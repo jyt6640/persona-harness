@@ -1,13 +1,18 @@
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import type { Part, UserMessage } from "@opencode-ai/sdk"
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/phase0/hooks.js"
 import type { TransformMessagesOutput } from "../src/phase0/types.js"
 
 const fixtureRoot = join(process.cwd(), ".persona-test-fixtures", "src", "main", "java", "com", "example")
+const fixtureWorkspace = join(process.cwd(), ".persona-test-fixtures")
+
+beforeEach(() => {
+  rmSync(fixtureWorkspace, { recursive: true, force: true })
+})
 
 function fixturePath(fileName: string): string {
   mkdirSync(fixtureRoot, { recursive: true })
@@ -69,8 +74,14 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("[Persona Harness Injection]")
     expect(text).toContain(`현재 파일: ${targetFile}`)
     expect(text).toContain("파일 역할: controller")
-    expect(text).toContain("Controller에는 비즈니스 로직을 넣지 않는다.")
-    expect(text).toContain("1단계 예약 추가 요청 본문은 반드시 name, date, time이다.")
+    expect(text).toContain("선택 규칙:")
+    expect(text).toContain("backend/spring-controller.md")
+    expect(text).toContain("backend/step1-api-contract.md")
+    expect(text).toContain(
+      "Controller에는 Repository 의존성, Map/List 저장 상태, id sequence, 저장소 구현 세부사항을 넣지 않는다.",
+    )
+    expect(text).toContain("GET /reservations는 200 OK와 예약 목록을 반환하고, 생성 전 목록 크기는 0이어야 한다.")
+    expect(text).toContain("POST /reservations는 200 OK를 반환한다. 201 Created는 이 단계에서 오답이며")
     expect(text).toContain("예약 생성 API 추가해줘.")
   })
 
@@ -89,7 +100,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
     const text = firstText(output)
     expect(text).toContain("파일 역할: service")
-    expect(text).toContain("@Transactional 경계는 Service public 메서드 기준으로 둔다.")
+    expect(text).toContain("Controller가 아니라 Service가 Repository를 호출하고, 생성/조회/삭제 흐름을 조율한다.")
   })
 
   it("selects an entity-specific injection block for Entity files", async () => {
