@@ -15,6 +15,8 @@ export type FileRole =
 export type PendingInjection = {
   targetFile: string
   fileRole: FileRole
+  selectedRules: string[]
+  policies: string[]
   block: string
 }
 
