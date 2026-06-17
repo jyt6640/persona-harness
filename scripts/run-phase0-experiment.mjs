@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
@@ -65,6 +65,9 @@ function summarizeEvidence() {
 }
 
 function createSandbox() {
+  cpSync(join(rootDir, ".persona", "rules"), join(sandboxDir, ".persona", "rules"), { recursive: true })
+  cpSync(join(rootDir, ".persona", "harness.jsonc"), join(sandboxDir, ".persona", "harness.jsonc"))
+
   write(
     join(sandboxDir, ".opencode", "opencode.json"),
     `${JSON.stringify({ plugin: [pluginPath] }, null, 2)}\n`,

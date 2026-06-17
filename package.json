@@ -10,6 +10,8 @@
   },
   "files": [
     "dist",
+    ".persona/harness.jsonc",
+    ".persona/rules",
     "README.md"
   ],
   "scripts": {

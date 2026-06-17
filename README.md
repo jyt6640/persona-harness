@@ -29,6 +29,38 @@ targetFile -> injection block -> 실제 모델 입력
 
 모든 Java/Spring 파일에는 clean-code baseline이 기본으로 깔린다. 파일명이 Controller, Service, Entity 등으로 끝나면 역할별 정책이 추가된다.
 
+## 규칙 정본
+
+Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
+
+```text
+.persona/
+├─ harness.jsonc
+└─ rules/
+   ├─ clean-code/
+   │  ├─ common.md
+   │  ├─ naming.md
+   │  ├─ method-design.md
+   │  └─ testability.md
+   └─ backend/
+      ├─ java-common.md
+      ├─ spring-controller.md
+      ├─ spring-service.md
+      ├─ spring-repository.md
+      ├─ spring-entity.md
+      ├─ spring-dto.md
+      ├─ spring-test.md
+      └─ step1-api-contract.md
+```
+
+현재 Phase 0 런타임은 아직 full rule-loader가 아니라 `src/phase0/injection.ts`의 curated injection catalog를 사용한다. 단, 이 catalog는 `.persona/rules`의 정본과 같은 철학을 따르도록 맞춰둔다.
+
+핵심 원칙:
+
+- clean-code는 선택 팩이 아니라 모든 Java/Spring 파일에 깔리는 기본 베이스다.
+- backend-policy는 Controller, Service, Repository, Entity, DTO, Test 역할별 책임을 분리한다.
+- 1단계 실험에서는 API 계약을 고정한다. 예약 추가 요청은 `name`, `date`, `time`이고 응답은 `id`, `name`, `date`, `time`이다.
+
 ## OpenCode 플러그인 구조
 
 `src/index.ts`는 OpenCode가 로드할 `PluginModule`을 export한다.
@@ -87,6 +119,8 @@ npm run experiment:phase0
 experiments/phase0-runs/{timestamp}/
 ├─ sandbox/
 │  ├─ .opencode/opencode.json
+│  ├─ .persona/harness.jsonc
+│  ├─ .persona/rules/...
 │  ├─ requirements-step1.md
 │  ├─ pom.xml
 │  └─ src/...
@@ -132,8 +166,9 @@ opencode run --model opencode/north-mini-code-free --dangerously-skip-permission
 - Controller에는 비즈니스 로직을 넣지 않는다.
 - Entity를 API 응답으로 직접 반환하지 않는다.
 - Request/Response DTO를 명시적으로 사용한다.
-- 메서드는 하나의 의도를 가져야 한다.
-- 메서드 이름은 구현 방식이 아니라 유스케이스와 의도를 드러내야 한다.
+- 1단계 예약 추가 요청 본문은 반드시 name, date, time이다.
+- 예약 추가 응답은 id, name, date, time을 반환한다.
+- 화면, 데이터베이스, H2, 시간 관리 기능은 1단계 범위가 아니다.
 ```
 
 이것이 Phase 0의 증명 대상이다.

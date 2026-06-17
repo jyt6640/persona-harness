@@ -2,8 +2,20 @@ import { resolveFileRole } from "./file-role.js"
 import type { FileRole, PendingInjection } from "./types.js"
 
 const CLEAN_CODE_BASELINE = [
+  "코드는 짧게보다 명확하게 작성한다.",
   "메서드는 하나의 의도를 가져야 한다.",
   "메서드 이름은 구현 방식이 아니라 유스케이스와 의도를 드러내야 한다.",
+] as const
+
+const JAVA_BACKEND_BASELINE = [
+  "HTTP 요청/응답, 유스케이스 흐름, 도메인 상태, 저장소 접근 책임을 구분한다.",
+  "요구사항의 요청/응답 필드 이름을 임의로 바꾸지 않는다.",
+] as const
+
+const STEP1_API_CONTRACT = [
+  "1단계 예약 추가 요청 본문은 반드시 name, date, time이다.",
+  "예약 추가 응답은 id, name, date, time을 반환한다.",
+  "화면, 데이터베이스, H2, 시간 관리 기능은 1단계 범위가 아니다.",
 ] as const
 
 const ROLE_POLICIES: Record<FileRole, readonly string[]> = {
@@ -12,6 +24,7 @@ const ROLE_POLICIES: Record<FileRole, readonly string[]> = {
     "Controller에는 비즈니스 로직을 넣지 않는다.",
     "Entity를 API 응답으로 직접 반환하지 않는다.",
     "Request/Response DTO를 명시적으로 사용한다.",
+    ...STEP1_API_CONTRACT,
   ],
   service: [
     "Service public 메서드는 유스케이스 흐름을 표현한다.",
@@ -37,10 +50,12 @@ const ROLE_POLICIES: Record<FileRole, readonly string[]> = {
   "request-dto": [
     "Request DTO는 외부 입력 계약과 검증 경계를 표현한다.",
     "Request DTO가 Entity 생성 세부사항을 직접 소유하지 않게 한다.",
+    ...STEP1_API_CONTRACT,
   ],
   "response-dto": [
     "Response DTO는 외부 출력 계약을 표현한다.",
     "Entity를 API 응답으로 직접 반환하지 않는다.",
+    ...STEP1_API_CONTRACT,
   ],
   exception: [
     "RuntimeException을 직접 던지는 대신 의미 있는 예외 타입을 사용한다.",
@@ -49,6 +64,7 @@ const ROLE_POLICIES: Record<FileRole, readonly string[]> = {
   test: [
     "테스트 이름은 실패 조건과 기대 동작을 드러낸다.",
     "성공 케이스보다 경계와 실패 케이스를 먼저 확인한다.",
+    ...STEP1_API_CONTRACT,
   ],
   "java-common": [
     "Java 파일에는 clean-code baseline을 항상 적용한다.",
@@ -58,7 +74,7 @@ const ROLE_POLICIES: Record<FileRole, readonly string[]> = {
 
 export function createInjectionBlock(targetFile: string): PendingInjection {
   const fileRole = resolveFileRole(targetFile)
-  const policies = [...ROLE_POLICIES[fileRole], ...CLEAN_CODE_BASELINE].slice(0, 8)
+  const policies = [...ROLE_POLICIES[fileRole], ...JAVA_BACKEND_BASELINE, ...CLEAN_CODE_BASELINE].slice(0, 8)
   const block = [
     "[Persona Harness Injection]",
     "",
@@ -69,7 +85,7 @@ export function createInjectionBlock(targetFile: string): PendingInjection {
     ...policies.map((policy) => `- ${policy}`),
     "",
     "주의:",
-    "이 Phase 0 블록은 rule-loader 결과가 아니라 hook feasibility 검증용 임시 injection이다.",
+    "이 Phase 0 블록은 .persona/rules 정본을 바탕으로 한 임시 주입이며, 아직 full rule-loader 결과는 아니다.",
   ].join("\n")
 
   return {

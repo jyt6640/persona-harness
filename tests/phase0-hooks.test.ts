@@ -70,7 +70,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain(`현재 파일: ${targetFile}`)
     expect(text).toContain("파일 역할: controller")
     expect(text).toContain("Controller에는 비즈니스 로직을 넣지 않는다.")
-    expect(text).toContain("메서드는 하나의 의도를 가져야 한다.")
+    expect(text).toContain("1단계 예약 추가 요청 본문은 반드시 name, date, time이다.")
     expect(text).toContain("예약 생성 API 추가해줘.")
   })
 
