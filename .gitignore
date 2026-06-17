@@ -1,0 +1,21 @@
+.DS_Store
+node_modules/
+dist/
+coverage/
+
+# Local reference notes used to design the MVP, not project source.
+PROJECT-PLAN.md
+OMO-ANALYSIS.md
+analysis/
+
+# OpenCode / Persona local runtime artifacts.
+.opencode/
+.persona/evidence/
+.persona-test-fixtures/
+fixtures/
+tmp/
+
+# Package-manager noise.
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
