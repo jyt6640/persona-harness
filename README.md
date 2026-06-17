@@ -38,12 +38,17 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 ├─ harness.jsonc
 └─ rules/
    ├─ clean-code/
+   │  ├─ abstraction.md
    │  ├─ common.md
    │  ├─ naming.md
    │  ├─ method-design.md
+   │  ├─ oop.md
    │  └─ testability.md
    └─ backend/
       ├─ java-common.md
+      ├─ layered-architecture.md
+      ├─ package-structure.md
+      ├─ validation-exception.md
       ├─ spring-controller.md
       ├─ spring-service.md
       ├─ spring-repository.md
@@ -58,8 +63,13 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 핵심 원칙:
 
 - clean-code는 선택 팩이 아니라 모든 Java/Spring 파일에 깔리는 기본 베이스다.
+- 짧은 코드보다 명확한 코드, 성급한 재사용보다 의도 보존을 우선한다.
+- 흐름과 판단을 분리하고, 객체가 자신의 상태와 규칙을 지키게 한다.
 - backend-policy는 Controller, Service, Repository, Entity, DTO, Test 역할별 책임을 분리한다.
+- Domain은 Spring, HTTP, DB 세부사항을 알지 않게 둔다.
 - 1단계 실험에서는 API 계약을 고정한다. 예약 추가 요청은 `name`, `date`, `time`이고 응답은 `id`, `name`, `date`, `time`이다.
+
+`references/diff-rules`에서 가져온 철학과 보류한 개인 취향성 규칙은 [docs/rule-curation.md](docs/rule-curation.md)에 남긴다.
 
 ## OpenCode 플러그인 구조
 
