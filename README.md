@@ -8,11 +8,17 @@ Phase 0의 목표는 하나다.
 targetFile -> injection block -> 실제 모델 입력
 ```
 
-아직 전체 rule-loader를 구현하지 않는다. 먼저 Java/Spring 파일을 읽거나 수정하려는 순간 파일 역할을 결정적으로 잡고, 그 파일에 맞는 클린코드/백엔드 원칙이 모델 컨텍스트에 들어가는지 증명한다.
+아직 완전한 rule engine을 구현하지 않는다. 먼저 Java/Spring 파일을 읽거나 수정하려는 순간 파일 역할을 결정적으로 잡고, 그 파일에 맞는 클린코드/백엔드 원칙이 모델 컨텍스트에 들어가는지 증명한다.
 
 ## 현재 범위
 
-현재 구현은 `# 1단계: 웹 요청-응답` 같은 Java/Spring 백엔드 미션을 대상으로 한다.
+현재 구현은 `# 1단계: 웹 요청-응답` Java/Spring 백엔드 미션만 대상으로 한다.
+
+Phase 0 #1단계 Spring backend MVP 상태는 **종료**다.
+
+종료 판단은 `2026-06-17T11-04-54-321Z`, `2026-06-17T11-06-35-453Z` 반복 run을 기준으로 한다. 두 run 모두 같은 기본 실행 명령으로 완주했고, 사람이 생성 코드를 직접 확인했을 때 API 계약과 Controller/Service/Repository 역할 분리를 만족했다. 직전 repository 분리 drift는 `2026-06-17T10-53-27-107Z`에서 `ReservationRepository`가 concrete 저장소 class로 생성된 문제였고, 이후 반복 2회에서는 재발하지 않았다.
+
+이 종료는 Java/Spring Backend Phase 0 `# 1단계: 웹 요청-응답`에만 적용된다. 2단계 이후 요구사항, profile-aware rule routing, frontend, infra, benchmark routing, desktop app 안정성을 의미하지 않는다.
 
 지원하는 파일 역할:
 
@@ -28,6 +34,15 @@ targetFile -> injection block -> 실제 모델 입력
 ```
 
 모든 Java/Spring 파일에는 clean-code baseline이 기본으로 깔린다. 파일명이 Controller, Service, Entity 등으로 끝나면 역할별 정책이 추가된다.
+
+MVP 밖 범위:
+
+- profile-aware rule routing
+- frontend/infra/deploy rule
+- benchmark routing
+- desktop app
+- 2단계 이후 웹 백엔드 요구사항
+- 복잡한 평가 대시보드
 
 ## 규칙 정본
 
@@ -58,7 +73,7 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
       └─ step1-api-contract.md
 ```
 
-현재 Phase 0 런타임은 아직 full rule-loader가 아니라 `src/phase0/injection.ts`의 curated injection catalog를 사용한다. 단, 이 catalog는 `.persona/rules`의 정본과 같은 철학을 따르도록 맞춰둔다.
+현재 Phase 0 런타임은 `src/phase0/rule-loader.ts`에서 `.persona/rules/**/*.md`의 bullet 정책을 읽고, `src/phase0/injection.ts`에서 MVP용 injection block으로 압축한다. full frontmatter/glob engine은 아직 구현하지 않는다.
 
 핵심 원칙:
 
@@ -70,6 +85,13 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 - 1단계 실험에서는 API 계약을 고정한다. 예약 추가 요청은 `name`, `date`, `time`이고 응답은 `id`, `name`, `date`, `time`이다.
 
 `references/diff-rules`에서 가져온 철학과 보류한 개인 취향성 규칙은 [docs/rule-curation.md](docs/rule-curation.md)에 남긴다.
+
+기준 문서:
+
+- [docs/mvp-goal.md](docs/mvp-goal.md)
+- [docs/loop-engineering.md](docs/loop-engineering.md)
+- [docs/workflow.md](docs/workflow.md)
+- [docs/rule-policy.md](docs/rule-policy.md)
 
 ## OpenCode 플러그인 구조
 
@@ -105,7 +127,7 @@ npm run typecheck
 npm run build
 ```
 
-테스트는 `.persona-test-fixtures/` 아래에 Java fixture를 만든다. 이 경로는 Git에 커밋하지 않는다.
+테스트는 매 테스트마다 `.persona-test-fixtures/`를 비우고 Java fixture를 다시 만든다. 이 경로는 Git에 커밋하지 않는다.
 
 ## 반복 실험 패키지
 
@@ -127,17 +149,25 @@ npm run experiment:phase0
 
 ```text
 experiments/phase0-runs/{timestamp}/
+├─ goal.md
+├─ worklog.md
+├─ requirements.md
+├─ prompt.md
+├─ evidence.md
+├─ stdout.log
+├─ stderr.log
+├─ diff.patch
+├─ rule-selection.md
+├─ analysis.md
+├─ next-actions.md
 ├─ sandbox/
 │  ├─ .opencode/opencode.json
 │  ├─ .persona/harness.jsonc
 │  ├─ .persona/rules/...
-│  ├─ requirements-step1.md
+│  ├─ requirements.md
 │  ├─ pom.xml
 │  └─ src/...
-├─ prompt.txt
-├─ opencode.stdout.jsonl
-├─ opencode.stderr.log
-└─ analysis.md
+└─ sandbox-baseline/
 ```
 
 `experiments/`는 Git ignore 대상이다. 실험 로그, 모델 산출물, evidence, 냉정 분석은 로컬에 계속 쌓되 저장소에는 커밋하지 않는다.
@@ -157,11 +187,11 @@ experiments/phase0-runs/{timestamp}/
 그 프로젝트에서 OpenCode를 실행한다.
 
 ```bash
-opencode run --model opencode/north-mini-code-free --dangerously-skip-permissions \
+opencode run --dir /path/to/java-spring-project --model opencode/north-mini-code-free --dangerously-skip-permissions \
   "먼저 src/main/java/com/example/reservation/ReservationController.java 파일을 읽고, 1단계 웹 요청-응답 요구사항의 예약 CRUD API를 구현해줘."
 ```
 
-주의: Persona Harness 저장소 내부 하위 디렉터리에서 OpenCode를 실행하면 Git 루트 때문에 모델이 상위 저장소까지 탐색할 수 있다. 실제 실험은 독립 Java/Spring 프로젝트에서 실행하는 편이 좋다.
+주의: Persona Harness 저장소 내부 하위 디렉터리에서 OpenCode를 실행하면 Git 루트 때문에 모델이 상위 저장소까지 탐색할 수 있다. 실험 스크립트는 이 문제를 줄이기 위해 `opencode run --dir {sandbox}`를 사용한다. 직접 실행할 때도 `--dir`로 독립 Java/Spring 프로젝트를 지정한다.
 
 모델이 `ReservationController.java`를 읽으면 Persona Harness가 파일 역할을 `controller`로 판정하고, read tool output 뒤에 다음 블록을 붙인다.
 
@@ -172,13 +202,12 @@ opencode run --model opencode/north-mini-code-free --dangerously-skip-permission
 파일 역할: controller
 
 적용 정책:
+- 코드는 짧게보다 명확하게 작성한다.
+- 메서드는 하나의 의도를 가진다.
+- HTTP 요청/응답, 유스케이스 흐름, 도메인 상태, 저장소 접근 책임을 구분한다.
 - Controller는 HTTP 요청/응답 변환만 담당한다.
-- Controller에는 비즈니스 로직을 넣지 않는다.
-- Entity를 API 응답으로 직접 반환하지 않는다.
-- Request/Response DTO를 명시적으로 사용한다.
+- Controller에는 비즈니스 로직과 저장소 접근을 넣지 않는다.
 - 1단계 예약 추가 요청 본문은 반드시 name, date, time이다.
-- 예약 추가 응답은 id, name, date, time을 반환한다.
-- 화면, 데이터베이스, H2, 시간 관리 기능은 1단계 범위가 아니다.
 ```
 
 이것이 Phase 0의 증명 대상이다.
@@ -219,18 +248,29 @@ Java targetFile을 포착했다.
 
 2단계 이후 요구사항은 Phase 0 OpenCode 연동 테스트에 넣지 않는다.
 
-## 실제 OpenCode 실험 결과
+## OpenCode 실험 결과
 
-2026-06-17에 `opencode run`으로 Phase 0을 실행했다.
+실험 결과 원문은 README에 넣지 않는다.
 
-결과:
+상세 결과, 실패 로그, 생성 diff, 냉정 분석은 추적하지 않는 `experiments/phase0-runs/*/analysis.md`에 남긴다.
 
-- Hook feasibility는 통과했다.
-- `read`/`write` tool output에 injection block이 실제로 들어갔다.
-- `.persona/evidence/phase0/*.json` evidence가 생성됐다.
-- 하지만 생성된 Java/Spring 코드는 1단계 요구사항을 통과하지 못했다.
+Phase 0 #1단계 backend MVP 종료 판단에 사용한 핵심 run:
 
-상세 분석은 추적하지 않는 `experiments/phase0-runs/*/analysis.md`에 남긴다.
+- `experiments/phase0-runs/2026-06-17T10-53-27-107Z`: repository contract와 in-memory implementation이 concrete `ReservationRepository` class로 합쳐진 drift 확인.
+- `experiments/phase0-runs/2026-06-17T10-58-42-358Z`: repository 분리 보강 후 PASS.
+- `experiments/phase0-runs/2026-06-17T11-04-54-321Z`: 보강 후 반복 PASS.
+- `experiments/phase0-runs/2026-06-17T11-06-35-453Z`: 보강 후 반복 PASS.
+
+Detector는 문자열 기반 보조 장치다. 정상 코드가 false positive로 잡힌 적이 있으므로, detector PASS만으로 품질 완료를 선언하지 않는다. 종료 판단은 detector 결과, 생성 Java/Spring 코드 직접 확인, 반복 run PASS 근거를 합쳐 내린다.
+
+## 실패했을 때 확인할 것
+
+- `dist/index.js`가 최신 빌드인지 확인한다.
+- 실험 sandbox의 `.opencode/opencode.json`이 `dist/index.js`를 가리키는지 확인한다.
+- OpenCode가 상위 Git 루트로 올라가지 않도록 `--dir {sandbox}`가 적용됐는지 확인한다.
+- `experiments/phase0-runs/{timestamp}/stderr.log`를 확인한다.
+- `experiments/phase0-runs/{timestamp}/evidence.md`와 `sandbox/.persona/evidence/phase0/*.json`에 selected rules가 남았는지 확인한다.
+- `analysis.md`의 Result가 `UNKNOWN`이면 실제 OpenCode 실행이나 생성 코드 테스트가 아직 끝나지 않은 상태다.
 
 ## Evidence 확인
 
@@ -247,6 +287,8 @@ Java targetFile을 포착했다.
 - callID
 - targetFile
 - fileRole
+- selected rule files
+- injected policy count
 - injection이 들어간 위치: pending-store, tool-output, model-input
 
 저장하지 않는 것:
