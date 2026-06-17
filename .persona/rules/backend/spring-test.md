@@ -13,9 +13,10 @@ enforcement: inject_only
 
 ## 메모리 저장소 테스트 격리
 
-- 메모리 저장소, static Map, static List, sequence/id generator를 사용하는 테스트는 테스트 간 상태를 반드시 초기화한다.
+- 메모리 저장소, static Map/List, sequence/id generator를 사용하는 테스트는 `@BeforeEach`에서 Repository `clear()`/`reset()`을 직접 호출해 저장 데이터와 id sequence를 함께 초기화한다. HTTP DELETE 요청으로 지우는 방식은 id sequence를 초기화하지 못하므로 쓰지 않는다.
 - 각 테스트는 독립적으로 실행되어야 하며, 이전 테스트의 저장 데이터나 id sequence에 의존하지 않는다.
-- Repository가 in-memory 구현이면 `@BeforeEach`에서 `clear()` 또는 동등한 초기화 메서드를 호출한다.
+- Repository가 in-memory 구현이면 `@BeforeEach`에서 `clear()` 또는 동등한 초기화 메서드를 호출해 저장 데이터와 id sequence를 함께 초기화한다.
+- 첫 생성 `id=1`을 여러 테스트에서 검증한다면 매 테스트 전에 id sequence도 1로 되돌아가야 한다.
 - 테스트가 단독 실행될 때만 통과하고 전체 실행에서 실패하면 상태 공유를 1순위 원인으로 의심한다.
 - `@DirtiesContext`는 마지막 수단이며, 먼저 저장소 초기화 API를 명시적으로 제공하는 방식을 우선한다.
 

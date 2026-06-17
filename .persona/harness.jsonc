@@ -2,7 +2,7 @@
   "enabled": true,
   "rulesDir": ".persona/rules",
   "evidenceDir": ".persona/evidence",
-  "maxRulesPerInjection": 11,
+  "maxRulesPerInjection": 12,
   "evidenceMode": "metadata_only",
   "enabledDomains": ["backend"]
 }
