@@ -2,7 +2,7 @@ import type { Hooks, Plugin, PluginModule } from "@opencode-ai/plugin"
 
 import { createPhase0Hooks } from "./phase0/hooks.js"
 
-const serverPlugin: Plugin = async (): Promise<Hooks> => createPhase0Hooks()
+const serverPlugin: Plugin = async (input): Promise<Hooks> => createPhase0Hooks({ projectDir: input.directory })
 
 const pluginModule: PluginModule = {
   id: "persona-harness",

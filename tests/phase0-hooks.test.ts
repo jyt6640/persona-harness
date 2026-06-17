@@ -109,4 +109,20 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("파일 역할: entity")
     expect(text).toContain("Entity는 setter를 열지 않는다.")
   })
+
+  it("appends the injection block to read tool output so the same model turn can see it", async () => {
+    const hooks = createPhase0Hooks()
+    const sessionID = "session-tool-output"
+    const targetFile = fixturePath("ReservationController.java")
+    const output = { title: "read", output: "class ReservationController {}", metadata: {} }
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "read", sessionID, callID: "call-4", args: { filePath: targetFile } },
+      output,
+    )
+
+    expect(output.output).toContain("class ReservationController {}")
+    expect(output.output).toContain("[Persona Harness Injection]")
+    expect(output.output).toContain("파일 역할: controller")
+  })
 })
