@@ -20,12 +20,12 @@ Use this file to answer:
 
 Current track: Phase 1.2 report-only observation loop.
 
-Current active candidate: Test Contract observer follow-up decision.
+Current active candidate: Phase 1.2 next track decision.
 
 Current recommendation:
 
-1. Treat the narrow time-list matcher correction as complete.
-2. Decide whether to close the current Test Contract observer cleanup track or observe the remaining response time object warning one more time.
+1. Treat the Test Contract observer cleanup track as closed.
+2. Choose the next Phase 1.2 action: a new report-only observation candidate or a broader phase-close decision.
 3. Keep rule/prompt reinforcement deferred.
 
 Current evidence summary:
@@ -40,12 +40,13 @@ Current evidence summary:
 - Response time object actual missing did not repeat in the comparison run.
 - Time-list matcher correction moved `reservation_time` table or time list size `1` from missing to present in the rechecked actual report.
 - The remaining actual report warning is reservation response time object, but prior comparison did not show repetition.
+- Test Contract observer cleanup track is closed; response time object remains a watch item, not an active cleanup loop.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 39
+Known scoped work items in this board: 40
 
-- Done: 34
+- Done: 35
 - Active next: 1
 - Deferred/watch: 4
 - Not yet decomposed: final product packaging and desktop app track
@@ -66,16 +67,16 @@ This is not an overall product-quality percentage. It is a progress count over t
 | --- | --- | --- | --- |
 | Phase 0 | Done | OpenCode plugin MVP for Java/Spring backend rule injection | MVP evidence collected for #1 and #2-3 |
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement | Narrow rule-loader refinement complete |
-| Phase 1.2 | Active | Report-only observers over generated Java/Spring runs | Row-count and time-list matcher corrections reduced observed false missing candidates |
+| Phase 1.2 | Active | Report-only observers over generated Java/Spring runs | Test Contract cleanup closed after row-count and time-list matcher corrections |
 | Phase 2 | Not decomposed | Stronger productization or broader domains | Not started |
 | Desktop App Track | Not decomposed | Final long-term host/app goal | Not started |
 
 ## Current Active Work Queue
 
-1. `[>]` Test Contract observer follow-up decision
-   - Goal: decide whether the current Test Contract observer cleanup track can close or whether one more actual observation is needed for the remaining response time object warning.
-   - Evidence: `docs/phase1-test-contract-time-list-matcher-result.md`
-   - Constraints: report-only, no rule/prompt reinforcement unless repeated manual-confirmed actual missing appears.
+1. `[>]` Phase 1.2 next track decision
+   - Goal: decide whether to select a new report-only observation candidate or close the current Phase 1.2 observation pass.
+   - Evidence: `docs/phase1-test-contract-cleanup-decision.md`
+   - Constraints: no product-quality gate, no enforcement gate, no rule/prompt reinforcement without repeated manual-confirmed actual missing evidence.
 
 2. `[~]` Test Contract response time object actual missing watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
@@ -212,7 +213,7 @@ Primary docs:
 - [x] Time-list/table matcher follow-up decision completed.
 - [x] Narrow time-list matcher correction implemented.
 - [x] Actual report recheck showed `reservation_time` table or time list size `1` moved from missing to present.
-- [>] Test Contract observer follow-up decision remains active next.
+- [x] Test Contract observer cleanup decision completed.
 - [~] Reservation response time object actual missing remains under watch.
 
 Primary docs:
@@ -228,6 +229,7 @@ Primary docs:
 - `docs/phase1-test-contract-response-time-repeat-review.md`
 - `docs/phase1-test-contract-time-list-matcher-decision.md`
 - `docs/phase1-test-contract-time-list-matcher-result.md`
+- `docs/phase1-test-contract-cleanup-decision.md`
 
 ## Deferred / Watch List
 
@@ -292,10 +294,10 @@ Use this when starting the next loop:
 
 ```text
 Current active item:
-- Test Contract observer follow-up decision
+- Phase 1.2 next track decision
 
 Goal:
-- Decide whether to close the current Test Contract observer cleanup track or observe the remaining response time object warning one more time.
+- Decide whether to select a new report-only observation candidate or close the current Phase 1.2 observation pass.
 
 Constraints:
 - string-based observer only
@@ -306,7 +308,7 @@ Constraints:
 - no test/product quality guarantee
 
 Expected output:
-- follow-up decision document
+- next-track decision document
 - PROJECT-PLAN update
 - this progress board updated
 ```
