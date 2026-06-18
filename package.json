@@ -18,6 +18,8 @@
     "build": "tsc -p tsconfig.build.json",
     "experiment:phase0": "node scripts/run-phase0-experiment.mjs",
     "experiment:phase0:prepare": "node scripts/run-phase0-experiment.mjs --no-run",
+    "experiment:phase0:step2-3": "node scripts/run-phase0-step2-3-experiment.mjs --run",
+    "experiment:phase0:step2-3:prepare": "node scripts/run-phase0-step2-3-experiment.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
