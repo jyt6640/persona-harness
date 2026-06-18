@@ -1,5 +1,5 @@
 import type { TestContractConfidence } from "./test-contract-observer.js"
-import { escapeRegExp } from "./java-source.js"
+import { escapeRegExp, stripJavaCommentsAndStrings } from "./java-source.js"
 
 export type AnchorCheck = {
   readonly anchor: string
@@ -117,12 +117,70 @@ function bodyFieldsAnchor(
 }
 
 function rowCountAnchor(source: string): AnchorCheck {
-  const hasReservationCount = /COUNT\s*\(\s*\*\s*\)\s+FROM\s+reservation\b/i.test(source)
-  const hasOne = /isEqualTo\s*\(\s*1\s*\)/.test(source)
-  const hasZero = /isEqualTo\s*\(\s*0\s*\)/.test(source)
-  return hasReservationCount && hasOne && hasZero
-    ? present("reservation row count 1/0", "HIGH", "reservation row count 1/0")
-    : missing("reservation row count 1/0")
+  const sourceWithoutStrings = stripJavaCommentsAndStrings(source)
+  if (hasDirectReservationCountAssertions(source, sourceWithoutStrings)) {
+    return present("reservation row count 1/0", "HIGH", "reservation row count 1/0")
+  }
+  if (hasReservationCountHelperAssertions(source)) {
+    return present("reservation row count 1/0", "HIGH", "reservation count helper 1/0")
+  }
+  if (hasReservationRowCountVariableAssertions(source, sourceWithoutStrings)) {
+    return present("reservation row count 1/0", "MEDIUM", "reservation rowCount variable 1/0")
+  }
+  return missing("reservation row count 1/0")
+}
+
+function hasDirectReservationCountAssertions(source: string, sourceWithoutStrings: string): boolean {
+  return hasReservationCountSql(source) && hasExpectedOne(sourceWithoutStrings) && hasExpectedZero(sourceWithoutStrings)
+}
+
+function hasReservationCountHelperAssertions(source: string): boolean {
+  const sourceWithoutStrings = stripJavaCommentsAndStrings(source)
+  if (!hasCountReservationsHelperReturningReservationCount(source)) return false
+  return hasExpectedForExpression(sourceWithoutStrings, "countReservations()", "1")
+    && hasExpectedForExpression(sourceWithoutStrings, "countReservations()", "0")
+}
+
+function hasReservationRowCountVariableAssertions(source: string, sourceWithoutStrings: string): boolean {
+  const variableNames = reservationRowCountVariableNames(source)
+  return variableNames.some((variableName) =>
+    hasExpectedForExpression(sourceWithoutStrings, variableName, "1")
+    && hasExpectedForExpression(sourceWithoutStrings, variableName, "0"),
+  )
+}
+
+function hasCountReservationsHelperReturningReservationCount(source: string): boolean {
+  return /\bcountReservations\s*\([^)]*\)\s*\{[\s\S]{0,500}?\bqueryForObject\s*\(\s*"select\s+count\s*\(\s*\*\s*\)\s+from\s+reservation\b/i
+    .test(source)
+}
+
+function reservationRowCountVariableNames(source: string): readonly string[] {
+  const names: string[] = []
+  const assignmentRegex =
+    /\b(?:long|Long|int|Integer|var)\s+([A-Za-z][A-Za-z0-9_]*)\s*=\s*jdbcTemplate\s*\.\s*queryForObject\s*\(\s*"select\s+count\s*\(\s*\*\s*\)\s+from\s+reservation\b/gi
+  for (const match of source.matchAll(assignmentRegex)) {
+    const name = match[1]
+    if (name !== undefined) names.push(name)
+  }
+  return names
+}
+
+function hasExpectedForExpression(source: string, expression: string, expected: "0" | "1"): boolean {
+  return new RegExp(
+    `\\bassertThat\\s*\\(\\s*${escapeRegExp(expression)}\\s*\\)\\s*\\.\\s*isEqualTo\\s*\\(\\s*${expected}[lL]?\\s*\\)`,
+  ).test(source)
+}
+
+function hasReservationCountSql(source: string): boolean {
+  return /COUNT\s*\(\s*\*\s*\)\s+FROM\s+reservation\b/i.test(source)
+}
+
+function hasExpectedOne(source: string): boolean {
+  return /isEqualTo\s*\(\s*1[lL]?\s*\)/.test(source)
+}
+
+function hasExpectedZero(source: string): boolean {
+  return /isEqualTo\s*\(\s*0[lL]?\s*\)/.test(source)
 }
 
 function timeCountAnchor(source: string): AnchorCheck {
