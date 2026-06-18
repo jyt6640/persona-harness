@@ -20,14 +20,14 @@ Use this file to answer:
 
 Current track: Phase 1.2 report-only observation pass closed.
 
-Current active candidate: PersonaHarnessRule MVP schema validation decision/implementation.
+Current active candidate: PersonaHarnessRule diagnostics-only validation implementation.
 
 Current recommendation:
 
 1. Treat the Phase 1.2 observation pass as closed.
 2. Do not choose another report-only observation candidate by default.
 3. Treat the existing Phase 1.1/frontmatter worktree settlement as complete.
-4. Choose PersonaHarnessRule MVP schema validation as the next implementation candidate.
+4. Use diagnostics-only as the PersonaHarnessRule MVP schema validation policy.
 5. Keep rule/prompt reinforcement deferred unless future actual runs provide repeated manual-confirmed evidence.
 
 Current evidence summary:
@@ -45,12 +45,13 @@ Current evidence summary:
 - Test Contract observer cleanup track is closed; response time object remains a watch item, not an active cleanup loop.
 - Phase 1.2 observation pass is closed; no new report-only observation candidate is selected now.
 - Phase 1.1/frontmatter/config dirty worktree settlement is complete and commit-ready.
+- PersonaHarnessRule validation policy is diagnostics-only: report findings without changing selection.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 42
+Known scoped work items in this board: 43
 
-- Done: 37
+- Done: 38
 - Active next: 1
 - Deferred/watch: 4
 - Not yet decomposed: final product packaging and desktop app track
@@ -77,9 +78,9 @@ This is not an overall product-quality percentage. It is a progress count over t
 
 ## Current Active Work Queue
 
-1. `[>]` PersonaHarnessRule MVP schema validation
-   - Goal: define and implement minimal validation behavior for current `.persona/rules` frontmatter.
-   - Evidence: `docs/phase1-1-frontmatter-worktree-settlement.md`
+1. `[>]` PersonaHarnessRule diagnostics-only validation implementation
+   - Goal: implement diagnostics-only validation findings for current `.persona/rules` frontmatter.
+   - Evidence: `docs/phase1-1-schema-validation-policy-decision.md`
    - Constraints: no new observer, no packaging/demo, no OMO rules-engine integration, no product-quality gate.
 
 2. `[~]` Test Contract response time object actual missing watch
@@ -252,6 +253,12 @@ Primary docs:
 - [x] Schema validation, OMO rules-engine reuse, and packaging/demo deferred to separate loops.
 - [x] Next implementation candidate selected: PersonaHarnessRule MVP schema validation.
 
+### Phase 1.1 Schema Validation
+
+- [x] PersonaHarnessRule MVP schema validation policy selected.
+- [x] Diagnostics-only chosen over selection-blocking and hybrid.
+- [>] Diagnostics-only validation implementation remains active next.
+
 ## Deferred / Watch List
 
 ### Rule/Prompt Reinforcement
@@ -302,10 +309,10 @@ Use this when starting the next loop:
 
 ```text
 Current active item:
-- PersonaHarnessRule MVP schema validation
+- PersonaHarnessRule diagnostics-only validation implementation
 
 Goal:
-- Define and implement minimal schema validation behavior for current `.persona/rules` frontmatter.
+- Implement diagnostics-only validation findings for current `.persona/rules` frontmatter.
 
 Constraints:
 - no observer work
