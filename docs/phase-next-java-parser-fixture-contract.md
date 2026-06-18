@@ -205,9 +205,9 @@ Run a minimal `java-parser` dependency/compile spike before implementing the sma
 The compile/import spike confirmed that `java-parser` can be imported from the current TypeScript/Vitest setup,
 but it also surfaced transitive `npm audit` findings through Chevrotain/Lodash.
 
-Recommended next decision loop:
+Dependency hygiene follow-up:
 
 ```text
-Decide whether the `java-parser` audit surface is acceptable for an ignored report-only prototype,
-or switch Candidate A before any parser-backed observer implementation.
+Phase 1.2 deferred parser-backed observation, so the `java-parser` spike dependency was removed.
+The fixture contract remains historical design input, not an active implementation plan.
 ```

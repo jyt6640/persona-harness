@@ -138,16 +138,21 @@ Limitation:
 
 - `npm audit` reports 6 transitive vulnerabilities through `java-parser`/Chevrotain/Lodash. The available npm audit fix points to `java-parser@0.3.2`, which is a semver-major downgrade relative to `3.0.1`, so this loop does not apply it.
 
+Dependency hygiene follow-up:
+
+- Phase 1.2 later deferred parser-backed observation and kept the string-based report-only observer.
+- Because the package was only used by the compile/import spike test, `java-parser` was removed from `package.json` and `package-lock.json`.
+- The spike remains documented as historical evidence, not as an active package dependency.
+
 Recommended next loop:
 
 ```text
-Decide whether the `java-parser` transitive audit surface is acceptable for an ignored report-only prototype,
-or replace Candidate A with a different parser candidate before implementing parser-backed observation.
+If parser-backed observation is revisited later, select and install a parser dependency in that future loop,
+with transitive audit surface reviewed again at that time.
 ```
 
 Alternative next loop:
 
 ```text
-If the audit surface is accepted, implement the smallest parser-backed report-only observation prototype,
-limited to Controller direct Repository dependency and ignored output.
+Continue with non-parser Phase candidates while Phase 1.2 keeps the string-based report-only observer.
 ```

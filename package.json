@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "java-parser": "^3.0.1",
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"
   }

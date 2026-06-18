@@ -109,6 +109,16 @@ Phase 1.2 observer에는 java-parser/AST 기반 분석을 도입하지 않는다
 
 이미 수행한 `java-parser` compile/import spike는 "도입 가능성 확인"으로만 취급한다. 그것이 Phase 1.2 observer에 parser-backed analysis를 도입한다는 결정은 아니다.
 
+## Package State
+
+Dependency hygiene decision:
+
+- `java-parser`는 runtime code 또는 Phase 1.2 observer code에서 사용하지 않는다.
+- `java-parser` 사용처는 compile/import spike test뿐이었다.
+- AST/java-parser 도입을 보류하기로 결정했으므로 spike test와 `java-parser` dev dependency를 제거한다.
+- `package.json`과 `package-lock.json`에는 `java-parser` 또는 새 Java AST parser dependency를 남기지 않는다.
+- 이 제거는 observer 동작을 바꾸지 않는다.
+
 ## Why
 
 - 현재 관찰 목표는 Controller direct Repository dependency 하나뿐이다.
@@ -149,8 +159,8 @@ Phase 1.2 observer에는 java-parser/AST 기반 분석을 도입하지 않는다
 추천 다음 loop:
 
 ```text
-Phase 1.2 parser-backed observer 도입은 보류로 닫고,
-현재 `java-parser` spike dependency를 유지할지 제거할지 별도 dependency hygiene loop에서 결정한다.
+Phase 1.2 parser-backed observer 도입과 spike dependency hygiene은 닫고,
+다음 Phase 후보를 actual generated run 추가 관찰 또는 다른 report-only observation 후보 중 하나로 좁힌다.
 ```
 
 대안 다음 loop:
