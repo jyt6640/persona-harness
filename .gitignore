@@ -12,6 +12,7 @@ experiments/
 
 # OpenCode / Persona local runtime artifacts.
 .opencode/
+.omo/
 .persona/evidence/
 .persona-test-fixtures/
 fixtures/
