@@ -111,13 +111,12 @@ Controller SQL Access observation도 single actual generated run에서 `PASS`, c
 - profile-aware backend/frontend/infra 확장 아님.
 - OMO workflow/skill 각색 아님.
 
-## Next Loop
+## Follow-Up
 
-선택 후보의 최소 설계를 문서화한다.
+선택 후보의 최소 설계는 `docs/phase-next-service-storage-observer-design.md`에 문서화했다.
 
 ```text
-Service 저장소 상태/id sequence 직접 소유 observation의 최소 문자열 기반 설계를 작성한다.
-대상, PASS/WARN/UNKNOWN 기준, evidence field, false positive limitation, ignored report 위치를 정한다.
+Service Storage Ownership observer의 최소 구현과 단위 테스트를 추가한다.
 ```
 
-다음 loop에서도 구현, rule/prompt 보강, enforcement gate, build/test failure 연결, product-quality 보증으로 확장하지 않는다.
+다음 loop에서도 rule/prompt 보강, enforcement gate, build/test failure 연결, product-quality 보증으로 확장하지 않는다.
