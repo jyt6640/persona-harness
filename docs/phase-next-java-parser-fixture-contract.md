@@ -187,17 +187,18 @@ build/test failure: no
 
 ## Next Loop
 
-Recommended next loop:
-
-```text
-Implement the smallest report-only parser prototype behind ignored output using the selected Candidate A contract,
-with tests limited to PASS/WARN/UNKNOWN fixture strings and without adding any enforcement gate.
-```
-
-Alternative next loop:
+Completed follow-up:
 
 ```text
 Before implementation, run a no-install spike against package metadata only to confirm Candidate A packaging,
 module format, and TypeScript import shape.
 ```
 
+The metadata spike is recorded in `docs/phase-next-java-parser-metadata-spike.md`.
+
+Recommended next implementation loop, if dependency install is explicitly approved:
+
+```text
+Run a minimal `java-parser` dependency/compile spike and then implement the smallest report-only parser prototype,
+with tests limited to PASS/WARN/UNKNOWN fixture strings and without adding any enforcement gate.
+```
