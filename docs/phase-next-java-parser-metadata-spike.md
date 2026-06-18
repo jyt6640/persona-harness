@@ -120,16 +120,34 @@ Candidate A should still be described as CST-backed structured parsing, not true
 
 ## Next Loop
 
-Recommended next loop:
+Completed follow-up:
 
 ```text
 Run an approved minimal dependency/compile spike for `java-parser` only,
-checking import/type shape and a tiny parser-backed report-only fixture,
-without enforcement, linter, Guard, product-quality claims, or build/test failure coupling.
+checking import/type shape without implementing observer logic.
+```
+
+The compile/import spike installed `java-parser` as a dev dependency and confirmed:
+
+- ESM named imports compile for `parse`, `lexAndParse`, `BaseJavaCstVisitor`, and `BaseJavaCstVisitorWithDefaults`.
+- Runtime import exposes those names as functions/constructors.
+- Published types expose `CstNode`, `IToken`, `JavaCstVisitor`, and `JavaCstVisitorWithDefaults`.
+- The spike did not call `parse`, implement observer traversal, add linter/Guard behavior, or connect findings to build/test failure.
+
+Limitation:
+
+- `npm audit` reports 6 transitive vulnerabilities through `java-parser`/Chevrotain/Lodash. The available npm audit fix points to `java-parser@0.3.2`, which is a semver-major downgrade relative to `3.0.1`, so this loop does not apply it.
+
+Recommended next loop:
+
+```text
+Decide whether the `java-parser` transitive audit surface is acceptable for an ignored report-only prototype,
+or replace Candidate A with a different parser candidate before implementing parser-backed observation.
 ```
 
 Alternative next loop:
 
 ```text
-If dependency install is still not allowed, stop parser work here and use this metadata decision as the handoff note for a later approved implementation loop.
+If the audit surface is accepted, implement the smallest parser-backed report-only observation prototype,
+limited to Controller direct Repository dependency and ignored output.
 ```

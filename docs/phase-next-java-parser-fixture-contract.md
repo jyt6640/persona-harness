@@ -196,9 +196,18 @@ module format, and TypeScript import shape.
 
 The metadata spike is recorded in `docs/phase-next-java-parser-metadata-spike.md`.
 
-Recommended next implementation loop, if dependency install is explicitly approved:
+Completed follow-up:
 
 ```text
-Run a minimal `java-parser` dependency/compile spike and then implement the smallest report-only parser prototype,
-with tests limited to PASS/WARN/UNKNOWN fixture strings and without adding any enforcement gate.
+Run a minimal `java-parser` dependency/compile spike before implementing the smallest report-only parser prototype.
+```
+
+The compile/import spike confirmed that `java-parser` can be imported from the current TypeScript/Vitest setup,
+but it also surfaced transitive `npm audit` findings through Chevrotain/Lodash.
+
+Recommended next decision loop:
+
+```text
+Decide whether the `java-parser` audit surface is acceptable for an ignored report-only prototype,
+or switch Candidate A before any parser-backed observer implementation.
 ```
