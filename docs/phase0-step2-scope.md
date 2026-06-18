@@ -4,7 +4,7 @@ Date: 2026-06-17
 
 ## Status
 
-READY / LIVE EVIDENCE SECURED
+READY / EVIDENCE CLOSED
 
 The user provided a concrete `# 2단계: 데이터베이스 연동 및 시간 관리` requirement. It is specific enough to start a Phase 0 #2 Java/Spring backend experiment, as long as the next loop only uses the explicit API, schema, configuration, and completion-test contracts below.
 
@@ -16,8 +16,11 @@ Current evidence:
 
 - `experiments/phase0-runs/2026-06-18T00-16-01-731Z`: scenario-aware contract selection removed `backend/step1-api-contract.md` from #2-3 Controller evidence and selected `backend/step2-3-api-contract.md`.
 - `experiments/phase0-runs/2026-06-18T00-34-47-590Z`: Controller, Test, Request DTO, and Response DTO were captured as live target files. All relevant roles selected `backend/step2-3-api-contract.md`; `backend/step1-api-contract.md` selected count was 0.
+- `experiments/phase0-runs/2026-06-18T01-02-20-056Z`: repeated the same default implementation command. Controller, Test, Request DTO, and Response DTO live target evidence was reproduced. `backend/step2-3-api-contract.md` selected count was 15; `backend/step1-api-contract.md` selected count was 0.
 
 This evidence was secured by explicitly prompting the model to `glob` and `read` Controller/Test/DTO files after implementation. It is sufficient for MVP injection-path observation, but it is not proof that future models naturally inspect every role file and it is not product-quality validation.
+
+Decision: **#2-3 evidence closed**. This supports closing the Phase 0 MVP under the narrow injection-path definition, not under an app-quality or Guard/AST/linter definition.
 
 ## Source Requirement
 
@@ -173,7 +176,6 @@ The source requirement is enough to start a #2 experiment, but these details are
 
 In the next loop:
 
-1. Reflect the #2-3 live evidence in README/report docs.
-2. Review the accumulated worktree by commit category.
-3. Keep `experiments/` ignored.
-4. Commit only after explicit user approval.
+1. Review accumulated tracked changes by commit category.
+2. Keep `experiments/` ignored.
+3. Commit only after explicit user approval.

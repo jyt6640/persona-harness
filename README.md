@@ -16,11 +16,15 @@ targetFile -> injection block -> 실제 모델 입력
 
 현재 기본 runner는 `# 1단계: 웹 요청-응답` Java/Spring fixture를 대상으로 한다. #2-3은 별도 runner로 분리해 H2/JdbcTemplate/time-management fixture를 다룬다.
 
+Phase 0 MVP 상태는 **종료**다.
+
+이 종료는 Java/Spring Backend Phase 0에서 `targetFile -> file role -> selected rules -> injection block -> model input/tool output -> model behavior` 경로가 #1과 #2-3 fixture에서 재현 가능하게 관찰됐다는 뜻이다. 앱 품질 보증, Guard/AST/linter 검증, profile-aware/frontend/infra/desktop 확장은 포함하지 않는다.
+
 Phase 0 #1단계 Spring backend fixture 상태는 **종료**다.
 
 종료 판단은 `2026-06-17T11-04-54-321Z`, `2026-06-17T11-06-35-453Z` 반복 run을 기준으로 한다. 두 run 모두 같은 기본 실행 명령으로 완주했고, 사람이 생성 코드를 직접 확인했을 때 API 계약과 Controller/Service/Repository 역할 분리를 만족했다. 이 확인은 모델 행동 변화 관찰이지 예약 앱 product 품질 보증이 아니다. 직전 repository 분리 drift는 `2026-06-17T10-53-27-107Z`에서 `ReservationRepository`가 concrete 저장소 class로 생성된 문제였고, 이후 반복 2회에서는 재발하지 않았다.
 
-Phase 0 #2-3 fixture는 live run에서 Controller/Test/DTO targetFile evidence를 확보했다. `experiments/phase0-runs/2026-06-18T00-34-47-590Z`에서 Controller, Test, Request DTO, Response DTO가 실제 hook target으로 포착됐고, 해당 역할의 selected rules에 `backend/step2-3-api-contract.md`가 들어갔다. `backend/step1-api-contract.md` 혼입은 0건이었다.
+Phase 0 #2-3 fixture evidence 상태도 **종료**다. `experiments/phase0-runs/2026-06-18T00-34-47-590Z`에서 Controller, Test, Request DTO, Response DTO가 실제 hook target으로 포착됐고, 해당 역할의 selected rules에 `backend/step2-3-api-contract.md`가 들어갔다. `backend/step1-api-contract.md` 혼입은 0건이었다. 같은 기본 명령의 반복 run `experiments/phase0-runs/2026-06-18T01-02-20-056Z`에서도 Controller, Test, Request DTO, Response DTO evidence가 재현됐고 `backend/step2-3-api-contract.md` 15건, `backend/step1-api-contract.md` 0건이었다.
 
 단, 이 #2-3 evidence는 prompt에서 구현 후 Controller/Test/DTO 파일을 `glob`/`read` 하도록 명시적으로 유도해 확보한 것이다. 모델이 자연스럽게 항상 모든 역할 파일을 읽는다는 보장은 아니다. MVP 기준으로는 targetFile -> injection block -> model input/tool output -> model behavior 관찰에 충분한 증거지만, 품질 게이트, Guard/AST/linter 검증, 완성 앱 품질 보증은 아니다.
 
@@ -286,10 +290,13 @@ Phase 0 #2-3 fixture live evidence:
 
 - `experiments/phase0-runs/2026-06-18T00-16-01-731Z`: scenario-aware contract selection 후 Controller evidence에서 `backend/step2-3-api-contract.md` 선택, `backend/step1-api-contract.md` 0건.
 - `experiments/phase0-runs/2026-06-18T00-34-47-590Z`: prompt로 Controller/Test/DTO read를 유도한 뒤 Controller, Test, Request DTO, Response DTO live targetFile evidence 확보. `backend/step2-3-api-contract.md` 14건, `backend/step1-api-contract.md` 0건.
+- `experiments/phase0-runs/2026-06-18T01-02-20-056Z`: 같은 기본 명령 반복 run. Controller, Test, Request DTO, Response DTO live targetFile evidence 재현. `backend/step2-3-api-contract.md` 15건, `backend/step1-api-contract.md` 0건.
 
 이 #2-3 evidence는 앱 완성도 평가가 아니라 rule selection과 injection path 관찰이다. prompt가 read를 명시적으로 유도했으므로 모델의 자연스러운 파일 탐색 습관을 증명하지 않는다.
 
 Detector는 문자열 기반 보조 관찰 장치다. 정상 코드가 false positive로 잡힌 적이 있으므로, detector PASS만으로 품질 완료를 선언하지 않는다. Phase 0에서는 Guard/AST/linter로 규칙 준수를 강제하지 않는다. 생성 Spring 앱 품질 평가는 후속 관찰로 의미가 있지만 MVP의 중심 목표는 규칙 주입 경로의 결정성과 재현성이다.
+
+Phase 0 MVP decision: **#2-3 evidence 종료, Phase 0 MVP 종료**.
 
 ## 실패했을 때 확인할 것
 

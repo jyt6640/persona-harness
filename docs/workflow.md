@@ -117,4 +117,8 @@ Phase 0 #1단계 Spring backend MVP 종료 판단은 다음 순서로 한다.
 6. evidence gap과 prompt 유도 여부를 analysis에 기록
 ```
 
-현재 `experiments/phase0-runs/2026-06-18T00-34-47-590Z`에서 Controller/Test/Request DTO/Response DTO live evidence를 확보했다. 이 evidence는 prompt가 구현 후 `glob`/`read`를 명시적으로 유도한 결과다. 따라서 모델이 자연스럽게 항상 모든 역할 파일을 읽는다는 보장은 아니며, 앱 품질 보증이나 Guard/AST/linter 검증도 아니다.
+현재 `experiments/phase0-runs/2026-06-18T00-34-47-590Z`와 반복 run `experiments/phase0-runs/2026-06-18T01-02-20-056Z`에서 Controller/Test/Request DTO/Response DTO live evidence를 확보했다. 두 run 모두 Controller/Test/DTO selected rules에 `backend/step2-3-api-contract.md`가 들어갔고 `backend/step1-api-contract.md` 혼입은 0건이었다.
+
+이 evidence는 prompt가 구현 후 `glob`/`read`를 명시적으로 유도한 결과다. 따라서 모델이 자연스럽게 항상 모든 역할 파일을 읽는다는 보장은 아니며, 앱 품질 보증이나 Guard/AST/linter 검증도 아니다.
+
+현재 결정은 **#2-3 evidence 종료, Phase 0 MVP 종료**다. 이 결정은 Java/Spring Backend Phase 0 injection-path proof에만 적용한다.

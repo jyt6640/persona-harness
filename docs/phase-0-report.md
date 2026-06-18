@@ -85,7 +85,7 @@ Detector limitation:
 
 ## Phase 0 #2-3 Live Evidence
 
-Status: **Controller/Test/DTO live evidence secured for the Java/Spring backend fixture**.
+Status: **Closed for Phase 0 #2-3 Java/Spring backend fixture evidence**.
 
 This does not reopen the product scope. The #2-3 room-reservation requirement is a higher-complexity Spring fixture for observing rule injection under H2/JdbcTemplate, schema, and time-linking concerns.
 
@@ -93,12 +93,15 @@ Reviewed runs:
 
 - `experiments/phase0-runs/2026-06-18T00-16-01-731Z`
 - `experiments/phase0-runs/2026-06-18T00-34-47-590Z`
+- `experiments/phase0-runs/2026-06-18T01-02-20-056Z`
 
 Evidence:
 
 - `2026-06-18T00-16-01-731Z` confirmed scenario-aware contract selection for Controller evidence: `backend/step2-3-api-contract.md` selected and `backend/step1-api-contract.md` absent.
 - `2026-06-18T00-34-47-590Z` captured live targetFile evidence for Controller, Test, Request DTO, and Response DTO.
 - In that run, `backend/step2-3-api-contract.md` was selected 14 times and `backend/step1-api-contract.md` was selected 0 times.
+- `2026-06-18T01-02-20-056Z` repeated the same default implementation command and again captured Controller, Test, Request DTO, and Response DTO live targetFile evidence.
+- In the repeated run, `backend/step2-3-api-contract.md` was selected 15 times and `backend/step1-api-contract.md` was selected 0 times.
 - Injection appeared in `pending-store`, `tool-output`, and `model-input`.
 
 Limitation:
@@ -107,6 +110,27 @@ Limitation:
 - This proves the Phase 0 harness can observe role-specific #2-3 contract injection when the fixture makes those files target files.
 - It does not prove that models naturally inspect every role file without prompting.
 - It is not a quality gate, Guard/AST/linter verification, or a guarantee of finished reservation-app product quality.
+
+## Phase 0 MVP Decision
+
+Status: **#2-3 evidence closed, Phase 0 MVP closed**.
+
+This closure is valid only under the MVP definition in this repository: prove that Java/Spring target files can drive deterministic rule selection and injection into model-facing context, with enough evidence to observe model behavior.
+
+Closure basis:
+
+- #1 fixture proved the basic Spring backend injection path.
+- #2-3 fixture proved the same path under a more complex H2/JdbcTemplate/schema/time/Test/DTO fixture.
+- Scenario-aware contract selection kept `backend/step1-api-contract.md` and `backend/step2-3-api-contract.md` from mixing in the observed #2-3 Controller/Test/DTO evidence.
+- Repeated #2-3 live run reproduced the selected-rules evidence.
+
+Non-closure basis:
+
+- This is not application quality certification.
+- This is not a complete backend quality gate.
+- This is not Guard/AST/linter enforcement.
+- This is not proof that a model naturally reads every role file without prompt steering.
+- This is not profile-aware, frontend, infra, benchmark routing, desktop app, or OMO-style full harness expansion.
 
 ## Boundary
 
