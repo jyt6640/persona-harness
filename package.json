@@ -10,6 +10,7 @@
   },
   "files": [
     "dist",
+    "scripts/report-rule-diagnostics.mjs",
     ".persona/harness.jsonc",
     ".persona/rules",
     "README.md"
@@ -22,6 +23,7 @@
     "experiment:phase0:step2-3:prepare": "node scripts/run-phase0-step2-3-experiment.mjs",
     "observe:phase1-2": "node scripts/observe-phase1-2.mjs",
     "observe:test-contract": "node scripts/observe-test-contract.mjs",
+    "report:rules": "npm run build && node scripts/report-rule-diagnostics.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

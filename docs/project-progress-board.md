@@ -18,9 +18,9 @@ Use this file to answer:
 
 ## Current Position
 
-Current track: Phase 1.1 diagnostics-only schema validation implemented after Phase 1.2 report-only observation pass closeout.
+Current track: diagnostics-first MVP productization path implemented after Phase 1.2 report-only observation pass closeout.
 
-Current active candidate: productization path decision.
+Current active candidate: release/demo checklist decision.
 
 Current recommendation:
 
@@ -29,7 +29,8 @@ Current recommendation:
 3. Treat the existing Phase 1.1/frontmatter worktree settlement as complete.
 4. Use diagnostics-only as the PersonaHarnessRule MVP schema validation policy and implementation behavior.
 5. Keep rule/prompt reinforcement deferred unless future actual runs provide repeated manual-confirmed evidence.
-6. Decide whether the next loop should move toward packaging/demo readiness or another productization blocker.
+6. Use `npm run report:rules` as the first user-visible diagnostics surface.
+7. Decide whether the next loop should prepare a release/demo checklist.
 
 Current evidence summary:
 
@@ -48,12 +49,14 @@ Current evidence summary:
 - Phase 1.1/frontmatter/config dirty worktree settlement is complete and commit-ready.
 - PersonaHarnessRule validation policy is diagnostics-only: report findings without changing selection.
 - PersonaHarnessRule diagnostics-only validation is implemented: valid rules have no findings, invalid or malformed frontmatter produces catalog diagnostics, and loading remains non-blocking.
+- PersonaHarnessRule diagnostics now have a user-visible report surface via `npm run report:rules`.
+- README documents the MVP reproduction path from install/build/test to rule diagnostics and OpenCode plugin connection.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 44
+Known scoped work items in this board: 45
 
-- Done: 39
+- Done: 40
 - Active next: 1
 - Deferred/watch: 4
 - Not yet decomposed: final product packaging and desktop app track
@@ -80,9 +83,9 @@ This is not an overall product-quality percentage. It is a progress count over t
 
 ## Current Active Work Queue
 
-1. `[>]` Productization path decision
-   - Goal: decide whether the next loop should move toward packaging/demo readiness or another explicit productization blocker.
-   - Evidence: `docs/phase1-1-schema-validation-result.md`
+1. `[>]` Release/demo checklist decision
+   - Goal: decide the smallest checklist needed before treating this as a shareable MVP artifact.
+   - Evidence: `docs/productization-path-decision.md`
    - Constraints: no new observer by default, no OMO rules-engine implementation by default, no product-quality gate.
 
 2. `[~]` Test Contract response time object actual missing watch
@@ -260,12 +263,15 @@ Primary docs:
 - [x] PersonaHarnessRule MVP schema validation policy selected.
 - [x] Diagnostics-only chosen over selection-blocking and hybrid.
 - [x] Diagnostics-only validation implementation completed.
-- [>] Productization path decision remains active next.
+- [x] Diagnostics report surface implemented via `npm run report:rules`.
+- [x] MVP reproduction path documented in README.
+- [>] Release/demo checklist decision remains active next.
 
 Primary docs:
 
 - `docs/phase1-1-schema-validation-policy-decision.md`
 - `docs/phase1-1-schema-validation-result.md`
+- `docs/productization-path-decision.md`
 
 ## Deferred / Watch List
 
@@ -317,10 +323,10 @@ Use this when starting the next loop:
 
 ```text
 Current active item:
-- Productization path decision
+- Release/demo checklist decision
 
 Goal:
-- Decide whether the next loop should move toward packaging/demo readiness or another explicit productization blocker.
+- Decide the smallest checklist needed before treating Persona Harness as a shareable MVP artifact.
 
 Constraints:
 - no observer work
@@ -331,7 +337,7 @@ Constraints:
 - no test/product quality guarantee
 
 Expected output:
-- one documented next productization path
+- one documented release/demo checklist path
 - PROJECT-PLAN update
 - this progress board updated
 ```

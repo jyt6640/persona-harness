@@ -143,9 +143,28 @@ npm run build
 npm test
 npm run typecheck
 npm run build
+npm run report:rules
 ```
 
 테스트는 매 테스트마다 `.persona-test-fixtures/`를 비우고 Java fixture를 다시 만든다. 이 경로는 Git에 커밋하지 않는다.
+
+`npm run report:rules`는 빌드 후 `.persona/rules` frontmatter diagnostics를 읽고 ignored output인 `.persona/evidence/phase-next/rule-diagnostics-report.md`에 markdown report를 남긴다. 이 report는 diagnostics-only surface다. invalid metadata를 보여주지만 rule loading, rule selection, injection, test, typecheck, build를 막지 않는다.
+
+## MVP 재현 경로
+
+현재 제품화 기준의 최소 재현 경로는 다음 순서다.
+
+```bash
+npm install
+npm test
+npm run typecheck
+npm run build
+npm run report:rules
+```
+
+그 다음 테스트할 Java/Spring 프로젝트의 `.opencode/opencode.json`에 `dist/index.js`를 연결하고 OpenCode에서 Java target file을 읽거나 수정한다.
+
+이 경로가 보장하는 것은 Persona Harness MVP의 rule injection과 metadata-only diagnostics surface다. 생성된 Spring 앱의 product quality, rule compliance enforcement, Guard/AST/linter 검증, desktop app packaging은 보장하지 않는다.
 
 ## 반복 실험 패키지
 
