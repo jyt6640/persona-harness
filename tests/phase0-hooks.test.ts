@@ -5,11 +5,25 @@ import type { Part, UserMessage } from "@opencode-ai/sdk"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/phase0/hooks.js"
+import { createInjectionBlock } from "../src/phase0/injection.js"
 import { loadRulesForRole } from "../src/phase0/rule-loader.js"
-import type { TransformMessagesOutput } from "../src/phase0/types.js"
+import type { FileRole, TransformMessagesOutput } from "../src/phase0/types.js"
 
 const fixtureRoot = join(process.cwd(), ".persona-test-fixtures", "src", "main", "java", "com", "example")
 const fixtureWorkspace = join(process.cwd(), ".persona-test-fixtures")
+const baseJavaRules = ["clean-code/common.md", "clean-code/method-design.md", "backend/java-common.md"] as const
+const javaSpringRoles = [
+  "controller",
+  "service",
+  "repository",
+  "entity",
+  "domain",
+  "request-dto",
+  "response-dto",
+  "exception",
+  "test",
+  "java-common",
+] as const satisfies readonly FileRole[]
 
 beforeEach(() => {
   rmSync(fixtureWorkspace, { recursive: true, force: true })
@@ -153,6 +167,16 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(selectedRulePaths("test", "step1")).toContain("backend/step1-api-contract.md")
   })
 
+  it("keeps step1 Controller and Test contract rules exclusive", () => {
+    const controllerRules = selectedRulePaths("controller", "step1")
+    const testRules = selectedRulePaths("test", "step1")
+
+    expect(controllerRules).toContain("backend/step1-api-contract.md")
+    expect(controllerRules).not.toContain("backend/step2-3-api-contract.md")
+    expect(testRules).toContain("backend/step1-api-contract.md")
+    expect(testRules).not.toContain("backend/step2-3-api-contract.md")
+  })
+
   it("selects the step2-3 API contract instead of step1 for step2-3 Controller, Test, and DTO fixtures", () => {
     for (const role of ["controller", "test", "request-dto", "response-dto"] as const) {
       const rules = selectedRulePaths(role, "step2-3")
@@ -160,5 +184,45 @@ describe("Phase 0 OpenCode hook feasibility", () => {
       expect(rules).toContain("backend/step2-3-api-contract.md")
       expect(rules).not.toContain("backend/step1-api-contract.md")
     }
+  })
+
+  it("keeps step2-3 Controller, Test, and DTO contract rules exclusive", () => {
+    for (const role of ["controller", "test", "request-dto", "response-dto"] as const) {
+      const rules = selectedRulePaths(role, "step2-3")
+
+      expect(rules).toContain("backend/step2-3-api-contract.md")
+      expect(rules).not.toContain("backend/step1-api-contract.md")
+    }
+  })
+
+  it("keeps Java/Spring base rules selected for every Java role", () => {
+    for (const role of javaSpringRoles) {
+      const rules = selectedRulePaths(role, "step1")
+
+      expect(rules).toEqual(expect.arrayContaining([...baseJavaRules]))
+    }
+  })
+
+  it("keeps the injection block section format stable", () => {
+    const targetFile = fixturePath("ReservationController.java")
+
+    const injection = createInjectionBlock(targetFile, fixtureWorkspace)
+
+    expect(injection.block).toContain("[Persona Harness Injection]")
+    expect(injection.block).toContain(`현재 파일: ${targetFile}`)
+    expect(injection.block).toContain("파일 역할: controller")
+    expect(injection.block).toContain("선택 규칙:")
+    expect(injection.block).toContain("적용 정책:")
+    expect(injection.block).toContain("주의:")
+  })
+
+  it("keeps selectedRules evidence as rule path strings", () => {
+    const targetFile = fixturePath("ReservationController.java")
+
+    const injection = createInjectionBlock(targetFile, fixtureWorkspace)
+
+    expect(injection.selectedRules.length).toBeGreaterThan(0)
+    expect(injection.selectedRules.every((rulePath) => typeof rulePath === "string")).toBe(true)
+    expect(injection.selectedRules).toContain("backend/step1-api-contract.md")
   })
 })
