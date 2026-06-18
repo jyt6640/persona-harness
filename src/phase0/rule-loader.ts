@@ -1,0 +1,113 @@
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
+
+import type { FileRole } from "./types.js"
+import {
+  isRuleEligibleForTarget,
+  loadRuleCatalog,
+  targetPathForMatching,
+  type Phase0Scenario,
+} from "./rule-catalog.js"
+import { extractBulletPolicies } from "./rule-frontmatter.js"
+
+export type { Phase0Scenario } from "./rule-catalog.js"
+
+export type LoadedRule = {
+  readonly path: string
+  readonly policies: readonly string[]
+}
+
+const DEFAULT_SCENARIO: Phase0Scenario = "step1"
+const STEP1_API_CONTRACT_RULE = "backend/step1-api-contract.md"
+const STEP2_3_API_CONTRACT_RULE = "backend/step2-3-api-contract.md"
+const CONTRACT_RULE_ROLES = new Set<FileRole>(["controller", "request-dto", "response-dto", "test"])
+
+const COMMON_RULES = [
+  "clean-code/common.md",
+  "clean-code/method-design.md",
+  "backend/java-common.md",
+] as const
+
+const ROLE_RULES: Record<FileRole, readonly string[]> = {
+  controller: ["backend/spring-controller.md", "backend/spring-dto.md", STEP1_API_CONTRACT_RULE],
+  service: ["backend/spring-service.md", "backend/validation-exception.md"],
+  repository: ["backend/spring-repository.md"],
+  entity: ["clean-code/oop.md", "backend/spring-entity.md"],
+  domain: ["clean-code/oop.md", "backend/layered-architecture.md"],
+  "request-dto": ["backend/spring-dto.md", STEP1_API_CONTRACT_RULE],
+  "response-dto": ["backend/spring-dto.md", STEP1_API_CONTRACT_RULE],
+  exception: ["backend/validation-exception.md"],
+  test: ["clean-code/testability.md", "backend/spring-test.md", STEP1_API_CONTRACT_RULE],
+  "java-common": ["clean-code/abstraction.md"],
+}
+
+function readScenario(projectDir: string): Phase0Scenario {
+  const harnessPath = join(projectDir, ".persona", "harness.jsonc")
+  if (!existsSync(harnessPath)) {
+    return DEFAULT_SCENARIO
+  }
+
+  const match = readFileSync(harnessPath, "utf8").match(/"scenario"\s*:\s*"([^"]+)"/)
+  return match?.[1] === "step2-3" ? "step2-3" : DEFAULT_SCENARIO
+}
+
+function takePoliciesForInjection(rulePath: string, policies: readonly string[], maxBullets?: number): string[] {
+  if (maxBullets !== undefined) {
+    return policies.slice(0, maxBullets)
+  }
+  if (rulePath === STEP1_API_CONTRACT_RULE || rulePath === STEP2_3_API_CONTRACT_RULE) {
+    return policies.slice(0, 3)
+  }
+  const limit = rulePath === "clean-code/method-design.md" ? 1 : 2
+  return policies.slice(0, limit)
+}
+
+function contractRuleForScenario(scenario: Phase0Scenario): string {
+  return scenario === "step2-3" ? STEP2_3_API_CONTRACT_RULE : STEP1_API_CONTRACT_RULE
+}
+
+function scenarioAwareRoleRules(fileRole: FileRole, scenario: Phase0Scenario): readonly string[] {
+  const roleRules = ROLE_RULES[fileRole]
+  if (!CONTRACT_RULE_ROLES.has(fileRole)) {
+    return roleRules
+  }
+
+  const contractRule = contractRuleForScenario(scenario)
+  return roleRules.map((rulePath) => (rulePath === STEP1_API_CONTRACT_RULE ? contractRule : rulePath))
+}
+
+export function selectRulePaths(fileRole: FileRole, scenario: Phase0Scenario = DEFAULT_SCENARIO): string[] {
+  return Array.from(new Set([...COMMON_RULES, ...scenarioAwareRoleRules(fileRole, scenario)]))
+}
+
+export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetFile?: string): LoadedRule[] {
+  const scenario = readScenario(projectDir)
+  const targetPath = targetPathForMatching(projectDir, fileRole, targetFile)
+  const catalog = new Map(loadRuleCatalog(projectDir).map((entry) => [entry.path, entry]))
+
+  return selectRulePaths(fileRole, scenario).flatMap((rulePath) => {
+    const catalogEntry = catalog.get(rulePath)
+    if (catalogEntry !== undefined) {
+      if (
+        !isRuleEligibleForTarget(catalogEntry, fileRole, scenario, targetPath)
+      ) {
+        return []
+      }
+
+      return {
+        path: rulePath,
+        policies: takePoliciesForInjection(rulePath, catalogEntry.policies, catalogEntry.metadata.maxBullets),
+      }
+    }
+
+    const absolutePath = join(projectDir, ".persona", "rules", rulePath)
+    if (!existsSync(absolutePath)) {
+      return { path: rulePath, policies: [] }
+    }
+
+    return {
+      path: rulePath,
+      policies: takePoliciesForInjection(rulePath, extractBulletPolicies(readFileSync(absolutePath, "utf8"))),
+    }
+  })
+}

@@ -34,6 +34,8 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): v
     injectedInto: event.injectedInto,
     targetFile: event.injection.targetFile,
     fileRole: event.injection.fileRole,
+    selectedRules: event.injection.selectedRules,
+    injectedPolicyCount: event.injection.policies.length,
   }
 
   mkdirSync(evidenceDir, { recursive: true })

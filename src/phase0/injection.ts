@@ -1,106 +1,39 @@
 import { resolveFileRole } from "./file-role.js"
-import type { FileRole, PendingInjection } from "./types.js"
+import { loadRulesForRole } from "./rule-loader.js"
+import type { PendingInjection } from "./types.js"
 
-const CLEAN_CODE_BASELINE = [
-  "코드는 짧게보다 명확하게 작성한다.",
-  "메서드는 하나의 의도를 가져야 한다.",
-  "메서드 이름은 구현 방식이 아니라 유스케이스와 의도를 드러내야 한다.",
-  "흐름을 진행하는 코드와 판단을 내리는 코드를 구분한다.",
-  "추상화는 반복되는 변경 비용이나 책임 혼재가 실제로 보일 때 도입한다.",
-] as const
+const MAX_POLICIES_PER_INJECTION = 12
 
-const JAVA_BACKEND_BASELINE = [
-  "HTTP 요청/응답, 유스케이스 흐름, 도메인 상태, 저장소 접근 책임을 구분한다.",
-  "도메인 규칙은 Spring, HTTP, DB 세부사항에 의존하지 않게 둔다.",
-  "요구사항의 요청/응답 필드 이름을 임의로 바꾸지 않는다.",
-] as const
-
-const MAX_POLICIES_PER_INJECTION = 11
-
-const STEP1_API_CONTRACT = [
-  "1단계 예약 추가 요청 본문은 반드시 name, date, time이다.",
-  "예약 추가 응답은 id, name, date, time을 반환한다.",
-  "화면, 데이터베이스, H2, 시간 관리 기능은 1단계 범위가 아니다.",
-] as const
-
-const ROLE_POLICIES: Record<FileRole, readonly string[]> = {
-  controller: [
-    "Controller는 HTTP 요청/응답 변환만 담당한다.",
-    "Controller에는 비즈니스 로직을 넣지 않는다.",
-    "Entity를 API 응답으로 직접 반환하지 않는다.",
-    "Request/Response DTO를 명시적으로 사용한다.",
-    ...STEP1_API_CONTRACT,
-  ],
-  service: [
-    "Service public 메서드는 유스케이스 흐름을 표현한다.",
-    "@Transactional 경계는 Service public 메서드 기준으로 둔다.",
-    "Controller나 Repository 책임을 Service에 섞어 넣지 않는다.",
-    "검증과 정책 판단은 가능한 Domain, Validator, Policy 같은 이름 있는 책임에 맡긴다.",
-    "도메인 예외는 의미 있는 타입이나 에러 코드로 드러낸다.",
-  ],
-  repository: [
-    "Repository는 영속성 접근만 담당한다.",
-    "비즈니스 판단은 Repository query 조건에 숨기지 않는다.",
-    "저장 방식 세부사항은 호출 계층의 비즈니스 흐름에 새지 않게 한다.",
-    "외부로 Entity 노출이 필요한지 호출 계층에서 명확히 결정한다.",
-  ],
-  entity: [
-    "Entity는 setter를 열지 않는다.",
-    "상태 변경은 의미 있는 도메인 메서드로만 한다.",
-    "도메인 불변식은 Entity나 Domain 객체 안에서 지킨다.",
-    "getter로 상태를 꺼내 외부에서 판단한 뒤 다시 조작하는 흐름을 기본 선택으로 삼지 않는다.",
-  ],
-  domain: [
-    "도메인 객체는 비즈니스 언어를 메서드 이름에 담는다.",
-    "도메인 불변식은 호출자에게 떠넘기지 않는다.",
-    "상태 전이는 명시적인 메서드로 표현한다.",
-  ],
-  "request-dto": [
-    "Request DTO는 외부 입력 계약과 검증 경계를 표현한다.",
-    "Request DTO가 Entity 생성 세부사항을 직접 소유하지 않게 한다.",
-    ...STEP1_API_CONTRACT,
-  ],
-  "response-dto": [
-    "Response DTO는 외부 출력 계약을 표현한다.",
-    "Entity를 API 응답으로 직접 반환하지 않는다.",
-    ...STEP1_API_CONTRACT,
-  ],
-  exception: [
-    "RuntimeException을 직접 던지는 대신 의미 있는 예외 타입을 사용한다.",
-    "예외는 호출자가 이해할 수 있는 에러 정책과 연결한다.",
-  ],
-  test: [
-    "테스트 이름은 실패 조건과 기대 동작을 드러낸다.",
-    "테스트는 public behavior를 검증하고 내부 구현 순서에 과하게 결합하지 않는다.",
-    "성공 케이스보다 경계와 실패 케이스를 먼저 확인한다.",
-    ...STEP1_API_CONTRACT,
-  ],
-  "java-common": [
-    "Java 파일에는 clean-code baseline을 항상 적용한다.",
-    "역할이 애매하면 책임을 새 타입으로 분리할 수 있는지 먼저 확인한다.",
-  ],
+function dedupePolicies(policies: string[]): string[] {
+  return Array.from(new Set(policies))
 }
 
-export function createInjectionBlock(targetFile: string): PendingInjection {
+export function createInjectionBlock(targetFile: string, projectDir = process.cwd()): PendingInjection {
   const fileRole = resolveFileRole(targetFile)
-  const mandatoryBaseline = [...CLEAN_CODE_BASELINE.slice(0, 4), ...JAVA_BACKEND_BASELINE.slice(0, 2)]
-  const policies = [...mandatoryBaseline, ...ROLE_POLICIES[fileRole]].slice(0, MAX_POLICIES_PER_INJECTION)
+  const loadedRules = loadRulesForRole(projectDir, fileRole, targetFile)
+  const selectedRules = loadedRules.map((rule) => rule.path)
+  const policies = dedupePolicies(loadedRules.flatMap((rule) => rule.policies)).slice(0, MAX_POLICIES_PER_INJECTION)
   const block = [
     "[Persona Harness Injection]",
     "",
     `현재 파일: ${targetFile}`,
     `파일 역할: ${fileRole}`,
     "",
+    "선택 규칙:",
+    ...selectedRules.map((rule) => `- ${rule}`),
+    "",
     "적용 정책:",
     ...policies.map((policy) => `- ${policy}`),
     "",
     "주의:",
-    "이 Phase 0 블록은 .persona/rules 정본을 바탕으로 한 임시 주입이며, 아직 full rule-loader 결과는 아니다.",
+    "이 Phase 0 블록은 .persona/rules 정본을 읽는 MVP rule-loader 결과이며, 아직 full frontmatter/glob engine은 아니다.",
   ].join("\n")
 
   return {
     targetFile,
     fileRole,
+    selectedRules,
+    policies,
     block,
   }
 }

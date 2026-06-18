@@ -43,7 +43,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       return undefined
     }
 
-    const injection = createInjectionBlock(targetFile)
+    const injection = createInjectionBlock(targetFile, projectDir)
     store.set(sessionID, injection)
     writePhase0Evidence(projectDir, {
       hook,

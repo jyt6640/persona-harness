@@ -1,0 +1,47 @@
+name: Phase observation
+description: Track an observation-only experiment for Persona Harness.
+title: "[observation]: "
+labels:
+  - observation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for ignored fixture or experiment observations. This should not request an enforcement gate by default.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What narrow behavior should be observed?
+      placeholder: Observe whether Controller directly depends on Repository.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Keep the observation bounded.
+      placeholder: Java/Spring Backend fixture only. Observation report only.
+    validations:
+      required: true
+  - type: checkboxes
+    id: limits
+    attributes:
+      label: Limits
+      options:
+        - label: This is not a full rule engine.
+          required: true
+        - label: This is not an enforcement gate.
+          required: true
+        - label: This does not guarantee generated app product quality.
+          required: true
+        - label: Output should stay in ignored fixture or experiment artifacts unless separately approved.
+          required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence to collect
+      description: List the minimal evidence expected from the observation.
+      placeholder: Files inspected, PASS/WEAK/FAIL/UNKNOWN, short evidence summary.
+    validations:
+      required: true
