@@ -10,15 +10,21 @@ targetFile -> injection block -> 실제 모델 입력
 
 아직 완전한 rule engine을 구현하지 않는다. 먼저 Java/Spring 파일을 읽거나 수정하려는 순간 파일 역할을 결정적으로 잡고, 그 파일에 맞는 클린코드/백엔드 원칙이 모델 컨텍스트에 들어가는지 증명한다.
 
+방탈출 예약 앱은 Persona Harness의 product가 아니다. 예약 요구사항은 Java/Spring fixture 입력이며, 난이도를 올려가며 `targetFile -> injection block -> 실제 모델 입력 -> 모델 행동 변화 관찰` 경로가 재현되는지 보기 위한 실험 재료다.
+
 ## 현재 범위
 
-현재 구현은 `# 1단계: 웹 요청-응답` Java/Spring 백엔드 미션만 대상으로 한다.
+현재 기본 runner는 `# 1단계: 웹 요청-응답` Java/Spring fixture를 대상으로 한다. #2-3은 별도 runner로 분리해 H2/JdbcTemplate/time-management fixture를 다룬다.
 
-Phase 0 #1단계 Spring backend MVP 상태는 **종료**다.
+Phase 0 #1단계 Spring backend fixture 상태는 **종료**다.
 
-종료 판단은 `2026-06-17T11-04-54-321Z`, `2026-06-17T11-06-35-453Z` 반복 run을 기준으로 한다. 두 run 모두 같은 기본 실행 명령으로 완주했고, 사람이 생성 코드를 직접 확인했을 때 API 계약과 Controller/Service/Repository 역할 분리를 만족했다. 직전 repository 분리 drift는 `2026-06-17T10-53-27-107Z`에서 `ReservationRepository`가 concrete 저장소 class로 생성된 문제였고, 이후 반복 2회에서는 재발하지 않았다.
+종료 판단은 `2026-06-17T11-04-54-321Z`, `2026-06-17T11-06-35-453Z` 반복 run을 기준으로 한다. 두 run 모두 같은 기본 실행 명령으로 완주했고, 사람이 생성 코드를 직접 확인했을 때 API 계약과 Controller/Service/Repository 역할 분리를 만족했다. 이 확인은 모델 행동 변화 관찰이지 예약 앱 product 품질 보증이 아니다. 직전 repository 분리 drift는 `2026-06-17T10-53-27-107Z`에서 `ReservationRepository`가 concrete 저장소 class로 생성된 문제였고, 이후 반복 2회에서는 재발하지 않았다.
 
-이 종료는 Java/Spring Backend Phase 0 `# 1단계: 웹 요청-응답`에만 적용된다. 2단계 이후 요구사항, profile-aware rule routing, frontend, infra, benchmark routing, desktop app 안정성을 의미하지 않는다.
+Phase 0 #2-3 fixture는 live run에서 Controller/Test/DTO targetFile evidence를 확보했다. `experiments/phase0-runs/2026-06-18T00-34-47-590Z`에서 Controller, Test, Request DTO, Response DTO가 실제 hook target으로 포착됐고, 해당 역할의 selected rules에 `backend/step2-3-api-contract.md`가 들어갔다. `backend/step1-api-contract.md` 혼입은 0건이었다.
+
+단, 이 #2-3 evidence는 prompt에서 구현 후 Controller/Test/DTO 파일을 `glob`/`read` 하도록 명시적으로 유도해 확보한 것이다. 모델이 자연스럽게 항상 모든 역할 파일을 읽는다는 보장은 아니다. MVP 기준으로는 targetFile -> injection block -> model input/tool output -> model behavior 관찰에 충분한 증거지만, 품질 게이트, Guard/AST/linter 검증, 완성 앱 품질 보증은 아니다.
+
+이 종료와 evidence는 Java/Spring Backend Phase 0 fixture에만 적용된다. profile-aware rule routing, frontend, infra, benchmark routing, desktop app 안정성을 의미하지 않는다.
 
 지원하는 파일 역할:
 
@@ -41,8 +47,10 @@ MVP 밖 범위:
 - frontend/infra/deploy rule
 - benchmark routing
 - desktop app
-- 2단계 이후 웹 백엔드 요구사항
+- 2단계 이후 웹 백엔드 요구사항의 product 구현 또는 품질 보증
 - 복잡한 평가 대시보드
+- 방탈출 예약 앱의 product 완성도 검증
+- Guard/AST/linter 기반 규칙 준수 강제
 
 ## 규칙 정본
 
@@ -70,10 +78,11 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
       ├─ spring-entity.md
       ├─ spring-dto.md
       ├─ spring-test.md
-      └─ step1-api-contract.md
+      ├─ step1-api-contract.md
+      └─ step2-3-api-contract.md
 ```
 
-현재 Phase 0 런타임은 `src/phase0/rule-loader.ts`에서 `.persona/rules/**/*.md`의 bullet 정책을 읽고, `src/phase0/injection.ts`에서 MVP용 injection block으로 압축한다. full frontmatter/glob engine은 아직 구현하지 않는다.
+현재 Phase 0 런타임은 `src/phase0/rule-loader.ts`에서 `.persona/rules/**/*.md`의 bullet 정책을 읽고, `src/phase0/injection.ts`에서 MVP용 injection block으로 압축한다. #2-3 sandbox는 `.persona/harness.jsonc`의 `"scenario": "step2-3"` marker로 `backend/step2-3-api-contract.md`를 선택한다. full frontmatter/glob engine은 아직 구현하지 않는다.
 
 핵심 원칙:
 
@@ -83,6 +92,7 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 - backend-policy는 Controller, Service, Repository, Entity, DTO, Test 역할별 책임을 분리한다.
 - Domain은 Spring, HTTP, DB 세부사항을 알지 않게 둔다.
 - 1단계 실험에서는 API 계약을 고정한다. 예약 추가 요청은 `name`, `date`, `time`이고 응답은 `id`, `name`, `date`, `time`이다.
+- #2-3 fixture에서는 별도 API contract rule을 사용한다. 예약 추가 요청은 `name`, `date`, `timeId`이고, 예약 조회 응답의 `time`은 `{ id, startAt }` 객체다.
 
 `references/diff-rules`에서 가져온 철학과 보류한 개인 취향성 규칙은 [docs/rule-curation.md](docs/rule-curation.md)에 남긴다.
 
@@ -92,6 +102,8 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 - [docs/loop-engineering.md](docs/loop-engineering.md)
 - [docs/workflow.md](docs/workflow.md)
 - [docs/rule-policy.md](docs/rule-policy.md)
+- [docs/phase0-step2-scope.md](docs/phase0-step2-scope.md)
+- [docs/phase0-rule-selection-review.md](docs/phase0-rule-selection-review.md)
 
 ## OpenCode 플러그인 구조
 
@@ -143,6 +155,13 @@ npm run experiment:phase0:prepare
 
 ```bash
 npm run experiment:phase0
+```
+
+#2-3 fixture 준비와 실행:
+
+```bash
+npm run experiment:phase0:step2-3:prepare
+npm run experiment:phase0:step2-3 -- --model openai/gpt-5.4-mini-fast --timeout-ms 600000
 ```
 
 각 실행은 다음 구조로 저장된다.
@@ -218,9 +237,11 @@ Java targetFile을 포착했다.
 -> read tool output 또는 다음 model input에 반영했다.
 ```
 
-## 1단계 테스트 요구사항
+## Fixture 요구사항
 
-현재 OpenCode 실험에 사용하는 요구사항 범위는 `# 1단계: 웹 요청-응답`만이다.
+현재 기본 OpenCode 실험에 사용하는 fixture 입력은 `# 1단계: 웹 요청-응답`만이다.
+
+이 요구사항은 예약 앱을 제품으로 만들기 위한 명세가 아니라 Java/Spring 파일 역할별 규칙 주입을 관찰하기 위한 fixture다.
 
 요구사항:
 
@@ -246,7 +267,7 @@ Java targetFile을 포착했다.
 - `DELETE /reservations/1` 요청 시 `200 OK`
 - 삭제 후 `GET /reservations` 예약 목록 크기 `0`
 
-2단계 이후 요구사항은 Phase 0 OpenCode 연동 테스트에 넣지 않는다.
+2단계 이후 요구사항은 기본 #1 runner에 넣지 않는다. #2-3은 별도 runner에서 더 복잡한 Spring fixture 입력으로만 다루며, product 구현 범위로 승격하지 않는다.
 
 ## OpenCode 실험 결과
 
@@ -261,7 +282,14 @@ Phase 0 #1단계 backend MVP 종료 판단에 사용한 핵심 run:
 - `experiments/phase0-runs/2026-06-17T11-04-54-321Z`: 보강 후 반복 PASS.
 - `experiments/phase0-runs/2026-06-17T11-06-35-453Z`: 보강 후 반복 PASS.
 
-Detector는 문자열 기반 보조 장치다. 정상 코드가 false positive로 잡힌 적이 있으므로, detector PASS만으로 품질 완료를 선언하지 않는다. 종료 판단은 detector 결과, 생성 Java/Spring 코드 직접 확인, 반복 run PASS 근거를 합쳐 내린다.
+Phase 0 #2-3 fixture live evidence:
+
+- `experiments/phase0-runs/2026-06-18T00-16-01-731Z`: scenario-aware contract selection 후 Controller evidence에서 `backend/step2-3-api-contract.md` 선택, `backend/step1-api-contract.md` 0건.
+- `experiments/phase0-runs/2026-06-18T00-34-47-590Z`: prompt로 Controller/Test/DTO read를 유도한 뒤 Controller, Test, Request DTO, Response DTO live targetFile evidence 확보. `backend/step2-3-api-contract.md` 14건, `backend/step1-api-contract.md` 0건.
+
+이 #2-3 evidence는 앱 완성도 평가가 아니라 rule selection과 injection path 관찰이다. prompt가 read를 명시적으로 유도했으므로 모델의 자연스러운 파일 탐색 습관을 증명하지 않는다.
+
+Detector는 문자열 기반 보조 관찰 장치다. 정상 코드가 false positive로 잡힌 적이 있으므로, detector PASS만으로 품질 완료를 선언하지 않는다. Phase 0에서는 Guard/AST/linter로 규칙 준수를 강제하지 않는다. 생성 Spring 앱 품질 평가는 후속 관찰로 의미가 있지만 MVP의 중심 목표는 규칙 주입 경로의 결정성과 재현성이다.
 
 ## 실패했을 때 확인할 것
 

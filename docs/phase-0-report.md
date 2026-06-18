@@ -16,6 +16,8 @@ Use an OpenCode TypeScript plugin, not a Java application.
 
 The Java/Spring files are test targets only. They live under ignored fixture paths so the repository stays focused on the plugin implementation.
 
+The room-escape reservation domain is not the product. It is a repeatable Java/Spring fixture used to observe whether role-specific rule injection reaches the model input and influences generated behavior.
+
 ## Hook Points
 
 - `tool.execute.before`: best first capture point for read/edit/write-like tool arguments.
@@ -38,6 +40,8 @@ The test suite simulates OpenCode hook calls:
 Status: **Closed for Phase 0 #1 Java/Spring backend**.
 
 This decision only covers `# 1단계: 웹 요청-응답`.
+
+Closed means the #1 fixture is sufficient for the MVP injection-path proof. It does not mean Persona Harness has guaranteed the product quality of a reservation application.
 
 Reviewed runs:
 
@@ -77,6 +81,32 @@ Detector limitation:
 - Normal generated code has produced false positives, including `jsonPath("$").isEmpty()` list-size assertions and `sequence.set(0L)` plus `incrementAndGet()` id reset.
 - Detector PASS is not the sole completion signal.
 - The closure decision combines detector output, direct generated-code review, Maven success, and repeated PASS evidence.
+- Detector is a helper for observing drift, not a quality gate. Phase 0 does not enforce rules through Guard, AST, or linter checks.
+
+## Phase 0 #2-3 Live Evidence
+
+Status: **Controller/Test/DTO live evidence secured for the Java/Spring backend fixture**.
+
+This does not reopen the product scope. The #2-3 room-reservation requirement is a higher-complexity Spring fixture for observing rule injection under H2/JdbcTemplate, schema, and time-linking concerns.
+
+Reviewed runs:
+
+- `experiments/phase0-runs/2026-06-18T00-16-01-731Z`
+- `experiments/phase0-runs/2026-06-18T00-34-47-590Z`
+
+Evidence:
+
+- `2026-06-18T00-16-01-731Z` confirmed scenario-aware contract selection for Controller evidence: `backend/step2-3-api-contract.md` selected and `backend/step1-api-contract.md` absent.
+- `2026-06-18T00-34-47-590Z` captured live targetFile evidence for Controller, Test, Request DTO, and Response DTO.
+- In that run, `backend/step2-3-api-contract.md` was selected 14 times and `backend/step1-api-contract.md` was selected 0 times.
+- Injection appeared in `pending-store`, `tool-output`, and `model-input`.
+
+Limitation:
+
+- The Controller/Test/DTO evidence was obtained by explicitly prompting the model to `glob` and `read` those file categories after implementation.
+- This proves the Phase 0 harness can observe role-specific #2-3 contract injection when the fixture makes those files target files.
+- It does not prove that models naturally inspect every role file without prompting.
+- It is not a quality gate, Guard/AST/linter verification, or a guarantee of finished reservation-app product quality.
 
 ## Boundary
 

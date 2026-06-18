@@ -23,7 +23,7 @@
 
 ## 현재 구현 매핑
 
-- 요구사항/작업 범위 로드: `scripts/run-phase0-experiment.mjs`가 `requirements.md`와 sandbox 요구사항 파일을 생성한다.
+- 요구사항/작업 범위 로드: `scripts/run-phase0-experiment.mjs`와 `scripts/run-phase0-step2-3-experiment.mjs`가 `requirements.md`와 sandbox 요구사항 파일을 생성한다.
 - target file 감지: `src/phase0/target-file.ts`
 - file role 판별: `src/phase0/file-role.ts`
 - rule 선택: `src/phase0/rule-loader.ts`
@@ -40,6 +40,8 @@
 Phase 0은 OpenCode hook 기반으로 target file 감지와 주입 가능성을 증명한다.
 
 중복 주입은 message/tool output에 이미 `[Persona Harness Injection]`이 있으면 건너뛰는 수준으로만 막는다.
+
+방탈출 예약 #1/#2/#3 요구사항은 product가 아니라 Java/Spring fixture 입력이다. workflow의 구현/테스트 단계는 모델이 fixture를 어떻게 처리하는지 관찰하기 위한 단계이지, 예약 앱 완성도를 MVP 목표로 삼는 단계가 아니다.
 
 ## Rule Loader 범위
 
@@ -100,3 +102,19 @@ Phase 0 #1단계 Spring backend MVP 종료 판단은 다음 순서로 한다.
 현재 결정은 **종료**다.
 
 이 결정은 `# 1단계: 웹 요청-응답` Java/Spring backend에만 적용한다. detector는 문자열 기반 보조 신호이므로, 생성 코드 직접 확인과 반복 PASS 근거 없이 detector 결과만으로 종료하지 않는다.
+또한 이 종료는 #1 fixture가 MVP 주입 경로 증명에 충분하다는 뜻이며, 예약 앱 product 품질 보증을 뜻하지 않는다.
+
+## Phase 0 #2-3 Live Evidence Workflow
+
+#2-3 fixture에서는 다음을 추가로 확인한다.
+
+```text
+1. sandbox .persona/harness.jsonc에 scenario: step2-3 기록
+2. Controller/Test/DTO 파일을 targetFile로 포착
+3. Controller/Test/DTO selected rules에 backend/step2-3-api-contract.md 포함
+4. Controller/Test/DTO selected rules에 backend/step1-api-contract.md 미포함
+5. injection block이 tool output 또는 model input에 남았는지 확인
+6. evidence gap과 prompt 유도 여부를 analysis에 기록
+```
+
+현재 `experiments/phase0-runs/2026-06-18T00-34-47-590Z`에서 Controller/Test/Request DTO/Response DTO live evidence를 확보했다. 이 evidence는 prompt가 구현 후 `glob`/`read`를 명시적으로 유도한 결과다. 따라서 모델이 자연스럽게 항상 모든 역할 파일을 읽는다는 보장은 아니며, 앱 품질 보증이나 Guard/AST/linter 검증도 아니다.
