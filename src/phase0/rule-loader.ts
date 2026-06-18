@@ -2,18 +2,20 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import type { FileRole } from "./types.js"
+import { loadHarnessConfig, resolveConfiguredPath } from "./harness-config.js"
 import {
   isRuleEligibleForTarget,
   loadRuleCatalog,
   targetPathForMatching,
   type Phase0Scenario,
 } from "./rule-catalog.js"
-import { extractBulletPolicies } from "./rule-frontmatter.js"
+import { extractBulletPolicies, fallbackRuleMetadata, type RuleMetadata } from "./rule-frontmatter.js"
 
 export type { Phase0Scenario } from "./rule-catalog.js"
 
 export type LoadedRule = {
   readonly path: string
+  readonly metadata: RuleMetadata
   readonly policies: readonly string[]
 }
 
@@ -39,16 +41,6 @@ const ROLE_RULES: Record<FileRole, readonly string[]> = {
   exception: ["backend/validation-exception.md"],
   test: ["clean-code/testability.md", "backend/spring-test.md", STEP1_API_CONTRACT_RULE],
   "java-common": ["clean-code/abstraction.md"],
-}
-
-function readScenario(projectDir: string): Phase0Scenario {
-  const harnessPath = join(projectDir, ".persona", "harness.jsonc")
-  if (!existsSync(harnessPath)) {
-    return DEFAULT_SCENARIO
-  }
-
-  const match = readFileSync(harnessPath, "utf8").match(/"scenario"\s*:\s*"([^"]+)"/)
-  return match?.[1] === "step2-3" ? "step2-3" : DEFAULT_SCENARIO
 }
 
 function takePoliciesForInjection(rulePath: string, policies: readonly string[], maxBullets?: number): string[] {
@@ -81,9 +73,11 @@ export function selectRulePaths(fileRole: FileRole, scenario: Phase0Scenario = D
 }
 
 export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetFile?: string): LoadedRule[] {
-  const scenario = readScenario(projectDir)
+  const config = loadHarnessConfig(projectDir)
+  const scenario = config.scenario
   const targetPath = targetPathForMatching(projectDir, fileRole, targetFile)
   const catalog = new Map(loadRuleCatalog(projectDir).map((entry) => [entry.path, entry]))
+  const rulesDir = resolveConfiguredPath(projectDir, config.rulesDir)
 
   return selectRulePaths(fileRole, scenario).flatMap((rulePath) => {
     const catalogEntry = catalog.get(rulePath)
@@ -96,17 +90,20 @@ export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetF
 
       return {
         path: rulePath,
+        metadata: catalogEntry.metadata,
         policies: takePoliciesForInjection(rulePath, catalogEntry.policies, catalogEntry.metadata.maxBullets),
       }
     }
 
-    const absolutePath = join(projectDir, ".persona", "rules", rulePath)
+    const absolutePath = join(rulesDir, rulePath)
+    const metadata = fallbackRuleMetadata(rulePath)
     if (!existsSync(absolutePath)) {
-      return { path: rulePath, policies: [] }
+      return { path: rulePath, metadata, policies: [] }
     }
 
     return {
       path: rulePath,
+      metadata,
       policies: takePoliciesForInjection(rulePath, extractBulletPolicies(readFileSync(absolutePath, "utf8"))),
     }
   })

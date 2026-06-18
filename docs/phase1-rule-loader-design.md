@@ -90,17 +90,18 @@ Phase 1.1 구현 후에도 #1/#2-3의 observable behavior는 유지한다.
 Phase 1.1에서 읽는 필드:
 
 - `id`: rule의 안정 식별자. 없으면 path를 fallback id로 본다.
-- `description`: 사람이 읽는 설명. Phase 1.1 selection에는 쓰지 않고 diagnostics/evidence 확장 후보로만 보존한다.
-- `applies_to`: 선택 적용 대상. Phase 1.1에서는 `java`, `spring`, `controller`, `service`, `repository`, `entity`, `domain`, `request-dto`, `response-dto`, `exception`, `test`, `java-common` 같은 문자열 배열만 허용한다.
+- `source`: `clean-code` 또는 `backend-policy` 같은 rule 출처. Phase 1.1 selection에는 쓰지 않고 metadata evidence로 보존한다.
+- `domain`: `common` 또는 `backend` 같은 rule domain. Phase 1.1 selection에는 쓰지 않고 metadata evidence로 보존한다.
+- `topic`: rule grouping key. Phase 1.1 selection에는 쓰지 않고 metadata evidence로 보존한다.
 - `globs`: target file path와 매칭할 glob 배열. Phase 1.1 selection의 핵심 입력이다.
 - `scenario`: contract rule에만 쓰는 선택 marker. 허용값은 `step1`, `step2-3`, `all`이다. 없으면 `all`로 본다.
-- `priority`: 같은 파일에 여러 rule이 매칭될 때 정렬하는 숫자. 없으면 `100`으로 본다.
+- `severity`: `must`, `should`, `prefer` 중 하나. Phase 1.1 selection에는 쓰지 않고 metadata evidence로 보존한다.
 - `max_bullets`: injection에 포함할 bullet 최대 수. 없으면 기존 기본값을 따른다.
 - `enforcement`: Phase 1.1에서는 `inject_only`만 활성 값으로 읽는다. 다른 값은 읽어도 실행 의미를 부여하지 않는다.
 
 Phase 1.1에서 읽지 않는 필드:
 
-- `source`, `domain`, `topic`, `severity`는 기존 rule files에 있지만 selection에는 쓰지 않는다.
+- `description`, `applies_to`, `priority`는 현재 rule 정본에 없으므로 Phase 1.1 runtime metadata model에서 제거한다.
 - `conflictsWith`, `extends`, `profile`, `owner`, `warn`, `deny`, `guard`, `linter`, `ast` 계열 필드는 구현하지 않는다.
 - nested object frontmatter는 지원하지 않는다.
 
@@ -197,16 +198,16 @@ Compatibility target:
 2. `.persona/rules/**/*.md`를 읽는 작은 rule catalog loader를 만든다.
 3. frontmatter parser는 Phase 1.1 필드만 scalar/string-array로 파싱한다.
 4. target path와 rule `globs`를 project-relative path 기준으로 매칭한다.
-5. `applies_to`와 current file role을 함께 확인한다.
-6. contract rule에는 `scenario` filter를 적용해 #1/#2-3 mixing을 막는다.
-7. `priority`와 기존 rule order가 같은 selectedRules 순서를 만들도록 정렬한다.
+5. contract rule에는 `scenario` filter를 적용해 #1/#2-3 mixing을 막는다.
+6. 기존 hardcoded role order와 selectedRules path shape를 유지한다.
+7. `source`, `domain`, `topic`, `severity`는 selectedRuleMetadata evidence로 보존한다.
 8. `max_bullets` 또는 기존 limit으로 policies를 추출한다.
 9. injection block과 `selectedRules` evidence format이 바뀌지 않았는지 테스트한다.
 
 Scope guard:
 
 - 기존 `createInjectionBlock` public return shape는 바꾸지 않는다.
-- `.persona/evidence` 기록 형식은 바꾸지 않는다.
+- `.persona/evidence`의 `selectedRules` path string 배열은 유지하고, metadata는 별도 필드로 추가한다.
 - Guard/AST/linter/profile/frontend/infra/workflow 관련 코드는 추가하지 않는다.
 
 ## Risks
@@ -244,13 +245,13 @@ This decision closes the minimal catalog-based rule selection refinement describ
 Implemented scope:
 
 - `.persona/rules/**/*.md` catalog loading.
-- Minimal frontmatter parsing for `id`, `description`, `applies_to`, `globs`, `scenario`, `priority`, `max_bullets`, and `enforcement`.
+- Minimal frontmatter parsing for `id`, `source`, `domain`, `topic`, `globs`, `scenario`, `severity`, `max_bullets`, and `enforcement`.
 - Frontmatter parsing split into `src/phase0/rule-frontmatter.ts`.
 - Minimal glob matching split into `src/phase0/rule-glob.ts`.
 - Scenario-aware contract eligibility for `step1` and `step2-3`.
 - Existing hardcoded fallback/order retained as a safety net.
 - Existing injection block format retained.
-- Existing evidence `selectedRules` rule path string array retained.
+- Existing evidence `selectedRules` rule path string array retained, with `selectedRuleMetadata` added for path/id/source/domain/topic/severity.
 
 Test/evidence closure:
 

@@ -4,5 +4,6 @@
   "evidenceDir": ".persona/evidence",
   "maxRulesPerInjection": 12,
   "evidenceMode": "metadata_only",
+  "scenario": "step1",
   "enabledDomains": ["backend"]
 }

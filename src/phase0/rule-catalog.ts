@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { isAbsolute, join, relative, sep } from "node:path"
 
 import type { FileRole } from "./types.js"
+import { loadHarnessConfig, resolveConfiguredPath } from "./harness-config.js"
 import { matchesAnyGlob, normalizePath } from "./rule-glob.js"
 import {
   extractBulletPolicies,
@@ -30,7 +31,8 @@ function listMarkdownFiles(directory: string): string[] {
 }
 
 export function loadRuleCatalog(projectDir: string): RuleCatalogEntry[] {
-  const rulesDir = join(projectDir, ".persona", "rules")
+  const config = loadHarnessConfig(projectDir)
+  const rulesDir = resolveConfiguredPath(projectDir, config.rulesDir)
   if (!existsSync(rulesDir)) {
     return []
   }
@@ -78,11 +80,6 @@ function matchesRuleGlob(entry: RuleCatalogEntry, targetPath: string): boolean {
   return matchesAnyGlob(entry.metadata.globs, targetPath)
 }
 
-function matchesRuleRole(entry: RuleCatalogEntry, fileRole: FileRole): boolean {
-  const appliesTo = entry.metadata.appliesTo
-  return appliesTo.length === 0 || appliesTo.includes(fileRole) || appliesTo.includes("java") || appliesTo.includes("spring")
-}
-
 function matchesRuleScenario(entry: RuleCatalogEntry, scenario: Phase0Scenario): boolean {
   return entry.metadata.scenario === "all" || entry.metadata.scenario === scenario
 }
@@ -93,5 +90,5 @@ export function isRuleEligibleForTarget(
   scenario: Phase0Scenario,
   targetPath: string,
 ): boolean {
-  return matchesRuleGlob(entry, targetPath) && matchesRuleRole(entry, fileRole) && matchesRuleScenario(entry, scenario)
+  return matchesRuleGlob(entry, targetPath) && matchesRuleScenario(entry, scenario)
 }

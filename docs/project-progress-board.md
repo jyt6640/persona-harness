@@ -20,14 +20,15 @@ Use this file to answer:
 
 Current track: Phase 1.2 report-only observation pass closed.
 
-Current active candidate: Post-Phase 1.2 next project step decision.
+Current active candidate: PersonaHarnessRule MVP schema validation decision/implementation.
 
 Current recommendation:
 
 1. Treat the Phase 1.2 observation pass as closed.
 2. Do not choose another report-only observation candidate by default.
-3. Decide the next broader project step: Phase 2 planning, packaging scope, or existing Phase 1.1/frontmatter worktree settlement.
-4. Keep rule/prompt reinforcement deferred unless future actual runs provide repeated manual-confirmed evidence.
+3. Treat the existing Phase 1.1/frontmatter worktree settlement as complete.
+4. Choose PersonaHarnessRule MVP schema validation as the next implementation candidate.
+5. Keep rule/prompt reinforcement deferred unless future actual runs provide repeated manual-confirmed evidence.
 
 Current evidence summary:
 
@@ -43,12 +44,13 @@ Current evidence summary:
 - The remaining actual report warning is reservation response time object, but prior comparison did not show repetition.
 - Test Contract observer cleanup track is closed; response time object remains a watch item, not an active cleanup loop.
 - Phase 1.2 observation pass is closed; no new report-only observation candidate is selected now.
+- Phase 1.1/frontmatter/config dirty worktree settlement is complete and commit-ready.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 41
+Known scoped work items in this board: 42
 
-- Done: 36
+- Done: 37
 - Active next: 1
 - Deferred/watch: 4
 - Not yet decomposed: final product packaging and desktop app track
@@ -75,10 +77,10 @@ This is not an overall product-quality percentage. It is a progress count over t
 
 ## Current Active Work Queue
 
-1. `[>]` Post-Phase 1.2 next project step decision
-   - Goal: decide whether the next project step is Phase 2 planning, packaging scope, or resolving the existing local Phase 1.1/frontmatter worktree changes.
-   - Evidence: `docs/phase1-2-observation-pass-decision.md`
-   - Constraints: no new observer by default, no product-quality gate, no rule/prompt reinforcement without repeated manual-confirmed actual missing evidence.
+1. `[>]` PersonaHarnessRule MVP schema validation
+   - Goal: define and implement minimal validation behavior for current `.persona/rules` frontmatter.
+   - Evidence: `docs/phase1-1-frontmatter-worktree-settlement.md`
+   - Constraints: no new observer, no packaging/demo, no OMO rules-engine integration, no product-quality gate.
 
 2. `[~]` Test Contract response time object actual missing watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
@@ -127,7 +129,8 @@ Primary docs:
 
 Note:
 
-- There are still local unstaged Phase 0/frontmatter/config changes in the worktree. They are intentionally not mixed into later report-only observer commits.
+- Phase 1.1/frontmatter/config dirty worktree settlement is recorded in `docs/phase1-1-frontmatter-worktree-settlement.md`.
+- The next open Phase 1.1 item is explicit schema validation behavior, not more observer work.
 
 ### Phase 1.2 Controller Repository Observer
 
@@ -242,6 +245,13 @@ Primary docs:
 - [x] Test Contract Anchor cleanup track closed.
 - [x] Phase 1.2 observation pass closed without selecting a new report-only observation candidate.
 
+### Phase 1.1 Worktree Settlement
+
+- [x] Phase 1.1/frontmatter/config dirty worktree reviewed.
+- [x] Commit-ready config/frontmatter/runtime evidence changes classified.
+- [x] Schema validation, OMO rules-engine reuse, and packaging/demo deferred to separate loops.
+- [x] Next implementation candidate selected: PersonaHarnessRule MVP schema validation.
+
 ## Deferred / Watch List
 
 ### Rule/Prompt Reinforcement
@@ -270,22 +280,9 @@ Primary docs:
 
 ## Known Dirty Worktree Items
 
-These existed before this board and should not be mixed into unrelated observer/report commits:
+No tracked Phase 1.1/frontmatter/config dirty items should remain after the settlement commit.
 
-- `.persona/harness.jsonc`
-- `README.md`
-- `docs/phase1-rule-loader-design.md`
-- `src/phase0/evidence.ts`
-- `src/phase0/hooks.ts`
-- `src/phase0/injection.ts`
-- `src/phase0/rule-catalog.ts`
-- `src/phase0/rule-frontmatter.ts`
-- `src/phase0/rule-loader.ts`
-- `src/phase0/types.ts`
-- `tests/helpers/rule-fixtures.ts`
-- `tests/phase0-rule-frontmatter.test.ts`
-- `src/phase0/harness-config.ts`
-- `tests/phase0-harness-config.test.ts`
+`PROJECT-PLAN.md` remains a local planning log and may contain untracked/local-only updates depending on the workspace setup.
 
 ## How To Update This Board
 
@@ -305,21 +302,22 @@ Use this when starting the next loop:
 
 ```text
 Current active item:
-- Post-Phase 1.2 next project step decision
+- PersonaHarnessRule MVP schema validation
 
 Goal:
-- Decide whether the next project step is Phase 2 planning, packaging scope, or resolving the existing local Phase 1.1/frontmatter worktree changes.
+- Define and implement minimal schema validation behavior for current `.persona/rules` frontmatter.
 
 Constraints:
-- string-based observer only
+- no observer work
 - no new dependency
-- report-only observation pass is closed
+- no OMO rules-engine integration
+- no packaging/demo
 - no rule/prompt reinforcement
 - no enforcement gate
 - no test/product quality guarantee
 
 Expected output:
-- post-Phase 1.2 next-step decision document
+- schema validation tests and implementation
 - PROJECT-PLAN update
 - this progress board updated
 ```

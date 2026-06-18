@@ -13,11 +13,21 @@ export type FileRole =
   | "java-common"
 
 export type PendingInjection = {
-  targetFile: string
-  fileRole: FileRole
-  selectedRules: string[]
-  policies: string[]
-  block: string
+  readonly targetFile: string
+  readonly fileRole: FileRole
+  readonly selectedRules: string[]
+  readonly selectedRuleMetadata: SelectedRuleMetadata[]
+  readonly policies: string[]
+  readonly block: string
+}
+
+export type SelectedRuleMetadata = {
+  readonly path: string
+  readonly id: string
+  readonly source?: string
+  readonly domain?: string
+  readonly topic?: string
+  readonly severity?: string
 }
 
 type HookHandler<T> = NonNullable<T>

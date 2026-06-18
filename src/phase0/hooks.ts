@@ -2,6 +2,7 @@ import type { Hooks } from "@opencode-ai/plugin"
 
 import { writePhase0Evidence } from "./evidence.js"
 import { isJavaTargetFile } from "./file-role.js"
+import { loadHarnessConfig } from "./harness-config.js"
 import { createInjectionBlock } from "./injection.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
 import { PendingInjectionStore } from "./store.js"
@@ -30,6 +31,7 @@ function appendInjectionToToolOutput(output: ToolAfterOutput, block: string): vo
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const store = options.store ?? new PendingInjectionStore()
   const projectDir = options.projectDir ?? process.cwd()
+  const config = loadHarnessConfig(projectDir)
 
   function captureTargetFile(
     hook: "tool.execute.before" | "tool.execute.after",
@@ -38,6 +40,10 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     callID: string | undefined,
     args: Record<string, unknown>,
   ): ReturnType<typeof createInjectionBlock> | undefined {
+    if (!config.enabled || !config.enabledDomains.includes("backend")) {
+      return undefined
+    }
+
     const targetFile = extractTargetFile(tool, args)
     if (!targetFile || !isJavaTargetFile(targetFile)) {
       return undefined

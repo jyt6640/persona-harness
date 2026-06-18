@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
+import { loadHarnessConfig, resolveConfiguredPath } from "./harness-config.js"
 import type { PendingInjection } from "./types.js"
 
 export type EvidenceEvent = {
@@ -22,7 +23,8 @@ function safeSlug(value: string): string {
 
 export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): void {
   const now = new Date()
-  const evidenceDir = join(projectDir, ".persona", "evidence", "phase0")
+  const config = loadHarnessConfig(projectDir)
+  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-${safeSlug(event.injection.targetFile)}`
   const payload = {
     schemaVersion: "phase0.1",
@@ -35,6 +37,7 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): v
     targetFile: event.injection.targetFile,
     fileRole: event.injection.fileRole,
     selectedRules: event.injection.selectedRules,
+    selectedRuleMetadata: event.injection.selectedRuleMetadata,
     injectedPolicyCount: event.injection.policies.length,
   }
 

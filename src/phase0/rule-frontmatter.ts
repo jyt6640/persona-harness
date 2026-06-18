@@ -4,21 +4,25 @@ export type RuleScenario = Phase0Scenario | "all"
 
 type SupportedFrontmatterField =
   | "id"
-  | "description"
-  | "applies_to"
+  | "source"
+  | "domain"
+  | "topic"
   | "globs"
   | "scenario"
-  | "priority"
+  | "severity"
   | "max_bullets"
   | "enforcement"
 
+export type RuleSeverity = "must" | "should" | "prefer"
+
 export type RuleMetadata = {
   readonly id: string
-  readonly description?: string
-  readonly appliesTo: readonly string[]
+  readonly source?: string
+  readonly domain?: string
+  readonly topic?: string
   readonly globs: readonly string[]
   readonly scenario: RuleScenario
-  readonly priority: number
+  readonly severity?: RuleSeverity
   readonly maxBullets?: number
   readonly enforcement?: string
 }
@@ -48,11 +52,12 @@ function scenarioForRulePath(rulePath: string): RuleScenario {
 
 function parseSupportedField(rawKey: string): SupportedFrontmatterField | undefined {
   if (rawKey === "id") return "id"
-  if (rawKey === "description") return "description"
-  if (rawKey === "applies_to") return "applies_to"
+  if (rawKey === "source") return "source"
+  if (rawKey === "domain") return "domain"
+  if (rawKey === "topic") return "topic"
   if (rawKey === "globs") return "globs"
   if (rawKey === "scenario") return "scenario"
-  if (rawKey === "priority") return "priority"
+  if (rawKey === "severity") return "severity"
   if (rawKey === "max_bullets") return "max_bullets"
   if (rawKey === "enforcement") return "enforcement"
   return undefined
@@ -83,29 +88,38 @@ function parsePositiveInteger(value: string | undefined): number | undefined {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined
 }
 
-function addListValue(field: SupportedFrontmatterField, value: string, globs: string[], appliesTo: string[]): void {
+function parseSeverity(value: string | undefined): RuleSeverity | undefined {
+  if (value === "must" || value === "should" || value === "prefer") {
+    return value
+  }
+  return undefined
+}
+
+function addListValue(field: SupportedFrontmatterField, value: string, globs: string[]): void {
   if (field === "globs") {
     globs.push(value)
   }
-  if (field === "applies_to") {
-    appliesTo.push(value)
-  }
+}
+
+export function fallbackRuleMetadata(rulePath: string): RuleMetadata {
+  return { id: rulePath, globs: [], scenario: scenarioForRulePath(rulePath) }
 }
 
 export function parseRuleMetadata(rulePath: string, markdown: string): RuleMetadata {
   const lines = markdown.split("\n")
   let id = rulePath
-  let description: string | undefined
+  let source: string | undefined
+  let domain: string | undefined
+  let topic: string | undefined
   const globs: string[] = []
-  const appliesTo: string[] = []
   let scenarioValue: string | undefined
-  let priority = 100
+  let severity: RuleSeverity | undefined
   let maxBullets: number | undefined
   let enforcement: string | undefined
   let listField: SupportedFrontmatterField | undefined
 
   if (lines[0] !== "---") {
-    return { id, appliesTo, globs, scenario: scenarioForRulePath(rulePath), priority }
+    return fallbackRuleMetadata(rulePath)
   }
 
   for (const line of lines.slice(1)) {
@@ -115,7 +129,7 @@ export function parseRuleMetadata(rulePath: string, markdown: string): RuleMetad
 
     const listMatch = line.match(/^\s*-\s+(.*)$/)
     if (listMatch?.[1] !== undefined && listField !== undefined) {
-      addListValue(listField, cleanScalar(listMatch[1]), globs, appliesTo)
+      addListValue(listField, cleanScalar(listMatch[1]), globs)
       continue
     }
 
@@ -130,23 +144,26 @@ export function parseRuleMetadata(rulePath: string, markdown: string): RuleMetad
     listField = value === "" ? field : undefined
 
     if (field === "id" && value !== "") id = value
-    if (field === "description" && value !== "") description = value
+    if (field === "source" && value !== "") source = value
+    if (field === "domain" && value !== "") domain = value
+    if (field === "topic" && value !== "") topic = value
     if (field === "scenario" && value !== "") scenarioValue = value
-    if (field === "priority") priority = parsePositiveInteger(value) ?? priority
+    if (field === "severity") severity = parseSeverity(value)
     if (field === "max_bullets") maxBullets = parsePositiveInteger(value)
     if (field === "enforcement" && value !== "") enforcement = value
-    if ((field === "globs" || field === "applies_to") && value !== "") {
-      addListValue(field, value, globs, appliesTo)
+    if (field === "globs" && value !== "") {
+      addListValue(field, value, globs)
     }
   }
 
   return {
     id,
-    description,
-    appliesTo,
+    source,
+    domain,
+    topic,
     globs,
     scenario: parseScenario(scenarioValue, scenarioForRulePath(rulePath)),
-    priority,
+    severity,
     maxBullets,
     enforcement,
   }

@@ -21,8 +21,12 @@ export function createProject(): string {
 }
 
 export function writeScenario(projectDir: string, scenario: Phase0Scenario): void {
+  writeHarnessConfig(projectDir, { scenario })
+}
+
+export function writeHarnessConfig(projectDir: string, config: Record<string, unknown>): void {
   mkdirSync(join(projectDir, ".persona"), { recursive: true })
-  writeFileSync(join(projectDir, ".persona", "harness.jsonc"), `${JSON.stringify({ scenario }, null, 2)}\n`)
+  writeFileSync(join(projectDir, ".persona", "harness.jsonc"), `${JSON.stringify(config, null, 2)}\n`)
 }
 
 export function writeRule(
