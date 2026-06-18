@@ -5,6 +5,7 @@ import type { Part, UserMessage } from "@opencode-ai/sdk"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/phase0/hooks.js"
+import { loadRulesForRole } from "../src/phase0/rule-loader.js"
 import type { TransformMessagesOutput } from "../src/phase0/types.js"
 
 const fixtureRoot = join(process.cwd(), ".persona-test-fixtures", "src", "main", "java", "com", "example")
@@ -54,6 +55,16 @@ function modelInput(sessionID: string): TransformMessagesOutput {
 function firstText(output: TransformMessagesOutput): string {
   const part = output.messages[0]?.parts[0]
   return part?.type === "text" ? part.text : ""
+}
+
+function writeScenario(scenario: "step1" | "step2-3"): void {
+  mkdirSync(join(fixtureWorkspace, ".persona"), { recursive: true })
+  writeFileSync(join(fixtureWorkspace, ".persona", "harness.jsonc"), `${JSON.stringify({ scenario }, null, 2)}\n`)
+}
+
+function selectedRulePaths(role: Parameters<typeof loadRulesForRole>[1], scenario: "step1" | "step2-3"): string[] {
+  writeScenario(scenario)
+  return loadRulesForRole(fixtureWorkspace, role).map((rule) => rule.path)
 }
 
 describe("Phase 0 OpenCode hook feasibility", () => {
@@ -135,5 +146,19 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(output.output).toContain("class ReservationController {}")
     expect(output.output).toContain("[Persona Harness Injection]")
     expect(output.output).toContain("파일 역할: controller")
+  })
+
+  it("keeps the step1 API contract selected for step1 Controller and Test fixtures", () => {
+    expect(selectedRulePaths("controller", "step1")).toContain("backend/step1-api-contract.md")
+    expect(selectedRulePaths("test", "step1")).toContain("backend/step1-api-contract.md")
+  })
+
+  it("selects the step2-3 API contract instead of step1 for step2-3 Controller, Test, and DTO fixtures", () => {
+    for (const role of ["controller", "test", "request-dto", "response-dto"] as const) {
+      const rules = selectedRulePaths(role, "step2-3")
+
+      expect(rules).toContain("backend/step2-3-api-contract.md")
+      expect(rules).not.toContain("backend/step1-api-contract.md")
+    }
   })
 })
