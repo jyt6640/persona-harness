@@ -1,0 +1,29 @@
+name: Scoped task
+description: Request a bounded Persona Harness task.
+title: "[task]: "
+labels:
+  - task
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: State the exact task outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Boundaries
+      description: What should stay out of scope?
+      placeholder: No full rule engine, no Guard/AST/linter enforcement, no product-quality certification.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Commands or evidence required before closing.
+      placeholder: npm test; npm run typecheck; npm run build.
+    validations:
+      required: true
