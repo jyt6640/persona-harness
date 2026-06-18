@@ -188,10 +188,24 @@ function timeCountAnchor(source: string): AnchorCheck {
     return present("reservation_time table or time list size 1", "HIGH", "reservation_time row count 1")
   }
   const timesCall = findRouteCallIndex("get", "/times", source)
-  const hasTimeListSize = timesCall !== -1 && /hasSize\s*\(\s*1\s*\)/.test(source.slice(timesCall, timesCall + 260))
-  return hasTimeListSize
-    ? present("reservation_time table or time list size 1", "HIGH", "time list size 1")
-    : missing("reservation_time table or time list size 1")
+  if (timesCall === -1) return missing("reservation_time table or time list size 1")
+
+  const segment = operationSegment(source, timesCall)
+  if (hasTimeListHasSizeAssertion(segment)) {
+    return present("reservation_time table or time list size 1", "HIGH", "time list size 1")
+  }
+  if (hasTimeListLengthValueAssertion(segment)) {
+    return present("reservation_time table or time list size 1", "HIGH", "time list length 1")
+  }
+  return missing("reservation_time table or time list size 1")
+}
+
+function hasTimeListHasSizeAssertion(source: string): boolean {
+  return /hasSize\s*\(\s*1\s*\)/.test(source)
+}
+
+function hasTimeListLengthValueAssertion(source: string): boolean {
+  return /\bjsonPath\s*\(\s*"\$\.length\(\)"\s*\)\s*\.\s*value\s*\(\s*1\s*\)/.test(source)
 }
 
 function findRouteCallIndex(methodName: "get" | "post" | "delete", route: string, source: string): number {

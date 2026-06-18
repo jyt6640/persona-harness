@@ -20,12 +20,12 @@ Use this file to answer:
 
 Current track: Phase 1.2 report-only observation loop.
 
-Current active candidate: Test Contract time-list matcher correction.
+Current active candidate: Test Contract observer follow-up decision.
 
 Current recommendation:
 
-1. Implement a narrow time-list matcher with tests first.
-2. Only recognize `jsonPath("$.length()").value(1)` near `GET /times` or clear time API test context.
+1. Treat the narrow time-list matcher correction as complete.
+2. Decide whether to close the current Test Contract observer cleanup track or observe the remaining response time object warning one more time.
 3. Keep rule/prompt reinforcement deferred.
 
 Current evidence summary:
@@ -38,13 +38,14 @@ Current evidence summary:
 - Test Contract Anchor observation: implemented, actual `WARN/HIGH` repeated at observer level.
 - Row-count helper matcher correction is implemented and reduced the third actual report mismatch.
 - Response time object actual missing did not repeat in the comparison run.
-- Time-list matcher correction is the active next candidate.
+- Time-list matcher correction moved `reservation_time` table or time list size `1` from missing to present in the rechecked actual report.
+- The remaining actual report warning is reservation response time object, but prior comparison did not show repetition.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 38
+Known scoped work items in this board: 39
 
-- Done: 33
+- Done: 34
 - Active next: 1
 - Deferred/watch: 4
 - Not yet decomposed: final product packaging and desktop app track
@@ -65,25 +66,21 @@ This is not an overall product-quality percentage. It is a progress count over t
 | --- | --- | --- | --- |
 | Phase 0 | Done | OpenCode plugin MVP for Java/Spring backend rule injection | MVP evidence collected for #1 and #2-3 |
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement | Narrow rule-loader refinement complete |
-| Phase 1.2 | Active | Report-only observers over generated Java/Spring runs | Row-count matcher corrected; response time object missing did not repeat; time-list matcher correction selected |
+| Phase 1.2 | Active | Report-only observers over generated Java/Spring runs | Row-count and time-list matcher corrections reduced observed false missing candidates |
 | Phase 2 | Not decomposed | Stronger productization or broader domains | Not started |
 | Desktop App Track | Not decomposed | Final long-term host/app goal | Not started |
 
 ## Current Active Work Queue
 
-1. `[>]` Test Contract time-list matcher correction
-   - Goal: implement the narrow matcher selected in `docs/phase1-test-contract-time-list-matcher-decision.md`.
-   - Conditions: require nearby `GET /times` or clear time API test block; do not treat generic list size assertions as time-list evidence.
-   - Constraints: tests first, string-based observer only, no rule/prompt reinforcement, no test/product quality claim.
+1. `[>]` Test Contract observer follow-up decision
+   - Goal: decide whether the current Test Contract observer cleanup track can close or whether one more actual observation is needed for the remaining response time object warning.
+   - Evidence: `docs/phase1-test-contract-time-list-matcher-result.md`
+   - Constraints: report-only, no rule/prompt reinforcement unless repeated manual-confirmed actual missing appears.
 
 2. `[~]` Test Contract response time object actual missing watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
    - Current state: third run missed reservation response `time.id/startAt`, but comparison run had explicit assertions.
    - Decision: keep inactive unless another actual run repeats manual-confirmed missing.
-
-3. `[~]` Optional time-list matcher review
-   - Evidence: third run had `jsonPath("$.length()").value(1)` after `GET /times`, but observer still missed time table/list anchor.
-   - Decision: keep separate from row-count matcher correction to avoid broad assertion parsing.
 
 ## Completed Work
 
@@ -213,9 +210,10 @@ Primary docs:
 - [x] Test Contract follow-up decision completed.
 - [x] Response time object actual missing repeat observation completed.
 - [x] Time-list/table matcher follow-up decision completed.
-- [>] Time-list matcher correction remains active next.
+- [x] Narrow time-list matcher correction implemented.
+- [x] Actual report recheck showed `reservation_time` table or time list size `1` moved from missing to present.
+- [>] Test Contract observer follow-up decision remains active next.
 - [~] Reservation response time object actual missing remains under watch.
-- [~] Time-list length matcher correction remains optional and separate.
 
 Primary docs:
 
@@ -229,6 +227,7 @@ Primary docs:
 - `docs/phase1-test-contract-follow-up-decision.md`
 - `docs/phase1-test-contract-response-time-repeat-review.md`
 - `docs/phase1-test-contract-time-list-matcher-decision.md`
+- `docs/phase1-test-contract-time-list-matcher-result.md`
 
 ## Deferred / Watch List
 
@@ -293,10 +292,10 @@ Use this when starting the next loop:
 
 ```text
 Current active item:
-- Test Contract time-list matcher correction
+- Test Contract observer follow-up decision
 
 Goal:
-- Implement the narrow time-list matcher for `GET /times` with `jsonPath("$.length()").value(1)` using tests first.
+- Decide whether to close the current Test Contract observer cleanup track or observe the remaining response time object warning one more time.
 
 Constraints:
 - string-based observer only
@@ -307,8 +306,7 @@ Constraints:
 - no test/product quality guarantee
 
 Expected output:
-- unit tests for `/times` context and false positive boundaries
-- matcher update
-- actual report recheck
+- follow-up decision document
+- PROJECT-PLAN update
 - this progress board updated
 ```
