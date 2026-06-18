@@ -132,6 +132,31 @@ Non-closure basis:
 - This is not proof that a model naturally reads every role file without prompt steering.
 - This is not profile-aware, frontend, infra, benchmark routing, desktop app, or OMO-style full harness expansion.
 
+## Phase 1.1 Follow-up Decision
+
+Status: **Phase 1.1 종료**.
+
+This follow-up does not change the Phase 0 MVP boundary. It records that the first Phase 1 axis, rule-loader/frontmatter/glob/scenario selection refinement, has enough evidence to close under the narrow Java/Spring Backend scope.
+
+Closure basis:
+
+- The rule catalog loader reads `.persona/rules/**/*.md` and uses frontmatter/glob/scenario eligibility as a minimal layer over the existing safe order/fallback.
+- Frontmatter parsing and glob matching were split into small modules.
+- #1/#2-3 scenario contract exclusivity is covered by tests.
+- Existing injection block format and evidence `selectedRules` path string array format are preserved.
+- #2-3 live run `experiments/phase0-runs/2026-06-18T02-10-18-110Z` captured Controller/Test/DTO targetFile evidence.
+- That live run kept injection blocks in tool output/model input.
+- That live run had catalog selection and evidence `selectedRules` matching with 0 mismatches.
+- That live run had `backend/step2-3-api-contract.md` 17건 and `backend/step1-api-contract.md` 0건.
+
+Limits:
+
+- #1 prepare is a static step1 selection check, not runtime hook path proof.
+- The live runtime evidence is one #2-3 implementation run.
+- Prompt read guidance still helped produce Controller/Test/DTO targetFile evidence.
+- Generated Spring app quality is not certified.
+- The `./gradlew test` wrapper absence and the intermediate `gradle test` H2 SQL syntax failure are product-quality observations, not injection evidence failures.
+
 ## Boundary
 
 This phase intentionally keeps out:

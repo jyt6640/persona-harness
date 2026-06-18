@@ -20,6 +20,8 @@ Phase 0 MVP 상태는 **종료**다.
 
 이 종료는 Java/Spring Backend Phase 0에서 `targetFile -> file role -> selected rules -> injection block -> model input/tool output -> model behavior` 경로가 #1과 #2-3 fixture에서 재현 가능하게 관찰됐다는 뜻이다. 앱 품질 보증, Guard/AST/linter 검증, profile-aware/frontend/infra/desktop 확장은 포함하지 않는다.
 
+Phase 1.1 rule-loader/frontmatter/glob/scenario selection refinement 상태도 **종료**다. 이 종료는 `.persona/rules/**/*.md` catalog loading, minimal frontmatter parsing, minimal glob matching, scenario-aware contract selection, catalog tests, runtime selection evidence 범위에 한정된다. full rule engine, Guard/AST/linter, profile-aware expansion, OMO workflow adaptation, generated Spring app quality certification은 포함하지 않는다.
+
 Phase 0 #1단계 Spring backend fixture 상태는 **종료**다.
 
 종료 판단은 `2026-06-17T11-04-54-321Z`, `2026-06-17T11-06-35-453Z` 반복 run을 기준으로 한다. 두 run 모두 같은 기본 실행 명령으로 완주했고, 사람이 생성 코드를 직접 확인했을 때 API 계약과 Controller/Service/Repository 역할 분리를 만족했다. 이 확인은 모델 행동 변화 관찰이지 예약 앱 product 품질 보증이 아니다. 직전 repository 분리 drift는 `2026-06-17T10-53-27-107Z`에서 `ReservationRepository`가 concrete 저장소 class로 생성된 문제였고, 이후 반복 2회에서는 재발하지 않았다.
@@ -86,7 +88,7 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
       └─ step2-3-api-contract.md
 ```
 
-현재 Phase 0 런타임은 `src/phase0/rule-loader.ts`에서 `.persona/rules/**/*.md`의 bullet 정책을 읽고, `src/phase0/injection.ts`에서 MVP용 injection block으로 압축한다. #2-3 sandbox는 `.persona/harness.jsonc`의 `"scenario": "step2-3"` marker로 `backend/step2-3-api-contract.md`를 선택한다. full frontmatter/glob engine은 아직 구현하지 않는다.
+현재 런타임은 `src/phase0/rule-loader.ts`에서 `.persona/rules/**/*.md`의 bullet 정책을 읽고, `src/phase0/injection.ts`에서 MVP용 injection block으로 압축한다. Phase 1.1에서는 `src/phase0/rule-catalog.ts`, `src/phase0/rule-frontmatter.ts`, `src/phase0/rule-glob.ts`를 통해 최소 catalog/frontmatter/glob eligibility layer를 추가했다. #2-3 sandbox는 `.persona/harness.jsonc`의 `"scenario": "step2-3"` marker로 `backend/step2-3-api-contract.md`를 선택한다. full frontmatter/glob rule engine은 아직 구현하지 않는다.
 
 핵심 원칙:
 
@@ -291,12 +293,15 @@ Phase 0 #2-3 fixture live evidence:
 - `experiments/phase0-runs/2026-06-18T00-16-01-731Z`: scenario-aware contract selection 후 Controller evidence에서 `backend/step2-3-api-contract.md` 선택, `backend/step1-api-contract.md` 0건.
 - `experiments/phase0-runs/2026-06-18T00-34-47-590Z`: prompt로 Controller/Test/DTO read를 유도한 뒤 Controller, Test, Request DTO, Response DTO live targetFile evidence 확보. `backend/step2-3-api-contract.md` 14건, `backend/step1-api-contract.md` 0건.
 - `experiments/phase0-runs/2026-06-18T01-02-20-056Z`: 같은 기본 명령 반복 run. Controller, Test, Request DTO, Response DTO live targetFile evidence 재현. `backend/step2-3-api-contract.md` 15건, `backend/step1-api-contract.md` 0건.
+- `experiments/phase0-runs/2026-06-18T02-10-18-110Z`: Phase 1.1 catalog 기반 runtime selection 확인. Controller/Test/DTO targetFile evidence가 잡혔고, injection block이 tool output/model input에 남았으며, catalog selection과 evidence `selectedRules`가 일치했다. `backend/step2-3-api-contract.md` 17건, `backend/step1-api-contract.md` 0건.
 
 이 #2-3 evidence는 앱 완성도 평가가 아니라 rule selection과 injection path 관찰이다. prompt가 read를 명시적으로 유도했으므로 모델의 자연스러운 파일 탐색 습관을 증명하지 않는다.
 
 Detector는 문자열 기반 보조 관찰 장치다. 정상 코드가 false positive로 잡힌 적이 있으므로, detector PASS만으로 품질 완료를 선언하지 않는다. Phase 0에서는 Guard/AST/linter로 규칙 준수를 강제하지 않는다. 생성 Spring 앱 품질 평가는 후속 관찰로 의미가 있지만 MVP의 중심 목표는 규칙 주입 경로의 결정성과 재현성이다.
 
 Phase 0 MVP decision: **#2-3 evidence 종료, Phase 0 MVP 종료**.
+
+Phase 1.1 decision: **Phase 1.1 종료**. #1 prepare는 step1 selection 정적 확인에 가깝고 runtime hook path 증명은 아니다. #2-3 live evidence는 runtime hook path에서 catalog selection이 흔들리지 않았다는 증거다. live run은 #2-3 1회뿐이고, 생성된 Spring 앱 품질 보증은 아니다. `./gradlew test` wrapper 부재 실패와 `gradle test` H2 SQL syntax 중간 실패는 product-quality 이슈로 분리하며, injection evidence 실패로 보지 않는다.
 
 ## 실패했을 때 확인할 것
 
