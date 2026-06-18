@@ -10,7 +10,7 @@ function dedupePolicies(policies: string[]): string[] {
 
 export function createInjectionBlock(targetFile: string, projectDir = process.cwd()): PendingInjection {
   const fileRole = resolveFileRole(targetFile)
-  const loadedRules = loadRulesForRole(projectDir, fileRole)
+  const loadedRules = loadRulesForRole(projectDir, fileRole, targetFile)
   const selectedRules = loadedRules.map((rule) => rule.path)
   const policies = dedupePolicies(loadedRules.flatMap((rule) => rule.policies)).slice(0, MAX_POLICIES_PER_INJECTION)
   const block = [

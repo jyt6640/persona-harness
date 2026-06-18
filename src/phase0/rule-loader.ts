@@ -2,12 +2,19 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import type { FileRole } from "./types.js"
+import {
+  isRuleEligibleForTarget,
+  loadRuleCatalog,
+  targetPathForMatching,
+  type Phase0Scenario,
+} from "./rule-catalog.js"
+import { extractBulletPolicies } from "./rule-frontmatter.js"
 
-export type Phase0Scenario = "step1" | "step2-3"
+export type { Phase0Scenario } from "./rule-catalog.js"
 
 export type LoadedRule = {
-  path: string
-  policies: string[]
+  readonly path: string
+  readonly policies: readonly string[]
 }
 
 const DEFAULT_SCENARIO: Phase0Scenario = "step1"
@@ -44,17 +51,10 @@ function readScenario(projectDir: string): Phase0Scenario {
   return match?.[1] === "step2-3" ? "step2-3" : DEFAULT_SCENARIO
 }
 
-function extractBulletPolicies(markdown: string): string[] {
-  const body = markdown.startsWith("---") ? markdown.split("---").slice(2).join("---") : markdown
-
-  return body
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith("- "))
-    .map((line) => line.slice(2).replace(/`/g, ""))
-}
-
-function takePoliciesForInjection(rulePath: string, policies: string[]): string[] {
+function takePoliciesForInjection(rulePath: string, policies: readonly string[], maxBullets?: number): string[] {
+  if (maxBullets !== undefined) {
+    return policies.slice(0, maxBullets)
+  }
   if (rulePath === STEP1_API_CONTRACT_RULE || rulePath === STEP2_3_API_CONTRACT_RULE) {
     return policies.slice(0, 3)
   }
@@ -80,9 +80,26 @@ export function selectRulePaths(fileRole: FileRole, scenario: Phase0Scenario = D
   return Array.from(new Set([...COMMON_RULES, ...scenarioAwareRoleRules(fileRole, scenario)]))
 }
 
-export function loadRulesForRole(projectDir: string, fileRole: FileRole): LoadedRule[] {
+export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetFile?: string): LoadedRule[] {
   const scenario = readScenario(projectDir)
-  return selectRulePaths(fileRole, scenario).map((rulePath) => {
+  const targetPath = targetPathForMatching(projectDir, fileRole, targetFile)
+  const catalog = new Map(loadRuleCatalog(projectDir).map((entry) => [entry.path, entry]))
+
+  return selectRulePaths(fileRole, scenario).flatMap((rulePath) => {
+    const catalogEntry = catalog.get(rulePath)
+    if (catalogEntry !== undefined) {
+      if (
+        !isRuleEligibleForTarget(catalogEntry, fileRole, scenario, targetPath)
+      ) {
+        return []
+      }
+
+      return {
+        path: rulePath,
+        policies: takePoliciesForInjection(rulePath, catalogEntry.policies, catalogEntry.metadata.maxBullets),
+      }
+    }
+
     const absolutePath = join(projectDir, ".persona", "rules", rulePath)
     if (!existsSync(absolutePath)) {
       return { path: rulePath, policies: [] }
