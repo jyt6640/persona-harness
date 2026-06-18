@@ -21,6 +21,7 @@
     "experiment:phase0:step2-3": "node scripts/run-phase0-step2-3-experiment.mjs --run",
     "experiment:phase0:step2-3:prepare": "node scripts/run-phase0-step2-3-experiment.mjs",
     "observe:phase1-2": "node scripts/observe-phase1-2.mjs",
+    "observe:test-contract": "node scripts/observe-test-contract.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

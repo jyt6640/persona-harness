@@ -4,10 +4,12 @@ import { dirname } from "node:path"
 import type { ControllerRepositoryObservation } from "./controller-repository-observer.js"
 import type { ControllerSqlObservation } from "./controller-sql-observer.js"
 import type { ServiceStorageObservation } from "./service-storage-observer.js"
+import type { TestContractObservation } from "./test-contract-observer.js"
 
 export const defaultPhase12ObserverReportPath = ".persona/evidence/phase1-2/observer-report.md"
 export const defaultControllerSqlObserverReportPath = ".persona/evidence/phase-next/controller-sql-observer-report.md"
 export const defaultServiceStorageObserverReportPath = ".persona/evidence/phase-next/service-storage-observer-report.md"
+export const defaultTestContractObserverReportPath = ".persona/evidence/phase-next/test-contract-observer-report.md"
 
 export type FormatObserverReportInput = {
   readonly runId: string
@@ -39,6 +41,17 @@ export type FormatServiceStorageObserverReportInput = {
 }
 
 export type WriteServiceStorageObserverReportInput = FormatServiceStorageObserverReportInput & {
+  readonly outputPath: string
+}
+
+export type FormatTestContractObserverReportInput = {
+  readonly runId: string
+  readonly filePath: string
+  readonly observation: TestContractObservation
+  readonly nextGeneratedRunCandidate: boolean
+}
+
+export type WriteTestContractObserverReportInput = FormatTestContractObserverReportInput & {
   readonly outputPath: string
 }
 
@@ -160,6 +173,60 @@ export function writeServiceStorageObserverReport(input: WriteServiceStorageObse
   writeFileSync(input.outputPath, formatServiceStorageObserverReport(input))
 }
 
+export function formatTestContractObserverReport(input: FormatTestContractObserverReportInput): string {
+  return `# Test Contract Anchor Observer Report
+
+## Target
+
+- run: ${input.runId}
+- file: ${input.filePath}
+
+## Scenario
+
+${input.observation.scenario}
+
+## Finding
+
+${input.observation.finding}
+
+## Confidence
+
+${input.observation.confidence ?? "none"}
+
+## Present Anchors
+
+${formatList(input.observation.evidence.presentAnchors)}
+
+## Missing Anchors
+
+${formatList(input.observation.evidence.missingAnchors)}
+
+## Evidence
+
+${formatList(input.observation.evidence.evidence)}
+
+## Limitations
+
+${input.observation.limitations.map((limitation) => `- ${limitation}`).join("\n")}
+
+## Decision
+
+- quality gate: no
+- build/test failure: no
+- WARN meaning: missing-anchor report-only signal
+- next generated run candidate: ${input.nextGeneratedRunCandidate ? "yes" : "no"}
+`
+}
+
+export function writeTestContractObserverReport(input: WriteTestContractObserverReportInput): void {
+  mkdirSync(dirname(input.outputPath), { recursive: true })
+  writeFileSync(input.outputPath, formatTestContractObserverReport(input))
+}
+
 function formatEvidence(values: readonly string[]): string {
   return values.length === 0 ? "none" : values.join("; ")
+}
+
+function formatList(values: readonly string[]): string {
+  return values.length === 0 ? "- none" : values.map((value) => `- ${value}`).join("\n")
 }
