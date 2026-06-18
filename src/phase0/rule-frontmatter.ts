@@ -1,3 +1,9 @@
+import {
+  malformedFrontmatter,
+  validateRuleFrontmatter,
+  type RuleFrontmatterDiagnostic,
+} from "./rule-frontmatter-diagnostics.js"
+
 export type Phase0Scenario = "step1" | "step2-3"
 
 export type RuleScenario = Phase0Scenario | "all"
@@ -25,6 +31,11 @@ export type RuleMetadata = {
   readonly severity?: RuleSeverity
   readonly maxBullets?: number
   readonly enforcement?: string
+}
+
+export type RuleFrontmatterParseResult = {
+  readonly metadata: RuleMetadata
+  readonly diagnostics: readonly RuleFrontmatterDiagnostic[]
 }
 
 const STEP1_API_CONTRACT_RULE = "backend/step1-api-contract.md"
@@ -73,8 +84,12 @@ function cleanScalar(value: string): string {
   return trimmed
 }
 
+function isRuleScenario(value: string | undefined): value is RuleScenario {
+  return value === "step1" || value === "step2-3" || value === "all"
+}
+
 function parseScenario(value: string | undefined, fallback: RuleScenario): RuleScenario {
-  if (value === "step1" || value === "step2-3" || value === "all") {
+  if (isRuleScenario(value)) {
     return value
   }
   return fallback
@@ -105,21 +120,30 @@ export function fallbackRuleMetadata(rulePath: string): RuleMetadata {
   return { id: rulePath, globs: [], scenario: scenarioForRulePath(rulePath) }
 }
 
-export function parseRuleMetadata(rulePath: string, markdown: string): RuleMetadata {
+export function parseRuleFrontmatter(rulePath: string, markdown: string): RuleFrontmatterParseResult {
   const lines = markdown.split("\n")
-  let id = rulePath
+  let id: string | undefined
   let source: string | undefined
   let domain: string | undefined
   let topic: string | undefined
   const globs: string[] = []
   let scenarioValue: string | undefined
+  let severityValue: string | undefined
   let severity: RuleSeverity | undefined
   let maxBullets: number | undefined
   let enforcement: string | undefined
   let listField: SupportedFrontmatterField | undefined
+  const malformedMessages: string[] = []
 
   if (lines[0] !== "---") {
-    return fallbackRuleMetadata(rulePath)
+    return {
+      metadata: fallbackRuleMetadata(rulePath),
+      diagnostics: [malformedFrontmatter("Frontmatter block is missing an opening marker.")],
+    }
+  }
+
+  if (!lines.slice(1).includes("---")) {
+    malformedMessages.push("Frontmatter block is missing a closing marker.")
   }
 
   for (const line of lines.slice(1)) {
@@ -148,7 +172,10 @@ export function parseRuleMetadata(rulePath: string, markdown: string): RuleMetad
     if (field === "domain" && value !== "") domain = value
     if (field === "topic" && value !== "") topic = value
     if (field === "scenario" && value !== "") scenarioValue = value
-    if (field === "severity") severity = parseSeverity(value)
+    if (field === "severity" && value !== "") {
+      severityValue = value
+      severity = parseSeverity(value)
+    }
     if (field === "max_bullets") maxBullets = parsePositiveInteger(value)
     if (field === "enforcement" && value !== "") enforcement = value
     if (field === "globs" && value !== "") {
@@ -156,15 +183,34 @@ export function parseRuleMetadata(rulePath: string, markdown: string): RuleMetad
     }
   }
 
-  return {
+  const diagnostics = validateRuleFrontmatter({
     id,
     source,
     domain,
     topic,
     globs,
-    scenario: parseScenario(scenarioValue, scenarioForRulePath(rulePath)),
-    severity,
-    maxBullets,
+    scenario: scenarioValue,
+    severity: severityValue,
     enforcement,
+    malformedMessages,
+  })
+
+  return {
+    metadata: {
+      id: id ?? rulePath,
+      source,
+      domain,
+      topic,
+      globs,
+      scenario: parseScenario(scenarioValue, scenarioForRulePath(rulePath)),
+      severity,
+      maxBullets,
+      enforcement,
+    },
+    diagnostics,
   }
+}
+
+export function parseRuleMetadata(rulePath: string, markdown: string): RuleMetadata {
+  return parseRuleFrontmatter(rulePath, markdown).metadata
 }

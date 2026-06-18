@@ -18,17 +18,18 @@ Use this file to answer:
 
 ## Current Position
 
-Current track: Phase 1.2 report-only observation pass closed.
+Current track: Phase 1.1 diagnostics-only schema validation implemented after Phase 1.2 report-only observation pass closeout.
 
-Current active candidate: PersonaHarnessRule diagnostics-only validation implementation.
+Current active candidate: productization path decision.
 
 Current recommendation:
 
 1. Treat the Phase 1.2 observation pass as closed.
 2. Do not choose another report-only observation candidate by default.
 3. Treat the existing Phase 1.1/frontmatter worktree settlement as complete.
-4. Use diagnostics-only as the PersonaHarnessRule MVP schema validation policy.
+4. Use diagnostics-only as the PersonaHarnessRule MVP schema validation policy and implementation behavior.
 5. Keep rule/prompt reinforcement deferred unless future actual runs provide repeated manual-confirmed evidence.
+6. Decide whether the next loop should move toward packaging/demo readiness or another productization blocker.
 
 Current evidence summary:
 
@@ -46,12 +47,13 @@ Current evidence summary:
 - Phase 1.2 observation pass is closed; no new report-only observation candidate is selected now.
 - Phase 1.1/frontmatter/config dirty worktree settlement is complete and commit-ready.
 - PersonaHarnessRule validation policy is diagnostics-only: report findings without changing selection.
+- PersonaHarnessRule diagnostics-only validation is implemented: valid rules have no findings, invalid or malformed frontmatter produces catalog diagnostics, and loading remains non-blocking.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 43
+Known scoped work items in this board: 44
 
-- Done: 38
+- Done: 39
 - Active next: 1
 - Deferred/watch: 4
 - Not yet decomposed: final product packaging and desktop app track
@@ -78,10 +80,10 @@ This is not an overall product-quality percentage. It is a progress count over t
 
 ## Current Active Work Queue
 
-1. `[>]` PersonaHarnessRule diagnostics-only validation implementation
-   - Goal: implement diagnostics-only validation findings for current `.persona/rules` frontmatter.
-   - Evidence: `docs/phase1-1-schema-validation-policy-decision.md`
-   - Constraints: no new observer, no packaging/demo, no OMO rules-engine integration, no product-quality gate.
+1. `[>]` Productization path decision
+   - Goal: decide whether the next loop should move toward packaging/demo readiness or another explicit productization blocker.
+   - Evidence: `docs/phase1-1-schema-validation-result.md`
+   - Constraints: no new observer by default, no OMO rules-engine implementation by default, no product-quality gate.
 
 2. `[~]` Test Contract response time object actual missing watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
@@ -257,7 +259,13 @@ Primary docs:
 
 - [x] PersonaHarnessRule MVP schema validation policy selected.
 - [x] Diagnostics-only chosen over selection-blocking and hybrid.
-- [>] Diagnostics-only validation implementation remains active next.
+- [x] Diagnostics-only validation implementation completed.
+- [>] Productization path decision remains active next.
+
+Primary docs:
+
+- `docs/phase1-1-schema-validation-policy-decision.md`
+- `docs/phase1-1-schema-validation-result.md`
 
 ## Deferred / Watch List
 
@@ -309,22 +317,21 @@ Use this when starting the next loop:
 
 ```text
 Current active item:
-- PersonaHarnessRule diagnostics-only validation implementation
+- Productization path decision
 
 Goal:
-- Implement diagnostics-only validation findings for current `.persona/rules` frontmatter.
+- Decide whether the next loop should move toward packaging/demo readiness or another explicit productization blocker.
 
 Constraints:
 - no observer work
 - no new dependency
 - no OMO rules-engine integration
-- no packaging/demo
 - no rule/prompt reinforcement
 - no enforcement gate
 - no test/product quality guarantee
 
 Expected output:
-- schema validation tests and implementation
+- one documented next productization path
 - PROJECT-PLAN update
 - this progress board updated
 ```

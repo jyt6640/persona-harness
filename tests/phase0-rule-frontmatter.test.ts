@@ -35,6 +35,7 @@ enforcement: inject_only
 
     const controllerRule = findEntry(loadRuleCatalog(projectDir), "backend/spring-controller.md")
 
+    expect(controllerRule.diagnostics).toEqual([])
     expect(controllerRule.metadata.id).toBe("backend.spring.controller")
     expect(controllerRule.metadata.source).toBe("backend-policy")
     expect(controllerRule.metadata.domain).toBe("backend")
@@ -80,8 +81,111 @@ max_bullets: 1
       "src/main/java/com/example/ReservationController.java",
     ).map((rule) => rule.path)
 
+    expect(commonRule.diagnostics).toContainEqual({
+      code: "malformed_frontmatter",
+      message: "Frontmatter block is missing a closing marker.",
+    })
     expect(eligible(commonRule, "controller", "step1", targetPath)).toBe(true)
     expect(selectedRules).toContain("clean-code/common.md")
+  })
+
+  it("records diagnostics for missing required topic and globs without crashing catalog loading", () => {
+    const projectDir = createProject()
+    writeRule(
+      projectDir,
+      "backend/missing-metadata.md",
+      `
+id: backend.missing-metadata
+source: backend-policy
+domain: backend
+severity: must
+enforcement: inject_only
+`,
+      ["missing metadata policy"],
+    )
+    writeRule(
+      projectDir,
+      "backend/spring-controller.md",
+      `
+id: backend.spring.controller
+source: backend-policy
+domain: backend
+topic: controller-responsibility
+globs:
+  - "**/*Controller.java"
+severity: must
+enforcement: inject_only
+`,
+      ["controller policy"],
+    )
+
+    const catalog = loadRuleCatalog(projectDir)
+    const missingMetadataRule = findEntry(catalog, "backend/missing-metadata.md")
+    const controllerRule = findEntry(catalog, "backend/spring-controller.md")
+
+    expect(catalog.map((entry) => entry.path)).toContain("backend/missing-metadata.md")
+    expect(missingMetadataRule.diagnostics).toContainEqual({
+      code: "missing_required_field",
+      field: "topic",
+      message: "Required frontmatter field 'topic' is missing.",
+    })
+    expect(missingMetadataRule.diagnostics).toContainEqual({
+      code: "missing_required_field",
+      field: "globs",
+      message: "Required frontmatter field 'globs' is missing.",
+    })
+    expect(controllerRule.diagnostics).toEqual([])
+  })
+
+  it("records diagnostics for unsupported enum values without blocking rule loading", () => {
+    const projectDir = createProject()
+    writeRule(
+      projectDir,
+      "backend/invalid-enums.md",
+      `
+id: backend.invalid-enums
+source: imported
+domain: mobile
+topic: controller-responsibility
+globs:
+  - "**/*Controller.java"
+scenario: tomorrow
+severity: critical
+enforcement: block
+`,
+      ["invalid enum policy"],
+    )
+
+    const invalidRule = findEntry(loadRuleCatalog(projectDir), "backend/invalid-enums.md")
+
+    expect(invalidRule.metadata.id).toBe("backend.invalid-enums")
+    expect(invalidRule.diagnostics).toEqual([
+      {
+        code: "invalid_enum_value",
+        field: "source",
+        message: "Unsupported frontmatter value for 'source': imported.",
+      },
+      {
+        code: "invalid_enum_value",
+        field: "domain",
+        message: "Unsupported frontmatter value for 'domain': mobile.",
+      },
+      {
+        code: "invalid_enum_value",
+        field: "scenario",
+        message: "Unsupported frontmatter value for 'scenario': tomorrow.",
+      },
+      {
+        code: "invalid_enum_value",
+        field: "severity",
+        message: "Unsupported frontmatter value for 'severity': critical.",
+      },
+      {
+        code: "invalid_enum_value",
+        field: "enforcement",
+        message: "Unsupported frontmatter value for 'enforcement': block.",
+      },
+    ])
   })
 
   it("records selected rule metadata without changing selectedRules path shape", () => {

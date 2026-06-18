@@ -6,10 +6,11 @@ import { loadHarnessConfig, resolveConfiguredPath } from "./harness-config.js"
 import { matchesAnyGlob, normalizePath } from "./rule-glob.js"
 import {
   extractBulletPolicies,
-  parseRuleMetadata,
+  parseRuleFrontmatter,
   type Phase0Scenario,
   type RuleMetadata,
 } from "./rule-frontmatter.js"
+import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
 
 export type { Phase0Scenario } from "./rule-frontmatter.js"
 
@@ -17,6 +18,7 @@ export type RuleCatalogEntry = {
   readonly path: string
   readonly absolutePath: string
   readonly metadata: RuleMetadata
+  readonly diagnostics: readonly RuleFrontmatterDiagnostic[]
   readonly policies: readonly string[]
 }
 
@@ -42,10 +44,12 @@ export function loadRuleCatalog(projectDir: string): RuleCatalogEntry[] {
     .map((absolutePath) => {
       const rulePath = normalizePath(relative(rulesDir, absolutePath).split(sep).join("/"))
       const markdown = readFileSync(absolutePath, "utf8")
+      const frontmatter = parseRuleFrontmatter(rulePath, markdown)
       return {
         path: rulePath,
         absolutePath,
-        metadata: parseRuleMetadata(rulePath, markdown),
+        metadata: frontmatter.metadata,
+        diagnostics: frontmatter.diagnostics,
         policies: extractBulletPolicies(markdown),
       }
     })

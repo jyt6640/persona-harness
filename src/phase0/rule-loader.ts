@@ -10,12 +10,14 @@ import {
   type Phase0Scenario,
 } from "./rule-catalog.js"
 import { extractBulletPolicies, fallbackRuleMetadata, type RuleMetadata } from "./rule-frontmatter.js"
+import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
 
 export type { Phase0Scenario } from "./rule-catalog.js"
 
 export type LoadedRule = {
   readonly path: string
   readonly metadata: RuleMetadata
+  readonly diagnostics: readonly RuleFrontmatterDiagnostic[]
   readonly policies: readonly string[]
 }
 
@@ -91,6 +93,7 @@ export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetF
       return {
         path: rulePath,
         metadata: catalogEntry.metadata,
+        diagnostics: catalogEntry.diagnostics,
         policies: takePoliciesForInjection(rulePath, catalogEntry.policies, catalogEntry.metadata.maxBullets),
       }
     }
@@ -98,12 +101,13 @@ export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetF
     const absolutePath = join(rulesDir, rulePath)
     const metadata = fallbackRuleMetadata(rulePath)
     if (!existsSync(absolutePath)) {
-      return { path: rulePath, metadata, policies: [] }
+      return { path: rulePath, metadata, diagnostics: [], policies: [] }
     }
 
     return {
       path: rulePath,
       metadata,
+      diagnostics: [],
       policies: takePoliciesForInjection(rulePath, extractBulletPolicies(readFileSync(absolutePath, "utf8"))),
     }
   })
