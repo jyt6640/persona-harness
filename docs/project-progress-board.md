@@ -20,13 +20,13 @@ Use this file to answer:
 
 Current track: Phase 1.2 report-only observation loop.
 
-Current active candidate: decide whether to address the remaining time-list/table matcher limitation.
+Current active candidate: Test Contract time-list matcher correction.
 
 Current recommendation:
 
-1. Keep rule/prompt reinforcement deferred.
-2. Keep Test Contract observer report-only.
-3. Decide whether to design a narrow time-list matcher for `GET /times` with `jsonPath("$.length()").value(1)`.
+1. Implement a narrow time-list matcher with tests first.
+2. Only recognize `jsonPath("$.length()").value(1)` near `GET /times` or clear time API test context.
+3. Keep rule/prompt reinforcement deferred.
 
 Current evidence summary:
 
@@ -38,13 +38,13 @@ Current evidence summary:
 - Test Contract Anchor observation: implemented, actual `WARN/HIGH` repeated at observer level.
 - Row-count helper matcher correction is implemented and reduced the third actual report mismatch.
 - Response time object actual missing did not repeat in the comparison run.
-- Time-list matcher limitation remains the active next candidate.
+- Time-list matcher correction is the active next candidate.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 37
+Known scoped work items in this board: 38
 
-- Done: 32
+- Done: 33
 - Active next: 1
 - Deferred/watch: 4
 - Not yet decomposed: final product packaging and desktop app track
@@ -65,16 +65,16 @@ This is not an overall product-quality percentage. It is a progress count over t
 | --- | --- | --- | --- |
 | Phase 0 | Done | OpenCode plugin MVP for Java/Spring backend rule injection | MVP evidence collected for #1 and #2-3 |
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement | Narrow rule-loader refinement complete |
-| Phase 1.2 | Active | Report-only observers over generated Java/Spring runs | Row-count matcher corrected; response time object missing did not repeat; time-list follow-up remains |
+| Phase 1.2 | Active | Report-only observers over generated Java/Spring runs | Row-count matcher corrected; response time object missing did not repeat; time-list matcher correction selected |
 | Phase 2 | Not decomposed | Stronger productization or broader domains | Not started |
 | Desktop App Track | Not decomposed | Final long-term host/app goal | Not started |
 
 ## Current Active Work Queue
 
-1. `[>]` Test Contract time-list matcher follow-up decision
-   - Goal: decide whether to design or implement a narrow matcher for `GET /times` with `jsonPath("$.length()").value(1)`.
-   - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
-   - Constraints: report-only, no rule/prompt reinforcement, no test/product quality claim.
+1. `[>]` Test Contract time-list matcher correction
+   - Goal: implement the narrow matcher selected in `docs/phase1-test-contract-time-list-matcher-decision.md`.
+   - Conditions: require nearby `GET /times` or clear time API test block; do not treat generic list size assertions as time-list evidence.
+   - Constraints: tests first, string-based observer only, no rule/prompt reinforcement, no test/product quality claim.
 
 2. `[~]` Test Contract response time object actual missing watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
@@ -212,7 +212,8 @@ Primary docs:
 - [x] Actual report recheck showed reservation row count moved from missing to present.
 - [x] Test Contract follow-up decision completed.
 - [x] Response time object actual missing repeat observation completed.
-- [>] Time-list/table matcher follow-up decision remains active next.
+- [x] Time-list/table matcher follow-up decision completed.
+- [>] Time-list matcher correction remains active next.
 - [~] Reservation response time object actual missing remains under watch.
 - [~] Time-list length matcher correction remains optional and separate.
 
@@ -227,6 +228,7 @@ Primary docs:
 - `docs/phase1-test-contract-matcher-adjustment-result.md`
 - `docs/phase1-test-contract-follow-up-decision.md`
 - `docs/phase1-test-contract-response-time-repeat-review.md`
+- `docs/phase1-test-contract-time-list-matcher-decision.md`
 
 ## Deferred / Watch List
 
@@ -291,10 +293,10 @@ Use this when starting the next loop:
 
 ```text
 Current active item:
-- Test Contract time-list matcher follow-up decision
+- Test Contract time-list matcher correction
 
 Goal:
-- Decide whether to design or implement a narrow time-list matcher for `GET /times` with `jsonPath("$.length()").value(1)`.
+- Implement the narrow time-list matcher for `GET /times` with `jsonPath("$.length()").value(1)` using tests first.
 
 Constraints:
 - string-based observer only
@@ -305,6 +307,8 @@ Constraints:
 - no test/product quality guarantee
 
 Expected output:
-- decision document for time-list matcher follow-up
+- unit tests for `/times` context and false positive boundaries
+- matcher update
+- actual report recheck
 - this progress board updated
 ```
