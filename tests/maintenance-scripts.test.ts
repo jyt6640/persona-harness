@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process"
 import { afterEach, describe, expect, it } from "vitest"
 
 const checkScopeScript = resolve("scripts/check-mvp-scope.mjs")
+const checkInjectionValueScript = resolve("scripts/check-injection-value.mjs")
 const cleanupScript = resolve("scripts/cleanup-phase-artifacts.mjs")
 
 let tempDirs: string[] = []
@@ -69,6 +70,11 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
   )
 }
 
+function writeInjectionValueStatus(projectDir: string, status: Record<string, unknown>): void {
+  mkdirSync(join(projectDir, "docs"), { recursive: true })
+  writeFileSync(join(projectDir, "docs", "injection-value-status.json"), `${JSON.stringify(status, null, 2)}\n`)
+}
+
 afterEach(() => {
   for (const dir of tempDirs) {
     rmSync(dir, { recursive: true, force: true })
@@ -97,6 +103,28 @@ describe("maintenance scripts", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("MVP scope diagnostics finding: WARN")
     expect(result.stdout).toContain("active shared skills changed")
+  })
+
+  it("exits nonzero in strict mode when scope diagnostics are WARN", () => {
+    const projectDir = createTempDir("persona-scope-strict-warn-")
+    writeScopeProject(projectDir, ["programming"])
+
+    const result = runNodeScript(checkScopeScript, ["--strict", projectDir], projectDir)
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain("MVP scope diagnostics finding: WARN")
+    expect(result.stdout).toContain("MVP scope diagnostics mode: STRICT")
+  })
+
+  it("exits zero in strict mode when scope diagnostics are PASS", () => {
+    const projectDir = createTempDir("persona-scope-strict-pass-")
+    writeScopeProject(projectDir)
+
+    const result = runNodeScript(checkScopeScript, ["--strict", projectDir], projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("MVP scope diagnostics finding: PASS")
+    expect(result.stdout).toContain("MVP scope diagnostics mode: STRICT")
   })
 
   it("keeps packaged scope checks usable when source and docs are absent", () => {
@@ -161,5 +189,77 @@ describe("maintenance scripts", () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("--max-log-bytes requires a positive integer")
+  })
+
+  it("reports open injection value decision before the evidence window is full", () => {
+    const projectDir = createTempDir("persona-injection-open-")
+    writeInjectionValueStatus(projectDir, {
+      requiredPairs: 3,
+      currentPairs: 1,
+      onPositive: 1,
+      neutralOrMixed: 0,
+      offPositive: 0,
+      decision: "open",
+    })
+
+    const result = runNodeScript(checkInjectionValueScript, [projectDir], projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Injection value diagnostics finding: PASS")
+    expect(result.stdout).toContain("Injection value expected decision: open")
+  })
+
+  it("reports continue-java-mvp when ON-positive reaches two of three pairs", () => {
+    const projectDir = createTempDir("persona-injection-continue-")
+    writeInjectionValueStatus(projectDir, {
+      requiredPairs: 3,
+      currentPairs: 3,
+      onPositive: 2,
+      neutralOrMixed: 1,
+      offPositive: 0,
+      decision: "continue-java-mvp",
+    })
+
+    const result = runNodeScript(checkInjectionValueScript, [projectDir], projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Injection value diagnostics finding: PASS")
+    expect(result.stdout).toContain("Injection value expected decision: continue-java-mvp")
+  })
+
+  it("reports freeze-expansion when mixed or OFF-positive reaches two of three pairs", () => {
+    const projectDir = createTempDir("persona-injection-freeze-")
+    writeInjectionValueStatus(projectDir, {
+      requiredPairs: 3,
+      currentPairs: 3,
+      onPositive: 1,
+      neutralOrMixed: 2,
+      offPositive: 0,
+      decision: "freeze-expansion",
+    })
+
+    const result = runNodeScript(checkInjectionValueScript, [projectDir], projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Injection value diagnostics finding: PASS")
+    expect(result.stdout).toContain("Injection value expected decision: freeze-expansion")
+  })
+
+  it("reports WARN when injection value decision state does not match counts", () => {
+    const projectDir = createTempDir("persona-injection-warn-")
+    writeInjectionValueStatus(projectDir, {
+      requiredPairs: 3,
+      currentPairs: 3,
+      onPositive: 2,
+      neutralOrMixed: 1,
+      offPositive: 0,
+      decision: "open",
+    })
+
+    const result = runNodeScript(checkInjectionValueScript, [projectDir], projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Injection value diagnostics finding: WARN")
+    expect(result.stdout).toContain("decision is open, expected continue-java-mvp")
   })
 })

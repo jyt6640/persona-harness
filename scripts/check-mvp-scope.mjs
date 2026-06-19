@@ -1,7 +1,25 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
 
-const PROJECT_DIR = process.argv[2] === undefined ? process.cwd() : resolve(process.argv[2])
+function parseArgs(argv) {
+  const options = {
+    projectDir: process.cwd(),
+    strict: false,
+  }
+
+  for (const arg of argv) {
+    if (arg === "--strict") {
+      options.strict = true
+      continue
+    }
+    options.projectDir = resolve(arg)
+  }
+
+  return options
+}
+
+const OPTIONS = parseArgs(process.argv.slice(2))
+const PROJECT_DIR = OPTIONS.projectDir
 
 const FILES = {
   status: "docs/mvp-scope-status.json",
@@ -148,6 +166,7 @@ async function main() {
   const finding = diagnostics.some((item) => item.startsWith("WARN")) ? "WARN" : "PASS"
   console.log(`MVP scope diagnostics finding: ${finding}`)
   console.log(`MVP scope diagnostics count: ${diagnostics.length}`)
+  console.log(`MVP scope diagnostics mode: ${OPTIONS.strict ? "STRICT" : "REPORT_ONLY"}`)
   if (diagnostics.length > 0) {
     console.log("")
     for (const diagnostic of diagnostics) {
@@ -156,6 +175,9 @@ async function main() {
   }
   console.log("")
   console.log("This is diagnostics-only. It does not block build, tests, packaging, or injection.")
+  if (OPTIONS.strict && finding === "WARN") {
+    process.exitCode = 1
+  }
 }
 
 main().catch((error) => {

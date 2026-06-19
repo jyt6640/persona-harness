@@ -1,0 +1,8 @@
+{
+  "requiredPairs": 3,
+  "currentPairs": 1,
+  "onPositive": 1,
+  "neutralOrMixed": 0,
+  "offPositive": 0,
+  "decision": "open"
+}

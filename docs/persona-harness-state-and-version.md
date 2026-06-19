@@ -241,6 +241,7 @@ Actual result:
 - `npm run build`: build dist.
 - `npm run report:rules`: rule metadata diagnostics report.
 - `npm run check:scope`: MVP scope consistency diagnostics.
+- `npm run check:injection-value`: Java injection value evidence-window decision check.
 - `npm run cleanup:experiments`: dry-run artifact cleanup.
 - `npm run cleanup:experiments -- --apply`: apply artifact cleanup.
 
@@ -250,6 +251,7 @@ Actual result:
 - `docs/mvp-scope-status.json`
 - `docs/backend-clean-code-uniformity-rubric.md`
 - `docs/injection-value-stopping-rule.md`
+- `docs/injection-value-status.json`
 - `docs/phase-artifact-retention-policy.md`
 - `docs/mvp-scope-consistency-check.md`
 - `docs/docs-taxonomy-archive-plan.md`

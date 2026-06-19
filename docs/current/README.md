@@ -10,6 +10,7 @@ Current root-level decision documents:
 - `../mvp-scope-status.json`
 - `../backend-clean-code-uniformity-rubric.md`
 - `../injection-value-stopping-rule.md`
+- `../injection-value-status.json`
 - `../phase-artifact-retention-policy.md`
 - `../mvp-scope-consistency-check.md`
 - `../docs-taxonomy-archive-plan.md`

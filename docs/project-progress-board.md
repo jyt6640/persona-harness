@@ -35,6 +35,8 @@ Current active candidate: use the product-code-flow rubric for the next Java Gra
 
 - `npm run report:rules`: diagnostics-only rule metadata report.
 - `npm run check:scope`: diagnostics-only MVP scope consistency check; also runs as part of `npm test`.
+- `npm run check:scope:strict`: strict MVP scope consistency check for release/CI-style verification.
+- `npm run check:injection-value`: validates the Java injection value evidence-window decision state.
 - `npm run cleanup:experiments`: dry-run experiment artifact cleanup.
 - `npm run cleanup:experiments -- --apply`: apply cleanup after dry-run review.
 
@@ -69,6 +71,7 @@ Current active candidate: use the product-code-flow rubric for the next Java Gra
 - `docs/mvp-scope-status.json`
 - `docs/backend-clean-code-uniformity-rubric.md`
 - `docs/injection-value-stopping-rule.md`
+- `docs/injection-value-status.json`
 - `docs/phase-artifact-retention-policy.md`
 - `docs/mvp-scope-consistency-check.md`
 - `docs/docs-taxonomy-archive-plan.md`

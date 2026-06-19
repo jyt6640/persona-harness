@@ -12,6 +12,16 @@ Does Injection ON repeatedly produce cleaner Java backend product-code flow than
 
 The comparison surface is `docs/backend-clean-code-uniformity-rubric.md`.
 
+Decision state lives in:
+
+- `docs/injection-value-status.json`
+
+Check it with:
+
+```sh
+npm run check:injection-value
+```
+
 ## Minimum Evidence Window
 
 Use a small fixed window:

@@ -166,4 +166,19 @@ describe("Phase 0 shared skill routing", () => {
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
     expect(injection.block).toContain("Gradle Java build file detected")
   })
+
+  it("classifies infrastructure-looking targets as infra parking surface with no active rules or skills", () => {
+    const terraformInjection = createInjectionBlock("infra/main.tf")
+    const dockerInjection = createInjectionBlock("Dockerfile")
+
+    expect(terraformInjection.fileRole).toBe("infra")
+    expect(terraformInjection.selectedRules).toEqual([])
+    expect(terraformInjection.selectedSharedSkills).toEqual([])
+    expect(terraformInjection.block).toContain("파일 역할: infra")
+    expect(terraformInjection.block).toContain("- 없음")
+
+    expect(dockerInjection.fileRole).toBe("infra")
+    expect(dockerInjection.selectedRules).toEqual([])
+    expect(dockerInjection.selectedSharedSkills).toEqual([])
+  })
 })

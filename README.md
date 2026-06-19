@@ -158,6 +158,7 @@ npm run report:rules
 ```
 
 `npm test`는 Vitest 전에 diagnostics-only scope check를 함께 실행한다. scope drift가 보이더라도 finding 자체는 test failure gate가 아니며, scope report만 보고 싶으면 `npm run check:scope`를 실행한다.
+릴리즈나 CI에서 scope drift를 실패로 다루고 싶으면 `npm run check:scope:strict`를 실행한다.
 
 테스트는 매 테스트마다 `.persona-test-fixtures/`를 비우고 Java fixture를 다시 만든다. 이 경로는 Git에 커밋하지 않는다.
 

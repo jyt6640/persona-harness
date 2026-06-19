@@ -8,6 +8,8 @@ The check is diagnostics-only. It reports scope drift but does not block injecti
 
 `npm test` runs this check before Vitest so scope drift is visible during normal verification. Scope findings still exit `0`, including `WARN` findings. Only script execution errors, such as missing files or unreadable project paths, fail the npm command.
 
+For release or CI-style checks, use strict mode. Strict mode keeps the same diagnostics but exits nonzero when the finding is `WARN`.
+
 Structured source of truth:
 
 - `docs/mvp-scope-status.json`
@@ -19,6 +21,10 @@ npm run check:scope
 ```
 
 `npm test` also runs this check before unit tests.
+
+```sh
+npm run check:scope:strict
+```
 
 ## Current Expected Boundary
 

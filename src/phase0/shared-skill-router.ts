@@ -97,6 +97,9 @@ export function selectSharedSkillsForTarget(targetFile: string): readonly Select
 export function resolveSharedSkillFileRole(selectedSkills: readonly SelectedSharedSkill[], targetFile = ""): FileRole {
   const normalizedPath = normalizePath(targetFile)
 
+  if (isInfraTarget(normalizedPath)) {
+    return "infra"
+  }
   if (selectedSkills.some((skill) => skill.domain === "frontend")) {
     return "frontend"
   }
