@@ -1,6 +1,6 @@
 # Persona Harness Progress Board
 
-Last updated: 2026-06-18
+Last updated: 2026-06-19
 
 ## Purpose
 
@@ -20,7 +20,7 @@ Use this file to answer:
 
 Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: decide whether to add a generic/no-contract backend fixture mode, run one more less-saturated backend fixture, or design the intake/planning surface.
+Current active candidate: decide whether to strengthen exact four-layer Java package naming in the injection surface or accept coarser package separation and move toward the intake/planning surface.
 
 Current recommendation:
 
@@ -40,6 +40,8 @@ Current recommendation:
 14. Treat the first Gradle ON/OFF A/B pair as mixed evidence, not product-quality proof.
 15. Treat Spring Boot entrypoint/package-shape cleanup as confirmed in one new A/B pair, but not as an ON-positive differential signal.
 16. Treat the Task Management fixture A/B as weak ON-positive evidence for explicit layered package shape, not as product-quality proof.
+17. Treat Java common routing to `backend/layered-architecture.md` as actual-run confirmed at the injection surface.
+18. Do not treat exact `presentation/application/domain/infrastructure` package naming as proven: the latest Library Loans A/B still produced `book` + `web` on Injection ON.
 
 Current evidence summary:
 
@@ -86,12 +88,17 @@ Current evidence summary:
 - ON produced explicit `web/application/domain/infrastructure` package layering; OFF produced a flatter but still acceptable `task` package with `dto` and `repository` subpackages.
 - The Task fixture gives weak ON-positive evidence for explicit layered package shape only.
 - A secondary Controller-first Task run selected reservation-specific `backend/step1-api-contract.md`; this exposes a generic-fixture contamination risk in the current scenario rule setup.
+- Java common routing A/B run `experiments/phase0-runs/2026-06-19T03-03-05Z-library-routing-ab` completed with model `openai/gpt-5.4-mini-fast`.
+- In that A/B pair, ON evidence for `LibraryApplication.java` and `build.gradle` selected `backend/layered-architecture.md`.
+- ON and OFF both kept Gradle-only files, avoided `pom.xml`, passed independent `gradle test`, and passed manual HTTP smoke for book create/list/loan/return/delete.
+- ON improved repository and Service storage/id boundaries: `BookService` delegated to `BookRepository`/`InMemoryBookRepository`; OFF `LibraryService` directly owned `Map<Long, Book>` and `AtomicLong nextId`.
+- ON still did not generate exact `presentation/application/domain/infrastructure` package names; it generated `book` + `web`.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 56
+Known scoped work items in this board: 57
 
-- Done: 50
+- Done: 51
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
@@ -119,8 +126,8 @@ This is not an overall product-quality percentage. It is a progress count over t
 ## Current Active Work Queue
 
 1. `[>]` Backend Clean Code uniformity next decision
-   - Goal: decide whether to add a generic/no-contract backend fixture mode, run one more less-saturated backend fixture, or design the intake/planning surface.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`
+   - Goal: decide whether to strengthen exact four-layer Java package naming in the injection surface or accept coarser package separation and move toward the intake/planning surface.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch
