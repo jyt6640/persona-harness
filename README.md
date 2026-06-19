@@ -6,20 +6,28 @@ Persona Harness는 OpenCode에서 동작하는 TypeScript 플러그인 MVP다.
 
 frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 release-facing MVP 범위가 아니다.
 
-## Quick Start
+## v0.2.0 Local Readiness
 
-외부 프로젝트에서 쓰는 가장 짧은 경로는 다음이다.
+`v0.2.0`은 public npm publish 전 단계다. 지금 보장하는 설치 경로는 local path install과 tarball install이며, npm registry에서 `npm install -D persona-harness`로 설치하는 흐름은 아직 지원 대상으로 쓰지 않는다.
+
+자세한 판단과 실제 검증 결과는 [docs/current/v0.2.0-release-readiness.md](docs/current/v0.2.0-release-readiness.md)를 본다.
+
+### A. Persona Harness Repo 자체 검증
+
+저장소를 받은 뒤 release readiness 기준으로 확인할 명령은 다음이다.
 
 ```bash
-npm install -D persona-harness
-npx persona-harness init
-opencode run --dir . --model openai/gpt-5.4-mini-fast \
-  "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."
+npm install
+npm test
+npm run typecheck
+npm run build
+npm run report:rules
+npm run check:scope:strict
+npm run check:injection-value
+npm pack --dry-run
 ```
 
-`persona-harness init`은 대상 프로젝트에 `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`을 설치/병합한다. `.persona/evidence/`는 template로 복사하지 않으며, OpenCode hook이 실제로 발동할 때 대상 프로젝트 안에 생성된다.
-
-저장소를 받은 뒤 가장 짧은 local smoke/demo command는 다음이다.
+가장 짧은 local smoke/demo command는 다음이다.
 
 ```bash
 npm install
@@ -34,7 +42,62 @@ npm run demo:java-mvp
 
 `npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다. 내부적으로 빌드, `npm pack`, 임시 프로젝트 설치, `persona-harness init`, 설치된 `dist/index.js` OpenCode plugin hook 실행, Java Controller injection, model input transform, `.persona/evidence/phase0` evidence 생성을 검증한다.
 
-실제 Java/Spring 프로젝트에 붙일 때는 빌드된 플러그인을 `.opencode/opencode.json`에 연결한다.
+### B. Clean Java/Spring Project Local Install
+
+repo 밖의 clean Java/Spring 프로젝트에서는 local path install로 검증한다.
+
+```bash
+npm install -D /absolute/path/to/persona-harness
+npx persona-harness init
+npx ph bearshell npm test
+opencode run --dir . --model <model> --dangerously-skip-permissions \
+  "<Java/Spring target file을 먼저 읽고 기능을 구현해줘>"
+```
+
+`persona-harness init`은 대상 프로젝트에 `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`을 설치/병합한다. `.persona/evidence/`는 template로 복사하지 않으며, OpenCode hook이 실제로 발동할 때 대상 프로젝트 안에 생성된다.
+
+`ph bearshell`은 OMO `sparkshell`을 참고한 Persona Harness CLI helper다. repo inspection, CLI smoke test, 큰 출력이 나오는 명령을 bounded output으로 실행할 때 쓴다. 자세한 범위와 OMO parity gap은 [docs/current/ph-bearshell-mvp.md](docs/current/ph-bearshell-mvp.md)에 둔다.
+
+```bash
+npx ph bearshell npm test
+npx ph bearshell --shell 'git status --short && npm test'
+npx ph bearshell --budget 1200 --shell 'npm pack --dry-run'
+```
+
+현재 MVP는 deterministic head/tail condensation, `--shell` opt-in, `--json`, `--budget`, `PH_BEARSHELL_CONDENSE=0`만 보장한다. OMO의 native sidecar, app-server socket, tmux pane, session-context ranking, spark-model summarization은 아직 포함하지 않는다.
+
+Java file이 아직 없는 0-start 상황에서는 먼저 `README.md` 또는 `requirements.md`를 읽도록 실행할 수 있다. 이 경우 `project-bootstrap` guidance가 들어가고, 이후 생성된 Java target file을 읽을 때 Controller/Service/Repository/DTO 역할별 injection이 잡힌다.
+
+```bash
+opencode run --dir . --model <model> \
+  "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."
+```
+
+이미 Java/Spring target file이 있다면 해당 파일을 먼저 읽게 하는 편이 현재 MVP의 가장 직접적인 검증 경로다.
+
+```bash
+opencode run --dir . --model <model> \
+  "먼저 src/main/java/.../presentation/...Controller.java 파일을 읽고, README.md 요구사항에 맞게 구현해줘."
+```
+
+권한 프롬프트를 생략해야 하는 환경에서는 OpenCode 버전에 맞게 `--dangerously-skip-permissions`를 붙인다. 이 repo의 v0.2.0 readiness 검증은 로컬 OpenCode 설정에서 해당 flag 없이 수행했다.
+
+### C. Tarball Install Verification
+
+public publish 전에 npm tarball 기준으로도 설치를 검증한다.
+
+```bash
+npm pack
+mkdir -p /tmp/persona-harness-clean-check
+cd /tmp/persona-harness-clean-check
+npm init -y
+npm install -D /absolute/path/to/persona-harness-*.tgz
+npx persona-harness init
+```
+
+### D. Manual Plugin Connection
+
+`persona-harness init`을 쓰지 않고 직접 연결할 때는 빌드된 플러그인을 `.opencode/opencode.json`에 등록한다.
 
 ```jsonc
 {
@@ -48,9 +111,9 @@ npm run demo:java-mvp
 
 Java file이 아직 없는 0-start 상황에서는 `README.md`, `requirements.md`, `build.gradle`, `settings.gradle` target에 한해 Java backend bootstrap guidance를 주입한다. 일반 markdown 문서, `docs/` 내부 문서, `CHANGELOG.md`, 임의 note 파일에는 bootstrap injection을 걸지 않는다.
 
-자세한 release-facing 설치/검증 경로는 [docs/current/java-backend-mvp-install-guide.md](docs/current/java-backend-mvp-install-guide.md)를 본다.
+추가 설치/검증 경로는 [docs/current/java-backend-mvp-install-guide.md](docs/current/java-backend-mvp-install-guide.md)를 본다.
 
-이 MVP는 생성된 Spring application의 품질, 테스트 충분성, rule enforcement, Guard/AST/linter 검증을 보증하지 않는다.
+이 MVP는 생성된 Spring application의 품질, 테스트 충분성, rule enforcement, Guard/AST/linter 검증, frontend/infra/desktop productization을 보증하지 않는다.
 
 Phase 0의 목표는 하나다.
 

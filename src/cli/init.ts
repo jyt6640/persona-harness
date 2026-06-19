@@ -186,7 +186,7 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
   }
 }
 
-function formatInitResult(result: InitResult): string {
+export function formatInitResult(result: InitResult): string {
   const backupLines = result.backups.length > 0 ? ["", "Backups:", ...result.backups.map((backup) => `- ${backup}`)] : []
 
   return [
@@ -215,38 +215,21 @@ function formatInitResult(result: InitResult): string {
   ].join("\n")
 }
 
-function runCli(): void {
-  const command = process.argv[2]
-  if (command !== "init") {
-    console.error("Usage: persona-harness init")
-    process.exitCode = 1
-    return
-  }
-
+export function runInitCommand(options: InitOptions = {}): { readonly status: number; readonly stdout: string; readonly stderr: string } {
   try {
-    console.log(formatInitResult(initializePersonaHarness()))
+    return {
+      status: 0,
+      stdout: `${formatInitResult(initializePersonaHarness(options))}\n`,
+      stderr: "",
+    }
   } catch (error) {
     if (error instanceof PersonaInitError) {
-      console.error(error.message)
-      process.exitCode = 1
-      return
+      return {
+        status: 1,
+        stdout: "",
+        stderr: `${error.message}\n`,
+      }
     }
     throw error
   }
-}
-
-function isCliEntrypoint(): boolean {
-  const entrypoint = process.argv[1]
-  if (entrypoint === undefined) {
-    return false
-  }
-  return (
-    entrypoint === fileURLToPath(import.meta.url) ||
-    entrypoint.replace(/\\/g, "/").endsWith("/persona-harness") ||
-    entrypoint.replace(/\\/g, "/").endsWith("/init.js")
-  )
-}
-
-if (isCliEntrypoint()) {
-  runCli()
 }

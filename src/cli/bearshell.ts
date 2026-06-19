@@ -1,0 +1,248 @@
+import { spawnSync } from "node:child_process"
+import process from "node:process"
+
+export type CliRunResult = {
+  readonly status: number
+  readonly stdout: string
+  readonly stderr: string
+}
+
+type BearshellOptions = {
+  readonly cwd?: string
+  readonly env?: Readonly<Record<string, string | undefined>>
+}
+
+type ParsedBearshellArgs =
+  | {
+      readonly kind: "help"
+      readonly json: boolean
+    }
+  | {
+      readonly kind: "invalid"
+      readonly json: boolean
+      readonly message: string
+    }
+  | {
+      readonly kind: "exec"
+      readonly json: boolean
+      readonly shell: false
+      readonly budget: number
+      readonly command: string
+      readonly args: readonly string[]
+    }
+  | {
+      readonly kind: "exec"
+      readonly json: boolean
+      readonly shell: true
+      readonly budget: number
+      readonly command: string
+      readonly args: readonly []
+    }
+
+const DEFAULT_BUDGET = 20_000
+const MIN_BUDGET = 80
+
+export function bearshellUsage(invocation = "ph"): string {
+  return [
+    `Usage: ${invocation} bearshell <command> [args...]`,
+    `   or: ${invocation} bearshell [--json] [--budget <chars>] <command> [args...]`,
+    `   or: ${invocation} bearshell --shell '<shell command>'`,
+    "",
+    "Runs a bounded shell-native command helper for Persona Harness.",
+    "Shell metacharacters are interpreted only with explicit --shell opt-in.",
+    "",
+    "Environment:",
+    "- PH_BEARSHELL_CONDENSE=0 disables output condensation.",
+    "- PH_BEARSHELL_CONDENSE_BUDGET overrides the default condensation budget.",
+    "- PH_BEARSHELL_SPARK=0 is accepted for OMO compatibility; this MVP uses deterministic condensation only.",
+  ].join("\n")
+}
+
+export function runBearshell(args: readonly string[], options: BearshellOptions = {}): CliRunResult {
+  const env = options.env ?? {}
+  const parsed = parseBearshellArgs(args, env)
+
+  if (parsed.kind === "help") {
+    return formatResult({ status: 0, stdout: `${bearshellUsage()}\n`, stderr: "" }, parsed.json)
+  }
+
+  if (parsed.kind === "invalid") {
+    return formatResult({ status: 1, stdout: "", stderr: `${parsed.message}\n\n${bearshellUsage()}\n` }, parsed.json)
+  }
+
+  const childEnv = { ...process.env, ...env }
+  const spawned = parsed.shell
+    ? spawnSync(parsed.command, {
+        cwd: options.cwd,
+        encoding: "utf8",
+        env: childEnv,
+        shell: true,
+      })
+    : spawnSync(parsed.command, [...parsed.args], {
+        cwd: options.cwd,
+        encoding: "utf8",
+        env: childEnv,
+        shell: false,
+      })
+
+  const status = spawned.status ?? signalExitCode(spawned.signal)
+  const stdout = maybeCondense(toOutputString(spawned.stdout), parsed.budget, env)
+  const stderr = maybeCondense(spawnErrorMessage(parsed.command, spawned.error) ?? toOutputString(spawned.stderr), parsed.budget, env)
+
+  return formatResult({ status, stdout, stderr }, parsed.json)
+}
+
+function parseBearshellArgs(args: readonly string[], env: Readonly<Record<string, string | undefined>>): ParsedBearshellArgs {
+  let json = false
+  let shell = false
+  let budget = readBudget(env["PH_BEARSHELL_CONDENSE_BUDGET"]) ?? DEFAULT_BUDGET
+  const positional: string[] = []
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === undefined) {
+      continue
+    }
+    if (arg === "--help" || arg === "-h") {
+      return { kind: "help", json }
+    }
+    if (arg === "--json") {
+      json = true
+      continue
+    }
+    if (arg === "--shell") {
+      shell = true
+      const command = args[index + 1]
+      if (command === undefined || command.length === 0) {
+        return { kind: "invalid", json, message: "--shell requires a command string" }
+      }
+      return { kind: "exec", json, shell: true, budget, command, args: [] }
+    }
+    if (arg === "--budget") {
+      const value = args[index + 1]
+      if (value === undefined) {
+        return { kind: "invalid", json, message: "--budget requires a positive integer" }
+      }
+      const parsedBudget = readBudget(value)
+      if (parsedBudget === null) {
+        return { kind: "invalid", json, message: "--budget requires a positive integer" }
+      }
+      budget = parsedBudget
+      index += 1
+      continue
+    }
+    positional.push(arg)
+  }
+
+  if (positional.length === 0) {
+    return { kind: "help", json }
+  }
+
+  const command = positional[0]
+  if (command === undefined) {
+    return { kind: "help", json }
+  }
+
+  return { kind: "exec", json, shell: false, budget, command, args: positional.slice(1) }
+}
+
+function readBudget(value: string | undefined): number | null {
+  if (value === undefined || value.trim().length === 0) {
+    return DEFAULT_BUDGET
+  }
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return null
+  }
+  return Math.max(parsed, MIN_BUDGET)
+}
+
+function maybeCondense(output: string, budget: number, env: Readonly<Record<string, string | undefined>>): string {
+  if (env["PH_BEARSHELL_CONDENSE"] === "0") {
+    return output
+  }
+  if (output.length <= budget) {
+    return output
+  }
+
+  const markerBudget = 96
+  const contentBudget = Math.max(MIN_BUDGET, budget - markerBudget)
+  const headLength = Math.floor(contentBudget * 0.6)
+  const tailLength = contentBudget - headLength
+  const head = output.slice(0, headLength).trimEnd()
+  const tail = output.slice(output.length - tailLength).trimStart()
+  const omitted = output.length - head.length - tail.length
+
+  return [
+    head,
+    `[bearshell condensed] original chars: ${output.length}; budget: ${budget}; omitted: ${omitted}`,
+    tail,
+  ].join("\n")
+}
+
+function formatResult(result: CliRunResult, json: boolean): CliRunResult {
+  if (!json) {
+    return result
+  }
+
+  return {
+    status: result.status,
+    stdout: `${JSON.stringify(result)}\n`,
+    stderr: "",
+  }
+}
+
+function toOutputString(value: unknown): string {
+  return typeof value === "string" ? value : ""
+}
+
+function spawnErrorMessage(command: string, error: Error | undefined): string | undefined {
+  if (error === undefined) {
+    return undefined
+  }
+  return `[bearshell] failed to launch ${command}: ${error.message}\n`
+}
+
+function signalExitCode(signal: NodeJS.Signals | null): number {
+  if (signal === null) {
+    return 1
+  }
+  const signalCodeByName: Readonly<Partial<Record<NodeJS.Signals, number>>> = {
+    SIGABRT: 6,
+    SIGALRM: 14,
+    SIGBREAK: 21,
+    SIGBUS: 7,
+    SIGCHLD: 17,
+    SIGCONT: 18,
+    SIGFPE: 8,
+    SIGHUP: 1,
+    SIGILL: 4,
+    SIGINT: 2,
+    SIGIO: 29,
+    SIGIOT: 6,
+    SIGKILL: 9,
+    SIGPIPE: 13,
+    SIGPOLL: 29,
+    SIGPROF: 27,
+    SIGPWR: 30,
+    SIGQUIT: 3,
+    SIGSEGV: 11,
+    SIGSTKFLT: 16,
+    SIGSTOP: 19,
+    SIGSYS: 31,
+    SIGTERM: 15,
+    SIGTRAP: 5,
+    SIGTSTP: 20,
+    SIGTTIN: 21,
+    SIGTTOU: 22,
+    SIGUNUSED: 31,
+    SIGURG: 23,
+    SIGUSR1: 10,
+    SIGUSR2: 12,
+    SIGVTALRM: 26,
+    SIGWINCH: 28,
+    SIGXCPU: 24,
+    SIGXFSZ: 25,
+  }
+  return 128 + (signalCodeByName[signal] ?? 1)
+}
