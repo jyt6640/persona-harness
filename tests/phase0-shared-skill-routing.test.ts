@@ -136,6 +136,8 @@ describe("Phase 0 shared skill routing", () => {
 
     expect(injection.fileRole).toBe("java-common")
     expect(injection.selectedRules).toContain("backend/layered-architecture.md")
+    expect(injection.policies.join("\n")).toContain("구현 전에 package structure plan")
+    expect(injection.policies.join("\n")).toContain("presentation/application/domain/infrastructure")
     expect(injection.policies.join("\n")).toContain("Presentation")
     expect(injection.policies.join("\n")).toContain("Application")
     expect(injection.policies.join("\n")).toContain("Domain")

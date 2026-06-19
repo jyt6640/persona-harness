@@ -20,7 +20,7 @@ Use this file to answer:
 
 Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: decide whether to strengthen exact four-layer Java package naming in the injection surface or accept coarser package separation and move toward the intake/planning surface.
+Current active candidate: rerun the non-leading Library Loans Gradle A/B pair and check whether the new package structure plan surface changes generated package shape.
 
 Current recommendation:
 
@@ -42,6 +42,7 @@ Current recommendation:
 16. Treat the Task Management fixture A/B as weak ON-positive evidence for explicit layered package shape, not as product-quality proof.
 17. Treat Java common routing to `backend/layered-architecture.md` as actual-run confirmed at the injection surface.
 18. Do not treat exact `presentation/application/domain/infrastructure` package naming as proven: the latest Library Loans A/B still produced `book` + `web` on Injection ON.
+19. Prefer package structure planning before implementation over repeatedly strengthening package-name wording in isolation.
 
 Current evidence summary:
 
@@ -93,12 +94,13 @@ Current evidence summary:
 - ON and OFF both kept Gradle-only files, avoided `pom.xml`, passed independent `gradle test`, and passed manual HTTP smoke for book create/list/loan/return/delete.
 - ON improved repository and Service storage/id boundaries: `BookService` delegated to `BookRepository`/`InMemoryBookRepository`; OFF `LibraryService` directly owned `Map<Long, Book>` and `AtomicLong nextId`.
 - ON still did not generate exact `presentation/application/domain/infrastructure` package names; it generated `book` + `web`.
+- Java common backend guidance now asks the agent to write a package structure plan before implementation, with `presentation/application/domain/infrastructure` as the default candidate.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 57
+Known scoped work items in this board: 58
 
-- Done: 51
+- Done: 52
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
@@ -126,8 +128,8 @@ This is not an overall product-quality percentage. It is a progress count over t
 ## Current Active Work Queue
 
 1. `[>]` Backend Clean Code uniformity next decision
-   - Goal: decide whether to strengthen exact four-layer Java package naming in the injection surface or accept coarser package separation and move toward the intake/planning surface.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`
+   - Goal: rerun the non-leading Library Loans Gradle A/B pair and check whether the new package structure plan surface changes generated package shape.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch

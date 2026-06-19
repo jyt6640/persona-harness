@@ -89,6 +89,9 @@ function takePoliciesForInjection(rulePath: string, policies: readonly string[],
   if (rulePath === "backend/layered-architecture.md") {
     return policies.slice(0, 4)
   }
+  if (rulePath === "backend/java-common.md") {
+    return policies.slice(0, 3)
+  }
   const limit = rulePath === "clean-code/method-design.md" ? 1 : 2
   return policies.slice(0, limit)
 }

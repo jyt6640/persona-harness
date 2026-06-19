@@ -12,6 +12,7 @@ enforcement: inject_only
 # Java/Spring Backend Baseline
 
 - Java/Spring 프로젝트는 Gradle을 기본 빌드 도구로 사용하고 Maven 파일을 생성하지 않으며, Spring Boot main application class는 root package에 하나만 두고 feature/domain package 아래에 추가 `*Application.java`를 만들지 않는다.
+- 구현 전에 package structure plan을 먼저 작성하고, 기본 후보는 `presentation/application/domain/infrastructure` 패키지로 역할 경계를 잡는다.
 - presentation → application → domain 흐름을 기본으로 두고, infrastructure는 domain을 사용할 수 있지만 domain은 infrastructure를 알지 않는다.
 - API 외부 계약은 DTO로 표현하고 Entity를 직접 노출하지 않는다.
 - 도메인 규칙은 Spring, HTTP, DB 세부사항에 의존하지 않게 둔다.
