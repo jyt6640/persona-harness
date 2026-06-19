@@ -236,7 +236,7 @@ function detectSpringBeanMissing(javaFiles: JavaFile[], findings: DriftFinding[]
     addFinding(findings, {
       kind: "Spring bean missing",
       severity: "fail",
-      evidence: `Maven/Spring log reports missing bean: ${missingBeanMatch[1]}`,
+      evidence: `Spring log reports missing bean: ${missingBeanMatch[1]}`,
     })
   }
 }
@@ -392,7 +392,7 @@ export function detectBackendDrift(input: DetectBackendDriftInput): BackendDrift
     addFinding(findings, {
       kind: "Unknown",
       severity: "warn",
-      evidence: "Maven/test failure was detected, but no minimal drift pattern matched.",
+      evidence: "Build/test failure was detected, but no minimal drift pattern matched.",
     })
   }
 

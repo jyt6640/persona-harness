@@ -12,7 +12,7 @@ const modelIndex = process.argv.indexOf("--model")
 const model = modelIndex >= 0 ? process.argv[modelIndex + 1] : "opencode/north-mini-code-free"
 const timeoutIndex = process.argv.indexOf("--timeout-ms")
 const opencodeTimeoutMs = timeoutIndex >= 0 ? Number(process.argv[timeoutIndex + 1]) : 300000
-const runId = new Date().toISOString().replace(/[:.]/g, "-")
+const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${process.pid}-${Math.random().toString(36).slice(2, 8)}`
 const runDir = join(rootDir, "experiments", "phase0-runs", runId)
 const sandboxDir = join(runDir, "sandbox")
 const baselineDir = join(runDir, "sandbox-baseline")
@@ -47,6 +47,7 @@ const step1Requirements = `# 1단계: 웹 요청-응답
 
 const prompt = [
   "requirements.md의 # 1단계: 웹 요청-응답만 구현 대상으로 삼아라.",
+  "이 프로젝트는 Gradle 기반 Java/Spring 프로젝트로 유지하라. pom.xml 또는 Maven 파일을 만들지 마라.",
   "먼저 src/main/java/com/example/reservation/ReservationController.java 파일을 read 도구로 읽어라.",
   "그 다음 방탈출 예약 CRUD API를 메모리 저장 방식으로 구현해라.",
   "Controller는 Repository, Map/List 저장 상태, id sequence를 직접 소유하거나 호출하지 말고 ReservationService 같은 Service만 주입받아 위임하라.",
@@ -136,6 +137,7 @@ Phase 0 실험이 rate limit 또는 timeout으로 중단되지 않고 완주 run
 - .persona/rules와 harness 설정 복사
 - OpenCode plugin 연결 설정 생성
 - 1단계 웹 요청-응답 요구사항과 prompt 저장
+- Gradle 기반 Java/Spring sandbox skeleton 생성
 
 ## Why
 
@@ -245,37 +247,32 @@ function createSandbox() {
 
   write(join(sandboxDir, "requirements.md"), `${step1Requirements}\n`)
 
+  write(join(sandboxDir, "settings.gradle"), "pluginManagement { repositories { gradlePluginPortal() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { mavenCentral() } }\nrootProject.name = 'reservation-step1'\n")
   write(
-    join(sandboxDir, "pom.xml"),
-    `<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.0</version>
-        <relativePath/>
-    </parent>
-    <groupId>com.example</groupId>
-    <artifactId>reservation-step1</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <properties>
-        <java.version>21</java.version>
-    </properties>
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-</project>
+    join(sandboxDir, "build.gradle"),
+    `plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
 `,
   )
 
@@ -371,7 +368,7 @@ if (!noRun && completionClassifications.length === 0) {
   completionClassifications.push("Unknown")
 }
 const buildSuccessDetected =
-  runOutput.includes("BUILD SUCCESS") && /Tests run:\s+\d+,\s+Failures:\s+0,\s+Errors:\s+0/.test(runOutput)
+  runOutput.includes("BUILD SUCCESSFUL") || runOutput.includes("BUILD SUCCESS")
 const testFailureDetected =
   !buildSuccessDetected && (runOutput.includes("BUILD FAILURE") || runOutput.includes("There are test failures"))
 const qualitySampleUsable = !noRun && !timedOut && !rateLimited && opencodeResult?.status === 0 && buildSuccessDetected
@@ -401,6 +398,10 @@ const diff = run("diff", [
   "node_modules",
   "-x",
   "target",
+  "-x",
+  "build",
+  "-x",
+  ".gradle",
   "-x",
   "package-lock.json",
   "-x",
@@ -497,17 +498,18 @@ ${noRun ? "- Prepare run only. OpenCode was not executed." : ""}
 - analysis.md now separates completion classification from backend quality sampling.
 - RATE_LIMIT and TIMEOUT results are reported before PASS/WEAK/FAIL quality judgment.
 - timeout/rate-limit runs are marked as not usable for backend quality sampling.
+- #1 sandbox now uses Gradle settings.gradle/build.gradle instead of Maven pom.xml.
 
 ## Prompt Change
 
-없음.
+Gradle 기반 Java/Spring 프로젝트로 유지하고 pom.xml 또는 Maven 파일을 만들지 말라는 문구를 추가했다.
 
 ## Quality Sampling Decision
 
-${qualitySampleUsable ? "- 이 run은 timeout/rate-limit 없이 완주했고 Maven 성공 로그가 있어 backend 품질 샘플로 사용할 수 있다." : "- 이 run은 backend 품질 샘플로 사용하지 않는다."}
+${qualitySampleUsable ? "- 이 run은 timeout/rate-limit 없이 완주했고 Gradle 성공 로그가 있어 backend 품질 샘플로 사용할 수 있다." : "- 이 run은 backend 품질 샘플로 사용하지 않는다."}
 ${rateLimited ? "- 제외 이유: rate limit이 감지됐다." : ""}
 ${timedOut ? "- 제외 이유: timeout/SIGTERM이 감지됐다." : ""}
-${!buildSuccessDetected ? "- 제외 이유: 최종 Maven 성공 로그가 감지되지 않았다." : ""}
+${!noRun && !buildSuccessDetected ? "- 제외 이유: 최종 Gradle 성공 로그가 감지되지 않았다." : ""}
 
 ## Verification
 
@@ -519,7 +521,7 @@ ${!buildSuccessDetected ? "- 제외 이유: 최종 Maven 성공 로그가 감지
 - OpenCode error: ${opencodeResult?.error?.message ?? "none"}
 - Rate limit detected: ${rateLimited ? "yes" : "no"}
 - Timeout detected: ${timedOut ? "yes" : "no"}
-- Final Maven build success detected: ${buildSuccessDetected ? "yes" : "no"}
+- Final Gradle build success detected: ${buildSuccessDetected ? "yes" : "no"}
 - Test failure detected in logs: ${testFailureDetected ? "yes" : buildSuccessDetected ? "no" : "unknown"}
 - Generated Java files:
 ${generatedJavaFiles.map((file) => `  - ${file}`).join("\n") || "  - none"}
