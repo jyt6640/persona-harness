@@ -66,6 +66,8 @@ npx ph bearshell --budget 1200 --shell 'npm pack --dry-run'
 
 현재 MVP는 deterministic head/tail condensation, `--shell` opt-in, `--json`, `--budget`, `PH_BEARSHELL_CONDENSE=0`만 보장한다. OMO의 native sidecar, app-server socket, tmux pane, session-context ranking, spark-model summarization은 아직 포함하지 않는다.
 
+Persona Harness injection block은 repo inspection, CLI smoke test, 큰 출력 확인에서 `ph bearshell`을 우선 사용하라는 awareness도 함께 넣는다.
+
 Java file이 아직 없는 0-start 상황에서는 먼저 `README.md` 또는 `requirements.md`를 읽도록 실행할 수 있다. 이 경우 `project-bootstrap` guidance가 들어가고, 이후 생성된 Java target file을 읽을 때 Controller/Service/Repository/DTO 역할별 injection이 잡힌다.
 
 ```bash
@@ -429,6 +431,7 @@ experiments/phase0-runs/{timestamp}/
 
 주의:
 이 Phase 0 블록은 .persona/rules 정본과 최소 frontmatter/glob/scenario catalog layer를 읽는 MVP rule-loader 결과이며, 아직 full rule engine은 아니다.
+repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.
 ```
 
 이것이 Phase 0의 증명 대상이다.

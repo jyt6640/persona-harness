@@ -47,7 +47,7 @@ Current active candidate: public npm publish support contract decision. Public p
 - `npm run cleanup:experiments`: dry-run experiment artifact cleanup.
 - `npm run cleanup:experiments -- --apply`: apply cleanup after dry-run review.
 - `npm pack --dry-run`: package contents dry run for v0.2.0 readiness.
-- `ph bearshell <command>`: Persona Harness CLI helper for bounded repo inspection and smoke-test command output.
+- `ph bearshell <command>`: Persona Harness CLI helper for bounded repo inspection and smoke-test command output. Injection blocks now tell the agent to prefer this helper for repo inspection, CLI smoke tests, and large output checks.
 
 ## Phase Map
 
@@ -57,7 +57,7 @@ Current active candidate: public npm publish support contract decision. Public p
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement complete |
 | Phase 1.2 | Done | Report-only observer pass closed; reinforcement deferred |
 | Phase 2 | Active validation | Product-code-flow rubric, injection value stopping rule, scope diagnostics, and artifact cleanup added |
-| Java MVP Packaging | Active productization | Init CLI, `ph bearshell`, bootstrap injection, packaged install/run/verify smoke commands, release-facing install guide, and v0.2.0 local/tarball readiness added |
+| Java MVP Packaging | Active productization | Init CLI, `ph bearshell`, `ph bearshell` awareness injection, bootstrap injection, packaged install/run/verify smoke commands, release-facing install guide, and v0.2.0 local/tarball readiness added |
 | Desktop App Track | Not decomposed | Not started |
 
 ## Active Work Queue

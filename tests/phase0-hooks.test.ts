@@ -233,6 +233,15 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(injection.block).toContain("주의:")
   })
 
+  it("includes ph bearshell awareness in the injected guidance", () => {
+    const targetFile = fixturePath("ReservationController.java")
+
+    const injection = createInjectionBlock(targetFile, fixtureWorkspace)
+
+    expect(injection.block).toContain("repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.")
+    expect(injection.block).not.toContain("omo sparkshell")
+  })
+
   it("keeps selectedRules evidence as rule path strings", () => {
     const targetFile = fixturePath("ReservationController.java")
 

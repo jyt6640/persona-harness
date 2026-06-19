@@ -51,6 +51,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     "",
     "주의:",
     "이 Phase 0 블록은 .persona/rules 정본과 최소 frontmatter/glob/scenario catalog layer를 읽는 MVP rule-loader 결과이며, 아직 full rule engine은 아니다.",
+    "repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.",
   ].join("\n")
 
   return {

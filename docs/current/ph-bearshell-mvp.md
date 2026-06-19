@@ -46,6 +46,7 @@ The `ph` and `persona-harness` bins share the same CLI entry.
 - `PH_BEARSHELL_CONDENSE=0`
 - `PH_BEARSHELL_CONDENSE_BUDGET`
 - command launch failure message for missing commands
+- agent awareness injection that tells the model to prefer `ph bearshell` for repo inspection, CLI smoke tests, and large output checks
 
 ## Not Included Yet
 
@@ -54,14 +55,13 @@ The `ph` and `persona-harness` bins share the same CLI entry.
 - tmux pane inspection
 - session-context ranking
 - spark-model summarization
-- agent awareness injection that tells the model to prefer `ph bearshell`
 
 ## Why This Shape
 
 This keeps the first `ph bearshell` loop small enough to verify through the packaged CLI surface while preserving the OMO shape:
 
 - helper command first
-- awareness/rule injection later
+- minimal awareness/rule injection after the helper command is verified
 - native/runtime sidecar later
 
 The MVP is useful now for local and tarball verification without claiming full OMO parity.
@@ -78,6 +78,7 @@ npm pack --dry-run
 node dist/cli/index.js bearshell --help
 node dist/cli/index.js bearshell node -e "console.log('ph-ok')"
 node dist/cli/index.js bearshell --shell "printf ph-shell"
+npx vitest run tests/phase0-hooks.test.ts
 ```
 
 Packaged install check:
@@ -92,4 +93,4 @@ npx persona-harness bearshell --shell "printf persona-ok"
 
 ## Next Loop
 
-Decide whether to add `ph bearshell` awareness injection to Persona Harness rules, similar to OMO `sparkshell-awareness`.
+Decide whether `ph bearshell` needs native sidecar, tmux pane inspection, or session-context-aware condensation.
