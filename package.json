@@ -10,7 +10,10 @@
   },
   "files": [
     "dist",
+    "scripts/check-mvp-scope.mjs",
+    "scripts/cleanup-phase-artifacts.mjs",
     "scripts/report-rule-diagnostics.mjs",
+    "docs/mvp-scope-status.json",
     "packages/shared-skills",
     ".persona/harness.jsonc",
     ".persona/rules",
@@ -22,10 +25,13 @@
     "experiment:phase0:prepare": "node scripts/run-phase0-experiment.mjs --no-run",
     "experiment:phase0:step2-3": "node scripts/run-phase0-step2-3-experiment.mjs --run",
     "experiment:phase0:step2-3:prepare": "node scripts/run-phase0-step2-3-experiment.mjs",
+    "check:scope": "node scripts/check-mvp-scope.mjs",
+    "cleanup:experiments": "node scripts/cleanup-phase-artifacts.mjs",
     "observe:phase1-2": "node scripts/observe-phase1-2.mjs",
     "observe:test-contract": "node scripts/observe-test-contract.mjs",
     "report:rules": "npm run build && node scripts/report-rule-diagnostics.mjs",
-    "test": "vitest run",
+    "test": "npm run check:scope && vitest run",
+    "test:unit": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {

@@ -157,6 +157,8 @@ npm run build
 npm run report:rules
 ```
 
+`npm test`는 Vitest 전에 diagnostics-only scope check를 함께 실행한다. scope drift가 보이더라도 finding 자체는 test failure gate가 아니며, scope report만 보고 싶으면 `npm run check:scope`를 실행한다.
+
 테스트는 매 테스트마다 `.persona-test-fixtures/`를 비우고 Java fixture를 다시 만든다. 이 경로는 Git에 커밋하지 않는다.
 
 `npm run report:rules`는 빌드 후 `.persona/rules` frontmatter diagnostics를 읽고 ignored output인 `.persona/evidence/phase-next/rule-diagnostics-report.md`에 markdown report를 남긴다. 이 report는 diagnostics-only surface다. invalid metadata를 보여주지만 rule loading, rule selection, injection, test, typecheck, build를 막지 않는다.
