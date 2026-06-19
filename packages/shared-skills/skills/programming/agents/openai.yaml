@@ -1,0 +1,15 @@
+interface:
+  display_name: "programming (omo)"
+  short_description: "Strict Python, Rust, TypeScript, Go, and Java recipes"
+  search_terms:
+    - "programming"
+    - "python"
+    - "rust"
+    - "typescript"
+    - "go"
+    - "java"
+    - "spring boot"
+    - "gradle"
+    - "tdd"
+    - "strict types"
+  default_prompt: "Use $programming to follow the strict language recipe, load the right reference files, and verify the requested code change with the matching toolchain."

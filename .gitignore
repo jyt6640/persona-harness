@@ -19,6 +19,8 @@ example/
 .persona/evidence/
 .persona-test-fixtures/
 fixtures/
+!packages/shared-skills/**/fixtures/
+!packages/shared-skills/**/fixtures/**
 tmp/
 
 # Package-manager noise.

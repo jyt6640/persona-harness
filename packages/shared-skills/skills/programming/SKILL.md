@@ -1,11 +1,11 @@
 ---
 name: programming
-description: "MUST USE for ANY work on .py .pyi .rs .ts .tsx .mts .cts .go files. One philosophy: strict types, modern stacks (Pydantic v2 / serde+thiserror / Zod / gin+sqlc+pgx+slog), modern toolchains (uv+basedpyright+ruff / cargo+clippy+miri / Bun+Biome+tsc / gofumpt+golangci-lint v2+nilaway+go-race), parse-don't-validate, exhaustive match, typed errors, no any/unwrap/panic, 250 LOC ceiling, TDD. Routes to references/{python,rust,typescript,rust-ub,go}/. Triggers: write/edit Python/Rust/TypeScript/Go code, new project, gin server, bubbletea TUI, CJK IME, connect-go RPC, sqlc pgx, branded ids, exhaustive match, unsafe Rust, miri, oversized file, refactor, TDD, e2e test, arena, allocator, bumpalo, const fn, const generics, comptime, zero-alloc, bitfield, repr, scopeguard, errdefer, Zig-like, zerocopy, packed struct."
+description: "MUST USE for ANY work on .py .pyi .rs .ts .tsx .mts .cts .go .java files or their build files. One philosophy: strict types, modern stacks (Pydantic v2 / serde+thiserror / Zod / gin+sqlc+pgx+slog / Spring Boot), modern toolchains, parse-don't-validate, exhaustive variants, typed errors, no any/unwrap/panic/raw RuntimeException, 250 LOC ceiling, TDD. Routes to references/{python,rust,typescript,rust-ub,go,java}/. Triggers: Python/Rust/TypeScript/Go/Java code, new project, backend, Spring Boot, JPA, JDBC, Gradle, Maven, gin, bubbletea, CJK IME, connect-go RPC, sqlc pgx, branded ids, exhaustive match, unsafe Rust, miri, oversized file, refactor, TDD, e2e test, arena, allocator, const fn, zerocopy, packed struct."
 ---
 
 # Programming
 
-You are a senior engineer who writes Python, Rust, and TypeScript with one shared discipline. **Type-strict. Stack-first. Async-correct. Architecturally honest about file size.**
+You are a senior engineer who writes Python, Rust, TypeScript, Go, and Java with one shared discipline. **Type-strict. Stack-first. Async-correct. Architecturally honest about file size.**
 
 This skill is an index. The hard per-language rules live under `references/`. Load the language-specific reference **before** writing a single line of code.
 
@@ -24,6 +24,7 @@ This skill is an index. The hard per-language rules live under `references/`. Lo
    | `.rs`, `Cargo.toml`, "Rust" | `references/rust/README.md` + every file under `references/rust/` that the README tells you to load on demand. **IF the change touches `unsafe`, `*mut`, `*const`, `MaybeUninit`, FFI, `unsafe impl Send/Sync`, or a custom lock-free primitive: ALSO load `references/rust-ub/README.md` plus every file under `references/rust-ub/`.** |
    | `.ts`, `.tsx`, `.mts`, `.cts`, "TypeScript" | `references/typescript/README.md` + every file under `references/typescript/` that the README tells you to load on demand |
    | `.go`, `go.mod`, `go.sum`, `.golangci.yml`, `*.proto` next to a Go module, "Go" / "Golang" | `references/go/README.md` + every file under `references/go/` that the README tells you to load on demand |
+   | `.java`, `build.gradle`, `settings.gradle`, `pom.xml`, "Java" / "Spring" | `references/java/README.md` + `references/java/foundations.md` + the focused Java reference that the README tells you to load on demand |
 
 3. Only after the references are loaded, apply the **shared philosophy** below plus the per-language iron list from the reference.
 
@@ -31,17 +32,17 @@ This skill is an index. The hard per-language rules live under `references/`. Lo
 
 ---
 
-## Shared philosophy (all three languages)
+## Shared philosophy (all supported languages)
 
 These are not style preferences. They are the six axioms every recipe in `references/` derives from.
 
 1. **The type system is your proof system.** Make illegal states unrepresentable. The compiler / type checker is the cheapest test you will ever run. If a bug can be expressed as a type error, it is *required* to be expressed as a type error.
 
-2. **Parse, don't validate.** Untrusted input crosses a boundary exactly once - at the boundary it is parsed into a typed value (Pydantic v2 in Python, `serde` + `#[derive]` in Rust, Zod in TypeScript). Inside the boundary, code receives typed values and never re-validates. The boundary owns trust; the interior owns logic.
+2. **Parse, don't validate.** Untrusted input crosses a boundary exactly once - at the boundary it is parsed into a typed value (Pydantic v2 in Python, `serde` + `#[derive]` in Rust, Zod in TypeScript, request/command/value objects in Java). Inside the boundary, code receives typed values and never re-validates. The boundary owns trust; the interior owns logic.
 
-3. **One name = one concept.** A `UserId` is not a `string`. A `Seconds` is not a `Milliseconds`. Use `NewType` (Python), newtype tuple structs (Rust), or branded types (TypeScript) for every distinct semantic primitive. The compiler refuses to let two semantic units mix.
+3. **One name = one concept.** A `UserId` is not a `string`. A `Seconds` is not a `Milliseconds`. Use `NewType` (Python), newtype tuple structs (Rust), branded types (TypeScript), named Go types, or Java value objects for every distinct semantic primitive. The compiler refuses to let two semantic units mix.
 
-4. **Exhaustive variant matching, always.** Discriminated unions and enums are matched exhaustively. Python: `match` + `case unreachable: assert_never(unreachable)`. Rust: `match` (the compiler enforces). TypeScript: `switch` + `assertNever`. **`if`/`elif`/`else` is forbidden for discriminating on a tagged variant** - it silently swallows new variants.
+4. **Exhaustive variant matching, always.** Discriminated unions, sealed hierarchies, and enums are matched exhaustively. Python: `match` + `case unreachable: assert_never(unreachable)`. Rust: `match` (the compiler enforces). TypeScript: `switch` + `assertNever`. Go: sealed interface + exhaustive linter. Java: sealed interface or enum + exhaustive `switch`. **`if`/`elif`/`else` is forbidden for discriminating on a tagged variant** - it silently swallows new variants.
 
 5. **Trust framework guarantees. Validate only at boundaries.** No null checks for values the type system already proves non-null. No `try/except` around code that cannot raise. No `unwrap`/`!`/`as` to paper over a contract you should have encoded in types. No defensive layer for a scenario you cannot name.
 
@@ -125,19 +126,19 @@ When tests cover LLM prompts or agent outputs, assert on **parsed structure, dec
 
 Apply unless the per-language reference overrides with something stricter.
 
-| Rule | Python | Rust | TypeScript | Go |
-|---|---|---|---|---|
-| Immutable by default | `@dataclass(frozen=True, slots=True)` / Pydantic `frozen=True` | every binding is `let` (not `let mut`) unless mutation is the documented purpose | every field is `readonly`; arrays are `readonly T[]` | value types, unexported fields, no mutation methods unless mutation is the purpose |
-| Branded primitives | `UserId = NewType("UserId", int)` | `struct UserId(u64);` (newtype tuple) | `type UserId = Brand<string, "UserId">` | `type UserID string` + smart constructor with unexported field |
-| Exhaustive variant matching | `match` + `assert_never` | `match` (compiler-enforced) | `switch` + `assertNever` | sealed interface + type switch + **`exhaustive` linter** (the compiler will not help) |
-| No untyped escape hatches | no `Any` in public sigs, no `cast`, no `# type: ignore` | no `unwrap`/`expect` outside `main`/tests, no `as` for narrowing, no `#[allow]` to silence real warnings | no `any`, no `as` (except `as const`, `satisfies`), no `!`, no `@ts-ignore`, no `@ts-expect-error` | no `interface{}` / bare `any` in domain sigs; no `_ = err`; no `//nolint` without reason |
-| No bare error strings | typed exception dataclass with `__str__` | `thiserror` enum (lib) or `anyhow` with `.context(...)` (app) | `Error` subclass with typed fields | sentinel `errors.New` + typed `*XError` struct; wrap with `%w`; check via `errors.Is/As` |
-| Boundary catch only | catch the exact exception you expect; broad `except Exception` only in `main()`, with logging + re-raise | `?` everywhere; never `panic!` in library code | `catch` must narrow with `instanceof` and re-throw or convert; no empty catch | every `(T, error)` checked; `panic` only in `main`/tests; one `httperr.Write` funnel in handlers |
-| Resources via RAII | `with` (sync) / `async with` (async) | `Drop` impl or RAII guard | `using`/`await using` (TC39 explicit resource management) | `defer x.Close()` immediately after acquisition; `bodyclose`/`sqlclosecheck` linters enforce |
-| Async runtime is mandatory | `anyio` (NEVER bare `asyncio`) | `tokio` (`async-std` is unmaintained) | platform-native async (Bun/Node) with structured cancellation via `AbortSignal` | `context.Context` as first param + `errgroup` for structured concurrency; `-race` on every test |
-| Modern HTTP client | [`httpx2`](https://github.com/pydantic/httpx2) with HTTP/2 + brotli + zstd | `reqwest` with rustls | `ky` (default) / `undici` direct API (Node perf) - NEVER bare `fetch` in prod | stdlib `net/http.Client` with tuned `Transport` + `go-retryablehttp` for retry/backoff |
-| No parameter mutation | params are inputs; produce a new value | `&mut` only when mutation is the documented purpose | parameters never reassigned (`noParameterAssign`) | value receivers when not mutating; pointer receivers only for genuine mutation; `copylocks` vet enforces |
-| No helpers for one-off | inline a 3-line operation; do not abstract until the second caller | same | same | same |
+| Rule | Python | Rust | TypeScript | Go | Java |
+|---|---|---|---|---|---|
+| Immutable by default | `@dataclass(frozen=True, slots=True)` / Pydantic `frozen=True` | every binding is `let` (not `let mut`) unless mutation is the documented purpose | every field is `readonly`; arrays are `readonly T[]` | value types, unexported fields, no mutation methods unless mutation is the purpose | records/value objects for immutable data; classes own lifecycle changes via named behavior |
+| Branded primitives | `UserId = NewType("UserId", int)` | `struct UserId(u64);` (newtype tuple) | `type UserId = Brand<string, "UserId">` | `type UserID string` + smart constructor with unexported field | `record UserId(...)` or final value type with invariant-preserving factory |
+| Exhaustive variant matching | `match` + `assert_never` | `match` (compiler-enforced) | `switch` + `assertNever` | sealed interface + type switch + **`exhaustive` linter** (the compiler will not help) | sealed interface / enum + exhaustive `switch` |
+| No untyped escape hatches | no `Any` in public sigs, no `cast`, no `# type: ignore` | no `unwrap`/`expect` outside `main`/tests, no `as` for narrowing, no `#[allow]` to silence real warnings | no `any`, no `as` (except `as const`, `satisfies`), no `!`, no `@ts-ignore`, no `@ts-expect-error` | no `interface{}` / bare `any` in domain sigs; no `_ = err`; no `//nolint` without reason | no raw types, unchecked casts, unsafe `Optional.get()`, broad suppression |
+| No bare error strings | typed exception dataclass with `__str__` | `thiserror` enum (lib) or `anyhow` with `.context(...)` (app) | `Error` subclass with typed fields | sentinel `errors.New` + typed `*XError` struct; wrap with `%w`; check via `errors.Is/As` | domain exception + protocol-neutral `ErrorCode`; handler maps to protocol |
+| Boundary catch only | catch the exact exception you expect; broad `except Exception` only in `main()`, with logging + re-raise | `?` everywhere; never `panic!` in library code | `catch` must narrow with `instanceof` and re-throw or convert; no empty catch | every `(T, error)` checked; `panic` only in `main`/tests; one `httperr.Write` funnel in handlers | catch narrow exceptions; catch-all only at boundary handler with context |
+| Resources via RAII | `with` (sync) / `async with` (async) | `Drop` impl or RAII guard | `using`/`await using` (TC39 explicit resource management) | `defer x.Close()` immediately after acquisition; `bodyclose`/`sqlclosecheck` linters enforce | try-with-resources or framework-owned lifecycle |
+| Async runtime is mandatory | `anyio` (NEVER bare `asyncio`) | `tokio` (`async-std` is unmaintained) | platform-native async (Bun/Node) with structured cancellation via `AbortSignal` | `context.Context` as first param + `errgroup` for structured concurrency; `-race` on every test | structured `ExecutorService`/virtual-thread ownership; no hidden shared mutable state |
+| Modern HTTP client | [`httpx2`](https://github.com/pydantic/httpx2) with HTTP/2 + brotli + zstd | `reqwest` with rustls | `ky` (default) / `undici` direct API (Node perf) - NEVER bare `fetch` in prod | stdlib `net/http.Client` with tuned `Transport` + `go-retryablehttp` for retry/backoff | Spring `RestClient`/`WebClient` with timeout/retry policy |
+| No parameter mutation | params are inputs; produce a new value | `&mut` only when mutation is the documented purpose | parameters never reassigned (`noParameterAssign`) | value receivers when not mutating; pointer receivers only for genuine mutation; `copylocks` vet enforces | parameters are inputs; mutation belongs to an owning object method |
+| No helpers for one-off | inline a 3-line operation; do not abstract until the second caller | same | same | same | same |
 
 ---
 
@@ -145,21 +146,21 @@ Apply unless the per-language reference overrides with something stricter.
 
 Use these unless the project's manifest explicitly picks something else.
 
-| Domain | Python | Rust | TypeScript | Go |
-|---|---|---|---|---|
-| Data validation / boundary parse | **Pydantic v2** | **serde** + `#[derive(Deserialize)]` + `validator` | **Zod v4** (Standard Schema) | `validator/v10` (HTTP) + `protovalidate` (proto) + smart constructors (domain) |
-| Internal value object | `@dataclass(frozen=True, slots=True)` | newtype tuple struct or plain `struct` | `type` alias with `readonly` | struct with unexported fields + `NewX(...)` constructor |
-| Error types | typed exception dataclass | `thiserror` (lib) + `anyhow` (app) | `Error` subclass + Result pattern | sentinel `errors.New` + typed `*XError` struct + `%w` wrap |
-| HTTP client | [`httpx2`](https://github.com/pydantic/httpx2) | `reqwest` | `ky` / `undici` | stdlib `net/http` + `go-retryablehttp` |
-| Web framework | **FastAPI** | **axum** | **Hono** + `hono-openapi` | **gin** (de facto, ~48%) / `chi` (minimalist) / `connect-go` (RPC) |
-| ORM / DB | SQLAlchemy 2.x async + `asyncpg` | `sqlx` (compile-time checked) | **Drizzle** | **sqlc** (codegen from `.sql`) + `pgx/v5` + `goose` migrations |
-| CLI | **typer** + `rich` | **clap** (derive) + `color-eyre` + `indicatif` | `@clack/prompts` + `commander` | **cobra** + `huh` (prompts) + `slog` |
-| Logging / observability | `structlog` (prod) or `rich.logging` (dev) | **tracing** + `tracing-subscriber` | `pino` (structured JSON) | stdlib **`log/slog`** (NEVER logrus/zap/zerolog for new code) |
-| Testing | `pytest` | `cargo nextest` + `proptest` + `insta` | `bun test` / `vitest` | stdlib `testing` + `testify/require` + `goleak` + `autogold` + `rapid` + `testcontainers` |
-| Data / analytics | **polars** + **duckdb** + `numpy` (NEVER pandas) | `polars-rs` or `arrow` | (defer to backend service) | `arrow-go` + DuckDB-Go bindings + `gonum` |
-| LLM / agent | **pydantic-ai** | (call out to Python via subprocess) | **Vercel AI SDK** | direct `net/http` + Connect (langchaingo not recommended) |
-| TUI | **textual** | `ratatui` | `@clack/prompts` or ink | **bubbletea v2 RC** + `bubbles/v2` + `lipgloss/v2` (v2 mandatory for CJK IME) |
-| Config from env | **pydantic-settings** | `figment` or `config` | `zod` + `process.env` | `caarlos0/env/v11` (struct-tag env) |
+| Domain | Python | Rust | TypeScript | Go | Java |
+|---|---|---|---|---|---|
+| Data validation / boundary parse | **Pydantic v2** | **serde** + `#[derive(Deserialize)]` + `validator` | **Zod v4** (Standard Schema) | `validator/v10` (HTTP) + `protovalidate` (proto) + smart constructors (domain) | Bean Validation at boundary + command/value factories |
+| Internal value object | `@dataclass(frozen=True, slots=True)` | newtype tuple struct or plain `struct` | `type` alias with `readonly` | struct with unexported fields + `NewX(...)` constructor | `record` or final class with private constructor |
+| Error types | typed exception dataclass | `thiserror` (lib) + `anyhow` (app) | `Error` subclass + Result pattern | sentinel `errors.New` + typed `*XError` struct + `%w` wrap | unchecked hierarchy + `ErrorCode` catalogue |
+| HTTP client | [`httpx2`](https://github.com/pydantic/httpx2) | `reqwest` | `ky` / `undici` | stdlib `net/http` + `go-retryablehttp` | Spring `RestClient` / `WebClient` |
+| Web framework | **FastAPI** | **axum** | **Hono** + `hono-openapi` | **gin** (de facto, ~48%) / `chi` (minimalist) / `connect-go` (RPC) | Spring Boot 4.x default; project harness may choose Boot 3.x, another JVM framework, or none |
+| ORM / DB | SQLAlchemy 2.x async + `asyncpg` | `sqlx` (compile-time checked) | **Drizzle** | **sqlc** (codegen from `.sql`) + `pgx/v5` + `goose` migrations | project harness chooses JPA/JDBC/MyBatis/Flyway/Liquibase; Repository boundary stays invariant |
+| CLI | **typer** + `rich` | **clap** (derive) + `color-eyre` + `indicatif` | `@clack/prompts` + `commander` | **cobra** + `huh` (prompts) + `slog` | picocli or thin `main` + typed library core |
+| Logging / observability | `structlog` (prod) or `rich.logging` (dev) | **tracing** + `tracing-subscriber` | `pino` (structured JSON) | stdlib **`log/slog`** (NEVER logrus/zap/zerolog for new code) | SLF4J + Micrometer/OpenTelemetry |
+| Testing | `pytest` | `cargo nextest` + `proptest` + `insta` | `bun test` / `vitest` | stdlib `testing` + `testify/require` + `goleak` + `autogold` + `rapid` + `testcontainers` | JUnit/AssertJ default; company/project harness owns naming and integration-test intensity |
+| Data / analytics | **polars** + **duckdb** + `numpy` (NEVER pandas) | `polars-rs` or `arrow` | (defer to backend service) | `arrow-go` + DuckDB-Go bindings + `gonum` | defer to service/DB unless project chooses a JVM data stack |
+| LLM / agent | **pydantic-ai** | (call out to Python via subprocess) | **Vercel AI SDK** | direct `net/http` + Connect (langchaingo not recommended) | direct HTTP client or project SDK behind a port |
+| TUI | **textual** | `ratatui` | `@clack/prompts` or ink | **bubbletea v2 RC** + `bubbles/v2` + `lipgloss/v2` (v2 mandatory for CJK IME) | picocli/JLine when a CLI needs interaction |
+| Config from env | **pydantic-settings** | `figment` or `config` | `zod` + `process.env` | `caarlos0/env/v11` (struct-tag env) | Spring `@ConfigurationProperties` or typed config value objects |
 
 A bare default constructor for any of these (no timeouts, no pool tuning, no schema) is a bug. See the per-language reference for the canonical production defaults.
 
@@ -167,16 +168,16 @@ A bare default constructor for any of these (no timeouts, no pool tuning, no sch
 
 ## Modern toolchain - the only acceptable setup
 
-| Tool category | Python | Rust | TypeScript | Go |
-|---|---|---|---|---|
-| Package / project manager | **uv** (NEVER pip/poetry/conda) | **cargo** + `cargo-nextest` + `cargo-machete` + `cargo-deny` | **Bun** (runtime + package manager); pnpm if Node is forced | **`go modules`** + `go work` for monorepos |
-| Type checker | **basedpyright** with `typeCheckingMode = "all"` | the Rust compiler with `-D warnings` + clippy `pedantic` + `nursery` + `cargo` groups | `tsc --noEmit` (or `tsgo` when available) with `strict` + `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` + `verbatimModuleSyntax` | the Go compiler + **`golangci-lint v2`** with the strict bundle + **`nilaway`** (nil-deref static analysis) |
-| Linter + formatter | **ruff** with `select = ["ALL"]` | `clippy` + `rustfmt` | **Biome** (single binary - replaces ESLint + Prettier) | **`gofumpt`** (stricter gofmt) + `goimports -local` + `golangci-lint v2` |
-| Test runner | **pytest** | **cargo-nextest** | `bun test` / `vitest` | stdlib `go test -race -shuffle=on -count=1` + `goleak` |
-| UB / soundness gate | (n/a) | **nightly miri** with strict provenance + Tree Borrows pass | (n/a) | **`nilaway`** + `-race` detector + `goleak` are the equivalent gate |
-| Disposable scripts | **PEP 723** inline metadata + `uv run script.py` | **rust-script** with inline `Cargo.toml` block | `bun run script.ts` | `//go:build ignore` + `go run script.go` |
-| Bootstrap a new project | `scripts/python/new-project.py` | `scripts/rust/new-project.py` | `scripts/typescript/new-project.ts` | `scripts/go/new-project.py` |
-| Pre-commit / CI gate | `ruff check . && basedpyright && pytest` | `cargo +nightly clippy -- -D warnings && cargo nextest run && cargo +nightly miri test` | `bunx biome check . && bunx tsc --noEmit && bun test` | `gofumpt -l . && golangci-lint run ./... && nilaway ./... && go test -race -shuffle=on -count=1 ./...` |
+| Tool category | Python | Rust | TypeScript | Go | Java |
+|---|---|---|---|---|---|
+| Package / project manager | **uv** (NEVER pip/poetry/conda) | **cargo** + `cargo-nextest` + `cargo-machete` + `cargo-deny` | **Bun** (runtime + package manager); pnpm if Node is forced | **`go modules`** + `go work` for monorepos | Gradle wrapper + Java toolchain; Maven only when project-owned |
+| Type checker | **basedpyright** with `typeCheckingMode = "all"` | the Rust compiler with `-D warnings` + clippy `pedantic` + `nursery` + `cargo` groups | `tsc --noEmit` (or `tsgo` when available) with `strict` + `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` + `verbatimModuleSyntax` | the Go compiler + **`golangci-lint v2`** with the strict bundle + **`nilaway`** (nil-deref static analysis) | Java compiler + Error Prone + NullAway/JSpecify when configured |
+| Linter + formatter | **ruff** with `select = ["ALL"]` | `clippy` + `rustfmt` | **Biome** (single binary - replaces ESLint + Prettier) | **`gofumpt`** (stricter gofmt) + `goimports -local` + `golangci-lint v2` | Spotless + google-java-format |
+| Test runner | **pytest** | **cargo-nextest** | `bun test` / `vitest` | stdlib `go test -race -shuffle=on -count=1` + `goleak` | JUnit Platform/Jupiter + Gradle `test` |
+| UB / soundness gate | (n/a) | **nightly miri** with strict provenance + Tree Borrows pass | (n/a) | **`nilaway`** + `-race` detector + `goleak` are the equivalent gate | ArchUnit + Error Prone + NullAway are the equivalent discipline gates |
+| Disposable scripts | **PEP 723** inline metadata + `uv run script.py` | **rust-script** with inline `Cargo.toml` block | `bun run script.ts` | `//go:build ignore` + `go run script.go` | thin `main` class or JShell only when project-free |
+| Bootstrap a new project | `scripts/python/new-project.py` | `scripts/rust/new-project.py` | `scripts/typescript/new-project.ts` | `scripts/go/new-project.py` | `scripts/java/new-project.py` |
+| Pre-commit / CI gate | `ruff check . && basedpyright && pytest` | `cargo +nightly clippy -- -D warnings && cargo nextest run && cargo +nightly miri test` | `bunx biome check . && bunx tsc --noEmit && bun test` | `gofumpt -l . && golangci-lint run ./... && nilaway ./... && go test -race -shuffle=on -count=1 ./...` | `./gradlew spotlessCheck compileJava test check` when configured |
 
 A `tsconfig.json` with `"strict": true` alone is **not** strict. The reference enumerates the additional flags. Same for `pyproject.toml` and `Cargo.toml` - the references contain the canonical full configuration.
 
@@ -334,6 +335,8 @@ uv run scripts/python/check-no-excuse-rules.py <changed paths>
 bash scripts/rust/check-no-excuse-rules.sh <changed paths>
 # TypeScript
 bun run scripts/typescript/check-no-excuse-rules.ts <changed paths>
+# Java
+bash scripts/java/check-no-excuse-rules.sh <changed paths>
 ```
 
 ### Step 2 — interpret
@@ -454,10 +457,34 @@ These two skills are not optional cosmetics. They are the recovery path for the 
 | Testing (Given/When/Then, table-driven, fakes-over-mocks, autogold, rapid) | `references/go/testing.md` |
 | Disposable `go run` scripts | `references/go/one-liners.md` |
 
+### Java (`.java`, `build.gradle`, `settings.gradle`, `pom.xml`)
+
+**READ `references/java/README.md` FIRST.** Then read `references/java/foundations.md` and load one focused reference:
+
+| Need | Load |
+|---|---|
+| Java syntax, references, type forms, resources, exceptions | `references/java/language-core.md` |
+| constructors, equality, generics, enum, lambda, stream, Optional | `references/java/java-idioms.md` |
+| role/responsibility/collaboration, encapsulation, patterns | `references/java/object-collaboration.md` |
+| naming, method/class shape, smells, refactoring, boundaries | `references/java/code-quality-refactoring.md` |
+| performance, memory, GC, IO, logging, DB cost | `references/java/performance-discipline.md` |
+| threads, locks, futures, async, reactive, shared state | `references/java/concurrency-discipline.md` |
+| TDD, unit tests, xUnit fixtures, doubles, test smells | `references/java/test-design.md` |
+| Spring, HTTP, persistence, transactions, DB, API errors, observability | `references/java/backend.md` |
+| Runtime/build/framework/static-analysis seams | `references/java/technology-seams.md` |
+| Layers, dependency direction, package structure | `references/java/architecture.md` |
+| Entity / VO / static factory / Policy / immutability / equals | `references/java/domain-model.md` |
+| Repository port & adapter, SQL, mapping | `references/java/repository-pattern.md` |
+| Service, Validator, transaction, Request/Command | `references/java/application-layer.md` |
+| ErrorCode, exception hierarchy, central handler | `references/java/error-handling.md` |
+| Method design + naming | `references/java/method-and-naming.md` |
+| Full backend test discipline | `references/java/testing.md` |
+| Rejected patterns | `references/java/anti-patterns.md` |
+
 ---
 
 ## Activation
 
-This skill activates whenever you are writing or modifying any `.py`, `.pyi`, `.rs`, `.ts`, `.tsx`, `.mts`, `.cts`, `.go` file, or any project manifest (`pyproject.toml`, `Cargo.toml`, `package.json`, `tsconfig.json`, `biome.json`, `go.mod`, `go.sum`, `.golangci.yml`, `Taskfile.yml`, `buf.yaml`, `sqlc.yaml`). **Even one-off scripts get the full treatment** - that is the whole point of `uv run` + PEP 723, `rust-script`, `bun run`, and `go run` + `//go:build ignore`: production hygiene with throwaway ergonomics.
+This skill activates whenever you are writing or modifying any `.py`, `.pyi`, `.rs`, `.ts`, `.tsx`, `.mts`, `.cts`, `.go`, `.java` file, or any project manifest (`pyproject.toml`, `Cargo.toml`, `package.json`, `tsconfig.json`, `biome.json`, `go.mod`, `go.sum`, `.golangci.yml`, `Taskfile.yml`, `buf.yaml`, `sqlc.yaml`, `build.gradle`, `build.gradle.kts`, `settings.gradle`, `settings.gradle.kts`, `pom.xml`). **Even one-off scripts get the full treatment** - that is the whole point of `uv run` + PEP 723, `rust-script`, `bun run`, and `go run` + `//go:build ignore`: production hygiene with throwaway ergonomics.
 
 The references contain the recipes. **Read them before writing code. Re-read them when the model drifts.** The post-write review loop is non-negotiable.

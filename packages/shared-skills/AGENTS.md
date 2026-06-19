@@ -34,7 +34,7 @@ Removed Persona Harness exclusions:
 - `lcx-contribute-bug-fix`
 - `lcx-doctor`
 
-Per-skill layout: `SKILL.md` (YAML frontmatter `name:` + single-line `description:` with triggers) + optional `references/` (the real content; SKILL.md is a router/index) + optional `scripts/` + optional `agents/openai.yaml` (2 skills carry the Codex agent role declaration).
+Per-skill layout: `SKILL.md` (YAML frontmatter `name:` + single-line `description:` with triggers) + optional `references/` (the real content; SKILL.md is a router/index) + optional `scripts/` + optional `fixtures/` for regression samples + optional `agents/openai.yaml` (3 skills carry the Codex agent role declaration).
 
 ## PIPELINE
 
