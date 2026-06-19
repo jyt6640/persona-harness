@@ -6,7 +6,7 @@ Last updated: 2026-06-19
 
 Persona Harness is currently best described as:
 
-> `0.2.0`: Java/Spring backend Clean Code injection MVP with diagnostics, scoped shared-skill support, artifact hygiene, packaged local demo validation, and Java role read follow-up.
+> `0.2.1`: Java/Spring backend Clean Code injection MVP with diagnostics, scoped shared-skill support, artifact hygiene, packaged local/tarball validation, Java role read follow-up, and npm-facing metadata readiness.
 
 It is no longer a pure Phase 0 proof-of-concept. It is also not a productized `1.0`.
 
@@ -24,7 +24,7 @@ That claim is deliberately blocked by the 3-pair injection value stopping rule.
 
 ### Semver-Like Project Version
 
-Recommended current version: `0.2.0`.
+Recommended current version: `0.2.1`.
 
 Why not `0.1.x`:
 
@@ -34,12 +34,13 @@ Why not `0.1.x`:
 - A/B evidence collection and rubric-based review exist.
 - Scope checker and cleanup scripts now exist.
 
-Why not `0.2.0-alpha`:
+Why plain `0.2.1`:
 
 - Local install/init/bootstrap productization exists.
 - Java MVP package demo exists.
 - Gradle Java/Spring A/B evidence window reached a continue-java-mvp decision.
 - Java role discovery and role read follow-up now make Controller/Service/Repository/DTO reads observable.
+- The package remains local/tarball-first, but the support posture no longer needs prerelease naming.
 
 Why not `0.3.0`:
 
@@ -59,12 +60,12 @@ Why not `1.0.0`:
 | --- | --- | --- |
 | Java/Spring injection MVP | MVP-complete | deterministic rule injection and tests exist |
 | Rule metadata diagnostics | MVP-complete | diagnostics-only report surface exists |
-| Backend Clean Code guidance | active alpha | rubric and Java guidance exist, but effect evidence is still open |
-| Shared skills | experimental alpha | `programming` active support, frontend/TypeScript experimental, infra parking |
-| A/B effect evidence | active validation | 1 comparable regraded pair, ON-positive 1/1 |
-| Artifact hygiene | operational alpha | cleanup policy/script and actual cleanup applied |
-| Docs governance | operational alpha | compact board and taxonomy exist, full migration not done |
-| Product packaging/demo | not started | not decomposed |
+| Backend Clean Code guidance | active local MVP | rubric and Java guidance exist; 3/3 comparable regraded pairs are ON-positive |
+| Shared skills | packaged reference / limited active support | `programming` active support, frontend/TypeScript experimental, infra parking |
+| A/B effect evidence | continue-java-mvp | 3 comparable regraded pairs, ON-positive 3/3 |
+| Artifact hygiene | operational local MVP | cleanup policy/script and actual cleanup applied |
+| Docs governance | operational local MVP | compact board and taxonomy exist, full migration not done |
+| Product packaging/demo | active local/tarball MVP | init/bootstrap/java-mvp demos, support contract, and package dry-run checks exist |
 | Desktop app track | not started | not decomposed |
 
 ## Completed Work
@@ -357,7 +358,7 @@ At that point the current window would be 1 positive and 1 mixed. One final comp
 Recommended label:
 
 ```text
-0.2.0
+0.2.1
 ```
 
 Short version name:
@@ -368,4 +369,4 @@ Java Backend MVP Local Productization Candidate
 
 Current status sentence:
 
-> Persona Harness has a working Java/Spring backend injection MVP with local install/demo validation, rule diagnostics, scoped shared-skill support, and Java role read follow-up. It is not yet an npm-published or multi-domain product.
+> Persona Harness has a working Java/Spring backend injection MVP with local/tarball install validation, rule diagnostics, scoped shared-skill support, Java role read follow-up, and npm-facing metadata readiness. It is not yet an npm-published or multi-domain product.

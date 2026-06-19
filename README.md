@@ -49,11 +49,11 @@ find .persona/evidence -type f | sort
 - Java file이 아직 없는 0-start 프로젝트는 `README.md` 또는 `requirements.md`를 먼저 읽게 실행할 수 있지만, 가장 직접적인 injection 검증은 Java/Spring target file read다.
 - 이 흐름은 generated Spring app product quality나 rule enforcement를 보증하지 않는다.
 
-## v0.2.0 Local Readiness
+## v0.2.1 Local Readiness
 
-`v0.2.0`은 public npm publish 전 단계다. 지금 보장하는 설치 경로는 local path install과 tarball install이며, npm registry에서 `npm install -D persona-harness`로 설치하는 흐름은 아직 지원 대상으로 쓰지 않는다.
+`v0.2.1`은 public npm publish 전 단계다. 지금 보장하는 설치 경로는 local path install과 tarball install이며, npm registry에서 `npm install -D persona-harness`로 설치하는 흐름은 아직 지원 대상으로 쓰지 않는다.
 
-자세한 판단과 실제 검증 결과는 [docs/current/v0.2.0-release-readiness.md](docs/current/v0.2.0-release-readiness.md), [docs/current/v0.2.0-alpha-support-contract.md](docs/current/v0.2.0-alpha-support-contract.md), [docs/current/clean-opencode-ph-bearshell-smoke.md](docs/current/clean-opencode-ph-bearshell-smoke.md), [docs/current/vendored-shared-skills-tarball-policy.md](docs/current/vendored-shared-skills-tarball-policy.md)를 본다.
+자세한 판단과 실제 검증 결과는 [docs/current/v0.2.1-release-readiness.md](docs/current/v0.2.1-release-readiness.md), [docs/current/v0.2.1-support-contract.md](docs/current/v0.2.1-support-contract.md), [docs/current/v0.2.1-package-metadata-audit.md](docs/current/v0.2.1-package-metadata-audit.md), [docs/current/clean-opencode-ph-bearshell-smoke.md](docs/current/clean-opencode-ph-bearshell-smoke.md), [docs/current/vendored-shared-skills-tarball-policy.md](docs/current/vendored-shared-skills-tarball-policy.md)를 본다.
 
 ### A. Persona Harness Repo 자체 검증
 
@@ -125,7 +125,7 @@ opencode run --dir . --model <model> \
   "먼저 src/main/java/.../presentation/...Controller.java 파일을 읽고, README.md 요구사항에 맞게 구현해줘."
 ```
 
-권한 프롬프트를 생략해야 하는 환경에서는 OpenCode 버전에 맞게 `--dangerously-skip-permissions`를 붙인다. 이 repo의 v0.2.0 readiness 검증은 로컬 OpenCode 설정에서 해당 flag 없이 수행했다.
+권한 프롬프트를 생략해야 하는 환경에서는 OpenCode 버전에 맞게 `--dangerously-skip-permissions`를 붙인다. 이 repo의 v0.2.1 readiness 검증은 로컬 OpenCode 설정에서 해당 flag 없이 수행했다.
 
 ### C. Tarball Install Verification
 

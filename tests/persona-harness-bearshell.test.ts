@@ -146,8 +146,8 @@ describe("ph package bin", () => {
 
     const bin = (parsed as { readonly bin?: unknown }).bin
     expect(bin).toEqual({
-      "persona-harness": "./dist/cli/index.js",
-      ph: "./dist/cli/index.js",
+      "persona-harness": "dist/cli/index.js",
+      ph: "dist/cli/index.js",
     })
   })
 })

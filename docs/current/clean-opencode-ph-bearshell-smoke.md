@@ -9,7 +9,7 @@ This is a behavior smoke, not a generated application quality certification.
 ## Environment
 
 - Date: 2026-06-19
-- Persona Harness package: `persona-harness@0.2.0`
+- Persona Harness package: `persona-harness@0.2.1`
 - Install modes checked: local path install and tarball install
 - OpenCode: `1.17.7`
 - Model: `openai/gpt-5.4-mini-fast`
@@ -45,7 +45,7 @@ Command shape:
 ```bash
 npm pack --pack-destination /tmp/persona-clean-opencode-ph-bearshell-G6eJA1/pack
 npm init -y
-npm install -D /tmp/persona-clean-opencode-ph-bearshell-G6eJA1/pack/persona-harness-0.2.0.tgz
+npm install -D /tmp/persona-clean-opencode-ph-bearshell-G6eJA1/pack/persona-harness-0.2.1.tgz
 npx persona-harness init
 npx ph bearshell node -e "console.log('ph-tarball-ok')"
 ```
@@ -118,7 +118,7 @@ Observed verification:
 
 ## Support Classification
 
-This smoke supports `v0.2.0-alpha` local/tarball behavior for:
+This smoke supports `v0.2.1` local/tarball behavior for:
 
 - local path installation,
 - tarball installation,

@@ -98,11 +98,11 @@ The current minimal adapter behavior is:
 
 ## Tarball Policy
 
-`packages/shared-skills` stays in the `v0.2.0-alpha` tarball as packaged reference material.
+`packages/shared-skills` stays in the `v0.2.1` tarball as packaged reference material.
 
 This is a packaging decision, not a productization decision. The Java/Spring backend MVP remains the only release-facing support surface. Vendored skills such as `ast-grep`, `debugging`, `frontend`, `visual-qa`, `review-work`, and related OMO-derived skills are inactive/reference surfaces unless a later scope decision activates them.
 
-The known tradeoff is package size. The project accepts this tradeoff for the alpha because the vendored content is intended to become part of the 1.0 skill direction, and trimming it now would create reintegration churn before the activation policy exists.
+The known tradeoff is package size. The project accepts this tradeoff for the local/tarball release because the vendored content is intended to become part of the 1.0 skill direction, and trimming it now would create reintegration churn before the activation policy exists.
 
 Before `1.0.0`, write the shared-skills activation policy that decides which skills are productized, which remain inactive references, and which should be trimmed from public packages.
 

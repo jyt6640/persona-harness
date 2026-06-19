@@ -86,7 +86,7 @@ Packaged install check:
 ```bash
 npm pack
 npm init -y
-npm install -D /absolute/path/to/persona-harness-0.2.0.tgz
+npm install -D /absolute/path/to/persona-harness-0.2.1.tgz
 npx ph bearshell node -e "console.log('ph-ok')"
 npx persona-harness bearshell --shell "printf persona-ok"
 ```

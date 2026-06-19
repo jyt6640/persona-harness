@@ -2,15 +2,15 @@
 
 ## Decision
 
-Keep `packages/shared-skills` in the `v0.2.0-alpha` tarball.
+Keep `packages/shared-skills` in the `v0.2.1` tarball.
 
-Do not trim the vendored shared-skill tree for the alpha package. The current copy is an intentional reference asset for the 1.0 direction, and removing it now would create churn before the activation policy is settled.
+Do not trim the vendored shared-skill tree for the local/tarball package. The current copy is an intentional reference asset for the 1.0 direction, and removing it now would create churn before the activation policy is settled.
 
 ## Release-facing Scope
 
 Including `packages/shared-skills` in the tarball does not expand the release-facing MVP.
 
-The only productized `v0.2.0-alpha` surface remains:
+The only productized `v0.2.1` surface remains:
 
 - Java/Spring backend Clean Code injection,
 - Gradle-first Java/Spring target support,
@@ -23,7 +23,7 @@ The only productized `v0.2.0-alpha` surface remains:
 
 ## Packaged Reference Surface
 
-These vendored skills may be present in the tarball as reference material, but they are not public support surfaces in `v0.2.0-alpha`:
+These vendored skills may be present in the tarball as reference material, but they are not public support surfaces in `v0.2.1`:
 
 - `ast-grep`
 - `debugging`
@@ -57,7 +57,7 @@ Keeping `packages/shared-skills` increases the tarball size.
 
 Current rationale:
 
-- the alpha package is local/tarball-first, not public-registry-first;
+- the package is local/tarball-first, not public-registry-first;
 - the vendored content is useful for the 1.0 skill direction;
 - trimming now would save package weight but risk later reintegration churn;
 - the current support contract can stay honest by labeling the content as packaged reference/inactive surface.

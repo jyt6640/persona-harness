@@ -1,13 +1,13 @@
 {
   "name": "persona-harness",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": false,
   "type": "module",
-  "description": "OpenCode plugin proof for deterministic Persona Harness rule injection.",
+  "description": "OpenCode plugin for Java/Spring backend Clean Code guidance injection and local/tarball Persona Harness verification.",
   "main": "dist/index.js",
   "bin": {
-    "persona-harness": "./dist/cli/index.js",
-    "ph": "./dist/cli/index.js"
+    "persona-harness": "dist/cli/index.js",
+    "ph": "dist/cli/index.js"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -25,11 +25,12 @@
     "docs/current/java-backend-mvp-install-guide.md",
     "docs/current/ph-bearshell-mvp.md",
     "docs/current/clean-opencode-ph-bearshell-smoke.md",
-    "docs/current/v0.2.0-alpha-support-contract.md",
+    "docs/current/v0.2.1-support-contract.md",
+    "docs/current/v0.2.1-package-metadata-audit.md",
     "docs/current/vendored-shared-skills-tarball-policy.md",
     "docs/current/injection-value-status.json",
     "docs/current/mvp-scope-status.json",
-    "docs/current/v0.2.0-release-readiness.md",
+    "docs/current/v0.2.1-release-readiness.md",
     "packages/shared-skills",
     ".persona/harness.jsonc",
     ".persona/rules",
@@ -64,5 +65,27 @@
     "@types/node": "^24.0.0",
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "persona-harness",
+    "java",
+    "spring",
+    "gradle",
+    "clean-code",
+    "ai-agent"
+  ],
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jyt6640/persona-harness.git"
+  },
+  "homepage": "https://github.com/jyt6640/persona-harness#readme",
+  "bugs": {
+    "url": "https://github.com/jyt6640/persona-harness/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
