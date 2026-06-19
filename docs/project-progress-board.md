@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: backend Clean Code uniformity validation with scope and artifact hygiene controls.
 
-Current active candidate: fill the final product-code-flow A/B pair, then decide whether the Java backend MVP is ready for productization/demo packaging.
+Current active candidate: Java backend MVP productization/demo packaging.
 
 ## Current Decisions
 
@@ -28,7 +28,7 @@ Current active candidate: fill the final product-code-flow A/B pair, then decide
 - Gradle is the canonical Java/Spring build tool; Maven evidence is discarded as primary evidence.
 - Test-style policy is out of the current product-code-quality track.
 - Backend Clean Code uniformity is judged by product-code flow, not exact package-name matching.
-- Java injection value remains open until the stopping rule reaches 3 comparable product-code-flow regraded A/B pairs.
+- Java injection value stopping rule is satisfied: 3 comparable product-code-flow regraded A/B pairs, ON-positive 3/3.
 - Experiment artifact cleanup is a phase-close hygiene step and remains dry-run-first.
 
 ## Active Commands
@@ -55,7 +55,7 @@ Current active candidate: fill the final product-code-flow A/B pair, then decide
 1. `[>]` Backend Clean Code uniformity next decision
    - Goal: fill the 3-pair stopping-rule window using `docs/backend-clean-code-uniformity-rubric.md`, `docs/java-product-code-flow-ab-regrade.md`, and `docs/injection-value-stopping-rule.md`.
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
-   - Current window: 2 comparable regraded pairs, ON-positive 2/2. Decision remains open until 3/3.
+   - Current window: 3 comparable regraded pairs, ON-positive 3/3. Decision: `continue-java-mvp`.
 
 2. `[~]` Test Contract response time object watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
@@ -79,6 +79,7 @@ Current active candidate: fill the final product-code-flow A/B pair, then decide
 ## Current Evidence Reviews
 
 - `docs/java-product-code-flow-ab-regrade.md`
+- `docs/coupon-product-code-flow-ab-review.md`
 - `docs/inventory-product-code-flow-ab-review.md`
 - `docs/java-root-semantics-ab-review.md`
 - `docs/java-domain-root-package-plan-ab-review.md`

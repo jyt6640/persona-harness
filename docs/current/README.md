@@ -11,6 +11,7 @@ Current root-level decision documents:
 - `../backend-clean-code-uniformity-rubric.md`
 - `../injection-value-stopping-rule.md`
 - `../injection-value-status.json`
+- `../coupon-product-code-flow-ab-review.md`
 - `../inventory-product-code-flow-ab-review.md`
 - `../phase-artifact-retention-policy.md`
 - `../mvp-scope-consistency-check.md`

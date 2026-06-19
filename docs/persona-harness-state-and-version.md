@@ -267,13 +267,15 @@ Actual result:
 
 ## Current Risks
 
-### 1. Injection Value Still Unproven
+### 1. Injection Value Window Closed
 
-The biggest remaining risk is not tooling hygiene.
+The biggest remaining risk is no longer the initial Java injection value question.
 
-It is whether Java/Spring Injection ON consistently produces better product-code flow than OFF.
+The fixed evidence window now has 3 comparable Gradle Java/Spring pairs, with Injection ON positive in all 3 regraded pairs.
 
-The current evidence window is 2/3 comparable Gradle Java/Spring pairs, with Injection ON positive in both regraded pairs. The project should not widen into frontend/infra/productized shared-skill scope until the 3-pair stopping rule has a result.
+Stopping rule result: `continue-java-mvp`.
+
+The project should move to Java backend MVP productization/demo packaging before widening into frontend/infra/productized shared-skill scope.
 
 ### 2. Shared-Skill Surface Can Expand Too Easily
 

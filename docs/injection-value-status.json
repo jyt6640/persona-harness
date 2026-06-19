@@ -1,8 +1,8 @@
 {
   "requiredPairs": 3,
-  "currentPairs": 2,
-  "onPositive": 2,
+  "currentPairs": 3,
+  "onPositive": 3,
   "neutralOrMixed": 0,
   "offPositive": 0,
-  "decision": "open"
+  "decision": "continue-java-mvp"
 }
