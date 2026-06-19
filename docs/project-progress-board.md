@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: Java backend MVP productization readiness with scope and artifact hygiene controls.
 
-Current active candidate: actual Java backend shape revalidation after bootstrap/rule reinforcement.
+Current active candidate: bootstrap workflow adjustment to improve role-by-role Java file reads.
 
 ## Current Decisions
 
@@ -68,8 +68,8 @@ Current active candidate: actual Java backend shape revalidation after bootstrap
 
 3. `[>]` Java backend MVP init/bootstrap productization
    - Evidence: `docs/java-backend-bootstrap-injection-design.md`, `docs/java-backend-bootstrap-open-code-demo.md`, `docs/npm-beta-publish-preparation.md`, `docs/java-backend-actual-quality-shape-review.md`
-   - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance. Clean actual rerun improved root domain package shape, DTO file boundaries, application result DTOs, and service-owned state avoidance. Repository boundary guidance now narrows the expected shape to domain `BookRepository`-style interfaces plus infrastructure `JdbcBookRepository`/`InMemoryBookRepository` implementations.
-   - Next candidate: clean actual rerun or bootstrap workflow adjustment to verify role-by-role Java file reads.
+   - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance. Clean actual rerun improved root domain package shape, DTO file boundaries, application result DTOs, service-owned state avoidance, and repository boundary shape. Repository boundary now repeated as domain `BookRepository`-style interfaces plus infrastructure `JdbcBookRepository`/`InMemoryBookRepository` implementations.
+   - Next candidate: bootstrap workflow adjustment to make Controller, DTO, Repository, and Service role reads observable instead of relying mostly on README/service/test surfaces.
 
 4. `[~]` Test Contract response time object watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`

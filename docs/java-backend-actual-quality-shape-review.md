@@ -120,3 +120,50 @@ This is still product-code-shape guidance, not an enforcement gate or product-qu
 ## Future TDD Direction
 
 The long-term target is for generated backend work to follow a Test -> Feat -> Refactor loop. That is intentionally not expanded in this repository-boundary loop. Current validation remains focused on product code structure and Clean Code uniformity; test workflow policy should be handled as a later, separate track.
+
+## Repository Boundary Clean Revalidation
+
+- Project: `/Users/yongtae/Desktop/persona-real-demo-3`
+- Command: `opencode run --dir /Users/yongtae/Desktop/persona-real-demo-3 --model openai/gpt-5.4-mini-fast "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."`
+- Package setup:
+  - `npm install -D /Users/yongtae/Desktop/persona-harness`
+  - `npx persona-harness init`
+- Generated validation: `gradle clean test` passed.
+
+Observed repository boundary result:
+
+- Domain repository interfaces were generated:
+  - `reservation/domain/ReservationRepository.java`
+  - `theme/domain/ThemeRepository.java`
+  - `time/domain/TimeRepository.java`
+  - `waiting/domain/WaitingRepository.java`
+- Infrastructure implementations were generated:
+  - `reservation/infrastructure/JdbcReservationRepository.java`
+  - `theme/infrastructure/JdbcThemeRepository.java`
+  - `time/infrastructure/JdbcTimeRepository.java`
+  - `waiting/infrastructure/JdbcWaitingRepository.java`
+- No infrastructure repository class used the ambiguous plain `<Domain>Repository` implementation name.
+
+Observed role evidence:
+
+- Total Phase 0 evidence JSON: 21
+- File roles:
+  - `project-bootstrap`: 10
+  - `service`: 6
+  - `java-common`: 2
+  - `test`: 3
+- Selected shared skills:
+  - `programming`: 11
+- Model-input injections: 4
+
+Shape result:
+
+- `feature/features/module/modules` wrapper packages were not generated.
+- Controller nested request/response DTO records were not found.
+- Service nested `*Response`, `*Item`, or `*View` records/classes were not found.
+- Service-owned `Map`, `AtomicLong`, `nextId`, `idCounter`, or direct id sequence state was not found.
+- Gradle wrapper was generated in this run.
+
+Remaining limitation:
+
+- Controller, DTO, and Repository role evidence still did not appear naturally in this clean run. The generated shape improved through bootstrap/java-common/service/test surfaces, but role-by-role Java file reads are not yet consistently observed across every backend role.
