@@ -27,6 +27,7 @@ Current active candidate: actual Java backend shape revalidation after bootstrap
 - Vendored OMO skills such as `ast-grep`, `debugging`, `visual-qa`, and `review-work` are inactive references unless a later scope decision activates them.
 - Gradle is the canonical Java/Spring build tool; Maven evidence is discarded as primary evidence.
 - Test-style policy is out of the current product-code-quality track.
+- Long-term backend workflow direction is Test -> Feat -> Refactor, but the current active track still evaluates product-code shape first.
 - Backend Clean Code uniformity is judged by product-code flow, not exact package-name matching.
 - Java injection value stopping rule is satisfied: 3 comparable product-code-flow regraded A/B pairs, ON-positive 3/3.
 - Experiment artifact cleanup is a phase-close hygiene step and remains dry-run-first.
@@ -67,8 +68,8 @@ Current active candidate: actual Java backend shape revalidation after bootstrap
 
 3. `[>]` Java backend MVP init/bootstrap productization
    - Evidence: `docs/java-backend-bootstrap-injection-design.md`, `docs/java-backend-bootstrap-open-code-demo.md`, `docs/npm-beta-publish-preparation.md`, `docs/java-backend-actual-quality-shape-review.md`
-   - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance. Clean actual rerun improved root domain package shape, DTO file boundaries, application result DTOs, and service-owned state avoidance, while repository interface placement remains weak.
-   - Next candidate: decide whether to reinforce domain repository interface/infrastructure implementation placement or adjust bootstrap workflow to force role-by-role Java file reads.
+   - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance. Clean actual rerun improved root domain package shape, DTO file boundaries, application result DTOs, and service-owned state avoidance. Repository boundary guidance now narrows the expected shape to domain `BookRepository`-style interfaces plus infrastructure `JdbcBookRepository`/`InMemoryBookRepository` implementations.
+   - Next candidate: clean actual rerun or bootstrap workflow adjustment to verify role-by-role Java file reads.
 
 4. `[~]` Test Contract response time object watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`

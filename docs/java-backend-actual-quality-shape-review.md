@@ -105,4 +105,18 @@ Still weak:
 
 The backend shape reinforcement produced a real positive signal on package depth, DTO file boundaries, application result DTOs, and service-owned state avoidance. It did not fully settle repository contract placement or role-by-role file reading.
 
-The next loop should be narrow: decide whether to reinforce domain repository interface plus infrastructure implementation naming/placement, or first adjust bootstrap workflow so the model intentionally opens Controller, DTO, Repository, and Service files after generation.
+## Repository Boundary Follow-up
+
+Accepted next reinforcement:
+
+- Domain owns the repository contract.
+- `root/<domain>/domain/<Domain>Repository` is an interface, for example `BookRepository`.
+- Infrastructure owns the implementation.
+- `root/<domain>/infrastructure/Jdbc<Domain>Repository` or `root/<domain>/infrastructure/InMemory<Domain>Repository` is the implementation, for example `JdbcBookRepository` or `InMemoryBookRepository`.
+- Infrastructure implementations should not be named only `<Domain>Repository`, because that hides the difference between the domain contract and the persistence adapter.
+
+This is still product-code-shape guidance, not an enforcement gate or product-quality certification.
+
+## Future TDD Direction
+
+The long-term target is for generated backend work to follow a Test -> Feat -> Refactor loop. That is intentionally not expanded in this repository-boundary loop. Current validation remains focused on product code structure and Clean Code uniformity; test workflow policy should be handled as a later, separate track.

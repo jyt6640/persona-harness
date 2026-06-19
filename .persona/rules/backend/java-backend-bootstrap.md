@@ -22,6 +22,6 @@ enforcement: inject_only
 - presentation은 HTTP 요청/응답과 request/response DTO boundary를 담당하고, application service에 위임한다.
 - Application Service는 use-case 흐름 조율만 담당하며 Service는 Map/List/AtomicLong/nextId/idCounter 같은 저장소 상태나 id sequence를 직접 소유하지 않는다.
 - 저장소 상태와 id generation은 Repository/Store 같은 persistence/storage component 뒤로 위임한다.
-- Repository interface는 domain 경계에 두고 구현체는 infrastructure에 둔다.
+- Repository interface는 domain 경계에 `root/<domain>/domain/<Domain>Repository`로 두고 구현체는 infrastructure 경계에 `Jdbc<Domain>Repository` 또는 `InMemory<Domain>Repository`로 둔다.
 - Domain은 Spring, HTTP, DB, infrastructure 세부사항에 의존하지 않는다.
 - frontend, infra, test-quality, generated app product-quality 보증은 현재 bootstrap injection 범위 밖이다.

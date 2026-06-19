@@ -51,6 +51,16 @@ describe("Phase 0 backend product-code shape guidance", () => {
     expect(policies).toContain("root/<domain>/presentation/dto/response")
   })
 
+  it("keeps common Java guidance explicit about domain repository interfaces and infrastructure implementations", () => {
+    const policies = policiesFor("src/main/java/com/example/library/LibraryApplication.java")
+
+    expect(policies).toContain("root/<domain>/domain/<Domain>Repository")
+    expect(policies).toContain("interface")
+    expect(policies).toContain("root/<domain>/infrastructure/Jdbc<Domain>Repository")
+    expect(policies).toContain("InMemory<Domain>Repository")
+    expect(policies).toContain("infrastructure class 이름을 <Domain>Repository로 끝내지 않는다")
+  })
+
   it("keeps controller DTO guidance out of nested controller records", () => {
     const block = blockFor("src/main/java/com/example/library/presentation/BookController.java")
 
@@ -76,6 +86,9 @@ describe("Phase 0 backend product-code shape guidance", () => {
     const block = blockFor("src/main/java/com/example/library/domain/BookRepository.java")
 
     expect(block).toContain("backend/spring-repository.md")
+    expect(block).toContain("domain package의 BookRepository 같은 interface")
+    expect(block).toContain("JdbcBookRepository")
+    expect(block).toContain("InMemoryBookRepository")
     expect(block).toContain("다른 Repository 구현체를 주입받아")
     expect(block).toContain("aggregate")
     expect(block).toContain("N+1")
