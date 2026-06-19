@@ -180,6 +180,30 @@ npm run report:rules
 
 이 경로가 보장하는 것은 Persona Harness MVP의 rule injection과 metadata-only diagnostics surface다. 생성된 Spring 앱의 product quality, rule compliance enforcement, Guard/AST/linter 검증, desktop app packaging은 보장하지 않는다.
 
+## Java Backend MVP 패키징 데모
+
+패키지 설치 표면까지 포함한 smoke verification은 다음 명령으로 실행한다.
+
+```bash
+npm run demo:java-mvp
+```
+
+이 명령은 현재 저장소를 빌드한 뒤 `npm pack`으로 tarball을 만들고, 임시 프로젝트에 `persona-harness` 패키지를 설치한다. 그 다음 설치된 패키지의 `dist/index.js` OpenCode plugin module을 import해 Java Controller target에 대한 Phase 0 hook을 직접 호출하고, 다음 항목을 확인한다.
+
+- 패키지 안에 `dist/index.js`, `.persona/harness.jsonc`, `.persona/rules`가 포함된다.
+- `tool.execute.after`가 Java Controller target에 `[Persona Harness Injection]`을 붙인다.
+- injection block에 `backend/java-common.md`, `backend/spring-controller.md`가 포함된다.
+- `experimental.chat.messages.transform`이 같은 injection을 model input 쪽 user message에 붙인다.
+- 임시 프로젝트의 ignored `.persona/evidence/phase0` 아래 evidence JSON이 생성된다.
+
+임시 프로젝트를 남겨 직접 확인하려면 다음처럼 실행한다.
+
+```bash
+npm run demo:java-mvp -- --keep
+```
+
+이 데모는 Persona Harness 패키지를 설치/실행/검증할 수 있는 MVP 표면을 확인한다. 생성된 Java/Spring 앱의 product quality, 테스트 충분성, rule compliance enforcement, Guard/AST/linter 검증은 확인하지 않는다.
+
 ## 반복 실험 패키지
 
 OpenCode 연동 실험은 추적하지 않는 `experiments/` 아래에 계속 남긴다.

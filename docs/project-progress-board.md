@@ -14,9 +14,9 @@ Detailed historical board content is archived at:
 
 ## Current Position
 
-Current track: backend Clean Code uniformity validation with scope and artifact hygiene controls.
+Current track: Java backend MVP productization readiness with scope and artifact hygiene controls.
 
-Current active candidate: Java backend MVP productization/demo packaging.
+Current active candidate: release-facing install guide or minimal OpenCode fixture demo after packaged MVP smoke verification.
 
 ## Current Decisions
 
@@ -37,6 +37,7 @@ Current active candidate: Java backend MVP productization/demo packaging.
 - `npm run check:scope`: diagnostics-only MVP scope consistency check; also runs as part of `npm test`.
 - `npm run check:scope:strict`: strict MVP scope consistency check for release/CI-style verification.
 - `npm run check:injection-value`: validates the Java injection value evidence-window decision state.
+- `npm run demo:java-mvp`: builds, packs, installs, and hook-smoke-tests the Java backend MVP from the packaged artifact.
 - `npm run cleanup:experiments`: dry-run experiment artifact cleanup.
 - `npm run cleanup:experiments -- --apply`: apply cleanup after dry-run review.
 
@@ -48,20 +49,26 @@ Current active candidate: Java backend MVP productization/demo packaging.
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement complete |
 | Phase 1.2 | Done | Report-only observer pass closed; reinforcement deferred |
 | Phase 2 | Active validation | Product-code-flow rubric, injection value stopping rule, scope diagnostics, and artifact cleanup added |
+| Java MVP Packaging | Active productization | Packaged install/run/verify smoke command added |
 | Desktop App Track | Not decomposed | Not started |
 
 ## Active Work Queue
 
-1. `[>]` Backend Clean Code uniformity next decision
+1. `[x]` Backend Clean Code uniformity next decision
    - Goal: fill the 3-pair stopping-rule window using `docs/backend-clean-code-uniformity-rubric.md`, `docs/java-product-code-flow-ab-regrade.md`, and `docs/injection-value-stopping-rule.md`.
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
    - Current window: 3 comparable regraded pairs, ON-positive 3/3. Decision: `continue-java-mvp`.
 
-2. `[~]` Test Contract response time object watch
+2. `[>]` Java backend MVP packaging/demo readiness
+   - Evidence: `docs/java-backend-mvp-packaging-readiness.md`
+   - Current state: `npm run demo:java-mvp` verifies build, `npm pack`, package install, OpenCode plugin hook exposure, Java Controller injection, model-input transform, and ignored evidence output from the installed package.
+   - Next candidate: release-facing install guide, minimal OpenCode fixture demo, or desktop app track decomposition.
+
+3. `[~]` Test Contract response time object watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
    - Current state: comparison run had explicit assertions, so no active reinforcement loop.
 
-3. `[~]` Shared-skill productization watch
+4. `[~]` Shared-skill productization watch
    - Evidence: `docs/phase2-scope-settlement.md`, `docs/shared-skill-reference-direction.md`, `docs/mvp-scope-consistency-check.md`
    - Current state: Java/Gradle `programming` support is limited active routing; multi-domain productization remains inactive.
 
@@ -72,6 +79,7 @@ Current active candidate: Java backend MVP productization/demo packaging.
 - `docs/backend-clean-code-uniformity-rubric.md`
 - `docs/injection-value-stopping-rule.md`
 - `docs/injection-value-status.json`
+- `docs/java-backend-mvp-packaging-readiness.md`
 - `docs/phase-artifact-retention-policy.md`
 - `docs/mvp-scope-consistency-check.md`
 - `docs/docs-taxonomy-archive-plan.md`
@@ -89,9 +97,9 @@ Current active candidate: Java backend MVP productization/demo packaging.
 
 ## Snapshot
 
-Known scoped work items tracked in the archived board: 68, plus the new injection value stopping-rule decision.
+Known scoped work items tracked in the archived board: 68, plus injection value stopping-rule and Java MVP packaging readiness decisions.
 
-- Done: 63
+- Done: 64
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
