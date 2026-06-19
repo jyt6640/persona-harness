@@ -11,6 +11,7 @@
   "files": [
     "dist",
     "scripts/report-rule-diagnostics.mjs",
+    "packages/shared-skills",
     ".persona/harness.jsonc",
     ".persona/rules",
     "README.md"

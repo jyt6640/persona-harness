@@ -38,6 +38,7 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): v
     fileRole: event.injection.fileRole,
     selectedRules: event.injection.selectedRules,
     selectedRuleMetadata: event.injection.selectedRuleMetadata,
+    selectedSharedSkills: event.injection.selectedSharedSkills,
     injectedPolicyCount: event.injection.policies.length,
   }
 

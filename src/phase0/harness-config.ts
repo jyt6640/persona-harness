@@ -19,7 +19,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
   evidenceDir: ".persona/evidence",
   maxRulesPerInjection: 12,
   evidenceMode: "metadata_only",
-  enabledDomains: ["backend"],
+  enabledDomains: ["backend", "frontend", "infra", "programming"],
   scenario: "step1",
 }
 

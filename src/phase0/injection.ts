@@ -1,7 +1,9 @@
 import { resolveFileRole } from "./file-role.js"
 import { loadHarnessConfig } from "./harness-config.js"
 import { loadRulesForRole } from "./rule-loader.js"
+import { resolveSharedSkillFileRole, selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import type { PendingInjection } from "./types.js"
+import { isJavaTargetFile } from "./file-role.js"
 
 function dedupePolicies(policies: string[]): string[] {
   return Array.from(new Set(policies))
@@ -9,8 +11,9 @@ function dedupePolicies(policies: string[]): string[] {
 
 export function createInjectionBlock(targetFile: string, projectDir = process.cwd()): PendingInjection {
   const config = loadHarnessConfig(projectDir)
-  const fileRole = resolveFileRole(targetFile)
-  const loadedRules = loadRulesForRole(projectDir, fileRole, targetFile)
+  const selectedSharedSkills = selectSharedSkillsForTarget(targetFile)
+  const fileRole = isJavaTargetFile(targetFile) ? resolveFileRole(targetFile) : resolveSharedSkillFileRole(selectedSharedSkills)
+  const loadedRules = isJavaTargetFile(targetFile) ? loadRulesForRole(projectDir, fileRole, targetFile) : []
   const selectedRules = loadedRules.map((rule) => rule.path)
   const selectedRuleMetadata = loadedRules.map((rule) => ({
     path: rule.path,
@@ -30,6 +33,11 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     "선택 규칙:",
     ...selectedRules.map((rule) => `- ${rule}`),
     "",
+    "선택 스킬:",
+    ...(selectedSharedSkills.length > 0
+      ? selectedSharedSkills.map((skill) => `- ${skill.name} (${skill.domain}): ${skill.path} — ${skill.reason}`)
+      : ["- 없음"]),
+    "",
     "적용 정책:",
     ...policies.map((policy) => `- ${policy}`),
     "",
@@ -42,6 +50,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     fileRole,
     selectedRules,
     selectedRuleMetadata,
+    selectedSharedSkills,
     policies,
     block,
   }

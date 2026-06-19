@@ -7,6 +7,7 @@ import { createInjectionBlock } from "./injection.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile } from "./target-file.js"
+import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import type {
   ToolAfterInput,
   ToolAfterOutput,
@@ -28,6 +29,10 @@ function appendInjectionToToolOutput(output: ToolAfterOutput, block: string): vo
   output.output = `${output.output}\n\n---\n\n${block}`
 }
 
+function hasEnabledSharedSkillDomain(enabledDomains: readonly string[], targetFile: string): boolean {
+  return selectSharedSkillsForTarget(targetFile).some((skill) => enabledDomains.includes(skill.domain))
+}
+
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const store = options.store ?? new PendingInjectionStore()
   const projectDir = options.projectDir ?? process.cwd()
@@ -40,12 +45,18 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     callID: string | undefined,
     args: Record<string, unknown>,
   ): ReturnType<typeof createInjectionBlock> | undefined {
-    if (!config.enabled || !config.enabledDomains.includes("backend")) {
+    if (!config.enabled) {
       return undefined
     }
 
     const targetFile = extractTargetFile(tool, args)
-    if (!targetFile || !isJavaTargetFile(targetFile)) {
+    if (!targetFile) {
+      return undefined
+    }
+
+    const canInjectBackend = isJavaTargetFile(targetFile) && config.enabledDomains.includes("backend")
+    const canInjectSharedSkill = hasEnabledSharedSkillDomain(config.enabledDomains, targetFile)
+    if (!canInjectBackend && !canInjectSharedSkill) {
       return undefined
     }
 

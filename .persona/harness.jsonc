@@ -5,5 +5,5 @@
   "maxRulesPerInjection": 12,
   "evidenceMode": "metadata_only",
   "scenario": "step1",
-  "enabledDomains": ["backend"]
+  "enabledDomains": ["backend", "frontend", "infra", "programming"]
 }

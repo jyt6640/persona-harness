@@ -11,12 +11,24 @@ export type FileRole =
   | "exception"
   | "test"
   | "java-common"
+  | "typescript"
+  | "frontend"
+  | "infra"
+  | "shared-skill"
+
+export type SelectedSharedSkill = {
+  readonly name: string
+  readonly domain: string
+  readonly path: string
+  readonly reason: string
+}
 
 export type PendingInjection = {
   readonly targetFile: string
   readonly fileRole: FileRole
   readonly selectedRules: string[]
   readonly selectedRuleMetadata: SelectedRuleMetadata[]
+  readonly selectedSharedSkills: readonly SelectedSharedSkill[]
   readonly policies: string[]
   readonly block: string
 }

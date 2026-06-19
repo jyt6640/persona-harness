@@ -24,7 +24,20 @@ export type LoadedRule = {
 const DEFAULT_SCENARIO: Phase0Scenario = "step1"
 const STEP1_API_CONTRACT_RULE = "backend/step1-api-contract.md"
 const STEP2_3_API_CONTRACT_RULE = "backend/step2-3-api-contract.md"
-const CONTRACT_RULE_ROLES = new Set<FileRole>(["controller", "request-dto", "response-dto", "test"])
+
+type RuleFileRole =
+  | "controller"
+  | "service"
+  | "repository"
+  | "entity"
+  | "domain"
+  | "request-dto"
+  | "response-dto"
+  | "exception"
+  | "test"
+  | "java-common"
+
+const CONTRACT_RULE_ROLES = new Set<RuleFileRole>(["controller", "request-dto", "response-dto", "test"])
 
 const COMMON_RULES = [
   "clean-code/common.md",
@@ -32,7 +45,7 @@ const COMMON_RULES = [
   "backend/java-common.md",
 ] as const
 
-const ROLE_RULES: Record<FileRole, readonly string[]> = {
+const ROLE_RULES: Record<RuleFileRole, readonly string[]> = {
   controller: ["backend/spring-controller.md", "backend/spring-dto.md", STEP1_API_CONTRACT_RULE],
   service: ["backend/spring-service.md", "backend/validation-exception.md"],
   repository: ["backend/spring-repository.md"],
@@ -43,6 +56,27 @@ const ROLE_RULES: Record<FileRole, readonly string[]> = {
   exception: ["backend/validation-exception.md"],
   test: ["clean-code/testability.md", "backend/spring-test.md", STEP1_API_CONTRACT_RULE],
   "java-common": ["clean-code/abstraction.md"],
+}
+
+function isRuleFileRole(fileRole: FileRole): fileRole is RuleFileRole {
+  switch (fileRole) {
+    case "controller":
+    case "service":
+    case "repository":
+    case "entity":
+    case "domain":
+    case "request-dto":
+    case "response-dto":
+    case "exception":
+    case "test":
+    case "java-common":
+      return true
+    case "typescript":
+    case "frontend":
+    case "infra":
+    case "shared-skill":
+      return false
+  }
 }
 
 function takePoliciesForInjection(rulePath: string, policies: readonly string[], maxBullets?: number): string[] {
@@ -61,6 +95,10 @@ function contractRuleForScenario(scenario: Phase0Scenario): string {
 }
 
 function scenarioAwareRoleRules(fileRole: FileRole, scenario: Phase0Scenario): readonly string[] {
+  if (!isRuleFileRole(fileRole)) {
+    return []
+  }
+
   const roleRules = ROLE_RULES[fileRole]
   if (!CONTRACT_RULE_ROLES.has(fileRole)) {
     return roleRules
@@ -71,6 +109,10 @@ function scenarioAwareRoleRules(fileRole: FileRole, scenario: Phase0Scenario): r
 }
 
 export function selectRulePaths(fileRole: FileRole, scenario: Phase0Scenario = DEFAULT_SCENARIO): string[] {
+  if (!isRuleFileRole(fileRole)) {
+    return []
+  }
+
   return Array.from(new Set([...COMMON_RULES, ...scenarioAwareRoleRules(fileRole, scenario)]))
 }
 
