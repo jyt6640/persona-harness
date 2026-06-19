@@ -1,4 +1,4 @@
-import { resolveFileRole } from "./file-role.js"
+import { isBackendBootstrapTargetFile, resolveBootstrapFileRole, resolveFileRole } from "./file-role.js"
 import { loadHarnessConfig } from "./harness-config.js"
 import { loadRulesForRole } from "./rule-loader.js"
 import { resolveSharedSkillFileRole, selectSharedSkillsForTarget } from "./shared-skill-router.js"
@@ -12,9 +12,15 @@ function dedupePolicies(policies: string[]): string[] {
 export function createInjectionBlock(targetFile: string, projectDir = process.cwd()): PendingInjection {
   const config = loadHarnessConfig(projectDir)
   const selectedSharedSkills = selectSharedSkillsForTarget(targetFile)
-  const fileRole = isJavaTargetFile(targetFile) ? resolveFileRole(targetFile) : resolveSharedSkillFileRole(selectedSharedSkills, targetFile)
-  const shouldLoadJavaRules = isJavaTargetFile(targetFile) || fileRole === "java-common"
-  const ruleTargetFile = isJavaTargetFile(targetFile) ? targetFile : undefined
+  const isJavaTarget = isJavaTargetFile(targetFile)
+  const isBootstrapTarget = isBackendBootstrapTargetFile(targetFile)
+  const fileRole = isJavaTarget
+    ? resolveFileRole(targetFile)
+    : isBootstrapTarget
+      ? resolveBootstrapFileRole(targetFile)
+      : resolveSharedSkillFileRole(selectedSharedSkills, targetFile)
+  const shouldLoadJavaRules = isJavaTarget || isBootstrapTarget || fileRole === "java-common"
+  const ruleTargetFile = shouldLoadJavaRules ? targetFile : undefined
   const loadedRules = shouldLoadJavaRules ? loadRulesForRole(projectDir, fileRole, ruleTargetFile) : []
   const selectedRules = loadedRules.map((rule) => rule.path)
   const selectedRuleMetadata = loadedRules.map((rule) => ({

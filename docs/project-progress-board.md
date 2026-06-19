@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: Java backend MVP productization readiness with scope and artifact hygiene controls.
 
-Current active candidate: minimal OpenCode fixture demo or desktop app track breakdown after release-facing install guide.
+Current active candidate: init/bootstrap productization verification and npm beta preparation.
 
 ## Current Decisions
 
@@ -38,6 +38,8 @@ Current active candidate: minimal OpenCode fixture demo or desktop app track bre
 - `npm run check:scope:strict`: strict MVP scope consistency check for release/CI-style verification.
 - `npm run check:injection-value`: validates the Java injection value evidence-window decision state.
 - `npm run demo:java-mvp`: builds, packs, installs, and hook-smoke-tests the Java backend MVP from the packaged artifact.
+- `npm run demo:init`: builds, packs, installs, runs `persona-harness init`, and verifies clean project initialization without copied evidence.
+- `npm run demo:bootstrap`: builds, packs, installs, runs init, and verifies README bootstrap injection plus runtime evidence.
 - `npm run cleanup:experiments`: dry-run experiment artifact cleanup.
 - `npm run cleanup:experiments -- --apply`: apply cleanup after dry-run review.
 
@@ -49,7 +51,7 @@ Current active candidate: minimal OpenCode fixture demo or desktop app track bre
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement complete |
 | Phase 1.2 | Done | Report-only observer pass closed; reinforcement deferred |
 | Phase 2 | Active validation | Product-code-flow rubric, injection value stopping rule, scope diagnostics, and artifact cleanup added |
-| Java MVP Packaging | Active productization | Packaged install/run/verify smoke command and release-facing install guide added |
+| Java MVP Packaging | Active productization | Init CLI, bootstrap injection, packaged install/run/verify smoke commands, and release-facing install guide added |
 | Desktop App Track | Not decomposed | Not started |
 
 ## Active Work Queue
@@ -63,9 +65,10 @@ Current active candidate: minimal OpenCode fixture demo or desktop app track bre
    - Evidence: `docs/java-backend-mvp-packaging-readiness.md`, `docs/java-backend-mvp-install-guide.md`
    - Current state: `npm run demo:java-mvp` verifies build, `npm pack`, package install, OpenCode plugin hook exposure, Java Controller injection, model-input transform, and ignored evidence output from the installed package. The release-facing install guide fixes local development install, package artifact smoke, OpenCode plugin connection, Java target injection flow, and evidence location.
 
-3. `[>]` Java backend MVP next productization decision
-   - Current state: release-facing install guide is in place.
-   - Next candidate: minimal OpenCode fixture demo or desktop app track decomposition.
+3. `[>]` Java backend MVP init/bootstrap productization
+   - Evidence: `docs/java-backend-bootstrap-injection-design.md`, `docs/java-backend-bootstrap-open-code-demo.md`, `docs/npm-beta-publish-preparation.md`
+   - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance.
+   - Next candidate: actual clean OpenCode run or npm beta publish.
 
 4. `[~]` Test Contract response time object watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
@@ -84,6 +87,9 @@ Current active candidate: minimal OpenCode fixture demo or desktop app track bre
 - `docs/injection-value-status.json`
 - `docs/java-backend-mvp-packaging-readiness.md`
 - `docs/java-backend-mvp-install-guide.md`
+- `docs/java-backend-bootstrap-injection-design.md`
+- `docs/java-backend-bootstrap-open-code-demo.md`
+- `docs/npm-beta-publish-preparation.md`
 - `docs/phase-artifact-retention-policy.md`
 - `docs/mvp-scope-consistency-check.md`
 - `docs/docs-taxonomy-archive-plan.md`
@@ -101,7 +107,7 @@ Current active candidate: minimal OpenCode fixture demo or desktop app track bre
 
 ## Snapshot
 
-Known scoped work items tracked in the archived board: 68, plus injection value stopping-rule, Java MVP packaging readiness, and release-facing install guide decisions.
+Known scoped work items tracked in the archived board: 68, plus injection value stopping-rule, Java MVP packaging readiness, init/bootstrap productization, and release-facing install guide decisions.
 
 - Done: 65
 - Active next: 1

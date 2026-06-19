@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -15,10 +15,9 @@ function run(command, args, options = {}) {
   })
 
   if (result.status !== 0) {
-    const commandLine = [command, ...args].join(" ")
     throw new Error(
       [
-        `Command failed: ${commandLine}`,
+        `Command failed: ${[command, ...args].join(" ")}`,
         `cwd: ${options.cwd ?? PROJECT_DIR}`,
         result.stdout.trim(),
         result.stderr.trim(),
@@ -66,56 +65,31 @@ function assertIncludes(label, source, expected) {
   }
 }
 
-const tempRoot = mkdtempSync(join(tmpdir(), "persona-java-mvp-demo-"))
+const tempRoot = mkdtempSync(join(tmpdir(), "persona-bootstrap-demo-"))
 
 try {
   const packDir = join(tempRoot, "pack")
   mkdirSync(packDir, { recursive: true })
-
   const packOutput = run("npm", ["pack", "--json", "--pack-destination", packDir])
   const tarballPath = resolvePackedTarball(packOutput, packDir)
-  if (!existsSync(tarballPath)) {
-    throw new Error(`Packed tarball was not created: ${tarballPath}`)
-  }
-
   const demoProjectDir = join(tempRoot, "demo-project")
   mkdirSync(demoProjectDir, { recursive: true })
   writeFileSync(
     join(demoProjectDir, "package.json"),
     `${JSON.stringify({ private: true, type: "module", dependencies: {} }, null, 2)}\n`,
   )
+  writeFileSync(join(demoProjectDir, "README.md"), "# Coupon API\n\nBuild a Gradle Spring backend.\n")
 
   run("npm", ["install", "--silent", "--no-audit", "--no-fund", tarballPath], { cwd: demoProjectDir })
-
   const installedPackageDir = join(demoProjectDir, "node_modules", "persona-harness")
-  const installedEntry = join(installedPackageDir, "dist", "index.js")
-  const installedBin = join(demoProjectDir, "node_modules", ".bin", "persona-harness")
-  if (!existsSync(installedEntry)) {
-    throw new Error(`Installed package entry is missing: ${installedEntry}`)
-  }
-  if (!existsSync(installedBin)) {
-    throw new Error(`Installed package bin is missing: ${installedBin}`)
-  }
+  const binPath = join(demoProjectDir, "node_modules", ".bin", "persona-harness")
+  run(binPath, ["init"], { cwd: demoProjectDir })
 
-  run(installedBin, ["init"], { cwd: demoProjectDir })
   if (existsSync(join(demoProjectDir, ".persona", "evidence"))) {
     throw new Error("Init created evidence before any hook ran")
   }
 
-  const targetFile = "src/main/java/com/example/coupon/presentation/CouponController.java"
-  const targetPath = join(demoProjectDir, targetFile)
-  mkdirSync(dirname(targetPath), { recursive: true })
-  writeFileSync(
-    targetPath,
-    [
-      "package com.example.coupon.presentation;",
-      "",
-      "public class CouponController {",
-      "}",
-      "",
-    ].join("\n"),
-  )
-
+  const installedEntry = join(installedPackageDir, "dist", "index.js")
   const pluginModule = await import(pathToFileURL(installedEntry).href)
   const plugin = pluginModule.default
   if (plugin?.id !== "persona-harness" || typeof plugin.server !== "function") {
@@ -129,49 +103,44 @@ try {
     throw new Error("Installed plugin did not expose the expected Phase 0 hooks")
   }
 
-  const sessionID = "demo-session"
-  const toolOutput = {
-    title: targetFile,
-    output: "public class CouponController {}",
-    metadata: {},
-  }
+  const sessionID = "bootstrap-demo-session"
+  const toolOutput = { title: "README.md", output: "# Coupon API", metadata: {} }
   await toolAfterHook(
     {
       tool: "read",
       sessionID,
-      callID: "demo-call",
-      args: { path: targetFile },
+      callID: "bootstrap-demo-call",
+      args: { path: "README.md" },
     },
     toolOutput,
   )
-
   assertIncludes("tool output", toolOutput.output, "[Persona Harness Injection]")
-  assertIncludes("tool output", toolOutput.output, "파일 역할: controller")
-  assertIncludes("tool output", toolOutput.output, "backend/java-common.md")
-  assertIncludes("tool output", toolOutput.output, "backend/spring-controller.md")
+  assertIncludes("tool output", toolOutput.output, "파일 역할: project-bootstrap")
+  assertIncludes("tool output", toolOutput.output, "backend/java-backend-bootstrap.md")
 
   const messagesOutput = {
     messages: [
       {
         info: { id: "demo-message", role: "user", sessionID },
-        parts: [{ type: "text", text: "Implement the coupon controller." }],
+        parts: [{ type: "text", text: "README.md를 끝까지 읽고 Gradle 기반 Spring 백엔드를 만들어줘." }],
       },
     ],
   }
   await messagesTransformHook({}, messagesOutput)
   const transformedText = JSON.stringify(messagesOutput)
-  assertIncludes("model input", transformedText, "[Persona Harness Injection]")
-  assertIncludes("model input", transformedText, "backend/spring-controller.md")
+  assertIncludes("model input", transformedText, "backend/java-backend-bootstrap.md")
+  assertIncludes("model input", transformedText, "Service는 Map/List/AtomicLong/nextId/idCounter")
 
-  const evidenceFiles = collectFiles(join(demoProjectDir, ".persona", "evidence"), (file) => file.endsWith(".json"))
+  const evidenceFiles = collectFiles(join(demoProjectDir, ".persona", "evidence", "phase0"), (file) =>
+    file.endsWith(".json"),
+  )
   if (evidenceFiles.length < 2) {
-    throw new Error(`Expected at least 2 evidence files, found ${evidenceFiles.length}`)
+    throw new Error(`Expected README bootstrap evidence files, found ${evidenceFiles.length}`)
   }
 
-  console.log("Java MVP demo readiness: PASS")
+  console.log("Persona bootstrap demo: PASS")
   console.log(`Packed tarball: ${tarballPath}`)
-  console.log(`Installed package entry: ${installedEntry}`)
-  console.log(`Target file: ${targetFile}`)
+  console.log("Target file: README.md")
   console.log(`Evidence files: ${evidenceFiles.length}`)
   if (KEEP_DEMO_PROJECT) {
     console.log(`Demo project kept: ${demoProjectDir}`)

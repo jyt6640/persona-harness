@@ -5,6 +5,9 @@
   "type": "module",
   "description": "OpenCode plugin proof for deterministic Persona Harness rule injection.",
   "main": "dist/index.js",
+  "bin": {
+    "persona-harness": "./dist/cli/init.js"
+  },
   "exports": {
     ".": "./dist/index.js"
   },
@@ -13,6 +16,8 @@
     "scripts/check-injection-value.mjs",
     "scripts/check-mvp-scope.mjs",
     "scripts/cleanup-phase-artifacts.mjs",
+    "scripts/verify-init-demo.mjs",
+    "scripts/verify-bootstrap-demo.mjs",
     "scripts/verify-java-mvp-demo.mjs",
     "scripts/report-rule-diagnostics.mjs",
     "docs/injection-value-status.json",
@@ -32,6 +37,8 @@
     "check:scope": "node scripts/check-mvp-scope.mjs",
     "check:scope:strict": "node scripts/check-mvp-scope.mjs --strict",
     "cleanup:experiments": "node scripts/cleanup-phase-artifacts.mjs",
+    "demo:init": "npm run build && node scripts/verify-init-demo.mjs",
+    "demo:bootstrap": "npm run build && node scripts/verify-bootstrap-demo.mjs",
     "demo:java-mvp": "npm run build && node scripts/verify-java-mvp-demo.mjs",
     "observe:phase1-2": "node scripts/observe-phase1-2.mjs",
     "observe:test-contract": "node scripts/observe-test-contract.mjs",

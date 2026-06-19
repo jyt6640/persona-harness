@@ -36,6 +36,9 @@ type RuleFileRole =
   | "exception"
   | "test"
   | "java-common"
+  | "project-bootstrap"
+  | "requirements-bootstrap"
+  | "gradle-bootstrap"
 
 const CONTRACT_RULE_ROLES = new Set<RuleFileRole>(["controller", "request-dto", "response-dto", "test"])
 
@@ -56,6 +59,9 @@ const ROLE_RULES: Record<RuleFileRole, readonly string[]> = {
   exception: ["backend/validation-exception.md"],
   test: ["clean-code/testability.md", "backend/spring-test.md", STEP1_API_CONTRACT_RULE],
   "java-common": ["clean-code/abstraction.md", "backend/layered-architecture.md"],
+  "project-bootstrap": ["backend/java-backend-bootstrap.md"],
+  "requirements-bootstrap": ["backend/java-backend-bootstrap.md"],
+  "gradle-bootstrap": ["backend/gradle-bootstrap.md", "backend/java-backend-bootstrap.md"],
 }
 
 function isRuleFileRole(fileRole: FileRole): fileRole is RuleFileRole {
@@ -70,6 +76,9 @@ function isRuleFileRole(fileRole: FileRole): fileRole is RuleFileRole {
     case "exception":
     case "test":
     case "java-common":
+    case "project-bootstrap":
+    case "requirements-bootstrap":
+    case "gradle-bootstrap":
       return true
     case "typescript":
     case "frontend":
@@ -91,6 +100,12 @@ function takePoliciesForInjection(rulePath: string, policies: readonly string[],
   }
   if (rulePath === "backend/java-common.md") {
     return policies.slice(0, 3)
+  }
+  if (rulePath === "backend/java-backend-bootstrap.md") {
+    return policies.slice(0, 8)
+  }
+  if (rulePath === "backend/gradle-bootstrap.md") {
+    return policies.slice(0, 4)
   }
   const limit = rulePath === "clean-code/method-design.md" ? 1 : 2
   return policies.slice(0, limit)

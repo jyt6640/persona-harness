@@ -7,10 +7,16 @@ Make the Java/Spring backend Clean Code MVP installable, runnable, and verifiabl
 ## Readiness Command
 
 ```bash
+npm run demo:init
+npm run demo:bootstrap
 npm run demo:java-mvp
 ```
 
-The command builds the package, creates an `npm pack` tarball, installs that tarball into a temporary demo project, imports the installed `dist/index.js` OpenCode plugin module, and drives the Phase 0 hooks against a Java Controller target.
+These commands build the package, create an `npm pack` tarball, install that tarball into a temporary demo project, and verify the release-facing surfaces:
+
+- `demo:init`: installed `persona-harness init` creates `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`.
+- `demo:bootstrap`: installed plugin handles README bootstrap injection and writes runtime evidence only after hook execution.
+- `demo:java-mvp`: installed plugin drives the Phase 0 hooks against a Java Controller target.
 
 The release-facing install path is documented in [java-backend-mvp-install-guide.md](java-backend-mvp-install-guide.md).
 
@@ -23,7 +29,10 @@ npm run demo:java-mvp -- --keep
 ## Verified Surface
 
 - The packed package includes `dist/index.js`.
+- The packed package includes `dist/cli/init.js` and the `persona-harness` bin.
 - The packed package includes `.persona/harness.jsonc` and `.persona/rules`.
+- Init does not copy `.persona/evidence`.
+- A README target receives `project-bootstrap` guidance.
 - The installed OpenCode plugin exposes `tool.execute.after`.
 - The installed OpenCode plugin exposes `experimental.chat.messages.transform`.
 - A Java Controller target receives a Persona Harness injection block.

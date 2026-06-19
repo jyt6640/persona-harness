@@ -13,6 +13,9 @@ Current root-level decision documents:
 - `../injection-value-status.json`
 - `../java-backend-mvp-packaging-readiness.md`
 - `../java-backend-mvp-install-guide.md`
+- `../java-backend-bootstrap-injection-design.md`
+- `../java-backend-bootstrap-open-code-demo.md`
+- `../npm-beta-publish-preparation.md`
 - `../coupon-product-code-flow-ab-review.md`
 - `../inventory-product-code-flow-ab-review.md`
 - `../phase-artifact-retention-policy.md`

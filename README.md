@@ -8,14 +8,31 @@ frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 
 
 ## Quick Start
 
-저장소를 받은 뒤 가장 짧은 smoke/demo command는 다음이다.
+외부 프로젝트에서 쓰는 가장 짧은 경로는 다음이다.
+
+```bash
+npm install -D persona-harness
+npx persona-harness init
+opencode run --dir . --model openai/gpt-5.4-mini-fast \
+  "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."
+```
+
+`persona-harness init`은 대상 프로젝트에 `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`을 설치/병합한다. `.persona/evidence/`는 template로 복사하지 않으며, OpenCode hook이 실제로 발동할 때 대상 프로젝트 안에 생성된다.
+
+저장소를 받은 뒤 가장 짧은 local smoke/demo command는 다음이다.
 
 ```bash
 npm install
+npm run demo:init
+npm run demo:bootstrap
 npm run demo:java-mvp
 ```
 
-`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다. 내부적으로 빌드, `npm pack`, 임시 프로젝트 설치, 설치된 `dist/index.js` OpenCode plugin hook 실행, Java Controller injection, model input transform, `.persona/evidence/phase0` evidence 생성을 검증한다.
+`npm run demo:init`은 package artifact를 임시 clean project에 설치하고 `persona-harness init`을 실행해 `.persona/rules`, `.persona/harness.jsonc`, `.opencode/opencode.json`이 안전하게 만들어지는지 확인한다. 이때 `.persona/evidence`가 생기면 실패한다.
+
+`npm run demo:bootstrap`은 init 이후 `README.md` target으로 설치된 plugin hook을 직접 호출해 `project-bootstrap` injection과 runtime evidence 생성을 확인한다.
+
+`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다. 내부적으로 빌드, `npm pack`, 임시 프로젝트 설치, `persona-harness init`, 설치된 `dist/index.js` OpenCode plugin hook 실행, Java Controller injection, model input transform, `.persona/evidence/phase0` evidence 생성을 검증한다.
 
 실제 Java/Spring 프로젝트에 붙일 때는 빌드된 플러그인을 `.opencode/opencode.json`에 연결한다.
 
@@ -28,6 +45,8 @@ npm run demo:java-mvp
 ```
 
 그 프로젝트에서 OpenCode가 `src/main/java/**/*.java` target file을 읽거나 수정하면 Persona Harness가 파일 역할을 판정하고, 해당 Java/Spring Clean Code rules를 tool output과 다음 model input에 주입한다. evidence는 해당 프로젝트의 `.persona/evidence/phase0` 아래에 남는다.
+
+Java file이 아직 없는 0-start 상황에서는 `README.md`, `requirements.md`, `build.gradle`, `settings.gradle` target에 한해 Java backend bootstrap guidance를 주입한다. 일반 markdown 문서, `docs/` 내부 문서, `CHANGELOG.md`, 임의 note 파일에는 bootstrap injection을 걸지 않는다.
 
 자세한 release-facing 설치/검증 경로는 [docs/java-backend-mvp-install-guide.md](docs/java-backend-mvp-install-guide.md)를 본다.
 
@@ -66,6 +85,8 @@ Phase 0 #2-3 fixture evidence 상태도 **종료**다. `experiments/phase0-runs/
 지원하는 파일 역할:
 
 ```text
+README.md / requirements.md
+build.gradle / settings.gradle
 **/*Controller.java
 **/*Service.java
 **/*Repository.java
@@ -77,6 +98,7 @@ Phase 0 #2-3 fixture evidence 상태도 **종료**다. `experiments/phase0-runs/
 ```
 
 모든 Java/Spring 파일에는 clean-code baseline이 기본으로 깔린다. 파일명이 Controller, Service, Entity 등으로 끝나면 역할별 정책이 추가된다.
+README/requirements/Gradle bootstrap target에는 Java backend project start guidance만 좁게 들어간다.
 
 MVP 밖 범위:
 
@@ -106,6 +128,8 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
    │  └─ testability.md
    └─ backend/
       ├─ java-common.md
+      ├─ java-backend-bootstrap.md
+      ├─ gradle-bootstrap.md
       ├─ layered-architecture.md
       ├─ package-structure.md
       ├─ validation-exception.md
@@ -182,10 +206,16 @@ npm run build
 검증:
 
 ```bash
+npm run demo:init
+npm run demo:bootstrap
+npm run demo:java-mvp
 npm test
 npm run typecheck
 npm run build
 npm run report:rules
+npm run check:injection-value
+npm run check:scope:strict
+npm pack --dry-run
 ```
 
 `npm test`는 Vitest 전에 diagnostics-only scope check를 함께 실행한다. scope drift가 보이더라도 finding 자체는 test failure gate가 아니며, scope report만 보고 싶으면 `npm run check:scope`를 실행한다.
@@ -201,14 +231,18 @@ npm run report:rules
 
 ```bash
 npm install
+npm run demo:init
+npm run demo:bootstrap
 npm run demo:java-mvp
 ```
 
-이 명령은 현재 저장소를 빌드한 뒤 `npm pack`으로 tarball을 만들고, 임시 프로젝트에 `persona-harness` 패키지를 설치한다. 그 다음 설치된 패키지의 `dist/index.js` OpenCode plugin module을 import해 Java Controller target에 대한 Phase 0 hook을 직접 호출한다.
+이 명령들은 현재 저장소를 빌드한 뒤 `npm pack`으로 tarball을 만들고, 임시 프로젝트에 `persona-harness` 패키지를 설치한다. `demo:init`은 `persona-harness init` 표면을 검증하고, `demo:bootstrap`은 README bootstrap hook surface를 검증하며, `demo:java-mvp`는 Java Controller target에 대한 Phase 0 hook을 직접 호출한다.
 
 검증하는 것:
 
 - 패키지 안에 `dist/index.js`, `.persona/harness.jsonc`, `.persona/rules`가 포함된다.
+- `persona-harness init`이 `.persona/evidence`를 복사하지 않는다.
+- README target이 `project-bootstrap` file role로 잡힌다.
 - `tool.execute.after`가 Java Controller target에 `[Persona Harness Injection]`을 붙인다.
 - injection block에 `backend/java-common.md`, `backend/spring-controller.md`가 포함된다.
 - `experimental.chat.messages.transform`이 같은 injection을 model input 쪽 user message에 붙인다.
@@ -230,7 +264,13 @@ npm run demo:java-mvp -- --keep
 
 ## OpenCode 연결 경로
 
-테스트할 Java/Spring 프로젝트의 `.opencode/opencode.json`에 빌드된 플러그인을 등록한다.
+테스트할 Java/Spring 프로젝트에서 init을 실행한다.
+
+```bash
+npx persona-harness init
+```
+
+local development 중 직접 연결하려면 `.opencode/opencode.json`에 빌드된 플러그인을 등록한다.
 
 ```jsonc
 {

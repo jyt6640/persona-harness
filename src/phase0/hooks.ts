@@ -1,7 +1,7 @@
 import type { Hooks } from "@opencode-ai/plugin"
 
 import { writePhase0Evidence } from "./evidence.js"
-import { isJavaTargetFile } from "./file-role.js"
+import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import { loadHarnessConfig } from "./harness-config.js"
 import { createInjectionBlock } from "./injection.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
@@ -54,7 +54,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       return undefined
     }
 
-    const canInjectBackend = isJavaTargetFile(targetFile) && config.enabledDomains.includes("backend")
+    const canInjectBackend =
+      (isJavaTargetFile(targetFile) || isBackendBootstrapTargetFile(targetFile)) &&
+      config.enabledDomains.includes("backend")
     const canInjectSharedSkill = hasEnabledSharedSkillDomain(config.enabledDomains, targetFile)
     if (!canInjectBackend && !canInjectSharedSkill) {
       return undefined

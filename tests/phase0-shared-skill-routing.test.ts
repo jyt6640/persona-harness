@@ -160,9 +160,8 @@ describe("Phase 0 shared skill routing", () => {
   it("selects the programming shared skill for Gradle Java build files", () => {
     const injection = createInjectionBlock("build.gradle")
 
-    expect(injection.fileRole).toBe("java-common")
-    expect(injection.selectedRules).toContain("backend/java-common.md")
-    expect(injection.selectedRules).toContain("backend/layered-architecture.md")
+    expect(injection.fileRole).toBe("gradle-bootstrap")
+    expect(injection.selectedRules).toContain("backend/gradle-bootstrap.md")
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
     expect(injection.block).toContain("Gradle Java build file detected")
   })

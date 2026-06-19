@@ -15,6 +15,26 @@ npm install
 npm run build
 ```
 
+## Project Init
+
+대상 프로젝트에서는 다음 한 줄로 Persona Harness rules와 OpenCode plugin 연결을 설치한다.
+
+```bash
+npx persona-harness init
+```
+
+설치되는 것:
+
+- `.persona/harness.jsonc`
+- `.persona/rules/`
+- `.opencode/opencode.json`
+
+복사하지 않는 것:
+
+- `.persona/evidence/`
+
+`.persona/evidence/`는 init template가 아니라 hook runtime evidence다. OpenCode가 README/requirements/Gradle/Java target을 실제로 읽거나 수정할 때 대상 프로젝트 안에 생성된다.
+
 기본 검증:
 
 ```bash
@@ -28,19 +48,28 @@ npm run report:rules
 
 ## Package Artifact Smoke
 
-가장 짧은 package artifact smoke command:
+가장 짧은 package artifact smoke commands:
 
 ```bash
+npm run demo:init
+npm run demo:bootstrap
 npm run demo:java-mvp
 ```
 
-`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다.
+`npm run demo:init`은 package artifact가 실제 설치 환경에서 `persona-harness init`으로 clean project를 안전하게 초기화하는지 확인한다.
+
+`npm run demo:bootstrap`은 init 이후 README target에서 bootstrap injection과 runtime evidence 생성이 되는지 확인한다.
+
+`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 Java Controller plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다.
 
 검증하는 것:
 
 - `npm pack` tarball 생성
 - 임시 프로젝트에 packed `persona-harness` 설치
+- 설치된 `persona-harness init` 실행
+- init 직후 `.persona/evidence`가 없음을 확인
 - 설치된 패키지 안의 `dist/index.js`, `.persona/harness.jsonc`, `.persona/rules` 확인
+- README target의 `project-bootstrap` injection 확인
 - 설치된 OpenCode plugin module import
 - `tool.execute.after` hook 노출과 Java Controller injection 확인
 - `experimental.chat.messages.transform` hook 노출과 model input transform 확인
@@ -54,7 +83,13 @@ npm run demo:java-mvp -- --keep
 
 ## OpenCode Plugin Connection
 
-테스트할 Java/Spring 프로젝트의 `.opencode/opencode.json`에 빌드된 플러그인을 등록한다.
+테스트할 Java/Spring 프로젝트에서 `persona-harness init`을 실행한다.
+
+```bash
+npx persona-harness init
+```
+
+local development 중 직접 경로를 고정해야 하면 `.opencode/opencode.json`에 빌드된 플러그인을 등록한다.
 
 ```jsonc
 {
@@ -71,12 +106,12 @@ opencode run --dir /path/to/java-spring-project --model openai/gpt-5.4-mini-fast
   "먼저 src/main/java/com/example/coupon/presentation/CouponController.java 파일을 읽고, 요구사항에 맞게 구현해줘."
 ```
 
-Persona Harness는 OpenCode가 Java/Spring target file을 읽거나 수정할 때 동작한다.
+Persona Harness는 OpenCode가 README/requirements/Gradle bootstrap target 또는 Java/Spring target file을 읽거나 수정할 때 동작한다.
 
 흐름:
 
 ```text
-Java target file
+README / requirements / Gradle / Java target file
 -> file role
 -> selected rules
 -> injection block
@@ -87,6 +122,10 @@ Java target file
 현재 Java/Spring target role:
 
 ```text
+README.md
+requirements.md
+build.gradle
+settings.gradle
 **/*Controller.java
 **/*Service.java
 **/*Repository.java
