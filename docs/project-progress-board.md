@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: Java backend MVP v0.2.0 local/tarball release readiness with scope and artifact hygiene controls.
 
-Current active candidate: public npm publish support contract decision. Public publish itself remains deferred.
+Current active candidate: post-smoke support contract hardening for `v0.2.0-alpha`. Public publish itself remains deferred.
 
 ## Current Decisions
 
@@ -31,6 +31,7 @@ Current active candidate: public npm publish support contract decision. Public p
 - Backend Clean Code uniformity is judged by product-code flow, not exact package-name matching.
 - Java injection value stopping rule is satisfied: 3 comparable product-code-flow regraded A/B pairs, ON-positive 3/3.
 - v0.2.0 local/tarball readiness is scoped to Java/Spring backend Clean Code injection and does not claim generated app product quality.
+- `v0.2.0-alpha` support contract covers local/tarball install, `ph init`, Java/Spring target injection, metadata evidence, and `npx ph bearshell` command-surface behavior in clean OpenCode smoke.
 - Public npm publish, GitHub release, version tag, and release branch remain deferred.
 - Experiment artifact cleanup is a phase-close hygiene step and remains dry-run-first.
 
@@ -76,9 +77,10 @@ Current active candidate: public npm publish support contract decision. Public p
    - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance. Clean actual rerun improved root domain package shape, DTO file boundaries, application result DTOs, service-owned state avoidance, and repository boundary shape. Repository boundary now repeated as domain `BookRepository`-style interfaces plus infrastructure `JdbcBookRepository`/`InMemoryBookRepository` implementations. v0.2.0 readiness confirms clean OpenCode bootstrap evidence and a target-file read follow-up that generated Controller evidence.
    - Next candidate: npm public publish/support contract decision, not another package-shape A/B loop.
 
-4. `[>]` v0.2.0 npm publish readiness decision
-   - Evidence: `docs/current/v0.2.0-release-readiness.md`
-   - Current state: local path install and tarball install are verified; `ph bearshell` is added as a bounded CLI runtime helper; npm public publish is explicitly deferred. The next publish-oriented loop should decide package metadata, README public install wording, support contract, and whether to publish an alpha.
+4. `[x]` v0.2.0-alpha local/tarball support contract and clean OpenCode behavior smoke
+   - Evidence: `docs/current/v0.2.0-release-readiness.md`, `docs/current/v0.2.0-alpha-support-contract.md`, `docs/current/clean-opencode-ph-bearshell-smoke.md`
+   - Current state: local path install, tarball install, `ph init`, clean OpenCode Java target injection, metadata evidence, and model use of `npx ph bearshell` for `git status`, `gradle test`, and `gradle build` are verified. npm public publish remains explicitly deferred.
+   - Next candidate: decide whether to keep vendored shared-skills in the alpha tarball unchanged until 1.0, or document them as inactive packaged references without trimming.
 
 5. `[~]` Test Contract response time object watch
    - Evidence: `docs/phases/phase1/phase1-test-contract-response-time-repeat-review.md`
@@ -98,6 +100,8 @@ Current active candidate: public npm publish support contract decision. Public p
 - `docs/current/java-backend-mvp-packaging-readiness.md`
 - `docs/current/java-backend-mvp-install-guide.md`
 - `docs/current/ph-bearshell-mvp.md`
+- `docs/current/clean-opencode-ph-bearshell-smoke.md`
+- `docs/current/v0.2.0-alpha-support-contract.md`
 - `docs/current/v0.2.0-release-readiness.md`
 - `docs/current/java-backend-bootstrap-injection-design.md`
 - `docs/current/java-backend-bootstrap-open-code-demo.md`

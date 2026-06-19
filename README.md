@@ -6,11 +6,54 @@ Persona Harness는 OpenCode에서 동작하는 TypeScript 플러그인 MVP다.
 
 frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 release-facing MVP 범위가 아니다.
 
+## 5분 Clean Project Flow
+
+public npm publish 전까지는 local path 또는 tarball install로 검증한다.
+
+```bash
+cd /path/to/clean-java-spring-project
+npm install -D /absolute/path/to/persona-harness
+npx ph init
+```
+
+`npx ph init`은 다음 파일을 만든다.
+
+- `.persona/harness.jsonc`
+- `.persona/rules/`
+- `.opencode/opencode.json`
+
+OpenCode에서 Java/Spring target file을 먼저 읽게 실행한다.
+
+```bash
+opencode run --dir . --model <model> --dangerously-skip-permissions \
+  "먼저 src/main/java/.../...Controller.java 파일을 읽고, README.md 요구사항에 맞게 Gradle 기반 Spring 백엔드로 구현해줘."
+```
+
+repo 상태 확인, build/test 확인, 큰 출력 확인이 필요하면 Persona Harness command surface를 쓴다.
+
+```bash
+npx ph bearshell --shell 'gradle test'
+npx ph bearshell --shell 'gradle build'
+```
+
+실행 뒤에는 evidence를 확인한다.
+
+```bash
+find .persona/evidence -type f | sort
+```
+
+주의:
+
+- `npx ph ...`는 local/tarball dev dependency install에서 가장 안정적인 실행 형태다.
+- `ph bearshell`은 Persona Harness command surface이고, clean OpenCode smoke에서 모델이 `npx ph bearshell`을 실제로 사용했다.
+- Java file이 아직 없는 0-start 프로젝트는 `README.md` 또는 `requirements.md`를 먼저 읽게 실행할 수 있지만, 가장 직접적인 injection 검증은 Java/Spring target file read다.
+- 이 흐름은 generated Spring app product quality나 rule enforcement를 보증하지 않는다.
+
 ## v0.2.0 Local Readiness
 
 `v0.2.0`은 public npm publish 전 단계다. 지금 보장하는 설치 경로는 local path install과 tarball install이며, npm registry에서 `npm install -D persona-harness`로 설치하는 흐름은 아직 지원 대상으로 쓰지 않는다.
 
-자세한 판단과 실제 검증 결과는 [docs/current/v0.2.0-release-readiness.md](docs/current/v0.2.0-release-readiness.md)를 본다.
+자세한 판단과 실제 검증 결과는 [docs/current/v0.2.0-release-readiness.md](docs/current/v0.2.0-release-readiness.md), [docs/current/v0.2.0-alpha-support-contract.md](docs/current/v0.2.0-alpha-support-contract.md), [docs/current/clean-opencode-ph-bearshell-smoke.md](docs/current/clean-opencode-ph-bearshell-smoke.md)를 본다.
 
 ### A. Persona Harness Repo 자체 검증
 
@@ -48,7 +91,7 @@ repo 밖의 clean Java/Spring 프로젝트에서는 local path install로 검증
 
 ```bash
 npm install -D /absolute/path/to/persona-harness
-npx persona-harness init
+npx ph init
 npx ph bearshell npm test
 opencode run --dir . --model <model> --dangerously-skip-permissions \
   "<Java/Spring target file을 먼저 읽고 기능을 구현해줘>"
@@ -94,7 +137,7 @@ mkdir -p /tmp/persona-harness-clean-check
 cd /tmp/persona-harness-clean-check
 npm init -y
 npm install -D /absolute/path/to/persona-harness-*.tgz
-npx persona-harness init
+npx ph init
 ```
 
 ### D. Manual Plugin Connection
