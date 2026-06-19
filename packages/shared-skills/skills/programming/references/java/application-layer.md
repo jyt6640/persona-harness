@@ -43,8 +43,38 @@ What the Service does / does not:
 | call Validator / Domain / Policy in sequence | hide policy in nested `if`/`else` |
 | own the transaction boundary | depend on HTTP Request/Response DTOs |
 | map between Command and domain calls | reach into entity state via getters to decide |
+| depend on repository/storage ports | own storage state or id sequence (`Map`, `List`, `AtomicLong`, `nextId`, `idCounter`) |
 
 If you see a business condition decided inside a Service, move it: self-state → Domain, lookup → Validator, branching ruleset → Policy.
+
+## Service does not own storage state
+
+An Application Service does not own persistence state or generate ids. Even in a small in-memory app, `Map`, mutable `List`, `AtomicLong`, `nextId`, `idCounter`, or sequence fields belong behind a Repository/Store-style persistence component, not inside the Service. The Service asks that component to save, find, update, or delete; the component owns how ids are assigned and how records are stored.
+
+```java
+@Service
+@RequiredArgsConstructor
+public class ExpenseService {
+
+    private final ExpenseRepository expenseRepository;
+
+    public Expense create(ExpenseCreateCommand command) {
+        Expense expense = Expense.create(command.title(), command.amount(), command.spentOn());
+        return expenseRepository.save(expense);          // repository assigns/persists id
+    }
+}
+```
+
+Reject this shape:
+
+```java
+@Service
+public class ExpenseService {
+
+    private final Map<Long, Expense> expenses = new LinkedHashMap<>(); // storage state
+    private final AtomicLong nextId = new AtomicLong(1);               // id sequence
+}
+```
 
 ## Small, single-intent methods
 

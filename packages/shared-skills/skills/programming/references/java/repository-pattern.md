@@ -61,6 +61,28 @@ The method says *what business question* it answers, not *how SQL runs*.
 
 If a method is *deciding* a business rule, it's in the wrong place — move it to Domain/Policy/Validator.
 
+## In-memory storage is still a persistence component
+
+For prototypes or tests, an in-memory adapter may be enough. It still follows the same boundary: storage state and id generation live behind the Repository/Store-style component, never in the Application Service. A `Map`, mutable `List`, `AtomicLong`, `nextId`, `idCounter`, or sequence field is persistence state.
+
+```java
+@Repository
+public class InMemoryExpenseRepository implements ExpenseRepository {
+
+    private final Map<Long, Expense> expenses = new LinkedHashMap<>();
+    private final AtomicLong nextId = new AtomicLong(1);
+
+    @Override
+    public synchronized Expense save(Expense expense) {
+        Expense saved = expense.withId(nextId.getAndIncrement());
+        expenses.put(saved.id(), saved);
+        return saved;
+    }
+}
+```
+
+The Service depends on `ExpenseRepository`; it does not know whether the adapter is JPA, JDBC, MyBatis, Redis, a file, or an in-memory map.
+
 ## If JPA Is Chosen: The Entity Lives In Infrastructure
 
 The JPA entity carries everything the philosophy keeps *out* of the domain: `@Entity`, an `@Id`, a no-arg constructor, mutable fields. So when the project chooses JPA, the JPA entity lives in `infrastructure`, separate from the pure domain `Order`. It owns the mapping both ways.
