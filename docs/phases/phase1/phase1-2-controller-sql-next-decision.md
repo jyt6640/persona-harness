@@ -13,7 +13,7 @@ Controller SQL Access observer actual review는 single actual generated run 기�
 report source:
 
 - `experiments/phase0-runs/2026-06-18T02-10-18-110Z/controller-sql-observer-report.md`
-- review: `docs/phase1-2-controller-sql-actual-report-review.md`
+- review: `docs/phases/phase1/phase1-2-controller-sql-actual-report-review.md`
 
 finding:
 

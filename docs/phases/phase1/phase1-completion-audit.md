@@ -29,18 +29,18 @@ Phase 1의 현재 허용 범위는 완료로 본다.
 
 ## Evidence Reviewed
 
-- `docs/phase1-plan.md`
+- `docs/phases/phase1/phase1-plan.md`
   - Phase 1 first axis를 rule-loader/frontmatter/glob/scenario selection refinement로 고정했다.
   - Phase 1.1은 좁은 Java/Spring backend selection refinement로 종료한다고 기록한다.
   - Guard/AST/linter, profile-aware routing, frontend/infra expansion, OMO workflow adaptation, product-quality validation은 닫힌 범위가 아니라고 기록한다.
-- `docs/phase1-rule-loader-design.md`
+- `docs/phases/phase1/phase1-rule-loader-design.md`
   - Phase 1.1에서 읽는 frontmatter field를 `id`, `description`, `applies_to`, `globs`, `scenario`, `priority`, `max_bullets`, `enforcement`로 제한한다.
   - `enforcement`는 `inject_only`만 활성 의미를 갖고, deny/warn/guard/linter/ast 계열은 구현하지 않는다고 기록한다.
   - Phase 1.1 decision을 종료로 기록한다.
-- `docs/phase1-2-plan.md`
+- `docs/phases/phase1/phase1-2-plan.md`
   - Phase 1.2는 Controller -> Repository 직접 의존 여부만 관찰한다고 제한한다.
   - report-only, ignored output, no build/test failure 원칙을 기록한다.
-- `docs/phase1-2-observer-design.md`
+- `docs/phases/phase1/phase1-2-observer-design.md`
   - 문자열 기반 observer를 선택했다.
   - PASS/WARN/UNKNOWN report format과 테스트 기준을 고정했다.
 - Current implementation

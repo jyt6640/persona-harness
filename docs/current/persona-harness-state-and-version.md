@@ -247,23 +247,23 @@ Actual result:
 
 ### Current Decision Docs
 
-- `docs/phase2-scope-settlement.md`
-- `docs/mvp-scope-status.json`
-- `docs/backend-clean-code-uniformity-rubric.md`
-- `docs/injection-value-stopping-rule.md`
-- `docs/injection-value-status.json`
-- `docs/phase-artifact-retention-policy.md`
-- `docs/mvp-scope-consistency-check.md`
-- `docs/docs-taxonomy-archive-plan.md`
+- `docs/current/phase2-scope-settlement.md`
+- `docs/current/mvp-scope-status.json`
+- `docs/current/backend-clean-code-uniformity-rubric.md`
+- `docs/current/injection-value-stopping-rule.md`
+- `docs/current/injection-value-status.json`
+- `docs/current/phase-artifact-retention-policy.md`
+- `docs/current/mvp-scope-consistency-check.md`
+- `docs/archive/docs-taxonomy-archive-plan.md`
 
 ### Current Evidence Docs
 
-- `docs/java-product-code-flow-ab-regrade.md`
-- `docs/java-root-semantics-ab-review.md`
-- `docs/java-domain-root-package-plan-ab-review.md`
-- `docs/java-package-structure-plan-ab-review.md`
-- `docs/java-common-routing-ab-review.md`
-- `docs/backend-clean-code-task-fixture-ab-review.md`
+- `docs/evidence-reviews/java-product-code-flow-ab-regrade.md`
+- `docs/evidence-reviews/java-root-semantics-ab-review.md`
+- `docs/evidence-reviews/java-domain-root-package-plan-ab-review.md`
+- `docs/evidence-reviews/java-package-structure-plan-ab-review.md`
+- `docs/evidence-reviews/java-common-routing-ab-review.md`
+- `docs/evidence-reviews/backend-clean-code-task-fixture-ab-review.md`
 
 ## Current Risks
 
@@ -321,8 +321,8 @@ Do not:
 
 Run or regrade two more comparable Gradle Java/Spring A/B pairs using:
 
-- `docs/backend-clean-code-uniformity-rubric.md`
-- `docs/injection-value-stopping-rule.md`
+- `docs/current/backend-clean-code-uniformity-rubric.md`
+- `docs/current/injection-value-stopping-rule.md`
 
 Outcome:
 

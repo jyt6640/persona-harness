@@ -60,7 +60,7 @@ The report should:
 
 - `npm run report:rules`
 - `.persona/evidence/phase-next/rule-diagnostics-report.md`
-- `docs/productization-path-decision.md`
+- `docs/current/productization-path-decision.md`
 - README MVP reproduction path
 
 The package file list includes `scripts/report-rule-diagnostics.mjs` so the report command is not omitted from a packaged artifact.

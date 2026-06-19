@@ -13,14 +13,14 @@ Report 1:
 - run: `experiments/phase0-runs/2026-06-18T02-10-18-110Z`
 - target: `ReservationIntegrationTest.java`
 - report: `experiments/phase0-runs/2026-06-18T02-10-18-110Z/test-contract-observer-report.md`
-- review: `docs/phase1-test-contract-actual-report-review.md`
+- review: `docs/phases/phase1/phase1-test-contract-actual-report-review.md`
 
 Report 2:
 
 - run: `experiments/phase0-runs/2026-06-18T01-02-20-056Z`
 - target: `ReservationControllerTest.java`
 - report: `experiments/phase0-runs/2026-06-18T01-02-20-056Z/test-contract-observer-report.md`
-- review: `docs/phase1-test-contract-repeat-report-review.md`
+- review: `docs/phases/phase1/phase1-test-contract-repeat-report-review.md`
 
 Report 3:
 

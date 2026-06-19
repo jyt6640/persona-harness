@@ -75,7 +75,7 @@ For A/B comparison, prefer repeated directional signals over one-off wins.
 
 ## Stopping Rule
 
-Use `docs/injection-value-stopping-rule.md` before starting more A/B loops.
+Use `docs/current/injection-value-stopping-rule.md` before starting more A/B loops.
 
 The short form:
 
@@ -89,9 +89,9 @@ Without this stopping rule, this rubric is only a scoring sheet and does not clo
 
 ## Current Regraded Evidence
 
-- `docs/java-product-code-flow-ab-regrade.md`: Library Loans root semantics A/B is ON-positive for product-code flow.
-- `docs/inventory-product-code-flow-ab-review.md`: Inventory Stock A/B is ON-positive for product-code flow, with a noted ON service HTTP exception leak.
-- `docs/coupon-product-code-flow-ab-review.md`: Coupon Campaign A/B is ON-positive for product-code flow, with ON adding the Service boundary that OFF skipped.
+- `docs/evidence-reviews/java-product-code-flow-ab-regrade.md`: Library Loans root semantics A/B is ON-positive for product-code flow.
+- `docs/evidence-reviews/inventory-product-code-flow-ab-review.md`: Inventory Stock A/B is ON-positive for product-code flow, with a noted ON service HTTP exception leak.
+- `docs/evidence-reviews/coupon-product-code-flow-ab-review.md`: Coupon Campaign A/B is ON-positive for product-code flow, with ON adding the Service boundary that OFF skipped.
 
 Current fixed-window count: 3 comparable regraded pairs, ON-positive 3/3.
 

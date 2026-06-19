@@ -87,7 +87,7 @@ Layer-specific defaults:
 
 ## Next Loop
 
-The Library Loans Gradle A/B was rerun in `docs/java-root-semantics-ab-review.md`.
+The Library Loans Gradle A/B was rerun in `docs/evidence-reviews/java-root-semantics-ab-review.md`.
 
 That A/B confirmed ON no longer creates `library/loan`, but it still did not create `com.example/global` beside `com.example/library` because the fixture starts with `LibraryApplication.java` under `com.example.library`.
 

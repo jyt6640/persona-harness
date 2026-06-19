@@ -74,7 +74,7 @@ Current evidence summary:
 - PersonaHarnessRule diagnostics now have a user-visible report surface via `npm run report:rules`.
 - README documents the MVP reproduction path from install/build/test to rule diagnostics and OpenCode plugin connection.
 - `example/src` is now treated as a backend product-code style reference answer, not a universal roomescape/step1 template.
-- The current product-code direction is documented in `docs/backend-product-code-style-direction.md`.
+- The current product-code direction is documented in `docs/current/backend-product-code-style-direction.md`.
 - Gradle-only Java/Spring generation and keeping storage state/id sequence outside Application Service are now reinforced in rule/prompt surfaces.
 - The backend baseline now treats presentation/application/domain/infrastructure boundaries as explicit Clean Code structure: upper layers may know lower layers, direct skip-layer coupling is avoided, and domain can be used by application/infrastructure without knowing infrastructure.
 - OMO shared-skills structure is vendored under `packages/shared-skills`; `programming` is the first important skill, with TypeScript expected to be React/frontend oriented later.
@@ -96,7 +96,7 @@ Current evidence summary:
 - Gradle ON/OFF A/B run `experiments/phase0-runs/2026-06-19T00-14-57-663Z-19978-drflpp` completed with model `openai/gpt-5.4-mini-fast`.
 - In that A/B pair, ON and OFF both kept `build.gradle`/`settings.gradle`, avoided `pom.xml`, produced exactly one root-package `ReservationApplication.java`, avoided feature-package extra `*Application.java`, and passed `gradle test --quiet`.
 - This closes the immediate package/class duplication noise check as cleanup confirmation. It is not an ON-positive product-quality signal because OFF was also clean.
-- A new non-reservation Task Management Gradle fixture is defined in `docs/backend-clean-code-task-fixture-design.md`.
+- A new non-reservation Task Management Gradle fixture is defined in `docs/evidence-reviews/backend-clean-code-task-fixture-design.md`.
 - Primary Task fixture A/B run `experiments/phase0-runs/2026-06-19T00-37-19-269Z-68875-mxhhug-task-service-fixture` completed with model `openai/gpt-5.4-mini-fast`.
 - In the primary Task fixture run, ON and OFF both kept Gradle-only files, avoided `pom.xml`, produced one root `TaskApplication.java`, avoided Service storage/id ownership, kept Repository and DTO boundaries, and passed `gradle test --quiet`.
 - ON produced explicit `web/application/domain/infrastructure` package layering; OFF produced a flatter but still acceptable `task` package with `dto` and `repository` subpackages.
@@ -128,16 +128,16 @@ Current evidence summary:
 - ON still generated `library/global/exception`, not sibling `com.example.global`, because the starting fixture placed `LibraryApplication.java` under `com.example.library`.
 - OFF generated a flatter `library/book` package and `library/common` package.
 - ON and OFF both kept Gradle-only files, avoided `pom.xml`, and passed independent `gradle test --quiet`.
-- Phase 2 scope settlement is recorded in `docs/phase2-scope-settlement.md`.
+- Phase 2 scope settlement is recorded in `docs/current/phase2-scope-settlement.md`.
 - The settlement chooses Java backend MVP first: do not broaden shared-skill routing or claim frontend/infra productization from the current smoke paths.
 - Java backend Clean Code uniformity rubric now focuses on product-code flow rather than exact package naming.
 - Primary rubric signals are Controller adapter behavior, Application Service orchestration-only behavior, Domain independence from Spring/HTTP/DB details, Repository persistence boundary, Request/Response DTO boundary, optional Command/Result use-case boundary, Gradle-only build, one Application class, and final `gradle test`.
 - Package shape such as `global` plus domain-internal layers remains useful secondary evidence, but exact names/depth are no longer the primary A/B conclusion.
-- Phase artifact retention policy is documented in `docs/phase-artifact-retention-policy.md`.
+- Phase artifact retention policy is documented in `docs/current/phase-artifact-retention-policy.md`.
 - `npm run cleanup:experiments` is available as a dry-run-first cleanup command for ignored experiment outputs.
-- MVP scope consistency diagnostics are documented in `docs/mvp-scope-consistency-check.md` and exposed through `npm run check:scope`.
-- The Library Loans root semantics A/B has been regraded in `docs/java-product-code-flow-ab-regrade.md`: Injection ON is positive for product-code flow, while exact package-name and product-quality claims remain out of scope.
-- Docs taxonomy and archive direction is documented in `docs/docs-taxonomy-archive-plan.md`, with placeholder indexes under `docs/current/`, `docs/evidence-reviews/`, and `docs/archive/`.
+- MVP scope consistency diagnostics are documented in `docs/current/mvp-scope-consistency-check.md` and exposed through `npm run check:scope`.
+- The Library Loans root semantics A/B has been regraded in `docs/evidence-reviews/java-product-code-flow-ab-regrade.md`: Injection ON is positive for product-code flow, while exact package-name and product-quality claims remain out of scope.
+- Docs taxonomy and archive direction is documented in `docs/archive/docs-taxonomy-archive-plan.md`, with placeholder indexes under `docs/current/`, `docs/evidence-reviews/`, and `docs/archive/`.
 
 ## Progress Snapshot
 
@@ -172,16 +172,16 @@ This is not an overall product-quality percentage. It is a progress count over t
 
 1. `[>]` Backend Clean Code uniformity next decision
    - Goal: use the product-code-flow rubric for the next Java Gradle A/B or decide whether the MVP is ready for productization/demo packaging.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`, `docs/java-global-package-plan-surface.md`, `docs/java-domain-root-package-plan-ab-review.md`, `docs/java-root-semantics-ab-review.md`, `docs/java-product-code-flow-ab-regrade.md`, `docs/phase2-scope-settlement.md`, `docs/mvp-scope-consistency-check.md`, `docs/phase-artifact-retention-policy.md`, `docs/docs-taxonomy-archive-plan.md`
+   - Evidence: `docs/current/backend-product-code-style-direction.md`, `docs/evidence-reviews/gradle-ab-actual-run-review.md`, `docs/current/backend-clean-code-uniformity-rubric.md`, `docs/evidence-reviews/backend-clean-code-parallel-ab-review.md`, `docs/evidence-reviews/response-dto-boundary-ab-review.md`, `docs/evidence-reviews/spring-boot-entrypoint-package-shape-review.md`, `docs/evidence-reviews/backend-clean-code-task-fixture-ab-review.md`, `docs/evidence-reviews/java-common-routing-ab-review.md`, `docs/evidence-reviews/java-package-structure-plan-surface.md`, `docs/evidence-reviews/java-package-structure-plan-ab-review.md`, `docs/evidence-reviews/java-global-package-plan-surface.md`, `docs/evidence-reviews/java-domain-root-package-plan-ab-review.md`, `docs/evidence-reviews/java-root-semantics-ab-review.md`, `docs/evidence-reviews/java-product-code-flow-ab-regrade.md`, `docs/current/phase2-scope-settlement.md`, `docs/current/mvp-scope-consistency-check.md`, `docs/current/phase-artifact-retention-policy.md`, `docs/archive/docs-taxonomy-archive-plan.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim, cleanup real experiment artifacts only after dry-run review.
 
 2. `[~]` Test Contract response time object actual missing watch
-   - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
+   - Evidence: `docs/phases/phase1/phase1-test-contract-response-time-repeat-review.md`
    - Current state: third run missed reservation response `time.id/startAt`, but comparison run had explicit assertions.
    - Decision: keep inactive unless another actual run repeats manual-confirmed missing.
 
 3. `[~]` Shared programming skill loader/adaptation
-   - Evidence: `docs/shared-skill-reference-direction.md`
+   - Evidence: `docs/current/shared-skill-reference-direction.md`
    - Current state: OMO shared-skills structure and skill content copied into `packages/shared-skills` with Persona-specific pruning of LazyCodex-only `lcx-*` skills; minimal routing exists for Java/Gradle support, TypeScript, and React/frontend TypeScript.
    - Decision: keep multi-domain productization inactive until a future philosophy/intake or frontend/infra scope decision activates it.
 
@@ -204,9 +204,9 @@ This is not an overall product-quality percentage. It is a progress count over t
 
 Primary docs:
 
-- `docs/phase-0-report.md`
-- `docs/phase0-rule-selection-review.md`
-- `docs/phase0-step2-scope.md`
+- `docs/phases/phase0/phase-0-report.md`
+- `docs/phases/phase0/phase0-rule-selection-review.md`
+- `docs/phases/phase0/phase0-step2-scope.md`
 
 ### Phase 1.1 Rule Selection Refinement
 
@@ -221,13 +221,13 @@ Primary docs:
 
 Primary docs:
 
-- `docs/phase1-plan.md`
-- `docs/phase1-rule-loader-design.md`
-- `docs/phase1-completion-audit.md`
+- `docs/phases/phase1/phase1-plan.md`
+- `docs/phases/phase1/phase1-rule-loader-design.md`
+- `docs/phases/phase1/phase1-completion-audit.md`
 
 Note:
 
-- Phase 1.1/frontmatter/config dirty worktree settlement is recorded in `docs/phase1-1-frontmatter-worktree-settlement.md`.
+- Phase 1.1/frontmatter/config dirty worktree settlement is recorded in `docs/phases/phase1/phase1-1-frontmatter-worktree-settlement.md`.
 - The next open Phase 1.1 item is explicit schema validation behavior, not more observer work.
 
 ### Phase 1.2 Controller Repository Observer
@@ -241,12 +241,12 @@ Note:
 
 Primary docs:
 
-- `docs/phase1-2-observer-design.md`
-- `docs/phase1-2-report-review.md`
-- `docs/phase1-2-controller-rule-improvement.md`
-- `docs/phase1-2-actual-report-review.md`
-- `docs/phase1-2-additional-actual-report-review.md`
-- `docs/phase1-2-next-decision.md`
+- `docs/phases/phase1/phase1-2-observer-design.md`
+- `docs/phases/phase1/phase1-2-report-review.md`
+- `docs/phases/phase1/phase1-2-controller-rule-improvement.md`
+- `docs/phases/phase1/phase1-2-actual-report-review.md`
+- `docs/phases/phase1/phase1-2-additional-actual-report-review.md`
+- `docs/phases/phase1/phase1-2-next-decision.md`
 
 ### Parser / AST Decision Track
 
@@ -259,10 +259,10 @@ Primary docs:
 
 Primary docs:
 
-- `docs/phase-next-guard-ast-linter-observation-design.md`
-- `docs/phase-next-java-parser-fixture-contract.md`
-- `docs/phase-next-java-parser-metadata-spike.md`
-- `docs/phase1-2-parser-decision.md`
+- `docs/phases/phase-next/phase-next-guard-ast-linter-observation-design.md`
+- `docs/phases/phase-next/phase-next-java-parser-fixture-contract.md`
+- `docs/phases/phase-next/phase-next-java-parser-metadata-spike.md`
+- `docs/phases/phase1/phase1-2-parser-decision.md`
 
 Current decision:
 
@@ -278,9 +278,9 @@ Current decision:
 
 Primary docs:
 
-- `docs/phase-next-controller-sql-observer-design.md`
-- `docs/phase1-2-controller-sql-actual-report-review.md`
-- `docs/phase1-2-controller-sql-next-decision.md`
+- `docs/phases/phase-next/phase-next-controller-sql-observer-design.md`
+- `docs/phases/phase1/phase1-2-controller-sql-actual-report-review.md`
+- `docs/phases/phase1/phase1-2-controller-sql-next-decision.md`
 
 ### Phase 1.2 Service Storage Observer
 
@@ -294,11 +294,11 @@ Primary docs:
 
 Primary docs:
 
-- `docs/phase1-2-next-observation-decision.md`
-- `docs/phase-next-service-storage-observer-design.md`
-- `docs/phase1-service-storage-actual-report-review.md`
-- `docs/phase1-service-storage-repeat-report-review.md`
-- `docs/phase1-next-observation-decision.md`
+- `docs/phases/phase1/phase1-2-next-observation-decision.md`
+- `docs/phases/phase-next/phase-next-service-storage-observer-design.md`
+- `docs/phases/phase1/phase1-service-storage-actual-report-review.md`
+- `docs/phases/phase1/phase1-service-storage-repeat-report-review.md`
+- `docs/phases/phase1/phase1-next-observation-decision.md`
 
 ### Phase 1.2 Test Contract Anchor Observer
 
@@ -321,19 +321,19 @@ Primary docs:
 
 Primary docs:
 
-- `docs/phase1-next-observation-decision.md`
-- `docs/phase1-test-contract-observer-design.md`
-- `docs/phase1-test-contract-actual-report-review.md`
-- `docs/phase1-test-contract-repeat-report-review.md`
-- `docs/phase1-test-contract-matcher-adjustment-design.md`
-- `docs/phase1-test-contract-third-report-review.md`
-- `docs/phase1-test-contract-matcher-adjustment-result.md`
-- `docs/phase1-test-contract-follow-up-decision.md`
-- `docs/phase1-test-contract-response-time-repeat-review.md`
-- `docs/phase1-test-contract-time-list-matcher-decision.md`
-- `docs/phase1-test-contract-time-list-matcher-result.md`
-- `docs/phase1-test-contract-cleanup-decision.md`
-- `docs/phase1-2-observation-pass-decision.md`
+- `docs/phases/phase1/phase1-next-observation-decision.md`
+- `docs/phases/phase1/phase1-test-contract-observer-design.md`
+- `docs/phases/phase1/phase1-test-contract-actual-report-review.md`
+- `docs/phases/phase1/phase1-test-contract-repeat-report-review.md`
+- `docs/phases/phase1/phase1-test-contract-matcher-adjustment-design.md`
+- `docs/phases/phase1/phase1-test-contract-third-report-review.md`
+- `docs/phases/phase1/phase1-test-contract-matcher-adjustment-result.md`
+- `docs/phases/phase1/phase1-test-contract-follow-up-decision.md`
+- `docs/phases/phase1/phase1-test-contract-response-time-repeat-review.md`
+- `docs/phases/phase1/phase1-test-contract-time-list-matcher-decision.md`
+- `docs/phases/phase1/phase1-test-contract-time-list-matcher-result.md`
+- `docs/phases/phase1/phase1-test-contract-cleanup-decision.md`
+- `docs/phases/phase1/phase1-2-observation-pass-decision.md`
 
 ### Phase 1.2 Pass Closeout
 
@@ -361,9 +361,9 @@ Primary docs:
 
 Primary docs:
 
-- `docs/phase1-1-schema-validation-policy-decision.md`
-- `docs/phase1-1-schema-validation-result.md`
-- `docs/productization-path-decision.md`
+- `docs/phases/phase1/phase1-1-schema-validation-policy-decision.md`
+- `docs/phases/phase1/phase1-1-schema-validation-result.md`
+- `docs/current/productization-path-decision.md`
 
 ### Backend Product Code Style Direction
 
@@ -379,9 +379,9 @@ Primary docs:
 
 Primary docs:
 
-- `docs/backend-product-code-style-direction.md`
-- `docs/shared-skill-reference-direction.md`
-- `docs/skill-auto-routing-result.md`
+- `docs/current/backend-product-code-style-direction.md`
+- `docs/current/shared-skill-reference-direction.md`
+- `docs/current/skill-auto-routing-result.md`
 
 ## Deferred / Watch List
 

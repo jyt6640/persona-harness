@@ -22,7 +22,7 @@ observer report:
 
 run 선택 이유:
 
-- `docs/phase1-completion-audit.md`와 `PROJECT-PLAN.md`에서 #2-3 live implementation evidence로 이미 기록된 actual generated run이다.
+- `docs/phases/phase1/phase1-completion-audit.md`와 `PROJECT-PLAN.md`에서 #2-3 live implementation evidence로 이미 기록된 actual generated run이다.
 - 해당 run은 Controller/Test/DTO targetFile evidence를 남긴 #2-3 live run이다.
 
 ## Finding

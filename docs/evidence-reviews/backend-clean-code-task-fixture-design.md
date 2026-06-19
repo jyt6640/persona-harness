@@ -41,7 +41,7 @@ The prompt asks for a Gradle Java/Spring implementation and the task API behavio
 
 ## Rubric
 
-Use `docs/backend-clean-code-uniformity-rubric.md`:
+Use `docs/current/backend-clean-code-uniformity-rubric.md`:
 
 - Gradle only.
 - Root package Application class count.

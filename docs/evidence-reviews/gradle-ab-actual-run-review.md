@@ -67,6 +67,6 @@ Do not add another observer by default. The next useful loop is either:
 
 ## Follow-up
 
-The follow-up parallel A/B review is recorded in `docs/backend-clean-code-parallel-ab-review.md`.
+The follow-up parallel A/B review is recorded in `docs/evidence-reviews/backend-clean-code-parallel-ab-review.md`.
 
 Across three A/B pairs, Gradle-only and Service storage ownership stayed clean in both ON and OFF. The repeated ON-positive signal moved to response DTO/code-shape uniformity.

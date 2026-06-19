@@ -12,7 +12,7 @@ For release or CI-style checks, use strict mode. Strict mode keeps the same diag
 
 Structured source of truth:
 
-- `docs/mvp-scope-status.json`
+- `docs/current/mvp-scope-status.json`
 
 ## Command
 
@@ -39,8 +39,8 @@ npm run check:scope:strict
 - `ACTIVE_SHARED_SKILL_NAMES` still matches the settled active list.
 - key vendored skills remain listed as inactive references.
 - experimental FileRole names remain documented as experimental or parking surfaces.
-- `docs/mvp-scope-status.json` stays aligned with router/type declarations.
-- `docs/phase2-scope-settlement.md` and `docs/project-progress-board.md` still describe the same scope boundary.
+- `docs/current/mvp-scope-status.json` stays aligned with router/type declarations.
+- `docs/current/phase2-scope-settlement.md` and `docs/project-progress-board.md` still describe the same scope boundary.
 
 ## Non-Goals
 

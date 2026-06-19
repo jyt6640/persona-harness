@@ -22,10 +22,10 @@ const OPTIONS = parseArgs(process.argv.slice(2))
 const PROJECT_DIR = OPTIONS.projectDir
 
 const FILES = {
-  status: "docs/mvp-scope-status.json",
+  status: "docs/current/mvp-scope-status.json",
   router: "src/phase0/shared-skill-router.ts",
   types: "src/phase0/types.ts",
-  settlement: "docs/phase2-scope-settlement.md",
+  settlement: "docs/current/phase2-scope-settlement.md",
   board: "docs/project-progress-board.md",
 }
 

@@ -10,7 +10,7 @@
 
 Previous report:
 
-- review doc: `docs/phase1-test-contract-actual-report-review.md`
+- review doc: `docs/phases/phase1/phase1-test-contract-actual-report-review.md`
 - actual run: `experiments/phase0-runs/2026-06-18T02-10-18-110Z`
 - target test file: `experiments/phase0-runs/2026-06-18T02-10-18-110Z/sandbox/src/test/java/com/example/reservation/ReservationIntegrationTest.java`
 - observer report: `experiments/phase0-runs/2026-06-18T02-10-18-110Z/test-contract-observer-report.md`

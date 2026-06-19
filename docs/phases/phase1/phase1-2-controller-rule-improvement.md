@@ -11,7 +11,7 @@ Controller direct Repository dependency observer report를 바탕으로 rule/pro
 기준 report:
 
 - `.persona/evidence/phase1-2/observer-report.md`
-- review 문서: `docs/phase1-2-report-review.md`
+- review 문서: `docs/phases/phase1/phase1-2-report-review.md`
 
 evidence 성격:
 

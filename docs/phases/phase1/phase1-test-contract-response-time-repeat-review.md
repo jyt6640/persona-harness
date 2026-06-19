@@ -13,7 +13,7 @@ Previous actual missing candidate:
 - run: `experiments/phase0-runs/2026-06-18T00-34-47-590Z`
 - target: `experiments/phase0-runs/2026-06-18T00-34-47-590Z/sandbox/src/test/java/com/example/reservation/ReservationIntegrationTest.java`
 - report: `experiments/phase0-runs/2026-06-18T00-34-47-590Z/test-contract-observer-report.md`
-- review: `docs/phase1-test-contract-third-report-review.md`
+- review: `docs/phases/phase1/phase1-test-contract-third-report-review.md`
 - finding after row-count correction: `WARN/HIGH`
 - response time object manual result: missing candidate
 

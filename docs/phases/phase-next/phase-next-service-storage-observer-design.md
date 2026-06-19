@@ -4,7 +4,7 @@
 
 Service가 저장소 상태나 id sequence를 직접 소유하는지 report-only로 관찰한다.
 
-이번 설계는 `docs/phase1-2-next-observation-decision.md`에서 선택한 다음 후보의 최소 설계다. 새 observer 구현, rule/prompt 보강, enforcement gate, build/test failure 연결은 하지 않는다.
+이번 설계는 `docs/phases/phase1/phase1-2-next-observation-decision.md`에서 선택한 다음 후보의 최소 설계다. 새 observer 구현, rule/prompt 보강, enforcement gate, build/test failure 연결은 하지 않는다.
 
 ## Scope
 

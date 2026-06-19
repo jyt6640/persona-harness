@@ -183,7 +183,7 @@ Phase 1.1 started as a design/documentation loop and then moved through minimal 
 
 Design note:
 
-- [`docs/phase1-rule-loader-design.md`](./phase1-rule-loader-design.md)
+- [`docs/phases/phase1/phase1-rule-loader-design.md`](./phase1-rule-loader-design.md)
 
 Minimum design locked for the next implementation loop:
 

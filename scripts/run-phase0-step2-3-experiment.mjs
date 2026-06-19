@@ -273,7 +273,7 @@ not-run
 ## Next Loop
 
 - Inspect this run's requirements.md and prompt.md.
-- If they match docs/phase0-step2-scope.md, run the actual #2-3 implementation experiment in a separate loop.
+- If they match docs/phases/phase0/phase0-step2-scope.md, run the actual #2-3 implementation experiment in a separate loop.
 
 ## Do Not
 
@@ -377,11 +377,11 @@ MVP 목표는 완성도 높은 방탈출 예약 앱을 만드는 것이 아니�
 
 ## Files Reviewed
 
-- docs/mvp-goal.md
+- docs/current/mvp-goal.md
 - README.md
-- docs/phase0-step2-scope.md
-- docs/phase-0-report.md
-- docs/workflow.md
+- docs/phases/phase0/phase0-step2-scope.md
+- docs/phases/phase0/phase-0-report.md
+- docs/current/workflow.md
 - scripts/run-phase0-step2-3-experiment.mjs
 
 ## Documentation Change

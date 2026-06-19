@@ -37,6 +37,7 @@ Current active candidate: bootstrap workflow adjustment to improve role-by-role 
 - `npm run report:rules`: diagnostics-only rule metadata report.
 - `npm run check:scope`: diagnostics-only MVP scope consistency check; also runs as part of `npm test`.
 - `npm run check:scope:strict`: strict MVP scope consistency check for release/CI-style verification.
+- `npm run check:docs`: docs root taxonomy check; also runs as part of `npm test`.
 - `npm run check:injection-value`: validates the Java injection value evidence-window decision state.
 - `npm run demo:java-mvp`: builds, packs, installs, and hook-smoke-tests the Java backend MVP from the packaged artifact.
 - `npm run demo:init`: builds, packs, installs, runs `persona-harness init`, and verifies clean project initialization without copied evidence.
@@ -58,55 +59,55 @@ Current active candidate: bootstrap workflow adjustment to improve role-by-role 
 ## Active Work Queue
 
 1. `[x]` Backend Clean Code uniformity next decision
-   - Goal: fill the 3-pair stopping-rule window using `docs/backend-clean-code-uniformity-rubric.md`, `docs/java-product-code-flow-ab-regrade.md`, and `docs/injection-value-stopping-rule.md`.
+   - Goal: fill the 3-pair stopping-rule window using `docs/current/backend-clean-code-uniformity-rubric.md`, `docs/evidence-reviews/java-product-code-flow-ab-regrade.md`, and `docs/current/injection-value-stopping-rule.md`.
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
    - Current window: 3 comparable regraded pairs, ON-positive 3/3. Decision: `continue-java-mvp`.
 
 2. `[x]` Java backend MVP packaging/demo readiness
-   - Evidence: `docs/java-backend-mvp-packaging-readiness.md`, `docs/java-backend-mvp-install-guide.md`
+   - Evidence: `docs/current/java-backend-mvp-packaging-readiness.md`, `docs/current/java-backend-mvp-install-guide.md`
    - Current state: `npm run demo:java-mvp` verifies build, `npm pack`, package install, OpenCode plugin hook exposure, Java Controller injection, model-input transform, and ignored evidence output from the installed package. The release-facing install guide fixes local development install, package artifact smoke, OpenCode plugin connection, Java target injection flow, and evidence location.
 
 3. `[>]` Java backend MVP init/bootstrap productization
-   - Evidence: `docs/java-backend-bootstrap-injection-design.md`, `docs/java-backend-bootstrap-open-code-demo.md`, `docs/npm-beta-publish-preparation.md`, `docs/java-backend-actual-quality-shape-review.md`
+   - Evidence: `docs/current/java-backend-bootstrap-injection-design.md`, `docs/current/java-backend-bootstrap-open-code-demo.md`, `docs/current/npm-beta-publish-preparation.md`, `docs/current/java-backend-actual-quality-shape-review.md`
    - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance. Clean actual rerun improved root domain package shape, DTO file boundaries, application result DTOs, service-owned state avoidance, and repository boundary shape. Repository boundary now repeated as domain `BookRepository`-style interfaces plus infrastructure `JdbcBookRepository`/`InMemoryBookRepository` implementations.
    - Next candidate: bootstrap workflow adjustment to make Controller, DTO, Repository, and Service role reads observable instead of relying mostly on README/service/test surfaces.
 
 4. `[~]` Test Contract response time object watch
-   - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
+   - Evidence: `docs/phases/phase1/phase1-test-contract-response-time-repeat-review.md`
    - Current state: comparison run had explicit assertions, so no active reinforcement loop.
 
 5. `[~]` Shared-skill productization watch
-   - Evidence: `docs/phase2-scope-settlement.md`, `docs/shared-skill-reference-direction.md`, `docs/mvp-scope-consistency-check.md`, `docs/programming-shared-skill-actual-usage-review.md`
+   - Evidence: `docs/current/phase2-scope-settlement.md`, `docs/current/shared-skill-reference-direction.md`, `docs/current/mvp-scope-consistency-check.md`, `docs/current/programming-shared-skill-actual-usage-review.md`
    - Current state: Java/Gradle `programming` support is limited active routing; actual clean run shows it appears on Java Service targets but does not replace `.persona` backend rules. Multi-domain productization remains inactive.
 
 ## Current Decision Docs
 
-- `docs/phase2-scope-settlement.md`
-- `docs/mvp-scope-status.json`
-- `docs/backend-clean-code-uniformity-rubric.md`
-- `docs/injection-value-stopping-rule.md`
-- `docs/injection-value-status.json`
-- `docs/java-backend-mvp-packaging-readiness.md`
-- `docs/java-backend-mvp-install-guide.md`
-- `docs/java-backend-bootstrap-injection-design.md`
-- `docs/java-backend-bootstrap-open-code-demo.md`
-- `docs/npm-beta-publish-preparation.md`
-- `docs/java-backend-actual-quality-shape-review.md`
-- `docs/programming-shared-skill-actual-usage-review.md`
-- `docs/phase-artifact-retention-policy.md`
-- `docs/mvp-scope-consistency-check.md`
-- `docs/docs-taxonomy-archive-plan.md`
+- `docs/current/phase2-scope-settlement.md`
+- `docs/current/mvp-scope-status.json`
+- `docs/current/backend-clean-code-uniformity-rubric.md`
+- `docs/current/injection-value-stopping-rule.md`
+- `docs/current/injection-value-status.json`
+- `docs/current/java-backend-mvp-packaging-readiness.md`
+- `docs/current/java-backend-mvp-install-guide.md`
+- `docs/current/java-backend-bootstrap-injection-design.md`
+- `docs/current/java-backend-bootstrap-open-code-demo.md`
+- `docs/current/npm-beta-publish-preparation.md`
+- `docs/current/java-backend-actual-quality-shape-review.md`
+- `docs/current/programming-shared-skill-actual-usage-review.md`
+- `docs/current/phase-artifact-retention-policy.md`
+- `docs/current/mvp-scope-consistency-check.md`
+- `docs/archive/docs-taxonomy-archive-plan.md`
 
 ## Current Evidence Reviews
 
-- `docs/java-product-code-flow-ab-regrade.md`
-- `docs/coupon-product-code-flow-ab-review.md`
-- `docs/inventory-product-code-flow-ab-review.md`
-- `docs/java-root-semantics-ab-review.md`
-- `docs/java-domain-root-package-plan-ab-review.md`
-- `docs/java-package-structure-plan-ab-review.md`
-- `docs/java-common-routing-ab-review.md`
-- `docs/backend-clean-code-task-fixture-ab-review.md`
+- `docs/evidence-reviews/java-product-code-flow-ab-regrade.md`
+- `docs/evidence-reviews/coupon-product-code-flow-ab-review.md`
+- `docs/evidence-reviews/inventory-product-code-flow-ab-review.md`
+- `docs/evidence-reviews/java-root-semantics-ab-review.md`
+- `docs/evidence-reviews/java-domain-root-package-plan-ab-review.md`
+- `docs/evidence-reviews/java-package-structure-plan-ab-review.md`
+- `docs/evidence-reviews/java-common-routing-ab-review.md`
+- `docs/evidence-reviews/backend-clean-code-task-fixture-ab-review.md`
 
 ## Snapshot
 

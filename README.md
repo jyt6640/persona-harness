@@ -48,7 +48,7 @@ npm run demo:java-mvp
 
 Java file이 아직 없는 0-start 상황에서는 `README.md`, `requirements.md`, `build.gradle`, `settings.gradle` target에 한해 Java backend bootstrap guidance를 주입한다. 일반 markdown 문서, `docs/` 내부 문서, `CHANGELOG.md`, 임의 note 파일에는 bootstrap injection을 걸지 않는다.
 
-자세한 release-facing 설치/검증 경로는 [docs/java-backend-mvp-install-guide.md](docs/java-backend-mvp-install-guide.md)를 본다.
+자세한 release-facing 설치/검증 경로는 [docs/current/java-backend-mvp-install-guide.md](docs/current/java-backend-mvp-install-guide.md)를 본다.
 
 이 MVP는 생성된 Spring application의 품질, 테스트 충분성, rule enforcement, Guard/AST/linter 검증을 보증하지 않는다.
 
@@ -155,7 +155,7 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 - 1단계 실험에서는 API 계약을 고정한다. 예약 추가 요청은 `name`, `date`, `time`이고 응답은 `id`, `name`, `date`, `time`이다.
 - #2-3 fixture에서는 별도 API contract rule을 사용한다. 예약 추가 요청은 `name`, `date`, `timeId`이고, 예약 조회 응답의 `time`은 `{ id, startAt }` 객체다.
 
-`references/diff-rules`에서 가져온 철학과 보류한 개인 취향성 규칙은 [docs/rule-curation.md](docs/rule-curation.md)에 남긴다.
+`references/diff-rules`에서 가져온 철학과 보류한 개인 취향성 규칙은 [docs/current/rule-curation.md](docs/current/rule-curation.md)에 남긴다.
 
 `example/src`는 backend product code style reference answer로 다룬다. 이 예제는 roomescape, step1, H2, `schema.sql`, 특정 endpoint/body/test style을 보편 규칙으로 강제하기 위한 template이 아니다. 현재 기본 목표는 같은 요구사항과 선택한 기술 스택이 주어졌을 때 Clean Code 기반 backend code flow가 균일하게 나오게 하는 것이다.
 
@@ -167,15 +167,15 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 
 기준 문서:
 
-- [docs/mvp-goal.md](docs/mvp-goal.md)
-- [docs/loop-engineering.md](docs/loop-engineering.md)
-- [docs/workflow.md](docs/workflow.md)
-- [docs/rule-policy.md](docs/rule-policy.md)
-- [docs/backend-product-code-style-direction.md](docs/backend-product-code-style-direction.md)
-- [docs/shared-skill-reference-direction.md](docs/shared-skill-reference-direction.md)
-- [docs/skill-auto-routing-result.md](docs/skill-auto-routing-result.md)
-- [docs/phase0-step2-scope.md](docs/phase0-step2-scope.md)
-- [docs/phase0-rule-selection-review.md](docs/phase0-rule-selection-review.md)
+- [docs/current/mvp-goal.md](docs/current/mvp-goal.md)
+- [docs/current/loop-engineering.md](docs/current/loop-engineering.md)
+- [docs/current/workflow.md](docs/current/workflow.md)
+- [docs/current/rule-policy.md](docs/current/rule-policy.md)
+- [docs/current/backend-product-code-style-direction.md](docs/current/backend-product-code-style-direction.md)
+- [docs/current/shared-skill-reference-direction.md](docs/current/shared-skill-reference-direction.md)
+- [docs/current/skill-auto-routing-result.md](docs/current/skill-auto-routing-result.md)
+- [docs/phases/phase0/phase0-step2-scope.md](docs/phases/phase0/phase0-step2-scope.md)
+- [docs/phases/phase0/phase0-rule-selection-review.md](docs/phases/phase0/phase0-rule-selection-review.md)
 
 ## OpenCode 플러그인 구조
 
@@ -218,7 +218,7 @@ npm run check:scope:strict
 npm pack --dry-run
 ```
 
-`npm test`는 Vitest 전에 diagnostics-only scope check를 함께 실행한다. scope drift가 보이더라도 finding 자체는 test failure gate가 아니며, scope report만 보고 싶으면 `npm run check:scope`를 실행한다.
+`npm test`는 Vitest 전에 diagnostics-only scope check와 docs taxonomy check를 함께 실행한다. scope drift가 보이더라도 finding 자체는 test failure gate가 아니며, scope report만 보고 싶으면 `npm run check:scope`를 실행한다. 새 docs가 루트에 생기면 `npm run check:docs`가 실패하고 `docs/current`, `docs/evidence-reviews`, `docs/phases`, `docs/archive` 중 이동할 위치를 제안한다.
 릴리즈나 CI에서 scope drift를 실패로 다루고 싶으면 `npm run check:scope:strict`를 실행한다.
 
 테스트는 매 테스트마다 `.persona-test-fixtures/`를 비우고 Java fixture를 다시 만든다. 이 경로는 Git에 커밋하지 않는다.

@@ -10,11 +10,11 @@ This is not a product-quality gate. It is a stop rule for A/B evidence loops.
 
 Does Injection ON repeatedly produce cleaner Java backend product-code flow than Injection OFF under comparable Gradle fixtures?
 
-The comparison surface is `docs/backend-clean-code-uniformity-rubric.md`.
+The comparison surface is `docs/current/backend-clean-code-uniformity-rubric.md`.
 
 Decision state lives in:
 
-- `docs/injection-value-status.json`
+- `docs/current/injection-value-status.json`
 
 Check it with:
 

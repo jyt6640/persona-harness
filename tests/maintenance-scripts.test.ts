@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 const checkScopeScript = resolve("scripts/check-mvp-scope.mjs")
 const checkInjectionValueScript = resolve("scripts/check-injection-value.mjs")
+const checkDocsTaxonomyScript = resolve("scripts/check-docs-taxonomy.mjs")
 const cleanupScript = resolve("scripts/cleanup-phase-artifacts.mjs")
 
 let tempDirs: string[] = []
@@ -24,10 +25,10 @@ function runNodeScript(scriptPath: string, args: readonly string[], cwd: string)
 }
 
 function writeScopeProject(projectDir: string, activeSkills: readonly string[] = ["programming", "frontend"]): void {
-  mkdirSync(join(projectDir, "docs"), { recursive: true })
+  mkdirSync(join(projectDir, "docs", "current"), { recursive: true })
   mkdirSync(join(projectDir, "src", "phase0"), { recursive: true })
   writeFileSync(
-    join(projectDir, "docs", "mvp-scope-status.json"),
+    join(projectDir, "docs", "current", "mvp-scope-status.json"),
     `${JSON.stringify(
       {
         mvpScope: "java-spring-backend-clean-code",
@@ -61,7 +62,7 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
     ].join("\n"),
   )
   writeFileSync(
-    join(projectDir, "docs", "phase2-scope-settlement.md"),
+    join(projectDir, "docs", "current", "phase2-scope-settlement.md"),
     "Java/Spring backend Clean Code injection. TypeScript is experimental. Infra is parking. ast-grep is inactive reference.\n",
   )
   writeFileSync(
@@ -71,8 +72,8 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
 }
 
 function writeInjectionValueStatus(projectDir: string, status: Record<string, unknown>): void {
-  mkdirSync(join(projectDir, "docs"), { recursive: true })
-  writeFileSync(join(projectDir, "docs", "injection-value-status.json"), `${JSON.stringify(status, null, 2)}\n`)
+  mkdirSync(join(projectDir, "docs", "current"), { recursive: true })
+  writeFileSync(join(projectDir, "docs", "current", "injection-value-status.json"), `${JSON.stringify(status, null, 2)}\n`)
 }
 
 afterEach(() => {
@@ -129,9 +130,9 @@ describe("maintenance scripts", () => {
 
   it("keeps packaged scope checks usable when source and docs are absent", () => {
     const projectDir = createTempDir("persona-scope-packaged-")
-    mkdirSync(join(projectDir, "docs"), { recursive: true })
+    mkdirSync(join(projectDir, "docs", "current"), { recursive: true })
     writeFileSync(
-      join(projectDir, "docs", "mvp-scope-status.json"),
+      join(projectDir, "docs", "current", "mvp-scope-status.json"),
       `${JSON.stringify(
         {
           mvpScope: "java-spring-backend-clean-code",
@@ -261,5 +262,34 @@ describe("maintenance scripts", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Injection value diagnostics finding: WARN")
     expect(result.stdout).toContain("decision is open, expected continue-java-mvp")
+  })
+
+  it("reports PASS when docs root only contains taxonomy entrypoints", () => {
+    const projectDir = createTempDir("persona-docs-taxonomy-pass-")
+    mkdirSync(join(projectDir, "docs", "current"), { recursive: true })
+    mkdirSync(join(projectDir, "docs", "evidence-reviews"), { recursive: true })
+    mkdirSync(join(projectDir, "docs", "phases"), { recursive: true })
+    mkdirSync(join(projectDir, "docs", "archive"), { recursive: true })
+    writeFileSync(join(projectDir, "docs", "README.md"), "# Docs\n")
+    writeFileSync(join(projectDir, "docs", "project-progress-board.md"), "# Progress\n")
+
+    const result = runNodeScript(checkDocsTaxonomyScript, [projectDir], projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Docs taxonomy diagnostics finding: PASS")
+    expect(result.stdout).toContain("Docs taxonomy diagnostics count: 0")
+  })
+
+  it("rejects new root docs and suggests the taxonomy package", () => {
+    const projectDir = createTempDir("persona-docs-taxonomy-warn-")
+    mkdirSync(join(projectDir, "docs"), { recursive: true })
+    writeFileSync(join(projectDir, "docs", "README.md"), "# Docs\n")
+    writeFileSync(join(projectDir, "docs", "phase1-new-decision.md"), "# Decision\n")
+
+    const result = runNodeScript(checkDocsTaxonomyScript, [projectDir], projectDir)
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain("Docs taxonomy diagnostics finding: WARN")
+    expect(result.stdout).toContain("Move docs/phase1-new-decision.md to docs/phases/phase1/phase1-new-decision.md")
   })
 })

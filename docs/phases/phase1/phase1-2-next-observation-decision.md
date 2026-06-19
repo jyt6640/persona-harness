@@ -113,7 +113,7 @@ Controller SQL Access observation도 single actual generated run에서 `PASS`, c
 
 ## Follow-Up
 
-선택 후보의 최소 설계는 `docs/phase-next-service-storage-observer-design.md`에 문서화했다.
+선택 후보의 최소 설계는 `docs/phases/phase-next/phase-next-service-storage-observer-design.md`에 문서화했다.
 
 ```text
 Service Storage Ownership observer의 최소 구현과 단위 테스트를 추가한다.

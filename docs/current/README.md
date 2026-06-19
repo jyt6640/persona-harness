@@ -1,25 +1,16 @@
-# Current Decisions
+# Current Docs
 
-This directory is reserved for active decision documents that define current Persona Harness behavior or the next product direction.
+This package contains active decisions, current policy, release-facing guides, and status JSON used by maintenance checks.
 
-Files should move here only when they are meant to be read as current policy, not as historical evidence.
+Use this package for documents that should guide the next implementation or productization loop.
 
-Current root-level decision documents:
+Common anchors:
 
-- `../phase2-scope-settlement.md`
-- `../mvp-scope-status.json`
-- `../backend-clean-code-uniformity-rubric.md`
-- `../injection-value-stopping-rule.md`
-- `../injection-value-status.json`
-- `../java-backend-mvp-packaging-readiness.md`
-- `../java-backend-mvp-install-guide.md`
-- `../java-backend-bootstrap-injection-design.md`
-- `../java-backend-bootstrap-open-code-demo.md`
-- `../npm-beta-publish-preparation.md`
-- `../coupon-product-code-flow-ab-review.md`
-- `../inventory-product-code-flow-ab-review.md`
-- `../phase-artifact-retention-policy.md`
-- `../mvp-scope-consistency-check.md`
-- `../docs-taxonomy-archive-plan.md`
-
-These remain at their existing paths for now to avoid breaking links during the taxonomy transition.
+- `mvp-goal.md`
+- `phase2-scope-settlement.md`
+- `backend-clean-code-uniformity-rubric.md`
+- `injection-value-stopping-rule.md`
+- `java-backend-mvp-install-guide.md`
+- `java-backend-bootstrap-injection-design.md`
+- `mvp-scope-status.json`
+- `injection-value-status.json`

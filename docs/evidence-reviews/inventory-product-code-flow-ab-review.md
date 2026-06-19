@@ -83,4 +83,4 @@ The decision remains open because the fixed evidence window requires 3 comparabl
 
 ## Next Loop
 
-Run or regrade one more comparable Gradle Java/Spring A/B pair. If the third pair is comparable, update `docs/injection-value-status.json` and apply the stopping rule.
+Run or regrade one more comparable Gradle Java/Spring A/B pair. If the third pair is comparable, update `docs/current/injection-value-status.json` and apply the stopping rule.

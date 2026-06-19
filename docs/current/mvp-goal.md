@@ -108,7 +108,7 @@ Phase 0 #2-3은 앱 구현 단계가 아니다. 더 복잡한 Spring 파일, H2/
 - Controller/Service/Repository 역할 분리 기준
 - 요구사항의 status/body/list size 또는 상태 변화를 고정하는 테스트 기준
 
-세부 기준은 [docs/phase0-step2-scope.md](phase0-step2-scope.md)에 둔다.
+세부 기준은 [docs/phases/phase0/phase0-step2-scope.md](phase0-step2-scope.md)에 둔다.
 
 핵심 evidence:
 

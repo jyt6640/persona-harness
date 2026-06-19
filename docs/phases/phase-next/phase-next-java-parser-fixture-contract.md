@@ -8,7 +8,7 @@ Guard/AST/linter observation을 구현하기 전에 Java parser 후보와 fixtur
 
 ## Context
 
-이전 결정은 `docs/phase-next-guard-ast-linter-observation-design.md`에서 AST-first report-only observation 후보를 추천했다.
+이전 결정은 `docs/phases/phase-next/phase-next-guard-ast-linter-observation-design.md`에서 AST-first report-only observation 후보를 추천했다.
 
 이번 문서는 그 다음 단계다. "AST"라는 단어를 넓게 쓰지 않고, 실제 후보가 AST인지 CST인지 구분한다.
 
@@ -194,7 +194,7 @@ Before implementation, run a no-install spike against package metadata only to c
 module format, and TypeScript import shape.
 ```
 
-The metadata spike is recorded in `docs/phase-next-java-parser-metadata-spike.md`.
+The metadata spike is recorded in `docs/phases/phase-next/phase-next-java-parser-metadata-spike.md`.
 
 Completed follow-up:
 

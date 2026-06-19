@@ -16,7 +16,7 @@ Primary comparison surface:
 - C1: Controller delegates to Service
 - B1: final `gradle test` success and whether intermediate failure was observed
 
-See `docs/backend-clean-code-uniformity-rubric.md`.
+See `docs/current/backend-clean-code-uniformity-rubric.md`.
 
 ## Parallel Execution Finding
 
@@ -88,6 +88,6 @@ Choose one:
 
 ## Follow-up
 
-Response DTO boundary was reinforced and rechecked in `docs/response-dto-boundary-ab-review.md`.
+Response DTO boundary was reinforced and rechecked in `docs/evidence-reviews/response-dto-boundary-ab-review.md`.
 
 The follow-up did not preserve the earlier ON-positive differential signal. OFF runs also produced response DTO boundaries, while one ON run still returned domain `Reservation` from Service and converted in Controller.

@@ -16,7 +16,7 @@ Define one new Gradle Java/Spring backend fixture outside the reservation/roomes
 - Test style: not judged.
 - Build: Gradle only.
 
-Fixture design is recorded in `docs/backend-clean-code-task-fixture-design.md`.
+Fixture design is recorded in `docs/evidence-reviews/backend-clean-code-task-fixture-design.md`.
 
 ## Runs
 

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
 
 const PROJECT_DIR = process.argv[2] === undefined ? process.cwd() : resolve(process.argv[2])
-const STATUS_PATH = "docs/injection-value-status.json"
+const STATUS_PATH = "docs/current/injection-value-status.json"
 const DECISIONS = new Set(["open", "continue-java-mvp", "freeze-expansion", "inconclusive"])
 
 function parseNonNegativeInteger(value, fieldName) {

@@ -12,7 +12,7 @@ Reviewed dirty scope:
 
 - `.persona/harness.jsonc`
 - `README.md`
-- `docs/phase1-rule-loader-design.md`
+- `docs/phases/phase1/phase1-rule-loader-design.md`
 - `src/phase0/evidence.ts`
 - `src/phase0/hooks.ts`
 - `src/phase0/injection.ts`

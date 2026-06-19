@@ -1,17 +1,5 @@
 # Evidence Reviews
 
-This directory is reserved for A/B reviews, generated-run reviews, observer report reviews, and other evidence documents.
+This package contains A/B reviews, actual-run reviews, generated-run observations, regrades, and evidence summaries.
 
-Evidence here can inform a decision, but it is not automatically active policy.
-
-Current root-level evidence review documents:
-
-- `../java-product-code-flow-ab-regrade.md`
-- `../java-root-semantics-ab-review.md`
-- `../java-domain-root-package-plan-ab-review.md`
-- `../java-package-structure-plan-ab-review.md`
-- `../java-common-routing-ab-review.md`
-- `../backend-clean-code-task-fixture-ab-review.md`
-- `../gradle-ab-actual-run-review.md`
-
-These remain at their existing paths for now to avoid breaking links during the taxonomy transition.
+Evidence can inform decisions, but it is not active policy by itself. Promote only the resulting decision or rule into `../current/`.
