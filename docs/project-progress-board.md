@@ -20,7 +20,7 @@ Use this file to answer:
 
 Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: decide whether to move to a less saturated backend fixture or design the intake/planning surface for backend Clean Code uniformity.
+Current active candidate: decide whether to add a generic/no-contract backend fixture mode, run one more less-saturated backend fixture, or design the intake/planning surface.
 
 Current recommendation:
 
@@ -39,6 +39,7 @@ Current recommendation:
 13. Target OMO-like skill behavior with Persona-specific backend/frontend/infra specialization.
 14. Treat the first Gradle ON/OFF A/B pair as mixed evidence, not product-quality proof.
 15. Treat Spring Boot entrypoint/package-shape cleanup as confirmed in one new A/B pair, but not as an ON-positive differential signal.
+16. Treat the Task Management fixture A/B as weak ON-positive evidence for explicit layered package shape, not as product-quality proof.
 
 Current evidence summary:
 
@@ -79,12 +80,18 @@ Current evidence summary:
 - Gradle ON/OFF A/B run `experiments/phase0-runs/2026-06-19T00-14-57-663Z-19978-drflpp` completed with model `openai/gpt-5.4-mini-fast`.
 - In that A/B pair, ON and OFF both kept `build.gradle`/`settings.gradle`, avoided `pom.xml`, produced exactly one root-package `ReservationApplication.java`, avoided feature-package extra `*Application.java`, and passed `gradle test --quiet`.
 - This closes the immediate package/class duplication noise check as cleanup confirmation. It is not an ON-positive product-quality signal because OFF was also clean.
+- A new non-reservation Task Management Gradle fixture is defined in `docs/backend-clean-code-task-fixture-design.md`.
+- Primary Task fixture A/B run `experiments/phase0-runs/2026-06-19T00-37-19-269Z-68875-mxhhug-task-service-fixture` completed with model `openai/gpt-5.4-mini-fast`.
+- In the primary Task fixture run, ON and OFF both kept Gradle-only files, avoided `pom.xml`, produced one root `TaskApplication.java`, avoided Service storage/id ownership, kept Repository and DTO boundaries, and passed `gradle test --quiet`.
+- ON produced explicit `web/application/domain/infrastructure` package layering; OFF produced a flatter but still acceptable `task` package with `dto` and `repository` subpackages.
+- The Task fixture gives weak ON-positive evidence for explicit layered package shape only.
+- A secondary Controller-first Task run selected reservation-specific `backend/step1-api-contract.md`; this exposes a generic-fixture contamination risk in the current scenario rule setup.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 55
+Known scoped work items in this board: 56
 
-- Done: 49
+- Done: 50
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
@@ -112,8 +119,8 @@ This is not an overall product-quality percentage. It is a progress count over t
 ## Current Active Work Queue
 
 1. `[>]` Backend Clean Code uniformity next decision
-   - Goal: decide whether to move to a less saturated backend fixture or design the intake/planning surface for backend Clean Code uniformity.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`
+   - Goal: decide whether to add a generic/no-contract backend fixture mode, run one more less-saturated backend fixture, or design the intake/planning surface.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch
