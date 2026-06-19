@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -115,6 +115,20 @@ try {
       "",
     ].join("\n"),
   )
+  const roleDiscoveryFiles = [
+    "src/main/java/com/example/coupon/application/CouponService.java",
+    "src/main/java/com/example/coupon/domain/Coupon.java",
+    "src/main/java/com/example/coupon/domain/CouponRepository.java",
+    "src/main/java/com/example/coupon/infrastructure/JdbcCouponRepository.java",
+    "src/main/java/com/example/coupon/presentation/dto/request/CreateCouponRequest.java",
+    "src/main/java/com/example/coupon/presentation/dto/response/CouponResponse.java",
+    "src/test/java/com/example/coupon/CouponControllerTest.java",
+  ]
+  for (const roleFile of roleDiscoveryFiles) {
+    const rolePath = join(demoProjectDir, roleFile)
+    mkdirSync(dirname(rolePath), { recursive: true })
+    writeFileSync(rolePath, "class Placeholder {}\n")
+  }
 
   const pluginModule = await import(pathToFileURL(installedEntry).href)
   const plugin = pluginModule.default
@@ -163,9 +177,33 @@ try {
   assertIncludes("model input", transformedText, "[Persona Harness Injection]")
   assertIncludes("model input", transformedText, "backend/spring-controller.md")
 
+  const globOutput = {
+    title: "Glob",
+    output: [targetFile, ...roleDiscoveryFiles].join("\n"),
+    metadata: {},
+  }
+  await toolAfterHook(
+    {
+      tool: "glob",
+      sessionID: "demo-glob-session",
+      callID: "demo-glob-call",
+      args: { pattern: "src/main/java/**/*.java" },
+    },
+    globOutput,
+  )
+  assertIncludes("glob output", globOutput.output, "[Persona Harness Java Role Discovery]")
+  assertIncludes("glob output", globOutput.output, "controller: src/main/java/com/example/coupon/presentation/CouponController.java")
+  assertIncludes("glob output", globOutput.output, "repository: src/main/java/com/example/coupon/domain/CouponRepository.java")
+  assertIncludes("glob output", globOutput.output, "request-dto: src/main/java/com/example/coupon/presentation/dto/request/CreateCouponRequest.java")
+  assertIncludes("glob output", globOutput.output, "response-dto: src/main/java/com/example/coupon/presentation/dto/response/CouponResponse.java")
+
   const evidenceFiles = collectFiles(join(demoProjectDir, ".persona", "evidence"), (file) => file.endsWith(".json"))
-  if (evidenceFiles.length < 2) {
-    throw new Error(`Expected at least 2 evidence files, found ${evidenceFiles.length}`)
+  if (evidenceFiles.length < 10) {
+    throw new Error(`Expected controller and role-discovery evidence files, found ${evidenceFiles.length}`)
+  }
+  const evidenceText = evidenceFiles.map((file) => readFileSync(file, "utf8")).join("\n")
+  for (const role of ["controller", "service", "domain", "repository", "request-dto", "response-dto", "test"]) {
+    assertIncludes("evidence", evidenceText, `"fileRole": "${role}"`)
   }
 
   console.log("Java MVP demo readiness: PASS")

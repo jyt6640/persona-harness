@@ -4,6 +4,11 @@ import { writePhase0Evidence } from "./evidence.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import { loadHarnessConfig } from "./harness-config.js"
 import { createInjectionBlock } from "./injection.js"
+import {
+  createJavaRoleReadFollowUp,
+  discoverJavaRoleInjections,
+  formatJavaRoleDiscoveryBlock,
+} from "./java-role-discovery.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile } from "./target-file.js"
@@ -23,6 +28,14 @@ type Phase0HookOptions = {
 
 function appendInjectionToToolOutput(output: ToolAfterOutput, block: string): void {
   if (typeof output.output !== "string" || output.output.includes("[Persona Harness Injection]")) {
+    return
+  }
+
+  output.output = `${output.output}\n\n---\n\n${block}`
+}
+
+function appendJavaRoleDiscoveryToToolOutput(output: ToolAfterOutput, block: string): void {
+  if (typeof output.output !== "string" || output.output.includes("[Persona Harness Java Role Discovery]")) {
     return
   }
 
@@ -74,6 +87,40 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     return injection
   }
 
+  function captureJavaRoleDiscovery(input: ToolAfterInput, output: ToolAfterOutput): void {
+    if (!config.enabled || typeof output.output !== "string" || !config.enabledDomains.includes("backend")) {
+      return
+    }
+
+    const injections = discoverJavaRoleInjections(input.tool, output.output, projectDir)
+    if (injections.length === 0) {
+      return
+    }
+
+    appendJavaRoleDiscoveryToToolOutput(output, formatJavaRoleDiscoveryBlock(injections))
+    const followUp = createJavaRoleReadFollowUp(injections)
+    if (followUp) {
+      store.set(input.sessionID, followUp)
+      writePhase0Evidence(projectDir, {
+        hook: "tool.execute.after",
+        sessionID: input.sessionID,
+        callID: input.callID,
+        injectedInto: "pending-store",
+        injection: followUp,
+      })
+    }
+
+    for (const injection of injections) {
+      writePhase0Evidence(projectDir, {
+        hook: "tool.execute.after",
+        sessionID: input.sessionID,
+        callID: input.callID,
+        injectedInto: "role-discovery",
+        injection,
+      })
+    }
+  }
+
   return {
     "tool.execute.before": async (input: ToolBeforeInput, output: ToolBeforeOutput): Promise<void> => {
       captureTargetFile(
@@ -86,6 +133,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     },
 
     "tool.execute.after": async (input: ToolAfterInput, output: ToolAfterOutput): Promise<void> => {
+      captureJavaRoleDiscovery(input, output)
+
       const injection = captureTargetFile(
         "tool.execute.after",
         input.tool,

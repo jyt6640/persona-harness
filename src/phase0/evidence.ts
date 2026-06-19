@@ -8,7 +8,7 @@ export type EvidenceEvent = {
   hook: "tool.execute.before" | "tool.execute.after" | "experimental.chat.messages.transform"
   sessionID: string
   callID?: string
-  injectedInto: "pending-store" | "tool-output" | "model-input"
+  injectedInto: "pending-store" | "tool-output" | "model-input" | "role-discovery"
   injection: PendingInjection
 }
 

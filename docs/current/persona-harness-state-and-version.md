@@ -6,7 +6,7 @@ Last updated: 2026-06-19
 
 Persona Harness is currently best described as:
 
-> `0.2.0-alpha`: Java/Spring backend Clean Code injection MVP with diagnostics, scoped shared-skill support, artifact hygiene, and an active A/B evidence gate.
+> `0.2.0`: Java/Spring backend Clean Code injection MVP with diagnostics, scoped shared-skill support, artifact hygiene, packaged local demo validation, and Java role read follow-up.
 
 It is no longer a pure Phase 0 proof-of-concept. It is also not a productized `1.0`.
 
@@ -24,7 +24,7 @@ That claim is deliberately blocked by the 3-pair injection value stopping rule.
 
 ### Semver-Like Project Version
 
-Recommended current version: `0.2.0-alpha`.
+Recommended current version: `0.2.0`.
 
 Why not `0.1.x`:
 
@@ -34,16 +34,22 @@ Why not `0.1.x`:
 - A/B evidence collection and rubric-based review exist.
 - Scope checker and cleanup scripts now exist.
 
+Why not `0.2.0-alpha`:
+
+- Local install/init/bootstrap productization exists.
+- Java MVP package demo exists.
+- Gradle Java/Spring A/B evidence window reached a continue-java-mvp decision.
+- Java role discovery and role read follow-up now make Controller/Service/Repository/DTO reads observable.
+
 Why not `0.3.0`:
 
-- Java injection value is not fully decided.
-- Productization/demo packaging is not complete.
+- npm distribution is still not published.
+- User-facing release/support contract is still local/tarball-first.
 - The shared-skill surface is not a productized multi-domain feature.
 
 Why not `1.0.0`:
 
-- No completed 3-pair go/no-go result.
-- No stable user-facing release/demo path.
+- No npm-published release path.
 - No documented installation/support contract beyond MVP reproduction.
 - No claim that generated application quality improves.
 
@@ -351,15 +357,15 @@ At that point the current window would be 1 positive and 1 mixed. One final comp
 Recommended label:
 
 ```text
-0.2.0-alpha
+0.2.0
 ```
 
 Short version name:
 
 ```text
-Java Backend MVP Validation Alpha
+Java Backend MVP Local Productization Candidate
 ```
 
 Current status sentence:
 
-> Persona Harness has a working Java/Spring backend injection MVP and operational hygiene/diagnostics, but it is still validating whether Injection ON provides enough repeated product-code-flow improvement to justify productization.
+> Persona Harness has a working Java/Spring backend injection MVP with local install/demo validation, rule diagnostics, scoped shared-skill support, and Java role read follow-up. It is not yet an npm-published or multi-domain product.
