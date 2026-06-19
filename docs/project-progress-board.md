@@ -20,7 +20,7 @@ Use this file to answer:
 
 Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: exact `com.example/global` sibling package fixture validation or move to project intake/planning design.
+Current active candidate: choose a narrow Java backend Clean Code uniformity rubric or move to MVP productization/demo packaging.
 
 Current recommendation:
 
@@ -35,7 +35,7 @@ Current recommendation:
 9. Keep personal/team/project philosophy as an optional future harness layer; the current default is Clean Code plus backend role responsibility.
 10. Keep test style and test-contract policy out of the current product-code-quality track.
 11. Treat `Gradle only + Service storage ownership baseline reinforcement` as the first implemented backend product-code uniformity step.
-12. Treat OMO `shared-skills` as a vendored reusable skill package, not as something wired into the current backend rule MVP.
+12. Treat OMO `shared-skills` as a vendored reusable skill package with limited active routing: `programming` supports Java/Gradle and TypeScript targets, `frontend` supports React/frontend TypeScript targets, and the rest remains inactive reference material.
 13. Target OMO-like skill behavior with Persona-specific backend/frontend/infra specialization.
 14. Treat the first Gradle ON/OFF A/B pair as mixed evidence, not product-quality proof.
 15. Treat Spring Boot entrypoint/package-shape cleanup as confirmed in one new A/B pair, but not as an ON-positive differential signal.
@@ -47,6 +47,7 @@ Current recommendation:
 21. Treat common cross-cutting backend concerns as `global`, not as domain/application/presentation spillover.
 22. Treat the corrected root/domain package plan as partially validated: domain-internal layers repeated on Injection ON, but root `global` placement did not match exactly.
 23. Treat the clarified root semantics A/B as useful but still partial: ON removed the previous `library/loan` nested domain drift, but the fixture still led to `com.example.library.global` rather than `com.example.global`.
+24. Treat Phase 2 scope settlement as decided: the current MVP remains Java/Spring backend Clean Code injection, while TypeScript/frontend/infra/shared-skill surfaces are experimental or parking surfaces unless a later productization decision activates them.
 
 Current evidence summary:
 
@@ -73,7 +74,10 @@ Current evidence summary:
 - The backend baseline now treats presentation/application/domain/infrastructure boundaries as explicit Clean Code structure: upper layers may know lower layers, direct skip-layer coupling is avoided, and domain can be used by application/infrastructure without knowing infrastructure.
 - OMO shared-skills structure is vendored under `packages/shared-skills`; `programming` is the first important skill, with TypeScript expected to be React/frontend oriented later.
 - The long-term skill direction is OMO-like operation with Persona-specific backend/frontend/infra routing.
-- Minimal skill auto-routing is implemented: TypeScript selects `programming`, React/frontend TypeScript selects `programming` plus `frontend`.
+- Minimal skill auto-routing is implemented: Java/Gradle selects `programming` as support beside `.persona/rules`, TypeScript selects `programming`, and React/frontend TypeScript selects `programming` plus `frontend`.
+- TypeScript/frontend routing is experimental and does not make the MVP multi-domain.
+- Infrastructure and generic `shared-skill` roles are parking surfaces with no active rules or product claim.
+- `debugging`, `visual-qa`, `ast-grep`, `git-master`, `refactor`, `review-work`, `start-work`, `ulw-plan`, `ultraresearch`, `init-deep`, `remove-ai-slops`, and `lsp-setup` are vendored inactive references, not runtime enforcement gates.
 - Gradle ON/OFF A/B run `experiments/phase0-runs/2026-06-18T10-55-43-325Z` completed with model `openai/gpt-5.4-mini-fast`.
 - Both ON and OFF kept Gradle files and avoided `pom.xml`.
 - Both ON and OFF kept storage state/id sequence out of `ReservationService`.
@@ -119,12 +123,14 @@ Current evidence summary:
 - ON still generated `library/global/exception`, not sibling `com.example.global`, because the starting fixture placed `LibraryApplication.java` under `com.example.library`.
 - OFF generated a flatter `library/book` package and `library/common` package.
 - ON and OFF both kept Gradle-only files, avoided `pom.xml`, and passed independent `gradle test --quiet`.
+- Phase 2 scope settlement is recorded in `docs/phase2-scope-settlement.md`.
+- The settlement chooses Java backend MVP first: do not broaden shared-skill routing or claim frontend/infra productization from the current smoke paths.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 62
+Known scoped work items in this board: 63
 
-- Done: 56
+- Done: 57
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
@@ -146,14 +152,14 @@ This is not an overall product-quality percentage. It is a progress count over t
 | Phase 0 | Done | OpenCode plugin MVP for Java/Spring backend rule injection | MVP evidence collected for #1 and #2-3 |
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement | Narrow rule-loader refinement complete |
 | Phase 1.2 | Done | Report-only observers over generated Java/Spring runs | Observation pass closed; reinforcement deferred |
-| Phase 2 | Active validation | Backend product-code uniformity and productization direction | Response DTO boundary reinforced; follow-up A/B is mixed and no longer ON-positive |
+| Phase 2 | Active validation | Backend product-code uniformity and productization direction | Shared-skill scope settled back to Java backend MVP first |
 | Desktop App Track | Not decomposed | Final long-term host/app goal | Not started |
 
 ## Current Active Work Queue
 
 1. `[>]` Backend Clean Code uniformity next decision
-   - Goal: choose whether exact `com.example/global` sibling package shape needs one fixture-corrected A/B or whether to move to project intake/planning design.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`, `docs/java-global-package-plan-surface.md`, `docs/java-domain-root-package-plan-ab-review.md`, `docs/java-root-semantics-ab-review.md`
+   - Goal: choose a narrow Java backend Clean Code uniformity rubric that is not just package-name exactness, or move to MVP productization/demo packaging with the Java backend scope explicit.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`, `docs/java-global-package-plan-surface.md`, `docs/java-domain-root-package-plan-ab-review.md`, `docs/java-root-semantics-ab-review.md`, `docs/phase2-scope-settlement.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch
@@ -163,8 +169,8 @@ This is not an overall product-quality percentage. It is a progress count over t
 
 3. `[~]` Shared programming skill loader/adaptation
    - Evidence: `docs/shared-skill-reference-direction.md`
-   - Current state: OMO shared-skills structure and skill content copied into `packages/shared-skills` with Persona-specific pruning of LazyCodex-only `lcx-*` skills; minimal auto-routing is implemented, but full loader/adaptation is not.
-   - Decision: keep inactive until Gradle A/B validation or philosophy/intake design needs backend/frontend/infra skill routing.
+   - Current state: OMO shared-skills structure and skill content copied into `packages/shared-skills` with Persona-specific pruning of LazyCodex-only `lcx-*` skills; minimal routing exists for Java/Gradle support, TypeScript, and React/frontend TypeScript.
+   - Decision: keep multi-domain productization inactive until a future philosophy/intake or frontend/infra scope decision activates it.
 
 ## Completed Work
 

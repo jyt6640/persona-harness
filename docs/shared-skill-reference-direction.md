@@ -84,13 +84,15 @@ The package should remain mostly data:
 - no OMO workflow copy
 - no OpenCode/Codex-specific behavior inside the shared package
 
-Harness adapters can consume the shared skill directory later.
+Harness adapters can consume the shared skill directory later. The current runtime already has a minimal adapter path, so the distinction is now between limited active support and productized multi-domain routing.
 
 The current minimal adapter behavior is:
 
+- Java and Gradle targets select `programming` as a supporting shared skill while Java backend rules still come from `.persona/rules`.
 - TypeScript targets select `programming`.
 - React/frontend TypeScript targets select `programming` plus `frontend`.
-- Java/Spring backend targets continue to use `.persona/rules` instead of TypeScript shared skills.
+- TypeScript and frontend routing are experimental smoke paths, not productized MVP domains.
+- Infrastructure-looking targets currently have no active skill and no rules.
 - `debugging`, `visual-qa`, `ast-grep`, `git-master`, `refactor`, `review-work`, `start-work`, `ulw-plan`, `ultraresearch`, `init-deep`, `remove-ai-slops`, and `lsp-setup` remain vendored but inactive.
 - `lcx-report-bug`, `lcx-contribute-bug-fix`, and `lcx-doctor` are removed because they are LazyCodex/Codex maintenance workflows rather than Persona Harness skill guidance.
 
@@ -106,10 +108,10 @@ Strong current backend baseline:
 
 Vendored shared skill layer:
 
-- programming discipline for implementation work
-- frontend TypeScript/React discipline
-- backend philosophy overlay when selected
-- infra discipline when selected
+- limited active `programming` support for Java/Gradle and TypeScript targets
+- experimental `frontend` support for React/frontend TypeScript targets
+- inactive reference material for broader OMO skills
+- future backend/frontend/infra philosophy overlays only after an explicit scope decision
 
 Future routing should decide which shared skill/reference applies from the current work domain:
 
@@ -117,7 +119,7 @@ Future routing should decide which shared skill/reference applies from the curre
 - `frontend`
 - `infra`
 
-Full domain routing is a later implementation step. The current implementation only covers the narrow TypeScript and React/frontend smoke path.
+Full domain routing is a later implementation step. The current implementation only covers Java/Gradle support plus narrow TypeScript and React/frontend smoke paths.
 
 ## Non-Goals
 
