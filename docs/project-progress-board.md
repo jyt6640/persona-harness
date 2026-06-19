@@ -43,7 +43,7 @@ Current recommendation:
 17. Treat Java common routing to `backend/layered-architecture.md` as actual-run confirmed at the injection surface.
 18. Do not treat exact `presentation/application/domain/infrastructure` package naming as proven: the latest Library Loans A/B still produced `book` + `web` on Injection ON.
 19. Prefer package structure planning before implementation over repeatedly strengthening package-name wording in isolation.
-20. Treat package structure planning as actual-run useful: the follow-up Library Loans A/B produced exact `presentation/application/domain/infrastructure` packages on Injection ON.
+20. Treat package structure planning as actual-run useful: the follow-up Library Loans A/B produced exact domain-internal `presentation/application/domain/infrastructure` packages on Injection ON.
 21. Treat common cross-cutting backend concerns as `global`, not as domain/application/presentation spillover.
 
 Current evidence summary:
@@ -96,13 +96,13 @@ Current evidence summary:
 - ON and OFF both kept Gradle-only files, avoided `pom.xml`, passed independent `gradle test`, and passed manual HTTP smoke for book create/list/loan/return/delete.
 - ON improved repository and Service storage/id boundaries: `BookService` delegated to `BookRepository`/`InMemoryBookRepository`; OFF `LibraryService` directly owned `Map<Long, Book>` and `AtomicLong nextId`.
 - ON still did not generate exact `presentation/application/domain/infrastructure` package names; it generated `book` + `web`.
-- Java common backend guidance now asks the agent to write a package structure plan before implementation, with `presentation/application/domain/infrastructure` as the default candidate.
+- Java common backend guidance now asks the agent to write a package structure plan before implementation, with root `global` plus domain-specific internal layers as the default candidate.
 - Package structure plan A/B run `experiments/phase0-runs/2026-06-19T03-28-43Z-library-package-plan-ab` completed with model `openai/gpt-5.4-mini-fast`.
-- In that A/B pair, ON generated exact `presentation/application/domain/infrastructure` packages; OFF generated `book` + `web`.
+- In that A/B pair, ON generated exact domain-internal `presentation/application/domain/infrastructure` packages; OFF generated `book` + `web`.
 - ON output did not literally print `package structure plan`, but it did describe a small layered HTTP app before editing.
 - ON and OFF both kept Gradle-only files, avoided `pom.xml`, passed independent `gradle test`, and passed manual HTTP smoke for book create/list/loan/return/delete.
 - The current package-shape signal is ON-positive for code uniformity, not product-quality proof.
-- Java common backend guidance now includes `global/presentation/application/domain/infrastructure` as the default package plan.
+- Java common backend guidance now includes an explicit root `global` plus `root/<domain>/application`, `root/<domain>/domain`, `root/<domain>/infrastructure`, and `root/<domain>/presentation` package plan.
 - `global` is scoped to cross-cutting concerns such as error, response, and config; domain logic, domain DTOs, services, and repositories should not be placed there.
 - The guidance now surfaces presentation request/response DTO packages, application command/result DTO packages, domain repository interfaces, and infrastructure repository implementations.
 
