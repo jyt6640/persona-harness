@@ -16,6 +16,7 @@ enforcement: inject_only
 - presentation → application → domain 흐름을 기본으로 두고, infrastructure는 domain을 사용할 수 있지만 domain은 infrastructure를 알지 않는다.
 - API 외부 계약은 DTO로 표현하고 Entity를 직접 노출하지 않는다.
 - 도메인 규칙은 Spring, HTTP, DB 세부사항에 의존하지 않게 둔다.
+- Domain entity/aggregate는 record 데이터 홀더가 아니라 class로 두고, 자신이 가진 필드로 판단 가능한 규칙은 스스로 판단한다. 예: `isOwner(name)`, `isReturned()`, `canLoan()` 같은 메서드가 Domain 안에 있어야 하며, Application Service가 accessor로 필드를 꺼내 동일한 판단을 대신하지 않는다.
 - RuntimeException을 직접 던지는 방식으로 정책을 숨기지 않는다.
 - 요구사항의 요청/응답 필드 이름을 임의로 바꾸지 않는다.
 - Spring annotation은 역할이 분명한 타입에만 붙인다.

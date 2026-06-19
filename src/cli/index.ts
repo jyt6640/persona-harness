@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url"
 
 import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
+import { runIntakeCommand } from "./intake.js"
 
 type PersonaCliOptions = {
   readonly cwd?: string
@@ -18,6 +19,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
 
   if (command === "init") {
     return runInitCommand({ projectDir: options.cwd, packageRoot: options.packageRoot })
+  }
+
+  if (command === "intake") {
+    return runIntakeCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
   if (command === "bearshell") {
@@ -41,10 +46,12 @@ function personaCliUsage(invocationName: string): string {
     "",
     "Commands:",
     "  init                         Install Persona Harness config into the current project.",
+    "  intake                       Create a draft backend project profile for planning.",
     "  bearshell <command> [args...] Run a bounded command helper for repo inspection and smoke tests.",
     "",
     "Examples:",
     `  ${invocationName} init`,
+    `  ${invocationName} intake`,
     `  ${invocationName} bearshell npm test`,
     `  ${invocationName} bearshell --shell 'git status --short && npm test'`,
   ].join("\n")

@@ -12,5 +12,6 @@ Common anchors:
 - `injection-value-stopping-rule.md`
 - `java-backend-mvp-install-guide.md`
 - `java-backend-bootstrap-injection-design.md`
+- `v0.3.0-project-intake-philosophy-workflow.md`
 - `mvp-scope-status.json`
 - `injection-value-status.json`

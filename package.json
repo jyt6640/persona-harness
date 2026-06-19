@@ -27,6 +27,7 @@
     "docs/current/clean-opencode-ph-bearshell-smoke.md",
     "docs/current/v0.2.1-support-contract.md",
     "docs/current/v0.2.1-package-metadata-audit.md",
+    "docs/current/v0.3.0-project-intake-philosophy-workflow.md",
     "docs/current/vendored-shared-skills-tarball-policy.md",
     "docs/current/injection-value-status.json",
     "docs/current/mvp-scope-status.json",
@@ -38,7 +39,7 @@
   ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "build": "npm run clean && tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/cli/index.js', 0o755)\"",
     "check:docs": "node scripts/check-docs-taxonomy.mjs",
     "check:injection-value": "node scripts/check-injection-value.mjs",
     "experiment:phase0": "node scripts/run-phase0-experiment.mjs",

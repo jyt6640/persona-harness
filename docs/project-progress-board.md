@@ -1,6 +1,6 @@
 # Persona Harness Progress Board
 
-Last updated: 2026-06-19
+Last updated: 2026-06-20
 
 ## Purpose
 
@@ -14,9 +14,9 @@ Detailed historical board content is archived at:
 
 ## Current Position
 
-Current track: Java backend MVP v0.2.1 local/tarball release readiness with scope and artifact hygiene controls.
+Current track: v0.3.0 project-intake / philosophy workflow planning surface on top of the Java backend MVP.
 
-Current active candidate: v0.2.1 local/tarball validation is complete; continue local testing toward `1.0.0`. Public publish remains deferred.
+Current active candidate: `ph intake` planned implementation smoke. v0.2.1 local/tarball validation is complete enough for continued local use; public publish remains deferred.
 
 ## Current Decisions
 
@@ -31,6 +31,10 @@ Current active candidate: v0.2.1 local/tarball validation is complete; continue 
 - Backend Clean Code uniformity is judged by product-code flow, not exact package-name matching.
 - Java injection value stopping rule is satisfied: 3 comparable product-code-flow regraded A/B pairs, ON-positive 3/3.
 - v0.2.1 local/tarball readiness is scoped to Java/Spring backend Clean Code injection and does not claim generated app product quality.
+- v0.2.1 clean project generation can produce buildable Gradle Spring apps from README-only bootstrap. The first library-lending pass exposed repository-port/domain-record guidance gaps that were corrected by target-file follow-up; after narrow guidance tightening, the second course-enrollment README-only rerun produced domain repository ports, infrastructure implementations, class-based domain entities, and domain self-judgment methods without target-file follow-up.
+- The narrow `v0.2.2` repository-port/domain-record candidate is closed for now. Reopen only if a future clean README-only run regresses on repository port placement or domain self-judgment behavior.
+- v0.3.0 starts as a planning surface, not rule enforcement: `ph intake` creates `.persona/project-profile.jsonc` with backend project-shaping questions and optional philosophy overlay slots.
+- Philosophy priority is company, then personal, then Clean Code baseline. Automatic philosophy injection is not productized yet.
 - `v0.2.1` support contract covers local/tarball install, `ph init`, Java/Spring target injection, metadata evidence, and `npx ph bearshell` command-surface behavior in clean OpenCode smoke.
 - `packages/shared-skills` remains in the v0.2.1 tarball as packaged reference material; it is not a release-facing support surface or enforcement gate.
 - v0.2.1 package metadata is checked for name, version, description, keywords, license, repository, homepage, bugs, bin, files, engines, and package size.
@@ -50,6 +54,7 @@ Current active candidate: v0.2.1 local/tarball validation is complete; continue 
 - `npm run cleanup:experiments`: dry-run experiment artifact cleanup.
 - `npm run cleanup:experiments -- --apply`: apply cleanup after dry-run review.
 - `npm pack --dry-run`: package contents dry run for v0.2.1 readiness.
+- `ph intake`: creates a draft `.persona/project-profile.jsonc` for backend project planning before implementation.
 - `ph bearshell <command>`: Persona Harness CLI helper for bounded repo inspection and smoke-test command output. Injection blocks now tell the agent to prefer this helper for repo inspection, CLI smoke tests, and large output checks.
 
 ## Phase Map
@@ -61,6 +66,7 @@ Current active candidate: v0.2.1 local/tarball validation is complete; continue 
 | Phase 1.2 | Done | Report-only observer pass closed; reinforcement deferred |
 | Phase 2 | Active validation | Product-code-flow rubric, injection value stopping rule, scope diagnostics, and artifact cleanup added |
 | Java MVP Packaging | Active productization | Init CLI, `ph bearshell`, `ph bearshell` awareness injection, bootstrap injection, packaged install/run/verify smoke commands, release-facing install guide, and v0.2.1 local/tarball readiness added |
+| v0.3.0 Intake | Active planning surface | `ph intake` creates a backend project profile draft; clean OpenCode planning smoke remains next |
 | Desktop App Track | Not decomposed | Not started |
 
 ## Active Work Queue
@@ -94,11 +100,21 @@ Current active candidate: v0.2.1 local/tarball validation is complete; continue 
    - Current state: package metadata now covers npm-facing fields while keeping public npm publish deferred until the project is closer to `1.0.0`. `npm publish --dry-run`, `npm pack`, clean tarball install, `npx ph init`, and `npx ph bearshell` smoke were verified for `0.2.1`.
    - Next candidate: keep using local/tarball installs for real OpenCode project validation; do not public-publish yet.
 
-7. `[~]` Test Contract response time object watch
+7. `[x]` v0.2.1 clean project generation quality review
+   - Evidence: `docs/evidence-reviews/v0.2.1-clean-project-quality-review.md`
+   - Current state: clean tarball install plus README-only OpenCode generation created buildable Java/Spring Gradle apps in two domains. The first library-lending pass needed target-file follow-up for repository port placement and domain behavior. After narrow guidance tightening, the second course-enrollment README-only rerun generated domain repository ports, infrastructure implementations, class-based domain entities, and domain self-judgment behavior without target-file follow-up. Final `gradle test` and `gradle build` passed in the second clean project.
+   - Next candidate: v0.3.0 project-intake / philosophy workflow planning. Reopen a narrow `v0.2.2` guidance loop only if a future clean README-only run regresses on repository port placement or domain self-judgment behavior.
+
+8. `[x]` v0.3.0 project-intake / philosophy workflow minimum surface
+   - Evidence: `docs/current/v0.3.0-project-intake-philosophy-workflow.md`
+   - Current state: `ph intake` creates `.persona/project-profile.jsonc` with backend project context, scale, storage, persistence, migration, package style, DTO strictness, and philosophy overlay questions. It does not enforce rules, productize frontend/infra, or auto-inject philosophy. Clean project smoke confirmed OpenCode can read README plus the filled profile and produce a planning-only architecture/technology plan without implementation.
+   - Next candidate: planned implementation smoke using `npx ph init`, `npx ph intake`, a filled sample profile, a required plan, and then implementation.
+
+9. `[~]` Test Contract response time object watch
    - Evidence: `docs/phases/phase1/phase1-test-contract-response-time-repeat-review.md`
    - Current state: comparison run had explicit assertions, so no active reinforcement loop.
 
-8. `[~]` Shared-skill productization watch
+10. `[~]` Shared-skill productization watch
    - Evidence: `docs/current/phase2-scope-settlement.md`, `docs/current/shared-skill-reference-direction.md`, `docs/current/mvp-scope-consistency-check.md`, `docs/current/programming-shared-skill-actual-usage-review.md`
    - Current state: Java/Gradle `programming` support is limited active routing; actual clean run shows it appears on Java Service targets but does not replace `.persona` backend rules. Multi-domain productization remains inactive.
 
@@ -117,6 +133,7 @@ Current active candidate: v0.2.1 local/tarball validation is complete; continue 
 - `docs/current/v0.2.1-package-metadata-audit.md`
 - `docs/current/vendored-shared-skills-tarball-policy.md`
 - `docs/current/v0.2.1-release-readiness.md`
+- `docs/current/v0.3.0-project-intake-philosophy-workflow.md`
 - `docs/current/java-backend-bootstrap-injection-design.md`
 - `docs/current/java-backend-bootstrap-open-code-demo.md`
 - `docs/current/npm-beta-publish-preparation.md`
@@ -129,6 +146,8 @@ Current active candidate: v0.2.1 local/tarball validation is complete; continue 
 ## Current Evidence Reviews
 
 - `docs/evidence-reviews/java-product-code-flow-ab-regrade.md`
+- `docs/evidence-reviews/v0.2.1-clean-project-quality-review.md`
+- `docs/evidence-reviews/v0.3.0-intake-planning-smoke.md`
 - `docs/evidence-reviews/coupon-product-code-flow-ab-review.md`
 - `docs/evidence-reviews/inventory-product-code-flow-ab-review.md`
 - `docs/evidence-reviews/java-root-semantics-ab-review.md`
