@@ -20,7 +20,7 @@ Use this file to answer:
 
 Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: decide the productization path for backend Clean Code baseline: move to project intake/planning design or run one more different non-reservation Gradle fixture.
+Current active candidate: validate the refined global/package-detail backend plan or move to project intake/planning design.
 
 Current recommendation:
 
@@ -44,6 +44,7 @@ Current recommendation:
 18. Do not treat exact `presentation/application/domain/infrastructure` package naming as proven: the latest Library Loans A/B still produced `book` + `web` on Injection ON.
 19. Prefer package structure planning before implementation over repeatedly strengthening package-name wording in isolation.
 20. Treat package structure planning as actual-run useful: the follow-up Library Loans A/B produced exact `presentation/application/domain/infrastructure` packages on Injection ON.
+21. Treat common cross-cutting backend concerns as `global`, not as domain/application/presentation spillover.
 
 Current evidence summary:
 
@@ -101,12 +102,15 @@ Current evidence summary:
 - ON output did not literally print `package structure plan`, but it did describe a small layered HTTP app before editing.
 - ON and OFF both kept Gradle-only files, avoided `pom.xml`, passed independent `gradle test`, and passed manual HTTP smoke for book create/list/loan/return/delete.
 - The current package-shape signal is ON-positive for code uniformity, not product-quality proof.
+- Java common backend guidance now includes `global/presentation/application/domain/infrastructure` as the default package plan.
+- `global` is scoped to cross-cutting concerns such as error, response, and config; domain logic, domain DTOs, services, and repositories should not be placed there.
+- The guidance now surfaces presentation request/response DTO packages, application command/result DTO packages, domain repository interfaces, and infrastructure repository implementations.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 59
+Known scoped work items in this board: 60
 
-- Done: 53
+- Done: 54
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
@@ -134,8 +138,8 @@ This is not an overall product-quality percentage. It is a progress count over t
 ## Current Active Work Queue
 
 1. `[>]` Backend Clean Code uniformity next decision
-   - Goal: decide whether to move to project intake/planning design or run one more different non-reservation Gradle fixture before productization.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`
+   - Goal: validate the refined global/package-detail backend plan or move to project intake/planning design.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`, `docs/java-global-package-plan-surface.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch
