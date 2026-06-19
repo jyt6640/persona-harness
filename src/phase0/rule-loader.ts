@@ -55,7 +55,7 @@ const ROLE_RULES: Record<RuleFileRole, readonly string[]> = {
   "response-dto": ["backend/spring-dto.md", STEP1_API_CONTRACT_RULE],
   exception: ["backend/validation-exception.md"],
   test: ["clean-code/testability.md", "backend/spring-test.md", STEP1_API_CONTRACT_RULE],
-  "java-common": ["clean-code/abstraction.md"],
+  "java-common": ["clean-code/abstraction.md", "backend/layered-architecture.md"],
 }
 
 function isRuleFileRole(fileRole: FileRole): fileRole is RuleFileRole {
@@ -85,6 +85,9 @@ function takePoliciesForInjection(rulePath: string, policies: readonly string[],
   }
   if (rulePath === STEP1_API_CONTRACT_RULE || rulePath === STEP2_3_API_CONTRACT_RULE) {
     return policies.slice(0, 3)
+  }
+  if (rulePath === "backend/layered-architecture.md") {
+    return policies.slice(0, 4)
   }
   const limit = rulePath === "clean-code/method-design.md" ? 1 : 2
   return policies.slice(0, limit)

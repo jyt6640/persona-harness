@@ -131,11 +131,23 @@ describe("Phase 0 shared skill routing", () => {
     expect(injection.block).toContain("packages/shared-skills/skills/programming/SKILL.md")
   })
 
+  it("surfaces backend package architecture guidance for Spring Boot application entrypoints", () => {
+    const injection = createInjectionBlock("src/main/java/com/example/library/LibraryApplication.java")
+
+    expect(injection.fileRole).toBe("java-common")
+    expect(injection.selectedRules).toContain("backend/layered-architecture.md")
+    expect(injection.policies.join("\n")).toContain("Presentation")
+    expect(injection.policies.join("\n")).toContain("Application")
+    expect(injection.policies.join("\n")).toContain("Domain")
+    expect(injection.policies.join("\n")).toContain("Infrastructure")
+  })
+
   it("selects the programming shared skill for Gradle Java build files", () => {
     const injection = createInjectionBlock("build.gradle")
 
     expect(injection.fileRole).toBe("java-common")
-    expect(injection.selectedRules).toEqual([])
+    expect(injection.selectedRules).toContain("backend/java-common.md")
+    expect(injection.selectedRules).toContain("backend/layered-architecture.md")
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
     expect(injection.block).toContain("Gradle Java build file detected")
   })

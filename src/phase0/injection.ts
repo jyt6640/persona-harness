@@ -13,7 +13,9 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
   const config = loadHarnessConfig(projectDir)
   const selectedSharedSkills = selectSharedSkillsForTarget(targetFile)
   const fileRole = isJavaTargetFile(targetFile) ? resolveFileRole(targetFile) : resolveSharedSkillFileRole(selectedSharedSkills, targetFile)
-  const loadedRules = isJavaTargetFile(targetFile) ? loadRulesForRole(projectDir, fileRole, targetFile) : []
+  const shouldLoadJavaRules = isJavaTargetFile(targetFile) || fileRole === "java-common"
+  const ruleTargetFile = isJavaTargetFile(targetFile) ? targetFile : undefined
+  const loadedRules = shouldLoadJavaRules ? loadRulesForRole(projectDir, fileRole, ruleTargetFile) : []
   const selectedRules = loadedRules.map((rule) => rule.path)
   const selectedRuleMetadata = loadedRules.map((rule) => ({
     path: rule.path,
