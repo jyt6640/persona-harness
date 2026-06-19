@@ -12,6 +12,7 @@ enforcement: inject_only
 # Repository Policy
 
 - Repository는 저장소 접근, Map/List 상태, id sequence, 테스트 reset을 담당하고, HTTP Request/Response DTO를 저장소 API나 저장 상태로 삼지 않는다.
+- Repository 구현체가 다른 Repository 구현체를 주입받아 aggregate를 조립하거나 N+1 조회 흐름을 숨기지 않는다. 여러 aggregate 조립은 application orchestration, 전용 query/read model, 또는 명시적 infrastructure query 책임으로 분리한다.
 - 메모리 CRUD나 작은 프로젝트에서도 Repository를 생략하지 않는다. `ReservationRepository` 같은 Repository 이름은 저장소 계약 interface로 두고, Map/List 저장 상태와 id sequence는 `InMemoryReservationRepository` 같은 `@Repository` 구현체에 둔다.
 - 비즈니스 판단을 Repository query 조건이나 map 조작 안에 숨기지 않는다.
 - 메모리 저장소 단계에서는 id 발급, 저장 상태 변화, 테스트 초기화가 가능해야 한다.

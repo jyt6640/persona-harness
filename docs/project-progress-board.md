@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: Java backend MVP productization readiness with scope and artifact hygiene controls.
 
-Current active candidate: init/bootstrap productization verification and npm beta preparation.
+Current active candidate: actual Java backend shape revalidation after bootstrap/rule reinforcement.
 
 ## Current Decisions
 
@@ -66,17 +66,17 @@ Current active candidate: init/bootstrap productization verification and npm bet
    - Current state: `npm run demo:java-mvp` verifies build, `npm pack`, package install, OpenCode plugin hook exposure, Java Controller injection, model-input transform, and ignored evidence output from the installed package. The release-facing install guide fixes local development install, package artifact smoke, OpenCode plugin connection, Java target injection flow, and evidence location.
 
 3. `[>]` Java backend MVP init/bootstrap productization
-   - Evidence: `docs/java-backend-bootstrap-injection-design.md`, `docs/java-backend-bootstrap-open-code-demo.md`, `docs/npm-beta-publish-preparation.md`
-   - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance.
-   - Next candidate: actual clean OpenCode run or npm beta publish.
+   - Evidence: `docs/java-backend-bootstrap-injection-design.md`, `docs/java-backend-bootstrap-open-code-demo.md`, `docs/npm-beta-publish-preparation.md`, `docs/java-backend-actual-quality-shape-review.md`
+   - Current state: `persona-harness init` installs `.persona/harness.jsonc`, `.persona/rules`, and merged `.opencode/opencode.json` without copying `.persona/evidence`; README/requirements/Gradle bootstrap targets are scoped to Java backend project-start guidance. Clean actual rerun improved root domain package shape, DTO file boundaries, application result DTOs, and service-owned state avoidance, while repository interface placement remains weak.
+   - Next candidate: decide whether to reinforce domain repository interface/infrastructure implementation placement or adjust bootstrap workflow to force role-by-role Java file reads.
 
 4. `[~]` Test Contract response time object watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
    - Current state: comparison run had explicit assertions, so no active reinforcement loop.
 
 5. `[~]` Shared-skill productization watch
-   - Evidence: `docs/phase2-scope-settlement.md`, `docs/shared-skill-reference-direction.md`, `docs/mvp-scope-consistency-check.md`
-   - Current state: Java/Gradle `programming` support is limited active routing; multi-domain productization remains inactive.
+   - Evidence: `docs/phase2-scope-settlement.md`, `docs/shared-skill-reference-direction.md`, `docs/mvp-scope-consistency-check.md`, `docs/programming-shared-skill-actual-usage-review.md`
+   - Current state: Java/Gradle `programming` support is limited active routing; actual clean run shows it appears on Java Service targets but does not replace `.persona` backend rules. Multi-domain productization remains inactive.
 
 ## Current Decision Docs
 
@@ -90,6 +90,8 @@ Current active candidate: init/bootstrap productization verification and npm bet
 - `docs/java-backend-bootstrap-injection-design.md`
 - `docs/java-backend-bootstrap-open-code-demo.md`
 - `docs/npm-beta-publish-preparation.md`
+- `docs/java-backend-actual-quality-shape-review.md`
+- `docs/programming-shared-skill-actual-usage-review.md`
 - `docs/phase-artifact-retention-policy.md`
 - `docs/mvp-scope-consistency-check.md`
 - `docs/docs-taxonomy-archive-plan.md`
