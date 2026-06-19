@@ -64,6 +64,24 @@ repository/        ← REJECT
 
 The first thing a reader sees should be *what the system is about* (orders, members), not *what framework roles exist*.
 
+Within a domain, the default layer package names are fixed:
+
+- `presentation` — transport/API boundary
+- `application` — use-case flow
+- `domain` — model, policy, port interface
+- `infrastructure` — persistence/external adapter
+
+Do not use role names as package names by default:
+
+```
+order/controller/      ← REJECT: use order/presentation/
+order/service/         ← REJECT: use order/application/
+order/repository/      ← REJECT: use order/infrastructure/ for adapters, order/domain/ for the port
+order/dto/             ← REJECT: put HTTP DTOs under presentation/dto, commands under application/dto
+```
+
+Class names may still use familiar roles when they clarify responsibility (`OrderController`, `OrderService`, `OrderRepository`). Package names express architectural layer, not implementation role.
+
 ### What goes in each layer package
 
 | Package | Contents |

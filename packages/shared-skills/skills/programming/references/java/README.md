@@ -60,8 +60,9 @@ Rule strength:
 11. **No broad catch or swallowed failures.** Catch narrowly; boundary catch-all requires `// no-excuse-ok: catch`.
 12. **No mutable static state.** Shared mutable state needs an explicit owner/lifecycle.
 13. **Frameworks stay at the edge.** Spring/JPA/HTTP/SQL imports do not belong in domain/core packages.
-14. **Test names follow the chosen project convention.** Default profile uses `methodName_ExpectedResult_TestState`; company/personal harness may choose another explicit convention.
-15. **250 pure LOC ceiling.** Split Java source files by responsibility before they become design dumps.
+14. **Use four backend layer package names by default.** Under each business domain, prefer `presentation`, `application`, `domain`, and `infrastructure`; do not default to `controller`, `service`, `repository`, or `dto` role packages.
+15. **Test names follow the chosen project convention.** Default profile uses `methodName_ExpectedResult_TestState`; company/personal harness may choose another explicit convention.
+16. **250 pure LOC ceiling.** Split Java source files by responsibility before they become design dumps.
 
 ### Data Modeling -- Which Construct, When
 

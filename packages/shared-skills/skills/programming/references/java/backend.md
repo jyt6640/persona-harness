@@ -34,7 +34,7 @@ The left side is the default when the project harness has not decided. The right
 ## Backend Iron List
 
 1. **Pin the JDK with a toolchain** -- Java source, target, CI, and local builds must agree.
-2. **Package by business domain** -- `order/presentation`, `order/application`, `order/domain`, `order/infrastructure`; no top-level `controller/service/repository` dump.
+2. **Package by business domain and four layer names** -- `order/presentation`, `order/application`, `order/domain`, `order/infrastructure`; do not default to `order/controller`, `order/service`, `order/repository`, `order/dto`, or a top-level `controller/service/repository` dump.
 3. **Frameworks stay at the edge** -- Spring/JPA/HTTP/SQL imports belong in presentation, infrastructure, config, or global handlers, not the domain core.
 4. **Validate once at the right boundary** -- request shape in Presentation, self-state rules in Domain/Policy, lookup rules in Application Validator.
 5. **Request is not Command** -- Presentation owns request/response DTOs; Application owns command/query DTOs.
