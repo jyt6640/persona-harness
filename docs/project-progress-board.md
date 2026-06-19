@@ -20,7 +20,7 @@ Use this file to answer:
 
 Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: validate the refined global/package-detail backend plan or move to project intake/planning design.
+Current active candidate: clarify package root semantics or move to project intake/planning design.
 
 Current recommendation:
 
@@ -45,6 +45,7 @@ Current recommendation:
 19. Prefer package structure planning before implementation over repeatedly strengthening package-name wording in isolation.
 20. Treat package structure planning as actual-run useful: the follow-up Library Loans A/B produced exact domain-internal `presentation/application/domain/infrastructure` packages on Injection ON.
 21. Treat common cross-cutting backend concerns as `global`, not as domain/application/presentation spillover.
+22. Treat the corrected root/domain package plan as partially validated: domain-internal layers repeated on Injection ON, but root `global` placement did not match exactly.
 
 Current evidence summary:
 
@@ -105,12 +106,17 @@ Current evidence summary:
 - Java common backend guidance now includes an explicit root `global` plus `root/<domain>/application`, `root/<domain>/domain`, `root/<domain>/infrastructure`, and `root/<domain>/presentation` package plan.
 - `global` is scoped to cross-cutting concerns such as error, response, and config; domain logic, domain DTOs, services, and repositories should not be placed there.
 - The guidance now surfaces presentation request/response DTO packages, application command/result DTO packages, domain repository interfaces, and infrastructure repository implementations.
+- Domain root package A/B run `experiments/phase0-runs/2026-06-19T03-48-03Z-library-domain-root-ab` completed with model `openai/gpt-5.4-mini-fast`.
+- In that A/B pair, ON generated `library/loan/application`, `library/loan/domain`, `library/loan/infrastructure`, and `library/loan/presentation` with DTO subpackages, domain repository interface, and infrastructure implementation.
+- ON generated `library/global/exception` and `library/global/response`, not root `com.example.global`.
+- OFF generated a flat `library/book` package and `BookService` directly owned `Map` and `AtomicLong nextId`.
+- The corrected package plan is ON-positive for code-shape uniformity but still partial for exact root `global` placement and domain package naming.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 60
+Known scoped work items in this board: 61
 
-- Done: 54
+- Done: 55
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
@@ -138,8 +144,8 @@ This is not an overall product-quality percentage. It is a progress count over t
 ## Current Active Work Queue
 
 1. `[>]` Backend Clean Code uniformity next decision
-   - Goal: validate the refined global/package-detail backend plan or move to project intake/planning design.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`, `docs/java-global-package-plan-surface.md`
+   - Goal: clarify package root semantics or move to project intake/planning design.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`, `docs/java-global-package-plan-surface.md`, `docs/java-domain-root-package-plan-ab-review.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch
