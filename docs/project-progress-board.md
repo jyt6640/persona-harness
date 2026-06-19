@@ -20,7 +20,7 @@ Use this file to answer:
 
 Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: rerun the non-leading Library Loans Gradle A/B pair and check whether the new package structure plan surface changes generated package shape.
+Current active candidate: decide the productization path for backend Clean Code baseline: move to project intake/planning design or run one more different non-reservation Gradle fixture.
 
 Current recommendation:
 
@@ -43,6 +43,7 @@ Current recommendation:
 17. Treat Java common routing to `backend/layered-architecture.md` as actual-run confirmed at the injection surface.
 18. Do not treat exact `presentation/application/domain/infrastructure` package naming as proven: the latest Library Loans A/B still produced `book` + `web` on Injection ON.
 19. Prefer package structure planning before implementation over repeatedly strengthening package-name wording in isolation.
+20. Treat package structure planning as actual-run useful: the follow-up Library Loans A/B produced exact `presentation/application/domain/infrastructure` packages on Injection ON.
 
 Current evidence summary:
 
@@ -95,12 +96,17 @@ Current evidence summary:
 - ON improved repository and Service storage/id boundaries: `BookService` delegated to `BookRepository`/`InMemoryBookRepository`; OFF `LibraryService` directly owned `Map<Long, Book>` and `AtomicLong nextId`.
 - ON still did not generate exact `presentation/application/domain/infrastructure` package names; it generated `book` + `web`.
 - Java common backend guidance now asks the agent to write a package structure plan before implementation, with `presentation/application/domain/infrastructure` as the default candidate.
+- Package structure plan A/B run `experiments/phase0-runs/2026-06-19T03-28-43Z-library-package-plan-ab` completed with model `openai/gpt-5.4-mini-fast`.
+- In that A/B pair, ON generated exact `presentation/application/domain/infrastructure` packages; OFF generated `book` + `web`.
+- ON output did not literally print `package structure plan`, but it did describe a small layered HTTP app before editing.
+- ON and OFF both kept Gradle-only files, avoided `pom.xml`, passed independent `gradle test`, and passed manual HTTP smoke for book create/list/loan/return/delete.
+- The current package-shape signal is ON-positive for code uniformity, not product-quality proof.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 58
+Known scoped work items in this board: 59
 
-- Done: 52
+- Done: 53
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
@@ -128,8 +134,8 @@ This is not an overall product-quality percentage. It is a progress count over t
 ## Current Active Work Queue
 
 1. `[>]` Backend Clean Code uniformity next decision
-   - Goal: rerun the non-leading Library Loans Gradle A/B pair and check whether the new package structure plan surface changes generated package shape.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`
+   - Goal: decide whether to move to project intake/planning design or run one more different non-reservation Gradle fixture before productization.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch
