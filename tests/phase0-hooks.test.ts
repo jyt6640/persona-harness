@@ -103,7 +103,16 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("backend/spring-controller.md")
     expect(text).toContain("backend/step1-api-contract.md")
     expect(text).toContain(
+      "Java/Spring 프로젝트는 Gradle을 기본 빌드 도구로 사용하고 Maven 파일을 생성하지 않으며, Spring Boot main application class는 root package에 하나만 두고 feature/domain package 아래에 추가 *Application.java를 만들지 않는다.",
+    )
+    expect(text).toContain(
+      "presentation → application → domain 흐름을 기본으로 두고, infrastructure는 domain을 사용할 수 있지만 domain은 infrastructure를 알지 않는다.",
+    )
+    expect(text).toContain(
       "Controller에는 Repository 의존성, Map/List 저장 상태, id sequence, 저장소 구현 세부사항을 넣지 않는다.",
+    )
+    expect(text).toContain(
+      "Controller/Service response path는 domain entity를 직접 외부 응답으로 노출하지 않고 Response DTO boundary를 둔다.",
     )
     expect(text).toContain("GET /reservations는 200 OK와 예약 목록을 반환하고, 생성 전 목록 크기는 0이어야 한다.")
     expect(text).toContain("POST /reservations는 200 OK를 반환한다. 201 Created는 이 단계에서 오답이며")
@@ -125,7 +134,15 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
     const text = firstText(output)
     expect(text).toContain("파일 역할: service")
-    expect(text).toContain("Controller가 아니라 Service가 Repository를 호출하고, 생성/조회/삭제 흐름을 조율한다.")
+    expect(text).toContain(
+      "Application Service는 비즈니스/use-case 흐름을 조율하고 저장소 구현 세부사항을 직접 소유하지 않는다.",
+    )
+    expect(text).toContain(
+      "Service는 List, Map, AtomicLong, nextId, idCounter, sequence 같은 저장소 상태나 id sequence를 직접 소유하지 않는다.",
+    )
+    expect(text).toContain(
+      "Service response path는 저장 결과를 domain entity 그대로 노출하지 않고 Response DTO로 변환한다.",
+    )
   })
 
   it("selects an entity-specific injection block for Entity files", async () => {
