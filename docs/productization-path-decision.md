@@ -67,4 +67,20 @@ The package file list includes `scripts/report-rule-diagnostics.mjs` so the repo
 
 ## Next Loop
 
-After the diagnostics report surface lands, decide whether to harden packaging/demo docs further or prepare a release/demo checklist.
+After the diagnostics report surface lands, the next decision is no longer release/demo first.
+
+The current direction is to clarify backend product-code uniformity before packaging:
+
+- Gradle is the canonical Java/Spring build tool.
+- Maven evidence is discarded for future primary decisions.
+- `example/src` is a style reference answer, not a universal roomescape/step fixture template.
+- The default target is Clean Code based backend product code flow.
+- Personal/team/project philosophy is optional and belongs to a later philosophy/intake harness.
+- Test style remains a later dedicated policy track.
+
+Next loop candidate:
+
+```text
+Run a Gradle canonical generated-run validation with the reinforced baseline:
+Gradle fixed plus Service storage ownership prohibition.
+```

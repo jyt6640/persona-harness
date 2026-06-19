@@ -18,9 +18,9 @@ Use this file to answer:
 
 ## Current Position
 
-Current track: diagnostics-first MVP productization path implemented after Phase 1.2 report-only observation pass closeout.
+Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: release/demo checklist decision.
+Current active candidate: decide whether to move to a less saturated backend fixture or design the intake/planning surface for backend Clean Code uniformity.
 
 Current recommendation:
 
@@ -30,7 +30,15 @@ Current recommendation:
 4. Use diagnostics-only as the PersonaHarnessRule MVP schema validation policy and implementation behavior.
 5. Keep rule/prompt reinforcement deferred unless future actual runs provide repeated manual-confirmed evidence.
 6. Use `npm run report:rules` as the first user-visible diagnostics surface.
-7. Decide whether the next loop should prepare a release/demo checklist.
+7. Treat Gradle as the canonical Java/Spring build tool and discard Maven as primary evidence.
+8. Move the next decision from release/demo packaging to backend product-code uniformity.
+9. Keep personal/team/project philosophy as an optional future harness layer; the current default is Clean Code plus backend role responsibility.
+10. Keep test style and test-contract policy out of the current product-code-quality track.
+11. Treat `Gradle only + Service storage ownership baseline reinforcement` as the first implemented backend product-code uniformity step.
+12. Treat OMO `shared-skills` as a vendored reusable skill package, not as something wired into the current backend rule MVP.
+13. Target OMO-like skill behavior with Persona-specific backend/frontend/infra specialization.
+14. Treat the first Gradle ON/OFF A/B pair as mixed evidence, not product-quality proof.
+15. Treat Spring Boot entrypoint/package-shape cleanup as confirmed in one new A/B pair, but not as an ON-positive differential signal.
 
 Current evidence summary:
 
@@ -51,14 +59,34 @@ Current evidence summary:
 - PersonaHarnessRule diagnostics-only validation is implemented: valid rules have no findings, invalid or malformed frontmatter produces catalog diagnostics, and loading remains non-blocking.
 - PersonaHarnessRule diagnostics now have a user-visible report surface via `npm run report:rules`.
 - README documents the MVP reproduction path from install/build/test to rule diagnostics and OpenCode plugin connection.
+- `example/src` is now treated as a backend product-code style reference answer, not a universal roomescape/step1 template.
+- The current product-code direction is documented in `docs/backend-product-code-style-direction.md`.
+- Gradle-only Java/Spring generation and keeping storage state/id sequence outside Application Service are now reinforced in rule/prompt surfaces.
+- The backend baseline now treats presentation/application/domain/infrastructure boundaries as explicit Clean Code structure: upper layers may know lower layers, direct skip-layer coupling is avoided, and domain can be used by application/infrastructure without knowing infrastructure.
+- OMO shared-skills structure is vendored under `packages/shared-skills`; `programming` is the first important skill, with TypeScript expected to be React/frontend oriented later.
+- The long-term skill direction is OMO-like operation with Persona-specific backend/frontend/infra routing.
+- Minimal skill auto-routing is implemented: TypeScript selects `programming`, React/frontend TypeScript selects `programming` plus `frontend`.
+- Gradle ON/OFF A/B run `experiments/phase0-runs/2026-06-18T10-55-43-325Z` completed with model `openai/gpt-5.4-mini-fast`.
+- Both ON and OFF kept Gradle files and avoided `pom.xml`.
+- Both ON and OFF kept storage state/id sequence out of `ReservationService`.
+- Injection ON separated request/response DTOs and reached final Gradle success without an intermediate failing test attempt; Injection OFF fixed a first failing test and then passed.
+- The current A/B signal is mixed: useful for direction, insufficient for product-quality or stable effect claims.
+- Parallel A/B generation requires isolated OpenCode data/cache/state directories seeded from existing OpenCode data. Naive parallel execution hit run directory collision and global database locking.
+- Across three earlier A/B pairs, response DTO boundary repeated in Injection ON 3/3 and in Injection OFF 1/3.
+- After minimal response DTO boundary reinforcement, two new A/B pairs showed Controller response DTO boundary in both ON and OFF 2/2. The earlier ON-positive differential did not hold.
+- In the response DTO recheck, Service response DTO boundary was ON 1/2 and OFF 2/2, and one ON run generated an extra `ReservationApplication` in the feature package.
+- The backend baseline now injects a Spring Boot entrypoint/package-shape rule: keep one main application class in the root package and do not create extra `*Application.java` classes under feature/domain packages.
+- Gradle ON/OFF A/B run `experiments/phase0-runs/2026-06-19T00-14-57-663Z-19978-drflpp` completed with model `openai/gpt-5.4-mini-fast`.
+- In that A/B pair, ON and OFF both kept `build.gradle`/`settings.gradle`, avoided `pom.xml`, produced exactly one root-package `ReservationApplication.java`, avoided feature-package extra `*Application.java`, and passed `gradle test --quiet`.
+- This closes the immediate package/class duplication noise check as cleanup confirmation. It is not an ON-positive product-quality signal because OFF was also clean.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 45
+Known scoped work items in this board: 55
 
-- Done: 40
+- Done: 49
 - Active next: 1
-- Deferred/watch: 4
+- Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
 
 This is not an overall product-quality percentage. It is a progress count over the currently documented Persona Harness MVP and Phase 1 observation track.
@@ -78,20 +106,25 @@ This is not an overall product-quality percentage. It is a progress count over t
 | Phase 0 | Done | OpenCode plugin MVP for Java/Spring backend rule injection | MVP evidence collected for #1 and #2-3 |
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement | Narrow rule-loader refinement complete |
 | Phase 1.2 | Done | Report-only observers over generated Java/Spring runs | Observation pass closed; reinforcement deferred |
-| Phase 2 | Not decomposed | Stronger productization or broader domains | Not started |
+| Phase 2 | Active validation | Backend product-code uniformity and productization direction | Response DTO boundary reinforced; follow-up A/B is mixed and no longer ON-positive |
 | Desktop App Track | Not decomposed | Final long-term host/app goal | Not started |
 
 ## Current Active Work Queue
 
-1. `[>]` Release/demo checklist decision
-   - Goal: decide the smallest checklist needed before treating this as a shareable MVP artifact.
-   - Evidence: `docs/productization-path-decision.md`
-   - Constraints: no new observer by default, no OMO rules-engine implementation by default, no product-quality gate.
+1. `[>]` Backend Clean Code uniformity next decision
+   - Goal: decide whether to move to a less saturated backend fixture or design the intake/planning surface for backend Clean Code uniformity.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`
+   - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
    - Current state: third run missed reservation response `time.id/startAt`, but comparison run had explicit assertions.
    - Decision: keep inactive unless another actual run repeats manual-confirmed missing.
+
+3. `[~]` Shared programming skill loader/adaptation
+   - Evidence: `docs/shared-skill-reference-direction.md`
+   - Current state: OMO shared-skills structure and skill content copied into `packages/shared-skills` with Persona-specific pruning of LazyCodex-only `lcx-*` skills; minimal auto-routing is implemented, but full loader/adaptation is not.
+   - Decision: keep inactive until Gradle A/B validation or philosophy/intake design needs backend/frontend/infra skill routing.
 
 ## Completed Work
 
@@ -265,13 +298,31 @@ Primary docs:
 - [x] Diagnostics-only validation implementation completed.
 - [x] Diagnostics report surface implemented via `npm run report:rules`.
 - [x] MVP reproduction path documented in README.
-- [>] Release/demo checklist decision remains active next.
+- [x] Diagnostics-first productization surface completed.
 
 Primary docs:
 
 - `docs/phase1-1-schema-validation-policy-decision.md`
 - `docs/phase1-1-schema-validation-result.md`
 - `docs/productization-path-decision.md`
+
+### Backend Product Code Style Direction
+
+- [x] `example/src` clarified as a style reference answer, not a universal project template.
+- [x] Gradle fixed as canonical Java/Spring build tool; Maven removed from primary evidence.
+- [x] Default Clean Code/backend baseline separated from optional personal/team/project philosophy harness.
+- [x] Test style deferred to a later dedicated policy track.
+- [x] First backend product-code uniformity implementation landed: Gradle-only runner/rule prompt and Service storage/id sequence ownership baseline.
+- [x] OMO `shared-skills` structure and skill content vendored as the future shape for reusable Programming/Frontend/Infra skills.
+- [x] OMO-like operation with Persona-specific backend/frontend/infra specialization recorded as the target skill direction.
+- [x] Minimal shared skill auto-routing implemented for TypeScript and React/frontend TypeScript targets.
+- [>] Actual Gradle generated-run validation remains active next.
+
+Primary docs:
+
+- `docs/backend-product-code-style-direction.md`
+- `docs/shared-skill-reference-direction.md`
+- `docs/skill-auto-routing-result.md`
 
 ## Deferred / Watch List
 
@@ -292,10 +343,14 @@ Primary docs:
   - Deferred. Current observers remain report-only.
 - [~] New parser dependency
   - Deferred after metadata/import spike and dependency hygiene.
-- [~] Profile-aware backend/frontend/infra expansion
-  - Deferred. Current MVP is Java/Spring backend.
+- [~] Optional philosophy/intake harness
+  - Deferred. Personal/team/project philosophy is a selectable future layer; current default remains Clean Code plus backend baseline.
+- [~] Frontend/infra profile expansion
+  - Deferred. Future tracks should use the same scale/stack intake pattern, but current work stays backend product code.
 - [~] OMO workflow/skill adaptation
-  - Deferred. Persona Harness remains independent.
+  - Deferred. Persona Harness remains independent; only the useful shared-skills package/content is vendored, with LazyCodex-only `lcx-*` skills removed.
+- [~] Shared skill bundle implementation
+  - Deferred. `packages/shared-skills` is copied, Persona-pruned, and minimally routed, but no full backend/frontend/infra loader/adaptation implementation is selected before Gradle A/B validation.
 - [?] Desktop app packaging
   - Long-term goal, not decomposed into actionable Phase tasks yet.
 
@@ -323,10 +378,10 @@ Use this when starting the next loop:
 
 ```text
 Current active item:
-- Release/demo checklist decision
+- Gradle canonical A/B rerun with reinforced backend baseline
 
 Goal:
-- Decide the smallest checklist needed before treating Persona Harness as a shareable MVP artifact.
+- Verify whether Gradle-only plus Service storage/id sequence ownership reinforcement improves generated backend code uniformity in an actual run.
 
 Constraints:
 - no observer work

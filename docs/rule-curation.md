@@ -33,6 +33,9 @@ Date: 2026-06-17
 - 정적 팩토리 메서드는 도메인 생성 의도가 복잡할 때 권장하고, 모든 생성에 강제하지 않는다.
 - ErrorCode 체계는 API 규모와 일관된 오류 응답 요구가 충분할 때 도입한다.
 - Fake 우선 테스트 전략은 기본 방향으로 두되, 상호작용 자체가 요구사항인 경우 Mock 사용을 허용한다.
+- 개인/팀/프로젝트 철학은 기본 baseline과 분리한다. 철학 파일이 있을 때 선택적으로 얹고, 없을 때는 Clean Code와 backend 역할 책임을 기본값으로 둔다.
+- DB, migration, persistence framework 선택은 사용자 요구사항과 프로젝트 규모에 따라 intake/plan에서 결정한다.
+- 테스트 스타일은 product code baseline과 분리해 후속 테스트 정책으로 다룬다.
 
 ## 보류한 원칙
 
@@ -42,6 +45,10 @@ Date: 2026-06-17
 - 모든 Entity equals/hashCode를 id 기준으로 강제하는 규칙은 영속성 모델과 생명주기에 따라 달라져 완화했다.
 - 특정 예외 클래스 계층, 특정 ErrorCode enum 형식은 프로젝트별 구현 정책이라 제외했다.
 - OMO 방식의 워크플로우 규칙은 참고 대상으로만 두고, Persona Harness의 Phase 0 baseline에는 넣지 않았다.
+- H2/JdbcTemplate/schema.sql/Flyway/Liquibase 같은 persistence 세부 선택은 baseline rule이 아니라 사용자 선택 또는 프로젝트 요구사항으로 보류한다.
+- RestAssured/MockMvc/DEFINED_PORT/DirtiesContext 같은 테스트 도구와 스타일은 후속 테스트 하네스 섹션으로 보류한다.
+- roomescape, reservation, step1/step2-3 요구사항은 fixture와 예시 정답의 맥락으로만 유지하고 보편 baseline으로 승격하지 않는다.
+- OMO `shared-skills`의 `programming` skill은 `packages/shared-skills`에 vendoring하되, 현재 Java/Spring backend baseline rule로 직접 이식하지 않는다.
 
 ## 반영 위치
 

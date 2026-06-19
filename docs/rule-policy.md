@@ -22,6 +22,23 @@
 - 예외와 검증은 경계에서 명확히 처리
 - API 요청/응답 계약은 테스트와 DTO에 명시적으로 드러나야 함
 
+## 기본 Baseline과 선택 철학
+
+현재 기본값은 Clean Code와 Java/Spring Backend 역할 책임이다.
+
+개인/팀/프로젝트 철학은 기본 rule에 항상 강제하는 대상이 아니라, 사용자가 선택하거나 프로젝트에 존재할 때 얹는 후속 철학 하네스 레이어다.
+
+기본 철학이 없을 때는 하네스가 최소 질문으로 프로젝트 규모, 개인/팀 맥락, 백엔드 저장소 선택, 아키텍처 깊이를 파악하고, 그 답변을 바탕으로 계획을 제안한 뒤 구현으로 넘어가는 방향을 유지한다.
+
+이 intake 질문들은 현재 rule 하드코딩 대상이 아니다.
+
+## 강하게 가져갈 Backend Baseline 후보
+
+- Java/Spring 프로젝트의 빌드 도구는 Gradle을 기본값으로 둔다.
+- Maven 파일 생성은 현재 사용자 환경의 primary path가 아니므로 기본 생성에서 제외한다.
+- Application Service는 `List`, `Map`, `AtomicLong`, `nextId`, `idCounter`, `sequence` 같은 저장소 상태나 id sequence를 직접 소유하지 않는다.
+- Application Service는 비즈니스/use-case 흐름을 조율하고, 영속성 접근과 id 발급은 Repository 또는 명시적인 persistence boundary 뒤에 둔다.
+
 ## 제외할 원칙
 
 - 개인 취향이 강한 네이밍 강제
@@ -35,6 +52,9 @@
 - profile-aware 규칙
 - desktop app 규칙
 - 아직 MVP에 필요 없는 운영 규칙
+- H2, JdbcTemplate, JPA, MyBatis, schema.sql, Flyway, Liquibase 같은 특정 persistence 선택의 보편 강제
+- roomescape, reservation, step1, step2-3 같은 fixture 전용 요구사항의 보편 규칙화
+- RestAssured, MockMvc 같은 테스트 스타일의 현재 baseline 강제
 
 ## Rule 작성 기준
 
@@ -43,6 +63,8 @@
 - 모델에게 행동 기준을 주되 과도한 설계를 강제하지 않는다.
 - API contract rule은 요구사항 필드명을 그대로 보존한다.
 - Spring 역할별 rule은 Controller, Service, Repository, Entity, DTO, Test 책임선을 흐리지 않는다.
+- fixture 요구사항에서 나온 구체 필드/endpoint/status를 일반 backend baseline으로 승격하지 않는다.
+- 프로젝트 규모나 기술 선택에 따라 달라질 내용은 rule이 아니라 intake/plan 질문으로 분리한다.
 
 ## Rule 변경 기준
 

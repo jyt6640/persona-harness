@@ -80,7 +80,7 @@ Detector limitation:
 - The detector is string-pattern based, not Java AST based.
 - Normal generated code has produced false positives, including `jsonPath("$").isEmpty()` list-size assertions and `sequence.set(0L)` plus `incrementAndGet()` id reset.
 - Detector PASS is not the sole completion signal.
-- The closure decision combines detector output, direct generated-code review, Maven success, and repeated PASS evidence.
+- The closure decision combines detector output, direct generated-code review, build success, and repeated PASS evidence.
 - Detector is a helper for observing drift, not a quality gate. Phase 0 does not enforce rules through Guard, AST, or linter checks.
 
 ## Phase 0 #2-3 Live Evidence

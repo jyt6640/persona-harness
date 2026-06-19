@@ -102,12 +102,23 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 
 `references/diff-rules`에서 가져온 철학과 보류한 개인 취향성 규칙은 [docs/rule-curation.md](docs/rule-curation.md)에 남긴다.
 
+`example/src`는 backend product code style reference answer로 다룬다. 이 예제는 roomescape, step1, H2, `schema.sql`, 특정 endpoint/body/test style을 보편 규칙으로 강제하기 위한 template이 아니다. 현재 기본 목표는 같은 요구사항과 선택한 기술 스택이 주어졌을 때 Clean Code 기반 backend code flow가 균일하게 나오게 하는 것이다.
+
+현재 Java/Spring build path는 Gradle을 canonical로 둔다. Maven 기반 A/B evidence는 향후 primary 판단에서 폐기한다.
+
+개인/팀/프로젝트 철학은 선택적으로 얹는 후속 philosophy harness layer다. 철학이 없을 때는 Clean Code와 backend 역할 책임을 기본값으로 삼고, 프로젝트 규모, 개인/팀 맥락, 저장소/DB/기술 선택 같은 최소 질문을 통해 계획을 먼저 세운 뒤 구현으로 넘어가는 방향을 유지한다.
+
+`packages/shared-skills`에는 OMO shared-skills 구조와 skill content를 vendoring한다. Persona Harness의 목표는 OMO처럼 작업 맥락에 맞는 skill을 자연스럽게 고르되, backend/frontend/infra에 특화해 적용하는 것이다. 현재 최소 auto-routing은 TypeScript target에 `programming`, React/frontend TypeScript target에 `programming` + `frontend`를 선택한다.
+
 기준 문서:
 
 - [docs/mvp-goal.md](docs/mvp-goal.md)
 - [docs/loop-engineering.md](docs/loop-engineering.md)
 - [docs/workflow.md](docs/workflow.md)
 - [docs/rule-policy.md](docs/rule-policy.md)
+- [docs/backend-product-code-style-direction.md](docs/backend-product-code-style-direction.md)
+- [docs/shared-skill-reference-direction.md](docs/shared-skill-reference-direction.md)
+- [docs/skill-auto-routing-result.md](docs/skill-auto-routing-result.md)
 - [docs/phase0-step2-scope.md](docs/phase0-step2-scope.md)
 - [docs/phase0-rule-selection-review.md](docs/phase0-rule-selection-review.md)
 
@@ -209,7 +220,8 @@ experiments/phase0-runs/{timestamp}/
 │  ├─ .persona/harness.jsonc
 │  ├─ .persona/rules/...
 │  ├─ requirements.md
-│  ├─ pom.xml
+│  ├─ settings.gradle
+│  ├─ build.gradle
 │  └─ src/...
 └─ sandbox-baseline/
 ```
