@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: Java backend MVP productization readiness with scope and artifact hygiene controls.
 
-Current active candidate: release-facing install guide or minimal OpenCode fixture demo after packaged MVP smoke verification.
+Current active candidate: minimal OpenCode fixture demo or desktop app track breakdown after release-facing install guide.
 
 ## Current Decisions
 
@@ -49,7 +49,7 @@ Current active candidate: release-facing install guide or minimal OpenCode fixtu
 | Phase 1.1 | Done | Catalog/frontmatter/glob/scenario selection refinement complete |
 | Phase 1.2 | Done | Report-only observer pass closed; reinforcement deferred |
 | Phase 2 | Active validation | Product-code-flow rubric, injection value stopping rule, scope diagnostics, and artifact cleanup added |
-| Java MVP Packaging | Active productization | Packaged install/run/verify smoke command added |
+| Java MVP Packaging | Active productization | Packaged install/run/verify smoke command and release-facing install guide added |
 | Desktop App Track | Not decomposed | Not started |
 
 ## Active Work Queue
@@ -59,16 +59,19 @@ Current active candidate: release-facing install guide or minimal OpenCode fixtu
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
    - Current window: 3 comparable regraded pairs, ON-positive 3/3. Decision: `continue-java-mvp`.
 
-2. `[>]` Java backend MVP packaging/demo readiness
-   - Evidence: `docs/java-backend-mvp-packaging-readiness.md`
-   - Current state: `npm run demo:java-mvp` verifies build, `npm pack`, package install, OpenCode plugin hook exposure, Java Controller injection, model-input transform, and ignored evidence output from the installed package.
-   - Next candidate: release-facing install guide, minimal OpenCode fixture demo, or desktop app track decomposition.
+2. `[x]` Java backend MVP packaging/demo readiness
+   - Evidence: `docs/java-backend-mvp-packaging-readiness.md`, `docs/java-backend-mvp-install-guide.md`
+   - Current state: `npm run demo:java-mvp` verifies build, `npm pack`, package install, OpenCode plugin hook exposure, Java Controller injection, model-input transform, and ignored evidence output from the installed package. The release-facing install guide fixes local development install, package artifact smoke, OpenCode plugin connection, Java target injection flow, and evidence location.
 
-3. `[~]` Test Contract response time object watch
+3. `[>]` Java backend MVP next productization decision
+   - Current state: release-facing install guide is in place.
+   - Next candidate: minimal OpenCode fixture demo or desktop app track decomposition.
+
+4. `[~]` Test Contract response time object watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
    - Current state: comparison run had explicit assertions, so no active reinforcement loop.
 
-4. `[~]` Shared-skill productization watch
+5. `[~]` Shared-skill productization watch
    - Evidence: `docs/phase2-scope-settlement.md`, `docs/shared-skill-reference-direction.md`, `docs/mvp-scope-consistency-check.md`
    - Current state: Java/Gradle `programming` support is limited active routing; multi-domain productization remains inactive.
 
@@ -80,6 +83,7 @@ Current active candidate: release-facing install guide or minimal OpenCode fixtu
 - `docs/injection-value-stopping-rule.md`
 - `docs/injection-value-status.json`
 - `docs/java-backend-mvp-packaging-readiness.md`
+- `docs/java-backend-mvp-install-guide.md`
 - `docs/phase-artifact-retention-policy.md`
 - `docs/mvp-scope-consistency-check.md`
 - `docs/docs-taxonomy-archive-plan.md`
@@ -97,9 +101,9 @@ Current active candidate: release-facing install guide or minimal OpenCode fixtu
 
 ## Snapshot
 
-Known scoped work items tracked in the archived board: 68, plus injection value stopping-rule and Java MVP packaging readiness decisions.
+Known scoped work items tracked in the archived board: 68, plus injection value stopping-rule, Java MVP packaging readiness, and release-facing install guide decisions.
 
-- Done: 64
+- Done: 65
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track

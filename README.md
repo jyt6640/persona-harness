@@ -2,6 +2,37 @@
 
 Persona Harness는 OpenCode에서 동작하는 TypeScript 플러그인 MVP다.
 
+현재 productized MVP는 **Java/Spring backend Clean Code injection**이다. 목표는 같은 요구사항에서 Gradle 기반, 계층 분리, DTO boundary, Repository boundary, Service orchestration-only backend product code shape가 더 균일하게 나오도록 Java target file에 rule context를 주입하는 것이다.
+
+frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 release-facing MVP 범위가 아니다.
+
+## Quick Start
+
+저장소를 받은 뒤 가장 짧은 smoke/demo command는 다음이다.
+
+```bash
+npm install
+npm run demo:java-mvp
+```
+
+`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다. 내부적으로 빌드, `npm pack`, 임시 프로젝트 설치, 설치된 `dist/index.js` OpenCode plugin hook 실행, Java Controller injection, model input transform, `.persona/evidence/phase0` evidence 생성을 검증한다.
+
+실제 Java/Spring 프로젝트에 붙일 때는 빌드된 플러그인을 `.opencode/opencode.json`에 연결한다.
+
+```jsonc
+{
+  "plugin": [
+    "/absolute/path/to/persona-harness/dist/index.js"
+  ]
+}
+```
+
+그 프로젝트에서 OpenCode가 `src/main/java/**/*.java` target file을 읽거나 수정하면 Persona Harness가 파일 역할을 판정하고, 해당 Java/Spring Clean Code rules를 tool output과 다음 model input에 주입한다. evidence는 해당 프로젝트의 `.persona/evidence/phase0` 아래에 남는다.
+
+자세한 release-facing 설치/검증 경로는 [docs/java-backend-mvp-install-guide.md](docs/java-backend-mvp-install-guide.md)를 본다.
+
+이 MVP는 생성된 Spring application의 품질, 테스트 충분성, rule enforcement, Guard/AST/linter 검증을 보증하지 않는다.
+
 Phase 0의 목표는 하나다.
 
 ```text
@@ -141,7 +172,7 @@ Phase 0 hook:
 
 OMO처럼 “모델이 알아서 좋은 스킬을 고르길 기대하는 방식”이 아니라, 파일 경로와 파일명으로 하네스가 먼저 발동한다.
 
-## 설치와 빌드
+## Local Development Install
 
 ```bash
 npm install
@@ -164,31 +195,18 @@ npm run report:rules
 
 `npm run report:rules`는 빌드 후 `.persona/rules` frontmatter diagnostics를 읽고 ignored output인 `.persona/evidence/phase-next/rule-diagnostics-report.md`에 markdown report를 남긴다. 이 report는 diagnostics-only surface다. invalid metadata를 보여주지만 rule loading, rule selection, injection, test, typecheck, build를 막지 않는다.
 
-## MVP 재현 경로
+## Package Artifact Smoke
 
-현재 제품화 기준의 최소 재현 경로는 다음 순서다.
+패키지 설치 표면까지 포함한 가장 짧은 smoke/demo command는 다음이다.
 
 ```bash
 npm install
-npm test
-npm run typecheck
-npm run build
-npm run report:rules
-```
-
-그 다음 테스트할 Java/Spring 프로젝트의 `.opencode/opencode.json`에 `dist/index.js`를 연결하고 OpenCode에서 Java target file을 읽거나 수정한다.
-
-이 경로가 보장하는 것은 Persona Harness MVP의 rule injection과 metadata-only diagnostics surface다. 생성된 Spring 앱의 product quality, rule compliance enforcement, Guard/AST/linter 검증, desktop app packaging은 보장하지 않는다.
-
-## Java Backend MVP 패키징 데모
-
-패키지 설치 표면까지 포함한 smoke verification은 다음 명령으로 실행한다.
-
-```bash
 npm run demo:java-mvp
 ```
 
-이 명령은 현재 저장소를 빌드한 뒤 `npm pack`으로 tarball을 만들고, 임시 프로젝트에 `persona-harness` 패키지를 설치한다. 그 다음 설치된 패키지의 `dist/index.js` OpenCode plugin module을 import해 Java Controller target에 대한 Phase 0 hook을 직접 호출하고, 다음 항목을 확인한다.
+이 명령은 현재 저장소를 빌드한 뒤 `npm pack`으로 tarball을 만들고, 임시 프로젝트에 `persona-harness` 패키지를 설치한다. 그 다음 설치된 패키지의 `dist/index.js` OpenCode plugin module을 import해 Java Controller target에 대한 Phase 0 hook을 직접 호출한다.
+
+검증하는 것:
 
 - 패키지 안에 `dist/index.js`, `.persona/harness.jsonc`, `.persona/rules`가 포함된다.
 - `tool.execute.after`가 Java Controller target에 `[Persona Harness Injection]`을 붙인다.
@@ -196,13 +214,40 @@ npm run demo:java-mvp
 - `experimental.chat.messages.transform`이 같은 injection을 model input 쪽 user message에 붙인다.
 - 임시 프로젝트의 ignored `.persona/evidence/phase0` 아래 evidence JSON이 생성된다.
 
+검증하지 않는 것:
+
+- 생성된 Spring application의 product quality
+- 테스트 충분성
+- rule compliance enforcement
+- Guard/AST/linter 검증
+- frontend, infra, multi-domain productization
+
 임시 프로젝트를 남겨 직접 확인하려면 다음처럼 실행한다.
 
 ```bash
 npm run demo:java-mvp -- --keep
 ```
 
-이 데모는 Persona Harness 패키지를 설치/실행/검증할 수 있는 MVP 표면을 확인한다. 생성된 Java/Spring 앱의 product quality, 테스트 충분성, rule compliance enforcement, Guard/AST/linter 검증은 확인하지 않는다.
+## OpenCode 연결 경로
+
+테스트할 Java/Spring 프로젝트의 `.opencode/opencode.json`에 빌드된 플러그인을 등록한다.
+
+```jsonc
+{
+  "plugin": [
+    "/Users/yongtae/Desktop/persona-harness/dist/index.js"
+  ]
+}
+```
+
+그 프로젝트에서 OpenCode를 실행하고 Java/Spring target file을 읽거나 수정한다.
+
+```bash
+opencode run --dir /path/to/java-spring-project --model openai/gpt-5.4-mini-fast \
+  "먼저 src/main/java/com/example/coupon/presentation/CouponController.java 파일을 읽고, 요구사항에 맞게 구현해줘."
+```
+
+Java target file이 포착되면 Persona Harness가 `targetFile -> file role -> selected rules -> injection block -> tool output/model input` 흐름으로 동작한다. evidence는 연결한 Java/Spring 프로젝트의 `.persona/evidence/phase0` 아래에 JSON으로 남는다.
 
 ## 반복 실험 패키지
 
@@ -255,33 +300,14 @@ experiments/phase0-runs/{timestamp}/
 
 `experiments/`는 Git ignore 대상이다. 실험 로그, 모델 산출물, evidence, 냉정 분석은 로컬에 계속 쌓되 저장소에는 커밋하지 않는다.
 
-## OpenCode에 연결하기
+## Injection 확인 예시
 
-테스트할 Java/Spring 프로젝트의 `.opencode/opencode.json`에 빌드된 플러그인을 등록한다.
-
-```jsonc
-{
-  "plugin": [
-    "/Users/yongtae/Desktop/persona-harness/dist/index.js"
-  ]
-}
-```
-
-그 프로젝트에서 OpenCode를 실행한다.
-
-```bash
-opencode run --dir /path/to/java-spring-project --model opencode/north-mini-code-free --dangerously-skip-permissions \
-  "먼저 src/main/java/com/example/reservation/ReservationController.java 파일을 읽고, 1단계 웹 요청-응답 요구사항의 예약 CRUD API를 구현해줘."
-```
-
-주의: Persona Harness 저장소 내부 하위 디렉터리에서 OpenCode를 실행하면 Git 루트 때문에 모델이 상위 저장소까지 탐색할 수 있다. 실험 스크립트는 이 문제를 줄이기 위해 `opencode run --dir {sandbox}`를 사용한다. 직접 실행할 때도 `--dir`로 독립 Java/Spring 프로젝트를 지정한다.
-
-모델이 `ReservationController.java`를 읽으면 Persona Harness가 파일 역할을 `controller`로 판정하고, read tool output 뒤에 다음 블록을 붙인다.
+모델이 Java Controller target file을 읽으면 Persona Harness가 파일 역할을 `controller`로 판정하고, read tool output 또는 다음 model input에 다음 형태의 블록을 붙인다.
 
 ```text
 [Persona Harness Injection]
 
-현재 파일: src/main/java/com/example/reservation/ReservationController.java
+현재 파일: src/main/java/com/example/coupon/presentation/CouponController.java
 파일 역할: controller
 
 선택 규칙:
@@ -290,7 +316,6 @@ opencode run --dir /path/to/java-spring-project --model opencode/north-mini-code
 - backend/java-common.md
 - backend/spring-controller.md
 - backend/spring-dto.md
-- backend/step1-api-contract.md
 
 적용 정책:
 - 코드는 짧게보다 명확하게 작성한다.
@@ -298,7 +323,6 @@ opencode run --dir /path/to/java-spring-project --model opencode/north-mini-code
 - HTTP 요청/응답, 유스케이스 흐름, 도메인 상태, 저장소 접근 책임을 구분한다.
 - Controller는 HTTP 요청/응답 변환만 담당한다.
 - Controller에는 비즈니스 로직과 저장소 접근을 넣지 않는다.
-- 1단계 예약 추가 요청 본문은 반드시 name, date, time이다.
 
 주의:
 이 Phase 0 블록은 .persona/rules 정본과 최소 frontmatter/glob/scenario catalog layer를 읽는 MVP rule-loader 결과이며, 아직 full rule engine은 아니다.

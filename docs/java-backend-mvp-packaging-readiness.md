@@ -12,6 +12,8 @@ npm run demo:java-mvp
 
 The command builds the package, creates an `npm pack` tarball, installs that tarball into a temporary demo project, imports the installed `dist/index.js` OpenCode plugin module, and drives the Phase 0 hooks against a Java Controller target.
 
+The release-facing install path is documented in [java-backend-mvp-install-guide.md](java-backend-mvp-install-guide.md).
+
 Use `-- --keep` to keep the temporary demo project for manual inspection:
 
 ```bash
@@ -43,8 +45,8 @@ This proves the MVP can be packed, installed into another project, loaded as an 
 
 ## Current Decision
 
-Java backend MVP packaging/demo readiness has a single local command that verifies the install/run/check path. The active MVP remains Java/Spring backend Clean Code injection.
+Java backend MVP packaging/demo readiness has a single local command that verifies the install/run/check path, plus a release-facing install guide. The active MVP remains Java/Spring backend Clean Code injection.
 
 ## Next Candidate
 
-The next productization loop should decide whether to prepare a release-facing install guide, a minimal OpenCode fixture demo, or a desktop app track breakdown.
+The next productization loop should decide whether to prepare a minimal OpenCode fixture demo or a desktop app track breakdown.
