@@ -20,7 +20,7 @@ Use this file to answer:
 
 Current track: backend Clean Code uniformity validation after diagnostics-first MVP productization surface.
 
-Current active candidate: clarify package root semantics or move to project intake/planning design.
+Current active candidate: exact `com.example/global` sibling package fixture validation or move to project intake/planning design.
 
 Current recommendation:
 
@@ -46,6 +46,7 @@ Current recommendation:
 20. Treat package structure planning as actual-run useful: the follow-up Library Loans A/B produced exact domain-internal `presentation/application/domain/infrastructure` packages on Injection ON.
 21. Treat common cross-cutting backend concerns as `global`, not as domain/application/presentation spillover.
 22. Treat the corrected root/domain package plan as partially validated: domain-internal layers repeated on Injection ON, but root `global` placement did not match exactly.
+23. Treat the clarified root semantics A/B as useful but still partial: ON removed the previous `library/loan` nested domain drift, but the fixture still led to `com.example.library.global` rather than `com.example.global`.
 
 Current evidence summary:
 
@@ -111,12 +112,19 @@ Current evidence summary:
 - ON generated `library/global/exception` and `library/global/response`, not root `com.example.global`.
 - OFF generated a flat `library/book` package and `BookService` directly owned `Map` and `AtomicLong nextId`.
 - The corrected package plan is ON-positive for code-shape uniformity but still partial for exact root `global` placement and domain package naming.
+- Java common backend guidance now explicitly says the root package is where the Spring Boot Application class is located, `global` sits directly below that root package, domain packages sit at the same depth as `global`, and an existing `com.example.library.LibraryApplication` should not trigger a nested `library/loan` domain package.
+- Root semantics A/B run `experiments/phase0-runs/2026-06-19T04-01-00Z-library-root-semantics-ab` completed with model `openai/gpt-5.4-mini-fast`.
+- In that A/B pair, ON generated `library/application`, `library/domain`, `library/infrastructure`, `library/presentation`, request/response DTO packages, command/result DTO packages, domain `BookRepository`, and infrastructure `InMemoryBookRepository`.
+- ON did not generate a nested `library/loan` package, fixing the previous ON drift.
+- ON still generated `library/global/exception`, not sibling `com.example.global`, because the starting fixture placed `LibraryApplication.java` under `com.example.library`.
+- OFF generated a flatter `library/book` package and `library/common` package.
+- ON and OFF both kept Gradle-only files, avoided `pom.xml`, and passed independent `gradle test --quiet`.
 
 ## Progress Snapshot
 
-Known scoped work items in this board: 61
+Known scoped work items in this board: 62
 
-- Done: 55
+- Done: 56
 - Active next: 1
 - Deferred/watch: 6
 - Not yet decomposed: final product packaging and desktop app track
@@ -144,8 +152,8 @@ This is not an overall product-quality percentage. It is a progress count over t
 ## Current Active Work Queue
 
 1. `[>]` Backend Clean Code uniformity next decision
-   - Goal: clarify package root semantics or move to project intake/planning design.
-   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`, `docs/java-global-package-plan-surface.md`, `docs/java-domain-root-package-plan-ab-review.md`
+   - Goal: choose whether exact `com.example/global` sibling package shape needs one fixture-corrected A/B or whether to move to project intake/planning design.
+   - Evidence: `docs/backend-product-code-style-direction.md`, `docs/gradle-ab-actual-run-review.md`, `docs/backend-clean-code-uniformity-rubric.md`, `docs/backend-clean-code-parallel-ab-review.md`, `docs/response-dto-boundary-ab-review.md`, `docs/spring-boot-entrypoint-package-shape-review.md`, `docs/backend-clean-code-task-fixture-ab-review.md`, `docs/java-common-routing-ab-review.md`, `docs/java-package-structure-plan-surface.md`, `docs/java-package-structure-plan-ab-review.md`, `docs/java-global-package-plan-surface.md`, `docs/java-domain-root-package-plan-ab-review.md`, `docs/java-root-semantics-ab-review.md`
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
 
 2. `[~]` Test Contract response time object actual missing watch
