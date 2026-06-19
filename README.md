@@ -53,7 +53,7 @@ find .persona/evidence -type f | sort
 
 `v0.2.0`은 public npm publish 전 단계다. 지금 보장하는 설치 경로는 local path install과 tarball install이며, npm registry에서 `npm install -D persona-harness`로 설치하는 흐름은 아직 지원 대상으로 쓰지 않는다.
 
-자세한 판단과 실제 검증 결과는 [docs/current/v0.2.0-release-readiness.md](docs/current/v0.2.0-release-readiness.md), [docs/current/v0.2.0-alpha-support-contract.md](docs/current/v0.2.0-alpha-support-contract.md), [docs/current/clean-opencode-ph-bearshell-smoke.md](docs/current/clean-opencode-ph-bearshell-smoke.md)를 본다.
+자세한 판단과 실제 검증 결과는 [docs/current/v0.2.0-release-readiness.md](docs/current/v0.2.0-release-readiness.md), [docs/current/v0.2.0-alpha-support-contract.md](docs/current/v0.2.0-alpha-support-contract.md), [docs/current/clean-opencode-ph-bearshell-smoke.md](docs/current/clean-opencode-ph-bearshell-smoke.md), [docs/current/vendored-shared-skills-tarball-policy.md](docs/current/vendored-shared-skills-tarball-policy.md)를 본다.
 
 ### A. Persona Harness Repo 자체 검증
 

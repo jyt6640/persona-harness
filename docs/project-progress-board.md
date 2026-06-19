@@ -32,6 +32,7 @@ Current active candidate: post-smoke support contract hardening for `v0.2.0-alph
 - Java injection value stopping rule is satisfied: 3 comparable product-code-flow regraded A/B pairs, ON-positive 3/3.
 - v0.2.0 local/tarball readiness is scoped to Java/Spring backend Clean Code injection and does not claim generated app product quality.
 - `v0.2.0-alpha` support contract covers local/tarball install, `ph init`, Java/Spring target injection, metadata evidence, and `npx ph bearshell` command-surface behavior in clean OpenCode smoke.
+- `packages/shared-skills` remains in the alpha tarball as packaged reference material; it is not a release-facing support surface or enforcement gate.
 - Public npm publish, GitHub release, version tag, and release branch remain deferred.
 - Experiment artifact cleanup is a phase-close hygiene step and remains dry-run-first.
 
@@ -80,13 +81,18 @@ Current active candidate: post-smoke support contract hardening for `v0.2.0-alph
 4. `[x]` v0.2.0-alpha local/tarball support contract and clean OpenCode behavior smoke
    - Evidence: `docs/current/v0.2.0-release-readiness.md`, `docs/current/v0.2.0-alpha-support-contract.md`, `docs/current/clean-opencode-ph-bearshell-smoke.md`
    - Current state: local path install, tarball install, `ph init`, clean OpenCode Java target injection, metadata evidence, and model use of `npx ph bearshell` for `git status`, `gradle test`, and `gradle build` are verified. npm public publish remains explicitly deferred.
-   - Next candidate: decide whether to keep vendored shared-skills in the alpha tarball unchanged until 1.0, or document them as inactive packaged references without trimming.
+   - Next candidate: npm public publish/prerelease metadata decision after alpha support contract stays stable.
 
-5. `[~]` Test Contract response time object watch
+5. `[x]` Vendored shared-skills tarball policy
+   - Evidence: `docs/current/vendored-shared-skills-tarball-policy.md`, `docs/current/shared-skill-reference-direction.md`, `docs/current/v0.2.0-alpha-support-contract.md`
+   - Current state: `packages/shared-skills` stays in the alpha tarball as packaged reference material. It is not an enforcement gate, not public support coverage for every skill, and not frontend/infra/desktop productization. Tarball size is accepted as a known alpha tradeoff until a pre-`1.0.0` activation policy decides productized/inactive/trimmed skills.
+   - Next candidate: public npm prerelease/publish metadata decision, not tarball trimming.
+
+6. `[~]` Test Contract response time object watch
    - Evidence: `docs/phases/phase1/phase1-test-contract-response-time-repeat-review.md`
    - Current state: comparison run had explicit assertions, so no active reinforcement loop.
 
-6. `[~]` Shared-skill productization watch
+7. `[~]` Shared-skill productization watch
    - Evidence: `docs/current/phase2-scope-settlement.md`, `docs/current/shared-skill-reference-direction.md`, `docs/current/mvp-scope-consistency-check.md`, `docs/current/programming-shared-skill-actual-usage-review.md`
    - Current state: Java/Gradle `programming` support is limited active routing; actual clean run shows it appears on Java Service targets but does not replace `.persona` backend rules. Multi-domain productization remains inactive.
 
@@ -102,6 +108,7 @@ Current active candidate: post-smoke support contract hardening for `v0.2.0-alph
 - `docs/current/ph-bearshell-mvp.md`
 - `docs/current/clean-opencode-ph-bearshell-smoke.md`
 - `docs/current/v0.2.0-alpha-support-contract.md`
+- `docs/current/vendored-shared-skills-tarball-policy.md`
 - `docs/current/v0.2.0-release-readiness.md`
 - `docs/current/java-backend-bootstrap-injection-design.md`
 - `docs/current/java-backend-bootstrap-open-code-demo.md`
