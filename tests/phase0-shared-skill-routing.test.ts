@@ -121,10 +121,22 @@ describe("Phase 0 shared skill routing", () => {
     expect(text).toContain("TypeScript 코드를 수정해줘.")
   })
 
-  it("keeps Java backend targets on rule injection without forcing shared TypeScript skills", () => {
+  it("selects Java backend rules and the programming shared skill for Java targets", () => {
     const injection = createInjectionBlock("src/main/java/com/example/reservation/ReservationService.java")
 
+    expect(injection.fileRole).toBe("service")
     expect(injection.selectedRules).toContain("backend/spring-service.md")
-    expect(injection.selectedSharedSkills).toEqual([])
+    expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
+    expect(injection.block).toContain("Java target detected")
+    expect(injection.block).toContain("packages/shared-skills/skills/programming/SKILL.md")
+  })
+
+  it("selects the programming shared skill for Gradle Java build files", () => {
+    const injection = createInjectionBlock("build.gradle")
+
+    expect(injection.fileRole).toBe("java-common")
+    expect(injection.selectedRules).toEqual([])
+    expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
+    expect(injection.block).toContain("Gradle Java build file detected")
   })
 })

@@ -12,7 +12,7 @@ function dedupePolicies(policies: string[]): string[] {
 export function createInjectionBlock(targetFile: string, projectDir = process.cwd()): PendingInjection {
   const config = loadHarnessConfig(projectDir)
   const selectedSharedSkills = selectSharedSkillsForTarget(targetFile)
-  const fileRole = isJavaTargetFile(targetFile) ? resolveFileRole(targetFile) : resolveSharedSkillFileRole(selectedSharedSkills)
+  const fileRole = isJavaTargetFile(targetFile) ? resolveFileRole(targetFile) : resolveSharedSkillFileRole(selectedSharedSkills, targetFile)
   const loadedRules = isJavaTargetFile(targetFile) ? loadRulesForRole(projectDir, fileRole, targetFile) : []
   const selectedRules = loadedRules.map((rule) => rule.path)
   const selectedRuleMetadata = loadedRules.map((rule) => ({

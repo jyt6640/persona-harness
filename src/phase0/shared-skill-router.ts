@@ -1,3 +1,5 @@
+import type { FileRole } from "./types.js"
+
 export const ACTIVE_SHARED_SKILL_NAMES = ["programming", "frontend"] as const
 
 export const INACTIVE_VENDORED_SHARED_SKILL_NAMES = [
@@ -29,6 +31,8 @@ export type SelectedSharedSkill = {
 }
 
 const TYPESCRIPT_FILE_PATTERN = /\.(ts|tsx|mts|cts)$/i
+const JAVA_FILE_PATTERN = /\.java$/i
+const GRADLE_BUILD_FILE_PATTERN = /(^|\/)(build|settings)\.gradle(\.kts)?$/i
 const REACT_FILE_PATTERN = /\.tsx$/i
 const FRONTEND_PATH_PATTERN = /(^|\/)(app|components|frontend|pages|routes|ui|web)(\/|$)/i
 const INFRA_FILE_PATTERN = /(^|\/)(Dockerfile|docker-compose\.ya?ml|.*\.(tf|tfvars|ya?ml))$/i
@@ -39,6 +43,14 @@ function normalizePath(targetFile: string): string {
 
 function isTypeScriptTarget(normalizedPath: string): boolean {
   return TYPESCRIPT_FILE_PATTERN.test(normalizedPath)
+}
+
+function isJavaProgrammingTarget(normalizedPath: string): boolean {
+  return JAVA_FILE_PATTERN.test(normalizedPath) || GRADLE_BUILD_FILE_PATTERN.test(normalizedPath)
+}
+
+function isGradleBuildFile(normalizedPath: string): boolean {
+  return GRADLE_BUILD_FILE_PATTERN.test(normalizedPath)
 }
 
 function isFrontendTarget(normalizedPath: string): boolean {
@@ -53,12 +65,16 @@ export function selectSharedSkillsForTarget(targetFile: string): readonly Select
   const normalizedPath = normalizePath(targetFile)
   const selected: SelectedSharedSkill[] = []
 
-  if (isTypeScriptTarget(normalizedPath)) {
+  if (isTypeScriptTarget(normalizedPath) || isJavaProgrammingTarget(normalizedPath)) {
     selected.push({
       name: "programming",
       domain: "programming",
       path: "packages/shared-skills/skills/programming/SKILL.md",
-      reason: "TypeScript target detected; apply shared programming discipline.",
+      reason: isJavaProgrammingTarget(normalizedPath)
+        ? isGradleBuildFile(normalizedPath)
+          ? "Gradle Java build file detected; apply shared programming discipline."
+          : "Java target detected; apply shared programming discipline."
+        : "TypeScript target detected; apply shared programming discipline.",
     })
   }
 
@@ -78,9 +94,14 @@ export function selectSharedSkillsForTarget(targetFile: string): readonly Select
   return selected
 }
 
-export function resolveSharedSkillFileRole(selectedSkills: readonly SelectedSharedSkill[]): "typescript" | "frontend" | "shared-skill" {
+export function resolveSharedSkillFileRole(selectedSkills: readonly SelectedSharedSkill[], targetFile = ""): FileRole {
+  const normalizedPath = normalizePath(targetFile)
+
   if (selectedSkills.some((skill) => skill.domain === "frontend")) {
     return "frontend"
+  }
+  if (isJavaProgrammingTarget(normalizedPath)) {
+    return "java-common"
   }
   if (selectedSkills.some((skill) => skill.domain === "programming")) {
     return "typescript"
