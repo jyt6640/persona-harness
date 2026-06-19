@@ -273,7 +273,7 @@ The biggest remaining risk is not tooling hygiene.
 
 It is whether Java/Spring Injection ON consistently produces better product-code flow than OFF.
 
-The project should not widen into frontend/infra/productized shared-skill scope until the 3-pair stopping rule has a result.
+The current evidence window is 2/3 comparable Gradle Java/Spring pairs, with Injection ON positive in both regraded pairs. The project should not widen into frontend/infra/productized shared-skill scope until the 3-pair stopping rule has a result.
 
 ### 2. Shared-Skill Surface Can Expand Too Easily
 

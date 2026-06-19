@@ -90,8 +90,9 @@ Without this stopping rule, this rubric is only a scoring sheet and does not clo
 ## Current Regraded Evidence
 
 - `docs/java-product-code-flow-ab-regrade.md`: Library Loans root semantics A/B is ON-positive for product-code flow.
+- `docs/inventory-product-code-flow-ab-review.md`: Inventory Stock A/B is ON-positive for product-code flow, with a noted ON service HTTP exception leak.
 
-Current fixed-window count: 1 comparable regraded pair, ON-positive 1/1.
+Current fixed-window count: 2 comparable regraded pairs, ON-positive 2/2.
 
 ## A/B Reading Order
 

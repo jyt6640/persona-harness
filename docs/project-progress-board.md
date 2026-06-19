@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: backend Clean Code uniformity validation with scope and artifact hygiene controls.
 
-Current active candidate: use the product-code-flow rubric for the next Java Gradle A/B, or decide whether the Java backend MVP is ready for productization/demo packaging.
+Current active candidate: fill the final product-code-flow A/B pair, then decide whether the Java backend MVP is ready for productization/demo packaging.
 
 ## Current Decisions
 
@@ -55,7 +55,7 @@ Current active candidate: use the product-code-flow rubric for the next Java Gra
 1. `[>]` Backend Clean Code uniformity next decision
    - Goal: fill the 3-pair stopping-rule window using `docs/backend-clean-code-uniformity-rubric.md`, `docs/java-product-code-flow-ab-regrade.md`, and `docs/injection-value-stopping-rule.md`.
    - Constraints: no new observer by default, no test-policy work, no frontend/infra/profile-aware implementation, no product-quality certification claim.
-   - Current window: 1 comparable regraded pair, ON-positive 1/1.
+   - Current window: 2 comparable regraded pairs, ON-positive 2/2. Decision remains open until 3/3.
 
 2. `[~]` Test Contract response time object watch
    - Evidence: `docs/phase1-test-contract-response-time-repeat-review.md`
@@ -79,6 +79,7 @@ Current active candidate: use the product-code-flow rubric for the next Java Gra
 ## Current Evidence Reviews
 
 - `docs/java-product-code-flow-ab-regrade.md`
+- `docs/inventory-product-code-flow-ab-review.md`
 - `docs/java-root-semantics-ab-review.md`
 - `docs/java-domain-root-package-plan-ab-review.md`
 - `docs/java-package-structure-plan-ab-review.md`
