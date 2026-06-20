@@ -5,9 +5,7 @@ import process from "node:process"
 import type { CliRunResult } from "./bearshell.js"
 import { loadBackendProjectProfileSummary } from "../phase0/project-profile.js"
 
-type PlanOptions = {
-  readonly projectDir?: string
-}
+type PlanOptions = { readonly projectDir?: string }
 
 type ParsedPlanArgs =
   | { readonly kind: "run"; readonly force: boolean }
@@ -22,6 +20,8 @@ class PlanDraftError extends Error {
 }
 
 const PLAN_PATH = ".persona/workflow/plan.md"
+const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
+const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const README_PATH = "README.md"
 
 export function planUsage(invocation = "ph"): string {
@@ -32,6 +32,8 @@ export function planUsage(invocation = "ph"): string {
     "",
     "Output:",
     `- ${PLAN_PATH}`,
+    `- ${IMPLEMENTATION_REPORT_PATH}`,
+    `- ${REVIEW_REPORT_PATH}`,
     "",
     "Scope:",
     "- Java/Spring backend Clean Code planning surface",
@@ -136,17 +138,104 @@ function createPlanDraft(projectDir: string): string {
   ].join("\n")
 }
 
+function createImplementationReportTemplate(projectDir: string): string {
+  return [
+    "# Jaeki Implementation Report",
+    "",
+    "Role: `jaeki`",
+    "Status: template",
+    "",
+    "## Inputs",
+    "",
+    ...readmeLines(projectDir),
+    "",
+    "Plan source: `.persona/workflow/plan.md`",
+    "",
+    "## Implemented Files",
+    "",
+    "- [ ] 작성/수정한 production files",
+    "- [ ] 작성/수정한 configuration files",
+    "- [ ] 작성/수정한 test files",
+    "",
+    "## Verification",
+    "",
+    "- [ ] `gradle test`",
+    "- [ ] `gradle build`",
+    "",
+    "## Manual QA",
+    "",
+    "- [ ] 실제 HTTP/CLI/user-facing surface를 실행했다.",
+    "- [ ] 성공 경로와 실패/예외 경로를 최소 1개씩 확인했다.",
+    "",
+    "## Notes",
+    "",
+    "- 구현 중 바뀐 결정:",
+    "- 남은 한계:",
+    "",
+  ].join("\n")
+}
+
+function createReviewReportTemplate(projectDir: string): string {
+  return [
+    "# Roach Review Report",
+    "",
+    "Role: `roach`",
+    "Status: template",
+    "",
+    "## Inputs",
+    "",
+    ...readmeLines(projectDir),
+    "",
+    "Plan source: `.persona/workflow/plan.md`",
+    "Implementation report: `.persona/workflow/implementation-report.md`",
+    "",
+    "## Requirements Check",
+    "",
+    "- [ ] README 요구사항이 구현 결과와 대응된다.",
+    "- [ ] 미구현 요구사항이 있으면 명시한다.",
+    "",
+    "## Boundary Review",
+    "",
+    "- [ ] Controller는 HTTP request/response와 Service 위임만 담당한다.",
+    "- [ ] Application Service는 use-case 흐름만 조율한다.",
+    "- [ ] Repository port는 domain에 있고 구현체는 infrastructure에 있다.",
+    "- [ ] Request/Response DTO와 Command/Result DTO 경계가 분리된다.",
+    "- [ ] Domain model은 자신의 상태 판단/행동을 스스로 가진다.",
+    "",
+    "## Verification Review",
+    "",
+    "- [ ] `gradle test` 결과를 확인했다.",
+    "- [ ] `gradle build` 결과를 확인했다.",
+    "- [ ] manual QA evidence를 확인했다.",
+    "",
+    "## Remaining Limits",
+    "",
+    "- product-quality 보증이 아닌 smoke/review evidence로 남긴다.",
+    "- 남은 리스크:",
+    "",
+  ].join("\n")
+}
+
+function existingWorkflowPaths(projectDir: string): readonly string[] {
+  return [PLAN_PATH, IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH].filter((path) => existsSync(join(projectDir, path)))
+}
+
 export function initializeWorkflowPlan(options: PlanOptions = {}, force = false): string {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const workflowDir = join(projectDir, ".persona", "workflow")
   const planPath = join(projectDir, PLAN_PATH)
+  const implementationReportPath = join(projectDir, IMPLEMENTATION_REPORT_PATH)
+  const reviewReportPath = join(projectDir, REVIEW_REPORT_PATH)
 
-  if (existsSync(planPath) && !force) {
-    throw new PlanDraftError(`${PLAN_PATH} already exists. Re-run with --force to replace the draft.`)
+  const existingPaths = existingWorkflowPaths(projectDir)
+  if (existingPaths.length > 0 && !force) {
+    throw new PlanDraftError(`${existingPaths.join(", ")} already exists. Re-run with --force to replace the drafts.`)
   }
 
   mkdirSync(workflowDir, { recursive: true })
   writeFileSync(planPath, createPlanDraft(projectDir))
+  writeFileSync(implementationReportPath, createImplementationReportTemplate(projectDir))
+  writeFileSync(reviewReportPath, createReviewReportTemplate(projectDir))
   return planPath
 }
 
@@ -172,7 +261,8 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
         "",
         "Next:",
         `- Review and complete ${PLAN_PATH} before implementation.`,
-        "- Keep implementation, review, and QA evidence in separate workflow artifacts.",
+        `- Fill ${IMPLEMENTATION_REPORT_PATH} after implementation.`,
+        `- Fill ${REVIEW_REPORT_PATH} after review/manual QA.`,
       ].join("\n") + "\n",
       stderr: "",
     }

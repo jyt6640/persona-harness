@@ -39,6 +39,14 @@ function readPlan(projectDir: string): string {
   return readFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "utf8")
 }
 
+function readImplementationReport(projectDir: string): string {
+  return readFileSync(join(projectDir, ".persona", "workflow", "implementation-report.md"), "utf8")
+}
+
+function readReviewReport(projectDir: string): string {
+  return readFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "utf8")
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -60,6 +68,8 @@ describe("ph plan", () => {
     expect(result.stdout).toContain("Persona Harness blackbear plan draft created.")
     expect(result.stderr).toBe("")
     expect(existsSync(join(projectDir, ".persona", "workflow", "plan.md"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "implementation-report.md"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "review-report.md"))).toBe(true)
 
     const plan = readPlan(projectDir)
     expect(plan).toContain("# Blackbear Architecture Plan")
@@ -72,6 +82,20 @@ describe("ph plan", () => {
     expect(plan).toContain("- package-style: domain-first")
     expect(plan).toContain("- dto-strictness: strict")
     expect(plan).toContain("implementation must not start until this plan is reviewed or accepted")
+
+    const implementationReport = readImplementationReport(projectDir)
+    expect(implementationReport).toContain("# Jaeki Implementation Report")
+    expect(implementationReport).toContain("Status: template")
+    expect(implementationReport).toContain("## Implemented Files")
+    expect(implementationReport).toContain("## Verification")
+    expect(implementationReport).toContain("## Manual QA")
+
+    const reviewReport = readReviewReport(projectDir)
+    expect(reviewReport).toContain("# Roach Review Report")
+    expect(reviewReport).toContain("Status: template")
+    expect(reviewReport).toContain("## Requirements Check")
+    expect(reviewReport).toContain("## Boundary Review")
+    expect(reviewReport).toContain("## Remaining Limits")
   })
 
   it("keeps profile summary optional and marks missing README without crashing", () => {
@@ -86,10 +110,12 @@ describe("ph plan", () => {
     expect(plan).toContain("- 응답된 항목 없음")
   })
 
-  it("does not overwrite an existing plan unless --force is used", () => {
+  it("does not overwrite existing workflow artifacts unless --force is used", () => {
     const projectDir = createTempProject()
     const first = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
     writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "custom plan\n")
+    writeFileSync(join(projectDir, ".persona", "workflow", "implementation-report.md"), "custom implementation\n")
+    writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "custom review\n")
 
     const duplicate = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const forced = runPersonaCli(["plan", "--force"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -99,6 +125,8 @@ describe("ph plan", () => {
     expect(duplicate.stderr).toContain("already exists")
     expect(forced.status).toBe(0)
     expect(readPlan(projectDir)).toContain("# Blackbear Architecture Plan")
+    expect(readImplementationReport(projectDir)).toContain("# Jaeki Implementation Report")
+    expect(readReviewReport(projectDir)).toContain("# Roach Review Report")
   })
 
   it("shows usage, rejects unknown options, and advertises plan in shared usage", () => {
@@ -110,6 +138,8 @@ describe("ph plan", () => {
 
     expect(help.status).toBe(0)
     expect(help.stdout).toContain("Usage: ph plan [--force]")
+    expect(help.stdout).toContain(".persona/workflow/implementation-report.md")
+    expect(help.stdout).toContain(".persona/workflow/review-report.md")
     expect(invalid.status).toBe(1)
     expect(invalid.stderr).toContain("Unknown option: --unknown")
     expect(rootHelp.stdout).toContain("plan")
