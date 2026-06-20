@@ -45,6 +45,13 @@ Rule strength:
 | Backend | Default recommendation | Spring Boot 4.x / Spring Framework 7.x | framework annotations stay out of domain/core code |
 | Persistence | Project choice | Flyway + Spring Data JPA/Hibernate adapter | ORM must not auto-mutate production schema; domain remains storage-tech ignorant |
 
+Build compatibility note:
+
+- Choose a mutually compatible Spring Boot plugin, Gradle wrapper, and Java toolchain line before writing code.
+- Do not mix a very new Gradle launcher with an older Spring Boot plugin and then disable `bootJar` to make `gradle build` pass.
+- For generated Spring apps, `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke should work unless the project is explicitly a library.
+- When using Gradle 9.x with JUnit Platform, include the JUnit Platform launcher on the test runtime classpath if the test task cannot load it.
+
 ### The Iron List
 
 1. **Pin the runtime and build.** Java version, Gradle wrapper, CI, and local toolchain must agree.

@@ -31,6 +31,23 @@ The left side is the default when the project harness has not decided. The right
 | Static analysis | Error Prone + NullAway/JSpecify + ArchUnit | checked contracts are not replaced by memory |
 | API/ops | springdoc-openapi, Actuator, Micrometer, structured logging | domain code never depends on operational APIs |
 
+## Build Compatibility
+
+Before generating a Spring project, pick one compatible build line and keep it coherent:
+
+- Spring Boot plugin version
+- Gradle wrapper or launcher version
+- Java toolchain version
+- JUnit Platform runtime
+
+Do not solve a Spring Boot executable-app build failure by disabling `bootJar` unless the project is explicitly a library. For a backend application, `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke should all be expected to pass.
+
+If the local environment uses a newer Gradle than the selected Spring Boot plugin supports, prefer a compatible Spring Boot plugin line or generate a Gradle wrapper for the chosen line. If the test task fails to load JUnit Platform, add the launcher explicitly:
+
+```groovy
+testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+```
+
 ## Backend Iron List
 
 1. **Pin the JDK with a toolchain** -- Java source, target, CI, and local builds must agree.

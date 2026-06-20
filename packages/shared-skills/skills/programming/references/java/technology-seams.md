@@ -34,6 +34,19 @@ The examples elsewhere in `references/java/` are written against the recommended
 
 A project is free to override any row — record the override (and why) in `docs/decisions/` so the next reader knows it was a choice, not drift.
 
+## Build line compatibility
+
+The rows above are not independent toggles. Pick a compatible **Spring Boot plugin + Gradle wrapper/launcher + Java toolchain + JUnit Platform** set before generating build files.
+
+For Spring Boot applications:
+
+- do not disable `bootJar` merely to make `gradle build` pass;
+- keep `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke viable;
+- add `testRuntimeOnly "org.junit.platform:junit-platform-launcher"` when the selected Gradle/JUnit setup needs an explicit launcher;
+- if the local Gradle is newer than the chosen Spring Boot plugin supports, prefer a compatible plugin line or generate a wrapper for the supported Gradle line.
+
+If the project is explicitly a plain Java library rather than a Spring Boot application, record that as the harness decision before disabling executable-application tasks.
+
 ## The JPA ↔ pure-domain reconciliation (the one seam with a catch)
 
 `domain-does-not-know-technology` is **accepted** (the Domain is a pure POJO, no framework annotations). `domain-entity-separation` is **pending** — and per the harness rule, *a pending decision cannot override an accepted one.* So with **Spring Data JPA as the default**, the conformant pattern is:
