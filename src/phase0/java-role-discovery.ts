@@ -1,5 +1,6 @@
 import { isJavaTargetFile } from "./file-role.js"
 import { createInjectionBlock } from "./injection.js"
+import { isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import type { PendingInjection } from "./types.js"
 
 const JAVA_PATH_PATTERN = /(?:[A-Za-z]:)?(?:\/|\.{1,2}\/)?[^\s"'`<>|]*src\/(?:main|test)\/java\/[^\s"'`<>|]+?\.java\b/g
@@ -14,7 +15,7 @@ export function extractJavaTargetFilesFromText(source: string): readonly string[
   const matches: string[] = []
   for (const match of source.matchAll(JAVA_PATH_PATTERN)) {
     const targetFile = match[0]?.replace(/[),.;:\]]+$/g, "")
-    if (targetFile && isJavaTargetFile(targetFile)) {
+    if (targetFile && isJavaTargetFile(targetFile) && !isInstalledPersonaHarnessPackageFile(targetFile)) {
       matches.push(targetFile)
     }
   }

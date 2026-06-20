@@ -71,6 +71,25 @@ afterEach(() => {
 })
 
 describe("Phase 0 Java role discovery", () => {
+  it("ignores installed persona-harness Java fixtures during direct target capture", async () => {
+    const projectDir = createTempProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const sessionID = "installed-fixture-direct-session"
+    const installedFixture =
+      "node_modules/persona-harness/packages/shared-skills/skills/programming/references/java/fixtures/no-excuse/fail/BadService.java"
+
+    await hooks["tool.execute.before"]?.(
+      { tool: "read", sessionID, callID: "installed-fixture-direct-call" },
+      { args: { filePath: installedFixture } },
+    )
+
+    const output = modelInput(sessionID)
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(firstText(output)).not.toContain("[Persona Harness Injection]")
+    expect(evidencePayloads(projectDir)).toEqual([])
+  })
+
   it("records role evidence from glob output for Controller, Repository, and DTO Java files", async () => {
     const projectDir = createTempProject()
     const hooks = createPhase0Hooks({ projectDir })
@@ -128,6 +147,46 @@ describe("Phase 0 Java role discovery", () => {
         "test",
       ]),
     )
+  })
+
+  it("ignores installed persona-harness Java fixtures in role discovery output", async () => {
+    const projectDir = createTempProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const toolOutput = {
+      title: "Glob",
+      output: [
+        "src/main/java/com/example/rental/presentation/EquipmentController.java",
+        "node_modules/persona-harness/packages/shared-skills/skills/programming/references/java/fixtures/no-excuse/fail/BadService.java",
+        "/tmp/project/node_modules/persona-harness/packages/shared-skills/skills/programming/references/java/fixtures/no-excuse/fail/BadRepository.java",
+      ].join("\n"),
+      metadata: {},
+    }
+
+    await hooks["tool.execute.after"]?.(
+      {
+        tool: "glob",
+        sessionID: "installed-fixture-discovery-session",
+        callID: "installed-fixture-discovery-call",
+        args: { pattern: "**/*.java" },
+      },
+      toolOutput,
+    )
+
+    const discoveryBlock = toolOutput.output.split("[Persona Harness Java Role Discovery]").at(1) ?? ""
+    expect(discoveryBlock).toContain("controller: src/main/java/com/example/rental/presentation/EquipmentController.java")
+    expect(discoveryBlock).not.toContain("BadService.java")
+    expect(discoveryBlock).not.toContain("BadRepository.java")
+
+    const payloads = evidencePayloads(projectDir)
+    expect(payloads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fileRole: "controller",
+          targetFile: "src/main/java/com/example/rental/presentation/EquipmentController.java",
+        }),
+      ]),
+    )
+    expect(payloads.some((payload) => String(payload.targetFile).includes("node_modules/persona-harness"))).toBe(false)
   })
 
   it("injects a follow-up read plan into the next model input for discovered role files", async () => {

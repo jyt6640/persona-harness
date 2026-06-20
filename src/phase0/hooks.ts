@@ -11,7 +11,7 @@ import {
 } from "./java-role-discovery.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
 import { PendingInjectionStore } from "./store.js"
-import { extractTargetFile } from "./target-file.js"
+import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import type {
   ToolAfterInput,
@@ -64,6 +64,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
 
     const targetFile = extractTargetFile(tool, args)
     if (!targetFile) {
+      return undefined
+    }
+    if (isInstalledPersonaHarnessPackageFile(targetFile)) {
       return undefined
     }
 

@@ -15,6 +15,7 @@ Common anchors:
 - `v0.3.0-project-intake-philosophy-workflow.md`
 - `v0.3.0-backend-profile-summary-injection-design.md`
 - `v0.3.0-blackbear-plan-artifact.md`
+- `v0.3.0-installed-package-evidence-noise-policy.md`
 - `persona-workflow-roles-v0.3.md`
 - `mvp-scope-status.json`
 - `injection-value-status.json`

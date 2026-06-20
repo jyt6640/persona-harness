@@ -16,6 +16,16 @@ const TARGETING_TOOL_NAMES = new Set([
   "multi_edit",
 ])
 
+const INSTALLED_PERSONA_HARNESS_PACKAGE_PATTERN = /(^|\/)node_modules\/persona-harness\//
+
+function normalizePath(targetFile: string): string {
+  return targetFile.replace(/\\/g, "/")
+}
+
+export function isInstalledPersonaHarnessPackageFile(targetFile: string): boolean {
+  return INSTALLED_PERSONA_HARNESS_PACKAGE_PATTERN.test(normalizePath(targetFile))
+}
+
 export function extractTargetFile(toolName: string, args: Record<string, unknown>): string | undefined {
   const normalizedToolName = toolName.toLowerCase()
   const mayTargetFile =
