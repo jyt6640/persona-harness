@@ -1,5 +1,6 @@
 import { isBackendBootstrapTargetFile, resolveBootstrapFileRole, resolveFileRole } from "./file-role.js"
 import { loadHarnessConfig } from "./harness-config.js"
+import { loadBackendProjectProfileSummary } from "./project-profile.js"
 import { loadRulesForRole } from "./rule-loader.js"
 import { resolveSharedSkillFileRole, selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import type { PendingInjection } from "./types.js"
@@ -22,6 +23,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
   const shouldLoadJavaRules = isJavaTarget || isBootstrapTarget || fileRole === "java-common"
   const ruleTargetFile = shouldLoadJavaRules ? targetFile : undefined
   const loadedRules = shouldLoadJavaRules ? loadRulesForRole(projectDir, fileRole, ruleTargetFile) : []
+  const projectProfileSummary = shouldLoadJavaRules ? loadBackendProjectProfileSummary(projectDir) : []
   const selectedRules = loadedRules.map((rule) => rule.path)
   const selectedRuleMetadata = loadedRules.map((rule) => ({
     path: rule.path,
@@ -38,6 +40,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     `현재 파일: ${targetFile}`,
     `파일 역할: ${fileRole}`,
     "",
+    ...(projectProfileSummary.length > 0 ? [...projectProfileSummary, ""] : []),
     "선택 규칙:",
     ...selectedRules.map((rule) => `- ${rule}`),
     "",

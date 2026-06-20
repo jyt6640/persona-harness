@@ -13,5 +13,7 @@ Common anchors:
 - `java-backend-mvp-install-guide.md`
 - `java-backend-bootstrap-injection-design.md`
 - `v0.3.0-project-intake-philosophy-workflow.md`
+- `v0.3.0-backend-profile-summary-injection-design.md`
+- `persona-workflow-roles-v0.3.md`
 - `mvp-scope-status.json`
 - `injection-value-status.json`

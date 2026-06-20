@@ -1,0 +1,208 @@
+# Persona Workflow Roles v0.3
+
+## Goal
+
+Define the Persona Harness workflow role model inspired by OMO, but scoped to the current Java/Spring backend MVP direction.
+
+This document names the roles and their intended inputs/outputs. It does not implement multi-agent orchestration yet.
+
+## Current Boundary
+
+The current product surface is:
+
+```text
+ph init -> ph intake -> profile summary injection -> OpenCode plan/implementation -> evidence review
+```
+
+The v0.3.x workflow should make this path more explicit without turning Persona Harness into a full autonomous agent platform.
+
+## Role Map
+
+| Persona Role | OMO-like role | Responsibility | Productized in v0.3.x |
+| --- | --- | --- | --- |
+| `blackbear` | planner / Prometheus | Read README, project profile, constraints, and propose architecture/technology plan. | Design target only |
+| `Charles` | executor / start-work coordinator | Convert the accepted plan into ordered work items and keep the run on scope. | Not yet |
+| `jaeki` | implementer / Hephaestus-Sisyphus worker | Implement code, run tests/build, fix failures. | OpenCode model does this today, not a named Persona agent |
+| `roach` | reviewer / Oracle-QA | Review goal fit, code shape, risks, and manual QA evidence. | Design target only |
+
+## Flow
+
+```text
+1. ph init
+2. ph intake
+3. user fills .persona/project-profile.jsonc
+4. profile summary injection exposes planning context
+5. blackbear-style planning:
+   - read README
+   - read profile summary
+   - propose architecture/technology plan
+6. user or run policy accepts the plan
+7. jaeki-style implementation:
+   - implement the plan
+   - run build/tests
+   - repair failures
+8. roach-style review:
+   - compare result to requirements and profile
+   - check Clean Code rubric
+   - record manual QA evidence
+9. evidence review decides next loop
+```
+
+## Inputs And Outputs
+
+### blackbear
+
+Inputs:
+
+- `README.md` or equivalent requirements file
+- `.persona/project-profile.jsonc`
+- Persona Harness injection block
+- current backend Clean Code rules
+
+Outputs:
+
+- short architecture/technology plan
+- package/layer plan
+- storage/persistence decision summary
+- explicit non-goals
+
+Current file candidate:
+
+```text
+.persona/workflow/plan.md
+```
+
+### Charles
+
+Inputs:
+
+- `.persona/workflow/plan.md`
+- current worktree state
+- accepted scope
+
+Outputs:
+
+- ordered implementation checklist
+- progress state
+- blocked/complete status
+
+Current file candidate:
+
+```text
+.persona/workflow/run-state.json
+```
+
+### jaeki
+
+Inputs:
+
+- accepted plan
+- implementation checklist
+- project codebase
+
+Outputs:
+
+- code changes
+- build/test results
+- implementation notes
+
+Current file candidate:
+
+```text
+.persona/workflow/implementation-report.md
+```
+
+### roach
+
+Inputs:
+
+- requirements
+- profile
+- plan
+- implementation report
+- generated code
+- test/build/manual QA output
+
+Outputs:
+
+- review findings
+- manual QA evidence
+- next-loop recommendation
+
+Current file candidate:
+
+```text
+.persona/workflow/review-report.md
+```
+
+## Evidence Ledger
+
+The existing `.persona/evidence` directory records injection evidence. Workflow evidence should be separate to avoid mixing runtime hook evidence with review notes.
+
+Candidate:
+
+```text
+.persona/workflow/evidence-ledger.md
+```
+
+Minimum ledger entries:
+
+- plan proposed
+- plan accepted or revised
+- implementation started
+- test/build verification
+- manual QA surface used
+- review decision
+- next loop
+
+## Manual QA Gate
+
+Manual QA should mean using the generated artifact through its real surface.
+
+For Java/Spring backend projects:
+
+- run `gradle test`;
+- run `gradle build`;
+- start the Spring app when feasible;
+- hit the API with curl or an equivalent HTTP client;
+- record at least one happy path and one requirement-relevant failure path.
+
+This gate is evidence, not product-quality certification.
+
+## v0.3.x Scope
+
+In scope:
+
+- backend-only profile summary injection;
+- plan-first prompt surface;
+- documentation of role boundaries;
+- optional local workflow files under `.persona/workflow`;
+- evidence review format for clean Java/Spring backend generation.
+
+Out of scope:
+
+- actual subagent orchestration;
+- autonomous multi-pane execution;
+- frontend/infra workflow roles;
+- company/personal philosophy file loading;
+- TDD workflow enforcement;
+- AST/linter/Guard enforcement;
+- product-quality certification;
+- public npm publish.
+
+## Naming Decision
+
+Use Persona names in user-facing Persona Harness docs:
+
+- `blackbear`: planning
+- `Charles`: execution coordination
+- `jaeki`: implementation
+- `roach`: review and QA pressure
+
+Mention OMO names only in reference/comparison documents.
+
+## Next Loop
+
+After backend profile summary injection is implemented and verified, decide whether to create `.persona/workflow/plan.md` as a generated planning artifact.
+
+Do not implement `Charles`, `jaeki`, or `roach` as autonomous agents until the plan artifact proves useful in at least one clean Java/Spring project smoke.

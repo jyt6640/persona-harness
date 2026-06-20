@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: v0.3.0 project-intake / philosophy workflow planning surface on top of the Java backend MVP.
 
-Current active candidate: `ph intake` planned implementation smoke. v0.2.1 local/tarball validation is complete enough for continued local use; public publish remains deferred.
+Current active candidate: create a minimal `.persona/workflow/plan.md` artifact for the `blackbear` planning role. v0.2.1 local/tarball validation is complete enough for continued local use; public publish remains deferred.
 
 ## Current Decisions
 
@@ -34,6 +34,9 @@ Current active candidate: `ph intake` planned implementation smoke. v0.2.1 local
 - v0.2.1 clean project generation can produce buildable Gradle Spring apps from README-only bootstrap. The first library-lending pass exposed repository-port/domain-record guidance gaps that were corrected by target-file follow-up; after narrow guidance tightening, the second course-enrollment README-only rerun produced domain repository ports, infrastructure implementations, class-based domain entities, and domain self-judgment methods without target-file follow-up.
 - The narrow `v0.2.2` repository-port/domain-record candidate is closed for now. Reopen only if a future clean README-only run regresses on repository port placement or domain self-judgment behavior.
 - v0.3.0 starts as a planning surface, not rule enforcement: `ph intake` creates `.persona/project-profile.jsonc` with backend project-shaping questions and optional philosophy overlay slots.
+- v0.3.0 planned implementation smoke is positive: a filled profile plus explicit profile-read prompt produced a buildable Equipment Rental Gradle Spring app with domain-first packages, domain repository ports, infrastructure repository implementations, class-based domain entities with behavior, DTO boundaries, and no Service-owned storage/id sequence.
+- v0.3.0 profile handling is implemented and smoke-verified: a README-only planning prompt received profile choices through project-bootstrap injection and reflected database, `JdbcTemplate`, `Flyway`, `domain-first`, and strict DTO choices in the first architecture/technology plan. Company/personal philosophy file loading, frontend/infra profile routing, AST/linter enforcement, and TDD workflow remain out of scope.
+- v0.3.x workflow role names are reserved for documentation and future local workflow artifacts: `blackbear` plans, `Charles` coordinates, `jaeki` implements, and `roach` reviews/pressures QA. These are not autonomous Persona Harness agents yet.
 - Philosophy priority is company, then personal, then Clean Code baseline. Automatic philosophy injection is not productized yet.
 - `v0.2.1` support contract covers local/tarball install, `ph init`, Java/Spring target injection, metadata evidence, and `npx ph bearshell` command-surface behavior in clean OpenCode smoke.
 - `packages/shared-skills` remains in the v0.2.1 tarball as packaged reference material; it is not a release-facing support surface or enforcement gate.
@@ -66,7 +69,7 @@ Current active candidate: `ph intake` planned implementation smoke. v0.2.1 local
 | Phase 1.2 | Done | Report-only observer pass closed; reinforcement deferred |
 | Phase 2 | Active validation | Product-code-flow rubric, injection value stopping rule, scope diagnostics, and artifact cleanup added |
 | Java MVP Packaging | Active productization | Init CLI, `ph bearshell`, `ph bearshell` awareness injection, bootstrap injection, packaged install/run/verify smoke commands, release-facing install guide, and v0.2.1 local/tarball readiness added |
-| v0.3.0 Intake | Active planning surface | `ph intake` creates a backend project profile draft; clean OpenCode planning smoke remains next |
+| v0.3.0 Intake | Active planning surface | `ph intake` creates a backend project profile draft; profile summary injection is implemented and smoke-verified as planning context; next candidate is `.persona/workflow/plan.md` |
 | Desktop App Track | Not decomposed | Not started |
 
 ## Active Work Queue
@@ -106,9 +109,9 @@ Current active candidate: `ph intake` planned implementation smoke. v0.2.1 local
    - Next candidate: v0.3.0 project-intake / philosophy workflow planning. Reopen a narrow `v0.2.2` guidance loop only if a future clean README-only run regresses on repository port placement or domain self-judgment behavior.
 
 8. `[x]` v0.3.0 project-intake / philosophy workflow minimum surface
-   - Evidence: `docs/current/v0.3.0-project-intake-philosophy-workflow.md`
-   - Current state: `ph intake` creates `.persona/project-profile.jsonc` with backend project context, scale, storage, persistence, migration, package style, DTO strictness, and philosophy overlay questions. It does not enforce rules, productize frontend/infra, or auto-inject philosophy. Clean project smoke confirmed OpenCode can read README plus the filled profile and produce a planning-only architecture/technology plan without implementation.
-   - Next candidate: planned implementation smoke using `npx ph init`, `npx ph intake`, a filled sample profile, a required plan, and then implementation.
+   - Evidence: `docs/current/v0.3.0-project-intake-philosophy-workflow.md`, `docs/current/v0.3.0-backend-profile-summary-injection-design.md`, `docs/current/persona-workflow-roles-v0.3.md`, `docs/evidence-reviews/v0.3.0-intake-planning-smoke.md`, `docs/evidence-reviews/v0.3.0-intake-planned-implementation-smoke.md`, `docs/evidence-reviews/v0.3.0-profile-summary-injection-smoke.md`
+   - Current state: `ph intake` creates `.persona/project-profile.jsonc` with backend project context, scale, storage, persistence, migration, package style, DTO strictness, and philosophy overlay questions. Clean project planning-only smoke and planned implementation smoke are positive. Backend-only profile summary injection now surfaces filled profile answers as planning context for Java/Spring backend/bootstrap targets without enforcing them. A README-only planning prompt smoke confirmed the first plan reflected profile choices without explicitly naming `.persona/project-profile.jsonc`. `blackbear`, `Charles`, `jaeki`, and `roach` workflow role boundaries are documented but not implemented as autonomous agents.
+   - Next candidate: create a minimal `.persona/workflow/plan.md` artifact path for `blackbear` planning before considering execution/review agents.
 
 9. `[~]` Test Contract response time object watch
    - Evidence: `docs/phases/phase1/phase1-test-contract-response-time-repeat-review.md`
@@ -134,6 +137,8 @@ Current active candidate: `ph intake` planned implementation smoke. v0.2.1 local
 - `docs/current/vendored-shared-skills-tarball-policy.md`
 - `docs/current/v0.2.1-release-readiness.md`
 - `docs/current/v0.3.0-project-intake-philosophy-workflow.md`
+- `docs/current/v0.3.0-backend-profile-summary-injection-design.md`
+- `docs/current/persona-workflow-roles-v0.3.md`
 - `docs/current/java-backend-bootstrap-injection-design.md`
 - `docs/current/java-backend-bootstrap-open-code-demo.md`
 - `docs/current/npm-beta-publish-preparation.md`
@@ -148,6 +153,8 @@ Current active candidate: `ph intake` planned implementation smoke. v0.2.1 local
 - `docs/evidence-reviews/java-product-code-flow-ab-regrade.md`
 - `docs/evidence-reviews/v0.2.1-clean-project-quality-review.md`
 - `docs/evidence-reviews/v0.3.0-intake-planning-smoke.md`
+- `docs/evidence-reviews/v0.3.0-intake-planned-implementation-smoke.md`
+- `docs/evidence-reviews/v0.3.0-profile-summary-injection-smoke.md`
 - `docs/evidence-reviews/coupon-product-code-flow-ab-review.md`
 - `docs/evidence-reviews/inventory-product-code-flow-ab-review.md`
 - `docs/evidence-reviews/java-root-semantics-ab-review.md`
