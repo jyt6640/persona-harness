@@ -15,6 +15,7 @@ cd /path/to/clean-java-spring-project
 npm install -D /absolute/path/to/persona-harness
 npx ph init
 npx ph intake
+npx ph plan
 ```
 
 `npx ph init`은 다음 파일을 만든다.
@@ -24,6 +25,8 @@ npx ph intake
 - `.opencode/opencode.json`
 
 `npx ph intake`는 선택 단계다. 구현 전에 프로젝트 규모, 저장소 선택, package style, DTO strictness, optional philosophy overlay를 정리할 `.persona/project-profile.jsonc` draft를 만든다. 현재는 planning surface이며 rule enforcement나 generated app product-quality 보증이 아니다.
+
+`npx ph plan`은 `blackbear` planning role의 최소 산출물인 `.persona/workflow/plan.md` draft를 만든다. README와 채워진 backend profile summary를 구현 전 architecture/technology plan의 입력으로 고정한다. 아직 autonomous agent workflow는 아니다.
 
 OpenCode에서 Java/Spring target file을 먼저 읽게 실행한다.
 
@@ -96,6 +99,7 @@ repo 밖의 clean Java/Spring 프로젝트에서는 local path install로 검증
 npm install -D /absolute/path/to/persona-harness
 npx ph init
 npx ph intake
+npx ph plan
 npx ph bearshell npm test
 opencode run --dir . --model <model> --dangerously-skip-permissions \
   "<Java/Spring target file을 먼저 읽고 기능을 구현해줘>"
@@ -104,6 +108,8 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 `persona-harness init`은 대상 프로젝트에 `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`을 설치/병합한다. `.persona/evidence/`는 template로 복사하지 않으며, OpenCode hook이 실제로 발동할 때 대상 프로젝트 안에 생성된다.
 
 `ph intake`는 `v0.3.0` project-intake / philosophy workflow의 최소 CLI 표면이다. `.persona/project-profile.jsonc`를 만들고, 사용자가 답을 채운 뒤 agent가 구현 전 architecture/technology plan을 제안하도록 하는 데 쓴다. 자세한 범위는 [docs/current/v0.3.0-project-intake-philosophy-workflow.md](docs/current/v0.3.0-project-intake-philosophy-workflow.md)를 본다.
+
+`ph plan`은 `blackbear` planning artifact인 `.persona/workflow/plan.md`를 만든다. README 상태와 backend profile summary를 계획 파일에 남기며, 구현은 이 계획이 검토되거나 수락된 뒤 시작한다. 자세한 범위는 [docs/current/v0.3.0-blackbear-plan-artifact.md](docs/current/v0.3.0-blackbear-plan-artifact.md)를 본다.
 
 `ph bearshell`은 OMO `sparkshell`을 참고한 Persona Harness CLI helper다. repo inspection, CLI smoke test, 큰 출력이 나오는 명령을 bounded output으로 실행할 때 쓴다. 자세한 범위와 OMO parity gap은 [docs/current/ph-bearshell-mvp.md](docs/current/ph-bearshell-mvp.md)에 둔다.
 
