@@ -14,6 +14,7 @@ Common anchors:
 - `java-backend-bootstrap-injection-design.md`
 - `v0.3.0-project-intake-philosophy-workflow.md`
 - `v0.3.0-backend-profile-summary-injection-design.md`
+- `v0.3.0-workflow-next-surface-decision.md`
 - `v0.3.0-blackbear-plan-artifact.md`
 - `v0.3.0-plan-acceptance.md`
 - `v0.3.0-workflow-history.md`
