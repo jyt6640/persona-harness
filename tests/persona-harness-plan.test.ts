@@ -125,8 +125,49 @@ describe("ph plan", () => {
     expect(duplicate.stderr).toContain("already exists")
     expect(forced.status).toBe(0)
     expect(readPlan(projectDir)).toContain("# Blackbear Architecture Plan")
+    expect(readPlan(projectDir)).toContain("Status: draft")
     expect(readImplementationReport(projectDir)).toContain("# Jaeki Implementation Report")
     expect(readReviewReport(projectDir)).toContain("# Roach Review Report")
+  })
+
+  it("reads and updates the plan acceptance status", () => {
+    const projectDir = createTempProject()
+    const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    const draftStatus = runPersonaCli(["plan", "--status"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const accepted = runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const acceptedStatus = runPersonaCli(["plan", "--status"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(draft.status).toBe(0)
+    expect(draftStatus.status).toBe(0)
+    expect(draftStatus.stdout).toContain("Status: draft")
+    expect(accepted.status).toBe(0)
+    expect(accepted.stdout).toContain("Status: accepted")
+    expect(acceptedStatus.stdout).toContain("Status: accepted")
+    expect(readPlan(projectDir)).toContain("Status: accepted")
+
+    const revise = runPersonaCli(["plan", "--revise"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const reviseStatus = runPersonaCli(["plan", "--status"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(revise.status).toBe(0)
+    expect(revise.stdout).toContain("Status: needs-revision")
+    expect(reviseStatus.stdout).toContain("Status: needs-revision")
+    expect(readPlan(projectDir)).toContain("Status: needs-revision")
+  })
+
+  it("fails plan status changes when the plan artifact does not exist", () => {
+    const projectDir = createTempProject()
+
+    const status = runPersonaCli(["plan", "--status"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const accept = runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const revise = runPersonaCli(["plan", "--revise"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(status.status).toBe(1)
+    expect(status.stderr).toContain("No workflow plan found")
+    expect(accept.status).toBe(1)
+    expect(accept.stderr).toContain("No workflow plan found")
+    expect(revise.status).toBe(1)
+    expect(revise.stderr).toContain("No workflow plan found")
   })
 
   it("shows usage, rejects unknown options, and advertises plan in shared usage", () => {
@@ -137,7 +178,9 @@ describe("ph plan", () => {
     const rootHelp = runPersonaCli(["--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain("Usage: ph plan [--force]")
+    expect(help.stdout).toContain("Usage: ph plan [--force | --status | --accept | --revise]")
+    expect(help.stdout).toContain("--accept")
+    expect(help.stdout).toContain("--revise")
     expect(help.stdout).toContain(".persona/workflow/implementation-report.md")
     expect(help.stdout).toContain(".persona/workflow/review-report.md")
     expect(invalid.status).toBe(1)

@@ -2,63 +2,21 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
-import type { CliRunResult } from "./bearshell.js"
 import { loadBackendProjectProfileSummary } from "../phase0/project-profile.js"
 
-type PlanOptions = { readonly projectDir?: string }
+export type PlanOptions = { readonly projectDir?: string }
 
-type ParsedPlanArgs =
-  | { readonly kind: "run"; readonly force: boolean }
-  | { readonly kind: "help" }
-  | { readonly kind: "invalid"; readonly message: string }
-
-class PlanDraftError extends Error {
+export class PlanDraftError extends Error {
   constructor(message: string) {
     super(message)
     this.name = "PlanDraftError"
   }
 }
 
-const PLAN_PATH = ".persona/workflow/plan.md"
-const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
-const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
+export const PLAN_PATH = ".persona/workflow/plan.md"
+export const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
+export const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const README_PATH = "README.md"
-
-export function planUsage(invocation = "ph"): string {
-  return [
-    `Usage: ${invocation} plan [--force]`,
-    "",
-    "Creates a blackbear architecture plan draft before implementation.",
-    "",
-    "Output:",
-    `- ${PLAN_PATH}`,
-    `- ${IMPLEMENTATION_REPORT_PATH}`,
-    `- ${REVIEW_REPORT_PATH}`,
-    "",
-    "Scope:",
-    "- Java/Spring backend Clean Code planning surface",
-    "- Uses README and backend project profile as planning context",
-    "- No rule enforcement",
-    "- No autonomous implementation",
-  ].join("\n")
-}
-
-function parsePlanArgs(args: readonly string[]): ParsedPlanArgs {
-  let force = false
-
-  for (const arg of args) {
-    if (arg === "--help" || arg === "-h") {
-      return { kind: "help" }
-    }
-    if (arg === "--force") {
-      force = true
-      continue
-    }
-    return { kind: "invalid", message: `Unknown option: ${arg}` }
-  }
-
-  return { kind: "run", force }
-}
 
 function readReadmeHeading(projectDir: string): string | undefined {
   const readmePath = join(projectDir, README_PATH)
@@ -237,39 +195,4 @@ export function initializeWorkflowPlan(options: PlanOptions = {}, force = false)
   writeFileSync(implementationReportPath, createImplementationReportTemplate(projectDir))
   writeFileSync(reviewReportPath, createReviewReportTemplate(projectDir))
   return planPath
-}
-
-export function runPlanCommand(args: readonly string[], options: PlanOptions = {}, invocationName = "ph"): CliRunResult {
-  const parsed = parsePlanArgs(args)
-
-  if (parsed.kind === "help") {
-    return { status: 0, stdout: `${planUsage(invocationName)}\n`, stderr: "" }
-  }
-
-  if (parsed.kind === "invalid") {
-    return { status: 1, stdout: "", stderr: `${parsed.message}\n\n${planUsage(invocationName)}\n` }
-  }
-
-  try {
-    const planPath = initializeWorkflowPlan(options, parsed.force)
-    return {
-      status: 0,
-      stdout: [
-        "Persona Harness blackbear plan draft created.",
-        "",
-        `Plan: ${planPath}`,
-        "",
-        "Next:",
-        `- Review and complete ${PLAN_PATH} before implementation.`,
-        `- Fill ${IMPLEMENTATION_REPORT_PATH} after implementation.`,
-        `- Fill ${REVIEW_REPORT_PATH} after review/manual QA.`,
-      ].join("\n") + "\n",
-      stderr: "",
-    }
-  } catch (error) {
-    if (error instanceof PlanDraftError) {
-      return { status: 1, stdout: "", stderr: `${error.message}\n` }
-    }
-    throw error
-  }
 }

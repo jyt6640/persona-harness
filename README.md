@@ -16,6 +16,7 @@ npm install -D /absolute/path/to/persona-harness
 npx ph init
 npx ph intake
 npx ph plan
+npx ph plan --status
 ```
 
 `npx ph init`은 다음 파일을 만든다.
@@ -26,7 +27,7 @@ npx ph plan
 
 `npx ph intake`는 선택 단계다. 구현 전에 프로젝트 규모, 저장소 선택, package style, DTO strictness, optional philosophy overlay를 정리할 `.persona/project-profile.jsonc` draft를 만든다. 현재는 planning surface이며 rule enforcement나 generated app product-quality 보증이 아니다.
 
-`npx ph plan`은 `blackbear` planning role의 최소 산출물인 `.persona/workflow/plan.md` draft를 만든다. README와 채워진 backend profile summary를 구현 전 architecture/technology plan의 입력으로 고정한다. 아직 autonomous agent workflow는 아니다.
+`npx ph plan`은 `blackbear` planning role의 최소 산출물인 `.persona/workflow/plan.md` draft를 만든다. README와 채워진 backend profile summary를 구현 전 architecture/technology plan의 입력으로 고정한다. `npx ph plan --status`로 현재 plan acceptance 상태를 확인하고, 검토 뒤에는 `npx ph plan --accept` 또는 `npx ph plan --revise`로 `accepted` / `needs-revision` 상태를 명시적으로 남긴다. 아직 autonomous agent workflow나 implementation gate는 아니다.
 
 `npx ph history`는 사용이 끝난 workflow artifact를 `.persona/workflow/history/<archive-id>/` 아래에 snapshot으로 남긴다. active `plan.md`, `implementation-report.md`, `review-report.md`는 삭제하지 않는다.
 
@@ -103,6 +104,7 @@ npm install -D /absolute/path/to/persona-harness
 npx ph init
 npx ph intake
 npx ph plan
+npx ph plan --accept
 npx ph bearshell npm test
 opencode run --dir . --model <model> --dangerously-skip-permissions \
   "<Java/Spring target file을 먼저 읽고 기능을 구현해줘>"
@@ -112,7 +114,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 `ph intake`는 `v0.3.0` project-intake / philosophy workflow의 최소 CLI 표면이다. `.persona/project-profile.jsonc`를 만들고, 사용자가 답을 채운 뒤 agent가 구현 전 architecture/technology plan을 제안하도록 하는 데 쓴다. 자세한 범위는 [docs/current/v0.3.0-project-intake-philosophy-workflow.md](docs/current/v0.3.0-project-intake-philosophy-workflow.md)를 본다.
 
-`ph plan`은 `blackbear` planning artifact인 `.persona/workflow/plan.md`를 만든다. README 상태와 backend profile summary를 계획 파일에 남기며, 구현은 이 계획이 검토되거나 수락된 뒤 시작한다. 자세한 범위는 [docs/current/v0.3.0-blackbear-plan-artifact.md](docs/current/v0.3.0-blackbear-plan-artifact.md)를 본다.
+`ph plan`은 `blackbear` planning artifact인 `.persona/workflow/plan.md`를 만든다. README 상태와 backend profile summary를 계획 파일에 남기며, 구현은 이 계획이 검토되거나 수락된 뒤 시작한다. `ph plan --status`, `ph plan --accept`, `ph plan --revise`는 이 상태를 읽거나 갱신하는 최소 acceptance surface다. 자세한 범위는 [docs/current/v0.3.0-blackbear-plan-artifact.md](docs/current/v0.3.0-blackbear-plan-artifact.md)와 [docs/current/v0.3.0-plan-acceptance.md](docs/current/v0.3.0-plan-acceptance.md)를 본다.
 
 `ph history`는 `ph plan`이 만든 workflow artifact가 실제 사용된 뒤 local history로 보존하는 최소 표면이다. 구현/검토 결과를 인증하지 않고, 현재 workflow files를 지우지도 않는다. 자세한 범위는 [docs/current/v0.3.0-workflow-history.md](docs/current/v0.3.0-workflow-history.md)를 본다.
 

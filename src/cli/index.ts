@@ -6,7 +6,7 @@ import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
 import { runIntakeCommand } from "./intake.js"
-import { runPlanCommand } from "./plan.js"
+import { runPlanCommand } from "./plan-command.js"
 
 type PersonaCliOptions = {
   readonly cwd?: string
