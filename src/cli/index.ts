@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url"
 
 import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
+import { runHistoryCommand } from "./history.js"
 import { runIntakeCommand } from "./intake.js"
 import { runPlanCommand } from "./plan.js"
 
@@ -30,6 +31,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     return runPlanCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
+  if (command === "history") {
+    return runHistoryCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+  }
+
   if (command === "bearshell") {
     return runBearshell(args.slice(1), { cwd: options.cwd, env: options.env })
   }
@@ -53,12 +58,14 @@ function personaCliUsage(invocationName: string): string {
     "  init                         Install Persona Harness config into the current project.",
     "  intake                       Create a draft backend project profile for planning.",
     "  plan                         Create a blackbear architecture plan draft before implementation.",
+    "  history                      Archive completed workflow artifacts into local history.",
     "  bearshell <command> [args...] Run a bounded command helper for repo inspection and smoke tests.",
     "",
     "Examples:",
     `  ${invocationName} init`,
     `  ${invocationName} intake`,
     `  ${invocationName} plan`,
+    `  ${invocationName} history --id run-001`,
     `  ${invocationName} bearshell npm test`,
     `  ${invocationName} bearshell --shell 'git status --short && npm test'`,
   ].join("\n")

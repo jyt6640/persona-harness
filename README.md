@@ -28,6 +28,8 @@ npx ph plan
 
 `npx ph plan`은 `blackbear` planning role의 최소 산출물인 `.persona/workflow/plan.md` draft를 만든다. README와 채워진 backend profile summary를 구현 전 architecture/technology plan의 입력으로 고정한다. 아직 autonomous agent workflow는 아니다.
 
+`npx ph history`는 사용이 끝난 workflow artifact를 `.persona/workflow/history/<archive-id>/` 아래에 snapshot으로 남긴다. active `plan.md`, `implementation-report.md`, `review-report.md`는 삭제하지 않는다.
+
 OpenCode에서 Java/Spring target file을 먼저 읽게 실행한다.
 
 ```bash
@@ -46,6 +48,7 @@ npx ph bearshell --shell 'gradle build'
 
 ```bash
 find .persona/evidence -type f | sort
+npx ph history --id first-run
 ```
 
 주의:
@@ -110,6 +113,8 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 `ph intake`는 `v0.3.0` project-intake / philosophy workflow의 최소 CLI 표면이다. `.persona/project-profile.jsonc`를 만들고, 사용자가 답을 채운 뒤 agent가 구현 전 architecture/technology plan을 제안하도록 하는 데 쓴다. 자세한 범위는 [docs/current/v0.3.0-project-intake-philosophy-workflow.md](docs/current/v0.3.0-project-intake-philosophy-workflow.md)를 본다.
 
 `ph plan`은 `blackbear` planning artifact인 `.persona/workflow/plan.md`를 만든다. README 상태와 backend profile summary를 계획 파일에 남기며, 구현은 이 계획이 검토되거나 수락된 뒤 시작한다. 자세한 범위는 [docs/current/v0.3.0-blackbear-plan-artifact.md](docs/current/v0.3.0-blackbear-plan-artifact.md)를 본다.
+
+`ph history`는 `ph plan`이 만든 workflow artifact가 실제 사용된 뒤 local history로 보존하는 최소 표면이다. 구현/검토 결과를 인증하지 않고, 현재 workflow files를 지우지도 않는다. 자세한 범위는 [docs/current/v0.3.0-workflow-history.md](docs/current/v0.3.0-workflow-history.md)를 본다.
 
 `ph bearshell`은 OMO `sparkshell`을 참고한 Persona Harness CLI helper다. repo inspection, CLI smoke test, 큰 출력이 나오는 명령을 bounded output으로 실행할 때 쓴다. 자세한 범위와 OMO parity gap은 [docs/current/ph-bearshell-mvp.md](docs/current/ph-bearshell-mvp.md)에 둔다.
 
