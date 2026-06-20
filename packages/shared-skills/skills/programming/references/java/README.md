@@ -47,8 +47,10 @@ Rule strength:
 
 Build compatibility note:
 
-- Choose a mutually compatible Spring Boot plugin, Gradle wrapper, and Java toolchain line before writing code.
-- Do not mix a very new Gradle launcher with an older Spring Boot plugin and then disable `bootJar` to make `gradle build` pass.
+- Choose a mutually compatible Spring Boot plugin, Gradle wrapper or launcher, and Java toolchain line before writing code.
+- For a Spring Boot executable application, do not disable `bootJar` to make `gradle build` pass. `tasks.named("bootJar") { enabled = false }` is only acceptable after the project is explicitly declared a plain Java library.
+- If `bootJar` fails with a Gradle/Spring Boot plugin compatibility error such as `CopyProcessingSpec.getDirMode()`, treat it as a build-line mismatch: upgrade the Spring Boot plugin to a line compatible with the current Gradle launcher or generate a Gradle wrapper pinned to the plugin-supported Gradle line.
+- Do not mix a very new Gradle launcher with an older Spring Boot plugin. With a Gradle 9.x launcher, avoid defaulting to older Spring Boot 3.3.x plugin lines unless a wrapper pins a supported Gradle line.
 - For generated Spring apps, `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke should work unless the project is explicitly a library.
 - When using Gradle 9.x with JUnit Platform, include the JUnit Platform launcher on the test runtime classpath if the test task cannot load it.
 

@@ -41,9 +41,12 @@ The rows above are not independent toggles. Pick a compatible **Spring Boot plug
 For Spring Boot applications:
 
 - do not disable `bootJar` merely to make `gradle build` pass;
+- do not add `tasks.named("bootJar") { enabled = false }` unless the project is explicitly a plain Java library rather than an executable Spring Boot app;
+- if `bootJar` fails with `CopyProcessingSpec.getDirMode()` or a similar plugin API mismatch, fix the Spring Boot plugin / Gradle launcher line instead of disabling the task;
 - keep `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke viable;
 - add `testRuntimeOnly "org.junit.platform:junit-platform-launcher"` when the selected Gradle/JUnit setup needs an explicit launcher;
-- if the local Gradle is newer than the chosen Spring Boot plugin supports, prefer a compatible plugin line or generate a wrapper for the supported Gradle line.
+- if the local Gradle is newer than the chosen Spring Boot plugin supports, prefer a compatible plugin line or generate a wrapper for the supported Gradle line;
+- with a Gradle 9.x launcher, do not default to older Spring Boot 3.3.x plugin lines unless a wrapper pins a supported Gradle line.
 
 If the project is explicitly a plain Java library rather than a Spring Boot application, record that as the harness decision before disabling executable-application tasks.
 

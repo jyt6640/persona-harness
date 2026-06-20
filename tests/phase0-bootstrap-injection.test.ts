@@ -102,8 +102,10 @@ describe("Phase 0 bootstrap injection", () => {
       expect(injection.selectedRules).toContain("backend/gradle-bootstrap.md")
       expect(injection.block).toContain("Maven")
       expect(injection.block).toContain("Spring Boot")
-      expect(injection.block).toContain("호환되는 Spring Boot/Gradle/JDK 조합")
+      expect(injection.block).toContain("호환되는 Spring Boot plugin / Gradle launcher or wrapper / JDK toolchain 조합")
       expect(injection.block).toContain("bootJar")
+      expect(injection.block).toContain("enabled = false")
+      expect(injection.block).toContain("CopyProcessingSpec.getDirMode")
       expect(injection.block).toContain("junit-platform-launcher")
     }
   })

@@ -40,9 +40,11 @@ Before generating a Spring project, pick one compatible build line and keep it c
 - Java toolchain version
 - JUnit Platform runtime
 
-Do not solve a Spring Boot executable-app build failure by disabling `bootJar` unless the project is explicitly a library. For a backend application, `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke should all be expected to pass.
+Do not solve a Spring Boot executable-app build failure by disabling `bootJar` unless the project is explicitly a plain Java library. For a backend application, `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke should all be expected to pass.
 
-If the local environment uses a newer Gradle than the selected Spring Boot plugin supports, prefer a compatible Spring Boot plugin line or generate a Gradle wrapper for the chosen line. If the test task fails to load JUnit Platform, add the launcher explicitly:
+If `bootJar` fails with a compatibility symptom such as `CopyProcessingSpec.getDirMode()`, do not add `tasks.named("bootJar") { enabled = false }`. Treat it as a Spring Boot plugin / Gradle launcher mismatch: prefer a compatible Spring Boot plugin line for the current Gradle launcher, or generate a Gradle wrapper for the Gradle line supported by the chosen plugin.
+
+If the local environment uses a newer Gradle than the selected Spring Boot plugin supports, prefer a compatible Spring Boot plugin line or generate a Gradle wrapper for the chosen line. With a Gradle 9.x launcher, do not default to older Spring Boot 3.3.x plugin lines unless the wrapper pins a supported Gradle line. If the test task fails to load JUnit Platform, add the launcher explicitly:
 
 ```groovy
 testRuntimeOnly "org.junit.platform:junit-platform-launcher"
