@@ -4,7 +4,16 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. Stable `latest` releases are deferred until the Java/Spring backend MVP has enough external tester feedback.
 
-## [0.3.0-alpha.0] - Unreleased
+## [0.3.0-alpha.1] - Unreleased
+
+### Changed
+
+- Documented the full OpenCode prerequisite flow before Persona Harness setup.
+- Added OpenCode provider/model connection steps using `opencode auth login`, `opencode auth list`, `/connect`, and `/models`.
+- Clarified that Persona Harness planning files can be created without OpenCode, but plugin injection and evidence capture require OpenCode.
+- Updated external tester docs to use the published `persona-harness@alpha` install path.
+
+## [0.3.0-alpha.0] - 2026-06-21
 
 ### Added
 

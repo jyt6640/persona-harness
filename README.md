@@ -9,9 +9,51 @@ Persona Harness helps an agent start from a clean project, ask for backend conte
 > Current scope: Java/Spring backend MVP.
 > Frontend, infra, desktop app, AST/linter enforcement, and full TDD workflow are future tracks.
 
+## Requirements
+
+- Node.js 20+
+- npm
+- OpenCode terminal CLI
+- A model/provider configured in OpenCode
+
 ## Quick Start
 
-Alpha package flow, after npm alpha publish:
+Install OpenCode first. The official OpenCode docs recommend the install script, or a global npm install:
+
+```bash
+curl -fsSL https://opencode.ai/install | bash
+```
+
+or:
+
+```bash
+npm install -g opencode-ai
+```
+
+Verify it:
+
+```bash
+opencode --version
+opencode
+```
+
+Connect a model provider in OpenCode:
+
+```bash
+opencode auth login
+opencode auth list
+```
+
+You can also open the OpenCode TUI and run:
+
+```text
+/connect
+/models
+```
+
+Use model IDs in `provider/model` format, for example `openai/gpt-5.4-mini-fast`.
+
+Then install Persona Harness in your Java/Spring backend project:
 
 ```bash
 npm install -D persona-harness@alpha
@@ -21,7 +63,7 @@ npx ph policy init
 npx ph plan
 ```
 
-Local development flow, before public publish:
+If you are developing Persona Harness itself, use a local install instead:
 
 ```bash
 npm install -D /absolute/path/to/persona-harness
@@ -79,6 +121,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - It does not prove tests are sufficient.
 - It does not productize frontend, infra, or desktop workflows yet.
 - It is not the final TDD workflow yet.
+- It is not useful as a full agent workflow without OpenCode.
 
 ## For Humans
 

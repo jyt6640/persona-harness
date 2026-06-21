@@ -8,6 +8,54 @@ Persona Harness의 현재 productized MVP는 Java/Spring backend Clean Code inje
 
 frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 release-facing MVP 범위가 아니다.
 
+## Requirements
+
+- Node.js 20+
+- npm
+- OpenCode terminal CLI
+- OpenCode에 연결된 model/provider
+
+Persona Harness의 CLI는 OpenCode 없이도 `.persona` planning files를 만들 수 있지만, 핵심인 plugin hook injection과 evidence capture는 OpenCode가 있어야 동작한다.
+
+OpenCode 설치:
+
+```bash
+curl -fsSL https://opencode.ai/install | bash
+```
+
+대안 npm 설치:
+
+```bash
+npm install -g opencode-ai
+```
+
+확인:
+
+```bash
+opencode --version
+opencode
+```
+
+model/provider 연결:
+
+```bash
+opencode auth login
+opencode auth list
+```
+
+또는 OpenCode TUI에서:
+
+```text
+/connect
+/models
+```
+
+`opencode run --model <model>`의 model 값은 `provider/model` 형식이어야 한다. 예:
+
+```text
+openai/gpt-5.4-mini-fast
+```
+
 ## Local Development Install
 
 ```bash
