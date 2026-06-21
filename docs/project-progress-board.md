@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: v0.3.0 project-intake / philosophy workflow planning surface on top of the Java backend MVP.
 
-Current active candidate: external tester pilot using local/tarball or GitHub install, with the repeated `bootJar` workaround tracked as the first risk to watch. v0.2.1 local/tarball validation is complete enough for continued local use; public publish remains deferred.
+Current active candidate: v0.3.0-alpha npm publish readiness. External tester pilot docs are prepared, and the next release-facing decision is whether to publish `persona-harness@0.3.0-alpha.0` under the `alpha` dist-tag after dry-run verification. Public `latest` publish remains deferred.
 
 ## Current Decisions
 
@@ -57,6 +57,7 @@ Current active candidate: external tester pilot using local/tarball or GitHub in
 - v0.3.0 policy overlay clean workflow smoke is positive: `ph init -> ph intake --interactive -> ph policy init -> ph plan -> OpenCode plan-only` produced a completed architecture plan that read the profile and company/personal policy files, treated policy overlay as planning context only, preserved README/current prompt priority, and created no implementation files.
 - v0.3.0 policy overlay accepted implementation smoke is positive for policy behavior and partial for build-line behavior: generated code followed the policy-influenced accepted plan with domain-first packages, domain repository ports, JDBC infrastructure adapters, class-based domain behavior, and no Service-owned storage/id sequence; independent `gradle test`, `gradle build`, `gradle bootRun`, and HTTP smoke passed. However OpenCode again disabled `bootJar`, so the next narrow follow-up is build-line compatibility, not broader policy/enforcement.
 - v0.3.0 external tester pilot is prepared as documentation, not public distribution: testers should use GitHub or tarball install, run `ph init -> ph intake --interactive -> ph policy init -> ph plan -> OpenCode`, and report install friction, `.persona/evidence`, Gradle/`bootJar`, HTTP smoke, generated structure, and usability judgment.
+- v0.3.0-alpha npm publish readiness is the current packaging track: package version is `0.3.0-alpha.0`, package name `persona-harness` returned npm registry `E404` on `npm view persona-harness version`, alpha install flow is `npm install -D persona-harness@alpha`, and real publish is still blocked on explicit approval plus npm auth.
 - `v0.2.1` support contract covers local/tarball install, `ph init`, Java/Spring target injection, metadata evidence, and `npx ph bearshell` command-surface behavior in clean OpenCode smoke.
 - `packages/shared-skills` remains in the v0.2.1 tarball as packaged reference material; it is not a release-facing support surface or enforcement gate.
 - v0.2.1 package metadata is checked for name, version, description, keywords, license, repository, homepage, bugs, bin, files, engines, and package size.
@@ -180,6 +181,7 @@ Current active candidate: external tester pilot using local/tarball or GitHub in
 - `docs/current/v0.3.0-gradle-spring-build-guidance.md`
 - `docs/current/v0.3.0-external-tester-guide.md`
 - `docs/current/v0.3.0-external-tester-feedback-template.md`
+- `docs/current/v0.3.0-alpha-publish-readiness.md`
 - `docs/current/persona-workflow-roles-v0.3.md`
 - `docs/current/java-backend-bootstrap-injection-design.md`
 - `docs/current/java-backend-bootstrap-open-code-demo.md`

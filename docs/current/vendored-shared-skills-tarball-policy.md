@@ -1,29 +1,37 @@
-# Vendored Shared-skills Tarball Policy
+# Vendored Shared-skills Package Policy
 
 ## Decision
 
-Keep `packages/shared-skills` in the `v0.2.1` tarball.
+Keep the full `packages/shared-skills` tree in the repository, but do not ship the full tree in the public `v0.3.0-alpha.0` npm tarball.
 
-Do not trim the vendored shared-skill tree for the local/tarball package. The current copy is an intentional reference asset for the 1.0 direction, and removing it now would create churn before the activation policy is settled.
+The alpha tarball includes only the Java MVP subset:
+
+- `packages/shared-skills/skills/programming/SKILL.md`
+- `packages/shared-skills/skills/programming/references/java`
+
+This keeps the Java/backend guidance inspectable without packaging inactive OMO skills, no-excuse fixtures, frontend references, debugging references, AST tooling, or workflow skills as public support surfaces.
 
 ## Release-facing Scope
 
 Including `packages/shared-skills` in the tarball does not expand the release-facing MVP.
 
-The only productized `v0.2.1` surface remains:
+The only productized `v0.3.0-alpha.0` surface remains:
 
 - Java/Spring backend Clean Code injection,
 - Gradle-first Java/Spring target support,
 - `.persona/rules` loading,
 - metadata-only evidence,
-- diagnostics-only reports,
 - `ph init`,
+- `ph intake`,
+- `ph policy`,
+- `ph plan`,
+- `ph history`,
 - `npx ph bearshell`,
-- local path and tarball install.
+- npm alpha/local/tarball install.
 
 ## Packaged Reference Surface
 
-These vendored skills may be present in the tarball as reference material, but they are not public support surfaces in `v0.2.1`:
+These vendored skills remain in the repo as reference material, but they are not included in the alpha tarball and are not public support surfaces:
 
 - `ast-grep`
 - `debugging`
@@ -38,7 +46,7 @@ These vendored skills may be present in the tarball as reference material, but t
 - `ultraresearch`
 - `visual-qa`
 
-The `programming` and `frontend` routing experiments remain limited/experimental unless a later scope decision productizes them. They do not replace the Java/Spring `.persona/rules` baseline.
+The `programming` routing experiment remains limited to Java MVP packaging through the Java reference subset. `frontend` routing remains non-release-facing unless a later scope decision productizes it.
 
 ## Explicit Non-Claims
 
@@ -53,18 +61,19 @@ Vendored shared-skills are not:
 
 ## Known Tradeoff
 
-Keeping `packages/shared-skills` increases the tarball size.
+Keeping the full `packages/shared-skills` tree in the tarball increased package size and shipped inactive fixture/reference content into external tester projects.
 
-Current rationale:
+Current rationale for trimming public package contents:
 
-- the package is local/tarball-first, not public-registry-first;
-- the vendored content is useful for the 1.0 skill direction;
-- trimming now would save package weight but risk later reintegration churn;
-- the current support contract can stay honest by labeling the content as packaged reference/inactive surface.
+- the alpha package is public-registry-facing;
+- clean project evidence should not be polluted by installed package fixture files;
+- inactive shared-skills should not look like supported product surfaces;
+- Java MVP users still get the relevant programming reference material;
+- the repo can still keep the full vendored tree for future 1.0 design work.
 
 ## 1.0 Activation Policy
 
-Before `1.0.0`, decide a shared-skills activation policy:
+Before `1.0.0`, decide a broader shared-skills activation policy:
 
 - which skills become productized support surfaces,
 - which skills remain packaged references,
@@ -73,4 +82,4 @@ Before `1.0.0`, decide a shared-skills activation policy:
 - whether any skill can participate in OpenCode injection by default,
 - how to avoid confusing packaged reference content with enforcement.
 
-Until that policy exists, keep `packages/shared-skills` packaged but non-release-facing.
+Until that policy exists, keep the full vendored tree out of the public package except for the Java MVP programming subset.
