@@ -4,12 +4,13 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `latest` is kept on the current alpha build to avoid stale default installs. Stable support guarantees are still deferred.
 
-## [0.3.0-alpha.2] - Unreleased
+## [0.3.0-alpha.2] - 2026-06-21
 
 ### Changed
 
 - Promoted the P0 plan-first CLI, diagnostics, scope, and bearshell hardening line to the next alpha candidate because the published `0.3.0-alpha.1` package still printed the old implementation-first `ph init` guidance.
 - Updated release automation so prerelease publishes also move the npm `latest` dist-tag to the same current alpha/beta version, avoiding stale default installs.
+- Published `persona-harness@0.3.0-alpha.2` to npm and synchronized both `alpha` and `latest` dist-tags to this version for the alpha pilot.
 - Documented the full OpenCode prerequisite flow before Persona Harness setup.
 - Added OpenCode provider/model connection steps using `opencode auth login`, `opencode auth list`, `/connect`, and `/models`.
 - Clarified that Persona Harness planning files can be created without OpenCode, but plugin injection and evidence capture require OpenCode.

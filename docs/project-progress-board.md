@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: v0.3.0 project-intake / philosophy workflow planning surface on top of the Java backend MVP.
 
-Current active candidate: v0.3.0-alpha.2 npm publish readiness. External tester pilot docs are prepared, `persona-harness@0.3.0-alpha.2` is the next alpha candidate, and release automation is defined for version tags. During the alpha pilot, `latest` should be synchronized to the current alpha build to avoid stale default installs; this is not a stable support claim.
+Current active candidate: v0.3.0-alpha.2 external tester feedback. `persona-harness@0.3.0-alpha.2` is published to npm, and both `alpha` and `latest` point to it during the alpha pilot to avoid stale default installs. This is not a stable support claim.
 
 ## Current Decisions
 
@@ -57,7 +57,7 @@ Current active candidate: v0.3.0-alpha.2 npm publish readiness. External tester 
 - v0.3.0 policy overlay clean workflow smoke is positive: `ph init -> ph intake --interactive -> ph policy init -> ph plan -> OpenCode plan-only` produced a completed architecture plan that read the profile and company/personal policy files, treated policy overlay as planning context only, preserved README/current prompt priority, and created no implementation files.
 - v0.3.0 policy overlay accepted implementation smoke is positive for policy behavior and partial for build-line behavior: generated code followed the policy-influenced accepted plan with domain-first packages, domain repository ports, JDBC infrastructure adapters, class-based domain behavior, and no Service-owned storage/id sequence; independent `gradle test`, `gradle build`, `gradle bootRun`, and HTTP smoke passed. However OpenCode again disabled `bootJar`, so the next narrow follow-up is build-line compatibility, not broader policy/enforcement.
 - v0.3.0 external tester pilot is prepared as documentation, not public distribution: testers should use GitHub or tarball install, run `ph init -> ph intake --interactive -> ph policy init -> ph plan -> OpenCode`, and report install friction, `.persona/evidence`, Gradle/`bootJar`, HTTP smoke, generated structure, and usability judgment.
-- v0.3.0-alpha npm publish readiness is the current packaging track: package version is `0.3.0-alpha.2`, alpha install flow is `npm install -D persona-harness@alpha`, and real publish stays controlled by explicit release/tag workflow approval.
+- v0.3.0-alpha npm publish readiness is closed for `0.3.0-alpha.2`: package version is `0.3.0-alpha.2`, alpha install flow is `npm install -D persona-harness@alpha`, and registry fresh install smoke passed.
 - Published `persona-harness@alpha` smoke against the existing `0.3.0-alpha.1` package exposed stale package behavior: `ph init` still printed the old implementation-first prompt, and non-TTY `ph intake --interactive` correctly refused piped input. This makes `0.3.0-alpha.2` the necessary next package candidate for the P0 plan-first UX fixes.
 - v0.3.0-alpha release automation is defined in `.github/workflows/release.yml`: tag pushes verify tests/typecheck/build/rule diagnostics/scope/injection-value/pack, publish npm with alpha/beta/latest dist-tag derived from the version tag, synchronize `latest` to prerelease tags during the alpha/beta pilot, and create generated GitHub release notes. This workflow is not yet proven by a real tag push in this board.
 - v0.3.0 workflow command guidance now prefers clean-project-safe invocation: OpenCode-facing prompts and report templates use `npx ph ...`, and Gradle/test/build/smoke command slots prefer `npx ph bearshell ...` over raw shell.
@@ -70,7 +70,7 @@ Current active candidate: v0.3.0-alpha.2 npm publish readiness. External tester 
 - `v0.2.1` support contract covers local/tarball install, `ph init`, Java/Spring target injection, metadata evidence, and `npx ph bearshell` command-surface behavior in clean OpenCode smoke.
 - `packages/shared-skills` remains in the v0.2.1 tarball as packaged reference material; it is not a release-facing support surface or enforcement gate.
 - v0.2.1 package metadata is checked for name, version, description, keywords, license, repository, homepage, bugs, bin, files, engines, and package size.
-- Public npm alpha exists; the next controlled publish target is `0.3.0-alpha.2` after verification and OTP/tag approval. Stable support guarantees remain deferred.
+- Public npm alpha exists; `alpha` and `latest` both point to `0.3.0-alpha.2` during the alpha pilot. Stable support guarantees remain deferred.
 - Experiment artifact cleanup is a phase-close hygiene step and remains dry-run-first.
 
 ## Active Commands
