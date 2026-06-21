@@ -160,15 +160,15 @@ npx ph history --id first-clean-run
 - 이 흐름은 Java/Spring backend Clean Code shape를 더 균일하게 만들기 위한 local MVP다.
 - generated app product quality, rule compliance enforcement, test sufficiency, Guard/AST/linter 검증은 보증하지 않는다.
 - frontend/infra/desktop workflow는 아직 release-facing 범위가 아니다.
-- `latest` 설치는 아직 지원하지 않는다. alpha publish 전에는 `npm install -D persona-harness`도 registry에 없으면 실패한다.
+- alpha pilot 기간에는 `persona-harness@alpha`를 명시한다. `latest`는 stale default install을 피하기 위해 현재 alpha/beta로 동기화할 수 있지만 stable support 보장은 아니다.
 
 ## 5분 Clean Project Flow
 
-public npm publish 전까지는 local path 또는 tarball install로 검증한다.
+public alpha publish 이후에는 npm install로 검증한다. unreleased development build만 local path 또는 tarball install을 쓴다.
 
 ```bash
 cd /path/to/clean-java-spring-project
-npm install -D /absolute/path/to/persona-harness
+npm install -D persona-harness@alpha
 npx ph init
 npx ph intake --interactive
 npx ph plan

@@ -2,12 +2,14 @@
 
 All notable Persona Harness changes are recorded here.
 
-This project uses npm prerelease versions for tester-facing alpha builds. Stable `latest` releases are deferred until the Java/Spring backend MVP has enough external tester feedback.
+This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `latest` is kept on the current alpha build to avoid stale default installs. Stable support guarantees are still deferred.
 
-## [0.3.0-alpha.1] - Unreleased
+## [0.3.0-alpha.2] - Unreleased
 
 ### Changed
 
+- Promoted the P0 plan-first CLI, diagnostics, scope, and bearshell hardening line to the next alpha candidate because the published `0.3.0-alpha.1` package still printed the old implementation-first `ph init` guidance.
+- Updated release automation so prerelease publishes also move the npm `latest` dist-tag to the same current alpha/beta version, avoiding stale default installs.
 - Documented the full OpenCode prerequisite flow before Persona Harness setup.
 - Added OpenCode provider/model connection steps using `opencode auth login`, `opencode auth list`, `/connect`, and `/models`.
 - Clarified that Persona Harness planning files can be created without OpenCode, but plugin injection and evidence capture require OpenCode.
@@ -20,6 +22,14 @@ This project uses npm prerelease versions for tester-facing alpha builds. Stable
 - Narrowed default `enabledDomains` to the Java backend MVP surface: `backend` and `programming`.
 - Added diagnostics-only reporting for malformed `.persona/harness.jsonc` instead of silently hiding the fallback.
 - Added a default `ph bearshell` command timeout with `PH_BEARSHELL_TIMEOUT_MS` override, while keeping the command helper explicitly non-sandboxed.
+
+## [0.3.0-alpha.1] - 2026-06-21
+
+### Changed
+
+- Published the first tester-facing alpha line after `0.3.0-alpha.0`.
+- Added OpenCode prerequisite and provider/model setup documentation.
+- Prepared release automation and external tester guidance, but the published package still had stale `ph init` implementation-first output.
 
 ## [0.3.0-alpha.0] - 2026-06-21
 
@@ -45,8 +55,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. Stable
 
 ### Known Gaps
 
-- npm public publish has not been completed yet.
-- `latest` dist-tag is intentionally deferred.
+- The current alpha line still needs external tester feedback before stable support guarantees.
 - Generated app product quality is not certified.
 - Rule compliance is not enforced by AST, linter, or build failure gates.
 - Frontend, infra, desktop, and full TDD workflows remain future tracks.

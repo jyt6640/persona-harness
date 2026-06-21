@@ -113,14 +113,14 @@ For the current alpha line:
 npm publish --tag alpha
 ```
 
-Do not publish under `latest` until the stable support contract is ready.
+During the alpha/beta pilot, keep `latest` synchronized to the current prerelease package to avoid stale default installs. This does not imply stable support guarantees.
 
 ### GitHub Actions path
 
 The `.github/workflows/release.yml` workflow publishes from tags that match `v*.*.*`.
 
-- `vX.Y.Z-alpha.N` publishes with dist-tag `alpha`.
-- `vX.Y.Z-beta.N` publishes with dist-tag `beta`.
+- `vX.Y.Z-alpha.N` publishes with dist-tag `alpha`, then synchronizes `latest` to the same version.
+- `vX.Y.Z-beta.N` publishes with dist-tag `beta`, then synchronizes `latest` to the same version.
 - `vX.Y.Z` publishes with dist-tag `latest`.
 
 Required repository setup:
