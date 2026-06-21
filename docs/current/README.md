@@ -27,6 +27,8 @@ Common anchors:
 - `v0.3.0-external-tester-guide.md`
 - `v0.3.0-external-tester-feedback-template.md`
 - `v0.3.0-alpha-publish-readiness.md`
+- `release/release-checklist.md`
+- `release/release-notes-template.md`
 - `persona-harness-detailed-usage.md`
 - `persona-workflow-roles-v0.3.md`
 - `mvp-scope-status.json`

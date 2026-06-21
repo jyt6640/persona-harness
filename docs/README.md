@@ -7,6 +7,7 @@ Root-level docs are restricted to this index and the compact progress board. New
 ## Packages
 
 - `current/`: active policy, current decisions, install guides, status JSON, and productization direction.
+- `current/release/`: release checklist, release note templates, and repeated release operations.
 - `evidence-reviews/`: A/B reviews, actual-run reviews, regrades, generated-run observations, and evidence summaries.
 - `phases/`: phase-specific plans, designs, decisions, and completion notes.
 - `archive/`: historical snapshots and superseded transition plans.

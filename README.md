@@ -4,7 +4,7 @@ Java/Spring backend Clean Code workflow pilot for OpenCode.
 
 Persona Harness helps an agent start from a clean project, ask for backend context, write an architecture plan, and generate code with a consistent Java/Spring structure.
 
-[한국어](#한국어) | [English](#english) | [日本語](#日本語) | [简体中文](#简体中文)
+[English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
 > Current scope: Java/Spring backend MVP.
 > Frontend, infra, desktop app, AST/linter enforcement, and full TDD workflow are future tracks.
@@ -110,50 +110,15 @@ After implementation, fill:
 
 ## Docs
 
+- [Changelog](CHANGELOG.md)
+- [Release checklist](docs/current/release/release-checklist.md)
+- [Release notes template](docs/current/release/release-notes-template.md)
 - [Detailed usage notes](docs/current/persona-harness-detailed-usage.md)
 - [Alpha publish readiness](docs/current/v0.3.0-alpha-publish-readiness.md)
 - [External tester guide](docs/current/v0.3.0-external-tester-guide.md)
 - [External tester feedback template](docs/current/v0.3.0-external-tester-feedback-template.md)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 - [Project progress board](docs/project-progress-board.md)
-
-## 한국어
-
-Persona Harness는 OpenCode에서 Java/Spring 백엔드 프로젝트를 더 균일한 Clean Code 구조로 생성하도록 돕는 하네스입니다.
-
-현재 목표는 “0에서 바로 90점짜리 프로젝트를 만든다”에 가깝습니다. 먼저 프로젝트 맥락을 묻고, 구현 전에 architecture/technology plan을 남긴 뒤, 그 계획을 기준으로 구현하게 합니다.
-
-가장 중요한 기준은 다음입니다.
-
-- Gradle 기반
-- `presentation/application/domain/infrastructure/global` 경계
-- Service는 저장소 상태나 id sequence를 직접 소유하지 않음
-- domain은 단순 record가 아니라 자기 필드로 판단과 행동을 가짐
-- domain에는 repository port, infrastructure에는 repository 구현체
-
-## English
-
-Persona Harness is an OpenCode plugin workflow for Java/Spring backend projects.
-
-It helps agents ask for backend context, write a plan first, and generate code with a consistent Clean Code shape. The current MVP focuses on Java/Spring backend generation, not frontend, infra, desktop, enforcement, or product-quality certification.
-
-Use it when you want a generated backend to follow a stable structure instead of drifting into ad hoc controllers, passive domains, or service-owned storage.
-
-## 日本語
-
-Persona Harness は OpenCode 向けの Java/Spring バックエンド用ワークフロープラグインです。
-
-実装前にプロジェクト情報を整理し、architecture/technology plan を作り、その計画を読ませてから実装させることを目的にしています。
-
-現在の MVP は Java/Spring backend Clean Code に限定されています。frontend、infra、desktop、AST/linter enforcement、完全な TDD workflow はまだ対象外です。
-
-## 简体中文
-
-Persona Harness 是面向 OpenCode 的 Java/Spring 后端工作流插件。
-
-它会先收集项目背景，生成 architecture/technology plan，然后让代理基于已确认的计划实现代码。当前 MVP 只面向 Java/Spring backend Clean Code，不承诺前端、基础设施、桌面应用、AST/linter 强制检查或最终产品质量认证。
-
-适合用于验证生成代码是否能稳定保持 Controller、Service、Domain、Repository、DTO 等边界。
 
 ## License
 

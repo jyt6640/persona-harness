@@ -16,6 +16,10 @@
     "dist",
     "LICENSE",
     "README.md",
+    "README.ko.md",
+    "README.ja.md",
+    "README.zh-cn.md",
+    "CHANGELOG.md",
     ".persona/harness.jsonc",
     ".persona/rules",
     "docs/current/java-backend-mvp-install-guide.md",
@@ -24,6 +28,7 @@
     "docs/current/v0.3.0-external-tester-feedback-template.md",
     "docs/current/v0.3.0-alpha-publish-readiness.md",
     "docs/current/persona-harness-detailed-usage.md",
+    "docs/current/release",
     "packages/shared-skills/skills/programming/SKILL.md",
     "packages/shared-skills/skills/programming/references/java"
   ],
