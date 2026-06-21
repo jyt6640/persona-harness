@@ -8,13 +8,15 @@ const SUPPORTED_MVP = "java-spring-clean-code"
 
 const SUMMARY_ORDER = [
   "project-context",
+  "project-goal",
   "project-scale",
+  "application-type",
   "storage",
   "persistence-technology",
   "migration-style",
   "package-style",
-  "dto-strictness",
-  "philosophy-overlay",
+  "architecture-style",
+  "boundary-strictness",
 ] as const
 
 type ProfileQuestion = {
@@ -119,15 +121,25 @@ function answeredQuestionMap(questions: readonly ProfileQuestion[]): ReadonlyMap
   return answers
 }
 
-function formatSummaryLines(answers: ReadonlyMap<string, string>): readonly string[] {
+function readProjectNote(value: unknown): string | undefined {
+  if (!isRecord(value) || !isRecord(value.notes) || typeof value.notes.project !== "string") {
+    return undefined
+  }
+
+  const note = value.notes.project.trim()
+  return note.length > 0 ? note : undefined
+}
+
+function formatSummaryLines(answers: ReadonlyMap<string, string>, projectNote?: string): readonly string[] {
   const answerLines = SUMMARY_ORDER.flatMap((id) => {
     const answer = answers.get(id)
     return answer === undefined ? [] : [`- ${id}: ${answer}`]
   })
+  const noteLines = projectNote === undefined ? [] : [`- notes.project: ${projectNote}`]
 
   return [
     "프로젝트 프로필 요약:",
-    ...(answerLines.length > 0 ? answerLines : ["- 응답된 항목 없음"]),
+    ...(answerLines.length > 0 || noteLines.length > 0 ? [...answerLines, ...noteLines] : ["- 응답된 항목 없음"]),
     "",
     "프로필 사용 원칙:",
     "- 이 요약은 구현 전 architecture/technology plan 참고용이다.",
@@ -156,5 +168,5 @@ export function loadBackendProjectProfileSummary(projectDir: string): readonly s
     return []
   }
 
-  return formatSummaryLines(answeredQuestionMap(readQuestions(parsed.questions)))
+  return formatSummaryLines(answeredQuestionMap(readQuestions(parsed.questions)), readProjectNote(parsed))
 }

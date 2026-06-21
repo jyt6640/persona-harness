@@ -43,10 +43,14 @@ The v0.3.x workflow should make this path more explicit without turning Persona 
    - implement the plan
    - run build/tests
    - repair failures
+   - fill `.persona/workflow/implementation-report.md`
+   - run `ph plan --report-filled implementation`
 8. roach-style review:
    - compare result to requirements and profile
    - check Clean Code rubric
    - record manual QA evidence
+   - fill `.persona/workflow/review-report.md`
+   - run `ph plan --report-filled review`
 9. evidence review decides next loop
 ```
 
@@ -154,6 +158,8 @@ Minimum ledger entries:
 - implementation started
 - test/build verification
 - manual QA surface used
+- implementation report marked filled through `ph plan --report-filled implementation`
+- review report marked filled through `ph plan --report-filled review`
 - review decision
 - next loop
 
@@ -168,6 +174,7 @@ For Java/Spring backend projects:
 - start the Spring app when feasible;
 - hit the API with curl or an equivalent HTTP client;
 - record at least one happy path and one requirement-relevant failure path.
+- if live HTTP QA cannot run, record the reason and stderr/key logs in `.persona/workflow/implementation-report.md`.
 
 This gate is evidence, not product-quality certification.
 

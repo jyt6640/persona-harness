@@ -24,12 +24,20 @@ function writeProfile(projectDir: string): void {
       productized: false,
     },
     questions: [
+      { id: "project-context", prompt: "context", choices: [], answer: "solo" },
+      { id: "project-goal", prompt: "goal", choices: [], answer: "production-service" },
+      { id: "project-scale", prompt: "scale", choices: [], answer: "small" },
+      { id: "application-type", prompt: "application", choices: [], answer: "rest-api" },
       { id: "storage", prompt: "storage", choices: [], answer: "database" },
       { id: "persistence-technology", prompt: "persistence", choices: [], answer: "jdbc-template" },
       { id: "migration-style", prompt: "migration", choices: [], answer: "flyway" },
       { id: "package-style", prompt: "package", choices: [], answer: "domain-first" },
-      { id: "dto-strictness", prompt: "dto", choices: [], answer: "strict" },
+      { id: "architecture-style", prompt: "architecture", choices: [], answer: "clean-architecture-light" },
+      { id: "boundary-strictness", prompt: "boundary", choices: [], answer: "strict" },
     ],
+    notes: {
+      project: "관리자 기능은 이번 범위에서 제외한다.",
+    },
   }
 
   writeFileSync(join(projectDir, ".persona", "project-profile.jsonc"), `${JSON.stringify(profile, null, 2)}\n`)
@@ -76,11 +84,17 @@ describe("ph plan", () => {
     expect(plan).toContain("Role: `blackbear`")
     expect(plan).toContain("Requirements source: `README.md`")
     expect(plan).toContain("README heading: Equipment Rental API")
+    expect(plan).toContain("- project-context: solo")
+    expect(plan).toContain("- project-goal: production-service")
+    expect(plan).toContain("- project-scale: small")
+    expect(plan).toContain("- application-type: rest-api")
     expect(plan).toContain("- storage: database")
     expect(plan).toContain("- persistence-technology: jdbc-template")
     expect(plan).toContain("- migration-style: flyway")
     expect(plan).toContain("- package-style: domain-first")
-    expect(plan).toContain("- dto-strictness: strict")
+    expect(plan).toContain("- architecture-style: clean-architecture-light")
+    expect(plan).toContain("- boundary-strictness: strict")
+    expect(plan).toContain("- notes.project: 관리자 기능은 이번 범위에서 제외한다.")
     expect(plan).toContain("implementation must not start until this plan is reviewed or accepted")
 
     const implementationReport = readImplementationReport(projectDir)
@@ -89,12 +103,20 @@ describe("ph plan", () => {
     expect(implementationReport).toContain("## Implemented Files")
     expect(implementationReport).toContain("## Verification")
     expect(implementationReport).toContain("## Manual QA")
+    expect(implementationReport).toContain("`gradle bootRun`")
+    expect(implementationReport).toContain("HTTP happy path")
+    expect(implementationReport).toContain("HTTP failure path")
+    expect(implementationReport).toContain("Manual QA가 불가능하면 사유와 stderr/핵심 로그를 기록한다.")
+    expect(implementationReport).toContain("채운 뒤에는 `ph plan --report-filled implementation`을 실행한다.")
 
     const reviewReport = readReviewReport(projectDir)
     expect(reviewReport).toContain("# Roach Review Report")
     expect(reviewReport).toContain("Status: template")
     expect(reviewReport).toContain("## Requirements Check")
     expect(reviewReport).toContain("## Boundary Review")
+    expect(reviewReport).toContain("`gradle bootRun` 결과를 확인했다.")
+    expect(reviewReport).toContain("HTTP happy path / failure path manual QA evidence")
+    expect(reviewReport).toContain("채운 뒤에는 `ph plan --report-filled review`를 실행한다.")
     expect(reviewReport).toContain("## Remaining Limits")
   })
 
@@ -155,6 +177,33 @@ describe("ph plan", () => {
     expect(readPlan(projectDir)).toContain("Status: needs-revision")
   })
 
+  it("marks filled workflow reports without changing the plan status", () => {
+    const projectDir = createTempProject()
+    const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    const implementationFilled = runPersonaCli(["plan", "--report-filled", "implementation"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const reviewFilled = runPersonaCli(["plan", "--report-filled", "review"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(draft.status).toBe(0)
+    expect(implementationFilled.status).toBe(0)
+    expect(implementationFilled.stdout).toContain("Workflow report: .persona/workflow/implementation-report.md")
+    expect(implementationFilled.stdout).toContain("Status: filled")
+    expect(reviewFilled.status).toBe(0)
+    expect(reviewFilled.stdout).toContain("Workflow report: .persona/workflow/review-report.md")
+    expect(reviewFilled.stdout).toContain("Status: filled")
+    expect(readImplementationReport(projectDir)).toContain("Status: filled")
+    expect(readReviewReport(projectDir)).toContain("Status: filled")
+    expect(readPlan(projectDir)).toContain("Status: draft")
+  })
+
   it("fails plan status changes when the plan artifact does not exist", () => {
     const projectDir = createTempProject()
 
@@ -170,6 +219,33 @@ describe("ph plan", () => {
     expect(revise.stderr).toContain("No workflow plan found")
   })
 
+  it("fails report status changes when workflow reports do not exist", () => {
+    const projectDir = createTempProject()
+
+    const implementation = runPersonaCli(["plan", "--report-filled", "implementation"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const review = runPersonaCli(["plan", "--report-filled", "review"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const invalid = runPersonaCli(["plan", "--report-filled", "unknown"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(implementation.status).toBe(1)
+    expect(implementation.stderr).toContain("No implementation report found")
+    expect(review.status).toBe(1)
+    expect(review.stderr).toContain("No review report found")
+    expect(invalid.status).toBe(1)
+    expect(invalid.stderr).toContain("Report kind must be implementation or review.")
+  })
+
   it("shows usage, rejects unknown options, and advertises plan in shared usage", () => {
     const projectDir = createTempProject()
 
@@ -178,9 +254,10 @@ describe("ph plan", () => {
     const rootHelp = runPersonaCli(["--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain("Usage: ph plan [--force | --status | --accept | --revise]")
+    expect(help.stdout).toContain("Usage: ph plan [--force | --status | --accept | --revise | --report-filled <implementation|review>]")
     expect(help.stdout).toContain("--accept")
     expect(help.stdout).toContain("--revise")
+    expect(help.stdout).toContain("--report-filled")
     expect(help.stdout).toContain(".persona/workflow/implementation-report.md")
     expect(help.stdout).toContain(".persona/workflow/review-report.md")
     expect(invalid.status).toBe(1)

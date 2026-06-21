@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import process from "node:process"
+import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
 
 import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
-import { runIntakeCommand } from "./intake.js"
+import { runIntakeCommand, runInteractiveIntakeCommand } from "./intake.js"
 import { runPlanCommand } from "./plan-command.js"
 
 type PersonaCliOptions = {
@@ -81,6 +82,41 @@ function writeResult(result: CliRunResult): void {
   process.exitCode = result.status
 }
 
+async function runCliEntrypoint(): Promise<void> {
+  const args = process.argv.slice(2)
+  const invocationName = process.argv[1]?.endsWith("/persona-harness") ? "persona-harness" : "ph"
+
+  if (args[0] === "intake" && args.includes("--interactive")) {
+    const readline = createInterface({ input: process.stdin, output: process.stdout })
+    try {
+      const result = await runInteractiveIntakeCommand(
+        args.slice(1),
+        {
+          projectDir: process.cwd(),
+          isTty: process.stdin.isTTY === true,
+          write: (text) => {
+            process.stdout.write(text)
+          },
+          readLine: (prompt) => readline.question(prompt),
+        },
+        invocationName,
+      )
+      writeResult(result)
+    } finally {
+      readline.close()
+    }
+    return
+  }
+
+  writeResult(
+    runPersonaCli(args, {
+      cwd: process.cwd(),
+      env: process.env,
+      invocationName,
+    }),
+  )
+}
+
 function isCliEntrypoint(): boolean {
   const entrypoint = process.argv[1]
   if (entrypoint === undefined) {
@@ -91,11 +127,12 @@ function isCliEntrypoint(): boolean {
 }
 
 if (isCliEntrypoint()) {
-  writeResult(
-    runPersonaCli(process.argv.slice(2), {
-      cwd: process.cwd(),
-      env: process.env,
-      invocationName: process.argv[1]?.endsWith("/persona-harness") ? "persona-harness" : "ph",
-    }),
-  )
+  runCliEntrypoint().catch((error: unknown) => {
+    if (error instanceof Error) {
+      process.stderr.write(`${error.message}\n`)
+      process.exitCode = 1
+      return
+    }
+    throw error
+  })
 }

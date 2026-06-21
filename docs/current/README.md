@@ -15,9 +15,13 @@ Common anchors:
 - `v0.3.0-project-intake-philosophy-workflow.md`
 - `v0.3.0-backend-profile-summary-injection-design.md`
 - `v0.3.0-workflow-next-surface-decision.md`
+- `v0.3.0-interactive-intake-design.md`
+- `v0.3.0-intake-transcript-fixture.md`
+- `v0.3.0-profile-schema-decision.md`
 - `v0.3.0-blackbear-plan-artifact.md`
 - `v0.3.0-plan-acceptance.md`
 - `v0.3.0-workflow-history.md`
+- `v0.3.0-workflow-report-status-lifecycle.md`
 - `v0.3.0-gradle-spring-build-guidance.md`
 - `v0.3.0-installed-package-evidence-noise-policy.md`
 - `persona-workflow-roles-v0.3.md`

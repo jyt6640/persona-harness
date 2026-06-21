@@ -13,18 +13,25 @@ import {
   readWorkflowPlanStatus,
   updateWorkflowPlanStatus,
 } from "./plan-status.js"
+import {
+  WorkflowReportStatusError,
+  parseWorkflowReportKind,
+  updateWorkflowReportStatus,
+  type WorkflowReportKind,
+} from "./report-status.js"
 
 type ParsedPlanArgs =
   | { readonly kind: "run"; readonly force: boolean }
   | { readonly kind: "status" }
   | { readonly kind: "accept" }
   | { readonly kind: "revise" }
+  | { readonly kind: "report-filled"; readonly reportKind: WorkflowReportKind }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
 export function planUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} plan [--force | --status | --accept | --revise]`,
+    `Usage: ${invocation} plan [--force | --status | --accept | --revise | --report-filled <implementation|review>]`,
     "",
     "Creates and manages a blackbear architecture plan before implementation.",
     "",
@@ -33,6 +40,8 @@ export function planUsage(invocation = "ph"): string {
     "  --status  Read the plan acceptance status.",
     "  --accept  Mark the plan status as accepted.",
     "  --revise  Mark the plan status as needs-revision.",
+    "  --report-filled <implementation|review>",
+    "            Mark a filled workflow report as filled.",
     "",
     "Output:",
     `- ${PLAN_PATH}`,
@@ -50,6 +59,14 @@ export function planUsage(invocation = "ph"): string {
 function parsePlanArgs(args: readonly string[]): ParsedPlanArgs {
   if (args.length === 0) {
     return { kind: "run", force: false }
+  }
+
+  if (args[0] === "--report-filled") {
+    const reportKind = parseWorkflowReportKind(args[1])
+    if (args.length !== 2 || reportKind === undefined) {
+      return { kind: "invalid", message: "Report kind must be implementation or review." }
+    }
+    return { kind: "report-filled", reportKind }
   }
 
   if (args.length > 1) {
@@ -77,6 +94,16 @@ function parsePlanArgs(args: readonly string[]): ParsedPlanArgs {
 
 function statusOutput(title: string, planPath: string, status: string): string {
   return [`Persona Harness ${title}.`, "", `Plan: ${planPath}`, `Status: ${status}`].join("\n") + "\n"
+}
+
+function reportStatusOutput(title: string, relativePath: string, reportPath: string, status: string): string {
+  return [
+    `Persona Harness ${title}.`,
+    "",
+    `Workflow report: ${relativePath}`,
+    `Path: ${reportPath}`,
+    `Status: ${status}`,
+  ].join("\n") + "\n"
 }
 
 function updateStatus(status: PlanAcceptanceStatus, options: PlanOptions): CliRunResult {
@@ -107,6 +134,14 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
     if (parsed.kind === "revise") {
       return updateStatus("needs-revision", options)
     }
+    if (parsed.kind === "report-filled") {
+      const result = updateWorkflowReportStatus(parsed.reportKind, "filled", options)
+      return {
+        status: 0,
+        stdout: reportStatusOutput("workflow report filled", result.relativePath, result.reportPath, result.status),
+        stderr: "",
+      }
+    }
 
     const planPath = initializeWorkflowPlan(options, parsed.force)
     return {
@@ -119,13 +154,13 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
         "Next:",
         `- Review and complete ${PLAN_PATH} before implementation.`,
         "- Run `ph plan --accept` before implementation, or `ph plan --revise` if the plan needs changes.",
-        `- Fill ${IMPLEMENTATION_REPORT_PATH} after implementation.`,
-        `- Fill ${REVIEW_REPORT_PATH} after review/manual QA.`,
+        `- Fill ${IMPLEMENTATION_REPORT_PATH} after implementation, then run \`ph plan --report-filled implementation\`.`,
+        `- Fill ${REVIEW_REPORT_PATH} after review/manual QA, then run \`ph plan --report-filled review\`.`,
       ].join("\n") + "\n",
       stderr: "",
     }
   } catch (error) {
-    if (error instanceof PlanDraftError || error instanceof PlanStatusError) {
+    if (error instanceof PlanDraftError || error instanceof PlanStatusError || error instanceof WorkflowReportStatusError) {
       return { status: 1, stdout: "", stderr: `${error.message}\n` }
     }
     throw error

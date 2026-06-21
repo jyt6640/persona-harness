@@ -58,16 +58,77 @@ describe("ph intake", () => {
     })
     expect(profile.questions).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "project-context", answer: null }),
-        expect.objectContaining({ id: "project-scale", answer: null }),
-        expect.objectContaining({ id: "storage", answer: null }),
-        expect.objectContaining({ id: "persistence-technology", answer: null }),
-        expect.objectContaining({ id: "migration-style", answer: null }),
-        expect.objectContaining({ id: "package-style", answer: null }),
-        expect.objectContaining({ id: "dto-strictness", answer: null }),
-        expect.objectContaining({ id: "philosophy-overlay", answer: null }),
+        expect.objectContaining({
+          id: "project-context",
+          choices: ["solo", "team", "company", "open-source", "learning", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "project-goal",
+          choices: ["prototype", "production-service", "study", "internal-tool", "portfolio", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "project-scale",
+          choices: ["throwaway", "small", "medium", "long-lived", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "application-type",
+          choices: ["rest-api", "mvc-web", "batch", "library", "mixed", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "storage",
+          choices: ["none", "in-memory", "file", "database", "external-api", "mixed", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "persistence-technology",
+          choices: ["not-needed", "jdbc-template", "jpa", "mybatis", "custom", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "migration-style",
+          choices: ["schema.sql", "flyway", "liquibase", "none", "not-needed", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "package-style",
+          choices: ["simple-mvc", "layer-first", "domain-first", "feature-first", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "architecture-style",
+          choices: [
+            "simple-layered",
+            "clean-architecture-light",
+            "hexagonal-light",
+            "strict-clean-architecture",
+            "recommend",
+          ],
+          answer: null,
+        }),
+        expect.objectContaining({
+          id: "boundary-strictness",
+          choices: ["lightweight", "pragmatic", "strict", "recommend"],
+          answer: null,
+        }),
       ]),
     )
+    expect(profile.questions).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "dto-strictness" }),
+        expect.objectContaining({ id: "philosophy-overlay" }),
+      ]),
+    )
+    expect(profile.notes).toEqual({ project: null })
+    expect(profile.philosophy).toEqual({
+      company: null,
+      personal: null,
+      project: null,
+      priority: ["project-specific", "company/team", "personal", "clean-code-baseline", "framework-default"],
+    })
   })
 
   it("does not overwrite an existing profile unless --force is used", () => {
@@ -106,7 +167,7 @@ describe("ph intake", () => {
     })
 
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain("Usage: ph intake [--force]")
+    expect(help.stdout).toContain("Usage: ph intake [--force | --interactive]")
     expect(invalid.status).toBe(1)
     expect(invalid.stderr).toContain("Unknown option: --unknown")
   })

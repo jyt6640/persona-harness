@@ -59,26 +59,61 @@ describe("Phase 0 backend profile summary injection", () => {
     writeProfile(
       projectDir,
       backendProfile({
-        "project-context": "personal",
+        "project-context": "solo",
+        "project-goal": "production-service",
         "project-scale": "small",
-        storage: "in-memory",
-        "persistence-technology": "undecided",
-        "migration-style": "none",
+        "application-type": "rest-api",
+        storage: "database",
+        "persistence-technology": "jdbc-template",
+        "migration-style": "flyway",
         "package-style": "domain-first",
-        "dto-strictness": "strict",
-        "philosophy-overlay": "none",
+        "architecture-style": "clean-architecture-light",
+        "boundary-strictness": "strict",
       }),
     )
 
     const injection = createInjectionBlock("src/main/java/com/example/coupon/application/CouponService.java", projectDir)
 
     expect(injection.block).toContain("프로젝트 프로필 요약:")
-    expect(injection.block).toContain("- project-context: personal")
-    expect(injection.block).toContain("- storage: in-memory")
+    expect(injection.block).toContain("- project-context: solo")
+    expect(injection.block).toContain("- project-goal: production-service")
+    expect(injection.block).toContain("- application-type: rest-api")
+    expect(injection.block).toContain("- storage: database")
     expect(injection.block).toContain("- package-style: domain-first")
+    expect(injection.block).toContain("- architecture-style: clean-architecture-light")
+    expect(injection.block).toContain("- boundary-strictness: strict")
     expect(injection.block).toContain("구현 전 architecture/technology plan 참고용")
     expect(injection.block).toContain("rule enforcement나 product-quality 보증이 아니다")
     expect(injection.selectedRules).toContain("backend/spring-service.md")
+  })
+
+  it("adds project notes as planning context when present", () => {
+    const projectDir = createTempProject()
+    writeProfile(projectDir, {
+      schema: "persona.project-profile.v1",
+      status: "draft",
+      scope: {
+        role: "backend",
+        mvp: "java-spring-clean-code",
+        productized: false,
+      },
+      questions: [
+        {
+          id: "package-style",
+          prompt: "package-style",
+          choices: [],
+          answer: "domain-first",
+        },
+      ],
+      notes: {
+        project: "관리자 기능은 이번 범위에서 제외한다.",
+      },
+    })
+
+    const injection = createInjectionBlock("README.md", projectDir)
+
+    expect(injection.block).toContain("- package-style: domain-first")
+    expect(injection.block).toContain("- notes.project: 관리자 기능은 이번 범위에서 제외한다.")
   })
 
   it("does not render null answers as strong profile decisions", () => {
