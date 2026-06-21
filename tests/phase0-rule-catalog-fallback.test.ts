@@ -14,16 +14,24 @@ describe("Phase 1.1 rule catalog fallback", () => {
     const emptyRulesProject = createProject()
     mkdirSync(join(emptyRulesProject, ".persona", "rules"), { recursive: true })
 
-    const expectedControllerOrder = [
+    const expectedCleanControllerOrder = [
       "clean-code/common.md",
       "clean-code/method-design.md",
       "backend/java-common.md",
       "backend/spring-controller.md",
       "backend/spring-dto.md",
+    ]
+    const expectedRoomescapeControllerOrder = [
+      ...expectedCleanControllerOrder,
       "backend/step1-api-contract.md",
     ]
 
-    expect(loadRulesForRole(missingRulesProject, "controller").map((rule) => rule.path)).toEqual(expectedControllerOrder)
-    expect(loadRulesForRole(emptyRulesProject, "controller").map((rule) => rule.path)).toEqual(expectedControllerOrder)
+    expect(loadRulesForRole(missingRulesProject, "controller").map((rule) => rule.path)).toEqual(expectedCleanControllerOrder)
+    expect(loadRulesForRole(emptyRulesProject, "controller").map((rule) => rule.path)).toEqual(expectedCleanControllerOrder)
+    expect(
+      loadRulesForRole(missingRulesProject, "controller", "src/main/java/roomescape/ReservationController.java").map(
+        (rule) => rule.path,
+      ),
+    ).toEqual(expectedRoomescapeControllerOrder)
   })
 })

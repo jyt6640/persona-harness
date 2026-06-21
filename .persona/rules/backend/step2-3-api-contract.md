@@ -4,15 +4,19 @@ source: backend-policy
 domain: backend
 topic: external-contract
 globs:
-  - "**/*Controller.java"
-  - "**/*Request.java"
-  - "**/*Response.java"
-  - "**/*Test.java"
+  - "**/roomescape/**/*Controller.java"
+  - "**/roomescape/**/*Request.java"
+  - "**/roomescape/**/*Response.java"
+  - "**/roomescape/**/*Test.java"
+  - "**/roomescape/**/*Tests.java"
+  - "**/roomescape/**/*IntegrationTest.java"
 severity: must
 enforcement: inject_only
 ---
 
 # Step 2-3 API Contract
+
+Roomescape step fixture 전용 외부 계약이다. 일반 Java/Spring clean project의 HTTP status, request body, response body는 해당 프로젝트 README와 intake/profile 요구사항을 따른다.
 
 - `GET /reservations`는 200 OK를 반환하고, `POST /reservations`는 request body로 `name`, `date`, `timeId`를 받으며 200 OK와 DB가 생성한 `id`를 반환하고, `DELETE /reservations/{id}`는 200 OK를 반환한다.
 - 예약 조회 응답의 `time`은 문자열이 아니라 `{ id, startAt }` 객체이며, 예약 생성 request body는 `time`이 아니라 `timeId`를 사용한다.

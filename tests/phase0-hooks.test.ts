@@ -1,5 +1,5 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 
 import type { Part, UserMessage } from "@opencode-ai/sdk"
 import { beforeEach, describe, expect, it } from "vitest"
@@ -34,6 +34,17 @@ function fixturePath(fileName: string): string {
   const path = join(fixtureRoot, fileName)
   writeFileSync(path, "class Placeholder {}\n")
   return path
+}
+
+function fixturePathFromWorkspace(relativePath: string): string {
+  const path = join(fixtureWorkspace, ...relativePath.split("/"))
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, "class Placeholder {}\n")
+  return path
+}
+
+function roomescapeFixturePath(fileName: string): string {
+  return fixturePathFromWorkspace(`src/main/java/roomescape/${fileName}`)
 }
 
 function modelInput(sessionID: string): TransformMessagesOutput {
@@ -76,9 +87,13 @@ function writeScenario(scenario: "step1" | "step2-3"): void {
   writeFileSync(join(fixtureWorkspace, ".persona", "harness.jsonc"), `${JSON.stringify({ scenario }, null, 2)}\n`)
 }
 
-function selectedRulePaths(role: Parameters<typeof loadRulesForRole>[1], scenario: "step1" | "step2-3"): string[] {
+function selectedRulePaths(
+  role: Parameters<typeof loadRulesForRole>[1],
+  scenario: "step1" | "step2-3",
+  targetFile?: string,
+): string[] {
   writeScenario(scenario)
-  return loadRulesForRole(fixtureWorkspace, role).map((rule) => rule.path)
+  return loadRulesForRole(fixtureWorkspace, role, targetFile).map((rule) => rule.path)
 }
 
 describe("Phase 0 OpenCode hook feasibility", () => {
@@ -101,7 +116,6 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("파일 역할: controller")
     expect(text).toContain("선택 규칙:")
     expect(text).toContain("backend/spring-controller.md")
-    expect(text).toContain("backend/step1-api-contract.md")
     expect(text).toContain(
       "Java/Spring 프로젝트는 Gradle을 기본 빌드 도구로 사용하고 Maven 파일을 생성하지 않으며, Spring Boot main application class는 root package에 하나만 두고 feature/domain package 아래에 추가 *Application.java를 만들지 않는다.",
     )
@@ -114,8 +128,9 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain(
       "Controller/Service response path는 domain entity를 직접 외부 응답으로 노출하지 않고 Response DTO boundary를 둔다.",
     )
-    expect(text).toContain("GET /reservations는 200 OK와 예약 목록을 반환하고, 생성 전 목록 크기는 0이어야 한다.")
-    expect(text).toContain("POST /reservations는 200 OK를 반환한다. 201 Created는 이 단계에서 오답이며")
+    expect(text).toContain("API 경로, 메서드, status code, request body, response body는 요구사항의 외부 계약을 그대로")
+    expect(text).not.toContain("backend/step1-api-contract.md")
+    expect(text).not.toContain("201 Created는 이 단계에서 오답")
     expect(text).toContain("예약 생성 API 추가해줘.")
   })
 
@@ -179,14 +194,30 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(output.output).toContain("파일 역할: controller")
   })
 
-  it("keeps the step1 API contract selected for step1 Controller and Test fixtures", () => {
-    expect(selectedRulePaths("controller", "step1")).toContain("backend/step1-api-contract.md")
-    expect(selectedRulePaths("test", "step1")).toContain("backend/step1-api-contract.md")
+  it("does not select step API contract rules for clean Java/Spring targets", () => {
+    const cleanController = fixturePath("ReservationController.java")
+    const cleanTest = fixturePathFromWorkspace("src/test/java/com/example/ReservationTest.java")
+    const cleanRequest = fixturePath("ReservationRequest.java")
+    const cleanResponse = fixturePath("ReservationResponse.java")
+
+    expect(selectedRulePaths("controller", "step1", cleanController)).not.toContain("backend/step1-api-contract.md")
+    expect(selectedRulePaths("test", "step1", cleanTest)).not.toContain("backend/step1-api-contract.md")
+    expect(selectedRulePaths("request-dto", "step1", cleanRequest)).not.toContain("backend/step1-api-contract.md")
+    expect(selectedRulePaths("response-dto", "step1", cleanResponse)).not.toContain("backend/step1-api-contract.md")
+  })
+
+  it("keeps the step1 API contract selected for roomescape step Controller and Test fixtures", () => {
+    expect(selectedRulePaths("controller", "step1", roomescapeFixturePath("ReservationController.java"))).toContain(
+      "backend/step1-api-contract.md",
+    )
+    expect(selectedRulePaths("test", "step1", roomescapeFixturePath("ReservationTest.java"))).toContain(
+      "backend/step1-api-contract.md",
+    )
   })
 
   it("keeps step1 Controller and Test contract rules exclusive", () => {
-    const controllerRules = selectedRulePaths("controller", "step1")
-    const testRules = selectedRulePaths("test", "step1")
+    const controllerRules = selectedRulePaths("controller", "step1", roomescapeFixturePath("ReservationController.java"))
+    const testRules = selectedRulePaths("test", "step1", roomescapeFixturePath("ReservationTest.java"))
 
     expect(controllerRules).toContain("backend/step1-api-contract.md")
     expect(controllerRules).not.toContain("backend/step2-3-api-contract.md")
@@ -196,7 +227,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
   it("selects the step2-3 API contract instead of step1 for step2-3 Controller, Test, and DTO fixtures", () => {
     for (const role of ["controller", "test", "request-dto", "response-dto"] as const) {
-      const rules = selectedRulePaths(role, "step2-3")
+      const rules = selectedRulePaths(role, "step2-3", roomescapeTargetForRole(role))
 
       expect(rules).toContain("backend/step2-3-api-contract.md")
       expect(rules).not.toContain("backend/step1-api-contract.md")
@@ -205,7 +236,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
   it("keeps step2-3 Controller, Test, and DTO contract rules exclusive", () => {
     for (const role of ["controller", "test", "request-dto", "response-dto"] as const) {
-      const rules = selectedRulePaths(role, "step2-3")
+      const rules = selectedRulePaths(role, "step2-3", roomescapeTargetForRole(role))
 
       expect(rules).toContain("backend/step2-3-api-contract.md")
       expect(rules).not.toContain("backend/step1-api-contract.md")
@@ -249,6 +280,19 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
     expect(injection.selectedRules.length).toBeGreaterThan(0)
     expect(injection.selectedRules.every((rulePath) => typeof rulePath === "string")).toBe(true)
-    expect(injection.selectedRules).toContain("backend/step1-api-contract.md")
+    expect(injection.selectedRules).not.toContain("backend/step1-api-contract.md")
   })
 })
+
+function roomescapeTargetForRole(role: "controller" | "test" | "request-dto" | "response-dto"): string {
+  switch (role) {
+    case "controller":
+      return roomescapeFixturePath("ReservationController.java")
+    case "test":
+      return roomescapeFixturePath("ReservationTest.java")
+    case "request-dto":
+      return roomescapeFixturePath("ReservationRequest.java")
+    case "response-dto":
+      return roomescapeFixturePath("ReservationResponse.java")
+  }
+}

@@ -115,6 +115,22 @@ function contractRuleForScenario(scenario: Phase0Scenario): string {
   return scenario === "step2-3" ? STEP2_3_API_CONTRACT_RULE : STEP1_API_CONTRACT_RULE
 }
 
+function isStepContractRule(rulePath: string): boolean {
+  return rulePath === STEP1_API_CONTRACT_RULE || rulePath === STEP2_3_API_CONTRACT_RULE
+}
+
+function isRoomescapeStepFixtureTarget(targetPath: string): boolean {
+  const normalizedTargetPath = targetPath.toLowerCase()
+  return normalizedTargetPath.startsWith("roomescape/") || normalizedTargetPath.includes("/roomescape/")
+}
+
+function isRulePathInTargetScope(rulePath: string, targetPath: string): boolean {
+  if (!isStepContractRule(rulePath)) {
+    return true
+  }
+  return isRoomescapeStepFixtureTarget(targetPath)
+}
+
 function scenarioAwareRoleRules(fileRole: FileRole, scenario: Phase0Scenario): readonly string[] {
   if (!isRuleFileRole(fileRole)) {
     return []
@@ -145,6 +161,10 @@ export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetF
   const rulesDir = resolveConfiguredPath(projectDir, config.rulesDir)
 
   return selectRulePaths(fileRole, scenario).flatMap((rulePath) => {
+    if (!isRulePathInTargetScope(rulePath, targetPath)) {
+      return []
+    }
+
     const catalogEntry = catalog.get(rulePath)
     if (catalogEntry !== undefined) {
       if (

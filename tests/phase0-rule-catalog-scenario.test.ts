@@ -35,7 +35,7 @@ globs:
     const catalog = loadRuleCatalog(projectDir)
     const step1Rule = findEntry(catalog, "backend/step1-api-contract.md")
     const step23Rule = findEntry(catalog, "backend/step2-3-api-contract.md")
-    const targetPath = "src/main/java/com/example/ReservationController.java"
+    const targetPath = "src/main/java/roomescape/ReservationController.java"
 
     expect(eligible(step1Rule, "controller", "step1", targetPath)).toBe(true)
     expect(eligible(step1Rule, "controller", "step2-3", targetPath)).toBe(false)
@@ -72,7 +72,7 @@ globs:
     const selectedRules = loadRulesForRole(
       projectDir,
       "controller",
-      "src/main/java/com/example/ReservationController.java",
+      "src/main/java/roomescape/ReservationController.java",
     ).map((rule) => rule.path)
 
     expect(selectedRules).toContain("backend/step1-api-contract.md")
