@@ -36,6 +36,7 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): v
     injectedInto: event.injectedInto,
     targetFile: event.injection.targetFile,
     fileRole: event.injection.fileRole,
+    selectedHarnessConfigDiagnostics: event.injection.selectedHarnessConfigDiagnostics,
     selectedRules: event.injection.selectedRules,
     selectedRuleMetadata: event.injection.selectedRuleMetadata,
     selectedSharedSkills: event.injection.selectedSharedSkills,

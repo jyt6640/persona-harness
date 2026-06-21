@@ -35,12 +35,19 @@ export type SelectedPolicyOverlay = {
 export type PendingInjection = {
   readonly targetFile: string
   readonly fileRole: FileRole
+  readonly selectedHarnessConfigDiagnostics: readonly SelectedHarnessConfigDiagnostic[]
   readonly selectedRules: string[]
   readonly selectedRuleMetadata: SelectedRuleMetadata[]
   readonly selectedSharedSkills: readonly SelectedSharedSkill[]
   readonly selectedPolicyOverlay: SelectedPolicyOverlay
   readonly policies: string[]
   readonly block: string
+}
+
+export type SelectedHarnessConfigDiagnostic = {
+  readonly code: string
+  readonly message: string
+  readonly path: string
 }
 
 export type SelectedRuleMetadata = {

@@ -155,7 +155,7 @@ export function runPolicyCommand(
         "",
         "Next:",
         "- Fill company/personal backend policy bullets.",
-        "- Run ph plan before implementation.",
+        "- Run npx ph plan before implementation.",
         "",
         "Scope:",
         "- backend-only planning/injection context",

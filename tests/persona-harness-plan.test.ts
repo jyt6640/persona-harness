@@ -103,20 +103,24 @@ describe("ph plan", () => {
     expect(implementationReport).toContain("## Implemented Files")
     expect(implementationReport).toContain("## Verification")
     expect(implementationReport).toContain("## Manual QA")
-    expect(implementationReport).toContain("`gradle bootRun`")
+    expect(implementationReport).toContain("`npx ph bearshell gradle test`")
+    expect(implementationReport).toContain("`npx ph bearshell gradle build`")
+    expect(implementationReport).toContain("`npx ph bearshell --shell 'gradle bootRun")
     expect(implementationReport).toContain("HTTP happy path")
     expect(implementationReport).toContain("HTTP failure path")
     expect(implementationReport).toContain("Manual QA가 불가능하면 사유와 stderr/핵심 로그를 기록한다.")
-    expect(implementationReport).toContain("채운 뒤에는 `ph plan --report-filled implementation`을 실행한다.")
+    expect(implementationReport).toContain("채운 뒤에는 `npx ph plan --report-filled implementation`을 실행한다.")
 
     const reviewReport = readReviewReport(projectDir)
     expect(reviewReport).toContain("# Roach Review Report")
     expect(reviewReport).toContain("Status: template")
     expect(reviewReport).toContain("## Requirements Check")
     expect(reviewReport).toContain("## Boundary Review")
-    expect(reviewReport).toContain("`gradle bootRun` 결과를 확인했다.")
+    expect(reviewReport).toContain("`npx ph bearshell gradle test` 결과를 확인했다.")
+    expect(reviewReport).toContain("`npx ph bearshell gradle build` 결과를 확인했다.")
+    expect(reviewReport).toContain("`npx ph bearshell --shell 'gradle bootRun")
     expect(reviewReport).toContain("HTTP happy path / failure path manual QA evidence")
-    expect(reviewReport).toContain("채운 뒤에는 `ph plan --report-filled review`를 실행한다.")
+    expect(reviewReport).toContain("채운 뒤에는 `npx ph plan --report-filled review`를 실행한다.")
     expect(reviewReport).toContain("## Remaining Limits")
   })
 
@@ -246,6 +250,22 @@ describe("ph plan", () => {
     expect(invalid.stderr).toContain("Report kind must be implementation or review.")
   })
 
+  it("prints a reusable plan-only OpenCode prompt", () => {
+    const projectDir = createTempProject()
+
+    const prompt = runPersonaCli(["plan", "--prompt"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(prompt.status).toBe(0)
+    expect(prompt.stderr).toBe("")
+    expect(prompt.stdout).toContain("README.md")
+    expect(prompt.stdout).toContain(".persona/project-profile.jsonc")
+    expect(prompt.stdout).toContain(".persona/policies")
+    expect(prompt.stdout).toContain(".persona/workflow/plan.md")
+    expect(prompt.stdout).toContain("구현하지 말고")
+    expect(prompt.stdout).toContain("architecture/technology plan")
+    expect(prompt.stdout).toContain("명령 실행이 필요하면 `npx ph bearshell`을 우선 사용")
+  })
+
   it("shows usage, rejects unknown options, and advertises plan in shared usage", () => {
     const projectDir = createTempProject()
 
@@ -254,9 +274,12 @@ describe("ph plan", () => {
     const rootHelp = runPersonaCli(["--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain("Usage: ph plan [--force | --status | --accept | --revise | --report-filled <implementation|review>]")
+    expect(help.stdout).toContain(
+      "Usage: ph plan [--force | --status | --accept | --revise | --prompt | --report-filled <implementation|review>]",
+    )
     expect(help.stdout).toContain("--accept")
     expect(help.stdout).toContain("--revise")
+    expect(help.stdout).toContain("--prompt")
     expect(help.stdout).toContain("--report-filled")
     expect(help.stdout).toContain(".persona/workflow/implementation-report.md")
     expect(help.stdout).toContain(".persona/workflow/review-report.md")

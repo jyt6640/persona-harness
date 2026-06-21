@@ -13,13 +13,24 @@ export type HarnessConfig = {
   readonly scenario: Phase0Scenario
 }
 
+export type HarnessConfigDiagnostic = {
+  readonly code: "malformed_config" | "invalid_config"
+  readonly message: string
+  readonly path: string
+}
+
+export type HarnessConfigLoadResult = {
+  readonly config: HarnessConfig
+  readonly diagnostics: readonly HarnessConfigDiagnostic[]
+}
+
 const DEFAULT_CONFIG: HarnessConfig = {
   enabled: true,
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",
   maxRulesPerInjection: 12,
   evidenceMode: "metadata_only",
-  enabledDomains: ["backend", "frontend", "infra", "programming"],
+  enabledDomains: ["backend", "programming"],
   scenario: "step1",
 }
 
@@ -113,9 +124,13 @@ export function resolveConfiguredPath(projectDir: string, configuredPath: string
 }
 
 export function loadHarnessConfig(projectDir: string): HarnessConfig {
+  return loadHarnessConfigResult(projectDir).config
+}
+
+export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadResult {
   const harnessPath = join(projectDir, ".persona", "harness.jsonc")
   if (!existsSync(harnessPath)) {
-    return DEFAULT_CONFIG
+    return { config: DEFAULT_CONFIG, diagnostics: [] }
   }
 
   let parsed: unknown
@@ -123,22 +138,43 @@ export function loadHarnessConfig(projectDir: string): HarnessConfig {
     parsed = JSON.parse(stripJsonComments(readFileSync(harnessPath, "utf8")))
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return DEFAULT_CONFIG
+      return {
+        config: DEFAULT_CONFIG,
+        diagnostics: [
+          {
+            code: "malformed_config",
+            message: `Failed to parse .persona/harness.jsonc: ${error.message}`,
+            path: harnessPath,
+          },
+        ],
+      }
     }
     throw error
   }
 
   if (!isRecord(parsed)) {
-    return DEFAULT_CONFIG
+    return {
+      config: DEFAULT_CONFIG,
+      diagnostics: [
+        {
+          code: "invalid_config",
+          message: ".persona/harness.jsonc must contain a JSON object.",
+          path: harnessPath,
+        },
+      ],
+    }
   }
 
   return {
-    enabled: readBoolean(parsed.enabled, DEFAULT_CONFIG.enabled),
-    rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
-    evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
-    maxRulesPerInjection: readPositiveInteger(parsed.maxRulesPerInjection, DEFAULT_CONFIG.maxRulesPerInjection),
-    evidenceMode: readEvidenceMode(parsed.evidenceMode),
-    enabledDomains: readStringArray(parsed.enabledDomains, DEFAULT_CONFIG.enabledDomains),
-    scenario: readScenario(parsed.scenario, DEFAULT_CONFIG.scenario),
+    config: {
+      enabled: readBoolean(parsed.enabled, DEFAULT_CONFIG.enabled),
+      rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
+      evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
+      maxRulesPerInjection: readPositiveInteger(parsed.maxRulesPerInjection, DEFAULT_CONFIG.maxRulesPerInjection),
+      evidenceMode: readEvidenceMode(parsed.evidenceMode),
+      enabledDomains: readStringArray(parsed.enabledDomains, DEFAULT_CONFIG.enabledDomains),
+      scenario: readScenario(parsed.scenario, DEFAULT_CONFIG.scenario),
+    },
+    diagnostics: [],
   }
 }

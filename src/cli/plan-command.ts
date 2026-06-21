@@ -25,13 +25,14 @@ type ParsedPlanArgs =
   | { readonly kind: "status" }
   | { readonly kind: "accept" }
   | { readonly kind: "revise" }
+  | { readonly kind: "prompt" }
   | { readonly kind: "report-filled"; readonly reportKind: WorkflowReportKind }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
 export function planUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} plan [--force | --status | --accept | --revise | --report-filled <implementation|review>]`,
+    `Usage: ${invocation} plan [--force | --status | --accept | --revise | --prompt | --report-filled <implementation|review>]`,
     "",
     "Creates and manages a blackbear architecture plan before implementation.",
     "",
@@ -40,6 +41,7 @@ export function planUsage(invocation = "ph"): string {
     "  --status  Read the plan acceptance status.",
     "  --accept  Mark the plan status as accepted.",
     "  --revise  Mark the plan status as needs-revision.",
+    "  --prompt  Print the default OpenCode plan-only prompt.",
     "  --report-filled <implementation|review>",
     "            Mark a filled workflow report as filled.",
     "",
@@ -89,7 +91,22 @@ function parsePlanArgs(args: readonly string[]): ParsedPlanArgs {
   if (arg === "--revise") {
     return { kind: "revise" }
   }
+  if (arg === "--prompt") {
+    return { kind: "prompt" }
+  }
   return { kind: "invalid", message: `Unknown option: ${arg}` }
+}
+
+export function createPlanOnlyPrompt(): string {
+  return [
+    "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 구현하지 말고 architecture/technology plan만 완성해줘.",
+    "",
+    "계획에는 요구사항 요약, Java/Spring Gradle 기술 선택, package/layer 구조, storage/persistence 선택, repository boundary, DTO boundary, domain behavior 기준을 포함해줘.",
+    "",
+    "계획이 불확실하면 구현하지 말고 질문이나 가정을 .persona/workflow/plan.md에 명확히 남겨줘.",
+    "",
+    "명령 실행이 필요하면 `npx ph bearshell`을 우선 사용하고, Persona Harness CLI는 글로벌 `ph`가 아니라 `npx ph`로 실행해줘.",
+  ].join("\n")
 }
 
 function statusOutput(title: string, planPath: string, status: string): string {
@@ -142,6 +159,9 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
         stderr: "",
       }
     }
+    if (parsed.kind === "prompt") {
+      return { status: 0, stdout: `${createPlanOnlyPrompt()}\n`, stderr: "" }
+    }
 
     const planPath = initializeWorkflowPlan(options, parsed.force)
     return {
@@ -153,9 +173,9 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
         "",
         "Next:",
         `- Review and complete ${PLAN_PATH} before implementation.`,
-        "- Run `ph plan --accept` before implementation, or `ph plan --revise` if the plan needs changes.",
-        `- Fill ${IMPLEMENTATION_REPORT_PATH} after implementation, then run \`ph plan --report-filled implementation\`.`,
-        `- Fill ${REVIEW_REPORT_PATH} after review/manual QA, then run \`ph plan --report-filled review\`.`,
+        "- Run `npx ph plan --accept` before implementation, or `npx ph plan --revise` if the plan needs changes.",
+        `- Fill ${IMPLEMENTATION_REPORT_PATH} after implementation, then run \`npx ph plan --report-filled implementation\`.`,
+        `- Fill ${REVIEW_REPORT_PATH} after review/manual QA, then run \`npx ph plan --report-filled review\`.`,
       ].join("\n") + "\n",
       stderr: "",
     }

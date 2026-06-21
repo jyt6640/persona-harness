@@ -149,7 +149,7 @@ export function archiveWorkflowHistory(options: HistoryOptions = {}, archiveIdIn
   }
 
   if (archivedFiles.length === 0) {
-    throw new WorkflowHistoryError(`No workflow artifacts found under ${WORKFLOW_DIR}. Run ph plan first.`)
+    throw new WorkflowHistoryError(`No workflow artifacts found under ${WORKFLOW_DIR}. Run npx ph plan first.`)
   }
 
   mkdirSync(archiveDir, { recursive: true })

@@ -46,7 +46,7 @@ export function updateWorkflowReportStatus(
   const relativePath = reportPathForKind(kind)
   const reportPath = join(projectDir, relativePath)
   if (!existsSync(reportPath)) {
-    throw new WorkflowReportStatusError(`No ${kind} report found. Run ph plan first.`)
+    throw new WorkflowReportStatusError(`No ${kind} report found. Run npx ph plan first.`)
   }
 
   const reportText = readFileSync(reportPath, "utf8")

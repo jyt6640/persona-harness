@@ -25,7 +25,7 @@ function resolvePlanPath(options: PlanOptions): string {
 
 function readPlanText(planPath: string): string {
   if (!existsSync(planPath)) {
-    throw new PlanStatusError("No workflow plan found. Run ph plan first.")
+    throw new PlanStatusError("No workflow plan found. Run npx ph plan first.")
   }
   return readFileSync(planPath, "utf8")
 }

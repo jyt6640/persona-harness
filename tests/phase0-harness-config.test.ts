@@ -1,7 +1,10 @@
+import { writeFileSync } from "node:fs"
+
 import { afterEach, describe, expect, it } from "vitest"
 
 import { createInjectionBlock } from "../src/phase0/injection.js"
 import { createPhase0Hooks } from "../src/phase0/hooks.js"
+import { loadHarnessConfig, loadHarnessConfigResult } from "../src/phase0/harness-config.js"
 import { loadRulesForRole } from "../src/phase0/rule-loader.js"
 import type { TransformMessagesOutput } from "../src/phase0/types.js"
 import { cleanupProjects, createProject, writeHarnessConfig, writeRule } from "./helpers/rule-fixtures.js"
@@ -38,6 +41,34 @@ function emptyModelInput(sessionID: string): TransformMessagesOutput {
 }
 
 describe("Phase 0 harness config", () => {
+  it("defaults to the Java backend MVP domains only", () => {
+    const projectDir = createProject()
+
+    const config = loadHarnessConfig(projectDir)
+
+    expect(config.enabledDomains).toEqual(["backend", "programming"])
+  })
+
+  it("keeps malformed config diagnostics-only while falling back to defaults", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { enabledDomains: ["frontend"] })
+    writeFileSync(`${projectDir}/.persona/harness.jsonc`, "{ broken jsonc")
+
+    const result = loadHarnessConfigResult(projectDir)
+    const injection = createInjectionBlock("README.md", projectDir)
+
+    expect(result.config.enabledDomains).toEqual(["backend", "programming"])
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        code: "malformed_config",
+        message: expect.stringContaining("Failed to parse .persona/harness.jsonc"),
+      }),
+    ])
+    expect(injection.selectedHarnessConfigDiagnostics).toEqual(result.diagnostics)
+    expect(injection.block).toContain("설정 진단:")
+    expect(injection.block).toContain("malformed_config")
+  })
+
   it("uses rulesDir from harness.jsonc", () => {
     const projectDir = createProject()
     writeHarnessConfig(projectDir, { rulesDir: ".persona/custom-rules" })

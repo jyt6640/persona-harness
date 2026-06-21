@@ -1,5 +1,5 @@
 import { isBackendBootstrapTargetFile, resolveBootstrapFileRole, resolveFileRole } from "./file-role.js"
-import { loadHarnessConfig } from "./harness-config.js"
+import { loadHarnessConfigResult } from "./harness-config.js"
 import { loadBackendPolicyOverlay } from "./policy-overlay.js"
 import { loadBackendProjectProfileSummary } from "./project-profile.js"
 import { loadRulesForRole } from "./rule-loader.js"
@@ -18,7 +18,8 @@ function dedupePolicies(policies: string[]): string[] {
 }
 
 export function createInjectionBlock(targetFile: string, projectDir = process.cwd()): PendingInjection {
-  const config = loadHarnessConfig(projectDir)
+  const configResult = loadHarnessConfigResult(projectDir)
+  const config = configResult.config
   const selectedSharedSkills = selectSharedSkillsForTarget(targetFile)
   const isJavaTarget = isJavaTargetFile(targetFile)
   const isBootstrapTarget = isBackendBootstrapTargetFile(targetFile)
@@ -60,6 +61,13 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
       ? selectedSharedSkills.map((skill) => `- ${skill.name} (${skill.domain}): ${skill.path} — ${skill.reason}`)
       : ["- 없음"]),
     "",
+    ...(configResult.diagnostics.length > 0
+      ? [
+          "설정 진단:",
+          ...configResult.diagnostics.map((diagnostic) => `- ${diagnostic.code}: ${diagnostic.message}`),
+          "",
+        ]
+      : []),
     "적용 정책:",
     ...policies.map((policy) => `- ${policy}`),
     "",
@@ -71,6 +79,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
   return {
     targetFile,
     fileRole,
+    selectedHarnessConfigDiagnostics: configResult.diagnostics,
     selectedRules,
     selectedRuleMetadata,
     selectedSharedSkills,

@@ -61,6 +61,16 @@ describe("ph bearshell", () => {
     expect(result.stdout).toContain("omitted")
   })
 
+  it("terminates commands that exceed the configured timeout", () => {
+    const result = runBearshell(["node", "-e", "setTimeout(() => {}, 5000)"], {
+      cwd: process.cwd(),
+      env: { PH_BEARSHELL_TIMEOUT_MS: "50" },
+    })
+
+    expect(result.status).toBeGreaterThan(0)
+    expect(result.stderr).toContain("timed out after 50ms")
+  })
+
   it("rejects invalid explicit budgets", () => {
     const result = runBearshell(["--budget", "nope", "node", "-e", "console.log('unused')"], {
       cwd: process.cwd(),

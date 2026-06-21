@@ -27,6 +27,7 @@ type ParsedBearshellArgs =
       readonly json: boolean
       readonly shell: false
       readonly budget: number
+      readonly timeoutMs: number
       readonly command: string
       readonly args: readonly string[]
     }
@@ -35,12 +36,15 @@ type ParsedBearshellArgs =
       readonly json: boolean
       readonly shell: true
       readonly budget: number
+      readonly timeoutMs: number
       readonly command: string
       readonly args: readonly []
     }
 
 const DEFAULT_BUDGET = 20_000
+const DEFAULT_TIMEOUT_MS = 30_000
 const MIN_BUDGET = 80
+const MIN_TIMEOUT_MS = 1
 
 export function bearshellUsage(invocation = "ph"): string {
   return [
@@ -54,6 +58,7 @@ export function bearshellUsage(invocation = "ph"): string {
     "Environment:",
     "- PH_BEARSHELL_CONDENSE=0 disables output condensation.",
     "- PH_BEARSHELL_CONDENSE_BUDGET overrides the default condensation budget.",
+    "- PH_BEARSHELL_TIMEOUT_MS overrides the default 30000ms command timeout.",
     "- PH_BEARSHELL_SPARK=0 is accepted for OMO compatibility; this MVP uses deterministic condensation only.",
   ].join("\n")
 }
@@ -77,17 +82,25 @@ export function runBearshell(args: readonly string[], options: BearshellOptions 
         encoding: "utf8",
         env: childEnv,
         shell: true,
+        timeout: parsed.timeoutMs,
+        killSignal: "SIGTERM",
       })
     : spawnSync(parsed.command, [...parsed.args], {
         cwd: options.cwd,
         encoding: "utf8",
         env: childEnv,
         shell: false,
+        timeout: parsed.timeoutMs,
+        killSignal: "SIGTERM",
       })
 
   const status = spawned.status ?? signalExitCode(spawned.signal)
   const stdout = maybeCondense(toOutputString(spawned.stdout), parsed.budget, env)
-  const stderr = maybeCondense(spawnErrorMessage(parsed.command, spawned.error) ?? toOutputString(spawned.stderr), parsed.budget, env)
+  const stderr = maybeCondense(
+    spawnErrorMessage(parsed.command, spawned.error, parsed.timeoutMs) ?? toOutputString(spawned.stderr),
+    parsed.budget,
+    env,
+  )
 
   return formatResult({ status, stdout, stderr }, parsed.json)
 }
@@ -96,6 +109,10 @@ function parseBearshellArgs(args: readonly string[], env: Readonly<Record<string
   let json = false
   let shell = false
   let budget = readBudget(env["PH_BEARSHELL_CONDENSE_BUDGET"]) ?? DEFAULT_BUDGET
+  const timeoutMs = readTimeoutMs(env["PH_BEARSHELL_TIMEOUT_MS"])
+  if (timeoutMs === null) {
+    return { kind: "invalid", json, message: "PH_BEARSHELL_TIMEOUT_MS requires a positive integer" }
+  }
   const positional: string[] = []
 
   for (let index = 0; index < args.length; index += 1) {
@@ -116,7 +133,7 @@ function parseBearshellArgs(args: readonly string[], env: Readonly<Record<string
       if (command === undefined || command.length === 0) {
         return { kind: "invalid", json, message: "--shell requires a command string" }
       }
-      return { kind: "exec", json, shell: true, budget, command, args: [] }
+      return { kind: "exec", json, shell: true, budget, timeoutMs, command, args: [] }
     }
     if (arg === "--budget") {
       const value = args[index + 1]
@@ -143,7 +160,7 @@ function parseBearshellArgs(args: readonly string[], env: Readonly<Record<string
     return { kind: "help", json }
   }
 
-  return { kind: "exec", json, shell: false, budget, command, args: positional.slice(1) }
+  return { kind: "exec", json, shell: false, budget, timeoutMs, command, args: positional.slice(1) }
 }
 
 function readBudget(value: string | undefined): number | null {
@@ -155,6 +172,17 @@ function readBudget(value: string | undefined): number | null {
     return null
   }
   return Math.max(parsed, MIN_BUDGET)
+}
+
+function readTimeoutMs(value: string | undefined): number | null {
+  if (value === undefined || value.trim().length === 0) {
+    return DEFAULT_TIMEOUT_MS
+  }
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < MIN_TIMEOUT_MS) {
+    return null
+  }
+  return parsed
 }
 
 function maybeCondense(output: string, budget: number, env: Readonly<Record<string, string | undefined>>): string {
@@ -196,11 +224,21 @@ function toOutputString(value: unknown): string {
   return typeof value === "string" ? value : ""
 }
 
-function spawnErrorMessage(command: string, error: Error | undefined): string | undefined {
+function spawnErrorMessage(command: string, error: Error | undefined, timeoutMs: number): string | undefined {
   if (error === undefined) {
     return undefined
   }
+  if (errorCode(error) === "ETIMEDOUT") {
+    return `[bearshell] command timed out after ${timeoutMs}ms: ${command}\n`
+  }
   return `[bearshell] failed to launch ${command}: ${error.message}\n`
+}
+
+function errorCode(error: Error): string | undefined {
+  if (!("code" in error)) {
+    return undefined
+  }
+  return typeof error.code === "string" ? error.code : undefined
 }
 
 function signalExitCode(signal: NodeJS.Signals | null): number {

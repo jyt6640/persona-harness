@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { initializePersonaHarness } from "../src/cli/init.js"
+import { formatInitResult, initializePersonaHarness } from "../src/cli/init.js"
 
 const tempProjects: string[] = []
 
@@ -71,5 +71,24 @@ describe("persona-harness init", () => {
     expect(config.model).toBe("openai/gpt-5.4-mini-fast")
     expect(config.plugin).toEqual(["/tmp/existing-plugin.js", join(process.cwd(), "dist", "index.js")])
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
+  })
+
+  it("prints a plan-first next flow instead of asking OpenCode to implement immediately", () => {
+    const result = formatInitResult({
+      projectDir: "/tmp/project",
+      packageRoot: process.cwd(),
+      pluginPath: join(process.cwd(), "dist", "index.js"),
+      installed: [".persona/harness.jsonc", ".persona/rules/", ".opencode/opencode.json"],
+      backups: [],
+      evidenceCopied: false,
+    })
+
+    expect(result).toContain("npx ph intake --interactive")
+    expect(result).toContain("npx ph policy init")
+    expect(result).toContain("npx ph plan")
+    expect(result).toContain("opencode")
+    expect(result).toContain("TUI")
+    expect(result).toContain("$(npx ph plan --prompt)")
+    expect(result).not.toContain("요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘")
   })
 })

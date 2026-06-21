@@ -82,6 +82,7 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
   return {
     targetFile: "<java-role-read-follow-up>",
     fileRole: "java-common",
+    selectedHarnessConfigDiagnostics: [],
     selectedRules: uniqueValues(injections.flatMap((injection) => injection.selectedRules)),
     selectedRuleMetadata: uniqueRuleMetadata(injections),
     selectedSharedSkills: uniqueSharedSkills(injections),
