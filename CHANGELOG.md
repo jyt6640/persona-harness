@@ -11,6 +11,18 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added `ph plan --implement` as a plan-aware implementation gate that blocks short implementation requests until `.persona/workflow/plan.md` is accepted and workflow report templates exist.
 - Added injected guidance for short implementation intents such as `플랜 보고 구현해줘` to route through `npx ph plan --implement` before coding.
 - Added TUI read-limit guidance so long README/plan files are read through `ph bearshell` line ranges and interrupted runs record remaining scope in the implementation report.
+- Added `ph help`, `ph language`, and a `user-language` intake question for multilingual tester setup.
+- Added Read Coverage evidence fields to implementation reports so agents record read method/ranges instead of checkbox-only claims.
+- Added `0.3.0-alpha.3` candidate notes and GitHub Actions release automation docs.
+
+### Changed
+
+- External tester guidance now starts with a minimal published-alpha command path and explicitly separates success evidence from setup-only evidence.
+- Release automation now checks tag/package version alignment and runs an npm publish dry-run before real publish.
+
+### Known Gaps
+
+- `ph plan --next` / `ph plan --resume` are still the next workflow gap before claiming robust TUI continuation.
 
 ## [0.3.0-alpha.2] - 2026-06-21
 

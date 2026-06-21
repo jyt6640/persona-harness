@@ -21,6 +21,10 @@ on:
           - beta
           - latest
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -51,6 +55,18 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          package_version=$(node -p "require('./package.json').version")
+          expected_tag="v$package_version"
+          if [[ "$TAG_NAME" != "$expected_tag" ]]; then
+            echo "Tag $TAG_NAME does not match package.json version $package_version"
+            exit 1
+          fi
+
       - name: Rule diagnostics
         run: npm run report:rules
 
@@ -62,6 +78,22 @@ jobs:
 
       - name: Package dry run
         run: npm pack --dry-run
+
+      - name: Publish dry run
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+          DISPATCH_DIST_TAG: ${{ inputs.dist_tag || 'alpha' }}
+        run: |
+          dist_tag="$DISPATCH_DIST_TAG"
+          if [[ "$TAG_NAME" == v* ]]; then
+            dist_tag=latest
+            if [[ "$TAG_NAME" == *"-alpha."* ]]; then
+              dist_tag=alpha
+            elif [[ "$TAG_NAME" == *"-beta."* ]]; then
+              dist_tag=beta
+            fi
+          fi
+          npm publish --dry-run --access public --tag "$dist_tag"
 
   publish:
     name: Publish npm package

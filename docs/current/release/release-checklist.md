@@ -14,6 +14,7 @@ Use this checklist before every npm release.
 
 - `package.json` version is correct.
 - `package-lock.json` root package version is aligned.
+- release tag matches `v${package.json.version}`.
 - `package.json` license is correct.
 - Root `LICENSE` file exists.
 - `README.md` describes the install flow for the target dist-tag.
@@ -75,6 +76,7 @@ npm run report:rules
 npm run check:scope:strict
 npm run check:injection-value
 npm pack --dry-run
+npm publish --dry-run --access public --tag <resolved-dist-tag>
 ```
 
 ## 5. Install Smoke
@@ -125,8 +127,9 @@ The `.github/workflows/release.yml` workflow publishes from tags that match `v*.
 
 Required repository setup:
 
-- add an `NPM_TOKEN` repository secret with publish permission, or replace the token path with npm trusted publishing before relying on the workflow;
-- keep `id-token: write` enabled for npm provenance;
+- preferred future setup: configure npm trusted publishing for this GitHub repository and remove long-lived token dependency;
+- current fallback setup: add an `NPM_TOKEN` repository secret with granular publish permission and 2FA-compatible automation behavior;
+- keep `id-token: write` enabled for npm provenance/trusted-publishing readiness;
 - push the version commit before pushing the tag.
 
 Manual dispatch can publish the current ref with an explicit `alpha`, `beta`, or `latest` dist-tag, but should stay reserved for recovery or controlled tester releases.

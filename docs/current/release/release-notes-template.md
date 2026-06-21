@@ -8,6 +8,10 @@
 
 `alpha` / `beta` / `latest`
 
+## npm Package
+
+`persona-harness@X.Y.Z`
+
 ## Summary
 
 One or two sentences explaining who should use this release and why.
@@ -62,6 +66,13 @@ Result:
 ## Known Gaps
 
 - 
+
+## Release Automation
+
+- `[ ]` tag matches `package.json` version
+- `[ ]` GitHub Actions verify job passed
+- `[ ]` npm publish job passed
+- `[ ]` GitHub release notes were created
 
 ## Next
 
