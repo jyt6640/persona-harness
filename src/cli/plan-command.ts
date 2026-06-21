@@ -11,6 +11,7 @@ import {
   initializeWorkflowPlan,
   type PlanOptions,
 } from "./plan.js"
+import { runNextCommand, runResumeCommand } from "./plan-next.js"
 import {
   PlanStatusError,
   type PlanAcceptanceStatus,
@@ -32,13 +33,15 @@ type ParsedPlanArgs =
   | { readonly kind: "revise" }
   | { readonly kind: "prompt" }
   | { readonly kind: "implement" }
+  | { readonly kind: "next" }
+  | { readonly kind: "resume" }
   | { readonly kind: "report-filled"; readonly reportKind: WorkflowReportKind }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
 export function planUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} plan [--force | --status | --accept | --revise | --prompt | --implement | --report-filled <implementation|review>]`,
+    `Usage: ${invocation} plan [--force | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review>]`,
     "",
     "Creates and manages a blackbear architecture plan before implementation.",
     "",
@@ -50,6 +53,8 @@ export function planUsage(invocation = "ph"): string {
     "  --prompt  Print the default OpenCode plan-only prompt.",
     "  --implement",
     "            Check the accepted workflow plan gate and print the implementation prompt.",
+    "  --next   Print the next workflow action from plan/report status.",
+    "  --resume Print an implementation continuation prompt from workflow report evidence.",
     "  --report-filled <implementation|review>",
     "            Mark a filled workflow report as filled.",
     "",
@@ -104,6 +109,12 @@ function parsePlanArgs(args: readonly string[]): ParsedPlanArgs {
   }
   if (arg === "--implement") {
     return { kind: "implement" }
+  }
+  if (arg === "--next") {
+    return { kind: "next" }
+  }
+  if (arg === "--resume") {
+    return { kind: "resume" }
   }
   return { kind: "invalid", message: `Unknown option: ${arg}` }
 }
@@ -219,6 +230,12 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
     }
     if (parsed.kind === "implement") {
       return runImplementationGate(options)
+    }
+    if (parsed.kind === "next") {
+      return runNextCommand(options)
+    }
+    if (parsed.kind === "resume") {
+      return runResumeCommand(options)
     }
 
     const planPath = initializeWorkflowPlan(options, parsed.force)

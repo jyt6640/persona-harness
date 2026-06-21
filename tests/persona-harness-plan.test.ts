@@ -352,12 +352,14 @@ describe("ph plan", () => {
 
     expect(help.status).toBe(0)
     expect(help.stdout).toContain(
-      "Usage: ph plan [--force | --status | --accept | --revise | --prompt | --implement | --report-filled <implementation|review>]",
+      "Usage: ph plan [--force | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review>]",
     )
     expect(help.stdout).toContain("--accept")
     expect(help.stdout).toContain("--revise")
     expect(help.stdout).toContain("--prompt")
     expect(help.stdout).toContain("--implement")
+    expect(help.stdout).toContain("--next")
+    expect(help.stdout).toContain("--resume")
     expect(help.stdout).toContain("--report-filled")
     expect(help.stdout).toContain(".persona/workflow/implementation-report.md")
     expect(help.stdout).toContain(".persona/workflow/review-report.md")

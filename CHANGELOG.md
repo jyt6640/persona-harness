@@ -14,6 +14,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added `ph help`, `ph language`, and a `user-language` intake question for multilingual tester setup.
 - Added Read Coverage evidence fields to implementation reports so agents record read method/ranges instead of checkbox-only claims.
 - Added `0.3.0-alpha.3` candidate notes and GitHub Actions release automation docs.
+- Added `ph plan --next` to print the next workflow action from plan/report status.
+- Added `ph plan --resume` to print a continuation prompt from accepted plan and implementation report evidence.
 
 ### Changed
 
@@ -22,7 +24,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ### Known Gaps
 
-- `ph plan --next` / `ph plan --resume` are still the next workflow gap before claiming robust TUI continuation.
+- `ph plan --resume` creates a continuation prompt but does not automatically resume OpenCode by itself.
 
 ## [0.3.0-alpha.2] - 2026-06-21
 
