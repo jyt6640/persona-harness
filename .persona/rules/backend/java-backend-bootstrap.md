@@ -18,11 +18,12 @@ enforcement: inject_only
 - 구현 전에 package structure plan을 작성한다. root package 바로 아래에 `global`과 `root/<domain>`을 같은 depth로 두고, `feature/features/module/modules` 같은 wrapper package를 추가하지 않는다.
 - 도메인 package 내부는 presentation/application/domain/infrastructure 흐름을 기본으로 두고 `root/<domain>/presentation`, `root/<domain>/application`, `root/<domain>/domain`, `root/<domain>/infrastructure`로 배치한다.
 - DTO는 파일 경계로 둔다. Presentation DTO는 `root/<domain>/presentation/dto/request`와 `root/<domain>/presentation/dto/response`, Application DTO는 `root/<domain>/application/dto/command`와 `root/<domain>/application/dto/result`에 둔다.
-- 구현 중에는 package structure plan을 기준으로 Domain, Repository, Service, DTO, Controller 역할 파일을 만들고 주요 Java 파일을 다시 읽고 다음 역할로 넘어간다.
+- 구현 중에는 package structure plan을 기준으로 Domain, Repository, Service, DTO, Controller 역할 파일을 만들고 주요 Java 파일을 다시 읽고 다음 역할로 넘어간다. Domain entity/aggregate가 static factory를 쓰면 public constructor가 아니라 private constructor로 생성 경로를 닫는다.
 - presentation은 HTTP 요청/응답과 request/response DTO boundary를 담당하고, application service에 위임한다.
 - Application Service는 use-case 흐름 조율만 담당하며 Service는 Map/List/AtomicLong/nextId/idCounter 같은 저장소 상태나 id sequence를 직접 소유하지 않는다.
 - 저장소 상태와 id generation은 Repository/Store 같은 persistence/storage component 뒤로 위임한다.
 - Repository interface는 domain 경계에 `root/<domain>/domain/<Domain>Repository`로 두고 구현체는 infrastructure 경계에 `Jdbc<Domain>Repository` 또는 `InMemory<Domain>Repository`로 둔다.
 - Domain은 Spring, HTTP, DB, infrastructure 세부사항에 의존하지 않는다.
 - Domain entity/aggregate는 record 데이터 홀더로 만들지 않는다. 자신의 필드로 판단할 수 있는 규칙은 `isOwner(name)`, `isReturned()`, `canLoan()` 같은 의미 있는 메서드로 Domain 객체가 직접 판단하고, Application Service가 getter/accessor로 필드를 꺼내 판단하지 않는다.
+- Domain entity/aggregate가 `create`, `restore`, `of` 같은 static factory로 생성 경로를 제공하면 public constructor를 열지 않고 private constructor로 닫는다.
 - frontend, infra, test-quality, generated app product-quality 보증은 현재 bootstrap injection 범위 밖이다.

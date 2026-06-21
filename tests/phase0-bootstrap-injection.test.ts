@@ -84,6 +84,8 @@ describe("Phase 0 bootstrap injection", () => {
     expect(injection.block).toContain("Gradle 기반 Spring Boot backend project")
     expect(injection.block).toContain("presentation/application/domain/infrastructure")
     expect(injection.block).toContain("Service는 Map/List/AtomicLong/nextId/idCounter")
+    expect(injection.block).toContain("static factory")
+    expect(injection.block).toContain("private constructor")
   })
 
   it("selects Java backend bootstrap guidance for requirements targets", () => {
