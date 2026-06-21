@@ -7,6 +7,7 @@ import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
 import { runIntakeCommand, runInteractiveIntakeCommand } from "./intake.js"
+import { runLanguageCommand } from "./language.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
 
@@ -41,11 +42,15 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     return runHistoryCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
+  if (command === "language") {
+    return runLanguageCommand(args.slice(1), invocationName)
+  }
+
   if (command === "bearshell") {
     return runBearshell(args.slice(1), { cwd: options.cwd, env: options.env })
   }
 
-  if (command === undefined || command === "--help" || command === "-h") {
+  if (command === undefined || command === "help" || command === "--help" || command === "-h") {
     return { status: 0, stdout: `${personaCliUsage(invocationName)}\n`, stderr: "" }
   }
 
@@ -66,6 +71,7 @@ function personaCliUsage(invocationName: string): string {
     "  plan                         Create a blackbear architecture plan draft before implementation.",
     "  policy                       Create backend-only policy overlay files.",
     "  history                      Archive completed workflow artifacts into local history.",
+    "  language                     Show supported user languages for intake and workflow prompts.",
     "  bearshell <command> [args...] Run a bounded command helper for repo inspection and smoke tests.",
     "",
     "Examples:",
@@ -73,6 +79,7 @@ function personaCliUsage(invocationName: string): string {
     `  ${invocationName} intake`,
     `  ${invocationName} plan`,
     `  ${invocationName} policy init`,
+    `  ${invocationName} language`,
     `  ${invocationName} history --id run-001`,
     `  ${invocationName} bearshell npm test`,
     `  ${invocationName} bearshell --shell 'git status --short && npm test'`,

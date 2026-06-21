@@ -83,6 +83,7 @@ describe("ph intake --interactive", () => {
 
     const result = await runInteractiveInputs(projectDir, [
       "2",
+      "2",
       "추천",
       "2",
       "",
@@ -102,6 +103,7 @@ describe("ph intake --interactive", () => {
 
     const profile = readProfile(projectDir)
     const answers = questionsById(profile)
+    expect(answers.get("user-language")).toBe("en")
     expect(answers.get("project-context")).toBe("team")
     expect(answers.get("project-goal")).toBe("production-service")
     expect(answers.get("project-scale")).toBe("small")
@@ -131,17 +133,18 @@ describe("ph intake --interactive", () => {
       "",
       "",
       "",
+      "",
     ])
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("다시 입력해 주세요.")
-    expect(questionsById(readProfile(projectDir)).get("project-context")).toBe("undecided")
+    expect(questionsById(readProfile(projectDir)).get("user-language")).toBe("undecided")
   })
 
   it("skips the migration prompt when persistence is not needed", async () => {
     const projectDir = createTempProject()
 
-    const result = await runInteractiveInputs(projectDir, ["", "", "", "", "1", "1", "", "", "", ""])
+    const result = await runInteractiveInputs(projectDir, ["", "", "", "", "", "1", "1", "", "", "", ""])
 
     expect(result.status).toBe(0)
     expect(result.stdout).not.toContain("DB schema/migration 방식")

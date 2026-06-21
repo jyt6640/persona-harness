@@ -54,6 +54,18 @@ export const PROFILE_PATH = ".persona/project-profile.jsonc"
 
 export const INTAKE_QUESTIONS: readonly IntakeQuestionDefinition[] = [
   {
+    id: "user-language",
+    prompt: "사용자와 agent가 주로 사용할 언어는 무엇인가요?",
+    choices: [
+      { value: "ko", label: "한국어" },
+      { value: "en", label: "English" },
+      { value: "ja", label: "日本語" },
+      { value: "zh-cn", label: "简体中文" },
+      { value: "recommend", label: "추천값 사용" },
+    ],
+    recommended: "ko",
+  },
+  {
     id: "project-context",
     prompt: "이 프로젝트는 어떤 맥락에 가깝나요?",
     choices: [

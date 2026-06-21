@@ -59,6 +59,11 @@ describe("ph intake", () => {
     expect(profile.questions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          id: "user-language",
+          choices: ["ko", "en", "ja", "zh-cn", "recommend"],
+          answer: null,
+        }),
+        expect.objectContaining({
           id: "project-context",
           choices: ["solo", "team", "company", "open-source", "learning", "recommend"],
           answer: null,
