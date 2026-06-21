@@ -12,6 +12,14 @@ This project uses npm prerelease versions for tester-facing alpha builds. Stable
 - Added OpenCode provider/model connection steps using `opencode auth login`, `opencode auth list`, `/connect`, and `/models`.
 - Clarified that Persona Harness planning files can be created without OpenCode, but plugin injection and evidence capture require OpenCode.
 - Updated external tester docs to use the published `persona-harness@alpha` install path.
+- Added GitHub Actions release automation for verify, npm publish on version tags, and generated GitHub release notes.
+- Tightened workflow prompts and report templates to prefer `npx ph bearshell` for repo inspection, Gradle verification, and smoke commands.
+- Clarified that clean project agents should call Persona Harness through `npx ph ...`, not a globally installed `ph`.
+- Clarified Java backend bootstrap guidance so domain static factories close creation through private constructors.
+- Changed `ph init` next steps to the plan-first flow: intake, policy, plan, accept or revise, then implementation.
+- Narrowed default `enabledDomains` to the Java backend MVP surface: `backend` and `programming`.
+- Added diagnostics-only reporting for malformed `.persona/harness.jsonc` instead of silently hiding the fallback.
+- Added a default `ph bearshell` command timeout with `PH_BEARSHELL_TIMEOUT_MS` override, while keeping the command helper explicitly non-sandboxed.
 
 ## [0.3.0-alpha.0] - 2026-06-21
 

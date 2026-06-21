@@ -189,18 +189,21 @@ npx ph plan --status
 
 `npx ph history`는 사용이 끝난 workflow artifact를 `.persona/workflow/history/<archive-id>/` 아래에 snapshot으로 남긴다. active `plan.md`, `implementation-report.md`, `review-report.md`는 삭제하지 않는다.
 
-OpenCode에서 Java/Spring target file을 먼저 읽게 실행한다.
+OpenCode CLI를 쓰면 plan-only prompt를 바로 넘긴다.
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "먼저 src/main/java/.../...Controller.java 파일을 읽고, README.md 요구사항에 맞게 Gradle 기반 Spring 백엔드로 구현해줘."
+  "$(npx ph plan --prompt)"
 ```
 
-repo 상태 확인, build/test 확인, 큰 출력 확인이 필요하면 Persona Harness command surface를 쓴다.
+OpenCode TUI를 선호하면 프로젝트 루트에서 `opencode`를 열고, `npx ph plan --prompt` 출력을 붙여 plan-only 작업부터 시작한다. 구현은 `.persona/workflow/plan.md`가 검토되거나 `npx ph plan --accept` 된 뒤 시작한다.
+
+repo 상태 확인, build/test 확인, 큰 출력 확인이 필요하면 Persona Harness command surface를 쓴다. 이 helper는 timeout과 output size를 제한하지만 sandbox는 아니다.
 
 ```bash
-npx ph bearshell --shell 'gradle test'
-npx ph bearshell --shell 'gradle build'
+npx ph bearshell gradle test
+npx ph bearshell gradle build
+npx ph bearshell --shell 'gradle bootRun --args="--server.port=18085"'
 ```
 
 실행 뒤에는 evidence를 확인한다.
@@ -213,7 +216,7 @@ npx ph history --id first-run
 주의:
 
 - `npx ph ...`는 local/tarball dev dependency install에서 가장 안정적인 실행 형태다.
-- `ph bearshell`은 Persona Harness command surface이고, clean OpenCode smoke에서 모델이 `npx ph bearshell`을 실제로 사용했다.
+- `ph bearshell`은 Persona Harness command surface이고, clean OpenCode smoke에서 모델이 `npx ph bearshell`을 실제로 사용했다. timeout과 출력 크기는 제한하지만 sandbox는 아니다.
 - Java file이 아직 없는 0-start 프로젝트는 `README.md` 또는 `requirements.md`를 먼저 읽게 실행할 수 있지만, 가장 직접적인 injection 검증은 Java/Spring target file read다.
 - 이 흐름은 generated Spring app product quality나 rule enforcement를 보증하지 않는다.
 
@@ -288,18 +291,18 @@ npx ph bearshell --budget 1200 --shell 'npm pack --dry-run'
 
 Persona Harness injection block은 repo inspection, CLI smoke test, 큰 출력 확인에서 `ph bearshell`을 우선 사용하라는 awareness도 함께 넣는다.
 
-Java file이 아직 없는 0-start 상황에서는 먼저 `README.md` 또는 `requirements.md`를 읽도록 실행할 수 있다. 이 경우 `project-bootstrap` guidance가 들어가고, 이후 생성된 Java target file을 읽을 때 Controller/Service/Repository/DTO 역할별 injection이 잡힌다.
+Java file이 아직 없는 0-start 상황에서는 `ph plan --prompt`로 README/requirements와 workflow plan을 먼저 읽게 한다. 이 경우 `project-bootstrap` guidance가 들어가고, 구현은 plan 검토/accept 이후에 시작한다. 이후 생성된 Java target file을 읽을 때 Controller/Service/Repository/DTO 역할별 injection이 잡힌다.
 
 ```bash
 opencode run --dir . --model <model> \
-  "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."
+  "$(npx ph plan --prompt)"
 ```
 
-이미 Java/Spring target file이 있다면 해당 파일을 먼저 읽게 하는 편이 현재 MVP의 가장 직접적인 검증 경로다.
+이미 Java/Spring target file이 있다면 plan이 accepted 상태인지 먼저 확인하게 한 뒤 해당 파일을 읽게 하는 편이 현재 MVP의 가장 직접적인 역할별 injection 검증 경로다.
 
 ```bash
 opencode run --dir . --model <model> \
-  "먼저 src/main/java/.../presentation/...Controller.java 파일을 읽고, README.md 요구사항에 맞게 구현해줘."
+  "README.md와 .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤, src/main/java/.../presentation/...Controller.java 파일을 읽고 필요한 구현을 진행해줘."
 ```
 
 권한 프롬프트를 생략해야 하는 환경에서는 OpenCode 버전에 맞게 `--dangerously-skip-permissions`를 붙인다. 이 repo의 v0.2.1 readiness 검증은 로컬 OpenCode 설정에서 해당 flag 없이 수행했다.

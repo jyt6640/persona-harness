@@ -77,7 +77,19 @@ Then ask OpenCode to plan first:
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 구현하지 말고 architecture/technology plan만 완성해줘."
+  "$(npx ph plan --prompt)"
+```
+
+If you prefer the OpenCode TUI, open it from the project root:
+
+```bash
+opencode
+```
+
+Then paste the output of:
+
+```bash
+npx ph plan --prompt
 ```
 
 Accept the plan when it is good enough:
@@ -91,7 +103,7 @@ Then ask OpenCode to implement:
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤 Java/Spring Gradle 기반으로 요구사항 전체를 구현해줘. 구현 후 gradle test, gradle build, gradle bootRun, HTTP happy path와 failure path smoke를 실행하고 .persona/workflow/implementation-report.md와 .persona/workflow/review-report.md를 채워줘."
+  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤 Java/Spring Gradle 기반으로 요구사항 전체를 구현해줘. 명령 실행은 가능하면 npx ph bearshell로 하고, 구현 후 npx ph bearshell gradle test, npx ph bearshell gradle build, 실행 가능한 Spring Boot 앱이면 npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"', HTTP happy path와 failure path smoke를 실행해줘. .persona/workflow/implementation-report.md와 .persona/workflow/review-report.md를 채우고 npx ph plan --report-filled implementation 및 npx ph plan --report-filled review를 실행해줘."
 ```
 
 ## What You Get
@@ -100,7 +112,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph intake --interactive`: asks backend project questions and writes `.persona/project-profile.jsonc`.
 - `ph policy init`: creates company and personal backend policy overlay files.
 - `ph plan`: creates `.persona/workflow/plan.md` for the `blackbear` planning role.
-- `ph bearshell`: runs bounded shell commands through the Persona Harness command surface.
+- `ph bearshell`: runs timeout-bounded and output-bounded shell commands through the Persona Harness command surface.
 - `ph history`: snapshots used workflow artifacts into `.persona/workflow/history/`.
 - OpenCode injection: adds Java/Spring backend Clean Code context when the agent reads relevant project files.
 
@@ -122,6 +134,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - It does not productize frontend, infra, or desktop workflows yet.
 - It is not the final TDD workflow yet.
 - It is not useful as a full agent workflow without OpenCode.
+- `ph bearshell` is not a sandbox. It limits runtime and output size, but commands still run on your machine.
 
 ## For Humans
 

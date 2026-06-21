@@ -151,7 +151,7 @@ local development 중 직접 경로를 고정해야 하면 `.opencode/opencode.j
 
 ```bash
 opencode run --dir /path/to/java-spring-project --model openai/gpt-5.4-mini-fast \
-  "먼저 src/main/java/com/example/coupon/presentation/CouponController.java 파일을 읽고, 요구사항에 맞게 구현해줘."
+  "$(npx ph plan --prompt)"
 ```
 
 Persona Harness는 OpenCode가 README/requirements/Gradle bootstrap target 또는 Java/Spring target file을 읽거나 수정할 때 동작한다.

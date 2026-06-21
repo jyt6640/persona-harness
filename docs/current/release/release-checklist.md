@@ -65,6 +65,18 @@ Expected:
 - Injection value state is acceptable for the release.
 - Publish dry-run reports the expected package version, files, and dist-tag.
 
+GitHub Actions also runs the verification subset on release tags:
+
+```bash
+npm test
+npm run typecheck
+npm run build
+npm run report:rules
+npm run check:scope:strict
+npm run check:injection-value
+npm pack --dry-run
+```
+
 ## 5. Install Smoke
 
 Use a temporary project outside the repository:
@@ -103,6 +115,22 @@ npm publish --tag alpha
 
 Do not publish under `latest` until the stable support contract is ready.
 
+### GitHub Actions path
+
+The `.github/workflows/release.yml` workflow publishes from tags that match `v*.*.*`.
+
+- `vX.Y.Z-alpha.N` publishes with dist-tag `alpha`.
+- `vX.Y.Z-beta.N` publishes with dist-tag `beta`.
+- `vX.Y.Z` publishes with dist-tag `latest`.
+
+Required repository setup:
+
+- add an `NPM_TOKEN` repository secret with publish permission, or replace the token path with npm trusted publishing before relying on the workflow;
+- keep `id-token: write` enabled for npm provenance;
+- push the version commit before pushing the tag.
+
+Manual dispatch can publish the current ref with an explicit `alpha`, `beta`, or `latest` dist-tag, but should stay reserved for recovery or controlled tester releases.
+
 ## 7. Post-publish
 
 - Run `npm view persona-harness dist-tags --json`.
@@ -111,3 +139,4 @@ Do not publish under `latest` until the stable support contract is ready.
 - Confirm `npx ph init` works from the published package.
 - Update `CHANGELOG.md` date if it was left as `Unreleased`.
 - Create GitHub release notes from the release notes template if this release gets a GitHub release.
+- For tag releases, GitHub Actions creates GitHub release notes with `gh release create --generate-notes`.

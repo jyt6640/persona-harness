@@ -77,7 +77,7 @@ npx ph plan
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.mdを読み、実装せず architecture/technology plan だけを完成させてください。"
+  "$(npx ph plan --prompt)"
 ```
 
 plan が十分なら accept します。
@@ -91,7 +91,7 @@ npx ph plan --accept
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.mdを読み、plan が accepted であることを確認してから Java/Spring Gradle ベースで要求全体を実装してください。実装後に gradle test, gradle build, gradle bootRun, HTTP happy path と failure path smoke を実行し、.persona/workflow/implementation-report.md と .persona/workflow/review-report.md を記入してください。"
+  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.mdを読み、plan が accepted であることを確認してから Java/Spring Gradle ベースで要求全体を実装してください。コマンド実行は可能なら npx ph bearshell を使い、実装後に npx ph bearshell gradle test, npx ph bearshell gradle build, 実行可能な Spring Boot app なら npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"', HTTP happy path と failure path smoke を実行してください。.persona/workflow/implementation-report.md と .persona/workflow/review-report.md を記入し、npx ph plan --report-filled implementation と npx ph plan --report-filled review を実行してください。"
 ```
 
 ## 提供するもの

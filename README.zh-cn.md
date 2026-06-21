@@ -77,7 +77,7 @@ npx ph plan
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "请阅读 README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md，不要实现代码，只完成 architecture/technology plan。"
+  "$(npx ph plan --prompt)"
 ```
 
 计划足够清楚后接受它:
@@ -91,7 +91,7 @@ npx ph plan --accept
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "请阅读 README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md，确认 plan 是 accepted 状态，然后基于 Java/Spring Gradle 实现全部需求。实现后运行 gradle test, gradle build, gradle bootRun, HTTP happy path 和 failure path smoke，并填写 .persona/workflow/implementation-report.md 与 .persona/workflow/review-report.md。"
+  "请阅读 README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md，确认 plan 是 accepted 状态，然后基于 Java/Spring Gradle 实现全部需求。执行命令时尽量使用 npx ph bearshell；实现后运行 npx ph bearshell gradle test, npx ph bearshell gradle build；如果是可运行的 Spring Boot app，运行 npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"'；再执行 HTTP happy path 和 failure path smoke。填写 .persona/workflow/implementation-report.md 与 .persona/workflow/review-report.md，并运行 npx ph plan --report-filled implementation 和 npx ph plan --report-filled review。"
 ```
 
 ## 提供内容
