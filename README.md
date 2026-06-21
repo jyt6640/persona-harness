@@ -6,6 +6,139 @@ Persona Harness는 OpenCode에서 동작하는 TypeScript 플러그인 MVP다.
 
 frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 release-facing MVP 범위가 아니다.
 
+## 지금 바로 써보기
+
+아직 public npm publish 전이므로, 지금은 Persona Harness repo를 로컬 경로로 설치해서 검증한다. 아래 흐름은 빈 Java/Spring backend 프로젝트를 0에서 만들 때 기준이다.
+
+### 1. Persona Harness 준비
+
+Persona Harness repo에서 한 번 빌드한다.
+
+```bash
+cd /absolute/path/to/persona-harness
+npm install
+npm run build
+```
+
+### 2. 새 프로젝트 폴더 만들기
+
+repo 밖에 clean project를 만든다.
+
+```bash
+mkdir -p /absolute/path/to/my-backend-check
+cd /absolute/path/to/my-backend-check
+npm init -y
+npm install -D /absolute/path/to/persona-harness
+```
+
+### 3. Harness 초기화
+
+대상 프로젝트 안에서 Persona Harness 파일을 만든다.
+
+```bash
+npx ph init
+npx ph intake --interactive
+npx ph policy init
+npx ph plan
+```
+
+생성되는 핵심 파일은 다음이다.
+
+- `.persona/harness.jsonc`
+- `.persona/rules/`
+- `.opencode/opencode.json`
+- `.persona/project-profile.jsonc`
+- `.persona/policies/overlay.jsonc`
+- `.persona/policies/company/backend.md`
+- `.persona/policies/personal/backend.md`
+- `.persona/workflow/plan.md`
+- `.persona/workflow/implementation-report.md`
+- `.persona/workflow/review-report.md`
+
+`ph intake --interactive`는 프로젝트 규모, 저장소 방식, persistence, migration, package style, architecture style 같은 backend planning 질문을 한 번에 하나씩 묻는다. 모르면 추천값을 써도 된다.
+
+`ph policy init`은 회사/팀 정책과 개인 철학을 적는 backend-only overlay 파일을 만든다. 비워두면 Clean Code baseline만 쓴다. 정책 우선순위는 `company > personal > Clean Code baseline`이다.
+
+### 4. README 요구사항 작성
+
+대상 프로젝트의 `README.md`에 만들고 싶은 API 요구사항을 적는다. 예시는 다음처럼 짧아도 된다.
+
+```md
+# Equipment Rental API
+
+- 장비를 등록할 수 있다.
+- 장비 목록을 조회할 수 있다.
+- 회원을 등록할 수 있다.
+- 회원이 장비를 대여할 수 있다.
+- 대여 중이거나 수량이 부족하면 실패한다.
+- 본인 대여만 반납할 수 있다.
+- Java/Spring Boot와 Gradle로 구현한다.
+```
+
+### 5. 구현 전 계획 만들기
+
+OpenCode에게 먼저 계획만 완성하게 한다.
+
+```bash
+opencode run --dir . --model openai/gpt-5.4-mini-fast --dangerously-skip-permissions \
+  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 구현하지 말고 architecture/technology plan만 완성해줘."
+```
+
+계획을 확인한 뒤 수락한다.
+
+```bash
+npx ph plan --status
+npx ph plan --accept
+```
+
+계획이 마음에 안 들면 `npx ph plan --revise`를 실행하고 OpenCode에게 다시 계획을 고치게 한다.
+
+### 6. 구현 실행
+
+accepted plan을 읽고 구현하게 한다.
+
+```bash
+opencode run --dir . --model openai/gpt-5.4-mini-fast --dangerously-skip-permissions \
+  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤 Java/Spring Gradle 기반으로 요구사항 전체를 구현해줘. 구현 후 gradle test, gradle build, gradle bootRun, HTTP happy path와 failure path smoke를 실행하고 .persona/workflow/implementation-report.md와 .persona/workflow/review-report.md를 채워줘."
+```
+
+### 7. 결과 확인
+
+생성물이 기대한 방향인지 확인한다.
+
+```bash
+find src/main/java -type f | sort
+gradle test
+gradle build
+npx ph plan --report-filled implementation
+npx ph plan --report-filled review
+find .persona/evidence -type f | sort
+```
+
+특히 다음을 본다.
+
+- `build.gradle`, `settings.gradle`은 있고 `pom.xml`은 없는가
+- `presentation`, `application`, `domain`, `infrastructure`, `global` 경계가 보이는가
+- domain에 repository interface가 있고 infrastructure에 구현체가 있는가
+- Application Service가 `Map`, `List`, `AtomicLong`, `nextId`, `idCounter` 같은 저장소 상태/id sequence를 직접 소유하지 않는가
+- domain model이 단순 record가 아니라 자기 필드로 상태 판단/행동을 하는가
+- `gradle build`에서 executable Spring Boot app의 `bootJar`를 꺼버리지 않았는가
+
+### 8. 사용 후 기록 남기기
+
+한 번 쓴 workflow 산출물은 history로 남긴다.
+
+```bash
+npx ph history --id first-clean-run
+```
+
+주의:
+
+- 이 흐름은 Java/Spring backend Clean Code shape를 더 균일하게 만들기 위한 local MVP다.
+- generated app product quality, rule compliance enforcement, test sufficiency, Guard/AST/linter 검증은 보증하지 않는다.
+- frontend/infra/desktop workflow는 아직 release-facing 범위가 아니다.
+- public npm install은 아직 지원하지 않는다. `npm install -D persona-harness`는 registry에 없으면 실패한다.
+
 ## 5분 Clean Project Flow
 
 public npm publish 전까지는 local path 또는 tarball install로 검증한다.

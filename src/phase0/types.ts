@@ -26,12 +26,19 @@ export type SelectedSharedSkill = {
   readonly reason: string
 }
 
+export type SelectedPolicyOverlay = {
+  readonly enabled: boolean
+  readonly sources: readonly ("company" | "personal")[]
+  readonly diagnostics: readonly string[]
+}
+
 export type PendingInjection = {
   readonly targetFile: string
   readonly fileRole: FileRole
   readonly selectedRules: string[]
   readonly selectedRuleMetadata: SelectedRuleMetadata[]
   readonly selectedSharedSkills: readonly SelectedSharedSkill[]
+  readonly selectedPolicyOverlay: SelectedPolicyOverlay
   readonly policies: string[]
   readonly block: string
 }

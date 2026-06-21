@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { loadBackendPolicyOverlay } from "../phase0/policy-overlay.js"
 import { loadBackendProjectProfileSummary } from "../phase0/project-profile.js"
 
 export type PlanOptions = { readonly projectDir?: string }
@@ -51,6 +52,10 @@ function profileSummaryLines(projectDir: string): readonly string[] {
   ]
 }
 
+function policyOverlayLines(projectDir: string): readonly string[] {
+  return loadBackendPolicyOverlay(projectDir).summaryLines
+}
+
 function readmeLines(projectDir: string): readonly string[] {
   const heading = readReadmeHeading(projectDir)
   return [
@@ -60,6 +65,7 @@ function readmeLines(projectDir: string): readonly string[] {
 }
 
 function createPlanDraft(projectDir: string): string {
+  const policyOverlaySummary = policyOverlayLines(projectDir)
   return [
     "# Blackbear Architecture Plan",
     "",
@@ -71,6 +77,7 @@ function createPlanDraft(projectDir: string): string {
     ...readmeLines(projectDir),
     "",
     ...profileSummaryLines(projectDir),
+    ...(policyOverlaySummary.length > 0 ? ["", ...policyOverlaySummary] : []),
     "",
     "## Architecture / Technology Plan",
     "",

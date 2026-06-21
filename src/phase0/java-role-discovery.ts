@@ -85,6 +85,11 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
     selectedRules: uniqueValues(injections.flatMap((injection) => injection.selectedRules)),
     selectedRuleMetadata: uniqueRuleMetadata(injections),
     selectedSharedSkills: uniqueSharedSkills(injections),
+    selectedPolicyOverlay: {
+      enabled: false,
+      sources: [],
+      diagnostics: [],
+    },
     policies: [
       "Discovered Java role files must be read so role-specific rule injection reaches model input before further edits.",
     ],

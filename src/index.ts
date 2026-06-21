@@ -12,4 +12,4 @@ const pluginModule: PluginModule = {
 export default pluginModule
 
 export { createPhase0Hooks } from "./phase0/hooks.js"
-export type { FileRole, PendingInjection, SelectedSharedSkill } from "./phase0/types.js"
+export type { FileRole, PendingInjection, SelectedPolicyOverlay, SelectedSharedSkill } from "./phase0/types.js"

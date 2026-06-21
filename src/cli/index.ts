@@ -8,6 +8,7 @@ import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
 import { runIntakeCommand, runInteractiveIntakeCommand } from "./intake.js"
 import { runPlanCommand } from "./plan-command.js"
+import { runPolicyCommand } from "./policy.js"
 
 type PersonaCliOptions = {
   readonly cwd?: string
@@ -30,6 +31,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
 
   if (command === "plan") {
     return runPlanCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+  }
+
+  if (command === "policy") {
+    return runPolicyCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
   if (command === "history") {
@@ -59,6 +64,7 @@ function personaCliUsage(invocationName: string): string {
     "  init                         Install Persona Harness config into the current project.",
     "  intake                       Create a draft backend project profile for planning.",
     "  plan                         Create a blackbear architecture plan draft before implementation.",
+    "  policy                       Create backend-only policy overlay files.",
     "  history                      Archive completed workflow artifacts into local history.",
     "  bearshell <command> [args...] Run a bounded command helper for repo inspection and smoke tests.",
     "",
@@ -66,6 +72,7 @@ function personaCliUsage(invocationName: string): string {
     `  ${invocationName} init`,
     `  ${invocationName} intake`,
     `  ${invocationName} plan`,
+    `  ${invocationName} policy init`,
     `  ${invocationName} history --id run-001`,
     `  ${invocationName} bearshell npm test`,
     `  ${invocationName} bearshell --shell 'git status --short && npm test'`,

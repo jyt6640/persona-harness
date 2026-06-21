@@ -1,10 +1,17 @@
 import { isBackendBootstrapTargetFile, resolveBootstrapFileRole, resolveFileRole } from "./file-role.js"
 import { loadHarnessConfig } from "./harness-config.js"
+import { loadBackendPolicyOverlay } from "./policy-overlay.js"
 import { loadBackendProjectProfileSummary } from "./project-profile.js"
 import { loadRulesForRole } from "./rule-loader.js"
 import { resolveSharedSkillFileRole, selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import type { PendingInjection } from "./types.js"
 import { isJavaTargetFile } from "./file-role.js"
+
+const inactivePolicyOverlay: PendingInjection["selectedPolicyOverlay"] = {
+  enabled: false,
+  sources: [],
+  diagnostics: [],
+}
 
 function dedupePolicies(policies: string[]): string[] {
   return Array.from(new Set(policies))
@@ -24,6 +31,9 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
   const ruleTargetFile = shouldLoadJavaRules ? targetFile : undefined
   const loadedRules = shouldLoadJavaRules ? loadRulesForRole(projectDir, fileRole, ruleTargetFile) : []
   const projectProfileSummary = shouldLoadJavaRules ? loadBackendProjectProfileSummary(projectDir) : []
+  const policyOverlay = shouldLoadJavaRules
+    ? loadBackendPolicyOverlay(projectDir)
+    : { summaryLines: [], metadata: inactivePolicyOverlay }
   const selectedRules = loadedRules.map((rule) => rule.path)
   const selectedRuleMetadata = loadedRules.map((rule) => ({
     path: rule.path,
@@ -41,6 +51,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     `파일 역할: ${fileRole}`,
     "",
     ...(projectProfileSummary.length > 0 ? [...projectProfileSummary, ""] : []),
+    ...(policyOverlay.summaryLines.length > 0 ? [...policyOverlay.summaryLines, ""] : []),
     "선택 규칙:",
     ...selectedRules.map((rule) => `- ${rule}`),
     "",
@@ -63,6 +74,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     selectedRules,
     selectedRuleMetadata,
     selectedSharedSkills,
+    selectedPolicyOverlay: policyOverlay.metadata,
     policies,
     block,
   }
