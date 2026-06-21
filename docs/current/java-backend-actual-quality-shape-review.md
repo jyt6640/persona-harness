@@ -2,13 +2,13 @@
 
 ## Goal
 
-Review the actual Java/Spring backend generated in `/Users/yongtae/Desktop/persona-real-demo`, reinforce only the backend product-code-shape guidance that is directly supported by that review, and revalidate with a clean generated run.
+Review the actual Java/Spring backend generated in `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo`, reinforce only the backend product-code-shape guidance that is directly supported by that review, and revalidate with a clean generated run.
 
 This is not a product-quality certification. It is a backend Clean Code shape and uniformity review.
 
 ## Original Actual Target
 
-- Project: `/Users/yongtae/Desktop/persona-real-demo`
+- Project: `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo`
 - Source: copied local `persona-harness` package installed through OpenCode plugin config
 - Requirement file: `README.md`
 - Validation observed: `./gradlew clean test` passed in the generated project
@@ -50,8 +50,8 @@ The reinforcement is intentionally narrow:
 
 ## Actual Revalidation
 
-- Project: `/Users/yongtae/Desktop/persona-real-demo-2`
-- Command: `opencode run --dir /Users/yongtae/Desktop/persona-real-demo-2 --model openai/gpt-5.4-mini-fast "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."`
+- Project: `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo-2`
+- Command: `opencode run --dir /Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo-2 --model openai/gpt-5.4-mini-fast "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."`
 - Package setup:
   - `npm install -D /Users/yongtae/Desktop/persona-harness`
   - `npx persona-harness init`
@@ -64,7 +64,7 @@ The reinforcement is intentionally narrow:
 
 ## Revalidation Evidence
 
-Phase 0 evidence files in `/Users/yongtae/Desktop/persona-real-demo-2/.persona/evidence/phase0`:
+Phase 0 evidence files in `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo-2/.persona/evidence/phase0`:
 
 - Total evidence JSON: 13
 - File roles:
@@ -123,8 +123,8 @@ The long-term target is for generated backend work to follow a Test -> Feat -> R
 
 ## Repository Boundary Clean Revalidation
 
-- Project: `/Users/yongtae/Desktop/persona-real-demo-3`
-- Command: `opencode run --dir /Users/yongtae/Desktop/persona-real-demo-3 --model openai/gpt-5.4-mini-fast "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."`
+- Project: `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo-3`
+- Command: `opencode run --dir /Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo-3 --model openai/gpt-5.4-mini-fast "README.md를 끝까지 읽고, 요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘."`
 - Package setup:
   - `npm install -D /Users/yongtae/Desktop/persona-harness`
   - `npx persona-harness init`

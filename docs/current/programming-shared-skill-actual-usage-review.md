@@ -6,7 +6,7 @@ Check whether the `programming` shared skill is actually being used in the Java 
 
 ## Original Actual Run
 
-Project: `/Users/yongtae/Desktop/persona-real-demo`
+Project: `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo`
 
 Observed evidence:
 
@@ -28,7 +28,7 @@ Conclusion:
 
 ## Clean Revalidation Run
 
-Project: `/Users/yongtae/Desktop/persona-real-demo-2`
+Project: `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo-2`
 
 Observed evidence:
 
