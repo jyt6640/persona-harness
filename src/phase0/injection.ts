@@ -74,6 +74,8 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     "주의:",
     "이 Phase 0 블록은 .persona/rules 정본과 최소 frontmatter/glob/scenario catalog layer를 읽는 MVP rule-loader 결과이며, 아직 full rule engine은 아니다.",
     "repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.",
+    "짧은 구현 지시(예: '플랜 보고 구현해줘', '계획대로 해줘', '이제 구현해줘')를 받으면 먼저 `npx ph plan --implement`를 실행한다.",
+    "`npx ph plan --implement`가 실패하면 구현하지 말고 plan/status 문제를 사용자에게 보고한다.",
   ].join("\n")
 
   return {

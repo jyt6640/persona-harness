@@ -214,6 +214,7 @@ describe("ph plan", () => {
     const status = runPersonaCli(["plan", "--status"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const accept = runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const revise = runPersonaCli(["plan", "--revise"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const implement = runPersonaCli(["plan", "--implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(status.status).toBe(1)
     expect(status.stderr).toContain("No workflow plan found")
@@ -221,6 +222,60 @@ describe("ph plan", () => {
     expect(accept.stderr).toContain("No workflow plan found")
     expect(revise.status).toBe(1)
     expect(revise.stderr).toContain("No workflow plan found")
+    expect(implement.status).toBe(1)
+    expect(implement.stderr).toContain("No workflow plan found")
+  })
+
+  it("blocks implementation until the workflow plan is accepted", () => {
+    const projectDir = createTempProject()
+    const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    const implement = runPersonaCli(["plan", "--implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(draft.status).toBe(0)
+    expect(implement.status).toBe(1)
+    expect(implement.stderr).toContain("Workflow plan is not accepted")
+    expect(implement.stderr).toContain("Current status: draft")
+    expect(implement.stderr).toContain("npx ph plan --accept")
+  })
+
+  it("blocks implementation when required workflow report templates are missing", () => {
+    const projectDir = createTempProject()
+    const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const accepted = runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    rmSync(join(projectDir, ".persona", "workflow", "implementation-report.md"))
+
+    const implement = runPersonaCli(["plan", "--implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(draft.status).toBe(0)
+    expect(accepted.status).toBe(0)
+    expect(implement.status).toBe(1)
+    expect(implement.stderr).toContain("Missing workflow artifacts")
+    expect(implement.stderr).toContain(".persona/workflow/implementation-report.md")
+    expect(implement.stderr).toContain("Run npx ph plan first")
+  })
+
+  it("prints an implementation prompt after the workflow plan is accepted", () => {
+    const projectDir = createTempProject()
+    const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const accepted = runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    const implement = runPersonaCli(["plan", "--implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(draft.status).toBe(0)
+    expect(accepted.status).toBe(0)
+    expect(implement.status).toBe(0)
+    expect(implement.stderr).toBe("")
+    expect(implement.stdout).toContain("Persona Harness implementation gate passed.")
+    expect(implement.stdout).toContain("Status: accepted")
+    expect(implement.stdout).toContain("README.md")
+    expect(implement.stdout).toContain(".persona/project-profile.jsonc")
+    expect(implement.stdout).toContain(".persona/policies")
+    expect(implement.stdout).toContain(".persona/workflow/plan.md")
+    expect(implement.stdout).toContain(".persona/workflow/implementation-report.md")
+    expect(implement.stdout).toContain(".persona/workflow/review-report.md")
+    expect(implement.stdout).toContain("npx ph plan --report-filled implementation")
+    expect(implement.stdout).toContain("npx ph plan --report-filled review")
   })
 
   it("fails report status changes when workflow reports do not exist", () => {
@@ -263,6 +318,8 @@ describe("ph plan", () => {
     expect(prompt.stdout).toContain(".persona/workflow/plan.md")
     expect(prompt.stdout).toContain("구현하지 말고")
     expect(prompt.stdout).toContain("architecture/technology plan")
+    expect(prompt.stdout).toContain("플랜 보고 구현해줘")
+    expect(prompt.stdout).toContain("npx ph plan --implement")
     expect(prompt.stdout).toContain("명령 실행이 필요하면 `npx ph bearshell`을 우선 사용")
   })
 
@@ -275,11 +332,12 @@ describe("ph plan", () => {
 
     expect(help.status).toBe(0)
     expect(help.stdout).toContain(
-      "Usage: ph plan [--force | --status | --accept | --revise | --prompt | --report-filled <implementation|review>]",
+      "Usage: ph plan [--force | --status | --accept | --revise | --prompt | --implement | --report-filled <implementation|review>]",
     )
     expect(help.stdout).toContain("--accept")
     expect(help.stdout).toContain("--revise")
     expect(help.stdout).toContain("--prompt")
+    expect(help.stdout).toContain("--implement")
     expect(help.stdout).toContain("--report-filled")
     expect(help.stdout).toContain(".persona/workflow/implementation-report.md")
     expect(help.stdout).toContain(".persona/workflow/review-report.md")

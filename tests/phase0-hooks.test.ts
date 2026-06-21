@@ -273,6 +273,17 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(injection.block).not.toContain("omo sparkshell")
   })
 
+  it("routes short implementation intent through the accepted workflow plan gate", () => {
+    const targetFile = fixturePath("ReservationController.java")
+
+    const injection = createInjectionBlock(targetFile, fixtureWorkspace)
+
+    expect(injection.block).toContain("짧은 구현 지시")
+    expect(injection.block).toContain("플랜 보고 구현해줘")
+    expect(injection.block).toContain("npx ph plan --implement")
+    expect(injection.block).toContain("실패하면 구현하지 말고")
+  })
+
   it("keeps selectedRules evidence as rule path strings", () => {
     const targetFile = fixturePath("ReservationController.java")
 
