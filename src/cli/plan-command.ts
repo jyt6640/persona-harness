@@ -111,6 +111,8 @@ export function createPlanOnlyPrompt(): string {
   return [
     "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 구현하지 말고 architecture/technology plan만 완성해줘.",
     "",
+    "긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고, Read 출력이 잘리면 `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`, `npx ph bearshell --shell 'sed -n \"221,440p\" README.md'`처럼 범위를 나눠 끝까지 읽어줘.",
+    "",
     "계획에는 요구사항 요약, Java/Spring Gradle 기술 선택, package/layer 구조, storage/persistence 선택, repository boundary, DTO boundary, domain behavior 기준을 포함해줘.",
     "",
     "계획이 불확실하면 구현하지 말고 질문이나 가정을 .persona/workflow/plan.md에 명확히 남겨줘.",
@@ -125,9 +127,13 @@ export function createImplementationPrompt(): string {
   return [
     "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 먼저 읽고 accepted plan 기준으로 구현해줘.",
     "",
+    "긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고, Read 출력이 잘리면 `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`, `npx ph bearshell --shell 'sed -n \"221,440p\" README.md'`처럼 범위를 나눠 끝까지 읽어줘.",
+    "",
     "구현 중에는 Java/Spring Gradle backend Clean Code 범위를 유지하고, plan에 없는 frontend/infra/desktop 범위로 확장하지 마.",
     "",
     "구현 후 .persona/workflow/implementation-report.md를 채우고 `npx ph plan --report-filled implementation`을 실행해줘.",
+    "",
+    "중간에 멈추면 .persona/workflow/implementation-report.md의 Continuation에 마지막 완료 범위, 남은 README/plan 범위, 남은 구현 범위, 다음 작업을 남기고 완료했다고 말하지 마.",
     "",
     "리뷰와 manual QA가 끝나면 .persona/workflow/review-report.md를 채우고 `npx ph plan --report-filled review`를 실행해줘.",
     "",

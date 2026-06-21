@@ -282,6 +282,8 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(injection.block).toContain("플랜 보고 구현해줘")
     expect(injection.block).toContain("npx ph plan --implement")
     expect(injection.block).toContain("실패하면 구현하지 말고")
+    expect(injection.block).toContain("긴 README/plan은 `npx ph bearshell --shell 'sed -n")
+    expect(injection.block).toContain("중간에 멈추면 implementation-report에 남은 범위를 기록한다.")
   })
 
   it("keeps selectedRules evidence as rule path strings", () => {

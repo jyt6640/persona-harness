@@ -76,6 +76,8 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     "repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.",
     "짧은 구현 지시(예: '플랜 보고 구현해줘', '계획대로 해줘', '이제 구현해줘')를 받으면 먼저 `npx ph plan --implement`를 실행한다.",
     "`npx ph plan --implement`가 실패하면 구현하지 말고 plan/status 문제를 사용자에게 보고한다.",
+    "긴 README/plan은 `npx ph bearshell --shell 'sed -n \"1,220p\" <file>'`처럼 범위를 나눠 끝까지 읽는다.",
+    "중간에 멈추면 implementation-report에 남은 범위를 기록한다.",
   ].join("\n")
 
   return {
