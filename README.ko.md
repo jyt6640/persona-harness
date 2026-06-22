@@ -6,6 +6,8 @@ OpenCode를 위한 Java/Spring backend Clean Code workflow pilot.
 
 Persona Harness는 에이전트가 빈 프로젝트에서 시작해 backend 맥락을 묻고, 구현 전 architecture plan을 남긴 뒤, 더 균일한 Java/Spring 구조로 코드를 만들도록 돕습니다.
 
+`ph` 명령어는 주로 AI가 쓰는 workflow surface입니다. 사용자는 설치와 초기화만 해두고, OpenCode나 Codex-style TUI에서 “README 보고 구현해줘”처럼 자연어로 요청하는 흐름을 목표로 합니다. 이후 `ph workflow check`, `ph plan --implement`, `ph bearshell`, report-fill 명령은 에이전트가 실행해야 합니다.
+
 > 현재 범위: Java/Spring backend MVP.
 > frontend, infra, desktop app, AST/linter enforcement, 완전한 TDD workflow는 후속 트랙입니다.
 
@@ -73,7 +75,7 @@ npx ph policy init
 npx ph plan
 ```
 
-먼저 OpenCode에게 계획만 완성하게 합니다.
+초기 설정 이후에는 사용자가 모든 명령어를 외울 필요가 없습니다. 먼저 OpenCode에게 계획만 완성하게 합니다.
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
@@ -87,7 +89,13 @@ npx ph plan --status
 npx ph plan --accept
 ```
 
-그 다음 구현을 요청합니다.
+그 다음에는 짧게 구현을 요청합니다.
+
+```text
+README 보고 계획대로 구현해줘.
+```
+
+에이전트가 workflow를 놓치면 아래처럼 더 강한 프롬프트를 사용합니다.
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
@@ -96,12 +104,16 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 ## 제공하는 것
 
+- 아래 명령어들은 사용자가 직접 외우는 CLI라기보다, OpenCode/Codex-style 세션에서 AI가 호출하기 쉽게 만든 workflow surface입니다.
 - `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config 설치
 - `ph intake --interactive`: backend planning 질문 후 `.persona/project-profile.jsonc` 생성
 - `ph policy init`: 회사/개인 backend policy overlay 파일 생성
 - `ph plan`: `blackbear` planning role용 `.persona/workflow/plan.md` 생성
 - `ph bearshell`: bounded shell command helper
 - `ph history`: 사용한 workflow artifact를 `.persona/workflow/history/`에 보존
+- `ph workflow check`: 현재 plan/report/evidence 상태 확인
+- `ph doctor`: OpenCode와 Persona Harness 연동 상태 진단
+- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph review backend-shape`: report-only 검증/피드백 artifact 생성
 - OpenCode injection: 관련 파일을 읽을 때 Java/Spring backend Clean Code context 주입
 
 ## 권장하는 코드 모양

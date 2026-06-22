@@ -4,6 +4,8 @@ Java/Spring backend Clean Code workflow pilot for OpenCode.
 
 Persona Harness helps an agent start from a clean project, ask for backend context, write an architecture plan, and generate code with a consistent Java/Spring structure.
 
+The `ph` commands are primarily an AI-facing workflow surface. Humans install and initialize the harness, then ask OpenCode or Codex-style TUI in plain language. The agent should run the `ph` commands, record workflow evidence, and report what it did.
+
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
 > Current scope: Java/Spring backend MVP.
@@ -73,7 +75,7 @@ npx ph policy init
 npx ph plan
 ```
 
-Then ask OpenCode to plan first:
+After setup, you should not need to memorize the workflow commands. For planning, ask OpenCode to use the generated prompt:
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
@@ -99,7 +101,13 @@ npx ph plan --status
 npx ph plan --accept
 ```
 
-Then ask OpenCode to implement:
+Then use a short implementation request. The injected workflow should make the agent run `npx ph workflow check`, `npx ph plan --implement`, `npx ph bearshell`, and the report-fill commands itself:
+
+```text
+README 보고 계획대로 구현해줘.
+```
+
+If the agent misses the workflow, use the stricter prompt:
 
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
@@ -108,12 +116,17 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 ## What You Get
 
+These commands are meant to be visible and easy for agents to call from OpenCode/Codex-style sessions:
+
 - `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, and OpenCode plugin config.
 - `ph intake --interactive`: asks backend project questions and writes `.persona/project-profile.jsonc`.
 - `ph policy init`: creates company and personal backend policy overlay files.
 - `ph plan`: creates `.persona/workflow/plan.md` for the `blackbear` planning role.
 - `ph bearshell`: runs timeout-bounded and output-bounded shell commands through the Persona Harness command surface.
 - `ph history`: snapshots used workflow artifacts into `.persona/workflow/history/`.
+- `ph workflow check`: reports the current plan/report/evidence status.
+- `ph doctor`: diagnoses local OpenCode and Persona Harness integration.
+- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph review backend-shape`: produce report-only workflow and quality-shape artifacts.
 - OpenCode injection: adds Java/Spring backend Clean Code context when the agent reads relevant project files.
 
 ## What It Encourages
@@ -145,10 +158,12 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 5. Run `npx ph plan`.
 6. Let OpenCode fill the plan only.
 7. Review and accept the plan.
-8. Let OpenCode implement from the accepted plan.
+8. Ask OpenCode in plain language to implement from the accepted plan.
 9. Check Gradle build, generated structure, and workflow reports.
 
 ## For Agents
+
+Treat `ph` as your workflow command surface. Do not wait for the human to manually run every command once setup is complete.
 
 Read these files before implementation:
 
@@ -159,10 +174,26 @@ Read these files before implementation:
 
 Do not skip the plan state. If the plan is not accepted, finish or revise the plan first.
 
+Before coding from a short implementation request, run:
+
+```bash
+npx ph workflow check
+npx ph plan --implement
+```
+
+Prefer `npx ph bearshell` for repo inspection, Gradle verification, and large command output.
+
 After implementation, fill:
 
 - `.persona/workflow/implementation-report.md`
 - `.persona/workflow/review-report.md`
+
+Then run:
+
+```bash
+npx ph plan --report-filled implementation
+npx ph plan --report-filled review
+```
 
 ## Docs
 
