@@ -8,6 +8,7 @@ import type { CliRunResult } from "./bearshell.js"
 
 type DoctorOptions = {
   readonly projectDir?: string
+  readonly env?: Readonly<Record<string, string | undefined>>
 }
 
 function commandVersion(command: string, args: readonly string[]): string {
@@ -15,6 +16,18 @@ function commandVersion(command: string, args: readonly string[]): string {
     return execFileSync(command, [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || "available"
   } catch {
     return "missing"
+  }
+}
+
+function commandOutput(command: string, args: readonly string[]): string | undefined {
+  try {
+    return execFileSync(command, [...args], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 3000,
+    }).trim()
+  } catch {
+    return undefined
   }
 }
 
@@ -49,8 +62,27 @@ function packageVersion(): string {
   }
 }
 
+function registryStatus(env: Readonly<Record<string, string | undefined>>): string {
+  const distTagsJson = env.PH_DOCTOR_REGISTRY_DIST_TAGS ?? commandOutput("npm", ["view", "persona-harness", "dist-tags", "--json"])
+  if (distTagsJson === undefined || distTagsJson.length === 0) {
+    return "unavailable"
+  }
+  try {
+    const parsed: unknown = JSON.parse(distTagsJson)
+    if (!isRecord(parsed)) {
+      return "unavailable"
+    }
+    const alpha = typeof parsed.alpha === "string" ? parsed.alpha : "missing"
+    const latest = typeof parsed.latest === "string" ? parsed.latest : "missing"
+    return `alpha=${alpha}, latest=${latest}`
+  } catch {
+    return "unavailable"
+  }
+}
+
 export function runDoctorCommand(_args: readonly string[], options: DoctorOptions = {}): CliRunResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
+  const env = options.env ?? process.env
   const lines = [
     "Persona Harness Doctor",
     "",
@@ -59,7 +91,7 @@ export function runDoctorCommand(_args: readonly string[], options: DoctorOption
     `npm: ${commandVersion("npm", ["--version"])}`,
     `OpenCode: ${commandVersion("opencode", ["--version"])}`,
     `Persona package version: ${packageVersion()}`,
-    "npm registry: unchecked",
+    `npm registry: ${registryStatus(env)}`,
     "",
     "Project integration:",
     `.opencode/opencode.json: ${pathStatus(projectDir, ".opencode/opencode.json")}`,

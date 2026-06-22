@@ -61,7 +61,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "doctor") {
-    return runDoctorCommand(args.slice(1), { projectDir: options.cwd })
+    return runDoctorCommand(args.slice(1), { projectDir: options.cwd, env: options.env })
   }
 
   if (command === "evidence") {

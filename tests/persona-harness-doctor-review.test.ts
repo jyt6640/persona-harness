@@ -35,7 +35,13 @@ describe("ph doctor", () => {
     writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
     writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
 
-    const result = runPersonaCli(["doctor"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const result = runPersonaCli(["doctor"], {
+      cwd: projectDir,
+      env: {
+        PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ alpha: "0.3.0-alpha.3", latest: "0.3.0-alpha.3" }),
+      },
+      invocationName: "ph",
+    })
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Persona Harness Doctor")
@@ -46,7 +52,7 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain("Persona plugin path: configured")
     expect(result.stdout).toContain(".persona/harness.jsonc: present")
     expect(result.stdout).toContain(".persona/rules: present")
-    expect(result.stdout).toContain("npm registry: unchecked")
+    expect(result.stdout).toContain("npm registry: alpha=0.3.0-alpha.3, latest=0.3.0-alpha.3")
   })
 })
 
