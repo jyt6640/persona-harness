@@ -14,6 +14,8 @@
 | `npm run check:injection-value` | pass: injection value diagnostics PASS, current window 3/3, expected decision `continue-java-mvp` |
 | `npm pack --dry-run --json` | pass: `persona-harness-0.3.0-alpha.3.tgz`, 191 files, 198.2 kB package size, 735.1 kB unpacked size |
 | `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.0-alpha.3` |
+| `npm publish --tag alpha` | pass: `persona-harness@0.3.0-alpha.3` published |
+| `npm view persona-harness dist-tags --json` | partial: `alpha` points to `0.3.0-alpha.3`; `latest` still points to `0.3.0-alpha.2` until OTP-protected dist-tag sync |
 
 ## Productization Review Decision
 
@@ -79,4 +81,4 @@ proceed-to-demo-packaging
 
 After the fresh package-flow/bootJar ON run, next-version demo packaging can proceed to final package verification.
 
-Do not publish yet. The package version metadata, changelog, release notes, `npm pack --dry-run --json`, and `npm publish --dry-run --tag alpha` now pass for `0.3.0-alpha.3`; the next release step is explicit tag or manual publish approval.
+`persona-harness@0.3.0-alpha.3` is published on the `alpha` dist-tag. The remaining release-close steps are OTP-protected `latest` dist-tag sync, GitHub tag/release creation, and external install smoke after both dist-tags point at the same alpha.

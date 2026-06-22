@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: v0.3.0 project-intake / philosophy workflow planning surface on top of the Java backend MVP.
 
-Current active candidate: v0.3.0-alpha.3 release approval. `persona-harness@0.3.0-alpha.2` remains the published npm package, while local package metadata and dry-run release checks are prepared for `0.3.0-alpha.3`. This is not a stable support claim.
+Current active candidate: v0.3.0-alpha.3 release closure. `persona-harness@0.3.0-alpha.3` is published on the `alpha` dist-tag, while `latest` still points to `0.3.0-alpha.2` until the OTP-protected dist-tag sync is completed. This is not a stable support claim.
 
 ## Current Decisions
 
@@ -70,11 +70,11 @@ Current active candidate: v0.3.0-alpha.3 release approval. `persona-harness@0.3.
 - `v0.2.1` support contract covers local/tarball install, `ph init`, Java/Spring target injection, metadata evidence, and `npx ph bearshell` command-surface behavior in clean OpenCode smoke.
 - `packages/shared-skills` remains in the v0.2.1 tarball as packaged reference material; it is not a release-facing support surface or enforcement gate.
 - v0.2.1 package metadata is checked for name, version, description, keywords, license, repository, homepage, bugs, bin, files, engines, and package size.
-- Public npm alpha exists; `alpha` and `latest` both point to `0.3.0-alpha.2` during the alpha pilot. Stable support guarantees remain deferred.
+- Public npm alpha exists; `alpha` points to `0.3.0-alpha.3`, and `latest` still points to `0.3.0-alpha.2` until OTP-protected dist-tag sync completes. Stable support guarantees remain deferred.
 - Experiment artifact cleanup is a phase-close hygiene step and remains dry-run-first.
 - Next-version packaging was previously blocked after the `01-book-loans` context-noise rerun: Persona ON run-05 no longer timed out and passed `gradle test`, but the generated package-flow shape still missed the current Java backend MVP target enough that the A/B verdict remained mixed. The external analyzer now classifies this as `buildable-package-flow-mismatch` instead of conflating it with generated-project failure, and backend guidance now explicitly rejects `controller/service/repository/dto` role-name packages in favor of `presentation/application/domain/infrastructure`.
 - Fresh ON package-flow/bootJar follow-up is positive: the `01-book-loans` run at `/Users/yongtae/Desktop/blackbear-persona-harness-test/fresh-runs/01-book-loans/A-persona-on/bootjar-guidance-20260622-005742` generated `presentation/application/domain/infrastructure`, domain repository ports plus infrastructure implementations, no Service-owned storage/id sequence, no `bootJar.enabled=false`, `gradle build` with `:bootJar UP-TO-DATE`, and independent `gradle bootRun` HTTP happy/failure smoke pass. This reduces the narrow package-flow/build-line blocker; final packaging still needs an explicit release/demo decision.
-- Release/demo decision is now `proceed-to-demo-packaging` for `v0.3.0-alpha.3`. Version metadata, changelog, release notes, `npm pack --dry-run --json`, and `npm publish --dry-run --tag alpha` pass locally for `0.3.0-alpha.3`, but no npm publish or tag is implied until explicit release approval.
+- Release/demo decision is now `proceed-to-demo-packaging` for `v0.3.0-alpha.3`. Version metadata, changelog, release notes, `npm pack --dry-run --json`, `npm publish --dry-run --tag alpha`, and manual `npm publish --tag alpha` pass for `0.3.0-alpha.3`. Remaining release-close work: `latest` dist-tag sync, GitHub tag/release, and external install smoke.
 
 ## Active Commands
 
