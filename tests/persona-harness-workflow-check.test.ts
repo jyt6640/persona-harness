@@ -91,8 +91,8 @@ describe("ph workflow check", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Workflow status: WARN")
-    expect(result.stdout).toContain("- command discipline: raw shell observed; prefer `npx ph bearshell` for verification")
-    expect(result.stdout).toContain("Next: review command discipline")
+    expect(result.stdout).toContain("- command discipline: raw shell used for final verification; rerun test/build/bootRun through `npx ph bearshell`")
+    expect(result.stdout).toContain("Next: rerun final verification through `npx ph bearshell`")
   })
 
   it("creates smoke and feedback reports from the workflow status", () => {

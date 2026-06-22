@@ -193,7 +193,7 @@ function finalGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): read
   if (summary.evidence !== "present") {
     reasons.push(".persona/evidence must contain at least one evidence file")
   }
-  if (summary.commandDisciplineFinding !== "PASS") {
+  if (summary.commandDisciplineBlocking) {
     reasons.push(summary.commandDiscipline)
   }
   return reasons

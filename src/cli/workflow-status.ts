@@ -10,6 +10,7 @@ export type WorkflowStatusSummary = {
   readonly review: string
   readonly evidence: "present" | "missing"
   readonly commandDiscipline: string
+  readonly commandDisciplineBlocking: boolean
   readonly commandDisciplineFinding: "PASS" | "WARN"
   readonly next: string
 }
@@ -48,10 +49,17 @@ function readExistingFiles(filePaths: readonly string[]): string {
   return filePaths.filter((filePath) => existsSync(filePath)).map((filePath) => readFileSync(filePath, "utf8")).join("\n")
 }
 
-function commandDiscipline(projectDir: string, implementationStatus: string, reviewStatus: string): Pick<WorkflowStatusSummary, "commandDiscipline" | "commandDisciplineFinding"> {
+const RAW_SHELL_PATTERN = /raw shell|직접\s*썼|직접\s*사용|raw\s+command/i
+const DIRECT_RULES_READ_PATTERN = /(?:read|읽)[^\n]*(?:\.persona\/rules|\.persona\\rules)|\.persona\/rules\/|\.persona\\rules\\/i
+const FINAL_VERIFICATION_PATTERN = /(?:\.\/)?gradlew?\s+(?:test|build|bootRun)\b|gradle\s+(?:test|build|bootRun)\b|bootRun\b|curl\b/i
+
+type CommandDisciplineSummary = Pick<WorkflowStatusSummary, "commandDiscipline" | "commandDisciplineBlocking" | "commandDisciplineFinding">
+
+function commandDiscipline(projectDir: string, implementationStatus: string, reviewStatus: string): CommandDisciplineSummary {
   if (implementationStatus !== "filled") {
     return {
       commandDiscipline: "not checked until implementation report is filled",
+      commandDisciplineBlocking: false,
       commandDisciplineFinding: "PASS",
     }
   }
@@ -59,26 +67,38 @@ function commandDiscipline(projectDir: string, implementationStatus: string, rev
     join(projectDir, IMPLEMENTATION_REPORT_PATH),
     join(projectDir, REVIEW_REPORT_PATH),
   ])
-  if (/raw shell|직접\s*썼|직접\s*사용|raw\s+command/i.test(reportText)) {
+  const hasBearshell = reportText.includes("npx ph bearshell")
+  const hasRawShell = RAW_SHELL_PATTERN.test(reportText)
+  const hasDirectRulesRead = DIRECT_RULES_READ_PATTERN.test(reportText)
+  const hasRawFinalVerification = hasRawShell && reportText.split(/\r?\n/).some((line) => !line.includes("npx ph bearshell") && FINAL_VERIFICATION_PATTERN.test(line))
+  if (hasRawFinalVerification) {
     return {
-      commandDiscipline: "raw shell observed; prefer `npx ph bearshell` for verification",
+      commandDiscipline: "raw shell used for final verification; rerun test/build/bootRun through `npx ph bearshell`",
+      commandDisciplineBlocking: true,
       commandDisciplineFinding: "WARN",
     }
   }
-  if (reportText.includes("npx ph bearshell")) {
+  if (hasBearshell) {
+    const warnings = [
+      ...(hasRawShell ? ["raw shell environment probe observed"] : []),
+      ...(hasDirectRulesRead ? ["direct `.persona/rules` read observed"] : []),
+    ]
     return {
-      commandDiscipline: "bearshell observed",
-      commandDisciplineFinding: "PASS",
+      commandDiscipline: warnings.length > 0 ? `bearshell observed; warning: ${warnings.join("; ")}` : "bearshell observed",
+      commandDisciplineBlocking: false,
+      commandDisciplineFinding: warnings.length > 0 ? "WARN" : "PASS",
     }
   }
   if (reviewStatus === "filled") {
     return {
-      commandDiscipline: "`npx ph bearshell` not observed in filled workflow reports",
+      commandDiscipline: "final verification through `npx ph bearshell` not observed in filled workflow reports",
+      commandDisciplineBlocking: true,
       commandDisciplineFinding: "WARN",
     }
   }
   return {
     commandDiscipline: "not checked until review report is filled",
+    commandDisciplineBlocking: false,
     commandDisciplineFinding: "PASS",
   }
 }
@@ -96,8 +116,11 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.review !== "filled") {
     return "fill review report and run `npx ph plan --report-filled review`"
   }
+  if (summary.commandDisciplineBlocking) {
+    return "rerun final verification through `npx ph bearshell`"
+  }
   if (summary.commandDisciplineFinding === "WARN") {
-    return "review command discipline and prefer `npx ph bearshell` for verification"
+    return "review workflow noise, then archive completed workflow if acceptable"
   }
   return "archive completed workflow with `npx ph history --id <run-id>`"
 }
