@@ -12,7 +12,8 @@
 | `npm run report:rules` | pass: PersonaHarnessRule diagnostics PASS, 0 findings |
 | `npm run check:scope` | pass: MVP scope diagnostics PASS, 0 findings, report-only |
 | `npm run check:injection-value` | pass: injection value diagnostics PASS, current window 3/3, expected decision `continue-java-mvp` |
-| `npm pack` | not run in this loop: this loop verifies bootJar/package-flow behavior, not package contents |
+| `npm pack --dry-run --json` | pass: `persona-harness-0.3.0-alpha.2.tgz`, 190 files, 197.1 kB package size after build output was included |
+| `npm publish --dry-run --tag alpha` | pass: dry-run only, current version remains `0.3.0-alpha.2` |
 
 ## Productization Review Decision
 
@@ -49,7 +50,7 @@ After context-noise reduction, `01-book-loans/A-persona-on/run-05` was rerun wit
 
 ## Demo Packaging Decision
 
-blocked
+proceed-to-demo-packaging
 
 ## Evidence
 
@@ -57,7 +58,7 @@ blocked
 - Rule diagnostics are green.
 - Scope diagnostics are green.
 - Injection value status remains `continue-java-mvp`.
-- The external productization review does not permit packaging because the 5-run ON/OFF result remains mixed.
+- The previous external productization review did not permit packaging because the 5-run ON/OFF result remained mixed.
 - The rerun reduces the timeout blocker, and analyzer reason codes now separate generated-project failure from buildable-but-wrong-shape output.
 - The generated code-shape blocker has fresh positive evidence after package-flow guidance:
   - fresh Persona ON run: `/Users/yongtae/Desktop/blackbear-persona-harness-test/fresh-runs/01-book-loans/A-persona-on/bootjar-guidance-20260622-005742`;
@@ -74,6 +75,8 @@ blocked
 - Productization claims could overstate architectural guidance as quality enforcement.
 - One requirement domain is not enough to prove release/demo reliability.
 
-## Next Action
+## Decision Update
 
-The narrow package-flow and bootJar follow-up now has positive fresh ON evidence. Next, make an explicit release/demo packaging decision instead of reopening broad A/B loops.
+After the fresh package-flow/bootJar ON run, next-version demo packaging can proceed to final package verification.
+
+Do not publish yet. The package dry-runs pass on the current `0.3.0-alpha.2` version, so the next release step is explicit version metadata preparation for `0.3.0-alpha.3`, changelog/release notes update, then tag or manual publish approval.

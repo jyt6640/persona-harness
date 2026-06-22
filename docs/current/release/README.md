@@ -6,6 +6,7 @@ Use this package for repeatable release operations and release note drafting.
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
 - [v0.3.0-alpha.3 candidate](v0.3.0-alpha.3-candidate.md)
+- [v0.3.0-alpha.3 demo packaging decision](v0.3.0-alpha.3-demo-packaging-decision.md)
 
 Release automation lives in `.github/workflows/release.yml`.
 

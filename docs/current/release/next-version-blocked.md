@@ -2,9 +2,9 @@
 
 ## Decision
 
-`freeze-expansion-and-simplify` was the previous productization review decision.
+Superseded by `docs/current/release/v0.3.0-alpha.3-demo-packaging-decision.md`.
 
-Packaging is not automatically unblocked by this document. However, the narrow follow-up requested by this blocker now has fresh positive ON evidence.
+This document records the previous blocker and why it was reopened.
 
 ## Reason
 
@@ -46,7 +46,7 @@ After package-flow and bootJar guidance tightening, a fresh ON run changed the c
 1. Keep Persona ON context-noise guards in `ph init` and plan prompts.
 2. Keep separating timeout reliability from generated code-shape quality in the review.
 3. Treat the narrow package-flow/bootJar follow-up as positive for this fixture.
-4. Reconsider packaging through an explicit release/demo decision loop. If one more confidence point is required, use a new small backend domain fresh ON smoke rather than reopening broad A/B.
+4. Continue through final package verification, not broad A/B.
 
 ## Do Not Do
 
