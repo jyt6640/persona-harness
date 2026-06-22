@@ -26,6 +26,7 @@ export function createImplementationPrompt(): string {
     "구현 보고서의 Read Coverage에는 체크만 하지 말고 `README read method`, `README ranges read`, `Plan read method`, `Plan ranges read`, `Unread ranges`를 실제 실행 증거 기준으로 적어줘.",
     "",
     "구현 중에는 Java/Spring Gradle backend Clean Code 범위를 유지하고, plan에 없는 frontend/infra/desktop 범위로 확장하지 마.",
+    "실행 가능한 Spring Boot 앱이면 `bootJar`를 비활성화하지 마. `gradle build` 출력에 `:bootJar SKIPPED`가 나오면 build 통과로 기록하지 말고, Spring Boot plugin / Gradle wrapper / JDK toolchain 호환성을 맞춰 다시 검증해줘.",
     "",
     "구현 후 .persona/workflow/implementation-report.md를 채우고 `npx ph plan --report-filled implementation`을 실행해줘.",
     "",

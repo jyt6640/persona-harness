@@ -108,6 +108,7 @@ describe("Phase 0 bootstrap injection", () => {
       expect(injection.block).toContain("bootJar")
       expect(injection.block).toContain("enabled = false")
       expect(injection.block).toContain("CopyProcessingSpec.getDirMode")
+      expect(injection.block).toContain(":bootJar SKIPPED")
       expect(injection.block).toContain("junit-platform-launcher")
     }
   })

@@ -21,7 +21,7 @@ enforcement: inject_only
 - Gradle build file에서는 Java/Spring Boot backend 기준을 유지하고 Maven `pom.xml`을 생성하지 않는다.
 - `settings.gradle` 또는 `settings.gradle.kts`는 하나의 Spring Boot application root project 이름을 명확히 둔다.
 - `build.gradle` 또는 `build.gradle.kts`는 Spring Boot backend를 만들기 위한 최소 plugin/dependency/source compatibility만 다루며, 호환되는 Spring Boot plugin / Gradle launcher or wrapper / JDK toolchain 조합을 먼저 선택하고 그 선택을 build file에 명시한다. JUnit Platform 실행에는 `testRuntimeOnly "org.junit.platform:junit-platform-launcher"` 또는 동등한 runtime launcher를 포함한다.
-- 실행 가능한 Spring Boot app에서는 `bootJar`를 끄지 않는다. `tasks.named("bootJar") { enabled = false }` 또는 동등한 설정은 plain Java library로 명시된 프로젝트가 아니면 사용하지 않는다. `bootJar`가 `CopyProcessingSpec.getDirMode()` 같은 호환성 오류로 실패하면, `bootJar`를 비활성화하지 말고 Spring Boot plugin을 현재 Gradle과 호환되는 line으로 올리거나 Gradle wrapper를 해당 plugin이 지원하는 line으로 고정한다.
+- 실행 가능한 Spring Boot app에서는 `bootJar`를 끄지 않는다. `tasks.named("bootJar") { enabled = false }` 또는 동등한 설정은 plain Java library로 명시된 프로젝트가 아니면 사용하지 않는다. `gradle build` 출력에 `:bootJar SKIPPED`가 나오면 실행 가능한 Spring Boot app 검증을 통과한 것으로 기록하지 않는다. `bootJar`가 `CopyProcessingSpec.getDirMode()` 같은 호환성 오류로 실패하면, `bootJar`를 비활성화하지 말고 Spring Boot plugin을 현재 Gradle과 호환되는 line으로 올리거나 Gradle wrapper를 해당 plugin이 지원하는 line으로 고정한다.
 - 로컬 launcher가 Gradle 9.x이면 Spring Boot 3.3.x 같은 오래된 plugin line을 기본으로 섞지 않는다. 호환 여부가 불명확하면 executable app 기준으로 `gradle test`, `gradle build`, `gradle bootRun`이 모두 통과하는 line을 선택한다.
 - build 설정은 presentation/application/domain/infrastructure package 구조를 대신하지 않는다.
 - build file target에서는 frontend/infra/multi-domain productization으로 확장하지 않는다.

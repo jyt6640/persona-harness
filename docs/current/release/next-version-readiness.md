@@ -6,13 +6,13 @@
 | --- | --- |
 | `git status --short` | pass before context-noise changes; working tree now contains this loop's code/doc updates |
 | `git branch --show-current` | pass: `main` |
-| `npm test` | pass: scope check PASS, docs taxonomy PASS, 30 test files passed, 190 tests passed |
+| `npm test` | pass: scope check PASS, docs taxonomy PASS, 32 test files passed, 190 tests passed |
 | `npm run typecheck` | pass |
 | `npm run build` | pass |
 | `npm run report:rules` | pass: PersonaHarnessRule diagnostics PASS, 0 findings |
 | `npm run check:scope` | pass: MVP scope diagnostics PASS, 0 findings, report-only |
 | `npm run check:injection-value` | pass: injection value diagnostics PASS, current window 3/3, expected decision `continue-java-mvp` |
-| `npm pack` | not run: productization review decision still blocks packaging in this loop |
+| `npm pack` | not run in this loop: this loop verifies bootJar/package-flow behavior, not package contents |
 
 ## Productization Review Decision
 
@@ -59,7 +59,13 @@ blocked
 - Injection value status remains `continue-java-mvp`.
 - The external productization review does not permit packaging because the 5-run ON/OFF result remains mixed.
 - The rerun reduces the timeout blocker, and analyzer reason codes now separate generated-project failure from buildable-but-wrong-shape output.
-- The generated code-shape blocker remains open.
+- The generated code-shape blocker has fresh positive evidence after package-flow guidance:
+  - fresh Persona ON run: `/Users/yongtae/Desktop/blackbear-persona-harness-test/fresh-runs/01-book-loans/A-persona-on/bootjar-guidance-20260622-005742`;
+  - generated code used `presentation/application/domain/infrastructure`;
+  - domain repository ports stayed in `domain`; in-memory implementations stayed in `infrastructure`;
+  - application services did not directly own storage state or ID sequence;
+  - `gradle build` passed with `:bootJar UP-TO-DATE`, not `:bootJar SKIPPED`;
+  - `gradle bootRun` plus HTTP happy/failure smoke passed independently.
 
 ## Risks
 
@@ -70,4 +76,4 @@ blocked
 
 ## Next Action
 
-Do not package yet. Keep the context-noise reduction and the analyzer reason-code split, then run a narrow follow-up only for package-flow guidance effectiveness.
+The narrow package-flow and bootJar follow-up now has positive fresh ON evidence. Next, make an explicit release/demo packaging decision instead of reopening broad A/B loops.
