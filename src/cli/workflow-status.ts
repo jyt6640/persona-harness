@@ -9,6 +9,8 @@ export type WorkflowStatusSummary = {
   readonly implementation: string
   readonly review: string
   readonly evidence: "present" | "missing"
+  readonly commandDiscipline: string
+  readonly commandDisciplineFinding: "PASS" | "WARN"
   readonly next: string
 }
 
@@ -42,6 +44,45 @@ function hasFilesDeep(dirPath: string): boolean {
   return false
 }
 
+function readExistingFiles(filePaths: readonly string[]): string {
+  return filePaths.filter((filePath) => existsSync(filePath)).map((filePath) => readFileSync(filePath, "utf8")).join("\n")
+}
+
+function commandDiscipline(projectDir: string, implementationStatus: string, reviewStatus: string): Pick<WorkflowStatusSummary, "commandDiscipline" | "commandDisciplineFinding"> {
+  if (implementationStatus !== "filled") {
+    return {
+      commandDiscipline: "not checked until implementation report is filled",
+      commandDisciplineFinding: "PASS",
+    }
+  }
+  const reportText = readExistingFiles([
+    join(projectDir, IMPLEMENTATION_REPORT_PATH),
+    join(projectDir, REVIEW_REPORT_PATH),
+  ])
+  if (/raw shell|직접\s*썼|직접\s*사용|raw\s+command/i.test(reportText)) {
+    return {
+      commandDiscipline: "raw shell observed; prefer `npx ph bearshell` for verification",
+      commandDisciplineFinding: "WARN",
+    }
+  }
+  if (reportText.includes("npx ph bearshell")) {
+    return {
+      commandDiscipline: "bearshell observed",
+      commandDisciplineFinding: "PASS",
+    }
+  }
+  if (reviewStatus === "filled") {
+    return {
+      commandDiscipline: "`npx ph bearshell` not observed in filled workflow reports",
+      commandDisciplineFinding: "WARN",
+    }
+  }
+  return {
+    commandDiscipline: "not checked until review report is filled",
+    commandDisciplineFinding: "PASS",
+  }
+}
+
 function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): string {
   if (summary.plan === "missing") {
     return "run `npx ph plan`"
@@ -55,6 +96,9 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.review !== "filled") {
     return "fill review report and run `npx ph plan --report-filled review`"
   }
+  if (summary.commandDisciplineFinding === "WARN") {
+    return "review command discipline and prefer `npx ph bearshell` for verification"
+  }
   return "archive completed workflow with `npx ph history --id <run-id>`"
 }
 
@@ -67,10 +111,11 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
     review: readStatusLine(join(projectDir, REVIEW_REPORT_PATH)),
     evidence: hasFilesDeep(join(projectDir, EVIDENCE_DIR)) ? "present" : "missing",
   } as const
-  const next = nextAction(summary)
+  const command = commandDiscipline(projectDir, summary.implementation, summary.review)
+  const next = nextAction({ ...summary, ...command })
   const finding =
-    summary.plan === "accepted" && summary.implementation === "filled" && summary.review === "filled" ? "PASS" : "WARN"
-  return { ...summary, finding, next }
+    summary.plan === "accepted" && summary.implementation === "filled" && summary.review === "filled" && command.commandDisciplineFinding === "PASS" ? "PASS" : "WARN"
+  return { ...summary, ...command, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -85,6 +130,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- .persona/workflow/implementation-report.md: ${summary.implementation}`,
     `- .persona/workflow/review-report.md: ${summary.review}`,
     `- .persona/evidence: ${summary.evidence}`,
+    `- command discipline: ${summary.commandDiscipline}`,
     "",
     `Next: ${summary.next}`,
     "",

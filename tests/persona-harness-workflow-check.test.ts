@@ -52,6 +52,49 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain("Next: fill review report")
   })
 
+  it("reports completed workflow as PASS when bearshell command discipline is observed", () => {
+    const projectDir = createTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\n- [x] `npx ph bearshell --shell './gradlew test'`\n",
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- [x] `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+
+    const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Workflow status: PASS")
+    expect(result.stdout).toContain("- command discipline: bearshell observed")
+    expect(result.stdout).toContain("Next: archive completed workflow")
+  })
+
+  it("keeps completed workflow WARN when bearshell command discipline is missing", () => {
+    const projectDir = createTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\n- [x] raw shell을 직접 썼고 `npx ph bearshell`은 제공되지 않았다.\n- [x] `./gradlew test build`\n",
+    )
+    writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- [x] HTTP smoke checked.\n")
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+
+    const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Workflow status: WARN")
+    expect(result.stdout).toContain("- command discipline: raw shell observed; prefer `npx ph bearshell` for verification")
+    expect(result.stdout).toContain("Next: review command discipline")
+  })
+
   it("creates smoke and feedback reports from the workflow status", () => {
     const projectDir = createTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
