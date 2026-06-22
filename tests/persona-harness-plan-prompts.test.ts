@@ -53,6 +53,8 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stdout).toContain("Spring Boot plugin / Gradle wrapper")
     expect(implement.stdout).toContain("중간에 멈추면")
     expect(implement.stdout).toContain("npx ph plan --report-filled implementation")
+    expect(implement.stdout).toContain("Before final answer, fill the review report after manual QA")
+    expect(implement.stdout).toContain("최종 답변 전에 리뷰와 manual QA 결과")
     expect(implement.stdout).toContain("npx ph plan --report-filled review")
   })
 

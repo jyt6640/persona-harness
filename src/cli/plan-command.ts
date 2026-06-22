@@ -169,6 +169,7 @@ function implementationGateOutput(planPath: string, status: string): string {
     "- Before implementation, run `npx ph workflow check` if the TUI context is uncertain.",
     "- Run shell verification through `npx ph bearshell` when possible.",
     "- After implementation, fill the implementation report and run `npx ph plan --report-filled implementation`.",
+    "- Before final answer, fill the review report after manual QA and run `npx ph plan --report-filled review`.",
     "",
     "Implementation prompt:",
     createImplementationPrompt(),

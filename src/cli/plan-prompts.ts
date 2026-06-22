@@ -34,7 +34,7 @@ export function createImplementationPrompt(): string {
     "",
     "중간에 멈추면 .persona/workflow/implementation-report.md의 Continuation에 마지막 완료 범위, 남은 README/plan 범위, 남은 구현 범위, 다음 작업을 남기고 완료했다고 말하지 마.",
     "",
-    "리뷰와 manual QA가 끝나면 .persona/workflow/review-report.md를 채우고 `npx ph plan --report-filled review`를 실행해줘.",
+    "최종 답변 전에 리뷰와 manual QA 결과를 .persona/workflow/review-report.md에 채우고 `npx ph plan --report-filled review`를 실행해줘. 이 단계가 남아 있으면 완료했다고 말하지 마.",
     "",
     "명령 실행이 필요하면 `npx ph bearshell`을 우선 사용하고, Persona Harness CLI는 글로벌 `ph`가 아니라 `npx ph`로 실행해줘.",
   ].join("\n")
