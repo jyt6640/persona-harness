@@ -74,6 +74,15 @@ Expected:
 
 ## Pre-Publish Release Decision
 
-Proceed with `0.3.2-alpha.1`.
+`persona-harness@0.3.2-alpha.1` is published.
 
-After publish, run a fresh installed-package smoke and then hand the alpha to external testers for short TUI request behavior.
+Post-publish smoke installed `persona-harness@alpha` in `/tmp/persona-v032-alpha1-smoke-xaV5nw` and confirmed:
+
+- installed version: `0.3.2-alpha.1`
+- `npx ph workflow implement`: PASS output with README chunk-read rail
+- heading-style `## README ranges read` plus `- 1-220`: accepted
+- `npx ph workflow check`: PASS
+- `npx ph workflow finish implement`: PASS
+- npm dist-tags: `alpha` and `latest` both point to `0.3.2-alpha.1`
+
+Next handoff: external testers can retry short TUI requests against `persona-harness@alpha`.
