@@ -10,6 +10,11 @@ import { runIntakeCommand, runInteractiveIntakeCommand } from "./intake.js"
 import { runLanguageCommand } from "./language.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
+import { runDoctorCommand } from "./doctor.js"
+import { runFeedbackCommand } from "./feedback.js"
+import { runReviewCommand } from "./review.js"
+import { runSmokeCommand } from "./smoke.js"
+import { runWorkflowCommand } from "./workflow-command.js"
 
 type PersonaCliOptions = {
   readonly cwd?: string
@@ -50,6 +55,26 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     return runBearshell(args.slice(1), { cwd: options.cwd, env: options.env })
   }
 
+  if (command === "workflow") {
+    return runWorkflowCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+  }
+
+  if (command === "doctor") {
+    return runDoctorCommand(args.slice(1), { projectDir: options.cwd })
+  }
+
+  if (command === "smoke") {
+    return runSmokeCommand(args.slice(1), { projectDir: options.cwd })
+  }
+
+  if (command === "feedback") {
+    return runFeedbackCommand(args.slice(1), { projectDir: options.cwd })
+  }
+
+  if (command === "review") {
+    return runReviewCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+  }
+
   if (command === undefined || command === "help" || command === "--help" || command === "-h") {
     return { status: 0, stdout: `${personaCliUsage(invocationName)}\n`, stderr: "" }
   }
@@ -73,6 +98,11 @@ function personaCliUsage(invocationName: string): string {
     "  history                      Archive completed workflow artifacts into local history.",
     "  language                     Show supported user languages for intake and workflow prompts.",
     "  bearshell <command> [args...] Run a bounded command helper for repo inspection and smoke tests.",
+    "  workflow check               Report plan/report/evidence workflow status.",
+    "  doctor                       Diagnose local OpenCode and Persona Harness installation state.",
+    "  smoke                        Write .persona/workflow/smoke-report.md.",
+    "  feedback                     Write .persona/workflow/feedback-report.md.",
+    "  review backend-shape         Write report-only backend Clean Code shape observations.",
     "",
     "Examples:",
     `  ${invocationName} init`,
@@ -82,6 +112,11 @@ function personaCliUsage(invocationName: string): string {
     `  ${invocationName} language`,
     `  ${invocationName} history --id run-001`,
     `  ${invocationName} bearshell npm test`,
+    `  ${invocationName} workflow check`,
+    `  ${invocationName} doctor`,
+    `  ${invocationName} smoke`,
+    `  ${invocationName} feedback`,
+    `  ${invocationName} review backend-shape`,
     `  ${invocationName} bearshell --shell 'git status --short && npm test'`,
   ].join("\n")
 }

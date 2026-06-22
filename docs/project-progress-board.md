@@ -14,9 +14,9 @@ Detailed historical board content is archived at:
 
 ## Current Position
 
-Current track: v0.3.0 project-intake / philosophy workflow planning surface on top of the Java backend MVP.
+Current track: v0.3.1 workflow diagnostics and external-tester command surface on top of the Java backend MVP.
 
-Current active candidate: external tester feedback for `v0.3.0-alpha.3`. `persona-harness@0.3.0-alpha.3` is published on both the `alpha` and `latest` dist-tags during the alpha pilot. This is not a stable support claim.
+Current active candidate: `ph workflow check`, `ph doctor`, `ph smoke`, `ph feedback`, and `ph review backend-shape` for `v0.3.1`. `persona-harness@0.3.0-alpha.3` is published on both the `alpha` and `latest` dist-tags during the alpha pilot. This is not a stable support claim.
 
 ## Current Decisions
 
@@ -75,6 +75,7 @@ Current active candidate: external tester feedback for `v0.3.0-alpha.3`. `person
 - Next-version packaging was previously blocked after the `01-book-loans` context-noise rerun: Persona ON run-05 no longer timed out and passed `gradle test`, but the generated package-flow shape still missed the current Java backend MVP target enough that the A/B verdict remained mixed. The external analyzer now classifies this as `buildable-package-flow-mismatch` instead of conflating it with generated-project failure, and backend guidance now explicitly rejects `controller/service/repository/dto` role-name packages in favor of `presentation/application/domain/infrastructure`.
 - Fresh ON package-flow/bootJar follow-up is positive: the `01-book-loans` run at `/Users/yongtae/Desktop/blackbear-persona-harness-test/fresh-runs/01-book-loans/A-persona-on/bootjar-guidance-20260622-005742` generated `presentation/application/domain/infrastructure`, domain repository ports plus infrastructure implementations, no Service-owned storage/id sequence, no `bootJar.enabled=false`, `gradle build` with `:bootJar UP-TO-DATE`, and independent `gradle bootRun` HTTP happy/failure smoke pass. This reduces the narrow package-flow/build-line blocker; final packaging still needs an explicit release/demo decision.
 - Release/demo decision is now `proceed-to-demo-packaging` for `v0.3.0-alpha.3`. Version metadata, changelog, release notes, `npm pack --dry-run --json`, `npm publish --dry-run --tag alpha`, manual `npm publish --tag alpha`, `latest` dist-tag sync, GitHub tag/release, and external install smoke pass for `0.3.0-alpha.3`.
+- v0.3.1 candidate is workflow diagnostics, not broader Java rule expansion: short OpenCode TUI requests already show useful Java/Spring product-code shape influence, but can skip workflow evidence discipline. The next surface adds `ph workflow check`, `ph doctor`, `ph smoke`, `ph feedback`, and `ph review backend-shape` as report-only local commands, and strengthens `ph plan --implement` / `ph plan --prompt` so short implementation requests are routed through accepted plan, workflow status, `npx ph bearshell`, and filled implementation report steps.
 
 ## Active Commands
 
@@ -100,6 +101,11 @@ Current active candidate: external tester feedback for `v0.3.0-alpha.3`. `person
 - `ph plan --report-filled review`: marks `.persona/workflow/review-report.md` as filled after the report has been filled.
 - `ph history`: archives completed workflow artifacts into `.persona/workflow/history/<archive-id>/` after a run has been used.
 - `ph bearshell <command>`: Persona Harness CLI helper for bounded repo inspection and smoke-test command output. Injection blocks now tell the agent to prefer this helper for repo inspection, CLI smoke tests, and large output checks.
+- `ph workflow check`: reports plan/report/evidence workflow status and the next workflow action.
+- `ph doctor`: diagnoses local Node/npm/OpenCode and Persona Harness integration state.
+- `ph smoke`: writes `.persona/workflow/smoke-report.md` for external tester reproduction.
+- `ph feedback`: writes `.persona/workflow/feedback-report.md` for external tester feedback.
+- `ph review backend-shape`: writes `.persona/workflow/backend-shape-report.md` as a report-only Java/Spring backend shape observation.
 
 ## Phase Map
 
@@ -111,6 +117,7 @@ Current active candidate: external tester feedback for `v0.3.0-alpha.3`. `person
 | Phase 2 | Active validation | Product-code-flow rubric, injection value stopping rule, scope diagnostics, and artifact cleanup added |
 | Java MVP Packaging | Active productization | Init CLI, `ph bearshell`, `ph bearshell` awareness injection, bootstrap injection, packaged install/run/verify smoke commands, release-facing install guide, and v0.2.1 local/tarball readiness added |
 | v0.3.0 Intake | Active planning surface | `ph intake` creates a backend project profile draft; `ph intake --interactive` writes a filled backend profile; `ph policy init` creates backend-only company/personal overlay files; profile and policy overlay summaries are implemented as planning context; `ph plan` creates plan, implementation-report, and review-report workflow drafts; `ph plan --status/--accept/--revise` records plan acceptance state; `ph plan --report-filled implementation|review` records filled workflow report state; implementation-report live HTTP QA slots are tightened and clean OpenCode smoke-verified; generated Java target-role follow-up is smoke-verified; `ph history` archives used workflow artifacts; clean OpenCode plan-fill, plan-based implementation, repeat workflow, template-fill/history, plan-acceptance implementation, Gradle/Spring build-line, interactive-intake planning, accepted-interactive-profile implementation, live HTTP QA template behavior, workflow report status, and generated Java target-role smokes passed; installed package Java fixture evidence noise is narrowed |
+| v0.3.1 Diagnostics | Candidate | `ph workflow check`, `ph doctor`, `ph smoke`, `ph feedback`, and `ph review backend-shape` are being added as local report-only commands for external tester friction, workflow evidence discipline, and backend shape observation. |
 | Desktop App Track | Not decomposed | Not started |
 
 ## Active Work Queue
@@ -162,6 +169,11 @@ Current active candidate: external tester feedback for `v0.3.0-alpha.3`. `person
    - Evidence: `docs/current/phase2-scope-settlement.md`, `docs/current/shared-skill-reference-direction.md`, `docs/current/mvp-scope-consistency-check.md`, `docs/current/programming-shared-skill-actual-usage-review.md`
    - Current state: Java/Gradle `programming` support is limited active routing; actual clean run shows it appears on Java Service targets but does not replace `.persona` backend rules. Multi-domain productization remains inactive.
 
+11. `[~]` v0.3.1 workflow diagnostics and external tester surface
+   - Evidence: `docs/current/v0.3.1-workflow-diagnostics-surface.md`
+   - Current state: candidate implementation adds report-only commands for workflow status, install diagnostics, smoke report, feedback template, and backend shape observation. The intent is to reduce external tester friction and short-TUI workflow drift before adding TDD workflow or broader productization.
+   - Next candidate: package this change and run one clean TUI smoke to confirm the agent actually uses `npx ph workflow check`, `npx ph plan --implement`, `npx ph bearshell`, and `npx ph plan --report-filled implementation`.
+
 ## Current Decision Docs
 
 - `docs/current/phase2-scope-settlement.md`
@@ -195,6 +207,7 @@ Current active candidate: external tester feedback for `v0.3.0-alpha.3`. `person
 - `docs/current/v0.3.0-external-tester-feedback-template.md`
 - `docs/current/v0.3.0-alpha-publish-readiness.md`
 - `docs/current/v0.3.0-domain-behavior-guidance-review.md`
+- `docs/current/v0.3.1-workflow-diagnostics-surface.md`
 - `docs/current/persona-workflow-roles-v0.3.md`
 - `docs/current/java-backend-bootstrap-injection-design.md`
 - `docs/current/java-backend-bootstrap-open-code-demo.md`

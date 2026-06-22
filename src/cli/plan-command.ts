@@ -165,6 +165,11 @@ function implementationGateOutput(planPath: string, status: string): string {
     `- ${IMPLEMENTATION_REPORT_PATH}`,
     `- ${REVIEW_REPORT_PATH}`,
     "",
+    "Required workflow commands:",
+    "- Before implementation, run `npx ph workflow check` if the TUI context is uncertain.",
+    "- Run shell verification through `npx ph bearshell` when possible.",
+    "- After implementation, fill the implementation report and run `npx ph plan --report-filled implementation`.",
+    "",
     "Implementation prompt:",
     createImplementationPrompt(),
   ].join("\n") + "\n"
@@ -178,6 +183,7 @@ function runImplementationGate(options: PlanOptions): CliRunResult {
         "Workflow plan is not accepted.",
         `Current status: ${result.status}`,
         "Run npx ph plan --accept after review, or npx ph plan --revise if the plan needs changes.",
+        "For a short TUI request like '그냥 플랜보고 구현해줘', run npx ph plan --implement again after acceptance.",
       ].join("\n"),
     )
   }
