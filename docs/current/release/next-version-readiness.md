@@ -15,7 +15,7 @@
 | `npm pack --dry-run --json` | pass: `persona-harness-0.3.0-alpha.3.tgz`, 191 files, 198.2 kB package size, 735.1 kB unpacked size |
 | `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.0-alpha.3` |
 | `npm publish --tag alpha` | pass: `persona-harness@0.3.0-alpha.3` published |
-| `npm view persona-harness dist-tags --json` | partial: `alpha` points to `0.3.0-alpha.3`; `latest` still points to `0.3.0-alpha.2` until OTP-protected dist-tag sync |
+| `npm view persona-harness dist-tags --json` | pass: `alpha` and `latest` both point to `0.3.0-alpha.3` |
 
 ## Productization Review Decision
 
@@ -81,4 +81,4 @@ proceed-to-demo-packaging
 
 After the fresh package-flow/bootJar ON run, next-version demo packaging can proceed to final package verification.
 
-`persona-harness@0.3.0-alpha.3` is published on the `alpha` dist-tag. The remaining release-close steps are OTP-protected `latest` dist-tag sync, GitHub tag/release creation, and external install smoke after both dist-tags point at the same alpha.
+`persona-harness@0.3.0-alpha.3` is published on the `alpha` and `latest` dist-tags. The remaining product work is external tester feedback and the next narrow quality loop; release-close mechanics for alpha.3 are complete.
