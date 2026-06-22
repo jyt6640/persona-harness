@@ -14,6 +14,13 @@ function createTempProject(): string {
   return projectDir
 }
 
+function createProfiledTempProject(): string {
+  const projectDir = createTempProject()
+  const result = runPersonaCli(["intake", "--default", "backend"], { cwd: projectDir, env: {}, invocationName: "ph" })
+  expect(result.status).toBe(0)
+  return projectDir
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -23,7 +30,7 @@ afterEach(() => {
 
 describe("ph plan prompt and usage output", () => {
   it("prints an implementation prompt after the workflow plan is accepted", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const accepted = runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -98,8 +105,9 @@ describe("ph plan prompt and usage output", () => {
 
     expect(help.status).toBe(0)
     expect(help.stdout).toContain(
-      "Usage: ph plan [--force | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review>]",
+      "Usage: ph plan [--force | --auto-accept | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review>]",
     )
+    expect(help.stdout).toContain("--auto-accept")
     expect(help.stdout).toContain("--accept")
     expect(help.stdout).toContain("--revise")
     expect(help.stdout).toContain("--prompt")

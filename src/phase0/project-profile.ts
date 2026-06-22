@@ -7,6 +7,7 @@ const SUPPORTED_ROLE = "backend"
 const SUPPORTED_MVP = "java-spring-clean-code"
 
 const SUMMARY_ORDER = [
+  "user-language",
   "project-context",
   "project-goal",
   "project-scale",
@@ -18,6 +19,12 @@ const SUMMARY_ORDER = [
   "architecture-style",
   "boundary-strictness",
 ] as const
+
+export type BackendProjectProfileState = {
+  readonly status: "missing" | "invalid" | "draft" | "incomplete" | "ready"
+  readonly missingAnswers: readonly string[]
+  readonly message: string
+}
 
 type ProfileQuestion = {
   readonly id: string
@@ -169,4 +176,62 @@ export function loadBackendProjectProfileSummary(projectDir: string): readonly s
   }
 
   return formatSummaryLines(answeredQuestionMap(readQuestions(parsed.questions)), readProjectNote(parsed))
+}
+
+export function readBackendProjectProfileState(projectDir: string): BackendProjectProfileState {
+  const profilePath = join(projectDir, PROFILE_PATH)
+  if (!existsSync(profilePath)) {
+    return {
+      status: "missing",
+      missingAnswers: [...SUMMARY_ORDER],
+      message: `${PROFILE_PATH} is missing. Run npx ph intake --default backend or npx ph intake --interactive.`,
+    }
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(stripJsonComments(readFileSync(profilePath, "utf8")))
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return {
+        status: "invalid",
+        missingAnswers: [...SUMMARY_ORDER],
+        message: `${PROFILE_PATH} is malformed. Fix it or run npx ph intake --default backend --force.`,
+      }
+    }
+    throw error
+  }
+
+  if (!isSupportedBackendProfile(parsed)) {
+    return {
+      status: "invalid",
+      missingAnswers: [...SUMMARY_ORDER],
+      message: `${PROFILE_PATH} is not a supported backend Java/Spring profile.`,
+    }
+  }
+
+  const profileStatus = typeof parsed.status === "string" ? parsed.status : "draft"
+  if (profileStatus === "draft") {
+    return {
+      status: "draft",
+      missingAnswers: [...SUMMARY_ORDER],
+      message: `${PROFILE_PATH} is still draft. Run npx ph intake --default backend --force or npx ph intake --interactive --force before planning.`,
+    }
+  }
+
+  const answers = answeredQuestionMap(readQuestions(parsed.questions))
+  const missingAnswers = SUMMARY_ORDER.filter((id) => !answers.has(id))
+  if (missingAnswers.length > 0) {
+    return {
+      status: "incomplete",
+      missingAnswers,
+      message: `${PROFILE_PATH} is missing required answers: ${missingAnswers.join(", ")}.`,
+    }
+  }
+
+  return {
+    status: "ready",
+    missingAnswers: [],
+    message: `${PROFILE_PATH} is ready.`,
+  }
 }

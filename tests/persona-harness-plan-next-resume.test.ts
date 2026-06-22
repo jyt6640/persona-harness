@@ -14,6 +14,13 @@ function createTempProject(): string {
   return projectDir
 }
 
+function createProfiledTempProject(): string {
+  const projectDir = createTempProject()
+  const result = runPersonaCli(["intake", "--default", "backend"], { cwd: projectDir, env: {}, invocationName: "ph" })
+  expect(result.status).toBe(0)
+  return projectDir
+}
+
 function runPlan(projectDir: string, args: readonly string[]) {
   return runPersonaCli(["plan", ...args], { cwd: projectDir, env: {}, invocationName: "ph" })
 }
@@ -43,7 +50,7 @@ describe("ph plan --next", () => {
   })
 
   it("recommends review and acceptance for a draft plan", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
 
     const result = runPlan(projectDir, ["--next"])
@@ -56,7 +63,7 @@ describe("ph plan --next", () => {
   })
 
   it("recommends implementation gate for an accepted plan with template reports", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
     expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
 
@@ -69,7 +76,7 @@ describe("ph plan --next", () => {
   })
 
   it("recommends review after the implementation report is filled", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
     expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
     expect(runPlan(projectDir, ["--report-filled", "implementation"]).status).toBe(0)
@@ -83,7 +90,7 @@ describe("ph plan --next", () => {
   })
 
   it("recommends archiving history after both workflow reports are filled", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
     expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
     expect(runPlan(projectDir, ["--report-filled", "implementation"]).status).toBe(0)
@@ -100,7 +107,7 @@ describe("ph plan --next", () => {
 
 describe("ph plan --resume", () => {
   it("fails until the workflow plan is accepted", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
 
     const result = runPlan(projectDir, ["--resume"])
@@ -111,7 +118,7 @@ describe("ph plan --resume", () => {
   })
 
   it("prints a restart prompt when the implementation report is still a template", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
     expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
 
@@ -127,7 +134,7 @@ describe("ph plan --resume", () => {
   })
 
   it("prints continuation evidence when an interrupted implementation report contains it", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
     expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
     const report = readFileSync(implementationReportPath(projectDir), "utf8")

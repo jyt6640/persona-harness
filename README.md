@@ -151,23 +151,28 @@ You can use a different domain. For cleaner feedback, avoid the older `reservati
 
 ## 4. Create Intake, Policy, And Plan Files
 
-For a quick smoke test, use the non-interactive draft:
+`npx ph init` creates a ready default backend profile at `.persona/project-profile.jsonc`.
+That default is only a planning convenience; customize it when the project context matters.
+
+For the fastest alpha smoke:
 
 ```bash
-npx ph intake
+npx ph doctor
 npx ph policy init
-npx ph plan
-npx ph plan --accept
+npx ph plan --auto-accept
 npx ph workflow check
 ```
 
-For a more realistic project setup, use:
+For a more realistic project setup, replace the default profile through the interview:
 
 ```bash
-npx ph intake --interactive
+npx ph intake --interactive --force
+npx ph policy init
+npx ph plan
+npx ph plan --accept
 ```
 
-Before implementation, `npx ph workflow check` usually reports `WARN` because implementation and review reports are still templates. That is normal.
+If `.persona/project-profile.jsonc` is missing, draft, malformed, or incomplete, `ph plan` and `ph workflow implement` stop and ask for `ph intake` first. Before implementation, `npx ph workflow check` usually reports `WARN` because implementation and review reports are still templates. That is normal.
 
 ## 5. Ask OpenCode To Implement
 
@@ -251,11 +256,13 @@ For generated code shape, look for:
 
 These commands are intentionally visible so AI agents can call them from OpenCode/Codex-style sessions.
 
-- `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, and OpenCode plugin config.
-- `ph intake`: creates a draft backend profile.
+- `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, and a ready default backend profile for the Java/Spring backend MVP fast path.
+- `ph intake`: creates an editable draft backend profile.
+- `ph intake --default backend`: creates a ready default backend profile without an interactive terminal.
 - `ph intake --interactive`: asks backend planning questions and writes `.persona/project-profile.jsonc`.
 - `ph policy init`: creates company and personal backend policy overlay files.
 - `ph plan`: creates `.persona/workflow/plan.md`.
+- `ph plan --auto-accept`: creates workflow plan/report templates and marks the plan accepted for a fast smoke.
 - `ph plan --accept`: marks the plan accepted.
 - `ph plan --implement`: checks that implementation may start and prints the implementation rail.
 - `ph bearshell`: runs timeout-bounded and output-bounded shell commands.

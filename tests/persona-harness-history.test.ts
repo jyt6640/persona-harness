@@ -14,6 +14,13 @@ function createTempProject(): string {
   return projectDir
 }
 
+function createProfiledTempProject(): string {
+  const projectDir = createTempProject()
+  const result = runPersonaCli(["intake", "--default", "backend"], { cwd: projectDir, env: {}, invocationName: "ph" })
+  expect(result.status).toBe(0)
+  return projectDir
+}
+
 function workflowPath(projectDir: string, path: string): string {
   return join(projectDir, ".persona", "workflow", path)
 }
@@ -45,7 +52,7 @@ afterEach(() => {
 
 describe("ph history", () => {
   it("archives completed workflow artifacts without removing active files", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     writeWorkflowArtifacts(projectDir)
     writeEvidenceSummary(projectDir)
 
@@ -67,7 +74,7 @@ describe("ph history", () => {
   })
 
   it("records missing workflow artifacts in the history summary", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     const plan = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
     expect(plan.status).toBe(0)
     rmSync(workflowPath(projectDir, "review-report.md"))
@@ -97,7 +104,7 @@ describe("ph history", () => {
   })
 
   it("does not overwrite an existing history archive id", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     writeWorkflowArtifacts(projectDir)
 
     const first = runPersonaCli(["history", "--id", "same-id"], { cwd: projectDir, env: {}, invocationName: "ph" })

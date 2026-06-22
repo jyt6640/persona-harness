@@ -8,7 +8,14 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ### Added
 
+- Added a profile-required implementation gate: `ph plan` and `ph workflow implement` now stop when `.persona/project-profile.jsonc` is missing, draft, invalid, or incomplete.
+- Added `ph intake --default backend` for a ready backend profile without an interactive terminal.
+- Added default backend profile creation during `ph init`, so a clean install can move straight to `ph plan --auto-accept` unless the user wants to customize intake answers.
+- Added `ph plan --auto-accept` as a faster planning path for users who do not want a separate manual accept step during alpha smoke tests.
+
 ### Changed
+
+- Updated fast-path guidance so implementation starts through `npx ph workflow implement` only after the profile and accepted workflow plan exist.
 
 ### Known Gaps
 

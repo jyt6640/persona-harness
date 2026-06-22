@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { initializeWorkflowPlan } from "../src/cli/plan.js"
+import { createBackendProfile, createDefaultBackendAnswers, PROFILE_PATH } from "../src/cli/intake-profile.js"
 import { createInjectionBlock } from "../src/phase0/injection.js"
 
 const tempProjects: string[] = []
@@ -43,6 +44,15 @@ function writeBackendPolicies(projectDir: string): void {
       "",
     ].join("\n"),
   )
+}
+
+function writeDefaultProfile(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  const profile = createBackendProfile(
+    createDefaultBackendAnswers(),
+    "Default backend profile for policy overlay planning tests.",
+  )
+  writeFileSync(join(projectDir, PROFILE_PATH), `${JSON.stringify(profile, null, 2)}\n`)
 }
 
 function supportedOverlay(maxBulletsPerSource = 2): unknown {
@@ -99,6 +109,7 @@ describe("Phase 0 policy overlay injection", () => {
   it("adds policy overlay summary to workflow plan drafts as planning context", () => {
     const projectDir = createTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Coupon API\n")
+    writeDefaultProfile(projectDir)
     writePolicyOverlay(projectDir, supportedOverlay(1))
     writeBackendPolicies(projectDir)
 

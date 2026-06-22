@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -17,13 +17,14 @@ function createTempProject(): string {
 function writeProfile(projectDir: string): void {
   const profile = {
     schema: "persona.project-profile.v1",
-    status: "draft",
+    status: "ready",
     scope: {
       role: "backend",
       mvp: "java-spring-clean-code",
       productized: false,
     },
     questions: [
+      { id: "user-language", prompt: "language", choices: [], answer: "ko" },
       { id: "project-context", prompt: "context", choices: [], answer: "solo" },
       { id: "project-goal", prompt: "goal", choices: [], answer: "production-service" },
       { id: "project-scale", prompt: "scale", choices: [], answer: "small" },
@@ -40,7 +41,14 @@ function writeProfile(projectDir: string): void {
     },
   }
 
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
   writeFileSync(join(projectDir, ".persona", "project-profile.jsonc"), `${JSON.stringify(profile, null, 2)}\n`)
+}
+
+function createProfiledTempProject(): string {
+  const projectDir = createTempProject()
+  writeProfile(projectDir)
+  return projectDir
 }
 
 function readPlan(projectDir: string): string {
@@ -64,11 +72,8 @@ afterEach(() => {
 
 describe("ph plan", () => {
   it("creates a blackbear planning artifact from README and backend profile summary", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Equipment Rental API\n\n- 장비 등록\n- 장비 대여\n")
-    const intake = runPersonaCli(["intake"], { cwd: projectDir, env: {}, invocationName: "ph" })
-    expect(intake.status).toBe(0)
-    writeProfile(projectDir)
 
     const result = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -140,8 +145,8 @@ describe("ph plan", () => {
     expect(reviewReport).toContain("## Remaining Limits")
   })
 
-  it("keeps profile summary optional and marks missing README without crashing", () => {
-    const projectDir = createTempProject()
+  it("marks missing README without crashing when the backend profile is ready", () => {
+    const projectDir = createProfiledTempProject()
 
     const result = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -149,11 +154,22 @@ describe("ph plan", () => {
     const plan = readPlan(projectDir)
     expect(plan).toContain("Requirements source: `README.md`")
     expect(plan).toContain("README status: missing")
-    expect(plan).toContain("- 응답된 항목 없음")
+    expect(plan).toContain("- user-language: ko")
+    expect(plan).toContain("- project-context: solo")
+  })
+
+  it("blocks plan creation until the backend profile is ready", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Project profile is required before planning.")
+    expect(result.stderr).toContain("npx ph intake --default backend")
   })
 
   it("does not overwrite existing workflow artifacts unless --force is used", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     const first = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
     writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "custom plan\n")
     writeFileSync(join(projectDir, ".persona", "workflow", "implementation-report.md"), "custom implementation\n")
@@ -173,7 +189,7 @@ describe("ph plan", () => {
   })
 
   it("reads and updates the plan acceptance status", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     const draftStatus = runPersonaCli(["plan", "--status"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -198,7 +214,7 @@ describe("ph plan", () => {
   })
 
   it("marks filled workflow reports without changing the plan status", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     const implementationFilled = runPersonaCli(["plan", "--report-filled", "implementation"], {
@@ -225,7 +241,7 @@ describe("ph plan", () => {
   })
 
   it("fails plan status changes when the plan artifact does not exist", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
 
     const status = runPersonaCli(["plan", "--status"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const accept = runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -243,7 +259,7 @@ describe("ph plan", () => {
   })
 
   it("blocks implementation until the workflow plan is accepted", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     const implement = runPersonaCli(["plan", "--implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -256,7 +272,7 @@ describe("ph plan", () => {
   })
 
   it("blocks implementation when required workflow report templates are missing", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const accepted = runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" })
     rmSync(join(projectDir, ".persona", "workflow", "implementation-report.md"))

@@ -15,6 +15,8 @@ function createTempProject(): string {
 }
 
 function prepareAcceptedWorkflow(projectDir: string): void {
+  const intake = runPersonaCli(["intake", "--default", "backend"], { cwd: projectDir, env: {}, invocationName: "ph" })
+  expect(intake.status).toBe(0)
   expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
   expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
   mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })

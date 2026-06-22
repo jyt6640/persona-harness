@@ -4,6 +4,8 @@ import { dirname, isAbsolute, join, resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
+import { createBackendProfile, createDefaultBackendAnswers, PROFILE_PATH } from "./intake-profile.js"
+
 type InitOptions = {
   readonly projectDir?: string
   readonly packageRoot?: string
@@ -182,6 +184,23 @@ function writeProjectNoiseIgnore(projectDir: string): void {
   writeFileSync(gitignorePath, nextContent)
 }
 
+function writeDefaultBackendProfile(projectDir: string): boolean {
+  const profilePath = join(projectDir, PROFILE_PATH)
+  if (existsSync(profilePath)) {
+    return false
+  }
+  mkdirSync(dirname(profilePath), { recursive: true })
+  writeFileSync(
+    profilePath,
+    `${JSON.stringify(
+      createBackendProfile(createDefaultBackendAnswers(), "Default backend profile created by Persona Harness init."),
+      null,
+      2,
+    )}\n`,
+  )
+  return true
+}
+
 function normalizeTemplateRelativePath(sourcePath: string, sourceRoot: string): string {
   return sourcePath === sourceRoot ? "" : sourcePath.slice(sourceRoot.length + sep.length).replace(/\\/g, "/")
 }
@@ -216,12 +235,19 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
   })
   const backups = writeOpencodeConfig(projectDir, pluginPath)
   writeProjectNoiseIgnore(projectDir)
+  const profileCreated = writeDefaultBackendProfile(projectDir)
 
   return {
     projectDir,
     packageRoot,
     pluginPath: isAbsolute(pluginPath) ? pluginPath : resolve(pluginPath),
-    installed: [".persona/harness.jsonc", ".persona/rules/", ".opencode/opencode.json", ".gitignore"],
+    installed: [
+      ".persona/harness.jsonc",
+      ".persona/rules/",
+      ...(profileCreated ? [PROFILE_PATH] : []),
+      ".opencode/opencode.json",
+      ".gitignore",
+    ],
     backups,
     evidenceCopied: false,
   }
@@ -238,10 +264,10 @@ export function formatInitResult(result: InitResult): string {
     ...backupLines,
     "",
     "Next:",
-    "1. Run `npx ph intake --interactive`.",
+    "1. A default backend profile is ready. Customize it with `npx ph intake --interactive --force` if needed.",
     "2. Run `npx ph policy init` if you want company or personal backend guidance.",
-    "3. Run `npx ph plan`.",
-    "4. Review `.persona/workflow/plan.md`, then run `npx ph plan --accept` or `npx ph plan --revise`.",
+    "3. Run `npx ph plan --auto-accept` for the fastest flow, or `npx ph plan` for manual review.",
+    "4. Ask the agent to implement only through `npx ph workflow implement`.",
     "",
     "OpenCode TUI:",
     "- Run `opencode` in this project.",

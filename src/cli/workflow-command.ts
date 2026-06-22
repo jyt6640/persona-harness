@@ -1,4 +1,5 @@
 import type { CliRunResult } from "./bearshell.js"
+import { readBackendProjectProfileState } from "../phase0/project-profile.js"
 import {
   failedGuardOutput,
   failedRunnerOutput,
@@ -81,6 +82,10 @@ function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
 
 function implementationGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): readonly string[] {
   const reasons: string[] = []
+  const profileState = readBackendProjectProfileState(summary.projectDir)
+  if (profileState.status !== "ready") {
+    reasons.push(profileState.message)
+  }
   if (summary.plan !== "accepted") {
     reasons.push(".persona/workflow/plan.md must be accepted")
   }

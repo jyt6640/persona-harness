@@ -157,6 +157,31 @@ describe("ph intake", () => {
     expect(forced.stdout).toContain("project-profile.jsonc")
   })
 
+  it("creates a ready default backend profile for the fast path", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["intake", "--default", "backend"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("default backend project profile created")
+    expect(result.stdout).toContain("Status: ready")
+
+    const profile = readProfile(projectDir)
+    expect(profile.status).toBe("ready")
+    expect(profile.questions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "user-language", answer: "ko" }),
+        expect.objectContaining({ id: "storage", answer: "database" }),
+        expect.objectContaining({ id: "persistence-technology", answer: "jdbc-template" }),
+        expect.objectContaining({ id: "package-style", answer: "domain-first" }),
+      ]),
+    )
+  })
+
   it("shows usage and rejects unknown options", () => {
     const projectDir = createTempProject()
 
@@ -172,7 +197,7 @@ describe("ph intake", () => {
     })
 
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain("Usage: ph intake [--force | --interactive]")
+    expect(help.stdout).toContain("Usage: ph intake [--force | --interactive | --default backend]")
     expect(invalid.status).toBe(1)
     expect(invalid.stderr).toContain("Unknown option: --unknown")
   })

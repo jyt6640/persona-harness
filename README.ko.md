@@ -82,12 +82,24 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
   "$(npx ph plan --prompt)"
 ```
 
-계획이 충분하면 수락합니다.
+빠른 alpha smoke에서는 기본 backend profile을 그대로 쓰고 계획을 바로 accepted 상태로 만들 수 있습니다.
 
 ```bash
-npx ph plan --status
+npx ph doctor
+npx ph policy init
+npx ph plan --auto-accept
+```
+
+프로젝트 조건을 직접 정하고 싶으면 기본 profile을 인터뷰로 덮어씁니다.
+
+```bash
+npx ph intake --interactive --force
+npx ph policy init
+npx ph plan
 npx ph plan --accept
 ```
+
+`.persona/project-profile.jsonc`가 없거나 draft/invalid/incomplete 상태면 `ph plan`과 `ph workflow implement`는 구현으로 넘어가지 않고 intake부터 하라고 막습니다.
 
 그 다음에는 짧게 구현을 요청합니다.
 
@@ -105,10 +117,13 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 ## 제공하는 것
 
 - 아래 명령어들은 사용자가 직접 외우는 CLI라기보다, OpenCode/Codex-style 세션에서 AI가 호출하기 쉽게 만든 workflow surface입니다.
-- `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config 설치
+- `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config 설치 + ready 기본 backend profile 생성
+- `ph intake`: 수정 가능한 draft backend profile 생성
+- `ph intake --default backend`: 대화형 터미널 없이 ready 기본 backend profile 생성
 - `ph intake --interactive`: backend planning 질문 후 `.persona/project-profile.jsonc` 생성
 - `ph policy init`: 회사/개인 backend policy overlay 파일 생성
 - `ph plan`: `blackbear` planning role용 `.persona/workflow/plan.md` 생성
+- `ph plan --auto-accept`: 빠른 smoke를 위해 plan/report template 생성 후 plan을 accepted 처리
 - `ph bearshell`: bounded shell command helper
 - `ph history`: 사용한 workflow artifact를 `.persona/workflow/history/`에 보존
 - `ph workflow check`: 현재 plan/report/evidence 상태 확인

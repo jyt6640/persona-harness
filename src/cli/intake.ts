@@ -3,7 +3,13 @@ import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
-import { INTAKE_QUESTIONS, PROFILE_PATH, createBackendProfile, type IntakeQuestionDefinition } from "./intake-profile.js"
+import {
+  INTAKE_QUESTIONS,
+  PROFILE_PATH,
+  createBackendProfile,
+  createDefaultBackendAnswers,
+  type IntakeQuestionDefinition,
+} from "./intake-profile.js"
 
 type IntakeOptions = {
   readonly projectDir?: string
@@ -16,13 +22,13 @@ export type InteractiveIntakeOptions = IntakeOptions & {
 }
 
 type ParsedIntakeArgs =
-  | { readonly kind: "run"; readonly force: boolean; readonly interactive: boolean }
+  | { readonly kind: "run"; readonly force: boolean; readonly interactive: boolean; readonly defaultBackend: boolean }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
 export function intakeUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} intake [--force | --interactive]`,
+    `Usage: ${invocation} intake [--force | --interactive | --default backend]`,
     "",
     "Creates a draft backend project profile for the v0.3.0 intake workflow.",
     "",
@@ -40,8 +46,10 @@ export function intakeUsage(invocation = "ph"): string {
 function parseIntakeArgs(args: readonly string[]): ParsedIntakeArgs {
   let force = false
   let interactive = false
+  let defaultBackend = false
 
-  for (const arg of args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
     if (arg === "--help" || arg === "-h") {
       return { kind: "help" }
     }
@@ -53,10 +61,22 @@ function parseIntakeArgs(args: readonly string[]): ParsedIntakeArgs {
       interactive = true
       continue
     }
+    if (arg === "--default") {
+      if (args[index + 1] !== "backend") {
+        return { kind: "invalid", message: "--default requires backend." }
+      }
+      defaultBackend = true
+      index += 1
+      continue
+    }
     return { kind: "invalid", message: `Unknown option: ${arg}` }
   }
 
-  return { kind: "run", force, interactive }
+  if (interactive && defaultBackend) {
+    return { kind: "invalid", message: "--interactive and --default backend cannot be used together." }
+  }
+
+  return { kind: "run", force, interactive, defaultBackend }
 }
 
 function resolveProfilePath(options: IntakeOptions): string {
@@ -81,6 +101,13 @@ export function initializeProjectIntake(options: IntakeOptions = {}, force = fal
   const profilePath = ensureWritableProfile(options, force)
 
   writeProfile(profilePath, new Map<string, string>(), null)
+  return profilePath
+}
+
+export function initializeDefaultBackendIntake(options: IntakeOptions = {}, force = false): string {
+  const profilePath = ensureWritableProfile(options, force)
+
+  writeProfile(profilePath, createDefaultBackendAnswers(), "Default backend profile created by Persona Harness.")
   return profilePath
 }
 
@@ -203,9 +230,8 @@ export async function runInteractiveIntakeCommand(
       `Profile: ${profilePath}`,
       "",
       "Next:",
-      "- Run npx ph plan.",
-      "- Review .persona/workflow/plan.md before implementation.",
-      "- Ask the agent to implement only after the plan is accepted.",
+      "- Run npx ph plan --auto-accept for the fastest backend MVP flow, or npx ph plan for manual review.",
+      "- Ask the agent to implement only through npx ph workflow implement.",
       "",
     ].join("\n"),
   )
@@ -231,6 +257,35 @@ export function runIntakeCommand(
       status: 1,
       stdout: "",
       stderr: "Interactive intake requires a TTY. Use `npx ph intake` to create an editable draft.\n",
+    }
+  }
+  if (parsed.defaultBackend) {
+    try {
+      const profilePath = initializeDefaultBackendIntake(options, parsed.force)
+      return {
+        status: 0,
+        stdout: [
+          "Persona Harness default backend project profile created.",
+          "",
+          `Profile: ${profilePath}`,
+          "Status: ready",
+          "",
+          "Next:",
+          "- Run npx ph plan --auto-accept for the fastest backend MVP flow, or npx ph intake --interactive --force to customize.",
+          "- Ask the agent to implement only through npx ph workflow implement.",
+          "",
+          "Scope:",
+          "- Java/Spring backend Clean Code planning surface",
+          "- Default profile is a planning convenience, not product-quality certification",
+        ].join("\n") + "\n",
+        stderr: "",
+      }
+    } catch (error) {
+      return {
+        status: 1,
+        stdout: "",
+        stderr: `${error instanceof Error ? error.message : String(error)}\n`,
+      }
     }
   }
 

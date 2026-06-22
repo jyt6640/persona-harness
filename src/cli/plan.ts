@@ -3,7 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { loadBackendPolicyOverlay } from "../phase0/policy-overlay.js"
-import { loadBackendProjectProfileSummary } from "../phase0/project-profile.js"
+import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from "../phase0/project-profile.js"
 
 export type PlanOptions = { readonly projectDir?: string }
 
@@ -223,6 +223,18 @@ function existingWorkflowPaths(projectDir: string): readonly string[] {
 
 export function initializeWorkflowPlan(options: PlanOptions = {}, force = false): string {
   const projectDir = resolve(options.projectDir ?? process.cwd())
+  const profileState = readBackendProjectProfileState(projectDir)
+  if (profileState.status !== "ready") {
+    throw new PlanDraftError(
+      [
+        "Project profile is required before planning.",
+        profileState.message,
+        "Fast path: run `npx ph intake --default backend --force`.",
+        "Custom path: run `npx ph intake --interactive --force`.",
+      ].join("\n"),
+    )
+  }
+
   const workflowDir = join(projectDir, ".persona", "workflow")
   const planPath = join(projectDir, PLAN_PATH)
   const implementationReportPath = join(projectDir, IMPLEMENTATION_REPORT_PATH)

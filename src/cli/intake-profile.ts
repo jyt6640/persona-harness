@@ -7,7 +7,7 @@ export type ProjectProfileQuestion = {
 
 export type ProjectProfile = {
   readonly schema: "persona.project-profile.v1"
-  readonly status: "draft"
+  readonly status: "draft" | "ready"
   readonly scope: {
     readonly role: "backend"
     readonly mvp: "java-spring-clean-code"
@@ -193,13 +193,22 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestionDefinition[] = [
   },
 ] as const
 
+export function createDefaultBackendAnswers(): ReadonlyMap<string, string> {
+  return new Map(INTAKE_QUESTIONS.map((question) => [question.id, question.recommended]))
+}
+
 export function createBackendProfile(
   answers: ReadonlyMap<string, string> = new Map<string, string>(),
   projectNote: string | null = null,
 ): ProjectProfile {
+  const isReady = INTAKE_QUESTIONS.every((question) => {
+    const answer = answers.get(question.id)
+    return answer !== undefined && answer.trim() !== ""
+  })
+
   return {
     schema: "persona.project-profile.v1",
-    status: "draft",
+    status: isReady ? "ready" : "draft",
     scope: {
       role: "backend",
       mvp: "java-spring-clean-code",

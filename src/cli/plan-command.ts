@@ -28,6 +28,7 @@ import {
 
 type ParsedPlanArgs =
   | { readonly kind: "run"; readonly force: boolean }
+  | { readonly kind: "auto-accept"; readonly force: boolean }
   | { readonly kind: "status" }
   | { readonly kind: "accept" }
   | { readonly kind: "revise" }
@@ -41,12 +42,14 @@ type ParsedPlanArgs =
 
 export function planUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} plan [--force | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review>]`,
+    `Usage: ${invocation} plan [--force | --auto-accept | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review>]`,
     "",
     "Creates and manages a blackbear architecture plan before implementation.",
     "",
     "Options:",
     "  --force   Replace existing workflow drafts.",
+    "  --auto-accept",
+    "            Create workflow drafts and mark the plan accepted for the fastest backend MVP flow.",
     "  --status  Read the plan acceptance status.",
     "  --accept  Mark the plan status as accepted.",
     "  --revise  Mark the plan status as needs-revision.",
@@ -94,6 +97,9 @@ function parsePlanArgs(args: readonly string[]): ParsedPlanArgs {
   }
   if (arg === "--force") {
     return { kind: "run", force: true }
+  }
+  if (arg === "--auto-accept") {
+    return { kind: "auto-accept", force: true }
   }
   if (arg === "--status") {
     return { kind: "status" }
@@ -244,6 +250,25 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
     }
     if (parsed.kind === "resume") {
       return runResumeCommand(options)
+    }
+    if (parsed.kind === "auto-accept") {
+      const planPath = initializeWorkflowPlan(options, parsed.force)
+      const accepted = updateWorkflowPlanStatus("accepted", options)
+      return {
+        status: 0,
+        stdout: [
+          "Persona Harness blackbear plan draft created and accepted.",
+          "",
+          `Plan: ${planPath}`,
+          `Status: ${accepted.status}`,
+          "",
+          "Next:",
+          "- Run `npx ph workflow implement` before implementation.",
+          `- Fill ${IMPLEMENTATION_REPORT_PATH} after implementation, then run \`npx ph plan --report-filled implementation\`.`,
+          `- Fill ${REVIEW_REPORT_PATH} after review/manual QA, then run \`npx ph plan --report-filled review\`.`,
+        ].join("\n") + "\n",
+        stderr: "",
+      }
     }
 
     const planPath = initializeWorkflowPlan(options, parsed.force)

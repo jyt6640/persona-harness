@@ -14,6 +14,13 @@ function createTempProject(): string {
   return projectDir
 }
 
+function createProfiledTempProject(): string {
+  const projectDir = createTempProject()
+  const result = runPersonaCli(["intake", "--default", "backend"], { cwd: projectDir, env: {}, invocationName: "ph" })
+  expect(result.status).toBe(0)
+  return projectDir
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -23,7 +30,7 @@ afterEach(() => {
 
 describe("ph workflow check", () => {
   it("reports missing workflow artifacts without failing the command", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
 
     const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -34,7 +41,7 @@ describe("ph workflow check", () => {
   })
 
   it("reports accepted plan, filled implementation report, and evidence presence", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -53,7 +60,7 @@ describe("ph workflow check", () => {
   })
 
   it("reports completed workflow as PASS when bearshell command discipline is observed", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     writeFileSync(
@@ -76,7 +83,7 @@ describe("ph workflow check", () => {
   })
 
   it("keeps completed workflow WARN when bearshell command discipline is missing", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     writeFileSync(
@@ -96,7 +103,7 @@ describe("ph workflow check", () => {
   })
 
   it("creates smoke and feedback reports from the workflow status", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const smoke = runPersonaCli(["smoke"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -120,7 +127,7 @@ describe("ph workflow check", () => {
   })
 
   it("keeps smoke report output directory creation idempotent", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     const first = runPersonaCli(["smoke"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const second = runPersonaCli(["smoke"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -131,8 +138,19 @@ describe("ph workflow check", () => {
 })
 
 describe("ph workflow guard", () => {
-  it("blocks implementation until the plan is accepted", () => {
+  it("blocks implementation rail until a backend profile is ready", () => {
     const projectDir = createTempProject()
+
+    const result = runPersonaCli(["workflow", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Workflow implement failed: implement")
+    expect(result.stderr).toContain(".persona/project-profile.jsonc is missing")
+    expect(result.stderr).toContain("npx ph intake --default backend")
+  })
+
+  it("blocks implementation until the plan is accepted", () => {
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const result = runPersonaCli(["workflow", "guard", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -143,7 +161,7 @@ describe("ph workflow guard", () => {
   })
 
   it("allows implementation after the plan is accepted and report templates exist", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
@@ -156,7 +174,7 @@ describe("ph workflow guard", () => {
   })
 
   it("blocks final answer until implementation and review reports are filled", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -169,7 +187,7 @@ describe("ph workflow guard", () => {
   })
 
   it("allows final answer after workflow reports are filled and bearshell discipline is observed", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     writeFileSync(
@@ -192,7 +210,7 @@ describe("ph workflow guard", () => {
   })
 
   it("keeps workflow check report-only even when final guard fails", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const guard = runPersonaCli(["workflow", "guard", "final"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -205,7 +223,7 @@ describe("ph workflow guard", () => {
 
 describe("ph workflow start and finish", () => {
   it("blocks implementation start until the accepted-plan gate passes", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const result = runPersonaCli(["workflow", "start", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -216,7 +234,7 @@ describe("ph workflow start and finish", () => {
   })
 
   it("prints the AI-facing implementation rail after the accepted-plan gate passes", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
@@ -236,7 +254,7 @@ describe("ph workflow start and finish", () => {
   })
 
   it("prints the single AI-facing implementation rail with README chunk-read commands", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Tool Rental API\n\n- 장비 등록\n")
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -255,7 +273,7 @@ describe("ph workflow start and finish", () => {
   })
 
   it("blocks the single implementation rail until the plan is accepted", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const result = runPersonaCli(["workflow", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -266,7 +284,7 @@ describe("ph workflow start and finish", () => {
   })
 
   it("blocks implementation finish until final workflow evidence passes", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -279,7 +297,7 @@ describe("ph workflow start and finish", () => {
   })
 
   it("allows implementation finish after final guard evidence passes", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     writeFileSync(
@@ -303,7 +321,7 @@ describe("ph workflow start and finish", () => {
   })
 
   it("blocks implementation finish when README exists but README range coverage is empty", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Tool Rental API\n\n- 장비 등록\n")
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -337,7 +355,7 @@ describe("ph workflow start and finish", () => {
   })
 
   it("allows implementation finish when README range coverage is recorded", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Tool Rental API\n\n- 장비 등록\n")
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -372,7 +390,7 @@ describe("ph workflow start and finish", () => {
   })
 
   it("allows implementation finish when README range coverage is recorded under a heading", () => {
-    const projectDir = createTempProject()
+    const projectDir = createProfiledTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Tool Rental API\n\n- 장비 등록\n")
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
