@@ -72,8 +72,21 @@ function repositoryPort(projectDir: string, files: readonly string[]): ShapeFind
 }
 
 function repositoryAdapter(projectDir: string, files: readonly string[]): ShapeFinding {
-  const adapters = files.filter((filePath) => filePath.includes("/infrastructure/") && filePath.endsWith("Repository.java"))
-  return adapters.length > 0 ? pass("Infrastructure repository adapter", adapters.map((filePath) => relative(projectDir, filePath)).join(", ")) : warn("Infrastructure repository adapter", "no infrastructure *Repository.java")
+  const repositoryPorts = files
+    .filter((filePath) => filePath.includes("/domain/") && filePath.endsWith("Repository.java"))
+    .map((filePath) => filePath.split("/").at(-1)?.replace(/\.java$/, ""))
+    .filter((name): name is string => name !== undefined)
+  const adapters = files.filter((filePath) => {
+    if (!filePath.includes("/infrastructure/")) {
+      return false
+    }
+    if (filePath.endsWith("Repository.java")) {
+      return true
+    }
+    const content = readFileSync(filePath, "utf8")
+    return repositoryPorts.some((port) => new RegExp(`\\bimplements\\s+[\\w\\s,]*\\b${port}\\b`).test(content))
+  })
+  return adapters.length > 0 ? pass("Infrastructure repository adapter", adapters.map((filePath) => relative(projectDir, filePath)).join(", ")) : warn("Infrastructure repository adapter", "no infrastructure *Repository.java or *Repository implementation")
 }
 
 function serviceStorage(projectDir: string, files: readonly string[]): ShapeFinding {
@@ -117,14 +130,17 @@ function bootJar(projectDir: string): ShapeFinding {
 }
 
 function verificationReport(projectDir: string): ShapeFinding {
-  const reportPath = join(projectDir, ".persona", "workflow", "implementation-report.md")
-  if (!existsSync(reportPath)) {
-    return warn("Verification report", "implementation report missing")
+  const reportPaths = [
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+  ].filter((reportPath) => existsSync(reportPath))
+  if (reportPaths.length === 0) {
+    return warn("Verification report", "implementation/review report missing")
   }
-  const content = readFileSync(reportPath, "utf8")
+  const content = reportPaths.map((reportPath) => readFileSync(reportPath, "utf8")).join("\n")
   const hasCommands =
-    /(?:\.\/gradlew|gradlew|gradle)\s+test/.test(content) &&
-    /(?:\.\/gradlew|gradlew|gradle)\s+build/.test(content) &&
+    /(?:\.\/gradlew|gradlew|gradle)\s+[^\n`]*\btest\b/.test(content) &&
+    /(?:\.\/gradlew|gradlew|gradle)\s+[^\n`]*\bbuild\b/.test(content) &&
     content.includes("bootRun")
   return hasCommands ? pass("Verification report", "gradle test/build/bootRun mentioned") : warn("Verification report", "gradle test/build/bootRun evidence missing")
 }

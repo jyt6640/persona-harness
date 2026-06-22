@@ -116,4 +116,61 @@ describe("ph review backend-shape", () => {
     expect(report).toContain("| Domain behavior | WARN |")
     expect(report).toContain("domain record")
   })
+
+  it("recognizes infrastructure Store adapters that implement domain repository ports", () => {
+    const projectDir = createTempProject()
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'library'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    writeFile(projectDir, "src/main/java/com/example/library/presentation/BookController.java", "class BookController {}\n")
+    writeFile(projectDir, "src/main/java/com/example/library/application/BookService.java", "class BookService {}\n")
+    writeFile(projectDir, "src/main/java/com/example/library/domain/Book.java", "class Book { boolean isAvailable() { return true; } }\n")
+    writeFile(projectDir, "src/main/java/com/example/library/domain/BookRepository.java", "interface BookRepository {}\n")
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/infrastructure/InMemoryBookStore.java",
+      "class InMemoryBookStore implements BookRepository {}\n",
+    )
+    writeFile(projectDir, "src/main/java/com/example/library/presentation/dto/request/CreateBookRequest.java", "record CreateBookRequest() {}\n")
+    writeFile(projectDir, "src/main/java/com/example/library/presentation/dto/response/BookResponse.java", "record BookResponse() {}\n")
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const report = readFileSync(join(projectDir, ".persona", "workflow", "backend-shape-report.md"), "utf8")
+    expect(report).toContain("| Infrastructure repository adapter | PASS |")
+    expect(report).toContain("InMemoryBookStore.java")
+  })
+
+  it("recognizes verification evidence split across implementation and review reports", () => {
+    const projectDir = createTempProject()
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'library'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    writeFile(projectDir, "src/main/java/com/example/library/presentation/BookController.java", "class BookController {}\n")
+    writeFile(projectDir, "src/main/java/com/example/library/application/BookService.java", "class BookService {}\n")
+    writeFile(projectDir, "src/main/java/com/example/library/domain/Book.java", "class Book { boolean isAvailable() { return true; } }\n")
+    writeFile(projectDir, "src/main/java/com/example/library/domain/BookRepository.java", "interface BookRepository {}\n")
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/infrastructure/InMemoryBookStore.java",
+      "class InMemoryBookStore implements BookRepository {}\n",
+    )
+    writeFile(projectDir, "src/main/java/com/example/library/presentation/dto/request/CreateBookRequest.java", "record CreateBookRequest() {}\n")
+    writeFile(projectDir, "src/main/java/com/example/library/presentation/dto/response/BookResponse.java", "record BookResponse() {}\n")
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\n- [x] `gradle test`\n- [x] `./gradlew test build`\n",
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- [x] `./gradlew bootRun`\n- [x] HTTP happy path / failure path manual QA evidence를 확인했다.\n",
+    )
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const report = readFileSync(join(projectDir, ".persona", "workflow", "backend-shape-report.md"), "utf8")
+    expect(report).toContain("| Verification report | PASS |")
+    expect(report).toContain("gradle test/build/bootRun mentioned")
+  })
 })
