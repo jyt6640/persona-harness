@@ -17,14 +17,15 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 ### Added
 
 - Added `ph workflow check`, `ph doctor`, `ph smoke`, `ph feedback`, `ph evidence summary`, and `ph review backend-shape` as report-only local commands for external tester diagnostics, workflow evidence discipline, evidence summary, and backend shape observation.
+- Added `ph workflow guard implement` and `ph workflow guard final` as AI-facing strict workflow gates for implementation start and final answer readiness.
 - Added npm dist-tag reporting to `ph doctor` so local installs can see current `alpha` and `latest` registry versions when the registry is reachable.
 - Added workflow command-discipline diagnostics so filled workflow reports can surface raw shell usage or missing `npx ph bearshell` evidence as report-only WARNs.
 - Added backend-shape review coverage for `*Store.java implements *Repository` adapters and verification evidence split across implementation/review reports.
 
 ### Changed
 
-- Clarified that `ph` commands are primarily an AI-facing workflow surface: users can ask the TUI in plain language, while the agent should run `npx ph workflow check`, `npx ph plan --implement`, `npx ph bearshell`, and report-fill commands.
-- Tightened `ph plan --prompt` and `ph plan --implement` so short implementation requests route through accepted plan status, workflow diagnostics, implementation report filling, review report filling, and manual QA evidence.
+- Clarified that `ph` commands are primarily an AI-facing workflow surface: users can ask the TUI in plain language, while the agent should run `npx ph workflow guard implement`, `npx ph plan --implement`, `npx ph bearshell`, report-fill commands, and `npx ph workflow guard final`.
+- Tightened `ph plan --prompt` and `ph plan --implement` so short implementation requests route through strict workflow guards, accepted plan status, implementation report filling, review report filling, and manual QA evidence.
 - Reduced model-facing injection noise by removing full shared-skill reference paths while preserving metadata evidence.
 - Extended `ph history` archive summaries with evidence-summary content when available.
 

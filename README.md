@@ -101,7 +101,7 @@ npx ph plan --status
 npx ph plan --accept
 ```
 
-Then use a short implementation request. The injected workflow should make the agent run `npx ph workflow check`, `npx ph plan --implement`, `npx ph bearshell`, and the report-fill commands itself:
+Then use a short implementation request. The injected workflow should make the agent run `npx ph workflow guard implement`, `npx ph plan --implement`, `npx ph bearshell`, the report-fill commands, and `npx ph workflow guard final` itself:
 
 ```text
 README 보고 계획대로 구현해줘.
@@ -125,6 +125,8 @@ These commands are meant to be visible and easy for agents to call from OpenCode
 - `ph bearshell`: runs timeout-bounded and output-bounded shell commands through the Persona Harness command surface.
 - `ph history`: snapshots used workflow artifacts into `.persona/workflow/history/`.
 - `ph workflow check`: reports the current plan/report/evidence status.
+- `ph workflow guard implement`: blocks implementation until the accepted-plan workflow state is ready.
+- `ph workflow guard final`: blocks final completion reporting until workflow reports/evidence are ready.
 - `ph doctor`: diagnoses local OpenCode and Persona Harness integration.
 - `ph smoke`, `ph feedback`, `ph evidence summary`, `ph review backend-shape`: produce report-only workflow and quality-shape artifacts.
 - OpenCode injection: adds Java/Spring backend Clean Code context when the agent reads relevant project files.
@@ -177,7 +179,7 @@ Do not skip the plan state. If the plan is not accepted, finish or revise the pl
 Before coding from a short implementation request, run:
 
 ```bash
-npx ph workflow check
+npx ph workflow guard implement
 npx ph plan --implement
 ```
 
@@ -193,6 +195,7 @@ Then run:
 ```bash
 npx ph plan --report-filled implementation
 npx ph plan --report-filled review
+npx ph workflow guard final
 ```
 
 ## Docs
