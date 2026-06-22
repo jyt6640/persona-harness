@@ -56,7 +56,11 @@ describe("ph review backend-shape", () => {
     writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'library'\n")
     writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
     writeFile(projectDir, "src/main/java/com/example/library/presentation/BookController.java", "class BookController {}\n")
-    writeFile(projectDir, "src/main/java/com/example/library/application/BookService.java", "class BookService {}\n")
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/application/BookService.java",
+      "import java.util.List;\nclass BookService { public List<BookResult> findAll() { return List.of(); } }\n",
+    )
     writeFile(
       projectDir,
       "src/main/java/com/example/library/domain/Book.java",
@@ -71,7 +75,10 @@ describe("ph review backend-shape", () => {
     writeFile(projectDir, "src/main/java/com/example/library/presentation/dto/request/CreateBookRequest.java", "record CreateBookRequest() {}\n")
     writeFile(projectDir, "src/main/java/com/example/library/presentation/dto/response/BookResponse.java", "record BookResponse() {}\n")
     mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "workflow", "implementation-report.md"), "Status: filled\nnpx ph bearshell gradle test\nnpx ph bearshell gradle build\nbootRun\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\nnpx ph bearshell --shell './gradlew test'\nnpx ph bearshell --shell './gradlew build'\n./gradlew bootRun\n",
+    )
 
     const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -86,12 +93,17 @@ describe("ph review backend-shape", () => {
     expect(report).toContain("| Service storage/id sequence ownership | PASS |")
     expect(report).toContain("| Domain behavior | PASS |")
     expect(report).toContain("| DTO boundary | PASS |")
+    expect(report).toContain("| Verification report | PASS |")
   })
 
   it("reports service-owned storage and Maven drift as WARN findings", () => {
     const projectDir = createTempProject()
     writeFileSync(join(projectDir, "pom.xml"), "<project />\n")
-    writeFile(projectDir, "src/main/java/com/example/library/application/BookService.java", "class BookService { private java.util.concurrent.atomic.AtomicLong nextId; }\n")
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/application/BookService.java",
+      "class BookService { private java.util.concurrent.atomic.AtomicLong nextId; private java.util.Map<Long, Book> storage; }\n",
+    )
     writeFile(projectDir, "src/main/java/com/example/library/domain/Book.java", "record Book(String name) {}\n")
 
     const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })

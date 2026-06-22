@@ -76,6 +76,7 @@ Current active candidate: `ph workflow check`, `ph doctor`, `ph smoke`, `ph feed
 - Fresh ON package-flow/bootJar follow-up is positive: the `01-book-loans` run at `/Users/yongtae/Desktop/blackbear-persona-harness-test/fresh-runs/01-book-loans/A-persona-on/bootjar-guidance-20260622-005742` generated `presentation/application/domain/infrastructure`, domain repository ports plus infrastructure implementations, no Service-owned storage/id sequence, no `bootJar.enabled=false`, `gradle build` with `:bootJar UP-TO-DATE`, and independent `gradle bootRun` HTTP happy/failure smoke pass. This reduces the narrow package-flow/build-line blocker; final packaging still needs an explicit release/demo decision.
 - Release/demo decision is now `proceed-to-demo-packaging` for `v0.3.0-alpha.3`. Version metadata, changelog, release notes, `npm pack --dry-run --json`, `npm publish --dry-run --tag alpha`, manual `npm publish --tag alpha`, `latest` dist-tag sync, GitHub tag/release, and external install smoke pass for `0.3.0-alpha.3`.
 - v0.3.1 candidate is workflow diagnostics, not broader Java rule expansion: short OpenCode TUI requests already show useful Java/Spring product-code shape influence, but can skip workflow evidence discipline. The next surface adds `ph workflow check`, `ph doctor`, `ph smoke`, `ph feedback`, `ph evidence summary`, and `ph review backend-shape` as report-only local commands, improves `ph history` archive summary with evidence-summary content, and strengthens `ph plan --implement` / `ph plan --prompt` so short implementation requests are routed through accepted plan, workflow status, `npx ph bearshell`, and filled implementation report steps. Injection block dieting now removes full shared-skill reference paths from model-facing text while keeping metadata evidence intact.
+- v0.3.1 short TUI workflow smoke is partially positive: in a clean installed tarball project, the prompt `README 보고 구현해줘` triggered `npx ph plan --implement`, `npx ph workflow check`, `npx ph bearshell` test/build verification, `.persona/workflow/implementation-report.md` filling, and `npx ph plan --report-filled implementation`. Generated backend shape passed the report-only analyzer after narrowing false WARN matchers for Service return `List<Result>` and Gradle wrapper command evidence. Remaining gaps are explicit: review-report stayed template, the agent used raw shell before later bearshell verification, and direct `.persona/rules` reads still need a follow-up smoke after stricter prompt wording.
 
 ## Active Commands
 
@@ -171,9 +172,9 @@ Current active candidate: `ph workflow check`, `ph doctor`, `ph smoke`, `ph feed
    - Current state: Java/Gradle `programming` support is limited active routing; actual clean run shows it appears on Java Service targets but does not replace `.persona` backend rules. Multi-domain productization remains inactive.
 
 11. `[~]` v0.3.1 workflow diagnostics and external tester surface
-   - Evidence: `docs/current/v0.3.1-workflow-diagnostics-surface.md`
-   - Current state: candidate implementation adds report-only commands for workflow status, install diagnostics, smoke report, feedback template, evidence summary, and backend shape observation. `ph history` includes evidence-summary content when present, and injection text drops full shared-skill file paths while preserving metadata evidence. The intent is to reduce external tester friction, evidence noise, and short-TUI workflow drift before adding TDD workflow or broader productization.
-   - Next candidate: package this change and run one clean TUI smoke to confirm the agent actually uses `npx ph workflow check`, `npx ph plan --implement`, `npx ph bearshell`, and `npx ph plan --report-filled implementation`, then run `npx ph evidence summary`.
+   - Evidence: `docs/current/v0.3.1-workflow-diagnostics-surface.md`, `docs/evidence-reviews/v0.3.1-short-tui-workflow-smoke.md`
+   - Current state: candidate implementation adds report-only commands for workflow status, install diagnostics, smoke report, feedback template, evidence summary, and backend shape observation. `ph history` includes evidence-summary content when present, and injection text drops full shared-skill file paths while preserving metadata evidence. Clean short-TUI smoke confirmed that a minimal `README 보고 구현해줘` request used `npx ph plan --implement`, `npx ph workflow check`, `npx ph bearshell` for test/build verification, filled the implementation report, and ran `npx ph plan --report-filled implementation`. Backend-shape review now avoids over-reporting Service `List<Result>` return types as storage and recognizes Gradle wrapper commands in implementation evidence.
+   - Next candidate: rerun one clean short-TUI smoke after the stricter `.persona/rules` prompt wording, or move to the explicit review-report workflow step so `review-report.md` is filled instead of remaining template.
 
 ## Current Decision Docs
 
@@ -241,6 +242,7 @@ Current active candidate: `ph workflow check`, `ph doctor`, `ph smoke`, `ph feed
 - `docs/evidence-reviews/v0.3.0-generated-java-target-role-followup.md`
 - `docs/evidence-reviews/v0.3.0-policy-overlay-clean-workflow-smoke.md`
 - `docs/evidence-reviews/v0.3.0-policy-overlay-accepted-implementation-smoke.md`
+- `docs/evidence-reviews/v0.3.1-short-tui-workflow-smoke.md`
 - `docs/evidence-reviews/coupon-product-code-flow-ab-review.md`
 - `docs/evidence-reviews/inventory-product-code-flow-ab-review.md`
 - `docs/evidence-reviews/java-root-semantics-ab-review.md`

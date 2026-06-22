@@ -78,11 +78,15 @@ function repositoryAdapter(projectDir: string, files: readonly string[]): ShapeF
 
 function serviceStorage(projectDir: string, files: readonly string[]): ShapeFinding {
   const serviceFiles = files.filter((filePath) => filePath.endsWith("Service.java"))
-  const pattern = /\b(Map|List|AtomicLong|nextId|idCounter)\b/
   const hits = serviceFiles.flatMap((filePath) => {
-    const content = readFileSync(filePath, "utf8")
-    const match = pattern.exec(content)
-    return match === null ? [] : [`${relative(projectDir, filePath)}:${match[0]}`]
+    const lines = readFileSync(filePath, "utf8").split(/\r?\n/)
+    return lines.flatMap((line) => {
+      if (!/\bprivate\b/.test(line)) {
+        return []
+      }
+      const terms = ["Map", "List", "AtomicLong", "nextId", "idCounter"].filter((term) => line.includes(term))
+      return terms.map((term) => `${relative(projectDir, filePath)}:${term}`)
+    })
   })
   return hits.length === 0 ? pass("Service storage/id sequence ownership", "no Map/List/AtomicLong/nextId/idCounter in *Service.java") : warn("Service storage/id sequence ownership", hits.join(", "))
 }
@@ -118,7 +122,10 @@ function verificationReport(projectDir: string): ShapeFinding {
     return warn("Verification report", "implementation report missing")
   }
   const content = readFileSync(reportPath, "utf8")
-  const hasCommands = content.includes("gradle test") && content.includes("gradle build") && content.includes("bootRun")
+  const hasCommands =
+    /(?:\.\/gradlew|gradlew|gradle)\s+test/.test(content) &&
+    /(?:\.\/gradlew|gradlew|gradle)\s+build/.test(content) &&
+    content.includes("bootRun")
   return hasCommands ? pass("Verification report", "gradle test/build/bootRun mentioned") : warn("Verification report", "gradle test/build/bootRun evidence missing")
 }
 
