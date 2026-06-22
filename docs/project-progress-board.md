@@ -1,6 +1,6 @@
 # Persona Harness Progress Board
 
-Last updated: 2026-06-21
+Last updated: 2026-06-22
 
 ## Purpose
 
@@ -72,6 +72,7 @@ Current active candidate: v0.3.0-alpha.2 external tester feedback. `persona-harn
 - v0.2.1 package metadata is checked for name, version, description, keywords, license, repository, homepage, bugs, bin, files, engines, and package size.
 - Public npm alpha exists; `alpha` and `latest` both point to `0.3.0-alpha.2` during the alpha pilot. Stable support guarantees remain deferred.
 - Experiment artifact cleanup is a phase-close hygiene step and remains dry-run-first.
+- Next-version packaging remains blocked after the `01-book-loans` context-noise rerun: Persona ON run-05 no longer timed out and passed `gradle test`, but the generated package-flow shape still missed the current Java backend MVP target enough that the A/B verdict remains mixed. The external analyzer now classifies this as `buildable-package-flow-mismatch` instead of conflating it with generated-project failure, and backend guidance now explicitly rejects `controller/service/repository/dto` role-name packages in favor of `presentation/application/domain/infrastructure`.
 
 ## Active Commands
 

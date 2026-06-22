@@ -26,6 +26,10 @@ describe("Phase 0 backend product-code shape guidance", () => {
     expect(policies).toContain("presentation/dto/response")
     expect(policies).toContain("application/dto/command")
     expect(policies).toContain("application/dto/result")
+    expect(policies).toContain("book/controller")
+    expect(policies).toContain("book/service")
+    expect(policies).toContain("book/repository")
+    expect(policies).toContain("book/dto/request")
   })
 
   it("tells bootstrap runs to plan and re-open role-specific Java targets before continuing", () => {
@@ -49,6 +53,7 @@ describe("Phase 0 backend product-code shape guidance", () => {
     expect(policies).toContain("root/<domain>/application/dto/result")
     expect(policies).toContain("root/<domain>/presentation/dto/request")
     expect(policies).toContain("root/<domain>/presentation/dto/response")
+    expect(policies).toContain("controller/service/repository/dto")
   })
 
   it("keeps common Java guidance explicit about domain repository interfaces and infrastructure implementations", () => {

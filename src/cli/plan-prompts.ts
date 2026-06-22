@@ -2,6 +2,8 @@ export function createPlanOnlyPrompt(): string {
   return [
     "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 구현하지 말고 architecture/technology plan만 완성해줘.",
     "",
+    "node_modules, .opencode, .persona/rules, .persona/evidence 경로는 읽지 마. package/vendor/setup 문서를 계획 컨텍스트로 읽지 마.",
+    "",
     "긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고, Read 출력이 잘리면 `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`, `npx ph bearshell --shell 'sed -n \"221,440p\" README.md'`처럼 범위를 나눠 끝까지 읽어줘.",
     "",
     "계획에는 요구사항 요약, Java/Spring Gradle 기술 선택, package/layer 구조, storage/persistence 선택, repository boundary, DTO boundary, domain behavior 기준을 포함해줘.",
@@ -17,6 +19,8 @@ export function createPlanOnlyPrompt(): string {
 export function createImplementationPrompt(): string {
   return [
     "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 먼저 읽고 accepted plan 기준으로 구현해줘.",
+    "",
+    "node_modules, .opencode, .persona/rules, .persona/evidence 경로는 읽지 마. package/vendor/setup 문서를 구현 컨텍스트로 읽지 마.",
     "",
     "긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고, Read 출력이 잘리면 `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`, `npx ph bearshell --shell 'sed -n \"221,440p\" README.md'`처럼 범위를 나눠 끝까지 읽어줘.",
     "구현 보고서의 Read Coverage에는 체크만 하지 말고 `README read method`, `README ranges read`, `Plan read method`, `Plan ranges read`, `Unread ranges`를 실제 실행 증거 기준으로 적어줘.",

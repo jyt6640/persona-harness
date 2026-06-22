@@ -39,8 +39,12 @@ describe("persona-harness init", () => {
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "java-common.md"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
     expect(existsSync(join(projectDir, ".opencode", "opencode.json"))).toBe(true)
+    expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain("node_modules/")
+    expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain(".opencode/node_modules/")
+    expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain(".persona/rules/")
+    expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain(".persona/evidence/")
     expect(result.installed).toEqual(
-      expect.arrayContaining([".persona/harness.jsonc", ".persona/rules/", ".opencode/opencode.json"]),
+      expect.arrayContaining([".persona/harness.jsonc", ".persona/rules/", ".opencode/opencode.json", ".gitignore"]),
     )
     expect(result.evidenceCopied).toBe(false)
 
@@ -71,6 +75,22 @@ describe("persona-harness init", () => {
     expect(config.model).toBe("openai/gpt-5.4-mini-fast")
     expect(config.plugin).toEqual(["/tmp/existing-plugin.js", join(process.cwd(), "dist", "index.js")])
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
+  })
+
+  it("preserves existing gitignore entries and does not duplicate noise guard entries", () => {
+    const projectDir = createTempProject()
+    writeFileSync(join(projectDir, ".gitignore"), "custom-output/\nnode_modules/\n")
+
+    initializePersonaHarness({ projectDir, packageRoot: process.cwd() })
+    initializePersonaHarness({ projectDir, packageRoot: process.cwd() })
+
+    const gitignore = readFileSync(join(projectDir, ".gitignore"), "utf8")
+    const lines = gitignore.split(/\r?\n/)
+    expect(gitignore).toContain("custom-output/")
+    expect(lines.filter((line) => line === "node_modules/")).toHaveLength(1)
+    expect(lines.filter((line) => line === ".opencode/node_modules/")).toHaveLength(1)
+    expect(lines.filter((line) => line === ".persona/rules/")).toHaveLength(1)
+    expect(lines.filter((line) => line === ".persona/evidence/")).toHaveLength(1)
   })
 
   it("prints a plan-first next flow instead of asking OpenCode to implement immediately", () => {

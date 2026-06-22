@@ -17,6 +17,7 @@ enforcement: inject_only
 - 0-start 요구사항을 먼저 backend product code shape 계획으로 변환하고 Gradle 기반 Spring Boot backend project로 구현한다. Maven 파일은 생성하지 않는다.
 - 구현 전에 package structure plan을 작성한다. root package 바로 아래에 `global`과 `root/<domain>`을 같은 depth로 두고, `feature/features/module/modules` 같은 wrapper package를 추가하지 않는다.
 - 도메인 package 내부는 presentation/application/domain/infrastructure 흐름을 기본으로 두고 `root/<domain>/presentation`, `root/<domain>/application`, `root/<domain>/domain`, `root/<domain>/infrastructure`로 배치한다.
+- `root/<domain>/controller`, `root/<domain>/service`, `root/<domain>/repository`, `root/<domain>/dto` 또는 `book/controller`, `book/service`, `book/repository`, `book/dto/request` 같은 역할명 package로 대체하지 않는다. Controller는 `presentation`, Service는 `application`, Repository interface는 `domain`, Repository 구현체는 `infrastructure`, HTTP DTO는 `presentation/dto`, Command/Result는 `application/dto`에 둔다.
 - DTO는 파일 경계로 둔다. Presentation DTO는 `root/<domain>/presentation/dto/request`와 `root/<domain>/presentation/dto/response`, Application DTO는 `root/<domain>/application/dto/command`와 `root/<domain>/application/dto/result`에 둔다.
 - 구현 중에는 package structure plan을 기준으로 Domain, Repository, Service, DTO, Controller 역할 파일을 만들고 주요 Java 파일을 다시 읽고 다음 역할로 넘어간다. Domain entity/aggregate가 static factory를 쓰면 public constructor가 아니라 private constructor로 생성 경로를 닫는다.
 - presentation은 HTTP 요청/응답과 request/response DTO boundary를 담당하고, application service에 위임한다.

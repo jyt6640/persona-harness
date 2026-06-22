@@ -26,6 +26,14 @@ class PersonaInitError extends Error {
 }
 
 const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
+const PROJECT_NOISE_IGNORE_ENTRIES = [
+  "node_modules/",
+  ".opencode/node_modules/",
+  ".persona/rules/",
+  ".persona/evidence/",
+  ".gradle/",
+  "build/",
+] as const
 
 function stripJsonComments(input: string): string {
   let output = ""
@@ -154,6 +162,21 @@ function writeOpencodeConfig(projectDir: string, pluginPath: string): readonly s
   return backupPath === undefined ? [] : [relativePath(projectDir, backupPath)]
 }
 
+function writeProjectNoiseIgnore(projectDir: string): void {
+  const gitignorePath = join(projectDir, ".gitignore")
+  const existing = existsSync(gitignorePath) ? readFileSync(gitignorePath, "utf8") : ""
+  const existingLines = new Set(existing.split(/\r?\n/).map((line) => line.trim()))
+  const missingEntries = PROJECT_NOISE_IGNORE_ENTRIES.filter((entry) => !existingLines.has(entry))
+  if (missingEntries.length === 0) {
+    return
+  }
+
+  const prefix = existing.length > 0 && !existing.endsWith("\n") ? "\n" : ""
+  const sectionHeader = existingLines.has("# Persona Harness generated context noise") ? [] : ["# Persona Harness generated context noise"]
+  const nextContent = `${existing}${prefix}${[...sectionHeader, ...missingEntries].join("\n")}\n`
+  writeFileSync(gitignorePath, nextContent)
+}
+
 export function initializePersonaHarness(options: InitOptions = {}): InitResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const packageRoot = resolve(options.packageRoot ?? defaultPackageRoot())
@@ -175,12 +198,13 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
   cpSync(sourceHarnessConfig, targetHarnessConfig)
   cpSync(sourceRulesDir, targetRulesDir, { recursive: true })
   const backups = writeOpencodeConfig(projectDir, pluginPath)
+  writeProjectNoiseIgnore(projectDir)
 
   return {
     projectDir,
     packageRoot,
     pluginPath: isAbsolute(pluginPath) ? pluginPath : resolve(pluginPath),
-    installed: [".persona/harness.jsonc", ".persona/rules/", ".opencode/opencode.json"],
+    installed: [".persona/harness.jsonc", ".persona/rules/", ".opencode/opencode.json", ".gitignore"],
     backups,
     evidenceCopied: false,
   }
