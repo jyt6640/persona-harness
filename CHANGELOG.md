@@ -6,6 +6,10 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+### Known Gaps
+
+## [0.3.2-alpha.2] - 2026-06-22
+
 ### Added
 
 - Added a profile-required implementation gate: `ph plan` and `ph workflow implement` now stop when `.persona/project-profile.jsonc` is missing, draft, invalid, or incomplete.
@@ -20,6 +24,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Updated the implementation report template with Java role discovery/read evidence fields.
 
 ### Known Gaps
+
+- Java role discovery depends on the agent following the `ph workflow implement` rail after generating files; file creation alone is not treated as proof that every generated Java file was read.
 
 ## [0.3.2-alpha.1] - 2026-06-22
 

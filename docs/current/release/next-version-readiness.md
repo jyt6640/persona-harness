@@ -3,59 +3,60 @@
 ## Candidate
 
 ```text
-persona-harness@0.3.2-alpha.1
+persona-harness@0.3.2-alpha.2
 dist-tag: alpha
 date: 2026-06-22
 ```
 
 ## Release Intent
 
-This candidate is a hotfix for `0.3.2-alpha.0`. It keeps the single implementation rail and fixes README read coverage parsing after fresh install smoke showed that `## README ranges read` heading-style reports were not accepted.
+This candidate is a hotfix for installed-package clean runs where generated Java files existed but evidence only showed `README.md` or a small set of touched files. It keeps the Java/Spring backend MVP scope and makes `ph workflow implement` surface generated Java role discovery and representative read follow-up.
 
 ## Included Changes
 
-- `ph workflow implement` single AI-facing implementation rail.
-- README chunk-read instructions using `ph bearshell` and 220-line ranges.
-- README read coverage diagnostics in `ph workflow check`.
-- `ph workflow finish implement` failure when `README.md` exists but `README ranges read` is empty.
-- README range coverage recognition for heading-style implementation reports.
-- Injection, prompt, next/resume, root README, and Korean README guidance updated to prefer `npx ph workflow implement`.
-- Direct `.persona/rules` read remains a non-blocking note; raw final verification remains blocking.
+- `ph workflow implement` asks the agent to run Java role discovery after Java files are generated or changed.
+- Java role discovery recognizes `npx ph bearshell --shell 'find src/main/java src/test/java -name "*.java" ...'` output.
+- Implementation report template includes Java role discovery/read fields.
+- Profile-required implementation gate is active before `ph plan` and `ph workflow implement`.
+- `ph init` creates a ready default backend profile for alpha smoke convenience.
+- `ph intake --default backend` creates the same ready default profile explicitly.
+- `ph plan --auto-accept` supports clean-run smoke without a separate manual accept step.
 
 ## Verification Commands
 
 | Command | Result |
 | --- | --- |
-| `npm test` | pass: 36 test files, 224 tests |
+| `npm test -- tests/phase0-java-role-discovery.test.ts tests/persona-harness-workflow-check.test.ts` | pass: 2 files, 26 tests |
+| `npm test` | pass: 36 test files, 229 tests |
 | `npm run typecheck` | pass |
 | `npm run build` | pass |
 | `npm run report:rules` | pass: PersonaHarnessRule diagnostics PASS, 0 findings |
 | `npm run check:scope:strict` | pass: MVP scope diagnostics PASS, 0 findings, STRICT mode |
 | `npm run check:injection-value` | pass: current window 3/3, expected decision `continue-java-mvp` |
-| `npm test -- tests/persona-harness-workflow-check.test.ts` | pass: 20 tests, includes heading-style README range coverage regression |
-| `npm pack --dry-run` | pass after sequential build: `persona-harness-0.3.2-alpha.1.tgz`, 221 files, 226.5 kB package size, 868.4 kB unpacked size |
-| `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.2-alpha.1` |
+| `npm pack --dry-run` | pass: `persona-harness-0.3.2-alpha.2.tgz`, 222 files, 230.8 kB package size, 889.4 kB unpacked size |
+| `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.2-alpha.2` |
 
-## Manual CLI Smoke
+## Clean Install Smoke
 
-Expected release-loop smoke:
+Expected smoke:
 
 ```bash
 tmp_project=$(mktemp -d)
 cd "$tmp_project"
 npm init -y
-npm install -D persona-harness@alpha
+npm install -D /absolute/path/to/persona-harness
 npx ph init
-npx ph plan
-npx ph plan --accept
+npx ph policy init
+npx ph plan --auto-accept
 npx ph workflow implement
 ```
 
 Expected:
 
-- `ph workflow implement` prints README chunk-read commands.
-- `ph workflow finish implement` fails when README ranges are empty.
-- `ph workflow finish implement` passes after `README ranges read` is recorded and normal workflow evidence exists.
+- `ph workflow implement` prints the Java role discovery command.
+- A generated Java file listing produces `[Persona Harness Java Role Discovery]`.
+- Evidence contains `role-discovery` rows for generated Java files.
+- Evidence contains a `<java-role-read-follow-up>` model-input row.
 
 ## Supported Surface
 
@@ -74,15 +75,12 @@ Expected:
 
 ## Pre-Publish Release Decision
 
-`persona-harness@0.3.2-alpha.1` is published.
+Ready for publish.
 
-Post-publish smoke installed `persona-harness@alpha` in `/tmp/persona-v032-alpha1-smoke-xaV5nw` and confirmed:
+Local tarball install smoke passed in a repo-external temporary project:
 
-- installed version: `0.3.2-alpha.1`
-- `npx ph workflow implement`: PASS output with README chunk-read rail
-- heading-style `## README ranges read` plus `- 1-220`: accepted
-- `npx ph workflow check`: PASS
-- `npx ph workflow finish implement`: PASS
-- npm dist-tags: `alpha` and `latest` both point to `0.3.2-alpha.1`
-
-Next handoff: external testers can retry short TUI requests against `persona-harness@alpha`.
+- installed package version: `0.3.2-alpha.2`
+- `npx ph init`: created ready default backend profile
+- `npx ph plan --auto-accept`: created accepted workflow plan
+- `npx ph workflow implement`: printed Java role discovery command
+- `npx ph workflow implement`: printed Java role discovery/read evidence guidance
