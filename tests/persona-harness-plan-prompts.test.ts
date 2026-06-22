@@ -44,7 +44,7 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stdout).toContain("package/vendor/setup 문서를 구현 컨텍스트로 읽지 마")
     expect(implement.stdout).toContain(".persona/workflow/implementation-report.md")
     expect(implement.stdout).toContain(".persona/workflow/review-report.md")
-    expect(implement.stdout).toContain("npx ph workflow guard implement")
+    expect(implement.stdout).toContain("npx ph workflow start implement")
     expect(implement.stdout).toContain("긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고")
     expect(implement.stdout).toContain("npx ph bearshell --shell 'sed -n \"1,220p\" README.md'")
     expect(implement.stdout).toContain("README read method")
@@ -57,7 +57,7 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stdout).toContain("Before final answer, fill the review report after manual QA")
     expect(implement.stdout).toContain("최종 답변 전에 리뷰와 manual QA 결과")
     expect(implement.stdout).toContain("npx ph plan --report-filled review")
-    expect(implement.stdout).toContain("npx ph workflow guard final")
+    expect(implement.stdout).toContain("npx ph workflow finish implement")
   })
 
   it("prints a reusable plan-only OpenCode prompt", () => {
@@ -79,8 +79,7 @@ describe("ph plan prompt and usage output", () => {
     expect(prompt.stdout).toContain("긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고")
     expect(prompt.stdout).toContain("npx ph bearshell --shell 'sed -n \"1,220p\" README.md'")
     expect(prompt.stdout).toContain("플랜 보고 구현해줘")
-    expect(prompt.stdout).toContain("npx ph workflow guard implement")
-    expect(prompt.stdout).toContain("npx ph plan --implement")
+    expect(prompt.stdout).toContain("npx ph workflow start implement")
     expect(prompt.stdout).toContain("명령 실행이 필요하면 `npx ph bearshell`을 우선 사용")
   })
 

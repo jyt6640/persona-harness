@@ -197,3 +197,68 @@ describe("ph workflow guard", () => {
     expect(guard.status).toBe(1)
   })
 })
+
+describe("ph workflow start and finish", () => {
+  it("blocks implementation start until the accepted-plan gate passes", () => {
+    const projectDir = createTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+
+    const result = runPersonaCli(["workflow", "start", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Workflow start failed: implement")
+    expect(result.stderr).toContain(".persona/workflow/plan.md must be accepted")
+  })
+
+  it("prints the AI-facing implementation rail after the accepted-plan gate passes", () => {
+    const projectDir = createTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+
+    const result = runPersonaCli(["workflow", "start", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Persona Harness Workflow Start: implement")
+    expect(result.stdout).toContain("npx ph plan --implement")
+    expect(result.stdout).toContain("Use `npx ph bearshell` for shell verification")
+    expect(result.stdout).toContain("npx ph plan --report-filled implementation")
+    expect(result.stdout).toContain("npx ph workflow finish implement")
+  })
+
+  it("blocks implementation finish until final workflow evidence passes", () => {
+    const projectDir = createTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Workflow finish failed: implement")
+    expect(result.stderr).toContain(".persona/workflow/review-report.md must be filled")
+  })
+
+  it("allows implementation finish after final guard evidence passes", () => {
+    const projectDir = createTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\n- [x] `npx ph bearshell --shell './gradlew test'`\n",
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- [x] `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Persona Harness Workflow Finish: implement")
+    expect(result.stdout).toContain("Finish status: PASS")
+    expect(result.stdout).toContain("final answer may be reported")
+    expect(result.stdout).toContain("npx ph history --id <run-id>")
+  })
+})

@@ -6,21 +6,25 @@ type WorkflowOptions = {
 }
 
 type WorkflowGuardKind = "implement" | "final"
+type WorkflowRunnerKind = "implement"
 
 type ParsedWorkflowArgs =
   | { readonly kind: "check" }
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
+  | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
+  | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
     "Scope:",
     "- workflow check is report-only",
+    "- workflow start/finish are AI-facing workflow rails",
     "- workflow guard uses strict exit codes for AI-facing workflow discipline",
     "- no generated app quality certification",
   ].join("\n")
@@ -38,6 +42,24 @@ function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
       return { kind: "guard", guardKind: args[1] }
     }
     return { kind: "invalid", message: `Unknown workflow guard: ${args[1]}` }
+  }
+  if (args[0] === "start") {
+    if (args.length !== 2) {
+      return { kind: "invalid", message: "workflow start requires implement." }
+    }
+    if (args[1] === "implement") {
+      return { kind: "start", runnerKind: args[1] }
+    }
+    return { kind: "invalid", message: `Unknown workflow start: ${args[1]}` }
+  }
+  if (args[0] === "finish") {
+    if (args.length !== 2) {
+      return { kind: "invalid", message: "workflow finish requires implement." }
+    }
+    if (args[1] === "implement") {
+      return { kind: "finish", runnerKind: args[1] }
+    }
+    return { kind: "invalid", message: `Unknown workflow finish: ${args[1]}` }
   }
   if (args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
     return { kind: "help" }
@@ -57,6 +79,68 @@ function failedGuardOutput(guardKind: WorkflowGuardKind, reasons: readonly strin
       "",
       "This is a workflow-state gate only. It does not certify generated app product quality.",
     ].join("\n") + "\n",
+  }
+}
+
+function failedRunnerOutput(action: "start" | "finish", runnerKind: WorkflowRunnerKind, reasons: readonly string[]): CliRunResult {
+  return {
+    status: 1,
+    stdout: "",
+    stderr: [
+      `Workflow ${action} failed: ${runnerKind}`,
+      "",
+      "Required fixes:",
+      ...reasons.map((reason) => `- ${reason}`),
+      "",
+      "This is an AI-facing workflow rail only. It does not certify generated app product quality.",
+    ].join("\n") + "\n",
+  }
+}
+
+function passedStartOutput(runnerKind: WorkflowRunnerKind): CliRunResult {
+  return {
+    status: 0,
+    stdout: [
+      `Persona Harness Workflow Start: ${runnerKind}`,
+      "",
+      "Start status: PASS",
+      "",
+      "Run this implementation rail now:",
+      "1. `npx ph plan --implement`",
+      "2. Read `README.md`, `.persona/project-profile.jsonc`, `.persona/policies`, and `.persona/workflow/plan.md`.",
+      "3. Implement from the accepted plan.",
+      "4. Use `npx ph bearshell` for shell verification.",
+      "5. Fill `.persona/workflow/implementation-report.md`.",
+      "6. Run `npx ph plan --report-filled implementation`.",
+      "7. Fill `.persona/workflow/review-report.md` after review/manual QA.",
+      "8. Run `npx ph plan --report-filled review`.",
+      "9. Run `npx ph workflow finish implement`.",
+      "",
+      "Scope:",
+      "- AI-facing workflow rail",
+      "- no generated app product-quality certification",
+    ].join("\n") + "\n",
+    stderr: "",
+  }
+}
+
+function passedFinishOutput(runnerKind: WorkflowRunnerKind): CliRunResult {
+  return {
+    status: 0,
+    stdout: [
+      `Persona Harness Workflow Finish: ${runnerKind}`,
+      "",
+      "Finish status: PASS",
+      "Workflow evidence is complete; final answer may be reported.",
+      "",
+      "Next:",
+      "- `npx ph history --id <run-id>` when this workflow should be archived.",
+      "",
+      "Scope:",
+      "- AI-facing workflow rail",
+      "- no generated app product-quality certification",
+    ].join("\n") + "\n",
+    stderr: "",
   }
 }
 
@@ -124,6 +208,24 @@ function runWorkflowGuard(guardKind: WorkflowGuardKind, options: WorkflowOptions
   return passedGuardOutput(guardKind)
 }
 
+function runWorkflowStart(runnerKind: WorkflowRunnerKind, options: WorkflowOptions): CliRunResult {
+  const summary = readWorkflowStatus(options.projectDir)
+  const reasons = implementationGuardReasons(summary)
+  if (reasons.length > 0) {
+    return failedRunnerOutput("start", runnerKind, reasons)
+  }
+  return passedStartOutput(runnerKind)
+}
+
+function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOptions): CliRunResult {
+  const summary = readWorkflowStatus(options.projectDir)
+  const reasons = finalGuardReasons(summary)
+  if (reasons.length > 0) {
+    return failedRunnerOutput("finish", runnerKind, reasons)
+  }
+  return passedFinishOutput(runnerKind)
+}
+
 export function runWorkflowCommand(args: readonly string[], options: WorkflowOptions = {}, invocationName = "ph"): CliRunResult {
   const parsed = parseWorkflowArgs(args)
   if (parsed.kind === "help") {
@@ -134,6 +236,12 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "guard") {
     return runWorkflowGuard(parsed.guardKind, options)
+  }
+  if (parsed.kind === "start") {
+    return runWorkflowStart(parsed.runnerKind, options)
+  }
+  if (parsed.kind === "finish") {
+    return runWorkflowFinish(parsed.runnerKind, options)
   }
   return { status: 0, stdout: `${formatWorkflowStatus(readWorkflowStatus(options.projectDir))}\n`, stderr: "" }
 }
