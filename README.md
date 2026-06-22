@@ -195,8 +195,7 @@ README.md 보고 구현해줘
 The agent should run or follow these workflow commands by itself:
 
 ```text
-npx ph workflow start implement
-npx ph plan --implement
+npx ph workflow implement
 npx ph bearshell ...
 npx ph plan --report-filled implementation
 npx ph plan --report-filled review
@@ -208,7 +207,7 @@ If the agent ignores the workflow, paste this stricter prompt:
 ```text
 README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤 Java/Spring Gradle 기반으로 요구사항 전체를 구현해줘.
 
-구현 전 `npx ph workflow start implement`와 `npx ph plan --implement`를 실행해줘.
+구현 전 `npx ph workflow implement`를 실행하고, README.md는 해당 출력의 bearshell chunk-read 방식으로 끝까지 읽어줘.
 명령 실행은 가능하면 `npx ph bearshell`로 해줘.
 구현 후 `npx ph bearshell --shell 'gradle test'`, `npx ph bearshell --shell 'gradle build'`를 실행해줘.
 실행 가능한 Spring Boot 앱이면 bootRun과 HTTP happy/failure smoke도 확인해줘.
@@ -261,6 +260,7 @@ These commands are intentionally visible so AI agents can call them from OpenCod
 - `ph plan --implement`: checks that implementation may start and prints the implementation rail.
 - `ph bearshell`: runs timeout-bounded and output-bounded shell commands.
 - `ph workflow check`: reports plan/report/evidence status.
+- `ph workflow implement`: prints the single AI-facing implementation rail, including README chunk-read commands.
 - `ph workflow start implement`: prints the AI-facing implementation workflow.
 - `ph workflow finish implement`: checks whether the workflow can be reported complete.
 - `ph doctor`: diagnoses OpenCode and Persona Harness integration.

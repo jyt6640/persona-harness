@@ -9,6 +9,9 @@ export type WorkflowStatusSummary = {
   readonly implementation: string
   readonly review: string
   readonly evidence: "present" | "missing"
+  readonly readCoverage: string
+  readonly readCoverageBlocking: boolean
+  readonly readCoverageFinding: "PASS" | "WARN"
   readonly commandDiscipline: string
   readonly commandDisciplineBlocking: boolean
   readonly commandDisciplineFinding: "PASS" | "WARN"
@@ -19,6 +22,7 @@ const PLAN_PATH = ".persona/workflow/plan.md"
 const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const EVIDENCE_DIR = ".persona/evidence"
+const README_PATH = "README.md"
 
 function readStatusLine(filePath: string): string {
   if (!existsSync(filePath)) {
@@ -57,6 +61,66 @@ const RAW_WITHOUT_BEARSHELL_PATTERN = /(?:raw shell|직접\s*썼|직접\s*사용
 const FINAL_VERIFICATION_RERUN_PATTERN = /(?:final verification|최종\s*검증)[^\n]*(?:rerun|re-run|다시\s*실행|재실행|다시\s*검증)[^\n]*(?:bearshell|npx\s+ph\s+bearshell)|(?:final verification|최종\s*검증)[^\n]*(?:bearshell|npx\s+ph\s+bearshell)[^\n]*(?:rerun|re-run|다시\s*실행|재실행|다시\s*검증)|(?:bearshell|npx\s+ph\s+bearshell)[^\n]*(?:rerun|re-run|다시\s*실행|재실행|다시\s*검증)[^\n]*(?:final verification|최종\s*검증)/i
 
 type CommandDisciplineSummary = Pick<WorkflowStatusSummary, "commandDiscipline" | "commandDisciplineBlocking" | "commandDisciplineFinding">
+type ReadCoverageSummary = Pick<WorkflowStatusSummary, "readCoverage" | "readCoverageBlocking" | "readCoverageFinding">
+
+const README_RANGES_FIELD_PATTERN = /^-\s*README ranges read:\s*(.*)$/i
+const READ_COVERAGE_STOP_PATTERN = /^-\s*(?:Plan read method|Plan ranges read|Unread ranges|Read evidence notes):/i
+const RANGE_COVERAGE_PATTERN = /\b\d+\s*[-–]\s*\d+\b|\ball\b|\bcomplete\b|전체|끝까지|완독/i
+
+function hasReadmeRangeCoverage(reportText: string): boolean {
+  const lines = reportText.split(/\r?\n/)
+  const fieldIndex = lines.findIndex((line) => README_RANGES_FIELD_PATTERN.test(line))
+  if (fieldIndex === -1) {
+    return false
+  }
+
+  const fieldMatch = README_RANGES_FIELD_PATTERN.exec(lines[fieldIndex])
+  if (fieldMatch?.[1] !== undefined && RANGE_COVERAGE_PATTERN.test(fieldMatch[1])) {
+    return true
+  }
+
+  for (const line of lines.slice(fieldIndex + 1)) {
+    if (/^##\s+/.test(line) || READ_COVERAGE_STOP_PATTERN.test(line)) {
+      return false
+    }
+    if (RANGE_COVERAGE_PATTERN.test(line)) {
+      return true
+    }
+  }
+  return false
+}
+
+function readCoverage(projectDir: string, implementationStatus: string): ReadCoverageSummary {
+  if (implementationStatus !== "filled") {
+    return {
+      readCoverage: "not checked until implementation report is filled",
+      readCoverageBlocking: false,
+      readCoverageFinding: "PASS",
+    }
+  }
+  if (!existsSync(join(projectDir, README_PATH))) {
+    return {
+      readCoverage: "README.md missing; range coverage not required",
+      readCoverageBlocking: false,
+      readCoverageFinding: "PASS",
+    }
+  }
+
+  const implementationReportPath = join(projectDir, IMPLEMENTATION_REPORT_PATH)
+  const reportText = existsSync(implementationReportPath) ? readFileSync(implementationReportPath, "utf8") : ""
+  if (hasReadmeRangeCoverage(reportText)) {
+    return {
+      readCoverage: "README ranges observed",
+      readCoverageBlocking: false,
+      readCoverageFinding: "PASS",
+    }
+  }
+  return {
+    readCoverage: "README.md exists but README ranges read is empty",
+    readCoverageBlocking: true,
+    readCoverageFinding: "WARN",
+  }
+}
 
 function commandDiscipline(projectDir: string, implementationStatus: string, reviewStatus: string): CommandDisciplineSummary {
   if (implementationStatus !== "filled") {
@@ -130,13 +194,16 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
     return "review plan, then run `npx ph plan --accept` or `npx ph plan --revise`"
   }
   if (summary.implementation !== "filled") {
-    return "run `npx ph plan --implement`, implement, fill implementation report, then run `npx ph plan --report-filled implementation`"
+    return "run `npx ph workflow implement`, implement, fill implementation report, then run `npx ph plan --report-filled implementation`"
   }
   if (summary.review !== "filled") {
     return "fill review report and run `npx ph plan --report-filled review`"
   }
   if (summary.commandDisciplineBlocking) {
     return "rerun final verification through `npx ph bearshell`"
+  }
+  if (summary.readCoverageBlocking) {
+    return "record README ranges read in `.persona/workflow/implementation-report.md`"
   }
   if (summary.commandDisciplineFinding === "WARN") {
     return "review workflow noise, then archive completed workflow if acceptable"
@@ -153,11 +220,18 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
     review: readStatusLine(join(projectDir, REVIEW_REPORT_PATH)),
     evidence: hasFilesDeep(join(projectDir, EVIDENCE_DIR)) ? "present" : "missing",
   } as const
+  const coverage = readCoverage(projectDir, summary.implementation)
   const command = commandDiscipline(projectDir, summary.implementation, summary.review)
-  const next = nextAction({ ...summary, ...command })
+  const next = nextAction({ ...summary, ...coverage, ...command })
   const finding =
-    summary.plan === "accepted" && summary.implementation === "filled" && summary.review === "filled" && command.commandDisciplineFinding === "PASS" ? "PASS" : "WARN"
-  return { ...summary, ...command, finding, next }
+    summary.plan === "accepted"
+    && summary.implementation === "filled"
+    && summary.review === "filled"
+    && coverage.readCoverageFinding === "PASS"
+    && command.commandDisciplineFinding === "PASS"
+      ? "PASS"
+      : "WARN"
+  return { ...summary, ...coverage, ...command, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -172,6 +246,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- .persona/workflow/implementation-report.md: ${summary.implementation}`,
     `- .persona/workflow/review-report.md: ${summary.review}`,
     `- .persona/evidence: ${summary.evidence}`,
+    `- read coverage: ${summary.readCoverage}`,
     `- command discipline: ${summary.commandDiscipline}`,
     "",
     `Next: ${summary.next}`,

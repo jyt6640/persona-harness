@@ -13,7 +13,7 @@ export function createPlanOnlyPrompt(): string {
     "",
     "계획이 불확실하면 구현하지 말고 질문이나 가정을 .persona/workflow/plan.md에 명확히 남겨줘.",
     "",
-    "만약 사용자가 '플랜 보고 구현해줘', '계획대로 해줘', 'README 보고 구현해줘', '이제 구현해줘'처럼 짧은 구현 지시를 하면 바로 구현하지 말고 `npx ph workflow start implement`를 먼저 실행해줘.",
+    "만약 사용자가 '플랜 보고 구현해줘', '계획대로 해줘', 'README 보고 구현해줘', '이제 구현해줘'처럼 짧은 구현 지시를 하면 바로 구현하지 말고 `npx ph workflow implement`를 먼저 실행해줘.",
     "",
     "명령 실행이 필요하면 `npx ph bearshell`을 우선 사용하고, Persona Harness CLI는 글로벌 `ph`가 아니라 `npx ph`로 실행해줘.",
   ].join("\n")
@@ -23,7 +23,7 @@ export function createImplementationPrompt(): string {
   return [
     "사용자가 `README.md 보고 구현해줘`, `플랜 보고 구현해줘`, `그냥 구현해줘`처럼 짧게 말해도 이 구현 workflow를 생략하지 마.",
     "",
-    "구현을 시작하기 전에 `npx ph workflow start implement`를 먼저 실행하고, 그 출력에 따라 `npx ph plan --implement`, README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽은 뒤 accepted plan 기준으로 구현해줘.",
+    "구현을 시작하기 전에 `npx ph workflow implement`를 먼저 실행하고, 그 단일 레일에 따라 README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽은 뒤 accepted plan 기준으로 구현해줘.",
     "",
     "node_modules, .opencode, .persona/rules, .persona/evidence 경로는 읽지 마. package/vendor/setup 문서를 구현 컨텍스트로 읽지 마.",
     ".persona/rules를 직접 열어 규칙 원문을 읽지 마. 필요한 규칙은 Persona Harness injection summary와 accepted plan에 이미 요약된다.",

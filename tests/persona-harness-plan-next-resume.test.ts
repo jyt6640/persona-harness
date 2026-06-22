@@ -65,7 +65,7 @@ describe("ph plan --next", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Plan status: accepted")
     expect(result.stdout).toContain("Implementation report status: template")
-    expect(result.stdout).toContain("npx ph plan --implement")
+    expect(result.stdout).toContain("npx ph workflow implement")
   })
 
   it("recommends review after the implementation report is filled", () => {
@@ -122,7 +122,7 @@ describe("ph plan --resume", () => {
     expect(result.stdout).toContain("Persona Harness resume prompt")
     expect(result.stdout).toContain("Implementation report status: template")
     expect(result.stdout).toContain("No filled continuation evidence found")
-    expect(result.stdout).toContain("npx ph plan --implement")
+    expect(result.stdout).toContain("npx ph workflow implement")
     expect(result.stdout).toContain("Read Coverage")
   })
 

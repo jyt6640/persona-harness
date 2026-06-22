@@ -6,7 +6,7 @@ OpenCode를 위한 Java/Spring backend Clean Code workflow pilot.
 
 Persona Harness는 에이전트가 빈 프로젝트에서 시작해 backend 맥락을 묻고, 구현 전 architecture plan을 남긴 뒤, 더 균일한 Java/Spring 구조로 코드를 만들도록 돕습니다.
 
-`ph` 명령어는 주로 AI가 쓰는 workflow surface입니다. 사용자는 설치와 초기화만 해두고, OpenCode나 Codex-style TUI에서 “README 보고 구현해줘”처럼 자연어로 요청하는 흐름을 목표로 합니다. 이후 `ph workflow start implement`, `ph bearshell`, report-fill, `ph workflow finish implement` 명령은 에이전트가 실행해야 합니다.
+`ph` 명령어는 주로 AI가 쓰는 workflow surface입니다. 사용자는 설치와 초기화만 해두고, OpenCode나 Codex-style TUI에서 “README 보고 구현해줘”처럼 자연어로 요청하는 흐름을 목표로 합니다. 이후 `ph workflow implement`, `ph bearshell`, report-fill, `ph workflow finish implement` 명령은 에이전트가 실행해야 합니다.
 
 > 현재 범위: Java/Spring backend MVP.
 > frontend, infra, desktop app, AST/linter enforcement, 완전한 TDD workflow는 후속 트랙입니다.
@@ -112,6 +112,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph bearshell`: bounded shell command helper
 - `ph history`: 사용한 workflow artifact를 `.persona/workflow/history/`에 보존
 - `ph workflow check`: 현재 plan/report/evidence 상태 확인
+- `ph workflow implement`: accepted plan workflow 상태가 준비된 뒤 AI용 단일 구현 레일과 README chunk-read 명령 출력
 - `ph workflow start implement`: accepted plan workflow 상태가 준비된 뒤 AI용 구현 레일 출력
 - `ph workflow finish implement`: workflow report/evidence가 준비되기 전 완료 보고 차단
 - `ph workflow guard implement/final`: workflow rail이 재사용하는 저수준 strict gate

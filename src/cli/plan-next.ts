@@ -102,7 +102,7 @@ function nextActionLines(snapshot: WorkflowSnapshot): readonly string[] {
   }
 
   if (snapshot.implementationStatus !== "filled") {
-    return ["Implementation is next.", "Next command: npx ph plan --implement"]
+    return ["Implementation is next.", "Next command: npx ph workflow implement"]
   }
 
   if (snapshot.reviewStatus !== "filled") {
@@ -185,8 +185,8 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     "- Fill .persona/workflow/implementation-report.md with actual Read Coverage and Continuation evidence.",
     "- When implementation is complete, run npx ph plan --report-filled implementation.",
     "",
-    "Fallback implementation gate:",
-    "npx ph plan --implement",
+    "Fallback implementation rail:",
+    "npx ph workflow implement",
     "",
     "Implementation prompt:",
     createImplementationPrompt(),

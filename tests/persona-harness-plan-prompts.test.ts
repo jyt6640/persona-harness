@@ -46,7 +46,7 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stdout).toContain("codegraph MCP first for code structure analysis")
     expect(implement.stdout).toContain(".persona/workflow/implementation-report.md")
     expect(implement.stdout).toContain(".persona/workflow/review-report.md")
-    expect(implement.stdout).toContain("npx ph workflow start implement")
+    expect(implement.stdout).toContain("npx ph workflow implement")
     expect(implement.stdout).toContain("README.md 보고 구현해줘")
     expect(implement.stdout).toContain("npx ph workflow finish implement")
     expect(implement.stdout).toContain("finish가 실패하면 완료했다고 말하지 마")
@@ -85,7 +85,7 @@ describe("ph plan prompt and usage output", () => {
     expect(prompt.stdout).toContain("긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고")
     expect(prompt.stdout).toContain("npx ph bearshell --shell 'sed -n \"1,220p\" README.md'")
     expect(prompt.stdout).toContain("플랜 보고 구현해줘")
-    expect(prompt.stdout).toContain("npx ph workflow start implement")
+    expect(prompt.stdout).toContain("npx ph workflow implement")
     expect(prompt.stdout).toContain("명령 실행이 필요하면 `npx ph bearshell`을 우선 사용")
   })
 

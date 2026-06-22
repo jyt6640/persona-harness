@@ -1,15 +1,23 @@
 import type { CliRunResult } from "./bearshell.js"
+import {
+  failedGuardOutput,
+  failedRunnerOutput,
+  passedFinishOutput,
+  passedGuardOutput,
+  passedImplementOutput,
+  passedStartOutput,
+  type WorkflowGuardKind,
+  type WorkflowRunnerKind,
+} from "./workflow-output.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 
 type WorkflowOptions = {
   readonly projectDir?: string
 }
 
-type WorkflowGuardKind = "implement" | "final"
-type WorkflowRunnerKind = "implement"
-
 type ParsedWorkflowArgs =
   | { readonly kind: "check" }
+  | { readonly kind: "implement" }
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
   | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
   | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
@@ -18,12 +26,13 @@ type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
     "Scope:",
     "- workflow check is report-only",
+    "- workflow implement prints a single AI-facing implementation rail",
     "- workflow start/finish are AI-facing workflow rails",
     "- workflow guard uses strict exit codes for AI-facing workflow discipline",
     "- no generated app quality certification",
@@ -33,6 +42,9 @@ export function workflowUsage(invocation = "ph"): string {
 function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   if (args.length === 0 || args[0] === "check") {
     return args.length <= 1 ? { kind: "check" } : { kind: "invalid", message: "workflow check does not accept extra arguments." }
+  }
+  if (args[0] === "implement") {
+    return args.length === 1 ? { kind: "implement" } : { kind: "invalid", message: "workflow implement does not accept extra arguments." }
   }
   if (args[0] === "guard") {
     if (args.length !== 2) {
@@ -67,110 +79,6 @@ function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   return { kind: "invalid", message: `Unknown workflow command: ${args[0]}` }
 }
 
-function failedGuardOutput(guardKind: WorkflowGuardKind, reasons: readonly string[]): CliRunResult {
-  return {
-    status: 1,
-    stdout: "",
-    stderr: [
-      `Workflow guard failed: ${guardKind}`,
-      "",
-      "Required fixes:",
-      ...reasons.map((reason) => `- ${reason}`),
-      "",
-      "This is a workflow-state gate only. It does not certify generated app product quality.",
-    ].join("\n") + "\n",
-  }
-}
-
-function failedRunnerOutput(action: "start" | "finish", runnerKind: WorkflowRunnerKind, reasons: readonly string[]): CliRunResult {
-  return {
-    status: 1,
-    stdout: "",
-    stderr: [
-      `Workflow ${action} failed: ${runnerKind}`,
-      "",
-      "Required fixes:",
-      ...reasons.map((reason) => `- ${reason}`),
-      "",
-      "This is an AI-facing workflow rail only. It does not certify generated app product quality.",
-    ].join("\n") + "\n",
-  }
-}
-
-function passedStartOutput(runnerKind: WorkflowRunnerKind): CliRunResult {
-  return {
-    status: 0,
-    stdout: [
-      `Persona Harness Workflow Start: ${runnerKind}`,
-      "",
-      "Start status: PASS",
-      "",
-      "Short TUI request detected:",
-      "- If the user said `README.md 보고 구현해줘`, `플랜 보고 구현해줘`, or another short implementation request, treat this output as the required workflow rail.",
-      "",
-      "Run this implementation rail now:",
-      "1. `npx ph plan --implement`",
-      "2. Read `README.md`, `.persona/project-profile.jsonc`, `.persona/policies`, and `.persona/workflow/plan.md`.",
-      "3. Do not read `.persona/rules` directly; use the accepted plan and Persona Harness injection summary.",
-      "4. Use codegraph MCP before raw file reads for code structure analysis when available.",
-      "5. Implement from the accepted plan.",
-      "6. Use `npx ph bearshell` for shell verification.",
-      "7. Fill `.persona/workflow/implementation-report.md`.",
-      "8. Run `npx ph plan --report-filled implementation`.",
-      "9. Fill `.persona/workflow/review-report.md` after review/manual QA.",
-      "10. Run `npx ph plan --report-filled review`.",
-      "11. Run `npx ph workflow finish implement`.",
-      "12. Do not give the final answer until `npx ph workflow finish implement` passes.",
-      "",
-      "Scope:",
-      "- AI-facing workflow rail",
-      "- no generated app product-quality certification",
-    ].join("\n") + "\n",
-    stderr: "",
-  }
-}
-
-function passedFinishOutput(runnerKind: WorkflowRunnerKind): CliRunResult {
-  return {
-    status: 0,
-    stdout: [
-      `Persona Harness Workflow Finish: ${runnerKind}`,
-      "",
-      "Finish status: PASS",
-      "Workflow evidence is complete; final answer may be reported.",
-      "",
-      "Next:",
-      "- `npx ph history --id <run-id>` when this workflow should be archived.",
-      "",
-      "Scope:",
-      "- AI-facing workflow rail",
-      "- no generated app product-quality certification",
-    ].join("\n") + "\n",
-    stderr: "",
-  }
-}
-
-function passedGuardOutput(guardKind: WorkflowGuardKind): CliRunResult {
-  const nextLine =
-    guardKind === "implement"
-      ? "Implementation may start. Run `npx ph plan --implement`, then implement from the accepted plan."
-      : "Workflow evidence is complete; final answer may be reported."
-  return {
-    status: 0,
-    stdout: [
-      `Persona Harness Workflow Guard: ${guardKind}`,
-      "",
-      "Guard status: PASS",
-      nextLine,
-      "",
-      "Scope:",
-      "- AI-facing workflow discipline gate",
-      "- no generated app product-quality certification",
-    ].join("\n") + "\n",
-    stderr: "",
-  }
-}
-
 function implementationGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): readonly string[] {
   const reasons: string[] = []
   if (summary.plan !== "accepted") {
@@ -202,6 +110,9 @@ function finalGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): read
   if (summary.commandDisciplineBlocking) {
     reasons.push(summary.commandDiscipline)
   }
+  if (summary.readCoverageBlocking) {
+    reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md")
+  }
   return reasons
 }
 
@@ -223,6 +134,15 @@ function runWorkflowStart(runnerKind: WorkflowRunnerKind, options: WorkflowOptio
   return passedStartOutput(runnerKind)
 }
 
+function runWorkflowImplement(options: WorkflowOptions): CliRunResult {
+  const summary = readWorkflowStatus(options.projectDir)
+  const reasons = implementationGuardReasons(summary)
+  if (reasons.length > 0) {
+    return failedRunnerOutput("implement", "implement", reasons)
+  }
+  return passedImplementOutput()
+}
+
 function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOptions): CliRunResult {
   const summary = readWorkflowStatus(options.projectDir)
   const reasons = finalGuardReasons(summary)
@@ -242,6 +162,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "guard") {
     return runWorkflowGuard(parsed.guardKind, options)
+  }
+  if (parsed.kind === "implement") {
+    return runWorkflowImplement(options)
   }
   if (parsed.kind === "start") {
     return runWorkflowStart(parsed.runnerKind, options)

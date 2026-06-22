@@ -167,7 +167,7 @@ function implementationGateOutput(planPath: string, status: string): string {
     `- ${REVIEW_REPORT_PATH}`,
     "",
     "Required workflow commands:",
-    "- Before implementation, run `npx ph workflow start implement`.",
+    "- Before implementation, run `npx ph workflow implement` for the single AI-facing implementation rail.",
     "- Run shell verification through `npx ph bearshell` when possible.",
     "- After implementation, fill the implementation report and run `npx ph plan --report-filled implementation`.",
     "- Before final answer, fill the review report after manual QA, run `npx ph plan --report-filled review`, then run `npx ph workflow finish implement`.",
@@ -185,7 +185,7 @@ function runImplementationGate(options: PlanOptions): CliRunResult {
         "Workflow plan is not accepted.",
         `Current status: ${result.status}`,
         "Run npx ph plan --accept after review, or npx ph plan --revise if the plan needs changes.",
-        "For a short TUI request like '그냥 플랜보고 구현해줘', run npx ph plan --implement again after acceptance.",
+        "For a short TUI request like '그냥 플랜보고 구현해줘', run npx ph workflow implement after acceptance.",
       ].join("\n"),
     )
   }
