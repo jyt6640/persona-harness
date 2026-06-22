@@ -35,6 +35,9 @@ This candidate is a hotfix for installed-package clean runs where generated Java
 | `npm run check:injection-value` | pass: current window 3/3, expected decision `continue-java-mvp` |
 | `npm pack --dry-run` | pass: `persona-harness-0.3.2-alpha.2.tgz`, 222 files, 230.8 kB package size, 889.4 kB unpacked size |
 | `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.2-alpha.2` |
+| `npm publish --tag alpha` | pass: `persona-harness@0.3.2-alpha.2` |
+| `npm view persona-harness@alpha version` | pass: `0.3.2-alpha.2` |
+| `npm dist-tag add persona-harness@0.3.2-alpha.2 latest` | blocked: npm OTP required |
 
 ## Clean Install Smoke
 
@@ -73,9 +76,9 @@ Expected:
 - Full TDD workflow.
 - `ph bearshell` sandboxing.
 
-## Pre-Publish Release Decision
+## Release Decision
 
-Ready for publish.
+`persona-harness@0.3.2-alpha.2` is published under the `alpha` dist-tag.
 
 Local tarball install smoke passed in a repo-external temporary project:
 
@@ -84,3 +87,9 @@ Local tarball install smoke passed in a repo-external temporary project:
 - `npx ph plan --auto-accept`: created accepted workflow plan
 - `npx ph workflow implement`: printed Java role discovery command
 - `npx ph workflow implement`: printed Java role discovery/read evidence guidance
+
+Registry status after publish:
+
+- `alpha`: `0.3.2-alpha.2`
+- `latest`: still `0.3.2-alpha.1`
+- `latest` sync is pending OTP authorization.
