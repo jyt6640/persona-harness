@@ -94,10 +94,16 @@ function commandDiscipline(projectDir: string, implementationStatus: string, rev
   if (hasBearshell) {
     const warnings = [
       ...(hasRawShell ? ["raw shell environment probe observed"] : []),
+    ]
+    const notes = [
       ...(hasDirectRulesRead ? ["direct `.persona/rules` read observed"] : []),
     ]
+    const details = [
+      ...warnings.map((warning) => `warning: ${warning}`),
+      ...notes.map((note) => `note: ${note}`),
+    ]
     return {
-      commandDiscipline: warnings.length > 0 ? `bearshell observed; warning: ${warnings.join("; ")}` : "bearshell observed",
+      commandDiscipline: details.length > 0 ? `bearshell observed; ${details.join("; ")}` : "bearshell observed",
       commandDisciplineBlocking: false,
       commandDisciplineFinding: warnings.length > 0 ? "WARN" : "PASS",
     }

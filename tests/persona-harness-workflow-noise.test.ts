@@ -56,7 +56,7 @@ describe("ph workflow noise classification", () => {
     expect(result.stdout).toContain("Next: review workflow noise")
   })
 
-  it("reports direct .persona/rules reads as workflow noise", () => {
+  it("records direct .persona/rules reads as a non-warning workflow note", () => {
     const projectDir = createTempProject()
     prepareAcceptedWorkflow(projectDir)
     writeWorkflowReports(
@@ -73,8 +73,10 @@ describe("ph workflow noise classification", () => {
     const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain("Workflow status: WARN")
+    expect(result.stdout).toContain("Workflow status: PASS")
+    expect(result.stdout).toContain("note: direct `.persona/rules` read observed")
     expect(result.stdout).toContain("direct `.persona/rules` read observed")
+    expect(result.stdout).toContain("Next: archive completed workflow")
   })
 
   it("allows implementation finish when only non-blocking workflow noise remains", () => {
@@ -96,6 +98,29 @@ describe("ph workflow noise classification", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Finish status: PASS")
+  })
+
+  it("keeps workflow check WARN when direct rules reads are paired with raw shell noise", () => {
+    const projectDir = createTempProject()
+    prepareAcceptedWorkflow(projectDir)
+    writeWorkflowReports(
+      projectDir,
+      [
+        "Status: filled",
+        "- [x] raw shell was used only for `java -version` and `gradle -v` environment probes.",
+        "- [x] Read .persona/rules/backend/spring-service.md directly.",
+        "- [x] `npx ph bearshell --shell 'gradle test'`",
+        "- [x] `npx ph bearshell --shell 'gradle build'`",
+      ],
+      ["Status: filled", "- [x] `npx ph bearshell --shell 'gradle bootRun'`"],
+    )
+
+    const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Workflow status: WARN")
+    expect(result.stdout).toContain("raw shell environment probe observed")
+    expect(result.stdout).toContain("note: direct `.persona/rules` read observed")
   })
 
   it("allows implementation finish when raw final verification was rerun through bearshell", () => {
