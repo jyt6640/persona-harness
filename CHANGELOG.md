@@ -8,6 +8,14 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ### Added
 
+### Changed
+
+### Known Gaps
+
+## [0.3.0-alpha.3] - 2026-06-22
+
+### Added
+
 - Added `ph plan --implement` as a plan-aware implementation gate that blocks short implementation requests until `.persona/workflow/plan.md` is accepted and workflow report templates exist.
 - Added injected guidance for short implementation intents such as `플랜 보고 구현해줘` to route through `npx ph plan --implement` before coding.
 - Added TUI read-limit guidance so long README/plan files are read through `ph bearshell` line ranges and interrupted runs record remaining scope in the implementation report.
@@ -16,15 +24,20 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added `0.3.0-alpha.3` candidate notes and GitHub Actions release automation docs.
 - Added `ph plan --next` to print the next workflow action from plan/report status.
 - Added `ph plan --resume` to print a continuation prompt from accepted plan and implementation report evidence.
+- Added package-flow guidance that steers Java/Spring generated packages toward `presentation/application/domain/infrastructure`.
+- Added `bootJar` guidance/reporting so executable Spring Boot apps do not treat `:bootJar SKIPPED` as a valid build pass.
+- Added alpha.3 demo packaging decision notes and release notes.
 
 ### Changed
 
 - External tester guidance now starts with a minimal published-alpha command path and explicitly separates success evidence from setup-only evidence.
 - Release automation now checks tag/package version alignment and runs an npm publish dry-run before real publish.
+- Release readiness now allows alpha.3 demo packaging checks to proceed after fresh ON package-flow and `bootJar` evidence.
 
 ### Known Gaps
 
 - `ph plan --resume` creates a continuation prompt but does not automatically resume OpenCode by itself.
+- Alpha.3 is still workflow/tooling evidence, not generated application product-quality certification.
 
 ## [0.3.0-alpha.2] - 2026-06-21
 

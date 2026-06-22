@@ -12,8 +12,8 @@
 | `npm run report:rules` | pass: PersonaHarnessRule diagnostics PASS, 0 findings |
 | `npm run check:scope` | pass: MVP scope diagnostics PASS, 0 findings, report-only |
 | `npm run check:injection-value` | pass: injection value diagnostics PASS, current window 3/3, expected decision `continue-java-mvp` |
-| `npm pack --dry-run --json` | pass: `persona-harness-0.3.0-alpha.2.tgz`, 190 files, 197.1 kB package size after build output was included |
-| `npm publish --dry-run --tag alpha` | pass: dry-run only, current version remains `0.3.0-alpha.2` |
+| `npm pack --dry-run --json` | pass: `persona-harness-0.3.0-alpha.3.tgz`, 191 files, 198.2 kB package size, 735.1 kB unpacked size |
+| `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.0-alpha.3` |
 
 ## Productization Review Decision
 
@@ -79,4 +79,4 @@ proceed-to-demo-packaging
 
 After the fresh package-flow/bootJar ON run, next-version demo packaging can proceed to final package verification.
 
-Do not publish yet. The package dry-runs pass on the current `0.3.0-alpha.2` version, so the next release step is explicit version metadata preparation for `0.3.0-alpha.3`, changelog/release notes update, then tag or manual publish approval.
+Do not publish yet. The package version metadata, changelog, release notes, `npm pack --dry-run --json`, and `npm publish --dry-run --tag alpha` now pass for `0.3.0-alpha.3`; the next release step is explicit tag or manual publish approval.

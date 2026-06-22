@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: v0.3.0 project-intake / philosophy workflow planning surface on top of the Java backend MVP.
 
-Current active candidate: v0.3.0-alpha.3 demo packaging verification. `persona-harness@0.3.0-alpha.2` remains the published npm package, and both `alpha` and `latest` point to it during the alpha pilot to avoid stale default installs. This is not a stable support claim.
+Current active candidate: v0.3.0-alpha.3 release approval. `persona-harness@0.3.0-alpha.2` remains the published npm package, while local package metadata and dry-run release checks are prepared for `0.3.0-alpha.3`. This is not a stable support claim.
 
 ## Current Decisions
 
@@ -74,7 +74,7 @@ Current active candidate: v0.3.0-alpha.3 demo packaging verification. `persona-h
 - Experiment artifact cleanup is a phase-close hygiene step and remains dry-run-first.
 - Next-version packaging was previously blocked after the `01-book-loans` context-noise rerun: Persona ON run-05 no longer timed out and passed `gradle test`, but the generated package-flow shape still missed the current Java backend MVP target enough that the A/B verdict remained mixed. The external analyzer now classifies this as `buildable-package-flow-mismatch` instead of conflating it with generated-project failure, and backend guidance now explicitly rejects `controller/service/repository/dto` role-name packages in favor of `presentation/application/domain/infrastructure`.
 - Fresh ON package-flow/bootJar follow-up is positive: the `01-book-loans` run at `/Users/yongtae/Desktop/blackbear-persona-harness-test/fresh-runs/01-book-loans/A-persona-on/bootjar-guidance-20260622-005742` generated `presentation/application/domain/infrastructure`, domain repository ports plus infrastructure implementations, no Service-owned storage/id sequence, no `bootJar.enabled=false`, `gradle build` with `:bootJar UP-TO-DATE`, and independent `gradle bootRun` HTTP happy/failure smoke pass. This reduces the narrow package-flow/build-line blocker; final packaging still needs an explicit release/demo decision.
-- Release/demo decision is now `proceed-to-demo-packaging` for `v0.3.0-alpha.3` final package verification only. `npm pack --dry-run` and `npm publish --dry-run --tag alpha` pass on the current `0.3.0-alpha.2` package surface, but no npm publish or tag is implied until explicit release/version approval.
+- Release/demo decision is now `proceed-to-demo-packaging` for `v0.3.0-alpha.3`. Version metadata, changelog, release notes, `npm pack --dry-run --json`, and `npm publish --dry-run --tag alpha` pass locally for `0.3.0-alpha.3`, but no npm publish or tag is implied until explicit release approval.
 
 ## Active Commands
 
