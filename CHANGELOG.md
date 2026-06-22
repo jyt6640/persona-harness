@@ -8,11 +8,19 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ### Added
 
-- Added v0.3.1 external tester guide and feedback template for the published `persona-harness@alpha` smoke path.
-
 ### Changed
 
 ### Known Gaps
+
+## [0.3.1-alpha.1] - 2026-06-22
+
+### Fixed
+
+- Removed old Roomescape step contract fixture rules from the public `ph init` rule copy and npm package surface. The internal `backend/step1-api-contract.md` and `backend/step2-3-api-contract.md` files remain available for Phase 0 regression fixtures, but clean external projects no longer receive stale `/reservations` or `/times` guidance.
+
+### Added
+
+- Added v0.3.1 external tester guide and feedback template for the published `persona-harness@alpha` smoke path.
 
 ## [0.3.1-alpha.0] - 2026-06-22
 

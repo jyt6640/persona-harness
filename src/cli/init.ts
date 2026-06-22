@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs"
-import { dirname, isAbsolute, join, resolve } from "node:path"
+import { dirname, isAbsolute, join, resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
@@ -34,6 +34,11 @@ const PROJECT_NOISE_IGNORE_ENTRIES = [
   ".gradle/",
   "build/",
 ] as const
+
+const PUBLIC_INIT_EXCLUDED_RULES = new Set([
+  "backend/step1-api-contract.md",
+  "backend/step2-3-api-contract.md",
+])
 
 function stripJsonComments(input: string): string {
   let output = ""
@@ -177,6 +182,15 @@ function writeProjectNoiseIgnore(projectDir: string): void {
   writeFileSync(gitignorePath, nextContent)
 }
 
+function normalizeTemplateRelativePath(sourcePath: string, sourceRoot: string): string {
+  return sourcePath === sourceRoot ? "" : sourcePath.slice(sourceRoot.length + sep.length).replace(/\\/g, "/")
+}
+
+function shouldCopyPublicRuleTemplate(sourcePath: string, sourceRulesDir: string): boolean {
+  const relative = normalizeTemplateRelativePath(sourcePath, sourceRulesDir)
+  return relative === "" || !PUBLIC_INIT_EXCLUDED_RULES.has(relative)
+}
+
 export function initializePersonaHarness(options: InitOptions = {}): InitResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const packageRoot = resolve(options.packageRoot ?? defaultPackageRoot())
@@ -196,7 +210,10 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
 
   mkdirSync(personaDir, { recursive: true })
   cpSync(sourceHarnessConfig, targetHarnessConfig)
-  cpSync(sourceRulesDir, targetRulesDir, { recursive: true })
+  cpSync(sourceRulesDir, targetRulesDir, {
+    recursive: true,
+    filter: (sourcePath) => shouldCopyPublicRuleTemplate(sourcePath, sourceRulesDir),
+  })
   const backups = writeOpencodeConfig(projectDir, pluginPath)
   writeProjectNoiseIgnore(projectDir)
 

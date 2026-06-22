@@ -37,6 +37,8 @@ describe("persona-harness init", () => {
 
     expect(existsSync(join(projectDir, ".persona", "harness.jsonc"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "java-common.md"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "rules", "backend", "step1-api-contract.md"))).toBe(false)
+    expect(existsSync(join(projectDir, ".persona", "rules", "backend", "step2-3-api-contract.md"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
     expect(existsSync(join(projectDir, ".opencode", "opencode.json"))).toBe(true)
     expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain("node_modules/")

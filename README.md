@@ -6,7 +6,7 @@ It helps an AI agent start from a clean project, read your backend requirements,
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current status: `0.3.1-alpha.0`
+> Current status: `0.3.1-alpha.1`
 >
 > Current scope: Java/Spring backend MVP.
 >
@@ -108,7 +108,7 @@ Expected:
 - `.persona/harness.jsonc` exists
 - `.persona/rules` exists
 - `ph doctor` shows OpenCode is present
-- `ph doctor` shows `Persona package version: 0.3.1-alpha.0` or newer
+- `ph doctor` shows `Persona package version: 0.3.1-alpha.1` or newer
 
 ## 3. Write The Project README
 
