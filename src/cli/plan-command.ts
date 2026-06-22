@@ -160,6 +160,7 @@ function implementationGateOutput(planPath: string, status: string): string {
     "- .persona/project-profile.jsonc",
     "- .persona/policies",
     `- ${PLAN_PATH}`,
+    "- codegraph MCP first for code structure analysis when available",
     "",
     "Required workflow reports:",
     `- ${IMPLEMENTATION_REPORT_PATH}`,

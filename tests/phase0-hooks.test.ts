@@ -273,6 +273,15 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(injection.block).not.toContain("omo sparkshell")
   })
 
+  it("prefers codegraph for injected code analysis guidance", () => {
+    const targetFile = fixturePath("ReservationController.java")
+
+    const injection = createInjectionBlock(targetFile, fixtureWorkspace)
+
+    expect(injection.block).toContain("코드 구조 분석이나 변경 영향 파악이 필요하면 raw file read보다 codegraph MCP를 먼저 사용한다.")
+    expect(injection.block).toContain("codegraph를 사용할 수 없을 때만 필요한 파일 범위를 직접 읽고 그 이유를 남긴다.")
+  })
+
   it("routes short implementation intent through the accepted workflow plan gate", () => {
     const targetFile = fixturePath("ReservationController.java")
 

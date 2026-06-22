@@ -52,6 +52,9 @@ function readExistingFiles(filePaths: readonly string[]): string {
 const RAW_SHELL_PATTERN = /raw shell|직접\s*썼|직접\s*사용|raw\s+command/i
 const DIRECT_RULES_READ_PATTERN = /(?:read|읽)[^\n]*(?:\.persona\/rules|\.persona\\rules)|\.persona\/rules\/|\.persona\\rules\\/i
 const FINAL_VERIFICATION_PATTERN = /(?:\.\/)?gradlew?\s+(?:test|build|bootRun)\b|gradle\s+(?:test|build|bootRun)\b|bootRun\b|curl\b/i
+const RAW_FINAL_VERIFICATION_PATTERN = /(?:raw shell|직접\s*썼|직접\s*사용|raw\s+command)[^\n]*(?:final verification|최종\s*검증)|(?:final verification|최종\s*검증)[^\n]*(?:raw shell|직접\s*썼|직접\s*사용|raw\s+command)/i
+const RAW_WITHOUT_BEARSHELL_PATTERN = /(?:raw shell|직접\s*썼|직접\s*사용|raw\s+command)[^\n]*(?:bearshell)[^\n]*(?:not provided|not used|없|않|못|미사용|제공되지)/i
+const FINAL_VERIFICATION_RERUN_PATTERN = /(?:final verification|최종\s*검증)[^\n]*(?:rerun|re-run|다시\s*실행|재실행|다시\s*검증)[^\n]*(?:bearshell|npx\s+ph\s+bearshell)|(?:final verification|최종\s*검증)[^\n]*(?:bearshell|npx\s+ph\s+bearshell)[^\n]*(?:rerun|re-run|다시\s*실행|재실행|다시\s*검증)|(?:bearshell|npx\s+ph\s+bearshell)[^\n]*(?:rerun|re-run|다시\s*실행|재실행|다시\s*검증)[^\n]*(?:final verification|최종\s*검증)/i
 
 type CommandDisciplineSummary = Pick<WorkflowStatusSummary, "commandDiscipline" | "commandDisciplineBlocking" | "commandDisciplineFinding">
 
@@ -70,7 +73,17 @@ function commandDiscipline(projectDir: string, implementationStatus: string, rev
   const hasBearshell = reportText.includes("npx ph bearshell")
   const hasRawShell = RAW_SHELL_PATTERN.test(reportText)
   const hasDirectRulesRead = DIRECT_RULES_READ_PATTERN.test(reportText)
-  const hasRawFinalVerification = hasRawShell && reportText.split(/\r?\n/).some((line) => !line.includes("npx ph bearshell") && FINAL_VERIFICATION_PATTERN.test(line))
+  const hasFinalVerification = reportText.split(/\r?\n/).some((line) => FINAL_VERIFICATION_PATTERN.test(line))
+  const hasRawWithoutBearshell = reportText.split(/\r?\n/).some((line) =>
+    !FINAL_VERIFICATION_RERUN_PATTERN.test(line) && RAW_WITHOUT_BEARSHELL_PATTERN.test(line)
+  )
+  const hasRawFinalVerification = reportText.split(/\r?\n/).some((line) =>
+    !FINAL_VERIFICATION_RERUN_PATTERN.test(line)
+    && (
+      RAW_FINAL_VERIFICATION_PATTERN.test(line)
+      || (!line.includes("npx ph bearshell") && RAW_SHELL_PATTERN.test(line) && FINAL_VERIFICATION_PATTERN.test(line))
+    )
+  ) || (hasRawWithoutBearshell && hasFinalVerification)
   if (hasRawFinalVerification) {
     return {
       commandDiscipline: "raw shell used for final verification; rerun test/build/bootRun through `npx ph bearshell`",

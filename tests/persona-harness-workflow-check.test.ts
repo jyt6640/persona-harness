@@ -220,6 +220,7 @@ describe("ph workflow start and finish", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Persona Harness Workflow Start: implement")
     expect(result.stdout).toContain("npx ph plan --implement")
+    expect(result.stdout).toContain("Use codegraph MCP before raw file reads")
     expect(result.stdout).toContain("Use `npx ph bearshell` for shell verification")
     expect(result.stdout).toContain("npx ph plan --report-filled implementation")
     expect(result.stdout).toContain("npx ph workflow finish implement")
