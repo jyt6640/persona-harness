@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
@@ -10,6 +10,36 @@ type DoctorOptions = {
   readonly projectDir?: string
   readonly env?: Readonly<Record<string, string | undefined>>
 }
+
+export type StaleFixtureFinding = {
+  readonly relativePath: string
+  readonly matches: readonly string[]
+}
+
+export type DoctorSummary = {
+  readonly projectDir: string
+  readonly node: string
+  readonly npm: string
+  readonly opencode: string
+  readonly packageVersion: string
+  readonly registry: string
+  readonly opencodeConfig: "present" | "missing"
+  readonly pluginPath: "configured" | "missing" | "unreadable"
+  readonly harnessConfig: "present" | "missing"
+  readonly rules: "present" | "missing"
+  readonly workflowPlan: "present" | "missing"
+  readonly evidence: "present" | "missing"
+  readonly rulesFileCount: number
+  readonly staleFixtureFindings: readonly StaleFixtureFinding[]
+}
+
+const STALE_FIXTURE_TOKENS = [
+  "step1-api-contract",
+  "step2-3-api-contract",
+  "roomescape",
+  "/reservations",
+  "/times",
+] as const
 
 function commandVersion(command: string, args: readonly string[]): string {
   try {
@@ -80,30 +110,114 @@ function registryStatus(env: Readonly<Record<string, string | undefined>>): stri
   }
 }
 
-export function runDoctorCommand(_args: readonly string[], options: DoctorOptions = {}): CliRunResult {
+function normalizeRelativePath(filePath: string, rootDir: string): string {
+  return filePath === rootDir ? "" : filePath.slice(rootDir.length + 1).replace(/\\/g, "/")
+}
+
+function listRuleFiles(rulesDir: string): readonly string[] {
+  if (!existsSync(rulesDir)) {
+    return []
+  }
+  const files: string[] = []
+  const visit = (currentDir: string): void => {
+    for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
+      const entryPath = join(currentDir, entry.name)
+      if (entry.isDirectory()) {
+        visit(entryPath)
+      } else if (entry.isFile()) {
+        files.push(entryPath)
+      }
+    }
+  }
+  if (statSync(rulesDir).isDirectory()) {
+    visit(rulesDir)
+  }
+  return files.sort()
+}
+
+function staleMatches(relativePath: string, content: string): readonly string[] {
+  const haystack = `${relativePath}\n${content}`
+  return STALE_FIXTURE_TOKENS.filter((token) => haystack.includes(token))
+}
+
+function scanStaleFixtureRules(projectDir: string): {
+  readonly rulesFileCount: number
+  readonly staleFixtureFindings: readonly StaleFixtureFinding[]
+} {
+  const rulesDir = join(projectDir, ".persona", "rules")
+  const ruleFiles = listRuleFiles(rulesDir)
+  const findings = ruleFiles.flatMap((filePath): readonly StaleFixtureFinding[] => {
+    const relativePath = normalizeRelativePath(filePath, rulesDir)
+    try {
+      const matches = staleMatches(relativePath, readFileSync(filePath, "utf8"))
+      return matches.length > 0 ? [{ relativePath, matches }] : []
+    } catch {
+      return [{ relativePath, matches: ["unreadable"] }]
+    }
+  })
+  return { rulesFileCount: ruleFiles.length, staleFixtureFindings: findings }
+}
+
+export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const env = options.env ?? process.env
-  const lines = [
+  const rulesScan = scanStaleFixtureRules(projectDir)
+  return {
+    projectDir,
+    node: process.version,
+    npm: commandVersion("npm", ["--version"]),
+    opencode: commandVersion("opencode", ["--version"]),
+    packageVersion: packageVersion(),
+    registry: registryStatus(env),
+    opencodeConfig: pathStatus(projectDir, ".opencode/opencode.json"),
+    pluginPath: pluginStatus(projectDir),
+    harnessConfig: pathStatus(projectDir, ".persona/harness.jsonc"),
+    rules: pathStatus(projectDir, ".persona/rules"),
+    workflowPlan: pathStatus(projectDir, ".persona/workflow/plan.md"),
+    evidence: pathStatus(projectDir, ".persona/evidence"),
+    ...rulesScan,
+  }
+}
+
+export function formatDoctorSummary(summary: DoctorSummary): string {
+  const staleStatus = summary.staleFixtureFindings.length === 0 ? "PASS" : `WARN (${summary.staleFixtureFindings.length} findings)`
+  const staleDetails =
+    summary.staleFixtureFindings.length === 0
+      ? []
+      : [
+          "",
+          "Stale fixture findings:",
+          ...summary.staleFixtureFindings.map(
+            (finding) => `- ${finding.relativePath}: ${finding.matches.join(", ")}`,
+          ),
+        ]
+  return [
     "Persona Harness Doctor",
     "",
-    `Project: ${projectDir}`,
-    `Node: ${process.version}`,
-    `npm: ${commandVersion("npm", ["--version"])}`,
-    `OpenCode: ${commandVersion("opencode", ["--version"])}`,
-    `Persona package version: ${packageVersion()}`,
-    `npm registry: ${registryStatus(env)}`,
+    `Project: ${summary.projectDir}`,
+    `Node: ${summary.node}`,
+    `npm: ${summary.npm}`,
+    `OpenCode: ${summary.opencode}`,
+    `Persona package version: ${summary.packageVersion}`,
+    `npm registry: ${summary.registry}`,
     "",
     "Project integration:",
-    `.opencode/opencode.json: ${pathStatus(projectDir, ".opencode/opencode.json")}`,
-    `Persona plugin path: ${pluginStatus(projectDir)}`,
-    `.persona/harness.jsonc: ${pathStatus(projectDir, ".persona/harness.jsonc")}`,
-    `.persona/rules: ${pathStatus(projectDir, ".persona/rules")}`,
-    `.persona/workflow/plan.md: ${pathStatus(projectDir, ".persona/workflow/plan.md")}`,
-    `.persona/evidence: ${pathStatus(projectDir, ".persona/evidence")}`,
+    `.opencode/opencode.json: ${summary.opencodeConfig}`,
+    `Persona plugin path: ${summary.pluginPath}`,
+    `.persona/harness.jsonc: ${summary.harnessConfig}`,
+    `.persona/rules: ${summary.rules}`,
+    `.persona/workflow/plan.md: ${summary.workflowPlan}`,
+    `.persona/evidence: ${summary.evidence}`,
+    `Rules surface: ${summary.rulesFileCount} files`,
+    `Stale fixture scan: ${staleStatus}`,
+    ...staleDetails,
     "",
     "Scope:",
     "- local install / tarball install diagnostics",
     "- no generated app product-quality certification",
-  ]
-  return { status: 0, stdout: `${lines.join("\n")}\n`, stderr: "" }
+  ].join("\n")
+}
+
+export function runDoctorCommand(_args: readonly string[], options: DoctorOptions = {}): CliRunResult {
+  return { status: 0, stdout: `${formatDoctorSummary(readDoctorSummary(options))}\n`, stderr: "" }
 }

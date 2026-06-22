@@ -12,6 +12,15 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ### Known Gaps
 
+## [0.3.1-alpha.2] - 2026-06-22
+
+### Added
+
+- Strengthened `ph doctor` with rules-surface counts and a stale Roomescape step fixture scan across public `.persona/rules`.
+- Strengthened `ph smoke` so the smoke report includes local install/OpenCode/plugin/rules-surface diagnostics in addition to workflow status.
+- Strengthened AI-facing workflow output for short TUI requests such as `README.md 보고 구현해줘`, making `npx ph workflow start implement`, `npx ph bearshell`, report filling, and `npx ph workflow finish implement` more explicit.
+- Added an npm package ignore file so `dist/` remains included in release tarballs even though it is ignored by git.
+
 ## [0.3.1-alpha.1] - 2026-06-22
 
 ### Fixed

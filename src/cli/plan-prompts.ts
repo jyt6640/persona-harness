@@ -21,6 +21,8 @@ export function createPlanOnlyPrompt(): string {
 
 export function createImplementationPrompt(): string {
   return [
+    "사용자가 `README.md 보고 구현해줘`, `플랜 보고 구현해줘`, `그냥 구현해줘`처럼 짧게 말해도 이 구현 workflow를 생략하지 마.",
+    "",
     "구현을 시작하기 전에 `npx ph workflow start implement`를 먼저 실행하고, 그 출력에 따라 `npx ph plan --implement`, README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽은 뒤 accepted plan 기준으로 구현해줘.",
     "",
     "node_modules, .opencode, .persona/rules, .persona/evidence 경로는 읽지 마. package/vendor/setup 문서를 구현 컨텍스트로 읽지 마.",

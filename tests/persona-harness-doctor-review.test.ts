@@ -52,7 +52,37 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain("Persona plugin path: configured")
     expect(result.stdout).toContain(".persona/harness.jsonc: present")
     expect(result.stdout).toContain(".persona/rules: present")
+    expect(result.stdout).toContain("Rules surface: 0 files")
+    expect(result.stdout).toContain("Stale fixture scan: PASS")
     expect(result.stdout).toContain("npm registry: alpha=0.3.0-alpha.3, latest=0.3.0-alpha.3")
+  })
+
+  it("warns when public rules contain old Roomescape step fixture residue", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".opencode"), { recursive: true })
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
+    writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
+    writeFile(
+      projectDir,
+      ".persona/rules/backend/step1-api-contract.md",
+      "GET /reservations and roomescape stale fixture\n",
+    )
+
+    const result = runPersonaCli(["doctor"], {
+      cwd: projectDir,
+      env: {
+        PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ alpha: "0.3.1-alpha.2", latest: "0.3.1-alpha.2" }),
+      },
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Rules surface: 1 files")
+    expect(result.stdout).toContain("Stale fixture scan: WARN")
+    expect(result.stdout).toContain("backend/step1-api-contract.md")
+    expect(result.stdout).toContain("/reservations")
+    expect(result.stdout).toContain("roomescape")
   })
 })
 
