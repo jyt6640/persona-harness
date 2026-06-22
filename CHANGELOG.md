@@ -12,10 +12,12 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added `ph intake --default backend` for a ready backend profile without an interactive terminal.
 - Added default backend profile creation during `ph init`, so a clean install can move straight to `ph plan --auto-accept` unless the user wants to customize intake answers.
 - Added `ph plan --auto-accept` as a faster planning path for users who do not want a separate manual accept step during alpha smoke tests.
+- Added Java role-discovery guidance to `ph workflow implement` so generated Java files can be surfaced through `npx ph bearshell --shell 'find ...*.java...'` and picked up by existing role-discovery evidence.
 
 ### Changed
 
 - Updated fast-path guidance so implementation starts through `npx ph workflow implement` only after the profile and accepted workflow plan exist.
+- Updated the implementation report template with Java role discovery/read evidence fields.
 
 ### Known Gaps
 

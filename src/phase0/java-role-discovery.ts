@@ -4,11 +4,15 @@ import { isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import type { PendingInjection } from "./types.js"
 
 const JAVA_PATH_PATTERN = /(?:[A-Za-z]:)?(?:\/|\.{1,2}\/)?[^\s"'`<>|]*src\/(?:main|test)\/java\/[^\s"'`<>|]+?\.java\b/g
-const DISCOVERY_TOOL_NAMES = new Set(["glob", "ls", "list", "find"])
+const DISCOVERY_TOOL_NAMES = new Set(["glob", "ls", "list", "find", "bash", "shell", "bearshell"])
 
 export function isJavaRoleDiscoveryTool(toolName: string): boolean {
   const normalizedToolName = toolName.toLowerCase()
-  return DISCOVERY_TOOL_NAMES.has(normalizedToolName) || normalizedToolName.includes("glob")
+  return (
+    DISCOVERY_TOOL_NAMES.has(normalizedToolName) ||
+    normalizedToolName.includes("glob") ||
+    normalizedToolName.includes("shell")
+  )
 }
 
 export function extractJavaTargetFilesFromText(source: string): readonly string[] {

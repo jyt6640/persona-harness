@@ -149,6 +149,54 @@ describe("Phase 0 Java role discovery", () => {
     )
   })
 
+  it("records role evidence from bearshell find output after generated Java files exist", async () => {
+    const projectDir = createTempProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const toolOutput = {
+      title: "bearshell",
+      output: [
+        "src/main/java/com/example/library/presentation/BookController.java",
+        "src/main/java/com/example/library/application/BookService.java",
+        "src/main/java/com/example/library/domain/BookRepository.java",
+        "src/main/java/com/example/library/infrastructure/InMemoryBookRepository.java",
+      ].join("\n"),
+      metadata: {},
+    }
+
+    await hooks["tool.execute.after"]?.(
+      {
+        tool: "bash",
+        sessionID: "bearshell-role-discovery-session",
+        callID: "bearshell-role-discovery-call",
+        args: {
+          command: "npx ph bearshell --shell 'find src/main/java src/test/java -name \"*.java\" 2>/dev/null | sort'",
+        },
+      },
+      toolOutput,
+    )
+
+    expect(toolOutput.output).toContain("[Persona Harness Java Role Discovery]")
+    expect(toolOutput.output).toContain("controller: src/main/java/com/example/library/presentation/BookController.java")
+    expect(toolOutput.output).toContain("service: src/main/java/com/example/library/application/BookService.java")
+    expect(toolOutput.output).toContain("repository: src/main/java/com/example/library/domain/BookRepository.java")
+
+    const payloads = evidencePayloads(projectDir)
+    expect(payloads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          injectedInto: "role-discovery",
+          fileRole: "controller",
+          targetFile: "src/main/java/com/example/library/presentation/BookController.java",
+        }),
+        expect.objectContaining({
+          injectedInto: "role-discovery",
+          fileRole: "service",
+          targetFile: "src/main/java/com/example/library/application/BookService.java",
+        }),
+      ]),
+    )
+  })
+
   it("ignores installed persona-harness Java fixtures in role discovery output", async () => {
     const projectDir = createTempProject()
     const hooks = createPhase0Hooks({ projectDir })
