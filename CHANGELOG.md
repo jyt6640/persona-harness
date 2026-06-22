@@ -8,6 +8,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ### Added
 
+- Added v0.3.1 external tester guide and feedback template for the published `persona-harness@alpha` smoke path.
+
 ### Changed
 
 ### Known Gaps

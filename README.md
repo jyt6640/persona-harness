@@ -205,8 +205,8 @@ npx ph workflow finish implement
 - [Release notes template](docs/current/release/release-notes-template.md)
 - [Detailed usage notes](docs/current/persona-harness-detailed-usage.md)
 - [Alpha publish readiness](docs/current/v0.3.0-alpha-publish-readiness.md)
-- [External tester guide](docs/current/v0.3.0-external-tester-guide.md)
-- [External tester feedback template](docs/current/v0.3.0-external-tester-feedback-template.md)
+- [External tester guide](docs/current/v0.3.1-external-tester-guide.md)
+- [External tester feedback template](docs/current/v0.3.1-external-tester-feedback-template.md)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 - [Project progress board](docs/project-progress-board.md)
 

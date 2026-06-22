@@ -24,8 +24,8 @@ Common anchors:
 - `v0.3.0-workflow-report-status-lifecycle.md`
 - `v0.3.0-gradle-spring-build-guidance.md`
 - `v0.3.0-installed-package-evidence-noise-policy.md`
-- `v0.3.0-external-tester-guide.md`
-- `v0.3.0-external-tester-feedback-template.md`
+- `v0.3.1-external-tester-guide.md`
+- `v0.3.1-external-tester-feedback-template.md`
 - `v0.3.0-alpha-publish-readiness.md`
 - `desktop-test-artifacts-index.md`
 - `v0.3.0-domain-behavior-guidance-review.md`
