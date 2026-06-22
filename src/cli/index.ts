@@ -11,6 +11,7 @@ import { runLanguageCommand } from "./language.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
 import { runDoctorCommand } from "./doctor.js"
+import { runEvidenceCommand } from "./evidence-summary.js"
 import { runFeedbackCommand } from "./feedback.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
@@ -63,6 +64,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     return runDoctorCommand(args.slice(1), { projectDir: options.cwd })
   }
 
+  if (command === "evidence") {
+    return runEvidenceCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+  }
+
   if (command === "smoke") {
     return runSmokeCommand(args.slice(1), { projectDir: options.cwd })
   }
@@ -100,6 +105,7 @@ function personaCliUsage(invocationName: string): string {
     "  bearshell <command> [args...] Run a bounded command helper for repo inspection and smoke tests.",
     "  workflow check               Report plan/report/evidence workflow status.",
     "  doctor                       Diagnose local OpenCode and Persona Harness installation state.",
+    "  evidence summary             Write .persona/evidence/summary.md from raw evidence files.",
     "  smoke                        Write .persona/workflow/smoke-report.md.",
     "  feedback                     Write .persona/workflow/feedback-report.md.",
     "  review backend-shape         Write report-only backend Clean Code shape observations.",
@@ -114,6 +120,7 @@ function personaCliUsage(invocationName: string): string {
     `  ${invocationName} bearshell npm test`,
     `  ${invocationName} workflow check`,
     `  ${invocationName} doctor`,
+    `  ${invocationName} evidence summary`,
     `  ${invocationName} smoke`,
     `  ${invocationName} feedback`,
     `  ${invocationName} review backend-shape`,

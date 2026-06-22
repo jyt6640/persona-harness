@@ -49,8 +49,9 @@ describe("Phase 0 shared skill routing", () => {
     const injection = createInjectionBlock("src/lib/reservation.ts")
 
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toContain("programming")
+    expect(injection.selectedSharedSkills.map((skill) => skill.path)).toContain("packages/shared-skills/skills/programming/SKILL.md")
     expect(injection.block).toContain("선택 스킬:")
-    expect(injection.block).toContain("packages/shared-skills/skills/programming/SKILL.md")
+    expect(injection.block).not.toContain("packages/shared-skills/skills/programming/SKILL.md")
     expect(injection.block).toContain("TypeScript")
   })
 
@@ -59,7 +60,8 @@ describe("Phase 0 shared skill routing", () => {
 
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming", "frontend"])
     expect(injection.selectedSharedSkills.map((skill) => skill.domain)).toContain("frontend")
-    expect(injection.block).toContain("packages/shared-skills/skills/frontend/SKILL.md")
+    expect(injection.selectedSharedSkills.map((skill) => skill.path)).toContain("packages/shared-skills/skills/frontend/SKILL.md")
+    expect(injection.block).not.toContain("packages/shared-skills/skills/frontend/SKILL.md")
   })
 
   it("does not add frontend for non-React TypeScript module targets", () => {
@@ -128,7 +130,8 @@ describe("Phase 0 shared skill routing", () => {
     expect(injection.selectedRules).toContain("backend/spring-service.md")
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
     expect(injection.block).toContain("Java target detected")
-    expect(injection.block).toContain("packages/shared-skills/skills/programming/SKILL.md")
+    expect(injection.selectedSharedSkills.map((skill) => skill.path)).toEqual(["packages/shared-skills/skills/programming/SKILL.md"])
+    expect(injection.block).not.toContain("packages/shared-skills/skills/programming/SKILL.md")
   })
 
   it("surfaces backend package architecture guidance for Spring Boot application entrypoints", () => {

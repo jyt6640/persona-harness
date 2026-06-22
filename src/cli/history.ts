@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs"
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
@@ -97,6 +97,8 @@ function artifactPath(projectDir: string, filename: string): string {
 }
 
 function createSummary(result: HistoryArchiveResult): string {
+  const evidenceSummaryPath = join(result.archiveDir, "..", "..", "..", "evidence", "summary.md")
+  const evidenceSummary = existsSync(evidenceSummaryPath) ? readFileSync(evidenceSummaryPath, "utf8").trim() : "not found"
   return [
     "# Persona Workflow History",
     "",
@@ -110,6 +112,10 @@ function createSummary(result: HistoryArchiveResult): string {
     "## Missing Files",
     "",
     ...listLines(result.missingFiles),
+    "",
+    "## Evidence Summary",
+    "",
+    evidenceSummary,
     "",
     "## Limitations",
     "",

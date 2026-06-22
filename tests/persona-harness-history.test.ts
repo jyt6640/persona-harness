@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -26,6 +26,12 @@ function writeWorkflowArtifacts(projectDir: string): void {
   writeFileSync(workflowPath(projectDir, "review-report.md"), "review evidence\n")
 }
 
+function writeEvidenceSummary(projectDir: string): void {
+  const evidenceDir = join(projectDir, ".persona", "evidence")
+  mkdirSync(evidenceDir, { recursive: true })
+  writeFileSync(join(evidenceDir, "summary.md"), "# Persona Evidence Summary\n\nTotal evidence files: 2\n")
+}
+
 function readHistoryFile(projectDir: string, archiveId: string, filename: string): string {
   return readFileSync(workflowPath(projectDir, join("history", archiveId, filename)), "utf8")
 }
@@ -41,6 +47,7 @@ describe("ph history", () => {
   it("archives completed workflow artifacts without removing active files", () => {
     const projectDir = createTempProject()
     writeWorkflowArtifacts(projectDir)
+    writeEvidenceSummary(projectDir)
 
     const result = runPersonaCli(["history", "--id", "run-001"], {
       cwd: projectDir,
@@ -54,6 +61,8 @@ describe("ph history", () => {
     expect(readHistoryFile(projectDir, "run-001", "implementation-report.md")).toBe("implementation evidence\n")
     expect(readHistoryFile(projectDir, "run-001", "review-report.md")).toBe("review evidence\n")
     expect(readHistoryFile(projectDir, "run-001", "summary.md")).toContain("Archived Files")
+    expect(readHistoryFile(projectDir, "run-001", "summary.md")).toContain("Evidence Summary")
+    expect(readHistoryFile(projectDir, "run-001", "summary.md")).toContain("Total evidence files: 2")
     expect(readFileSync(workflowPath(projectDir, "plan.md"), "utf8")).toBe("completed plan\n")
   })
 

@@ -58,7 +58,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     "",
     "선택 스킬:",
     ...(selectedSharedSkills.length > 0
-      ? selectedSharedSkills.map((skill) => `- ${skill.name} (${skill.domain}): ${skill.path} — ${skill.reason}`)
+      ? selectedSharedSkills.map((skill) => `- ${skill.name} (${skill.domain}): ${skill.reason}`)
       : ["- 없음"]),
     "",
     ...(configResult.diagnostics.length > 0
