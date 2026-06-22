@@ -10,6 +10,7 @@ Use this package for repeatable release operations and release note drafting.
 - [v0.3.0-alpha.3 release notes](v0.3.0-alpha.3-release-notes.md)
 - [v0.3.1-alpha.0 release notes](v0.3.1-alpha.0-release-notes.md)
 - [v0.3.2-alpha.0 release notes](v0.3.2-alpha.0-release-notes.md)
+- [v0.3.2-alpha.1 release notes](v0.3.2-alpha.1-release-notes.md)
 
 Release automation lives in `.github/workflows/release.yml`.
 

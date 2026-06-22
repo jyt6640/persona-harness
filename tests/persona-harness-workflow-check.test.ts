@@ -370,4 +370,42 @@ describe("ph workflow start and finish", () => {
     expect(finish.status).toBe(0)
     expect(finish.stdout).toContain("Finish status: PASS")
   })
+
+  it("allows implementation finish when README range coverage is recorded under a heading", () => {
+    const projectDir = createTempProject()
+    writeFileSync(join(projectDir, "README.md"), "# Tool Rental API\n\n- 장비 등록\n")
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "# Implementation Report",
+        "",
+        "Status: filled",
+        "",
+        "## README ranges read",
+        "",
+        "- 1-220",
+        "",
+        "## Final verification",
+        "",
+        "- `npx ph bearshell --shell './gradlew test'`",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("Workflow status: PASS")
+    expect(check.stdout).toContain("read coverage: README ranges observed")
+    expect(finish.status).toBe(0)
+    expect(finish.stdout).toContain("Finish status: PASS")
+  })
 })

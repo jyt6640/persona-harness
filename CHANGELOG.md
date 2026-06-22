@@ -12,6 +12,17 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ### Known Gaps
 
+## [0.3.2-alpha.1] - 2026-06-22
+
+### Fixed
+
+- Fixed README read coverage parsing so `ph workflow check` and `ph workflow finish implement` accept ranges recorded under a `## README ranges read` heading, not only the older `- README ranges read:` field shape.
+
+### Notes
+
+- `0.3.2-alpha.0` was published, but fresh install smoke found this parser gap before external tester handoff.
+- This hotfix keeps the same Java/Spring backend MVP scope and only patches the workflow evidence parser.
+
 ## [0.3.2-alpha.0] - 2026-06-22
 
 ### Added

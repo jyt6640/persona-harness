@@ -64,23 +64,35 @@ type CommandDisciplineSummary = Pick<WorkflowStatusSummary, "commandDiscipline" 
 type ReadCoverageSummary = Pick<WorkflowStatusSummary, "readCoverage" | "readCoverageBlocking" | "readCoverageFinding">
 
 const README_RANGES_FIELD_PATTERN = /^-\s*README ranges read:\s*(.*)$/i
+const README_RANGES_HEADING_PATTERN = /^##+\s*README ranges read:?\s*$/i
 const READ_COVERAGE_STOP_PATTERN = /^-\s*(?:Plan read method|Plan ranges read|Unread ranges|Read evidence notes):/i
 const RANGE_COVERAGE_PATTERN = /\b\d+\s*[-–]\s*\d+\b|\ball\b|\bcomplete\b|전체|끝까지|완독/i
 
 function hasReadmeRangeCoverage(reportText: string): boolean {
   const lines = reportText.split(/\r?\n/)
   const fieldIndex = lines.findIndex((line) => README_RANGES_FIELD_PATTERN.test(line))
-  if (fieldIndex === -1) {
+  if (fieldIndex !== -1) {
+    const fieldMatch = README_RANGES_FIELD_PATTERN.exec(lines[fieldIndex])
+    if (fieldMatch?.[1] !== undefined && RANGE_COVERAGE_PATTERN.test(fieldMatch[1])) {
+      return true
+    }
+
+    for (const line of lines.slice(fieldIndex + 1)) {
+      if (/^##\s+/.test(line) || READ_COVERAGE_STOP_PATTERN.test(line)) {
+        return false
+      }
+      if (RANGE_COVERAGE_PATTERN.test(line)) {
+        return true
+      }
+    }
+  }
+
+  const headingIndex = lines.findIndex((line) => README_RANGES_HEADING_PATTERN.test(line))
+  if (headingIndex === -1) {
     return false
   }
-
-  const fieldMatch = README_RANGES_FIELD_PATTERN.exec(lines[fieldIndex])
-  if (fieldMatch?.[1] !== undefined && RANGE_COVERAGE_PATTERN.test(fieldMatch[1])) {
-    return true
-  }
-
-  for (const line of lines.slice(fieldIndex + 1)) {
-    if (/^##\s+/.test(line) || READ_COVERAGE_STOP_PATTERN.test(line)) {
+  for (const line of lines.slice(headingIndex + 1)) {
+    if (/^##\s+/.test(line)) {
       return false
     }
     if (RANGE_COVERAGE_PATTERN.test(line)) {
