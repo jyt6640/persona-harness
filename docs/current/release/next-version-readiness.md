@@ -1,84 +1,77 @@
 # Next Version Readiness
 
+## Candidate
+
+```text
+persona-harness@0.3.2-alpha.0
+dist-tag: alpha
+date: 2026-06-22
+```
+
+## Release Intent
+
+This candidate reduces short-TUI workflow drift. The main user-visible change is that AI agents can run one command, `npx ph workflow implement`, to receive the implementation rail, README chunk-read instructions, report lifecycle, and final finish gate.
+
+## Included Changes
+
+- `ph workflow implement` single AI-facing implementation rail.
+- README chunk-read instructions using `ph bearshell` and 220-line ranges.
+- README read coverage diagnostics in `ph workflow check`.
+- `ph workflow finish implement` failure when `README.md` exists but `README ranges read` is empty.
+- Injection, prompt, next/resume, root README, and Korean README guidance updated to prefer `npx ph workflow implement`.
+- Direct `.persona/rules` read remains a non-blocking note; raw final verification remains blocking.
+
 ## Verification Commands
 
 | Command | Result |
 | --- | --- |
-| `git status --short` | pass before context-noise changes; working tree now contains this loop's code/doc updates |
-| `git branch --show-current` | pass: `main` |
-| `npm test` | pass: scope check PASS, docs taxonomy PASS, 32 test files passed, 190 tests passed |
+| `npm test` | pass: 36 test files, 224 tests |
 | `npm run typecheck` | pass |
 | `npm run build` | pass |
 | `npm run report:rules` | pass: PersonaHarnessRule diagnostics PASS, 0 findings |
-| `npm run check:scope` | pass: MVP scope diagnostics PASS, 0 findings, report-only |
-| `npm run check:injection-value` | pass: injection value diagnostics PASS, current window 3/3, expected decision `continue-java-mvp` |
-| `npm pack --dry-run --json` | pass: `persona-harness-0.3.0-alpha.3.tgz`, 191 files, 198.2 kB package size, 735.1 kB unpacked size |
-| `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.0-alpha.3` |
-| `npm publish --tag alpha` | pass: `persona-harness@0.3.0-alpha.3` published |
-| `npm view persona-harness dist-tags --json` | pass: `alpha` and `latest` both point to `0.3.0-alpha.3` |
+| `npm run check:scope:strict` | pass: MVP scope diagnostics PASS, 0 findings, STRICT mode |
+| `npm run check:injection-value` | pass: current window 3/3, expected decision `continue-java-mvp` |
+| `npm pack --dry-run` | pass: `persona-harness-0.3.2-alpha.0.tgz`, 220 files, 225.5 kB package size, 864.1 kB unpacked size |
+| `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.2-alpha.0` |
 
-## Productization Review Decision
+## Manual CLI Smoke
 
-Source:
+Expected release-loop smoke:
 
-- `~/Desktop/blackbear-persona-harness-test/productization-review/final-productization-verdict.md`
-- `~/Desktop/blackbear-persona-harness-test/productization-review/01-ab-result-digest.md`
-- `~/Desktop/blackbear-persona-harness-test/productization-review/02-java-mvp-readiness.md`
-- `~/Desktop/blackbear-persona-harness-test/productization-review/04-release-risk-review.md`
-- `~/Desktop/blackbear-persona-harness-test/productization-review/05-next-work-priority.md`
-
-Decision:
-
-```text
-freeze-expansion-and-simplify
+```bash
+tmp_project=$(mktemp -d)
+cd "$tmp_project"
+npm init -y
+npm install -D persona-harness@alpha
+npx ph init
+npx ph plan
+npx ph plan --accept
+npx ph workflow implement
 ```
 
-The original A/B evidence for `01-book-loans` was mixed:
+Expected:
 
-- Persona Harness ON completed 4/5 runs and timed out once.
-- Persona Harness OFF completed 5/5 runs.
-- ON successful runs had better domain repository port placement.
-- ON successful runs used application command/result DTO boundaries.
-- OFF was more reliable as a generated runnable output baseline.
+- `ph workflow implement` prints README chunk-read commands.
+- `ph workflow finish implement` fails when README ranges are empty.
+- `ph workflow finish implement` passes after `README ranges read` is recorded and normal workflow evidence exists.
 
-After context-noise reduction, `01-book-loans/A-persona-on/run-05` was rerun with the local package:
+## Supported Surface
 
-- `ph init` now writes project `.gitignore` entries for `node_modules/`, `.opencode/node_modules/`, `.persona/rules/`, `.persona/evidence/`, `.gradle/`, and `build/`.
-- Persona Harness ON run-05 completed without timeout: OpenCode exit 0 in 270013 ms.
-- Persona Harness ON run-05 produced Java/Spring code, generated 113 evidence files, and final `gradle test` passed.
-- The paired Persona OFF run-05 also passed and completed faster: OpenCode exit 0 in 50085 ms.
-- The generated ON code still did not match the target package-flow shape closely enough for the analyzer to treat run-05 as ON-positive.
-- The analyzer now distinguishes this as `buildable-package-flow-mismatch`, not a generated-project failure.
+- Java/Spring backend MVP.
+- Gradle-first backend workflow.
+- AI-facing workflow discipline for OpenCode/Codex-style TUI use.
+- Report-only diagnostics and workflow evidence gates.
 
-## Demo Packaging Decision
+## Not Supported
 
-proceed-to-demo-packaging
+- Generated app product-quality certification.
+- AST/linter/build enforcement of rule compliance.
+- Frontend/infra/desktop productization.
+- Full TDD workflow.
+- `ph bearshell` sandboxing.
 
-## Evidence
+## Pre-Publish Release Decision
 
-- Repository verification commands are green.
-- Rule diagnostics are green.
-- Scope diagnostics are green.
-- Injection value status remains `continue-java-mvp`.
-- The previous external productization review did not permit packaging because the 5-run ON/OFF result remained mixed.
-- The rerun reduces the timeout blocker, and analyzer reason codes now separate generated-project failure from buildable-but-wrong-shape output.
-- The generated code-shape blocker has fresh positive evidence after package-flow guidance:
-  - fresh Persona ON run: `/Users/yongtae/Desktop/blackbear-persona-harness-test/fresh-runs/01-book-loans/A-persona-on/bootjar-guidance-20260622-005742`;
-  - generated code used `presentation/application/domain/infrastructure`;
-  - domain repository ports stayed in `domain`; in-memory implementations stayed in `infrastructure`;
-  - application services did not directly own storage state or ID sequence;
-  - `gradle build` passed with `:bootJar UP-TO-DATE`, not `:bootJar SKIPPED`;
-  - `gradle bootRun` plus HTTP happy/failure smoke passed independently.
+Proceed with `0.3.2-alpha.0`.
 
-## Risks
-
-- OpenCode/model runtime can still be slower during Persona ON generation.
-- ON setup and evidence files can add context noise for the model, though the default `.gitignore` now hides the largest generated paths from normal project context.
-- Productization claims could overstate architectural guidance as quality enforcement.
-- One requirement domain is not enough to prove release/demo reliability.
-
-## Decision Update
-
-After the fresh package-flow/bootJar ON run, next-version demo packaging can proceed to final package verification.
-
-`persona-harness@0.3.0-alpha.3` is published on the `alpha` and `latest` dist-tags. The remaining product work is external tester feedback and the next narrow quality loop; release-close mechanics for alpha.3 are complete.
+After publish, run a fresh installed-package smoke and then hand the alpha to external testers for short TUI request behavior.

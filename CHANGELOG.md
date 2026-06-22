@@ -12,6 +12,31 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ### Known Gaps
 
+## [0.3.2-alpha.0] - 2026-06-22
+
+### Added
+
+- Added `ph workflow implement` as the single AI-facing implementation rail for short TUI requests such as `README.md 보고 구현해줘`.
+- Added README chunk-read guidance to the implementation rail, using `npx ph bearshell --shell 'wc -l README.md'` and 220-line `sed -n` ranges.
+- Added README read coverage workflow diagnostics so filled implementation reports must record `README ranges read` when `README.md` exists.
+- Added `src/cli/workflow-output.ts` to keep workflow command orchestration separate from long AI-facing rail output.
+
+### Changed
+
+- Updated injection, plan prompts, next/resume output, and README guidance to prefer `npx ph workflow implement` over the older two-step `workflow start implement` plus `plan --implement` path.
+- Kept `ph workflow start implement` and `ph plan --implement` available as lower-level compatibility surfaces.
+- Kept direct `.persona/rules` reads as non-blocking workflow notes, while raw final verification remains blocking.
+
+### Fixed
+
+- `ph workflow finish implement` now fails when `README.md` exists but README range coverage is empty, preventing agents from reporting completion after only a partial README read.
+
+### Known Gaps
+
+- The read coverage gate verifies recorded ranges, not semantic understanding of the README.
+- This release still does not certify generated application product quality.
+- Full TDD workflow, frontend, infra, desktop, and AST/linter enforcement remain future tracks.
+
 ## [0.3.1-alpha.2] - 2026-06-22
 
 ### Added
