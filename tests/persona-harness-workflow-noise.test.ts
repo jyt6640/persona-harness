@@ -54,8 +54,9 @@ describe("ph workflow noise classification", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Workflow status: WARN")
-    expect(result.stdout).toContain("raw shell environment probe observed")
-    expect(result.stdout).toContain("Next: review workflow noise")
+    expect(result.stdout).toContain("non-blocking raw shell environment probe observed")
+    expect(result.stdout).toContain("final verification is acceptable only when rerun through `npx ph bearshell`")
+    expect(result.stdout).toContain("Next: review non-blocking workflow notes")
   })
 
   it("records direct .persona/rules reads as a non-warning workflow note", () => {
@@ -121,7 +122,7 @@ describe("ph workflow noise classification", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Workflow status: WARN")
-    expect(result.stdout).toContain("raw shell environment probe observed")
+    expect(result.stdout).toContain("non-blocking raw shell environment probe observed")
     expect(result.stdout).toContain("note: direct `.persona/rules` read observed")
   })
 

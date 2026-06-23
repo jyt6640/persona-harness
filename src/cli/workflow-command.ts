@@ -1,5 +1,6 @@
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../phase0/project-profile.js"
+import { runResumeCommand } from "./plan-next.js"
 import {
   failedGuardOutput,
   failedRunnerOutput,
@@ -19,6 +20,7 @@ type WorkflowOptions = {
 type ParsedWorkflowArgs =
   | { readonly kind: "check" }
   | { readonly kind: "implement" }
+  | { readonly kind: "continue" }
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
   | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
   | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
@@ -27,13 +29,14 @@ type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|continue|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
     "Scope:",
     "- workflow check is report-only",
     "- workflow implement prints a single AI-facing implementation rail",
+    "- workflow continue prints the accepted-plan continuation prompt",
     "- workflow start/finish are AI-facing workflow rails",
     "- workflow guard uses strict exit codes for AI-facing workflow discipline",
     "- no generated app quality certification",
@@ -46,6 +49,9 @@ function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   }
   if (args[0] === "implement") {
     return args.length === 1 ? { kind: "implement" } : { kind: "invalid", message: "workflow implement does not accept extra arguments." }
+  }
+  if (args[0] === "continue") {
+    return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
   }
   if (args[0] === "guard") {
     if (args.length !== 2) {
@@ -170,6 +176,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "implement") {
     return runWorkflowImplement(options)
+  }
+  if (parsed.kind === "continue") {
+    return runResumeCommand(options)
   }
   if (parsed.kind === "start") {
     return runWorkflowStart(parsed.runnerKind, options)

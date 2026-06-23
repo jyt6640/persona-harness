@@ -162,3 +162,30 @@ describe("ph plan --resume", () => {
     expect(result.stdout).toContain("generate src/main/java")
   })
 })
+
+describe("ph workflow continue", () => {
+  it("aliases the accepted-plan continuation prompt for short TUI resume requests", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPlan(projectDir, []).status).toBe(0)
+    expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    const report = readFileSync(implementationReportPath(projectDir), "utf8")
+    writeFileSync(
+      implementationReportPath(projectDir),
+      report
+        .replace("- README read method:", "- README read method: npx ph bearshell chunks")
+        .replace("- README ranges read:", "- README ranges read: 1-440")
+        .replace("- Unread ranges:", "- Unread ranges: README 441-end")
+        .replace("- 남은 README/plan 범위:", "- 남은 README/plan 범위: README Step 4/6/7")
+        .replace("- 남은 구현 범위:", "- 남은 구현 범위: import/export and sharing API")
+        .replace("- 다음에 이어서 실행할 명령/작업:", "- 다음에 이어서 실행할 명령/작업: continue Step 4"),
+    )
+
+    const result = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Persona Harness resume prompt")
+    expect(result.stdout).toContain("README Step 4/6/7")
+    expect(result.stdout).toContain("import/export and sharing API")
+    expect(result.stdout).toContain("npx ph workflow implement")
+  })
+})

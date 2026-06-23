@@ -64,6 +64,8 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stdout).toContain("bootJar")
     expect(implement.stdout).toContain(":bootJar SKIPPED")
     expect(implement.stdout).toContain("Spring Boot plugin / Gradle wrapper")
+    expect(implement.stdout).toContain("./gradlew test")
+    expect(implement.stdout).toContain("gradlew.bat")
     expect(implement.stdout).toContain("중간에 멈추면")
     expect(implement.stdout).toContain("npx ph plan --report-filled implementation")
     expect(implement.stdout).toContain("Before final answer, fill the review report after manual QA")

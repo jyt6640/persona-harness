@@ -6,6 +6,15 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+### Added
+
+- Added `ph workflow continue` as an AI-facing alias for the accepted-plan continuation prompt used after interrupted or long README implementations.
+
+### Changed
+
+- Strengthened Gradle wrapper guidance in Java/Spring implementation rails so generated apps prefer `./gradlew`/`gradlew.bat` verification and do not treat missing system Gradle as application failure.
+- Clarified raw shell environment probe warnings as non-blocking notes when final verification was rerun through `npx ph bearshell`.
+
 ### Known Gaps
 
 ## [0.3.2-alpha.2] - 2026-06-22

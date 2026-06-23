@@ -169,7 +169,7 @@ function commandDiscipline(projectDir: string, implementationStatus: string, rev
   }
   if (hasBearshell) {
     const warnings = [
-      ...(hasRawShell ? ["raw shell environment probe observed"] : []),
+      ...(hasRawShell ? ["non-blocking raw shell environment probe observed; final verification is acceptable only when rerun through `npx ph bearshell`"] : []),
     ]
     const notes = [
       ...(hasDirectRulesRead ? ["direct `.persona/rules` read observed"] : []),
@@ -199,26 +199,18 @@ function commandDiscipline(projectDir: string, implementationStatus: string, rev
 }
 
 function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): string {
-  if (summary.plan === "missing") {
-    return "run `npx ph plan`"
-  }
+  if (summary.plan === "missing") return "run `npx ph plan`"
   if (summary.plan !== "accepted") {
     return "review plan, then run `npx ph plan --accept` or `npx ph plan --revise`"
   }
   if (summary.implementation !== "filled") {
     return "run `npx ph workflow implement`, implement, fill implementation report, then run `npx ph plan --report-filled implementation`"
   }
-  if (summary.review !== "filled") {
-    return "fill review report and run `npx ph plan --report-filled review`"
-  }
-  if (summary.commandDisciplineBlocking) {
-    return "rerun final verification through `npx ph bearshell`"
-  }
-  if (summary.readCoverageBlocking) {
-    return "record README ranges read in `.persona/workflow/implementation-report.md`"
-  }
+  if (summary.review !== "filled") return "fill review report and run `npx ph plan --report-filled review`"
+  if (summary.commandDisciplineBlocking) return "rerun final verification through `npx ph bearshell`"
+  if (summary.readCoverageBlocking) return "record README ranges read in `.persona/workflow/implementation-report.md`"
   if (summary.commandDisciplineFinding === "WARN") {
-    return "review workflow noise, then archive completed workflow if acceptable"
+    return "review non-blocking workflow notes, then archive completed workflow if acceptable"
   }
   return "archive completed workflow with `npx ph history --id <run-id>`"
 }
