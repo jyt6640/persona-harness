@@ -1,6 +1,6 @@
 ---
 name: workflow-requirements
-description: "Use when a user asks to implement README.md, requirements.md, pasted product requirements, feature additions, Step continuation, or remaining requirement work. AI-facing workflow rail for requirements analysis, backlog ticketing, implementation reports, and finish gates."
+description: "Use when a user asks to draft requirements from a vague product idea, implement README.md, requirements.md, pasted product requirements, feature additions, Step continuation, or remaining requirement work. AI-facing workflow rail for requirements drafting, analysis, backlog ticketing, implementation reports, and finish gates."
 ---
 
 # Requirements Workflow
@@ -15,6 +15,7 @@ Use this when the user asks to:
 
 - implement `README.md`
 - implement `requirements.md`
+- draft requirements from a vague product idea
 - build from pasted requirements
 - add or change a feature from product requirements
 - continue `Step N`
@@ -23,6 +24,22 @@ Use this when the user asks to:
 Do not use this skill for explanation-only, debugging-only, or code-review-only requests.
 
 ## Required Flow
+
+If the user gives a vague product idea such as `TODO 웹 서비스 만들래`:
+
+1. Do not implement yet.
+2. Run `npx ph workflow draft --stdin`.
+3. Review `.persona/workflow/requirements/backlog.md`, `questions.md`, and `assumptions.md`.
+4. Tell the user the requirements draft is complete.
+5. Ask the user to review it and say `진행하자` when accepted.
+
+If the user approves a requirements draft:
+
+1. Run `npx ph workflow approve requirements`.
+2. Run `npx ph workflow split .persona/workflow/requirements/backlog.md`.
+3. Run `npx ph workflow next`.
+4. Run `npx ph workflow implement`.
+5. Implement only the current task card.
 
 If requirements are in a file:
 

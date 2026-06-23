@@ -4,6 +4,9 @@ import { join } from "node:path"
 import type { CliRunResult } from "./bearshell.js"
 import {
   BACKLOG_PATH,
+  DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH,
+  DRAFT_REQUIREMENTS_BACKLOG_PATH,
+  DRAFT_REQUIREMENTS_QUESTIONS_PATH,
   HISTORY_DIR,
   LATEST_REQUIREMENTS_PATH,
   REQUIREMENTS_ANALYSIS_PATH,
@@ -20,9 +23,13 @@ import {
 } from "./workflow-ticket-model.js"
 import { analyzeRequirementSections, formatRequirementsAnalysis } from "./workflow-requirements-analysis.js"
 import {
+  approvalCompleteOutput,
   archiveCompleteOutput,
   backlogNotFoundOutput,
   captureCompleteOutput,
+  draftCompleteOutput,
+  draftRequirementsConflictOutput,
+  missingDraftRequirementsOutput,
   missingRequirementSourceOutput,
   nextTicketOutput,
   noPendingTicketsOutput,
@@ -50,6 +57,94 @@ function initializedProjectDir(options: WorkflowTicketOptions): { readonly kind:
 
 function conflictMessage(path: string): CliRunResult {
   return splitConflictOutput(path)
+}
+
+function firstMeaningfulLine(markdown: string): string {
+  const line = markdown.split(/\r?\n/u).map((candidate) => candidate.trim()).find((candidate) => candidate.length > 0)
+  return line ?? "Untitled product idea"
+}
+
+function formatDraftRequirementsBacklog(input: string): string {
+  const idea = firstMeaningfulLine(input)
+  return [
+    "# Requirements Draft Backlog",
+    "",
+    "Status: draft",
+    "Source kind: prompt",
+    `Source path: ${LATEST_REQUIREMENTS_PATH}`,
+    `Original idea: ${idea}`,
+    "",
+    "## Step 1. Product scope and core use cases",
+    "",
+    `- Clarify the MVP scope for: ${idea}`,
+    "- Identify primary users and the main user goals.",
+    "- List core create/read/update/delete or workflow use cases.",
+    "",
+    "## Step 2. Domain model and API contract",
+    "",
+    "- Draft domain concepts, aggregate boundaries, and ownership rules.",
+    "- Draft REST API endpoints, request DTOs, response DTOs, and status codes.",
+    "- Keep external contracts separate from domain objects.",
+    "",
+    "## Step 3. Persistence and validation rules",
+    "",
+    "- Decide storage technology from the project profile before implementation.",
+    "- Draft validation, error response, and edge-case behavior.",
+    "- Keep Repository ports in domain and adapters in infrastructure.",
+    "",
+    "## Step 4. Verification and delivery slices",
+    "",
+    "- Define build/test/smoke checks for each slice.",
+    "- Split implementation into reviewable tickets after user approval.",
+    "- Do not claim all requirements are complete while pending tickets remain.",
+    "",
+    "## Review Gate",
+    "",
+    "- This is a requirements draft, not implementation output.",
+    "- Ask the user to review before running implementation tickets.",
+    "- Continue only after the user says `진행하자` or explicitly approves the draft.",
+  ].join("\n") + "\n"
+}
+
+function formatDraftQuestions(input: string): string {
+  const idea = firstMeaningfulLine(input)
+  return [
+    "# Requirements Questions",
+    "",
+    "Status: draft",
+    `Original idea: ${idea}`,
+    "",
+    "- Who are the primary users or roles?",
+    "- What is the smallest useful MVP scope?",
+    "- Which backend storage choice should be used for this project?",
+    "- Which operations need failure cases and explicit error responses?",
+    "- Which requirements must be deferred instead of implemented now?",
+  ].join("\n") + "\n"
+}
+
+function formatDraftAssumptions(input: string): string {
+  const idea = firstMeaningfulLine(input)
+  return [
+    "# Requirements Assumptions",
+    "",
+    "Status: draft",
+    `Original idea: ${idea}`,
+    "",
+    "- Java/Spring backend Clean Code guidance applies when the project profile targets backend work.",
+    "- Gradle is preferred for Java/Spring projects unless the user explicitly says otherwise.",
+    "- Implementation waits until the user reviews and approves the requirements draft.",
+    "- Existing project style wins when adding to an existing codebase.",
+  ].join("\n") + "\n"
+}
+
+function replaceDraftStatus(markdown: string): string {
+  if (/^Status:\s*draft\s*$/imu.test(markdown)) {
+    return markdown.replace(/^Status:\s*draft\s*$/imu, "Status: accepted")
+  }
+  if (/^Status:\s*accepted\s*$/imu.test(markdown)) {
+    return markdown
+  }
+  return markdown.replace(/^# .+$/u, (heading) => `${heading}\n\nStatus: accepted`)
 }
 
 function resolveRequirementSource(projectDir: string, sourceFile: string | undefined): RequirementSource | CliRunResult {
@@ -83,6 +178,65 @@ export function runWorkflowCapture(options: WorkflowTicketOptions): CliRunResult
   mkdirSync(join(projectDir, REQUIREMENTS_DIR), { recursive: true })
   writeFileSync(join(projectDir, LATEST_REQUIREMENTS_PATH), input.endsWith("\n") ? input : `${input}\n`)
   return captureCompleteOutput()
+}
+
+export function runWorkflowDraft(options: WorkflowTicketOptions): CliRunResult {
+  const initialized = initializedProjectDir(options)
+  if ("status" in initialized) {
+    return initialized
+  }
+  const input = options.stdin ?? ""
+  if (input.trim().length === 0) {
+    return {
+      status: 1,
+      stdout: "",
+      stderr: "Workflow draft requires product idea text on stdin.\n",
+    }
+  }
+
+  const projectDir = initialized.projectDir
+  const draftPaths = [
+    DRAFT_REQUIREMENTS_BACKLOG_PATH,
+    DRAFT_REQUIREMENTS_QUESTIONS_PATH,
+    DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH,
+  ] as const
+  const existingDraftPath = draftPaths.find((path) => existsSync(join(projectDir, path)))
+  if (existingDraftPath !== undefined) {
+    return draftRequirementsConflictOutput(existingDraftPath)
+  }
+
+  mkdirSync(join(projectDir, REQUIREMENTS_DIR), { recursive: true })
+  writeFileSync(join(projectDir, LATEST_REQUIREMENTS_PATH), input.endsWith("\n") ? input : `${input}\n`)
+  writeFileSync(join(projectDir, DRAFT_REQUIREMENTS_BACKLOG_PATH), formatDraftRequirementsBacklog(input))
+  writeFileSync(join(projectDir, DRAFT_REQUIREMENTS_QUESTIONS_PATH), formatDraftQuestions(input))
+  writeFileSync(join(projectDir, DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH), formatDraftAssumptions(input))
+  return draftCompleteOutput()
+}
+
+export function runWorkflowApproveRequirements(options: WorkflowTicketOptions): CliRunResult {
+  const initialized = initializedProjectDir(options)
+  if ("status" in initialized) {
+    return initialized
+  }
+
+  const projectDir = initialized.projectDir
+  const backlogPath = join(projectDir, DRAFT_REQUIREMENTS_BACKLOG_PATH)
+  if (!existsSync(backlogPath)) {
+    return missingDraftRequirementsOutput()
+  }
+
+  const draftPaths = [
+    DRAFT_REQUIREMENTS_BACKLOG_PATH,
+    DRAFT_REQUIREMENTS_QUESTIONS_PATH,
+    DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH,
+  ] as const
+  for (const path of draftPaths) {
+    const absolutePath = join(projectDir, path)
+    if (existsSync(absolutePath)) {
+      writeFileSync(absolutePath, replaceDraftStatus(readFileSync(absolutePath, "utf8")))
+    }
+  }
+  return approvalCompleteOutput()
 }
 
 export function runWorkflowSplit(sourceFile: string | undefined, options: WorkflowTicketOptions): CliRunResult {
@@ -202,6 +356,8 @@ export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOpti
 
 export function workflowTicketUsage(invocation = "ph"): string {
   return [
+    `${invocation} workflow draft --stdin`,
+    `${invocation} workflow approve requirements`,
     `${invocation} workflow capture --stdin`,
     `${invocation} workflow split`,
     `${invocation} workflow split README.md`,

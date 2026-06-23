@@ -3,6 +3,8 @@ import { join } from "node:path"
 
 import type { RequirementsIntent } from "./requirements-intent-router.js"
 
+const DRAFT_REQUIREMENTS_BACKLOG_PATH = ".persona/workflow/requirements/backlog.md"
+
 export type RequirementsWorkflowSkill = {
   readonly name: "workflow-requirements"
   readonly domain: "workflow"
@@ -12,6 +14,10 @@ export type RequirementsWorkflowSkill = {
 
 export function hasPersonaWorkflowOptIn(projectDir: string): boolean {
   return existsSync(join(projectDir, ".persona"))
+}
+
+export function hasRequirementsDraft(projectDir: string): boolean {
+  return existsSync(join(projectDir, DRAFT_REQUIREMENTS_BACKLOG_PATH))
 }
 
 export function selectedRequirementsWorkflowSkill(intent: RequirementsIntent): RequirementsWorkflowSkill {
@@ -50,9 +56,40 @@ function continuationFlow(): readonly string[] {
   ]
 }
 
+function draftFlow(): readonly string[] {
+  return [
+    "- 프롬프트 본문을 제품 아이디어 source로 취급한다.",
+    "- 구현하지 않는다.",
+    "- 먼저 `npx ph workflow draft --stdin`로 requirements draft를 작성한다.",
+    "- `.persona/workflow/requirements/backlog.md`, `questions.md`, `assumptions.md`를 사용자에게 검토하라고 보고한다.",
+    "- 사용자가 `진행하자`라고 승인하기 전에는 `split`, `next`, `implement`를 실행하지 않는다.",
+    "- Draft complete message에는 `Say `진행하자``를 포함한다.",
+  ]
+}
+
+function approvalFlow(): readonly string[] {
+  return [
+    "- 사용자가 requirements draft를 승인한 것으로 처리한다.",
+    "- `npx ph workflow approve requirements`를 실행한다.",
+    `- \`npx ph workflow split ${DRAFT_REQUIREMENTS_BACKLOG_PATH}\`를 실행해 implementation tickets를 만든다.`,
+    "- `npx ph workflow next`로 첫 ticket을 확인한다.",
+    "- `npx ph workflow implement`로 구현 레일을 시작하고 현재 task card만 구현한다.",
+  ]
+}
+
 export function formatRequirementsWorkflowBlock(intent: RequirementsIntent): string {
-  const flow =
-    intent.source === "file" ? fileFlow(intent) : intent.source === "workflow" ? continuationFlow() : promptFlow()
+  const flow = (() => {
+    if (intent.kind === "requirement-drafting") {
+      return draftFlow()
+    }
+    if (intent.kind === "requirement-approval") {
+      return approvalFlow()
+    }
+    if (intent.source === "file") {
+      return fileFlow(intent)
+    }
+    return intent.source === "workflow" ? continuationFlow() : promptFlow()
+  })()
   return [
     "[Persona Harness Requirements Workflow]",
     "",

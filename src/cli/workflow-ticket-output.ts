@@ -1,6 +1,9 @@
 import type { CliRunResult } from "./bearshell.js"
 import {
   BACKLOG_PATH,
+  DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH,
+  DRAFT_REQUIREMENTS_BACKLOG_PATH,
+  DRAFT_REQUIREMENTS_QUESTIONS_PATH,
   LATEST_REQUIREMENTS_PATH,
   REQUIREMENTS_ANALYSIS_PATH,
   type RequirementSource,
@@ -73,6 +76,77 @@ export function captureCompleteOutput(): CliRunResult {
       "Next:",
       "- `npx ph workflow split`",
       "- `npx ph workflow next`",
+    ].join("\n") + "\n",
+    stderr: "",
+  }
+}
+
+export function draftCompleteOutput(): CliRunResult {
+  return {
+    status: 0,
+    stdout: [
+      "Requirements draft complete.",
+      "",
+      `Backlog: ${DRAFT_REQUIREMENTS_BACKLOG_PATH}`,
+      `Questions: ${DRAFT_REQUIREMENTS_QUESTIONS_PATH}`,
+      `Assumptions: ${DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH}`,
+      "",
+      "Review gate:",
+      "- Do not implement yet.",
+      "- Ask the user to review the requirements draft.",
+      "- Say `진행하자` after the user accepts the draft.",
+      "",
+      "Next after approval:",
+      "- `npx ph workflow approve requirements`",
+      `- \`npx ph workflow split ${DRAFT_REQUIREMENTS_BACKLOG_PATH}\``,
+      "- `npx ph workflow next`",
+    ].join("\n") + "\n",
+    stderr: "",
+  }
+}
+
+export function missingDraftRequirementsOutput(): CliRunResult {
+  return {
+    status: 1,
+    stdout: "",
+    stderr: [
+      "Requirements draft not found.",
+      "",
+      `Expected: ${DRAFT_REQUIREMENTS_BACKLOG_PATH}`,
+      "",
+      "Create a draft first:",
+      "- `npx ph workflow draft --stdin`",
+    ].join("\n") + "\n",
+  }
+}
+
+export function draftRequirementsConflictOutput(path: string): CliRunResult {
+  return {
+    status: 1,
+    stdout: "",
+    stderr: [
+      "Requirements draft refused to overwrite existing draft artifacts.",
+      "",
+      `Existing path: ${path}`,
+      "",
+      "Review, approve, archive, or remove the draft intentionally before drafting again.",
+    ].join("\n") + "\n",
+  }
+}
+
+export function approvalCompleteOutput(): CliRunResult {
+  return {
+    status: 0,
+    stdout: [
+      "Requirements draft approved.",
+      "",
+      `Backlog: ${DRAFT_REQUIREMENTS_BACKLOG_PATH}`,
+      "Status: accepted",
+      "",
+      "Next:",
+      `- \`npx ph workflow split ${DRAFT_REQUIREMENTS_BACKLOG_PATH}\``,
+      "- `npx ph workflow next`",
+      "- `npx ph workflow implement`",
     ].join("\n") + "\n",
     stderr: "",
   }

@@ -13,6 +13,7 @@ import { injectIntoLatestUserMessage, injectTextIntoLatestUserMessage } from "./
 import { detectRequirementsIntent } from "./requirements-intent-router.js"
 import {
   formatRequirementsWorkflowBlock,
+  hasRequirementsDraft,
   hasPersonaWorkflowOptIn,
 } from "./requirements-workflow-skill.js"
 import { PendingInjectionStore } from "./store.js"
@@ -67,6 +68,9 @@ function maybeInjectRequirementsWorkflow(output: TransformMessagesOutput, projec
   }
   const intent = detectRequirementsIntent(text)
   if (intent === undefined) {
+    return false
+  }
+  if (intent.kind === "requirement-approval" && !hasRequirementsDraft(projectDir)) {
     return false
   }
   return injectTextIntoLatestUserMessage(

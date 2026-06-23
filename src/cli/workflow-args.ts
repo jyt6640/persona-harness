@@ -8,6 +8,8 @@ export type ParsedWorkflowArgs =
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
   | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
   | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
+  | { readonly kind: "draft" }
+  | { readonly kind: "approve-requirements" }
   | { readonly kind: "capture" }
   | { readonly kind: "split"; readonly sourceFile?: string }
   | { readonly kind: "next" }
@@ -17,7 +19,7 @@ export type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|continue|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|continue|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
@@ -26,7 +28,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow implement prints a single AI-facing implementation rail",
     "- workflow continue prints the accepted-plan continuation prompt",
     "- workflow start/finish are AI-facing workflow rails",
-    "- workflow capture/split/next/archive manage requirement-derived task tickets",
+    "- workflow draft/approve/capture/split/next/archive manage requirement-derived task tickets",
     "- workflow guard uses strict exit codes for AI-facing workflow discipline",
     "- no generated app quality certification",
     "",
@@ -44,6 +46,18 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   }
   if (args[0] === "continue") {
     return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
+  }
+  if (args[0] === "draft") {
+    if (args.length !== 2 || args[1] !== "--stdin") {
+      return { kind: "invalid", message: "workflow draft requires --stdin." }
+    }
+    return { kind: "draft" }
+  }
+  if (args[0] === "approve") {
+    if (args.length !== 2 || args[1] !== "requirements") {
+      return { kind: "invalid", message: "workflow approve requires requirements." }
+    }
+    return { kind: "approve-requirements" }
   }
   if (args[0] === "capture") {
     if (args.length !== 2 || args[1] !== "--stdin") {

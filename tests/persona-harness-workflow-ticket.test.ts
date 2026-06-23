@@ -51,6 +51,65 @@ afterEach(() => {
 })
 
 describe("ph workflow ticket backlog", () => {
+  it("drafts requirement backlog artifacts from a vague product idea without creating implementation tickets", () => {
+    const projectDir = createHarnessProject()
+
+    const result = runPersonaCli(["workflow", "draft", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: "TODO 웹 서비스 만들래",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Requirements draft complete")
+    expect(result.stdout).toContain(".persona/workflow/requirements/backlog.md")
+    expect(result.stdout).toContain("Say `진행하자`")
+    const draftBacklog = readFileSync(join(projectDir, ".persona", "workflow", "requirements", "backlog.md"), "utf8")
+    const questions = readFileSync(join(projectDir, ".persona", "workflow", "requirements", "questions.md"), "utf8")
+    const assumptions = readFileSync(join(projectDir, ".persona", "workflow", "requirements", "assumptions.md"), "utf8")
+    expect(draftBacklog).toContain("Status: draft")
+    expect(draftBacklog).toContain("## Step 1. Product scope and core use cases")
+    expect(draftBacklog).toContain("TODO 웹 서비스 만들래")
+    expect(questions).toContain("Status: draft")
+    expect(assumptions).toContain("Status: draft")
+    expect(existsSync(join(projectDir, ".persona", "workflow", "backlog.md"))).toBe(false)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "work"))).toBe(false)
+  })
+
+  it("approves a drafted requirements backlog and then splits it into implementation tickets", () => {
+    const projectDir = createHarnessProject()
+    expect(
+      runPersonaCli(["workflow", "draft", "--stdin"], {
+        cwd: projectDir,
+        env: {},
+        invocationName: "ph",
+        stdin: "장비 대여 웹 서비스 만들래",
+      }).status,
+    ).toBe(0)
+
+    const approve = runPersonaCli(["workflow", "approve", "requirements"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const split = runPersonaCli(["workflow", "split", ".persona/workflow/requirements/backlog.md"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(approve.status).toBe(0)
+    expect(approve.stdout).toContain("Requirements draft approved")
+    const approvedBacklog = readFileSync(join(projectDir, ".persona", "workflow", "requirements", "backlog.md"), "utf8")
+    expect(approvedBacklog).toContain("Status: accepted")
+    expect(split.status).toBe(0)
+    expect(split.stdout).toContain("Tickets created: 4")
+    const ticket = readFileSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"), "utf8")
+    expect(ticket).toContain("# Task Card: Step 1. Product scope and core use cases")
+    expect(ticket).toContain("Source path: .persona/workflow/requirements/backlog.md")
+  })
+
   it("splits README Step sections into backlog rows and task cards", () => {
     const projectDir = createHarnessProject()
     writeStepReadme(projectDir)

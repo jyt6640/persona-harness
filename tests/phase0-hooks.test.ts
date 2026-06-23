@@ -179,6 +179,52 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("현재 task card만 구현")
   })
 
+  it("injects requirements draft guidance for vague product ideas without implementation", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-draft-workflow"
+    const output = modelInputWithText(sessionID, "TODO 웹 서비스 만들래")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Requirements Workflow]")
+    expect(text).toContain("Detected intent: requirement-drafting")
+    expect(text).toContain("npx ph workflow draft --stdin")
+    expect(text).toContain("구현하지 않는다")
+    expect(text).toContain("Say `진행하자`")
+    expect(text).not.toContain("npx ph workflow split README.md")
+  })
+
+  it("injects requirements approval guidance only when a draft backlog exists", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    mkdirSync(join(fixtureWorkspace, ".persona", "workflow", "requirements"), { recursive: true })
+    writeFileSync(join(fixtureWorkspace, ".persona", "workflow", "requirements", "backlog.md"), "Status: draft\n")
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-approve-workflow"
+    const output = modelInputWithText(sessionID, "진행하자")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Requirements Workflow]")
+    expect(text).toContain("Detected intent: requirement-approval")
+    expect(text).toContain("npx ph workflow approve requirements")
+    expect(text).toContain("npx ph workflow split .persona/workflow/requirements/backlog.md")
+    expect(text).toContain("npx ph workflow implement")
+  })
+
+  it("does not route bare approval words when no requirements draft exists", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-approve-without-draft"
+    const output = modelInputWithText(sessionID, "진행하자")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(firstText(output)).not.toContain("[Persona Harness Requirements Workflow]")
+  })
+
   it("injects continuation guidance for Step continuation requests", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })

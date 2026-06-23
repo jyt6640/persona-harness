@@ -193,13 +193,13 @@ async function runCliEntrypoint(): Promise<void> {
       cwd: process.cwd(),
       env: process.env,
       invocationName,
-      stdin: workflowCaptureStdin(args),
+      stdin: workflowStdin(args),
     }),
   )
 }
 
-function workflowCaptureStdin(args: readonly string[]): string | undefined {
-  if (args[0] !== "workflow" || args[1] !== "capture" || args[2] !== "--stdin") {
+function workflowStdin(args: readonly string[]): string | undefined {
+  if (args[0] !== "workflow" || (args[1] !== "capture" && args[1] !== "draft") || args[2] !== "--stdin") {
     return undefined
   }
   if (process.stdin.isTTY === true) {

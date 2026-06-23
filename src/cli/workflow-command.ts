@@ -20,7 +20,9 @@ import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import {
   pendingWorkflowTicketIds,
   runWorkflowArchive,
+  runWorkflowApproveRequirements,
   runWorkflowCapture,
+  runWorkflowDraft,
   runWorkflowNext,
   runWorkflowSplit,
 } from "./workflow-tickets.js"
@@ -152,6 +154,12 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
+  }
+  if (parsed.kind === "draft") {
+    return runWorkflowDraft(options)
+  }
+  if (parsed.kind === "approve-requirements") {
+    return runWorkflowApproveRequirements(options)
   }
   if (parsed.kind === "capture") {
     return runWorkflowCapture(options)

@@ -27,6 +27,9 @@ export const BACKLOG_PATH = ".persona/workflow/backlog.md"
 export const REQUIREMENTS_ANALYSIS_PATH = ".persona/workflow/requirements-analysis.md"
 export const REQUIREMENTS_DIR = ".persona/workflow/requirements"
 export const LATEST_REQUIREMENTS_PATH = ".persona/workflow/requirements/latest.md"
+export const DRAFT_REQUIREMENTS_BACKLOG_PATH = ".persona/workflow/requirements/backlog.md"
+export const DRAFT_REQUIREMENTS_QUESTIONS_PATH = ".persona/workflow/requirements/questions.md"
+export const DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH = ".persona/workflow/requirements/assumptions.md"
 export const TASK_CARD_NAME = "00-task-card.md"
 
 function stepHeading(line: string): { readonly number: string; readonly title: string } | undefined {
