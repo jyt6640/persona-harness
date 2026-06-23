@@ -48,6 +48,10 @@ function roomescapeFixturePath(fileName: string): string {
 }
 
 function modelInput(sessionID: string): TransformMessagesOutput {
+  return modelInputWithText(sessionID, "예약 생성 API 추가해줘.")
+}
+
+function modelInputWithText(sessionID: string, text: string): TransformMessagesOutput {
   const message: UserMessage = {
     id: "msg-1",
     sessionID,
@@ -64,7 +68,7 @@ function modelInput(sessionID: string): TransformMessagesOutput {
     sessionID,
     messageID: message.id,
     type: "text",
-    text: "예약 생성 API 추가해줘.",
+    text,
   }
 
   return {
@@ -75,6 +79,14 @@ function modelInput(sessionID: string): TransformMessagesOutput {
       },
     ],
   }
+}
+
+function writeOptInHarnessConfig(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "harness.jsonc"),
+    `${JSON.stringify({ enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+  )
 }
 
 function firstText(output: TransformMessagesOutput): string {
@@ -132,6 +144,76 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).not.toContain("backend/step1-api-contract.md")
     expect(text).not.toContain("201 Created는 이 단계에서 오답")
     expect(text).toContain("예약 생성 API 추가해줘.")
+  })
+
+  it("injects requirements workflow guidance for README implementation requests in opt-in projects", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-readme-workflow"
+    const output = modelInputWithText(sessionID, "README.md 구현해줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Requirements Workflow]")
+    expect(text).toContain("Detected intent: requirement-implementation")
+    expect(text).toContain("npx ph bearshell")
+    expect(text).toContain("npx ph workflow split README.md")
+    expect(text).toContain("npx ph workflow next")
+    expect(text).toContain("npx ph workflow finish implement")
+  })
+
+  it("injects prompt capture guidance for pasted requirement implementation requests", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-prompt-workflow"
+    const output = modelInputWithText(sessionID, "이 요구사항대로 장비 대여 API 만들어줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Requirements Workflow]")
+    expect(text).toContain("Detected intent: requirement-implementation")
+    expect(text).toContain("npx ph workflow capture --stdin")
+    expect(text).toContain("npx ph workflow split")
+    expect(text).toContain("현재 task card만 구현")
+  })
+
+  it("injects continuation guidance for Step continuation requests", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-continue-workflow"
+    const output = modelInputWithText(sessionID, "Step 2 이어서 해줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Requirements Workflow]")
+    expect(text).toContain("Detected intent: requirement-continuation")
+    expect(text).toContain("npx ph workflow next")
+    expect(text).toContain("npx ph workflow continue")
+  })
+
+  it("does not over-route explanation or debugging requests to requirements workflow", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    for (const request of ["이 코드 설명해줘", "버그 원인 분석해줘"]) {
+      const output = modelInputWithText(`session-non-requirement-${request}`, request)
+
+      await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+      expect(firstText(output)).not.toContain("[Persona Harness Requirements Workflow]")
+    }
+  })
+
+  it("does not inject requirements workflow guidance before Persona Harness opt-in", async () => {
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-no-opt-in"
+    const output = modelInputWithText(sessionID, "README.md 구현해줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(firstText(output)).not.toContain("[Persona Harness Requirements Workflow]")
   })
 
   it("selects a service-specific injection block for Service files", async () => {

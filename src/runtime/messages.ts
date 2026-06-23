@@ -6,9 +6,10 @@ function isTextPart(part: Part): part is Extract<Part, { type: "text" }> {
   return part.type === "text" && typeof part.text === "string"
 }
 
-export function injectIntoLatestUserMessage(
+export function injectTextIntoLatestUserMessage(
   output: TransformMessagesOutput,
-  injection: PendingInjection,
+  block: string,
+  marker: string,
 ): boolean {
   for (let messageIndex = output.messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
     const message = output.messages[messageIndex]
@@ -18,10 +19,10 @@ export function injectIntoLatestUserMessage(
 
     const textPart = message.parts.find(isTextPart)
     if (textPart) {
-      if (textPart.text.includes("[Persona Harness Injection]")) {
+      if (textPart.text.includes(marker)) {
         return false
       }
-      textPart.text = `${injection.block}\n\n---\n\n${textPart.text}`
+      textPart.text = `${block}\n\n---\n\n${textPart.text}`
       return true
     }
 
@@ -30,11 +31,18 @@ export function injectIntoLatestUserMessage(
       sessionID: message.info.sessionID,
       messageID: message.info.id,
       type: "text",
-      text: injection.block,
+      text: block,
       synthetic: true,
     })
     return true
   }
 
   return false
+}
+
+export function injectIntoLatestUserMessage(
+  output: TransformMessagesOutput,
+  injection: PendingInjection,
+): boolean {
+  return injectTextIntoLatestUserMessage(output, injection.block, "[Persona Harness Injection]")
 }

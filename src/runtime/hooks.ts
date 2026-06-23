@@ -9,7 +9,12 @@ import {
   discoverJavaRoleInjections,
   formatJavaRoleDiscoveryBlock,
 } from "./java-role-discovery.js"
-import { injectIntoLatestUserMessage } from "./messages.js"
+import { injectIntoLatestUserMessage, injectTextIntoLatestUserMessage } from "./messages.js"
+import { detectRequirementsIntent } from "./requirements-intent-router.js"
+import {
+  formatRequirementsWorkflowBlock,
+  hasPersonaWorkflowOptIn,
+} from "./requirements-workflow-skill.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
@@ -44,6 +49,31 @@ function appendJavaRoleDiscoveryToToolOutput(output: ToolAfterOutput, block: str
 
 function hasEnabledSharedSkillDomain(enabledDomains: readonly string[], targetFile: string): boolean {
   return selectSharedSkillsForTarget(targetFile).some((skill) => enabledDomains.includes(skill.domain))
+}
+
+function latestUserText(output: TransformMessagesOutput): string | undefined {
+  const latestUserMessage = [...output.messages].reverse().find((message) => message.info.role === "user")
+  const textPart = latestUserMessage?.parts.find((part) => part.type === "text" && typeof part.text === "string")
+  return textPart?.type === "text" ? textPart.text : undefined
+}
+
+function maybeInjectRequirementsWorkflow(output: TransformMessagesOutput, projectDir: string, config: ReturnType<typeof loadHarnessConfig>): boolean {
+  if (!config.enabled || !config.enabledDomains.includes("workflow") || !hasPersonaWorkflowOptIn(projectDir)) {
+    return false
+  }
+  const text = latestUserText(output)
+  if (text === undefined) {
+    return false
+  }
+  const intent = detectRequirementsIntent(text)
+  if (intent === undefined) {
+    return false
+  }
+  return injectTextIntoLatestUserMessage(
+    output,
+    formatRequirementsWorkflowBlock(intent),
+    "[Persona Harness Requirements Workflow]",
+  )
 }
 
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
@@ -168,6 +198,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       if (!sessionId) {
         return
       }
+
+      maybeInjectRequirementsWorkflow(output, projectDir, config)
 
       const injection = store.take(sessionId)
       if (!injection) {

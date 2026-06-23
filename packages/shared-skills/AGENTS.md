@@ -6,12 +6,16 @@
 
 Hand-authored, cross-harness skill bundle shared between the OpenCode and Codex editions, pruned for Persona Harness. Pure data — no logic, no transform inside the package. The only code is `index.mjs`, which exports `sharedSkillsRootPath()` returning the absolute path to `skills/`. Package: `@oh-my-opencode/shared-skills` (`files`: `index.mjs`, `index.d.ts`, `skills`).
 
-## SKILLS (14 under `skills/<name>/`)
+## SKILLS
 
 Active auto-routed skills:
 
 - `programming`
 - `frontend`
+
+Active intent-routed skills:
+
+- `workflow/requirements` — selected by Persona Harness runtime when a user asks to implement README/requirements/prompt requirements. This skill stays in the npm package and is not copied into project `.persona`.
 
 Inactive vendored skills:
 
