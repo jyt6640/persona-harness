@@ -6,16 +6,29 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## [0.3.2-alpha.3] - 2026-06-23
+
 ### Added
 
+- Added `ph bootstrap backend` as an AI-facing fast path that fills missing backend profile, policy, accepted plan, and workflow report templates.
+- Added conditional workflow behavior for non-harness projects: when `.persona/` is absent, `ph workflow implement` now returns an advisory PASS and does not block normal implementation.
+- Added stricter initialized-harness behavior: when `.persona/` exists but profile/plan/report artifacts are missing, `ph workflow implement` now directs the agent to `npx ph bootstrap backend`.
 - Added `ph workflow continue` as an AI-facing alias for the accepted-plan continuation prompt used after interrupted or long README implementations.
+- Added clean short-request review evidence for the current alpha.3 candidate.
 
 ### Changed
 
 - Strengthened Gradle wrapper guidance in Java/Spring implementation rails so generated apps prefer `./gradlew`/`gradlew.bat` verification and do not treat missing system Gradle as application failure.
 - Clarified raw shell environment probe warnings as non-blocking notes when final verification was rerun through `npx ph bearshell`.
+- Updated injection guidance so Persona Harness workflow gates apply only after a project has opted in with `.persona/`.
 
 ### Known Gaps
+
+- OpenCode may still read `.persona/rules` directly before settling into the workflow rail.
+- Workflow finish can still be satisfied by report text, so future hardening should reduce report-only self-attestation risk.
+- This release still does not certify generated application product quality.
 
 ## [0.3.2-alpha.2] - 2026-06-22
 
