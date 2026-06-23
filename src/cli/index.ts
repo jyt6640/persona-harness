@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import process from "node:process"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
 
 import { runBootstrapCommand } from "./bootstrap.js"
+import { personaCliUsage } from "./cli-usage.js"
 import { formatInitNonInteractiveInterviewMessage } from "./init-output.js"
 import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
@@ -27,6 +28,7 @@ type PersonaCliOptions = {
   readonly env?: Readonly<Record<string, string | undefined>>
   readonly invocationName?: string
   readonly packageRoot?: string
+  readonly stdin?: string
 }
 
 export function runPersonaCli(args: readonly string[], options: PersonaCliOptions = {}): CliRunResult {
@@ -66,7 +68,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "workflow") {
-    return runWorkflowCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+    return runWorkflowCommand(args.slice(1), { projectDir: options.cwd, stdin: options.stdin }, invocationName)
   }
 
   if (command === "doctor") {
@@ -98,63 +100,6 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     stdout: "",
     stderr: `Unknown command: ${command}\n\n${personaCliUsage(invocationName)}\n`,
   }
-}
-
-function personaCliUsage(invocationName: string): string {
-  return [
-    `Usage: ${invocationName} <command> [args...]`,
-    "",
-    "Commands:",
-    "  init                         Install Persona Harness config and start the backend profile interview.",
-    "  bootstrap backend            Fill missing backend profile/policy/plan workflow pieces.",
-    "  intake                       Create a draft backend project profile for planning.",
-    "  plan                         Create a blackbear architecture plan draft before implementation.",
-    "  policy                       Create backend-only policy overlay files.",
-    "  history                      Archive completed workflow artifacts into local history.",
-    "  language                     Show supported user languages for intake and workflow prompts.",
-    "  bearshell <command> [args...] Run a bounded command helper for repo inspection and smoke tests.",
-    "  workflow check               Report plan/report/evidence workflow status.",
-    "  workflow implement           Print the single AI-facing implementation rail.",
-    "  workflow continue            Print the accepted-plan continuation prompt.",
-    "  workflow split README.md     Split README Step sections into workflow task cards.",
-    "  workflow next                Print the next pending workflow ticket.",
-    "  workflow archive <ticket>    Move a completed ticket from work to immutable history.",
-    "  workflow start implement     Print the AI-facing implementation workflow rail.",
-    "  workflow finish implement    Block final answer until implementation workflow evidence is complete.",
-    "  workflow guard implement     Block implementation until plan workflow state is ready.",
-    "  workflow guard final         Block final answer until report/evidence workflow state is ready.",
-    "  doctor                       Diagnose local OpenCode and Persona Harness installation state.",
-    "  evidence summary             Write .persona/evidence/summary.md from raw evidence files.",
-    "  smoke                        Write .persona/workflow/smoke-report.md.",
-    "  feedback                     Write .persona/workflow/feedback-report.md.",
-    "  review backend-shape         Write report-only backend Clean Code shape observations.",
-    "",
-    "Examples:",
-    `  ${invocationName} init`,
-    `  ${invocationName} bootstrap backend`,
-    `  ${invocationName} intake`,
-    `  ${invocationName} plan`,
-    `  ${invocationName} policy init`,
-    `  ${invocationName} language`,
-    `  ${invocationName} history --id run-001`,
-    `  ${invocationName} bearshell npm test`,
-    `  ${invocationName} workflow check`,
-    `  ${invocationName} workflow implement`,
-    `  ${invocationName} workflow continue`,
-    `  ${invocationName} workflow split README.md`,
-    `  ${invocationName} workflow next`,
-    `  ${invocationName} workflow archive step-1`,
-    `  ${invocationName} workflow start implement`,
-    `  ${invocationName} workflow finish implement`,
-    `  ${invocationName} workflow guard implement`,
-    `  ${invocationName} workflow guard final`,
-    `  ${invocationName} doctor`,
-    `  ${invocationName} evidence summary`,
-    `  ${invocationName} smoke`,
-    `  ${invocationName} feedback`,
-    `  ${invocationName} review backend-shape`,
-    `  ${invocationName} bearshell --shell 'git status --short && npm test'`,
-  ].join("\n")
 }
 
 function writeResult(result: CliRunResult): void {
@@ -248,8 +193,19 @@ async function runCliEntrypoint(): Promise<void> {
       cwd: process.cwd(),
       env: process.env,
       invocationName,
+      stdin: workflowCaptureStdin(args),
     }),
   )
+}
+
+function workflowCaptureStdin(args: readonly string[]): string | undefined {
+  if (args[0] !== "workflow" || args[1] !== "capture" || args[2] !== "--stdin") {
+    return undefined
+  }
+  if (process.stdin.isTTY === true) {
+    return undefined
+  }
+  return readFileSync(0, "utf8")
 }
 
 function isCliEntrypoint(): boolean {

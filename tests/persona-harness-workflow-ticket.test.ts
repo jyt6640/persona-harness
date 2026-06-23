@@ -66,8 +66,63 @@ describe("ph workflow ticket backlog", () => {
     expect(backlog).toContain("| 2 | step-2 | iCal Import/Export | pending | .persona/workflow/work/step-2/00-task-card.md |")
     expect(card).toContain("# Task Card: Step 1. 기본 일정 구현")
     expect(card).toContain("Source: README.md")
+    expect(card).toContain("Source kind: file")
+    expect(card).toContain("Source path: README.md")
     expect(card).toContain("- 일정을 등록한다.")
     expect(card).toContain("No automatic code generation")
+  })
+
+  it("captures prompt requirements from stdin and splits the latest prompt source by default", () => {
+    const projectDir = createHarnessProject()
+    const promptRequirements = [
+      "# Prompt Requirements",
+      "",
+      "## Step 1. 기본 일정 구현",
+      "",
+      "- 프롬프트로 받은 일정을 등록한다.",
+      "",
+      "## Step 2. iCal Import/Export",
+      "",
+      "- 프롬프트 기반 iCal export를 구현한다.",
+      "",
+      "## Step 3. 반복 일정",
+      "",
+      "- 프롬프트 기반 반복 일정을 구현한다.",
+      "",
+      "## Step 4. 캘린더 연동",
+      "",
+      "- 외부 캘린더 연동을 검토한다.",
+      "",
+      "## Step 5. 다양한 조회",
+      "",
+      "- 일간/주간/월간 조회를 구현한다.",
+      "",
+      "## Step 6. 초대 기능",
+      "",
+      "- 공유 링크를 만든다.",
+      "",
+      "## Step 7. 성능 테스트",
+      "",
+      "- 성능 테스트 계획을 만든다.",
+    ].join("\n")
+
+    const capture = runPersonaCli(["workflow", "capture", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: promptRequirements,
+    })
+    const split = runPersonaCli(["workflow", "split"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(capture.status).toBe(0)
+    expect(capture.stdout).toContain("Workflow requirements captured")
+    expect(existsSync(join(projectDir, ".persona", "workflow", "requirements", "latest.md"))).toBe(true)
+    expect(split.status).toBe(0)
+    expect(split.stdout).toContain("Tickets created: 7")
+    const card = readFileSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"), "utf8")
+    expect(card).toContain("Source kind: prompt")
+    expect(card).toContain("Source path: .persona/workflow/requirements/latest.md")
+    expect(card).toContain("- 프롬프트로 받은 일정을 등록한다.")
   })
 
   it("prints the first pending ticket with its task card path", () => {
@@ -124,6 +179,43 @@ describe("ph workflow ticket backlog", () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("No Step sections found")
+  })
+
+  it("fails split without a source file or captured prompt source", () => {
+    const projectDir = createHarnessProject()
+
+    const result = runPersonaCli(["workflow", "split"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Workflow requirement source not found")
+    expect(result.stderr).toContain("npx ph workflow capture --stdin")
+  })
+
+  it("blocks implementation finish while pending workflow tickets remain", () => {
+    const projectDir = createHarnessProject()
+    writeStepReadme(projectDir)
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "Status: filled",
+        "## README ranges read",
+        "- 1-220",
+        "- `npx ph bearshell --shell './gradlew test'`",
+      ].join("\n"),
+    )
+    writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n")
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["workflow", "archive", "step-1"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Pending workflow tickets remain: step-2, step-3")
+    expect(result.stderr).toContain("Run `npx ph workflow next`")
   })
 
   it("keeps workflow ticket commands inactive before Persona Harness opt-in", () => {

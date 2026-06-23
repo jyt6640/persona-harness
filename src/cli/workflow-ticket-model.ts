@@ -4,6 +4,14 @@ export type StepSection = {
   readonly body: string
 }
 
+export type RequirementSourceKind = "file" | "prompt"
+
+export type RequirementSource = {
+  readonly kind: RequirementSourceKind
+  readonly path: string
+  readonly label: string
+}
+
 export type BacklogTicket = {
   readonly order: number
   readonly ticket: string
@@ -15,6 +23,8 @@ export type BacklogTicket = {
 export const WORK_DIR = ".persona/workflow/work"
 export const HISTORY_DIR = ".persona/workflow/history"
 export const BACKLOG_PATH = ".persona/workflow/backlog.md"
+export const REQUIREMENTS_DIR = ".persona/workflow/requirements"
+export const LATEST_REQUIREMENTS_PATH = ".persona/workflow/requirements/latest.md"
 export const TASK_CARD_NAME = "00-task-card.md"
 
 function stepHeading(line: string): { readonly number: string; readonly title: string } | undefined {
@@ -58,7 +68,7 @@ export function historyTaskCardPath(ticket: string): string {
   return `${HISTORY_DIR}/${ticket}/${TASK_CARD_NAME}`
 }
 
-export function formatTaskCard(sourceFile: string, section: StepSection): string {
+export function formatTaskCard(source: RequirementSource, section: StepSection): string {
   const ticket = `step-${section.number}`
   const body = section.body.length > 0 ? section.body : "(No body was captured under this Step heading.)"
   return [
@@ -66,7 +76,9 @@ export function formatTaskCard(sourceFile: string, section: StepSection): string
     "",
     "Status: pending",
     `Ticket: ${ticket}`,
-    `Source: ${sourceFile}`,
+    `Source: ${source.label}`,
+    `Source kind: ${source.kind}`,
+    `Source path: ${source.path}`,
     `Source heading: Step ${section.number}. ${section.title}`,
     "",
     "## Goal",
@@ -97,7 +109,7 @@ export function formatTaskCard(sourceFile: string, section: StepSection): string
   ].join("\n") + "\n"
 }
 
-export function formatBacklog(sourceFile: string, sections: readonly StepSection[]): string {
+export function formatBacklog(source: RequirementSource, sections: readonly StepSection[]): string {
   const rows = sections.map((section, index) => {
     const ticket = `step-${section.number}`
     return `| ${index + 1} | ${ticket} | ${section.title} | pending | ${taskCardPath(ticket)} |`
@@ -105,7 +117,9 @@ export function formatBacklog(sourceFile: string, sections: readonly StepSection
   return [
     "# Persona Workflow Backlog",
     "",
-    `Source: ${sourceFile}`,
+    `Source: ${source.label}`,
+    `Source kind: ${source.kind}`,
+    `Source path: ${source.path}`,
     "Status: active",
     "",
     "| Order | Ticket | Title | Status | Path |",
@@ -143,4 +157,8 @@ export function replaceBacklogTicket(markdown: string, ticketId: string): string
       return `| ${order} | ${ticketId} | ${title} | archived | ${historyTaskCardPath(ticketId)} |`
     })
     .join("\n")
+}
+
+export function pendingTickets(markdown: string): readonly BacklogTicket[] {
+  return parseBacklog(markdown).filter((ticket) => ticket.status === "pending" || ticket.status === "active")
 }

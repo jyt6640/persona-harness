@@ -5,18 +5,34 @@ import type { CliRunResult } from "./bearshell.js"
 import {
   BACKLOG_PATH,
   HISTORY_DIR,
+  LATEST_REQUIREMENTS_PATH,
+  REQUIREMENTS_DIR,
   TASK_CARD_NAME,
   WORK_DIR,
+  type RequirementSource,
   formatBacklog,
   formatTaskCard,
+  pendingTickets,
   parseBacklog,
   parseStepSections,
   replaceBacklogTicket,
   taskCardPath,
 } from "./workflow-ticket-model.js"
+import {
+  archiveCompleteOutput,
+  backlogNotFoundOutput,
+  captureCompleteOutput,
+  missingRequirementSourceOutput,
+  nextTicketOutput,
+  noPendingTicketsOutput,
+  splitCompleteOutput,
+  splitConflictOutput,
+  uninitializedTicketOutput,
+} from "./workflow-ticket-output.js"
 
 type WorkflowTicketOptions = {
   readonly projectDir?: string
+  readonly stdin?: string
 }
 
 function resolveProjectDir(options: WorkflowTicketOptions): string {
@@ -26,50 +42,65 @@ function resolveProjectDir(options: WorkflowTicketOptions): string {
 function initializedProjectDir(options: WorkflowTicketOptions): { readonly kind: "ready"; readonly projectDir: string } | CliRunResult {
   const projectDir = resolveProjectDir(options)
   if (!existsSync(join(projectDir, ".persona"))) {
-    return {
-      status: 1,
-      stdout: "",
-      stderr: [
-        "Persona Harness is not initialized for workflow tickets.",
-        "",
-        "Run `npx ph init` or `npx ph bootstrap backend` first.",
-      ].join("\n") + "\n",
-    }
+    return uninitializedTicketOutput()
   }
   return { kind: "ready", projectDir }
 }
 
 function conflictMessage(path: string): CliRunResult {
-  return {
-    status: 1,
-    stdout: "",
-    stderr: [
-      "Workflow split refused to overwrite existing workflow state.",
-      "",
-      `Existing path: ${path}`,
-      "",
-      "Archive or remove the existing ticket state intentionally before splitting again.",
-    ].join("\n") + "\n",
-  }
+  return splitConflictOutput(path)
 }
 
-export function runWorkflowSplit(sourceFile: string, options: WorkflowTicketOptions): CliRunResult {
+function resolveRequirementSource(projectDir: string, sourceFile: string | undefined): RequirementSource | CliRunResult {
+  if (sourceFile !== undefined) {
+    if (!existsSync(join(projectDir, sourceFile))) {
+      return { status: 1, stdout: "", stderr: `Workflow split source not found: ${sourceFile}\n` }
+    }
+    return { kind: "file", path: sourceFile, label: sourceFile }
+  }
+  if (!existsSync(join(projectDir, LATEST_REQUIREMENTS_PATH))) {
+    return missingRequirementSourceOutput()
+  }
+  return { kind: "prompt", path: LATEST_REQUIREMENTS_PATH, label: LATEST_REQUIREMENTS_PATH }
+}
+
+export function runWorkflowCapture(options: WorkflowTicketOptions): CliRunResult {
+  const initialized = initializedProjectDir(options)
+  if ("status" in initialized) {
+    return initialized
+  }
+  const input = options.stdin ?? ""
+  if (input.trim().length === 0) {
+    return {
+      status: 1,
+      stdout: "",
+      stderr: "Workflow capture requires requirements text on stdin.\n",
+    }
+  }
+
+  const projectDir = initialized.projectDir
+  mkdirSync(join(projectDir, REQUIREMENTS_DIR), { recursive: true })
+  writeFileSync(join(projectDir, LATEST_REQUIREMENTS_PATH), input.endsWith("\n") ? input : `${input}\n`)
+  return captureCompleteOutput()
+}
+
+export function runWorkflowSplit(sourceFile: string | undefined, options: WorkflowTicketOptions): CliRunResult {
   const initialized = initializedProjectDir(options)
   if ("status" in initialized) {
     return initialized
   }
 
   const projectDir = initialized.projectDir
-  const sourcePath = join(projectDir, sourceFile)
-  if (!existsSync(sourcePath)) {
-    return { status: 1, stdout: "", stderr: `Workflow split source not found: ${sourceFile}\n` }
+  const source = resolveRequirementSource(projectDir, sourceFile)
+  if ("status" in source) {
+    return source
   }
-  const sections = parseStepSections(readFileSync(sourcePath, "utf8"))
+  const sections = parseStepSections(readFileSync(join(projectDir, source.path), "utf8"))
   if (sections.length === 0) {
     return {
       status: 1,
       stdout: "",
-      stderr: `No Step sections found in ${sourceFile}. Expected headings like "## Step 1. ...".\n`,
+      stderr: `No Step sections found in ${source.path}. Expected headings like "## Step 1. ...".\n`,
     }
   }
 
@@ -94,36 +125,15 @@ export function runWorkflowSplit(sourceFile: string, options: WorkflowTicketOpti
     const ticket = `step-${section.number}`
     const ticketDir = join(projectDir, WORK_DIR, ticket)
     mkdirSync(ticketDir, { recursive: true })
-    writeFileSync(join(ticketDir, TASK_CARD_NAME), formatTaskCard(sourceFile, section))
+    writeFileSync(join(ticketDir, TASK_CARD_NAME), formatTaskCard(source, section))
   }
-  writeFileSync(backlogAbsolutePath, formatBacklog(sourceFile, sections))
+  writeFileSync(backlogAbsolutePath, formatBacklog(source, sections))
 
-  return {
-    status: 0,
-    stdout: [
-      "Workflow split complete.",
-      "",
-      `Source: ${sourceFile}`,
-      `Backlog: ${BACKLOG_PATH}`,
-      `Tickets created: ${sections.length}`,
-      "",
-      "Next:",
-      "- `npx ph workflow next`",
-    ].join("\n") + "\n",
-    stderr: "",
-  }
+  return splitCompleteOutput(source, sections.length)
 }
 
 function backlogNotFound(): CliRunResult {
-  return {
-    status: 1,
-    stdout: "",
-    stderr: [
-      "Workflow backlog not found.",
-      "",
-      "Run `npx ph workflow split README.md` first.",
-    ].join("\n") + "\n",
-  }
+  return backlogNotFoundOutput()
 }
 
 export function runWorkflowNext(options: WorkflowTicketOptions): CliRunResult {
@@ -139,34 +149,18 @@ export function runWorkflowNext(options: WorkflowTicketOptions): CliRunResult {
   const tickets = parseBacklog(readFileSync(backlogAbsolutePath, "utf8"))
   const nextTicket = tickets.find((ticket) => ticket.status === "pending" || ticket.status === "active")
   if (nextTicket === undefined) {
-    return {
-      status: 0,
-      stdout: [
-        "Persona Workflow Next Ticket",
-        "",
-        "Status: complete",
-        "No pending tickets remain in `.persona/workflow/backlog.md`.",
-      ].join("\n") + "\n",
-      stderr: "",
-    }
+    return noPendingTicketsOutput()
   }
 
-  return {
-    status: 0,
-    stdout: [
-      "Persona Workflow Next Ticket",
-      "",
-      `Ticket: ${nextTicket.ticket}`,
-      `Title: ${nextTicket.title}`,
-      `Card: ${nextTicket.path}`,
-      "",
-      "Next:",
-      "- Read the task card.",
-      "- Implement only this ticket.",
-      `- When done, run \`npx ph workflow archive ${nextTicket.ticket}\`.`,
-    ].join("\n") + "\n",
-    stderr: "",
+  return nextTicketOutput(nextTicket.ticket, nextTicket.title, nextTicket.path)
+}
+
+export function pendingWorkflowTicketIds(projectDir: string): readonly string[] {
+  const backlogAbsolutePath = join(projectDir, BACKLOG_PATH)
+  if (!existsSync(backlogAbsolutePath)) {
+    return []
   }
+  return pendingTickets(readFileSync(backlogAbsolutePath, "utf8")).map((ticket) => ticket.ticket)
 }
 
 export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOptions): CliRunResult {
@@ -205,23 +199,13 @@ export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOpti
   const backlog = readFileSync(backlogAbsolutePath, "utf8")
   writeFileSync(backlogAbsolutePath, replaceBacklogTicket(backlog, ticketId))
 
-  return {
-    status: 0,
-    stdout: [
-      `Workflow ticket archived: ${ticketId}`,
-      "",
-      `From: ${WORK_DIR}/${ticketId}`,
-      `To: ${HISTORY_DIR}/${ticketId}`,
-      "",
-      "Next:",
-      "- `npx ph workflow next`",
-    ].join("\n") + "\n",
-    stderr: "",
-  }
+  return archiveCompleteOutput(ticketId, `${WORK_DIR}/${ticketId}`, `${HISTORY_DIR}/${ticketId}`)
 }
 
 export function workflowTicketUsage(invocation = "ph"): string {
   return [
+    `${invocation} workflow capture --stdin`,
+    `${invocation} workflow split`,
     `${invocation} workflow split README.md`,
     `${invocation} workflow next`,
     `${invocation} workflow archive <ticket>`,

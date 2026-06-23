@@ -208,10 +208,20 @@ npx ph plan --report-filled review
 npx ph workflow finish implement
 ```
 
-For long README files with multiple steps, let the agent split the assignment into workflow tickets first:
+For long requirements with multiple steps, let the agent split the assignment into workflow tickets first.
+
+If the requirements are in a file:
 
 ```text
 npx ph workflow split README.md
+npx ph workflow next
+```
+
+If the user pasted the requirements directly in the TUI prompt and there is no README yet, the agent should first capture the prompt as the latest requirement source:
+
+```text
+npx ph workflow capture --stdin
+npx ph workflow split
 npx ph workflow next
 ```
 
@@ -222,7 +232,7 @@ npx ph workflow archive step-1
 npx ph workflow next
 ```
 
-This creates `.persona/workflow/backlog.md`, active task cards under `.persona/workflow/work/`, and completed task history under `.persona/workflow/history/`. It is a workflow ledger for the AI agent, not generated-app quality certification.
+This creates `.persona/workflow/backlog.md`, active task cards under `.persona/workflow/work/`, completed task history under `.persona/workflow/history/`, and prompt-captured requirement sources under `.persona/workflow/requirements/`. It is a workflow ledger for the AI agent, not generated-app quality certification.
 
 If the agent ignores the workflow, paste this stricter prompt:
 

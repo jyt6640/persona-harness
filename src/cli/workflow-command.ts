@@ -15,102 +15,19 @@ import {
   type WorkflowRunnerKind,
   uninitializedHarnessOutput,
 } from "./workflow-output.js"
+import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
-import { runWorkflowArchive, runWorkflowNext, runWorkflowSplit, workflowTicketUsage } from "./workflow-tickets.js"
+import {
+  pendingWorkflowTicketIds,
+  runWorkflowArchive,
+  runWorkflowCapture,
+  runWorkflowNext,
+  runWorkflowSplit,
+} from "./workflow-tickets.js"
 
 type WorkflowOptions = {
   readonly projectDir?: string
-}
-
-type ParsedWorkflowArgs =
-  | { readonly kind: "check" }
-  | { readonly kind: "implement" }
-  | { readonly kind: "continue" }
-  | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
-  | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
-  | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
-  | { readonly kind: "split"; readonly sourceFile: string }
-  | { readonly kind: "next" }
-  | { readonly kind: "archive"; readonly ticketId: string }
-  | { readonly kind: "help" }
-  | { readonly kind: "invalid"; readonly message: string }
-
-export function workflowUsage(invocation = "ph"): string {
-  return [
-    `Usage: ${invocation} workflow <check|implement|continue|split|next|archive|start implement|finish implement|guard implement|guard final>`,
-    "",
-    "Checks or guards Persona Harness workflow artifacts before or after implementation.",
-    "",
-    "Scope:",
-    "- workflow check is report-only",
-    "- workflow implement prints a single AI-facing implementation rail",
-    "- workflow continue prints the accepted-plan continuation prompt",
-    "- workflow start/finish are AI-facing workflow rails",
-    "- workflow split/next/archive manage README-derived task tickets",
-    "- workflow guard uses strict exit codes for AI-facing workflow discipline",
-    "- no generated app quality certification",
-    "",
-    "Ticket commands:",
-    workflowTicketUsage(invocation),
-  ].join("\n")
-}
-
-function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
-  if (args.length === 0 || args[0] === "check") {
-    return args.length <= 1 ? { kind: "check" } : { kind: "invalid", message: "workflow check does not accept extra arguments." }
-  }
-  if (args[0] === "implement") {
-    return args.length === 1 ? { kind: "implement" } : { kind: "invalid", message: "workflow implement does not accept extra arguments." }
-  }
-  if (args[0] === "continue") {
-    return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
-  }
-  if (args[0] === "split") {
-    if (args.length !== 2) {
-      return { kind: "invalid", message: "workflow split requires a source markdown file." }
-    }
-    return { kind: "split", sourceFile: args[1] ?? "" }
-  }
-  if (args[0] === "next") {
-    return args.length === 1 ? { kind: "next" } : { kind: "invalid", message: "workflow next does not accept extra arguments." }
-  }
-  if (args[0] === "archive") {
-    if (args.length !== 2) {
-      return { kind: "invalid", message: "workflow archive requires a ticket id." }
-    }
-    return { kind: "archive", ticketId: args[1] ?? "" }
-  }
-  if (args[0] === "guard") {
-    if (args.length !== 2) {
-      return { kind: "invalid", message: "workflow guard requires implement or final." }
-    }
-    if (args[1] === "implement" || args[1] === "final") {
-      return { kind: "guard", guardKind: args[1] }
-    }
-    return { kind: "invalid", message: `Unknown workflow guard: ${args[1]}` }
-  }
-  if (args[0] === "start") {
-    if (args.length !== 2) {
-      return { kind: "invalid", message: "workflow start requires implement." }
-    }
-    if (args[1] === "implement") {
-      return { kind: "start", runnerKind: args[1] }
-    }
-    return { kind: "invalid", message: `Unknown workflow start: ${args[1]}` }
-  }
-  if (args[0] === "finish") {
-    if (args.length !== 2) {
-      return { kind: "invalid", message: "workflow finish requires implement." }
-    }
-    if (args[1] === "implement") {
-      return { kind: "finish", runnerKind: args[1] }
-    }
-    return { kind: "invalid", message: `Unknown workflow finish: ${args[1]}` }
-  }
-  if (args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
-    return { kind: "help" }
-  }
-  return { kind: "invalid", message: `Unknown workflow command: ${args[0]}` }
+  readonly stdin?: string
 }
 
 function implementationGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): readonly string[] {
@@ -159,6 +76,10 @@ function finalGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): read
   }
   if (summary.readCoverageBlocking) {
     reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md")
+  }
+  const pendingTicketIds = pendingWorkflowTicketIds(summary.projectDir)
+  if (pendingTicketIds.length > 0) {
+    reasons.push(`Pending workflow tickets remain: ${pendingTicketIds.join(", ")}. Run \`npx ph workflow next\`.`)
   }
   return reasons
 }
@@ -231,6 +152,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
+  }
+  if (parsed.kind === "capture") {
+    return runWorkflowCapture(options)
   }
   if (parsed.kind === "split") {
     return runWorkflowSplit(parsed.sourceFile, options)
