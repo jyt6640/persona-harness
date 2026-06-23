@@ -8,6 +8,40 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.4-alpha.0] - 2026-06-23
+
+### Added
+
+- Strengthened continuation workflow for long README implementations.
+- Added explicit continuation fields to the implementation report template:
+  - completed requirements;
+  - incomplete requirements;
+  - last completed requirement/file;
+  - remaining README/plan range;
+  - remaining implementation scope;
+  - interruption reason;
+  - next command/action;
+  - next prompt hint.
+- Added `ph plan --next` behavior that prefers `npx ph workflow continue` when a filled implementation report still records remaining scope.
+- Added plan unchecked checklist output to the continuation prompt so agents can resume from the accepted plan and previous report evidence.
+
+### Changed
+
+- Refactored workflow report template generation into `src/cli/workflow-templates.ts` to keep the plan CLI smaller and easier to review.
+
+### Verification
+
+- Long README smoke created a 260-line README and simulated an interrupted first pass that completed Step 1-40 and left Step 41-260.
+- Observed `ph plan --next` recommend `npx ph workflow continue` with continuation evidence.
+- Observed `ph workflow continue` print remaining README range, incomplete requirements, interruption reason, next action, next prompt hint, and unchecked plan items.
+- `npm test`, `npm run typecheck`, `npm run build`, and `npm pack --dry-run` passed before publish.
+
+### Known Gaps
+
+- Continuation workflow is still an AI-facing rail. It does not automatically execute OpenCode or certify generated app quality.
+- It depends on the agent filling continuation evidence honestly when a run stops early.
+- Full TDD workflow remains future scope.
+
 ## [0.3.3-alpha.0] - 2026-06-23
 
 ### Added
