@@ -171,14 +171,69 @@ describe("ph workflow ticket backlog", () => {
     expect(result.stderr).toContain("Refusing to overwrite")
   })
 
-  it("fails split when no Step headings are found", () => {
+  it("splits generic README requirements into an analysis-backed fallback ticket", () => {
     const projectDir = createHarnessProject()
-    writeFileSync(join(projectDir, "README.md"), "# API\n\n- no step headings\n")
+    writeFileSync(
+      join(projectDir, "README.md"),
+      [
+        "# Equipment Rental API",
+        "",
+        "- 장비를 등록한다.",
+        "- 장비 목록을 조회한다.",
+        "- 회원이 장비를 대여한다.",
+      ].join("\n"),
+    )
 
     const result = runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
-    expect(result.status).toBe(1)
-    expect(result.stderr).toContain("No Step sections found")
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Requirements analysis: .persona/workflow/requirements-analysis.md")
+    expect(result.stdout).toContain("Tickets created: 1")
+    const analysis = readFileSync(join(projectDir, ".persona", "workflow", "requirements-analysis.md"), "utf8")
+    const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
+    const card = readFileSync(join(projectDir, ".persona", "workflow", "work", "req-1", "00-task-card.md"), "utf8")
+    expect(analysis).toContain("Split strategy: single-ticket-fallback")
+    expect(analysis).toContain("Source kind: file")
+    expect(backlog).toContain("| 1 | req-1 | Equipment Rental API | pending | .persona/workflow/work/req-1/00-task-card.md |")
+    expect(card).toContain("# Task Card: Requirement 1. Equipment Rental API")
+    expect(card).toContain("- 장비를 등록한다.")
+  })
+
+  it("splits prompt requirements without Step headings into backlog automatically", () => {
+    const projectDir = createHarnessProject()
+    const promptRequirements = [
+      "장비 대여 API를 만들어줘.",
+      "",
+      "## 장비 관리",
+      "",
+      "- 장비 등록",
+      "- 장비 목록 조회",
+      "",
+      "## 대여 흐름",
+      "",
+      "- 회원 등록",
+      "- 장비 대여",
+      "- 본인 대여만 반납 가능",
+    ].join("\n")
+
+    const capture = runPersonaCli(["workflow", "capture", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: promptRequirements,
+    })
+    const split = runPersonaCli(["workflow", "split"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(capture.status).toBe(0)
+    expect(split.status).toBe(0)
+    expect(split.stdout).toContain("Tickets created: 2")
+    const analysis = readFileSync(join(projectDir, ".persona", "workflow", "requirements-analysis.md"), "utf8")
+    const card = readFileSync(join(projectDir, ".persona", "workflow", "work", "req-1", "00-task-card.md"), "utf8")
+    expect(analysis).toContain("Split strategy: heading-fallback")
+    expect(analysis).toContain("Source kind: prompt")
+    expect(card).toContain("Source kind: prompt")
+    expect(card).toContain("# Task Card: Requirement 1. 장비 관리")
+    expect(card).toContain("- 장비 등록")
   })
 
   it("fails split without a source file or captured prompt source", () => {

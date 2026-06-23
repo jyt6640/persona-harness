@@ -2,6 +2,7 @@ export type StepSection = {
   readonly number: string
   readonly title: string
   readonly body: string
+  readonly kind: "step" | "requirement"
 }
 
 export type RequirementSourceKind = "file" | "prompt"
@@ -23,6 +24,7 @@ export type BacklogTicket = {
 export const WORK_DIR = ".persona/workflow/work"
 export const HISTORY_DIR = ".persona/workflow/history"
 export const BACKLOG_PATH = ".persona/workflow/backlog.md"
+export const REQUIREMENTS_ANALYSIS_PATH = ".persona/workflow/requirements-analysis.md"
 export const REQUIREMENTS_DIR = ".persona/workflow/requirements"
 export const LATEST_REQUIREMENTS_PATH = ".persona/workflow/requirements/latest.md"
 export const TASK_CARD_NAME = "00-task-card.md"
@@ -45,7 +47,7 @@ export function parseStepSections(markdown: string): readonly StepSection[] {
     const heading = stepHeading(line)
     if (heading !== undefined) {
       if (current !== undefined) {
-        sections.push({ number: current.number, title: current.title, body: current.lines.join("\n").trim() })
+        sections.push({ number: current.number, title: current.title, body: current.lines.join("\n").trim(), kind: "step" })
       }
       current = { number: heading.number, title: heading.title, lines: [] }
     } else if (current !== undefined) {
@@ -54,10 +56,18 @@ export function parseStepSections(markdown: string): readonly StepSection[] {
   }
 
   if (current !== undefined) {
-    sections.push({ number: current.number, title: current.title, body: current.lines.join("\n").trim() })
+    sections.push({ number: current.number, title: current.title, body: current.lines.join("\n").trim(), kind: "step" })
   }
 
   return sections
+}
+
+function ticketForSection(section: StepSection): string {
+  return section.kind === "step" ? `step-${section.number}` : `req-${section.number}`
+}
+
+function headingForSection(section: StepSection): string {
+  return section.kind === "step" ? `Step ${section.number}. ${section.title}` : `Requirement ${section.number}. ${section.title}`
 }
 
 export function taskCardPath(ticket: string): string {
@@ -69,21 +79,22 @@ export function historyTaskCardPath(ticket: string): string {
 }
 
 export function formatTaskCard(source: RequirementSource, section: StepSection): string {
-  const ticket = `step-${section.number}`
-  const body = section.body.length > 0 ? section.body : "(No body was captured under this Step heading.)"
+  const ticket = ticketForSection(section)
+  const heading = headingForSection(section)
+  const body = section.body.length > 0 ? section.body : `(No body was captured under this ${section.kind} heading.)`
   return [
-    `# Task Card: Step ${section.number}. ${section.title}`,
+    `# Task Card: ${heading}`,
     "",
     "Status: pending",
     `Ticket: ${ticket}`,
     `Source: ${source.label}`,
     `Source kind: ${source.kind}`,
     `Source path: ${source.path}`,
-    `Source heading: Step ${section.number}. ${section.title}`,
+    `Source heading: ${heading}`,
     "",
     "## Goal",
     "",
-    `Implement Step ${section.number} from the source requirements.`,
+    `Implement ${heading} from the source requirements.`,
     "",
     "## Source Requirement",
     "",
@@ -111,7 +122,7 @@ export function formatTaskCard(source: RequirementSource, section: StepSection):
 
 export function formatBacklog(source: RequirementSource, sections: readonly StepSection[]): string {
   const rows = sections.map((section, index) => {
-    const ticket = `step-${section.number}`
+    const ticket = ticketForSection(section)
     return `| ${index + 1} | ${ticket} | ${section.title} | pending | ${taskCardPath(ticket)} |`
   })
   return [

@@ -1,5 +1,10 @@
 import type { CliRunResult } from "./bearshell.js"
-import { BACKLOG_PATH, LATEST_REQUIREMENTS_PATH, type RequirementSource } from "./workflow-ticket-model.js"
+import {
+  BACKLOG_PATH,
+  LATEST_REQUIREMENTS_PATH,
+  REQUIREMENTS_ANALYSIS_PATH,
+  type RequirementSource,
+} from "./workflow-ticket-model.js"
 
 export function uninitializedTicketOutput(): CliRunResult {
   return {
@@ -81,6 +86,7 @@ export function splitCompleteOutput(source: RequirementSource, count: number): C
       "",
       `Source: ${source.label}`,
       `Source kind: ${source.kind}`,
+      `Requirements analysis: ${REQUIREMENTS_ANALYSIS_PATH}`,
       `Backlog: ${BACKLOG_PATH}`,
       `Tickets created: ${count}`,
       "",

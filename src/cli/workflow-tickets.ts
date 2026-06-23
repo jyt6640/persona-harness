@@ -6,6 +6,7 @@ import {
   BACKLOG_PATH,
   HISTORY_DIR,
   LATEST_REQUIREMENTS_PATH,
+  REQUIREMENTS_ANALYSIS_PATH,
   REQUIREMENTS_DIR,
   TASK_CARD_NAME,
   WORK_DIR,
@@ -14,10 +15,10 @@ import {
   formatTaskCard,
   pendingTickets,
   parseBacklog,
-  parseStepSections,
   replaceBacklogTicket,
   taskCardPath,
 } from "./workflow-ticket-model.js"
+import { analyzeRequirementSections, formatRequirementsAnalysis } from "./workflow-requirements-analysis.js"
 import {
   archiveCompleteOutput,
   backlogNotFoundOutput,
@@ -95,14 +96,9 @@ export function runWorkflowSplit(sourceFile: string | undefined, options: Workfl
   if ("status" in source) {
     return source
   }
-  const sections = parseStepSections(readFileSync(join(projectDir, source.path), "utf8"))
-  if (sections.length === 0) {
-    return {
-      status: 1,
-      stdout: "",
-      stderr: `No Step sections found in ${source.path}. Expected headings like "## Step 1. ...".\n`,
-    }
-  }
+  const sourceMarkdown = readFileSync(join(projectDir, source.path), "utf8")
+  const analysis = analyzeRequirementSections(sourceMarkdown)
+  const sections = analysis.sections
 
   const backlogAbsolutePath = join(projectDir, BACKLOG_PATH)
   if (existsSync(backlogAbsolutePath)) {
@@ -121,8 +117,10 @@ export function runWorkflowSplit(sourceFile: string | undefined, options: Workfl
 
   mkdirSync(join(projectDir, WORK_DIR), { recursive: true })
   mkdirSync(join(projectDir, HISTORY_DIR), { recursive: true })
+  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  writeFileSync(join(projectDir, REQUIREMENTS_ANALYSIS_PATH), formatRequirementsAnalysis(source, analysis, sourceMarkdown))
   for (const section of sections) {
-    const ticket = `step-${section.number}`
+    const ticket = section.kind === "step" ? `step-${section.number}` : `req-${section.number}`
     const ticketDir = join(projectDir, WORK_DIR, ticket)
     mkdirSync(ticketDir, { recursive: true })
     writeFileSync(join(ticketDir, TASK_CARD_NAME), formatTaskCard(source, section))

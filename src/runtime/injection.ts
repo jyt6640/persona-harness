@@ -90,6 +90,8 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     "사용자가 직접 터미널을 쓰는 상황이면 `npx ph init` 또는 `npx ph intake --interactive`로 프로필 인터뷰를 완료하게 안내한다.",
     "`.persona`가 없는 일반 프로젝트에는 Persona Harness workflow를 강제하지 않는다. 하네스를 쓰려면 사용자가 `npx ph init`으로 opt in한다.",
     "짧은 구현 지시(예: '플랜 보고 구현해줘', '계획대로 해줘', '이제 구현해줘')를 받으면 먼저 `npx ph workflow implement`를 실행하고, 그 단일 레일을 따른다.",
+    "프롬프트에 요구사항이 직접 들어오면 구현 전에 `npx ph workflow capture --stdin`, `npx ph workflow split`, `npx ph workflow next`로 요구사항 분석과 backlog를 먼저 남긴다.",
+    "`npx ph workflow split`은 Step heading이 없어도 `.persona/workflow/requirements-analysis.md`와 fallback task ticket을 만든다.",
     "`npx ph workflow implement`가 실패하면 구현하지 말고 plan/status 문제를 사용자에게 보고한다.",
     "긴 README/plan은 `npx ph bearshell --shell 'sed -n \"1,220p\" <file>'`처럼 범위를 나눠 끝까지 읽는다.",
     "중간에 멈추면 implementation-report에 남은 범위를 기록한다.",
