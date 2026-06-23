@@ -11,10 +11,12 @@ This document names the roles and their intended inputs/outputs. It does not imp
 The current product surface is:
 
 ```text
-ph init(interview) -> profile summary injection -> OpenCode plan/implementation -> evidence review
+ph init(interactive interview) -> profile summary injection -> OpenCode plan/implementation -> evidence review
 ```
 
 The v0.3.x workflow should make this path more explicit without turning Persona Harness into a full autonomous agent platform.
+
+For AI/non-TTY shells, the equivalent fast path is `npx ph bootstrap backend`. It is intentionally separate from `ph init` so a direct human setup can collect interview answers while an agent shell can still create deterministic smoke-test artifacts without hanging on prompts.
 
 ## Role Map
 
@@ -28,7 +30,7 @@ The v0.3.x workflow should make this path more explicit without turning Persona 
 ## Flow
 
 ```text
-1. npx ph init
+1. npx ph init in an interactive terminal
 2. user answers the backend intake interview
 3. .persona/project-profile.jsonc is written
 4. profile summary injection exposes planning context

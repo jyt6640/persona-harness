@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 
 import { formatInitResult } from "./init-output.js"
 
-export { formatInitResult } from "./init-output.js"
+export { formatInitNonInteractiveInterviewMessage, formatInitResult } from "./init-output.js"
 
 type InitOptions = {
   readonly projectDir?: string

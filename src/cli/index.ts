@@ -6,6 +6,7 @@ import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
 
 import { runBootstrapCommand } from "./bootstrap.js"
+import { formatInitNonInteractiveInterviewMessage } from "./init-output.js"
 import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
@@ -176,6 +177,12 @@ async function runInitEntrypoint(invocationName: string): Promise<void> {
   if (existsSync(join(process.cwd(), PROFILE_PATH))) {
     process.stdout.write(`\n${PROFILE_PATH} already exists. Backend interview skipped.\n`)
     process.exitCode = 0
+    return
+  }
+
+  if (process.stdin.isTTY !== true) {
+    process.stderr.write(`\n${formatInitNonInteractiveInterviewMessage(invocationName)}`)
+    process.exitCode = 1
     return
   }
 

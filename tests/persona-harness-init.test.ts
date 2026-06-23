@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { formatInitResult, initializePersonaHarness } from "../src/cli/init.js"
+import { formatInitNonInteractiveInterviewMessage, formatInitResult, initializePersonaHarness } from "../src/cli/init.js"
 
 const tempProjects: string[] = []
 
@@ -112,6 +112,8 @@ describe("persona-harness init", () => {
     })
 
     expect(result).toContain("ph init` starts the backend profile interview")
+    expect(result).toContain("interactive terminal")
+    expect(result).toContain("npx ph bootstrap backend")
     expect(result).toContain("npx ph intake --default backend")
     expect(result).toContain("npx ph policy init")
     expect(result).toContain("npx ph plan --auto-accept")
@@ -119,5 +121,14 @@ describe("persona-harness init", () => {
     expect(result).toContain("TUI")
     expect(result).toContain("$(npx ph plan --prompt)")
     expect(result).not.toContain("요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘")
+  })
+
+  it("explains the AI/non-TTY bootstrap path without creating a default profile", () => {
+    const result = formatInitNonInteractiveInterviewMessage("ph")
+
+    expect(result).toContain("interactive terminal")
+    expect(result).toContain("npx ph init")
+    expect(result).toContain("npx ph bootstrap backend")
+    expect(result).toContain("No default profile was created")
   })
 })

@@ -3,94 +3,97 @@
 ## Candidate
 
 ```text
-persona-harness@0.3.2-alpha.2
+persona-harness@0.3.5-alpha.0
 dist-tag: alpha
-date: 2026-06-22
+date: 2026-06-23
 ```
 
 ## Release Intent
 
-This candidate is a hotfix for installed-package clean runs where generated Java files existed but evidence only showed `README.md` or a small set of touched files. It keeps the Java/Spring backend MVP scope and makes `ph workflow implement` surface generated Java role discovery and representative read follow-up.
+This candidate clarifies the first-run setup path for Persona Harness users and AI agents.
+
+The desired split is:
+
+- human terminal setup uses `npx ph init` and answers the backend profile interview;
+- AI/non-TTY setup uses `npx ph bootstrap backend`;
+- `ph init` never silently creates a default profile when the interview cannot run.
 
 ## Included Changes
 
-- `ph workflow implement` asks the agent to run Java role discovery after Java files are generated or changed.
-- Java role discovery recognizes `npx ph bearshell --shell 'find src/main/java src/test/java -name "*.java" ...'` output.
-- Implementation report template includes Java role discovery/read fields.
-- Profile-required implementation gate is active before `ph plan` and `ph workflow implement`.
-- `ph init` installs harness/plugin files and starts the intended interview-based backend profile flow in an interactive terminal.
-- `ph intake --default backend` remains available as an explicit fast-path default profile.
-- `ph bootstrap backend` remains the non-interactive smoke path for filling profile/policy/plan pieces.
-- `ph plan --auto-accept` supports clean-run smoke without a separate manual accept step.
-
-## Verification Commands
-
-| Command | Result |
-| --- | --- |
-| `npm test -- tests/phase0-java-role-discovery.test.ts tests/persona-harness-workflow-check.test.ts` | pass: 2 files, 26 tests |
-| `npm test` | pass: 36 test files, 229 tests |
-| `npm run typecheck` | pass |
-| `npm run build` | pass |
-| `npm run report:rules` | pass: PersonaHarnessRule diagnostics PASS, 0 findings |
-| `npm run check:scope:strict` | pass: MVP scope diagnostics PASS, 0 findings, STRICT mode |
-| `npm run check:injection-value` | pass: current window 3/3, expected decision `continue-java-mvp` |
-| `npm pack --dry-run` | pass: `persona-harness-0.3.2-alpha.2.tgz`, 222 files, 230.8 kB package size, 889.4 kB unpacked size |
-| `npm publish --dry-run --tag alpha` | pass: dry-run only for `persona-harness@0.3.2-alpha.2` |
-| `npm publish --tag alpha` | pass: `persona-harness@0.3.2-alpha.2` |
-| `npm view persona-harness@alpha version` | pass: `0.3.2-alpha.2` |
-| `npm dist-tag add persona-harness@0.3.2-alpha.2 latest` | blocked: npm OTP required |
-
-## Clean Install Smoke
-
-Expected smoke:
-
-```bash
-tmp_project=$(mktemp -d)
-cd "$tmp_project"
-npm init -y
-npm install -D /absolute/path/to/persona-harness
-npx ph bootstrap backend
-npx ph workflow implement
-```
-
-Expected:
-
-- `ph workflow implement` prints the Java role discovery command.
-- A generated Java file listing produces `[Persona Harness Java Role Discovery]`.
-- Evidence contains `role-discovery` rows for generated Java files.
-- Evidence contains a `<java-role-read-follow-up>` model-input row.
+- `ph init` starts the backend profile interview only when it runs from an interactive terminal.
+- non-TTY `ph init` installs harness/plugin files, returns a clear setup message, and exits before writing `.persona/project-profile.jsonc`.
+- The non-TTY message points to `npx ph bootstrap backend` for AI shells and smoke tests.
+- Injection guidance now tells agents not to attempt interactive prompts from AI/non-TTY shells.
+- README and workflow role docs describe the human interview path and the AI bootstrap path separately.
 
 ## Supported Surface
 
 - Java/Spring backend MVP.
 - Gradle-first backend workflow.
-- AI-facing workflow discipline for OpenCode/Codex-style TUI use.
-- Report-only diagnostics and workflow evidence gates.
+- Human setup through an interview-based backend profile.
+- AI/non-TTY setup through deterministic backend bootstrap.
+- Report-only workflow evidence gates.
 
 ## Not Supported
 
 - Generated app product-quality certification.
+- Rule compliance enforcement.
 - AST/linter/build enforcement of rule compliance.
 - Frontend/infra/desktop productization.
 - Full TDD workflow.
-- `ph bearshell` sandboxing.
+
+## Verification Commands
+
+| Command | Result |
+| --- | --- |
+| `npm test -- tests/persona-harness-init.test.ts tests/phase0-hooks.test.ts tests/persona-harness-interactive-intake.test.ts` | pass: 3 files, 25 tests |
+| `npm test` | pass: 36 files, 240 tests |
+| `npm run typecheck` | pass |
+| `npm run build` | pass |
+| `npm run report:rules` | pass: PersonaHarnessRule diagnostics PASS, 0 findings |
+| `npm run check:scope:strict` | pass: MVP scope diagnostics PASS, 0 findings |
+| `npm run check:injection-value` | pass: current window 3/3, expected decision `continue-java-mvp` |
+| `bun run packages/shared-skills/skills/programming/scripts/typescript/check-no-excuse-rules.ts src/cli/index.ts src/cli/init-output.ts src/cli/init.ts src/phase0/injection.ts tests/persona-harness-init.test.ts` | pass |
+| `npm pack --dry-run` | pass: `persona-harness-0.3.5-alpha.0.tgz`, 237 files, 250.0 kB package size, 966.7 kB unpacked size |
+| non-TTY `node dist/cli/index.js init` smoke | pass: exit 1, harness/plugin files created, no profile created, bootstrap guidance printed |
+| TTY `node dist/cli/index.js init` smoke | pass: exit 0, backend interview completed, profile status `ready` |
+| `node dist/cli/index.js bootstrap backend` smoke | pass: profile, policy, accepted plan, and report templates created |
+
+## Smoke Expectations
+
+Interactive terminal:
+
+```bash
+npx ph init
+```
+
+Expected:
+
+- `.persona/harness.jsonc` exists;
+- `.persona/rules/` exists;
+- `.opencode/opencode.json` exists;
+- backend profile interview starts;
+- `.persona/project-profile.jsonc` is written only after answers are collected.
+
+AI/non-TTY:
+
+```bash
+npx ph init
+```
+
+Expected:
+
+- harness/plugin files are installed;
+- command exits non-zero with a clear message;
+- `.persona/project-profile.jsonc` is not created;
+- message tells the agent to run `npx ph bootstrap backend`.
 
 ## Release Decision
 
-`persona-harness@0.3.2-alpha.2` is published under the `alpha` dist-tag.
+Ready to publish under the `alpha` dist-tag.
 
-Local tarball install smoke passed in a repo-external temporary project:
+## Known Gaps
 
-- installed package version: `0.3.2-alpha.2`
-- `npx ph init`: installed harness/plugin files
-- `npx ph init`: starts backend interview in the interactive CLI
-- `npx ph bootstrap backend`: non-interactive smoke path still creates a ready default backend profile
-- `npx ph plan --auto-accept`: created accepted workflow plan
-- `npx ph workflow implement`: printed Java role discovery command
-- `npx ph workflow implement`: printed Java role discovery/read evidence guidance
-
-Registry status after publish:
-
-- `alpha`: `0.3.2-alpha.2`
-- `latest`: still `0.3.2-alpha.1`
-- `latest` sync is pending OTP authorization.
+- OpenCode/Codex TUI shells may not reliably support interactive prompts.
+- `ph bootstrap backend` is intentionally the AI/non-TTY fast path, not a replacement for a human interview.
+- Generated application quality remains a manual/external-test judgment.

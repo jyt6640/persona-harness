@@ -153,6 +153,7 @@ You can use a different domain. For cleaner feedback, avoid the older `reservati
 
 `npx ph init` installs the harness, connects the OpenCode plugin, and immediately starts the backend profile interview.
 The interview writes `.persona/project-profile.jsonc`; that profile is the planning context used before implementation.
+The interview requires an interactive terminal. If an AI/TUI non-TTY shell runs `npx ph init`, the harness installs files but stops before writing a default profile and points the agent to `npx ph bootstrap backend`.
 
 For the normal external tester flow:
 
@@ -169,6 +170,8 @@ If you need a non-interactive fast path for smoke tests, use backend bootstrap:
 ```bash
 npx ph bootstrap backend
 ```
+
+Use this bootstrap path for AI agent shells where interactive prompts are unreliable. Use the interview path when a human is setting up the project directly in a terminal.
 
 If `.persona/project-profile.jsonc` is missing, draft, malformed, or incomplete, `ph plan` and `ph workflow implement` stop and ask for `ph intake` first. Before implementation, `npx ph workflow check` usually reports `WARN` because implementation and review reports are still templates. That is normal.
 
@@ -254,10 +257,11 @@ For generated code shape, look for:
 
 These commands are intentionally visible so AI agents can call them from OpenCode/Codex-style sessions.
 
-- `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, and starts the backend profile interview.
+- `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, and starts the backend profile interview when run from an interactive terminal.
 - `ph intake`: creates an editable draft backend profile.
 - `ph intake --default backend`: creates a ready default backend profile without an interactive terminal.
 - `ph intake --interactive`: asks backend planning questions and writes `.persona/project-profile.jsonc`.
+- `ph bootstrap backend`: AI/non-TTY fast path that creates the default backend profile, policy, accepted plan, and report templates.
 - `ph policy init`: creates company and personal backend policy overlay files.
 - `ph plan`: creates `.persona/workflow/plan.md`.
 - `ph plan --auto-accept`: creates workflow plan/report templates and marks the plan accepted for a fast smoke.

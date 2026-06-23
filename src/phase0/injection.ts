@@ -57,8 +57,8 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
       ? [
           "프로젝트 프로필 상태:",
           `- ${projectProfileState.message}`,
-          "- `.persona`가 있는 하네스 프로젝트에서 구현 요청을 받았다면 먼저 `npx ph intake --interactive`로 프로필을 확정한다.",
-          "- 인터뷰를 생략하는 의도적 fast path에서만 `npx ph intake --default backend --force`를 사용한다.",
+          "- 사용자 직접 터미널에서는 `npx ph init` 또는 `npx ph intake --interactive`로 프로필 인터뷰를 완료한다.",
+          "- AI/non-TTY shell에서는 interactive prompt를 시도하지 말고 `npx ph bootstrap backend`를 실행한다.",
           "- 프로필이 ready가 되기 전에는 하네스 workflow 구현 레일을 시작하지 않는다.",
           "",
         ]
@@ -86,7 +86,8 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     "이 Phase 0 블록은 .persona/rules 정본과 최소 frontmatter/glob/scenario catalog layer를 읽는 MVP rule-loader 결과이며, 아직 full rule engine은 아니다.",
     "코드 구조 분석이나 변경 영향 파악이 필요하면 raw file read보다 codegraph MCP를 먼저 사용한다. codegraph를 사용할 수 없을 때만 필요한 파일 범위를 직접 읽고 그 이유를 남긴다.",
     "repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.",
-    "`.persona`가 있는데 프로젝트 프로필/정책/계획이 비어 있으면 구현하지 말고 먼저 `npx ph bootstrap backend`를 실행한다.",
+    "`.persona`가 있는데 프로젝트 프로필/정책/계획이 비어 있으면 구현하지 말고, AI/non-TTY shell에서는 먼저 `npx ph bootstrap backend`를 실행한다.",
+    "사용자가 직접 터미널을 쓰는 상황이면 `npx ph init` 또는 `npx ph intake --interactive`로 프로필 인터뷰를 완료하게 안내한다.",
     "`.persona`가 없는 일반 프로젝트에는 Persona Harness workflow를 강제하지 않는다. 하네스를 쓰려면 사용자가 `npx ph init`으로 opt in한다.",
     "짧은 구현 지시(예: '플랜 보고 구현해줘', '계획대로 해줘', '이제 구현해줘')를 받으면 먼저 `npx ph workflow implement`를 실행하고, 그 단일 레일을 따른다.",
     "`npx ph workflow implement`가 실패하면 구현하지 말고 plan/status 문제를 사용자에게 보고한다.",

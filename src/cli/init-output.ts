@@ -11,11 +11,12 @@ export function formatInitResult(result: InitResult): string {
     ...backupLines,
     "",
     "Profile:",
-    "- `ph init` starts the backend profile interview in the interactive CLI.",
+    "- `ph init` starts the backend profile interview when it is run from an interactive terminal.",
     "- The interview writes `.persona/project-profile.jsonc` before planning.",
     "",
     "Fast path:",
-    "- If you intentionally want the default backend profile without the interview, run `npx ph intake --default backend`.",
+    "- If an AI/non-TTY shell needs the default backend workflow, run `npx ph bootstrap backend`.",
+    "- If you intentionally want only the default backend profile without the interview, run `npx ph intake --default backend`.",
     "",
     "Next after profile:",
     "1. Run `npx ph policy init` if you want company or personal backend guidance.",
@@ -44,5 +45,20 @@ export function formatInitResult(result: InitResult): string {
     "Evidence:",
     "- .persona/evidence/",
     "- .persona/evidence/ was not copied from the template; it is created only when hooks run.",
+  ].join("\n")
+}
+
+export function formatInitNonInteractiveInterviewMessage(invocationName = "ph"): string {
+  return [
+    "Backend profile interview requires an interactive terminal.",
+    "",
+    "User path:",
+    `- Run \`npx ${invocationName} init\` directly in your terminal and answer the interview.`,
+    "",
+    "AI/non-TTY path:",
+    `- Run \`npx ${invocationName} bootstrap backend\` to create the default backend profile, policy, accepted plan, and workflow templates.`,
+    "",
+    "No default profile was created by `ph init`.",
+    "",
   ].join("\n")
 }

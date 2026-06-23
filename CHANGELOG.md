@@ -8,6 +8,29 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.5-alpha.0] - 2026-06-23
+
+### Changed
+
+- Split the `ph init` setup path by terminal mode:
+  - interactive terminal: install harness files and start the backend profile interview;
+  - AI/non-TTY shell: install harness files, stop before profile creation, and direct the agent to `npx ph bootstrap backend`.
+- Updated injection guidance so agents do not attempt interactive prompts from non-TTY shells.
+- Updated README/workflow docs to explain the human interview path and the AI bootstrap path separately.
+
+### Fixed
+
+- Prevented `ph init` in non-TTY contexts from falling through to the generic interactive-intake TTY error.
+- Kept `ph init` from silently creating a default project profile when the intended profile interview cannot run.
+
+### Verification
+
+- `npm test -- tests/persona-harness-init.test.ts tests/phase0-hooks.test.ts tests/persona-harness-interactive-intake.test.ts` passed.
+- `npm test` passed: 36 files, 240 tests.
+- `npm run typecheck` passed.
+- `npm run build`, `npm run report:rules`, `npm run check:scope:strict`, `npm run check:injection-value`, and `npm pack --dry-run` passed.
+- non-TTY `ph init`, TTY `ph init`, and `ph bootstrap backend` smoke checks passed.
+
 ## [0.3.4-alpha.0] - 2026-06-23
 
 ### Added
