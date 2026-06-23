@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: v0.3.x AI-facing workflow routing on top of the Java backend MVP.
 
-Current active candidate: `persona-harness@0.3.1-alpha.2`. The candidate packages the report-only workflow diagnostics surface (`ph workflow check`, `ph doctor`, `ph smoke`, `ph feedback`, `ph evidence summary`, and `ph review backend-shape`) plus AI-facing workflow rails (`ph workflow guard implement`, `ph workflow guard final`, `ph workflow start implement`, and `ph workflow finish implement`). Humans should be able to ask OpenCode/Codex-style TUI in plain language while the agent runs the `ph` workflow commands. `persona-harness@0.3.1-alpha.1` is published on the alpha line with stale Roomescape step contract files removed from public init/package output; `0.3.1-alpha.2` is the next candidate for stronger `doctor`, `smoke`, and short-TUI workflow guidance. This is not a stable support claim.
+Current active candidate: `persona-harness@0.3.6-alpha.1`. The candidate keeps the Java/Spring backend MVP scope, includes the requirements drafting workflow from `0.3.6-alpha.0`, adds PH-style intent preamble text to the AI-facing workflow rail, and documents the next top-level intent router policy for requirements/debug/review/refactor/git/programming routing. This is not a stable support claim.
 
 ## Current Decisions
 

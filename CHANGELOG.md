@@ -8,6 +8,32 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.6-alpha.1] - 2026-06-23
+
+### Added
+
+- Added a PH-style intent preamble for requirements workflow routing:
+  - `의도 감지`;
+  - `근거`;
+  - `다음 행동`.
+- Added top-level intent router design documentation for:
+  - requirements;
+  - debug;
+  - review;
+  - refactor;
+  - git;
+  - programming.
+
+### Changed
+
+- Clarified that short AI/TUI requests should first be classified into a primary workflow rail before defaulting to direct implementation.
+- Updated the progress board to track `v0.3.x` AI-facing workflow routing as the active direction.
+
+### Verification
+
+- `npm run check:docs` passed.
+- `npm test` passed: 37 files, 261 tests.
+
 ## [0.3.6-alpha.0] - 2026-06-23
 
 ### Added

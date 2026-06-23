@@ -8,7 +8,7 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current status: `0.3.6-alpha.0`
+> Current status: `0.3.6-alpha.1`
 >
 > Current scope: Java/Spring backend MVP.
 >

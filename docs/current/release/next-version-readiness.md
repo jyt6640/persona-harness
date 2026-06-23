@@ -3,35 +3,38 @@
 ## Candidate
 
 ```text
-persona-harness@0.3.6-alpha.0
+persona-harness@0.3.6-alpha.1
 dist-tag: alpha
 date: 2026-06-23
 ```
 
 ## Release Intent
 
-This candidate adds a requirements drafting gate before implementation.
+This candidate tightens the AI-facing intent routing story after the requirements drafting gate.
 
-The desired split is:
+The desired split is still:
 
 - vague product idea -> draft requirements;
 - user review -> approval;
 - accepted requirements -> ticket split;
 - first ticket -> implementation rail.
 
-This keeps `TODO 웹 서비스 만들래` from turning into immediate implementation without a reviewable backlog.
+This release also documents the next top-level intent router so Persona Harness can classify user language before defaulting to direct implementation.
 
 ## Included Changes
 
-- `ph workflow draft --stdin` creates:
-  - `.persona/workflow/requirements/backlog.md`
-  - `.persona/workflow/requirements/questions.md`
-  - `.persona/workflow/requirements/assumptions.md`
-  - `.persona/workflow/requirements/latest.md`
-- `ph workflow approve requirements` marks draft artifacts accepted.
-- `requirement-drafting` intent routes vague product ideas to the draft workflow.
-- `requirement-approval` routes approval phrases such as `진행하자` only when a draft backlog exists.
-- README and workflow docs describe idea-first requirements drafting.
+- PH-style intent preamble in requirements workflow guidance:
+  - `의도 감지`;
+  - `근거`;
+  - `다음 행동`.
+- `docs/current/top-level-intent-router-design.md` defines routing priorities for:
+  - requirements;
+  - debug;
+  - review;
+  - refactor;
+  - git;
+  - programming.
+- Progress board and current docs index point to `v0.3.x` AI-facing workflow routing as the next active direction.
 
 ## Supported Surface
 
@@ -39,6 +42,7 @@ This keeps `TODO 웹 서비스 만들래` from turning into immediate implementa
 - Gradle-first backend workflow.
 - Idea-first requirements drafting.
 - File/prompt requirement source ticket splitting.
+- AI-facing intent classification design.
 - Report-only workflow evidence gates.
 
 ## Not Supported
@@ -53,44 +57,36 @@ This keeps `TODO 웹 서비스 만들래` from turning into immediate implementa
 
 | Command | Result |
 | --- | --- |
-| `npm test -- tests/persona-harness-workflow-ticket.test.ts tests/phase0-hooks.test.ts` | pass: 2 files, 35 tests |
+| `npm test` | pass: 37 files, 261 tests |
 | `npm run typecheck` | pass |
 | `npm run build` | pass |
-| `npm test` | pass: 37 files, 260 tests |
+| `npm run check:docs` | pass |
 | `npm run report:rules` | pass: PersonaHarnessRule diagnostics PASS, 0 findings |
 | `npm run check:scope:strict` | pass: MVP scope diagnostics PASS, 0 findings |
 | `npm run check:injection-value` | pass: current window 3/3, expected decision `continue-java-mvp` |
-| `npm pack --dry-run --json` | pass: `persona-harness-0.3.6-alpha.0.tgz`, 263 files, 269.9 kB package size, 1.1 MB unpacked size |
-| dist CLI smoke | pass: `draft -> approve -> split -> next` |
-| dist runtime transform smoke | pass: draft/approval routing |
+| `npm pack --dry-run --json` | pass: `persona-harness-0.3.6-alpha.1.tgz`, 264 files, 270.7 kB package size, 1.1 MB unpacked size |
 
 ## Smoke Expectations
 
-Idea-first TUI:
+Intent-preamble TUI:
 
 ```text
-TODO 웹 서비스 만들래
+README 보고 구현해줘
 ```
 
 Expected:
 
-- AI runs or follows `npx ph workflow draft --stdin`.
-- `.persona/workflow/requirements/backlog.md` is created.
-- AI stops and asks the user to review.
-- AI does not implement yet.
+- AI sees the PH intent preamble in the workflow guidance.
+- Primary routing remains requirements workflow, not direct programming.
+- Implementation still starts through the workflow rail.
 
-Approval:
+Top-level router design:
 
-```text
-진행하자
-```
-
-Expected:
-
-- AI runs or follows `npx ph workflow approve requirements`.
-- AI runs or follows `npx ph workflow split .persona/workflow/requirements/backlog.md`.
-- AI runs or follows `npx ph workflow next`.
-- AI starts `npx ph workflow implement` for the first ticket only.
+- `README 보고 구현해줘` -> requirements primary, programming secondary.
+- `왜 테스트 실패해?` -> debug primary.
+- `리뷰해줘` -> review primary.
+- `리팩터링해줘` -> refactor primary.
+- `커밋하고 푸쉬해` -> git primary.
 
 ## Release Decision
 
@@ -98,6 +94,6 @@ Ready to publish under the `alpha` dist-tag after final git commit/push.
 
 ## Known Gaps
 
-- OpenCode TUI external smoke still needs to confirm the full idea-first flow.
-- Draft requirements are intentionally generic and require user review.
+- `src/runtime/top-level-intent-router.ts` is not implemented yet.
+- Debug/review/refactor/git rails remain inactive references.
 - Generated application quality remains a manual/external-test judgment.
