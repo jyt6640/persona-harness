@@ -1,6 +1,6 @@
 # Persona Harness Progress Board
 
-Last updated: 2026-06-22
+Last updated: 2026-06-23
 
 ## Purpose
 
@@ -14,7 +14,7 @@ Detailed historical board content is archived at:
 
 ## Current Position
 
-Current track: v0.3.1 workflow diagnostics and external-tester command surface on top of the Java backend MVP.
+Current track: v0.3.x AI-facing workflow routing on top of the Java backend MVP.
 
 Current active candidate: `persona-harness@0.3.1-alpha.2`. The candidate packages the report-only workflow diagnostics surface (`ph workflow check`, `ph doctor`, `ph smoke`, `ph feedback`, `ph evidence summary`, and `ph review backend-shape`) plus AI-facing workflow rails (`ph workflow guard implement`, `ph workflow guard final`, `ph workflow start implement`, and `ph workflow finish implement`). Humans should be able to ask OpenCode/Codex-style TUI in plain language while the agent runs the `ph` workflow commands. `persona-harness@0.3.1-alpha.1` is published on the alpha line with stale Roomescape step contract files removed from public init/package output; `0.3.1-alpha.2` is the next candidate for stronger `doctor`, `smoke`, and short-TUI workflow guidance. This is not a stable support claim.
 
@@ -81,6 +81,7 @@ Current active candidate: `persona-harness@0.3.1-alpha.2`. The candidate package
 - v0.3.1-alpha.1 packaging fix removes old Roomescape step contract fixture files from public `ph init` copies and from the npm tarball. `backend/step1-api-contract.md` and `backend/step2-3-api-contract.md` remain internal Phase 0 fixture rules only; external clean projects should not receive stale `/reservations`, `/times`, or Roomescape guidance.
 - v0.3.1-alpha.2 candidate strengthens external-user diagnostics: `ph doctor` now reports rules-surface size and stale fixture findings, `ph smoke` writes local integration diagnostics into the smoke report, and workflow start/implementation prompts more directly route short TUI requests like `README.md 보고 구현해줘` through workflow start/finish and `npx ph bearshell`.
 - v0.3.1 workflow guard clean TUI smoke is partial: across three clean OpenCode runs using the short prompt `README 보고 구현해줘`, all three ran `npx ph workflow guard implement`, all three ran `npx ph plan --implement`, all three filled implementation and review reports, and all three produced evidence. Only one of three reached `npx ph workflow guard final` PASS naturally. The repeated failure was command discipline around raw shell usage versus `npx ph bearshell`. The next improvement is now implemented as script-level workflow routing (`ph workflow start implement` / `ph workflow finish implement`) rather than more prose in README or plan templates.
+- v0.3.x next routing candidate is the top-level intent router: classify user language before implementation and choose one primary rail among requirements, debug, review, refactor, git, and programming. Requirements workflow is active today; programming/frontend are active file-target shared-skill surfaces; debugging/review/refactor/git remain vendored references until a scoped implementation loop activates them.
 
 ## Active Commands
 
