@@ -272,9 +272,9 @@ describe("Phase 0 Java role discovery", () => {
     expect(text).toContain("read src/main/java/com/example/library/presentation/BookController.java")
     expect(text).toContain("read src/main/java/com/example/library/application/BookService.java")
     expect(text).toContain("read src/main/java/com/example/library/domain/BookRepository.java")
-    expect(text).toContain("read src/main/java/com/example/library/infrastructure/JdbcBookRepository.java")
     expect(text).toContain("read src/main/java/com/example/library/presentation/dto/request/CreateBookRequest.java")
     expect(text).toContain("read src/main/java/com/example/library/presentation/dto/response/BookResponse.java")
+    expect(text).not.toContain("read src/main/java/com/example/library/infrastructure/JdbcBookRepository.java")
     expect(text).toContain("역할별 rule injection을 실제 model input에 태운다")
 
     const payloads = evidencePayloads(projectDir)
@@ -287,5 +287,75 @@ describe("Phase 0 Java role discovery", () => {
         }),
       ]),
     )
+  })
+
+  it("keeps existing Spring project role-discovery evidence and follow-up representative by role", async () => {
+    const projectDir = createTempProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const sessionID = "existing-spring-role-discovery-session"
+    const toolOutput = {
+      title: "bearshell",
+      output: [
+        "src/main/java/com/acme/todo/TodoApplication.java",
+        "src/main/java/com/acme/todo/calendar/presentation/ScheduleController.java",
+        "src/main/java/com/acme/todo/calendar/presentation/dto/request/CreateScheduleRequest.java",
+        "src/main/java/com/acme/todo/calendar/presentation/dto/response/ScheduleResponse.java",
+        "src/main/java/com/acme/todo/calendar/application/ScheduleService.java",
+        "src/main/java/com/acme/todo/calendar/domain/Schedule.java",
+        "src/main/java/com/acme/todo/calendar/domain/ScheduleRepository.java",
+        "src/main/java/com/acme/todo/calendar/infrastructure/JdbcScheduleRepository.java",
+        "src/main/java/com/acme/todo/global/exception/TodoNotFoundException.java",
+        "src/test/java/com/acme/todo/calendar/ScheduleControllerTest.java",
+      ].join("\n"),
+      metadata: {},
+    }
+
+    await hooks["tool.execute.after"]?.(
+      {
+        tool: "bash",
+        sessionID,
+        callID: "existing-spring-role-discovery-call",
+        args: {
+          command: "npx ph bearshell --shell 'find src/main/java src/test/java -name \"*.java\" 2>/dev/null | sort'",
+        },
+      },
+      toolOutput,
+    )
+
+    const payloads = evidencePayloads(projectDir)
+    const roles = payloads.map((payload) => payload.fileRole)
+    expect(roles).toEqual(
+      expect.arrayContaining([
+        "java-common",
+        "controller",
+        "request-dto",
+        "response-dto",
+        "service",
+        "domain",
+        "repository",
+        "exception",
+        "test",
+      ]),
+    )
+    expect(payloads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ injectedInto: "role-discovery", fileRole: "domain" }),
+        expect.objectContaining({ injectedInto: "role-discovery", fileRole: "repository" }),
+        expect.objectContaining({ injectedInto: "pending-store", targetFile: "<java-role-read-follow-up>" }),
+      ]),
+    )
+
+    const output = modelInput(sessionID)
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Java Role Read Follow-up]")
+    expect(text).toContain("read src/main/java/com/acme/todo/calendar/presentation/ScheduleController.java")
+    expect(text).toContain("read src/main/java/com/acme/todo/calendar/application/ScheduleService.java")
+    expect(text).toContain("read src/main/java/com/acme/todo/calendar/domain/ScheduleRepository.java")
+    expect(text).toContain("read src/main/java/com/acme/todo/calendar/presentation/dto/request/CreateScheduleRequest.java")
+    expect(text).toContain("read src/main/java/com/acme/todo/calendar/presentation/dto/response/ScheduleResponse.java")
+    expect(text).toContain("read src/main/java/com/acme/todo/calendar/domain/Schedule.java")
+    expect(text).not.toContain("read src/main/java/com/acme/todo/calendar/infrastructure/JdbcScheduleRepository.java")
   })
 })

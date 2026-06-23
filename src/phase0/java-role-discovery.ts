@@ -1,10 +1,22 @@
 import { isJavaTargetFile } from "./file-role.js"
 import { createInjectionBlock } from "./injection.js"
 import { isInstalledPersonaHarnessPackageFile } from "./target-file.js"
-import type { PendingInjection } from "./types.js"
+import type { FileRole, PendingInjection } from "./types.js"
 
 const JAVA_PATH_PATTERN = /(?:[A-Za-z]:)?(?:\/|\.{1,2}\/)?[^\s"'`<>|]*src\/(?:main|test)\/java\/[^\s"'`<>|]+?\.java\b/g
 const DISCOVERY_TOOL_NAMES = new Set(["glob", "ls", "list", "find", "bash", "shell", "bearshell"])
+const FOLLOW_UP_ROLE_ORDER: readonly FileRole[] = [
+  "controller",
+  "service",
+  "repository",
+  "request-dto",
+  "response-dto",
+  "domain",
+  "exception",
+  "test",
+  "entity",
+  "java-common",
+]
 
 export function isJavaRoleDiscoveryTool(toolName: string): boolean {
   const normalizedToolName = toolName.toLowerCase()
@@ -64,6 +76,19 @@ function uniqueSharedSkills(injections: readonly PendingInjection[]): PendingInj
   return [...skillsByKey.values()]
 }
 
+function representativeInjectionsByRole(injections: readonly PendingInjection[]): readonly PendingInjection[] {
+  const injectionsByRole = new Map<FileRole, PendingInjection>()
+  for (const injection of injections) {
+    if (!injectionsByRole.has(injection.fileRole)) {
+      injectionsByRole.set(injection.fileRole, injection)
+    }
+  }
+  return FOLLOW_UP_ROLE_ORDER.flatMap((role) => {
+    const injection = injectionsByRole.get(role)
+    return injection === undefined ? [] : [injection]
+  })
+}
+
 export function formatJavaRoleDiscoveryBlock(injections: readonly PendingInjection[]): string {
   const roleLines = injections.map((injection) => `- ${injection.fileRole}: ${injection.targetFile}`)
   return [
@@ -82,7 +107,8 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
     return undefined
   }
 
-  const readLines = injections.map((injection) => `- read ${injection.targetFile} (${injection.fileRole})`)
+  const representativeInjections = representativeInjectionsByRole(injections)
+  const readLines = representativeInjections.map((injection) => `- read ${injection.targetFile} (${injection.fileRole})`)
   return {
     targetFile: "<java-role-read-follow-up>",
     fileRole: "java-common",
