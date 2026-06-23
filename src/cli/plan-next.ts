@@ -14,6 +14,7 @@ type WorkflowSnapshot = {
   readonly planStatus: string | undefined
   readonly implementationStatus: ReportStatus
   readonly reviewStatus: ReportStatus
+  readonly implementationReportText: string | undefined
 }
 
 const READ_COVERAGE_LABELS = [
@@ -26,11 +27,25 @@ const READ_COVERAGE_LABELS = [
 ] as const
 
 const CONTINUATION_LABELS = [
+  "완료한 요구사항",
+  "미완료 요구사항",
   "마지막으로 완료한 요구사항/파일",
   "남은 README/plan 범위",
   "남은 구현 범위",
+  "중단 이유",
   "다음에 이어서 실행할 명령/작업",
+  "다음 프롬프트 힌트",
 ] as const
+
+const REMAINING_SCOPE_LABELS = [
+  "미완료 요구사항",
+  "남은 README/plan 범위",
+  "남은 구현 범위",
+  "다음에 이어서 실행할 명령/작업",
+  "다음 프롬프트 힌트",
+] as const
+
+const EMPTY_CONTINUATION_VALUE_PATTERN = /^(?:없음|없다|none|n\/a|na|-|완료|complete|completed|all done)$/i
 
 function projectDirFor(options: PlanOptions): string {
   return resolve(options.projectDir ?? process.cwd())
@@ -53,6 +68,11 @@ function reportStatus(projectDir: string, relativePath: string): ReportStatus {
   return "unknown"
 }
 
+function reportText(projectDir: string, relativePath: string): string | undefined {
+  const reportPath = join(projectDir, relativePath)
+  return existsSync(reportPath) ? readFileSync(reportPath, "utf8") : undefined
+}
+
 function workflowSnapshot(options: PlanOptions): WorkflowSnapshot {
   const projectDir = projectDirFor(options)
   let planStatus: string | undefined
@@ -69,6 +89,7 @@ function workflowSnapshot(options: PlanOptions): WorkflowSnapshot {
     planStatus,
     implementationStatus: reportStatus(projectDir, IMPLEMENTATION_REPORT_PATH),
     reviewStatus: reportStatus(projectDir, REVIEW_REPORT_PATH),
+    implementationReportText: reportText(projectDir, IMPLEMENTATION_REPORT_PATH),
   }
 }
 
@@ -105,6 +126,15 @@ function nextActionLines(snapshot: WorkflowSnapshot): readonly string[] {
     return ["Implementation is next.", "Next command: npx ph workflow implement"]
   }
 
+  if (snapshot.implementationReportText !== undefined && hasRemainingScope(snapshot.implementationReportText)) {
+    return [
+      "Continuation is next.",
+      "Next command: npx ph workflow continue",
+      "Continuation evidence:",
+      ...evidenceLines(snapshot.implementationReportText).map((line) => `  ${line}`),
+    ]
+  }
+
   if (snapshot.reviewStatus !== "filled") {
     return [
       "Review is next.",
@@ -122,6 +152,7 @@ function nextActionLines(snapshot: WorkflowSnapshot): readonly string[] {
 
 export function runNextCommand(options: PlanOptions = {}): CliRunResult {
   const snapshot = workflowSnapshot(options)
+  const nextLines = nextActionLines(snapshot)
   const stdout = [
     "Persona Harness next action",
     "",
@@ -131,7 +162,7 @@ export function runNextCommand(options: PlanOptions = {}): CliRunResult {
     `Review report status: ${snapshot.reviewStatus}`,
     "",
     "Next:",
-    ...nextActionLines(snapshot).map((line) => `- ${line}`),
+    ...nextLines.map((line) => line.startsWith("  ") ? line : `- ${line}`),
   ].join("\n") + "\n"
 
   return { status: 0, stdout, stderr: "" }
@@ -156,6 +187,30 @@ function valueForLabel(reportText: string, label: string): string | undefined {
   return undefined
 }
 
+function isFilledContinuationValue(value: string): boolean {
+  return value.length > 0 && !EMPTY_CONTINUATION_VALUE_PATTERN.test(value)
+}
+
+function hasRemainingScope(reportText: string): boolean {
+  return REMAINING_SCOPE_LABELS.some((label) => {
+    const value = valueForLabel(reportText, label)
+    return value !== undefined && isFilledContinuationValue(value)
+  })
+}
+
+function planUncheckedItems(projectDir: string): readonly string[] {
+  const planPath = join(projectDir, PLAN_PATH)
+  if (!existsSync(planPath)) {
+    return []
+  }
+  return readFileSync(planPath, "utf8")
+    .split(/\r?\n/)
+    .flatMap((line) => {
+      const match = /^-\s*\[\s\]\s+(.+)$/.exec(line)
+      return match?.[1] === undefined ? [] : [`- ${match[1]}`]
+    })
+}
+
 function evidenceLines(reportText: string): readonly string[] {
   const lines = [...READ_COVERAGE_LABELS, ...CONTINUATION_LABELS].flatMap((label) => {
     const value = valueForLabel(reportText, label)
@@ -166,6 +221,7 @@ function evidenceLines(reportText: string): readonly string[] {
 
 function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
   const hasEvidence = evidenceLines(reportText).some((line) => !line.includes("No filled continuation evidence found."))
+  const uncheckedItems = planUncheckedItems(snapshot.projectDir)
   return [
     "Persona Harness resume prompt",
     "",
@@ -177,6 +233,9 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     "",
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
     ...evidenceLines(reportText),
+    "",
+    "Plan unchecked items:",
+    ...(uncheckedItems.length > 0 ? uncheckedItems : ["- No unchecked plan checklist items found."]),
     "",
     "Required action:",
     "- Read README.md, .persona/project-profile.jsonc, .persona/policies, and .persona/workflow/plan.md.",

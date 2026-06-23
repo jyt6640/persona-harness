@@ -89,6 +89,32 @@ describe("ph plan --next", () => {
     expect(result.stdout).toContain("npx ph plan --report-filled review")
   })
 
+  it("recommends continuation before review when the filled implementation report has remaining scope", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPlan(projectDir, []).status).toBe(0)
+    expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    const report = readFileSync(implementationReportPath(projectDir), "utf8")
+    writeFileSync(
+      implementationReportPath(projectDir),
+      report
+        .replace("Status: template", "Status: filled")
+        .replace("- README ranges read:", "- README ranges read: 1-220")
+        .replace("- 미완료 요구사항:", "- 미완료 요구사항: Step 3~7")
+        .replace("- 남은 README/plan 범위:", "- 남은 README/plan 범위: README 221-end")
+        .replace("- 남은 구현 범위:", "- 남은 구현 범위: import/export and sharing API")
+        .replace("- 다음 프롬프트 힌트:", "- 다음 프롬프트 힌트: 이어서 구현해줘"),
+    )
+
+    const result = runPlan(projectDir, ["--next"])
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Implementation report status: filled")
+    expect(result.stdout).toContain("Continuation is next")
+    expect(result.stdout).toContain("npx ph workflow continue")
+    expect(result.stdout).toContain("README 221-end")
+    expect(result.stdout).toContain("Step 3~7")
+  })
+
   it("recommends archiving history after both workflow reports are filled", () => {
     const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
@@ -146,9 +172,12 @@ describe("ph plan --resume", () => {
         .replace("- Plan read method:", "- Plan read method: OpenCode Read")
         .replace("- Plan ranges read:", "- Plan ranges read: 1-220")
         .replace("- Unread ranges:", "- Unread ranges: README 201-end")
+        .replace("- 완료한 요구사항:", "- 완료한 요구사항: Step 1 basic CRUD")
+        .replace("- 미완료 요구사항:", "- 미완료 요구사항: Step 2 import/export")
         .replace("- 마지막으로 완료한 요구사항/파일:", "- 마지막으로 완료한 요구사항/파일: build.gradle 생성 전 중단")
         .replace("- 남은 README/plan 범위:", "- 남은 README/plan 범위: README 201-end")
         .replace("- 남은 구현 범위:", "- 남은 구현 범위: Spring Boot source generation")
+        .replace("- 중단 이유:", "- 중단 이유: TUI output limit")
         .replace("- 다음에 이어서 실행할 명령/작업:", "- 다음에 이어서 실행할 명령/작업: generate src/main/java"),
     )
 
@@ -158,8 +187,13 @@ describe("ph plan --resume", () => {
     expect(result.stdout).toContain("Continue from this recorded state")
     expect(result.stdout).toContain("README ranges read: 1-200")
     expect(result.stdout).toContain("Unread ranges: README 201-end")
+    expect(result.stdout).toContain("Step 1 basic CRUD")
+    expect(result.stdout).toContain("Step 2 import/export")
     expect(result.stdout).toContain("Spring Boot source generation")
     expect(result.stdout).toContain("generate src/main/java")
+    expect(result.stdout).toContain("TUI output limit")
+    expect(result.stdout).toContain("Plan unchecked items")
+    expect(result.stdout).toContain("요구사항의 핵심 유스케이스")
   })
 })
 
@@ -175,6 +209,7 @@ describe("ph workflow continue", () => {
         .replace("- README read method:", "- README read method: npx ph bearshell chunks")
         .replace("- README ranges read:", "- README ranges read: 1-440")
         .replace("- Unread ranges:", "- Unread ranges: README 441-end")
+        .replace("- 미완료 요구사항:", "- 미완료 요구사항: Step 4/6/7")
         .replace("- 남은 README/plan 범위:", "- 남은 README/plan 범위: README Step 4/6/7")
         .replace("- 남은 구현 범위:", "- 남은 구현 범위: import/export and sharing API")
         .replace("- 다음에 이어서 실행할 명령/작업:", "- 다음에 이어서 실행할 명령/작업: continue Step 4"),

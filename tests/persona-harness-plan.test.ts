@@ -131,7 +131,11 @@ describe("ph plan", () => {
     expect(implementationReport).toContain("채운 뒤에는 `npx ph plan --report-filled implementation`을 실행한다.")
     expect(implementationReport).toContain("## Continuation")
     expect(implementationReport).toContain("남은 README/plan 범위:")
+    expect(implementationReport).toContain("완료한 요구사항:")
+    expect(implementationReport).toContain("미완료 요구사항:")
+    expect(implementationReport).toContain("중단 이유:")
     expect(implementationReport).toContain("다음에 이어서 실행할 명령/작업:")
+    expect(implementationReport).toContain("다음 프롬프트 힌트:")
 
     const reviewReport = readReviewReport(projectDir)
     expect(reviewReport).toContain("# Roach Review Report")
