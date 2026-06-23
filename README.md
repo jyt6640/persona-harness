@@ -6,7 +6,7 @@ It helps an AI agent start from a clean project, read your backend requirements,
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current status: `0.3.1-alpha.2`
+> Current status: `0.3.5-alpha.0`
 >
 > Current scope: Java/Spring backend MVP.
 >
@@ -207,6 +207,22 @@ npx ph plan --report-filled implementation
 npx ph plan --report-filled review
 npx ph workflow finish implement
 ```
+
+For long README files with multiple steps, let the agent split the assignment into workflow tickets first:
+
+```text
+npx ph workflow split README.md
+npx ph workflow next
+```
+
+After one ticket is completed and reviewed:
+
+```text
+npx ph workflow archive step-1
+npx ph workflow next
+```
+
+This creates `.persona/workflow/backlog.md`, active task cards under `.persona/workflow/work/`, and completed task history under `.persona/workflow/history/`. It is a workflow ledger for the AI agent, not generated-app quality certification.
 
 If the agent ignores the workflow, paste this stricter prompt:
 

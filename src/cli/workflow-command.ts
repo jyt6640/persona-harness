@@ -16,6 +16,7 @@ import {
   uninitializedHarnessOutput,
 } from "./workflow-output.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
+import { runWorkflowArchive, runWorkflowNext, runWorkflowSplit, workflowTicketUsage } from "./workflow-tickets.js"
 
 type WorkflowOptions = {
   readonly projectDir?: string
@@ -28,12 +29,15 @@ type ParsedWorkflowArgs =
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
   | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
   | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
+  | { readonly kind: "split"; readonly sourceFile: string }
+  | { readonly kind: "next" }
+  | { readonly kind: "archive"; readonly ticketId: string }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|continue|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|continue|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
@@ -42,8 +46,12 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow implement prints a single AI-facing implementation rail",
     "- workflow continue prints the accepted-plan continuation prompt",
     "- workflow start/finish are AI-facing workflow rails",
+    "- workflow split/next/archive manage README-derived task tickets",
     "- workflow guard uses strict exit codes for AI-facing workflow discipline",
     "- no generated app quality certification",
+    "",
+    "Ticket commands:",
+    workflowTicketUsage(invocation),
   ].join("\n")
 }
 
@@ -56,6 +64,21 @@ function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   }
   if (args[0] === "continue") {
     return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
+  }
+  if (args[0] === "split") {
+    if (args.length !== 2) {
+      return { kind: "invalid", message: "workflow split requires a source markdown file." }
+    }
+    return { kind: "split", sourceFile: args[1] ?? "" }
+  }
+  if (args[0] === "next") {
+    return args.length === 1 ? { kind: "next" } : { kind: "invalid", message: "workflow next does not accept extra arguments." }
+  }
+  if (args[0] === "archive") {
+    if (args.length !== 2) {
+      return { kind: "invalid", message: "workflow archive requires a ticket id." }
+    }
+    return { kind: "archive", ticketId: args[1] ?? "" }
   }
   if (args[0] === "guard") {
     if (args.length !== 2) {
@@ -208,6 +231,15 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
+  }
+  if (parsed.kind === "split") {
+    return runWorkflowSplit(parsed.sourceFile, options)
+  }
+  if (parsed.kind === "next") {
+    return runWorkflowNext(options)
+  }
+  if (parsed.kind === "archive") {
+    return runWorkflowArchive(parsed.ticketId, options)
   }
   if (parsed.kind === "start") {
     return runWorkflowStart(parsed.runnerKind, options)
