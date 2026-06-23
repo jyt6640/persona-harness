@@ -53,6 +53,37 @@ function readExistingFiles(filePaths: readonly string[]): string {
   return filePaths.filter((filePath) => existsSync(filePath)).map((filePath) => readFileSync(filePath, "utf8")).join("\n")
 }
 
+function hasReadmeEvidenceDeep(dirPath: string): boolean {
+  if (!existsSync(dirPath)) {
+    return false
+  }
+  for (const entry of readdirSync(dirPath)) {
+    const entryPath = join(dirPath, entry)
+    const stat = statSync(entryPath)
+    if (stat.isDirectory()) {
+      if (hasReadmeEvidenceDeep(entryPath)) {
+        return true
+      }
+      continue
+    }
+    if (!stat.isFile()) {
+      continue
+    }
+    const lowerEntry = entry.toLowerCase()
+    if (lowerEntry.includes("readme.md")) {
+      return true
+    }
+    if (!lowerEntry.endsWith(".json")) {
+      continue
+    }
+    const evidenceText = readFileSync(entryPath, "utf8")
+    if (/["/\\]README\.md["/\\]?|README\.md/i.test(evidenceText)) {
+      return true
+    }
+  }
+  return false
+}
+
 const RAW_SHELL_PATTERN = /raw shell|직접\s*썼|직접\s*사용|raw\s+command/i
 const DIRECT_RULES_READ_PATTERN = /(?:read|읽)[^\n]*(?:\.persona\/rules|\.persona\\rules)|\.persona\/rules\/|\.persona\\rules\\/i
 const FINAL_VERIFICATION_PATTERN = /(?:\.\/)?gradlew?\s+(?:test|build|bootRun)\b|gradle\s+(?:test|build|bootRun)\b|bootRun\b|curl\b/i
@@ -123,6 +154,13 @@ function readCoverage(projectDir: string, implementationStatus: string): ReadCov
   if (hasReadmeRangeCoverage(reportText)) {
     return {
       readCoverage: "README ranges observed",
+      readCoverageBlocking: false,
+      readCoverageFinding: "PASS",
+    }
+  }
+  if (hasReadmeEvidenceDeep(join(projectDir, EVIDENCE_DIR))) {
+    return {
+      readCoverage: "README read evidence observed",
       readCoverageBlocking: false,
       readCoverageFinding: "PASS",
     }

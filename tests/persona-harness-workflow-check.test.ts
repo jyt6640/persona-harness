@@ -326,6 +326,8 @@ describe("ph workflow start and finish", () => {
     expect(result.stdout).toContain("npx ph bearshell --shell 'sed -n \"1,220p\" README.md'")
     expect(result.stdout).toContain("npx ph bearshell --shell 'sed -n \"221,440p\" README.md'")
     expect(result.stdout).toContain("Record README ranges read in `.persona/workflow/implementation-report.md`")
+    expect(result.stdout).toContain("If existing Java/Spring source files already exist")
+    expect(result.stdout).toContain("existing code wins over greenfield guidance")
     expect(result.stdout).toContain("find src/main/java src/test/java -name \"*.java\"")
     expect(result.stdout).toContain("Java Role Read Follow-up")
     expect(result.stdout).toContain("Java role discovery/read evidence")
@@ -487,6 +489,44 @@ describe("ph workflow start and finish", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("Workflow status: PASS")
     expect(check.stdout).toContain("read coverage: README ranges observed")
+    expect(finish.status).toBe(0)
+    expect(finish.stdout).toContain("Finish status: PASS")
+  })
+
+  it("infers README read coverage from Persona evidence when report ranges are missing", () => {
+    const projectDir = createProfiledTempProject()
+    const readmePath = join(projectDir, "README.md")
+    writeFileSync(readmePath, "# Tool Rental API\n\n- 장비 등록\n")
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "Status: filled",
+        "## Read Coverage",
+        "- README read method: npx ph bearshell",
+        "- README ranges read:",
+        "- Plan read method: Read",
+        "- Plan ranges read: 1-220",
+        "- [x] `npx ph bearshell --shell './gradlew test'`",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- [x] `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "phase0", "2026-06-23T00-00-00-000Z-readme.md.json"),
+      `${JSON.stringify({ targetFile: readmePath, fileRole: "project-bootstrap" }, null, 2)}\n`,
+    )
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("Workflow status: PASS")
+    expect(check.stdout).toContain("read coverage: README read evidence observed")
     expect(finish.status).toBe(0)
     expect(finish.stdout).toContain("Finish status: PASS")
   })

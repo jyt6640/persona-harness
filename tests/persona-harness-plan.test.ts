@@ -161,6 +161,53 @@ describe("ph plan", () => {
     expect(plan).toContain("- project-context: solo")
   })
 
+  it("marks empty projects as greenfield baseline mode", () => {
+    const projectDir = createProfiledTempProject()
+    writeFileSync(join(projectDir, "README.md"), "# Todo API\n\n- 할 일 등록\n")
+
+    const result = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const plan = readPlan(projectDir)
+    expect(plan).toContain("## Project Mode")
+    expect(plan).toContain("Mode: greenfield")
+    expect(plan).toContain("0% -> 80%")
+    expect(plan).toContain("Java/Spring backend baseline package flow")
+  })
+
+  it("marks non-empty Java projects as existing-code adaptation mode", () => {
+    const projectDir = createProfiledTempProject()
+    writeFileSync(join(projectDir, "README.md"), "# Todo API\n\n- 기존 Todo 기능 확장\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "todo", "web"), { recursive: true })
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "todo", "service"), { recursive: true })
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "todo", "repository"), { recursive: true })
+    writeFileSync(
+      join(projectDir, "src", "main", "java", "com", "example", "todo", "web", "TodoController.java"),
+      "package com.example.todo.web;\n\nclass TodoController {}\n",
+    )
+    writeFileSync(
+      join(projectDir, "src", "main", "java", "com", "example", "todo", "service", "TodoService.java"),
+      "package com.example.todo.service;\n\nclass TodoService {}\n",
+    )
+    writeFileSync(
+      join(projectDir, "src", "main", "java", "com", "example", "todo", "repository", "TodoRepository.java"),
+      "package com.example.todo.repository;\n\ninterface TodoRepository {}\n",
+    )
+
+    const result = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const plan = readPlan(projectDir)
+    expect(plan).toContain("## Project Mode")
+    expect(plan).toContain("Mode: existing-code")
+    expect(plan).toContain("Existing source files detected: 3")
+    expect(plan).toContain("com.example.todo")
+    expect(plan).toContain("web")
+    expect(plan).toContain("service")
+    expect(plan).toContain("repository")
+    expect(plan).toContain("existing code wins over greenfield guidance")
+  })
+
   it("blocks plan creation until the backend profile is ready", () => {
     const projectDir = createTempProject()
 

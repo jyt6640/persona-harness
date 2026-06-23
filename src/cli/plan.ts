@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
@@ -18,6 +18,8 @@ export const PLAN_PATH = ".persona/workflow/plan.md"
 export const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 export const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const README_PATH = "README.md"
+const EXISTING_CODE_SCAN_ROOTS = ["src/main/java", "src/test/java"] as const
+const EXISTING_CODE_SCAN_LIMIT = 40
 
 function readReadmeHeading(projectDir: string): string | undefined {
   const readmePath = join(projectDir, README_PATH)
@@ -64,6 +66,100 @@ function readmeLines(projectDir: string): readonly string[] {
   ]
 }
 
+function collectJavaSourceFiles(projectDir: string): readonly string[] {
+  const javaFiles: string[] = []
+  const visit = (relativeDir: string): void => {
+    if (javaFiles.length >= EXISTING_CODE_SCAN_LIMIT) {
+      return
+    }
+    const absoluteDir = join(projectDir, relativeDir)
+    if (!existsSync(absoluteDir)) {
+      return
+    }
+    for (const entry of readdirSync(absoluteDir).sort()) {
+      const relativePath = `${relativeDir}/${entry}`
+      const absolutePath = join(projectDir, relativePath)
+      const stat = statSync(absolutePath)
+      if (stat.isDirectory()) {
+        visit(relativePath)
+        continue
+      }
+      if (stat.isFile() && entry.endsWith(".java")) {
+        javaFiles.push(relativePath)
+      }
+    }
+  }
+
+  for (const root of EXISTING_CODE_SCAN_ROOTS) {
+    visit(root)
+  }
+  return javaFiles
+}
+
+function packageNameFromJavaFile(projectDir: string, relativePath: string): string | undefined {
+  const match = /^package\s+([^;]+);/m.exec(readFileSync(join(projectDir, relativePath), "utf8"))
+  return match?.[1]?.trim()
+}
+
+function commonPackagePrefix(packages: readonly string[]): string | undefined {
+  if (packages.length === 0) {
+    return undefined
+  }
+  const segments = packages[0]?.split(".") ?? []
+  let prefixLength = segments.length
+  for (const packageName of packages.slice(1)) {
+    const current = packageName.split(".")
+    while (prefixLength > 0 && segments.slice(0, prefixLength).join(".") !== current.slice(0, prefixLength).join(".")) {
+      prefixLength -= 1
+    }
+  }
+  return prefixLength > 0 ? segments.slice(0, prefixLength).join(".") : undefined
+}
+
+function layerNamesFromJavaFiles(files: readonly string[]): readonly string[] {
+  const layerCandidates = new Set<string>()
+  for (const file of files) {
+    for (const segment of file.split("/")) {
+      if (/^(presentation|application|domain|infrastructure|controller|service|repository|dto|web|global|config|exception)$/i.test(segment)) {
+        layerCandidates.add(segment)
+      }
+    }
+  }
+  return [...layerCandidates].sort()
+}
+
+function projectModeLines(projectDir: string): readonly string[] {
+  const javaFiles = collectJavaSourceFiles(projectDir)
+  if (javaFiles.length === 0) {
+    return [
+      "## Project Mode",
+      "",
+      "Mode: greenfield",
+      "",
+      "- Goal: create a consistent 0% -> 80% Java/Spring backend baseline for a new project.",
+      "- Use the Java/Spring backend baseline package flow when README/profile do not define an existing convention.",
+      "- Keep the baseline advisory: user requirements and explicit instructions still win.",
+    ]
+  }
+
+  const packages = javaFiles
+    .map((file) => packageNameFromJavaFile(projectDir, file))
+    .filter((packageName): packageName is string => packageName !== undefined)
+  const packageRoot = commonPackagePrefix(packages)
+  const layers = layerNamesFromJavaFiles(javaFiles)
+  return [
+    "## Project Mode",
+    "",
+    "Mode: existing-code",
+    "",
+    `- Existing source files detected: ${javaFiles.length}`,
+    packageRoot === undefined ? "- Existing package root: unknown" : `- Existing package root: ${packageRoot}`,
+    layers.length === 0 ? "- Existing layer/style hints: none detected" : `- Existing layer/style hints: ${layers.join(", ")}`,
+    "- existing code wins over greenfield guidance: follow current package, naming, layer, repository, DTO, and domain style before introducing the baseline structure.",
+    "- If current code conflicts with profile guidance, record the conflict in this plan before implementation.",
+  ]
+}
+
 function createPlanDraft(projectDir: string): string {
   const policyOverlaySummary = policyOverlayLines(projectDir)
   return [
@@ -78,6 +174,8 @@ function createPlanDraft(projectDir: string): string {
     "",
     ...profileSummaryLines(projectDir),
     ...(policyOverlaySummary.length > 0 ? ["", ...policyOverlaySummary] : []),
+    "",
+    ...projectModeLines(projectDir),
     "",
     "## Architecture / Technology Plan",
     "",
