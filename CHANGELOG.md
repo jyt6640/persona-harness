@@ -8,6 +8,35 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.3-alpha.0] - 2026-06-23
+
+### Added
+
+- Added Existing Project Adaptation Mode to `ph plan`, with automatic `greenfield` versus `existing-code` project mode output.
+- Added existing Java source discovery for package root and layer/style hints so brownfield projects can prefer their current package, naming, repository, DTO, and domain flow.
+- Added plan/prompt/workflow guidance that existing code wins over greenfield guidance.
+- Added README read coverage fallback from `.persona/evidence` when filled workflow reports omit explicit README ranges.
+- Added existing Spring-style role discovery coverage for Controller, Service, Repository, DTO, Domain, Exception, and Test files.
+
+### Changed
+
+- Changed Java Role Read Follow-up to ask for representative role files instead of every discovered Java file, while still recording full role-discovery evidence.
+- Relaxed workflow finish classification when raw-shell checklist text remains but final verification was rerun through `npx ph bearshell`.
+
+### Verification
+
+- Existing Spring-style smoke used a current local tarball install, `npx ph init`, accepted plan workflow, and OpenCode `openai/gpt-5.4-mini-fast` with the short prompt `README.md 보고 구현해줘`.
+- Observed `Mode: existing-code`, package root `com.acme.todo`, layer hints `domain, dto, repository, service, web`.
+- Generated code stayed in the existing `web/service/repository/dto/domain` package flow rather than forcing `presentation/application/domain/infrastructure`.
+- Java role discovery evidence covered Controller, Service, Repository, DTO, Domain, and Test files.
+- `gradle test`, `gradle build`, and HTTP smoke passed through the generated project.
+
+### Known Gaps
+
+- OpenCode may still inspect package metadata such as `node_modules/persona-harness/package.json` before settling into the workflow rail.
+- Agents may still perform an initial raw shell probe before rerunning final verification through `npx ph bearshell`.
+- Long README continuation remains the next product gap; full TDD workflow is still future scope.
+
 ## [0.3.2-alpha.3] - 2026-06-23
 
 ### Added

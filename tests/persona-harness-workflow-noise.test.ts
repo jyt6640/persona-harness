@@ -146,6 +146,34 @@ describe("ph workflow noise classification", () => {
     expect(result.stdout).toContain("Finish status: PASS")
   })
 
+  it("allows implementation finish when template raw-shell checklist remains but final verification was rerun through bearshell", () => {
+    const projectDir = createTempProject()
+    prepareAcceptedWorkflow(projectDir)
+    writeWorkflowReports(
+      projectDir,
+      [
+        "Status: filled",
+        "- [x] `npx ph bearshell gradle test`",
+        "- [x] `npx ph bearshell gradle build`",
+        "- [x] 실행 가능한 Spring Boot 앱이면 `npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=18080\"'`",
+        "- [ ] raw shell을 직접 썼다면 `npx ph bearshell`을 쓰지 못한 이유를 기록한다.",
+        "- 최종 검증은 `npx ph bearshell` 경유로 다시 실행했다.",
+      ],
+      [
+        "Status: filled",
+        "- [x] `npx ph bearshell gradle test` 결과를 확인했다.",
+        "- [x] `npx ph bearshell gradle build` 결과를 확인했다.",
+        "- [x] 실행 가능한 Spring Boot 앱이면 `npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=18080\"'` 결과를 확인했다.",
+        "- 최종 검증 재실행은 `npx ph bearshell` 경유로 완료했다.",
+      ],
+    )
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Finish status: PASS")
+  })
+
   it("blocks implementation finish when final verification used raw shell", () => {
     const projectDir = createTempProject()
     prepareAcceptedWorkflow(projectDir)
