@@ -163,6 +163,23 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("npx ph workflow finish implement")
   })
 
+  it("routes Korean readme implementation phrasing through the requirements workflow", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-korean-readme-workflow"
+    const output = modelInputWithText(sessionID, "리드미 보고 구현할래")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Requirements Workflow]")
+    expect(text).toContain("Detected intent: requirement-implementation")
+    expect(text).toContain("요구사항 파일: `README.md`")
+    expect(text).toContain("npx ph workflow split README.md")
+    expect(text).toContain("split/next 전에는 production code를 작성하지 않는다")
+    expect(text).toContain("현재 task card만 구현")
+  })
+
   it("injects prompt capture guidance for pasted requirement implementation requests", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })

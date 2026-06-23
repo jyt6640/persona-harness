@@ -12,7 +12,7 @@ export type RequirementsIntent = {
   readonly reason: string
 }
 
-const FILE_REQUIREMENT_PATTERN = /\b(readme|requirements)\.md\b/iu
+const FILE_REQUIREMENT_PATTERN = /(?:\bREADME(?:\.md)?\b|\brequirements(?:\.md)?\b|리드미|요구사항\.md)/iu
 const IMPLEMENTATION_VERBS = /(구현|만들|작성|개발|완성|build|implement|create|make)/iu
 const CHANGE_VERBS = /(추가|변경|수정|확장|add|change|update|extend)/iu
 const REQUIREMENT_HINTS = /(요구사항|기능|서비스|api|프로젝트|과제|step|단계)/iu
@@ -27,7 +27,8 @@ function sourceFileFromMessage(message: string): string | undefined {
   if (value === undefined) {
     return undefined
   }
-  return value.toLowerCase() === "readme.md" ? "README.md" : "requirements.md"
+  const normalized = value.toLowerCase()
+  return normalized.includes("readme") || normalized.includes("리드미") ? "README.md" : "requirements.md"
 }
 
 export function detectRequirementsIntent(message: string): RequirementsIntent | undefined {
