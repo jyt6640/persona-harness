@@ -22,6 +22,8 @@ Common anchors:
 - `v0.3.0-plan-acceptance.md`
 - `v0.3.0-workflow-history.md`
 - `v0.3.0-workflow-report-status-lifecycle.md`
+- `v0.3.6-workflow-ticket-backlog.md`
+- `v0.3.6-requirements-draft-workflow.md`
 - `v0.3.0-gradle-spring-build-guidance.md`
 - `v0.3.0-installed-package-evidence-noise-policy.md`
 - `v0.3.1-external-tester-guide.md`

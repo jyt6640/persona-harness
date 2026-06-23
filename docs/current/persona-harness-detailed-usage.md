@@ -198,6 +198,37 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 OpenCode TUI를 선호하면 프로젝트 루트에서 `opencode`를 열고, `npx ph plan --prompt` 출력을 붙여 plan-only 작업부터 시작한다. 구현은 `.persona/workflow/plan.md`가 검토되거나 `npx ph plan --accept` 된 뒤 시작한다.
 
+## Idea First Requirements Draft
+
+README나 requirements 파일이 아직 없고 사용자가 `TODO 웹 서비스 만들래`처럼 제품 아이디어만 말한 경우, Persona Harness의 목표는 바로 구현하지 않는 것이다.
+
+AI는 먼저 요구사항 초안을 만든다.
+
+```bash
+npx ph workflow draft --stdin
+```
+
+생성되는 파일:
+
+```text
+.persona/workflow/requirements/backlog.md
+.persona/workflow/requirements/questions.md
+.persona/workflow/requirements/assumptions.md
+```
+
+이 단계에서는 implementation ticket을 만들지 않는다. AI는 사용자에게 초안을 검토하라고 말하고, 괜찮으면 `진행하자`라고 말하라고 안내한다.
+
+사용자가 승인하면 다음 흐름으로 구현 ticket을 만든다.
+
+```bash
+npx ph workflow approve requirements
+npx ph workflow split .persona/workflow/requirements/backlog.md
+npx ph workflow next
+npx ph workflow implement
+```
+
+`진행하자`는 draft backlog가 있을 때만 approval intent로 라우팅한다. draft가 없는 일반 대화에서는 과하게 workflow를 주입하지 않는다.
+
 repo 상태 확인, build/test 확인, 큰 출력 확인이 필요하면 Persona Harness command surface를 쓴다. 이 helper는 timeout과 output size를 제한하지만 sandbox는 아니다.
 
 ```bash

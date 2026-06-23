@@ -12,6 +12,9 @@ Use this package for repeatable release operations and release note drafting.
 - [v0.3.2-alpha.0 release notes](v0.3.2-alpha.0-release-notes.md)
 - [v0.3.2-alpha.1 release notes](v0.3.2-alpha.1-release-notes.md)
 - [v0.3.2-alpha.2 release notes](v0.3.2-alpha.2-release-notes.md)
+- [v0.3.6-alpha.0 release notes](v0.3.6-alpha.0-release-notes.md)
+- [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
+- [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
 Release automation lives in `.github/workflows/release.yml`.
 

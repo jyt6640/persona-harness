@@ -1,5 +1,53 @@
 # Workflow
 
+## Current AI-facing Requirements Workflow
+
+Persona Harness now separates product ideas, written requirements, and implementation tickets.
+
+```text
+Idea only -> requirements draft -> user review -> approval -> ticket split -> implementation
+```
+
+When the user says something vague such as `TODO 웹 서비스 만들래`, the agent should not implement immediately. It should run:
+
+```bash
+npx ph workflow draft --stdin
+```
+
+This creates:
+
+- `.persona/workflow/requirements/backlog.md`
+- `.persona/workflow/requirements/questions.md`
+- `.persona/workflow/requirements/assumptions.md`
+
+The agent reports that the requirements draft is complete and asks the user to review it. Implementation starts only after the user says something like `진행하자`.
+
+Approval flow:
+
+```bash
+npx ph workflow approve requirements
+npx ph workflow split .persona/workflow/requirements/backlog.md
+npx ph workflow next
+npx ph workflow implement
+```
+
+If requirements already exist in `README.md`, skip drafting and split the file:
+
+```bash
+npx ph workflow split README.md
+npx ph workflow next
+```
+
+If requirements were pasted directly into the TUI prompt and are already detailed, capture then split:
+
+```bash
+npx ph workflow capture --stdin
+npx ph workflow split
+npx ph workflow next
+```
+
+This is a workflow/evidence rail, not generated app product-quality certification.
+
 ## Phase 0 Injection Workflow
 
 정식 주입 순서는 다음으로 고정한다.

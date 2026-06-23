@@ -89,6 +89,35 @@ npx ph plan --accept
 
 然后让 OpenCode 实现:
 
+如果还没有 README，只有一个产品想法，请先生成 requirements draft。
+
+```text
+TODO 웹 서비스 만들래
+```
+
+这种情况下，代理不应该立刻实现，而应该先运行:
+
+```text
+npx ph workflow draft --stdin
+```
+
+生成的 draft:
+
+- `.persona/workflow/requirements/backlog.md`
+- `.persona/workflow/requirements/questions.md`
+- `.persona/workflow/requirements/assumptions.md`
+
+确认内容后，如果方向正确，告诉代理 `진행하자`。之后代理应运行:
+
+```text
+npx ph workflow approve requirements
+npx ph workflow split .persona/workflow/requirements/backlog.md
+npx ph workflow next
+npx ph workflow implement
+```
+
+如果 README 已经存在，请使用普通实现请求。
+
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
   "请阅读 README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md，确认 plan 是 accepted 状态，然后基于 Java/Spring Gradle 实现全部需求。执行命令时尽量使用 npx ph bearshell；实现后运行 npx ph bearshell gradle test, npx ph bearshell gradle build；如果是可运行的 Spring Boot app，运行 npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"'；再执行 HTTP happy path 和 failure path smoke。填写 .persona/workflow/implementation-report.md 与 .persona/workflow/review-report.md，并运行 npx ph plan --report-filled implementation 和 npx ph plan --report-filled review。"
@@ -100,6 +129,10 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph intake --interactive`: 询问 backend planning 问题并写入 `.persona/project-profile.jsonc`
 - `ph policy init`: 创建 company/personal backend policy overlay
 - `ph plan`: 创建 `blackbear` planning role 的 `.persona/workflow/plan.md`
+- `ph workflow draft --stdin`: 从 vague product idea 创建 requirements draft，并停在 review 阶段
+- `ph workflow approve requirements`: 将已 review 的 draft 标记为 accepted
+- `ph workflow split [source.md]`: 将 requirements source 拆分成 ticket/backlog
+- `ph workflow next`: 输出下一个 pending ticket
 - `ph bearshell`: bounded shell command helper
 - `ph history`: 将使用过的 workflow artifact 保存到 `.persona/workflow/history/`
 - OpenCode injection: 当代理读取相关文件时注入 Java/Spring backend Clean Code context

@@ -8,6 +8,23 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.6-alpha.0] - 2026-06-23
+
+### Added
+
+- Added requirements drafting workflow before implementation:
+  - `ph workflow draft --stdin` creates `.persona/workflow/requirements/backlog.md`, `questions.md`, and `assumptions.md` from a vague product idea;
+  - `ph workflow approve requirements` marks the draft accepted before ticket splitting;
+  - vague product ideas such as `TODO 웹 서비스 만들래` route to `requirement-drafting` and stop for user review;
+  - approval phrases such as `진행하자` route to `requirement-approval` only when a draft backlog exists.
+
+### Verification
+
+- `npm test -- tests/persona-harness-workflow-ticket.test.ts tests/phase0-hooks.test.ts` passed.
+- `npm run typecheck`, `npm run build`, `npm test`, `npm run report:rules`, `npm run check:scope:strict`, `npm run check:injection-value`, and `npm pack --dry-run` passed.
+- dist CLI smoke confirmed `draft -> approve -> split -> next`.
+- dist runtime transform smoke confirmed draft/approval intent routing.
+
 ## [0.3.5-alpha.0] - 2026-06-23
 
 ### Changed

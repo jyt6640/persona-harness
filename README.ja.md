@@ -89,6 +89,35 @@ npx ph plan --accept
 
 その後、実装を依頼します。
 
+README がまだなく、アイデアだけがある場合は、先に requirements draft を作ります。
+
+```text
+TODO 웹 서비스 만들래
+```
+
+この場合、エージェントはすぐ実装せず、次を実行します。
+
+```text
+npx ph workflow draft --stdin
+```
+
+生成される draft:
+
+- `.persona/workflow/requirements/backlog.md`
+- `.persona/workflow/requirements/questions.md`
+- `.persona/workflow/requirements/assumptions.md`
+
+内容を確認し、よければ `진행하자` と伝えます。その後、エージェントは次を実行します。
+
+```text
+npx ph workflow approve requirements
+npx ph workflow split .persona/workflow/requirements/backlog.md
+npx ph workflow next
+npx ph workflow implement
+```
+
+README が既にある場合は、通常の実装依頼を使います。
+
 ```bash
 opencode run --dir . --model <model> --dangerously-skip-permissions \
   "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.mdを読み、plan が accepted であることを確認してから Java/Spring Gradle ベースで要求全体を実装してください。コマンド実行は可能なら npx ph bearshell を使い、実装後に npx ph bearshell gradle test, npx ph bearshell gradle build, 実行可能な Spring Boot app なら npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"', HTTP happy path と failure path smoke を実行してください。.persona/workflow/implementation-report.md と .persona/workflow/review-report.md を記入し、npx ph plan --report-filled implementation と npx ph plan --report-filled review を実行してください。"
@@ -100,6 +129,10 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph intake --interactive`: backend planning 質問を行い `.persona/project-profile.jsonc` を作成
 - `ph policy init`: company/personal backend policy overlay を作成
 - `ph plan`: `blackbear` planning role 用 `.persona/workflow/plan.md` を作成
+- `ph workflow draft --stdin`: vague product idea から requirements draft を作成し、review で止める
+- `ph workflow approve requirements`: review 済み draft を accepted にする
+- `ph workflow split [source.md]`: requirements source を ticket/backlog に分割
+- `ph workflow next`: 次の pending ticket を表示
 - `ph bearshell`: bounded shell command helper
 - `ph history`: 使用済み workflow artifact を `.persona/workflow/history/` に保存
 - OpenCode injection: 関連ファイルを読むと Java/Spring backend Clean Code context を注入

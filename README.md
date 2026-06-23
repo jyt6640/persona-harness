@@ -4,9 +4,11 @@ Persona Harness is an OpenCode plugin and local CLI for Java/Spring backend gene
 
 It helps an AI agent start from a clean project, read your backend requirements, create an architecture plan, implement with a consistent Java/Spring structure, run verification, and leave workflow reports behind.
 
+If you only have a product idea, Persona Harness now routes the AI through a requirements draft first. For example, `TODO 웹 서비스 만들래` should create `.persona/workflow/requirements/backlog.md` and ask for review instead of starting implementation immediately. Implementation starts after you approve the draft with a phrase such as `진행하자`.
+
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current status: `0.3.5-alpha.0`
+> Current status: `0.3.6-alpha.0`
 >
 > Current scope: Java/Spring backend MVP.
 >
@@ -177,7 +179,40 @@ If `.persona/project-profile.jsonc` is missing, draft, malformed, or incomplete,
 
 ## 5. Ask OpenCode To Implement
 
-Run OpenCode with a deliberately short prompt:
+If you only have an idea, start with that idea instead of forcing a full README first:
+
+```text
+TODO 웹 서비스 만들래
+```
+
+The agent should not implement yet. It should run or follow:
+
+```text
+npx ph workflow draft --stdin
+```
+
+Expected draft artifacts:
+
+- `.persona/workflow/requirements/backlog.md`
+- `.persona/workflow/requirements/questions.md`
+- `.persona/workflow/requirements/assumptions.md`
+
+Review those files. If the direction is right, tell the agent:
+
+```text
+진행하자
+```
+
+Then the agent should run or follow:
+
+```text
+npx ph workflow approve requirements
+npx ph workflow split .persona/workflow/requirements/backlog.md
+npx ph workflow next
+npx ph workflow implement
+```
+
+If you already have a README, run OpenCode with a deliberately short prompt:
 
 ```bash
 opencode run --dir . \
@@ -233,6 +268,13 @@ npx ph workflow next
 ```
 
 This creates `.persona/workflow/backlog.md`, active task cards under `.persona/workflow/work/`, completed task history under `.persona/workflow/history/`, and prompt-captured requirement sources under `.persona/workflow/requirements/`. It is a workflow ledger for the AI agent, not generated-app quality certification.
+
+The difference between the requirement commands:
+
+- `ph workflow draft --stdin`: vague product idea -> draft backlog/questions/assumptions; stop for user review.
+- `ph workflow approve requirements`: mark the draft accepted after the user says to proceed.
+- `ph workflow capture --stdin`: already-written prompt requirements -> latest source for ticket splitting.
+- `ph workflow split`: accepted/file/prompt requirements -> implementation tickets.
 
 If the agent ignores the workflow, paste this stricter prompt:
 
