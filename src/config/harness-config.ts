@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { isAbsolute, join } from "node:path"
 
-import type { Phase0Scenario } from "./rule-frontmatter.js"
+import type { Phase0Scenario } from "../rules/rule-frontmatter.js"
 
 export type HarnessConfig = {
   readonly enabled: boolean

@@ -4,10 +4,10 @@ import { dirname, join } from "node:path"
 import type { Part, UserMessage } from "@opencode-ai/sdk"
 import { beforeEach, describe, expect, it } from "vitest"
 
-import { createPhase0Hooks } from "../src/phase0/hooks.js"
-import { createInjectionBlock } from "../src/phase0/injection.js"
-import { loadRulesForRole } from "../src/phase0/rule-loader.js"
-import type { FileRole, TransformMessagesOutput } from "../src/phase0/types.js"
+import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { createInjectionBlock } from "../src/runtime/injection.js"
+import { loadRulesForRole } from "../src/rules/rule-loader.js"
+import type { FileRole, TransformMessagesOutput } from "../src/runtime/types.js"
 
 const fixtureRoot = join(process.cwd(), ".persona-test-fixtures", "src", "main", "java", "com", "example")
 const fixtureWorkspace = join(process.cwd(), ".persona-test-fixtures")

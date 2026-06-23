@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest"
 import { existsSync } from "node:fs"
 
-import { createPhase0Hooks } from "../src/phase0/hooks.js"
-import { createInjectionBlock } from "../src/phase0/injection.js"
+import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { createInjectionBlock } from "../src/runtime/injection.js"
 import {
   ACTIVE_SHARED_SKILL_NAMES,
   INACTIVE_VENDORED_SHARED_SKILL_NAMES,
   REMOVED_SHARED_SKILL_NAMES,
-} from "../src/phase0/shared-skill-router.js"
-import type { TransformMessagesOutput } from "../src/phase0/types.js"
+} from "../src/runtime/shared-skill-router.js"
+import type { TransformMessagesOutput } from "../src/runtime/types.js"
 
 function modelInput(sessionID: string): TransformMessagesOutput {
   return {

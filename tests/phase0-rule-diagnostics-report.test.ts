@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import {
   renderRuleDiagnosticsReport,
   summarizeRuleDiagnostics,
-} from "../src/phase0/rule-diagnostics-report.js"
+} from "../src/rules/rule-diagnostics-report.js"
 import {
   cleanupProjects,
   createProject,

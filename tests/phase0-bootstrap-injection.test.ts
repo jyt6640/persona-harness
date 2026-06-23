@@ -5,9 +5,9 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { initializePersonaHarness } from "../src/cli/init.js"
-import { createPhase0Hooks } from "../src/phase0/hooks.js"
-import { createInjectionBlock } from "../src/phase0/injection.js"
-import type { TransformMessagesOutput } from "../src/phase0/types.js"
+import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { createInjectionBlock } from "../src/runtime/injection.js"
+import type { TransformMessagesOutput } from "../src/runtime/types.js"
 
 const tempProjects: string[] = []
 

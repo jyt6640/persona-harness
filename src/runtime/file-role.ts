@@ -1,4 +1,4 @@
-import type { FileRole } from "./types.js"
+import type { FileRole } from "../runtime/types.js"
 
 const JAVA_FILE_PATTERN = /\.java$/i
 const GRADLE_BUILD_FILE_PATTERN = /(^|\/)(build|settings)\.gradle(\.kts)?$/i

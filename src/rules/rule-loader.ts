@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import type { FileRole } from "./types.js"
-import { loadHarnessConfig, resolveConfiguredPath } from "./harness-config.js"
+import type { FileRole } from "../runtime/types.js"
+import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
 import {
   isRuleEligibleForTarget,
   loadRuleCatalog,

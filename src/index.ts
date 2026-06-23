@@ -1,6 +1,6 @@
 import type { Hooks, Plugin, PluginModule } from "@opencode-ai/plugin"
 
-import { createPhase0Hooks } from "./phase0/hooks.js"
+import { createPhase0Hooks } from "./runtime/hooks.js"
 
 const serverPlugin: Plugin = async (input): Promise<Hooks> => createPhase0Hooks({ projectDir: input.directory })
 
@@ -11,5 +11,5 @@ const pluginModule: PluginModule = {
 
 export default pluginModule
 
-export { createPhase0Hooks } from "./phase0/hooks.js"
-export type { FileRole, PendingInjection, SelectedPolicyOverlay, SelectedSharedSkill } from "./phase0/types.js"
+export { createPhase0Hooks } from "./runtime/hooks.js"
+export type { FileRole, PendingInjection, SelectedPolicyOverlay, SelectedSharedSkill } from "./runtime/types.js"

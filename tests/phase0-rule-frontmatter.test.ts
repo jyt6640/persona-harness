@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest"
 
-import { loadRuleCatalog, targetPathForMatching } from "../src/phase0/rule-catalog.js"
-import { createInjectionBlock } from "../src/phase0/injection.js"
-import { loadRulesForRole } from "../src/phase0/rule-loader.js"
+import { loadRuleCatalog, targetPathForMatching } from "../src/rules/rule-catalog.js"
+import { createInjectionBlock } from "../src/runtime/injection.js"
+import { loadRulesForRole } from "../src/rules/rule-loader.js"
 import {
   cleanupProjects,
   createProject,

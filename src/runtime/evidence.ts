@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { loadHarnessConfig, resolveConfiguredPath } from "./harness-config.js"
+import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
 import type { PendingInjection } from "./types.js"
 
 export type EvidenceEvent = {

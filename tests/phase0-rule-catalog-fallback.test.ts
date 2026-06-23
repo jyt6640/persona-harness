@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { loadRulesForRole } from "../src/phase0/rule-loader.js"
+import { loadRulesForRole } from "../src/rules/rule-loader.js"
 import { cleanupProjects, createProject } from "./helpers/rule-fixtures.js"
 
 afterEach(cleanupProjects)

@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { isAbsolute, join, relative, sep } from "node:path"
 
-import type { FileRole } from "./types.js"
-import { loadHarnessConfig, resolveConfiguredPath } from "./harness-config.js"
+import type { FileRole } from "../runtime/types.js"
+import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
 import { matchesAnyGlob, normalizePath } from "./rule-glob.js"
 import {
   extractBulletPolicies,

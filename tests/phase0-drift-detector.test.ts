@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { detectBackendDrift } from "../src/phase0/drift-detector.js"
+import { detectBackendDrift } from "../src/runtime/drift-detector.js"
 
 const sandboxes: string[] = []
 

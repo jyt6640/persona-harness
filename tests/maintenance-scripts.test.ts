@@ -26,7 +26,7 @@ function runNodeScript(scriptPath: string, args: readonly string[], cwd: string)
 
 function writeScopeProject(projectDir: string, activeSkills: readonly string[] = ["programming", "frontend"]): void {
   mkdirSync(join(projectDir, "docs", "current"), { recursive: true })
-  mkdirSync(join(projectDir, "src", "phase0"), { recursive: true })
+  mkdirSync(join(projectDir, "src", "runtime"), { recursive: true })
   writeFileSync(
     join(projectDir, "docs", "current", "mvp-scope-status.json"),
     `${JSON.stringify(
@@ -43,7 +43,7 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
     )}\n`,
   )
   writeFileSync(
-    join(projectDir, "src", "phase0", "shared-skill-router.ts"),
+    join(projectDir, "src", "runtime", "shared-skill-router.ts"),
     [
       'export const ACTIVE_SHARED_SKILL_NAMES = ["programming", "frontend"] as const',
       'export const INACTIVE_VENDORED_SHARED_SKILL_NAMES = ["ast-grep", "debugging", "visual-qa", "review-work"] as const',
@@ -51,7 +51,7 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
     ].join("\n"),
   )
   writeFileSync(
-    join(projectDir, "src", "phase0", "types.ts"),
+    join(projectDir, "src", "runtime", "types.ts"),
     [
       "export type FileRole =",
       '  | "typescript"',

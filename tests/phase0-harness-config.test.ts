@@ -2,11 +2,11 @@ import { writeFileSync } from "node:fs"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { createInjectionBlock } from "../src/phase0/injection.js"
-import { createPhase0Hooks } from "../src/phase0/hooks.js"
-import { loadHarnessConfig, loadHarnessConfigResult } from "../src/phase0/harness-config.js"
-import { loadRulesForRole } from "../src/phase0/rule-loader.js"
-import type { TransformMessagesOutput } from "../src/phase0/types.js"
+import { createInjectionBlock } from "../src/runtime/injection.js"
+import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { loadHarnessConfig, loadHarnessConfigResult } from "../src/config/harness-config.js"
+import { loadRulesForRole } from "../src/rules/rule-loader.js"
+import type { TransformMessagesOutput } from "../src/runtime/types.js"
 import { cleanupProjects, createProject, writeHarnessConfig, writeRule } from "./helpers/rule-fixtures.js"
 
 afterEach(cleanupProjects)

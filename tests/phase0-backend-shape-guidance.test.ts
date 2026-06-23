@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createInjectionBlock } from "../src/phase0/injection.js"
+import { createInjectionBlock } from "../src/runtime/injection.js"
 
 function policiesFor(targetFile: string): string {
   return createInjectionBlock(targetFile, process.cwd()).policies.join("\n")

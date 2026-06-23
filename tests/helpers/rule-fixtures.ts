@@ -2,8 +2,8 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 
-import { isRuleEligibleForTarget, type Phase0Scenario, type RuleCatalogEntry } from "../../src/phase0/rule-catalog.js"
-import type { FileRole } from "../../src/phase0/types.js"
+import { isRuleEligibleForTarget, type Phase0Scenario, type RuleCatalogEntry } from "../../src/rules/rule-catalog.js"
+import type { FileRole } from "../../src/runtime/types.js"
 
 let projectDirs: string[] = []
 

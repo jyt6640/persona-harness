@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest"
 
-import { loadRuleCatalog } from "../src/phase0/rule-catalog.js"
-import { loadRulesForRole } from "../src/phase0/rule-loader.js"
+import { loadRuleCatalog } from "../src/rules/rule-catalog.js"
+import { loadRulesForRole } from "../src/rules/rule-loader.js"
 import { cleanupProjects, createProject, eligible, findEntry, writeRule, writeScenario } from "./helpers/rule-fixtures.js"
 
 afterEach(cleanupProjects)

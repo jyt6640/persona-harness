@@ -9,7 +9,7 @@ import { runIntakeCommand } from "./intake.js"
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH } from "./plan.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
-import { readBackendProjectProfileState } from "../phase0/project-profile.js"
+import { readBackendProjectProfileState } from "../config/project-profile.js"
 
 type BootstrapOptions = {
   readonly projectDir?: string

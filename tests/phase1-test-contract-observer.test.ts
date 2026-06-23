@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { formatTestContractObserverReport } from "../src/phase1/observer/report.js"
-import { observeTestContractAnchors } from "../src/phase1/observer/test-contract-observer.js"
+import { formatTestContractObserverReport } from "../src/observer/report.js"
+import { observeTestContractAnchors } from "../src/observer/test-contract-observer.js"
 
 const testPath = "src/test/java/com/example/reservation/ReservationIntegrationTest.java"
 

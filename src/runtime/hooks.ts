@@ -2,7 +2,7 @@ import type { Hooks } from "@opencode-ai/plugin"
 
 import { writePhase0Evidence } from "./evidence.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
-import { loadHarnessConfig } from "./harness-config.js"
+import { loadHarnessConfig } from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
 import {
   createJavaRoleReadFollowUp,

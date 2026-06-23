@@ -1,4 +1,4 @@
-import type { FileRole } from "./types.js"
+import type { FileRole } from "../runtime/types.js"
 
 export const ACTIVE_SHARED_SKILL_NAMES = ["programming", "frontend"] as const
 

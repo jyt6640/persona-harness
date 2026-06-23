@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { createInjectionBlock } from "../src/phase0/injection.js"
+import { createInjectionBlock } from "../src/runtime/injection.js"
 
 const tempProjects: string[] = []
 

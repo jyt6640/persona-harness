@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
-import { loadHarnessConfig, resolveConfiguredPath } from "./harness-config.js"
+import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
 import { loadRuleCatalog } from "./rule-catalog.js"
 import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
 

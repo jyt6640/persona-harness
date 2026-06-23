@@ -23,8 +23,8 @@ const PROJECT_DIR = OPTIONS.projectDir
 
 const FILES = {
   status: "docs/current/mvp-scope-status.json",
-  router: "src/phase0/shared-skill-router.ts",
-  types: "src/phase0/types.ts",
+  router: "src/runtime/shared-skill-router.ts",
+  types: "src/runtime/types.ts",
   settlement: "docs/current/phase2-scope-settlement.md",
   board: "docs/project-progress-board.md",
 }

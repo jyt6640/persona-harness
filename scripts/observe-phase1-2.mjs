@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
-import { observeControllerRepositoryDependency } from "../dist/phase1/observer/controller-repository-observer.js"
-import { defaultPhase12ObserverReportPath, writeObserverReport } from "../dist/phase1/observer/report.js"
+import { observeControllerRepositoryDependency } from "../dist/observer/controller-repository-observer.js"
+import { defaultPhase12ObserverReportPath, writeObserverReport } from "../dist/observer/report.js"
 
 const fixturePath = join(
   ".persona-test-fixtures",

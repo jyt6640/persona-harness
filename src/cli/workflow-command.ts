@@ -2,7 +2,7 @@ import { existsSync } from "node:fs"
 import { join } from "node:path"
 
 import type { CliRunResult } from "./bearshell.js"
-import { readBackendProjectProfileState } from "../phase0/project-profile.js"
+import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
 import {
   failedGuardOutput,

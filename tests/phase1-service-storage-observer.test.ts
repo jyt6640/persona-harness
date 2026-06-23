@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { observeServiceStorageOwnership } from "../src/phase1/observer/service-storage-observer.js"
-import { formatServiceStorageObserverReport } from "../src/phase1/observer/report.js"
+import { observeServiceStorageOwnership } from "../src/observer/service-storage-observer.js"
+import { formatServiceStorageObserverReport } from "../src/observer/report.js"
 
 const servicePath = "src/main/java/com/example/reservation/ReservationService.java"
 

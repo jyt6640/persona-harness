@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { observeControllerRepositoryDependency } from "../src/phase1/observer/controller-repository-observer.js"
-import { formatObserverReport } from "../src/phase1/observer/report.js"
+import { observeControllerRepositoryDependency } from "../src/observer/controller-repository-observer.js"
+import { formatObserverReport } from "../src/observer/report.js"
 
 const controllerPath = "src/main/java/com/example/reservation/ReservationController.java"
 

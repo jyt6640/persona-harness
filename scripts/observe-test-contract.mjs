@@ -1,11 +1,11 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
-import { observeTestContractAnchors } from "../dist/phase1/observer/test-contract-observer.js"
+import { observeTestContractAnchors } from "../dist/observer/test-contract-observer.js"
 import {
   defaultTestContractObserverReportPath,
   writeTestContractObserverReport,
-} from "../dist/phase1/observer/report.js"
+} from "../dist/observer/report.js"
 
 const fixturePath = join(
   ".persona-test-fixtures",

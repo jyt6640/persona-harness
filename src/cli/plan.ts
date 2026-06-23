@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { join, resolve } from "node:path"
 import process from "node:process"
 
-import { loadBackendPolicyOverlay } from "../phase0/policy-overlay.js"
-import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from "../phase0/project-profile.js"
+import { loadBackendPolicyOverlay } from "../config/policy-overlay.js"
+import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from "../config/project-profile.js"
 import { createImplementationReportTemplate, createReviewReportTemplate } from "./workflow-templates.js"
 
 export type PlanOptions = { readonly projectDir?: string }

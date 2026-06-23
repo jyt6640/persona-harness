@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { observeControllerSqlAccess } from "../src/phase1/observer/controller-sql-observer.js"
-import { formatControllerSqlObserverReport } from "../src/phase1/observer/report.js"
+import { observeControllerSqlAccess } from "../src/observer/controller-sql-observer.js"
+import { formatControllerSqlObserverReport } from "../src/observer/report.js"
 
 const controllerPath = "src/main/java/com/example/reservation/ReservationController.java"
 

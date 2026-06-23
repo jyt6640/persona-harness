@@ -4,8 +4,8 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { createPhase0Hooks } from "../src/phase0/hooks.js"
-import type { TransformMessagesOutput } from "../src/phase0/types.js"
+import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import type { TransformMessagesOutput } from "../src/runtime/types.js"
 
 const tempProjects: string[] = []
 

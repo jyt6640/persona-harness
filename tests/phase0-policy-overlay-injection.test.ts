@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { initializeWorkflowPlan } from "../src/cli/plan.js"
 import { createBackendProfile, createDefaultBackendAnswers, PROFILE_PATH } from "../src/cli/intake-profile.js"
-import { createInjectionBlock } from "../src/phase0/injection.js"
+import { createInjectionBlock } from "../src/runtime/injection.js"
 
 const tempProjects: string[] = []
 

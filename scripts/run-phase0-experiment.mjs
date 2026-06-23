@@ -200,8 +200,8 @@ ${prompt}
 ## 반영 파일
 
 - .persona/rules/**
-- src/phase0/rule-loader.ts
-- src/phase0/injection.ts
+- src/rules/rule-loader.ts
+- src/runtime/injection.ts
 
 ## 리스크
 
@@ -312,7 +312,7 @@ if (build.status !== 0) {
   throw new Error(`npm run build failed. See ${relative(rootDir, runDir)}/build.stderr.log`)
 }
 
-const { detectBackendDrift, formatDriftReport } = await import("../dist/phase0/drift-detector.js")
+const { detectBackendDrift, formatDriftReport } = await import("../dist/runtime/drift-detector.js")
 
 createSandbox()
 cpSync(sandboxDir, baselineDir, { recursive: true })
