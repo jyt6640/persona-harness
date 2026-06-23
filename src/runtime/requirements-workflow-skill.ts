@@ -80,6 +80,43 @@ function approvalFlow(): readonly string[] {
   ]
 }
 
+function intentPreamble(intent: RequirementsIntent): readonly string[] {
+  if (intent.kind === "requirement-drafting") {
+    return [
+      "의도 감지: 제품 아이디어 초안 작성 요청으로 판단함.",
+      "근거: 구체 요구사항 파일 없이 새 서비스 아이디어를 말함.",
+      "다음 행동: 구현하지 않고 requirements draft를 작성한 뒤 사용자 검토를 기다린다.",
+    ]
+  }
+  if (intent.kind === "requirement-approval") {
+    return [
+      "의도 감지: 요구사항 draft 승인 요청으로 판단함.",
+      "근거: 사용자가 draft 검토 후 진행을 승인하는 표현을 사용함.",
+      "다음 행동: draft를 승인하고 ticket backlog를 만든 뒤 첫 ticket으로 이동한다.",
+    ]
+  }
+  if (intent.kind === "requirement-continuation") {
+    return [
+      "의도 감지: 이어서 진행 요청으로 판단함.",
+      "근거: 사용자가 다음 단계/이어서 진행을 요청함.",
+      "다음 행동: 다음 pending ticket을 확인하고 현재 ticket만 이어서 진행한다.",
+    ]
+  }
+  if (intent.source === "file") {
+    const sourceFile = intent.sourceFile ?? "README.md"
+    return [
+      `의도 감지: ${sourceFile} 기반 구현 요청으로 판단함.`,
+      `근거: 사용자가 ${sourceFile}/리드미 같은 요구사항 파일을 보고 구현하라고 요청함.`,
+      "다음 행동: 요구사항 파일을 ticket backlog로 나눈 뒤 현재 ticket만 구현한다.",
+    ]
+  }
+  return [
+    "의도 감지: 프롬프트 기반 요구사항 구현 요청으로 판단함.",
+    "근거: 사용자가 요구사항 본문이나 기능 설명을 프롬프트로 직접 제공함.",
+    "다음 행동: 프롬프트를 요구사항 source로 저장하고 ticket backlog를 만든 뒤 현재 ticket만 구현한다.",
+  ]
+}
+
 export function formatRequirementsWorkflowBlock(intent: RequirementsIntent): string {
   const flow = (() => {
     if (intent.kind === "requirement-drafting") {
@@ -99,6 +136,8 @@ export function formatRequirementsWorkflowBlock(intent: RequirementsIntent): str
     `Detected intent: ${intent.kind}`,
     `Selected skill: workflow-requirements (${selectedRequirementsWorkflowSkill(intent).path})`,
     `Reason: ${intent.reason}`,
+    "",
+    ...intentPreamble(intent),
     "",
     "Required flow:",
     ...flow,
