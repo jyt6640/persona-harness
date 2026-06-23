@@ -11,7 +11,7 @@ This document names the roles and their intended inputs/outputs. It does not imp
 The current product surface is:
 
 ```text
-ph init -> ph intake -> profile summary injection -> OpenCode plan/implementation -> evidence review
+ph init(interview) -> profile summary injection -> OpenCode plan/implementation -> evidence review
 ```
 
 The v0.3.x workflow should make this path more explicit without turning Persona Harness into a full autonomous agent platform.
@@ -29,8 +29,8 @@ The v0.3.x workflow should make this path more explicit without turning Persona 
 
 ```text
 1. npx ph init
-2. npx ph intake
-3. user fills .persona/project-profile.jsonc
+2. user answers the backend intake interview
+3. .persona/project-profile.jsonc is written
 4. profile summary injection exposes planning context
 5. blackbear-style planning:
    - read README

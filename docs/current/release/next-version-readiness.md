@@ -18,8 +18,9 @@ This candidate is a hotfix for installed-package clean runs where generated Java
 - Java role discovery recognizes `npx ph bearshell --shell 'find src/main/java src/test/java -name "*.java" ...'` output.
 - Implementation report template includes Java role discovery/read fields.
 - Profile-required implementation gate is active before `ph plan` and `ph workflow implement`.
-- `ph init` creates a ready default backend profile for alpha smoke convenience.
-- `ph intake --default backend` creates the same ready default profile explicitly.
+- `ph init` installs harness/plugin files and starts the intended interview-based backend profile flow in an interactive terminal.
+- `ph intake --default backend` remains available as an explicit fast-path default profile.
+- `ph bootstrap backend` remains the non-interactive smoke path for filling profile/policy/plan pieces.
 - `ph plan --auto-accept` supports clean-run smoke without a separate manual accept step.
 
 ## Verification Commands
@@ -48,9 +49,7 @@ tmp_project=$(mktemp -d)
 cd "$tmp_project"
 npm init -y
 npm install -D /absolute/path/to/persona-harness
-npx ph init
-npx ph policy init
-npx ph plan --auto-accept
+npx ph bootstrap backend
 npx ph workflow implement
 ```
 
@@ -83,7 +82,9 @@ Expected:
 Local tarball install smoke passed in a repo-external temporary project:
 
 - installed package version: `0.3.2-alpha.2`
-- `npx ph init`: created ready default backend profile
+- `npx ph init`: installed harness/plugin files
+- `npx ph init`: starts backend interview in the interactive CLI
+- `npx ph bootstrap backend`: non-interactive smoke path still creates a ready default backend profile
 - `npx ph plan --auto-accept`: created accepted workflow plan
 - `npx ph workflow implement`: printed Java role discovery command
 - `npx ph workflow implement`: printed Java role discovery/read evidence guidance

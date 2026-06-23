@@ -39,7 +39,7 @@ describe("persona-harness init", () => {
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "java-common.md"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "step1-api-contract.md"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "step2-3-api-contract.md"))).toBe(false)
-    expect(existsSync(join(projectDir, ".persona", "project-profile.jsonc"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "project-profile.jsonc"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
     expect(existsSync(join(projectDir, ".opencode", "opencode.json"))).toBe(true)
     expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain("node_modules/")
@@ -50,7 +50,6 @@ describe("persona-harness init", () => {
       expect.arrayContaining([
         ".persona/harness.jsonc",
         ".persona/rules/",
-        ".persona/project-profile.jsonc",
         ".opencode/opencode.json",
         ".gitignore",
       ]),
@@ -63,9 +62,6 @@ describe("persona-harness init", () => {
       return
     }
     expect(config.plugin).toEqual([join(process.cwd(), "dist", "index.js")])
-
-    const profile = JSON.parse(readFileSync(join(projectDir, ".persona", "project-profile.jsonc"), "utf8")) as Record<string, unknown>
-    expect(profile.status).toBe("ready")
   })
 
   it("preserves an existing OpenCode config while adding the Persona plugin path once", () => {
@@ -115,8 +111,8 @@ describe("persona-harness init", () => {
       evidenceCopied: false,
     })
 
-    expect(result).toContain("default backend profile is ready")
-    expect(result).toContain("npx ph intake --interactive --force")
+    expect(result).toContain("ph init` starts the backend profile interview")
+    expect(result).toContain("npx ph intake --default backend")
     expect(result).toContain("npx ph policy init")
     expect(result).toContain("npx ph plan --auto-accept")
     expect(result).toContain("opencode")

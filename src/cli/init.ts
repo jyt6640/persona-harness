@@ -4,7 +4,9 @@ import { dirname, isAbsolute, join, resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
-import { createBackendProfile, createDefaultBackendAnswers, PROFILE_PATH } from "./intake-profile.js"
+import { formatInitResult } from "./init-output.js"
+
+export { formatInitResult } from "./init-output.js"
 
 type InitOptions = {
   readonly projectDir?: string
@@ -184,23 +186,6 @@ function writeProjectNoiseIgnore(projectDir: string): void {
   writeFileSync(gitignorePath, nextContent)
 }
 
-function writeDefaultBackendProfile(projectDir: string): boolean {
-  const profilePath = join(projectDir, PROFILE_PATH)
-  if (existsSync(profilePath)) {
-    return false
-  }
-  mkdirSync(dirname(profilePath), { recursive: true })
-  writeFileSync(
-    profilePath,
-    `${JSON.stringify(
-      createBackendProfile(createDefaultBackendAnswers(), "Default backend profile created by Persona Harness init."),
-      null,
-      2,
-    )}\n`,
-  )
-  return true
-}
-
 function normalizeTemplateRelativePath(sourcePath: string, sourceRoot: string): string {
   return sourcePath === sourceRoot ? "" : sourcePath.slice(sourceRoot.length + sep.length).replace(/\\/g, "/")
 }
@@ -235,7 +220,6 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
   })
   const backups = writeOpencodeConfig(projectDir, pluginPath)
   writeProjectNoiseIgnore(projectDir)
-  const profileCreated = writeDefaultBackendProfile(projectDir)
 
   return {
     projectDir,
@@ -244,54 +228,12 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
     installed: [
       ".persona/harness.jsonc",
       ".persona/rules/",
-      ...(profileCreated ? [PROFILE_PATH] : []),
       ".opencode/opencode.json",
       ".gitignore",
     ],
     backups,
     evidenceCopied: false,
   }
-}
-
-export function formatInitResult(result: InitResult): string {
-  const backupLines = result.backups.length > 0 ? ["", "Backups:", ...result.backups.map((backup) => `- ${backup}`)] : []
-
-  return [
-    "Persona Harness initialized.",
-    "",
-    "Installed:",
-    ...result.installed.map((item) => `- ${item}`),
-    ...backupLines,
-    "",
-    "Next:",
-    "1. A default backend profile is ready. Customize it with `npx ph intake --interactive --force` if needed.",
-    "2. Run `npx ph policy init` if you want company or personal backend guidance.",
-    "3. Run `npx ph plan --auto-accept` for the fastest flow, or `npx ph plan` for manual review.",
-    "4. Ask the agent to implement only through `npx ph workflow implement`.",
-    "",
-    "OpenCode TUI:",
-    "- Run `opencode` in this project.",
-    "- Ask it to read README.md and `.persona/workflow/plan.md` first.",
-    "- Paste `npx ph plan --prompt` if you want the plan-only prompt inside the TUI.",
-    "",
-    "OpenCode CLI:",
-    "- Plan first: `opencode run --dir . --model <model> --dangerously-skip-permissions \"$(npx ph plan --prompt)\"`",
-    "- Implement only after the plan is accepted.",
-    "",
-    "Scope:",
-    "- Java/Spring backend Clean Code injection",
-    "- Gradle-first backend product code shape guidance",
-    "",
-    "Not guaranteed:",
-    "- generated app product quality",
-    "- test quality",
-    "- rule enforcement",
-    "- frontend/infra/multi-domain productization",
-    "",
-    "Evidence:",
-    "- .persona/evidence/",
-    "- .persona/evidence/ was not copied from the template; it is created only when hooks run.",
-  ].join("\n")
 }
 
 export function runInitCommand(options: InitOptions = {}): { readonly status: number; readonly stdout: string; readonly stderr: string } {

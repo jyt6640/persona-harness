@@ -57,7 +57,8 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
       ? [
           "프로젝트 프로필 상태:",
           `- ${projectProfileState.message}`,
-          "- `.persona`가 있는 하네스 프로젝트에서 구현 요청을 받았다면 먼저 `npx ph bootstrap backend` 또는 `npx ph intake --default backend --force`로 프로필을 확정한다.",
+          "- `.persona`가 있는 하네스 프로젝트에서 구현 요청을 받았다면 먼저 `npx ph intake --interactive`로 프로필을 확정한다.",
+          "- 인터뷰를 생략하는 의도적 fast path에서만 `npx ph intake --default backend --force`를 사용한다.",
           "- 프로필이 ready가 되기 전에는 하네스 workflow 구현 레일을 시작하지 않는다.",
           "",
         ]

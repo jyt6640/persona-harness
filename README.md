@@ -151,25 +151,23 @@ You can use a different domain. For cleaner feedback, avoid the older `reservati
 
 ## 4. Create Intake, Policy, And Plan Files
 
-`npx ph init` creates a ready default backend profile at `.persona/project-profile.jsonc`.
-That default is only a planning convenience; customize it when the project context matters.
+`npx ph init` installs the harness, connects the OpenCode plugin, and immediately starts the backend profile interview.
+The interview writes `.persona/project-profile.jsonc`; that profile is the planning context used before implementation.
 
-For the fastest alpha smoke:
+For the normal external tester flow:
 
 ```bash
 npx ph doctor
+npx ph init
 npx ph policy init
 npx ph plan --auto-accept
 npx ph workflow check
 ```
 
-For a more realistic project setup, replace the default profile through the interview:
+If you need a non-interactive fast path for smoke tests, use backend bootstrap:
 
 ```bash
-npx ph intake --interactive --force
-npx ph policy init
-npx ph plan
-npx ph plan --accept
+npx ph bootstrap backend
 ```
 
 If `.persona/project-profile.jsonc` is missing, draft, malformed, or incomplete, `ph plan` and `ph workflow implement` stop and ask for `ph intake` first. Before implementation, `npx ph workflow check` usually reports `WARN` because implementation and review reports are still templates. That is normal.
@@ -256,7 +254,7 @@ For generated code shape, look for:
 
 These commands are intentionally visible so AI agents can call them from OpenCode/Codex-style sessions.
 
-- `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, and a ready default backend profile for the Java/Spring backend MVP fast path.
+- `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, and starts the backend profile interview.
 - `ph intake`: creates an editable draft backend profile.
 - `ph intake --default backend`: creates a ready default backend profile without an interactive terminal.
 - `ph intake --interactive`: asks backend planning questions and writes `.persona/project-profile.jsonc`.
