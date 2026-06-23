@@ -4,6 +4,30 @@ export type WorkflowGuardKind = "implement" | "final"
 export type WorkflowRunnerKind = "implement"
 export type WorkflowRunnerAction = "implement" | "start" | "finish"
 
+export function uninitializedHarnessOutput(): CliRunResult {
+  return {
+    status: 0,
+    stdout: [
+      "Persona Harness not initialized.",
+      "",
+      "Implementation is not blocked.",
+      "",
+      "This project does not have a `.persona/` directory, so Persona Harness workflow gates are inactive.",
+      "Continue normal implementation if the user did not opt into Persona Harness.",
+      "",
+      "To opt in:",
+      "- `npx ph init`",
+      "- `npx ph bootstrap backend`",
+      "- then run `npx ph workflow implement` again",
+      "",
+      "Scope:",
+      "- advisory only",
+      "- no generated app product-quality certification",
+    ].join("\n") + "\n",
+    stderr: "",
+  }
+}
+
 export function failedGuardOutput(guardKind: WorkflowGuardKind, reasons: readonly string[]): CliRunResult {
   return {
     status: 1,

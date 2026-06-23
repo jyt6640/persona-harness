@@ -3,6 +3,7 @@ import process from "node:process"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
 
+import { runBootstrapCommand } from "./bootstrap.js"
 import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
@@ -30,6 +31,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
 
   if (command === "init") {
     return runInitCommand({ projectDir: options.cwd, packageRoot: options.packageRoot })
+  }
+
+  if (command === "bootstrap") {
+    return runBootstrapCommand(args.slice(1), { projectDir: options.cwd, packageRoot: options.packageRoot }, invocationName)
   }
 
   if (command === "intake") {
@@ -97,6 +102,7 @@ function personaCliUsage(invocationName: string): string {
     "",
     "Commands:",
     "  init                         Install Persona Harness config into the current project.",
+    "  bootstrap backend            Fill missing backend profile/policy/plan workflow pieces.",
     "  intake                       Create a draft backend project profile for planning.",
     "  plan                         Create a blackbear architecture plan draft before implementation.",
     "  policy                       Create backend-only policy overlay files.",
@@ -118,6 +124,7 @@ function personaCliUsage(invocationName: string): string {
     "",
     "Examples:",
     `  ${invocationName} init`,
+    `  ${invocationName} bootstrap backend`,
     `  ${invocationName} intake`,
     `  ${invocationName} plan`,
     `  ${invocationName} policy init`,

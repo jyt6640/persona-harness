@@ -138,14 +138,27 @@ describe("ph workflow check", () => {
 })
 
 describe("ph workflow guard", () => {
-  it("blocks implementation rail until a backend profile is ready", () => {
+  it("does not block normal implementation when Persona Harness is not initialized", () => {
     const projectDir = createTempProject()
+
+    const result = runPersonaCli(["workflow", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Persona Harness not initialized")
+    expect(result.stdout).toContain("Implementation is not blocked")
+    expect(result.stdout).toContain("npx ph init")
+  })
+
+  it("blocks implementation rail when Persona Harness is initialized but the backend profile is missing", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
 
     const result = runPersonaCli(["workflow", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Workflow implement failed: implement")
-    expect(result.stderr).toContain(".persona/project-profile.jsonc is missing")
+    expect(result.stderr).toContain("Harness initialized but project profile is not ready")
+    expect(result.stderr).toContain("npx ph bootstrap backend")
     expect(result.stderr).toContain("npx ph intake --default backend")
   })
 
@@ -218,6 +231,51 @@ describe("ph workflow guard", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("Workflow status: WARN")
     expect(guard.status).toBe(1)
+  })
+})
+
+describe("ph bootstrap backend", () => {
+  it("creates a default backend profile, policy overlay, accepted plan, and workflow reports in a clean project", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Persona Harness backend bootstrap complete")
+    expect(result.stdout).toContain(".persona/project-profile.jsonc")
+    expect(result.stdout).toContain(".persona/policies/overlay.jsonc")
+    expect(result.stdout).toContain(".persona/workflow/plan.md")
+    expect(result.stdout).toContain("npx ph workflow implement")
+    expect(existsSync(join(projectDir, ".persona", "harness.jsonc"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "project-profile.jsonc"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "policies", "overlay.jsonc"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "plan.md"))).toBe(true)
+    expect(readFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "utf8")).toContain("Status: accepted")
+  })
+
+  it("fills missing backend workflow pieces after init without requiring the user to type every command", () => {
+    const projectDir = createTempProject()
+    const init = runPersonaCli(["init"], { cwd: projectDir, env: {}, invocationName: "ph", packageRoot: process.cwd() })
+    expect(init.status).toBe(0)
+    rmSync(join(projectDir, ".persona", "project-profile.jsonc"), { force: true })
+
+    const bootstrap = runPersonaCli(["bootstrap", "backend"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+    const implement = runPersonaCli(["workflow", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(bootstrap.status).toBe(0)
+    expect(bootstrap.stdout).toContain("created default backend profile")
+    expect(implement.status).toBe(0)
+    expect(implement.stdout).toContain("Implementation rail status: PASS")
   })
 })
 

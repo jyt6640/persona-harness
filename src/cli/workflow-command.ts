@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs"
+import { join } from "node:path"
+
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../phase0/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
@@ -10,6 +13,7 @@ import {
   passedStartOutput,
   type WorkflowGuardKind,
   type WorkflowRunnerKind,
+  uninitializedHarnessOutput,
 } from "./workflow-output.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 
@@ -90,9 +94,18 @@ function implementationGuardReasons(summary: ReturnType<typeof readWorkflowStatu
   const reasons: string[] = []
   const profileState = readBackendProjectProfileState(summary.projectDir)
   if (profileState.status !== "ready") {
-    reasons.push(profileState.message)
+    reasons.push(
+      [
+        "Harness initialized but project profile is not ready.",
+        profileState.message,
+        "Fast path: run npx ph bootstrap backend.",
+        "Manual path: run npx ph intake --default backend or npx ph intake --interactive.",
+      ].join(" "),
+    )
   }
-  if (summary.plan !== "accepted") {
+  if (summary.plan === "missing") {
+    reasons.push(".persona/workflow/plan.md is missing. Run npx ph bootstrap backend or npx ph plan --auto-accept.")
+  } else if (summary.plan !== "accepted") {
     reasons.push(".persona/workflow/plan.md must be accepted")
   }
   if (summary.implementation === "missing") {
@@ -127,8 +140,15 @@ function finalGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): read
   return reasons
 }
 
+function hasPersonaHarness(summary: ReturnType<typeof readWorkflowStatus>): boolean {
+  return existsSync(join(summary.projectDir, ".persona"))
+}
+
 function runWorkflowGuard(guardKind: WorkflowGuardKind, options: WorkflowOptions): CliRunResult {
   const summary = readWorkflowStatus(options.projectDir)
+  if (!hasPersonaHarness(summary)) {
+    return uninitializedHarnessOutput()
+  }
   const reasons = guardKind === "implement" ? implementationGuardReasons(summary) : finalGuardReasons(summary)
   if (reasons.length > 0) {
     return failedGuardOutput(guardKind, reasons)
@@ -138,6 +158,9 @@ function runWorkflowGuard(guardKind: WorkflowGuardKind, options: WorkflowOptions
 
 function runWorkflowStart(runnerKind: WorkflowRunnerKind, options: WorkflowOptions): CliRunResult {
   const summary = readWorkflowStatus(options.projectDir)
+  if (!hasPersonaHarness(summary)) {
+    return uninitializedHarnessOutput()
+  }
   const reasons = implementationGuardReasons(summary)
   if (reasons.length > 0) {
     return failedRunnerOutput("start", runnerKind, reasons)
@@ -147,6 +170,9 @@ function runWorkflowStart(runnerKind: WorkflowRunnerKind, options: WorkflowOptio
 
 function runWorkflowImplement(options: WorkflowOptions): CliRunResult {
   const summary = readWorkflowStatus(options.projectDir)
+  if (!hasPersonaHarness(summary)) {
+    return uninitializedHarnessOutput()
+  }
   const reasons = implementationGuardReasons(summary)
   if (reasons.length > 0) {
     return failedRunnerOutput("implement", "implement", reasons)
@@ -156,6 +182,9 @@ function runWorkflowImplement(options: WorkflowOptions): CliRunResult {
 
 function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOptions): CliRunResult {
   const summary = readWorkflowStatus(options.projectDir)
+  if (!hasPersonaHarness(summary)) {
+    return uninitializedHarnessOutput()
+  }
   const reasons = finalGuardReasons(summary)
   if (reasons.length > 0) {
     return failedRunnerOutput("finish", runnerKind, reasons)
