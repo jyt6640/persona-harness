@@ -29,6 +29,29 @@ function writeProfileReadEvidence(projectDir: string): void {
   )
 }
 
+function writePassingWorkflowEvidence(projectDir: string): void {
+  writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+  writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+  writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- README ranges read: 1-220",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
+  )
+  mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+  writeProfileReadEvidence(projectDir)
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -102,6 +125,38 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain("Workflow status: PASS")
     expect(result.stdout).toContain("- command discipline: bearshell observed")
     expect(result.stdout).toContain("Next: archive completed workflow")
+  })
+
+  it("warns and points to workflow next when a pending ticket remains despite passing reports and gates", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writePassingWorkflowEvidence(projectDir)
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "backlog.md"),
+      [
+        "# Persona Workflow Backlog",
+        "",
+        "Status: active",
+        "",
+        "| Order | Ticket | Title | Status | Path |",
+        "| --- | --- | --- | --- | --- |",
+        "| 1 | step-1 | Equipment catalog API | archived | .persona/workflow/history/step-1/00-task-card.md |",
+        "| 2 | step-2 | Technical Constraints | pending | .persona/workflow/work/step-2/00-task-card.md |",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Workflow status: WARN")
+    expect(result.stdout).toContain("- pending tickets: present")
+    expect(result.stdout).toContain("Ticket: step-2")
+    expect(result.stdout).toContain("Title: Technical Constraints")
+    expect(result.stdout).toContain("Path: .persona/workflow/work/step-2/00-task-card.md")
+    expect(result.stdout).toContain("Next: run `npx ph workflow next` or `npx ph workflow continue`")
+    expect(result.stdout).toContain("review/archive candidate")
+    expect(result.stdout).not.toContain("Next: archive completed workflow")
   })
 
   it("recognizes report statuses written as checklist or bold status lines", () => {

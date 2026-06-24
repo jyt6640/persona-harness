@@ -3,6 +3,11 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { readBackendProjectProfileState } from "../config/project-profile.js"
+import {
+  formatPendingWorkflowTicketStatusLines,
+  workflowPendingTicketStatus,
+  type WorkflowPendingTicket,
+} from "./workflow-ticket-summary.js"
 
 export type WorkflowStatusSummary = {
   readonly projectDir: string
@@ -23,6 +28,8 @@ export type WorkflowStatusSummary = {
   readonly stackAlignment: string
   readonly stackAlignmentBlocking: boolean
   readonly stackAlignmentFinding: "PASS" | "WARN"
+  readonly pendingTickets: readonly WorkflowPendingTicket[]
+  readonly pendingTicketsFinding: "PASS" | "WARN"
   readonly next: string
 }
 
@@ -402,6 +409,9 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.readCoverageBlocking) return "record README ranges read in `.persona/workflow/implementation-report.md`"
   if (summary.profileReadCoverageBlocking) return "record project profile read coverage in `.persona/workflow/implementation-report.md`"
   if (summary.stackAlignmentBlocking) return "fix generated project stack to match `.persona/project-profile.jsonc` before finishing"
+  if (summary.pendingTickets.length > 0) {
+    return `run \`npx ph workflow next\` or \`npx ph workflow continue\` for pending ticket ${summary.pendingTickets[0]?.ticket ?? "<unknown>"}`
+  }
   if (summary.commandDisciplineFinding === "WARN") {
     return "review non-blocking workflow notes, then archive completed workflow if acceptable"
   }
@@ -421,7 +431,9 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
   const profileCoverage = profileReadCoverage(projectDir, summary.implementation)
   const command = commandDiscipline(projectDir, summary.implementation, summary.review)
   const stack = stackAlignment(projectDir, summary.implementation)
-  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...command, ...stack })
+  const pendingTickets = workflowPendingTicketStatus(projectDir)
+  const pendingTicketsFinding = pendingTickets.length > 0 ? "WARN" : "PASS"
+  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...command, ...stack, pendingTickets, pendingTicketsFinding })
   const finding =
     summary.plan === "accepted"
     && summary.implementation === "filled"
@@ -430,9 +442,10 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
     && profileCoverage.profileReadCoverageFinding === "PASS"
     && command.commandDisciplineFinding === "PASS"
     && stack.stackAlignmentFinding === "PASS"
+    && pendingTicketsFinding === "PASS"
       ? "PASS"
       : "WARN"
-  return { ...summary, ...coverage, ...profileCoverage, ...command, ...stack, finding, next }
+  return { ...summary, ...coverage, ...profileCoverage, ...command, ...stack, pendingTickets, pendingTicketsFinding, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -451,6 +464,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- profile read coverage: ${summary.profileReadCoverage}`,
     `- command discipline: ${summary.commandDiscipline}`,
     `- stack alignment: ${summary.stackAlignment}`,
+    ...formatPendingWorkflowTicketStatusLines(summary.pendingTickets),
     "",
     `Next: ${summary.next}`,
     "",
