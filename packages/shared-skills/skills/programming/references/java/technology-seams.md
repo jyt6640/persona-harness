@@ -16,7 +16,7 @@ The examples elsewhere in `references/java/` are written against the recommended
 |---|---|---|---|
 | **Language** | **Java 25 LTS** for new projects | Java 21, Java 17 | pin it with a toolchain; do not rely on the machine's ambient JDK |
 | **Framework** | **Spring Boot 4.x / Spring Framework 7.x** | Spring Boot 3.x for maintenance, Quarkus, Micronaut, none | the framework is wiring; it never appears in the Domain |
-| **Build** | **Gradle wrapper 9.x**, JDK pinned via a toolchain | Gradle 8.14+ for Boot 4 compatibility, Maven only if the project harness chooses it | pin the JDK and build tool so CI and local builds agree |
+| **Build** | **Gradle wrapper 9.x**, JDK pinned via a toolchain | Gradle 8.14+ for Boot 4 compatibility, Maven only if the project harness chooses it | pin the JDK and build tool so CI and local builds agree; never replace Gradle with a fake Node/JS/Python/shell shim |
 | **Web** | **Spring Web MVC** | WebFlux, none (library/CLI) | Presentation maps `Request → Command`, returns `Response`; never holds business logic; errors flow to one central handler |
 | **DB** | **MySQL or PostgreSQL** | H2 (local/test), others | the Domain never names the DB; only the infrastructure adapter does |
 | **Persistence / ORM** | **Spring Data JPA + Hibernate** | JdbcTemplate, MyBatis, Redis, in-memory | Repository *interface* in `domain`; *impl* in `infrastructure`. **The Domain entity is a pure POJO — NOT a `@Entity`.** A separate `@Entity` lives in `infrastructure`; the adapter maps entity ↔ domain (see below) |
@@ -41,6 +41,7 @@ The rows above are not independent toggles. Pick a compatible **Spring Boot plug
 For Spring Boot applications:
 
 - do not disable `bootJar` merely to make `gradle build` pass;
+- do not create `tools/gradle-shim.js` or any Node/JS/Python/shell shim to mimic `gradle test`, `gradle build`, or `bootRun`; if real Gradle cannot execute, report the environment problem and stop claiming successful Gradle verification;
 - do not add `tasks.named("bootJar") { enabled = false }` unless the project is explicitly a plain Java library rather than an executable Spring Boot app;
 - if `bootJar` fails with `CopyProcessingSpec.getDirMode()` or a similar plugin API mismatch, fix the Spring Boot plugin / Gradle launcher line instead of disabling the task;
 - keep `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke viable;

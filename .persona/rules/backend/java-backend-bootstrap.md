@@ -14,7 +14,7 @@ enforcement: inject_only
 
 # Java Backend Bootstrap
 
-- 0-start 요구사항을 먼저 backend product code shape 계획으로 변환하고 Gradle 기반 Spring Boot backend project로 구현한다. Maven 파일은 생성하지 않는다.
+- 0-start 요구사항을 먼저 backend product code shape 계획으로 변환하고 Gradle 기반 Spring Boot backend project로 구현한다. Maven 파일은 생성하지 않는다. Hard rule: Gradle 없는 환경에서 Node/JS/Python/shell shim 또는 `tools/gradle-shim.js` 같은 fake Gradle script로 `gradle test`, `gradle build`, `bootRun`을 흉내 내지 않는다. 실제 Gradle 실행이 불가능하면 성공처럼 말하지 말고 환경 문제로 보고한다. Default guidance: Gradle project라면 `gradlew`, `gradlew.bat`, `gradle/wrapper/`를 만들거나 실제 Gradle launcher 사용 가능성을 확인한다. Project-choice: Spring/Gradle/JPA/database profile이면 HttpServer/InMemory/Node shim으로 우회하지 말고 실제 Spring Boot/Gradle/JPA 구조를 만들며, DB/JPA/Flyway 선택은 profile 또는 project-choice를 따른다.
 - 구현 전에 package structure plan을 작성한다. root package 바로 아래에 `global`과 `root/<domain>`을 같은 depth로 두고, `feature/features/module/modules` 같은 wrapper package를 추가하지 않는다.
 - 도메인 package 내부는 presentation/application/domain/infrastructure 흐름을 기본으로 두고 `root/<domain>/presentation`, `root/<domain>/application`, `root/<domain>/domain`, `root/<domain>/infrastructure`로 배치한다.
 - `root/<domain>/controller`, `root/<domain>/service`, `root/<domain>/repository`, `root/<domain>/dto` 또는 `book/controller`, `book/service`, `book/repository`, `book/dto/request` 같은 역할명 package로 대체하지 않는다. Controller는 `presentation`, Service는 `application`, Repository interface는 `domain`, Repository 구현체는 `infrastructure`, HTTP DTO는 `presentation/dto`, Command/Result는 `application/dto`에 둔다.

@@ -86,6 +86,9 @@ describe("Phase 0 bootstrap injection", () => {
     expect(injection.block).toContain("Service는 Map/List/AtomicLong/nextId/idCounter")
     expect(injection.block).toContain("static factory")
     expect(injection.block).toContain("private constructor")
+    expect(injection.block).toContain("Spring/Gradle/JPA/database profile")
+    expect(injection.block).toContain("실제 Spring Boot/Gradle/JPA")
+    expect(injection.block).toContain("Node/JS/Python/shell shim")
   })
 
   it("selects Java backend bootstrap guidance for requirements targets", () => {
@@ -110,6 +113,9 @@ describe("Phase 0 bootstrap injection", () => {
       expect(injection.block).toContain("CopyProcessingSpec.getDirMode")
       expect(injection.block).toContain(":bootJar SKIPPED")
       expect(injection.block).toContain("junit-platform-launcher")
+      expect(injection.block).toContain("Hard rule")
+      expect(injection.block).toContain("Node/JS/Python/shell shim")
+      expect(injection.block).toContain("환경 문제")
     }
   })
 

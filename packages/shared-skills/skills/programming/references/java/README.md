@@ -25,7 +25,7 @@ Rule strength:
 
 | Strength | Meaning | Examples |
 |---|---|---|
-| **Hard universal** | Applies unless the explicit task requires otherwise. | pin runtime/build; no framework imports in domain; no field injection; no mutable static storage; no raw `RuntimeException`; Service does not own storage state/id sequence |
+| **Hard universal** | Applies unless the explicit task requires otherwise. | pin runtime/build; never fake Gradle with Node/JS/Python/shell shims; no framework imports in domain; no field injection; no mutable static storage; no raw `RuntimeException`; Service does not own storage state/id sequence |
 | **Default recommendation** | Use when the harness has not decided. Override by recording the project choice. | Java 25 LTS, Spring Boot 4.x, Gradle 9.x, Spring MVC, JUnit/AssertJ, Flyway |
 | **Project choice** | Ask/decide per project profile. The skill only preserves boundaries. | JPA vs JDBC/MyBatis, Flyway vs Liquibase, Testcontainers intensity, package depth, test naming convention |
 
@@ -36,7 +36,7 @@ Rule strength:
 | Category | Strength | Use when undecided | Hard invariant |
 |---|---|---|---|
 | JDK | Default recommendation | Java 25 LTS for new projects; Java 21/17 for compatibility | pin the toolchain; never rely on ambient JDK |
-| Build | Default recommendation | Gradle wrapper + Java toolchain; Gradle 9.x preferred | CI and local builds use the same pinned toolchain |
+| Build | Default recommendation | Gradle wrapper + Java toolchain; Gradle 9.x preferred | CI and local builds use the same pinned toolchain; Gradle tasks are run by real Gradle, never by a fake shim |
 | Formatter | Default recommendation | Spotless + google-java-format | formatting is machine-owned when configured |
 | Static bug checks | Default recommendation | Error Prone | configured checks are not skipped silently |
 | Nullness | Default recommendation | NullAway or JSpecify-based nullness | nullness contracts are explicit at boundaries |
@@ -48,6 +48,7 @@ Rule strength:
 Build compatibility note:
 
 - Choose a mutually compatible Spring Boot plugin, Gradle wrapper or launcher, and Java toolchain line before writing code.
+- Do not create Node/JS/Python/shell shims such as `tools/gradle-shim.js` to pretend that `gradle test`, `gradle build`, or `bootRun` succeeded. If real Gradle cannot run, report an environment/toolchain problem instead of claiming verification.
 - For a Spring Boot executable application, do not disable `bootJar` to make `gradle build` pass. `tasks.named("bootJar") { enabled = false }` is only acceptable after the project is explicitly declared a plain Java library.
 - If `bootJar` fails with a Gradle/Spring Boot plugin compatibility error such as `CopyProcessingSpec.getDirMode()`, treat it as a build-line mismatch: upgrade the Spring Boot plugin to a line compatible with the current Gradle launcher or generate a Gradle wrapper pinned to the plugin-supported Gradle line.
 - Do not mix a very new Gradle launcher with an older Spring Boot plugin. With a Gradle 9.x launcher, avoid defaulting to older Spring Boot 3.3.x plugin lines unless a wrapper pins a supported Gradle line.
