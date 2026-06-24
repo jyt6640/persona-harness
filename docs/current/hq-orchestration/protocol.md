@@ -151,6 +151,7 @@ HQ는 담당 세션 결과를 받거나 읽은 뒤 다음을 확인한다.
 | --- | --- | --- |
 | Runtime/Injection | `019ef8d2-c35c-75b1-bbae-fe66c8343ec3` | runtime injection, profile summary attribution, evidence/intent hook behavior |
 | CLI Workflow | `019ef8d2-cc51-7c02-bbc3-209a216ca20c` | workflow tickets, `ph workflow`, `ph plan`, check/finish/continue behavior |
+| Docs Release | `019ef8e2-8faa-7983-957e-9453c86f1384` | README, CHANGELOG, release notes, external guides, develop records |
 
 ## Stop Rules
 
