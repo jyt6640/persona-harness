@@ -20,6 +20,7 @@ import {
   hasRequirementsDraft,
   hasPersonaWorkflowOptIn,
 } from "./requirements-workflow-skill.js"
+import { RailComplianceTracker } from "./rail-compliance.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import { detectTopLevelIntent, type TopLevelIntent } from "./top-level-intent-router.js"
@@ -71,9 +72,11 @@ function injectIntentWorkflowRail(
   intent: TopLevelIntent,
   block: string,
   railMarker: string,
+  compliance: RailComplianceTracker,
 ): boolean {
   const injected = injectTextIntoLatestUserMessage(output, block, railMarker)
   if (injected) {
+    compliance.startRail(sessionID, userPrompt, intent, railMarker)
     writeIntentEvidence(projectDir, {
       hook: "experimental.chat.messages.transform",
       sessionID,
@@ -91,6 +94,7 @@ function maybeInjectIntentWorkflow(
   projectDir: string,
   sessionID: string,
   config: ReturnType<typeof loadHarnessConfig>,
+  compliance: RailComplianceTracker,
 ): boolean {
   if (!config.enabled || !config.enabledDomains.includes("workflow") || !hasPersonaWorkflowOptIn(projectDir)) {
     return false
@@ -110,6 +114,7 @@ function maybeInjectIntentWorkflow(
       intent,
       formatDebugWorkflowBlock(intent),
       "[Persona Harness Debug Workflow]",
+      compliance,
     )
   }
 
@@ -122,6 +127,7 @@ function maybeInjectIntentWorkflow(
       intent,
       formatReviewWorkflowBlock(intent),
       "[Persona Harness Review Workflow]",
+      compliance,
     )
   }
 
@@ -134,6 +140,7 @@ function maybeInjectIntentWorkflow(
       intent,
       formatRefactorWorkflowBlock(intent),
       "[Persona Harness Refactor Workflow]",
+      compliance,
     )
   }
 
@@ -146,6 +153,7 @@ function maybeInjectIntentWorkflow(
       intent,
       formatGitWorkflowBlock(intent),
       "[Persona Harness Git Workflow]",
+      compliance,
     )
   }
 
@@ -158,6 +166,7 @@ function maybeInjectIntentWorkflow(
       intent,
       formatProgrammingWorkflowBlock(intent),
       "[Persona Harness Programming Workflow]",
+      compliance,
     )
   }
 
@@ -176,11 +185,13 @@ function maybeInjectIntentWorkflow(
     intent,
     formatRequirementsWorkflowBlock(intent.requirementsIntent),
     "[Persona Harness Requirements Workflow]",
+    compliance,
   )
 }
 
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const store = options.store ?? new PendingInjectionStore()
+  const compliance = new RailComplianceTracker()
   const projectDir = options.projectDir ?? process.cwd()
   const config = loadHarnessConfig(projectDir)
 
@@ -269,6 +280,12 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     },
 
     "tool.execute.after": async (input: ToolAfterInput, output: ToolAfterOutput): Promise<void> => {
+      compliance.observeTool(projectDir, {
+        tool: input.tool,
+        sessionID: input.sessionID,
+        callID: input.callID,
+        args: input.args as Record<string, unknown>,
+      })
       captureJavaRoleDiscovery(input, output)
 
       const injection = captureTargetFile(
@@ -302,7 +319,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         return
       }
 
-      maybeInjectIntentWorkflow(output, projectDir, sessionId, config)
+      maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance)
 
       const injection = store.take(sessionId)
       if (!injection) {

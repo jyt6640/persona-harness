@@ -5,6 +5,14 @@ import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-conf
 import type { TopLevelIntent } from "./top-level-intent-router.js"
 import type { PendingInjection } from "./types.js"
 
+export type RailComplianceFindingCode =
+  | "review-rail-file-modification"
+  | "requirements-rail-direct-implementation"
+  | "debug-rail-edit-without-reproduction"
+  | "git-rail-mutation-without-status-diff"
+  | "raw-final-verification-without-bearshell"
+  | "workflow-report-missing"
+
 export type EvidenceEvent = {
   hook: "tool.execute.before" | "tool.execute.after" | "experimental.chat.messages.transform"
   sessionID: string
@@ -20,6 +28,22 @@ export type IntentEvidenceEvent = {
   userPrompt: string
   intent: TopLevelIntent
   railMarker: string
+}
+
+export type RailComplianceEvidenceEvent = {
+  hook: "tool.execute.after"
+  sessionID: string
+  callID?: string
+  userPrompt: string
+  primaryIntent: TopLevelIntent["primary"]
+  secondaryIntents: TopLevelIntent["secondary"]
+  railMarker: string
+  finding: "WARN"
+  confidence: "HIGH" | "MEDIUM" | "LOW"
+  code: RailComplianceFindingCode
+  message: string
+  observedAction: string
+  expectedAction: string
 }
 
 function safeSlug(value: string): string {
@@ -76,6 +100,36 @@ export function writeIntentEvidence(projectDir: string, event: IntentEvidenceEve
     reason: event.intent.reason,
     requirementsIntent: event.intent.requirementsIntent,
     railMarker: event.railMarker,
+  }
+
+  mkdirSync(evidenceDir, { recursive: true })
+  writeFileSync(join(evidenceDir, `${runId}.json`), `${JSON.stringify(payload, null, 2)}\n`)
+}
+
+export function writeRailComplianceEvidence(projectDir: string, event: RailComplianceEvidenceEvent): void {
+  const now = new Date()
+  const config = loadHarnessConfig(projectDir)
+  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  const runId = `${now.toISOString().replace(/[:.]/g, "-")}-rail-compliance-${safeSlug(event.code)}`
+  const payload = {
+    schemaVersion: "phase0.rail-compliance.1",
+    runId,
+    timestamp: now.toISOString(),
+    hook: event.hook,
+    sessionID: event.sessionID,
+    callID: event.callID,
+    injectedInto: "rail-compliance",
+    userPrompt: event.userPrompt,
+    primaryIntent: event.primaryIntent,
+    secondaryIntents: event.secondaryIntents,
+    railMarker: event.railMarker,
+    finding: event.finding,
+    confidence: event.confidence,
+    code: event.code,
+    message: event.message,
+    observedAction: event.observedAction,
+    expectedAction: event.expectedAction,
+    reportOnly: true,
   }
 
   mkdirSync(evidenceDir, { recursive: true })

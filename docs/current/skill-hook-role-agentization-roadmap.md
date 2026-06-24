@@ -48,11 +48,13 @@ Implemented:
 - programming rail block;
 - PH-owned workflow skill reference files for requirements/debug/review/refactor/git/programming;
 - runtime loading of workflow rail text from `packages/shared-skills/skills/workflow/**/SKILL.md`;
-- `phase0.intent.1` evidence for injected workflow rails.
+- `phase0.intent.1` evidence for injected workflow rails;
+- `phase0.rail-compliance.1` report-only evidence for selected-rail versus observed-tool behavior mismatches.
 
 Diagnostics-only:
 
 - intent evidence records what was selected and injected;
+- rail compliance evidence records likely mismatches between the selected rail and observed tools;
 - it does not enforce that the AI followed the rail;
 - it does not certify generated app quality.
 
@@ -80,6 +82,8 @@ Runtime should then:
 
 ### P1: Hook-Based Rail Compliance Evidence
 
+Status: implemented as report-only evidence for the first six mismatch categories.
+
 Add report-only hook checks:
 
 - selected rail versus actual tool behavior;
@@ -90,6 +94,8 @@ Add report-only hook checks:
 - rail mismatch such as review request followed by edits.
 
 These findings should be local evidence/warnings, not build/test gates.
+
+Current evidence schema: `phase0.rail-compliance.1`.
 
 ### P2: Stop / Continuation Hook
 
