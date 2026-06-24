@@ -10,6 +10,16 @@ No unreleased changes yet.
 
 ## [0.3.7-alpha.1] - 2026-06-24
 
+### Added
+
+- Added workflow profile read coverage reporting for backend profile runs.
+- Added implementation-report and review-report prompts for `.persona/project-profile.jsonc` read method/range evidence.
+
+### Changed
+
+- `ph workflow finish implement` now blocks when a ready backend profile exists but project-profile read coverage is missing.
+- AI-facing implementation guidance now tells agents to read `.persona/project-profile.jsonc` before implementation and record that coverage.
+
 ### Fixed
 
 - Made `ph doctor` surface OpenCode runtime readiness explicitly, including a clear WARN when the OpenCode CLI is missing.
