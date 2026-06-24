@@ -253,5 +253,6 @@ describe("ph workflow continue", () => {
     expect(result.stdout).toContain("Path: .persona/workflow/work/step-2/00-task-card.md")
     expect(result.stdout).toContain("Next command: npx ph workflow next")
     expect(result.stdout).toContain("If complete: npx ph workflow archive step-2")
+    expect(result.stdout).toContain("Do not claim overall completion while this ticket remains pending.")
   })
 })

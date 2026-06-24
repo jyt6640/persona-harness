@@ -334,6 +334,7 @@ describe("ph workflow ticket backlog", () => {
     expect(result.stderr).toContain("Path: .persona/workflow/work/step-2/00-task-card.md")
     expect(result.stderr).toContain("Run `npx ph workflow next`")
     expect(result.stderr).toContain("If this ticket is complete: `npx ph workflow archive step-2`")
+    expect(result.stderr).toContain("Do not claim overall completion while pending tickets remain.")
   })
 
   it("suggests reviewing and archiving a satisfied technical constraints ticket instead of auto-completing it", () => {

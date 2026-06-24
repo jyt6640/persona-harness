@@ -10,6 +10,9 @@ export type WorkflowPendingTicket = {
   readonly reviewArchiveCandidate: boolean
 }
 
+export const PENDING_TICKETS_COMPLETION_GUIDANCE = "Do not claim overall completion while pending tickets remain."
+const PENDING_TICKET_COMPLETION_GUIDANCE = "Do not claim overall completion while this ticket remains pending."
+
 export function pendingWorkflowTickets(projectDir: string): readonly BacklogTicket[] {
   const backlogAbsolutePath = join(projectDir, BACKLOG_PATH)
   return existsSync(backlogAbsolutePath) ? pendingTickets(readFileSync(backlogAbsolutePath, "utf8")) : []
@@ -34,6 +37,7 @@ export function formatPendingWorkflowTicketStatusLines(tickets: readonly Workflo
   }
   return [
     "- pending tickets: present",
+    PENDING_TICKETS_COMPLETION_GUIDANCE,
     ...tickets.flatMap((ticket) => [
       `  Ticket: ${ticket.ticket}`,
       `  Title: ${ticket.title}`,
@@ -55,6 +59,7 @@ export function pendingWorkflowTicketResumeLines(ticket: BacklogTicket | undefin
     `Path: ${ticket.path}`,
     "Next command: npx ph workflow next",
     `If complete: npx ph workflow archive ${ticket.ticket}`,
+    PENDING_TICKET_COMPLETION_GUIDANCE,
     "",
   ]
 }

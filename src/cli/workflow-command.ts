@@ -18,7 +18,7 @@ import {
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
-import { pendingWorkflowTickets } from "./workflow-ticket-summary.js"
+import { PENDING_TICKETS_COMPLETION_GUIDANCE, pendingWorkflowTickets } from "./workflow-ticket-summary.js"
 import {
   runWorkflowArchive,
   runWorkflowApproveRequirements,
@@ -106,6 +106,7 @@ function pendingTicketReason(summary: WorkflowStatus): string | undefined {
   return [
     `Pending workflow tickets remain: ${pendingTickets.map((ticket) => ticket.ticket).join(", ")}.`,
     "Run `npx ph workflow next` to resume the next ticket.",
+    PENDING_TICKETS_COMPLETION_GUIDANCE,
     ...ticketLines,
   ].join("\n")
 }

@@ -155,6 +155,7 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain("Title: Technical Constraints")
     expect(result.stdout).toContain("Path: .persona/workflow/work/step-2/00-task-card.md")
     expect(result.stdout).toContain("Next: run `npx ph workflow next` or `npx ph workflow continue`")
+    expect(result.stdout).toContain("Do not claim overall completion while pending tickets remain.")
     expect(result.stdout).toContain("review/archive candidate")
     expect(result.stdout).not.toContain("Next: archive completed workflow")
   })
