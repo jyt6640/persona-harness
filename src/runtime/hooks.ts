@@ -1,35 +1,28 @@
 import type { Hooks } from "@opencode-ai/plugin"
 
-import { writeIntentEvidence, writePhase0Evidence } from "./evidence.js"
-import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
-import { formatGitWorkflowBlock } from "./git-workflow-skill.js"
-import { formatProgrammingWorkflowBlock } from "./programming-workflow-skill.js"
-import { formatRefactorWorkflowBlock } from "./refactor-workflow-skill.js"
-import { formatReviewWorkflowBlock } from "./review-workflow-skill.js"
+import { writePhase0Evidence } from "./evidence.js"
+import { ContinuationTracker } from "./continuation.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
+import { maybeInjectIntentWorkflow } from "./intent-workflow.js"
 import {
   createJavaRoleReadFollowUp,
   discoverJavaRoleInjections,
   formatJavaRoleDiscoveryBlock,
 } from "./java-role-discovery.js"
-import { injectIntoLatestUserMessage, injectTextIntoLatestUserMessage } from "./messages.js"
-import {
-  formatRequirementsWorkflowBlock,
-  hasRequirementsDraft,
-  hasPersonaWorkflowOptIn,
-} from "./requirements-workflow-skill.js"
+import { injectIntoLatestUserMessage } from "./messages.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
-import { detectTopLevelIntent, type TopLevelIntent } from "./top-level-intent-router.js"
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import type {
   ToolAfterInput,
   ToolAfterOutput,
   ToolBeforeInput,
   ToolBeforeOutput,
+  TextCompleteInput,
+  TextCompleteOutput,
   TransformMessagesOutput,
 } from "./types.js"
 
@@ -58,140 +51,10 @@ function hasEnabledSharedSkillDomain(enabledDomains: readonly string[], targetFi
   return selectSharedSkillsForTarget(targetFile).some((skill) => enabledDomains.includes(skill.domain))
 }
 
-function latestUserText(output: TransformMessagesOutput): string | undefined {
-  const latestUserMessage = [...output.messages].reverse().find((message) => message.info.role === "user")
-  const textPart = latestUserMessage?.parts.find((part) => part.type === "text" && typeof part.text === "string")
-  return textPart?.type === "text" ? textPart.text : undefined
-}
-
-function injectIntentWorkflowRail(
-  output: TransformMessagesOutput,
-  projectDir: string,
-  sessionID: string,
-  userPrompt: string,
-  intent: TopLevelIntent,
-  block: string,
-  railMarker: string,
-  compliance: RailComplianceTracker,
-): boolean {
-  const injected = injectTextIntoLatestUserMessage(output, block, railMarker)
-  if (injected) {
-    compliance.startRail(sessionID, userPrompt, intent, railMarker)
-    writeIntentEvidence(projectDir, {
-      hook: "experimental.chat.messages.transform",
-      sessionID,
-      injectedInto: "intent-workflow",
-      userPrompt,
-      intent,
-      railMarker,
-    })
-  }
-  return injected
-}
-
-function maybeInjectIntentWorkflow(
-  output: TransformMessagesOutput,
-  projectDir: string,
-  sessionID: string,
-  config: ReturnType<typeof loadHarnessConfig>,
-  compliance: RailComplianceTracker,
-): boolean {
-  if (!config.enabled || !config.enabledDomains.includes("workflow") || !hasPersonaWorkflowOptIn(projectDir)) {
-    return false
-  }
-  const text = latestUserText(output)
-  if (text === undefined) {
-    return false
-  }
-  const intent = detectTopLevelIntent(text)
-
-  if (intent?.primary === "debug") {
-    return injectIntentWorkflowRail(
-      output,
-      projectDir,
-      sessionID,
-      text,
-      intent,
-      formatDebugWorkflowBlock(intent),
-      "[Persona Harness Debug Workflow]",
-      compliance,
-    )
-  }
-
-  if (intent?.primary === "review") {
-    return injectIntentWorkflowRail(
-      output,
-      projectDir,
-      sessionID,
-      text,
-      intent,
-      formatReviewWorkflowBlock(intent),
-      "[Persona Harness Review Workflow]",
-      compliance,
-    )
-  }
-
-  if (intent?.primary === "refactor") {
-    return injectIntentWorkflowRail(
-      output,
-      projectDir,
-      sessionID,
-      text,
-      intent,
-      formatRefactorWorkflowBlock(intent),
-      "[Persona Harness Refactor Workflow]",
-      compliance,
-    )
-  }
-
-  if (intent?.primary === "git") {
-    return injectIntentWorkflowRail(
-      output,
-      projectDir,
-      sessionID,
-      text,
-      intent,
-      formatGitWorkflowBlock(intent),
-      "[Persona Harness Git Workflow]",
-      compliance,
-    )
-  }
-
-  if (intent?.primary === "programming") {
-    return injectIntentWorkflowRail(
-      output,
-      projectDir,
-      sessionID,
-      text,
-      intent,
-      formatProgrammingWorkflowBlock(intent),
-      "[Persona Harness Programming Workflow]",
-      compliance,
-    )
-  }
-
-  if (intent === undefined || intent.primary !== "requirements" || intent.requirementsIntent === undefined) {
-    return false
-  }
-
-  if (intent.requirementsIntent.kind === "requirement-approval" && !hasRequirementsDraft(projectDir)) {
-    return false
-  }
-  return injectIntentWorkflowRail(
-    output,
-    projectDir,
-    sessionID,
-    text,
-    intent,
-    formatRequirementsWorkflowBlock(intent.requirementsIntent),
-    "[Persona Harness Requirements Workflow]",
-    compliance,
-  )
-}
-
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const store = options.store ?? new PendingInjectionStore()
   const compliance = new RailComplianceTracker()
+  const continuation = new ContinuationTracker()
   const projectDir = options.projectDir ?? process.cwd()
   const config = loadHarnessConfig(projectDir)
 
@@ -334,6 +197,18 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           injection,
         })
       }
+    },
+
+    "experimental.text.complete": async (
+      input: TextCompleteInput,
+      output: TextCompleteOutput,
+    ): Promise<void> => {
+      const block = continuation.completeText(projectDir, input.sessionID, output.text)
+      if (block === undefined || output.text.includes("[Persona Harness Continuation]")) {
+        return
+      }
+
+      output.text = `${output.text}\n\n---\n\n${block}`
     },
   }
 }

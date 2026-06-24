@@ -66,3 +66,5 @@ export type ToolBeforeOutput = Parameters<HookHandler<Hooks["tool.execute.before
 export type ToolAfterInput = Parameters<HookHandler<Hooks["tool.execute.after"]>>[0]
 export type ToolAfterOutput = Parameters<HookHandler<Hooks["tool.execute.after"]>>[1]
 export type TransformMessagesOutput = Parameters<HookHandler<Hooks["experimental.chat.messages.transform"]>>[1]
+export type TextCompleteInput = Parameters<HookHandler<Hooks["experimental.text.complete"]>>[0]
+export type TextCompleteOutput = Parameters<HookHandler<Hooks["experimental.text.complete"]>>[1]

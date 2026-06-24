@@ -1,6 +1,6 @@
 # Persona Harness Progress Board
 
-Last updated: 2026-06-23
+Last updated: 2026-06-24
 
 ## Purpose
 
@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: v0.3.x AI-facing workflow routing on top of the Java backend MVP.
 
-Current active candidate: `persona-harness@0.3.6-alpha.1`. The candidate keeps the Java/Spring backend MVP scope, includes the requirements drafting workflow from `0.3.6-alpha.0`, adds PH-style intent preamble text to the AI-facing workflow rail, and routes requirements/debug/review/refactor/git/programming through PH-owned workflow skill reference files. This is not a stable support claim.
+Current active candidate: `persona-harness@0.3.6-alpha.1`. The candidate keeps the Java/Spring backend MVP scope, includes the requirements drafting workflow from `0.3.6-alpha.0`, adds PH-style intent preamble text to the AI-facing workflow rail, routes requirements/debug/review/refactor/git/programming through PH-owned workflow skill reference files, records report-only rail compliance evidence, and adds report-only continuation guidance when workflow artifacts still show pending scope. This is not a stable support claim.
 
 ## Current Decisions
 

@@ -50,6 +50,7 @@ Implemented:
 - runtime loading of workflow rail text from `packages/shared-skills/skills/workflow/**/SKILL.md`;
 - `phase0.intent.1` evidence for injected workflow rails;
 - `phase0.rail-compliance.1` report-only evidence for selected-rail versus observed-tool behavior mismatches.
+- `phase0.continuation.1` report-only evidence for unfinished workflow report/backlog state at text completion.
 
 Diagnostics-only:
 
@@ -99,12 +100,16 @@ Current evidence schema: `phase0.rail-compliance.1`.
 
 ### P2: Stop / Continuation Hook
 
+Status: implemented as report-only `experimental.text.complete` guidance for workflow projects.
+
 When a run stops with unfinished ticket/backlog/report state:
 
 - summarize the next pending ticket;
 - show remaining README/requirements range;
 - point to the next `ph workflow continue` action;
 - avoid pretending the full requirement set is complete.
+
+This does not continue work automatically and does not enforce completion. It only appends local guidance and writes continuation evidence.
 
 ### P3: Role Agentization
 

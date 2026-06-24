@@ -16,6 +16,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added Persona Programming Workflow block injection for direct code creation/edit primary intent.
 - Added `phase0.intent.1` evidence records for injected workflow rails.
 - Added report-only `phase0.rail-compliance.1` evidence for selected-rail versus observed-tool behavior mismatches.
+- Added report-only `phase0.continuation.1` evidence and text-completion continuation guidance for unfinished workflow backlog/report state.
 - Added unit coverage for top-level intent priority and mixed-intent sequencing.
 - Added next rail prompt drafts for review/refactor/git workflow blocks.
 
@@ -30,6 +31,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Direct programming requests now receive a scoped programming workflow block unless a stronger requirements/debug/review/refactor/git rail applies.
 - Workflow rail injection now records the original user prompt, primary intent, secondary intents, reason, and injected rail marker in local evidence.
 - Rail compliance checks remain diagnostics-only; they do not block builds, tests, OpenCode runs, or generated app output.
+- Continuation checks remain diagnostics-only; they append next-ticket guidance when workflow artifacts record remaining scope, but do not continue or certify implementation.
 
 ## [0.3.6-alpha.1] - 2026-06-23
 

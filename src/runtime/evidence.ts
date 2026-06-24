@@ -46,6 +46,19 @@ export type RailComplianceEvidenceEvent = {
   expectedAction: string
 }
 
+export type ContinuationEvidenceEvent = {
+  hook: "experimental.text.complete"
+  sessionID: string
+  finding: "INFO" | "WARN"
+  reason: string
+  nextAction: string
+  pendingTicket?: string
+  pendingTicketPath?: string
+  remainingReadRange?: string
+  remainingScope?: string
+  nextPromptHint?: string
+}
+
 function safeSlug(value: string): string {
   return value
     .replace(/\\/g, "/")
@@ -129,6 +142,33 @@ export function writeRailComplianceEvidence(projectDir: string, event: RailCompl
     message: event.message,
     observedAction: event.observedAction,
     expectedAction: event.expectedAction,
+    reportOnly: true,
+  }
+
+  mkdirSync(evidenceDir, { recursive: true })
+  writeFileSync(join(evidenceDir, `${runId}.json`), `${JSON.stringify(payload, null, 2)}\n`)
+}
+
+export function writeContinuationEvidence(projectDir: string, event: ContinuationEvidenceEvent): void {
+  const now = new Date()
+  const config = loadHarnessConfig(projectDir)
+  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  const runId = `${now.toISOString().replace(/[:.]/g, "-")}-continuation-${safeSlug(event.sessionID)}`
+  const payload = {
+    schemaVersion: "phase0.continuation.1",
+    runId,
+    timestamp: now.toISOString(),
+    hook: event.hook,
+    sessionID: event.sessionID,
+    injectedInto: "continuation",
+    finding: event.finding,
+    reason: event.reason,
+    nextAction: event.nextAction,
+    pendingTicket: event.pendingTicket,
+    pendingTicketPath: event.pendingTicketPath,
+    remainingReadRange: event.remainingReadRange,
+    remainingScope: event.remainingScope,
+    nextPromptHint: event.nextPromptHint,
     reportOnly: true,
   }
 
