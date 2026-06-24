@@ -5,6 +5,7 @@ import process from "node:process"
 import { loadBackendPolicyOverlay } from "../config/policy-overlay.js"
 import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from "../config/project-profile.js"
 import { createImplementationReportTemplate, createReviewReportTemplate } from "./workflow-templates.js"
+import { createWorkflowRoleBoundaryTemplate, ROLE_BOUNDARY_PATH } from "./workflow-roles.js"
 
 export type PlanOptions = { readonly projectDir?: string }
 
@@ -206,7 +207,9 @@ function createPlanDraft(projectDir: string): string {
 }
 
 function existingWorkflowPaths(projectDir: string): readonly string[] {
-  return [PLAN_PATH, IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH].filter((path) => existsSync(join(projectDir, path)))
+  return [PLAN_PATH, IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH, ROLE_BOUNDARY_PATH].filter((path) =>
+    existsSync(join(projectDir, path)),
+  )
 }
 
 export function initializeWorkflowPlan(options: PlanOptions = {}, force = false): string {
@@ -227,6 +230,7 @@ export function initializeWorkflowPlan(options: PlanOptions = {}, force = false)
   const planPath = join(projectDir, PLAN_PATH)
   const implementationReportPath = join(projectDir, IMPLEMENTATION_REPORT_PATH)
   const reviewReportPath = join(projectDir, REVIEW_REPORT_PATH)
+  const roleBoundaryPath = join(projectDir, ROLE_BOUNDARY_PATH)
 
   const existingPaths = existingWorkflowPaths(projectDir)
   if (existingPaths.length > 0 && !force) {
@@ -238,5 +242,6 @@ export function initializeWorkflowPlan(options: PlanOptions = {}, force = false)
   const inputLines = readmeLines(projectDir)
   writeFileSync(implementationReportPath, createImplementationReportTemplate(inputLines))
   writeFileSync(reviewReportPath, createReviewReportTemplate(inputLines))
+  writeFileSync(roleBoundaryPath, createWorkflowRoleBoundaryTemplate())
   return planPath
 }

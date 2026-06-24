@@ -4,7 +4,7 @@
 
 Define the Persona Harness workflow role model inspired by OMO, but scoped to the current Java/Spring backend MVP direction.
 
-This document names the roles and their intended inputs/outputs. It does not implement multi-agent orchestration yet.
+This document names the roles and their intended inputs/outputs. Persona Harness now writes these boundaries to `.persona/workflow/roles.md`, but it does not implement multi-agent orchestration yet.
 
 ## Current Boundary
 
@@ -26,6 +26,14 @@ For AI/non-TTY shells, the equivalent fast path is `npx ph bootstrap backend`. I
 | `Charles` | executor / start-work coordinator | Convert the accepted plan into ordered work items and keep the run on scope. | Not yet |
 | `jaeki` | implementer / Hephaestus-Sisyphus worker | Implement code, run tests/build, fix failures. | OpenCode model does this today, not a named Persona agent |
 | `roach` | reviewer / Oracle-QA | Review goal fit, code shape, risks, and manual QA evidence. | Design target only |
+
+Runtime artifact:
+
+```bash
+npx ph workflow roles
+```
+
+This writes `.persona/workflow/roles.md`. `npx ph plan` also creates the same role-boundary artifact next to `plan.md`, `implementation-report.md`, and `review-report.md`.
 
 ## Flow
 
@@ -187,6 +195,7 @@ In scope:
 - backend-only profile summary injection;
 - plan-first prompt surface;
 - documentation of role boundaries;
+- local `.persona/workflow/roles.md` role-boundary artifact;
 - optional local workflow files under `.persona/workflow`;
 - evidence review format for clean Java/Spring backend generation.
 

@@ -14,12 +14,13 @@ export type ParsedWorkflowArgs =
   | { readonly kind: "split"; readonly sourceFile?: string }
   | { readonly kind: "next" }
   | { readonly kind: "archive"; readonly ticketId: string }
+  | { readonly kind: "roles" }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|continue|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|continue|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
@@ -27,6 +28,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow check is report-only",
     "- workflow implement prints a single AI-facing implementation rail",
     "- workflow continue prints the accepted-plan continuation prompt",
+    "- workflow roles writes and prints non-autonomous role boundaries",
     "- workflow start/finish are AI-facing workflow rails",
     "- workflow draft/approve/capture/split/next/archive manage requirement-derived task tickets",
     "- workflow guard uses strict exit codes for AI-facing workflow discipline",
@@ -46,6 +48,9 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   }
   if (args[0] === "continue") {
     return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
+  }
+  if (args[0] === "roles") {
+    return args.length === 1 ? { kind: "roles" } : { kind: "invalid", message: "workflow roles does not accept extra arguments." }
   }
   if (args[0] === "draft") {
     if (args.length !== 2 || args[1] !== "--stdin") {

@@ -16,6 +16,7 @@ import {
   uninitializedHarnessOutput,
 } from "./workflow-output.js"
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
+import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import {
   pendingWorkflowTicketIds,
@@ -154,6 +155,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
+  }
+  if (parsed.kind === "roles") {
+    return runWorkflowRolesCommand(options)
   }
   if (parsed.kind === "draft") {
     return runWorkflowDraft(options)

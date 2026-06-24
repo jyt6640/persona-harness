@@ -17,6 +17,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added `phase0.intent.1` evidence records for injected workflow rails.
 - Added report-only `phase0.rail-compliance.1` evidence for selected-rail versus observed-tool behavior mismatches.
 - Added report-only `phase0.continuation.1` evidence and text-completion continuation guidance for unfinished workflow backlog/report state.
+- Added `ph workflow roles` and `.persona/workflow/roles.md` as a non-autonomous role-boundary artifact for blackbear/Charles/jaeki/roach.
 - Added unit coverage for top-level intent priority and mixed-intent sequencing.
 - Added next rail prompt drafts for review/refactor/git workflow blocks.
 
@@ -32,6 +33,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Workflow rail injection now records the original user prompt, primary intent, secondary intents, reason, and injected rail marker in local evidence.
 - Rail compliance checks remain diagnostics-only; they do not block builds, tests, OpenCode runs, or generated app output.
 - Continuation checks remain diagnostics-only; they append next-ticket guidance when workflow artifacts record remaining scope, but do not continue or certify implementation.
+- Role boundaries are now a workflow artifact, not autonomous multi-agent execution.
 
 ## [0.3.6-alpha.1] - 2026-06-23
 
