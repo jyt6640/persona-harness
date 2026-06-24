@@ -6,7 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-No unreleased changes yet.
+### Added
+
+- Added `detectTopLevelIntent` runtime routing for requirements/debug/review/refactor/git/programming intent priority.
+- Added unit coverage for top-level intent priority and mixed-intent sequencing.
+
+### Changed
+
+- Requirements workflow injection now goes through the top-level router, so README-related bug reports do not get misrouted into requirements implementation workflow.
 
 ## [0.3.6-alpha.1] - 2026-06-23
 

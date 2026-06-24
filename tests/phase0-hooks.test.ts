@@ -184,6 +184,17 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("현재 task card만 구현")
   })
 
+  it("does not route README bug reports through the requirements implementation workflow", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-readme-debug-workflow"
+    const output = modelInputWithText(sessionID, "README 보고 구현했는데 테스트가 실패해. 고쳐줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(firstText(output)).not.toContain("[Persona Harness Requirements Workflow]")
+  })
+
   it("injects prompt capture guidance for pasted requirement implementation requests", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })

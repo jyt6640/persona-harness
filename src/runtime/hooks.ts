@@ -10,7 +10,6 @@ import {
   formatJavaRoleDiscoveryBlock,
 } from "./java-role-discovery.js"
 import { injectIntoLatestUserMessage, injectTextIntoLatestUserMessage } from "./messages.js"
-import { detectRequirementsIntent } from "./requirements-intent-router.js"
 import {
   formatRequirementsWorkflowBlock,
   hasRequirementsDraft,
@@ -18,6 +17,7 @@ import {
 } from "./requirements-workflow-skill.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
+import { detectTopLevelIntent } from "./top-level-intent-router.js"
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import type {
   ToolAfterInput,
@@ -66,16 +66,16 @@ function maybeInjectRequirementsWorkflow(output: TransformMessagesOutput, projec
   if (text === undefined) {
     return false
   }
-  const intent = detectRequirementsIntent(text)
-  if (intent === undefined) {
+  const intent = detectTopLevelIntent(text)
+  if (intent === undefined || intent.primary !== "requirements" || intent.requirementsIntent === undefined) {
     return false
   }
-  if (intent.kind === "requirement-approval" && !hasRequirementsDraft(projectDir)) {
+  if (intent.requirementsIntent.kind === "requirement-approval" && !hasRequirementsDraft(projectDir)) {
     return false
   }
   return injectTextIntoLatestUserMessage(
     output,
-    formatRequirementsWorkflowBlock(intent),
+    formatRequirementsWorkflowBlock(intent.requirementsIntent),
     "[Persona Harness Requirements Workflow]",
   )
 }

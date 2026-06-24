@@ -26,6 +26,24 @@ Current active shared-skill routing is intentionally narrow:
 | refactor | inactive reference | Useful model for future PH refactor rail. |
 | git-master | inactive reference | Useful model for future PH git/history rail. |
 
+## Implementation Status
+
+Status: MVP runtime router implemented.
+
+Implemented:
+
+- `src/runtime/top-level-intent-router.ts` classifies one primary intent and optional secondary intents.
+- Requirements workflow hook routing now calls the top-level router first.
+- Requirements workflow injection only runs when the primary intent is `requirements`.
+- README-related debug requests such as `README 보고 구현했는데 테스트가 실패해. 고쳐줘` stay out of the requirements implementation rail.
+- Unit tests cover requirements, debug, review, refactor, git, programming, and mixed work/git intent.
+
+Not implemented yet:
+
+- Dedicated debug/review/refactor/git workflow blocks.
+- Activation of inactive vendored OMO skills as PH runtime rails.
+- Evidence fields for primary/secondary intent selection.
+
 ## Design Principle
 
 The top-level router should choose one primary intent and optional secondary intents.
