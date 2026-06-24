@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { readBackendProjectProfileState } from "../config/project-profile.js"
+import { readStackAlignment, type StackAlignmentSummary } from "./stack-alignment.js"
 import {
   formatPendingWorkflowTicketStatusLines,
   workflowPendingTicketStatus,
@@ -76,20 +77,7 @@ function hasFileDeep(dirPath: string, predicate: (filePath: string) => boolean):
   return false
 }
 
-function hasAny(projectDir: string, relativePaths: readonly string[]): boolean {
-  return relativePaths.some((relativePath) => existsSync(join(projectDir, relativePath)))
-}
-
-type StackAlignmentSummary = Pick<WorkflowStatusSummary, "stackAlignment" | "stackAlignmentBlocking" | "stackAlignmentFinding">
-
 function stackAlignment(projectDir: string, implementationStatus: string): StackAlignmentSummary {
-  if (implementationStatus !== "filled") {
-    return {
-      stackAlignment: "not checked until implementation report is filled",
-      stackAlignmentBlocking: false,
-      stackAlignmentFinding: "PASS",
-    }
-  }
   const profileState = readBackendProjectProfileState(projectDir)
   if (profileState.status !== "ready") {
     return {
@@ -98,40 +86,7 @@ function stackAlignment(projectDir: string, implementationStatus: string): Stack
       stackAlignmentFinding: "PASS",
     }
   }
-
-  const hasGradle = hasAny(projectDir, ["build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "gradlew", "gradlew.bat"])
-  const hasJavaSource = hasFileDeep(join(projectDir, "src", "main", "java"), (filePath) => filePath.endsWith(".java"))
-  const hasMaven = hasAny(projectDir, ["pom.xml"])
-  const hasSourceFiles = hasFileDeep(join(projectDir, "src"), () => true)
-  if (hasGradle && hasJavaSource) {
-    return {
-      stackAlignment: "profile expects Java/Spring/Gradle and generated project has Gradle + src/main/java",
-      stackAlignmentBlocking: false,
-      stackAlignmentFinding: "PASS",
-    }
-  }
-
-  const hasNodeMarkers = hasAny(projectDir, ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"])
-    || hasFileDeep(join(projectDir, "src"), (filePath) => /\.(?:js|cjs|mjs|ts|tsx)$/.test(filePath))
-  if (!hasGradle && !hasJavaSource && !hasMaven && !hasNodeMarkers && !hasSourceFiles) {
-    return {
-      stackAlignment: "not checked; no generated project stack markers observed",
-      stackAlignmentBlocking: false,
-      stackAlignmentFinding: "PASS",
-    }
-  }
-  const mismatchDetails = [
-    ...(hasGradle ? [] : ["missing build.gradle/settings.gradle/gradlew"]),
-    ...(hasJavaSource ? [] : ["missing src/main/java Java source"]),
-    ...(hasMaven ? ["Maven pom.xml observed"] : []),
-    ...(hasNodeMarkers ? ["Node/CommonJS markers observed"] : []),
-  ]
-
-  return {
-    stackAlignment: `STACK_MISMATCH: profile expects Java/Spring/Gradle; ${mismatchDetails.join("; ")}`,
-    stackAlignmentBlocking: true,
-    stackAlignmentFinding: "WARN",
-  }
+  return readStackAlignment(projectDir, implementationStatus)
 }
 
 function hasFilesDeep(dirPath: string): boolean {
@@ -412,6 +367,7 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.pendingTickets.length > 0) {
     return `run \`npx ph workflow next\` or \`npx ph workflow continue\` for pending ticket ${summary.pendingTickets[0]?.ticket ?? "<unknown>"}`
   }
+  if (summary.stackAlignmentFinding === "WARN") return "review profile/generated stack mismatch before archiving workflow"
   if (summary.commandDisciplineFinding === "WARN") {
     return "review non-blocking workflow notes, then archive completed workflow if acceptable"
   }
