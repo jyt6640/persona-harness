@@ -8,6 +8,32 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.8-alpha.2] - 2026-06-24
+
+### Added
+
+- Added `profileSummaryInjected` runtime evidence so README/project-bootstrap injection records whether the backend profile summary reached the same model-input block.
+- Added pending workflow ticket completion guidance to `workflow check`, `workflow continue`, and `workflow finish implement` output so agents are explicitly told not to claim overall completion while pending tickets remain.
+
+### Changed
+
+- Clarified bootstrap injection evidence documentation to distinguish backend profile summary injection from AGENTS-only signals.
+- Strengthened pending-ticket CLI copy without changing workflow enforcement semantics.
+
+### External Smoke
+
+- External Smoke was partially successful.
+- `profileSummaryInjected` marker evidence was observed in README-read phase0 evidence.
+- Pending workflow guidance was observed for `workflow check`, `workflow continue`, and `workflow finish implement`.
+- OpenCode full implementation smoke was stopped by a `.persona/policies` policy path issue, so full implementation smoke remains a release risk.
+
+### Verification
+
+- `npm test` passed: scope/docs diagnostics PASS, 51 files, 327 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+- `npm pack --dry-run` passed for `persona-harness@0.3.8-alpha.2` with 309 files.
+
 ## [0.3.8-alpha.1] - 2026-06-24
 
 ### Added
