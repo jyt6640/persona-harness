@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import type { Part, UserMessage } from "@opencode-ai/sdk"
@@ -92,6 +92,27 @@ function writeOptInHarnessConfig(projectDir: string): void {
 function firstText(output: TransformMessagesOutput): string {
   const part = output.messages[0]?.parts[0]
   return part?.type === "text" ? part.text : ""
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function evidencePayloads(projectDir: string): readonly Record<string, unknown>[] {
+  const evidenceDir = join(projectDir, ".persona", "evidence", "phase0")
+  if (!existsSync(evidenceDir)) {
+    return []
+  }
+
+  return readdirSync(evidenceDir)
+    .filter((fileName) => fileName.endsWith(".json"))
+    .map((fileName) => {
+      const parsed: unknown = JSON.parse(readFileSync(join(evidenceDir, fileName), "utf8"))
+      if (!isRecord(parsed)) {
+        throw new Error(`expected evidence payload object: ${fileName}`)
+      }
+      return parsed
+    })
 }
 
 function writeScenario(scenario: "step1" | "step2-3"): void {
@@ -239,6 +260,48 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).not.toContain("[Persona Harness Requirements Workflow]")
     expect(text).not.toContain("[Persona Harness Debug Workflow]")
     expect(text).not.toContain("[Persona Harness Review Workflow]")
+  })
+
+  it("routes git-only requests through the git workflow", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-git-workflow"
+    const output = modelInputWithText(sessionID, "커밋하고 푸쉬해")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Git Workflow]")
+    expect(text).toContain("Detected intent: git")
+    expect(text).toContain("의도 감지: git 작업 요청으로 판단함.")
+    expect(text).toContain("관련 파일만 stage")
+    expect(text).toContain("push는 사용자가 명시적으로 요청한 경우에만")
+    expect(text).not.toContain("[Persona Harness Requirements Workflow]")
+    expect(text).not.toContain("[Persona Harness Debug Workflow]")
+    expect(text).not.toContain("[Persona Harness Review Workflow]")
+    expect(text).not.toContain("[Persona Harness Refactor Workflow]")
+  })
+
+  it("records intent evidence when a workflow rail is injected", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-intent-evidence"
+    const output = modelInputWithText(sessionID, "구조 정리해줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const intentEvidence = evidencePayloads(fixtureWorkspace).find(
+      (payload) => payload.schemaVersion === "phase0.intent.1",
+    )
+    expect(intentEvidence).toMatchObject({
+      hook: "experimental.chat.messages.transform",
+      sessionID,
+      injectedInto: "intent-workflow",
+      userPrompt: "구조 정리해줘",
+      primaryIntent: "refactor",
+      railMarker: "[Persona Harness Refactor Workflow]",
+    })
+    expect(intentEvidence?.secondaryIntents).toEqual(["programming"])
   })
 
   it("injects prompt capture guidance for pasted requirement implementation requests", async () => {

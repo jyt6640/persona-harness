@@ -59,19 +59,36 @@ Required flow:
 - 구조 변경 후 같은 테스트/빌드/스모크 명령을 다시 실행한다.
 ```
 
-## Next Candidate: Git Rail
+## Implemented: Git Rail
 
 ```text
 [Persona Harness Git Workflow]
 
+Detected intent: git
+Reason: The user asked for repository state/history work.
+
 의도 감지: git 작업 요청으로 판단함.
-근거: 사용자가 commit/push/tag/history 작업을 명시함.
-다음 행동: 작업트리와 diff를 확인하고, 요청된 git 작업만 수행한다.
+근거: 사용자가 commit/push/tag/history 같은 저장소 작업을 명시함.
+다음 행동: 작업트리와 diff를 먼저 확인하고 요청된 git 작업만 수행한다.
 
 Required flow:
 - git status를 확인한다.
-- diff를 확인한다.
-- 관련 파일만 stage한다.
-- atomic commit을 만든다.
+- diff를 확인한다. staged diff와 unstaged diff를 구분한다.
+- 관련 파일만 stage한다. unrelated dirty work는 섞지 않는다.
+- atomic commit을 만든다. 메시지는 repo의 기존 스타일을 따른다.
 - push는 사용자가 명시적으로 요청한 경우에만 한다.
+- push 전에는 현재 브랜치와 upstream 상태를 확인한다.
+```
+
+## Next Candidate: Skill / Hook / Role Agentization
+
+```text
+Persona Harness should graduate from inline rail blocks to PH-owned workflow skills, hook-based rail compliance evidence, and role-agent workflow boundaries.
+
+Order:
+- Move requirements/debug/review/refactor/git/programming rail text into skill/reference files.
+- Keep runtime injection small: detect intent, load selected skill summary, inject the rail.
+- Add hook evidence that compares selected rail with actual tool behavior.
+- Add stop/continuation checks for unfinished tickets or incomplete workflow reports.
+- Later map workflow roles to PH agents: blackbear planning, jaeki implementation, roach review, Charles coordination.
 ```

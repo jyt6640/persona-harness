@@ -1,7 +1,8 @@
 import type { Hooks } from "@opencode-ai/plugin"
 
-import { writePhase0Evidence } from "./evidence.js"
+import { writeIntentEvidence, writePhase0Evidence } from "./evidence.js"
 import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
+import { formatGitWorkflowBlock } from "./git-workflow-skill.js"
 import { formatRefactorWorkflowBlock } from "./refactor-workflow-skill.js"
 import { formatReviewWorkflowBlock } from "./review-workflow-skill.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
@@ -20,7 +21,7 @@ import {
 } from "./requirements-workflow-skill.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
-import { detectTopLevelIntent } from "./top-level-intent-router.js"
+import { detectTopLevelIntent, type TopLevelIntent } from "./top-level-intent-router.js"
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import type {
   ToolAfterInput,
@@ -61,7 +62,35 @@ function latestUserText(output: TransformMessagesOutput): string | undefined {
   return textPart?.type === "text" ? textPart.text : undefined
 }
 
-function maybeInjectIntentWorkflow(output: TransformMessagesOutput, projectDir: string, config: ReturnType<typeof loadHarnessConfig>): boolean {
+function injectIntentWorkflowRail(
+  output: TransformMessagesOutput,
+  projectDir: string,
+  sessionID: string,
+  userPrompt: string,
+  intent: TopLevelIntent,
+  block: string,
+  railMarker: string,
+): boolean {
+  const injected = injectTextIntoLatestUserMessage(output, block, railMarker)
+  if (injected) {
+    writeIntentEvidence(projectDir, {
+      hook: "experimental.chat.messages.transform",
+      sessionID,
+      injectedInto: "intent-workflow",
+      userPrompt,
+      intent,
+      railMarker,
+    })
+  }
+  return injected
+}
+
+function maybeInjectIntentWorkflow(
+  output: TransformMessagesOutput,
+  projectDir: string,
+  sessionID: string,
+  config: ReturnType<typeof loadHarnessConfig>,
+): boolean {
   if (!config.enabled || !config.enabledDomains.includes("workflow") || !hasPersonaWorkflowOptIn(projectDir)) {
     return false
   }
@@ -72,26 +101,50 @@ function maybeInjectIntentWorkflow(output: TransformMessagesOutput, projectDir: 
   const intent = detectTopLevelIntent(text)
 
   if (intent?.primary === "debug") {
-    return injectTextIntoLatestUserMessage(
+    return injectIntentWorkflowRail(
       output,
+      projectDir,
+      sessionID,
+      text,
+      intent,
       formatDebugWorkflowBlock(intent),
       "[Persona Harness Debug Workflow]",
     )
   }
 
   if (intent?.primary === "review") {
-    return injectTextIntoLatestUserMessage(
+    return injectIntentWorkflowRail(
       output,
+      projectDir,
+      sessionID,
+      text,
+      intent,
       formatReviewWorkflowBlock(intent),
       "[Persona Harness Review Workflow]",
     )
   }
 
   if (intent?.primary === "refactor") {
-    return injectTextIntoLatestUserMessage(
+    return injectIntentWorkflowRail(
       output,
+      projectDir,
+      sessionID,
+      text,
+      intent,
       formatRefactorWorkflowBlock(intent),
       "[Persona Harness Refactor Workflow]",
+    )
+  }
+
+  if (intent?.primary === "git") {
+    return injectIntentWorkflowRail(
+      output,
+      projectDir,
+      sessionID,
+      text,
+      intent,
+      formatGitWorkflowBlock(intent),
+      "[Persona Harness Git Workflow]",
     )
   }
 
@@ -102,8 +155,12 @@ function maybeInjectIntentWorkflow(output: TransformMessagesOutput, projectDir: 
   if (intent.requirementsIntent.kind === "requirement-approval" && !hasRequirementsDraft(projectDir)) {
     return false
   }
-  return injectTextIntoLatestUserMessage(
+  return injectIntentWorkflowRail(
     output,
+    projectDir,
+    sessionID,
+    text,
+    intent,
     formatRequirementsWorkflowBlock(intent.requirementsIntent),
     "[Persona Harness Requirements Workflow]",
   )
@@ -232,7 +289,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         return
       }
 
-      maybeInjectIntentWorkflow(output, projectDir, config)
+      maybeInjectIntentWorkflow(output, projectDir, sessionId, config)
 
       const injection = store.take(sessionId)
       if (!injection) {

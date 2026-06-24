@@ -22,12 +22,14 @@ Current active shared-skill routing is intentionally narrow:
 | debug workflow block | active | Handles failure/error/broken-behavior prompts before requirements implementation. |
 | review workflow block | active | Handles review/audit/QA prompts as read-only findings-first work. |
 | refactor workflow block | active | Handles cleanup/restructure prompts as behavior-preserving structural work. |
+| git workflow block | active | Handles commit/push/tag/history prompts as repository-safe git work. |
+| intent evidence | active | Records user prompt, selected intent, secondary intents, and injected rail marker. |
 | programming | active | File-target support for Java/Gradle and selected programming targets. |
 | frontend | experimental active | Active for frontend TypeScript targets, but not part of Java backend MVP productization. |
 | debugging | inactive reference | Vendored reference only; PH debug runtime block is implemented separately. |
 | review-work | inactive reference | Vendored reference only; PH review runtime block is implemented separately. |
 | refactor | inactive reference | Vendored reference only; PH refactor runtime block is implemented separately. |
-| git-master | inactive reference | Useful model for future PH git/history rail. |
+| git-master | inactive reference | Vendored reference only; PH git runtime block is implemented separately. |
 
 ## Implementation Status
 
@@ -42,13 +44,15 @@ Implemented:
 - Debug primary intent injects a PH debug workflow block.
 - Review primary intent injects a PH review workflow block.
 - Refactor primary intent injects a PH refactor workflow block.
+- Git primary intent injects a PH git workflow block.
+- Injected workflow rails write `phase0.intent.1` evidence records under `.persona/evidence/phase0`.
 - Unit tests cover requirements, debug, review, refactor, git, programming, and mixed work/git intent.
 
 Not implemented yet:
 
-- Dedicated git workflow block.
 - Activation of inactive vendored OMO skills as PH runtime rails.
-- Evidence fields for primary/secondary intent selection.
+- Moving rail block text out of runtime code strings into PH skill/reference files.
+- Hook-based verification that the AI followed the selected rail after tool use or stop.
 
 ## Design Principle
 
@@ -228,6 +232,27 @@ Format:
 근거: <short reason>
 다음 행동: <next rail action>
 ```
+
+## Intent Evidence
+
+When a workflow rail is actually injected, Persona Harness writes a local intent evidence record.
+
+Schema:
+
+```json
+{
+  "schemaVersion": "phase0.intent.1",
+  "hook": "experimental.chat.messages.transform",
+  "injectedInto": "intent-workflow",
+  "userPrompt": "...",
+  "primaryIntent": "debug",
+  "secondaryIntents": ["programming"],
+  "reason": "...",
+  "railMarker": "[Persona Harness Debug Workflow]"
+}
+```
+
+This is diagnostics-only evidence. It does not enforce compliance, certify generated app quality, or fail the build.
 
 Examples:
 
