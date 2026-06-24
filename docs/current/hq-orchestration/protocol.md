@@ -45,7 +45,22 @@ HQ는 담당 세션에 메시지를 직접 보낸다.
 
 ## Result Collection
 
-HQ는 담당 세션 결과를 읽은 뒤 다음을 확인한다.
+담당 세션은 작업이 끝나면 HQ가 polling할 때까지 기다리지 않는다. 가능하면 thread 도구로 HQ 세션에 결과를 직접 전송한다.
+
+현재 HQ thread id:
+
+```text
+019ed945-1bd4-7262-a4ff-66563c4cf0aa
+```
+
+담당 세션의 completion rule:
+
+1. 자기 thread의 final answer에 정규화된 결과를 남긴다.
+2. `send_message_to_thread` 또는 동등한 thread tool이 있으면 HQ thread로 같은 결과를 보낸다.
+3. HQ로 보낼 때 제목은 `[HQ_RESULT] <세션명>: <짧은 결과>` 형식을 사용한다.
+4. thread tool이 없거나 실패하면 final answer의 `Handoff`에 “HQ 직접 전송 실패”를 명시한다.
+
+HQ는 담당 세션 결과를 받거나 읽은 뒤 다음을 확인한다.
 
 - Result가 goal을 만족하는지.
 - Changed files가 담당 범위 안인지.
@@ -61,6 +76,43 @@ HQ는 담당 세션 결과를 읽은 뒤 다음을 확인한다.
 - evidence review: `docs/current/evidence-reviews/**`
 - HQ 운영 메모리: `/Users/yongtae/Documents/하네스/Persona-Harness/develop/HQ-CURRENT-MEMORY.md`
 - 날짜별 진행 기록: `/Users/yongtae/Documents/하네스/Persona-Harness/develop/YYYY-MM-DD-*.md`
+
+## Result Return Message
+
+담당 세션이 HQ로 보내는 메시지는 아래 구조를 따른다.
+
+```md
+[HQ_RESULT] <Session>: <Result summary>
+
+## Result
+...
+
+## Changed Files
+...
+
+## Behavior
+...
+
+## Tests
+...
+
+## Verification
+...
+
+## Commit
+...
+
+## Handoff
+...
+
+## Risks
+...
+
+## Next
+...
+```
+
+이 규칙의 목적은 HQ의 polling 비용을 줄이고, 사용자에게 결과가 자연스럽게 모이도록 만드는 것이다.
 
 ## Commit Policy
 
@@ -93,4 +145,3 @@ HQ should stop dispatching and ask the user when:
 - publish/tag/push needs explicit approval;
 - the user's desired product behavior is ambiguous and would materially change architecture;
 - two sessions report conflicting implementation directions.
-

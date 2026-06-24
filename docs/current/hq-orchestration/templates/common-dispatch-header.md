@@ -11,4 +11,6 @@
 - push는 하지 않는다.
 - 결과는 `result-report-format.md` 형식으로 보고한다.
 - 모든 결과와 중요한 판단은 문서화 가능한 형태로 남긴다.
-
+- 작업이 끝나면 자기 thread final answer에 결과를 남긴 뒤, 가능하면 thread tool로 HQ thread `019ed945-1bd4-7262-a4ff-66563c4cf0aa`에 같은 결과를 직접 보낸다.
+- HQ로 보낼 때는 `[HQ_RESULT] <세션명>: <짧은 결과>` 제목으로 시작한다.
+- thread tool이 없거나 HQ 전송에 실패하면 `Handoff`에 그 사실을 명시한다.

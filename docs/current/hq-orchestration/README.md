@@ -22,10 +22,10 @@ Persona Harness HQ는 사용자와 대화하면서 기능 의도를 정규화하
 2. HQ derives scope, non-goals, success criteria, and owner session.
 3. HQ sends a dispatch prompt to the owner session.
 4. Owner session reports in Korean using the standard result format.
-5. HQ reads the result, checks conflicts and gaps, then decides the next dispatch.
-6. Every session result is documented in repo docs or the external develop memory before release decisions.
+5. Owner session sends the result back to the HQ thread when thread tools are available.
+6. HQ reads the result, checks conflicts and gaps, then decides the next dispatch.
+7. Every session result is documented in repo docs or the external develop memory before release decisions.
 
 ## Core Rule
 
 사용자는 HQ와만 대화해도 된다. HQ가 담당 세션에 보내고, 읽고, 다음 작업을 이어간다.
-
