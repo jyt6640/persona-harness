@@ -88,6 +88,7 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): v
     selectedRuleMetadata: event.injection.selectedRuleMetadata,
     selectedSharedSkills: event.injection.selectedSharedSkills,
     selectedPolicyOverlay: event.injection.selectedPolicyOverlay,
+    profileSummaryInjected: event.injection.block.includes("프로젝트 프로필 요약:"),
     injectedPolicyCount: event.injection.policies.length,
   }
 

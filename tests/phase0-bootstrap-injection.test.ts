@@ -149,6 +149,30 @@ describe("Phase 0 bootstrap injection", () => {
   it("records bootstrap fileRole evidence when README injection reaches model input", async () => {
     const projectDir = createTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Coupon API\n")
+    writeFileSync(
+      join(projectDir, ".persona", "project-profile.jsonc"),
+      `${JSON.stringify(
+        {
+          schema: "persona.project-profile.v1",
+          status: "draft",
+          scope: {
+            role: "backend",
+            mvp: "java-spring-clean-code",
+            productized: false,
+          },
+          questions: [
+            {
+              id: "package-style",
+              prompt: "package-style",
+              choices: [],
+              answer: "domain-first",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    )
     const hooks = createPhase0Hooks({ projectDir })
     const sessionID = "bootstrap-session"
     const toolOutput = { title: "README.md", output: "# Coupon API", metadata: {} }
@@ -161,7 +185,12 @@ describe("Phase 0 bootstrap injection", () => {
     await hooks["experimental.chat.messages.transform"]?.({}, output)
 
     expect(toolOutput.output).toContain("파일 역할: project-bootstrap")
+    expect(toolOutput.output).toContain("프로젝트 프로필 요약:")
     expect(firstText(output)).toContain("backend/java-backend-bootstrap.md")
-    expect(evidencePayloads(projectDir).some((payload) => payload.fileRole === "project-bootstrap")).toBe(true)
+    expect(
+      evidencePayloads(projectDir).some(
+        (payload) => payload.fileRole === "project-bootstrap" && payload.profileSummaryInjected === true,
+      ),
+    ).toBe(true)
   })
 })

@@ -51,4 +51,4 @@
 
 ## Evidence
 
-Bootstrap hook이 발동하면 `.persona/evidence/phase0/*.json`에 `targetFile`, `fileRole`, `selectedRules`, `selectedRuleMetadata`, `injectedInto`가 남는다. `.persona/evidence/`는 init template로 복사하지 않고 runtime hook이 만들 때만 생긴다.
+Bootstrap hook이 발동하면 `.persona/evidence/phase0/*.json`에 `targetFile`, `fileRole`, `selectedRules`, `selectedRuleMetadata`, `injectedInto`가 남는다. Backend profile summary가 같은 injection block에 포함됐는지는 `profileSummaryInjected`로 남겨 README/bootstrap evidence를 AGENTS-only 신호와 구분한다. `.persona/evidence/`는 init template로 복사하지 않고 runtime hook이 만들 때만 생긴다.
