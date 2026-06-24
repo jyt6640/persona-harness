@@ -3,6 +3,7 @@ import type { Hooks } from "@opencode-ai/plugin"
 import { writeIntentEvidence, writePhase0Evidence } from "./evidence.js"
 import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
 import { formatGitWorkflowBlock } from "./git-workflow-skill.js"
+import { formatProgrammingWorkflowBlock } from "./programming-workflow-skill.js"
 import { formatRefactorWorkflowBlock } from "./refactor-workflow-skill.js"
 import { formatReviewWorkflowBlock } from "./review-workflow-skill.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
@@ -145,6 +146,18 @@ function maybeInjectIntentWorkflow(
       intent,
       formatGitWorkflowBlock(intent),
       "[Persona Harness Git Workflow]",
+    )
+  }
+
+  if (intent?.primary === "programming") {
+    return injectIntentWorkflowRail(
+      output,
+      projectDir,
+      sessionID,
+      text,
+      intent,
+      formatProgrammingWorkflowBlock(intent),
+      "[Persona Harness Programming Workflow]",
     )
   }
 

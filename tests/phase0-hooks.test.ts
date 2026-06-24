@@ -282,11 +282,31 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).not.toContain("[Persona Harness Refactor Workflow]")
   })
 
+  it("routes direct programming requests through the programming workflow", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-programming-workflow"
+    const output = modelInputWithText(sessionID, "CouponService 만들어줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Programming Workflow]")
+    expect(text).toContain("Detected intent: programming")
+    expect(text).toContain("의도 감지: 직접 프로그래밍 요청으로 판단함.")
+    expect(text).toContain("관련 파일을 먼저 읽는다")
+    expect(text).not.toContain("[Persona Harness Requirements Workflow]")
+    expect(text).not.toContain("[Persona Harness Debug Workflow]")
+    expect(text).not.toContain("[Persona Harness Review Workflow]")
+    expect(text).not.toContain("[Persona Harness Refactor Workflow]")
+    expect(text).not.toContain("[Persona Harness Git Workflow]")
+  })
+
   it("records intent evidence when a workflow rail is injected", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-intent-evidence"
-    const output = modelInputWithText(sessionID, "구조 정리해줘")
+    const output = modelInputWithText(sessionID, "CouponService 만들어줘")
 
     await hooks["experimental.chat.messages.transform"]?.({}, output)
 
@@ -297,11 +317,11 @@ describe("Phase 0 OpenCode hook feasibility", () => {
       hook: "experimental.chat.messages.transform",
       sessionID,
       injectedInto: "intent-workflow",
-      userPrompt: "구조 정리해줘",
-      primaryIntent: "refactor",
-      railMarker: "[Persona Harness Refactor Workflow]",
+      userPrompt: "CouponService 만들어줘",
+      primaryIntent: "programming",
+      railMarker: "[Persona Harness Programming Workflow]",
     })
-    expect(intentEvidence?.secondaryIntents).toEqual(["programming"])
+    expect(intentEvidence?.secondaryIntents).toEqual([])
   })
 
   it("injects prompt capture guidance for pasted requirement implementation requests", async () => {

@@ -45,7 +45,7 @@
     "docs/current/release",
     "packages/shared-skills/skills/programming/SKILL.md",
     "packages/shared-skills/skills/programming/references/java",
-    "packages/shared-skills/skills/workflow/requirements/SKILL.md"
+    "packages/shared-skills/skills/workflow"
   ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",

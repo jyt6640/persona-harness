@@ -23,6 +23,7 @@ Current active shared-skill routing is intentionally narrow:
 | review workflow block | active | Handles review/audit/QA prompts as read-only findings-first work. |
 | refactor workflow block | active | Handles cleanup/restructure prompts as behavior-preserving structural work. |
 | git workflow block | active | Handles commit/push/tag/history prompts as repository-safe git work. |
+| programming workflow block | active | Handles direct code creation/edit prompts when no stronger rail applies. |
 | intent evidence | active | Records user prompt, selected intent, secondary intents, and injected rail marker. |
 | programming | active | File-target support for Java/Gradle and selected programming targets. |
 | frontend | experimental active | Active for frontend TypeScript targets, but not part of Java backend MVP productization. |
@@ -45,13 +46,14 @@ Implemented:
 - Review primary intent injects a PH review workflow block.
 - Refactor primary intent injects a PH refactor workflow block.
 - Git primary intent injects a PH git workflow block.
+- Programming primary intent injects a PH programming workflow block.
+- Workflow rail text is loaded from PH-owned skill reference files under `packages/shared-skills/skills/workflow/**/SKILL.md`.
 - Injected workflow rails write `phase0.intent.1` evidence records under `.persona/evidence/phase0`.
 - Unit tests cover requirements, debug, review, refactor, git, programming, and mixed work/git intent.
 
 Not implemented yet:
 
 - Activation of inactive vendored OMO skills as PH runtime rails.
-- Moving rail block text out of runtime code strings into PH skill/reference files.
 - Hook-based verification that the AI followed the selected rail after tool use or stop.
 
 ## Design Principle

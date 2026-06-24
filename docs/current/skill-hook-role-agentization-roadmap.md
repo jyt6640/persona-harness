@@ -45,12 +45,10 @@ Implemented:
 - review rail block;
 - refactor rail block;
 - git rail block;
+- programming rail block;
+- PH-owned workflow skill reference files for requirements/debug/review/refactor/git/programming;
+- runtime loading of workflow rail text from `packages/shared-skills/skills/workflow/**/SKILL.md`;
 - `phase0.intent.1` evidence for injected workflow rails.
-
-Still code-string based:
-
-- rail blocks currently live in `src/runtime/*-workflow-skill.ts`;
-- they are not yet loaded from PH skill/reference files.
 
 Diagnostics-only:
 
@@ -62,7 +60,9 @@ Diagnostics-only:
 
 ### P0: Rail Skill Extraction
 
-Move rail text into PH-owned skill/reference files:
+Status: implemented for the current runtime rails.
+
+Rail text lives in PH-owned skill/reference files:
 
 - requirements;
 - debug;

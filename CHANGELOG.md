@@ -13,17 +13,20 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added Persona Review Workflow block injection for review primary intent.
 - Added Persona Refactor Workflow block injection for refactor primary intent.
 - Added Persona Git Workflow block injection for git primary intent.
+- Added Persona Programming Workflow block injection for direct code creation/edit primary intent.
 - Added `phase0.intent.1` evidence records for injected workflow rails.
 - Added unit coverage for top-level intent priority and mixed-intent sequencing.
 - Added next rail prompt drafts for review/refactor/git workflow blocks.
 
 ### Changed
 
+- Workflow rail text now loads from PH-owned `packages/shared-skills/skills/workflow/**/SKILL.md` runtime blocks instead of hardcoded runtime strings.
 - Requirements workflow injection now goes through the top-level router, so README-related bug reports do not get misrouted into requirements implementation workflow.
 - README-related debug requests now receive a debug workflow block instead of no workflow guidance.
 - Review requests now receive a findings-first review workflow block that tells the AI not to modify code unless the user explicitly asks for fixes.
 - Refactor requests now receive a behavior-preserving refactor workflow block that tells the AI to establish baseline behavior, avoid feature changes, keep changes small, and rerun the same verification.
 - Git-only requests now receive a repository-safe git workflow block before commit/push/tag/history operations.
+- Direct programming requests now receive a scoped programming workflow block unless a stronger requirements/debug/review/refactor/git rail applies.
 - Workflow rail injection now records the original user prompt, primary intent, secondary intents, reason, and injected rail marker in local evidence.
 
 ## [0.3.6-alpha.1] - 2026-06-23
