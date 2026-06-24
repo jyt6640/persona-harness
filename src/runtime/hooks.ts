@@ -1,6 +1,7 @@
 import type { Hooks } from "@opencode-ai/plugin"
 
 import { writePhase0Evidence } from "./evidence.js"
+import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
@@ -58,7 +59,7 @@ function latestUserText(output: TransformMessagesOutput): string | undefined {
   return textPart?.type === "text" ? textPart.text : undefined
 }
 
-function maybeInjectRequirementsWorkflow(output: TransformMessagesOutput, projectDir: string, config: ReturnType<typeof loadHarnessConfig>): boolean {
+function maybeInjectIntentWorkflow(output: TransformMessagesOutput, projectDir: string, config: ReturnType<typeof loadHarnessConfig>): boolean {
   if (!config.enabled || !config.enabledDomains.includes("workflow") || !hasPersonaWorkflowOptIn(projectDir)) {
     return false
   }
@@ -67,9 +68,19 @@ function maybeInjectRequirementsWorkflow(output: TransformMessagesOutput, projec
     return false
   }
   const intent = detectTopLevelIntent(text)
+
+  if (intent?.primary === "debug") {
+    return injectTextIntoLatestUserMessage(
+      output,
+      formatDebugWorkflowBlock(intent),
+      "[Persona Harness Debug Workflow]",
+    )
+  }
+
   if (intent === undefined || intent.primary !== "requirements" || intent.requirementsIntent === undefined) {
     return false
   }
+
   if (intent.requirementsIntent.kind === "requirement-approval" && !hasRequirementsDraft(projectDir)) {
     return false
   }
@@ -203,7 +214,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         return
       }
 
-      maybeInjectRequirementsWorkflow(output, projectDir, config)
+      maybeInjectIntentWorkflow(output, projectDir, config)
 
       const injection = store.take(sessionId)
       if (!injection) {
