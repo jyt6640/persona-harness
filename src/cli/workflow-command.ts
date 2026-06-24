@@ -4,6 +4,7 @@ import { join } from "node:path"
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
+import { javaRoleReadCoverageReason, stackAlignmentReason } from "./workflow-finish-reasons.js"
 import {
   failedGuardOutput,
   failedRunnerOutput,
@@ -111,21 +112,6 @@ function pendingTicketReason(summary: WorkflowStatus): string | undefined {
   ].join("\n")
 }
 
-function stackAlignmentReason(summary: WorkflowStatus): string | undefined {
-  if (summary.stackAlignmentFinding !== "WARN") {
-    return undefined
-  }
-  return [
-    `Project profile and generated stack mismatch: ${summary.stackAlignment}`,
-    "This is a workflow/profile alignment gate, not generated app product-quality certification.",
-    "Required next actions:",
-    "- Re-read `.persona/project-profile.jsonc`.",
-    "- Change the generated project to Spring Boot/Gradle/JPA/database structure.",
-    "- Remove fake `gradle-shim.js`/Node shim files.",
-    "- Re-run `npx ph workflow check`.",
-  ].join("\n")
-}
-
 function finalGuardReasons(summary: WorkflowStatus): readonly string[] {
   const reasons: string[] = []
   if (summary.plan !== "accepted") {
@@ -150,6 +136,10 @@ function finalGuardReasons(summary: WorkflowStatus): readonly string[] {
     reasons.push(
       "Profile read coverage missing: project profile read coverage must be recorded in .persona/workflow/implementation-report.md. Record project profile read method/ranges before finish.",
     )
+  }
+  const javaRoleReason = javaRoleReadCoverageReason(summary)
+  if (javaRoleReason !== undefined) {
+    reasons.push(javaRoleReason)
   }
   if (summary.stackAlignmentBlocking) {
     reasons.push(`Stack alignment blocking: ${summary.stackAlignment}. Keep the Java/Spring backend MVP stack aligned before finish.`)

@@ -167,6 +167,10 @@ describe("ph workflow check stack alignment", () => {
     mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
     writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "package com.example;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n@SpringBootApplication\nclass Application {}\n")
     writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "SampleController.java"), "package com.example;\nimport org.springframework.web.bind.annotation.RestController;\n@RestController\nclass SampleController {}\n")
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "phase0", "sample-controller.json"),
+      `${JSON.stringify({ injectedInto: "model-input", targetFile: "src/main/java/com/example/SampleController.java", fileRole: "controller" }, null, 2)}\n`,
+    )
     mkdirSync(join(projectDir, "src", "main", "resources", "db", "migration"), { recursive: true })
     writeFileSync(join(projectDir, "src", "main", "resources", "db", "migration", "V1__init.sql"), "create table sample(id bigint primary key);\n")
 

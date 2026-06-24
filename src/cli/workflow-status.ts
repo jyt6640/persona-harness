@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { readBackendProjectProfileState } from "../config/project-profile.js"
+import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./java-role-read-coverage.js"
 import { readStackAlignment, type StackAlignmentSummary } from "./stack-alignment.js"
 import {
   formatPendingWorkflowTicketStatusLines,
@@ -23,6 +24,9 @@ export type WorkflowStatusSummary = {
   readonly profileReadCoverage: string
   readonly profileReadCoverageBlocking: boolean
   readonly profileReadCoverageFinding: "PASS" | "WARN"
+  readonly javaRoleReadCoverage: string
+  readonly javaRoleReadCoverageBlocking: boolean
+  readonly javaRoleReadCoverageFinding: "PASS" | "WARN"
   readonly commandDiscipline: string
   readonly commandDisciplineBlocking: boolean
   readonly commandDisciplineFinding: "PASS" | "WARN"
@@ -363,6 +367,7 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.commandDisciplineBlocking) return "rerun final verification through `npx ph bearshell`"
   if (summary.readCoverageBlocking) return "record README ranges read in `.persona/workflow/implementation-report.md`"
   if (summary.profileReadCoverageBlocking) return "record project profile read coverage in `.persona/workflow/implementation-report.md`"
+  if (summary.javaRoleReadCoverageBlocking) return "read generated Java role files and rerun `npx ph workflow check`"
   if (summary.stackAlignmentBlocking) return "fix generated project stack to match `.persona/project-profile.jsonc` before finishing"
   if (summary.pendingTickets.length > 0) {
     return `run \`npx ph workflow next\` or \`npx ph workflow continue\` for pending ticket ${summary.pendingTickets[0]?.ticket ?? "<unknown>"}`
@@ -385,23 +390,25 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
   } as const
   const coverage = readCoverage(projectDir, summary.implementation)
   const profileCoverage = profileReadCoverage(projectDir, summary.implementation)
+  const javaRoleCoverage: JavaRoleReadCoverageSummary = readJavaRoleReadCoverage(projectDir, summary.implementation)
   const command = commandDiscipline(projectDir, summary.implementation, summary.review)
   const stack = stackAlignment(projectDir, summary.implementation)
   const pendingTickets = workflowPendingTicketStatus(projectDir)
   const pendingTicketsFinding = pendingTickets.length > 0 ? "WARN" : "PASS"
-  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...command, ...stack, pendingTickets, pendingTicketsFinding })
+  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...command, ...stack, pendingTickets, pendingTicketsFinding })
   const finding =
     summary.plan === "accepted"
     && summary.implementation === "filled"
     && summary.review === "filled"
     && coverage.readCoverageFinding === "PASS"
     && profileCoverage.profileReadCoverageFinding === "PASS"
+    && javaRoleCoverage.javaRoleReadCoverageFinding === "PASS"
     && command.commandDisciplineFinding === "PASS"
     && stack.stackAlignmentFinding === "PASS"
     && pendingTicketsFinding === "PASS"
       ? "PASS"
       : "WARN"
-  return { ...summary, ...coverage, ...profileCoverage, ...command, ...stack, pendingTickets, pendingTicketsFinding, finding, next }
+  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...command, ...stack, pendingTickets, pendingTicketsFinding, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -418,6 +425,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- .persona/evidence: ${summary.evidence}`,
     `- read coverage: ${summary.readCoverage}`,
     `- profile read coverage: ${summary.profileReadCoverage}`,
+    `- java role read coverage: ${summary.javaRoleReadCoverage}`,
     `- command discipline: ${summary.commandDiscipline}`,
     `- stack alignment: ${summary.stackAlignment}`,
     ...formatPendingWorkflowTicketStatusLines(summary.pendingTickets),
