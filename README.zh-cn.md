@@ -60,8 +60,7 @@ Model ID 使用 `provider/model` 格式，例如 `openai/gpt-5.4-mini-fast`.
 ```bash
 npm install -D persona-harness@alpha
 npx ph init
-npx ph policy init
-npx ph plan --auto-accept
+npx ph bootstrap backend
 ```
 
 如果你正在开发 Persona Harness 本身，请使用 local install。
@@ -69,8 +68,7 @@ npx ph plan --auto-accept
 ```bash
 npm install -D /absolute/path/to/persona-harness
 npx ph init
-npx ph policy init
-npx ph plan --auto-accept
+npx ph bootstrap backend
 ```
 
 先让 OpenCode 只完成计划:
@@ -126,6 +124,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 ## 提供内容
 
 - `ph init`: 安装 `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config
+- `ph bootstrap backend`: 准备 `AGENTS.md`, backend profile, policy overlay, accepted plan, report template
 - `ph intake --interactive`: 询问 backend planning 问题并写入 `.persona/project-profile.jsonc`
 - `ph policy init`: 创建 company/personal backend policy overlay
 - `ph plan`: 创建 `blackbear` planning role 的 `.persona/workflow/plan.md`

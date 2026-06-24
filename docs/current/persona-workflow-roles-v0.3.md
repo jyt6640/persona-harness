@@ -11,12 +11,14 @@ This document names the roles and their intended inputs/outputs. Persona Harness
 The current product surface is:
 
 ```text
-ph init(interactive interview) -> profile summary injection -> OpenCode plan/implementation -> evidence review
+ph init -> ph bootstrap backend -> profile summary injection -> OpenCode plan/implementation -> evidence review
 ```
 
 The v0.3.x workflow should make this path more explicit without turning Persona Harness into a full autonomous agent platform.
 
-For AI/non-TTY shells, the equivalent fast path is `npx ph bootstrap backend`. It is intentionally separate from `ph init` so a direct human setup can collect interview answers while an agent shell can still create deterministic smoke-test artifacts without hanging on prompts.
+`npx ph init` is intentionally minimal: it installs Persona Harness config/rules, OpenCode plugin config, and `.gitignore` entries. It does not create `AGENTS.md`, `.persona/project-profile.jsonc`, or workflow plan/report templates.
+
+`npx ph bootstrap backend` is the backend-ready path. It fills missing `AGENTS.md`, backend profile, policy overlay, accepted plan, report templates, harness config, and OpenCode config. If a human wants custom profile answers instead, use `npx ph intake --interactive` or `npx ph intake --default backend` before planning.
 
 ## Role Map
 
@@ -38,9 +40,11 @@ This writes `.persona/workflow/roles.md`. `npx ph plan` also creates the same ro
 ## Flow
 
 ```text
-1. npx ph init in an interactive terminal
-2. user answers the backend intake interview
-3. .persona/project-profile.jsonc is written
+1. npx ph init
+2. choose one backend setup path:
+   - backend-ready bootstrap: npx ph bootstrap backend
+   - manual profile: npx ph intake --interactive or npx ph intake --default backend, then npx ph policy init and npx ph plan
+3. .persona/project-profile.jsonc and workflow planning artifacts exist before implementation
 4. profile summary injection exposes planning context
 5. blackbear-style planning:
    - read README

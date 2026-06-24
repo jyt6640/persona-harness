@@ -64,8 +64,7 @@ opencode auth list
 ```bash
 npm install -D persona-harness@alpha
 npx ph init
-npx ph policy init
-npx ph plan --auto-accept
+npx ph bootstrap backend
 ```
 
 Persona Harness 자체를 개발 중이면 local install을 사용합니다.
@@ -73,9 +72,12 @@ Persona Harness 자체를 개발 중이면 local install을 사용합니다.
 ```bash
 npm install -D /absolute/path/to/persona-harness
 npx ph init
-npx ph policy init
-npx ph plan --auto-accept
+npx ph bootstrap backend
 ```
+
+`npx ph init`은 최소 설치/연동 단계입니다. `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore`만 준비하고, `AGENTS.md`, `.persona/project-profile.jsonc`, plan/report template은 만들지 않습니다.
+
+backend-ready 상태가 필요하면 `npx ph bootstrap backend`를 실행합니다. 이 명령은 `AGENTS.md`, 기본 backend profile, policy overlay, accepted plan, implementation/review report template, harness/OpenCode config 상태를 준비합니다.
 
 초기 설정 이후에는 사용자가 모든 명령어를 외울 필요가 없습니다. 먼저 OpenCode에게 계획만 완성하게 합니다.
 
@@ -84,18 +86,19 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
   "$(npx ph plan --prompt)"
 ```
 
-빠른 alpha smoke에서는 기본 backend profile을 그대로 쓰고 계획을 바로 accepted 상태로 만들 수 있습니다.
+이미 `npx ph bootstrap backend`를 실행한 빠른 alpha smoke에서는 준비된 backend profile과 accepted plan을 확인할 수 있습니다.
 
 ```bash
 npx ph doctor
-npx ph policy init
-npx ph plan --auto-accept
+npx ph workflow check
 ```
 
-프로젝트 조건을 직접 정하고 싶으면 기본 profile을 인터뷰로 덮어씁니다.
+프로젝트 조건을 직접 정하고 싶으면 수동 profile 흐름을 사용합니다.
 
 ```bash
 npx ph intake --interactive --force
+# 또는 비대화형 기본 profile만 필요하면:
+npx ph intake --default backend
 npx ph policy init
 npx ph plan
 npx ph plan --accept
@@ -152,7 +155,8 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 ## 제공하는 것
 
 - 아래 명령어들은 사용자가 직접 외우는 CLI라기보다, OpenCode/Codex-style 세션에서 AI가 호출하기 쉽게 만든 workflow surface입니다.
-- `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config 설치 + ready 기본 backend profile 생성
+- `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, `.gitignore` 설치
+- `ph bootstrap backend`: `AGENTS.md`, ready 기본 backend profile, policy overlay, accepted plan, report template, harness/OpenCode config 준비
 - `ph intake`: 수정 가능한 draft backend profile 생성
 - `ph intake --default backend`: 대화형 터미널 없이 ready 기본 backend profile 생성
 - `ph intake --interactive`: backend planning 질문 후 `.persona/project-profile.jsonc` 생성

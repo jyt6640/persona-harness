@@ -151,29 +151,34 @@ EOF
 
 You can use a different domain. For cleaner feedback, avoid the older `reservation`, `roomescape`, or `book loan` examples when testing the current alpha.
 
-## 4. Create Intake, Policy, And Plan Files
+## 4. Choose The Setup Path
 
-`npx ph init` installs the harness, connects the OpenCode plugin, and immediately starts the backend profile interview.
-The interview writes `.persona/project-profile.jsonc`; that profile is the planning context used before implementation.
-The interview requires an interactive terminal. If an AI/TUI non-TTY shell runs `npx ph init`, the harness installs files but stops before writing a default profile and points the agent to `npx ph bootstrap backend`.
+`npx ph init` is the minimal install and OpenCode integration step. It installs `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`, and `.gitignore` entries, then exits with next-step guidance.
 
-For the normal external tester flow:
+`npx ph init` does not create `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay files, an accepted plan, or workflow report templates.
+
+For the normal backend-ready external tester flow:
 
 ```bash
 npx ph doctor
 npx ph init
-npx ph policy init
-npx ph plan --auto-accept
+npx ph bootstrap backend
 npx ph workflow check
 ```
 
-If you need a non-interactive fast path for smoke tests, use backend bootstrap:
+`npx ph bootstrap backend` prepares the backend workflow for AI implementation. It fills missing `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay files, an accepted `.persona/workflow/plan.md`, implementation/review report templates, harness config, and OpenCode config.
+
+If you want to choose the profile manually instead of using the backend-ready bootstrap path:
 
 ```bash
-npx ph bootstrap backend
+npx ph intake --interactive
+# or, without an interactive terminal:
+npx ph intake --default backend
+npx ph policy init
+npx ph plan --auto-accept
 ```
 
-Use this bootstrap path for AI agent shells where interactive prompts are unreliable. Use the interview path when a human is setting up the project directly in a terminal.
+Use the bootstrap path for AI agent shells where interactive prompts are unreliable. Use the intake path when a human wants to choose project profile answers directly in a terminal.
 
 If `.persona/project-profile.jsonc` is missing, draft, malformed, or incomplete, `ph plan` and `ph workflow implement` stop and ask for `ph intake` first. Before implementation, `npx ph workflow check` usually reports `WARN` because implementation and review reports are still templates. That is normal.
 
@@ -325,11 +330,11 @@ For generated code shape, look for:
 
 These commands are intentionally visible so AI agents can call them from OpenCode/Codex-style sessions.
 
-- `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, and starts the backend profile interview when run from an interactive terminal.
+- `ph init`: installs `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, and `.gitignore` entries only.
 - `ph intake`: creates an editable draft backend profile.
 - `ph intake --default backend`: creates a ready default backend profile without an interactive terminal.
 - `ph intake --interactive`: asks backend planning questions and writes `.persona/project-profile.jsonc`.
-- `ph bootstrap backend`: AI/non-TTY fast path that creates the default backend profile, policy, accepted plan, and report templates.
+- `ph bootstrap backend`: backend-ready path that fills `AGENTS.md`, the default backend profile, policy overlay, accepted plan, report templates, harness config, and OpenCode config.
 - `ph policy init`: creates company and personal backend policy overlay files.
 - `ph plan`: creates `.persona/workflow/plan.md`.
 - `ph plan --auto-accept`: creates workflow plan/report templates and marks the plan accepted for a fast smoke.

@@ -60,8 +60,7 @@ Model ID は `provider/model` 形式です。例: `openai/gpt-5.4-mini-fast`.
 ```bash
 npm install -D persona-harness@alpha
 npx ph init
-npx ph policy init
-npx ph plan --auto-accept
+npx ph bootstrap backend
 ```
 
 Persona Harness 自体を開発する場合は local install を使います。
@@ -69,8 +68,7 @@ Persona Harness 自体を開発する場合は local install を使います。
 ```bash
 npm install -D /absolute/path/to/persona-harness
 npx ph init
-npx ph policy init
-npx ph plan --auto-accept
+npx ph bootstrap backend
 ```
 
 まず OpenCode に plan だけを作らせます。
@@ -126,6 +124,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 ## 提供するもの
 
 - `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config を作成
+- `ph bootstrap backend`: `AGENTS.md`, backend profile, policy overlay, accepted plan, report template を準備
 - `ph intake --interactive`: backend planning 質問を行い `.persona/project-profile.jsonc` を作成
 - `ph policy init`: company/personal backend policy overlay を作成
 - `ph plan`: `blackbear` planning role 用 `.persona/workflow/plan.md` を作成
