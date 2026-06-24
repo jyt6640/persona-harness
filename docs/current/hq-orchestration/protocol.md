@@ -30,6 +30,13 @@ HQ는 기능 개발 요청을 받으면 바로 dispatch하지 않는다. 먼저 
 
 HQ는 담당 세션에 메시지를 직접 보낸다.
 
+HQ는 새 thread를 기본값으로 만들지 않는다. 담당 영역별 공용 lane을 먼저 재사용한다.
+
+- 같은 담당 영역의 thread가 이미 있으면 `send_message_to_thread`로 이어서 보낸다.
+- 새 thread는 해당 담당 영역의 공용 lane이 없거나, 기존 lane이 archive/blocked 상태이거나, 독립 worktree가 반드시 필요한 경우에만 만든다.
+- 새로 만든 thread가 반복적으로 필요해지면 disposable task thread가 아니라 담당 영역 공용 lane으로 승격하고, thread id를 HQ memory에 기록한다.
+- 장시간 OpenCode smoke, A/B, external validation은 공용 External Smoke lane으로 보낸다. HQ가 직접 실행하지 않는다.
+
 모든 dispatch에는 다음이 포함되어야 한다.
 
 - 공통 지시.
@@ -136,6 +143,14 @@ HQ는 담당 세션 결과를 받거나 읽은 뒤 다음을 확인한다.
 | QA Coverage | unit tests, coverage map, test strategy | feature scope decisions |
 | Docs Release | README, CHANGELOG, release notes, external guides, develop logs | runtime/CLI behavior |
 | Research Reference | OMO/Codex/reference analysis | product code changes |
+| External Smoke | clean install, OpenCode/TUI smoke, A/B/generated output review | product code changes, release/publish decisions |
+
+현재 재사용 lane:
+
+| Lane | Thread id | Reuse For |
+| --- | --- | --- |
+| Runtime/Injection | `019ef8d2-c35c-75b1-bbae-fe66c8343ec3` | runtime injection, profile summary attribution, evidence/intent hook behavior |
+| CLI Workflow | `019ef8d2-cc51-7c02-bbc3-209a216ca20c` | workflow tickets, `ph workflow`, `ph plan`, check/finish/continue behavior |
 
 ## Stop Rules
 

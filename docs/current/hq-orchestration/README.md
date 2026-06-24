@@ -20,7 +20,7 @@ Persona Harness HQ는 사용자와 대화하면서 기능 의도를 정규화하
 
 1. HQ asks enough questions to normalize the user's intent.
 2. HQ derives scope, non-goals, success criteria, and owner session.
-3. HQ sends a dispatch prompt to the owner session.
+3. HQ reuses the existing owner-session lane when one exists, then sends a dispatch prompt.
 4. Owner session reports in Korean using the standard result format.
 5. Owner session sends the result back to the HQ thread when thread tools are available.
 6. HQ reads the result, checks conflicts and gaps, then decides the next dispatch.
@@ -29,3 +29,9 @@ Persona Harness HQ는 사용자와 대화하면서 기능 의도를 정규화하
 ## Core Rule
 
 사용자는 HQ와만 대화해도 된다. HQ가 담당 세션에 보내고, 읽고, 다음 작업을 이어간다.
+
+## Lane Reuse
+
+HQ는 작업마다 새 thread를 만들지 않는다. `CLI Workflow`, `Runtime/Injection`, `External Smoke`, `QA Coverage`, `Docs Release` 같은 담당 영역은 가능한 한 같은 thread를 계속 재사용한다.
+
+새 thread는 담당 lane이 없거나, 기존 lane이 막혔거나, 격리 worktree가 필요한 경우에만 만든다. 새로 만든 thread가 반복 업무에 쓰이면 공용 lane으로 승격하고 `protocol.md`와 develop memory에 thread id를 기록한다.
