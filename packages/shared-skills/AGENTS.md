@@ -15,7 +15,14 @@ Active auto-routed skills:
 
 Active intent-routed skills:
 
-- `workflow/requirements` — selected by Persona Harness runtime when a user asks to implement README/requirements/prompt requirements. This skill stays in the npm package and is not copied into project `.persona`.
+- `workflow/requirements` — selected by Persona Harness runtime when a user asks to draft, approve, split, continue, or implement README/requirements/prompt requirements.
+- `workflow/debug` — selected by Persona Harness runtime for failure/error/broken-behavior prompts.
+- `workflow/review` — selected by Persona Harness runtime for review/audit/QA prompts.
+- `workflow/refactor` — selected by Persona Harness runtime for behavior-preserving cleanup/restructure prompts.
+- `workflow/git` — selected by Persona Harness runtime for commit/push/tag/history prompts.
+- `workflow/programming` — selected by Persona Harness runtime for direct code creation or edit prompts when no stronger workflow rail applies.
+
+Workflow skills stay in the npm package and are not copied into project `.persona`.
 
 Inactive vendored skills:
 
