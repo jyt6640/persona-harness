@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { readBackendProjectProfileState } from "../config/project-profile.js"
+import { backendShapeReportStatus } from "./backend-shape-report-status.js"
 import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./java-role-read-coverage.js"
 import { readStackAlignment, type StackAlignmentSummary } from "./stack-alignment.js"
 import {
@@ -428,6 +429,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- java role read coverage: ${summary.javaRoleReadCoverage}`,
     `- command discipline: ${summary.commandDiscipline}`,
     `- stack alignment: ${summary.stackAlignment}`,
+    `- backend shape report: ${backendShapeReportStatus(summary.projectDir)}`,
     ...formatPendingWorkflowTicketStatusLines(summary.pendingTickets),
     "",
     `Next: ${summary.next}`,

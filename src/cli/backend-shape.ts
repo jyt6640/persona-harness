@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
@@ -14,7 +15,8 @@ type ShapeFinding = {
   readonly evidence: string
 }
 
-const REPORT_PATH = ".persona/workflow/backend-shape-report.md"
+export const BACKEND_SHAPE_REPORT_PATH = ".persona/workflow/backend-shape-report.md"
+const FAKE_SHIM_FILES = ["gradle-shim.js", join("tools", "gradle-shim.js")] as const
 
 function listFiles(dirPath: string): readonly string[] {
   if (!existsSync(dirPath)) {
@@ -45,12 +47,44 @@ function javaFiles(projectDir: string): readonly string[] {
   return listFiles(join(projectDir, "src", "main", "java")).filter((filePath) => filePath.endsWith(".java"))
 }
 
+function readBuildText(projectDir: string): string {
+  return [join(projectDir, "build.gradle"), join(projectDir, "build.gradle.kts")]
+    .filter((buildPath) => existsSync(buildPath))
+    .map((buildPath) => readFileSync(buildPath, "utf8"))
+    .join("\n")
+}
+
 function pass(criterion: string, evidence: string): ShapeFinding {
   return { criterion, result: "PASS", evidence }
 }
 
 function warn(criterion: string, evidence: string): ShapeFinding {
   return { criterion, result: "WARN", evidence }
+}
+
+function springBootApp(projectDir: string, files: readonly string[]): ShapeFinding {
+  const buildText = readBuildText(projectDir)
+  const hasSpringBuildSignal = /org\.springframework\.boot|spring-boot-starter/.test(buildText)
+  const appFiles = files.filter((filePath) => /Application\.java$/.test(filePath))
+  const hasSpringBootApplication = appFiles.some((filePath) => readFileSync(filePath, "utf8").includes("@SpringBootApplication"))
+  return hasSpringBuildSignal && hasSpringBootApplication
+    ? pass("Spring Boot app", appFiles.map((filePath) => relative(projectDir, filePath)).join(", "))
+    : warn("Spring Boot app", "missing Spring Boot build signal or @SpringBootApplication")
+}
+
+function gradleExecutableAvailable(projectDir: string): boolean {
+  const result = spawnSync("gradle", ["--version"], { cwd: projectDir, encoding: "utf8", timeout: 3_000 })
+  return result.status === 0
+}
+
+function gradleRuntime(projectDir: string): ShapeFinding {
+  const hasWrapper = existsSync(join(projectDir, "gradlew")) || existsSync(join(projectDir, "gradlew.bat"))
+  if (hasWrapper) {
+    return pass("Gradle runtime", "Gradle wrapper present")
+  }
+  return gradleExecutableAvailable(projectDir)
+    ? pass("Gradle runtime", "system Gradle executable available")
+    : warn("Gradle runtime", "Gradle wrapper missing and system Gradle unavailable")
 }
 
 function gradleOnly(projectDir: string): ShapeFinding {
@@ -60,10 +94,37 @@ function gradleOnly(projectDir: string): ShapeFinding {
   return hasGradle && hasSettings && !hasMaven ? pass("Gradle only", "Gradle files present and pom.xml absent") : warn("Gradle only", "Gradle/settings missing or pom.xml present")
 }
 
+function mavenAbsent(projectDir: string): ShapeFinding {
+  return existsSync(join(projectDir, "pom.xml"))
+    ? warn("Maven pom.xml absent", "pom.xml present")
+    : pass("Maven pom.xml absent", "pom.xml absent")
+}
+
+function fakeBuildShimAbsent(projectDir: string): ShapeFinding {
+  const shims = FAKE_SHIM_FILES.filter((shimPath) => existsSync(join(projectDir, shimPath)))
+  return shims.length === 0 ? pass("Fake build shim absent", "no fake Gradle shim observed") : warn("Fake build shim absent", shims.join(", "))
+}
+
 function layerStructure(files: readonly string[]): ShapeFinding {
   const required = ["presentation", "application", "domain", "infrastructure"]
   const missing = required.filter((part) => !hasPathPart(files, part))
   return missing.length === 0 ? pass("Layer/package structure", required.join(", ")) : warn("Layer/package structure", `missing: ${missing.join(", ")}`)
+}
+
+function boundaryShape(files: readonly string[]): ShapeFinding {
+  const hasController = files.some((filePath) => filePath.endsWith("Controller.java") || filePath.includes("/presentation/"))
+  const hasService = files.some((filePath) => filePath.endsWith("Service.java") || filePath.includes("/application/"))
+  const hasRepository = files.some((filePath) => filePath.endsWith("Repository.java"))
+  const hasDto = files.some((filePath) => filePath.includes("/dto/"))
+  const hasDomain = files.some((filePath) => filePath.includes("/domain/") && !filePath.endsWith("Repository.java"))
+  const missing = [
+    ...(!hasController ? ["Controller"] : []),
+    ...(!hasService ? ["Service"] : []),
+    ...(!hasRepository ? ["Repository"] : []),
+    ...(!hasDto ? ["DTO"] : []),
+    ...(!hasDomain ? ["Domain"] : []),
+  ]
+  return missing.length === 0 ? pass("Controller/Service/Repository/DTO/Domain boundary", "role files observed") : warn("Controller/Service/Repository/DTO/Domain boundary", `missing: ${missing.join(", ")}`)
 }
 
 function repositoryPort(projectDir: string, files: readonly string[]): ShapeFinding {
@@ -120,6 +181,19 @@ function dtoBoundary(files: readonly string[]): ShapeFinding {
   return hasRequest && hasResponse ? pass("DTO boundary", "request and response DTO packages present") : warn("DTO boundary", "request/response DTO package missing")
 }
 
+function entityDirectExposure(projectDir: string, files: readonly string[]): ShapeFinding {
+  const domainNames = files
+    .filter((filePath) => filePath.includes("/domain/") && !filePath.endsWith("Repository.java"))
+    .map((filePath) => filePath.split("/").at(-1)?.replace(/\.java$/, ""))
+    .filter((name): name is string => name !== undefined)
+  const controllerFiles = files.filter((filePath) => filePath.endsWith("Controller.java") || filePath.includes("/presentation/"))
+  const hits = controllerFiles.flatMap((filePath) => {
+    const content = readFileSync(filePath, "utf8")
+    return domainNames.filter((domainName) => new RegExp(`\\b${domainName}\\b`).test(content)).map((domainName) => `${relative(projectDir, filePath)} exposes ${domainName}`)
+  })
+  return hits.length === 0 ? pass("Entity direct exposure", "no controller domain entity exposure observed") : warn("Entity direct exposure", hits.join(", "))
+}
+
 function bootJar(projectDir: string): ShapeFinding {
   const buildPath = existsSync(join(projectDir, "build.gradle")) ? join(projectDir, "build.gradle") : join(projectDir, "build.gradle.kts")
   if (!existsSync(buildPath)) {
@@ -148,20 +222,28 @@ function verificationReport(projectDir: string): ShapeFinding {
 function createReport(projectDir: string): string {
   const files = javaFiles(projectDir)
   const findings = [
+    springBootApp(projectDir, files),
+    gradleRuntime(projectDir),
     gradleOnly(projectDir),
+    mavenAbsent(projectDir),
+    fakeBuildShimAbsent(projectDir),
     layerStructure(files),
+    boundaryShape(files),
     repositoryPort(projectDir, files),
     repositoryAdapter(projectDir, files),
     serviceStorage(projectDir, files),
     domainBehavior(projectDir, files),
     dtoBoundary(files),
+    entityDirectExposure(projectDir, files),
     bootJar(projectDir),
     verificationReport(projectDir),
   ]
   return [
     "# Backend Shape Report",
     "",
-    "Report-only observation for Java/Spring backend clean-code shape.",
+    "Report-only workflow/structure observation report for Java/Spring backend shape.",
+    "",
+    "This is not enforcement/linter output and not generated app product-quality certification.",
     "",
     "| Criterion | Result | Evidence |",
     "| --- | --- | --- |",
@@ -178,7 +260,7 @@ function createReport(projectDir: string): string {
 
 export function runBackendShapeReview(options: BackendShapeOptions = {}): CliRunResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
-  const reportPath = join(projectDir, REPORT_PATH)
+  const reportPath = join(projectDir, BACKEND_SHAPE_REPORT_PATH)
   mkdirSync(dirname(reportPath), { recursive: true })
   writeFileSync(reportPath, createReport(projectDir))
   return { status: 0, stdout: `Backend shape report written: ${reportPath}\n`, stderr: "" }
