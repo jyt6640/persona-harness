@@ -6,7 +6,23 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-No unreleased changes yet.
+### Added
+
+- Added v0.3.8 workflow reliability guidance for pending workflow tickets:
+  - `ph workflow finish implement` now reports pending ticket id, title, path, next command, and archive command;
+  - technical-constraints tickets can be surfaced as review/archive candidates when existing workflow signals already pass;
+  - `ph workflow continue` now includes pending ticket context before the generic resume prompt.
+
+### Changed
+
+- Strengthened profile-not-ready workflow UX so `.persona` projects without a ready backend profile point to `npx ph intake --interactive` or `npx ph bootstrap backend`.
+- Strengthened runtime implementation guidance so AI runs must read `.persona/project-profile.jsonc`, avoid stack drift, and continue pending tickets instead of claiming completion.
+
+### Verification
+
+- `npm test` passed: 47 files, 308 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed.
 
 ## [0.3.7-alpha.1] - 2026-06-24
 

@@ -329,7 +329,60 @@ describe("ph workflow ticket backlog", () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Pending workflow tickets remain: step-2, step-3")
+    expect(result.stderr).toContain("Ticket: step-2")
+    expect(result.stderr).toContain("Title: iCal Import/Export")
+    expect(result.stderr).toContain("Path: .persona/workflow/work/step-2/00-task-card.md")
     expect(result.stderr).toContain("Run `npx ph workflow next`")
+    expect(result.stderr).toContain("If this ticket is complete: `npx ph workflow archive step-2`")
+  })
+
+  it("suggests reviewing and archiving a satisfied technical constraints ticket instead of auto-completing it", () => {
+    const projectDir = createHarnessProject()
+    writeFileSync(
+      join(projectDir, "README.md"),
+      [
+        "# Calendar API",
+        "",
+        "## Step 1. Basic CRUD",
+        "",
+        "- 일정을 등록한다.",
+        "",
+        "## Step 2. Technical Constraints",
+        "",
+        "- Use Gradle only.",
+        "- Keep Java source under src/main/java.",
+        "- Fill implementation and review reports.",
+      ].join("\n"),
+    )
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'calendar'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
+    writeFileSync(join(projectDir, ".persona", "project-profile.jsonc"), "{\"status\":\"ready\",\"questions\":[]}\n")
+    writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "Status: filled",
+        "- README ranges read: 1-220",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell --shell './gradlew test'`",
+      ].join("\n"),
+    )
+    writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n")
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["workflow", "archive", "step-1"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Ticket: step-2")
+    expect(result.stderr).toContain("Title: Technical Constraints")
+    expect(result.stderr).toContain("may already be satisfied")
+    expect(result.stderr).toContain("Archive only after review: `npx ph workflow archive step-2`")
   })
 
   it("keeps workflow ticket commands inactive before Persona Harness opt-in", () => {

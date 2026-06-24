@@ -18,8 +18,8 @@ import {
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
+import { pendingWorkflowTickets } from "./workflow-ticket-summary.js"
 import {
-  pendingWorkflowTicketIds,
   runWorkflowArchive,
   runWorkflowApproveRequirements,
   runWorkflowCapture,
@@ -33,16 +33,21 @@ type WorkflowOptions = {
   readonly stdin?: string
 }
 
-function implementationGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): readonly string[] {
+type WorkflowStatus = ReturnType<typeof readWorkflowStatus>
+
+type PendingTicketSummary = ReturnType<typeof pendingWorkflowTickets>[number]
+
+function implementationGuardReasons(summary: WorkflowStatus): readonly string[] {
   const reasons: string[] = []
   const profileState = readBackendProjectProfileState(summary.projectDir)
   if (profileState.status !== "ready") {
     reasons.push(
       [
         "Harness initialized but project profile is not ready.",
+        ".persona exists but the backend project profile is not ready.",
         profileState.message,
-        "Fast path: run npx ph bootstrap backend.",
-        "Manual path: run npx ph intake --default backend or npx ph intake --interactive.",
+        "Interactive intake: run `npx ph intake --interactive`.",
+        "AI/non-TTY fast path: run `npx ph bootstrap backend`.",
       ].join(" "),
     )
   }
@@ -60,7 +65,52 @@ function implementationGuardReasons(summary: ReturnType<typeof readWorkflowStatu
   return reasons
 }
 
-function finalGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): readonly string[] {
+function ticketLooksTechnicalConstraints(ticket: PendingTicketSummary): boolean {
+  return /technical constraints|constraints|기술|제약/i.test(`${ticket.ticket} ${ticket.title} ${ticket.path}`)
+}
+
+function satisfiedTechnicalConstraintSignals(summary: WorkflowStatus): readonly string[] {
+  const signals = [
+    ...(summary.implementation === "filled" && summary.review === "filled" ? ["workflow reports filled"] : []),
+    ...(summary.readCoverageFinding === "PASS" ? ["README/read coverage PASS"] : []),
+    ...(summary.profileReadCoverageFinding === "PASS" ? ["project profile read coverage PASS"] : []),
+    ...(summary.stackAlignmentFinding === "PASS" ? ["Java/Spring Gradle stack alignment PASS"] : []),
+    ...(summary.commandDisciplineFinding === "PASS" ? ["bearshell command discipline PASS"] : []),
+    ...(summary.evidence === "present" ? ["workflow evidence present"] : []),
+  ]
+  return signals
+}
+
+function pendingTicketReason(summary: WorkflowStatus): string | undefined {
+  const pendingTickets = pendingWorkflowTickets(summary.projectDir)
+  if (pendingTickets.length === 0) {
+    return undefined
+  }
+
+  const ticketLines = pendingTickets.flatMap((ticket) => {
+    const technicalSignals = ticketLooksTechnicalConstraints(ticket) ? satisfiedTechnicalConstraintSignals(summary) : []
+    return [
+      `  Ticket: ${ticket.ticket}`,
+      `  Title: ${ticket.title}`,
+      `  Path: ${ticket.path}`,
+      "  Next command: `npx ph workflow next`",
+      `  If this ticket is complete: \`npx ph workflow archive ${ticket.ticket}\``,
+      ...(technicalSignals.length > 0
+        ? [
+            `  Technical constraints note: may already be satisfied by ${technicalSignals.join(", ")}.`,
+            `  Archive only after review: \`npx ph workflow archive ${ticket.ticket}\``,
+          ]
+        : []),
+    ]
+  })
+  return [
+    `Pending workflow tickets remain: ${pendingTickets.map((ticket) => ticket.ticket).join(", ")}.`,
+    "Run `npx ph workflow next` to resume the next ticket.",
+    ...ticketLines,
+  ].join("\n")
+}
+
+function finalGuardReasons(summary: WorkflowStatus): readonly string[] {
   const reasons: string[] = []
   if (summary.plan !== "accepted") {
     reasons.push(".persona/workflow/plan.md must be accepted")
@@ -75,25 +125,27 @@ function finalGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): read
     reasons.push(".persona/evidence must contain at least one evidence file")
   }
   if (summary.commandDisciplineBlocking) {
-    reasons.push(summary.commandDiscipline)
+    reasons.push(`Command discipline blocking: ${summary.commandDiscipline}. Rerun final verification through \`npx ph bearshell\`.`)
   }
   if (summary.readCoverageBlocking) {
-    reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md")
+    reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md before finish.")
   }
   if (summary.profileReadCoverageBlocking) {
-    reasons.push("project profile read coverage must be recorded in .persona/workflow/implementation-report.md")
+    reasons.push(
+      "Profile read coverage missing: project profile read coverage must be recorded in .persona/workflow/implementation-report.md. Record project profile read method/ranges before finish.",
+    )
   }
   if (summary.stackAlignmentBlocking) {
-    reasons.push(summary.stackAlignment)
+    reasons.push(`Stack alignment blocking: ${summary.stackAlignment}. Keep the Java/Spring backend MVP stack aligned before finish.`)
   }
-  const pendingTicketIds = pendingWorkflowTicketIds(summary.projectDir)
-  if (pendingTicketIds.length > 0) {
-    reasons.push(`Pending workflow tickets remain: ${pendingTicketIds.join(", ")}. Run \`npx ph workflow next\`.`)
+  const pendingReason = pendingTicketReason(summary)
+  if (pendingReason !== undefined) {
+    reasons.push(pendingReason)
   }
   return reasons
 }
 
-function hasPersonaHarness(summary: ReturnType<typeof readWorkflowStatus>): boolean {
+function hasPersonaHarness(summary: WorkflowStatus): boolean {
   return existsSync(join(summary.projectDir, ".persona"))
 }
 

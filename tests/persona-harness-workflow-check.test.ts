@@ -48,6 +48,19 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain("Next: run `npx ph plan`")
   })
 
+  it("guides implementation requests back to intake or bootstrap when .persona exists but the profile is missing", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+
+    const result = runPersonaCli(["workflow", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Workflow implement failed: implement")
+    expect(result.stderr).toContain(".persona exists but the backend project profile is not ready")
+    expect(result.stderr).toContain("npx ph intake --interactive")
+    expect(result.stderr).toContain("npx ph bootstrap backend")
+  })
+
   it("reports accepted plan, filled implementation report, and evidence presence", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)

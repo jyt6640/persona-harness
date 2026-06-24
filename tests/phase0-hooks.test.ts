@@ -295,6 +295,10 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("Detected intent: programming")
     expect(text).toContain("의도 감지: 직접 프로그래밍 요청으로 판단함.")
     expect(text).toContain("관련 파일을 먼저 읽는다")
+    expect(text).toContain("Runtime reliability guard:")
+    expect(text).toContain("`.persona/project-profile.jsonc`가 있으면 반드시 읽고")
+    expect(text).toContain("profile이 존재하지만 아직 읽지 않았다면 구현하지 말고")
+    expect(text).toContain("`npx ph plan --report-filled review`")
     expect(text).not.toContain("[Persona Harness Requirements Workflow]")
     expect(text).not.toContain("[Persona Harness Debug Workflow]")
     expect(text).not.toContain("[Persona Harness Review Workflow]")
@@ -340,6 +344,18 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("npx ph workflow capture --stdin")
     expect(text).toContain("npx ph workflow split")
     expect(text).toContain("현재 task card만 구현")
+    expect(text).toContain("prompt-only requirements")
+    expect(text).toContain("요구사항 source/backlog를 먼저 만든다")
+
+    const intentEvidence = evidencePayloads(fixtureWorkspace).find(
+      (payload) => payload.schemaVersion === "phase0.intent.1",
+    )
+    expect(intentEvidence).toMatchObject({
+      injectedInto: "intent-workflow",
+      userPrompt: "이 요구사항대로 장비 대여 API 만들어줘",
+      primaryIntent: "requirements",
+      railMarker: "[Persona Harness Requirements Workflow]",
+    })
   })
 
   it("injects requirements draft guidance for vague product ideas without implementation", async () => {
@@ -357,6 +373,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("다음 행동: 구현하지 않고 requirements draft를 작성한 뒤 사용자 검토를 기다린다.")
     expect(text).toContain("npx ph workflow draft --stdin")
     expect(text).toContain("구현하지 않는다")
+    expect(text).toContain("draft/review-before-implementation")
     expect(text).toContain("Say `진행하자`")
     expect(text).not.toContain("npx ph workflow split README.md")
   })
@@ -407,6 +424,8 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("다음 행동: 다음 pending ticket을 확인하고 현재 ticket만 이어서 진행한다.")
     expect(text).toContain("npx ph workflow next")
     expect(text).toContain("npx ph workflow continue")
+    expect(text).toContain("pending tickets remain")
+    expect(text).toContain("전체 완료라고 주장하지 않는다")
   })
 
   it("does not over-route explanation or debugging requests to requirements workflow", async () => {
@@ -587,6 +606,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(injection.block).toContain("짧은 구현 지시")
     expect(injection.block).toContain("플랜 보고 구현해줘")
     expect(injection.block).toContain("npx ph workflow implement")
+    expect(injection.block).toContain("profile exists but not read → do not implement yet")
     expect(injection.block).toContain("실패하면 구현하지 말고")
     expect(injection.block).toContain("긴 README/plan은 `npx ph bearshell --shell 'sed -n")
     expect(injection.block).toContain("중간에 멈추면 implementation-report에 남은 범위를 기록한다.")

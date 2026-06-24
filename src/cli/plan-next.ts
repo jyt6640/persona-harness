@@ -6,6 +6,7 @@ import type { CliRunResult } from "./bearshell.js"
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH, type PlanOptions } from "./plan.js"
 import { PlanStatusError, readWorkflowPlanStatus } from "./plan-status.js"
 import { createImplementationPrompt } from "./plan-prompts.js"
+import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets } from "./workflow-ticket-summary.js"
 
 type ReportStatus = "missing" | "template" | "filled" | "unknown"
 
@@ -15,6 +16,7 @@ type WorkflowSnapshot = {
   readonly implementationStatus: ReportStatus
   readonly reviewStatus: ReportStatus
   readonly implementationReportText: string | undefined
+  readonly pendingTicket: ReturnType<typeof pendingWorkflowTickets>[number] | undefined
 }
 
 const READ_COVERAGE_LABELS = [
@@ -90,6 +92,7 @@ function workflowSnapshot(options: PlanOptions): WorkflowSnapshot {
     implementationStatus: reportStatus(projectDir, IMPLEMENTATION_REPORT_PATH),
     reviewStatus: reportStatus(projectDir, REVIEW_REPORT_PATH),
     implementationReportText: reportText(projectDir, IMPLEMENTATION_REPORT_PATH),
+    pendingTicket: pendingWorkflowTickets(projectDir)[0],
   }
 }
 
@@ -234,6 +237,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
     ...evidenceLines(reportText),
     "",
+    ...pendingWorkflowTicketResumeLines(snapshot.pendingTicket),
     "Plan unchecked items:",
     ...(uncheckedItems.length > 0 ? uncheckedItems : ["- No unchecked plan checklist items found."]),
     "",

@@ -83,6 +83,7 @@ describe("continuation hook", () => {
     expect(output.text).toContain("[Persona Harness Continuation]")
     expect(output.text).toContain("Next pending ticket: iCal Import/Export")
     expect(output.text).toContain("Task card: .persona/workflow/work/step-2/00-task-card.md")
+    expect(output.text).toContain("Pending tickets remain: continue the next ticket; do not claim all done.")
     expect(output.text).toContain("Remaining README/plan range: README.md 120-260")
     expect(output.text).toContain("Remaining scope: Step 2-7")
     expect(output.text).toContain("Next prompt hint: Step 2부터 이어서 구현")
@@ -120,6 +121,7 @@ describe("continuation hook", () => {
     expect(output.text).toContain("[Persona Harness Continuation]")
     expect(output.text).toContain("Assistant output looks complete while workflow backlog still has pending tickets.")
     expect(output.text).toContain("Next pending ticket: iCal Import/Export")
+    expect(output.text).toContain("Pending tickets remain: continue the next ticket; do not claim all done.")
   })
 
   it("does not append continuation guidance when no remaining scope or pending ticket exists", async () => {

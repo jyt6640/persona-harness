@@ -111,6 +111,9 @@ function continuationBlock(summary: ContinuationSummary): string {
     `Reason: ${summary.reason}`,
     summary.pendingTicket === undefined ? undefined : `Next pending ticket: ${summary.pendingTicket}`,
     summary.pendingTicketPath === undefined ? undefined : `Task card: ${summary.pendingTicketPath}`,
+    summary.pendingTicket === undefined
+      ? undefined
+      : "Pending tickets remain: continue the next ticket; do not claim all done.",
     summary.remainingReadRange === undefined ? undefined : `Remaining README/plan range: ${summary.remainingReadRange}`,
     summary.remainingScope === undefined ? undefined : `Remaining scope: ${summary.remainingScope}`,
     summary.nextPromptHint === undefined ? undefined : `Next prompt hint: ${summary.nextPromptHint}`,

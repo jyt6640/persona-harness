@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -222,5 +222,36 @@ describe("ph workflow continue", () => {
     expect(result.stdout).toContain("README Step 4/6/7")
     expect(result.stdout).toContain("import/export and sharing API")
     expect(result.stdout).toContain("npx ph workflow implement")
+  })
+
+  it("shows the pending ticket path and archive command before the generic resume prompt", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPlan(projectDir, []).status).toBe(0)
+    expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    mkdirSync(join(projectDir, ".persona", "workflow", "work", "step-2"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "backlog.md"),
+      [
+        "# Persona Workflow Backlog",
+        "",
+        "Status: active",
+        "",
+        "| Order | Ticket | Title | Status | Path |",
+        "| --- | --- | --- | --- | --- |",
+        "| 1 | step-1 | Basic CRUD | archived | .persona/workflow/history/step-1/00-task-card.md |",
+        "| 2 | step-2 | iCal Import/Export | pending | .persona/workflow/work/step-2/00-task-card.md |",
+      ].join("\n"),
+    )
+    writeFileSync(join(projectDir, ".persona", "workflow", "work", "step-2", "00-task-card.md"), "# Task Card: Step 2\n")
+
+    const result = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Pending workflow ticket:")
+    expect(result.stdout).toContain("Ticket: step-2")
+    expect(result.stdout).toContain("Title: iCal Import/Export")
+    expect(result.stdout).toContain("Path: .persona/workflow/work/step-2/00-task-card.md")
+    expect(result.stdout).toContain("Next command: npx ph workflow next")
+    expect(result.stdout).toContain("If complete: npx ph workflow archive step-2")
   })
 })

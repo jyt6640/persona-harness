@@ -84,6 +84,7 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     "",
     "주의:",
     "이 Phase 0 블록은 .persona/rules 정본과 최소 frontmatter/glob/scenario catalog layer를 읽는 MVP rule-loader 결과이며, 아직 full rule engine은 아니다.",
+    "구현 전에 `.persona/project-profile.jsonc`가 있으면 반드시 읽고 language/framework/build tool을 따른다. profile exists but not read → do not implement yet.",
     "코드 구조 분석이나 변경 영향 파악이 필요하면 raw file read보다 codegraph MCP를 먼저 사용한다. codegraph를 사용할 수 없을 때만 필요한 파일 범위를 직접 읽고 그 이유를 남긴다.",
     "repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.",
     "`.persona`가 있는데 프로젝트 프로필/정책/계획이 비어 있으면 구현하지 말고, AI/non-TTY shell에서는 먼저 `npx ph bootstrap backend`를 실행한다.",
