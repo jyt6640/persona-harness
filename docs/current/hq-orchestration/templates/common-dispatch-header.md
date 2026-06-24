@@ -5,6 +5,7 @@
 - 반드시 한국어로 답한다.
 - 담당 범위 밖 작업은 직접 하지 말고 `Handoff`에 보고한다.
 - 새 thread를 만들지 말고, 담당 영역의 기존 공용 lane을 재사용한다. HQ가 새 thread를 만들었다면 반복 업무용 공용 lane으로 승격할지 확인한다.
+- thread 정체성은 이번 작업명이 아니라 장기 lane 역할이다. 보고할 때도 `Prompt Architect`, `Runtime Injection`, `CLI Workflow`, `Docs Release`, `External Smoke`, `QA Coverage`, `Skills Prompting`, `Research Reference` 같은 고정 lane 이름을 사용한다.
 - 작업 단위별 atomic commit을 지킨다.
 - 기능/테스트/문서/release 변경이 독립이면 커밋을 나눈다.
 - 커밋 전 staged diff가 이번 작업만 포함하는지 확인한다.

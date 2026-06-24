@@ -132,6 +132,24 @@ HQ는 담당 세션 결과를 받거나 읽은 뒤 다음을 확인한다.
 - unrelated dirty file은 섞지 않는다.
 - push는 HQ/사용자 지시가 있을 때만 한다.
 
+## Permanent Lane Roles
+
+HQ는 담당 thread를 임시 작업자가 아니라 재사용 가능한 lane으로 다룬다. lane 이름은 작업명이 아니라 장기 책임을 드러내야 한다.
+
+이름 규칙:
+
+- `Persona Harness HQ`: 사용자와 대화하며 의도, 우선순위, dispatch, 통합 판단을 맡는다.
+- `Prompt Architect`: HQ가 정한 목표를 전담 lane에 보낼 dispatch prompt로 정규화한다.
+- `Runtime Injection`: runtime hooks, injection, evidence, intent, profile summary attribution을 맡는다.
+- `CLI Workflow`: `ph workflow`, `ph plan`, ticket/report/check/finish/continue UX를 맡는다.
+- `Docs Release`: README, CHANGELOG, release notes, external guide, develop 기록, version prep을 맡는다.
+- `External Smoke`: clean install, OpenCode/TUI smoke, A/B/generated output 관찰을 맡는다.
+- `QA Coverage`: unit/integration/e2e-smoke coverage map과 테스트 보강을 맡는다.
+- `Skills Prompting`: shared-skills, rail wording, `.persona/rules` prompt surface를 맡는다.
+- `Research Reference`: OMO/Codex/reference 조사와 해석을 맡는다.
+
+새 thread를 만들 때 제목은 `[Persona Harness] <Lane Name>` 형식을 사용한다. 이미 만들어진 thread도 가능한 한 이 이름으로 rename한다.
+
 ## Session Ownership
 
 | Session | Owns | Must Not Own |
@@ -147,11 +165,13 @@ HQ는 담당 세션 결과를 받거나 읽은 뒤 다음을 확인한다.
 
 현재 재사용 lane:
 
-| Lane | Thread id | Reuse For |
+| Lane Name | Thread id | Reuse For |
 | --- | --- | --- |
-| Runtime/Injection | `019ef8d2-c35c-75b1-bbae-fe66c8343ec3` | runtime injection, profile summary attribution, evidence/intent hook behavior |
+| Prompt Architect | `019ef8b8-bfdf-7c72-9e6b-f50424e3993f` | dispatch prompt design and normalization |
+| Runtime Injection | `019ef8d2-c35c-75b1-bbae-fe66c8343ec3` | runtime injection, profile summary attribution, evidence/intent hook behavior |
 | CLI Workflow | `019ef8d2-cc51-7c02-bbc3-209a216ca20c` | workflow tickets, `ph workflow`, `ph plan`, check/finish/continue behavior |
 | Docs Release | `019ef8e2-8faa-7983-957e-9453c86f1384` | README, CHANGELOG, release notes, external guides, develop records |
+| External Smoke | `019ef8c2-d17f-7713-9fa1-79be6a9a2c4b` | clean install, OpenCode/TUI smoke, A/B/generated output review |
 
 ## Stop Rules
 
