@@ -2,6 +2,7 @@ import type { Hooks } from "@opencode-ai/plugin"
 
 import { writePhase0Evidence } from "./evidence.js"
 import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
+import { formatRefactorWorkflowBlock } from "./refactor-workflow-skill.js"
 import { formatReviewWorkflowBlock } from "./review-workflow-skill.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
@@ -83,6 +84,14 @@ function maybeInjectIntentWorkflow(output: TransformMessagesOutput, projectDir: 
       output,
       formatReviewWorkflowBlock(intent),
       "[Persona Harness Review Workflow]",
+    )
+  }
+
+  if (intent?.primary === "refactor") {
+    return injectTextIntoLatestUserMessage(
+      output,
+      formatRefactorWorkflowBlock(intent),
+      "[Persona Harness Refactor Workflow]",
     )
   }
 

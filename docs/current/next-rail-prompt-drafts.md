@@ -39,24 +39,27 @@ Non-goals:
 - 구현/리팩터링을 시작하지 않는다.
 ```
 
-## Next Candidate: Refactor Rail
+## Implemented: Refactor Rail
 
 ```text
 [Persona Harness Refactor Workflow]
 
+Detected intent: refactor
+Reason: The user asked for behavior-preserving structure improvement.
+
 의도 감지: 리팩터링 요청으로 판단함.
-근거: 사용자가 구조 개선/정리/리팩터링을 요청함.
-다음 행동: public behavior를 먼저 고정하고, 동작 유지 범위 안에서만 구조를 바꾼다.
+근거: 사용자가 기능 추가보다 구조 개선/정리/cleanup을 요청함.
+다음 행동: public behavior를 먼저 고정한다. 그 다음 작은 구조 변경만 수행한다.
 
 Required flow:
-- 현재 동작을 테스트/빌드/스모크로 먼저 확인한다.
-- 변경 범위를 작게 잡는다.
-- public behavior를 바꾸지 않는다.
-- 구조 변경 후 같은 검증을 다시 실행한다.
-- 기능 추가와 리팩터링을 섞지 않는다.
+- 현재 public behavior를 테스트/빌드/스모크 또는 관찰 가능한 evidence로 먼저 고정한다.
+- 기능을 추가하지 않는다. 요구사항 변경, API 확장, 버그 수정은 별도 rail에서 다룬다.
+- 변경 범위를 작게 잡고 한 번에 하나의 구조 문제만 다룬다.
+- 이름/계층/중복/책임 분리처럼 behavior-preserving 변경만 수행한다.
+- 구조 변경 후 같은 테스트/빌드/스모크 명령을 다시 실행한다.
 ```
 
-## Parking Draft: Git Rail
+## Next Candidate: Git Rail
 
 ```text
 [Persona Harness Git Workflow]

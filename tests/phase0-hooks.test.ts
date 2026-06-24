@@ -221,6 +221,26 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).not.toContain("[Persona Harness Debug Workflow]")
   })
 
+  it("routes refactor requests through the refactor workflow without implementation or debug rails", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-refactor-workflow"
+    const output = modelInputWithText(sessionID, "구조 정리해줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Refactor Workflow]")
+    expect(text).toContain("Detected intent: refactor")
+    expect(text).toContain("의도 감지: 리팩터링 요청으로 판단함.")
+    expect(text).toContain("public behavior를 먼저 고정한다")
+    expect(text).toContain("기능을 추가하지 않는다")
+    expect(text).toContain("같은 테스트/빌드/스모크")
+    expect(text).not.toContain("[Persona Harness Requirements Workflow]")
+    expect(text).not.toContain("[Persona Harness Debug Workflow]")
+    expect(text).not.toContain("[Persona Harness Review Workflow]")
+  })
+
   it("injects prompt capture guidance for pasted requirement implementation requests", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })

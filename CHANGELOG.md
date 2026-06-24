@@ -11,6 +11,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added `detectTopLevelIntent` runtime routing for requirements/debug/review/refactor/git/programming intent priority.
 - Added Persona Debug Workflow block injection for debug primary intent.
 - Added Persona Review Workflow block injection for review primary intent.
+- Added Persona Refactor Workflow block injection for refactor primary intent.
 - Added unit coverage for top-level intent priority and mixed-intent sequencing.
 - Added next rail prompt drafts for review/refactor/git workflow blocks.
 
@@ -19,6 +20,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Requirements workflow injection now goes through the top-level router, so README-related bug reports do not get misrouted into requirements implementation workflow.
 - README-related debug requests now receive a debug workflow block instead of no workflow guidance.
 - Review requests now receive a findings-first review workflow block that tells the AI not to modify code unless the user explicitly asks for fixes.
+- Refactor requests now receive a behavior-preserving refactor workflow block that tells the AI to establish baseline behavior, avoid feature changes, keep changes small, and rerun the same verification.
 
 ## [0.3.6-alpha.1] - 2026-06-23
 
