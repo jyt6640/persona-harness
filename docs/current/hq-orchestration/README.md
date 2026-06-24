@@ -7,9 +7,10 @@ Persona Harness HQ는 사용자와 대화하면서 기능 의도를 정규화하
 ## Documents
 
 - [protocol.md](protocol.md): HQ 운영 프로토콜.
+- [thread-index.md](thread-index.md): 재사용 lane 이름, thread id, archive 처리된 중복 thread 인덱스.
 - [templates/common-dispatch-header.md](templates/common-dispatch-header.md): 모든 담당 세션에 붙이는 공통 지시.
 - [templates/dispatch-cli-workflow.md](templates/dispatch-cli-workflow.md): CLI Workflow 작업 요청 템플릿.
-- [templates/dispatch-runtime-hooks.md](templates/dispatch-runtime-hooks.md): Runtime Hooks 작업 요청 템플릿.
+- [templates/dispatch-runtime-injection.md](templates/dispatch-runtime-injection.md): Runtime Injection 작업 요청 템플릿.
 - [templates/dispatch-skills-prompting.md](templates/dispatch-skills-prompting.md): Skills Prompting 작업 요청 템플릿.
 - [templates/dispatch-qa-coverage.md](templates/dispatch-qa-coverage.md): QA Coverage 작업 요청 템플릿.
 - [templates/dispatch-docs-release.md](templates/dispatch-docs-release.md): Docs Release 작업 요청 템플릿.

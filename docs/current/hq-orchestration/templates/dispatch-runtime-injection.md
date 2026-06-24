@@ -1,4 +1,4 @@
-# Runtime Hooks Dispatch Template
+# Runtime Injection Dispatch Template
 
 {{COMMON_DISPATCH_HEADER}}
 
@@ -7,7 +7,7 @@ Goal:
 
 Scope:
 
-- 담당 범위: `src/runtime/**`, runtime hook tests, intent/evidence/continuation logic.
+- 담당 범위: `src/runtime/**`, runtime hook tests, injection, intent/evidence/continuation logic, profile summary attribution.
 - CLI command behavior는 직접 수정하지 말고 `Handoff`에 보고한다.
 - release docs/publish는 하지 않는다.
 
@@ -34,4 +34,3 @@ npm run build
 Report:
 
 `result-report-format.md` 형식으로 보고한다.
-

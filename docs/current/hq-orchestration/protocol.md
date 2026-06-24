@@ -33,6 +33,7 @@ HQ는 담당 세션에 메시지를 직접 보낸다.
 HQ는 새 thread를 기본값으로 만들지 않는다. 담당 영역별 공용 lane을 먼저 재사용한다.
 
 - 같은 담당 영역의 thread가 이미 있으면 `send_message_to_thread`로 이어서 보낸다.
+- 실제 thread id는 [thread-index.md](thread-index.md)를 정본으로 삼는다.
 - 새 thread는 해당 담당 영역의 공용 lane이 없거나, 기존 lane이 archive/blocked 상태이거나, 독립 worktree가 반드시 필요한 경우에만 만든다.
 - 새로 만든 thread가 반복적으로 필요해지면 disposable task thread가 아니라 담당 영역 공용 lane으로 승격하고, thread id를 HQ memory에 기록한다.
 - 장시간 OpenCode smoke, A/B, external validation은 공용 External Smoke lane으로 보낸다. HQ가 직접 실행하지 않는다.
@@ -156,7 +157,7 @@ HQ는 담당 thread를 임시 작업자가 아니라 재사용 가능한 lane으
 | --- | --- | --- |
 | HQ | direction, decisions, dispatch, result synthesis | broad implementation without owner split |
 | CLI Workflow | `src/cli/**`, `ph` workflow commands, tickets, reports | runtime injection prose, npm publish |
-| Runtime Hooks | `src/runtime/**`, hooks, intent, evidence, continuation | CLI command behavior, release docs |
+| Runtime Injection | `src/runtime/**`, hooks, injection, intent, evidence, continuation, profile summary attribution | CLI command behavior, release docs |
 | Skills Prompting | shared-skills, `.persona/rules`, rail wording | CLI implementation, package publish |
 | QA Coverage | unit tests, coverage map, test strategy | feature scope decisions |
 | Docs Release | README, CHANGELOG, release notes, external guides, develop logs | runtime/CLI behavior |
@@ -172,6 +173,13 @@ HQ는 담당 thread를 임시 작업자가 아니라 재사용 가능한 lane으
 | CLI Workflow | `019ef8d2-cc51-7c02-bbc3-209a216ca20c` | workflow tickets, `ph workflow`, `ph plan`, check/finish/continue behavior |
 | Docs Release | `019ef8e2-8faa-7983-957e-9453c86f1384` | README, CHANGELOG, release notes, external guides, develop records |
 | External Smoke | `019ef8c2-d17f-7713-9fa1-79be6a9a2c4b` | clean install, OpenCode/TUI smoke, A/B/generated output review |
+| QA Coverage | `019ef819-3a55-7cd3-aa36-af1017758487` | tests, coverage map, transition/unit/integration/e2e-smoke coverage |
+| Skills Prompting | `019ef81b-8189-7ea3-ab66-f80a672e4786` | shared-skills, `.persona/rules`, rail wording, Java/backend guidance |
+| Research Reference | `019ef81b-924c-7323-8a42-25d62b039902` | OMO/Codex/reference analysis, session strategy, research memo |
+
+Thread index 정본:
+
+- [thread-index.md](thread-index.md)
 
 ## Stop Rules
 
