@@ -21,6 +21,14 @@ function createProfiledTempProject(): string {
   return projectDir
 }
 
+function writeProfileReadEvidence(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "2026-06-24T00-00-00-000Z-project-profile.jsonc.json"),
+    `${JSON.stringify({ targetFile: join(projectDir, ".persona", "project-profile.jsonc"), fileRole: "project-profile" }, null, 2)}\n`,
+  )
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -73,6 +81,7 @@ describe("ph workflow check", () => {
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -111,6 +120,7 @@ describe("ph workflow check", () => {
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -146,6 +156,99 @@ describe("ph workflow check", () => {
     expect(check.stdout).toContain("profile expects Java/Spring/Gradle")
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("STACK_MISMATCH")
+  })
+
+  it("blocks finish when the backend profile was not read before implementation", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\n- README ranges read: 1-220\n- `npx ph bearshell --shell './gradlew test'`\n",
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("profile read coverage: project profile exists but profile read coverage is empty")
+    expect(check.stdout).toContain("Workflow status: WARN")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("project profile read coverage must be recorded")
+  })
+
+  it("passes profile read coverage when implementation report records project profile read evidence", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "Status: filled",
+        "- README ranges read: 1-220",
+        "- Project profile read method: npx ph bearshell",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell --shell './gradlew test'`",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("profile read coverage: project profile ranges observed")
+    expect(check.stdout).toContain("Workflow status: PASS")
+    expect(finish.status).toBe(0)
+  })
+
+  it("infers profile read coverage from Persona evidence", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\n- README ranges read: 1-220\n- `npx ph bearshell --shell './gradlew test'`\n",
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "phase0", "2026-06-24T00-00-00-000Z-project-profile.jsonc.json"),
+      `${JSON.stringify({ targetFile: join(projectDir, ".persona", "project-profile.jsonc"), fileRole: "project-profile" }, null, 2)}\n`,
+    )
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("profile read coverage: project profile read evidence observed")
+    expect(check.stdout).toContain("Workflow status: PASS")
   })
 
   it("keeps completed workflow WARN when bearshell command discipline is missing", () => {
@@ -279,6 +382,7 @@ describe("ph workflow guard", () => {
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "guard", "final"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -448,6 +552,7 @@ describe("ph workflow start and finish", () => {
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -481,6 +586,7 @@ describe("ph workflow start and finish", () => {
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -516,6 +622,7 @@ describe("ph workflow start and finish", () => {
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -554,6 +661,7 @@ describe("ph workflow start and finish", () => {
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -592,6 +700,7 @@ describe("ph workflow start and finish", () => {
       join(projectDir, ".persona", "evidence", "phase0", "2026-06-23T00-00-00-000Z-readme.md.json"),
       `${JSON.stringify({ targetFile: readmePath, fileRole: "project-bootstrap" }, null, 2)}\n`,
     )
+    writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })

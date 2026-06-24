@@ -14,6 +14,9 @@ export type WorkflowStatusSummary = {
   readonly readCoverage: string
   readonly readCoverageBlocking: boolean
   readonly readCoverageFinding: "PASS" | "WARN"
+  readonly profileReadCoverage: string
+  readonly profileReadCoverageBlocking: boolean
+  readonly profileReadCoverageFinding: "PASS" | "WARN"
   readonly commandDiscipline: string
   readonly commandDisciplineBlocking: boolean
   readonly commandDisciplineFinding: "PASS" | "WARN"
@@ -28,6 +31,7 @@ const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const EVIDENCE_DIR = ".persona/evidence"
 const README_PATH = "README.md"
+const PROFILE_PATH = ".persona/project-profile.jsonc"
 
 function readStatusLine(filePath: string): string {
   if (!existsSync(filePath)) {
@@ -144,7 +148,7 @@ function readExistingFiles(filePaths: readonly string[]): string {
   return filePaths.filter((filePath) => existsSync(filePath)).map((filePath) => readFileSync(filePath, "utf8")).join("\n")
 }
 
-function hasReadmeEvidenceDeep(dirPath: string): boolean {
+function hasEvidenceTargetDeep(dirPath: string, targetPattern: RegExp): boolean {
   if (!existsSync(dirPath)) {
     return false
   }
@@ -152,7 +156,7 @@ function hasReadmeEvidenceDeep(dirPath: string): boolean {
     const entryPath = join(dirPath, entry)
     const stat = statSync(entryPath)
     if (stat.isDirectory()) {
-      if (hasReadmeEvidenceDeep(entryPath)) {
+      if (hasEvidenceTargetDeep(entryPath, targetPattern)) {
         return true
       }
       continue
@@ -161,14 +165,14 @@ function hasReadmeEvidenceDeep(dirPath: string): boolean {
       continue
     }
     const lowerEntry = entry.toLowerCase()
-    if (lowerEntry.includes("readme.md")) {
+    if (targetPattern.test(lowerEntry)) {
       return true
     }
     if (!lowerEntry.endsWith(".json")) {
       continue
     }
     const evidenceText = readFileSync(entryPath, "utf8")
-    if (/["/\\]README\.md["/\\]?|README\.md/i.test(evidenceText)) {
+    if (targetPattern.test(evidenceText)) {
       return true
     }
   }
@@ -185,23 +189,27 @@ const RAW_SHELL_TEMPLATE_CHECKLIST_PATTERN = /raw shell을 직접 썼다면|if r
 
 type CommandDisciplineSummary = Pick<WorkflowStatusSummary, "commandDiscipline" | "commandDisciplineBlocking" | "commandDisciplineFinding">
 type ReadCoverageSummary = Pick<WorkflowStatusSummary, "readCoverage" | "readCoverageBlocking" | "readCoverageFinding">
+type ProfileReadCoverageSummary = Pick<WorkflowStatusSummary, "profileReadCoverage" | "profileReadCoverageBlocking" | "profileReadCoverageFinding">
 
 const README_RANGES_FIELD_PATTERN = /^-\s*README ranges read:\s*(.*)$/i
 const README_RANGES_HEADING_PATTERN = /^##+\s*README ranges read:?\s*$/i
+const PROFILE_RANGES_FIELD_PATTERN = /^-\s*(?:Project profile|Profile)\s+ranges read:\s*(.*)$/i
+const PROFILE_RANGES_HEADING_PATTERN = /^##+\s*(?:Project profile|Profile)\s+ranges read:?\s*$/i
 const READ_COVERAGE_STOP_PATTERN = /^-\s*(?:Plan read method|Plan ranges read|Unread ranges|Read evidence notes):/i
+const PROFILE_COVERAGE_STOP_PATTERN = /^-\s*(?:README read method|README ranges read|Plan read method|Plan ranges read|Unread ranges|Read evidence notes):/i
 const RANGE_COVERAGE_PATTERN = /\b\d+\s*[-–]\s*\d+\b|\ball\b|\bcomplete\b|전체|끝까지|완독/i
 
-function hasReadmeRangeCoverage(reportText: string): boolean {
+function hasRangeCoverage(reportText: string, fieldPattern: RegExp, headingPattern: RegExp, stopPattern: RegExp): boolean {
   const lines = reportText.split(/\r?\n/)
-  const fieldIndex = lines.findIndex((line) => README_RANGES_FIELD_PATTERN.test(line))
+  const fieldIndex = lines.findIndex((line) => fieldPattern.test(line))
   if (fieldIndex !== -1) {
-    const fieldMatch = README_RANGES_FIELD_PATTERN.exec(lines[fieldIndex])
+    const fieldMatch = fieldPattern.exec(lines[fieldIndex])
     if (fieldMatch?.[1] !== undefined && RANGE_COVERAGE_PATTERN.test(fieldMatch[1])) {
       return true
     }
 
     for (const line of lines.slice(fieldIndex + 1)) {
-      if (/^##\s+/.test(line) || READ_COVERAGE_STOP_PATTERN.test(line)) {
+      if (/^##\s+/.test(line) || stopPattern.test(line)) {
         return false
       }
       if (RANGE_COVERAGE_PATTERN.test(line)) {
@@ -210,7 +218,7 @@ function hasReadmeRangeCoverage(reportText: string): boolean {
     }
   }
 
-  const headingIndex = lines.findIndex((line) => README_RANGES_HEADING_PATTERN.test(line))
+  const headingIndex = lines.findIndex((line) => headingPattern.test(line))
   if (headingIndex === -1) {
     return false
   }
@@ -223,6 +231,14 @@ function hasReadmeRangeCoverage(reportText: string): boolean {
     }
   }
   return false
+}
+
+function hasReadmeRangeCoverage(reportText: string): boolean {
+  return hasRangeCoverage(reportText, README_RANGES_FIELD_PATTERN, README_RANGES_HEADING_PATTERN, READ_COVERAGE_STOP_PATTERN)
+}
+
+function hasProjectProfileRangeCoverage(reportText: string): boolean {
+  return hasRangeCoverage(reportText, PROFILE_RANGES_FIELD_PATTERN, PROFILE_RANGES_HEADING_PATTERN, PROFILE_COVERAGE_STOP_PATTERN)
 }
 
 function readCoverage(projectDir: string, implementationStatus: string): ReadCoverageSummary {
@@ -250,7 +266,7 @@ function readCoverage(projectDir: string, implementationStatus: string): ReadCov
       readCoverageFinding: "PASS",
     }
   }
-  if (hasReadmeEvidenceDeep(join(projectDir, EVIDENCE_DIR))) {
+  if (hasEvidenceTargetDeep(join(projectDir, EVIDENCE_DIR), /["/\\]README\.md["/\\]?|README\.md/i)) {
     return {
       readCoverage: "README read evidence observed",
       readCoverageBlocking: false,
@@ -261,6 +277,46 @@ function readCoverage(projectDir: string, implementationStatus: string): ReadCov
     readCoverage: "README.md exists but README ranges read is empty",
     readCoverageBlocking: true,
     readCoverageFinding: "WARN",
+  }
+}
+
+function profileReadCoverage(projectDir: string, implementationStatus: string): ProfileReadCoverageSummary {
+  if (implementationStatus !== "filled") {
+    return {
+      profileReadCoverage: "not checked until implementation report is filled",
+      profileReadCoverageBlocking: false,
+      profileReadCoverageFinding: "PASS",
+    }
+  }
+  const profileState = readBackendProjectProfileState(projectDir)
+  if (profileState.status !== "ready") {
+    return {
+      profileReadCoverage: "not checked until backend project profile is ready",
+      profileReadCoverageBlocking: false,
+      profileReadCoverageFinding: "PASS",
+    }
+  }
+
+  const implementationReportPath = join(projectDir, IMPLEMENTATION_REPORT_PATH)
+  const reportText = existsSync(implementationReportPath) ? readFileSync(implementationReportPath, "utf8") : ""
+  if (hasProjectProfileRangeCoverage(reportText)) {
+    return {
+      profileReadCoverage: "project profile ranges observed",
+      profileReadCoverageBlocking: false,
+      profileReadCoverageFinding: "PASS",
+    }
+  }
+  if (hasEvidenceTargetDeep(join(projectDir, EVIDENCE_DIR), /["/\\]project-profile\.jsonc["/\\]?|project-profile\.jsonc/i)) {
+    return {
+      profileReadCoverage: "project profile read evidence observed",
+      profileReadCoverageBlocking: false,
+      profileReadCoverageFinding: "PASS",
+    }
+  }
+  return {
+    profileReadCoverage: "project profile exists but profile read coverage is empty",
+    profileReadCoverageBlocking: true,
+    profileReadCoverageFinding: "WARN",
   }
 }
 
@@ -344,6 +400,7 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.review !== "filled") return "fill review report and run `npx ph plan --report-filled review`"
   if (summary.commandDisciplineBlocking) return "rerun final verification through `npx ph bearshell`"
   if (summary.readCoverageBlocking) return "record README ranges read in `.persona/workflow/implementation-report.md`"
+  if (summary.profileReadCoverageBlocking) return "record project profile read coverage in `.persona/workflow/implementation-report.md`"
   if (summary.stackAlignmentBlocking) return "fix generated project stack to match `.persona/project-profile.jsonc` before finishing"
   if (summary.commandDisciplineFinding === "WARN") {
     return "review non-blocking workflow notes, then archive completed workflow if acceptable"
@@ -361,19 +418,21 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
     evidence: hasFilesDeep(join(projectDir, EVIDENCE_DIR)) ? "present" : "missing",
   } as const
   const coverage = readCoverage(projectDir, summary.implementation)
+  const profileCoverage = profileReadCoverage(projectDir, summary.implementation)
   const command = commandDiscipline(projectDir, summary.implementation, summary.review)
   const stack = stackAlignment(projectDir, summary.implementation)
-  const next = nextAction({ ...summary, ...coverage, ...command, ...stack })
+  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...command, ...stack })
   const finding =
     summary.plan === "accepted"
     && summary.implementation === "filled"
     && summary.review === "filled"
     && coverage.readCoverageFinding === "PASS"
+    && profileCoverage.profileReadCoverageFinding === "PASS"
     && command.commandDisciplineFinding === "PASS"
     && stack.stackAlignmentFinding === "PASS"
       ? "PASS"
       : "WARN"
-  return { ...summary, ...coverage, ...command, ...stack, finding, next }
+  return { ...summary, ...coverage, ...profileCoverage, ...command, ...stack, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -389,6 +448,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- .persona/workflow/review-report.md: ${summary.review}`,
     `- .persona/evidence: ${summary.evidence}`,
     `- read coverage: ${summary.readCoverage}`,
+    `- profile read coverage: ${summary.profileReadCoverage}`,
     `- command discipline: ${summary.commandDiscipline}`,
     `- stack alignment: ${summary.stackAlignment}`,
     "",

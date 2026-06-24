@@ -80,6 +80,9 @@ function finalGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): read
   if (summary.readCoverageBlocking) {
     reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md")
   }
+  if (summary.profileReadCoverageBlocking) {
+    reasons.push("project profile read coverage must be recorded in .persona/workflow/implementation-report.md")
+  }
   if (summary.stackAlignmentBlocking) {
     reasons.push(summary.stackAlignment)
   }

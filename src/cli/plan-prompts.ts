@@ -33,7 +33,7 @@ export function createImplementationPrompt(): string {
     "코드 구조 분석이나 변경 영향 파악이 필요하면 raw file read보다 codegraph MCP를 먼저 사용해줘. codegraph를 사용할 수 없을 때만 필요한 파일 범위를 직접 읽고 그 이유를 implementation-report에 남겨줘.",
     "",
     "긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고, Read 출력이 잘리면 `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`, `npx ph bearshell --shell 'sed -n \"221,440p\" README.md'`처럼 범위를 나눠 끝까지 읽어줘.",
-    "구현 보고서의 Read Coverage에는 체크만 하지 말고 `README read method`, `README ranges read`, `Plan read method`, `Plan ranges read`, `Unread ranges`를 실제 실행 증거 기준으로 적어줘.",
+    "구현 보고서의 Read Coverage에는 체크만 하지 말고 `README read method`, `README ranges read`, `Project profile read method`, `Project profile ranges read`, `Plan read method`, `Plan ranges read`, `Unread ranges`를 실제 실행 증거 기준으로 적어줘.",
     "",
     "구현 중에는 Java/Spring Gradle backend Clean Code 범위를 유지하고, plan에 없는 frontend/infra/desktop 범위로 확장하지 마.",
     "기존 Java/Spring 코드가 있으면 먼저 package/layer/naming/repository/DTO/domain style을 읽고, existing code wins over greenfield guidance 원칙으로 현재 프로젝트 흐름에 맞춰 구현해줘.",

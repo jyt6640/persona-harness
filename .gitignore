@@ -19,6 +19,7 @@ example/
 .persona/evidence/
 .persona-test-fixtures/
 .persona-rail-compliance-test-fixtures/
+.persona-continuation-test-fixtures/
 fixtures/
 !packages/shared-skills/**/fixtures/
 !packages/shared-skills/**/fixtures/**

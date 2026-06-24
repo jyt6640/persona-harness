@@ -21,6 +21,10 @@ function prepareAcceptedWorkflow(projectDir: string): void {
   expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
   mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
   writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "2026-06-24T00-00-00-000Z-project-profile.jsonc.json"),
+    `${JSON.stringify({ targetFile: join(projectDir, ".persona", "project-profile.jsonc"), fileRole: "project-profile" }, null, 2)}\n`,
+  )
 }
 
 function writeWorkflowReports(projectDir: string, implementationLines: readonly string[], reviewLines: readonly string[]): void {
