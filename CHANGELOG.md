@@ -6,6 +6,10 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## [0.3.7-alpha.0] - 2026-06-24
+
 ### Added
 
 - Added `detectTopLevelIntent` runtime routing for requirements/debug/review/refactor/git/programming intent priority.
