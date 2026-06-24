@@ -2,6 +2,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { readBackendProjectProfileState } from "../config/project-profile.js"
+
 export type WorkflowStatusSummary = {
   readonly projectDir: string
   readonly finding: "PASS" | "WARN"
@@ -15,6 +17,9 @@ export type WorkflowStatusSummary = {
   readonly commandDiscipline: string
   readonly commandDisciplineBlocking: boolean
   readonly commandDisciplineFinding: "PASS" | "WARN"
+  readonly stackAlignment: string
+  readonly stackAlignmentBlocking: boolean
+  readonly stackAlignmentFinding: "PASS" | "WARN"
   readonly next: string
 }
 
@@ -28,8 +33,94 @@ function readStatusLine(filePath: string): string {
   if (!existsSync(filePath)) {
     return "missing"
   }
-  const match = /^Status:\s*(.+)$/m.exec(readFileSync(filePath, "utf8"))
-  return match?.[1]?.trim() ?? "unknown"
+  const match = readFileSync(filePath, "utf8").split(/\r?\n/).map((line) => line.trim()).find((line) =>
+    /^Status:\s*(.+)$/i.test(line)
+    || /^[-*]\s*(?:\*\*)?Status(?:\*\*)?:\s*(.+)$/i.test(line)
+    || /^(?:\*\*)?Status(?:\*\*)?:\s*(.+)$/i.test(line)
+  )
+  if (match === undefined) {
+    return "unknown"
+  }
+  const value =
+    /^Status:\s*(.+)$/i.exec(match)?.[1]
+    ?? /^[-*]\s*(?:\*\*)?Status(?:\*\*)?:\s*(.+)$/i.exec(match)?.[1]
+    ?? /^(?:\*\*)?Status(?:\*\*)?:\s*(.+)$/i.exec(match)?.[1]
+  return value?.replace(/\*\*/g, "").trim() ?? "unknown"
+}
+
+function hasFileDeep(dirPath: string, predicate: (filePath: string) => boolean): boolean {
+  if (!existsSync(dirPath)) {
+    return false
+  }
+  for (const entry of readdirSync(dirPath)) {
+    const entryPath = join(dirPath, entry)
+    const stat = statSync(entryPath)
+    if (stat.isFile() && predicate(entryPath)) {
+      return true
+    }
+    if (stat.isDirectory() && hasFileDeep(entryPath, predicate)) {
+      return true
+    }
+  }
+  return false
+}
+
+function hasAny(projectDir: string, relativePaths: readonly string[]): boolean {
+  return relativePaths.some((relativePath) => existsSync(join(projectDir, relativePath)))
+}
+
+type StackAlignmentSummary = Pick<WorkflowStatusSummary, "stackAlignment" | "stackAlignmentBlocking" | "stackAlignmentFinding">
+
+function stackAlignment(projectDir: string, implementationStatus: string): StackAlignmentSummary {
+  if (implementationStatus !== "filled") {
+    return {
+      stackAlignment: "not checked until implementation report is filled",
+      stackAlignmentBlocking: false,
+      stackAlignmentFinding: "PASS",
+    }
+  }
+  const profileState = readBackendProjectProfileState(projectDir)
+  if (profileState.status !== "ready") {
+    return {
+      stackAlignment: "not checked until backend project profile is ready",
+      stackAlignmentBlocking: false,
+      stackAlignmentFinding: "PASS",
+    }
+  }
+
+  const hasGradle = hasAny(projectDir, ["build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "gradlew", "gradlew.bat"])
+  const hasJavaSource = hasFileDeep(join(projectDir, "src", "main", "java"), (filePath) => filePath.endsWith(".java"))
+  const hasMaven = hasAny(projectDir, ["pom.xml"])
+  const hasSourceFiles = hasFileDeep(join(projectDir, "src"), () => true)
+  if (hasGradle && hasJavaSource) {
+    return {
+      stackAlignment: "profile expects Java/Spring/Gradle and generated project has Gradle + src/main/java",
+      stackAlignmentBlocking: false,
+      stackAlignmentFinding: "PASS",
+    }
+  }
+
+  const hasNodeMarkers = hasAny(projectDir, ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"])
+    || hasFileDeep(join(projectDir, "src"), (filePath) => /\.(?:js|cjs|mjs|ts|tsx)$/.test(filePath))
+  if (!hasGradle && !hasJavaSource && !hasMaven && !hasNodeMarkers && !hasSourceFiles) {
+    return {
+      stackAlignment: "not checked; no generated project stack markers observed",
+      stackAlignmentBlocking: false,
+      stackAlignmentFinding: "PASS",
+    }
+  }
+  const mismatchDetails = [
+    ...(hasGradle ? [] : ["missing build.gradle/settings.gradle/gradlew"]),
+    ...(hasJavaSource ? [] : ["missing src/main/java Java source"]),
+    ...(hasMaven ? ["Maven pom.xml observed"] : []),
+    ...(hasNodeMarkers ? ["Node/CommonJS markers observed"] : []),
+  ]
+
+  return {
+    stackAlignment: `STACK_MISMATCH: profile expects Java/Spring/Gradle; ${mismatchDetails.join("; ")}`,
+    stackAlignmentBlocking: true,
+    stackAlignmentFinding: "WARN",
+  }
 }
 
 function hasFilesDeep(dirPath: string): boolean {
@@ -253,6 +344,7 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.review !== "filled") return "fill review report and run `npx ph plan --report-filled review`"
   if (summary.commandDisciplineBlocking) return "rerun final verification through `npx ph bearshell`"
   if (summary.readCoverageBlocking) return "record README ranges read in `.persona/workflow/implementation-report.md`"
+  if (summary.stackAlignmentBlocking) return "fix generated project stack to match `.persona/project-profile.jsonc` before finishing"
   if (summary.commandDisciplineFinding === "WARN") {
     return "review non-blocking workflow notes, then archive completed workflow if acceptable"
   }
@@ -270,16 +362,18 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
   } as const
   const coverage = readCoverage(projectDir, summary.implementation)
   const command = commandDiscipline(projectDir, summary.implementation, summary.review)
-  const next = nextAction({ ...summary, ...coverage, ...command })
+  const stack = stackAlignment(projectDir, summary.implementation)
+  const next = nextAction({ ...summary, ...coverage, ...command, ...stack })
   const finding =
     summary.plan === "accepted"
     && summary.implementation === "filled"
     && summary.review === "filled"
     && coverage.readCoverageFinding === "PASS"
     && command.commandDisciplineFinding === "PASS"
+    && stack.stackAlignmentFinding === "PASS"
       ? "PASS"
       : "WARN"
-  return { ...summary, ...coverage, ...command, finding, next }
+  return { ...summary, ...coverage, ...command, ...stack, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -296,6 +390,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- .persona/evidence: ${summary.evidence}`,
     `- read coverage: ${summary.readCoverage}`,
     `- command discipline: ${summary.commandDiscipline}`,
+    `- stack alignment: ${summary.stackAlignment}`,
     "",
     `Next: ${summary.next}`,
     "",

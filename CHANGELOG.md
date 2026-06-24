@@ -8,6 +8,15 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.7-alpha.1] - 2026-06-24
+
+### Fixed
+
+- Made `ph doctor` surface OpenCode runtime readiness explicitly, including a clear WARN when the OpenCode CLI is missing.
+- Made workflow report status parsing accept checklist and bold Markdown forms such as `- **Status:** filled`.
+- Added Java/Spring/Gradle stack-alignment diagnostics for backend profiles so Node/CommonJS or non-Gradle output is reported as `STACK_MISMATCH`.
+- Made `ph workflow finish implement` block on `STACK_MISMATCH` while keeping `ph workflow check` report-only.
+
 ## [0.3.7-alpha.0] - 2026-06-24
 
 ### Added

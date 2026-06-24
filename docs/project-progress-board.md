@@ -16,7 +16,7 @@ Detailed historical board content is archived at:
 
 Current track: v0.3.x AI-facing workflow routing on top of the Java backend MVP.
 
-Current active candidate: `persona-harness@0.3.7-alpha.0`. The candidate keeps the Java/Spring backend MVP scope, includes the requirements drafting workflow from `0.3.6-alpha.0`, adds top-level intent routing for requirements/debug/review/refactor/git/programming, routes those rails through PH-owned workflow skill reference files, records report-only intent and rail-compliance evidence, adds report-only continuation guidance when workflow artifacts still show pending scope, and writes non-autonomous blackbear/Charles/jaeki/roach role boundaries to `.persona/workflow/roles.md`. This is not a stable support claim.
+Current active candidate: `persona-harness@0.3.7-alpha.1`. The candidate keeps the Java/Spring backend MVP scope, includes the requirements drafting workflow from `0.3.6-alpha.0`, adds top-level intent routing for requirements/debug/review/refactor/git/programming, routes those rails through PH-owned workflow skill reference files, records report-only intent and rail-compliance evidence, adds report-only continuation guidance when workflow artifacts still show pending scope, writes non-autonomous blackbear/Charles/jaeki/roach role boundaries to `.persona/workflow/roles.md`, and adds workflow diagnostics for OpenCode runtime readiness, report status recognition, and Java/Spring/Gradle stack mismatch. This is not a stable support claim.
 
 ## Current Decisions
 

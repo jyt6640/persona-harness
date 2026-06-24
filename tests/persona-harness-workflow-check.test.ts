@@ -82,6 +82,72 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain("Next: archive completed workflow")
   })
 
+  it("recognizes report statuses written as checklist or bold status lines", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "# Implementation Report",
+        "",
+        "- **Status:** filled",
+        "- README ranges read: 1-220",
+        "- `npx ph bearshell --shell './gradlew test'`",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      [
+        "# Review Report",
+        "",
+        "**Status:** filled",
+        "- `npx ph bearshell --shell './gradlew bootRun'`",
+      ].join("\n"),
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+
+    const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain(".persona/workflow/implementation-report.md: filled")
+    expect(result.stdout).toContain(".persona/workflow/review-report.md: filled")
+  })
+
+  it("warns when the backend profile expects Java Spring Gradle but the generated project is Node/CommonJS", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(join(projectDir, "package.json"), "{\"type\":\"commonjs\"}\n")
+    mkdirSync(join(projectDir, "src"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "index.js"), "module.exports = {}\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\n- README ranges read: 1-220\n- `npx ph bearshell --shell 'npm test'`\n",
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- `npx ph bearshell --shell 'npm test'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("Workflow status: WARN")
+    expect(check.stdout).toContain("stack alignment: STACK_MISMATCH")
+    expect(check.stdout).toContain("profile expects Java/Spring/Gradle")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("STACK_MISMATCH")
+  })
+
   it("keeps completed workflow WARN when bearshell command discipline is missing", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)

@@ -80,6 +80,9 @@ function finalGuardReasons(summary: ReturnType<typeof readWorkflowStatus>): read
   if (summary.readCoverageBlocking) {
     reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md")
   }
+  if (summary.stackAlignmentBlocking) {
+    reasons.push(summary.stackAlignment)
+  }
   const pendingTicketIds = pendingWorkflowTicketIds(summary.projectDir)
   if (pendingTicketIds.length > 0) {
     reasons.push(`Pending workflow tickets remain: ${pendingTicketIds.join(", ")}. Run \`npx ph workflow next\`.`)

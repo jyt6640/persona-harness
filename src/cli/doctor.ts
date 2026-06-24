@@ -21,6 +21,8 @@ export type DoctorSummary = {
   readonly node: string
   readonly npm: string
   readonly opencode: string
+  readonly runtimeReadiness: "PASS" | "WARN"
+  readonly runtimeFindings: readonly string[]
   readonly packageVersion: string
   readonly registry: string
   readonly opencodeConfig: "present" | "missing"
@@ -47,6 +49,10 @@ function commandVersion(command: string, args: readonly string[]): string {
   } catch {
     return "missing"
   }
+}
+
+function opencodeVersion(env: Readonly<Record<string, string | undefined>>): string {
+  return env.PH_DOCTOR_OPENCODE_VERSION ?? commandVersion("opencode", ["--version"])
 }
 
 function commandOutput(command: string, args: readonly string[]): string | undefined {
@@ -162,11 +168,17 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const env = options.env ?? process.env
   const rulesScan = scanStaleFixtureRules(projectDir)
+  const opencode = opencodeVersion(env)
+  const runtimeFindings = opencode === "missing"
+    ? ["OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified."]
+    : []
   return {
     projectDir,
     node: process.version,
     npm: commandVersion("npm", ["--version"]),
-    opencode: commandVersion("opencode", ["--version"]),
+    opencode,
+    runtimeReadiness: runtimeFindings.length === 0 ? "PASS" : "WARN",
+    runtimeFindings,
     packageVersion: packageVersion(),
     registry: registryStatus(env),
     opencodeConfig: pathStatus(projectDir, ".opencode/opencode.json"),
@@ -198,6 +210,8 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Node: ${summary.node}`,
     `npm: ${summary.npm}`,
     `OpenCode: ${summary.opencode}`,
+    `Runtime readiness: ${summary.runtimeReadiness}`,
+    ...summary.runtimeFindings.map((finding) => `- ${finding}`),
     `Persona package version: ${summary.packageVersion}`,
     `npm registry: ${summary.registry}`,
     "",

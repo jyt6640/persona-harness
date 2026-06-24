@@ -57,6 +57,27 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain("npm registry: alpha=0.3.0-alpha.3, latest=0.3.0-alpha.3")
   })
 
+  it("warns clearly when OpenCode is missing from the runtime path", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".opencode"), { recursive: true })
+    mkdirSync(join(projectDir, ".persona", "rules"), { recursive: true })
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["node_modules/persona-harness/dist/index.js"] }, null, 2))
+    writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
+
+    const result = runPersonaCli(["doctor"], {
+      cwd: projectDir,
+      env: {
+        PH_DOCTOR_OPENCODE_VERSION: "missing",
+        PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ alpha: "0.3.7-alpha.0", latest: "0.3.7-alpha.0" }),
+      },
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Runtime readiness: WARN")
+    expect(result.stdout).toContain("OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified.")
+  })
+
   it("warns when public rules contain old Roomescape step fixture residue", () => {
     const projectDir = createTempProject()
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
