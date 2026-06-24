@@ -25,7 +25,8 @@ No unreleased changes yet.
 - External Smoke was partially successful.
 - `profileSummaryInjected` marker evidence was observed in README-read phase0 evidence.
 - Pending workflow guidance was observed for `workflow check`, `workflow continue`, and `workflow finish implement`.
-- OpenCode full implementation smoke was stopped by a `.persona/policies` policy path issue, so full implementation smoke remains a release risk.
+- Follow-up policy path smoke did not reproduce the previous `.persona/policies` permission auto-reject, so that issue can be removed as a publish blocker.
+- OpenCode full implementation quality is still not certified, and direct `.persona/rules/backend/...` reads remain a follow-up risk.
 
 ### Verification
 
