@@ -6,6 +6,10 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## [0.3.8-alpha.0] - 2026-06-24
+
 ### Added
 
 - Added v0.3.8 workflow reliability guidance for pending workflow tickets:
@@ -23,6 +27,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - `npm test` passed: 47 files, 308 tests.
 - `npm run typecheck` passed.
 - `npm run build` passed.
+- `npm pack --dry-run` passed.
 
 ## [0.3.7-alpha.1] - 2026-06-24
 
