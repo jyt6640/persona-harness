@@ -93,6 +93,59 @@ describe("ph workflow check stack alignment", () => {
     expect(result.stdout).toContain("Next: review profile/generated stack mismatch before archiving workflow")
   })
 
+  it("blocks workflow finish when profile/generated stack mismatch remains", () => {
+    const projectDir = createTempProject()
+    writeReadyJpaProfile(projectDir)
+    writeWorkflowEvidence(projectDir)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'fake-http-server'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
+    writeFileSync(join(projectDir, "gradle-shim.js"), "console.log('fake gradle build')\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "package com.example;\nimport com.sun.net.httpserver.HttpServer;\nclass Application { HttpServer server; }\n")
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Workflow finish failed: implement")
+    expect(result.stderr).toContain("Project profile and generated stack mismatch")
+    expect(result.stderr).toContain("STACK_MISMATCH")
+    expect(result.stderr).toContain("This is a workflow/profile alignment gate, not generated app product-quality certification.")
+    expect(result.stderr).toContain("Re-read `.persona/project-profile.jsonc`.")
+    expect(result.stderr).toContain("Change the generated project to Spring Boot/Gradle/JPA/database structure.")
+    expect(result.stderr).toContain("Remove fake `gradle-shim.js`/Node shim files.")
+    expect(result.stderr).toContain("Re-run `npx ph workflow check`.")
+  })
+
+  it("keeps pending ticket guidance when stack mismatch and pending tickets both remain", () => {
+    const projectDir = createTempProject()
+    writeReadyJpaProfile(projectDir)
+    writeWorkflowEvidence(projectDir)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'fake-http-server'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
+    writeFileSync(join(projectDir, "gradle-shim.js"), "console.log('fake gradle build')\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "package com.example;\nimport com.sun.net.httpserver.HttpServer;\nclass Application { HttpServer server; }\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "backlog.md"),
+      [
+        "# Persona Workflow Backlog",
+        "",
+        "Status: active",
+        "",
+        "| Order | Ticket | Title | Status | Path |",
+        "| --- | --- | --- | --- | --- |",
+        "| 1 | req-1 | First request | pending | .persona/workflow/work/req-1/00-task-card.md |",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Project profile and generated stack mismatch")
+    expect(result.stderr).toContain("Pending workflow tickets remain: req-1")
+    expect(result.stderr).toContain("Run `npx ph workflow next`")
+  })
+
   it("passes stack alignment for a minimal Spring Boot Gradle JPA database project", () => {
     const projectDir = createTempProject()
     writeReadyJpaProfile(projectDir)
@@ -122,5 +175,9 @@ describe("ph workflow check stack alignment", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Workflow status: PASS")
     expect(result.stdout).toContain("stack alignment: profile expects Java/Spring/Gradle/JPA/database and generated project has Spring Boot + Gradle + JPA/database evidence")
+
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    expect(finish.status).toBe(0)
+    expect(finish.stdout).toContain("Finish status: PASS")
   })
 })
