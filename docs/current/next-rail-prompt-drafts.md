@@ -6,7 +6,7 @@ Record the next PH rail prompts before implementing each rail.
 
 These are AI-facing workflow blocks. They are not generated-app product-quality certification, enforcement gates, or AST/linter rules.
 
-## Next Candidate: Review Rail
+## Implemented: Review Rail
 
 ```text
 [Persona Harness Review Workflow]
@@ -24,7 +24,7 @@ Required flow:
 - Findings를 먼저 쓴다. 심각도 높은 순서로 정리한다.
 - 각 finding에는 파일/라인/증거/영향을 포함한다.
 - 문제가 없으면 "No findings"라고 명확히 말하고 남은 리스크를 적는다.
-- 수정은 사용자가 명시적으로 요청할 때만 별도 구현 rail로 진행한다.
+- 수정은 사용자가 명시적으로 요청할 때만 별도 구현/debug/refactor rail로 진행한다.
 
 Evidence checklist:
 - Reviewed files
@@ -36,9 +36,10 @@ Non-goals:
 - 자동 수정 rail이 아니다.
 - generated app product quality 보증이 아니다.
 - AST/linter/enforcement gate가 아니다.
+- 구현/리팩터링을 시작하지 않는다.
 ```
 
-## Parking Draft: Refactor Rail
+## Next Candidate: Refactor Rail
 
 ```text
 [Persona Harness Refactor Workflow]

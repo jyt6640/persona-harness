@@ -202,6 +202,25 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).not.toContain("[Persona Harness Requirements Workflow]")
   })
 
+  it("routes review requests through the review workflow without implementation", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-review-workflow"
+    const output = modelInputWithText(sessionID, "이 코드 냉정하게 리뷰해줘")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = firstText(output)
+    expect(text).toContain("[Persona Harness Review Workflow]")
+    expect(text).toContain("Detected intent: review")
+    expect(text).toContain("의도 감지: 리뷰 요청으로 판단함.")
+    expect(text).toContain("수정하지 않는다")
+    expect(text).toContain("Findings를 먼저 쓴다")
+    expect(text).toContain("파일/라인/증거/영향")
+    expect(text).not.toContain("[Persona Harness Requirements Workflow]")
+    expect(text).not.toContain("[Persona Harness Debug Workflow]")
+  })
+
   it("injects prompt capture guidance for pasted requirement implementation requests", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })

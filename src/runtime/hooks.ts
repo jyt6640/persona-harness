@@ -2,6 +2,7 @@ import type { Hooks } from "@opencode-ai/plugin"
 
 import { writePhase0Evidence } from "./evidence.js"
 import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
+import { formatReviewWorkflowBlock } from "./review-workflow-skill.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
@@ -74,6 +75,14 @@ function maybeInjectIntentWorkflow(output: TransformMessagesOutput, projectDir: 
       output,
       formatDebugWorkflowBlock(intent),
       "[Persona Harness Debug Workflow]",
+    )
+  }
+
+  if (intent?.primary === "review") {
+    return injectTextIntoLatestUserMessage(
+      output,
+      formatReviewWorkflowBlock(intent),
+      "[Persona Harness Review Workflow]",
     )
   }
 

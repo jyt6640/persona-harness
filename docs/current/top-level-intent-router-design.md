@@ -19,10 +19,12 @@ Current active shared-skill routing is intentionally narrow:
 | Surface | Runtime Status | Notes |
 | --- | --- | --- |
 | requirements workflow | active | Handles README/requirements/prompt requirements draft, approval, implementation, change, and continuation intents. |
+| debug workflow block | active | Handles failure/error/broken-behavior prompts before requirements implementation. |
+| review workflow block | active | Handles review/audit/QA prompts as read-only findings-first work. |
 | programming | active | File-target support for Java/Gradle and selected programming targets. |
 | frontend | experimental active | Active for frontend TypeScript targets, but not part of Java backend MVP productization. |
-| debugging | inactive reference | Useful model for future PH debug rail. |
-| review-work | inactive reference | Useful model for future PH review rail. |
+| debugging | inactive reference | Vendored reference only; PH debug runtime block is implemented separately. |
+| review-work | inactive reference | Vendored reference only; PH review runtime block is implemented separately. |
 | refactor | inactive reference | Useful model for future PH refactor rail. |
 | git-master | inactive reference | Useful model for future PH git/history rail. |
 
@@ -36,11 +38,13 @@ Implemented:
 - Requirements workflow hook routing now calls the top-level router first.
 - Requirements workflow injection only runs when the primary intent is `requirements`.
 - README-related debug requests such as `README 보고 구현했는데 테스트가 실패해. 고쳐줘` stay out of the requirements implementation rail.
+- Debug primary intent injects a PH debug workflow block.
+- Review primary intent injects a PH review workflow block.
 - Unit tests cover requirements, debug, review, refactor, git, programming, and mixed work/git intent.
 
 Not implemented yet:
 
-- Dedicated debug/review/refactor/git workflow blocks.
+- Dedicated refactor/git workflow blocks.
 - Activation of inactive vendored OMO skills as PH runtime rails.
 - Evidence fields for primary/secondary intent selection.
 
