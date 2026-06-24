@@ -1,14 +1,22 @@
-import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
 import type { CliRunResult } from "./bearshell.js"
+import {
+  detectCommandOutput,
+  detectCommandVersion,
+  type DoctorCommandFinder,
+  type DoctorCommandRunner,
+} from "./doctor-command-detection.js"
 
 type DoctorOptions = {
   readonly projectDir?: string
   readonly env?: Readonly<Record<string, string | undefined>>
+  readonly platform?: NodeJS.Platform
+  readonly commandFinder?: DoctorCommandFinder
+  readonly commandRunner?: DoctorCommandRunner
 }
 
 export type StaleFixtureFinding = {
@@ -20,6 +28,7 @@ export type DoctorSummary = {
   readonly projectDir: string
   readonly node: string
   readonly npm: string
+  readonly npx: string
   readonly opencode: string
   readonly runtimeReadiness: "PASS" | "WARN"
   readonly runtimeFindings: readonly string[]
@@ -43,28 +52,27 @@ const STALE_FIXTURE_TOKENS = [
   "/times",
 ] as const
 
-function commandVersion(command: string, args: readonly string[]): string {
-  try {
-    return execFileSync(command, [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || "available"
-  } catch {
-    return "missing"
-  }
+function commandVersion(command: string, args: readonly string[], options: DoctorOptions): string {
+  return detectCommandVersion(command, args, {
+    env: options.env ?? process.env,
+    finder: options.commandFinder,
+    platform: options.platform,
+    runner: options.commandRunner,
+  })
 }
 
-function opencodeVersion(env: Readonly<Record<string, string | undefined>>): string {
-  return env.PH_DOCTOR_OPENCODE_VERSION ?? commandVersion("opencode", ["--version"])
+function opencodeVersion(options: DoctorOptions): string {
+  const env = options.env ?? process.env
+  return env.PH_DOCTOR_OPENCODE_VERSION ?? commandVersion("opencode", ["--version"], options)
 }
 
-function commandOutput(command: string, args: readonly string[]): string | undefined {
-  try {
-    return execFileSync(command, [...args], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: 3000,
-    }).trim()
-  } catch {
-    return undefined
-  }
+function commandOutput(command: string, args: readonly string[], options: DoctorOptions): string | undefined {
+  return detectCommandOutput(command, args, {
+    env: options.env ?? process.env,
+    finder: options.commandFinder,
+    platform: options.platform,
+    runner: options.commandRunner,
+  })
 }
 
 function pathStatus(projectDir: string, relativePath: string): "present" | "missing" {
@@ -98,8 +106,9 @@ function packageVersion(): string {
   }
 }
 
-function registryStatus(env: Readonly<Record<string, string | undefined>>): string {
-  const distTagsJson = env.PH_DOCTOR_REGISTRY_DIST_TAGS ?? commandOutput("npm", ["view", "persona-harness", "dist-tags", "--json"])
+function registryStatus(options: DoctorOptions): string {
+  const env = options.env ?? process.env
+  const distTagsJson = env.PH_DOCTOR_REGISTRY_DIST_TAGS ?? commandOutput("npm", ["view", "persona-harness", "dist-tags", "--json"], options)
   if (distTagsJson === undefined || distTagsJson.length === 0) {
     return "unavailable"
   }
@@ -168,19 +177,20 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const env = options.env ?? process.env
   const rulesScan = scanStaleFixtureRules(projectDir)
-  const opencode = opencodeVersion(env)
+  const opencode = opencodeVersion(options)
   const runtimeFindings = opencode === "missing"
     ? ["OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified."]
     : []
   return {
     projectDir,
     node: process.version,
-    npm: commandVersion("npm", ["--version"]),
+    npm: commandVersion("npm", ["--version"], options),
+    npx: commandVersion("npx", ["--version"], options),
     opencode,
     runtimeReadiness: runtimeFindings.length === 0 ? "PASS" : "WARN",
     runtimeFindings,
     packageVersion: packageVersion(),
-    registry: registryStatus(env),
+    registry: registryStatus(options),
     opencodeConfig: pathStatus(projectDir, ".opencode/opencode.json"),
     pluginPath: pluginStatus(projectDir),
     harnessConfig: pathStatus(projectDir, ".persona/harness.jsonc"),
@@ -209,6 +219,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Project: ${summary.projectDir}`,
     `Node: ${summary.node}`,
     `npm: ${summary.npm}`,
+    `npx: ${summary.npx}`,
     `OpenCode: ${summary.opencode}`,
     `Runtime readiness: ${summary.runtimeReadiness}`,
     ...summary.runtimeFindings.map((finding) => `- ${finding}`),
