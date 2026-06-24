@@ -8,6 +8,34 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.8-alpha.1] - 2026-06-24
+
+### Added
+
+- Added prompt-only requirements workflow transition coverage:
+  - capture;
+  - draft;
+  - approve;
+  - split;
+  - next;
+  - finish blocking while tickets remain pending.
+- Added parser-level workflow report status coverage for `workflow check` and `workflow finish implement`.
+- Added direct `RailComplianceTracker` unit coverage for report-only rail mismatch evidence.
+- Added `createPhase0Hooks` intent-workflow hook-boundary coverage for requirements, programming, debug, review, refactor, and git rails.
+- Added clean tarball workflow smoke evidence for `ph bootstrap backend`, `ph workflow split`, `workflow next`, `workflow continue`, `workflow finish implement`, `workflow check`, and `ph doctor`.
+
+### Changed
+
+- Strengthened release confidence for v0.3.8 by covering workflow transitions at integration, parser, runtime tracker, and hook-boundary layers.
+- Kept generated Java/Spring app code quality as injection guidance plus report-only review, not an enforcement gate.
+
+### Verification
+
+- `npm test` passed: 51 files, 326 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+- Clean tarball install smoke passed for Persona workflow command surfaces.
+
 ## [0.3.8-alpha.0] - 2026-06-24
 
 ### Added
