@@ -46,6 +46,8 @@ function implementationGuardReasons(summary: WorkflowStatus): readonly string[] 
       [
         "Harness initialized but project profile is not ready.",
         ".persona exists but the backend project profile is not ready.",
+        ".persona/project-profile.jsonc is required before implementation.",
+        "Do not enter implementation rail until profile/bootstrap is ready.",
         profileState.message,
         "Interactive intake: run `npx ph intake --interactive`.",
         "AI/non-TTY fast path: run `npx ph bootstrap backend`.",

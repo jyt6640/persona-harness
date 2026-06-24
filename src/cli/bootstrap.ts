@@ -22,6 +22,10 @@ type ParsedBootstrapArgs =
   | { readonly kind: "invalid"; readonly message: string }
 
 const PERSONA_DIR = ".persona"
+const HARNESS_CONFIG_PATH = ".persona/harness.jsonc"
+const RULES_DIR_PATH = ".persona/rules/"
+const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
+const GITIGNORE_PATH = ".gitignore"
 const POLICY_OVERLAY_PATH = ".persona/policies/overlay.jsonc"
 const ROOT_AGENT_INSTRUCTIONS_PATH = "AGENTS.md"
 
@@ -32,7 +36,11 @@ export function bootstrapUsage(invocation = "ph"): string {
     "Prepares the backend Persona Harness workflow for AI implementation.",
     "",
     "What it fills when missing:",
-    `- ${PERSONA_DIR}/ harness files`,
+    `- ${HARNESS_CONFIG_PATH}`,
+    `- ${RULES_DIR_PATH}`,
+    `- ${OPENCODE_CONFIG_PATH}`,
+    `- ${GITIGNORE_PATH}`,
+    `- ${ROOT_AGENT_INSTRUCTIONS_PATH}`,
     `- ${PROFILE_PATH}`,
     `- ${POLICY_OVERLAY_PATH}`,
     `- ${PLAN_PATH}`,
@@ -196,13 +204,17 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean): CliRunR
       "Skipped:",
       ...(skipped.length > 0 ? skipped.map((item) => `- ${item}`) : ["- none"]),
       "",
-      "Ready workflow files:",
+      "Ready backend bootstrap files:",
+      `- ${HARNESS_CONFIG_PATH}`,
+      `- ${RULES_DIR_PATH}`,
+      `- ${OPENCODE_CONFIG_PATH}`,
+      `- ${GITIGNORE_PATH}`,
+      `- ${ROOT_AGENT_INSTRUCTIONS_PATH}`,
       `- ${PROFILE_PATH}`,
       `- ${POLICY_OVERLAY_PATH}`,
       `- ${PLAN_PATH}`,
       `- ${IMPLEMENTATION_REPORT_PATH}`,
       `- ${REVIEW_REPORT_PATH}`,
-      `- ${ROOT_AGENT_INSTRUCTIONS_PATH}`,
       "",
       "Next:",
       "- Ask the AI agent to run `npx ph workflow implement` before implementation.",

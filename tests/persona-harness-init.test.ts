@@ -41,7 +41,9 @@ describe("persona-harness init", () => {
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "step2-3-api-contract.md"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", "project-profile.jsonc"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "plan.md"))).toBe(false)
     expect(existsSync(join(projectDir, ".opencode", "opencode.json"))).toBe(true)
+    expect(existsSync(join(projectDir, "AGENTS.md"))).toBe(false)
     expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain("node_modules/")
     expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain(".opencode/node_modules/")
     expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain(".persona/rules/")
@@ -101,7 +103,7 @@ describe("persona-harness init", () => {
     expect(lines.filter((line) => line === ".persona/evidence/")).toHaveLength(1)
   })
 
-  it("prints a plan-first next flow instead of asking OpenCode to implement immediately", () => {
+  it("prints an init-only next flow that matches the files it creates", () => {
     const result = formatInitResult({
       projectDir: "/tmp/project",
       packageRoot: process.cwd(),
@@ -111,15 +113,18 @@ describe("persona-harness init", () => {
       evidenceCopied: false,
     })
 
-    expect(result).toContain("ph init` starts the backend profile interview")
-    expect(result).toContain("interactive terminal")
+    expect(result).toContain("`ph init` installs Persona Harness config/rules and OpenCode plugin config only.")
+    expect(result).toContain("It does not create `AGENTS.md`, `.persona/project-profile.jsonc`, or workflow plan/report templates.")
+    expect(result).toContain("Do not enter implementation before the backend project profile exists.")
     expect(result).toContain("npx ph bootstrap backend")
+    expect(result).toContain("npx ph intake --interactive")
     expect(result).toContain("npx ph intake --default backend")
     expect(result).toContain("npx ph policy init")
     expect(result).toContain("npx ph plan --auto-accept")
     expect(result).toContain("opencode")
     expect(result).toContain("TUI")
     expect(result).toContain("$(npx ph plan --prompt)")
+    expect(result).not.toContain("starts the backend profile interview")
     expect(result).not.toContain("요구사항 전체를 Gradle 기반 Spring 백엔드로 구현해줘")
   })
 

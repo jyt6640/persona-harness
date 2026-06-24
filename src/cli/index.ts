@@ -1,13 +1,11 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs"
-import { join } from "node:path"
+import { readFileSync } from "node:fs"
 import process from "node:process"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
 
 import { runBootstrapCommand } from "./bootstrap.js"
 import { personaCliUsage } from "./cli-usage.js"
-import { formatInitNonInteractiveInterviewMessage } from "./init-output.js"
 import { runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
@@ -18,7 +16,6 @@ import { runPolicyCommand } from "./policy.js"
 import { runDoctorCommand } from "./doctor.js"
 import { runEvidenceCommand } from "./evidence-summary.js"
 import { runFeedbackCommand } from "./feedback.js"
-import { PROFILE_PATH } from "./intake-profile.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
 import { runWorkflowCommand } from "./workflow-command.js"
@@ -112,49 +109,9 @@ function writeResult(result: CliRunResult): void {
   process.exitCode = result.status
 }
 
-async function runInitEntrypoint(invocationName: string): Promise<void> {
+function runInitEntrypoint(): void {
   const initResult = runInitCommand({ projectDir: process.cwd() })
-  if (initResult.stdout.length > 0) {
-    process.stdout.write(initResult.stdout)
-  }
-  if (initResult.stderr.length > 0) {
-    process.stderr.write(initResult.stderr)
-  }
-  if (initResult.status !== 0) {
-    process.exitCode = initResult.status
-    return
-  }
-
-  if (existsSync(join(process.cwd(), PROFILE_PATH))) {
-    process.stdout.write(`\n${PROFILE_PATH} already exists. Backend interview skipped.\n`)
-    process.exitCode = 0
-    return
-  }
-
-  if (process.stdin.isTTY !== true) {
-    process.stderr.write(`\n${formatInitNonInteractiveInterviewMessage(invocationName)}`)
-    process.exitCode = 1
-    return
-  }
-
-  const readline = createInterface({ input: process.stdin, output: process.stdout })
-  try {
-    const intakeResult = await runInteractiveIntakeCommand(
-      ["--interactive"],
-      {
-        projectDir: process.cwd(),
-        isTty: process.stdin.isTTY === true,
-        write: (text) => {
-          process.stdout.write(text)
-        },
-        readLine: (prompt) => readline.question(prompt),
-      },
-      invocationName,
-    )
-    writeResult(intakeResult)
-  } finally {
-    readline.close()
-  }
+  writeResult(initResult)
 }
 
 async function runCliEntrypoint(): Promise<void> {
@@ -162,7 +119,7 @@ async function runCliEntrypoint(): Promise<void> {
   const invocationName = process.argv[1]?.endsWith("/persona-harness") ? "persona-harness" : "ph"
 
   if (args[0] === "init") {
-    await runInitEntrypoint(invocationName)
+    runInitEntrypoint()
     return
   }
 
