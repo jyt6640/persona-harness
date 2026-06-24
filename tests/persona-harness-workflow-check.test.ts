@@ -494,6 +494,11 @@ describe("ph bootstrap backend", () => {
     expect(existsSync(join(projectDir, ".persona", "policies", "overlay.jsonc"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "workflow", "plan.md"))).toBe(true)
     expect(readFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "utf8")).toContain("Status: accepted")
+    const agents = readFileSync(join(projectDir, "AGENTS.md"), "utf8")
+    expect(agents).toContain("Persona Harness")
+    expect(agents).toContain("npx ph workflow implement")
+    expect(agents).toContain(".persona/project-profile.jsonc")
+    expect(agents).toContain("Do not infer a Node/CommonJS project from package.json")
   })
 
   it("fills missing backend workflow pieces after init without requiring the user to type every command", () => {
@@ -514,6 +519,23 @@ describe("ph bootstrap backend", () => {
     expect(bootstrap.stdout).toContain("created default backend profile")
     expect(implement.status).toBe(0)
     expect(implement.stdout).toContain("Implementation rail status: PASS")
+  })
+
+  it("does not overwrite an existing root AGENTS.md during backend bootstrap", () => {
+    const projectDir = createTempProject()
+    const existingAgents = "# Existing Agent Rules\n\nKeep this project-specific instruction.\n"
+    writeFileSync(join(projectDir, "AGENTS.md"), existingAgents)
+
+    const result = runPersonaCli(["bootstrap", "backend"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("AGENTS.md already exists")
+    expect(readFileSync(join(projectDir, "AGENTS.md"), "utf8")).toBe(existingAgents)
   })
 })
 

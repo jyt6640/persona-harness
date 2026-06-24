@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs"
+import { existsSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
@@ -23,6 +23,7 @@ type ParsedBootstrapArgs =
 
 const PERSONA_DIR = ".persona"
 const POLICY_OVERLAY_PATH = ".persona/policies/overlay.jsonc"
+const ROOT_AGENT_INSTRUCTIONS_PATH = "AGENTS.md"
 
 export function bootstrapUsage(invocation = "ph"): string {
   return [
@@ -95,6 +96,46 @@ function runAndRecord(
   return undefined
 }
 
+function backendAgentInstructions(): string {
+  return [
+    "# Persona Harness Agent Instructions",
+    "",
+    "This project is initialized with Persona Harness for Java/Spring backend work.",
+    "",
+    "Before implementation:",
+    "- Run `npx ph workflow implement` and follow the single AI-facing rail.",
+    "- Read `.persona/project-profile.jsonc` directly. Do not rely on Glob results for hidden `.persona` paths.",
+    "- Use the project profile as the source of truth for language, framework, build tool, storage, persistence, migration, package style, and architecture style.",
+    "- If README.md does not mention a technology stack, keep the stack from `.persona/project-profile.jsonc`.",
+    "",
+    "Do not infer a Node/CommonJS project from package.json.",
+    "- package.json may exist only because Persona Harness is installed through npm.",
+    "- node_modules is dependency/vendor material, not product implementation context.",
+    "",
+    "Do not read these as implementation context:",
+    "- node_modules",
+    "- .opencode/node_modules",
+    "- .persona/rules",
+    "- .persona/evidence",
+    "",
+    "After implementation:",
+    "- Fill `.persona/workflow/implementation-report.md`.",
+    "- Fill `.persona/workflow/review-report.md`.",
+    "- Run `npx ph workflow finish implement` before claiming completion.",
+    "",
+  ].join("\n")
+}
+
+function writeBackendAgentInstructions(projectDir: string, skipped: string[], force: boolean): string | undefined {
+  const targetPath = join(projectDir, ROOT_AGENT_INSTRUCTIONS_PATH)
+  if (existsSync(targetPath) && !force) {
+    skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} already exists`)
+    return undefined
+  }
+  writeFileSync(targetPath, backendAgentInstructions(), "utf8")
+  return `created ${ROOT_AGENT_INSTRUCTIONS_PATH} AI bootstrap instructions`
+}
+
 function runBackendBootstrap(options: BootstrapOptions, force: boolean): CliRunResult {
   const projectDir = projectDirFor(options)
   const actions: string[] = []
@@ -139,6 +180,11 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean): CliRunR
     skipped.push(`${PLAN_PATH} already exists`)
   }
 
+  const agentInstructionAction = writeBackendAgentInstructions(projectDir, skipped, force)
+  if (agentInstructionAction !== undefined) {
+    actions.push(agentInstructionAction)
+  }
+
   return {
     status: 0,
     stdout: [
@@ -156,6 +202,7 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean): CliRunR
       `- ${PLAN_PATH}`,
       `- ${IMPLEMENTATION_REPORT_PATH}`,
       `- ${REVIEW_REPORT_PATH}`,
+      `- ${ROOT_AGENT_INSTRUCTIONS_PATH}`,
       "",
       "Next:",
       "- Ask the AI agent to run `npx ph workflow implement` before implementation.",
