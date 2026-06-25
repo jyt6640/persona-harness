@@ -8,6 +8,41 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.9-alpha.0] - 2026-06-25
+
+### Changed
+
+- Hardened backend-shape Java field parsing so naive `private` line text scans create fewer false WARNs from comments, text blocks, strings, lambdas, and nested generic mentions while still preserving WARNs for real multiline Service fields such as `Map`, `AtomicLong`, and `nextId`.
+- Added adversarial fixture coverage for the Java field parser hardening.
+- Strengthened Spring Boot Gradle dependency-management guidance around Boot plugin-managed dependencies, `io.spring.dependency-management`, starter dependencies, Flyway, wrapper-backed verification, and recovery after dependency resolution failures.
+- Added report coverage continuation hardening so reports marked `Status: filled` but left blank or template-like produce report coverage WARNs with next actions in `check`, `continue`, and `finish`.
+- Added the 0.3.9-alpha pre-eval stop gate: before `0.4` eval, HQ must stop for a `0.3.9-alpha` publish or release decision.
+- Refined AST verified report schema research with candidate fields such as `ruleId`, `result`, `targetFile`, `evidence`, `limitations`, `confidence`, and `source`, plus stable rule ID candidates.
+- Preregistered the v0.4 eval fixture matrix, including README fixture candidates, plain/AGENTS/CLAUDE/cursorrules/PH baseline conditions, baseline kill-gate, thresholds, primary/secondary metrics, and blind/second-reviewer rubric.
+
+### External Smoke
+
+- Pre-alpha9 5-run smoke was partially successful:
+  - parser hardening local/Windows adversarial fixture succeeded;
+  - clean tarball install, `init`, `bootstrap`, and `doctor` succeeded;
+  - PH ON bounded OpenCode run confirmed workflow rail/profile/evidence/pending block behavior but stopped before implementation files were generated;
+  - PH OFF baseline used the same README but drifted to a CommonJS/in-memory Node HTTP server.
+- Focused re-smoke succeeded:
+  - report coverage guidance surfaced through `check`, `continue`, and `finish`;
+  - Spring Boot dependency-management guidance surfaced through README/build.gradle injection;
+  - `init`, `bootstrap`, and `doctor` passed.
+- Focused smoke is surface verified only. It did not directly verify that a full OpenCode continuation applies dependency guidance, fills reports by itself, and reaches `finish` PASS.
+- This release does not certify generated app product quality and does not add AST/linter/enforcement.
+- Registry `alpha`/`latest` before this release prep pointed to `0.3.8-alpha.5` with gitHead `d99df54`, so current commits were verified with local tarballs.
+
+### Verification
+
+- `npm test` passed: scope/docs diagnostics PASS, 56 files, 358 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+- `npm run check:docs` passed.
+- `npm pack --dry-run` passed for `persona-harness@0.3.9-alpha.0` with 337 files.
+
 ## [0.3.8-alpha.5] - 2026-06-25
 
 ### Changed
