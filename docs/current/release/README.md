@@ -15,6 +15,18 @@ Do not describe a release as:
 
 External smoke and A/B or ON/OFF runs may be reported as stack-steering and workflow-closure signals only. Mention limits when relevant: small sample size, `n=1`, non-blind runs, same operator, and model/version/prompt/timeout/continuation dependence.
 
+## 0.3.9-alpha Pre-Eval Stop Gate
+
+Before moving from the `0.3.9-alpha` cleanup lane into `0.4` eval work, HQ must stop and ask the user for a `0.3.9-alpha` publish or release decision.
+
+Do not start `0.4` eval immediately after the following are complete:
+
+- `0.3.9-alpha` pre-eval code-debt cleanup;
+- QA eval fixture / kill-gate documentation;
+- verified report schema documentation.
+
+Those items make the release decision ready; they do not authorize Docs Release to publish, push, tag, or start release prep without HQ/user approval.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
