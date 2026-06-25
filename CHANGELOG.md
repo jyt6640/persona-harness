@@ -36,6 +36,15 @@ No unreleased changes yet.
   - clean tarball install, `init`, `bootstrap`, and `doctor` succeeded;
   - report coverage guidance surfaced through `check`, `continue`, and `finish`;
   - Spring Boot dependency-management guidance surfaced through README/build.gradle injection.
+- Post-publish registry install/surface smoke passed for `persona-harness@0.3.9-alpha.1`:
+  - registry dist-tags were `latest=0.3.9-alpha.1` and `alpha=0.3.9-alpha.1`;
+  - registry `gitHead` was `bc7eaddc678b6268be1194d7e659123f895e6fd5`;
+  - registry shasum was `c901e24a0c6da82658ebf6800f038223d0e93de4`;
+  - Windows clean install from registry `persona-harness@alpha`, `ph doctor`, `ph init`, `ph bootstrap backend`, workflow/bearshell guidance, and backend-shape report surfaces were OK;
+  - `workflow check` WARNs were limited to template reports and missing evidence;
+  - `review backend-shape` WARNs were expected because the smoke did not generate a Java app, while fake shim absence passed;
+  - `workflow finish implement` exited 1 as expected and named the required filled reports and evidence file.
+- HQ local checks before that smoke did not find a `v0.3.9-alpha.1` tag locally or on origin.
 - This prep does not directly certify that a full OpenCode continuation applies dependency guidance, fills reports by itself, and reaches `finish` PASS.
 - This release does not certify generated app product quality and does not add AST/linter/enforcement.
 
