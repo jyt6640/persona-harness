@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { warnRuntimeFailure } from "./error-boundary.js"
 import type { TopLevelIntent } from "./top-level-intent-router.js"
 import type { PendingInjection } from "./types.js"
 
@@ -68,6 +69,20 @@ function safeSlug(value: string): string {
     .toLowerCase() || "target"
 }
 
+function writeEvidenceJson(evidenceDir: string, runId: string, payload: unknown): void {
+  const outputPath = join(evidenceDir, `${runId}.json`)
+  try {
+    mkdirSync(evidenceDir, { recursive: true })
+    writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+  } catch (error) {
+    if (error instanceof Error) {
+      warnRuntimeFailure("evidence write", outputPath, error)
+      return
+    }
+    warnRuntimeFailure("evidence write", outputPath, new Error(String(error)))
+  }
+}
+
 export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): void {
   const now = new Date()
   const config = loadHarnessConfig(projectDir)
@@ -92,8 +107,7 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): v
     injectedPolicyCount: event.injection.policies.length,
   }
 
-  mkdirSync(evidenceDir, { recursive: true })
-  writeFileSync(join(evidenceDir, `${runId}.json`), `${JSON.stringify(payload, null, 2)}\n`)
+  writeEvidenceJson(evidenceDir, runId, payload)
 }
 
 export function writeIntentEvidence(projectDir: string, event: IntentEvidenceEvent): void {
@@ -116,8 +130,7 @@ export function writeIntentEvidence(projectDir: string, event: IntentEvidenceEve
     railMarker: event.railMarker,
   }
 
-  mkdirSync(evidenceDir, { recursive: true })
-  writeFileSync(join(evidenceDir, `${runId}.json`), `${JSON.stringify(payload, null, 2)}\n`)
+  writeEvidenceJson(evidenceDir, runId, payload)
 }
 
 export function writeRailComplianceEvidence(projectDir: string, event: RailComplianceEvidenceEvent): void {
@@ -146,8 +159,7 @@ export function writeRailComplianceEvidence(projectDir: string, event: RailCompl
     reportOnly: true,
   }
 
-  mkdirSync(evidenceDir, { recursive: true })
-  writeFileSync(join(evidenceDir, `${runId}.json`), `${JSON.stringify(payload, null, 2)}\n`)
+  writeEvidenceJson(evidenceDir, runId, payload)
 }
 
 export function writeContinuationEvidence(projectDir: string, event: ContinuationEvidenceEvent): void {
@@ -173,6 +185,5 @@ export function writeContinuationEvidence(projectDir: string, event: Continuatio
     reportOnly: true,
   }
 
-  mkdirSync(evidenceDir, { recursive: true })
-  writeFileSync(join(evidenceDir, `${runId}.json`), `${JSON.stringify(payload, null, 2)}\n`)
+  writeEvidenceJson(evidenceDir, runId, payload)
 }

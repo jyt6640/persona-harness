@@ -11,6 +11,7 @@ import {
   discoverJavaRoleInjections,
   formatJavaRoleDiscoveryBlock,
 } from "./java-role-discovery.js"
+import { warnRuntimeFailure } from "./error-boundary.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
 import { PendingInjectionStore } from "./store.js"
@@ -49,6 +50,18 @@ function appendJavaRoleDiscoveryToToolOutput(output: ToolAfterOutput, block: str
 
 function hasEnabledSharedSkillDomain(enabledDomains: readonly string[], targetFile: string): boolean {
   return selectSharedSkillsForTarget(targetFile).some((skill) => enabledDomains.includes(skill.domain))
+}
+
+function runHostHook(hookName: string, operation: () => void): void {
+  try {
+    operation()
+  } catch (error) {
+    if (error instanceof Error) {
+      warnRuntimeFailure(`hook ${hookName}`, undefined, error)
+      return
+    }
+    warnRuntimeFailure(`hook ${hookName}`, undefined, new Error(String(error)))
+  }
 }
 
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
@@ -133,42 +146,46 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
 
   return {
     "tool.execute.before": async (input: ToolBeforeInput, output: ToolBeforeOutput): Promise<void> => {
-      captureTargetFile(
-        "tool.execute.before",
-        input.tool,
-        input.sessionID,
-        input.callID,
-        output.args as Record<string, unknown>,
-      )
+      runHostHook("tool.execute.before", () => {
+        captureTargetFile(
+          "tool.execute.before",
+          input.tool,
+          input.sessionID,
+          input.callID,
+          output.args as Record<string, unknown>,
+        )
+      })
     },
 
     "tool.execute.after": async (input: ToolAfterInput, output: ToolAfterOutput): Promise<void> => {
-      compliance.observeTool(projectDir, {
-        tool: input.tool,
-        sessionID: input.sessionID,
-        callID: input.callID,
-        args: input.args as Record<string, unknown>,
-      })
-      captureJavaRoleDiscovery(input, output)
+      runHostHook("tool.execute.after", () => {
+        compliance.observeTool(projectDir, {
+          tool: input.tool,
+          sessionID: input.sessionID,
+          callID: input.callID,
+          args: input.args as Record<string, unknown>,
+        })
+        captureJavaRoleDiscovery(input, output)
 
-      const injection = captureTargetFile(
-        "tool.execute.after",
-        input.tool,
-        input.sessionID,
-        input.callID,
-        input.args as Record<string, unknown>,
-      )
-      if (!injection) {
-        return
-      }
+        const injection = captureTargetFile(
+          "tool.execute.after",
+          input.tool,
+          input.sessionID,
+          input.callID,
+          input.args as Record<string, unknown>,
+        )
+        if (!injection) {
+          return
+        }
 
-      appendInjectionToToolOutput(output, injection.block)
-      writePhase0Evidence(projectDir, {
-        hook: "tool.execute.after",
-        sessionID: input.sessionID,
-        callID: input.callID,
-        injectedInto: "tool-output",
-        injection,
+        appendInjectionToToolOutput(output, injection.block)
+        writePhase0Evidence(projectDir, {
+          hook: "tool.execute.after",
+          sessionID: input.sessionID,
+          callID: input.callID,
+          injectedInto: "tool-output",
+          injection,
+        })
       })
     },
 
@@ -176,39 +193,43 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       _input: unknown,
       output: TransformMessagesOutput,
     ): Promise<void> => {
-      const latestUserMessage = [...output.messages].reverse().find((message) => message.info.role === "user")
-      const sessionId = latestUserMessage?.info.sessionID
-      if (!sessionId) {
-        return
-      }
+      runHostHook("experimental.chat.messages.transform", () => {
+        const latestUserMessage = [...output.messages].reverse().find((message) => message.info.role === "user")
+        const sessionId = latestUserMessage?.info.sessionID
+        if (!sessionId) {
+          return
+        }
 
-      maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance)
+        maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance)
 
-      const injection = store.take(sessionId)
-      if (!injection) {
-        return
-      }
+        const injection = store.take(sessionId)
+        if (!injection) {
+          return
+        }
 
-      if (injectIntoLatestUserMessage(output, injection)) {
-        writePhase0Evidence(projectDir, {
-          hook: "experimental.chat.messages.transform",
-          sessionID: sessionId,
-          injectedInto: "model-input",
-          injection,
-        })
-      }
+        if (injectIntoLatestUserMessage(output, injection)) {
+          writePhase0Evidence(projectDir, {
+            hook: "experimental.chat.messages.transform",
+            sessionID: sessionId,
+            injectedInto: "model-input",
+            injection,
+          })
+        }
+      })
     },
 
     "experimental.text.complete": async (
       input: TextCompleteInput,
       output: TextCompleteOutput,
     ): Promise<void> => {
-      const block = continuation.completeText(projectDir, input.sessionID, output.text)
-      if (block === undefined || output.text.includes("[Persona Harness Continuation]")) {
-        return
-      }
+      runHostHook("experimental.text.complete", () => {
+        const block = continuation.completeText(projectDir, input.sessionID, output.text)
+        if (block === undefined || output.text.includes("[Persona Harness Continuation]")) {
+          return
+        }
 
-      output.text = `${output.text}\n\n---\n\n${block}`
+        output.text = `${output.text}\n\n---\n\n${block}`
+      })
     },
   }
 }
