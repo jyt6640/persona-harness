@@ -8,6 +8,46 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.9-alpha.1] - 2026-06-25
+
+### Changed
+
+- Bumped the prerelease version to `0.3.9-alpha.1` because `persona-harness@0.3.9-alpha.0` already exists on the npm registry and cannot be overwritten with the refreshed current HEAD contents.
+- Carried forward the `0.3.9-alpha.0` release-prep refresh contents:
+  - release checklist docs stale guard for version/doc alignment, smoke interpretation boundaries, registry `gitHead` / current `HEAD` mismatch recording, and develop commit/no-commit reporting;
+  - v0.4 evaluation methodology, fixture files, evaluation plan, and runbook with fixture order, baseline setup, metadata capture, archive naming, metrics, blind package preparation, second reviewer handoff, and kill-gate calculation timing;
+  - v0.4 runbook release-reference guard;
+  - verified report manual backfill plan with artifact selection, rule ID evidence sources, PASS/WARN/FAIL/UNKNOWN criteria, confidence/source handling, false-positive review, and v0.5 parser spike decision criteria;
+  - Gradle skills guidance wording tightening that preserves fake-shim ban, wrapper-first verification, and Spring Boot dependency-management semantics;
+  - runtime structured warning output as `[Persona Harness Runtime Warning] kind=... scope=...`;
+  - CLI report coverage helper refactor into `workflow-report-coverage.ts` with unchanged workflow semantics.
+- Recorded that external develop retrospectives and templates are repo-outside operating artifacts only and are not package contents.
+
+### Registry Note
+
+- `persona-harness@0.3.9-alpha.0` is a stale registry artifact for the refreshed release docs: npm reports its `gitHead` as `4338cc51b40eb9ba3b3853e9df394373fc2b0269`, while the refreshed alpha.0 release-prep/tag commit was `b31b557`.
+- Because npm package versions are immutable, `0.3.9-alpha.1` is the next prerelease intended to carry the refreshed current HEAD state.
+
+### External Smoke
+
+- No new External Smoke was run for this release prep.
+- Pre-alpha9 and focused smoke remain surface/guidance verified:
+  - parser hardening local/Windows adversarial fixture succeeded;
+  - clean tarball install, `init`, `bootstrap`, and `doctor` succeeded;
+  - report coverage guidance surfaced through `check`, `continue`, and `finish`;
+  - Spring Boot dependency-management guidance surfaced through README/build.gradle injection.
+- This prep does not directly certify that a full OpenCode continuation applies dependency guidance, fills reports by itself, and reaches `finish` PASS.
+- This release does not certify generated app product quality and does not add AST/linter/enforcement.
+
+### Verification
+
+- `npm test` passed: scope/docs diagnostics PASS, 57 files, 361 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+- `npm run check:docs` passed.
+- `npm pack --dry-run` passed for `persona-harness@0.3.9-alpha.1` with 341 files.
+- `git diff --check` passed.
+
 ## [0.3.9-alpha.0] - 2026-06-25
 
 ### Changed
