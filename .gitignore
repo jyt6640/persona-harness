@@ -20,9 +20,10 @@ example/
 .persona-test-fixtures/
 .persona-rail-compliance-test-fixtures/
 .persona-continuation-test-fixtures/
+.playwright-cli/
 fixtures/
 !packages/shared-skills/**/fixtures/
-!packages/shared-skills/**/fixtures/**
+!packages/shared-skills/**/fixtures/**  
 tmp/
 
 # Package-manager noise.
