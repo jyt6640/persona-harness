@@ -10,7 +10,9 @@ The root [README.md](../../README.md) is now focused on first-time users.
 
 Persona Harness는 OpenCode에서 동작하는 TypeScript 플러그인 MVP다.
 
-현재 productized MVP는 **Java/Spring backend Clean Code injection**이다. 목표는 같은 요구사항에서 Gradle 기반, 계층 분리, DTO boundary, Repository boundary, Service orchestration-only backend product code shape가 더 균일하게 나오도록 Java target file에 rule context를 주입하는 것이다.
+현재 productized MVP는 **AI coding workflow rail + evidence + continuation harness**다. Java/Spring backend는 첫 steering target이며, 목표는 에이전트가 요구사항/profile/plan을 읽고, 정해진 workflow rail을 따라가며, 읽기/주입/workflow command 흔적을 남기고, pending ticket을 이어서 처리한 뒤 report를 채우고 완료를 주장하게 만드는 것이다.
+
+이 문서는 generated app product quality를 인증하지 않는다. Persona Harness는 Clean Code 품질 보장 도구, AST/linter, enforcement engine이 아니다. `backend-shape`와 evidence는 사람이 workflow와 stack steering을 검토하기 위한 report-only surface다.
 
 frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 release-facing MVP 범위가 아니다.
 
@@ -18,7 +20,7 @@ License: Apache-2.0.
 
 ## v0.3.0-alpha 설치 흐름
 
-`v0.3.0-alpha.0`은 Java/Spring backend Clean Code workflow pilot for OpenCode다. 정식 stable release가 아니라 외부 테스터가 설치와 생성 흐름을 확인하기 위한 alpha package다.
+`v0.3.0-alpha.0` 이후 alpha 라인은 OpenCode용 Java/Spring backend workflow rail pilot이다. 정식 stable release가 아니라 외부 테스터가 설치, workflow rail, evidence, continuation 흐름을 확인하기 위한 alpha package다.
 
 alpha publish 이후에는 clean Java/Spring backend 프로젝트에서 이렇게 시작한다.
 
@@ -163,8 +165,10 @@ npx ph history --id first-clean-run
 
 주의:
 
-- 이 흐름은 Java/Spring backend Clean Code shape를 더 균일하게 만들기 위한 local MVP다.
+- 이 흐름은 Java/Spring backend stack steering과 workflow closure를 관찰하기 위한 local MVP다.
 - generated app product quality, rule compliance enforcement, test sufficiency, Guard/AST/linter 검증은 보증하지 않는다.
+- `.persona/evidence`는 읽기/주입/workflow 실행 흔적이며, evidence count는 품질 점수나 품질 향상 증거가 아니다.
+- A/B와 ON/OFF smoke는 stack steering 신호일 뿐이다. 현재 smoke는 표본이 작고, 때로는 `n=1`, non-blind, same operator, model/version/prompt/timeout/continuation behavior에 의존한다.
 - frontend/infra/desktop workflow는 아직 release-facing 범위가 아니다.
 - alpha pilot 기간에는 `persona-harness@alpha`를 명시한다. `latest`는 stale default install을 피하기 위해 현재 alpha/beta로 동기화할 수 있지만 stable support 보장은 아니다.
 

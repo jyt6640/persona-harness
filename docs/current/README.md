@@ -4,6 +4,14 @@ This package contains active decisions, current policy, release-facing guides, a
 
 Use this package for documents that should guide the next implementation or productization loop.
 
+## Product Positioning
+
+Persona Harness is currently positioned as an AI coding workflow rail + evidence + continuation harness.
+
+It is not a Java Clean Code guarantee, generated app quality certification, AST/linter, or enforcement engine. Java/Spring backend guidance remains the first steering target, but evidence means local traces of reads, injections, selected rails, target file roles, and workflow command activity. Evidence count is not a quality score.
+
+A/B and ON/OFF smoke results should be read as stack-steering signals only. Current evidence is small, often `n=1`, non-blind, run by the same operator, and sensitive to model, version, prompt, timeout, and continuation behavior.
+
 Common anchors:
 
 - `mvp-goal.md`

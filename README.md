@@ -1,22 +1,24 @@
 # Persona Harness
 
-Persona Harness is an OpenCode plugin and local CLI for Java/Spring backend generation workflows.
+Persona Harness is an OpenCode plugin and local CLI for AI coding workflow rails, evidence traces, and continuation control.
 
-It helps an AI agent start from a clean project, read your backend requirements, create an architecture plan, implement with a consistent Java/Spring structure, run verification, and leave workflow reports behind.
+It helps an AI agent start from a clean project, read your backend requirements, follow an implementation rail, leave evidence of what it read/injected/ran, continue unfinished tickets, run verification, and fill workflow reports before claiming completion.
+
+It does not certify generated application product quality. The current Java/Spring backend guidance is a stack-steering and workflow-observability surface, not a Clean Code guarantee, AST/linter, or enforcement engine.
 
 If you only have a product idea, Persona Harness now routes the AI through a requirements draft first. For example, `TODO 웹 서비스 만들래` should create `.persona/workflow/requirements/backlog.md` and ask for review instead of starting implementation immediately. Implementation starts after you approve the draft with a phrase such as `진행하자`.
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.3.7-alpha.1`
+> Current source/package candidate: `0.3.8-alpha.4`
 >
-> Current scope: Java/Spring backend MVP.
+> Current scope: Java/Spring backend workflow rail MVP.
 >
 > Not in scope yet: frontend, infra, desktop app, AST/linter enforcement, generated-app quality certification, and full TDD workflow.
 
 ## Who This Is For
 
-Use Persona Harness if you want to test whether OpenCode can generate Java/Spring backend code with a more consistent Clean Code shape.
+Use Persona Harness if you want to test whether OpenCode can stay on a Java/Spring backend implementation workflow, preserve readable evidence, continue pending work, and avoid obvious stack drift before it reports completion.
 
 It is especially focused on:
 
@@ -349,7 +351,7 @@ These commands are intentionally visible so AI agents can call them from OpenCod
 - `ph smoke`: writes `.persona/workflow/smoke-report.md`.
 - `ph feedback`: writes `.persona/workflow/feedback-report.md`.
 - `ph evidence summary`: summarizes raw evidence files.
-- `ph review backend-shape`: writes report-only backend Clean Code shape observations.
+- `ph review backend-shape`: writes report-only backend workflow shape observations.
 - `ph history`: archives completed workflow artifacts.
 
 ## What Persona Harness Encourages
@@ -363,10 +365,22 @@ These commands are intentionally visible so AI agents can call them from OpenCod
 - Repository implementation lives in infrastructure.
 - Request/response DTO boundary is explicit.
 
+These are steering targets and review cues. They are not proof that the generated app is correct, maintainable, secure, or production-ready.
+
+## What Evidence Means
+
+`.persona/evidence` records local traces such as file reads, injected workflow/rule context, selected rails, target file roles, and workflow command activity. Evidence is useful for asking "did the agent see and follow the intended rail?" It is not a quality score, and higher evidence counts do not prove better generated code.
+
+## A/B And ON/OFF Smoke Limits
+
+Existing A/B or ON/OFF smoke results are stack-steering signals only. They are not product-quality proof because the samples are small, often `n=1`, non-blind, run by the same operator, and sensitive to model, provider, version, prompt, timeout, and continuation behavior.
+
 ## What Persona Harness Does Not Promise
 
 - It does not certify generated application product quality.
 - It does not enforce rules through AST, linter, or build failure gates.
+- It does not guarantee Clean Code quality.
+- It does not turn evidence counts into quality improvement claims.
 - It does not prove tests are sufficient.
 - It does not productize frontend, infra, or desktop workflows yet.
 - It is not the final TDD workflow yet.

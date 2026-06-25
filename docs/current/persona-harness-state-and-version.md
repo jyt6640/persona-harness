@@ -1,24 +1,26 @@
 # Persona Harness State And Version
 
-Last updated: 2026-06-19
+Last updated: 2026-06-25
 
 ## Verdict
 
 Persona Harness is currently best described as:
 
-> `0.2.1`: Java/Spring backend Clean Code injection MVP with diagnostics, scoped shared-skill support, artifact hygiene, packaged local/tarball validation, Java role read follow-up, and npm-facing metadata readiness.
+> `0.3.8-alpha`: AI coding workflow rail + evidence + continuation harness for Java/Spring backend alpha runs.
 
-It is no longer a pure Phase 0 proof-of-concept. It is also not a productized `1.0`.
+It is no longer best described as a Java Clean Code quality-improvement product. Java/Spring backend remains the first steering target, but the P0 product thesis is workflow control: keep the agent on the intended rail, make reads/injections/workflow activity observable, continue pending tickets, and block premature completion claims.
 
 The strongest current claim is:
 
-> Persona Harness can deterministically inject Java/Spring backend Clean Code guidance, report rule metadata diagnostics, keep scope drift visible, and compare generated Gradle Java/Spring outputs with a product-code-flow rubric.
+> Persona Harness can steer OpenCode through Java/Spring backend workflow rails, record evidence traces, surface continuation state, and report stack-shape signals before completion is claimed.
 
 The project still cannot honestly claim:
 
-> Injection ON reliably improves generated code quality across enough comparable actual runs.
+> Persona Harness guarantees Clean Code quality, certifies generated app product quality, or enforces rules through AST/linter/build gates.
 
-That claim is deliberately blocked by the 3-pair injection value stopping rule.
+Evidence means local traces of file reads, injected context, selected rails, target file roles, and workflow command activity. It is not a quality score, and evidence count must not be used as a quality-improvement claim.
+
+A/B and ON/OFF smoke results are stack-steering signals only. They remain limited by small sample size, often `n=1`, non-blind execution, same-operator bias, and model/version/prompt/timeout/continuation dependence.
 
 ## Version Judgment
 
@@ -53,6 +55,8 @@ Why not `1.0.0`:
 - No npm-published release path.
 - No documented installation/support contract beyond MVP reproduction.
 - No claim that generated application quality improves.
+- No claim that evidence count proves quality improvement.
+- No AST/linter/enforcement gate.
 
 ### Product Maturity Version
 

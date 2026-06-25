@@ -1,19 +1,21 @@
 # Persona Harness
 
-OpenCode를 위한 Java/Spring backend Clean Code workflow pilot.
+OpenCode를 위한 AI coding workflow rail + evidence + continuation harness.
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-Persona Harness는 에이전트가 빈 프로젝트에서 시작해 backend 맥락을 묻고, 구현 전 architecture plan을 남긴 뒤, 더 균일한 Java/Spring 구조로 코드를 만들도록 돕습니다.
+Persona Harness는 에이전트가 빈 프로젝트에서 시작해 backend 맥락을 읽고, 구현 rail을 따라가며, 무엇을 읽고/주입받고/실행했는지 흔적을 남기고, unfinished ticket을 이어서 처리한 뒤 workflow report를 채우고 완료를 주장하도록 돕습니다.
+
+generated app product quality를 인증하지 않습니다. 현재 Java/Spring backend guidance는 stack steering과 workflow observability를 위한 표면이지, Clean Code 보장이나 AST/linter/enforcement 엔진이 아닙니다.
 
 `ph` 명령어는 주로 AI가 쓰는 workflow surface입니다. 사용자는 설치와 초기화만 해두고, OpenCode나 Codex-style TUI에서 “README 보고 구현해줘”처럼 자연어로 요청하는 흐름을 목표로 합니다. 이후 `ph workflow implement`, `ph bearshell`, report-fill, `ph workflow finish implement` 명령은 에이전트가 실행해야 합니다.
 
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
-> 현재 범위: Java/Spring backend MVP.
+> 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, AST/linter enforcement, 완전한 TDD workflow는 후속 트랙입니다.
 >
-> 현재 source/package 후보: `0.3.7-alpha.1`
+> 현재 source/package 후보: `0.3.8-alpha.4`
 
 ## 요구사항
 
@@ -178,7 +180,11 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph workflow guard implement/final`: workflow rail이 재사용하는 저수준 strict gate
 - `ph doctor`: OpenCode와 Persona Harness 연동 상태 진단
 - `ph smoke`, `ph feedback`, `ph evidence summary`, `ph review backend-shape`: report-only 검증/피드백 artifact 생성
-- OpenCode injection: 관련 파일을 읽을 때 Java/Spring backend Clean Code context 주입
+- OpenCode injection: 관련 파일을 읽을 때 Java/Spring backend workflow/guidance context 주입
+
+## evidence의 의미
+
+`.persona/evidence`는 파일 read, 주입된 workflow/rule context, 선택된 rail, target file role, workflow command activity 같은 실행 흔적입니다. “에이전트가 의도한 rail을 보고 따라갔는가”를 확인하기 위한 기록이지, 품질 점수나 품질 향상 증거가 아닙니다.
 
 ## 권장하는 코드 모양
 
@@ -190,10 +196,18 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - Repository interface는 domain, 구현체는 infrastructure에 위치
 - Request/response DTO boundary 명확화
 
+위 항목은 steering target과 review cue입니다. 생성된 앱이 정확하거나 유지보수 가능하거나 안전하거나 production-ready임을 증명하지 않습니다.
+
+## A/B와 ON/OFF smoke 한계
+
+기존 A/B 또는 ON/OFF smoke 결과는 stack steering 신호로만 봅니다. 대부분 표본이 작고, 때로는 `n=1`이며, non-blind, same operator, model/version/prompt/timeout/continuation behavior에 의존하므로 product quality 입증으로 쓰지 않습니다.
+
 ## 보장하지 않는 것
 
 - generated app product quality 인증
 - AST/linter/build failure 기반 rule enforcement
+- Clean Code 품질 보장
+- evidence count를 품질 향상으로 해석하는 주장
 - 테스트 충분성 증명
 - frontend, infra, desktop workflow productization
 - 최종 TDD workflow

@@ -2,6 +2,19 @@
 
 Use this package for repeatable release operations and release note drafting.
 
+## Release Messaging Guardrail
+
+Describe Persona Harness as an AI coding workflow rail + evidence + continuation harness.
+
+Do not describe a release as:
+
+- a Java Clean Code quality guarantee;
+- generated app product-quality certification;
+- evidence count proving quality improvement;
+- AST/linter/build-failure enforcement.
+
+External smoke and A/B or ON/OFF runs may be reported as stack-steering and workflow-closure signals only. Mention limits when relevant: small sample size, `n=1`, non-blind runs, same operator, and model/version/prompt/timeout/continuation dependence.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

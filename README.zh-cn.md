@@ -1,15 +1,17 @@
 # Persona Harness
 
-面向 OpenCode 的 Java/Spring backend Clean Code workflow pilot.
+面向 OpenCode 的 AI coding workflow rail + evidence + continuation harness.
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-Persona Harness 帮助代理从空项目开始，先收集 backend 背景，生成 architecture plan，再基于计划生成更一致的 Java/Spring 代码结构。
+Persona Harness 帮助代理从空项目开始，读取 backend 背景，沿着 implementation rail 工作，留下读取/注入/workflow command 的痕迹，继续未完成 ticket，然后再填写 workflow reports 并声明完成。
 
-> 当前范围: Java/Spring backend MVP.
+它不认证 generated app product quality。当前 Java/Spring backend guidance 是 stack steering 和 workflow observability surface，不是 Clean Code 保证、AST/linter 或 enforcement engine。
+
+> 当前范围: Java/Spring backend workflow rail MVP.
 > frontend、infra、desktop app、AST/linter enforcement、完整 TDD workflow 都是后续方向。
 >
-> Current source/package candidate: `0.3.7-alpha.1`
+> Current source/package candidate: `0.3.8-alpha.4`
 
 ## Requirements
 
@@ -134,7 +136,11 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph workflow next`: 输出下一个 pending ticket
 - `ph bearshell`: bounded shell command helper
 - `ph history`: 将使用过的 workflow artifact 保存到 `.persona/workflow/history/`
-- OpenCode injection: 当代理读取相关文件时注入 Java/Spring backend Clean Code context
+- OpenCode injection: 当代理读取相关文件时注入 Java/Spring backend workflow/guidance context
+
+## Evidence 的含义
+
+`.persona/evidence` 记录 file read、被注入的 workflow/rule context、选中的 rail、target file role、workflow command activity 等执行痕迹。它用于确认“代理是否看见并跟随了预期 rail”，不是质量分数，也不能把 evidence count 当成质量提升证明。
 
 ## 鼓励的代码结构
 
@@ -146,10 +152,18 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - Repository interface 在 domain，具体实现放在 infrastructure
 - 明确 request/response DTO boundary
 
+这些是 steering target 和 review cue。它们不证明生成的 app 正确、可维护、安全或 production-ready。
+
+## A/B 与 ON/OFF smoke 的限制
+
+现有 A/B 或 ON/OFF smoke 结果只能视为 stack steering signal。样本很小，常见 `n=1`，non-blind，同一操作者执行，并且依赖 model/version/prompt/timeout/continuation behavior，因此不能作为 product quality 证明。
+
 ## 不承诺
 
 - 生成 app 的 product quality 认证
 - AST/linter/build failure 级别的 rule enforcement
+- Clean Code 质量保证
+- 把 evidence count 解读为质量提升的说法
 - 测试充分性证明
 - frontend, infra, desktop workflow productization
 - 最终 TDD workflow

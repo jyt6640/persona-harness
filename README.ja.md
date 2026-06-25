@@ -1,15 +1,17 @@
 # Persona Harness
 
-OpenCode 向け Java/Spring backend Clean Code workflow pilot.
+OpenCode 向け AI coding workflow rail + evidence + continuation harness.
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-Persona Harness は、エージェントが空のプロジェクトから始め、backend の前提を確認し、実装前に architecture plan を残し、一貫した Java/Spring 構造でコードを生成するためのワークフローです。
+Persona Harness は、エージェントが空のプロジェクトから始め、backend の前提を読み、実装 rail を辿り、何を読んだか・何が注入されたか・どの workflow command を実行したかを記録し、未完了 ticket を継続してから完了を報告するための harness です。
 
-> 現在の範囲: Java/Spring backend MVP.
+生成された app の product quality は認証しません。現在の Java/Spring backend guidance は stack steering と workflow observability のための surface であり、Clean Code 保証、AST/linter、enforcement engine ではありません。
+
+> 現在の範囲: Java/Spring backend workflow rail MVP.
 > frontend、infra、desktop app、AST/linter enforcement、完全な TDD workflow は今後の対象です。
 >
-> Current source/package candidate: `0.3.7-alpha.1`
+> Current source/package candidate: `0.3.8-alpha.4`
 
 ## Requirements
 
@@ -134,7 +136,11 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph workflow next`: 次の pending ticket を表示
 - `ph bearshell`: bounded shell command helper
 - `ph history`: 使用済み workflow artifact を `.persona/workflow/history/` に保存
-- OpenCode injection: 関連ファイルを読むと Java/Spring backend Clean Code context を注入
+- OpenCode injection: 関連ファイルを読むと Java/Spring backend workflow/guidance context を注入
+
+## Evidence の意味
+
+`.persona/evidence` は file read、注入された workflow/rule context、選択された rail、target file role、workflow command activity などの実行痕跡です。これは「agent が意図した rail を見て従ったか」を確認するための記録であり、品質スコアでも品質向上の証明でもありません。
 
 ## 推奨するコード構造
 
@@ -146,10 +152,18 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - Repository interface は domain、実装は infrastructure
 - Request/response DTO boundary を明確にする
 
+これらは steering target と review cue です。生成された app が正しい、保守しやすい、安全、production-ready であることは証明しません。
+
+## A/B と ON/OFF smoke の限界
+
+既存の A/B または ON/OFF smoke 結果は stack steering signal として扱います。多くは小さい sample、場合によっては `n=1`、non-blind、same operator であり、model/version/prompt/timeout/continuation behavior に依存するため、product quality の証明ではありません。
+
 ## 保証しないこと
 
 - 生成された app の product quality 認証
 - AST/linter/build failure による rule enforcement
+- Clean Code 品質保証
+- evidence count を品質向上として扱う主張
 - test sufficiency の証明
 - frontend, infra, desktop workflow の productization
 - 最終的な TDD workflow

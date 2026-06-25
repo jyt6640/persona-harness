@@ -16,6 +16,8 @@
 
 One or two sentences explaining who should use this release and why.
 
+Describe Persona Harness as an AI coding workflow rail + evidence + continuation harness. Do not describe the release as a Java Clean Code quality guarantee, generated app product-quality certification, evidence-count quality proof, or AST/linter/build-failure enforcement.
+
 ## What Changed
 
 - 
@@ -66,6 +68,9 @@ Result:
 ## Known Gaps
 
 - 
+- Generated app product quality is not certified.
+- Evidence means read/injection/workflow traces, not a quality score.
+- A/B or ON/OFF smoke results are stack-steering signals only and may be limited by sample size, non-blind runs, same operator, model/version, prompt, timeout, and continuation behavior.
 
 ## Release Automation
 
