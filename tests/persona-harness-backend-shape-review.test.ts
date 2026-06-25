@@ -30,6 +30,26 @@ function readReport(projectDir: string): string {
   return readFileSync(join(projectDir, ".persona", "workflow", "backend-shape-report.md"), "utf8")
 }
 
+type BackendShapeReportRow = {
+  readonly result: string
+  readonly evidence: string
+}
+
+function backendShapeReportRows(report: string): ReadonlyMap<string, BackendShapeReportRow> {
+  const rows = new Map<string, BackendShapeReportRow>()
+  for (const line of report.split(/\r?\n/u)) {
+    const match = /^\| (?<criterion>[^|]+) \| (?<result>PASS|WARN) \| (?<evidence>[^|]*) \|$/u.exec(line)
+    if (match?.groups === undefined) {
+      continue
+    }
+    rows.set(match.groups.criterion.trim(), {
+      result: match.groups.result,
+      evidence: match.groups.evidence.trim(),
+    })
+  }
+  return rows
+}
+
 function writeCleanishSpringProject(projectDir: string): void {
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'library'\n")
   writeFileSync(
@@ -291,6 +311,75 @@ describe("ph review backend-shape report-only analyzer", () => {
     const report = readReport(projectDir)
     expect(report).toContain("| Entity direct exposure | WARN |")
     expect(report).toContain("LeakyBookResponse.java exposes Book")
+  })
+
+  it("does not treat nested generic dependencies, annotations, lambdas, comments, or text blocks as service-owned storage", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/application/BookService.java",
+      [
+        "import java.util.List;",
+        "import java.util.Map;",
+        "import java.util.function.BiFunction;",
+        "import java.util.function.Function;",
+        "class BookService {",
+        "  @SuppressWarnings({\"Map\", \"AtomicLong\", \"nextId\"})",
+        "  private final Function<String, List<BookRepository>> lookupFactory = name -> List.of();",
+        "  private final BiFunction<String, String, String> labels = (left, right) -> left + \",\" + right;",
+        "  BookService(",
+        "    BookRepository bookRepository,",
+        "    Map<String, List<BookRepository>> repositoryGroups,",
+        "    Function<String, List<BookRepository>> lookupFactory",
+        "  ) {",
+        "    String note = \"private Map<Long, Book> storage; AtomicLong nextId\";",
+        "    String text = \"\"\"",
+        "      private Map<Long, Book> storage;",
+        "      private AtomicLong nextId;",
+        "      ItemRepository, MemberRepository",
+        "      \"\"\";",
+        "    // private List<Book> cachedBooks;",
+        "  }",
+        "}",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const serviceStorageRow = backendShapeReportRows(readReport(projectDir)).get("Service storage/id sequence ownership")
+    expect(serviceStorageRow).toStrictEqual({
+      result: "PASS",
+      evidence: "no Map/List/AtomicLong/nextId/idCounter in *Service.java",
+    })
+  })
+
+  it("detects multiline service-owned storage and id sequence fields", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/application/BookService.java",
+      [
+        "class BookService {",
+        "  private final",
+        "      java.util.Map<Long, Book>",
+        "      storage;",
+        "  private",
+        "      java.util.concurrent.atomic.AtomicLong",
+        "      nextId;",
+        "}",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const serviceStorageRow = backendShapeReportRows(readReport(projectDir)).get("Service storage/id sequence ownership")
+    expect(serviceStorageRow?.result).toBe("WARN")
+    expect(serviceStorageRow?.evidence).toContain("BookService.java:Map")
+    expect(serviceStorageRow?.evidence).toContain("BookService.java:AtomicLong")
   })
 
   it("surfaces backend-shape report status in workflow check without blocking finish", () => {

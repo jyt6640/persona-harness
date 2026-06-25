@@ -25,6 +25,11 @@ type ShapeCheck = {
   readonly run: (context: ShapeCheckContext) => ShapeFinding
 }
 
+type JavaFieldDeclaration = {
+  readonly typeName: string
+  readonly fieldName: string
+}
+
 export const BACKEND_SHAPE_REPORT_PATH = ".persona/workflow/backend-shape-report.md"
 const FAKE_SHIM_FILES = ["gradle-shim.js", join("tools", "gradle-shim.js")] as const
 const VERIFICATION_TEXT_LIMIT = 200_000
@@ -189,17 +194,46 @@ function repositoryAdapter(projectDir: string, files: readonly string[]): ShapeF
   return adapters.length > 0 ? pass("Infrastructure repository adapter", adapters.map((filePath) => relative(projectDir, filePath)).join(", ")) : warn("Infrastructure repository adapter", "no infrastructure/infra *Repository.java or *Repository implementation")
 }
 
+function parsePrivateFieldDeclaration(declaration: string): JavaFieldDeclaration | undefined {
+  const normalized = declaration.replace(/\s+/g, " ").trim()
+  const match = /\bprivate\s+(?:(?:static|final|volatile|transient)\s+)*(?<typeName>.+?)\s+(?<fieldName>[A-Za-z_$][\w$]*)\s*(?:=|;)/u.exec(normalized)
+  if (match?.groups === undefined) {
+    return undefined
+  }
+  return {
+    typeName: match.groups.typeName.trim(),
+    fieldName: match.groups.fieldName,
+  }
+}
+
+function javaPrivateFieldDeclarations(content: string): readonly JavaFieldDeclaration[] {
+  const codeOnly = stripJavaCommentsAndLiterals(content)
+  return [...codeOnly.matchAll(/\bprivate\b[^;{}]*;/gu)]
+    .map((match) => parsePrivateFieldDeclaration(match[0]))
+    .filter((field): field is JavaFieldDeclaration => field !== undefined)
+}
+
+function rawJavaType(typeName: string): string {
+  const rawType = typeName.split("<", 1)[0]?.trim() ?? typeName
+  return rawType.split(".").at(-1) ?? rawType
+}
+
+function serviceStorageTerms(field: JavaFieldDeclaration): readonly string[] {
+  const rawType = rawJavaType(field.typeName)
+  const terms = [
+    ...(["Map", "List"].includes(rawType) ? [rawType] : []),
+    ...(rawType === "AtomicLong" ? ["AtomicLong"] : []),
+    ...(/\bnextId\b/u.test(field.fieldName) ? ["nextId"] : []),
+    ...(/\bidCounter\b/u.test(field.fieldName) ? ["idCounter"] : []),
+  ]
+  return [...new Set(terms)]
+}
+
 function serviceStorage(projectDir: string, files: readonly string[]): ShapeFinding {
   const serviceFiles = files.filter((filePath) => filePath.endsWith("Service.java"))
   const hits = serviceFiles.flatMap((filePath) => {
-    const lines = readFileSync(filePath, "utf8").split(/\r?\n/)
-    return lines.flatMap((line) => {
-      if (!/\bprivate\b/.test(line)) {
-        return []
-      }
-      const terms = ["Map", "List", "AtomicLong", "nextId", "idCounter"].filter((term) => line.includes(term))
-      return terms.map((term) => `${relative(projectDir, filePath)}:${term}`)
-    })
+    const fields = javaPrivateFieldDeclarations(readFileSync(filePath, "utf8"))
+    return fields.flatMap((field) => serviceStorageTerms(field).map((term) => `${relative(projectDir, filePath)}:${term}`))
   })
   return hits.length === 0 ? pass("Service storage/id sequence ownership", "no Map/List/AtomicLong/nextId/idCounter in *Service.java") : warn("Service storage/id sequence ownership", hits.join(", "))
 }
@@ -239,6 +273,7 @@ function entityDirectExposure(projectDir: string, files: readonly string[]): Sha
 
 function stripJavaCommentsAndLiterals(content: string): string {
   return content
+    .replace(/"""[\s\S]*?"""/g, "\"\"")
     .replace(/\/\*[\s\S]*?\*\//g, " ")
     .replace(/\/\/[^\r\n]*/g, " ")
     .replace(/"(?:\\.|[^"\\])*"/g, "\"\"")
