@@ -94,6 +94,7 @@ Minimum next-step evaluation design:
 Until that rigor exists, describe results as preliminary signals.
 
 The preregistered v0.4 fixture matrix, baseline conditions, kill-gate, success threshold, and reviewer rubric are recorded in `docs/current/v0.4-evaluation-plan.md`.
+The operator runbook skeleton for executing that matrix is recorded in `docs/current/v0.4-evaluation-runbook.md`.
 
 ## Reporting Language
 
