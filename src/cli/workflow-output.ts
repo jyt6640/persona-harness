@@ -125,7 +125,7 @@ export function passedImplementOutput(): CliRunResult {
       "4. Windows PowerShell first chunk: `npx ph bearshell powershell -NoProfile -Command \"Get-Content README.md -TotalCount 220\"`",
       "5. Windows PowerShell next chunk: `npx ph bearshell powershell -NoProfile -Command \"Get-Content README.md | Select-Object -Skip 220 -First 220\"`.",
       "6. Continue 220-line ranges until README.md and plan are fully covered.",
-      "7. Windows search: `npx ph bearshell powershell -NoProfile -Command \"Get-ChildItem -Recurse -File | Select-String -Pattern TODO\"`.",
+      "7. Windows search: `npx ph bearshell powershell -NoProfile -Command \"Get-ChildItem -Path README.md,src,.persona -Recurse -File -ErrorAction SilentlyContinue | Select-String -Pattern TODO\"`.",
       "8. Record README ranges read in `.persona/workflow/implementation-report.md`.",
       "",
       "Read project profile before implementation:",
