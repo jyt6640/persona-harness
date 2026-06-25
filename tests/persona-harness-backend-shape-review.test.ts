@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { backendShapeBoundaryForTest, normalizeBackendShapePathForTest } from "../src/cli/backend-shape.js"
+import { backendShapeBoundaryForTest, normalizeBackendShapePathForTest, stripJavaCommentsAndLiteralsForTest } from "../src/cli/backend-shape.js"
 import { runPersonaCli } from "../src/cli/index.js"
 
 const tempProjects: string[] = []
@@ -200,6 +200,52 @@ describe("ph review backend-shape report-only analyzer", () => {
     const report = readReport(projectDir)
     expect(report).toContain("| Domain behavior | PASS |")
     expect(report).not.toContain("domain record:")
+  })
+
+  it("does not report entity exposure from validation message string literals", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/presentation/dto/request/LendItemRequest.java",
+      [
+        "import jakarta.validation.constraints.NotNull;",
+        "import jakarta.validation.constraints.Positive;",
+        "public record LendItemRequest(",
+        "  @NotNull(message = \"Item id is required.\") @Positive(message = \"Member id must be positive.\") Long itemId,",
+        "  @NotNull(message = \"Member id is required.\") Long memberId",
+        ") {}",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(stripJavaCommentsAndLiteralsForTest("String message = \"Item id is required.\"; // Member note")).not.toContain("Item id")
+    expect(result.status).toBe(0)
+    const report = readReport(projectDir)
+    expect(report).toContain("| Entity direct exposure | PASS |")
+    expect(report).not.toContain("LendItemRequest.java exposes Item")
+    expect(report).not.toContain("LendItemRequest.java exposes Member")
+  })
+
+  it("keeps entity direct exposure WARN when a presentation DTO imports a domain entity type", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/presentation/dto/response/LeakyBookResponse.java",
+      [
+        "import com.example.library.domain.Book;",
+        "public record LeakyBookResponse(Book book) {}",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const report = readReport(projectDir)
+    expect(report).toContain("| Entity direct exposure | WARN |")
+    expect(report).toContain("LeakyBookResponse.java exposes Book")
   })
 
   it("surfaces backend-shape report status in workflow check without blocking finish", () => {

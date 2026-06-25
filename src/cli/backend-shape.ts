@@ -219,10 +219,22 @@ function entityDirectExposure(projectDir: string, files: readonly string[]): Sha
     .filter((name): name is string => name !== undefined)
   const controllerFiles = files.filter((filePath) => filePath.endsWith("Controller.java") || hasPathPart([filePath], "presentation"))
   const hits = controllerFiles.flatMap((filePath) => {
-    const content = readFileSync(filePath, "utf8")
+    const content = stripJavaCommentsAndLiterals(readFileSync(filePath, "utf8"))
     return domainNames.filter((domainName) => new RegExp(`\\b${domainName}\\b`).test(content)).map((domainName) => `${relative(projectDir, filePath)} exposes ${domainName}`)
   })
   return hits.length === 0 ? pass("Entity direct exposure", "no controller domain entity exposure observed") : warn("Entity direct exposure", hits.join(", "))
+}
+
+function stripJavaCommentsAndLiterals(content: string): string {
+  return content
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/\/\/[^\r\n]*/g, " ")
+    .replace(/"(?:\\.|[^"\\])*"/g, "\"\"")
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+}
+
+export function stripJavaCommentsAndLiteralsForTest(content: string): string {
+  return stripJavaCommentsAndLiterals(content)
 }
 
 function bootJar(projectDir: string): ShapeFinding {
