@@ -14,6 +14,8 @@ No unreleased changes yet.
 
 - Repositioned Persona Harness release-facing docs as an AI coding workflow rail, evidence, and continuation harness rather than a Java Clean Code quality guarantee.
 - Clarified that evidence records read/injection/workflow traces, not generated-code quality proof.
+- Added a runtime hook/evidence boundary so evidence write failures are best-effort and do not reject the host hook.
+- Guarded injection context loading failures, including malformed filesystem states such as `.persona/project-profile.jsonc` being a directory, so they do not kill the host hook.
 - Strengthened Gradle wrapper guidance so agents are expected to create and use real wrapper outputs instead of relying on unavailable system Gradle or fake shims.
 - Added failed verification continuation guidance so compile/test/build failures remain continuation work instead of being smoothed over as completion.
 - Reduced backend-shape false positives for domain/DTO naming, entity-name mentions inside DTO messages, and verification evidence visibility.
@@ -36,6 +38,7 @@ No unreleased changes yet.
 - Remaining backend-shape WARN candidates were Entity direct exposure and Verification report.
 - Fake `gradle-shim.js`, Java `HttpServer`, and Express/CommonJS workarounds were not observed.
 - This smoke is workflow rail closure evidence, not generated app product quality certification. AST/linter/enforcement gates are still not part of this release.
+- Runtime hook/evidence boundary coverage was added after release prep so host stability is improved when evidence or context loading fails. Normal injection/evidence behavior is expected to stay unchanged.
 
 ### Verification
 
