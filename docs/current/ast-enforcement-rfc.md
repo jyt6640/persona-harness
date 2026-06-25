@@ -237,6 +237,154 @@ Vocabulary rules:
 - Rule IDs must stay backend-shape oriented. They should not become general Java lint rules.
 - New IDs need HQ scope approval because every ID becomes a future support surface.
 
+## Manual Backfill Plan Before AST Spike
+
+The first v0.4 evaluation step should be a no-parser manual backfill over existing generated
+Java/Spring smoke artifacts. The goal is to test whether the verified report schema and
+stable rule IDs are readable, useful, and low-noise before any AST implementation exists.
+
+This backfill is still a research/evidence exercise. It must not become a hidden
+enforcement gate.
+
+### Artifact Selection Criteria
+
+Select two to three existing generated Java/Spring smoke outputs that have enough material
+to fill the schema without rerunning OpenCode.
+
+Prefer artifacts that include:
+
+- generated Java/Spring product source files;
+- `.persona/workflow/implementation-report.md` or equivalent implementation notes;
+- `.persona/workflow/review-report.md` or equivalent review notes;
+- `ph workflow check`, `ph workflow finish implement`, or backend-shape report output;
+- Gradle wrapper or `npx ph bearshell` verification evidence;
+- at least one clean workflow run and, if available, one run with known WARN/noise so the
+  schema exercises both positive and mixed results.
+
+Avoid artifacts that:
+
+- are only README/planning smoke with no generated Java product code;
+- lack enough source or log evidence to assign even `UNKNOWN` responsibly;
+- are frontend/infra/non-Java outputs;
+- are release packaging checks rather than generated app shape observations.
+
+Candidate artifact families from current docs:
+
+- clean short-TUI workflow smokes referenced by `v0.3.1-workflow-diagnostics-surface.md`;
+- clean tarball workflow smoke evidence under `docs/current/evidence-reviews/`;
+- Java/Spring planned implementation smoke summaries referenced by
+  `v0.3.0-project-intake-philosophy-workflow.md`.
+
+### Manual Evidence Source By Rule ID
+
+| Rule ID | Manual evidence source | Minimum backfill action |
+| --- | --- | --- |
+| `controller-delegates-to-service` | Controller source, implementation report, review report. | Inspect controller handler methods and record whether they call Service-layer APIs. |
+| `controller-no-repository-direct-dependency` | Controller imports, fields, constructor parameters, method bodies. | Record any Repository-like direct dependency or direct storage access. |
+| `service-no-storage-id-sequence` | Service fields and method bodies. | Record storage collections, maps, counters, `AtomicLong`, `nextId`, or sequence ownership if present. |
+| `domain-no-infrastructure-dependency` | Domain package source, imports, annotations. | Record Spring web/data/infrastructure imports or annotations in domain classes. |
+| `repository-port-and-adapter-boundary` | Repository interfaces, infrastructure adapters, Service dependency types, package paths. | Record whether the Service depends on a port/interface and whether storage implementation lives outside Controller/Service. |
+| `dto-no-domain-entity-exposure` | Controller signatures, request/response types, DTO packages, mapping code. | Record whether API boundary exposes domain entities or dedicated DTO/request/response types. |
+| `gradle-wrapper-real-verification` | `gradlew` files, workflow reports, command logs. | Record whether final verification used project Gradle wrapper or `npx ph bearshell` path. |
+| `fake-shim-absent` | Product-like source files, review report, obvious TODO/not-implemented scans. | Record TODO, hardcoded fake shim, throw-not-implemented, or placeholder code in primary paths. |
+
+### PASS/WARN/FAIL/UNKNOWN Judgment
+
+Use these judgment rules consistently across all artifacts:
+
+- `PASS`: the evidence directly supports the rule and no contradictory evidence appears.
+- `WARN`: evidence is mixed, weak, naming-dependent, profile-dependent, or likely acceptable
+  but still needs review.
+- `FAIL`: evidence directly contradicts the rule in a product-like path.
+- `UNKNOWN`: the artifact lacks the files, logs, reports, or context needed to judge.
+
+Do not use `FAIL` when the problem is missing evidence. Missing evidence is usually
+`UNKNOWN`; only use `FAIL` when the available evidence shows a violation.
+
+Examples:
+
+- Controller calls `reservationService.reserve(...)` and has no repository field:
+  `controller-delegates-to-service = PASS`.
+- Controller has a `ReservationRepository` field but only uses it for trivial lookup in a
+  toy scaffold: `controller-no-repository-direct-dependency = FAIL` or `WARN` depending on
+  whether the path is product-like and in scope.
+- Service has `Map<Long, Reservation>` and `AtomicLong nextId`: `service-no-storage-id-sequence = FAIL`.
+- No generated source files are available, only an implementation report claim:
+  source should be `manual`, confidence `low`, and most shape rules should be `UNKNOWN`.
+
+### Confidence And Source Recording
+
+Use confidence to describe evidence quality, not personal confidence in Persona Harness.
+
+- `high`: source files plus report/log evidence agree.
+- `medium`: source files are available but the rule depends on naming or partial context.
+- `low`: only report text, summary text, or incomplete source excerpts are available.
+
+Use source as follows:
+
+- `manual`: human inspection of source/reports fills the finding.
+- `text`: filename, string, token, or command-log evidence supports the finding.
+- `syntax`: reserved for future parser/tree-pattern evidence; do not use in the manual
+  backfill unless a non-AST structural tool is explicitly part of a later evaluation.
+- `semantic`: reserved for future type/declaration-aware evidence; do not use in v0.4
+  manual backfill.
+
+Every manual finding should include at least one evidence item with file path or report path.
+When evidence is absent, record a limitation instead of inventing a source.
+
+### False-positive Review Process
+
+After the first two to three artifacts are backfilled, run a cold review pass:
+
+1. List all `FAIL` and `WARN` findings.
+2. For each finding, ask whether a reasonable human reviewer would agree from the same
+   evidence.
+3. Mark disagreements as false positive candidates.
+4. Classify the cause:
+   - insufficient artifact evidence;
+   - naming ambiguity;
+   - profile/style variation;
+   - rule wording too broad;
+   - schema field too weak;
+   - actual generated-code issue.
+5. Update the rule limitation text before considering any parser spike.
+
+The backfill should produce a short false-positive ledger:
+
+```text
+artifact | ruleId | result | reviewer verdict | cause | action
+```
+
+Parser work should not start while the same rule repeatedly creates unresolved false
+positive candidates.
+
+### Decision Criteria For v0.5 Parser Spike
+
+Move from manual backfill to a v0.5 ast-grep or JavaParser spike only if all of these hold:
+
+1. At least two artifacts were backfilled with the schema.
+2. Each stable rule ID has at least one example finding or a documented reason for
+   `UNKNOWN`.
+3. The false-positive ledger has no unresolved high-impact false positives for the first
+   candidate parser rules.
+4. The next parser target is limited to two or three rule IDs.
+5. The spike remains report-only and cannot affect build/test/workflow finish.
+
+Prefer ast-grep when:
+
+- the selected rules are syntax-only or token/annotation/import oriented;
+- the goal is to measure simple structural noise quickly;
+- no classpath/sourcepath setup should be required.
+
+Prefer JavaParser sidecar design when:
+
+- the selected rules need type/declaration/cross-file certainty;
+- the manual backfill shows syntax-only checks would over-warn;
+- the team is ready to define sourcepath/classpath and unresolved-symbol behavior.
+
+Do not move to enforcement after the manual backfill. Enforcement remains a v1.0 opt-in
+candidate only after verified reports prove low-noise across repeated clean runs.
+
 ## Recommended Phased Path
 
 ### P0 Now: Do Not Build AST Enforcement
