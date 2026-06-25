@@ -95,6 +95,14 @@ describe("Phase 0 bootstrap injection", () => {
     expect(injection.block).toContain("Gradle wrapper를 프로젝트 산출물로 포함")
     expect(injection.block).toContain("system Gradle이 있어도 clean project 재현성")
     expect(injection.block).toContain("gradlew.bat build")
+    expect(injection.block).toContain("io.spring.dependency-management")
+    expect(injection.block).toContain("Boot plugin-managed dependencies")
+    expect(injection.block).toContain("spring-boot-starter-*")
+    expect(injection.block).toContain("빈 version")
+    expect(injection.block).toContain("dot version")
+    expect(injection.block).toContain("Spring Initializr/build.gradle template")
+    expect(injection.block).toContain("dependency resolution")
+    expect(injection.block).toContain("build.gradle을 고치고 재검증")
   })
 
   it("selects Java backend bootstrap guidance for requirements targets", () => {
@@ -128,6 +136,14 @@ describe("Phase 0 bootstrap injection", () => {
       expect(injection.block).toContain("Gradle wrapper를 프로젝트 산출물로 포함")
       expect(injection.block).toContain("system Gradle이 있어도 clean project 재현성")
       expect(injection.block).toContain("gradlew.bat build")
+      expect(injection.block).toContain("io.spring.dependency-management")
+      expect(injection.block).toContain("Boot plugin-managed dependencies")
+      expect(injection.block).toContain("spring-boot-starter-*")
+      expect(injection.block).toContain("빈 version")
+      expect(injection.block).toContain("dot version")
+      expect(injection.block).toContain("Spring Initializr/build.gradle template")
+      expect(injection.block).toContain("dependency resolution")
+      expect(injection.block).toContain("build.gradle을 고치고 재검증")
     }
   })
 
