@@ -7,6 +7,7 @@ import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH, type PlanOpt
 import { PlanStatusError, readWorkflowPlanStatus } from "./plan-status.js"
 import { createImplementationPrompt } from "./plan-prompts.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
+import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets } from "./workflow-ticket-summary.js"
 
 type ReportStatus = "missing" | "template" | "filled" | "unknown"
@@ -17,6 +18,7 @@ type WorkflowSnapshot = {
   readonly implementationStatus: ReportStatus
   readonly reviewStatus: ReportStatus
   readonly implementationReportText: string | undefined
+  readonly workflowStatus: WorkflowStatusSummary
   readonly verificationFailure: VerificationFailureSummary
   readonly pendingTicket: ReturnType<typeof pendingWorkflowTickets>[number] | undefined
 }
@@ -96,6 +98,7 @@ function workflowSnapshot(options: PlanOptions): WorkflowSnapshot {
     implementationStatus,
     reviewStatus,
     implementationReportText: reportText(projectDir, IMPLEMENTATION_REPORT_PATH),
+    workflowStatus: readWorkflowStatus(projectDir),
     verificationFailure: readVerificationFailure(projectDir, implementationStatus),
     pendingTicket: pendingWorkflowTickets(projectDir)[0],
   }
@@ -251,6 +254,19 @@ function verificationFailureFollowUpLines(snapshot: WorkflowSnapshot): readonly 
   ]
 }
 
+function reportCoverageFollowUpLines(snapshot: WorkflowSnapshot): readonly string[] {
+  if (!snapshot.workflowStatus.reportCoverageBlocking) {
+    return []
+  }
+  return [
+    "Reports say filled but required coverage is missing.",
+    `Report coverage: ${snapshot.workflowStatus.reportCoverage}`,
+    "Next action: read README/profile/generated Java role files, then update implementation/review reports with actual coverage/checklist evidence.",
+    "Do not archive req tickets until review confirms requirements are satisfied.",
+    "",
+  ]
+}
+
 function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
   const hasEvidence = evidenceLines(reportText).some((line) => !line.includes("No filled continuation evidence found."))
   const uncheckedItems = planUncheckedItems(snapshot.projectDir)
@@ -264,6 +280,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     `Review report status: ${snapshot.reviewStatus}`,
     "",
     ...verificationFailureFollowUpLines(snapshot),
+    ...reportCoverageFollowUpLines(snapshot),
     ...reviewFollowUpLines(snapshot),
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
     ...evidenceLines(reportText),

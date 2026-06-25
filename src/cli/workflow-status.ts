@@ -29,6 +29,9 @@ export type WorkflowStatusSummary = {
   readonly javaRoleReadCoverage: string
   readonly javaRoleReadCoverageBlocking: boolean
   readonly javaRoleReadCoverageFinding: "PASS" | "WARN"
+  readonly reportCoverage: string
+  readonly reportCoverageBlocking: boolean
+  readonly reportCoverageFinding: "PASS" | "WARN"
   readonly commandDiscipline: string
   readonly commandDisciplineBlocking: boolean
   readonly commandDisciplineFinding: "PASS" | "WARN"
@@ -162,6 +165,7 @@ type CommandDisciplineSummary = Pick<WorkflowStatusSummary, "commandDiscipline" 
 type WorkflowVerificationFailureSummary = VerificationFailureSummary
 type ReadCoverageSummary = Pick<WorkflowStatusSummary, "readCoverage" | "readCoverageBlocking" | "readCoverageFinding">
 type ProfileReadCoverageSummary = Pick<WorkflowStatusSummary, "profileReadCoverage" | "profileReadCoverageBlocking" | "profileReadCoverageFinding">
+type ReportCoverageSummary = Pick<WorkflowStatusSummary, "reportCoverage" | "reportCoverageBlocking" | "reportCoverageFinding">
 
 const README_RANGES_FIELD_PATTERN = /^-\s*README ranges read:\s*(.*)$/i
 const README_RANGES_HEADING_PATTERN = /^##+\s*README ranges read:?\s*$/i
@@ -170,6 +174,10 @@ const PROFILE_RANGES_HEADING_PATTERN = /^##+\s*(?:Project profile|Profile)\s+ran
 const READ_COVERAGE_STOP_PATTERN = /^-\s*(?:Plan read method|Plan ranges read|Unread ranges|Read evidence notes):/i
 const PROFILE_COVERAGE_STOP_PATTERN = /^-\s*(?:README read method|README ranges read|Plan read method|Plan ranges read|Unread ranges|Read evidence notes):/i
 const RANGE_COVERAGE_PATTERN = /\b\d+\s*[-–]\s*\d+\b|\ball\b|\bcomplete\b|전체|끝까지|완독/i
+const BLANK_REQUIRED_REPORT_FIELD_PATTERN =
+  /^-\s*(?:README ranges read|Project profile ranges read|Profile ranges read|Java role files read|Read evidence notes):\s*$/im
+const UNCHECKED_CHECKLIST_PATTERN = /^-\s*\[\s\]\s+.+$/gm
+const CHECKED_CHECKLIST_PATTERN = /^-\s*\[[xX]\]\s+.+$/m
 
 function hasRangeCoverage(reportText: string, fieldPattern: RegExp, headingPattern: RegExp, stopPattern: RegExp): boolean {
   const lines = reportText.split(/\r?\n/)
@@ -292,6 +300,55 @@ function profileReadCoverage(projectDir: string, implementationStatus: string): 
   }
 }
 
+function uncheckedChecklistCount(reportText: string): number {
+  return [...reportText.matchAll(UNCHECKED_CHECKLIST_PATTERN)].length
+}
+
+function hasTemplateLikeBody(reportText: string): boolean {
+  return BLANK_REQUIRED_REPORT_FIELD_PATTERN.test(reportText)
+    || (uncheckedChecklistCount(reportText) >= 3 && !CHECKED_CHECKLIST_PATTERN.test(reportText))
+}
+
+function reportCoverage(
+  projectDir: string,
+  implementationStatus: string,
+  reviewStatus: string,
+  readCoverageSummary: ReadCoverageSummary,
+  profileCoverageSummary: ProfileReadCoverageSummary,
+  javaRoleCoverageSummary: JavaRoleReadCoverageSummary,
+): ReportCoverageSummary {
+  if (implementationStatus !== "filled") {
+    return {
+      reportCoverage: "not checked until implementation report is filled",
+      reportCoverageBlocking: false,
+      reportCoverageFinding: "PASS",
+    }
+  }
+
+  const implementationReportPath = join(projectDir, IMPLEMENTATION_REPORT_PATH)
+  const reviewReportPath = join(projectDir, REVIEW_REPORT_PATH)
+  const implementationText = existsSync(implementationReportPath) ? readFileSync(implementationReportPath, "utf8") : ""
+  const reviewText = existsSync(reviewReportPath) ? readFileSync(reviewReportPath, "utf8") : ""
+  const issues = [
+    ...(readCoverageSummary.readCoverageBlocking ? ["README coverage missing"] : []),
+    ...(profileCoverageSummary.profileReadCoverageBlocking ? ["profile read coverage missing"] : []),
+    ...(javaRoleCoverageSummary.javaRoleReadCoverageBlocking ? ["Java role read coverage missing"] : []),
+    ...(reviewStatus === "filled" && hasTemplateLikeBody(reviewText) ? ["review report checklist template-like"] : []),
+  ]
+  if (issues.length === 0) {
+    return {
+      reportCoverage: "filled reports include required coverage/checklist evidence",
+      reportCoverageBlocking: false,
+      reportCoverageFinding: "PASS",
+    }
+  }
+  return {
+    reportCoverage: `reports say filled but required coverage is missing: ${issues.join(", ")}`,
+    reportCoverageBlocking: true,
+    reportCoverageFinding: "WARN",
+  }
+}
+
 function commandDiscipline(projectDir: string, implementationStatus: string, reviewStatus: string): CommandDisciplineSummary {
   if (implementationStatus !== "filled") {
     return {
@@ -372,6 +429,7 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.verificationFailureBlocking) return "fix compile/test failure, rerun `./gradlew test` or `gradlew.bat test`, then run `npx ph workflow check`"
   if (summary.review !== "filled") return "fill review report and run `npx ph plan --report-filled review`"
   if (summary.commandDisciplineBlocking) return "rerun final verification through `npx ph bearshell`"
+  if (summary.reportCoverageBlocking) return "fill report coverage: read README/profile/generated Java role files, update reports, then run `npx ph workflow check`"
   if (summary.readCoverageBlocking) return "record README ranges read in `.persona/workflow/implementation-report.md`"
   if (summary.profileReadCoverageBlocking) return "record project profile read coverage in `.persona/workflow/implementation-report.md`"
   if (summary.javaRoleReadCoverageBlocking) return "read generated Java role files and rerun `npx ph workflow check`"
@@ -398,12 +456,13 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
   const coverage = readCoverage(projectDir, summary.implementation)
   const profileCoverage = profileReadCoverage(projectDir, summary.implementation)
   const javaRoleCoverage: JavaRoleReadCoverageSummary = readJavaRoleReadCoverage(projectDir, summary.implementation)
+  const reportCoverageSummary = reportCoverage(projectDir, summary.implementation, summary.review, coverage, profileCoverage, javaRoleCoverage)
   const command = commandDiscipline(projectDir, summary.implementation, summary.review)
   const verificationFailure: WorkflowVerificationFailureSummary = readVerificationFailure(projectDir, summary.implementation)
   const stack = stackAlignment(projectDir, summary.implementation)
   const pendingTickets = workflowPendingTicketStatus(projectDir)
   const pendingTicketsFinding = pendingTickets.length > 0 ? "WARN" : "PASS"
-  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...command, ...verificationFailure, ...stack, pendingTickets, pendingTicketsFinding })
+  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, pendingTickets, pendingTicketsFinding })
   const finding =
     summary.plan === "accepted"
     && summary.implementation === "filled"
@@ -411,13 +470,14 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
     && coverage.readCoverageFinding === "PASS"
     && profileCoverage.profileReadCoverageFinding === "PASS"
     && javaRoleCoverage.javaRoleReadCoverageFinding === "PASS"
+    && reportCoverageSummary.reportCoverageFinding === "PASS"
     && command.commandDisciplineFinding === "PASS"
     && verificationFailure.verificationFailureFinding === "PASS"
     && stack.stackAlignmentFinding === "PASS"
     && pendingTicketsFinding === "PASS"
       ? "PASS"
       : "WARN"
-  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...command, ...verificationFailure, ...stack, pendingTickets, pendingTicketsFinding, finding, next }
+  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, pendingTickets, pendingTicketsFinding, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -435,6 +495,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- read coverage: ${summary.readCoverage}`,
     `- profile read coverage: ${summary.profileReadCoverage}`,
     `- java role read coverage: ${summary.javaRoleReadCoverage}`,
+    `- report coverage: ${summary.reportCoverage}`,
     `- command discipline: ${summary.commandDiscipline}`,
     `- verification failure: ${summary.verificationFailure}`,
     `- stack alignment: ${summary.stackAlignment}`,

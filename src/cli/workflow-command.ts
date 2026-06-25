@@ -4,7 +4,7 @@ import { join } from "node:path"
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
-import { javaRoleReadCoverageReason, stackAlignmentReason, verificationFailureReason } from "./workflow-finish-reasons.js"
+import { javaRoleReadCoverageReason, reportCoverageReason, stackAlignmentReason, verificationFailureReason } from "./workflow-finish-reasons.js"
 import {
   failedGuardOutput,
   failedRunnerOutput,
@@ -152,6 +152,10 @@ function finalGuardReasons(summary: WorkflowStatus): readonly string[] {
   const verificationReason = verificationFailureReason(summary)
   if (verificationReason !== undefined) {
     reasons.push(verificationReason)
+  }
+  const reportCoverageMissingReason = reportCoverageReason(summary)
+  if (reportCoverageMissingReason !== undefined) {
+    reasons.push(reportCoverageMissingReason)
   }
   if (summary.readCoverageBlocking) {
     reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md before finish.")

@@ -69,6 +69,72 @@ function writePendingReqBacklog(projectDir: string): void {
   writeFileSync(join(projectDir, ".persona", "workflow", "work", "req-1", "00-task-card.md"), "# Task Card: req-1\n")
 }
 
+function workflowStatusRows(stdout: string): ReadonlyMap<string, string> {
+  const rows = new Map<string, string>()
+  for (const line of stdout.split(/\r?\n/u)) {
+    if (!line.startsWith("- ")) {
+      continue
+    }
+    const separatorIndex = line.indexOf(":")
+    if (separatorIndex === -1) {
+      continue
+    }
+    rows.set(line.slice(2, separatorIndex), line.slice(separatorIndex + 1).trim())
+  }
+  return rows
+}
+
+function writeJavaRoleFiles(projectDir: string): void {
+  writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'task-api'\n")
+  writeFileSync(
+    join(projectDir, "build.gradle"),
+    [
+      "plugins { id 'java'; id 'org.springframework.boot' version '3.5.0' }",
+      "dependencies {",
+      "  implementation 'org.springframework.boot:spring-boot-starter-web'",
+      "  implementation 'org.springframework.boot:spring-boot-starter-data-jpa'",
+      "  runtimeOnly 'com.h2database:h2'",
+      "}",
+    ].join("\n"),
+  )
+  writeFileSync(join(projectDir, "gradlew"), "#!/bin/sh\nexit 0\n")
+  mkdirSync(join(projectDir, "src", "main", "resources"), { recursive: true })
+  writeFileSync(join(projectDir, "src", "main", "resources", "schema.sql"), "create table task (id bigint primary key);\n")
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "task"), { recursive: true })
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "TaskApplication.java"),
+    "import org.springframework.boot.autoconfigure.SpringBootApplication;\n@SpringBootApplication\nclass TaskApplication {}\n",
+  )
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "task", "presentation"), { recursive: true })
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "TaskController.java"),
+    "import org.springframework.web.bind.annotation.RestController;\n@RestController\nclass TaskController { TaskResponse response() { return new TaskResponse(); } }\n",
+  )
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "task", "application"), { recursive: true })
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "application", "TaskService.java"),
+    "class TaskService { TaskResponse create(CreateTaskRequest request) { return new TaskResponse(); } }\n",
+  )
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "task", "domain"), { recursive: true })
+  writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "task", "domain", "Task.java"), "class Task { boolean open() { return true; } }\n")
+  writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "task", "domain", "TaskRepository.java"), "interface TaskRepository {}\n")
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "task", "infrastructure"), { recursive: true })
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "infrastructure", "JdbcTaskRepository.java"),
+    "class JdbcTaskRepository implements TaskRepository {}\n",
+  )
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "dto"), { recursive: true })
+  writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "dto", "CreateTaskRequest.java"), "record CreateTaskRequest() {}\n")
+  writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "dto", "TaskResponse.java"), "record TaskResponse() {}\n")
+}
+
+function markWorkflowReportsFilledButTemplateLike(projectDir: string): void {
+  const implementationReportPath = join(projectDir, ".persona", "workflow", "implementation-report.md")
+  const reviewReportPath = join(projectDir, ".persona", "workflow", "review-report.md")
+  writeFileSync(implementationReportPath, readFileSync(implementationReportPath, "utf8").replace("Status: template", "Status: filled"))
+  writeFileSync(reviewReportPath, readFileSync(reviewReportPath, "utf8").replace("Status: template", "Status: filled"))
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -141,6 +207,42 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain("Do not claim overall completion while pending tickets remain.")
     expect(result.stdout).toContain("If this req ticket is actually complete after review: `npx ph workflow archive req-1`")
     expect(result.stdout).toContain("Archive is a candidate action only; do not auto-archive.")
+  })
+
+  it("guides filled-but-template reports back to coverage fill, required reads, and req review", () => {
+    const projectDir = createProfiledTempProject()
+    writeFileSync(join(projectDir, "README.md"), "# Task API\n\n- Task CRUD\n")
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeJavaRoleFiles(projectDir)
+    markWorkflowReportsFilledButTemplateLike(projectDir)
+    writePendingReqBacklog(projectDir)
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "profile-summary-injected.json"), "{\"profileSummaryInjected\":true}\n")
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const resume = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const rows = workflowStatusRows(check.stdout)
+
+    expect(check.status).toBe(0)
+    expect(rows.get(".persona/workflow/implementation-report.md")).toBe("filled")
+    expect(rows.get(".persona/workflow/review-report.md")).toBe("filled")
+    expect(rows.get("report coverage")).toContain("reports say filled but required coverage is missing")
+    expect(rows.get("profile read coverage")).toContain("project profile exists but profile read coverage is empty")
+    expect(rows.get("java role read coverage")).toContain("workflow evidence/read coverage missing")
+    expect(rows.get("pending tickets")).toBe("present")
+    expect(check.stdout).toContain("Next: fill report coverage")
+    expect(resume.status).toBe(0)
+    expect(resume.stdout).toContain("Reports say filled but required coverage is missing")
+    expect(resume.stdout).toContain("read README/profile/generated Java role files")
+    expect(resume.stdout).toContain("update implementation/review reports")
+    expect(resume.stdout).toContain("Do not archive req tickets until review confirms requirements are satisfied.")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Report coverage missing")
+    expect(finish.stderr).toContain("read README/profile/generated Java role files")
+    expect(finish.stderr).toContain("Re-run `npx ph workflow check`.")
+    expect(finish.stderr).toContain("Pending workflow tickets remain: req-1")
   })
 
   it("reports completed workflow as PASS when bearshell command discipline is observed", () => {

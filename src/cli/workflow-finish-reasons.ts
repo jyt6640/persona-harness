@@ -29,6 +29,21 @@ export function javaRoleReadCoverageReason(summary: WorkflowStatusSummary): stri
   ].join("\n")
 }
 
+export function reportCoverageReason(summary: WorkflowStatusSummary): string | undefined {
+  if (!summary.reportCoverageBlocking) {
+    return undefined
+  }
+  return [
+    `Report coverage missing: ${summary.reportCoverage}`,
+    "This is workflow evidence/read coverage missing, not generated app product-quality certification.",
+    "Required next actions:",
+    "- read README/profile/generated Java role files.",
+    "- update implementation/review reports with actual coverage/checklist evidence.",
+    "- Re-run `npx ph workflow check`.",
+    "- Do not archive req tickets until review confirms requirements are satisfied.",
+  ].join("\n")
+}
+
 export function verificationFailureReason(summary: WorkflowStatusSummary): string | undefined {
   if (!summary.verificationFailureBlocking) {
     return undefined
