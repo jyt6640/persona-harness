@@ -43,6 +43,14 @@ function hasPathPart(files: readonly string[], part: string): boolean {
   return files.some((filePath) => filePath.includes(`/${part}/`))
 }
 
+function hasAnyPathPart(filePath: string, parts: readonly string[]): boolean {
+  return parts.some((part) => filePath.includes(`/${part}/`))
+}
+
+function fileName(filePath: string): string {
+  return filePath.split("/").at(-1) ?? filePath
+}
+
 function javaFiles(projectDir: string): readonly string[] {
   return listFiles(join(projectDir, "src", "main", "java")).filter((filePath) => filePath.endsWith(".java"))
 }
@@ -106,9 +114,15 @@ function fakeBuildShimAbsent(projectDir: string): ShapeFinding {
 }
 
 function layerStructure(files: readonly string[]): ShapeFinding {
-  const required = ["presentation", "application", "domain", "infrastructure"]
-  const missing = required.filter((part) => !hasPathPart(files, part))
-  return missing.length === 0 ? pass("Layer/package structure", required.join(", ")) : warn("Layer/package structure", `missing: ${missing.join(", ")}`)
+  const required = [
+    { label: "presentation", parts: ["presentation", "controller", "web"] },
+    { label: "application", parts: ["application", "service"] },
+    { label: "domain", parts: ["domain"] },
+    { label: "infrastructure", parts: ["infrastructure", "infra", "adapter", "persistence"] },
+  ] as const
+  const missing = required.filter((entry) => !files.some((filePath) => hasAnyPathPart(filePath, entry.parts))).map((entry) => entry.label)
+  const evidence = required.map((entry) => `${entry.label}=${entry.parts.join("/")}`).join(", ")
+  return missing.length === 0 ? pass("Layer/package structure", evidence) : warn("Layer/package structure", `missing: ${missing.join(", ")}`)
 }
 
 function boundaryShape(files: readonly string[]): ShapeFinding {
@@ -138,7 +152,7 @@ function repositoryAdapter(projectDir: string, files: readonly string[]): ShapeF
     .map((filePath) => filePath.split("/").at(-1)?.replace(/\.java$/, ""))
     .filter((name): name is string => name !== undefined)
   const adapters = files.filter((filePath) => {
-    if (!filePath.includes("/infrastructure/")) {
+    if (!hasAnyPathPart(filePath, ["infrastructure", "infra", "adapter", "persistence"])) {
       return false
     }
     if (filePath.endsWith("Repository.java")) {
@@ -147,7 +161,7 @@ function repositoryAdapter(projectDir: string, files: readonly string[]): ShapeF
     const content = readFileSync(filePath, "utf8")
     return repositoryPorts.some((port) => new RegExp(`\\bimplements\\s+[\\w\\s,]*\\b${port}\\b`).test(content))
   })
-  return adapters.length > 0 ? pass("Infrastructure repository adapter", adapters.map((filePath) => relative(projectDir, filePath)).join(", ")) : warn("Infrastructure repository adapter", "no infrastructure *Repository.java or *Repository implementation")
+  return adapters.length > 0 ? pass("Infrastructure repository adapter", adapters.map((filePath) => relative(projectDir, filePath)).join(", ")) : warn("Infrastructure repository adapter", "no infrastructure/infra *Repository.java or *Repository implementation")
 }
 
 function serviceStorage(projectDir: string, files: readonly string[]): ShapeFinding {
@@ -176,9 +190,11 @@ function domainBehavior(projectDir: string, files: readonly string[]): ShapeFind
 }
 
 function dtoBoundary(files: readonly string[]): ShapeFinding {
-  const hasRequest = hasPathPart(files, "request")
-  const hasResponse = hasPathPart(files, "response")
-  return hasRequest && hasResponse ? pass("DTO boundary", "request and response DTO packages present") : warn("DTO boundary", "request/response DTO package missing")
+  const requestFiles = files.filter((filePath) => hasPathPart([filePath], "request") || (hasPathPart([filePath], "dto") && fileName(filePath).endsWith("Request.java")))
+  const responseFiles = files.filter((filePath) => hasPathPart([filePath], "response") || (hasPathPart([filePath], "dto") && fileName(filePath).endsWith("Response.java")))
+  return requestFiles.length > 0 && responseFiles.length > 0
+    ? pass("DTO boundary", [...requestFiles, ...responseFiles].map((filePath) => fileName(filePath)).join(", "))
+    : warn("DTO boundary", "request/response DTO package or *Request/*Response DTO file missing")
 }
 
 function entityDirectExposure(projectDir: string, files: readonly string[]): ShapeFinding {

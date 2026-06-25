@@ -52,6 +52,34 @@ function writeCleanishSpringProject(projectDir: string): void {
   writeFile(projectDir, "src/main/java/com/example/library/presentation/dto/response/BookResponse.java", "record BookResponse() {}\n")
 }
 
+function writeTaskRepositoryAdapterProject(projectDir: string): void {
+  writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'tasks'\n")
+  writeFileSync(
+    join(projectDir, "build.gradle"),
+    [
+      "plugins { id 'org.springframework.boot' version '3.5.0' }",
+      "dependencies { implementation 'org.springframework.boot:spring-boot-starter-web' }",
+    ].join("\n"),
+  )
+  writeFileSync(join(projectDir, "gradlew"), "#!/bin/sh\nexit 0\n")
+  writeFile(
+    projectDir,
+    "src/main/java/com/example/tasks/TaskApplication.java",
+    "import org.springframework.boot.autoconfigure.SpringBootApplication;\n@SpringBootApplication\nclass TaskApplication {}\n",
+  )
+  writeFile(
+    projectDir,
+    "src/main/java/com/example/tasks/presentation/TaskController.java",
+    "import org.springframework.web.bind.annotation.RestController;\n@RestController\nclass TaskController { TaskResponse response() { return new TaskResponse(); } }\n",
+  )
+  writeFile(projectDir, "src/main/java/com/example/tasks/application/TaskService.java", "class TaskService { TaskResult find() { return new TaskResult(); } }\n")
+  writeFile(projectDir, "src/main/java/com/example/tasks/domain/Task.java", "class Task { boolean isOpen() { return true; } }\n")
+  writeFile(projectDir, "src/main/java/com/example/tasks/domain/repository/TaskRepository.java", "interface TaskRepository {}\n")
+  writeFile(projectDir, "src/main/java/com/example/tasks/infra/persistence/JdbcTaskRepository.java", "class JdbcTaskRepository implements TaskRepository {}\n")
+  writeFile(projectDir, "src/main/java/com/example/tasks/presentation/dto/CreateTaskRequest.java", "record CreateTaskRequest() {}\n")
+  writeFile(projectDir, "src/main/java/com/example/tasks/presentation/dto/TaskResponse.java", "record TaskResponse() {}\n")
+}
+
 function writeWorkflowScaffold(projectDir: string): void {
   mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
   mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
@@ -109,6 +137,24 @@ describe("ph review backend-shape report-only analyzer", () => {
     expect(report).toContain("| Fake build shim absent | WARN |")
     expect(report).toContain("gradle-shim.js")
     expect(report).toContain("| Entity direct exposure | WARN |")
+  })
+
+  it("recognizes common TaskRepository/JdbcTaskRepository and request/response DTO naming", () => {
+    const projectDir = createTempProject()
+    writeTaskRepositoryAdapterProject(projectDir)
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const report = readReport(projectDir)
+    expect(report).toContain("| Layer/package structure | PASS |")
+    expect(report).toContain("| Domain repository port | PASS |")
+    expect(report).toContain("TaskRepository.java")
+    expect(report).toContain("| Infrastructure repository adapter | PASS |")
+    expect(report).toContain("JdbcTaskRepository.java")
+    expect(report).toContain("| DTO boundary | PASS |")
+    expect(report).toContain("CreateTaskRequest.java")
+    expect(report).toContain("TaskResponse.java")
   })
 
   it("surfaces backend-shape report status in workflow check without blocking finish", () => {
