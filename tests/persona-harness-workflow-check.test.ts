@@ -331,6 +331,52 @@ describe("ph workflow check", () => {
     expect(finish.status).toBe(0)
   })
 
+  it("warns and blocks finish when final verification recorded a compile failure", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "Status: filled",
+        "- README ranges read: 1-220",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell --shell './gradlew test'`",
+        "- Verification failed: ./gradlew test failed",
+        "- > Task :compileJava FAILED",
+        "- LendingController.java:29: error: cannot find symbol",
+        "- symbol: class ReturnLendingRequest",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- Manual QA blocked by compile failure.\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("Workflow status: WARN")
+    expect(check.stdout).toContain("verification failure: compile/test verification failed")
+    expect(check.stdout).toContain("./gradlew test failed")
+    expect(check.stdout).toContain("cannot find symbol")
+    expect(check.stdout).toContain("Next: fix compile/test failure")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Workflow finish failed: implement")
+    expect(finish.stderr).toContain("Verification failed: compile/test verification failed")
+    expect(finish.stderr).toContain("cannot find symbol")
+    expect(finish.stderr).toContain("Do not claim overall completion while verification failed.")
+    expect(finish.stderr).toContain("Fix the compile/test failure")
+  })
+
   it("infers profile read coverage from Persona evidence", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)

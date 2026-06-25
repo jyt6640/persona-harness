@@ -4,7 +4,7 @@ import { join } from "node:path"
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
-import { javaRoleReadCoverageReason, stackAlignmentReason } from "./workflow-finish-reasons.js"
+import { javaRoleReadCoverageReason, stackAlignmentReason, verificationFailureReason } from "./workflow-finish-reasons.js"
 import {
   failedGuardOutput,
   failedRunnerOutput,
@@ -148,6 +148,10 @@ function finalGuardReasons(summary: WorkflowStatus): readonly string[] {
   }
   if (summary.commandDisciplineBlocking) {
     reasons.push(`Command discipline blocking: ${summary.commandDiscipline}. Rerun final verification through \`npx ph bearshell\`.`)
+  }
+  const verificationReason = verificationFailureReason(summary)
+  if (verificationReason !== undefined) {
+    reasons.push(verificationReason)
   }
   if (summary.readCoverageBlocking) {
     reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md before finish.")

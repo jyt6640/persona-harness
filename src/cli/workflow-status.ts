@@ -6,6 +6,7 @@ import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { backendShapeReportStatus } from "./backend-shape-report-status.js"
 import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./java-role-read-coverage.js"
 import { readStackAlignment, type StackAlignmentSummary } from "./stack-alignment.js"
+import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
 import {
   formatPendingWorkflowTicketStatusLines,
   workflowPendingTicketStatus,
@@ -31,6 +32,9 @@ export type WorkflowStatusSummary = {
   readonly commandDiscipline: string
   readonly commandDisciplineBlocking: boolean
   readonly commandDisciplineFinding: "PASS" | "WARN"
+  readonly verificationFailure: string
+  readonly verificationFailureBlocking: boolean
+  readonly verificationFailureFinding: "PASS" | "WARN"
   readonly stackAlignment: string
   readonly stackAlignmentBlocking: boolean
   readonly stackAlignmentFinding: "PASS" | "WARN"
@@ -155,6 +159,7 @@ const FINAL_VERIFICATION_RERUN_PATTERN = /(?:final verification|최종\s*검증)
 const RAW_SHELL_TEMPLATE_CHECKLIST_PATTERN = /raw shell을 직접 썼다면|if raw shell/i
 
 type CommandDisciplineSummary = Pick<WorkflowStatusSummary, "commandDiscipline" | "commandDisciplineBlocking" | "commandDisciplineFinding">
+type WorkflowVerificationFailureSummary = VerificationFailureSummary
 type ReadCoverageSummary = Pick<WorkflowStatusSummary, "readCoverage" | "readCoverageBlocking" | "readCoverageFinding">
 type ProfileReadCoverageSummary = Pick<WorkflowStatusSummary, "profileReadCoverage" | "profileReadCoverageBlocking" | "profileReadCoverageFinding">
 
@@ -364,6 +369,7 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.implementation !== "filled") {
     return "run `npx ph workflow implement`, implement, fill implementation report, then run `npx ph plan --report-filled implementation`"
   }
+  if (summary.verificationFailureBlocking) return "fix compile/test failure, rerun `./gradlew test` or `gradlew.bat test`, then run `npx ph workflow check`"
   if (summary.review !== "filled") return "fill review report and run `npx ph plan --report-filled review`"
   if (summary.commandDisciplineBlocking) return "rerun final verification through `npx ph bearshell`"
   if (summary.readCoverageBlocking) return "record README ranges read in `.persona/workflow/implementation-report.md`"
@@ -393,10 +399,11 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
   const profileCoverage = profileReadCoverage(projectDir, summary.implementation)
   const javaRoleCoverage: JavaRoleReadCoverageSummary = readJavaRoleReadCoverage(projectDir, summary.implementation)
   const command = commandDiscipline(projectDir, summary.implementation, summary.review)
+  const verificationFailure: WorkflowVerificationFailureSummary = readVerificationFailure(projectDir, summary.implementation)
   const stack = stackAlignment(projectDir, summary.implementation)
   const pendingTickets = workflowPendingTicketStatus(projectDir)
   const pendingTicketsFinding = pendingTickets.length > 0 ? "WARN" : "PASS"
-  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...command, ...stack, pendingTickets, pendingTicketsFinding })
+  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...command, ...verificationFailure, ...stack, pendingTickets, pendingTicketsFinding })
   const finding =
     summary.plan === "accepted"
     && summary.implementation === "filled"
@@ -405,11 +412,12 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
     && profileCoverage.profileReadCoverageFinding === "PASS"
     && javaRoleCoverage.javaRoleReadCoverageFinding === "PASS"
     && command.commandDisciplineFinding === "PASS"
+    && verificationFailure.verificationFailureFinding === "PASS"
     && stack.stackAlignmentFinding === "PASS"
     && pendingTicketsFinding === "PASS"
       ? "PASS"
       : "WARN"
-  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...command, ...stack, pendingTickets, pendingTicketsFinding, finding, next }
+  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...command, ...verificationFailure, ...stack, pendingTickets, pendingTicketsFinding, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -428,6 +436,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- profile read coverage: ${summary.profileReadCoverage}`,
     `- java role read coverage: ${summary.javaRoleReadCoverage}`,
     `- command discipline: ${summary.commandDiscipline}`,
+    `- verification failure: ${summary.verificationFailure}`,
     `- stack alignment: ${summary.stackAlignment}`,
     `- backend shape report: ${backendShapeReportStatus(summary.projectDir)}`,
     ...formatPendingWorkflowTicketStatusLines(summary.pendingTickets),

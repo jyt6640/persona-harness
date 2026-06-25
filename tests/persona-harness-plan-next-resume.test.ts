@@ -292,4 +292,40 @@ describe("ph workflow continue", () => {
     expect(result.stdout).toContain("If this req ticket is actually complete after review: npx ph workflow archive req-1")
     expect(result.stdout).toContain("Archive is a candidate action only; do not auto-archive.")
   })
+
+  it("prioritizes failed verification repair in the continuation prompt", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPlan(projectDir, []).status).toBe(0)
+    expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    const report = readFileSync(implementationReportPath(projectDir), "utf8")
+    writeFileSync(
+      implementationReportPath(projectDir),
+      report
+        .replace("Status: template", "Status: filled")
+        .replace("- README ranges read:", "- README ranges read: 1-220")
+        .replace("- Project profile ranges read:", "- Project profile ranges read: all")
+        .replace("- 다음에 이어서 실행할 명령/작업:", "- 다음에 이어서 실행할 명령/작업: fix compile failure")
+        .concat(
+          [
+            "",
+            "## Verification",
+            "- `npx ph bearshell --shell './gradlew test'`",
+            "- Verification failed: ./gradlew test failed",
+            "- > Task :compileJava FAILED",
+            "- LendingController.java:29: error: cannot find symbol",
+            "- symbol: class ReturnLendingRequest",
+          ].join("\n"),
+        ),
+    )
+
+    const result = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Verification failed: compile/test verification failed")
+    expect(result.stdout).toContain("./gradlew test failed")
+    expect(result.stdout).toContain("cannot find symbol")
+    expect(result.stdout).toContain("Next action: fix the compile/test failure")
+    expect(result.stdout).toContain("Do not claim overall completion while verification failed.")
+    expect(result.stdout).toContain("npx ph workflow check")
+  })
 })

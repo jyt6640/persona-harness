@@ -28,3 +28,18 @@ export function javaRoleReadCoverageReason(summary: WorkflowStatusSummary): stri
     "- Re-run `npx ph workflow check`.",
   ].join("\n")
 }
+
+export function verificationFailureReason(summary: WorkflowStatusSummary): string | undefined {
+  if (!summary.verificationFailureBlocking) {
+    return undefined
+  }
+  return [
+    `Verification failed: ${summary.verificationFailure}`,
+    "This is workflow verification failure evidence, not generated app product-quality certification.",
+    "Do not claim overall completion while verification failed.",
+    "Required next actions:",
+    "- Fix the compile/test failure.",
+    "- Re-run `./gradlew test` or Windows `gradlew.bat test` through `npx ph bearshell`.",
+    "- Re-run `npx ph workflow check`.",
+  ].join("\n")
+}

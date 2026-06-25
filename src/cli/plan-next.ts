@@ -6,6 +6,7 @@ import type { CliRunResult } from "./bearshell.js"
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH, type PlanOptions } from "./plan.js"
 import { PlanStatusError, readWorkflowPlanStatus } from "./plan-status.js"
 import { createImplementationPrompt } from "./plan-prompts.js"
+import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
 import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets } from "./workflow-ticket-summary.js"
 
 type ReportStatus = "missing" | "template" | "filled" | "unknown"
@@ -16,6 +17,7 @@ type WorkflowSnapshot = {
   readonly implementationStatus: ReportStatus
   readonly reviewStatus: ReportStatus
   readonly implementationReportText: string | undefined
+  readonly verificationFailure: VerificationFailureSummary
   readonly pendingTicket: ReturnType<typeof pendingWorkflowTickets>[number] | undefined
 }
 
@@ -85,13 +87,16 @@ function workflowSnapshot(options: PlanOptions): WorkflowSnapshot {
       throw error
     }
   }
+  const implementationStatus = reportStatus(projectDir, IMPLEMENTATION_REPORT_PATH)
+  const reviewStatus = reportStatus(projectDir, REVIEW_REPORT_PATH)
 
   return {
     projectDir,
     planStatus,
-    implementationStatus: reportStatus(projectDir, IMPLEMENTATION_REPORT_PATH),
-    reviewStatus: reportStatus(projectDir, REVIEW_REPORT_PATH),
+    implementationStatus,
+    reviewStatus,
     implementationReportText: reportText(projectDir, IMPLEMENTATION_REPORT_PATH),
+    verificationFailure: readVerificationFailure(projectDir, implementationStatus),
     pendingTicket: pendingWorkflowTickets(projectDir)[0],
   }
 }
@@ -234,6 +239,18 @@ function reviewFollowUpLines(snapshot: WorkflowSnapshot): readonly string[] {
   ]
 }
 
+function verificationFailureFollowUpLines(snapshot: WorkflowSnapshot): readonly string[] {
+  if (!snapshot.verificationFailure.verificationFailureBlocking) {
+    return []
+  }
+  return [
+    `Verification failed: ${snapshot.verificationFailure.verificationFailure}`,
+    "Next action: fix the compile/test failure, rerun `./gradlew test` or Windows `gradlew.bat test`, then run `npx ph workflow check`.",
+    "Do not claim overall completion while verification failed.",
+    "",
+  ]
+}
+
 function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
   const hasEvidence = evidenceLines(reportText).some((line) => !line.includes("No filled continuation evidence found."))
   const uncheckedItems = planUncheckedItems(snapshot.projectDir)
@@ -246,6 +263,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     `Implementation report status: ${snapshot.implementationStatus}`,
     `Review report status: ${snapshot.reviewStatus}`,
     "",
+    ...verificationFailureFollowUpLines(snapshot),
     ...reviewFollowUpLines(snapshot),
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
     ...evidenceLines(reportText),
