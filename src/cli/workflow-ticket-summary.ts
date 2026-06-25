@@ -22,6 +22,10 @@ function looksLikeTechnicalConstraints(ticket: Pick<BacklogTicket, "ticket" | "t
   return /technical constraints|constraints|기술|제약/i.test(`${ticket.ticket} ${ticket.title} ${ticket.path}`)
 }
 
+function archiveCandidateLabel(ticketId: string): string {
+  return /^req[-_]?/i.test(ticketId) ? "this req ticket" : "this ticket"
+}
+
 export function workflowPendingTicketStatus(projectDir: string): readonly WorkflowPendingTicket[] {
   return pendingWorkflowTickets(projectDir).map((ticket) => ({
     ticket: ticket.ticket,
@@ -43,7 +47,8 @@ export function formatPendingWorkflowTicketStatusLines(tickets: readonly Workflo
       `  Title: ${ticket.title}`,
       `  Path: ${ticket.path}`,
       "  Next command: `npx ph workflow next` or `npx ph workflow continue`",
-      `  If complete after review: \`npx ph workflow archive ${ticket.ticket}\``,
+      `  If ${archiveCandidateLabel(ticket.ticket)} is actually complete after review: \`npx ph workflow archive ${ticket.ticket}\``,
+      "  Archive is a candidate action only; do not auto-archive.",
       ...(ticket.reviewArchiveCandidate
         ? ["  Note: technical constraints review/archive candidate; do not auto-archive."]
         : []),
@@ -59,6 +64,8 @@ export function pendingWorkflowTicketResumeLines(ticket: BacklogTicket | undefin
     `Path: ${ticket.path}`,
     "Next command: npx ph workflow next",
     `If complete: npx ph workflow archive ${ticket.ticket}`,
+    `If ${archiveCandidateLabel(ticket.ticket)} is actually complete after review: npx ph workflow archive ${ticket.ticket}`,
+    "Archive is a candidate action only; do not auto-archive.",
     PENDING_TICKET_COMPLETION_GUIDANCE,
     "",
   ]

@@ -52,6 +52,23 @@ function writePassingWorkflowEvidence(projectDir: string): void {
   writeProfileReadEvidence(projectDir)
 }
 
+function writePendingReqBacklog(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-1"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "backlog.md"),
+    [
+      "# Persona Workflow Backlog",
+      "",
+      "Status: active",
+      "",
+      "| Order | Ticket | Title | Status | Path |",
+      "| --- | --- | --- | --- | --- |",
+      "| 1 | req-1 | Task CRUD API | pending | .persona/workflow/work/req-1/00-task-card.md |",
+    ].join("\n"),
+  )
+  writeFileSync(join(projectDir, ".persona", "workflow", "work", "req-1", "00-task-card.md"), "# Task Card: req-1\n")
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -103,6 +120,27 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain(".persona/workflow/review-report.md: template")
     expect(result.stdout).toContain(".persona/evidence: present")
     expect(result.stdout).toContain("Next: fill review report")
+  })
+
+  it("keeps review-report as next action while warning about a pending req ticket", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writePendingReqBacklog(projectDir)
+
+    const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Workflow status: WARN")
+    expect(result.stdout).toContain(".persona/workflow/implementation-report.md: filled")
+    expect(result.stdout).toContain(".persona/workflow/review-report.md: template")
+    expect(result.stdout).toContain("Next: fill review report and run `npx ph plan --report-filled review`")
+    expect(result.stdout).toContain("- pending tickets: present")
+    expect(result.stdout).toContain("Ticket: req-1")
+    expect(result.stdout).toContain("Do not claim overall completion while pending tickets remain.")
+    expect(result.stdout).toContain("If this req ticket is actually complete after review: `npx ph workflow archive req-1`")
+    expect(result.stdout).toContain("Archive is a candidate action only; do not auto-archive.")
   })
 
   it("reports completed workflow as PASS when bearshell command discipline is observed", () => {
@@ -661,6 +699,26 @@ describe("ph workflow start and finish", () => {
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Workflow finish failed: implement")
     expect(result.stderr).toContain(".persona/workflow/review-report.md must be filled")
+  })
+
+  it("blocks finish with review-report guidance while preserving pending req ticket guidance", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writePendingReqBacklog(projectDir)
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Workflow finish failed: implement")
+    expect(result.stderr).toContain("Implementation report is filled but review report is template")
+    expect(result.stderr).toContain(".persona/workflow/review-report.md must be filled")
+    expect(result.stderr).toContain("Next action: fill .persona/workflow/review-report.md")
+    expect(result.stderr).toContain("Pending workflow tickets remain: req-1")
+    expect(result.stderr).toContain("Do not claim overall completion while pending tickets remain.")
+    expect(result.stderr).toContain("If this req ticket is actually complete after review: `npx ph workflow archive req-1`")
+    expect(result.stderr).toContain("Archive is a candidate action only; do not auto-archive.")
   })
 
   it("allows implementation finish after final guard evidence passes", () => {

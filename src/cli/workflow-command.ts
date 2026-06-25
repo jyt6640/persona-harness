@@ -92,12 +92,15 @@ function pendingTicketReason(summary: WorkflowStatus): string | undefined {
 
   const ticketLines = pendingTickets.flatMap((ticket) => {
     const technicalSignals = ticketLooksTechnicalConstraints(ticket) ? satisfiedTechnicalConstraintSignals(summary) : []
+    const archiveCandidateLabel = /^req[-_]?/i.test(ticket.ticket) ? "this req ticket" : "this ticket"
     return [
       `  Ticket: ${ticket.ticket}`,
       `  Title: ${ticket.title}`,
       `  Path: ${ticket.path}`,
       "  Next command: `npx ph workflow next`",
       `  If this ticket is complete: \`npx ph workflow archive ${ticket.ticket}\``,
+      `  If ${archiveCandidateLabel} is actually complete after review: \`npx ph workflow archive ${ticket.ticket}\``,
+      "  Archive is a candidate action only; do not auto-archive.",
       ...(technicalSignals.length > 0
         ? [
             `  Technical constraints note: may already be satisfied by ${technicalSignals.join(", ")}.`,
@@ -114,6 +117,20 @@ function pendingTicketReason(summary: WorkflowStatus): string | undefined {
   ].join("\n")
 }
 
+function reviewReportReason(summary: WorkflowStatus): string | undefined {
+  if (summary.review === "filled") {
+    return undefined
+  }
+  if (summary.implementation === "filled") {
+    return [
+      `Implementation report is filled but review report is ${summary.review}.`,
+      ".persona/workflow/review-report.md must be filled before finish.",
+      "Next action: fill .persona/workflow/review-report.md after review/manual QA, then run `npx ph plan --report-filled review`.",
+    ].join(" ")
+  }
+  return ".persona/workflow/review-report.md must be filled"
+}
+
 function finalGuardReasons(summary: WorkflowStatus): readonly string[] {
   const reasons: string[] = []
   if (summary.plan !== "accepted") {
@@ -122,8 +139,9 @@ function finalGuardReasons(summary: WorkflowStatus): readonly string[] {
   if (summary.implementation !== "filled") {
     reasons.push(".persona/workflow/implementation-report.md must be filled")
   }
-  if (summary.review !== "filled") {
-    reasons.push(".persona/workflow/review-report.md must be filled")
+  const reviewReason = reviewReportReason(summary)
+  if (reviewReason !== undefined) {
+    reasons.push(reviewReason)
   }
   if (summary.evidence !== "present") {
     reasons.push(".persona/evidence must contain at least one evidence file")

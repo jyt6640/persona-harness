@@ -29,6 +29,23 @@ function implementationReportPath(projectDir: string): string {
   return join(projectDir, ".persona", "workflow", "implementation-report.md")
 }
 
+function writePendingReqBacklog(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-1"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "backlog.md"),
+    [
+      "# Persona Workflow Backlog",
+      "",
+      "Status: active",
+      "",
+      "| Order | Ticket | Title | Status | Path |",
+      "| --- | --- | --- | --- | --- |",
+      "| 1 | req-1 | Task CRUD API | pending | .persona/workflow/work/req-1/00-task-card.md |",
+    ].join("\n"),
+  )
+  writeFileSync(join(projectDir, ".persona", "workflow", "work", "req-1", "00-task-card.md"), "# Task Card: req-1\n")
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -254,5 +271,25 @@ describe("ph workflow continue", () => {
     expect(result.stdout).toContain("Next command: npx ph workflow next")
     expect(result.stdout).toContain("If complete: npx ph workflow archive step-2")
     expect(result.stdout).toContain("Do not claim overall completion while this ticket remains pending.")
+  })
+
+  it("shows review-report follow-up before archive guidance when a req ticket remains pending", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPlan(projectDir, []).status).toBe(0)
+    expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    expect(runPlan(projectDir, ["--report-filled", "implementation"]).status).toBe(0)
+    writePendingReqBacklog(projectDir)
+
+    const result = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Implementation report status: filled")
+    expect(result.stdout).toContain("Review report status: template")
+    expect(result.stdout).toContain("Implementation report is filled but review report is template")
+    expect(result.stdout).toContain("Next action: fill .persona/workflow/review-report.md")
+    expect(result.stdout).toContain("Ticket: req-1")
+    expect(result.stdout).toContain("Do not claim overall completion while this ticket remains pending.")
+    expect(result.stdout).toContain("If this req ticket is actually complete after review: npx ph workflow archive req-1")
+    expect(result.stdout).toContain("Archive is a candidate action only; do not auto-archive.")
   })
 })

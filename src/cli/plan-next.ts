@@ -222,6 +222,18 @@ function evidenceLines(reportText: string): readonly string[] {
   return lines.length > 0 ? lines : ["- No filled continuation evidence found."]
 }
 
+function reviewFollowUpLines(snapshot: WorkflowSnapshot): readonly string[] {
+  if (snapshot.implementationStatus !== "filled" || snapshot.reviewStatus === "filled") {
+    return []
+  }
+  return [
+    `Implementation report is filled but review report is ${snapshot.reviewStatus}.`,
+    "Next action: fill .persona/workflow/review-report.md after review/manual QA, then run npx ph plan --report-filled review.",
+    "Do not claim overall completion until review report is filled and finish passes.",
+    "",
+  ]
+}
+
 function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
   const hasEvidence = evidenceLines(reportText).some((line) => !line.includes("No filled continuation evidence found."))
   const uncheckedItems = planUncheckedItems(snapshot.projectDir)
@@ -234,6 +246,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     `Implementation report status: ${snapshot.implementationStatus}`,
     `Review report status: ${snapshot.reviewStatus}`,
     "",
+    ...reviewFollowUpLines(snapshot),
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
     ...evidenceLines(reportText),
     "",
