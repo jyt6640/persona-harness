@@ -151,6 +151,92 @@ Every finding should include:
 - reason;
 - whether the observation is syntax-only or symbol-aware.
 
+## Verified Report Schema Draft
+
+Before any AST parser is added, Persona Harness needs a stable report shape that can be
+filled by text, syntax, semantic, or manual evidence. The schema should prove that a
+finding is explainable, not that a generated app is certified.
+
+Draft finding shape:
+
+```json
+{
+  "ruleId": "controller-delegates-to-service",
+  "result": "PASS",
+  "targetFile": "src/main/java/example/presentation/BookController.java",
+  "evidence": [
+    {
+      "kind": "method-call",
+      "location": {
+        "line": 42,
+        "column": 12
+      },
+      "detail": "Controller method delegates to BookService.registerBook(...)"
+    }
+  ],
+  "limitations": [
+    "syntax-only evidence cannot prove transaction boundary correctness"
+  ],
+  "confidence": "medium",
+  "source": "syntax"
+}
+```
+
+Required fields:
+
+| Field | Allowed values | Meaning |
+| --- | --- | --- |
+| `ruleId` | stable kebab-case ID | The backend-shape rule being observed. The ID must remain stable across report versions. |
+| `result` | `PASS`, `WARN`, `FAIL`, `UNKNOWN` | The observation result. `UNKNOWN` is a first-class result, not a failure to implement the analyzer. |
+| `targetFile` | project-relative path | The main file the finding is about. Cross-file evidence can appear inside `evidence`. |
+| `evidence` | list of structured evidence items | File/range, symbol guess, AST node, token, command log, or manual note that supports the result. |
+| `limitations` | list of strings | Caveats that prevent overclaiming, especially for syntax-only and text-only findings. |
+| `confidence` | `high`, `medium`, `low` | How much trust the analyzer places in the observation. |
+| `source` | `text`, `syntax`, `semantic`, `manual` | The evidence source used to produce the finding. |
+
+Result semantics:
+
+- `PASS`: evidence is present and the rule appears satisfied within the stated limitations.
+- `WARN`: evidence is mixed, weak, profile-dependent, or probably acceptable but worth review.
+- `FAIL`: evidence strongly indicates the rule is violated.
+- `UNKNOWN`: the report cannot determine the rule because files, classpath, symbols, logs, or
+  domain context are missing.
+
+Source semantics:
+
+- `text`: filename, string, command-log, or token evidence only.
+- `syntax`: AST/tree pattern evidence without type or declaration resolution.
+- `semantic`: type/declaration/call/reference-aware evidence.
+- `manual`: human reviewer observation, usually used as baseline or adjudication.
+
+The first implementation-independent deliverable should be a markdown summary plus a JSON
+shape like this. It can be hand-filled for existing smoke outputs before any parser spike.
+
+## Stable Rule ID Vocabulary Draft
+
+These IDs should be treated as candidate stable vocabulary before implementation. They
+mirror the current backend Clean Code rubric while preserving report-only semantics.
+
+| Rule ID | Question It Answers | Minimum Evidence | Likely Source Before AST | AST/Semantic Need |
+| --- | --- | --- | --- | --- |
+| `controller-delegates-to-service` | Does the HTTP boundary delegate use-case work to a Service-like collaborator? | Controller annotation plus method call or dependency evidence. | `manual` or `text` | `syntax` first, semantic later for type certainty. |
+| `controller-no-repository-direct-dependency` | Does the Controller avoid direct Repository/storage dependency? | Controller fields/imports/calls do not target Repository-like or storage APIs. | `text` | `syntax` is enough for first pass; semantic improves false positives. |
+| `service-no-storage-id-sequence` | Does the Service avoid owning storage maps/lists and id sequence state? | Service fields and method bodies lack obvious storage/id ownership patterns. | `text` | `syntax` is high value; semantic usually unnecessary initially. |
+| `domain-no-infrastructure-dependency` | Does Domain avoid Spring web/persistence/infrastructure coupling unless profile allows it? | Domain imports/annotations/packages do not point to infrastructure/framework concerns. | `text` | `syntax` is enough for imports/annotations; semantic needed for hidden type aliases. |
+| `repository-port-and-adapter-boundary` | Are repository ports and adapters separated clearly enough for the profile? | Interface/implementation/package boundary and Service dependency direction evidence. | `manual` | Cross-file and semantic evidence are eventually needed. |
+| `dto-no-domain-entity-exposure` | Do API request/response boundaries avoid exposing domain entities directly? | Controller signatures use DTO/request/response types, with mapping evidence. | `manual` or `text` | `syntax` can detect signatures; semantic needed to prove domain/entity type. |
+| `gradle-wrapper-real-verification` | Was real Gradle wrapper verification available and used? | `gradlew` presence/executable signal plus command log using wrapper. | `text` | No AST needed. |
+| `fake-shim-absent` | Are obvious fake/no-op shims absent from core backend paths? | No TODO/not-implemented/hardcoded demo fallback in product-like paths. | `text` | No AST needed for first pass; syntax can narrow hotspots later. |
+
+Vocabulary rules:
+
+- Rule IDs are not parser names and must not encode implementation technology.
+- Rule IDs should outlive the first analyzer. A text/manual report and a JavaParser report
+  should both be able to use the same ID.
+- Rule IDs must support `UNKNOWN`; unclear architecture should not be forced into `FAIL`.
+- Rule IDs must stay backend-shape oriented. They should not become general Java lint rules.
+- New IDs need HQ scope approval because every ID becomes a future support surface.
+
 ## Recommended Phased Path
 
 ### P0 Now: Do Not Build AST Enforcement
@@ -165,9 +251,24 @@ Before any parser dependency, do this:
 - collect two or three representative generated Java/Spring runs where humans already
   know the expected backend-shape reading.
 
-### v0.4: Verified Report Design And Thin Prototype
+### v0.4: Verified Report Schema And Manual Backfill
 
-v0.4 should add design and a tiny report-only prototype, not enforcement.
+v0.4 should stay implementation-free unless HQ explicitly opens a separate evaluation
+work item. The default v0.4 deliverable is schema/design plus manual backfill, not an AST
+prototype.
+
+Recommended v0.4 shape:
+
+- accept the verified report schema and stable rule IDs;
+- hand-fill the schema against existing generated Java/Spring smoke outputs;
+- mark every finding with `source: manual`, `text`, or both;
+- record which rule IDs are too ambiguous for machine reading;
+- decide whether a tiny analyzer spike is justified for v0.5.
+
+### v0.5: Tiny Parser Spike Decision
+
+v0.5 is the earliest reasonable point to decide whether to run a parser spike. It should
+still be report-only.
 
 Recommended prototype shape:
 
@@ -181,9 +282,10 @@ Recommended prototype shape:
 If ast-grep cannot express the needed Java/Spring boundary checks without fragile naming
 assumptions, stop there and use the learning to specify a JavaParser sidecar.
 
-### v0.5: JavaParser Sidecar RFC/Prototype
+### v0.5+ Or Later: JavaParser Sidecar RFC/Prototype
 
-v0.5 is the earliest reasonable place for a PH-owned Java analyzer.
+JavaParser should be considered only after the v0.4 schema/manual backfill and the v0.5
+spike decision show that syntax-only checks are insufficient or too noisy.
 
 Recommended shape:
 
@@ -282,19 +384,20 @@ What to do first:
 2. Freeze the backend-shape rubric into candidate machine-readable rule IDs.
 3. Write the verified report schema.
 4. Run a no-dependency manual backfill over existing smoke outputs using the new schema.
-5. Only then choose the first parser experiment.
+5. Only then choose whether v0.5 should run an ast-grep or JavaParser spike.
 
 Recommended first parser experiment:
 
-- use ast-grep only for a narrow syntax-only report spike in v0.4; or
-- if HQ wants semantic boundary checks immediately, skip ast-grep and design a JavaParser
-  sidecar for v0.5.
+- use ast-grep only for a narrow syntax-only report spike after v0.4 schema/manual backfill;
+  or
+- if HQ wants semantic boundary checks, write a JavaParser sidecar RFC first and defer the
+  prototype until the sourcepath/classpath plan is accepted.
 
 Recommended long-term path:
 
 ```text
-v0.4: report schema + tiny report-only ast-grep spike
-v0.5: JavaParser sidecar prototype for verified backend-shape reports
+v0.4: report schema + manual backfill, no AST implementation
+v0.5: tiny report-only ast-grep or JavaParser spike decision
 v1.0: opt-in enforcement policy after low-noise evidence
 ```
 
