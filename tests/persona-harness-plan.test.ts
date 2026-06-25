@@ -103,8 +103,11 @@ describe("ph plan", () => {
     expect(plan).toContain("implementation must not start until this plan is reviewed or accepted")
     expect(plan).toContain("긴 README나 plan은 한 번에 읽었다고 가정하지 않는다.")
     expect(plan).toContain("macOS/Linux: `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`")
-    expect(plan).toContain("Windows PowerShell: `npx ph bearshell --shell 'powershell -NoProfile -Command \"Get-Content README.md -TotalCount 220\"'`")
+    expect(plan).toContain(
+      'Windows PowerShell: `npx ph bearshell powershell -NoProfile -Command "Get-Content README.md -TotalCount 220"`',
+    )
     expect(plan).toContain("Get-ChildItem -Recurse -File | Select-String -Pattern")
+    expect(plan).not.toContain("npx ph bearshell --shell 'powershell")
     expect(plan).not.toContain("Select-String -Recurse")
 
     const implementationReport = readImplementationReport(projectDir)

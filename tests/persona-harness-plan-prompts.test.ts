@@ -61,8 +61,14 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stdout).toContain("finish가 실패하면 완료했다고 말하지 마")
     expect(implement.stdout).toContain("긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고")
     expect(implement.stdout).toContain("macOS/Linux: `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`")
-    expect(implement.stdout).toContain("Windows PowerShell: `npx ph bearshell --shell 'powershell -NoProfile -Command \"Get-Content README.md -TotalCount 220\"'`")
+    expect(implement.stdout).toContain(
+      'Windows PowerShell: `npx ph bearshell powershell -NoProfile -Command "Get-Content README.md -TotalCount 220"`',
+    )
+    expect(implement.stdout).toContain(
+      'npx ph bearshell powershell -NoProfile -Command "Get-Content README.md | Select-Object -Skip 220 -First 220"',
+    )
     expect(implement.stdout).toContain("Get-ChildItem -Recurse -File | Select-String -Pattern")
+    expect(implement.stdout).not.toContain("npx ph bearshell --shell 'powershell")
     expect(implement.stdout).not.toContain("Select-String -Recurse")
     expect(implement.stdout).toContain("README read method")
     expect(implement.stdout).toContain("README ranges read")
@@ -100,8 +106,14 @@ describe("ph plan prompt and usage output", () => {
     expect(prompt.stdout).toContain("existing code wins over greenfield guidance")
     expect(prompt.stdout).toContain("긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고")
     expect(prompt.stdout).toContain("macOS/Linux: `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`")
-    expect(prompt.stdout).toContain("Windows PowerShell: `npx ph bearshell --shell 'powershell -NoProfile -Command \"Get-Content README.md -TotalCount 220\"'`")
+    expect(prompt.stdout).toContain(
+      'Windows PowerShell: `npx ph bearshell powershell -NoProfile -Command "Get-Content README.md -TotalCount 220"`',
+    )
+    expect(prompt.stdout).toContain(
+      'npx ph bearshell powershell -NoProfile -Command "Get-Content README.md | Select-Object -Skip 220 -First 220"',
+    )
     expect(prompt.stdout).toContain("Get-ChildItem -Recurse -File | Select-String -Pattern")
+    expect(prompt.stdout).not.toContain("npx ph bearshell --shell 'powershell")
     expect(prompt.stdout).not.toContain("Select-String -Recurse")
     expect(prompt.stdout).toContain("플랜 보고 구현해줘")
     expect(prompt.stdout).toContain("npx ph workflow implement")

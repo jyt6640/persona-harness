@@ -100,6 +100,14 @@ describe("ph bearshell", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Usage: ph bearshell <command> [args...]")
+    expect(result.stdout).toContain("Windows PowerShell pipelines: prefer no `--shell`")
+    expect(result.stdout).toContain(
+      'npx ph bearshell powershell -NoProfile -Command "Get-ChildItem -Recurse -File | Select-String -Pattern TODO"',
+    )
+    expect(result.stdout).toContain(
+      'npx ph bearshell --shell "powershell -NoProfile -Command \\"Get-ChildItem -Recurse -File | Select-String -Pattern TODO\\""',
+    )
+    expect(result.stdout).not.toContain("npx ph bearshell --shell 'powershell")
     expect(result.stdout).toContain("PH_BEARSHELL_CONDENSE=0")
   })
 
@@ -147,14 +155,14 @@ describe("ph bearshell", () => {
 
 describe("ph package bin", () => {
   it("exposes persona-harness and ph through the shared CLI entry", () => {
-    const parsed = JSON.parse(readFileSync("package.json", "utf8")) as unknown
+    const parsed: unknown = JSON.parse(readFileSync("package.json", "utf8"))
     expect(typeof parsed).toBe("object")
     expect(parsed).not.toBeNull()
     if (typeof parsed !== "object" || parsed === null || !("bin" in parsed)) {
       return
     }
 
-    const bin = (parsed as { readonly bin?: unknown }).bin
+    const bin = parsed.bin
     expect(bin).toEqual({
       "persona-harness": "dist/cli/index.js",
       ph: "dist/cli/index.js",

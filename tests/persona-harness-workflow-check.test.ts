@@ -610,15 +610,22 @@ describe("ph workflow start and finish", () => {
     expect(result.stdout).toContain("macOS/Linux first chunk")
     expect(result.stdout).toContain("npx ph bearshell --shell 'sed -n \"1,220p\" README.md'")
     expect(result.stdout).toContain("Windows PowerShell first chunk")
-    expect(result.stdout).toContain("Get-Content README.md -TotalCount 220")
-    expect(result.stdout).toContain("Select-Object -Skip 220 -First 220")
+    expect(result.stdout).toContain(
+      'npx ph bearshell powershell -NoProfile -Command "Get-Content README.md -TotalCount 220"',
+    )
+    expect(result.stdout).toContain(
+      'npx ph bearshell powershell -NoProfile -Command "Get-Content README.md | Select-Object -Skip 220 -First 220"',
+    )
     expect(result.stdout).toContain("Get-ChildItem -Recurse -File | Select-String -Pattern")
+    expect(result.stdout).not.toContain("npx ph bearshell --shell 'powershell")
     expect(result.stdout).not.toContain("Select-String -Recurse")
     expect(result.stdout).toContain("Record README ranges read in `.persona/workflow/implementation-report.md`")
     expect(result.stdout).toContain("If existing Java/Spring source files already exist")
     expect(result.stdout).toContain("existing code wins over greenfield guidance")
     expect(result.stdout).toContain("find src/main/java src/test/java -name \"*.java\"")
-    expect(result.stdout).toContain("Get-ChildItem -Path src/main/java,src/test/java -Recurse -File -Filter *.java")
+    expect(result.stdout).toContain(
+      'npx ph bearshell powershell -NoProfile -Command "Get-ChildItem -Path src/main/java,src/test/java -Recurse -File -Filter *.java',
+    )
     expect(result.stdout).toContain("Java Role Read Follow-up")
     expect(result.stdout).toContain("Java role discovery/read evidence")
     expect(result.stdout).toContain("Gradle wrapper verification")
