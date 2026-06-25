@@ -30,6 +30,10 @@ External smoke and A/B or ON/OFF runs may be reported as stack-steering and work
 - [v0.3.7-alpha.1 release notes](v0.3.7-alpha.1-release-notes.md)
 - [v0.3.8-alpha.0 release notes](v0.3.8-alpha.0-release-notes.md)
 - [v0.3.8-alpha.1 release notes](v0.3.8-alpha.1-release-notes.md)
+- [v0.3.8-alpha.2 release notes](v0.3.8-alpha.2-release-notes.md)
+- [v0.3.8-alpha.3 release notes](v0.3.8-alpha.3-release-notes.md)
+- [v0.3.8-alpha.4 release notes](v0.3.8-alpha.4-release-notes.md)
+- [v0.3.8-alpha.5 release notes](v0.3.8-alpha.5-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

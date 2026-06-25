@@ -8,6 +8,43 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.8-alpha.5] - 2026-06-25
+
+### Changed
+
+- Repositioned Persona Harness release-facing docs as an AI coding workflow rail, evidence, and continuation harness rather than a Java Clean Code quality guarantee.
+- Clarified that evidence records read/injection/workflow traces, not generated-code quality proof.
+- Strengthened Gradle wrapper guidance so agents are expected to create and use real wrapper outputs instead of relying on unavailable system Gradle or fake shims.
+- Added failed verification continuation guidance so compile/test/build failures remain continuation work instead of being smoothed over as completion.
+- Reduced backend-shape false positives for domain/DTO naming, entity-name mentions inside DTO messages, and verification evidence visibility.
+
+### External Smoke
+
+- Long continuation smoke passed for workflow rail closure using a local `0.3.8-alpha.4` tarball at HEAD `d0eb111`.
+- The smoke used a Windows clean ON project and the same `Inventory Lending API` README.
+- Initial run timed out at 600 seconds after README/profile read, workflow implement/split/next, and Java/Spring/Gradle generation.
+- Continuation 1 timed out at 900 seconds after reports fill, Gradle wrapper creation, and `test`/`build`/`bootRun` execution, with some stale verification wording still present.
+- Continuation 2 exited 0 after reports were updated, `req-1` was archived, and `workflow finish implement` passed.
+- Final state:
+  - `implementation-report.md`: filled;
+  - `review-report.md`: filled;
+  - `req-1`: archived;
+  - `workflow finish implement`: PASS exit 0;
+  - `workflow check`: WARN only, with reports filled, no verification failure, stack alignment OK, no pending tickets, and Java role read coverage present.
+- Gradle wrapper files were generated, and `gradlew.bat test` / `gradlew.bat build` were BUILD SUCCESSFUL. `bootRun` started the server and then timed out while running.
+- Backend-shape PASS evidence included Spring Boot app, Gradle runtime, Gradle only, Maven absent, fake shim absent, package/layer boundaries, Controller/Service/Repository/DTO/Domain boundary, domain repository port, infrastructure repository adapter, service storage/id sequence ownership, domain behavior, DTO boundary, and bootJar.
+- Remaining backend-shape WARN candidates were Entity direct exposure and Verification report.
+- Fake `gradle-shim.js`, Java `HttpServer`, and Express/CommonJS workarounds were not observed.
+- This smoke is workflow rail closure evidence, not generated app product quality certification. AST/linter/enforcement gates are still not part of this release.
+
+### Verification
+
+- `npm test` passed: scope/docs diagnostics PASS, 56 files, 355 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+- `npm pack --dry-run` passed for `persona-harness@0.3.8-alpha.5` with 336 files.
+- `npm run check:docs` passed.
+
 ## [0.3.8-alpha.4] - 2026-06-25
 
 ### Changed
