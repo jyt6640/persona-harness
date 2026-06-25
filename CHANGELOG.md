@@ -8,6 +8,41 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.8-alpha.3] - 2026-06-25
+
+### Added
+
+- Added Windows-aware doctor command detection so `ph doctor` can report OpenCode runtime readiness more reliably on Windows.
+- Added stack-alignment checks for generated backend projects and made `ph workflow finish implement` block on stack mismatch.
+- Added Java role read coverage gating so implementation finish can require generated Controller, Service, Repository, DTO, Domain, and related Java files to have been read.
+- Added backend-shape review reporting to summarize generated backend structure evidence.
+- Added Windows-safe and vendor-safe bearshell/read/search guidance for workflow prompts.
+
+### Changed
+
+- Clarified `ph init` as the minimal harness/OpenCode integration step and `ph bootstrap backend` as the backend-ready bootstrap path.
+- Strengthened Java guidance to forbid fake Gradle shims and HTTP-server/CommonJS style workarounds for Java/Spring backend targets.
+- Bounded Windows search guidance to README/project files instead of unsafe recursive vendor scans.
+
+### External Smoke
+
+- Windows P0/P1 smoke was partially successful:
+  - doctor and runtime readiness passed;
+  - init/bootstrap output matched generated artifacts;
+  - `profileSummaryInjected` was confirmed;
+  - backend-shape report generation was observed;
+  - fake Gradle shim, `HttpServer`, and CommonJS workarounds were not observed.
+- OpenCode full finish still timed out/continued with pending work, so full implementation completion and generated product quality are not certified.
+- Windows vendor-safe bearshell search smoke succeeded for README-only `Select-String -Path README.md -Pattern TODO` guidance, output, and command execution; unsafe recursive/vendor search guidance was not observed.
+
+### Verification
+
+- `npm test` passed: scope/docs diagnostics PASS, 55 files, 337 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+- `npm pack --dry-run` passed for `persona-harness@0.3.8-alpha.3` with 328 files.
+- `npm run check:docs` passed.
+
 ## [0.3.8-alpha.2] - 2026-06-24
 
 ### Added
