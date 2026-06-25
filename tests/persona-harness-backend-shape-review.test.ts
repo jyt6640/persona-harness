@@ -4,6 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
+import { normalizeBackendShapePathForTest } from "../src/cli/backend-shape.js"
 import { runPersonaCli } from "../src/cli/index.js"
 
 const tempProjects: string[] = []
@@ -100,6 +101,18 @@ afterEach(() => {
 })
 
 describe("ph review backend-shape report-only analyzer", () => {
+  it("normalizes Windows fixture-v2 source paths before role matching", () => {
+    const sourcePath = String.raw`C:\fixture\src\main\java\com\example\taskapi\task\domain\TaskRepository.java`
+    const adapterPath = String.raw`C:\fixture\src\main\java\com\example\taskapi\task\infrastructure\JdbcTaskRepository.java`
+    const requestPath = String.raw`C:\fixture\src\main\java\com\example\taskapi\task\presentation\dto\request\CreateTaskRequest.java`
+    const responsePath = String.raw`C:\fixture\src\main\java\com\example\taskapi\task\presentation\dto\response\TaskResponse.java`
+
+    expect(normalizeBackendShapePathForTest(sourcePath)).toContain("/domain/TaskRepository.java")
+    expect(normalizeBackendShapePathForTest(adapterPath)).toContain("/infrastructure/JdbcTaskRepository.java")
+    expect(normalizeBackendShapePathForTest(requestPath)).toContain("/presentation/dto/request/CreateTaskRequest.java")
+    expect(normalizeBackendShapePathForTest(responsePath)).toContain("/presentation/dto/response/TaskResponse.java")
+  })
+
   it("creates a report-only backend shape report with the required observation criteria", () => {
     const projectDir = createTempProject()
     writeCleanishSpringProject(projectDir)

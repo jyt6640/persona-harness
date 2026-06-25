@@ -39,16 +39,25 @@ function relative(projectDir: string, filePath: string): string {
   return filePath.slice(projectDir.length + 1).replace(/\\/g, "/")
 }
 
+function normalizeBackendShapePath(filePath: string): string {
+  return filePath.replace(/\\/g, "/")
+}
+
+export function normalizeBackendShapePathForTest(filePath: string): string {
+  return normalizeBackendShapePath(filePath)
+}
+
 function hasPathPart(files: readonly string[], part: string): boolean {
-  return files.some((filePath) => filePath.includes(`/${part}/`))
+  return files.some((filePath) => normalizeBackendShapePath(filePath).includes(`/${part}/`))
 }
 
 function hasAnyPathPart(filePath: string, parts: readonly string[]): boolean {
-  return parts.some((part) => filePath.includes(`/${part}/`))
+  const normalized = normalizeBackendShapePath(filePath)
+  return parts.some((part) => normalized.includes(`/${part}/`))
 }
 
 function fileName(filePath: string): string {
-  return filePath.split("/").at(-1) ?? filePath
+  return normalizeBackendShapePath(filePath).split("/").at(-1) ?? filePath
 }
 
 function javaFiles(projectDir: string): readonly string[] {
@@ -142,14 +151,14 @@ function boundaryShape(files: readonly string[]): ShapeFinding {
 }
 
 function repositoryPort(projectDir: string, files: readonly string[]): ShapeFinding {
-  const ports = files.filter((filePath) => filePath.includes("/domain/") && filePath.endsWith("Repository.java"))
+  const ports = files.filter((filePath) => hasPathPart([filePath], "domain") && filePath.endsWith("Repository.java"))
   return ports.length > 0 ? pass("Domain repository port", ports.map((filePath) => relative(projectDir, filePath)).join(", ")) : warn("Domain repository port", "no domain *Repository.java")
 }
 
 function repositoryAdapter(projectDir: string, files: readonly string[]): ShapeFinding {
   const repositoryPorts = files
-    .filter((filePath) => filePath.includes("/domain/") && filePath.endsWith("Repository.java"))
-    .map((filePath) => filePath.split("/").at(-1)?.replace(/\.java$/, ""))
+    .filter((filePath) => hasPathPart([filePath], "domain") && filePath.endsWith("Repository.java"))
+    .map((filePath) => fileName(filePath).replace(/\.java$/, ""))
     .filter((name): name is string => name !== undefined)
   const adapters = files.filter((filePath) => {
     if (!hasAnyPathPart(filePath, ["infrastructure", "infra", "adapter", "persistence"])) {
@@ -180,7 +189,7 @@ function serviceStorage(projectDir: string, files: readonly string[]): ShapeFind
 }
 
 function domainBehavior(projectDir: string, files: readonly string[]): ShapeFinding {
-  const domainFiles = files.filter((filePath) => filePath.includes("/domain/") && !filePath.endsWith("Repository.java"))
+  const domainFiles = files.filter((filePath) => hasPathPart([filePath], "domain") && !filePath.endsWith("Repository.java"))
   const records = domainFiles.filter((filePath) => /\brecord\s+\w+/.test(readFileSync(filePath, "utf8")))
   if (records.length > 0) {
     return warn("Domain behavior", `domain record: ${records.map((filePath) => relative(projectDir, filePath)).join(", ")}`)
@@ -199,10 +208,10 @@ function dtoBoundary(files: readonly string[]): ShapeFinding {
 
 function entityDirectExposure(projectDir: string, files: readonly string[]): ShapeFinding {
   const domainNames = files
-    .filter((filePath) => filePath.includes("/domain/") && !filePath.endsWith("Repository.java"))
-    .map((filePath) => filePath.split("/").at(-1)?.replace(/\.java$/, ""))
+    .filter((filePath) => hasPathPart([filePath], "domain") && !filePath.endsWith("Repository.java"))
+    .map((filePath) => fileName(filePath).replace(/\.java$/, ""))
     .filter((name): name is string => name !== undefined)
-  const controllerFiles = files.filter((filePath) => filePath.endsWith("Controller.java") || filePath.includes("/presentation/"))
+  const controllerFiles = files.filter((filePath) => filePath.endsWith("Controller.java") || hasPathPart([filePath], "presentation"))
   const hits = controllerFiles.flatMap((filePath) => {
     const content = readFileSync(filePath, "utf8")
     return domainNames.filter((domainName) => new RegExp(`\\b${domainName}\\b`).test(content)).map((domainName) => `${relative(projectDir, filePath)} exposes ${domainName}`)
