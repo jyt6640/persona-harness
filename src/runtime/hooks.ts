@@ -56,11 +56,12 @@ function runHostHook(hookName: string, operation: () => void): void {
   try {
     operation()
   } catch (error) {
+    const scope = `hook.${hookName}`
     if (error instanceof Error) {
-      warnRuntimeFailure(`hook ${hookName}`, undefined, error)
+      warnRuntimeFailure("hook-boundary", scope, undefined, error)
       return
     }
-    warnRuntimeFailure(`hook ${hookName}`, undefined, new Error(String(error)))
+    warnRuntimeFailure("hook-boundary", scope, undefined, new Error(String(error)))
   }
 }
 

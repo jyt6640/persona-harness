@@ -90,7 +90,9 @@ describe("runtime hook evidence write boundary", () => {
 
     expect(output.output).toContain("[Persona Harness Injection]")
     expect(output.output).toContain("파일 역할: project-bootstrap")
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Persona Harness evidence write failed"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[Persona Harness Runtime Warning]"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("kind=evidence-write"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("scope=evidence-write"))
   })
 
   it("keeps the host hook alive when injection context loading throws", async () => {
@@ -111,7 +113,9 @@ describe("runtime hook evidence write boundary", () => {
     ).resolves.toBeUndefined()
 
     expect(output.output).toBe("# Coupon API")
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Persona Harness hook tool.execute.after failed"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[Persona Harness Runtime Warning]"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("kind=hook-boundary"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("scope=hook.tool.execute.after"))
   })
 
   it("keeps intent workflow transform alive when intent evidence cannot be written", async () => {
@@ -124,7 +128,8 @@ describe("runtime hook evidence write boundary", () => {
 
     expect(firstText(output)).toContain("[Persona Harness Programming Workflow]")
     expect(firstText(output)).toContain("Detected intent: programming")
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Persona Harness evidence write failed"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[Persona Harness Runtime Warning]"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("kind=evidence-write"))
   })
 
   it("keeps continuation text completion alive when continuation evidence cannot be written", async () => {
@@ -151,6 +156,7 @@ describe("runtime hook evidence write boundary", () => {
 
     expect(output.text).toContain("[Persona Harness Continuation]")
     expect(output.text).toContain("Remaining README/plan range: README.md 120-260")
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Persona Harness evidence write failed"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[Persona Harness Runtime Warning]"))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("kind=evidence-write"))
   })
 })

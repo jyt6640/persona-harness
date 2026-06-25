@@ -76,10 +76,10 @@ function writeEvidenceJson(evidenceDir: string, runId: string, payload: unknown)
     writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
   } catch (error) {
     if (error instanceof Error) {
-      warnRuntimeFailure("evidence write", outputPath, error)
+      warnRuntimeFailure("evidence-write", "evidence-write", outputPath, error)
       return
     }
-    warnRuntimeFailure("evidence write", outputPath, new Error(String(error)))
+    warnRuntimeFailure("evidence-write", "evidence-write", outputPath, new Error(String(error)))
   }
 }
 
