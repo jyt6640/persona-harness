@@ -92,6 +92,9 @@ describe("Phase 0 bootstrap injection", () => {
     expect(injection.block).toContain("system Gradle이 없으면 wrapper를 우선")
     expect(injection.block).toContain("./gradlew.bat test")
     expect(injection.block).toContain("toolchain/environment issue")
+    expect(injection.block).toContain("Gradle wrapper를 프로젝트 산출물로 포함")
+    expect(injection.block).toContain("system Gradle이 있어도 clean project 재현성")
+    expect(injection.block).toContain("gradlew.bat build")
   })
 
   it("selects Java backend bootstrap guidance for requirements targets", () => {
@@ -122,6 +125,9 @@ describe("Phase 0 bootstrap injection", () => {
       expect(injection.block).toContain("system Gradle이 없으면 wrapper를 우선")
       expect(injection.block).toContain("./gradlew.bat test")
       expect(injection.block).toContain("toolchain/environment issue")
+      expect(injection.block).toContain("Gradle wrapper를 프로젝트 산출물로 포함")
+      expect(injection.block).toContain("system Gradle이 있어도 clean project 재현성")
+      expect(injection.block).toContain("gradlew.bat build")
     }
   })
 

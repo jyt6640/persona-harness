@@ -36,7 +36,7 @@ Rule strength:
 | Category | Strength | Use when undecided | Hard invariant |
 |---|---|---|---|
 | JDK | Default recommendation | Java 25 LTS for new projects; Java 21/17 for compatibility | pin the toolchain; never rely on ambient JDK |
-| Build | Default recommendation | Gradle wrapper + Java toolchain; Gradle 9.x preferred; prefer wrapper when system Gradle is missing | CI and local builds use the same pinned toolchain; Gradle tasks are run by real Gradle, never by a fake shim |
+| Build | Default recommendation | Gradle wrapper + Java toolchain; Gradle 9.x preferred; include wrapper as generated project output; prefer wrapper even when system Gradle exists | CI and local builds use the same pinned toolchain; Gradle tasks are run by real Gradle, never by a fake shim |
 | Formatter | Default recommendation | Spotless + google-java-format | formatting is machine-owned when configured |
 | Static bug checks | Default recommendation | Error Prone | configured checks are not skipped silently |
 | Nullness | Default recommendation | NullAway or JSpecify-based nullness | nullness contracts are explicit at boundaries |
@@ -48,7 +48,7 @@ Rule strength:
 Build compatibility note:
 
 - Choose a mutually compatible Spring Boot plugin, Gradle wrapper or launcher, and Java toolchain line before writing code.
-- Prefer the Gradle wrapper for generated Gradle projects. If system Gradle is missing, create/use `gradlew`, `gradlew.bat`, and `gradle/wrapper/` before falling back to a global `gradle` command. Use `./gradlew test` on macOS/Linux and `./gradlew.bat test` or `gradlew.bat test` on Windows.
+- Prefer the Gradle wrapper for generated Gradle projects and include `gradlew`, `gradlew.bat`, and `gradle/wrapper/` as project outputs. Prefer wrapper-backed commands even when system Gradle exists because they make a clean project reproducible. Use `./gradlew test` and `./gradlew build` on macOS/Linux; use `gradlew.bat test` and `gradlew.bat build` on Windows.
 - Do not create Node/JS/Python/shell shims such as `tools/gradle-shim.js` to pretend that `gradle test`, `gradle build`, or `bootRun` succeeded. If neither the wrapper nor system Gradle can run, report a toolchain/environment issue instead of claiming verification.
 - For a Spring Boot executable application, do not disable `bootJar` to make `gradle build` pass. `tasks.named("bootJar") { enabled = false }` is only acceptable after the project is explicitly declared a plain Java library.
 - If `bootJar` fails with a Gradle/Spring Boot plugin compatibility error such as `CopyProcessingSpec.getDirMode()`, treat it as a build-line mismatch: upgrade the Spring Boot plugin to a line compatible with the current Gradle launcher or generate a Gradle wrapper pinned to the plugin-supported Gradle line.
