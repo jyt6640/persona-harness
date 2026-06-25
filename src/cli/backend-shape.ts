@@ -135,11 +135,11 @@ function layerStructure(files: readonly string[]): ShapeFinding {
 }
 
 function boundaryShape(files: readonly string[]): ShapeFinding {
-  const hasController = files.some((filePath) => filePath.endsWith("Controller.java") || filePath.includes("/presentation/"))
-  const hasService = files.some((filePath) => filePath.endsWith("Service.java") || filePath.includes("/application/"))
+  const hasController = files.some((filePath) => filePath.endsWith("Controller.java") || hasAnyPathPart(filePath, ["presentation", "controller", "web"]))
+  const hasService = files.some((filePath) => filePath.endsWith("Service.java") || hasAnyPathPart(filePath, ["application", "service"]))
   const hasRepository = files.some((filePath) => filePath.endsWith("Repository.java"))
-  const hasDto = files.some((filePath) => filePath.includes("/dto/"))
-  const hasDomain = files.some((filePath) => filePath.includes("/domain/") && !filePath.endsWith("Repository.java"))
+  const hasDto = files.some((filePath) => hasAnyPathPart(filePath, ["dto", "request", "response"]) || /(?:Request|Response|Dto|DTO)\.java$/.test(fileName(filePath)))
+  const hasDomain = files.some((filePath) => hasPathPart([filePath], "domain") && !filePath.endsWith("Repository.java"))
   const missing = [
     ...(!hasController ? ["Controller"] : []),
     ...(!hasService ? ["Service"] : []),
@@ -148,6 +148,10 @@ function boundaryShape(files: readonly string[]): ShapeFinding {
     ...(!hasDomain ? ["Domain"] : []),
   ]
   return missing.length === 0 ? pass("Controller/Service/Repository/DTO/Domain boundary", "role files observed") : warn("Controller/Service/Repository/DTO/Domain boundary", `missing: ${missing.join(", ")}`)
+}
+
+export function backendShapeBoundaryForTest(files: readonly string[]): ShapeFinding {
+  return boundaryShape(files)
 }
 
 function repositoryPort(projectDir: string, files: readonly string[]): ShapeFinding {
@@ -190,12 +194,14 @@ function serviceStorage(projectDir: string, files: readonly string[]): ShapeFind
 
 function domainBehavior(projectDir: string, files: readonly string[]): ShapeFinding {
   const domainFiles = files.filter((filePath) => hasPathPart([filePath], "domain") && !filePath.endsWith("Repository.java"))
-  const records = domainFiles.filter((filePath) => /\brecord\s+\w+/.test(readFileSync(filePath, "utf8")))
-  if (records.length > 0) {
-    return warn("Domain behavior", `domain record: ${records.map((filePath) => relative(projectDir, filePath)).join(", ")}`)
-  }
+  const records = domainFiles.filter((filePath) => /\b(?:public\s+)?record\s+\w+\s*\(/.test(readFileSync(filePath, "utf8")))
   const hasBehavior = domainFiles.some((filePath) => /\b(public|private|protected)?\s*(boolean|void|String|int|long|[A-Z]\w*)\s+\w+\s*\(/.test(readFileSync(filePath, "utf8")))
-  return hasBehavior ? pass("Domain behavior", "domain class contains behavior method") : warn("Domain behavior", "no domain behavior method observed")
+  if (hasBehavior) {
+    return pass("Domain behavior", "domain class contains behavior method")
+  }
+  return records.length > 0
+    ? warn("Domain behavior", `domain record: ${records.map((filePath) => relative(projectDir, filePath)).join(", ")}`)
+    : warn("Domain behavior", "no domain behavior method observed")
 }
 
 function dtoBoundary(files: readonly string[]): ShapeFinding {

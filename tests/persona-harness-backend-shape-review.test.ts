@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { normalizeBackendShapePathForTest } from "../src/cli/backend-shape.js"
+import { backendShapeBoundaryForTest, normalizeBackendShapePathForTest } from "../src/cli/backend-shape.js"
 import { runPersonaCli } from "../src/cli/index.js"
 
 const tempProjects: string[] = []
@@ -113,6 +113,21 @@ describe("ph review backend-shape report-only analyzer", () => {
     expect(normalizeBackendShapePathForTest(responsePath)).toContain("/presentation/dto/response/TaskResponse.java")
   })
 
+  it("recognizes Windows-style DTO and domain aggregate boundary paths", () => {
+    const result = backendShapeBoundaryForTest([
+      String.raw`C:\fixture\src\main\java\com\example\inventory\presentation\ItemController.java`,
+      String.raw`C:\fixture\src\main\java\com\example\inventory\application\InventoryApplicationService.java`,
+      String.raw`C:\fixture\src\main\java\com\example\inventory\domain\Item.java`,
+      String.raw`C:\fixture\src\main\java\com\example\inventory\domain\ItemRepository.java`,
+      String.raw`C:\fixture\src\main\java\com\example\inventory\infrastructure\JdbcItemRepository.java`,
+      String.raw`C:\fixture\src\main\java\com\example\inventory\presentation\dto\request\CreateItemRequest.java`,
+      String.raw`C:\fixture\src\main\java\com\example\inventory\presentation\dto\response\ItemResponse.java`,
+    ])
+
+    expect(result.result).toBe("PASS")
+    expect(result.evidence).toBe("role files observed")
+  })
+
   it("creates a report-only backend shape report with the required observation criteria", () => {
     const projectDir = createTempProject()
     writeCleanishSpringProject(projectDir)
@@ -168,6 +183,23 @@ describe("ph review backend-shape report-only analyzer", () => {
     expect(report).toContain("| DTO boundary | PASS |")
     expect(report).toContain("CreateTaskRequest.java")
     expect(report).toContain("TaskResponse.java")
+  })
+
+  it("keeps domain behavior PASS when exception messages contain the word record", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    writeFile(
+      projectDir,
+      "src/main/java/com/example/library/domain/LendingAlreadyReturnedException.java",
+      "class LendingAlreadyReturnedException extends RuntimeException { LendingAlreadyReturnedException(Long id) { super(\"Lending record already returned: \" + id); } }\n",
+    )
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const report = readReport(projectDir)
+    expect(report).toContain("| Domain behavior | PASS |")
+    expect(report).not.toContain("domain record:")
   })
 
   it("surfaces backend-shape report status in workflow check without blocking finish", () => {
