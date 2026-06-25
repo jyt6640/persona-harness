@@ -8,6 +8,35 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes yet.
 
+## [0.3.8-alpha.4] - 2026-06-25
+
+### Changed
+
+- Clarified pending review continuation guidance so template review reports and pending `req-*` tickets keep agents on the continuation path instead of allowing premature completion claims.
+- Updated Java/Spring verification guidance to prefer a real Gradle wrapper first, then system Gradle only when appropriate, without suggesting fake Gradle shim workarounds.
+- Reduced backend-shape false positives for repository ports, repository adapters, and flat DTO names such as `TaskRepository`, `JdbcTaskRepository implements TaskRepository`, `CreateTaskRequest`, and `TaskResponse`.
+- Normalized backend-shape path handling so Windows path separators do not hide generated Java evidence.
+
+### External Smoke
+
+- Windows backend-shape fixture-v2 recheck succeeded from a local current `npm pack` install at HEAD `31fb91a` with package version `0.3.8-alpha.3`.
+- `npx ph review backend-shape` exited 0 and generated a backend-shape report.
+- The report passed:
+  - Domain repository port evidence with `TaskRepository.java`;
+  - Infrastructure repository adapter evidence with `JdbcTaskRepository.java`;
+  - DTO boundary evidence with `CreateTaskRequest.java` and `TaskResponse.java`.
+- The previous Windows path separator false positive was not reproduced.
+- Remaining WARN items were limited to the narrow fixture shape: missing application/controller/service examples and missing Gradle runtime. Those are outside this recheck's success criteria.
+- This release is still workflow/check/report guidance hardening. It does not certify generated app product quality, and full OpenCode end-to-end implementation quality remains a separate smoke target.
+
+### Verification
+
+- `npm test` passed: scope/docs diagnostics PASS, 55 files, 342 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+- `npm pack --dry-run` passed for `persona-harness@0.3.8-alpha.4` with 329 files.
+- `npm run check:docs` passed.
+
 ## [0.3.8-alpha.3] - 2026-06-25
 
 ### Added
