@@ -4,7 +4,12 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { backendShapeBoundaryForTest, normalizeBackendShapePathForTest, stripJavaCommentsAndLiteralsForTest } from "../src/cli/backend-shape.js"
+import {
+  backendShapeBoundaryForTest,
+  backendShapeCheckCriteriaForTest,
+  normalizeBackendShapePathForTest,
+  stripJavaCommentsAndLiteralsForTest,
+} from "../src/cli/backend-shape.js"
 import { runPersonaCli } from "../src/cli/index.js"
 
 const tempProjects: string[] = []
@@ -121,6 +126,26 @@ afterEach(() => {
 })
 
 describe("ph review backend-shape report-only analyzer", () => {
+  it("keeps backend-shape report criteria in one structured checklist", () => {
+    expect(backendShapeCheckCriteriaForTest()).toStrictEqual([
+      "Spring Boot app",
+      "Gradle runtime",
+      "Gradle only",
+      "Maven pom.xml absent",
+      "Fake build shim absent",
+      "Layer/package structure",
+      "Controller/Service/Repository/DTO/Domain boundary",
+      "Domain repository port",
+      "Infrastructure repository adapter",
+      "Service storage/id sequence ownership",
+      "Domain behavior",
+      "DTO boundary",
+      "Entity direct exposure",
+      "bootJar",
+      "Verification report",
+    ])
+  })
+
   it("normalizes Windows fixture-v2 source paths before role matching", () => {
     const sourcePath = String.raw`C:\fixture\src\main\java\com\example\taskapi\task\domain\TaskRepository.java`
     const adapterPath = String.raw`C:\fixture\src\main\java\com\example\taskapi\task\infrastructure\JdbcTaskRepository.java`

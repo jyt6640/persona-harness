@@ -15,6 +15,16 @@ type ShapeFinding = {
   readonly evidence: string
 }
 
+type ShapeCheckContext = {
+  readonly projectDir: string
+  readonly files: readonly string[]
+}
+
+type ShapeCheck = {
+  readonly criterion: string
+  readonly run: (context: ShapeCheckContext) => ShapeFinding
+}
+
 export const BACKEND_SHAPE_REPORT_PATH = ".persona/workflow/backend-shape-report.md"
 const FAKE_SHIM_FILES = ["gradle-shim.js", join("tools", "gradle-shim.js")] as const
 const VERIFICATION_TEXT_LIMIT = 200_000
@@ -306,25 +316,31 @@ function verificationReport(projectDir: string): ShapeFinding {
     : pass("Verification report", "gradle test/build/bootRun mentioned")
 }
 
+const BACKEND_SHAPE_CHECKS = [
+  { criterion: "Spring Boot app", run: ({ projectDir, files }) => springBootApp(projectDir, files) },
+  { criterion: "Gradle runtime", run: ({ projectDir }) => gradleRuntime(projectDir) },
+  { criterion: "Gradle only", run: ({ projectDir }) => gradleOnly(projectDir) },
+  { criterion: "Maven pom.xml absent", run: ({ projectDir }) => mavenAbsent(projectDir) },
+  { criterion: "Fake build shim absent", run: ({ projectDir }) => fakeBuildShimAbsent(projectDir) },
+  { criterion: "Layer/package structure", run: ({ files }) => layerStructure(files) },
+  { criterion: "Controller/Service/Repository/DTO/Domain boundary", run: ({ files }) => boundaryShape(files) },
+  { criterion: "Domain repository port", run: ({ projectDir, files }) => repositoryPort(projectDir, files) },
+  { criterion: "Infrastructure repository adapter", run: ({ projectDir, files }) => repositoryAdapter(projectDir, files) },
+  { criterion: "Service storage/id sequence ownership", run: ({ projectDir, files }) => serviceStorage(projectDir, files) },
+  { criterion: "Domain behavior", run: ({ projectDir, files }) => domainBehavior(projectDir, files) },
+  { criterion: "DTO boundary", run: ({ files }) => dtoBoundary(files) },
+  { criterion: "Entity direct exposure", run: ({ projectDir, files }) => entityDirectExposure(projectDir, files) },
+  { criterion: "bootJar", run: ({ projectDir }) => bootJar(projectDir) },
+  { criterion: "Verification report", run: ({ projectDir }) => verificationReport(projectDir) },
+] as const satisfies readonly ShapeCheck[]
+
+export function backendShapeCheckCriteriaForTest(): readonly string[] {
+  return BACKEND_SHAPE_CHECKS.map((check) => check.criterion)
+}
+
 function createReport(projectDir: string): string {
   const files = javaFiles(projectDir)
-  const findings = [
-    springBootApp(projectDir, files),
-    gradleRuntime(projectDir),
-    gradleOnly(projectDir),
-    mavenAbsent(projectDir),
-    fakeBuildShimAbsent(projectDir),
-    layerStructure(files),
-    boundaryShape(files),
-    repositoryPort(projectDir, files),
-    repositoryAdapter(projectDir, files),
-    serviceStorage(projectDir, files),
-    domainBehavior(projectDir, files),
-    dtoBoundary(files),
-    entityDirectExposure(projectDir, files),
-    bootJar(projectDir),
-    verificationReport(projectDir),
-  ]
+  const findings = BACKEND_SHAPE_CHECKS.map((check) => check.run({ projectDir, files }))
   return [
     "# Backend Shape Report",
     "",
