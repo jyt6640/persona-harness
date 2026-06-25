@@ -47,9 +47,6 @@ export type DoctorSummary = {
 const STALE_FIXTURE_TOKENS = [
   "step1-api-contract",
   "step2-3-api-contract",
-  "roomescape",
-  "/reservations",
-  "/times",
 ] as const
 
 function commandVersion(command: string, args: readonly string[], options: DoctorOptions): string {

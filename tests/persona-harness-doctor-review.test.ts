@@ -78,7 +78,7 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain("OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified.")
   })
 
-  it("warns when public rules contain old Roomescape step fixture residue", () => {
+  it("warns when public rules contain old step fixture files", () => {
     const projectDir = createTempProject()
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona"), { recursive: true })
@@ -102,8 +102,32 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain("Rules surface: 1 files")
     expect(result.stdout).toContain("Stale fixture scan: WARN")
     expect(result.stdout).toContain("backend/step1-api-contract.md")
-    expect(result.stdout).toContain("/reservations")
-    expect(result.stdout).toContain("roomescape")
+    expect(result.stdout).toContain("step1-api-contract")
+  })
+
+  it("does not treat reservation domain examples as stale step fixture residue", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".opencode"), { recursive: true })
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
+    writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
+    writeFile(
+      projectDir,
+      ".persona/rules/backend/reservation-policy.md",
+      "Roomescape reservation policy may mention GET /reservations and GET /times as product routes.\n",
+    )
+
+    const result = runPersonaCli(["doctor"], {
+      cwd: projectDir,
+      env: {
+        PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ alpha: "0.3.1-alpha.2", latest: "0.3.1-alpha.2" }),
+      },
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Rules surface: 1 files")
+    expect(result.stdout).toContain("Stale fixture scan: PASS")
   })
 })
 
