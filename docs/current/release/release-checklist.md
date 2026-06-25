@@ -22,7 +22,27 @@ Use this checklist before every npm release.
 - `CHANGELOG.md` has an entry for the release.
 - Release notes are drafted from `docs/current/release/release-notes-template.md`.
 
-## 3. Package Contents
+## 3. Docs Stale Guard
+
+Run this guard before release prep and again before publish if any smoke, runtime, CLI, or develop-doc update lands after the release-prep commit.
+
+Check:
+
+- `package.json`, `package-lock.json`, `CHANGELOG.md`, the current release note, and the develop README/current-status record all name the same intended release version.
+- `CHANGELOG.md` and the release note both distinguish surface-verified smoke from full generated-app behavior verification.
+- The release note explicitly says generated app product quality is not certified unless there is a separate, explicit product-quality certification decision.
+- Registry state is recorded when relevant:
+  - npm dist-tag/version checked;
+  - registry `gitHead` checked;
+  - current `HEAD` checked;
+  - any registry `gitHead` / current `HEAD` mismatch recorded with whether smoke used the registry package, local tarball, or workspace install.
+- Develop docs are checked for stale or missing smoke summaries when release notes cite those smoke results.
+- If `/Users/yongtae/Documents/하네스/Persona-Harness/develop` is not a git worktree, the release report records that develop-doc changes have no commit.
+- If develop docs are a git worktree, the release report records the commit hash or the explicit no-commit reason.
+
+Do not proceed from this guard to publish, push, or tag. It is a documentation freshness gate only.
+
+## 4. Package Contents
 
 Run:
 
@@ -42,7 +62,7 @@ Check:
 - Java no-excuse fixtures are excluded.
 - `experiments/`, `.persona/evidence/`, `.persona-test-fixtures/`, and `.omo/` are excluded.
 
-## 4. Verification
+## 5. Verification
 
 Run:
 
@@ -79,7 +99,7 @@ npm pack --dry-run
 npm publish --dry-run --access public --tag <resolved-dist-tag>
 ```
 
-## 5. Install Smoke
+## 6. Install Smoke
 
 Use a temporary project outside the repository:
 
@@ -101,7 +121,7 @@ Check:
 
 For a local pre-publish smoke, install the generated tarball instead of the registry package.
 
-## 6. Publish
+## 7. Publish
 
 Only run real publish after explicit approval.
 
@@ -134,7 +154,7 @@ Required repository setup:
 
 Manual dispatch can publish the current ref with an explicit `alpha`, `beta`, or `latest` dist-tag, but should stay reserved for recovery or controlled tester releases.
 
-## 7. Post-publish
+## 8. Post-publish
 
 - Run `npm view persona-harness dist-tags --json`.
 - Run `npm view persona-harness@<version> version`.
