@@ -67,8 +67,9 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stdout).toContain(
       'npx ph bearshell powershell -NoProfile -Command "Get-Content README.md | Select-Object -Skip 220 -First 220"',
     )
-    expect(implement.stdout).toContain("Get-ChildItem -Path README.md,src,.persona -Recurse -File -ErrorAction SilentlyContinue")
-    expect(implement.stdout).toContain("| Select-String -Pattern TODO")
+    expect(implement.stdout).toContain('Select-String -Path README.md -Pattern TODO')
+    expect(implement.stdout).toContain("do not recurse project root or .persona root")
+    expect(implement.stdout).not.toContain("Get-ChildItem -Path README.md,src,.persona -Recurse")
     expect(implement.stdout).not.toContain("Get-ChildItem -Recurse -File | Select-String -Pattern TODO")
     expect(implement.stdout).not.toContain('npx ph bearshell --shell "powershell')
     expect(implement.stdout).not.toContain("npx ph bearshell --shell 'powershell")
@@ -115,8 +116,9 @@ describe("ph plan prompt and usage output", () => {
     expect(prompt.stdout).toContain(
       'npx ph bearshell powershell -NoProfile -Command "Get-Content README.md | Select-Object -Skip 220 -First 220"',
     )
-    expect(prompt.stdout).toContain("Get-ChildItem -Path README.md,src,.persona -Recurse -File -ErrorAction SilentlyContinue")
-    expect(prompt.stdout).toContain("| Select-String -Pattern TODO")
+    expect(prompt.stdout).toContain('Select-String -Path README.md -Pattern TODO')
+    expect(prompt.stdout).toContain("do not recurse project root or .persona root")
+    expect(prompt.stdout).not.toContain("Get-ChildItem -Path README.md,src,.persona -Recurse")
     expect(prompt.stdout).not.toContain("Get-ChildItem -Recurse -File | Select-String -Pattern TODO")
     expect(prompt.stdout).not.toContain('npx ph bearshell --shell "powershell')
     expect(prompt.stdout).not.toContain("npx ph bearshell --shell 'powershell")

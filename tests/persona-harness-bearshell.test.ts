@@ -102,9 +102,10 @@ describe("ph bearshell", () => {
     expect(result.stdout).toContain("Usage: ph bearshell <command> [args...]")
     expect(result.stdout).toContain("Windows PowerShell pipelines: prefer no `--shell`")
     expect(result.stdout).toContain(
-      'npx ph bearshell powershell -NoProfile -Command "Get-ChildItem -Path README.md,src,.persona -Recurse -File -ErrorAction SilentlyContinue | Select-String -Pattern TODO"',
+      'npx ph bearshell powershell -NoProfile -Command "Select-String -Path README.md -Pattern TODO"',
     )
-    expect(result.stdout).toContain("Avoid project-root recursive search; it can traverse node_modules and time out.")
+    expect(result.stdout).toContain("Avoid project-root or `.persona` root recursive search; it can traverse node_modules or package/vendor files.")
+    expect(result.stdout).not.toContain("Get-ChildItem -Path README.md,src,.persona -Recurse")
     expect(result.stdout).not.toContain("Get-ChildItem -Recurse -File | Select-String -Pattern TODO")
     expect(result.stdout).not.toContain('npx ph bearshell --shell "powershell')
     expect(result.stdout).not.toContain("npx ph bearshell --shell 'powershell")

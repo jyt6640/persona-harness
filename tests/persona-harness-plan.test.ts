@@ -106,8 +106,9 @@ describe("ph plan", () => {
     expect(plan).toContain(
       'Windows PowerShell: `npx ph bearshell powershell -NoProfile -Command "Get-Content README.md -TotalCount 220"`',
     )
-    expect(plan).toContain("Get-ChildItem -Path README.md,src,.persona -Recurse -File -ErrorAction SilentlyContinue")
-    expect(plan).toContain("| Select-String -Pattern TODO")
+    expect(plan).toContain("Select-String -Path README.md -Pattern TODO")
+    expect(plan).toContain("do not recurse project root or .persona root")
+    expect(plan).not.toContain("Get-ChildItem -Path README.md,src,.persona -Recurse")
     expect(plan).not.toContain("Get-ChildItem -Recurse -File | Select-String -Pattern TODO")
     expect(plan).not.toContain('npx ph bearshell --shell "powershell')
     expect(plan).not.toContain("npx ph bearshell --shell 'powershell")

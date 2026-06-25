@@ -616,8 +616,9 @@ describe("ph workflow start and finish", () => {
     expect(result.stdout).toContain(
       'npx ph bearshell powershell -NoProfile -Command "Get-Content README.md | Select-Object -Skip 220 -First 220"',
     )
-    expect(result.stdout).toContain("Get-ChildItem -Path README.md,src,.persona -Recurse -File -ErrorAction SilentlyContinue")
-    expect(result.stdout).toContain("| Select-String -Pattern TODO")
+    expect(result.stdout).toContain("Select-String -Path README.md -Pattern TODO")
+    expect(result.stdout).toContain("do not recurse project root or .persona root")
+    expect(result.stdout).not.toContain("Get-ChildItem -Path README.md,src,.persona -Recurse")
     expect(result.stdout).not.toContain("Get-ChildItem -Recurse -File | Select-String -Pattern TODO")
     expect(result.stdout).not.toContain('npx ph bearshell --shell "powershell')
     expect(result.stdout).not.toContain("npx ph bearshell --shell 'powershell")
