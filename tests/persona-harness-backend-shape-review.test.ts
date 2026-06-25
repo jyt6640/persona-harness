@@ -93,6 +93,26 @@ function writeWorkflowScaffold(projectDir: string): void {
   writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
 }
 
+function writeWindowsVerificationWorkflowScaffold(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "## Verification",
+      "- [x] `npx ph bearshell --shell 'call gradlew.bat test'` 결과를 확인했다.",
+      "- [x] `npx ph bearshell --shell 'call gradlew.bat build'` 결과를 확인했다.",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- [x] `npx ph bearshell --shell 'call gradlew.bat bootRun --args=\"--server.port=8085\"'` smoke-started the app.",
+    ].join("\n"),
+  )
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -263,5 +283,45 @@ describe("ph review backend-shape report-only analyzer", () => {
     expect(review.status).toBe(0)
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("backend shape report: PASS")
+  })
+
+  it("recognizes Windows gradlew.bat verification evidence in workflow reports", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    writeWindowsVerificationWorkflowScaffold(projectDir)
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "large-read-evidence.json"), "x".repeat(210_000))
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const report = readReport(projectDir)
+    expect(report).toContain("| Verification report | PASS |")
+    expect(report).toContain("gradle test/build/bootRun success evidence observed")
+  })
+
+  it("recognizes Gradle verification success evidence files when workflow reports are absent", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "phase0", "verification.log"),
+      [
+        "$ npx ph bearshell --shell 'call gradlew.bat test'",
+        "BUILD SUCCESSFUL in 2s",
+        "$ npx ph bearshell --shell 'call gradlew.bat build'",
+        "BUILD SUCCESSFUL in 2s",
+        "$ npx ph bearshell --shell 'call gradlew.bat bootRun --args=\"--server.port=8085\"'",
+        "Tomcat started on port 8085",
+        "Started InventoryLendingApplication",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const report = readReport(projectDir)
+    expect(report).toContain("| Verification report | PASS |")
+    expect(report).toContain("success evidence observed")
   })
 })

@@ -17,6 +17,8 @@ type ShapeFinding = {
 
 export const BACKEND_SHAPE_REPORT_PATH = ".persona/workflow/backend-shape-report.md"
 const FAKE_SHIM_FILES = ["gradle-shim.js", join("tools", "gradle-shim.js")] as const
+const VERIFICATION_TEXT_LIMIT = 200_000
+const VERIFICATION_TEXT_EXTENSIONS = [".json", ".log", ".md", ".txt"] as const
 
 function listFiles(dirPath: string): readonly string[] {
   if (!existsSync(dirPath)) {
@@ -246,20 +248,62 @@ function bootJar(projectDir: string): ShapeFinding {
   return /bootJar[\s\S]*(enabled\s*=\s*false|enabled\.set\(false\))/.test(content) ? warn("bootJar", "bootJar disabled") : pass("bootJar", "bootJar not disabled")
 }
 
-function verificationReport(projectDir: string): ShapeFinding {
+function hasVerificationTextExtension(filePath: string): boolean {
+  return VERIFICATION_TEXT_EXTENSIONS.some((extension) => filePath.endsWith(extension))
+}
+
+function verificationTextPaths(projectDir: string): readonly string[] {
   const reportPaths = [
     join(projectDir, ".persona", "workflow", "implementation-report.md"),
     join(projectDir, ".persona", "workflow", "review-report.md"),
   ].filter((reportPath) => existsSync(reportPath))
-  if (reportPaths.length === 0) {
-    return warn("Verification report", "implementation/review report missing")
+  const evidencePaths = listFiles(join(projectDir, ".persona", "evidence")).filter(hasVerificationTextExtension).sort()
+  return [...reportPaths, ...evidencePaths]
+}
+
+function readBoundedVerificationText(filePaths: readonly string[]): string {
+  let content = ""
+  for (const filePath of filePaths) {
+    if (content.length >= VERIFICATION_TEXT_LIMIT) {
+      break
+    }
+    const remaining = VERIFICATION_TEXT_LIMIT - content.length
+    content += `\n${readFileSync(filePath, "utf8").slice(0, remaining)}`
   }
-  const content = reportPaths.map((reportPath) => readFileSync(reportPath, "utf8")).join("\n")
+  return content
+}
+
+function hasGradleTaskEvidence(content: string, task: "test" | "build" | "bootRun"): boolean {
+  return new RegExp(`\\b(?:call\\s+)?(?:\\.\\/)?gradlew(?:\\.bat)?\\s+[^\\r\\n]*\\b${task}\\b|\\bgradle\\s+[^\\r\\n]*\\b${task}\\b`, "i").test(content)
+}
+
+function hasVerificationFailureEvidence(content: string): boolean {
+  return /\bVerification failed\b|\bcompile\/test verification failed\b|\bBUILD FAILED\b|>\s*Task\s+:[^\r\n]+?\bFAILED\b|\bExecution failed for task\b/i.test(content)
+}
+
+function hasVerificationSuccessEvidence(content: string): boolean {
+  return /\bBUILD SUCCESSFUL\b|\bTomcat started\b|\bStarted\s+\w+Application\b|\bsmoke-started\b|결과를 확인했다|통과/i.test(content)
+}
+
+function verificationReport(projectDir: string): ShapeFinding {
+  const textPaths = verificationTextPaths(projectDir)
+  if (textPaths.length === 0) {
+    return warn("Verification report", "implementation/review report or evidence missing")
+  }
+  const content = readBoundedVerificationText(textPaths)
+  if (hasVerificationFailureEvidence(content)) {
+    return warn("Verification report", "failed verification evidence observed")
+  }
   const hasCommands =
-    /(?:\.\/gradlew|gradlew|gradle)\s+[^\n`]*\btest\b/.test(content) &&
-    /(?:\.\/gradlew|gradlew|gradle)\s+[^\n`]*\bbuild\b/.test(content) &&
-    content.includes("bootRun")
-  return hasCommands ? pass("Verification report", "gradle test/build/bootRun mentioned") : warn("Verification report", "gradle test/build/bootRun evidence missing")
+    hasGradleTaskEvidence(content, "test") &&
+    hasGradleTaskEvidence(content, "build") &&
+    hasGradleTaskEvidence(content, "bootRun")
+  if (!hasCommands) {
+    return warn("Verification report", "gradle test/build/bootRun evidence missing")
+  }
+  return hasVerificationSuccessEvidence(content)
+    ? pass("Verification report", "gradle test/build/bootRun success evidence observed")
+    : pass("Verification report", "gradle test/build/bootRun mentioned")
 }
 
 function createReport(projectDir: string): string {
