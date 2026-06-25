@@ -19,6 +19,14 @@ No unreleased changes yet.
 - Added the 0.3.9-alpha pre-eval stop gate: before `0.4` eval, HQ must stop for a `0.3.9-alpha` publish or release decision.
 - Refined AST verified report schema research with candidate fields such as `ruleId`, `result`, `targetFile`, `evidence`, `limitations`, `confidence`, and `source`, plus stable rule ID candidates.
 - Preregistered the v0.4 eval fixture matrix, including README fixture candidates, plain/AGENTS/CLAUDE/cursorrules/PH baseline conditions, baseline kill-gate, thresholds, primary/secondary metrics, and blind/second-reviewer rubric.
+- Added a release checklist docs stale guard covering package/lockfile, CHANGELOG, release note, develop record alignment, smoke interpretation boundaries, registry `gitHead` / current `HEAD` mismatches, and develop commit/no-commit reporting.
+- Added and restored v0.4 evaluation docs, including the evaluation methodology, fixture files, evaluation plan, and runbook with fixture order, baseline condition setup, metadata capture, archive naming, metrics, blind package preparation, second reviewer handoff, and kill-gate calculation timing.
+- Guarded release references to the v0.4 runbook so release prep may mention it only when the runbook exists in the target HEAD being prepared.
+- Added the verified report manual backfill plan, including artifact selection, rule ID evidence sources, PASS/WARN/FAIL/UNKNOWN criteria, confidence/source handling, false-positive review, and v0.5 parser spike decision criteria.
+- Tightened Gradle guidance wording while preserving the fake-shim ban, wrapper-first verification, and Spring Boot dependency-management semantics.
+- Structured runtime warnings as `[Persona Harness Runtime Warning] kind=... scope=...` while keeping host hooks alive and evidence writes best-effort.
+- Split workflow report coverage finding logic into `workflow-report-coverage.ts` with unchanged workflow semantics and structured summary assertions.
+- External develop retrospective artifacts and templates were prepared outside this repository and remain operating context only, not package content.
 
 ### External Smoke
 
@@ -37,11 +45,12 @@ No unreleased changes yet.
 
 ### Verification
 
-- `npm test` passed: scope/docs diagnostics PASS, 56 files, 358 tests.
+- `npm test` passed: scope/docs diagnostics PASS, 57 files, 361 tests.
 - `npm run typecheck` passed.
 - `npm run build` passed.
 - `npm run check:docs` passed.
-- `npm pack --dry-run` passed for `persona-harness@0.3.9-alpha.0` with 337 files.
+- `npm pack --dry-run` passed for `persona-harness@0.3.9-alpha.0` with 340 files.
+- `git diff --check` passed.
 
 ## [0.3.8-alpha.5] - 2026-06-25
 
