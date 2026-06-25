@@ -89,6 +89,9 @@ describe("Phase 0 bootstrap injection", () => {
     expect(injection.block).toContain("Spring/Gradle/JPA/database profile")
     expect(injection.block).toContain("실제 Spring Boot/Gradle/JPA")
     expect(injection.block).toContain("Node/JS/Python/shell shim")
+    expect(injection.block).toContain("system Gradle이 없으면 wrapper를 우선")
+    expect(injection.block).toContain("./gradlew.bat test")
+    expect(injection.block).toContain("toolchain/environment issue")
   })
 
   it("selects Java backend bootstrap guidance for requirements targets", () => {
@@ -116,6 +119,9 @@ describe("Phase 0 bootstrap injection", () => {
       expect(injection.block).toContain("Hard rule")
       expect(injection.block).toContain("Node/JS/Python/shell shim")
       expect(injection.block).toContain("환경 문제")
+      expect(injection.block).toContain("system Gradle이 없으면 wrapper를 우선")
+      expect(injection.block).toContain("./gradlew.bat test")
+      expect(injection.block).toContain("toolchain/environment issue")
     }
   })
 

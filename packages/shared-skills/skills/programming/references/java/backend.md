@@ -20,7 +20,7 @@ The left side is the default when the project harness has not decided. The right
 | Category | Default recommendation | Hard invariant |
 |---|---|---|
 | JDK | Java 25 LTS for new projects; Java 21/17 for compatibility | pin the JDK with a toolchain |
-| Build | Gradle wrapper + Java toolchain; Gradle 9.x preferred | do not rely on a global build tool as the contract |
+| Build | Gradle wrapper + Java toolchain; Gradle 9.x preferred; wrapper first when system Gradle is absent | do not rely on a global build tool as the contract; never fake Gradle with Node/JS/Python/shell shims |
 | Web app | Spring Boot 4.x + Spring Framework 7.x | framework annotations stay out of domain code |
 | Maintenance line | keep existing Boot/JDK unless migration is the task | do not mix major versions casually |
 | Web stack | Spring Web MVC | choose WebFlux only for explicit reactive pressure |
@@ -42,7 +42,7 @@ Before generating a Spring project, pick one compatible build line and keep it c
 
 Do not solve a Spring Boot executable-app build failure by disabling `bootJar` unless the project is explicitly a plain Java library. For a backend application, `gradle test`, `gradle build`, and a basic `gradle bootRun` smoke should all be expected to pass.
 
-Generated Spring apps should prefer wrapper-backed verification. Include `gradlew`, `gradlew.bat`, and `gradle/wrapper` when feasible; otherwise record why the wrapper could not be generated and avoid treating missing system Gradle as an application failure.
+Generated Spring apps should prefer wrapper-backed verification. Include `gradlew`, `gradlew.bat`, and `gradle/wrapper` when feasible; otherwise record why the wrapper could not be generated and avoid treating missing system Gradle as an application failure. Use `./gradlew test` on macOS/Linux and `./gradlew.bat test` or `gradlew.bat test` on Windows before using a global `gradle` command.
 
 If `bootJar` fails with a compatibility symptom such as `CopyProcessingSpec.getDirMode()`, do not add `tasks.named("bootJar") { enabled = false }`. Treat it as a Spring Boot plugin / Gradle launcher mismatch: prefer a compatible Spring Boot plugin line for the current Gradle launcher, or generate a Gradle wrapper for the Gradle line supported by the chosen plugin.
 
