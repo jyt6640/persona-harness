@@ -45,6 +45,16 @@ No unreleased changes yet.
   - `review backend-shape` WARNs were expected because the smoke did not generate a Java app, while fake shim absence passed;
   - `workflow finish implement` exited 1 as expected and named the required filled reports and evidence file.
 - HQ local checks before that smoke did not find a `v0.3.9-alpha.1` tag locally or on origin.
+- Post-publish full continuation smoke was partially successful for `persona-harness@0.3.9-alpha.1`:
+  - OpenCode generated a Java/Spring/Gradle app with `build.gradle`, `settings.gradle`, `gradlew.bat`, `src/main/java`, `src/test/java`, and presentation/application/domain/infrastructure/DTO/test structure;
+  - `gradlew.bat test` passed and post-check `gradlew.bat build` passed;
+  - evidence was present, `profileSummaryInjected: true` was observed, and Java representative file evidence was observed;
+  - fake shim, Java `HttpServer`, and CommonJS source scans were clean;
+  - OpenCode did not fill reports or reach the final gate after generation/build repair and was stopped after a long no-output state;
+  - `workflow finish implement` exited 1 with exact reasons that `implementation-report.md` and `review-report.md` must be filled;
+  - reports remained `Status: template`, req archive/split was not observed, and `workflow check` stayed WARN;
+  - `review backend-shape` was mostly PASS, with a Domain repository port WARN because repository ports were under `application/port/out`;
+  - backend-shape Verification report wording incorrectly implied bootRun evidence, while this smoke observed test/build only.
 - This prep does not directly certify that a full OpenCode continuation applies dependency guidance, fills reports by itself, and reaches `finish` PASS.
 - This release does not certify generated app product quality and does not add AST/linter/enforcement.
 
