@@ -73,6 +73,19 @@ function hasAnyPathPart(filePath: string, parts: readonly string[]): boolean {
   return parts.some((part) => normalized.includes(`/${part}/`))
 }
 
+function hasOrderedPathParts(filePath: string, parts: readonly string[]): boolean {
+  const pathParts = normalizeBackendShapePath(filePath).split("/")
+  let offset = 0
+  for (const part of parts) {
+    const index = pathParts.indexOf(part, offset)
+    if (index === -1) {
+      return false
+    }
+    offset = index + 1
+  }
+  return true
+}
+
 function fileName(filePath: string): string {
   return normalizeBackendShapePath(filePath).split("/").at(-1) ?? filePath
 }
@@ -172,13 +185,23 @@ export function backendShapeBoundaryForTest(files: readonly string[]): ShapeFind
 }
 
 function repositoryPort(projectDir: string, files: readonly string[]): ShapeFinding {
-  const ports = files.filter((filePath) => hasPathPart([filePath], "domain") && filePath.endsWith("Repository.java"))
-  return ports.length > 0 ? pass("Domain repository port", ports.map((filePath) => relative(projectDir, filePath)).join(", ")) : warn("Domain repository port", "no domain *Repository.java")
+  const ports = repositoryPortFiles(files)
+  return ports.length > 0
+    ? pass("Domain repository port", ports.map((filePath) => relative(projectDir, filePath)).join(", "))
+    : warn("Domain repository port", "no domain or application/port/out *Repository.java")
+}
+
+function isRepositoryPortPath(filePath: string): boolean {
+  return filePath.endsWith("Repository.java")
+    && (hasPathPart([filePath], "domain") || hasOrderedPathParts(filePath, ["application", "port", "out"]))
+}
+
+function repositoryPortFiles(files: readonly string[]): readonly string[] {
+  return files.filter(isRepositoryPortPath)
 }
 
 function repositoryAdapter(projectDir: string, files: readonly string[]): ShapeFinding {
-  const repositoryPorts = files
-    .filter((filePath) => hasPathPart([filePath], "domain") && filePath.endsWith("Repository.java"))
+  const repositoryPorts = repositoryPortFiles(files)
     .map((filePath) => fileName(filePath).replace(/\.java$/, ""))
     .filter((name): name is string => name !== undefined)
   const adapters = files.filter((filePath) => {
@@ -330,6 +353,10 @@ function hasVerificationSuccessEvidence(content: string): boolean {
   return /\bBUILD SUCCESSFUL\b|\bTomcat started\b|\bStarted\s+\w+Application\b|\bsmoke-started\b|결과를 확인했다|통과/i.test(content)
 }
 
+function hasBootRunSuccessEvidence(content: string): boolean {
+  return /\bTomcat started\b|\bStarted\s+\w+Application\b|\bsmoke-started\b/i.test(content)
+}
+
 function verificationReport(projectDir: string): ShapeFinding {
   const textPaths = verificationTextPaths(projectDir)
   if (textPaths.length === 0) {
@@ -339,16 +366,18 @@ function verificationReport(projectDir: string): ShapeFinding {
   if (hasVerificationFailureEvidence(content)) {
     return warn("Verification report", "failed verification evidence observed")
   }
-  const hasCommands =
-    hasGradleTaskEvidence(content, "test") &&
-    hasGradleTaskEvidence(content, "build") &&
-    hasGradleTaskEvidence(content, "bootRun")
-  if (!hasCommands) {
-    return warn("Verification report", "gradle test/build/bootRun evidence missing")
+  const hasTestEvidence = hasGradleTaskEvidence(content, "test")
+  const hasBuildEvidence = hasGradleTaskEvidence(content, "build")
+  const hasBootRunEvidence = hasGradleTaskEvidence(content, "bootRun")
+  if (!hasTestEvidence || !hasBuildEvidence) {
+    return warn("Verification report", "gradle test/build evidence missing")
   }
-  return hasVerificationSuccessEvidence(content)
+  if (!hasVerificationSuccessEvidence(content)) {
+    return pass("Verification report", hasBootRunEvidence ? "gradle test/build/bootRun mentioned" : "gradle test/build mentioned; bootRun evidence not observed")
+  }
+  return hasBootRunEvidence && hasBootRunSuccessEvidence(content)
     ? pass("Verification report", "gradle test/build/bootRun success evidence observed")
-    : pass("Verification report", "gradle test/build/bootRun mentioned")
+    : pass("Verification report", "gradle test/build success evidence observed; bootRun evidence not observed")
 }
 
 const BACKEND_SHAPE_CHECKS = [
