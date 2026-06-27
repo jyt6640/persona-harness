@@ -70,6 +70,7 @@ If the user approves a requirements draft:
 3. Run `npx ph workflow next`.
 4. Run `npx ph workflow implement`.
 5. Implement only the current task card.
+6. If the backlog is too large for one session, complete a bounded subset/current ticket, leave remaining tickets pending for continuation, and do not claim the whole backlog.
 
 If requirements are in a file:
 
@@ -78,6 +79,7 @@ If requirements are in a file:
 3. Run `npx ph workflow next`.
 4. Read the current task card.
 5. Implement only the current task card.
+6. If the backlog is too large for one session, complete a bounded subset/current ticket, leave remaining tickets pending for continuation, and do not claim the whole backlog.
 
 If requirements are in the prompt:
 
@@ -86,12 +88,14 @@ If requirements are in the prompt:
 3. Run `npx ph workflow next`.
 4. Read the current task card.
 5. Implement only the current task card.
+6. If the backlog is too large for one session, complete a bounded subset/current ticket, leave remaining tickets pending for continuation, and do not claim the whole backlog.
 
 If the request is continuation work:
 
 1. Run `npx ph workflow next`.
 2. If the accepted plan continuation is needed, run `npx ph workflow continue`.
 3. Implement only the current task card.
+4. If the backlog is too large for one session, complete a bounded subset/current ticket, leave remaining tickets pending for continuation, and do not claim the whole backlog.
 
 ## Finish Gate
 
@@ -167,6 +171,7 @@ Required flow:
 - `npx ph workflow split .persona/workflow/requirements/backlog.md`를 실행해 implementation tickets를 만든다.
 - `npx ph workflow next`로 첫 ticket을 확인한다.
 - `npx ph workflow implement`로 구현 레일을 시작하고 현재 task card만 구현한다.
+- backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
 
 Finish gate:
 - build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
@@ -203,6 +208,7 @@ Required flow:
 - 먼저 `npx ph bearshell --shell 'sed -n "1,220p" {{sourceFile}}'`처럼 범위를 나눠 파일을 끝까지 읽는다.
 - 그 다음 `npx ph workflow split {{sourceFile}}`를 실행해 requirements-analysis/backlog/task card를 만든다.
 - `npx ph workflow next`를 실행하고 현재 task card만 구현한다.
+- backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
 - backlog에 pending ticket이 남아 있으면 전체 완료라고 말하지 않는다.
 
 Finish gate:
@@ -238,6 +244,7 @@ Required flow:
 - 구현 전에 `npx ph workflow capture --stdin`로 요구사항을 저장한다.
 - 그 다음 `npx ph workflow split`를 실행해 requirements-analysis/backlog/task card를 만든다.
 - `npx ph workflow next`를 실행하고 현재 task card만 구현한다.
+- backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
 
 Finish gate:
 - build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
@@ -271,6 +278,7 @@ Required flow:
 - 이어서 할 ticket을 찾기 위해 `npx ph workflow next`를 실행한다.
 - accepted plan continuation이 필요하면 `npx ph workflow continue`를 실행한다.
 - 현재 task card만 구현하고, 남은 ticket이 있으면 전체 완료라고 말하지 않는다.
+- backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
 
 Finish gate:
 - build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
