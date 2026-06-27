@@ -23,6 +23,19 @@ afterEach(() => {
 })
 
 describe("objective eval decision gate", () => {
+  it("identifies the legacy stack-hard policy by default", () => {
+    const decision = decideResults({
+      runs: [
+        run("backend-api-no-stack", "plain", true, true, true, 0.75, 4),
+        run("backend-api-no-stack", "ph-on", true, true, true, 0.75, 0),
+      ],
+    })
+
+    expect(decision.policy).toBe("legacy-v0.4-stack-hard")
+    expect(decision.verdict).toBe("FAIL")
+    expect(decision.reasons).toContain("backend-api-no-stack: PH ON stack alignment improvement over plain is below 20 percentage points")
+  })
+
   it("passes when PH ON has no primary regression and clears coded thresholds", () => {
     const decision = decideResults({
       runs: [
@@ -34,6 +47,7 @@ describe("objective eval decision gate", () => {
     })
 
     expect(decision).toEqual({
+      policy: "legacy-v0.4-stack-hard",
       verdict: "PASS",
       reasons: ["PH ON met coded v0.4 threshold checks for supplied results"],
     })
@@ -107,6 +121,76 @@ describe("objective eval decision gate", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Verdict: PASS")
+  })
+
+  it("fails external-primary policy when PH ON regresses a Tier 1 external outcome", () => {
+    const decision = decideResults(
+      {
+        decisionPolicy: "external-primary-v0.4.1",
+        runs: [
+          run("backend-api-no-stack", "plain", true, true, true, 0.5, 2),
+          run("backend-api-no-stack", "ph-on", true, false, true, 0.5, 0),
+        ],
+      },
+      { policy: "external-primary-v0.4.1" },
+    )
+
+    expect(decision.policy).toBe("external-primary-v0.4.1")
+    expect(decision.verdict).toBe("FAIL")
+    expect(decision.reasons).toContain("backend-api-no-stack: Tier 1 external outcome regression: PH ON gradleTestRate below plain")
+  })
+
+  it("does not fail external-primary policy solely because stack differentiation is not proven", () => {
+    const decision = decideResults(
+      {
+        decisionPolicy: "external-primary-v0.4.1",
+        runs: [
+          run("backend-api-no-stack", "plain", true, true, true, 0.75, 4),
+          run("backend-api-no-stack", "claude", true, true, true, 0.5, 6),
+          run("backend-api-no-stack", "ph-on", true, true, true, 0.75, 0),
+        ],
+      },
+      { policy: "external-primary-v0.4.1" },
+    )
+
+    expect(decision.policy).toBe("external-primary-v0.4.1")
+    expect(decision.verdict).toBe("PASS")
+    expect(decision.reasons).toContain("backend-api-no-stack: Tier 1 external outcomes passed")
+    expect(decision.reasons).toContain("backend-api-no-stack: Tier 2 stack differentiation not proven against plain")
+  })
+
+  it("does not apply external-primary policy to unstamped legacy results", () => {
+    const dir = tempDir("persona-decide-policy-")
+    const resultsPath = join(dir, "results.json")
+    writeFileSync(
+      resultsPath,
+      `${JSON.stringify({
+        runs: [
+          run("backend-api-no-stack", "plain", true, true, true, 0.75, 4),
+          run("backend-api-no-stack", "ph-on", true, true, true, 0.75, 0),
+        ],
+      })}\n`,
+    )
+
+    const legacy = spawnSync(process.execPath, [resolve("scripts/eval/decide.mjs"), resultsPath], {
+      cwd: resolve("."),
+      encoding: "utf8",
+    })
+    const externalPrimary = spawnSync(
+      process.execPath,
+      [resolve("scripts/eval/decide.mjs"), "--policy", "external-primary-v0.4.1", resultsPath],
+      {
+        cwd: resolve("."),
+        encoding: "utf8",
+      },
+    )
+
+    expect(legacy.status).toBe(1)
+    expect(legacy.stdout).toContain("Policy: legacy-v0.4-stack-hard")
+    expect(externalPrimary.status).toBe(0)
+    expect(externalPrimary.stdout).toContain("Policy: external-primary-v0.4.1")
+    expect(externalPrimary.stdout).toContain("Verdict: INCONCLUSIVE")
+    expect(externalPrimary.stdout).toContain("results were not preregistered for external-primary-v0.4.1")
   })
 })
 

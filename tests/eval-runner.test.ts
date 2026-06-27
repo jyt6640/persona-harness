@@ -37,6 +37,7 @@ type ReplayRuntimeRun = {
 }
 
 type ReplayResults = {
+  readonly decisionPolicy?: string
   readonly runs: readonly ReplayRuntimeRun[]
 }
 
@@ -205,6 +206,12 @@ describe("ON/OFF eval runner core", () => {
 
     try {
       expect(result.status).toBe(0)
+      const resultsPath = result.stdout.match(/results: (.+results\.json)/)?.[1]
+      if (!resultsPath) {
+        throw new Error(`missing results path in output: ${result.stdout}`)
+      }
+      const results = parseReplayResultsText(readFileSync(resultsPath, "utf8"))
+      expect(results.decisionPolicy).toBe("external-primary-v0.4.1")
       expect(Number.isInteger(childPid)).toBe(true)
       expect(isProcessAlive(childPid)).toBe(false)
     } finally {
@@ -214,7 +221,7 @@ describe("ON/OFF eval runner core", () => {
     }
   }, 10000)
 
-  it("scores stack alignment from observer findings and structure", () => {
+  it("marks stack alignment fallback criteria as low-confidence instead of precise observer evidence", () => {
     const projectDir = tempDir("persona-eval-stack-")
     mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
     writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "OrderController.java"), "class OrderController { OrderService service; }\n")
@@ -240,6 +247,47 @@ describe("ON/OFF eval runner core", () => {
           noServiceStorageOwnership: true,
           dtoBoundary: true,
         },
+      }),
+    )
+    expect(score).toEqual(
+      expect.objectContaining({
+        stackAlignmentPrecise: false,
+        criterionDetails: {
+          controllerServiceDependency: expect.objectContaining({ passed: true, source: "fallback", confidence: "LOW" }),
+          dtoBoundary: expect.objectContaining({ passed: true, source: "fallback", confidence: "LOW" }),
+          noControllerRepositoryDependency: expect.objectContaining({ passed: true, source: "observer", confidence: "HIGH" }),
+          noServiceStorageOwnership: expect.objectContaining({ passed: true, source: "observer", confidence: "HIGH" }),
+        },
+      }),
+    )
+  })
+
+  it("scores stack alignment as precise when all criteria are observer-backed", () => {
+    const score = scoreStackAlignmentFromObserveReport({
+      findings: [
+        { ruleId: "controller.service-dependency", result: "PASS" },
+        { ruleId: "controller.repository-dependency", result: "PASS" },
+        { ruleId: "service.storage-ownership", result: "PASS" },
+        { ruleId: "dto.boundary", result: "PASS", evidence: { role: "request" } },
+        { ruleId: "dto.boundary", result: "PASS", evidence: { role: "response" } },
+      ],
+    })
+
+    expect(score).toEqual(
+      expect.objectContaining({
+        rate: 1,
+        score: 2,
+        stackAlignmentPrecise: true,
+        criteria: {
+          controllerServiceDependency: true,
+          noControllerRepositoryDependency: true,
+          noServiceStorageOwnership: true,
+          dtoBoundary: true,
+        },
+        criterionDetails: expect.objectContaining({
+          controllerServiceDependency: expect.objectContaining({ passed: true, source: "observer", confidence: "HIGH" }),
+          dtoBoundary: expect.objectContaining({ passed: true, source: "observer", confidence: "HIGH" }),
+        }),
       }),
     )
   })
@@ -523,7 +571,10 @@ function parseReplayResultsText(text: string): ReplayResults {
   if (!isRecord(parsed) || !Array.isArray(parsed.runs)) {
     throw new Error("invalid replay results shape")
   }
-  return { runs: parsed.runs.map(parseReplayRuntimeRun) }
+  return {
+    decisionPolicy: typeof parsed.decisionPolicy === "string" ? parsed.decisionPolicy : undefined,
+    runs: parsed.runs.map(parseReplayRuntimeRun),
+  }
 }
 
 function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {

@@ -26,6 +26,10 @@ const STACK_CRITERIA = [
   "noServiceStorageOwnership",
   "dtoBoundary",
 ]
+export const DECISION_POLICIES = {
+  legacyStackHard: "legacy-v0.4-stack-hard",
+  externalPrimary: "external-primary-v0.4.1",
+}
 
 export function sha256Text(text) {
   return createHash("sha256").update(text).digest("hex")
@@ -416,18 +420,34 @@ export function runObserveReport(workspaceDir) {
 
 export function scoreStackAlignmentFromObserveReport(report, workspaceDir = "") {
   const findings = Array.isArray(report?.findings) ? report.findings : []
+  const criterionDetails = {
+    controllerServiceDependency: positiveCriterionDetail(
+      findings,
+      "controller.service-dependency",
+      hasControllerServiceStructure(workspaceDir),
+      "controller/service dependency inferred from Controller.java source fallback",
+    ),
+    noControllerRepositoryDependency: noWarnCriterionDetail(findings, "controller.repository-dependency"),
+    noServiceStorageOwnership: noWarnCriterionDetail(findings, "service.storage-ownership"),
+    dtoBoundary: dtoBoundaryCriterionDetail(findings, hasDtoBoundaryStructure(workspaceDir)),
+  }
   const criteria = {
-    controllerServiceDependency: hasFindingPass(findings, "controller.service-dependency") || hasControllerServiceStructure(workspaceDir),
-    noControllerRepositoryDependency: findingPassesWithoutWarn(findings, "controller.repository-dependency"),
-    noServiceStorageOwnership: findingPassesWithoutWarn(findings, "service.storage-ownership"),
-    dtoBoundary: hasFindingPass(findings, "dto.boundary") || hasDtoBoundaryStructure(workspaceDir),
+    controllerServiceDependency: criterionDetails.controllerServiceDependency.passed,
+    noControllerRepositoryDependency: criterionDetails.noControllerRepositoryDependency.passed,
+    noServiceStorageOwnership: criterionDetails.noServiceStorageOwnership.passed,
+    dtoBoundary: criterionDetails.dtoBoundary.passed,
   }
   const passed = STACK_CRITERIA.filter((criterion) => criteria[criterion]).length
+  const stackAlignmentPrecise = STACK_CRITERIA.every((criterion) => criterionDetails[criterion].source === "observer")
   return {
     rate: passed / STACK_CRITERIA.length,
     score: Math.round((passed / STACK_CRITERIA.length) * 2),
     criteria,
-    rationale: `${passed}/${STACK_CRITERIA.length} observer-backed stack alignment criteria passed`,
+    criterionDetails,
+    stackAlignmentPrecise,
+    rationale: stackAlignmentPrecise
+      ? `${passed}/${STACK_CRITERIA.length} observer-backed stack alignment criteria passed`
+      : `${passed}/${STACK_CRITERIA.length} stack alignment criteria passed; includes fallback/low-confidence criteria`,
     observerError: report?.observerError ?? null,
   }
 }
@@ -436,9 +456,51 @@ function hasFindingPass(findings, ruleId) {
   return findings.some((finding) => finding?.ruleId === ruleId && finding?.result === "PASS")
 }
 
-function findingPassesWithoutWarn(findings, ruleId) {
+function positiveCriterionDetail(findings, ruleId, fallbackPassed, fallbackLimitation) {
   const matching = findings.filter((finding) => finding?.ruleId === ruleId)
-  return matching.length > 0 && matching.every((finding) => finding.result === "PASS")
+  if (matching.some((finding) => finding.result === "PASS")) {
+    return { passed: true, source: "observer", confidence: "HIGH", limitations: [] }
+  }
+  if (matching.length > 0) {
+    return { passed: false, source: "observer", confidence: "HIGH", limitations: [] }
+  }
+  if (fallbackPassed) {
+    return { passed: true, source: "fallback", confidence: "LOW", limitations: [fallbackLimitation] }
+  }
+  return { passed: false, source: "missing", confidence: "NONE", limitations: [`${ruleId} observer finding missing`] }
+}
+
+function noWarnCriterionDetail(findings, ruleId) {
+  const matching = findings.filter((finding) => finding?.ruleId === ruleId)
+  if (matching.length === 0) {
+    return { passed: false, source: "missing", confidence: "NONE", limitations: [`${ruleId} observer finding missing`] }
+  }
+  return { passed: matching.every((finding) => finding.result === "PASS"), source: "observer", confidence: "HIGH", limitations: [] }
+}
+
+function dtoBoundaryCriterionDetail(findings, fallbackPassed) {
+  const matching = findings.filter((finding) => finding?.ruleId === "dto.boundary")
+  if (matching.length > 0) {
+    return {
+      passed: hasDtoRolePass(matching, "request") && hasDtoRolePass(matching, "response"),
+      source: "observer",
+      confidence: "HIGH",
+      limitations: [],
+    }
+  }
+  if (fallbackPassed) {
+    return {
+      passed: true,
+      source: "fallback",
+      confidence: "LOW",
+      limitations: ["DTO boundary inferred from filename fallback"],
+    }
+  }
+  return { passed: false, source: "missing", confidence: "NONE", limitations: ["dto.boundary observer finding missing"] }
+}
+
+function hasDtoRolePass(findings, role) {
+  return findings.some((finding) => finding.result === "PASS" && finding.evidence?.role === role)
 }
 
 function hasControllerServiceStructure(workspaceDir) {
@@ -538,11 +600,18 @@ function rate(numerator, denominator) {
   return denominator === 0 ? 0 : numerator / denominator
 }
 
-export function decideResults(results) {
+export function decideResults(results, options = {}) {
+  const policy = options.policy ?? DECISION_POLICIES.legacyStackHard
+  if (policy === DECISION_POLICIES.externalPrimary) return decideExternalPrimaryResults(results, policy)
+  if (policy === DECISION_POLICIES.legacyStackHard) return decideLegacyStackHardResults(results, policy)
+  throw new Error(`Unknown decision policy: ${policy}`)
+}
+
+function decideLegacyStackHardResults(results, policy) {
   const reasons = []
   const runs = Array.isArray(results.runs) ? results.runs : []
   if (runs.length === 0) {
-    return { verdict: "INCONCLUSIVE", reasons: ["results contains no runs"] }
+    return { policy, verdict: "INCONCLUSIVE", reasons: ["results contains no runs"] }
   }
 
   const fixtureIds = [...new Set(runs.map((run) => run.fixtureId))]
@@ -600,22 +669,119 @@ export function decideResults(results) {
     if (!plain) {
       anyInconclusive = true
       reasons.push(`${fixtureId}: plain prompt baseline is required for stack alignment threshold`)
+    } else if (!ph.stackAlignmentPrecise || !plain.stackAlignmentPrecise) {
+      anyInconclusive = true
+      reasons.push(`${fixtureId}: stack alignment threshold requires observer-backed criteria, fallback/low-confidence criteria observed`)
     } else if (ph.stackAlignmentRate - plain.stackAlignmentRate < 0.2) {
       anyFailure = true
       reasons.push(`${fixtureId}: PH ON stack alignment improvement over plain is below 20 percentage points`)
     }
 
     for (const staticBaseline of offs.filter((off) => off.conditionId !== "plain")) {
-      if (ph.stackAlignmentRate < staticBaseline.stackAlignmentRate) {
+      if (!ph.stackAlignmentPrecise || !staticBaseline.stackAlignmentPrecise) {
+        anyInconclusive = true
+        reasons.push(`${fixtureId}: stack alignment comparison with ${staticBaseline.conditionId} requires observer-backed criteria`)
+      } else if (ph.stackAlignmentRate < staticBaseline.stackAlignmentRate) {
         anyFailure = true
         reasons.push(`${fixtureId}: PH ON stack alignment is worse than ${staticBaseline.conditionId}`)
       }
     }
   }
 
-  if (anyFailure) return { verdict: "FAIL", reasons }
-  if (anyInconclusive) return { verdict: "INCONCLUSIVE", reasons }
-  return { verdict: "PASS", reasons: ["PH ON met coded v0.4 threshold checks for supplied results"] }
+  if (anyFailure) return { policy, verdict: "FAIL", reasons }
+  if (anyInconclusive) return { policy, verdict: "INCONCLUSIVE", reasons }
+  return { policy, verdict: "PASS", reasons: ["PH ON met coded v0.4 threshold checks for supplied results"] }
+}
+
+function decideExternalPrimaryResults(results, policy) {
+  const reasons = []
+  if (results.decisionPolicy !== policy) {
+    return {
+      policy,
+      verdict: "INCONCLUSIVE",
+      reasons: [`results were not preregistered for ${policy}; rerun eval after gate coding before applying this policy`],
+    }
+  }
+  const runs = Array.isArray(results.runs) ? results.runs : []
+  if (runs.length === 0) {
+    return { policy, verdict: "INCONCLUSIVE", reasons: ["results contains no runs"] }
+  }
+
+  const fixtureIds = [...new Set(runs.map((run) => run.fixtureId))]
+  let anyFailure = false
+  let anyInconclusive = false
+
+  for (const fixtureId of fixtureIds) {
+    const fixtureRuns = runs.filter((run) => run.fixtureId === fixtureId)
+    const phRuns = fixtureRuns.filter((run) => run.conditionId === "ph-on")
+    const offRuns = fixtureRuns.filter((run) => run.conditionId !== "ph-on")
+    if (phRuns.length === 0 || offRuns.length === 0) {
+      anyInconclusive = true
+      reasons.push(`${fixtureId}: requires PH ON and at least one OFF baseline`)
+      continue
+    }
+
+    const ph = summarizeComparable(phRuns)
+    const offs = groupBy(offRuns, (run) => run.conditionId)
+      .map((group) => summarizeComparable(group))
+      .sort(compareComparableSummaries)
+    let fixtureTierOneFailed = false
+
+    for (const metric of ["compileBuildRate", "gradleTestRate", "runtimeSmokeRate"]) {
+      if (ph[metric] === null || offs.some((off) => off[metric] === null)) {
+        anyInconclusive = true
+        reasons.push(`${fixtureId}: Tier 1 ${metric} missing for comparable decision`)
+        continue
+      }
+      for (const off of offs) {
+        if (ph[metric] < off[metric]) {
+          anyFailure = true
+          fixtureTierOneFailed = true
+          reasons.push(`${fixtureId}: Tier 1 external outcome regression: PH ON ${metric} below ${off.conditionId}`)
+        }
+      }
+    }
+
+    if (ph.workflowFinishRate < 1) {
+      anyFailure = true
+      fixtureTierOneFailed = true
+      reasons.push(`${fixtureId}: Tier 1 workflow finish did not complete for every PH ON run`)
+    }
+
+    for (const off of offs) {
+      if (ph.externalFailureModeTotal > off.externalFailureModeTotal) {
+        anyFailure = true
+        fixtureTierOneFailed = true
+        reasons.push(`${fixtureId}: Tier 1 failure-mode count increased above ${off.conditionId}`)
+      }
+    }
+
+    if (fixtureTierOneFailed) continue
+    if (!anyInconclusive) reasons.push(`${fixtureId}: Tier 1 external outcomes passed`)
+
+    const plain = offs.find((off) => off.conditionId === "plain")
+    if (!plain) {
+      reasons.push(`${fixtureId}: Tier 2 stack differentiation not assessed because plain prompt baseline is missing`)
+    } else if (!ph.stackAlignmentPrecise || !plain.stackAlignmentPrecise) {
+      reasons.push(`${fixtureId}: Tier 2 stack differentiation not assessed because fallback/low-confidence criteria were observed`)
+    } else if (ph.stackAlignmentRate - plain.stackAlignmentRate < 0.2) {
+      reasons.push(`${fixtureId}: Tier 2 stack differentiation not proven against plain`)
+    } else {
+      reasons.push(`${fixtureId}: Tier 2 stack differentiation observed against plain`)
+    }
+
+    for (const staticBaseline of offs.filter((off) => off.conditionId !== "plain")) {
+      if (!ph.stackAlignmentPrecise || !staticBaseline.stackAlignmentPrecise) {
+        reasons.push(`${fixtureId}: Tier 2 stack comparison with ${staticBaseline.conditionId} not assessed because fallback/low-confidence criteria were observed`)
+      } else if (ph.stackAlignmentRate < staticBaseline.stackAlignmentRate) {
+        reasons.push(`${fixtureId}: Tier 2 stack alignment lower than ${staticBaseline.conditionId}`)
+      }
+    }
+  }
+
+  if (anyFailure) return { policy, verdict: "FAIL", reasons }
+  if (anyInconclusive) return { policy, verdict: "INCONCLUSIVE", reasons }
+  return { policy, verdict: "PASS", reasons }
 }
 
 export function summarizeComparable(runs) {
@@ -627,6 +793,7 @@ export function summarizeComparable(runs) {
   const runtimeSmokeRate =
     runtimeSmokeValues.length === 0 ? null : runtimeSmokeValues.filter((value) => value === true).length / runtimeSmokeValues.length
   const stackAlignmentRate = total === 0 ? 0 : runs.reduce((sum, run) => sum + stackAlignmentRateForRun(run), 0) / total
+  const stackAlignmentPrecise = runs.every((run) => run.metrics.stackAlignmentPrecise !== false)
   return {
     conditionId,
     total,
@@ -634,6 +801,8 @@ export function summarizeComparable(runs) {
     gradleTestRate,
     runtimeSmokeRate,
     stackAlignmentRate,
+    stackAlignmentPrecise,
+    workflowFinishRate: total === 0 ? 0 : runs.filter((run) => run.metrics.workflowFinishOutcome === "PASS").length / total,
     externalFailureModeTotal: runs.reduce((sum, run) => sum + run.metrics.externalFailureModeCount, 0),
   }
 }
@@ -668,6 +837,18 @@ function formatPercent(value) {
   return `${Math.round(value * 1000) / 10}%`
 }
 
+function capturedDecisionPolicy(replayRoot) {
+  const resultsPath = join(replayRoot, "results.json")
+  if (!existsSync(resultsPath)) return null
+  try {
+    const results = JSON.parse(readFileSync(resultsPath, "utf8"))
+    return typeof results.decisionPolicy === "string" ? results.decisionPolicy : null
+  } catch (error) {
+    if (error instanceof Error) return null
+    throw error
+  }
+}
+
 export async function runEval(options) {
   if (options.replayDir) {
     return replayEval(options)
@@ -693,6 +874,7 @@ export async function runEval(options) {
 
   const results = {
     schemaVersion: "persona-onoff-eval.1",
+    decisionPolicy: DECISION_POLICIES.externalPrimary,
     createdAt: new Date().toISOString(),
     gitCommit,
     installSource: options.installSource,
@@ -867,6 +1049,8 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       stackAlignmentScore: stackAlignment.score,
       stackAlignmentRate: stackAlignment.rate,
       stackAlignmentCriteria: stackAlignment.criteria,
+      stackAlignmentCriterionDetails: stackAlignment.criterionDetails,
+      stackAlignmentPrecise: stackAlignment.stackAlignmentPrecise,
       stackAlignmentRationale: stackAlignment.rationale,
       externalFailureModeCount: failures.count,
       externalFailureModeLabels: failures.labels,
@@ -941,6 +1125,7 @@ async function replayEval(options) {
   mkdirSync(outputDir, { recursive: true })
   const results = {
     schemaVersion: "persona-onoff-eval.1",
+    decisionPolicy: capturedDecisionPolicy(replayRoot),
     replayOf: replayRoot,
     createdAt: new Date().toISOString(),
     gitCommit,
@@ -1008,6 +1193,8 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       stackAlignmentScore: stackAlignment.score,
       stackAlignmentRate: stackAlignment.rate,
       stackAlignmentCriteria: stackAlignment.criteria,
+      stackAlignmentCriterionDetails: stackAlignment.criterionDetails,
+      stackAlignmentPrecise: stackAlignment.stackAlignmentPrecise,
       stackAlignmentRationale: stackAlignment.rationale,
       externalFailureModeCount: failures.count,
       externalFailureModeLabels: failures.labels,

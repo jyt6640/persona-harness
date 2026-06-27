@@ -1,29 +1,55 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs"
-import { decideResults } from "./eval-core.mjs"
+import { DECISION_POLICIES, decideResults } from "./eval-core.mjs"
 
 function usage() {
-  return `Usage: node scripts/eval/decide.mjs <results.json>
+  return `Usage: node scripts/eval/decide.mjs [--policy <policy>] <results.json>
 
 Reads ON/OFF eval results and prints PASS, FAIL, or INCONCLUSIVE.
-This command does not modify injection-value-status.json or any release state.`
+This command does not modify injection-value-status.json or any release state.
+
+Policies:
+- ${DECISION_POLICIES.legacyStackHard} (default; preserves previously recorded old-gate verdict semantics)
+- ${DECISION_POLICIES.externalPrimary} (external-outcome-primary 2-tier gate; use only for newly run evals after preregistration)`
 }
 
 function main() {
-  const [arg] = process.argv.slice(2)
-  if (!arg || arg === "--help" || arg === "-h") {
+  const { policy, resultsPath, help } = parseArgs(process.argv.slice(2))
+  const arg = resultsPath
+  if (!arg || help) {
     console.log(usage())
-    process.exitCode = arg ? 0 : 1
+    process.exitCode = help ? 0 : 1
     return
   }
 
   const results = JSON.parse(readFileSync(arg, "utf8"))
-  const decision = decideResults(results)
+  const decision = decideResults(results, { policy })
+  console.log(`Policy: ${decision.policy}`)
   console.log(`Verdict: ${decision.verdict}`)
   for (const reason of decision.reasons) {
     console.log(`- ${reason}`)
   }
   process.exitCode = decision.verdict === "FAIL" ? 1 : 0
+}
+
+function parseArgs(argv) {
+  let policy = DECISION_POLICIES.legacyStackHard
+  let resultsPath = ""
+  let help = false
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index]
+    if (arg === "--help" || arg === "-h") {
+      help = true
+    } else if (arg === "--policy") {
+      index += 1
+      policy = argv[index] ?? ""
+    } else if (!resultsPath) {
+      resultsPath = arg
+    } else {
+      throw new Error(`Unexpected argument: ${arg}`)
+    }
+  }
+  return { policy, resultsPath, help }
 }
 
 main()

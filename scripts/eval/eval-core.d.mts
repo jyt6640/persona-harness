@@ -39,4 +39,11 @@ export function measureGradleTestResult(workspaceDir: string, execution: Record<
 export function measureCompileResult(workspaceDir: string, execution: Record<string, unknown>): Record<string, unknown>
 export function scoreStackAlignmentFromObserveReport(report: unknown, workspaceDir?: string): Record<string, unknown>
 export function preflight(options: Record<string, unknown>): { ok: boolean; errors: string[] }
-export function decideResults(results: { runs?: readonly EvalRun[] }): { verdict: string; reasons: string[] }
+export const DECISION_POLICIES: {
+  readonly legacyStackHard: "legacy-v0.4-stack-hard"
+  readonly externalPrimary: "external-primary-v0.4.1"
+}
+export function decideResults(
+  results: { decisionPolicy?: string | null; runs?: readonly EvalRun[] },
+  options?: { policy?: string },
+): { policy: string; verdict: string; reasons: string[] }
