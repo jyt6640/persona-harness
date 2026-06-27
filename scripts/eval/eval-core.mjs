@@ -881,13 +881,18 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
   const compileBuild = measureCompileResult(workspaceDir, buildExecution)
   const gradleTest = measureGradleTestResult(workspaceDir, testExecution)
   const runtimeSmokeOutcome = parseCapturedCommandOutcome(join(logsDir, "runtime-smoke.log"))
+  const providerOutcome = parseCapturedCommandOutcome(join(logsDir, "opencode.log"))
+  const providerFailed = providerOutcome === "FAIL"
+  const capturedWorkflowFinishOutcome = parseCapturedCommandOutcome(join(logsDir, "workflow-finish.log"))
+  const workflowFinishOutcome =
+    capturedWorkflowFinishOutcome === "NOT RUN" ? "NOT APPLICABLE" : capturedWorkflowFinishOutcome
   const failures = countFailureModes({
     compileBuildOutcome: compileBuild.outcome,
     gradleTestOutcome: gradleTest.outcome,
     runtimeSmokeOutcome,
     stackAlignmentRate: stackAlignment.rate,
-    workflowFinishOutcome: "NOT APPLICABLE",
-    providerFailed: false,
+    workflowFinishOutcome,
+    providerFailed,
   })
   return {
     runId: `${environment.platform}-${fixtureId}-${conditionId}-r${repetition}`.toLowerCase(),
@@ -904,7 +909,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       compileBuildOutcome: compileBuild.outcome,
       gradleTestOutcome: gradleTest.outcome,
       runtimeSmokeOutcome,
-      workflowFinishOutcome: "NOT APPLICABLE",
+      workflowFinishOutcome,
       compileBuild,
       gradleTest,
     },
@@ -918,7 +923,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       stackAlignmentRationale: stackAlignment.rationale,
       externalFailureModeCount: failures.count,
       externalFailureModeLabels: failures.labels,
-      workflowFinishOutcome: "NOT APPLICABLE",
+      workflowFinishOutcome,
       backendShapeWarnCount: null,
     },
   }

@@ -23,17 +23,20 @@ import {
 const tempDirs: string[] = []
 
 type ReplayRuntimeRun = {
-  conditionId: string
-  outcomes: {
-    runtimeSmokeOutcome: string
+  readonly conditionId: string
+  readonly outcomes: {
+    readonly runtimeSmokeOutcome: string
+    readonly workflowFinishOutcome: string
   }
-  metrics: {
-    runtimeSmokePass: boolean | null
+  readonly metrics: {
+    readonly runtimeSmokePass: boolean | null
+    readonly externalFailureModeLabels: readonly string[]
+    readonly workflowFinishOutcome: string
   }
 }
 
 type ReplayResults = {
-  runs: ReplayRuntimeRun[]
+  readonly runs: readonly ReplayRuntimeRun[]
 }
 
 function tempDir(prefix: string): string {
@@ -249,9 +252,9 @@ describe("ON/OFF eval runner core", () => {
   it("replays captured runtime-smoke log status without fabricating missing smoke results", () => {
     const outputRoot = tempDir("persona-eval-replay-runtime-")
     const captureDir = join(outputRoot, "capture")
-    writeCapturedRun(captureDir, "plain", "status: 0")
-    writeCapturedRun(captureDir, "claude", "status: 1")
-    writeCapturedRun(captureDir, "agents", null)
+    writeCapturedRun(captureDir, { conditionId: "plain", runtimeStatus: "status: 0" })
+    writeCapturedRun(captureDir, { conditionId: "claude", runtimeStatus: "status: 1" })
+    writeCapturedRun(captureDir, { conditionId: "agents", runtimeStatus: null })
 
     const result = spawnSync(
       process.execPath,
@@ -264,11 +267,43 @@ describe("ON/OFF eval runner core", () => {
     if (!resultsPath) {
       throw new Error(`missing replay results path in output: ${result.stdout}`)
     }
-    const results = JSON.parse(readFileSync(resultsPath, "utf8")) as ReplayResults
+    const results = parseReplayResultsText(readFileSync(resultsPath, "utf8"))
 
     expect(runtimeOutcomeFor(results, "plain")).toEqual({ outcome: "PASS", pass: true })
     expect(runtimeOutcomeFor(results, "claude")).toEqual({ outcome: "FAIL", pass: false })
     expect(runtimeOutcomeFor(results, "agents")).toEqual({ outcome: "NOT RUN", pass: null })
+  })
+
+  it("replays captured provider and workflow logs without fabricating missing workflow results", () => {
+    const outputRoot = tempDir("persona-eval-replay-workflow-")
+    const captureDir = join(outputRoot, "capture")
+    writeCapturedRun(captureDir, {
+      conditionId: "ph-on",
+      runtimeStatus: "status: 0",
+      opencodeStatus: "status: null\nsignal: SIGTERM\nerror: spawnSync /bin/sh ETIMEDOUT",
+      workflowStatus: "status: 0",
+    })
+    writeCapturedRun(captureDir, {
+      conditionId: "plain",
+      runtimeStatus: "status: 0",
+      opencodeStatus: "status: 0",
+      workflowStatus: null,
+    })
+
+    const result = spawnSync(
+      process.execPath,
+      [resolve("scripts/eval/run-onoff-eval.mjs"), "--replay", captureDir, "--output-root", outputRoot],
+      { cwd: resolve("."), encoding: "utf8" },
+    )
+
+    expect(result.status).toBe(0)
+    const results = readReplayResults(result.stdout)
+
+    expect(workflowOutcomeFor(results, "ph-on")).toEqual({ outcome: "PASS", metric: "PASS" })
+    expect(failureLabelsFor(results, "ph-on")).toContain("provider limit")
+    expect(workflowOutcomeFor(results, "plain")).toEqual({ outcome: "NOT APPLICABLE", metric: "NOT APPLICABLE" })
+    expect(failureLabelsFor(results, "plain")).not.toContain("provider limit")
+    expect(failureLabelsFor(results, "plain")).not.toContain("workflow dead-end")
   })
 
   it("reports PH ON install command as required during preflight", () => {
@@ -320,7 +355,15 @@ function readFixtureXml(): string {
   ].join("\n")
 }
 
-function writeCapturedRun(captureDir: string, conditionId: string, runtimeStatus: string | null): void {
+type CapturedRunOptions = {
+  readonly conditionId: string
+  readonly runtimeStatus: string | null
+  readonly opencodeStatus?: string | null
+  readonly workflowStatus?: string | null
+}
+
+function writeCapturedRun(captureDir: string, options: CapturedRunOptions): void {
+  const { conditionId, runtimeStatus, opencodeStatus = null, workflowStatus = null } = options
   const replayRunDir = join(captureDir, "raw", "backend-api-no-stack", conditionId, "r1")
   const workspaceDir = join(replayRunDir, "workspace")
   const logsDir = join(replayRunDir, "raw")
@@ -352,15 +395,98 @@ function writeCapturedRun(captureDir: string, conditionId: string, runtimeStatus
       [`$ /tmp/runtime-smoke`, `cwd: ${workspaceDir}`, runtimeStatus, "signal: ", "", "## stdout", "", "## stderr", ""].join("\n"),
     )
   }
+  if (opencodeStatus !== null) {
+    writeFileSync(
+      join(logsDir, "opencode.log"),
+      [`$ opencode run`, `cwd: ${workspaceDir}`, opencodeStatus, "", "## stdout", "", "## stderr", ""].join("\n"),
+    )
+  }
+  if (workflowStatus !== null) {
+    writeFileSync(
+      join(logsDir, "workflow-finish.log"),
+      [`$ npx ph workflow finish implement`, `cwd: ${workspaceDir}`, workflowStatus, "signal: ", "", "## stdout", "Finish status: PASS", "", "## stderr", ""].join("\n"),
+    )
+  }
 }
 
-function runtimeOutcomeFor(results: ReplayResults, conditionId: string): { outcome: string; pass: boolean | null } {
+function readReplayResults(stdout: string): ReplayResults {
+  const resultsPath = stdout.match(/results: (.+results\.json)/)?.[1]
+  if (!resultsPath) {
+    throw new Error(`missing replay results path in output: ${stdout}`)
+  }
+  return parseReplayResultsText(readFileSync(resultsPath, "utf8"))
+}
+
+function parseReplayResultsText(text: string): ReplayResults {
+  const parsed: unknown = JSON.parse(text)
+  if (!isRecord(parsed) || !Array.isArray(parsed.runs)) {
+    throw new Error("invalid replay results shape")
+  }
+  return { runs: parsed.runs.map(parseReplayRuntimeRun) }
+}
+
+function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {
+  if (!isRecord(value) || typeof value.conditionId !== "string" || !isRecord(value.outcomes) || !isRecord(value.metrics)) {
+    throw new Error("invalid replay run shape")
+  }
+  const { outcomes, metrics } = value
+  if (typeof outcomes.runtimeSmokeOutcome !== "string" || typeof outcomes.workflowFinishOutcome !== "string") {
+    throw new Error("invalid replay outcome shape")
+  }
+  if (
+    !isRuntimePass(metrics.runtimeSmokePass) ||
+    !Array.isArray(metrics.externalFailureModeLabels) ||
+    !metrics.externalFailureModeLabels.every((label) => typeof label === "string") ||
+    typeof metrics.workflowFinishOutcome !== "string"
+  ) {
+    throw new Error("invalid replay metrics shape")
+  }
+  return {
+    conditionId: value.conditionId,
+    outcomes: {
+      runtimeSmokeOutcome: outcomes.runtimeSmokeOutcome,
+      workflowFinishOutcome: outcomes.workflowFinishOutcome,
+    },
+    metrics: {
+      runtimeSmokePass: metrics.runtimeSmokePass,
+      externalFailureModeLabels: metrics.externalFailureModeLabels,
+      workflowFinishOutcome: metrics.workflowFinishOutcome,
+    },
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function isRuntimePass(value: unknown): value is boolean | null {
+  return typeof value === "boolean" || value === null
+}
+
+function replayRunFor(results: ReplayResults, conditionId: string): ReplayRuntimeRun {
   const runResult = results.runs.find((item) => item.conditionId === conditionId)
   if (!runResult) {
     throw new Error(`missing run for condition: ${conditionId}`)
   }
+  return runResult
+}
+
+function runtimeOutcomeFor(results: ReplayResults, conditionId: string): { outcome: string; pass: boolean | null } {
+  const runResult = replayRunFor(results, conditionId)
   return {
     outcome: runResult.outcomes.runtimeSmokeOutcome,
     pass: runResult.metrics.runtimeSmokePass,
   }
+}
+
+function workflowOutcomeFor(results: ReplayResults, conditionId: string): { outcome: string; metric: string } {
+  const runResult = replayRunFor(results, conditionId)
+  return {
+    outcome: runResult.outcomes.workflowFinishOutcome,
+    metric: runResult.metrics.workflowFinishOutcome,
+  }
+}
+
+function failureLabelsFor(results: ReplayResults, conditionId: string): readonly string[] {
+  return replayRunFor(results, conditionId).metrics.externalFailureModeLabels
 }
