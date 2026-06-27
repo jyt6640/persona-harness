@@ -80,6 +80,18 @@ No unreleased changes.
 - backend-shape main was mostly PASS, and fixture coverage confirmed `application/port/out/TaskRepository`, adapter, and DTO PASS. Verification report avoided false PASS for template-only command mentions by leaving `gradle test/build/bootRun mentioned without success/failure output` as a WARN.
 - Smoke perspective: alpha2 release prep candidate.
 - Residual risks: generated app product quality is not certified, backend-shape remains report-only, AST/linter/enforcement is still absent, separate manual curl QA was not performed, and the backend-shape Verification WARN remains conservative because reports lacked raw success/failure output even though post-check test/build passed.
+- Post-publish registry surface smoke passed for `persona-harness@0.3.9-alpha.2`.
+  - Source: Windows clean project registry-only `npm install -D persona-harness@alpha`.
+  - Registry facts: installed `persona-harness@0.3.9-alpha.2`; dist-tags `alpha=0.3.9-alpha.2`, `latest=0.3.9-alpha.1`; gitHead `ecc65560af26df78656f6135237f44cdbf9c2607`; shasum `cdd6a238da82a06b59f0c9ee75f7eea2bbec1440`.
+  - `ph init`, `ph bootstrap backend`, and `ph doctor` passed; doctor Runtime readiness passed with OpenCode present and package version `0.3.9-alpha.2`.
+  - `workflow implement` / `plan --prompt` surfaces showed Windows-safe bearshell read/search guidance and finish/report-filled guidance.
+  - Fresh/template `workflow check` WARN and `workflow finish implement` exit 1 for missing implementation/review reports + evidence were expected.
+  - `bearshell` README search/read commands passed.
+  - Copied backend rules contained Gradle wrapper/dependency self-check guidance, including no blank/dot versions for `spring-boot-starter-*` / `flyway-core` and build.gradle self-check guidance.
+  - backend-shape fixture confirmed `application/port/out` repository port PASS, adapter/DTO PASS, and template-only verification mentions as Verification WARN rather than false PASS.
+  - No blocker was found for registry alpha2 install/init/bootstrap/doctor/workflow/bearshell/backend-shape surfaces.
+  - `latest=0.3.9-alpha.1` is recorded as observed dist-tag state, not a smoke failure.
+  - Optional OpenCode generated-app closure smoke was not run; this is not generated app product quality certification, backend-shape remains report-only, and AST/linter/enforcement remains absent.
 
 ### Verification
 
