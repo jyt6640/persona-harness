@@ -115,11 +115,64 @@ class ReservationService {
       "String-based observation; false positives or false negatives remain possible for unusual Java formatting.",
     ])
 
+    const serviceFinding = findingByRule(findings, "controller.service-dependency")
+    expect(serviceFinding.result).toBe("PASS")
+    expect(serviceFinding.confidence).toBe("HIGH")
+    expect(serviceFinding.source).toBe("manual/text")
+    expect(serviceFinding.filePath).toBe("src/main/java/com/example/ReservationController.java")
+
     const storageFinding = findingByRule(findings, "service.storage-ownership")
     expect(storageFinding.result).toBe("WARN")
     expect(storageFinding.confidence).toBe("HIGH")
     expect(storageFinding.source).toBe("manual/text")
     expect(storageFinding.filePath).toBe("src/main/java/com/example/ReservationService.java")
+  })
+
+  it("emits request and response DTO boundary findings from real Java files", () => {
+    const projectDir = createProject()
+    writeJava(
+      projectDir,
+      "src/main/java/com/example/api/CreateOrderRequest.java",
+      `
+class CreateOrderRequest {
+  String customerEmail;
+}
+`,
+    )
+    writeJava(
+      projectDir,
+      "src/main/java/com/example/api/OrderResponse.java",
+      `
+class OrderResponse {
+  String id;
+}
+`,
+    )
+
+    const result = runPersonaCli(["observe", "--json", "src/main/java"], { cwd: projectDir, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const report = recordValue(JSON.parse(result.stdout))
+    const findings = arrayValue(report.findings).map(recordValue)
+    const dtoFindings = findings.filter((finding) => finding.ruleId === "dto.boundary")
+    expect(dtoFindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          result: "PASS",
+          confidence: "MEDIUM",
+          source: "manual/text",
+          filePath: "src/main/java/com/example/api/CreateOrderRequest.java",
+          evidence: expect.objectContaining({ role: "request" }),
+        }),
+        expect.objectContaining({
+          result: "PASS",
+          confidence: "MEDIUM",
+          source: "manual/text",
+          filePath: "src/main/java/com/example/api/OrderResponse.java",
+          evidence: expect.objectContaining({ role: "response" }),
+        }),
+      ]),
+    )
   })
 
   it("runs against the repo example Java app with --json", () => {

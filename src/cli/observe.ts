@@ -5,8 +5,12 @@ import process from "node:process"
 import type { CliRunResult } from "./bearshell.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryObservation } from "../observer/controller-repository-observer.js"
+import { observeControllerServiceDependency } from "../observer/controller-service-observer.js"
+import type { ControllerServiceObservation } from "../observer/controller-service-observer.js"
 import { observeControllerSqlAccess } from "../observer/controller-sql-observer.js"
 import type { ControllerSqlObservation } from "../observer/controller-sql-observer.js"
+import { observeDtoBoundary } from "../observer/dto-boundary-observer.js"
+import type { DtoBoundaryObservation } from "../observer/dto-boundary-observer.js"
 import { observeServiceStorageOwnership } from "../observer/service-storage-observer.js"
 import type { ServiceStorageObservation } from "../observer/service-storage-observer.js"
 import { observeTestContractAnchors } from "../observer/test-contract-observer.js"
@@ -114,9 +118,13 @@ function observeJavaFile(projectDir: string, filePath: string): readonly Observe
   const findings: ObserveFinding[] = []
   if (filePath.endsWith("Controller.java")) {
     findings.push(
+      normalizeObservation("controller.service-dependency", relativePath, observeControllerServiceDependency({ filePath, source })),
       normalizeObservation("controller.repository-dependency", relativePath, observeControllerRepositoryDependency({ filePath, source })),
       normalizeObservation("controller.sql-access", relativePath, observeControllerSqlAccess({ filePath, source })),
     )
+  }
+  if (/(?:Request|Response|Dto|DTO)\.java$/.test(filePath)) {
+    findings.push(normalizeObservation("dto.boundary", relativePath, observeDtoBoundary({ filePath, source })))
   }
   if (filePath.endsWith("Service.java")) {
     findings.push(normalizeObservation("service.storage-ownership", relativePath, observeServiceStorageOwnership({ filePath, source })))
@@ -141,7 +149,13 @@ function observeJavaFile(projectDir: string, filePath: string): readonly Observe
 function normalizeObservation(
   ruleId: string,
   filePath: string,
-  observation: ControllerRepositoryObservation | ControllerSqlObservation | ServiceStorageObservation | TestContractObservation,
+  observation:
+    | ControllerRepositoryObservation
+    | ControllerServiceObservation
+    | ControllerSqlObservation
+    | DtoBoundaryObservation
+    | ServiceStorageObservation
+    | TestContractObservation,
 ): ObserveFinding {
   const isInfo = observation.finding === "INFO"
   return {
@@ -160,7 +174,13 @@ function normalizeFindingResult(finding: "PASS" | "WARN" | "UNKNOWN" | "INFO"): 
 }
 
 function observationConfidence(
-  observation: ControllerRepositoryObservation | ControllerSqlObservation | ServiceStorageObservation | TestContractObservation,
+  observation:
+    | ControllerRepositoryObservation
+    | ControllerServiceObservation
+    | ControllerSqlObservation
+    | DtoBoundaryObservation
+    | ServiceStorageObservation
+    | TestContractObservation,
 ): ObserveConfidence {
   return "confidence" in observation && observation.confidence !== undefined ? observation.confidence : "NONE"
 }
