@@ -45,6 +45,13 @@ No unreleased changes.
   - `decide.mjs` and `blind-grade.mjs` surfaces executed.
 - Actual OpenCode ON/OFF eval was not run because `OPENCODE_MODEL`, model version, and provider keys were not pinned. No fake `results.json` was generated.
 - This release does not certify generated app product quality, does not add AST/linter/enforcement, and keeps observer/backend-shape report-only.
+- Post-publish registry install smoke passed for `persona-harness@0.3.9-alpha.3`:
+  - registry facts: `alpha=0.3.9-alpha.3`, `latest=0.3.9-alpha.1`, gitHead `d96941f6e212bd89f62cd0d7b12853a845cc1c86`, shasum `fcd8b7da9f0568510a73f9d25a1c083a8343e6b9`;
+  - registry-only install from `persona-harness@alpha` installed `0.3.9-alpha.3`;
+  - CLI surfaces passed for init/bootstrap/doctor/plan/workflow/review backend-shape and `observe --json` fixture;
+  - fresh/template `workflow finish implement` blocked as expected on missing reports/evidence;
+  - generated-app OpenCode run was not executed, and no product-quality certification is made;
+  - installed package did not contain `node_modules/persona-harness/scripts/eval/*`, so package-level eval runner help/dry-run/preflight were not executed. This is recorded as a package-surface boundary, not a fake eval success.
 
 ## [0.3.9-alpha.2] - 2026-06-27
 
