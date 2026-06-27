@@ -6,7 +6,19 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-No unreleased changes.
+### Changed
+
+- Added a local eval environment guard so repo-side eval pilot environment files stay untracked.
+- Updated the repo-side eval runner command for the current OpenCode run surface:
+  - default command shape is now `opencode run --model {model} --file {promptFile} {message}`;
+  - default runner execution avoids unsupported `--prompt-file`, `--temperature`, `--top-p`, and `--seed` flags;
+  - the previous actual eval pilot produced real results/capture but failed on the old runner command surface, so it is recorded as a runner/environment failure rather than PH product evidence;
+  - the fix was pushed to origin/main as `7d231677c4440f6ebad99c3d21b9b9b412885940`;
+  - post-fix preflight passed and dry-run selected 4 runs;
+  - the post-fix QA actual eval rerun also produced real results/capture but failed all conditions because OpenCode treated the positional message after `--file` as a file path: `Error: File not found: README.md 보고 구현해줘`;
+  - original results path: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/results.json`;
+  - replay results path: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061307346Z/results.json`;
+  - this remains a runner/OpenCode invocation failure, not PH product evidence or generated app quality evidence.
 
 ## [0.3.9-alpha.3] - 2026-06-27
 
@@ -46,12 +58,16 @@ No unreleased changes.
 - Actual OpenCode ON/OFF eval was not run because `OPENCODE_MODEL`, model version, and provider keys were not pinned. No fake `results.json` was generated.
 - This release does not certify generated app product quality, does not add AST/linter/enforcement, and keeps observer/backend-shape report-only.
 - Post-publish registry install smoke passed for `persona-harness@0.3.9-alpha.3`:
-  - registry facts: `alpha=0.3.9-alpha.3`, `latest=0.3.9-alpha.1`, gitHead `d96941f6e212bd89f62cd0d7b12853a845cc1c86`, shasum `fcd8b7da9f0568510a73f9d25a1c083a8343e6b9`;
+  - registry facts: `alpha=0.3.9-alpha.3`, `latest=0.3.9-alpha.3`, gitHead `d96941f6e212bd89f62cd0d7b12853a845cc1c86`, shasum `fcd8b7da9f0568510a73f9d25a1c083a8343e6b9`;
   - registry-only install from `persona-harness@alpha` installed `0.3.9-alpha.3`;
   - CLI surfaces passed for init/bootstrap/doctor/plan/workflow/review backend-shape and `observe --json` fixture;
   - fresh/template `workflow finish implement` blocked as expected on missing reports/evidence;
   - generated-app OpenCode run was not executed, and no product-quality certification is made;
   - installed package did not contain `node_modules/persona-harness/scripts/eval/*`, so package-level eval runner help/dry-run/preflight were not executed. This is recorded as a package-surface boundary, not a fake eval success.
+- Latest-tag install smoke also passed after dist-tag synchronization:
+  - clean `npm install -D persona-harness` installed `0.3.9-alpha.3`;
+  - `ph init`, `ph doctor`, and `ph observe --json` surfaces passed;
+  - this remains install/surface coverage only, not an OpenCode generated-app run or product-quality certification.
 
 ## [0.3.9-alpha.2] - 2026-06-27
 
