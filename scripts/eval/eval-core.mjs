@@ -541,7 +541,9 @@ export function decideResults(results) {
     }
 
     const ph = summarizeComparable(phRuns)
-    const offs = groupBy(offRuns, (run) => run.conditionId).map((group) => summarizeComparable(group))
+    const offs = groupBy(offRuns, (run) => run.conditionId)
+      .map((group) => summarizeComparable(group))
+      .sort(compareComparableSummaries)
     const strongestOff = offs.reduce((best, current) =>
       current.externalFailureModeTotal < best.externalFailureModeTotal ? current : best,
     )
@@ -615,6 +617,10 @@ export function summarizeComparable(runs) {
     stackAlignmentRate,
     externalFailureModeTotal: runs.reduce((sum, run) => sum + run.metrics.externalFailureModeCount, 0),
   }
+}
+
+function compareComparableSummaries(left, right) {
+  return left.conditionId.localeCompare(right.conditionId)
 }
 
 function stackAlignmentRateForRun(run) {

@@ -65,6 +65,27 @@ describe("objective eval decision gate", () => {
     )
   })
 
+  it("uses a deterministic OFF baseline tie-break for regression reasons", () => {
+    const plainFirst = decideResults({
+      runs: [
+        run("backend-api-no-stack", "plain", true, true, true, 0.5, 4),
+        run("backend-api-no-stack", "claude", true, true, true, 0.5, 4),
+        run("backend-api-no-stack", "ph-on", true, true, false, 1, 7),
+      ],
+    })
+    const claudeFirst = decideResults({
+      runs: [
+        run("backend-api-no-stack", "claude", true, true, true, 0.5, 4),
+        run("backend-api-no-stack", "plain", true, true, true, 0.5, 4),
+        run("backend-api-no-stack", "ph-on", true, true, false, 1, 7),
+      ],
+    })
+
+    expect(plainFirst.reasons).toContain("backend-api-no-stack: PH ON runtimeSmokeRate regressed below claude")
+    expect(claudeFirst.reasons).toContain("backend-api-no-stack: PH ON runtimeSmokeRate regressed below claude")
+    expect(plainFirst.reasons).toEqual(claudeFirst.reasons)
+  })
+
   it("prints a verdict from fixture results json without writing status files", () => {
     const dir = tempDir("persona-decide-")
     const resultsPath = join(dir, "results.json")
