@@ -46,6 +46,8 @@ Generated Spring apps should prefer wrapper-backed verification. Include `gradle
 
 For Spring Boot Gradle dependency management, use the `org.springframework.boot` plugin plus `io.spring.dependency-management` or Boot plugin-managed dependencies. Do not put empty or dot versions on `spring-boot-starter-*`, JDBC/JPA/validation starters, or `org.flywaydb:flyway-core`; if the version is unknown, follow a Spring Initializr/build.gradle template or the generated wrapper project's valid build line. If `gradlew.bat test/build` or wrapper-backed test/build fails during dependency resolution, fix `build.gradle` and rerun verification instead of reporting success.
 
+Before running wrapper commands, do a build.gradle self-check: if dependency notation contains `:.`, an empty version, or a Boot-managed starter explicit version, repair before test/build.
+
 If `bootJar` fails with a compatibility symptom such as `CopyProcessingSpec.getDirMode()`, do not add `tasks.named("bootJar") { enabled = false }`. Treat it as a Spring Boot plugin / Gradle launcher mismatch: prefer a compatible Spring Boot plugin line for the current Gradle launcher, or generate a Gradle wrapper for the Gradle line supported by the chosen plugin.
 
 If the local environment uses a newer Gradle than the selected Spring Boot plugin supports, prefer a compatible Spring Boot plugin line or generate a Gradle wrapper for the chosen line. With a Gradle 9.x launcher, do not default to older Spring Boot 3.3.x plugin lines unless the wrapper pins a supported Gradle line. If the test task fails to load JUnit Platform, add the launcher explicitly:
