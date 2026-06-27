@@ -6,8 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+No unreleased changes.
+
+## [0.3.9-alpha.2] - 2026-06-27
+
 ### Changed
 
+- Bumped the prerelease version to `0.3.9-alpha.2` because registry `persona-harness@0.3.9-alpha.1` is stale relative to current HEAD.
 - Reinforced workflow closure guidance after build/test success so agents are reminded to fill reports, check status, archive completed requirements, and run the final gate before claiming completion.
 - Refined backend-shape smoke findings for current HEAD:
   - `application/port/out/*Repository.java` can be recognized as repository port evidence;
@@ -15,6 +20,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Added Gradle dependency self-check guidance to reduce dot-version recurrence in generated `build.gradle` files.
 - Returned runtime QA guidance to workflow closure so agents are expected to come back from build/test/bootRun or manual QA attempts to report fill, archive, and finish.
 - Hardened backend-shape Verification reporting so template-only command mentions produce WARN instead of false PASS.
+- Kept v0.5 AST/linter/enforcement work behind the existing decision gate. `dfeb88c docs(eval): plan v0.5 qa decision cadence` exists locally but is not an ancestor of this release-prep HEAD, so this package does not claim that commit's files as package contents.
 
 ### External Smoke
 
@@ -74,6 +80,19 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - backend-shape main was mostly PASS, and fixture coverage confirmed `application/port/out/TaskRepository`, adapter, and DTO PASS. Verification report avoided false PASS for template-only command mentions by leaving `gradle test/build/bootRun mentioned without success/failure output` as a WARN.
 - Smoke perspective: alpha2 release prep candidate.
 - Residual risks: generated app product quality is not certified, backend-shape remains report-only, AST/linter/enforcement is still absent, separate manual curl QA was not performed, and the backend-shape Verification WARN remains conservative because reports lacked raw success/failure output even though post-check test/build passed.
+
+### Verification
+
+- Release-prep verification for `0.3.9-alpha.2` was rerun on 2026-06-27.
+- `npm test`: passed. Scope diagnostics and docs taxonomy diagnostics passed; 58 files / 367 tests passed.
+- `npm run typecheck`: passed.
+- `npm run build`: passed.
+- `npm run check:docs`: passed.
+- `npm pack --dry-run`: passed for `persona-harness@0.3.9-alpha.2`.
+  - Filename: `persona-harness-0.3.9-alpha.2.tgz`
+  - Package contents: 345 files
+  - Shasum: `9fc8fdcb92e3a2824112b51b2fce5f6c73269b1a`
+- `git diff --check`: passed.
 
 ## [0.3.9-alpha.1] - 2026-06-25
 
