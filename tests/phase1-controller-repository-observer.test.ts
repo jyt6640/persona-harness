@@ -110,6 +110,34 @@ class ReservationController {
     expect(observation.evidence.methodCalls).toEqual(["repository.findAll("])
   })
 
+  it("detects repository access in the target Controller when the file has helper classes and static imports", () => {
+    const source = `
+import static java.util.Comparator.comparing;
+
+class HelperController {
+  HelperController(String ignored) {}
+}
+
+class ReservationController {
+  private final ReservationService service;
+
+  ReservationController(
+    @Qualifier(value = "primary,repo") ReservationRepository repository,
+    ReservationService service
+  ) {
+    this.service = service;
+    repository.findAll().stream().sorted(comparing(Reservation::id)).toList();
+  }
+}
+`
+
+    const observation = observeControllerRepositoryDependency({ filePath: controllerPath, source })
+
+    expect(observation.finding).toBe("WARN")
+    expect(observation.evidence.constructorParameters).toEqual(["ReservationRepository repository"])
+    expect(observation.evidence.methodCalls).toEqual(["repository.findAll("])
+  })
+
   it("returns WARN when a Controller method directly calls a repository variable", () => {
     const source = `
 package com.example.reservation;

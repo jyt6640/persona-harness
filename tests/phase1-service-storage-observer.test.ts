@@ -103,6 +103,32 @@ class ReservationService {
     expect(observation.evidence.constructorParameters).toEqual(["long idCounter"])
   })
 
+  it("detects nested generic Map storage fields while ignoring method references and text blocks", () => {
+    const source = `
+import java.util.Map;
+import java.util.List;
+
+class ReservationService {
+  private final Map<Long, List<Reservation>> reservations = new HashMap<>();
+
+  ReservationService(ReservationRepository repository) {
+    Function<Reservation, Long> idReader = Reservation::id;
+    String ignored = """
+      Map<Long, List<Reservation>> fake,
+      DELETE /reservations
+    """;
+  }
+}
+`
+
+    const observation = observeServiceStorageOwnership({ filePath: servicePath, source })
+
+    expect(observation.finding).toBe("WARN")
+    expect(observation.confidence).toBe("HIGH")
+    expect(observation.evidence.storageFields).toEqual(["private final Map<Long, List<Reservation>> reservations ="])
+    expect(observation.evidence.literalOnly).toEqual(["Map<Long, List<Reservation>> fake, DELETE /reservations"])
+  })
+
   it("returns WARN for confirmed mutation calls on storage or sequence variables", () => {
     const source = `
 class ReservationService {

@@ -16,8 +16,13 @@ example/
 # OpenCode / Persona local runtime artifacts.
 .opencode/
 .omo/
+.persona/project-profile.jsonc
 .persona/evidence/
+.persona/policies/
+.persona/workflow/
 .persona-test-fixtures/
+.persona-intent-workflow-hook-fixtures/
+.persona-rail-compliance-unit-fixtures/
 .persona-rail-compliance-test-fixtures/
 .persona-continuation-test-fixtures/
 .playwright-cli/

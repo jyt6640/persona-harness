@@ -48,6 +48,7 @@ const SQL_LITERAL_LIMITATION =
   "SQL-like literal-only evidence is low confidence and needs additional import/type/member evidence before rule or prompt changes."
 
 const SQL_ACCESS_TYPES = ["JdbcTemplate", "NamedParameterJdbcTemplate", "DataSource"] as const
+const SQL_ACCESS_TYPE_PATTERN = `(?:[\\w.]+\\.)?(?:${SQL_ACCESS_TYPES.join("|")})`
 const SQL_ACCESS_METHODS = [
   "query",
   "update",
@@ -148,9 +149,8 @@ function collectSqlAccessImports(source: string): readonly string[] {
 }
 
 function scanSqlAccessFields(source: string): VariableScan {
-  const typePattern = SQL_ACCESS_TYPES.join("|")
   const regex = new RegExp(
-    `^\\s*(?:private|protected|public)?\\s*(?:static\\s+)?(?:final\\s+)?(${typePattern})\\s+(\\w+)\\s*(?:[=;])`,
+    `^\\s*(?:private|protected|public)?\\s*(?:static\\s+)?(?:final\\s+)?(${SQL_ACCESS_TYPE_PATTERN})\\s+(\\w+)\\s*(?:[=;])`,
     "gm",
   )
   return scanVariableDeclarations(source, regex)
@@ -159,12 +159,11 @@ function scanSqlAccessFields(source: string): VariableScan {
 function scanConstructorParameters(source: string, className: string): VariableScan {
   const evidence: string[] = []
   const variableNames: string[] = []
-  const typePattern = SQL_ACCESS_TYPES.join("|")
 
   for (const parameters of collectJavaParameterLists(source, className)) {
     for (const parameter of splitJavaParameters(parameters)) {
       const normalizedParameter = normalizeJavaParameter(parameter)
-      const parameterMatch = normalizedParameter.match(new RegExp(`\\b(?:${typePattern})\\s+(\\w+)\\b`))
+      const parameterMatch = normalizedParameter.match(new RegExp(`\\b${SQL_ACCESS_TYPE_PATTERN}\\s+(\\w+)\\b`))
       const variableName = parameterMatch?.[1]
       if (variableName) {
         evidence.push(normalizedParameter)

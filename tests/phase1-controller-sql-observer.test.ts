@@ -104,6 +104,30 @@ class ReservationController {
     expect(observation.evidence.constructorParameters).toEqual(["JdbcTemplate jdbcTemplate"])
   })
 
+  it("detects fully qualified JdbcTemplate fields without treating static imports or generic names as aliases", () => {
+    const source = `
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import java.util.Map;
+
+class ReservationController {
+  private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+  private final Map<Long, List<JdbcTemplateLabel>> labels;
+
+  ReservationController(org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+    this.jdbcTemplate = jdbcTemplate;
+  }
+}
+`
+
+    const observation = observeControllerSqlAccess({ filePath: controllerPath, source })
+
+    expect(observation.finding).toBe("WARN")
+    expect(observation.confidence).toBe("HIGH")
+    expect(observation.evidence.imports).toEqual([])
+    expect(observation.evidence.fields).toEqual(["private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;"])
+    expect(observation.evidence.constructorParameters).toEqual(["org.springframework.jdbc.core.JdbcTemplate jdbcTemplate"])
+  })
+
   it("returns WARN/HIGH when a typed jdbcTemplate method call is found", () => {
     const source = `
 class ReservationController {
