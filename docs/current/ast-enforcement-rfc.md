@@ -385,6 +385,89 @@ Prefer JavaParser sidecar design when:
 Do not move to enforcement after the manual backfill. Enforcement remains a v1.0 opt-in
 candidate only after verified reports prove low-noise across repeated clean runs.
 
+## v0.5.0 Decision Gate
+
+v0.5.0 should not include verified-report implementation or AST-related spike work just
+because the schema exists. The gate is evidence-first: finish the v0.4 pilot, backfill real
+artifacts, review false positives, then decide whether a tiny report-only parser spike is
+worth the cost.
+
+Current status:
+
+- AST RFC exists.
+- Verified report schema exists.
+- Stable rule ID vocabulary exists.
+- Manual backfill plan exists.
+- v0.4 pilot plan exists, but the pilot has not produced complete backfilled artifacts yet.
+- Recent continuation smoke evidence is useful but not sufficient: Java/Spring/Gradle
+  generation and build/test can pass while workflow reports remain templates and finish
+  gates block. Backend-shape WARNs around application/port/out repository ports or
+  verification wording should be treated as candidate manual-backfill inputs, not as
+  authorization for AST work.
+
+### Proceed To Tiny Parser Spike Only If
+
+All prerequisites must be true:
+
+1. The v0.4 pilot has executed against the selected artifacts.
+2. Two to three Java/Spring artifacts have been manually backfilled using the verified
+   report schema.
+3. Each backfilled artifact includes enough source/report/log evidence to justify its
+   `PASS`, `WARN`, `FAIL`, or `UNKNOWN` findings.
+4. A false-positive ledger exists and has been reviewed.
+5. The candidate spike rule IDs are limited to two or three.
+6. The selected rule IDs have low unresolved false-positive risk after manual review.
+7. The proposed spike is explicitly report-only and cannot affect build, test, workflow
+   finish, release, or generated project behavior.
+8. Release and docs wording still avoids generated app quality certification claims.
+
+If any prerequisite is missing, v0.5.0 should continue with report-only/manual backfill
+work rather than AST/parser work.
+
+### Which Spike Is Allowed
+
+Only one tiny spike shape should be selected for v0.5.0:
+
+- **ast-grep syntax-only spike:** allowed when the chosen rule IDs are import, annotation,
+  field, token, or simple method-call shape checks and do not require Java type resolution.
+- **JavaParser sidecar design spike:** allowed when the chosen rule IDs require type,
+  declaration, or cross-file certainty and the sourcepath/classpath/unresolved-symbol plan is
+  accepted before implementation.
+
+JDT LS should remain out of v0.5.0 unless HQ explicitly decides that editor-grade workspace
+semantics are worth the lifecycle and setup cost. That is a separate product decision.
+
+### v0.5.0 Blockers
+
+Any of these should block AST/verified-report implementation work in v0.5.0:
+
+- v0.4 pilot did not execute.
+- Fewer than two Java/Spring artifacts were manually backfilled.
+- Backfill artifacts lack generated source, implementation/review reports, or verification
+  logs.
+- Workflow reports remain template in the primary candidate artifact.
+- Finish gate remains blocked for reasons unrelated to backend-shape observation.
+- False-positive ledger is missing.
+- False-positive ledger has unresolved high-impact WARN/FAIL disagreements.
+- More than three rule IDs are proposed for the first spike.
+- The proposed spike can fail build/test/workflow finish.
+- The proposed docs or release language implies generated app quality certification.
+- Parser dependency, code prototype, release, publish, tag, or push is bundled into the same
+  decision.
+
+### v0.5.0 Allowed Output
+
+If the gate passes, v0.5.0 may produce only one of these outputs:
+
+- a report-only ast-grep spike plan or tiny implementation for two to three syntax-friendly
+  rule IDs;
+- a JavaParser sidecar design memo that defines sourcepath/classpath/unresolved-symbol
+  behavior before implementation;
+- a decision memo that keeps work manual/report-only because evidence is not mature enough.
+
+The default should remain the third option until v0.4 artifacts and the false-positive ledger
+show that automation would reduce ambiguity rather than amplify it.
+
 ## Recommended Phased Path
 
 ### P0 Now: Do Not Build AST Enforcement
