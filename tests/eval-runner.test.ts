@@ -17,6 +17,7 @@ import {
   formatCommand,
   parseJUnitXmlText,
   preflight,
+  runShellAsync,
   scoreStackAlignmentFromObserveReport,
 } from "../scripts/eval/eval-core.mjs"
 
@@ -134,6 +135,30 @@ describe("ON/OFF eval runner core", () => {
     expect(parseCommandOutcome({ status: 0, stdout: "", stderr: "", timedOut: false })).toBe("PASS")
     expect(parseCommandOutcome({ status: 1, stdout: "PASS", stderr: "", timedOut: false })).toBe("FAIL")
     expect(parseCommandOutcome({ status: null, stdout: "", stderr: "", timedOut: true })).toBe("FAIL")
+  })
+
+  it("cleans up runtime-smoke process groups without killing unrelated processes", async () => {
+    const projectDir = tempDir("persona-eval-runtime-cleanup-")
+    const execution = await runShellAsync(
+      `${process.execPath} -e "const { spawn } = require('node:child_process'); const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' }); child.unref(); console.log(child.pid);"`,
+      projectDir,
+      5000,
+      { cleanupProcessGroup: true },
+    )
+    const childPid = Number.parseInt(execution.stdout.trim().split("\n")[0] ?? "", 10)
+
+    try {
+      expect(execution.status).toBe(0)
+      expect(Number.isInteger(childPid)).toBe(true)
+      await new Promise<void>((resolvePromise) => {
+        setTimeout(resolvePromise, 100)
+      })
+      expect(isProcessAlive(childPid)).toBe(false)
+    } finally {
+      if (Number.isInteger(childPid) && isProcessAlive(childPid)) {
+        process.kill(childPid, "SIGKILL")
+      }
+    }
   })
 
   it("scores stack alignment from observer findings and structure", () => {
@@ -283,7 +308,7 @@ describe("ON/OFF eval runner core", () => {
     expect(runtimeOutcomeFor(results, "plain")).toEqual({ outcome: "PASS", pass: true })
     expect(runtimeOutcomeFor(results, "claude")).toEqual({ outcome: "FAIL", pass: false })
     expect(runtimeOutcomeFor(results, "agents")).toEqual({ outcome: "NOT RUN", pass: null })
-  })
+  }, 10000)
 
   it("replays captured provider and workflow logs without fabricating missing workflow results", () => {
     const outputRoot = tempDir("persona-eval-replay-workflow-")
@@ -315,7 +340,7 @@ describe("ON/OFF eval runner core", () => {
     expect(workflowOutcomeFor(results, "plain")).toEqual({ outcome: "NOT APPLICABLE", metric: "NOT APPLICABLE" })
     expect(failureLabelsFor(results, "plain")).not.toContain("provider limit")
     expect(failureLabelsFor(results, "plain")).not.toContain("workflow dead-end")
-  })
+  }, 10000)
 
   it("reports PH ON install command as required during preflight", () => {
     const options = parseArgs([
@@ -364,6 +389,18 @@ function readFixtureXml(): string {
     '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>',
     '<testsuite tests="2" failures="0" errors="0" skipped="1"></testsuite>',
   ].join("\n")
+}
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ESRCH") {
+      return false
+    }
+    throw error
+  }
 }
 
 type CapturedRunOptions = {

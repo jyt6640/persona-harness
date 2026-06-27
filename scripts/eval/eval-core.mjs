@@ -224,12 +224,14 @@ export function runShell(command, cwd, timeoutMs) {
   }
 }
 
-export function runShellAsync(command, cwd, timeoutMs) {
+export function runShellAsync(command, cwd, timeoutMs, options = {}) {
+  const cleanupProcessGroup = options.cleanupProcessGroup === true && process.platform !== "win32"
   return new Promise((resolvePromise) => {
     const child = spawn(command, {
       cwd,
       shell: true,
       stdio: ["ignore", "pipe", "pipe"],
+      detached: cleanupProcessGroup,
     })
     let stdout = ""
     let stderr = ""
@@ -237,7 +239,7 @@ export function runShellAsync(command, cwd, timeoutMs) {
     let timedOut = false
     const timer = setTimeout(() => {
       timedOut = true
-      child.kill("SIGTERM")
+      terminateChildProcess(child, cleanupProcessGroup, "SIGTERM")
     }, timeoutMs)
     child.stdout.setEncoding("utf8")
     child.stderr.setEncoding("utf8")
@@ -252,6 +254,9 @@ export function runShellAsync(command, cwd, timeoutMs) {
     })
     child.on("close", (status, signal) => {
       clearTimeout(timer)
+      if (cleanupProcessGroup) {
+        terminateChildProcess(child, cleanupProcessGroup, "SIGTERM")
+      }
       resolvePromise({
         command,
         cwd,
@@ -264,6 +269,20 @@ export function runShellAsync(command, cwd, timeoutMs) {
       })
     })
   })
+}
+
+function terminateChildProcess(child, cleanupProcessGroup, signal) {
+  try {
+    if (cleanupProcessGroup) {
+      process.kill(-child.pid, signal)
+      return
+    }
+    child.kill(signal)
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error ? error.code : null
+    if (code === "ESRCH" || code === "EPERM") return
+    throw error
+  }
 }
 
 export function parseCommandOutcome(execution) {
@@ -759,7 +778,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   rawOutputPaths["gradle-build"] = writeRawExecutionFiles(logsDir, "gradle-build", buildExecution)
 
   const runtimeExecution = options.runtimeSmokeCommand
-    ? await runShellAsync(options.runtimeSmokeCommand, workspaceDir, options.timeoutMs)
+    ? await runShellAsync(options.runtimeSmokeCommand, workspaceDir, options.timeoutMs, { cleanupProcessGroup: true })
     : null
   if (runtimeExecution) {
     writeCommandLog(join(logsDir, "runtime-smoke.log"), runtimeExecution)

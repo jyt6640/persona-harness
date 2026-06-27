@@ -26,6 +26,12 @@ export function parseArgs(argv: readonly string[]): Record<string, unknown> & {
 }
 export function parseBackendShapeWarnCount(text: string): number
 export function parseCommandOutcome(execution: Record<string, unknown>): string
+export function runShellAsync(
+  command: string,
+  cwd: string,
+  timeoutMs: number,
+  options?: { cleanupProcessGroup?: boolean },
+): Promise<{ status: number | null; signal: NodeJS.Signals | null; stdout: string; stderr: string; timedOut: boolean }>
 export function formatCommand(template: string, values: Record<string, unknown>): string
 export function parseJUnitXmlText(xmlText: string): { tests: number; failures: number; errors: number; skipped: number }
 export function collectJUnitResults(workspaceDir: string): Record<string, unknown>
