@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, rmSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { spawnSync } from "node:child_process"
@@ -9,10 +9,14 @@ import {
   aggregateRuns,
   buildPlan,
   countFailureModes,
+  measureCompileResult,
+  measureGradleTestResult,
   parseArgs,
   parseBackendShapeWarnCount,
   parseCommandOutcome,
+  parseJUnitXmlText,
   preflight,
+  scoreStackAlignmentFromObserveReport,
 } from "../scripts/eval/eval-core.mjs"
 
 const tempDirs: string[] = []
@@ -38,31 +42,78 @@ describe("ON/OFF eval runner core", () => {
     expect(plan.runs).toEqual([{ fixtureId: "backend-api-no-stack", conditionId: "plain", repetition: 1 }])
   })
 
-  it("parses fixed command logs without claiming dummy pass", () => {
-    expect(
-      parseCommandOutcome({
-        status: 0,
-        stdout: "BUILD SUCCESSFUL in 3s\n4 actionable tasks",
-        stderr: "",
-        timedOut: false,
+  it("measures Gradle test from JUnit XML instead of successful log text", () => {
+    const projectDir = tempDir("persona-eval-junit-")
+
+    const fakeLogOnly = measureGradleTestResult(projectDir, {
+      status: 0,
+      stdout: "BUILD SUCCESSFUL in 3s",
+      stderr: "",
+      timedOut: false,
+    })
+    expect(fakeLogOnly.outcome).toBe("UNKNOWN")
+
+    const junitDir = join(projectDir, "build", "test-results", "test")
+    mkdirSync(junitDir, { recursive: true })
+    writeFileSync(join(junitDir, "TEST-sample.xml"), '<testsuite tests="2" failures="1" errors="0" skipped="0"></testsuite>\n')
+
+    expect(parseJUnitXmlText(readFixtureXml())).toEqual({ tests: 3, failures: 0, errors: 0, skipped: 1 })
+    const measured = measureGradleTestResult(projectDir, {
+      status: 0,
+      stdout: "BUILD SUCCESSFUL in 3s",
+      stderr: "",
+      timedOut: false,
+    })
+    expect(measured).toEqual(expect.objectContaining({ outcome: "FAIL", tests: 2, failures: 1, errors: 0, skipped: 0 }))
+  })
+
+  it("measures compile from exit code plus build artifacts", () => {
+    const projectDir = tempDir("persona-eval-compile-")
+    expect(measureCompileResult(projectDir, { status: 0, timedOut: false })).toEqual({ outcome: "UNKNOWN", artifacts: [] })
+
+    mkdirSync(join(projectDir, "build", "classes", "java", "main", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "build", "classes", "java", "main", "com", "example", "App.class"), "bytecode")
+
+    expect(measureCompileResult(projectDir, { status: 0, timedOut: false })).toEqual(
+      expect.objectContaining({ outcome: "PASS", artifacts: ["classes/java/main/com/example/App.class"] }),
+    )
+    expect(measureCompileResult(projectDir, { status: 1, timedOut: false })).toEqual({ outcome: "FAIL", artifacts: [] })
+  })
+
+  it("keeps runtime command outcome exit-code based only", () => {
+    expect(parseCommandOutcome({ status: 0, stdout: "", stderr: "", timedOut: false })).toBe("PASS")
+    expect(parseCommandOutcome({ status: 1, stdout: "PASS", stderr: "", timedOut: false })).toBe("FAIL")
+    expect(parseCommandOutcome({ status: null, stdout: "", stderr: "", timedOut: true })).toBe("FAIL")
+  })
+
+  it("scores stack alignment from observer findings and structure", () => {
+    const projectDir = tempDir("persona-eval-stack-")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "OrderController.java"), "class OrderController { OrderService service; }\n")
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "OrderResponse.java"), "class OrderResponse {}\n")
+
+    const score = scoreStackAlignmentFromObserveReport(
+      {
+        findings: [
+          { ruleId: "controller.repository-dependency", result: "PASS" },
+          { ruleId: "service.storage-ownership", result: "PASS" },
+        ],
+      },
+      projectDir,
+    )
+
+    expect(score).toEqual(
+      expect.objectContaining({
+        rate: 1,
+        score: 2,
+        criteria: {
+          controllerServiceDependency: true,
+          noControllerRepositoryDependency: true,
+          noServiceStorageOwnership: true,
+          dtoBoundary: true,
+        },
       }),
-    ).toBe("PASS")
-    expect(
-      parseCommandOutcome({
-        status: 1,
-        stdout: "",
-        stderr: "FAILURE: Build failed with an exception.",
-        timedOut: false,
-      }),
-    ).toBe("FAIL")
-    expect(
-      parseCommandOutcome({
-        status: null,
-        stdout: "",
-        stderr: "",
-        timedOut: true,
-      }),
-    ).toBe("FAIL")
+    )
   })
 
   it("counts backend-shape WARN lines from fixed report text", () => {
@@ -72,9 +123,9 @@ describe("ON/OFF eval runner core", () => {
 
   it("aggregates fixed run metadata into deterministic rates", () => {
     const runs = [
-      run("backend-api-no-stack", "plain", true, true, true, 1, 5),
-      run("backend-api-no-stack", "ph-on", true, true, true, 2, 3),
-      run("backend-api-no-stack", "ph-on", true, false, null, 2, 4),
+      run("backend-api-no-stack", "plain", true, true, true, 0.5, 5),
+      run("backend-api-no-stack", "ph-on", true, true, true, 1, 3),
+      run("backend-api-no-stack", "ph-on", true, false, null, 1, 4),
     ]
 
     const aggregate = aggregateRuns(runs)
@@ -96,7 +147,7 @@ describe("ON/OFF eval runner core", () => {
         compileBuildRate: 1,
         gradleTestRate: 0.5,
         runtimeSmokeRate: 1,
-        stackAlignmentAverage: 2,
+        stackAlignmentRate: 1,
         externalFailureModeTotal: 7,
       }),
     ])
@@ -107,7 +158,7 @@ describe("ON/OFF eval runner core", () => {
       compileBuildOutcome: "FAIL",
       gradleTestOutcome: "FAIL",
       runtimeSmokeOutcome: "FAIL",
-      stackAlignmentScore: 0,
+      stackAlignmentRate: 0,
       workflowFinishOutcome: "FAIL",
       providerFailed: true,
     })
@@ -145,6 +196,20 @@ describe("ON/OFF eval runner core", () => {
     expect(readdirSync(outputRoot)).toEqual([])
   })
 
+  it("fails replay when capture artifacts are missing", () => {
+    const outputRoot = tempDir("persona-eval-replay-missing-")
+    const result = spawnSync(
+      process.execPath,
+      [resolve("scripts/eval/run-onoff-eval.mjs"), "--replay", join(outputRoot, "missing"), "--output-root", outputRoot],
+      { cwd: resolve("."), encoding: "utf8" },
+    )
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain("Preflight: FAIL")
+    expect(result.stdout).toContain("capture raw directory not found")
+    expect(readdirSync(outputRoot)).toEqual([])
+  })
+
   it("reports PH ON install command as required during preflight", () => {
     const options = parseArgs([
       "--fixture",
@@ -169,7 +234,7 @@ function run(
   compileBuildPass: boolean,
   gradleTestPass: boolean,
   runtimeSmokePass: boolean | null,
-  stackAlignmentScore: number,
+  stackAlignmentRate: number,
   externalFailureModeCount: number,
 ) {
   return {
@@ -179,10 +244,17 @@ function run(
       compileBuildPass,
       gradleTestPass,
       runtimeSmokePass,
-      stackAlignmentScore,
+      stackAlignmentRate,
       externalFailureModeCount,
       workflowFinishOutcome: conditionId === "ph-on" ? "PASS" : "NOT APPLICABLE",
       backendShapeWarnCount: 0,
     },
   }
+}
+
+function readFixtureXml(): string {
+  return [
+    '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>',
+    '<testsuite tests="2" failures="0" errors="0" skipped="1"></testsuite>',
+  ].join("\n")
 }

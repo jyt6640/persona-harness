@@ -13,6 +13,8 @@ Options:
   --model <id>               Required model id for actual/preflight runs
   --model-version <label>    Model version label (default: OPENCODE_MODEL_VERSION or unknown)
   --temperature <value>      Temperature pin (default: OPENCODE_TEMPERATURE or unknown)
+  --top-p <value>            top_p pin when supported by the selected CLI surface
+  --seed <value>             seed pin when supported by the selected CLI surface
   --opencode-command <cmd>   Command template, supports {model}, {promptFile}, {workspaceDir}
   --ph-install-command <cmd> Required when --condition ph-on or all includes PH ON
   --runtime-smoke-command <cmd>
@@ -20,6 +22,8 @@ Options:
   --workflow-finish-command <cmd>
   --timeout-ms <n>           Command timeout in milliseconds (default: 600000)
   --output-root <dir>        Output root (default: experiments/eval-runs)
+  --capture                  Store raw workspace/stdout/stderr artifacts under raw/
+  --replay <run-dir>         Re-score a captured run without calling the model
   --preflight                Check environment only; writes no results
   --dry-run                  Print selected run plan; writes no results
   --json                     Print JSON for preflight/dry-run
@@ -90,16 +94,17 @@ function printPreflight(result) {
 function printSummary(results) {
   const aggregate = results.aggregate ?? aggregateRuns(results.runs)
   console.log("")
-  console.log("| fixture | condition | runs | build | test | runtime | stack avg | failures |")
+  console.log("| fixture | condition | runs | build | test | runtime | stack | failures |")
   console.log("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |")
   for (const row of aggregate.byCondition) {
     console.log(
-      `| ${row.fixtureId} | ${row.conditionId} | ${row.runs} | ${pct(row.compileBuildRate)} | ${pct(row.gradleTestRate)} | ${row.runtimeSmokeRate === null ? "n/a" : pct(row.runtimeSmokeRate)} | ${row.stackAlignmentAverage.toFixed(2)} | ${row.externalFailureModeTotal} |`,
+      `| ${row.fixtureId} | ${row.conditionId} | ${row.runs} | ${pct(row.compileBuildRate)} | ${pct(row.gradleTestRate)} | ${row.runtimeSmokeRate === null ? "n/a" : pct(row.runtimeSmokeRate)} | ${pct(row.stackAlignmentRate)} | ${row.externalFailureModeTotal} |`,
     )
   }
 }
 
 function pct(value) {
+  if (typeof value !== "number") return "n/a"
   return `${Math.round(value * 100)}%`
 }
 

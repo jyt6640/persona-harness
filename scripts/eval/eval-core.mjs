@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { cp, mkdtemp, writeFile } from "node:fs/promises"
-import { tmpdir } from "node:os"
+import { arch, platform, release, tmpdir, type } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { spawnSync } from "node:child_process"
 
@@ -18,8 +18,14 @@ export const CONDITIONS = {
   "ph-on": { id: "ph-on", label: "Persona Harness ON", harnessState: "ON" },
 }
 
-const PASS_TEXT = /\b(BUILD SUCCESSFUL|BUILD SUCCESS|SUCCESSFUL|Tests? passed|PASS)\b/i
-const FAIL_TEXT = /\b(BUILD FAILED|FAILURE:|FAILED|Exception|Error:|FAIL)\b/i
+const JUNIT_RESULT_DIR = join("build", "test-results", "test")
+const RAW_ROOT = "raw"
+const STACK_CRITERIA = [
+  "controllerServiceDependency",
+  "noControllerRepositoryDependency",
+  "noServiceStorageOwnership",
+  "dtoBoundary",
+]
 
 export function sha256Text(text) {
   return createHash("sha256").update(text).digest("hex")
@@ -42,8 +48,14 @@ export function parseArgs(argv) {
     help: false,
     model: process.env.OPENCODE_MODEL ?? "",
     modelVersion: process.env.OPENCODE_MODEL_VERSION ?? "unknown",
+    modelVersionReason: process.env.OPENCODE_MODEL_VERSION ? null : "OPENCODE_MODEL_VERSION is not set",
     temperature: process.env.OPENCODE_TEMPERATURE ?? "unknown",
-    opencodeCommand: "opencode run --model {model} --prompt-file {promptFile}",
+    topP: process.env.OPENCODE_TOP_P ?? "unknown",
+    seed: process.env.OPENCODE_SEED ?? "unknown",
+    topPReason: process.env.OPENCODE_TOP_P ? null : "OPENCODE_TOP_P is not set or unsupported by the selected CLI surface",
+    seedReason: process.env.OPENCODE_SEED ? null : "OPENCODE_SEED is not set or unsupported by the selected CLI surface",
+    opencodeCommand:
+      "opencode run --model {model} {temperatureFlag} {topPFlag} {seedFlag} --prompt-file {promptFile}",
     phInstallCommand: process.env.PERSONA_HARNESS_INSTALL_COMMAND ?? "",
     phInitCommand: process.env.PERSONA_HARNESS_INIT_COMMAND ?? "npx ph init --default backend",
     workflowFinishCommand: process.env.PERSONA_HARNESS_FINISH_COMMAND ?? "npx ph workflow finish implement",
@@ -51,6 +63,8 @@ export function parseArgs(argv) {
     runtimeSmokeCommand: process.env.EVAL_RUNTIME_SMOKE_COMMAND ?? "",
     installSource: process.env.PERSONA_HARNESS_INSTALL_COMMAND ?? "unknown",
     projectDir: process.cwd(),
+    capture: false,
+    replayDir: "",
   }
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -72,6 +86,8 @@ export function parseArgs(argv) {
     else if (arg === "--model") options.model = next()
     else if (arg === "--model-version") options.modelVersion = next()
     else if (arg === "--temperature") options.temperature = next()
+    else if (arg === "--top-p") options.topP = next()
+    else if (arg === "--seed") options.seed = next()
     else if (arg === "--opencode-command") options.opencodeCommand = next()
     else if (arg === "--ph-install-command") {
       options.phInstallCommand = next()
@@ -83,6 +99,8 @@ export function parseArgs(argv) {
     else if (arg === "--project-dir") options.projectDir = next()
     else if (arg === "--preflight") options.preflightOnly = true
     else if (arg === "--dry-run") options.dryRun = true
+    else if (arg === "--capture") options.capture = true
+    else if (arg === "--replay") options.replayDir = next()
     else if (arg === "--json") options.json = true
     else throw new Error(`Unknown option: ${arg}`)
   }
@@ -167,6 +185,9 @@ export function preflight(options, plan = buildPlan(options)) {
 
 export function formatCommand(template, values) {
   return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, key) => {
+    if (key === "temperatureFlag") return values.temperature === "unknown" ? "" : `--temperature ${quoteShell(String(values.temperature))}`
+    if (key === "topPFlag") return values.topP === "unknown" ? "" : `--top-p ${quoteShell(String(values.topP))}`
+    if (key === "seedFlag") return values.seed === "unknown" ? "" : `--seed ${quoteShell(String(values.seed))}`
     if (!Object.hasOwn(values, key)) return ""
     return quoteShell(String(values[key]))
   })
@@ -200,11 +221,90 @@ export function runShell(command, cwd, timeoutMs) {
 }
 
 export function parseCommandOutcome(execution) {
-  const combined = `${execution.stdout}\n${execution.stderr}`
   if (execution.timedOut) return "FAIL"
-  if (execution.status === 0 && !FAIL_TEXT.test(combined)) return "PASS"
-  if (execution.status === 0 && PASS_TEXT.test(combined) && !FAIL_TEXT.test(combined)) return "PASS"
-  return "FAIL"
+  return execution.status === 0 ? "PASS" : "FAIL"
+}
+
+export function parseJUnitXmlText(xmlText) {
+  const suites = []
+  for (const match of xmlText.matchAll(/<testsuite\b([^>]*)>/g)) {
+    suites.push(parseJUnitAttributes(match[1] ?? ""))
+  }
+  if (suites.length === 0) {
+    const testcaseCount = [...xmlText.matchAll(/<testcase\b/g)].length
+    if (testcaseCount === 0) return { tests: 0, failures: 0, errors: 0, skipped: 0 }
+    return {
+      tests: testcaseCount,
+      failures: [...xmlText.matchAll(/<failure\b/g)].length,
+      errors: [...xmlText.matchAll(/<error\b/g)].length,
+      skipped: [...xmlText.matchAll(/<skipped\b/g)].length,
+    }
+  }
+  return suites.reduce(
+    (total, suite) => ({
+      tests: total.tests + suite.tests,
+      failures: total.failures + suite.failures,
+      errors: total.errors + suite.errors,
+      skipped: total.skipped + suite.skipped,
+    }),
+    { tests: 0, failures: 0, errors: 0, skipped: 0 },
+  )
+}
+
+function parseJUnitAttributes(attributeText) {
+  return {
+    tests: parseJUnitInteger(attributeText, "tests"),
+    failures: parseJUnitInteger(attributeText, "failures"),
+    errors: parseJUnitInteger(attributeText, "errors"),
+    skipped: parseJUnitInteger(attributeText, "skipped"),
+  }
+}
+
+function parseJUnitInteger(attributeText, name) {
+  const match = attributeText.match(new RegExp(`\\b${name}="(\\d+)"`))
+  return match ? Number.parseInt(match[1], 10) : 0
+}
+
+export function collectJUnitResults(workspaceDir) {
+  const resultDir = join(workspaceDir, JUNIT_RESULT_DIR)
+  if (!existsSync(resultDir)) {
+    return { outcome: "UNKNOWN", tests: 0, failures: 0, errors: 0, skipped: 0, files: [] }
+  }
+  const files = listFiles(resultDir)
+    .filter((file) => /^TEST-.*\.xml$/.test(basename(file)))
+    .map((file) => join(resultDir, file))
+  if (files.length === 0) {
+    return { outcome: "UNKNOWN", tests: 0, failures: 0, errors: 0, skipped: 0, files: [] }
+  }
+  const totals = files
+    .map((file) => parseJUnitXmlText(readFileSync(file, "utf8")))
+    .reduce(
+      (total, suite) => ({
+        tests: total.tests + suite.tests,
+        failures: total.failures + suite.failures,
+        errors: total.errors + suite.errors,
+        skipped: total.skipped + suite.skipped,
+      }),
+      { tests: 0, failures: 0, errors: 0, skipped: 0 },
+    )
+  const outcome = totals.errors > 0 ? "ERROR" : totals.failures > 0 ? "FAIL" : totals.tests > 0 ? "PASS" : "UNKNOWN"
+  return { outcome, ...totals, files }
+}
+
+export function measureGradleTestResult(workspaceDir, execution) {
+  const junit = collectJUnitResults(workspaceDir)
+  if (junit.outcome !== "UNKNOWN") return junit
+  return { ...junit, outcome: execution.status === 0 ? "UNKNOWN" : "ERROR" }
+}
+
+export function measureCompileResult(workspaceDir, execution) {
+  if (execution.timedOut || execution.status !== 0) {
+    return { outcome: "FAIL", artifacts: [] }
+  }
+  const artifacts = listFiles(join(workspaceDir, "build")).filter((file) =>
+    /^(classes\/(?:java|kotlin)\/main\/|libs\/.+\.(?:jar|war)$)/.test(file.replaceAll("\\", "/")),
+  )
+  return artifacts.length > 0 ? { outcome: "PASS", artifacts } : { outcome: "UNKNOWN", artifacts }
 }
 
 export function parseBackendShapeWarnCount(text) {
@@ -215,25 +315,69 @@ export function parseBackendShapeWarnCount(text) {
 }
 
 export function detectStackAlignment(workspaceDir) {
-  const files = listFiles(workspaceDir).map((path) => path.replaceAll("\\", "/"))
-  const hasGradle = files.some((file) => /(^|\/)(build\.gradle|build\.gradle\.kts|settings\.gradle|settings\.gradle\.kts|gradlew|gradlew\.bat)$/.test(file))
-  const hasJava = files.some((file) => file.endsWith(".java"))
-  const hasSpring = files.some((file) => {
-    if (!file.endsWith(".java") && !file.endsWith(".gradle") && !file.endsWith(".kts")) return false
-    const absolutePath = join(workspaceDir, file)
-    if (!existsSync(absolutePath)) return false
-    const content = readFileSync(absolutePath, "utf8")
-    return /springframework|org\.springframework|spring-boot/i.test(content)
-  })
-  const hasBackendShape = files.some((file) => /src\/main\/(java|kotlin)|controller|service|repository|domain|dto/i.test(file))
+  const report = runObserveReport(workspaceDir)
+  return scoreStackAlignmentFromObserveReport(report, workspaceDir)
+}
 
-  if (hasGradle && hasJava && hasSpring) {
-    return { score: 2, rationale: "Gradle + Java + Spring markers detected" }
+export function runObserveReport(workspaceDir) {
+  const localCli = resolve("dist", "cli", "index.js")
+  const command = existsSync(localCli) ? `node ${quoteShell(localCli)} observe --json .` : "npx ph observe --json ."
+  const execution = runShell(command, workspaceDir, 60000)
+  if (execution.status !== 0) {
+    return {
+      inspectedFiles: [],
+      findings: [],
+      observerError: `${execution.stdout}\n${execution.stderr}`.trim(),
+    }
   }
-  if ((hasGradle && hasJava) || hasBackendShape) {
-    return { score: 1, rationale: "partial backend or Gradle/Java markers detected" }
+  try {
+    return JSON.parse(execution.stdout)
+  } catch (error) {
+    return {
+      inspectedFiles: [],
+      findings: [],
+      observerError: error instanceof Error ? error.message : String(error),
+    }
   }
-  return { score: 0, rationale: "expected backend stack markers not detected" }
+}
+
+export function scoreStackAlignmentFromObserveReport(report, workspaceDir = "") {
+  const findings = Array.isArray(report?.findings) ? report.findings : []
+  const criteria = {
+    controllerServiceDependency: hasFindingPass(findings, "controller.service-dependency") || hasControllerServiceStructure(workspaceDir),
+    noControllerRepositoryDependency: findingPassesWithoutWarn(findings, "controller.repository-dependency"),
+    noServiceStorageOwnership: findingPassesWithoutWarn(findings, "service.storage-ownership"),
+    dtoBoundary: hasFindingPass(findings, "dto.boundary") || hasDtoBoundaryStructure(workspaceDir),
+  }
+  const passed = STACK_CRITERIA.filter((criterion) => criteria[criterion]).length
+  return {
+    rate: passed / STACK_CRITERIA.length,
+    score: Math.round((passed / STACK_CRITERIA.length) * 2),
+    criteria,
+    rationale: `${passed}/${STACK_CRITERIA.length} observer-backed stack alignment criteria passed`,
+    observerError: report?.observerError ?? null,
+  }
+}
+
+function hasFindingPass(findings, ruleId) {
+  return findings.some((finding) => finding?.ruleId === ruleId && finding?.result === "PASS")
+}
+
+function findingPassesWithoutWarn(findings, ruleId) {
+  const matching = findings.filter((finding) => finding?.ruleId === ruleId)
+  return matching.length > 0 && matching.every((finding) => finding.result === "PASS")
+}
+
+function hasControllerServiceStructure(workspaceDir) {
+  if (!workspaceDir || !existsSync(workspaceDir)) return false
+  return listFiles(workspaceDir)
+    .filter((file) => file.endsWith("Controller.java"))
+    .some((file) => /\b\w*Service\b/.test(readFileSync(join(workspaceDir, file), "utf8")))
+}
+
+function hasDtoBoundaryStructure(workspaceDir) {
+  if (!workspaceDir || !existsSync(workspaceDir)) return false
+  return listFiles(workspaceDir).some((file) => /(?:Dto|DTO|Request|Response)\.java$/.test(file))
 }
 
 export function listFiles(rootDir) {
@@ -263,9 +407,9 @@ export function gradleCommand(workspaceDir, task) {
 
 export function countFailureModes(outcomes) {
   const labels = []
-  if (outcomes.stackAlignmentScore === 0) labels.push("wrong stack")
-  if (outcomes.compileBuildOutcome === "FAIL") labels.push("compile failure")
-  if (outcomes.gradleTestOutcome === "FAIL") labels.push("test failure")
+  if ((outcomes.stackAlignmentRate ?? 0) < 0.5) labels.push("wrong stack")
+  if (outcomes.compileBuildOutcome === "FAIL" || outcomes.compileBuildOutcome === "ERROR") labels.push("compile failure")
+  if (outcomes.gradleTestOutcome === "FAIL" || outcomes.gradleTestOutcome === "ERROR") labels.push("test failure")
   if (outcomes.runtimeSmokeOutcome === "FAIL") labels.push("runtime smoke failure")
   if (outcomes.runtimeSmokeOutcome === "NOT RUN") labels.push("runtime smoke failure")
   if (outcomes.providerFailed) labels.push("provider limit")
@@ -282,20 +426,24 @@ export function aggregateRuns(runs) {
       conditionId: run.conditionId,
       runs: 0,
       compileBuildPasses: 0,
+      compileBuildKnown: 0,
       gradleTestPasses: 0,
+      gradleTestKnown: 0,
       runtimeSmokePasses: 0,
       runtimeSmokeKnown: 0,
-      stackAlignmentAverage: 0,
+      stackAlignmentTotal: 0,
       externalFailureModeTotal: 0,
       backendShapeWarnTotal: 0,
       workflowFinishPasses: 0,
     }
     bucket.runs += 1
     if (run.metrics.compileBuildPass === true) bucket.compileBuildPasses += 1
+    if (run.metrics.compileBuildPass !== null && run.metrics.compileBuildPass !== undefined) bucket.compileBuildKnown += 1
     if (run.metrics.gradleTestPass === true) bucket.gradleTestPasses += 1
+    if (run.metrics.gradleTestPass !== null && run.metrics.gradleTestPass !== undefined) bucket.gradleTestKnown += 1
     if (run.metrics.runtimeSmokePass === true) bucket.runtimeSmokePasses += 1
     if (run.metrics.runtimeSmokePass !== null) bucket.runtimeSmokeKnown += 1
-    bucket.stackAlignmentAverage += run.metrics.stackAlignmentScore
+    bucket.stackAlignmentTotal += stackAlignmentRateForRun(run)
     bucket.externalFailureModeTotal += run.metrics.externalFailureModeCount
     bucket.backendShapeWarnTotal += run.metrics.backendShapeWarnCount ?? 0
     if (run.metrics.workflowFinishOutcome === "PASS") bucket.workflowFinishPasses += 1
@@ -303,10 +451,10 @@ export function aggregateRuns(runs) {
   }
 
   for (const bucket of Object.values(byCondition)) {
-    bucket.compileBuildRate = rate(bucket.compileBuildPasses, bucket.runs)
-    bucket.gradleTestRate = rate(bucket.gradleTestPasses, bucket.runs)
+    bucket.compileBuildRate = bucket.compileBuildKnown === 0 ? null : rate(bucket.compileBuildPasses, bucket.compileBuildKnown)
+    bucket.gradleTestRate = bucket.gradleTestKnown === 0 ? null : rate(bucket.gradleTestPasses, bucket.gradleTestKnown)
     bucket.runtimeSmokeRate = bucket.runtimeSmokeKnown === 0 ? null : rate(bucket.runtimeSmokePasses, bucket.runtimeSmokeKnown)
-    bucket.stackAlignmentAverage = bucket.runs === 0 ? 0 : bucket.stackAlignmentAverage / bucket.runs
+    bucket.stackAlignmentRate = bucket.runs === 0 ? 0 : bucket.stackAlignmentTotal / bucket.runs
     bucket.workflowFinishPassRate = rate(bucket.workflowFinishPasses, bucket.runs)
   }
 
@@ -403,20 +551,26 @@ export function summarizeComparable(runs) {
   const runtimeSmokeValues = runs.map((run) => run.metrics.runtimeSmokePass).filter((value) => value !== null)
   const runtimeSmokeRate =
     runtimeSmokeValues.length === 0 ? null : runtimeSmokeValues.filter((value) => value === true).length / runtimeSmokeValues.length
-  const aligned = runs.filter((run) => run.metrics.stackAlignmentScore === 2).length
+  const stackAlignmentRate = total === 0 ? 0 : runs.reduce((sum, run) => sum + stackAlignmentRateForRun(run), 0) / total
   return {
     conditionId,
     total,
     compileBuildRate,
     gradleTestRate,
     runtimeSmokeRate,
-    stackAlignmentRate: total === 0 ? 0 : aligned / total,
+    stackAlignmentRate,
     externalFailureModeTotal: runs.reduce((sum, run) => sum + run.metrics.externalFailureModeCount, 0),
   }
 }
 
+function stackAlignmentRateForRun(run) {
+  if (typeof run.metrics.stackAlignmentRate === "number") return run.metrics.stackAlignmentRate
+  return run.metrics.stackAlignmentScore === 2 ? 1 : run.metrics.stackAlignmentScore === 1 ? 0.5 : 0
+}
+
 function passRate(runs, key) {
   if (runs.length === 0) return null
+  if (runs.some((run) => run.metrics[key] === null || run.metrics[key] === undefined)) return null
   return runs.filter((run) => run.metrics[key] === true).length / runs.length
 }
 
@@ -436,6 +590,9 @@ function formatPercent(value) {
 }
 
 export async function runEval(options) {
+  if (options.replayDir) {
+    return replayEval(options)
+  }
   const plan = buildPlan(options)
   const preflightResult = preflight(options, plan)
   if (!preflightResult.ok) {
@@ -464,8 +621,14 @@ export async function runEval(options) {
     installSource: options.installSource,
     model: {
       id: options.model,
-      version: options.modelVersion,
+      version: options.modelVersion === "unknown" ? null : options.modelVersion,
+      versionReason: options.modelVersion === "unknown" ? options.modelVersionReason : null,
       temperature: options.temperature === "unknown" ? null : options.temperature,
+      temperatureReason: options.temperature === "unknown" ? "OPENCODE_TEMPERATURE is not set or unsupported by the selected CLI surface" : null,
+      topP: options.topP === "unknown" ? null : options.topP,
+      topPReason: options.topP === "unknown" ? options.topPReason : null,
+      seed: options.seed === "unknown" ? null : options.seed,
+      seedReason: options.seed === "unknown" ? options.seedReason : null,
     },
     timeoutMs: options.timeoutMs,
     environment,
@@ -486,7 +649,8 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   const fixturePath = resolve(options.projectDir, FIXTURE_PATHS[runPlan.fixtureId])
   const fixtureText = readFileSync(fixturePath, "utf8")
   const runId = `${environment.platform}-${runPlan.fixtureId}-${runPlan.conditionId}-r${runPlan.repetition}`.toLowerCase()
-  const workspaceDir = join(outputDir, "workspaces", runId)
+  const rawDir = join(outputDir, RAW_ROOT, runPlan.fixtureId, runPlan.conditionId, `r${runPlan.repetition}`)
+  const workspaceDir = options.capture ? join(rawDir, "workspace") : join(outputDir, "workspaces", runId)
   mkdirSync(workspaceDir, { recursive: true })
   await writeFile(join(workspaceDir, "README.md"), fixtureText)
 
@@ -495,7 +659,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   const promptFile = join(workspaceDir, "prompt.txt")
   await writeFile(promptFile, prompt)
 
-  const logsDir = join(outputDir, "logs", runId)
+  const logsDir = options.capture ? join(rawDir, "raw") : join(outputDir, "logs", runId)
   mkdirSync(logsDir, { recursive: true })
 
   const commands = []
@@ -505,40 +669,62 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   }
   commands.push([
     "opencode",
-    formatCommand(options.opencodeCommand, { model: options.model, promptFile, workspaceDir }),
+    formatCommand(options.opencodeCommand, {
+      model: options.model,
+      promptFile,
+      workspaceDir,
+      temperature: options.temperature,
+      topP: options.topP,
+      seed: options.seed,
+    }),
   ])
 
   const commandResults = {}
+  const rawOutputPaths = {}
   let providerFailed = false
   for (const [name, command] of commands) {
     const execution = runShell(command, workspaceDir, options.timeoutMs)
     commandResults[name] = execution
     writeCommandLog(join(logsDir, `${name}.log`), execution)
+    rawOutputPaths[name] = writeRawExecutionFiles(logsDir, name, execution)
     if (name === "opencode" && execution.status !== 0) providerFailed = true
   }
 
   const testExecution = runShell(gradleCommand(workspaceDir, "test"), workspaceDir, options.timeoutMs)
   writeCommandLog(join(logsDir, "gradle-test.log"), testExecution)
+  rawOutputPaths["gradle-test"] = writeRawExecutionFiles(logsDir, "gradle-test", testExecution)
   const buildExecution = runShell(gradleCommand(workspaceDir, "build"), workspaceDir, options.timeoutMs)
   writeCommandLog(join(logsDir, "gradle-build.log"), buildExecution)
+  rawOutputPaths["gradle-build"] = writeRawExecutionFiles(logsDir, "gradle-build", buildExecution)
 
   const runtimeExecution = options.runtimeSmokeCommand
     ? runShell(options.runtimeSmokeCommand, workspaceDir, options.timeoutMs)
     : null
-  if (runtimeExecution) writeCommandLog(join(logsDir, "runtime-smoke.log"), runtimeExecution)
+  if (runtimeExecution) {
+    writeCommandLog(join(logsDir, "runtime-smoke.log"), runtimeExecution)
+    rawOutputPaths["runtime-smoke"] = writeRawExecutionFiles(logsDir, "runtime-smoke", runtimeExecution)
+  }
 
   const workflowFinishExecution =
     runPlan.conditionId === "ph-on" ? runShell(options.workflowFinishCommand, workspaceDir, options.timeoutMs) : null
-  if (workflowFinishExecution) writeCommandLog(join(logsDir, "workflow-finish.log"), workflowFinishExecution)
+  if (workflowFinishExecution) {
+    writeCommandLog(join(logsDir, "workflow-finish.log"), workflowFinishExecution)
+    rawOutputPaths["workflow-finish"] = writeRawExecutionFiles(logsDir, "workflow-finish", workflowFinishExecution)
+  }
 
   const backendShapeExecution = options.backendShapeCommand
     ? runShell(options.backendShapeCommand, workspaceDir, options.timeoutMs)
     : null
-  if (backendShapeExecution) writeCommandLog(join(logsDir, "backend-shape.log"), backendShapeExecution)
+  if (backendShapeExecution) {
+    writeCommandLog(join(logsDir, "backend-shape.log"), backendShapeExecution)
+    rawOutputPaths["backend-shape"] = writeRawExecutionFiles(logsDir, "backend-shape", backendShapeExecution)
+  }
 
   const stackAlignment = detectStackAlignment(workspaceDir)
-  const compileBuildOutcome = parseCommandOutcome(buildExecution)
-  const gradleTestOutcome = parseCommandOutcome(testExecution)
+  const compileBuild = measureCompileResult(workspaceDir, buildExecution)
+  const gradleTest = measureGradleTestResult(workspaceDir, testExecution)
+  const compileBuildOutcome = compileBuild.outcome
+  const gradleTestOutcome = gradleTest.outcome
   const runtimeSmokeOutcome = runtimeExecution ? parseCommandOutcome(runtimeExecution) : "NOT RUN"
   const workflowFinishOutcome = workflowFinishExecution
     ? workflowFinishExecution.status === 0
@@ -552,7 +738,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     compileBuildOutcome,
     gradleTestOutcome,
     runtimeSmokeOutcome,
-    stackAlignmentScore: stackAlignment.score,
+    stackAlignmentRate: stackAlignment.rate,
     workflowFinishOutcome,
     providerFailed,
   })
@@ -571,22 +757,34 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     gitCommit,
     metadata: {
       model: options.model,
-      modelVersion: options.modelVersion,
+      modelVersion: options.modelVersion === "unknown" ? null : options.modelVersion,
+      modelVersionReason: options.modelVersion === "unknown" ? options.modelVersionReason : null,
       temperature: options.temperature === "unknown" ? null : options.temperature,
+      temperatureReason:
+        options.temperature === "unknown" ? "OPENCODE_TEMPERATURE is not set or unsupported by the selected CLI surface" : null,
+      topP: options.topP === "unknown" ? null : options.topP,
+      topPReason: options.topP === "unknown" ? options.topPReason : null,
+      seed: options.seed === "unknown" ? null : options.seed,
+      seedReason: options.seed === "unknown" ? options.seedReason : null,
       timeoutMs: options.timeoutMs,
       environment,
+      rawOutputPaths,
     },
     outcomes: {
       compileBuildOutcome,
       gradleTestOutcome,
       runtimeSmokeOutcome,
       workflowFinishOutcome,
+      compileBuild,
+      gradleTest,
     },
     metrics: {
-      compileBuildPass: compileBuildOutcome === "PASS",
-      gradleTestPass: gradleTestOutcome === "PASS",
+      compileBuildPass: outcomePassValue(compileBuildOutcome),
+      gradleTestPass: outcomePassValue(gradleTestOutcome),
       runtimeSmokePass: runtimeSmokeOutcome === "NOT RUN" ? null : runtimeSmokeOutcome === "PASS",
       stackAlignmentScore: stackAlignment.score,
+      stackAlignmentRate: stackAlignment.rate,
+      stackAlignmentCriteria: stackAlignment.criteria,
       stackAlignmentRationale: stackAlignment.rationale,
       externalFailureModeCount: failures.count,
       externalFailureModeLabels: failures.labels,
@@ -594,6 +792,132 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       backendShapeWarnCount,
     },
   }
+}
+
+async function replayEval(options) {
+  const replayRoot = resolve(options.projectDir, options.replayDir)
+  const rawRoot = join(replayRoot, RAW_ROOT)
+  if (!existsSync(rawRoot)) {
+    return {
+      ok: false,
+      preflight: { ok: false, errors: [`capture raw directory not found: ${rawRoot}`] },
+      resultsPath: null,
+      results: null,
+    }
+  }
+  const environment = collectEnvironment(options)
+  const gitCommit = getGitCommit(options.projectDir)
+  const runs = []
+  for (const fixtureId of readdirSync(rawRoot)) {
+    const fixtureDir = join(rawRoot, fixtureId)
+    if (!statSync(fixtureDir).isDirectory()) continue
+    for (const conditionId of readdirSync(fixtureDir)) {
+      const conditionDir = join(fixtureDir, conditionId)
+      if (!statSync(conditionDir).isDirectory()) continue
+      for (const repetitionDirName of readdirSync(conditionDir)) {
+        const replayRunDir = join(conditionDir, repetitionDirName)
+        if (!statSync(replayRunDir).isDirectory()) continue
+        const workspaceDir = join(replayRunDir, "workspace")
+        if (!existsSync(workspaceDir)) {
+          return {
+            ok: false,
+            preflight: { ok: false, errors: [`capture workspace not found: ${workspaceDir}`] },
+            resultsPath: null,
+            results: null,
+          }
+        }
+        const repetition = Number.parseInt(repetitionDirName.replace(/^r/, ""), 10)
+        runs.push(await scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, conditionId, repetition, environment, gitCommit))
+      }
+    }
+  }
+  if (runs.length === 0) {
+    return {
+      ok: false,
+      preflight: { ok: false, errors: [`no captured runs found under ${rawRoot}`] },
+      resultsPath: null,
+      results: null,
+    }
+  }
+  const timestamp = new Date().toISOString().replaceAll(":", "").replaceAll(".", "")
+  const outputDir = resolve(options.projectDir, options.outputRoot, timestamp)
+  mkdirSync(outputDir, { recursive: true })
+  const results = {
+    schemaVersion: "persona-onoff-eval.1",
+    replayOf: replayRoot,
+    createdAt: new Date().toISOString(),
+    gitCommit,
+    installSource: "replay",
+    model: { id: "replay", version: null, versionReason: "replay does not call a model" },
+    timeoutMs: options.timeoutMs,
+    environment,
+    options: { replay: replayRoot },
+    runs,
+    aggregate: aggregateRuns(runs),
+  }
+  const resultsPath = join(outputDir, "results.json")
+  writeFileSync(resultsPath, `${JSON.stringify(results, null, 2)}\n`)
+  return { ok: true, preflight: { ok: true, errors: [] }, resultsPath, results }
+}
+
+async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, conditionId, repetition, environment, gitCommit) {
+  const logsDir = join(replayRunDir, "raw")
+  const testExecution = runShell(gradleCommand(workspaceDir, "test"), workspaceDir, options.timeoutMs)
+  writeCommandLog(join(logsDir, "replay-gradle-test.log"), testExecution)
+  writeRawExecutionFiles(logsDir, "replay-gradle-test", testExecution)
+  const buildExecution = runShell(gradleCommand(workspaceDir, "build"), workspaceDir, options.timeoutMs)
+  writeCommandLog(join(logsDir, "replay-gradle-build.log"), buildExecution)
+  writeRawExecutionFiles(logsDir, "replay-gradle-build", buildExecution)
+  const stackAlignment = detectStackAlignment(workspaceDir)
+  const compileBuild = measureCompileResult(workspaceDir, buildExecution)
+  const gradleTest = measureGradleTestResult(workspaceDir, testExecution)
+  const failures = countFailureModes({
+    compileBuildOutcome: compileBuild.outcome,
+    gradleTestOutcome: gradleTest.outcome,
+    runtimeSmokeOutcome: "NOT RUN",
+    stackAlignmentRate: stackAlignment.rate,
+    workflowFinishOutcome: "NOT APPLICABLE",
+    providerFailed: false,
+  })
+  return {
+    runId: `${environment.platform}-${fixtureId}-${conditionId}-r${repetition}`.toLowerCase(),
+    fixtureId,
+    conditionId,
+    repetition,
+    replaySource: replayRunDir,
+    workspaceDir,
+    logsDir,
+    fixtureHash: existsSync(join(workspaceDir, "README.md")) ? sha256File(join(workspaceDir, "README.md")) : "unknown",
+    gitCommit,
+    metadata: { timeoutMs: options.timeoutMs, environment },
+    outcomes: {
+      compileBuildOutcome: compileBuild.outcome,
+      gradleTestOutcome: gradleTest.outcome,
+      runtimeSmokeOutcome: "NOT RUN",
+      workflowFinishOutcome: "NOT APPLICABLE",
+      compileBuild,
+      gradleTest,
+    },
+    metrics: {
+      compileBuildPass: outcomePassValue(compileBuild.outcome),
+      gradleTestPass: outcomePassValue(gradleTest.outcome),
+      runtimeSmokePass: null,
+      stackAlignmentScore: stackAlignment.score,
+      stackAlignmentRate: stackAlignment.rate,
+      stackAlignmentCriteria: stackAlignment.criteria,
+      stackAlignmentRationale: stackAlignment.rationale,
+      externalFailureModeCount: failures.count,
+      externalFailureModeLabels: failures.labels,
+      workflowFinishOutcome: "NOT APPLICABLE",
+      backendShapeWarnCount: null,
+    },
+  }
+}
+
+function outcomePassValue(outcome) {
+  if (outcome === "PASS") return true
+  if (outcome === "UNKNOWN") return null
+  return false
 }
 
 async function prepareConditionFiles(workspaceDir, conditionId) {
@@ -655,10 +979,23 @@ function writeCommandLog(path, execution) {
   )
 }
 
+function writeRawExecutionFiles(logsDir, name, execution) {
+  const stdoutPath = join(logsDir, `${name}.stdout.txt`)
+  const stderrPath = join(logsDir, `${name}.stderr.txt`)
+  writeFileSync(stdoutPath, execution.stdout)
+  writeFileSync(stderrPath, execution.stderr)
+  return { stdoutPath, stderrPath }
+}
+
 function collectEnvironment(options) {
   return {
     platform: process.platform,
-    os: process.version,
+    os: {
+      type: type(),
+      platform: platform(),
+      release: release(),
+      arch: arch(),
+    },
     node: process.version,
     npm: commandOutput("npm --version"),
     java: commandOutput("java -version"),
