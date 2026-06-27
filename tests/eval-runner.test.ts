@@ -47,6 +47,7 @@ describe("ON/OFF eval runner core", () => {
     const options = parseArgs(["--runs", "1", "--fixture", "backend-api-no-stack", "--condition", "plain", "--model", "openai/test"])
     const command = formatCommand(options.opencodeCommand, {
       model: options.model,
+      prompt: "Respond with OK only. Do not create or edit files.",
       promptFile: "/tmp/prompt.txt",
       workspaceDir: "/tmp/workspace",
       message: "README.md 보고 구현해줘",
@@ -55,7 +56,8 @@ describe("ON/OFF eval runner core", () => {
       seed: "",
     })
 
-    expect(command).toBe("opencode run --model 'openai/test' --file '/tmp/prompt.txt' 'README.md 보고 구현해줘'")
+    expect(command).toBe("opencode run --model 'openai/test' 'Respond with OK only. Do not create or edit files.'")
+    expect(command).not.toContain("--file")
     expect(command).not.toContain("--prompt-file")
     expect(command).not.toContain("--temperature")
     expect(command).not.toContain("--top-p")
