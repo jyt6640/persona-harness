@@ -1,4 +1,4 @@
-export type RuntimeWarningKind = "evidence-write" | "hook-boundary"
+export type RuntimeWarningKind = "evidence-write" | "hook-boundary" | "observer-report-only"
 
 export type RuntimeWarning = {
   kind: RuntimeWarningKind

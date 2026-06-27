@@ -60,6 +60,26 @@ export type ContinuationEvidenceEvent = {
   nextPromptHint?: string
 }
 
+export type ObserverReportOnlyFinding = {
+  readonly ruleId: string
+  readonly result: "PASS" | "WARN" | "UNKNOWN"
+  readonly evidence: unknown
+  readonly confidence: "HIGH" | "MEDIUM" | "LOW" | "NONE"
+  readonly source: "live-hook/text"
+  readonly limitations: readonly string[]
+  readonly filePath: string
+}
+
+export type ObserverReportOnlyEvidenceEvent = {
+  readonly hook: "tool.execute.after"
+  readonly sessionID: string
+  readonly callID?: string
+  readonly targetFile: string
+  readonly inspectedFile: string
+  readonly findings: readonly ObserverReportOnlyFinding[]
+  readonly limitations: readonly string[]
+}
+
 function safeSlug(value: string): string {
   return value
     .replace(/\\/g, "/")
@@ -183,6 +203,31 @@ export function writeContinuationEvidence(projectDir: string, event: Continuatio
     remainingScope: event.remainingScope,
     nextPromptHint: event.nextPromptHint,
     reportOnly: true,
+  }
+
+  writeEvidenceJson(evidenceDir, runId, payload)
+}
+
+export function writeObserverReportOnlyEvidence(projectDir: string, event: ObserverReportOnlyEvidenceEvent): void {
+  const now = new Date()
+  const config = loadHarnessConfig(projectDir)
+  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  const runId = `${now.toISOString().replace(/[:.]/g, "-")}-observer-report-only-${safeSlug(event.targetFile)}`
+  const payload = {
+    schemaVersion: "phase0.observer-report-only.1",
+    runId,
+    timestamp: now.toISOString(),
+    hook: event.hook,
+    sessionID: event.sessionID,
+    callID: event.callID,
+    injectedInto: "observer-report-only",
+    evidenceKind: "observer-report-only",
+    targetFile: event.targetFile,
+    inspectedFile: event.inspectedFile,
+    findings: event.findings,
+    limitations: event.limitations,
+    reportOnly: true,
+    enforcement: false,
   }
 
   writeEvidenceJson(evidenceDir, runId, payload)

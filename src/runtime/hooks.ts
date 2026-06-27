@@ -13,6 +13,7 @@ import {
 } from "./java-role-discovery.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
+import { observeJavaWriteReportOnly } from "./observer-report-only.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
@@ -186,6 +187,13 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           callID: input.callID,
           injectedInto: "tool-output",
           injection,
+        })
+        observeJavaWriteReportOnly({
+          projectDir,
+          tool: input.tool,
+          sessionID: input.sessionID,
+          callID: input.callID,
+          targetFile: injection.targetFile,
         })
       })
     },
