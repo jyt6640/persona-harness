@@ -13,6 +13,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - `application/port/out/*Repository.java` can be recognized as repository port evidence;
   - Verification report wording is intended to distinguish test/build evidence from bootRun evidence, though the current-head re-smoke still found a false-success wording risk.
 - Added Gradle dependency self-check guidance to reduce dot-version recurrence in generated `build.gradle` files.
+- Returned runtime QA guidance to workflow closure so agents are expected to come back from build/test/bootRun or manual QA attempts to report fill, archive, and finish.
+- Hardened backend-shape Verification reporting so template-only command mentions produce WARN instead of false PASS.
 
 ### External Smoke
 
@@ -50,6 +52,28 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - The blocker appears shifted from Gradle dependency notation to closure/report/final-gate follow-through after build/test/manual QA.
 - Verification report false-success wording is still a residual risk rather than a proven failed fix because the dot-dependency fixture did not contain actual Gradle failure evidence.
 - Release prep for alpha2 remains held unless HQ explicitly accepts partial closure risk.
+- Third current-head local tarball closure re-smoke at `ee292ea` passed workflow closure. This was not a registry `0.3.9-alpha.1` smoke; registry alpha/latest still pointed to `gitHead` `bc7eadd...`.
+- Source facts:
+  - local `npm pack` tarball, package `0.3.9-alpha.1`;
+  - tarball shasum `e03ce076cee801e0db91b01670c2efbdb2ca1db4`;
+  - tarball sha256 `afb76178626a7d23657ddd78c2c77a5fe3df2528b3225005adff738edbd8ea1d`;
+  - included follow-ups `32b557b`, `691f874`, and `bd2f8a1`.
+- Workflow closure confirmed:
+  - OpenCode returned from build/test/bootRun attempt to workflow closure;
+  - implementation/review reports were filled;
+  - `plan --report-filled implementation` and `plan --report-filled review` were observed;
+  - `req-1` was archived;
+  - `workflow finish implement` passed.
+- Generated stack and verification observed:
+  - Java/Spring/Gradle + wrapper generated;
+  - no dot dependency recurrence such as `spring-boot-starter-*:.` or `flyway-core:.`;
+  - `gradlew.bat test/build` and post-check `--no-daemon` test/build passed;
+  - bootRun startup logs, Tomcat, and Flyway startup were observed before a 30s bearshell timeout;
+  - `profileSummaryInjected` and Java role read coverage were observed;
+  - fake Gradle shim, Java `HttpServer`, and CommonJS workarounds were not observed.
+- backend-shape main was mostly PASS, and fixture coverage confirmed `application/port/out/TaskRepository`, adapter, and DTO PASS. Verification report avoided false PASS for template-only command mentions by leaving `gradle test/build/bootRun mentioned without success/failure output` as a WARN.
+- Smoke perspective: alpha2 release prep candidate.
+- Residual risks: generated app product quality is not certified, backend-shape remains report-only, AST/linter/enforcement is still absent, separate manual curl QA was not performed, and the backend-shape Verification WARN remains conservative because reports lacked raw success/failure output even though post-check test/build passed.
 
 ## [0.3.9-alpha.1] - 2026-06-25
 
