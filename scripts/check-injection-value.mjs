@@ -3,7 +3,8 @@ import { resolve } from "node:path"
 
 const PROJECT_DIR = process.argv[2] === undefined ? process.cwd() : resolve(process.argv[2])
 const STATUS_PATH = "docs/current/injection-value-status.json"
-const DECISIONS = new Set(["open", "continue-java-mvp", "freeze-expansion", "inconclusive"])
+const DECISIONS = new Set(["open", "continue-java-mvp", "freeze-expansion", "inconclusive", "injection-effect-not-proven"])
+const COUNT_BASES = new Set(["measured-evidence", "not-measured-evidence"])
 
 function parseNonNegativeInteger(value, fieldName) {
   if (!Number.isInteger(value) || value < 0) {
@@ -24,6 +25,7 @@ function parseStatus(source) {
     onPositive: parseNonNegativeInteger(parsed.onPositive, "onPositive"),
     neutralOrMixed: parseNonNegativeInteger(parsed.neutralOrMixed, "neutralOrMixed"),
     offPositive: parseNonNegativeInteger(parsed.offPositive, "offPositive"),
+    countBasis: typeof parsed.countBasis === "string" ? parsed.countBasis : "measured-evidence",
     decision: typeof parsed.decision === "string" ? parsed.decision : "",
   }
 
@@ -33,11 +35,17 @@ function parseStatus(source) {
   if (!DECISIONS.has(status.decision)) {
     throw new Error(`Invalid decision: ${status.decision || "(empty)"}`)
   }
+  if (!COUNT_BASES.has(status.countBasis)) {
+    throw new Error(`Invalid countBasis: ${status.countBasis || "(empty)"}`)
+  }
 
   return status
 }
 
 function expectedDecision(status) {
+  if (status.countBasis === "not-measured-evidence") {
+    return "injection-effect-not-proven"
+  }
   if (status.currentPairs < status.requiredPairs) {
     return "open"
   }
@@ -71,6 +79,7 @@ async function main() {
   console.log(`Injection value diagnostics finding: ${finding}`)
   console.log(`Injection value diagnostics count: ${diagnostics.length}`)
   console.log(`Injection value current window: ${status.currentPairs}/${status.requiredPairs}`)
+  console.log(`Injection value count basis: ${status.countBasis}`)
   console.log(`Injection value expected decision: ${decision}`)
   if (diagnostics.length > 0) {
     console.log("")

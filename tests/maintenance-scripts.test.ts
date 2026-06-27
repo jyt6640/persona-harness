@@ -210,6 +210,33 @@ describe("maintenance scripts", () => {
     expect(result.stdout).toContain("Injection value expected decision: open")
   })
 
+  it("reports injection-effect-not-proven when current counts are not measured evidence", () => {
+    const projectDir = createTempDir("persona-injection-not-proven-")
+    writeInjectionValueStatus(projectDir, {
+      requiredPairs: 3,
+      currentPairs: 0,
+      onPositive: 0,
+      neutralOrMixed: 0,
+      offPositive: 0,
+      countBasis: "not-measured-evidence",
+      legacySelfRatedCounts: {
+        currentPairs: 3,
+        onPositive: 3,
+        neutralOrMixed: 0,
+        offPositive: 0,
+        basis: "self-rated qualitative review only; retained for audit, not measured evidence",
+      },
+      decision: "injection-effect-not-proven",
+    })
+
+    const result = runNodeScript(checkInjectionValueScript, [projectDir], projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Injection value diagnostics finding: PASS")
+    expect(result.stdout).toContain("Injection value count basis: not-measured-evidence")
+    expect(result.stdout).toContain("Injection value expected decision: injection-effect-not-proven")
+  })
+
   it("reports continue-java-mvp when ON-positive reaches two of three pairs", () => {
     const projectDir = createTempDir("persona-injection-continue-")
     writeInjectionValueStatus(projectDir, {
