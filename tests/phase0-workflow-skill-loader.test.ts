@@ -33,6 +33,11 @@ describe("workflow skill loader", () => {
     expect(block).toContain("Selected skill: workflow-requirements")
     expect(block).toContain("요구사항 파일: `README.md`")
     expect(block).toContain("npx ph workflow split README.md")
+    expect(block).toContain("npx ph plan --report-filled implementation")
+    expect(block).toContain("npx ph plan --report-filled review")
+    expect(block).toContain("npx ph workflow check")
+    expect(block).toContain("Do not archive req tickets until review confirms requirements are satisfied.")
+    expect(block).toContain("npx ph workflow finish implement")
   })
 
   it("loads the programming fallback workflow block", () => {

@@ -183,6 +183,9 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("npx ph bearshell")
     expect(text).toContain("npx ph workflow split README.md")
     expect(text).toContain("npx ph workflow next")
+    expect(text).toContain("npx ph plan --report-filled implementation")
+    expect(text).toContain("npx ph workflow check")
+    expect(text).toContain("Do not archive req tickets until review confirms requirements are satisfied.")
     expect(text).toContain("npx ph workflow finish implement")
   })
 
