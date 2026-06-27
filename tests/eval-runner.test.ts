@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { spawnSync } from "node:child_process"
@@ -21,6 +21,20 @@ import {
 } from "../scripts/eval/eval-core.mjs"
 
 const tempDirs: string[] = []
+
+type ReplayRuntimeRun = {
+  conditionId: string
+  outcomes: {
+    runtimeSmokeOutcome: string
+  }
+  metrics: {
+    runtimeSmokePass: boolean | null
+  }
+}
+
+type ReplayResults = {
+  runs: ReplayRuntimeRun[]
+}
 
 function tempDir(prefix: string): string {
   const dir = mkdtempSync(join(tmpdir(), prefix))
@@ -232,6 +246,31 @@ describe("ON/OFF eval runner core", () => {
     expect(readdirSync(outputRoot)).toEqual([])
   })
 
+  it("replays captured runtime-smoke log status without fabricating missing smoke results", () => {
+    const outputRoot = tempDir("persona-eval-replay-runtime-")
+    const captureDir = join(outputRoot, "capture")
+    writeCapturedRun(captureDir, "plain", "status: 0")
+    writeCapturedRun(captureDir, "claude", "status: 1")
+    writeCapturedRun(captureDir, "agents", null)
+
+    const result = spawnSync(
+      process.execPath,
+      [resolve("scripts/eval/run-onoff-eval.mjs"), "--replay", captureDir, "--output-root", outputRoot],
+      { cwd: resolve("."), encoding: "utf8" },
+    )
+
+    expect(result.status).toBe(0)
+    const resultsPath = result.stdout.match(/results: (.+results\.json)/)?.[1]
+    if (!resultsPath) {
+      throw new Error(`missing replay results path in output: ${result.stdout}`)
+    }
+    const results = JSON.parse(readFileSync(resultsPath, "utf8")) as ReplayResults
+
+    expect(runtimeOutcomeFor(results, "plain")).toEqual({ outcome: "PASS", pass: true })
+    expect(runtimeOutcomeFor(results, "claude")).toEqual({ outcome: "FAIL", pass: false })
+    expect(runtimeOutcomeFor(results, "agents")).toEqual({ outcome: "NOT RUN", pass: null })
+  })
+
   it("reports PH ON install command as required during preflight", () => {
     const options = parseArgs([
       "--fixture",
@@ -279,4 +318,49 @@ function readFixtureXml(): string {
     '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>',
     '<testsuite tests="2" failures="0" errors="0" skipped="1"></testsuite>',
   ].join("\n")
+}
+
+function writeCapturedRun(captureDir: string, conditionId: string, runtimeStatus: string | null): void {
+  const replayRunDir = join(captureDir, "raw", "backend-api-no-stack", conditionId, "r1")
+  const workspaceDir = join(replayRunDir, "workspace")
+  const logsDir = join(replayRunDir, "raw")
+  mkdirSync(join(workspaceDir, "build", "test-results", "test"), { recursive: true })
+  mkdirSync(join(workspaceDir, "build", "classes", "java", "main", "com", "example"), { recursive: true })
+  mkdirSync(join(workspaceDir, "src", "main", "java", "com", "example"), { recursive: true })
+  mkdirSync(logsDir, { recursive: true })
+  writeFileSync(join(workspaceDir, "README.md"), "# Captured fixture\n")
+  writeFileSync(join(workspaceDir, "build", "test-results", "test", "TEST-sample.xml"), '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>\n')
+  writeFileSync(join(workspaceDir, "build", "classes", "java", "main", "com", "example", "App.class"), "bytecode")
+  writeFileSync(join(workspaceDir, "src", "main", "java", "com", "example", "OrderController.java"), "class OrderController { OrderService service; }\n")
+  writeFileSync(join(workspaceDir, "src", "main", "java", "com", "example", "OrderResponse.java"), "class OrderResponse {}\n")
+  writeFileSync(
+    join(workspaceDir, "gradlew"),
+    [
+      "#!/usr/bin/env sh",
+      "set -eu",
+      "mkdir -p build/test-results/test build/classes/java/main/com/example",
+      "printf '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"></testsuite>\\n' > build/test-results/test/TEST-sample.xml",
+      "printf bytecode > build/classes/java/main/com/example/App.class",
+      "exit 0",
+      "",
+    ].join("\n"),
+    { mode: 0o755 },
+  )
+  if (runtimeStatus !== null) {
+    writeFileSync(
+      join(logsDir, "runtime-smoke.log"),
+      [`$ /tmp/runtime-smoke`, `cwd: ${workspaceDir}`, runtimeStatus, "signal: ", "", "## stdout", "", "## stderr", ""].join("\n"),
+    )
+  }
+}
+
+function runtimeOutcomeFor(results: ReplayResults, conditionId: string): { outcome: string; pass: boolean | null } {
+  const runResult = results.runs.find((item) => item.conditionId === conditionId)
+  if (!runResult) {
+    throw new Error(`missing run for condition: ${conditionId}`)
+  }
+  return {
+    outcome: runResult.outcomes.runtimeSmokeOutcome,
+    pass: runResult.metrics.runtimeSmokePass,
+  }
 }

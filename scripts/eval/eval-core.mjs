@@ -224,6 +224,14 @@ export function parseCommandOutcome(execution) {
   return execution.status === 0 ? "PASS" : "FAIL"
 }
 
+export function parseCapturedCommandOutcome(logPath) {
+  if (!existsSync(logPath)) return "NOT RUN"
+  const text = readFileSync(logPath, "utf8")
+  const statusMatch = text.match(/^status:\s*(.+)$/m)
+  if (!statusMatch) return "NOT RUN"
+  return statusMatch[1].trim() === "0" ? "PASS" : "FAIL"
+}
+
 export function parseJUnitXmlText(xmlText) {
   const suites = []
   for (const match of xmlText.matchAll(/<testsuite\b([^>]*)>/g)) {
@@ -872,10 +880,11 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
   const stackAlignment = detectStackAlignment(workspaceDir)
   const compileBuild = measureCompileResult(workspaceDir, buildExecution)
   const gradleTest = measureGradleTestResult(workspaceDir, testExecution)
+  const runtimeSmokeOutcome = parseCapturedCommandOutcome(join(logsDir, "runtime-smoke.log"))
   const failures = countFailureModes({
     compileBuildOutcome: compileBuild.outcome,
     gradleTestOutcome: gradleTest.outcome,
-    runtimeSmokeOutcome: "NOT RUN",
+    runtimeSmokeOutcome,
     stackAlignmentRate: stackAlignment.rate,
     workflowFinishOutcome: "NOT APPLICABLE",
     providerFailed: false,
@@ -894,7 +903,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     outcomes: {
       compileBuildOutcome: compileBuild.outcome,
       gradleTestOutcome: gradleTest.outcome,
-      runtimeSmokeOutcome: "NOT RUN",
+      runtimeSmokeOutcome,
       workflowFinishOutcome: "NOT APPLICABLE",
       compileBuild,
       gradleTest,
@@ -902,7 +911,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     metrics: {
       compileBuildPass: outcomePassValue(compileBuild.outcome),
       gradleTestPass: outcomePassValue(gradleTest.outcome),
-      runtimeSmokePass: null,
+      runtimeSmokePass: runtimeSmokeOutcome === "NOT RUN" ? null : runtimeSmokeOutcome === "PASS",
       stackAlignmentScore: stackAlignment.score,
       stackAlignmentRate: stackAlignment.rate,
       stackAlignmentCriteria: stackAlignment.criteria,
