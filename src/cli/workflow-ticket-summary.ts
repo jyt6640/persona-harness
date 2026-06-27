@@ -11,6 +11,10 @@ export type WorkflowPendingTicket = {
 }
 
 export const PENDING_TICKETS_COMPLETION_GUIDANCE = "Do not claim overall completion while pending tickets remain."
+export const TICKET_BY_TICKET_GUIDANCE =
+  "Work one ticket at a time; do not open later tickets until the current ticket is implemented, reviewed, and archived."
+export const TIMEBOXED_SCOPE_GUIDANCE =
+  "For time-boxed or eval runs, split a smaller requirements source so every pending ticket can be honestly finished."
 const PENDING_TICKET_COMPLETION_GUIDANCE = "Do not claim overall completion while this ticket remains pending."
 
 export function pendingWorkflowTickets(projectDir: string): readonly BacklogTicket[] {
@@ -42,6 +46,8 @@ export function formatPendingWorkflowTicketStatusLines(tickets: readonly Workflo
   return [
     "- pending tickets: present",
     PENDING_TICKETS_COMPLETION_GUIDANCE,
+    TICKET_BY_TICKET_GUIDANCE,
+    TIMEBOXED_SCOPE_GUIDANCE,
     ...tickets.flatMap((ticket) => [
       `  Ticket: ${ticket.ticket}`,
       `  Title: ${ticket.title}`,
@@ -67,6 +73,8 @@ export function pendingWorkflowTicketResumeLines(ticket: BacklogTicket | undefin
     `If ${archiveCandidateLabel(ticket.ticket)} is actually complete after review: npx ph workflow archive ${ticket.ticket}`,
     "Archive is a candidate action only; do not auto-archive.",
     PENDING_TICKET_COMPLETION_GUIDANCE,
+    TICKET_BY_TICKET_GUIDANCE,
+    TIMEBOXED_SCOPE_GUIDANCE,
     "",
   ]
 }

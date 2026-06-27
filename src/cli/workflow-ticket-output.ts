@@ -8,6 +8,7 @@ import {
   REQUIREMENTS_ANALYSIS_PATH,
   type RequirementSource,
 } from "./workflow-ticket-model.js"
+import { TICKET_BY_TICKET_GUIDANCE, TIMEBOXED_SCOPE_GUIDANCE } from "./workflow-ticket-summary.js"
 
 export function uninitializedTicketOutput(): CliRunResult {
   return {
@@ -164,6 +165,10 @@ export function splitCompleteOutput(source: RequirementSource, count: number): C
       `Backlog: ${BACKLOG_PATH}`,
       `Tickets created: ${count}`,
       "",
+      "Scope strategy:",
+      `- ${TICKET_BY_TICKET_GUIDANCE}`,
+      `- ${TIMEBOXED_SCOPE_GUIDANCE}`,
+      "",
       "Next:",
       "- `npx ph workflow next`",
     ].join("\n") + "\n",
@@ -198,6 +203,7 @@ export function nextTicketOutput(ticketId: string, title: string, path: string):
       "Next:",
       "- Read the task card.",
       "- Implement only this ticket.",
+      `- ${TICKET_BY_TICKET_GUIDANCE}`,
       "- Keep this as the current workflow ticket until it is archived.",
       `- When done, run \`npx ph workflow archive ${ticketId}\`.`,
     ].join("\n") + "\n",

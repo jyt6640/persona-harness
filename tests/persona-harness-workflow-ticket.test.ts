@@ -119,6 +119,8 @@ describe("ph workflow ticket backlog", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Workflow split complete")
     expect(result.stdout).toContain("Tickets created: 3")
+    expect(result.stdout).toContain("Work one ticket at a time")
+    expect(result.stdout).toContain("split a smaller requirements source")
     const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
     const card = readFileSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"), "utf8")
     expect(backlog).toContain("| 1 | step-1 | 기본 일정 구현 | pending | .persona/workflow/work/step-1/00-task-card.md |")
@@ -196,6 +198,7 @@ describe("ph workflow ticket backlog", () => {
     expect(result.stdout).toContain("Ticket: step-1")
     expect(result.stdout).toContain(".persona/workflow/work/step-1/00-task-card.md")
     expect(result.stdout).toContain("Implement only this ticket")
+    expect(result.stdout).toContain("do not open later tickets")
   })
 
   it("archives a work ticket into immutable history and advances next ticket", () => {

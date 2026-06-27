@@ -8,7 +8,12 @@ import { PlanStatusError, readWorkflowPlanStatus } from "./plan-status.js"
 import { createImplementationPrompt } from "./plan-prompts.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
-import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets } from "./workflow-ticket-summary.js"
+import {
+  pendingWorkflowTicketResumeLines,
+  pendingWorkflowTickets,
+  TICKET_BY_TICKET_GUIDANCE,
+  TIMEBOXED_SCOPE_GUIDANCE,
+} from "./workflow-ticket-summary.js"
 
 type ReportStatus = "missing" | "template" | "filled" | "unknown"
 
@@ -293,6 +298,8 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     "- Read README.md, .persona/project-profile.jsonc, .persona/policies, and .persona/workflow/plan.md.",
     "- Use the Read Coverage fields to avoid claiming unread ranges as complete.",
     "- Continue only the remaining implementation scope.",
+    `- ${TICKET_BY_TICKET_GUIDANCE}`,
+    `- ${TIMEBOXED_SCOPE_GUIDANCE}`,
     "- Fill .persona/workflow/implementation-report.md with actual Read Coverage and Continuation evidence.",
     "- When implementation is complete, run npx ph plan --report-filled implementation.",
     "",

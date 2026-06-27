@@ -173,6 +173,8 @@ describe("ph plan --resume", () => {
     expect(result.stdout).toContain("Implementation report status: template")
     expect(result.stdout).toContain("No filled continuation evidence found")
     expect(result.stdout).toContain("npx ph workflow implement")
+    expect(result.stdout).toContain("Work one ticket at a time")
+    expect(result.stdout).toContain("split a smaller requirements source")
     expect(result.stdout).toContain("Read Coverage")
   })
 
