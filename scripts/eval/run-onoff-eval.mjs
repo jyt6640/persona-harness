@@ -15,7 +15,7 @@ Options:
   --temperature <value>      Temperature pin (default: OPENCODE_TEMPERATURE or unknown)
   --top-p <value>            top_p pin when supported by the selected CLI surface
   --seed <value>             seed pin when supported by the selected CLI surface
-  --opencode-command <cmd>   Command template, supports {model}, {promptFile}, {workspaceDir}
+  --opencode-command <cmd>   Command template, supports {model}, {promptFile}, {workspaceDir}, {message}
   --ph-install-command <cmd> Required when --condition ph-on or all includes PH ON
   --runtime-smoke-command <cmd>
   --backend-shape-command <cmd>

@@ -14,6 +14,7 @@ import {
   parseArgs,
   parseBackendShapeWarnCount,
   parseCommandOutcome,
+  formatCommand,
   parseJUnitXmlText,
   preflight,
   scoreStackAlignmentFromObserveReport,
@@ -40,6 +41,25 @@ describe("ON/OFF eval runner core", () => {
     const plan = buildPlan(options)
 
     expect(plan.runs).toEqual([{ fixtureId: "backend-api-no-stack", conditionId: "plain", repetition: 1 }])
+  })
+
+  it("uses the current OpenCode CLI surface by default", () => {
+    const options = parseArgs(["--runs", "1", "--fixture", "backend-api-no-stack", "--condition", "plain", "--model", "openai/test"])
+    const command = formatCommand(options.opencodeCommand, {
+      model: options.model,
+      promptFile: "/tmp/prompt.txt",
+      workspaceDir: "/tmp/workspace",
+      message: "README.md 보고 구현해줘",
+      temperature: "0",
+      topP: "",
+      seed: "",
+    })
+
+    expect(command).toBe("opencode run --model 'openai/test' --file '/tmp/prompt.txt' 'README.md 보고 구현해줘'")
+    expect(command).not.toContain("--prompt-file")
+    expect(command).not.toContain("--temperature")
+    expect(command).not.toContain("--top-p")
+    expect(command).not.toContain("--seed")
   })
 
   it("measures Gradle test from JUnit XML instead of successful log text", () => {

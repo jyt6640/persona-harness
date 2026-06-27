@@ -54,8 +54,7 @@ export function parseArgs(argv) {
     seed: process.env.OPENCODE_SEED ?? "unknown",
     topPReason: process.env.OPENCODE_TOP_P ? null : "OPENCODE_TOP_P is not set or unsupported by the selected CLI surface",
     seedReason: process.env.OPENCODE_SEED ? null : "OPENCODE_SEED is not set or unsupported by the selected CLI surface",
-    opencodeCommand:
-      "opencode run --model {model} {temperatureFlag} {topPFlag} {seedFlag} --prompt-file {promptFile}",
+    opencodeCommand: "opencode run --model {model} --file {promptFile} {message}",
     phInstallCommand: process.env.PERSONA_HARNESS_INSTALL_COMMAND ?? "",
     phInitCommand: process.env.PERSONA_HARNESS_INIT_COMMAND ?? "npx ph init --default backend",
     workflowFinishCommand: process.env.PERSONA_HARNESS_FINISH_COMMAND ?? "npx ph workflow finish implement",
@@ -673,6 +672,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       model: options.model,
       promptFile,
       workspaceDir,
+      message: "README.md 보고 구현해줘",
       temperature: options.temperature,
       topP: options.topP,
       seed: options.seed,

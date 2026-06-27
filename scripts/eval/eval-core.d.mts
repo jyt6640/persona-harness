@@ -20,9 +20,13 @@ export function buildPlan(options: Record<string, unknown>): {
   runs: Array<{ fixtureId: string; conditionId: string; repetition: number }>
 }
 export function countFailureModes(outcomes: Record<string, unknown>): { count: number; labels: string[] }
-export function parseArgs(argv: readonly string[]): Record<string, unknown>
+export function parseArgs(argv: readonly string[]): Record<string, unknown> & {
+  model: string
+  opencodeCommand: string
+}
 export function parseBackendShapeWarnCount(text: string): number
 export function parseCommandOutcome(execution: Record<string, unknown>): string
+export function formatCommand(template: string, values: Record<string, unknown>): string
 export function parseJUnitXmlText(xmlText: string): { tests: number; failures: number; errors: number; skipped: number }
 export function collectJUnitResults(workspaceDir: string): Record<string, unknown>
 export function measureGradleTestResult(workspaceDir: string, execution: Record<string, unknown>): Record<string, unknown>
