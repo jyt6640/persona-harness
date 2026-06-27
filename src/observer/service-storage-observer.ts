@@ -1,9 +1,11 @@
 import {
   collectJavaStringLiterals,
+  collectJavaParameterLists,
   escapeRegExp,
   getJavaFileName,
   hasJavaClassOrRecord,
   normalizeJavaParameter,
+  splitJavaParameters,
   stripJavaComments,
   stripJavaCommentsAndStrings,
   unique,
@@ -161,16 +163,13 @@ function scanSequenceFields(source: string): VariableScan {
 }
 
 function scanSequenceConstructorParameters(source: string, className: string): VariableScan {
-  const regex = new RegExp(`\\b${escapeRegExp(className)}\\s*\\(([^)]*)\\)`, "gm")
   const evidence: string[] = []
   const variableNames: string[] = []
   const typePattern = SEQUENCE_TYPES.join("|")
   const namePattern = SEQUENCE_NAMES.join("|")
 
-  for (const match of source.matchAll(regex)) {
-    const parameters = match[1]
-    if (!parameters) continue
-    for (const parameter of parameters.split(",")) {
+  for (const parameters of collectJavaParameterLists(source, className)) {
+    for (const parameter of splitJavaParameters(parameters)) {
       const normalizedParameter = normalizeJavaParameter(parameter)
       const parameterMatch = normalizedParameter.match(new RegExp(`\\b(?:${typePattern})\\s+(${namePattern})\\b`))
       const variableName = parameterMatch?.[1]

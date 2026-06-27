@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { stripJsonComments } from "./jsonc.js"
+import { isRecord, stripJsonComments } from "./jsonc.js"
 
 const POLICY_OVERLAY_PATH = ".persona/policies/overlay.jsonc"
 const SUPPORTED_SCHEMA = "persona.policy-overlay.v1"
@@ -38,10 +38,6 @@ function inactiveOverlay(diagnostics: readonly string[] = []): BackendPolicyOver
       diagnostics,
     },
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function maxBulletsPerSource(value: unknown): number {

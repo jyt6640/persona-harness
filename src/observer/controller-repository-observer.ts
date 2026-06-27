@@ -1,3 +1,5 @@
+import { collectJavaParameterLists, splitJavaParameters } from "./java-source.js"
+
 export type ObserverFinding = "PASS" | "WARN" | "UNKNOWN"
 
 export type ControllerRepositoryEvidence = {
@@ -96,7 +98,7 @@ function hasEvidence(evidence: ControllerRepositoryEvidence): boolean {
 }
 
 function scanRepositoryFields(source: string): RepositoryVariableScan {
-  const regex = /^\s*(?:private|protected|public)?\s*(?:static\s+)?(?:final\s+)?(\w*Repository\w*)\s+(\w+)\s*(?:[=;])/gm
+  const regex = /^\s*(?:private|protected|public)?\s*(?:static\s+)?(?:final\s+)?(\w*Repository\w*(?:\s*<[^;=]+>)?)\s+(\w+)\s*(?:[=;])/gm
   const evidence: string[] = []
   const variableNames: string[] = []
 
@@ -116,17 +118,13 @@ function scanRepositoryFields(source: string): RepositoryVariableScan {
 }
 
 function scanConstructorParameters(source: string, className: string): RepositoryVariableScan {
-  const regex = new RegExp(`\\b${escapeRegExp(className)}\\s*\\(([^)]*)\\)`, "gm")
   const evidence: string[] = []
   const variableNames: string[] = []
 
-  for (const match of source.matchAll(regex)) {
-    const parameters = match[1]
-    if (!parameters) continue
-
-    for (const parameter of parameters.split(",")) {
+  for (const parameters of collectJavaParameterLists(source, className)) {
+    for (const parameter of splitJavaParameters(parameters)) {
       const normalizedParameter = normalizeJavaParameter(parameter)
-      const parameterMatch = normalizedParameter.match(/\b\w*Repository\w*\s+(\w+)\b/)
+      const parameterMatch = normalizedParameter.match(/\b\w*Repository\w*(?:\s*<[^>]+>)?\s+(\w+)\b/)
       const variableName = parameterMatch?.[1]
       if (variableName) {
         evidence.push(normalizedParameter)

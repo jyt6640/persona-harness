@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { isAbsolute, join } from "node:path"
 
 import type { Phase0Scenario } from "../rules/rule-frontmatter.js"
-import { stripJsonComments } from "./jsonc.js"
+import { isRecord, stripJsonComments } from "./jsonc.js"
 
 export type HarnessConfig = {
   readonly enabled: boolean
@@ -33,10 +33,6 @@ const DEFAULT_CONFIG: HarnessConfig = {
   evidenceMode: "metadata_only",
   enabledDomains: ["backend", "programming", "workflow"],
   scenario: "step1",
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {

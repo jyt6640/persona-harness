@@ -130,7 +130,7 @@ class ReservationIntegrationTest {
     expect(observation.evidence.missingAnchors).toEqual([])
   })
 
-  it("returns WARN when step2-3 timeId or times anchors are missing", () => {
+  it("returns WARN when step2-3 timeId or secondary collection anchors are missing", () => {
     const source = `
 class ReservationIntegrationTest {
   @Test
@@ -151,9 +151,9 @@ class ReservationIntegrationTest {
     const observation = observeTestContractAnchors({ filePath: testPath, scenario: "step2-3", source })
 
     expect(observation.finding).toBe("WARN")
-    expect(observation.evidence.missingAnchors).toContain("POST /times")
-    expect(observation.evidence.missingAnchors).toContain("GET /times")
-    expect(observation.evidence.missingAnchors).toContain("DELETE /times/{id}")
+    expect(observation.evidence.missingAnchors).toContain("POST /related-resources")
+    expect(observation.evidence.missingAnchors).toContain("GET /related-resources")
+    expect(observation.evidence.missingAnchors).toContain("DELETE /related-resources/{id}")
     expect(observation.evidence.missingAnchors).toContain("request body name/date/timeId")
   })
 

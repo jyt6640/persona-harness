@@ -76,6 +76,33 @@ class ReservationService {
     expect(observation.evidence.constructorParameters).toEqual(["long idCounter"])
   })
 
+  it("keeps generic commas and annotation commas while scanning sequence constructor parameters", () => {
+    const source = `
+import java.util.Map;
+import java.util.function.BiFunction;
+
+class ReservationService {
+  ReservationService(
+    @Named("ids,primary") long idCounter,
+    Map<String, List<Reservation>> reservations,
+    BiFunction<Foo, Bar, Baz> mapper
+  ) {
+    String ignored = """
+      long idCounter,
+      AtomicLong sequence
+    """;
+    mapper.apply(new Foo(), new Bar());
+  }
+}
+`
+
+    const observation = observeServiceStorageOwnership({ filePath: servicePath, source })
+
+    expect(observation.finding).toBe("WARN")
+    expect(observation.confidence).toBe("HIGH")
+    expect(observation.evidence.constructorParameters).toEqual(["long idCounter"])
+  })
+
   it("returns WARN for confirmed mutation calls on storage or sequence variables", () => {
     const source = `
 class ReservationService {

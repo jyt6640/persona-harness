@@ -155,21 +155,21 @@ function detectHttpDeleteReset(javaFiles: JavaFile[], findings: DriftFinding[]):
       })
     }
 
-    if (/restTemplate\.delete\(\s*"\/reservations"\s*\)/.test(file.content)) {
+    if (/\brestTemplate\s*\.\s*delete\s*\(\s*"\/[A-Za-z0-9._~-]+"\s*\)/.test(file.content)) {
       addFinding(findings, {
         kind: "HTTP DELETE reset",
         severity: "fail",
         file: file.relativePath,
-        evidence: 'Test reset uses restTemplate.delete("/reservations").',
+        evidence: "Test reset uses collection-level restTemplate.delete(...).",
       })
     }
 
-    if (/HttpMethod\.DELETE[\s\S]{0,240}"\/reservations"[\s\S]{0,240}(clear|reset)/i.test(file.content)) {
+    if (/HttpMethod\.DELETE[\s\S]{0,240}"\/[A-Za-z0-9._~-]+"[\s\S]{0,240}(clear|reset)/i.test(file.content)) {
       addFinding(findings, {
         kind: "HTTP DELETE reset",
         severity: "warn",
         file: file.relativePath,
-        evidence: "DELETE /reservations appears near clear/reset behavior.",
+        evidence: "Collection-level DELETE appears near clear/reset behavior.",
       })
     }
   }

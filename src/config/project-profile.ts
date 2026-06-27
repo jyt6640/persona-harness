@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { stripJsonComments } from "./jsonc.js"
+import { isRecord, stripJsonComments } from "./jsonc.js"
 
 const PROFILE_PATH = ".persona/project-profile.jsonc"
 const SUPPORTED_SCHEMA = "persona.project-profile.v1"
@@ -31,10 +31,6 @@ export type BackendProjectProfileState = {
 type ProfileQuestion = {
   readonly id: string
   readonly answer: string | null
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function readQuestion(value: unknown): ProfileQuestion | undefined {

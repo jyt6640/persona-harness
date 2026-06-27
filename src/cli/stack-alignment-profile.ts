@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { stripJsonComments } from "../config/jsonc.js"
+import { isRecord, stripJsonComments } from "../config/jsonc.js"
 
 export type ProfileIntent = {
   readonly buildTool: string
@@ -13,10 +13,6 @@ export type ProfileIntent = {
 }
 
 const PROFILE_PATH = ".persona/project-profile.jsonc"
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
 
 function readString(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : ""

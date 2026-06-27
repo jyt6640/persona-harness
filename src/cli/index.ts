@@ -11,6 +11,7 @@ import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
 import { runIntakeCommand, runInteractiveIntakeCommand } from "./intake.js"
 import { runLanguageCommand } from "./language.js"
+import { runObserveCommand } from "./observe.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
 import { runDoctorCommand } from "./doctor.js"
@@ -58,6 +59,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
 
   if (command === "language") {
     return runLanguageCommand(args.slice(1), invocationName)
+  }
+
+  if (command === "observe") {
+    return runObserveCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
   if (command === "bearshell") {

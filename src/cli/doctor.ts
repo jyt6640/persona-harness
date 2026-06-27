@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
+import { isRecord } from "../config/jsonc.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   detectCommandOutput,
@@ -87,10 +88,6 @@ function pluginStatus(projectDir: string): "configured" | "missing" | "unreadabl
   } catch {
     return "unreadable"
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function packageVersion(): string {

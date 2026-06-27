@@ -4,7 +4,7 @@ import { dirname, isAbsolute, join, resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
-import { stripJsonComments } from "../config/jsonc.js"
+import { isRecord, stripJsonComments } from "../config/jsonc.js"
 import { formatInitResult } from "./init-output.js"
 
 export { formatInitNonInteractiveInterviewMessage, formatInitResult } from "./init-output.js"
@@ -44,10 +44,6 @@ const PUBLIC_INIT_EXCLUDED_RULES = new Set([
   "backend/step1-api-contract.md",
   "backend/step2-3-api-contract.md",
 ])
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
 
 function defaultPackageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")

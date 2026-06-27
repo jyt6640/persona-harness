@@ -10,13 +10,14 @@ export type AnchorCheck = {
 }
 
 export function checkStep1Anchors(source: string, literals: readonly string[]): readonly AnchorCheck[] {
+  const routes = inferContractRoutes(literals)
   return [
-    routeAnchor("GET /reservations", "get", "/reservations", source, literals),
-    routeAnchor("POST /reservations", "post", "/reservations", source, literals),
-    routeAnchor("DELETE /reservations/{id}", "delete", "/reservations", source, literals),
+    routeAnchor(`GET ${routes.primary}`, "get", routes.primary, source, literals),
+    routeAnchor(`POST ${routes.primary}`, "post", routes.primary, source, literals),
+    routeAnchor(`DELETE ${routes.primary}/{id}`, "delete", routes.primary, source, literals),
     statusAnchor("200 OK", source),
-    routeStatusAnchor("POST /reservations 200 OK", "post", "/reservations", source),
-    routeStatusAnchor("DELETE /reservations/{id} 200 OK", "delete", "/reservations", source),
+    routeStatusAnchor(`POST ${routes.primary} 200 OK`, "post", routes.primary, source),
+    routeStatusAnchor(`DELETE ${routes.primary}/{id} 200 OK`, "delete", routes.primary, source),
     idAnchor(source),
     listSizeTransitionAnchor(source),
     bodyFieldsAnchor("request body name/date/time", ["name", "date", "time"], source, literals),
@@ -24,13 +25,14 @@ export function checkStep1Anchors(source: string, literals: readonly string[]): 
 }
 
 export function checkStep23Anchors(source: string, literals: readonly string[]): readonly AnchorCheck[] {
+  const routes = inferContractRoutes(literals)
   return [
-    routeAnchor("GET /reservations", "get", "/reservations", source, literals),
-    routeAnchor("POST /reservations", "post", "/reservations", source, literals),
-    routeAnchor("DELETE /reservations/{id}", "delete", "/reservations", source, literals),
-    routeAnchor("POST /times", "post", "/times", source, literals),
-    routeAnchor("GET /times", "get", "/times", source, literals),
-    routeAnchor("DELETE /times/{id}", "delete", "/times", source, literals),
+    routeAnchor(`GET ${routes.primary}`, "get", routes.primary, source, literals),
+    routeAnchor(`POST ${routes.primary}`, "post", routes.primary, source, literals),
+    routeAnchor(`DELETE ${routes.primary}/{id}`, "delete", routes.primary, source, literals),
+    routeAnchor(`POST ${routes.secondary}`, "post", routes.secondary, source, literals),
+    routeAnchor(`GET ${routes.secondary}`, "get", routes.secondary, source, literals),
+    routeAnchor(`DELETE ${routes.secondary}/{id}`, "delete", routes.secondary, source, literals),
     statusAnchor("200 OK", source),
     bodyFieldsAnchor("request body name/date/timeId", ["name", "date", "timeId"], source, literals),
     bodyFieldsAnchor("request body startAt", ["startAt"], source, literals),
@@ -242,9 +244,30 @@ function missing(anchor: string): AnchorCheck {
 }
 
 function constantRouteEvidence(route: string): readonly string[] {
-  return [`constant/helper: ${route === "/reservations" ? "RESERVATIONS" : "TIMES"}`]
+  return [`constant/helper: ${routeConstantName(route)}`]
 }
 
 function normalizeLiteral(literal: string): string {
   return literal.replace(/\s+/g, " ").trim()
+}
+
+function inferContractRoutes(literals: readonly string[]): { readonly primary: string; readonly secondary: string } {
+  const routes = unique(literals.flatMap(collectionRouteFromLiteral))
+  const primary = routes[0] ?? "/resources"
+  const secondary = routes.find((route) => route !== primary && /time/i.test(route)) ?? routes.find((route) => route !== primary) ?? "/related-resources"
+  return { primary, secondary }
+}
+
+function collectionRouteFromLiteral(literal: string): readonly string[] {
+  const match = literal.match(/^(\/[A-Za-z0-9._~-]+)(?:\/(?:\d+|\{id\}))?$/)
+  return match?.[1] === undefined ? [] : [match[1]]
+}
+
+function routeConstantName(route: string): string {
+  const segment = route.replace(/^\/+/, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "")
+  return segment.length === 0 ? "ROUTE" : segment.toUpperCase()
+}
+
+function unique(values: readonly string[]): readonly string[] {
+  return [...new Set(values)]
 }

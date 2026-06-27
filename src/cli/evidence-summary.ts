@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { basename, dirname, join, resolve } from "node:path"
 import process from "node:process"
 
+import { isRecord } from "../config/jsonc.js"
 import type { CliRunResult } from "./bearshell.js"
 
 type EvidenceOptions = {
@@ -21,10 +22,6 @@ type EvidenceSummary = {
 }
 
 const SUMMARY_PATH = ".persona/evidence/summary.md"
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
 
 function stringArray(value: unknown): readonly string[] {
   return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : []

@@ -119,16 +119,14 @@ function isStepContractRule(rulePath: string): boolean {
   return rulePath === STEP1_API_CONTRACT_RULE || rulePath === STEP2_3_API_CONTRACT_RULE
 }
 
-function isRoomescapeStepFixtureTarget(targetPath: string): boolean {
-  const normalizedTargetPath = targetPath.toLowerCase()
-  return normalizedTargetPath.startsWith("roomescape/") || normalizedTargetPath.includes("/roomescape/")
+function isLegacyStepFixtureTarget(targetPath: string): boolean {
+  const normalizedTargetPath = targetPath.replace(/\\/g, "/")
+  const match = normalizedTargetPath.match(/(?:^|\/)src\/(?:main|test)\/java\/([^/]+)\/([^/]+\.java)$/)
+  return match?.[1] !== undefined && isContractFixtureFile(match[2])
 }
 
-function isRulePathInTargetScope(rulePath: string, targetPath: string): boolean {
-  if (!isStepContractRule(rulePath)) {
-    return true
-  }
-  return isRoomescapeStepFixtureTarget(targetPath)
+function isContractFixtureFile(fileName: string | undefined): boolean {
+  return fileName !== undefined && /(?:Controller|Test|Request|Response)\.java$/.test(fileName)
 }
 
 function scenarioAwareRoleRules(fileRole: FileRole, scenario: Phase0Scenario): readonly string[] {
@@ -156,12 +154,12 @@ export function selectRulePaths(fileRole: FileRole, scenario: Phase0Scenario = D
 export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetFile?: string): LoadedRule[] {
   const config = loadHarnessConfig(projectDir)
   const scenario = config.scenario
-  const targetPath = targetPathForMatching(projectDir, fileRole, targetFile)
   const catalog = new Map(loadRuleCatalog(projectDir).map((entry) => [entry.path, entry]))
   const rulesDir = resolveConfiguredPath(projectDir, config.rulesDir)
+  const targetPath = targetPathForMatching(projectDir, fileRole, targetFile)
 
   return selectRulePaths(fileRole, scenario).flatMap((rulePath) => {
-    if (!isRulePathInTargetScope(rulePath, targetPath)) {
+    if (isStepContractRule(rulePath) && !isLegacyStepFixtureTarget(targetPath)) {
       return []
     }
 

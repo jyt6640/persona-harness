@@ -16,6 +16,53 @@ export function normalizeJavaParameter(parameter: string): string {
     .trim()
 }
 
+export function splitJavaParameters(parameters: string): readonly string[] {
+  const result: string[] = []
+  let startIndex = 0
+  let angleDepth = 0
+  let parenDepth = 0
+  let bracketDepth = 0
+  let braceDepth = 0
+  let index = 0
+
+  while (index < parameters.length) {
+    const token = readProtectedJavaToken(parameters, index)
+    if (token !== undefined) {
+      index = token.nextIndex
+      continue
+    }
+
+    const current = parameters[index]
+    if (current === "<") angleDepth += 1
+    if (current === ">" && angleDepth > 0) angleDepth -= 1
+    if (current === "(") parenDepth += 1
+    if (current === ")" && parenDepth > 0) parenDepth -= 1
+    if (current === "[") bracketDepth += 1
+    if (current === "]" && bracketDepth > 0) bracketDepth -= 1
+    if (current === "{") braceDepth += 1
+    if (current === "}" && braceDepth > 0) braceDepth -= 1
+    if (current === "," && angleDepth === 0 && parenDepth === 0 && bracketDepth === 0 && braceDepth === 0) {
+      pushJavaParameter(result, parameters.slice(startIndex, index))
+      startIndex = index + 1
+    }
+    index += 1
+  }
+
+  pushJavaParameter(result, parameters.slice(startIndex))
+  return result
+}
+
+export function collectJavaParameterLists(source: string, callableName: string): readonly string[] {
+  const lists: string[] = []
+  const regex = new RegExp(`\\b${escapeRegExp(callableName)}\\s*\\(`, "g")
+  for (const match of source.matchAll(regex)) {
+    const openParenIndex = (match.index ?? 0) + match[0].length - 1
+    const parameterList = readBalancedParentheses(source, openParenIndex)
+    if (parameterList !== undefined) lists.push(parameterList)
+  }
+  return lists
+}
+
 export function stripJavaCommentsAndStrings(source: string): string {
   return stripJavaComments(source).replace(/"""[\s\S]*?"""|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, (value) =>
     value.replace(/[^\n]/g, " "),
@@ -97,4 +144,49 @@ function readQuotedLiteral(
     text += current
   }
   return { text, nextIndex: index }
+}
+
+function readProtectedJavaToken(source: string, startIndex: number): { readonly nextIndex: number } | undefined {
+  if (source.slice(startIndex, startIndex + 3) === '"""') {
+    return { nextIndex: readTextBlock(source, startIndex).nextIndex }
+  }
+  const current = source[startIndex]
+  if (current === '"' || current === "'") {
+    return { nextIndex: readQuotedLiteral(source, startIndex, current).nextIndex }
+  }
+  if (current === "/" && source[startIndex + 1] === "/") {
+    const lineEnd = source.indexOf("\n", startIndex + 2)
+    return { nextIndex: lineEnd === -1 ? source.length : lineEnd + 1 }
+  }
+  if (current === "/" && source[startIndex + 1] === "*") {
+    const blockEnd = source.indexOf("*/", startIndex + 2)
+    return { nextIndex: blockEnd === -1 ? source.length : blockEnd + 2 }
+  }
+  return undefined
+}
+
+function pushJavaParameter(result: string[], parameter: string): void {
+  const trimmed = parameter.trim()
+  if (trimmed.length > 0) result.push(trimmed)
+}
+
+function readBalancedParentheses(source: string, openParenIndex: number): string | undefined {
+  let depth = 0
+  let index = openParenIndex
+  while (index < source.length) {
+    const token = readProtectedJavaToken(source, index)
+    if (token !== undefined) {
+      index = token.nextIndex
+      continue
+    }
+
+    const current = source[index]
+    if (current === "(") depth += 1
+    if (current === ")") {
+      depth -= 1
+      if (depth === 0) return source.slice(openParenIndex + 1, index)
+    }
+    index += 1
+  }
+  return undefined
 }

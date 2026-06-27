@@ -77,6 +77,33 @@ class ReservationController {
     expect(observation.evidence.constructorParameters).toEqual(["JdbcTemplate jdbcTemplate"])
   })
 
+  it("keeps annotation commas and lambda-like text from splitting constructor parameters", () => {
+    const source = `
+import java.util.function.BiFunction;
+
+class ReservationController {
+  ReservationController(
+    @Qualifier(name = "primary,jdbc") JdbcTemplate jdbcTemplate,
+    BiFunction<Foo, Bar, Baz> mapper,
+    ReservationService service
+  ) {
+    String textBlock = """
+      JdbcTemplate fakeTemplate,
+      jdbcTemplate.update("DELETE FROM reservation")
+    """;
+    mapper.apply(new Foo(), new Bar());
+    this.jdbcTemplate = jdbcTemplate;
+  }
+}
+`
+
+    const observation = observeControllerSqlAccess({ filePath: controllerPath, source })
+
+    expect(observation.finding).toBe("WARN")
+    expect(observation.confidence).toBe("HIGH")
+    expect(observation.evidence.constructorParameters).toEqual(["JdbcTemplate jdbcTemplate"])
+  })
+
   it("returns WARN/HIGH when a typed jdbcTemplate method call is found", () => {
     const source = `
 class ReservationController {

@@ -83,6 +83,33 @@ class ReservationController {
     expect(observation.evidence.constructorParameters).toEqual(["ReservationRepository repository"])
   })
 
+  it("keeps generic commas and annotation commas inside one Repository constructor parameter", () => {
+    const source = `
+import java.util.function.Function;
+
+class ReservationController {
+  ReservationController(
+    @Qualifier(name = "primary,repository") CrudRepository<Foo, Bar> repository,
+    Function<Foo, Bar> mapper,
+    ReservationService service
+  ) {
+    String ignored = """
+      Repository<Foo, Bar> repository
+      repository.findAll()
+    """;
+    mapper.apply(new Foo(), new Bar());
+    repository.findAll();
+  }
+}
+`
+
+    const observation = observeControllerRepositoryDependency({ filePath: controllerPath, source })
+
+    expect(observation.finding).toBe("WARN")
+    expect(observation.evidence.constructorParameters).toEqual(["CrudRepository<Foo, Bar> repository"])
+    expect(observation.evidence.methodCalls).toEqual(["repository.findAll("])
+  })
+
   it("returns WARN when a Controller method directly calls a repository variable", () => {
     const source = `
 package com.example.reservation;
