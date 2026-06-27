@@ -11,9 +11,9 @@ Persona Harness 帮助代理从空项目开始，读取 backend 背景，沿着 
 > 当前范围: Java/Spring backend workflow rail MVP.
 > frontend、infra、desktop app、AST/linter enforcement、完整 TDD workflow 都是后续方向。
 >
-> Current source/package candidate: `0.3.8-alpha.4`
+> 当前 source/package 候选版本: `0.3.9-alpha.3`
 
-## Requirements
+## 环境要求
 
 - Node.js 20+
 - npm
@@ -92,7 +92,7 @@ npx ph plan --accept
 如果还没有 README，只有一个产品想法，请先生成 requirements draft。
 
 ```text
-TODO 웹 서비스 만들래
+我想做一个 TODO Web 服务
 ```
 
 这种情况下，代理不应该立刻实现，而应该先运行:
@@ -107,7 +107,7 @@ npx ph workflow draft --stdin
 - `.persona/workflow/requirements/questions.md`
 - `.persona/workflow/requirements/assumptions.md`
 
-确认内容后，如果方向正确，告诉代理 `진행하자`。之后代理应运行:
+确认内容后，如果方向正确，告诉代理 `继续`。之后代理应运行:
 
 ```text
 npx ph workflow approve requirements
@@ -169,7 +169,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - 最终 TDD workflow
 - 没有 OpenCode 的独立 agent workflow
 
-## Docs
+## 文档
 
 - [Changelog](CHANGELOG.md)
 - [Release checklist](docs/current/release/release-checklist.md)
@@ -179,6 +179,6 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - [External tester guide](docs/current/v0.3.0-external-tester-guide.md)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 
-## License
+## 许可证
 
 Apache-2.0. See [LICENSE](LICENSE).

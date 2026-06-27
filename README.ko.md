@@ -15,7 +15,7 @@ generated app product quality를 인증하지 않습니다. 현재 Java/Spring b
 > 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, AST/linter enforcement, 완전한 TDD workflow는 후속 트랙입니다.
 >
-> 현재 source/package 후보: `0.3.9-alpha.2`
+> 현재 source/package 후보: `0.3.9-alpha.3`
 
 ## 요구사항
 
@@ -223,6 +223,6 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - [External tester guide](docs/current/v0.3.0-external-tester-guide.md)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 
-## License
+## 라이선스
 
 Apache-2.0. See [LICENSE](LICENSE).

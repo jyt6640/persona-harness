@@ -6,11 +6,11 @@ It helps an AI agent start from a clean project, read your backend requirements,
 
 It does not certify generated application product quality. The current Java/Spring backend guidance is a stack-steering and workflow-observability surface, not a Clean Code guarantee, AST/linter, or enforcement engine.
 
-If you only have a product idea, Persona Harness now routes the AI through a requirements draft first. For example, `TODO 웹 서비스 만들래` should create `.persona/workflow/requirements/backlog.md` and ask for review instead of starting implementation immediately. Implementation starts after you approve the draft with a phrase such as `진행하자`.
+If you only have a product idea, Persona Harness now routes the AI through a requirements draft first. For example, `I want to build a TODO web service` should create `.persona/workflow/requirements/backlog.md` and ask for review instead of starting implementation immediately. Implementation starts after you approve the draft with a phrase such as `proceed`.
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.3.9-alpha.2`
+> Current source/package candidate: `0.3.9-alpha.3`
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
@@ -112,7 +112,7 @@ Expected:
 - `.persona/harness.jsonc` exists
 - `.persona/rules` exists
 - `ph doctor` shows OpenCode is present
-- `ph doctor` shows `Persona package version: 0.3.9-alpha.2` after the current alpha package is installed
+- `ph doctor` shows `Persona package version: 0.3.9-alpha.3` after the current alpha package is installed
 
 ## 3. Write The Project README
 
@@ -124,30 +124,30 @@ Example:
 cat > README.md <<'EOF'
 # Equipment Rental API
 
-Java/Spring Boot와 Gradle로 장비 대여 REST API를 구현한다.
+Implement an equipment rental REST API with Java/Spring Boot and Gradle.
 
-## 요구사항
+## Requirements
 
-* 장비를 등록할 수 있다.
-* 장비 목록을 조회할 수 있다.
-* 회원을 등록할 수 있다.
-* 회원이 장비를 대여할 수 있다.
-* 이미 대여 중인 장비이거나 수량이 부족하면 대여에 실패한다.
-* 장비를 대여한 회원 본인만 반납할 수 있다.
-* 존재하지 않는 장비, 회원, 대여 요청에는 적절한 예외 응답을 반환한다.
+* Users can register equipment.
+* Users can list equipment.
+* Users can register members.
+* Members can rent equipment.
+* Renting fails when equipment is already rented or has insufficient quantity.
+* Only the member who rented equipment can return it.
+* Missing equipment, members, or rental requests return appropriate error responses.
 
-## 기술 조건
+## Technical Constraints
 
-* Java 21 이상
+* Java 21+
 * Spring Boot 3.x
 * Gradle only
 * REST API
-* 화면 구현 없음
-* 저장소는 단순 in-memory 구현으로 시작해도 된다.
-* Repository interface는 domain 패키지에 두고, 구현체는 infrastructure 패키지에 둔다.
-* Application Service는 저장소 상태나 id sequence를 직접 소유하지 않는다.
-* Domain은 record가 아니라 상태와 행동을 가진 class로 만든다.
-* Controller, Service, Domain, Repository, DTO 책임을 분리한다.
+* No UI implementation
+* Start with a simple in-memory repository if needed.
+* Put repository interfaces in the domain package and implementations in the infrastructure package.
+* Application services must not directly own storage state or id sequences.
+* Domain objects should be classes with state and behavior, not records.
+* Separate Controller, Service, Domain, Repository, and DTO responsibilities.
 EOF
 ```
 
@@ -189,7 +189,7 @@ If `.persona/project-profile.jsonc` is missing, draft, malformed, or incomplete,
 If you only have an idea, start with that idea instead of forcing a full README first:
 
 ```text
-TODO 웹 서비스 만들래
+I want to build a TODO web service.
 ```
 
 The agent should not implement yet. It should run or follow:
@@ -207,7 +207,7 @@ Expected draft artifacts:
 Review those files. If the direction is right, tell the agent:
 
 ```text
-진행하자
+Proceed.
 ```
 
 Then the agent should run or follow:
@@ -225,7 +225,7 @@ If you already have a README, run OpenCode with a deliberately short prompt:
 opencode run --dir . \
   --model openai/gpt-5.4-mini-fast \
   --dangerously-skip-permissions \
-  "README.md 보고 구현해줘"
+  "Read README.md and implement it."
 ```
 
 If you use the TUI instead:
@@ -237,7 +237,7 @@ opencode
 Then type:
 
 ```text
-README.md 보고 구현해줘
+Read README.md and implement it.
 ```
 
 The agent should run or follow these workflow commands by itself:
@@ -286,14 +286,14 @@ The difference between the requirement commands:
 If the agent ignores the workflow, paste this stricter prompt:
 
 ```text
-README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤 Java/Spring Gradle 기반으로 요구사항 전체를 구현해줘.
+Read README.md, .persona/project-profile.jsonc, .persona/policies, and .persona/workflow/plan.md. Confirm that the plan is accepted, then implement all requirements with Java/Spring and Gradle.
 
-구현 전 `npx ph workflow implement`를 실행하고, README.md는 해당 출력의 bearshell chunk-read 방식으로 끝까지 읽어줘.
-명령 실행은 가능하면 `npx ph bearshell`로 해줘.
-구현 후 `npx ph bearshell --shell 'gradle test'`, `npx ph bearshell --shell 'gradle build'`를 실행해줘.
-실행 가능한 Spring Boot 앱이면 bootRun과 HTTP happy/failure smoke도 확인해줘.
-.persona/workflow/implementation-report.md와 .persona/workflow/review-report.md를 채우고, `npx ph plan --report-filled implementation`, `npx ph plan --report-filled review`, `npx ph workflow finish implement`를 실행해줘.
-finish가 실패하면 완료했다고 말하지 말고 실패 이유를 고쳐줘.
+Before implementing, run `npx ph workflow implement`, then read README.md completely using the bearshell chunk-read method shown in that output.
+Use `npx ph bearshell` for commands where possible.
+After implementation, run `npx ph bearshell --shell 'gradle test'` and `npx ph bearshell --shell 'gradle build'`.
+If the Spring Boot app can run, also check bootRun plus HTTP happy-path and failure-path smoke.
+Fill .persona/workflow/implementation-report.md and .persona/workflow/review-report.md, then run `npx ph plan --report-filled implementation`, `npx ph plan --report-filled review`, and `npx ph workflow finish implement`.
+If finish fails, do not claim completion. Fix the reason first.
 ```
 
 ## 6. Check The Result
@@ -463,7 +463,7 @@ That is not desired. The agent should rely on Persona Harness injection and the 
 Tell it:
 
 ```text
-.persona/rules를 직접 열어 읽지 말고, accepted plan과 Persona Harness injection summary를 기준으로 구현해줘.
+Do not open and read .persona/rules directly. Implement from the accepted plan and Persona Harness injection summary.
 ```
 
 ### `gradle build` passes but `bootJar` is skipped
