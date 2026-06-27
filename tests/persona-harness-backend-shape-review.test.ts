@@ -188,6 +188,31 @@ function writeWindowsTestBuildVerificationWorkflowScaffold(projectDir: string): 
   )
 }
 
+function writeWindowsFailedDependencyVerificationWorkflowScaffold(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "## Verification",
+      "$ npx ph bearshell --shell 'call gradlew.bat test'",
+      "gradlew.bat test: exit 1",
+      "Could not resolve all files for configuration ':runtimeClasspath'.",
+      "Could not resolve org.springframework.boot:spring-boot-starter-web:.",
+      "$ npx ph bearshell --shell 'call gradlew.bat build'",
+      "gradlew.bat build: exit 1",
+      "Could not resolve org.flywaydb:flyway-core:.",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- test/build 통과라고 쓰면 안 되는 dependency resolution failure case.",
+    ].join("\n"),
+  )
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -494,6 +519,21 @@ describe("ph review backend-shape report-only analyzer", () => {
     expect(verificationRow).toStrictEqual({
       result: "PASS",
       evidence: "gradle test/build success evidence observed; bootRun evidence not observed",
+    })
+  })
+
+  it("reports WARN when Gradle test and build evidence contains dependency resolution failures", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    writeWindowsFailedDependencyVerificationWorkflowScaffold(projectDir)
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const verificationRow = backendShapeReportRows(readReport(projectDir)).get("Verification report")
+    expect(verificationRow).toStrictEqual({
+      result: "WARN",
+      evidence: "failed verification evidence observed",
     })
   })
 

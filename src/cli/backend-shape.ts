@@ -346,7 +346,7 @@ function hasGradleTaskEvidence(content: string, task: "test" | "build" | "bootRu
 }
 
 function hasVerificationFailureEvidence(content: string): boolean {
-  return /\bVerification failed\b|\bcompile\/test verification failed\b|\bBUILD FAILED\b|>\s*Task\s+:[^\r\n]+?\bFAILED\b|\bExecution failed for task\b/i.test(content)
+  return /\bVerification failed\b|\bcompile\/test verification failed\b|\bBUILD FAILED\b|>\s*Task\s+:[^\r\n]+?\bFAILED\b|\bExecution failed for task\b|\bCould not resolve\b|\bgradlew(?:\.bat)?\s+(?:test|build)\b[^\r\n]*(?:exit(?:ed)?(?:\s+code)?\s*1|status\s*1)|\borg\.springframework\.boot:spring-boot-starter-[\w-]+:\.|\borg\.flywaydb:flyway-core:\./i.test(content)
 }
 
 function hasVerificationSuccessEvidence(content: string): boolean {
