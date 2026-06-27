@@ -31,6 +31,15 @@ fixtures/
 !packages/shared-skills/**/fixtures/**  
 tmp/
 
+# Local secrets and eval pilot environment. Keep credentials out of git.
+.env
+.env.*
+*.env
+*.env.local
+eval-pilot.env
+tmp/*.env
+tmp/*.env.local
+
 # Package-manager noise.
 npm-debug.log*
 yarn-error.log*
