@@ -29,12 +29,27 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - original raw/capture root: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/`;
   - replay results: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T070237569Z/results.json`;
   - pins used model `openai/gpt-5.4-mini-fast`, model version `openai-oauth-2026-06-27-gpt-5.4-mini-fast`, timeout `900000`, and PH install `npm install -D persona-harness@0.3.9-alpha.3`.
-- Eval decision gate remains FAIL:
+- Before the replay runtime-smoke fix, the eval decision gate failed:
   - plain/claude/agents generated Maven/Spring projects and failed Gradle compile/test metrics;
   - PH ON generated a Gradle/Spring project with wrapper and PH artifacts, with compile PASS and Gradle test PASS;
   - original decide failed because runtimeSmokeRate was missing and PH ON stack alignment improvement over plain was below 20 percentage points;
   - replay decide also failed because runtimeSmokeRate was missing and stack alignment improvement stayed below threshold;
-  - this is real eval pilot evidence, but it is not a gate PASS, not proof PH beats baselines, and not generated app product quality certification.
+  - this was real eval pilot evidence, but it was not yet a gate PASS, proof PH beats baselines, or generated app product quality certification.
+- Fixed replay runtime-smoke determinism:
+  - `8f203d7 fix(eval): preserve runtime smoke on replay` was pushed to origin/main as `8f203d7fa90e767c0de591f6c1284a833b3c531a`;
+  - replay now reads captured `raw/runtime-smoke.log` `status:`, mapping `status: 0` to PASS, non-zero/null to FAIL, and missing status/log to NOT RUN/null;
+  - QA verification passed focused eval tests, typecheck, full `npm test`, and build.
+- Replayed the existing runtime-smoke actual capture:
+  - existing actual capture root: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z`;
+  - new replay result: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T080127352Z/results.json`;
+  - replay runtime rates: agents=`1`, claude=`0`, ph-on=`1`, plain=`0`;
+  - `node scripts/eval/decide.mjs experiments/eval-runs/2026-06-27T080127352Z/results.json` returned `Verdict: PASS` and `PH ON met coded v0.4 threshold checks for supplied results`.
+- The replay-fixed pilot is a replay-reproducible `n=1` PASS under the coded decide gate for the supplied results:
+  - it is not a full v0.4 matrix result;
+  - it is not generated app product quality certification;
+  - original PH ON generated Gradle/Spring and reached build/test/runtime/workflow finish PASS;
+  - OFF baselines generated Maven/Spring and failed Gradle compile/test, with agents runtime/stack strong but build/test failing;
+  - replay still does not preserve provider timeout/providerFailed or original PH ON workflow finish outcome exactly, which remains optional future QA scope.
 
 ## [0.3.9-alpha.3] - 2026-06-27
 
