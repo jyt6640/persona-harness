@@ -81,6 +81,17 @@ describe("ON/OFF eval runner core", () => {
     expect(command).not.toContain("--seed")
   })
 
+  it("keeps capture paths unique for bounded concurrent repetitions", () => {
+    const options = parseArgs(["--runs", "2", "--fixture", "backend-api-no-stack", "--condition", "all", "--concurrency", "2", "--model", "test-model"])
+    const plan = buildPlan(options)
+
+    const capturePathKeys = plan.runs.map((runPlan) => `${runPlan.fixtureId}/${runPlan.conditionId}/r${runPlan.repetition}`)
+    const uniqueCapturePathKeys = new Set(capturePathKeys)
+
+    expect(options.concurrency).toBe(2)
+    expect(uniqueCapturePathKeys.size).toBe(capturePathKeys.length)
+  })
+
   it("measures Gradle test from JUnit XML instead of successful log text", () => {
     const projectDir = tempDir("persona-eval-junit-")
 

@@ -10,6 +10,7 @@ Options:
   --fixture <id>             Fixture id or all (default: all)
   --condition <id>           plain | claude | agents | ph-on | all (default: all)
   --runs <n>                 Repetitions per fixture/condition (default: 5)
+  --concurrency <n>          Max concurrently executing runs (default: 1)
   --model <id>               Required model id for actual/preflight runs
   --model-version <label>    Model version label (default: OPENCODE_MODEL_VERSION or unknown)
   --temperature <value>      Temperature pin (default: OPENCODE_TEMPERATURE or unknown)
@@ -72,6 +73,7 @@ function printPlan(options, plan) {
     fixture: options.fixture,
     condition: options.condition,
     runs: options.runs,
+    concurrency: options.concurrency,
     totalRuns: plan.runs.length,
     selectedRuns: plan.runs,
   }

@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { cp, mkdtemp, writeFile } from "node:fs/promises"
 import { arch, platform, release, tmpdir, type } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 
 export const FIXTURE_PATHS = {
   "backend-api-no-stack": "docs/current/evaluation-fixtures/backend-api-no-stack.md",
@@ -42,6 +42,7 @@ export function parseArgs(argv) {
     condition: "all",
     outputRoot: "experiments/eval-runs",
     timeoutMs: 600000,
+    concurrency: 1,
     preflightOnly: false,
     dryRun: false,
     json: false,
@@ -82,6 +83,7 @@ export function parseArgs(argv) {
     else if (arg === "--condition") options.condition = normalizeConditionId(next())
     else if (arg === "--output-root") options.outputRoot = next()
     else if (arg === "--timeout-ms") options.timeoutMs = Number.parseInt(next(), 10)
+    else if (arg === "--concurrency") options.concurrency = Number.parseInt(next(), 10)
     else if (arg === "--model") options.model = next()
     else if (arg === "--model-version") options.modelVersion = next()
     else if (arg === "--temperature") options.temperature = next()
@@ -109,6 +111,9 @@ export function parseArgs(argv) {
   }
   if (!Number.isInteger(options.timeoutMs) || options.timeoutMs < 1000) {
     throw new Error("--timeout-ms requires an integer >= 1000")
+  }
+  if (!Number.isInteger(options.concurrency) || options.concurrency < 1) {
+    throw new Error("--concurrency requires a positive integer")
   }
 
   return options
@@ -217,6 +222,48 @@ export function runShell(command, cwd, timeoutMs) {
     timedOut: result.error?.name === "Error" && /timed out/i.test(result.error.message),
     error: result.error ? result.error.message : "",
   }
+}
+
+export function runShellAsync(command, cwd, timeoutMs) {
+  return new Promise((resolvePromise) => {
+    const child = spawn(command, {
+      cwd,
+      shell: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    })
+    let stdout = ""
+    let stderr = ""
+    let errorMessage = ""
+    let timedOut = false
+    const timer = setTimeout(() => {
+      timedOut = true
+      child.kill("SIGTERM")
+    }, timeoutMs)
+    child.stdout.setEncoding("utf8")
+    child.stderr.setEncoding("utf8")
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk
+    })
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk
+    })
+    child.on("error", (error) => {
+      errorMessage = error instanceof Error ? error.message : String(error)
+    })
+    child.on("close", (status, signal) => {
+      clearTimeout(timer)
+      resolvePromise({
+        command,
+        cwd,
+        status,
+        signal,
+        stdout,
+        stderr,
+        timedOut,
+        error: timedOut ? `timed out after ${timeoutMs}ms` : errorMessage,
+      })
+    })
+  })
 }
 
 export function parseCommandOutcome(execution) {
@@ -615,11 +662,9 @@ export async function runEval(options) {
 
   const environment = collectEnvironment(options)
   const gitCommit = getGitCommit(options.projectDir)
-  const runs = []
-
-  for (const runPlan of plan.runs) {
-    runs.push(await executeRun(options, outputDir, runPlan, environment, gitCommit))
-  }
+  const runs = await runWithConcurrency(plan.runs, options.concurrency, (runPlan) =>
+    executeRun(options, outputDir, runPlan, environment, gitCommit),
+  )
 
   const results = {
     schemaVersion: "persona-onoff-eval.1",
@@ -643,6 +688,7 @@ export async function runEval(options) {
       fixture: options.fixture,
       condition: options.condition,
       runs: options.runs,
+      concurrency: options.concurrency,
     },
     runs,
     aggregate: aggregateRuns(runs),
@@ -692,22 +738,22 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   const rawOutputPaths = {}
   let providerFailed = false
   for (const [name, command] of commands) {
-    const execution = runShell(command, workspaceDir, options.timeoutMs)
+    const execution = await runShellAsync(command, workspaceDir, options.timeoutMs)
     commandResults[name] = execution
     writeCommandLog(join(logsDir, `${name}.log`), execution)
     rawOutputPaths[name] = writeRawExecutionFiles(logsDir, name, execution)
     if (name === "opencode" && execution.status !== 0) providerFailed = true
   }
 
-  const testExecution = runShell(gradleCommand(workspaceDir, "test"), workspaceDir, options.timeoutMs)
+  const testExecution = await runShellAsync(gradleCommand(workspaceDir, "test"), workspaceDir, options.timeoutMs)
   writeCommandLog(join(logsDir, "gradle-test.log"), testExecution)
   rawOutputPaths["gradle-test"] = writeRawExecutionFiles(logsDir, "gradle-test", testExecution)
-  const buildExecution = runShell(gradleCommand(workspaceDir, "build"), workspaceDir, options.timeoutMs)
+  const buildExecution = await runShellAsync(gradleCommand(workspaceDir, "build"), workspaceDir, options.timeoutMs)
   writeCommandLog(join(logsDir, "gradle-build.log"), buildExecution)
   rawOutputPaths["gradle-build"] = writeRawExecutionFiles(logsDir, "gradle-build", buildExecution)
 
   const runtimeExecution = options.runtimeSmokeCommand
-    ? runShell(options.runtimeSmokeCommand, workspaceDir, options.timeoutMs)
+    ? await runShellAsync(options.runtimeSmokeCommand, workspaceDir, options.timeoutMs)
     : null
   if (runtimeExecution) {
     writeCommandLog(join(logsDir, "runtime-smoke.log"), runtimeExecution)
@@ -715,14 +761,14 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   }
 
   const workflowFinishExecution =
-    runPlan.conditionId === "ph-on" ? runShell(options.workflowFinishCommand, workspaceDir, options.timeoutMs) : null
+    runPlan.conditionId === "ph-on" ? await runShellAsync(options.workflowFinishCommand, workspaceDir, options.timeoutMs) : null
   if (workflowFinishExecution) {
     writeCommandLog(join(logsDir, "workflow-finish.log"), workflowFinishExecution)
     rawOutputPaths["workflow-finish"] = writeRawExecutionFiles(logsDir, "workflow-finish", workflowFinishExecution)
   }
 
   const backendShapeExecution = options.backendShapeCommand
-    ? runShell(options.backendShapeCommand, workspaceDir, options.timeoutMs)
+    ? await runShellAsync(options.backendShapeCommand, workspaceDir, options.timeoutMs)
     : null
   if (backendShapeExecution) {
     writeCommandLog(join(logsDir, "backend-shape.log"), backendShapeExecution)
@@ -801,6 +847,21 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       backendShapeWarnCount,
     },
   }
+}
+
+export async function runWithConcurrency(items, concurrency, worker) {
+  const results = new Array(items.length)
+  let nextIndex = 0
+  async function runWorker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex
+      nextIndex += 1
+      results[index] = await worker(items[index], index)
+    }
+  }
+  const workerCount = Math.min(concurrency, items.length)
+  await Promise.all(Array.from({ length: workerCount }, () => runWorker()))
+  return results
 }
 
 async function replayEval(options) {
