@@ -79,6 +79,28 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - do not expand to the full v0.4 matrix from this evidence;
   - PH ON improved stack alignment in this pilot but regressed runtime and failure-mode outcomes versus OFF baselines;
   - no generated app product quality certification or fake metrics are claimed.
+- Recorded QA root-cause classification and serial `n=2` rerun after `dde9bcc fix(eval): clean timed-out opencode process groups`:
+  - inspected capture root: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z`;
+  - old PH ON r1 failed build/test/runtime because generated Java had a compile error: `OrderService.java` referenced missing `CustomerNotFoundException`; workflow finish failed because implementation/review reports remained templates; OpenCode exited status `0` with no provider timeout;
+  - old PH ON r2 passed build/test, but runtime smoke likely failed due contamination from a timed-out OpenCode process leaving bootRun/H2 lock, `Database may be already in use: .../order-intake.mv.db`; workflow finish failed because reports were templates and `req-1` through `req-6` were pending; OpenCode status was null/SIGTERM after `900000ms`;
+  - `dde9bcc` adds scoped process-group cleanup only for timed-out OpenCode/provider commands, with no broad process killing;
+  - verification passed focused tests, `npm run typecheck`, `npm test` (64 files / 404 tests), and `npm run build`.
+- Serial rerun used the same fixture/conditions/runs with `--concurrency 1` and capture enabled:
+  - original results: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/results.json`;
+  - replay results: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T114723409Z/results.json`;
+  - original and replay decide both FAIL because PH ON stack alignment improvement over plain is below 20 percentage points.
+- Serial `n=2` aggregate matched in original and replay:
+  - plain: build `0%`, test `0%`, runtime `100%`, stack `75%`, failures `4`;
+  - claude: build `0%`, test `0%`, runtime `50%`, stack `37.5%`, failures `6`;
+  - agents: build `0%`, test `0%`, runtime `50%`, stack `37.5%`, failures `6`;
+  - ph-on: build `100%`, test `100%`, runtime `100%`, stack `75%`, workflow `100%`, failures `0`;
+  - PH ON r1/r2 runtime logs both observed a Tomcat startup marker;
+  - no matching orphan opencode/persona-runtime-smoke/gradle bootRun/workspace process remained.
+- Serial `n=2` interpretation boundary:
+  - external outcomes are green for PH ON versus OFF in this rerun;
+  - coded decide gate remains FAIL because plain baseline already has stackAlignmentRate `75%`, so PH ON does not clear the +20pp stack-improvement threshold;
+  - record this as external outcome green, coded gate stack-threshold fail;
+  - this is not full v0.4 matrix evidence, broad PH value proof, generated app product quality certification, or a reason to move v0.5 AST forward.
 
 ## [0.3.9-alpha.3] - 2026-06-27
 
