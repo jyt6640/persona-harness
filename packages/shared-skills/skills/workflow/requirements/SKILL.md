@@ -98,11 +98,12 @@ If the request is continuation work:
 Before saying complete:
 
 1. After build/test succeeds, fill `.persona/workflow/implementation-report.md` with actual evidence.
-2. Fill `.persona/workflow/review-report.md` with actual review evidence.
-3. Run `npx ph plan --report-filled implementation` and `npx ph plan --report-filled review`.
-4. Run `npx ph workflow check` and address blockers.
-5. Archive satisfied req tickets only after review confirms requirements are satisfied: `npx ph workflow archive <ticket>`.
-6. Run `npx ph workflow finish implement`.
+2. After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
+3. Fill `.persona/workflow/review-report.md` with actual review evidence.
+4. Run `npx ph plan --report-filled implementation` and `npx ph plan --report-filled review`.
+5. Run `npx ph workflow check` and address blockers.
+6. Archive satisfied req tickets only after review confirms requirements are satisfied: `npx ph workflow archive <ticket>`.
+7. Run `npx ph workflow finish implement`.
 
 If pending tickets remain, do not claim full completion. Report the next ticket instead.
 
@@ -134,6 +135,7 @@ Required flow:
 
 Finish gate:
 - build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
 - `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
 - `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
 - `npx ph workflow check`를 실행하고 blocker를 해결한다.
@@ -168,6 +170,7 @@ Required flow:
 
 Finish gate:
 - build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
 - `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
 - `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
 - `npx ph workflow check`를 실행하고 blocker를 해결한다.
@@ -204,6 +207,7 @@ Required flow:
 
 Finish gate:
 - build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
 - `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
 - `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
 - `npx ph workflow check`를 실행하고 blocker를 해결한다.
@@ -237,6 +241,7 @@ Required flow:
 
 Finish gate:
 - build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
 - `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
 - `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
 - `npx ph workflow check`를 실행하고 blocker를 해결한다.
@@ -269,6 +274,7 @@ Required flow:
 
 Finish gate:
 - build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
 - `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
 - `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
 - `npx ph workflow check`를 실행하고 blocker를 해결한다.

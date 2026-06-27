@@ -37,6 +37,11 @@ describe("workflow skill loader", () => {
     expect(block).toContain("npx ph plan --report-filled review")
     expect(block).toContain("npx ph workflow check")
     expect(block).toContain("Do not archive req tickets until review confirms requirements are satisfied.")
+    expect(block).toContain("bounded bootRun/manual QA")
+    expect(block).toContain("stop the app")
+    expect(block).toContain("observed result")
+    expect(block).toContain("verification limitation/blocker")
+    expect(block).toContain("instead of looping")
     expect(block).toContain("npx ph workflow finish implement")
   })
 
