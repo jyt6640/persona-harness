@@ -50,6 +50,28 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - original PH ON generated Gradle/Spring and reached build/test/runtime/workflow finish PASS;
   - OFF baselines generated Maven/Spring and failed Gradle compile/test, with agents runtime/stack strong but build/test failing;
   - replay still does not preserve provider timeout/providerFailed or original PH ON workflow finish outcome exactly, which remains optional future QA scope.
+- Preserved replay provider/workflow outcomes and added bounded eval runner concurrency:
+  - `0ff6ca6 fix(eval): preserve replay provider workflow outcomes`;
+  - `afcae34 feat(eval): add bounded runner concurrency`;
+  - origin/main now points to `afcae34ef696f76c7c7ab55e27b0f3d20a8421df`;
+  - QA verification passed focused eval tests (15), typecheck, full `npm test` (64 files / 401 tests), and build.
+- Recorded a real 2-rep backend-api-no-stack pilot with capture enabled and concurrency 2:
+  - original results: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/results.json`;
+  - replay results: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T085815683Z/results.json`;
+  - original decide verdict: FAIL because PH ON runtimeSmokeRate regressed below plain and PH ON failure-mode reduction was `-75%`, below the 20% threshold;
+  - replay decide verdict: FAIL because PH ON runtimeSmokeRate regressed below claude and PH ON failure-mode reduction was `-75%`, below the 20% threshold;
+  - verdict is stable FAIL, while reason text differs only in strongest-OFF tie/order labeling.
+- 2-rep aggregate results:
+  - plain: runs `2`, build `0%`, test `0%`, runtime `100%`, stack `75%`, workflow `0%`, failures `4`;
+  - claude: runs `2`, build `0%`, test `0%`, runtime `50%`, stack `37.5%`, workflow `0%`, failures `6`;
+  - agents: runs `2`, build `0%`, test `0%`, runtime `0%`, stack `0%`, workflow `0%`, failures `8`;
+  - ph-on: runs `2`, build `50%`, test `50%`, runtime `0%`, stack `100%`, workflow `0%`, failures `7`.
+- Interpretation boundary for the 2-rep pilot:
+  - the earlier replay-fixed `n=1` PASS remains recorded as a real pilot signal;
+  - the `n=2` follow-up is not a durable PASS and overrides expansion readiness;
+  - do not expand to the full v0.4 matrix from this evidence;
+  - PH ON improved stack alignment in this pilot but regressed runtime and failure-mode outcomes versus OFF baselines;
+  - no generated app product quality certification or fake metrics are claimed.
 
 ## [0.3.9-alpha.3] - 2026-06-27
 
