@@ -140,9 +140,20 @@ function writeWorkflowScaffold(projectDir: string): void {
   writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
   writeFileSync(
     join(projectDir, ".persona", "workflow", "implementation-report.md"),
-    "Status: filled\n- README ranges read: 1-220\n- Project profile ranges read: all\n- `npx ph bearshell --shell './gradlew test'`\n- `npx ph bearshell --shell './gradlew build'`\n",
+    [
+      "Status: filled",
+      "- README ranges read: 1-220",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "BUILD SUCCESSFUL in 1s",
+      "- `npx ph bearshell --shell './gradlew build'`",
+      "BUILD SUCCESSFUL in 1s",
+    ].join("\n"),
   )
-  writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n")
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    ["Status: filled", "- `npx ph bearshell --shell './gradlew bootRun'`", "Tomcat started on port 8080", "Started LibraryApplication"].join("\n"),
+  )
   writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
 }
 
@@ -154,7 +165,9 @@ function writeWindowsVerificationWorkflowScaffold(projectDir: string): void {
       "Status: filled",
       "## Verification",
       "- [x] `npx ph bearshell --shell 'call gradlew.bat test'` 결과를 확인했다.",
+      "BUILD SUCCESSFUL in 2s",
       "- [x] `npx ph bearshell --shell 'call gradlew.bat build'` 결과를 확인했다.",
+      "BUILD SUCCESSFUL in 2s",
     ].join("\n"),
   )
   writeFileSync(
@@ -184,6 +197,29 @@ function writeWindowsTestBuildVerificationWorkflowScaffold(projectDir: string): 
     [
       "Status: filled",
       "- [ ] 실행 가능한 Spring Boot 앱이면 `npx ph bearshell --shell 'call gradlew.bat bootRun --args=\"--server.port=8085\"'` 결과를 확인했다.",
+    ].join("\n"),
+  )
+}
+
+function writeTemplateOnlyVerificationWorkflowScaffold(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: template",
+      "## Verification",
+      "- [ ] `npx ph bearshell gradle test`",
+      "- [ ] `npx ph bearshell gradle build`",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: template",
+      "## Verification Review",
+      "- [ ] `npx ph bearshell gradle test` 결과를 확인했다.",
+      "- [ ] `npx ph bearshell gradle build` 결과를 확인했다.",
+      "- [ ] 실행 가능한 Spring Boot 앱이면 `npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"'` 결과를 확인했다.",
     ].join("\n"),
   )
 }
@@ -519,6 +555,21 @@ describe("ph review backend-shape report-only analyzer", () => {
     expect(verificationRow).toStrictEqual({
       result: "PASS",
       evidence: "gradle test/build success evidence observed; bootRun evidence not observed",
+    })
+  })
+
+  it("warns when template reports only mention verification commands without output", () => {
+    const projectDir = createTempProject()
+    writeCleanishSpringProject(projectDir)
+    writeTemplateOnlyVerificationWorkflowScaffold(projectDir)
+
+    const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const verificationRow = backendShapeReportRows(readReport(projectDir)).get("Verification report")
+    expect(verificationRow).toStrictEqual({
+      result: "WARN",
+      evidence: "gradle test/build/bootRun mentioned without success/failure output",
     })
   })
 

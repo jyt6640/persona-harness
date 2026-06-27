@@ -350,7 +350,7 @@ function hasVerificationFailureEvidence(content: string): boolean {
 }
 
 function hasVerificationSuccessEvidence(content: string): boolean {
-  return /\bBUILD SUCCESSFUL\b|\bTomcat started\b|\bStarted\s+\w+Application\b|\bsmoke-started\b|결과를 확인했다|통과/i.test(content)
+  return /\bBUILD SUCCESSFUL\b|\bTomcat started\b|\bStarted\s+\w+Application\b|\bsmoke-started\b/i.test(content)
 }
 
 function hasBootRunSuccessEvidence(content: string): boolean {
@@ -373,7 +373,7 @@ function verificationReport(projectDir: string): ShapeFinding {
     return warn("Verification report", "gradle test/build evidence missing")
   }
   if (!hasVerificationSuccessEvidence(content)) {
-    return pass("Verification report", hasBootRunEvidence ? "gradle test/build/bootRun mentioned" : "gradle test/build mentioned; bootRun evidence not observed")
+    return warn("Verification report", hasBootRunEvidence ? "gradle test/build/bootRun mentioned without success/failure output" : "gradle test/build mentioned without success/failure output; bootRun evidence not observed")
   }
   return hasBootRunEvidence && hasBootRunSuccessEvidence(content)
     ? pass("Verification report", "gradle test/build/bootRun success evidence observed")

@@ -158,7 +158,16 @@ describe("ph review backend-shape", () => {
     mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
     writeFileSync(
       join(projectDir, ".persona", "workflow", "implementation-report.md"),
-      "Status: filled\nnpx ph bearshell --shell './gradlew test'\nnpx ph bearshell --shell './gradlew build'\n./gradlew bootRun\n",
+      [
+        "Status: filled",
+        "npx ph bearshell --shell './gradlew test'",
+        "BUILD SUCCESSFUL in 1s",
+        "npx ph bearshell --shell './gradlew build'",
+        "BUILD SUCCESSFUL in 1s",
+        "./gradlew bootRun",
+        "Tomcat started on port 8080",
+        "Started LibraryApplication",
+      ].join("\n"),
     )
 
     const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -240,11 +249,11 @@ describe("ph review backend-shape", () => {
     mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
     writeFileSync(
       join(projectDir, ".persona", "workflow", "implementation-report.md"),
-      "Status: filled\n- [x] `gradle test`\n- [x] `./gradlew test build`\n",
+      "Status: filled\n- [x] `gradle test`\nBUILD SUCCESSFUL in 1s\n- [x] `./gradlew test build`\nBUILD SUCCESSFUL in 1s\n",
     )
     writeFileSync(
       join(projectDir, ".persona", "workflow", "review-report.md"),
-      "Status: filled\n- [x] `./gradlew bootRun`\n- [x] HTTP happy path / failure path manual QA evidence를 확인했다.\n",
+      "Status: filled\n- [x] `./gradlew bootRun`\nTomcat started on port 8080\nStarted LibraryApplication\n- [x] HTTP happy path / failure path manual QA evidence를 확인했다.\n",
     )
 
     const result = runPersonaCli(["review", "backend-shape"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -252,6 +261,6 @@ describe("ph review backend-shape", () => {
     expect(result.status).toBe(0)
     const report = readFileSync(join(projectDir, ".persona", "workflow", "backend-shape-report.md"), "utf8")
     expect(report).toContain("| Verification report | PASS |")
-    expect(report).toContain("gradle test/build/bootRun mentioned")
+    expect(report).toContain("gradle test/build/bootRun success evidence observed")
   })
 })
