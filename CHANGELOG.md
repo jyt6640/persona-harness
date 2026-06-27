@@ -12,6 +12,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Refined backend-shape smoke findings for current HEAD:
   - `application/port/out/*Repository.java` can be recognized as repository port evidence;
   - Verification report wording is intended to distinguish test/build evidence from bootRun evidence, though the current-head re-smoke still found a false-success wording risk.
+- Added Gradle dependency self-check guidance to reduce dot-version recurrence in generated `build.gradle` files.
 
 ### External Smoke
 
@@ -32,6 +33,23 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - backend-shape Verification report wording still said `gradle test/build success evidence observed; bootRun evidence not observed` despite test/build failure or missing success evidence.
 - Release prep for alpha2 should stay on hold until the dependency recurrence and Verification report wording blockers are fixed and re-smoked, unless HQ explicitly accepts the risk.
 - This current-head smoke does not certify generated app product quality, does not make backend-shape an enforcement gate, and does not add AST/linter/enforcement.
+- Second current-head local tarball closure re-smoke at `691f874` was partially successful. This was not a registry `0.3.9-alpha.1` smoke.
+- Improvements confirmed:
+  - Java/Spring/Gradle generation;
+  - valid dependency notation;
+  - `gradlew.bat test` and `gradlew.bat build` PASS;
+  - `profileSummaryInjected` and Java role evidence;
+  - backend-shape main PASS;
+  - `application/port/out` repository port fixture PASS.
+- Still blocked:
+  - OpenCode stopped at the bootRun/manual QA PowerShell step;
+  - implementation/review reports remained templates;
+  - `plan --report-filled` markers were not observed;
+  - `req-1` remained pending;
+  - `workflow finish implement` exited 1 on missing reports + pending requirement.
+- The blocker appears shifted from Gradle dependency notation to closure/report/final-gate follow-through after build/test/manual QA.
+- Verification report false-success wording is still a residual risk rather than a proven failed fix because the dot-dependency fixture did not contain actual Gradle failure evidence.
+- Release prep for alpha2 remains held unless HQ explicitly accepts partial closure risk.
 
 ## [0.3.9-alpha.1] - 2026-06-25
 
