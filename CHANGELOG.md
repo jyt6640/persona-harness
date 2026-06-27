@@ -8,6 +8,44 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 No unreleased changes.
 
+## [0.3.9-alpha.3] - 2026-06-27
+
+### Changed
+
+- Bumped the prerelease version to `0.3.9-alpha.3` because registry `persona-harness@0.3.9-alpha.2` points to `gitHead` `ecc65560af26df78656f6135237f44cdbf9c2607`, while current HEAD includes the verification-focused changes through `a5204db`.
+- Marked injection value as not proven:
+  - `docs/current/injection-value-status.json` now uses `decision: injection-effect-not-proven`;
+  - legacy self-rated counts are retained only as audit data, not measured evidence;
+  - `npm run check:injection-value` passes against the not-measured evidence state.
+- Added `ph observe <path>` as a report-only Java observer CLI surface:
+  - observer findings are normalized with `ruleId`, `result`, `evidence`, `confidence`, `source`, and `limitations`;
+  - observer code is now reachable from the shipped CLI instead of only from scripts/tests.
+- Hardened observer measurement code:
+  - replaced naive Java parameter comma splitting with a tokenizer that respects nested generics and other Java syntax boundaries;
+  - consolidated `isRecord` into a single shared definition;
+  - removed product analyzer `roomescape` / `/reservations` domain literals from `src`;
+  - added adversarial Java observer/tokenizer coverage.
+- Added live runtime observer trace evidence:
+  - Java write/edit hook paths can record `observer-report-only` evidence;
+  - evidence is best-effort and non-blocking;
+  - no enforcement or generated app quality certification is added.
+- Added ON/OFF eval measurement infrastructure:
+  - `run-onoff-eval.mjs` supports dry-run, preflight, capture, replay, reproducibility pins, JUnit XML / Gradle artifact based scoring, and observer-based stack alignment;
+  - `decide.mjs` computes an objective gate from results JSON;
+  - `blind-grade.mjs` creates anonymized review packages and aggregates reviewer disagreement.
+- Restored a tracked minimal Java `example/` fixture used by observe tests.
+
+### Verification
+
+- Current-head score-uplift smoke passed on local tarball HEAD `a5204db`:
+  - clean install, `ph init`, `ph bootstrap backend`, and `ph doctor` passed;
+  - `ph observe --json example/` passed and emitted report-only schema findings;
+  - runtime hook observer evidence was created without throwing or blocking;
+  - eval runner help/dry-run/preflight/replay guard surfaces passed;
+  - `decide.mjs` and `blind-grade.mjs` surfaces executed.
+- Actual OpenCode ON/OFF eval was not run because `OPENCODE_MODEL`, model version, and provider keys were not pinned. No fake `results.json` was generated.
+- This release does not certify generated app product quality, does not add AST/linter/enforcement, and keeps observer/backend-shape report-only.
+
 ## [0.3.9-alpha.2] - 2026-06-27
 
 ### Changed

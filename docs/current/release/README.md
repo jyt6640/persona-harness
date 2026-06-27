@@ -49,6 +49,7 @@ Those items make the release decision ready; they do not authorize Docs Release 
 - [v0.3.9-alpha.0 release notes](v0.3.9-alpha.0-release-notes.md)
 - [v0.3.9-alpha.1 release notes](v0.3.9-alpha.1-release-notes.md)
 - [v0.3.9-alpha.2 release notes](v0.3.9-alpha.2-release-notes.md)
+- [v0.3.9-alpha.3 release notes](v0.3.9-alpha.3-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
