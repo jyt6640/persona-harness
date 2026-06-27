@@ -6,7 +6,32 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-No unreleased changes yet.
+### Changed
+
+- Reinforced workflow closure guidance after build/test success so agents are reminded to fill reports, check status, archive completed requirements, and run the final gate before claiming completion.
+- Refined backend-shape smoke findings for current HEAD:
+  - `application/port/out/*Repository.java` can be recognized as repository port evidence;
+  - Verification report wording is intended to distinguish test/build evidence from bootRun evidence, though the current-head re-smoke still found a false-success wording risk.
+
+### External Smoke
+
+- Current-head local tarball closure re-smoke at `23877e2` was partially successful. This was not a registry `0.3.9-alpha.1` smoke.
+- Confirmed:
+  - `ph init`, `ph bootstrap backend`, and `ph doctor` passed;
+  - OpenCode reached workflow rail / split / next / `req-1`;
+  - Java/Spring/Gradle generation, Gradle wrapper creation, `profileSummaryInjected`, and Java role evidence were observed;
+  - backend-shape `application/port/out` fixture produced Domain repository port / adapter / DTO PASS;
+  - fake Gradle shim, Java `HttpServer`, and CommonJS workarounds were not observed in generated source.
+- Blocked:
+  - `gradlew.bat test` and `gradlew.bat build` failed with dependency `:.` interpretation errors such as `spring-boot-starter-*:.` and `flyway-core:.`;
+  - OpenCode hung after wrapper generation;
+  - implementation/review reports remained templates;
+  - `req-1` remained pending;
+  - `workflow finish implement` exited 1 on template reports + pending `req-1` and showed "Do not claim overall completion" guidance.
+- Remaining risk:
+  - backend-shape Verification report wording still said `gradle test/build success evidence observed; bootRun evidence not observed` despite test/build failure or missing success evidence.
+- Release prep for alpha2 should stay on hold until the dependency recurrence and Verification report wording blockers are fixed and re-smoked, unless HQ explicitly accepts the risk.
+- This current-head smoke does not certify generated app product quality, does not make backend-shape an enforcement gate, and does not add AST/linter/enforcement.
 
 ## [0.3.9-alpha.1] - 2026-06-25
 
