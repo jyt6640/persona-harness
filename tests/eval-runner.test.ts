@@ -9,6 +9,7 @@ import {
   aggregateRuns,
   buildPlan,
   countFailureModes,
+  FIXTURE_METADATA,
   measureCompileResult,
   measureGradleTestResult,
   parseArgs,
@@ -24,6 +25,8 @@ import {
 const tempDirs: string[] = []
 
 type ReplayRuntimeRun = {
+  readonly fixtureId: string
+  readonly fixtureMetadata: Record<string, unknown>
   readonly conditionId: string
   readonly outcomes: {
     readonly runtimeSmokeOutcome: string
@@ -38,6 +41,8 @@ type ReplayRuntimeRun = {
 
 type ReplayResults = {
   readonly decisionPolicy?: string
+  readonly fixtureMetadata: Record<string, unknown>
+  readonly aggregate: Record<string, unknown>
   readonly runs: readonly ReplayRuntimeRun[]
 }
 
@@ -67,7 +72,29 @@ describe("ON/OFF eval runner core", () => {
     const plan = buildPlan(options)
 
     expect(plan.fixtureIds).toEqual(["multi-step-backend-small"])
+    expect(plan.fixtureMetadata["multi-step-backend-small"]).toEqual({
+      scopeClass: "reduced-single-turn",
+      singleTurnEligible: true,
+      pairedWith: "multi-step-backend",
+    })
     expect(plan.runs).toEqual([{ fixtureId: "multi-step-backend-small", conditionId: "ph-on", repetition: 1 }])
+  })
+
+  it("classifies fixture scope for single-turn and continuation evals", () => {
+    const options = parseArgs(["--runs", "1", "--fixture", "all", "--condition", "plain", "--model", "test-model"])
+    const plan = buildPlan(options)
+
+    expect(FIXTURE_METADATA["backend-api-no-stack"]).toEqual({ scopeClass: "single-turn", singleTurnEligible: true })
+    expect(FIXTURE_METADATA["ambiguous-idea-first"]).toEqual({ scopeClass: "single-turn", singleTurnEligible: true })
+    expect(plan.fixtureMetadata["multi-step-backend"]).toEqual({
+      scopeClass: "stress-continuation",
+      singleTurnEligible: false,
+    })
+    expect(plan.fixtureMetadata["multi-step-backend-small"]).toEqual({
+      scopeClass: "reduced-single-turn",
+      singleTurnEligible: true,
+      pairedWith: "multi-step-backend",
+    })
   })
 
   it("uses the current OpenCode CLI surface by default", () => {
@@ -337,6 +364,40 @@ describe("ON/OFF eval runner core", () => {
     ])
   })
 
+  it("marks stress-continuation fixtures outside single-turn aggregate summaries", () => {
+    const runs = [
+      run("multi-step-backend", "ph-on", true, true, true, 0.75, 4),
+      run("multi-step-backend-small", "ph-on", true, true, true, 1, 0),
+      run("backend-api-no-stack", "ph-on", true, true, true, 1, 0),
+    ]
+
+    const aggregate = aggregateRuns(runs)
+
+    expect(aggregate.byCondition).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fixtureId: "multi-step-backend",
+          scopeClass: "stress-continuation",
+          singleTurnEligible: false,
+        }),
+        expect.objectContaining({
+          fixtureId: "multi-step-backend-small",
+          scopeClass: "reduced-single-turn",
+          singleTurnEligible: true,
+        }),
+      ]),
+    )
+    expect(aggregate.singleTurnEligibleByCondition).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ fixtureId: "multi-step-backend-small" }),
+        expect.objectContaining({ fixtureId: "backend-api-no-stack" }),
+      ]),
+    )
+    expect(aggregate.singleTurnEligibleByCondition).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ fixtureId: "multi-step-backend" })]),
+    )
+  })
+
   it("maps failed outcomes to failure-mode labels", () => {
     const failures = countFailureModes({
       compileBuildOutcome: "FAIL",
@@ -451,6 +512,52 @@ describe("ON/OFF eval runner core", () => {
     expect(failureLabelsFor(results, "plain")).not.toContain("workflow dead-end")
   }, 10000)
 
+  it("records fixture scope metadata in replay results without changing verdict semantics", () => {
+    const outputRoot = tempDir("persona-eval-replay-scope-")
+    const captureDir = join(outputRoot, "capture")
+    writeCapturedRun(captureDir, {
+      fixtureId: "multi-step-backend",
+      conditionId: "ph-on",
+      runtimeStatus: "status: 0",
+      workflowStatus: "status: 0",
+    })
+    writeCapturedRun(captureDir, {
+      fixtureId: "multi-step-backend-small",
+      conditionId: "plain",
+      runtimeStatus: "status: 0",
+      workflowStatus: null,
+    })
+
+    const result = spawnSync(
+      process.execPath,
+      [resolve("scripts/eval/run-onoff-eval.mjs"), "--replay", captureDir, "--output-root", outputRoot],
+      { cwd: resolve("."), encoding: "utf8" },
+    )
+
+    expect(result.status).toBe(0)
+    const results = readReplayResults(result.stdout)
+
+    expect(results.fixtureMetadata["multi-step-backend"]).toEqual({
+      scopeClass: "stress-continuation",
+      singleTurnEligible: false,
+    })
+    expect(replayRunFor(results, "ph-on").fixtureMetadata).toEqual({
+      scopeClass: "stress-continuation",
+      singleTurnEligible: false,
+    })
+    expect(results.fixtureMetadata["multi-step-backend-small"]).toEqual({
+      scopeClass: "reduced-single-turn",
+      singleTurnEligible: true,
+      pairedWith: "multi-step-backend",
+    })
+    expect(results.aggregate["singleTurnEligibleByCondition"]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ fixtureId: "multi-step-backend-small" })]),
+    )
+    expect(results.aggregate["singleTurnEligibleByCondition"]).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ fixtureId: "multi-step-backend" })]),
+    )
+  }, 10000)
+
   it("reports PH ON install command as required during preflight", () => {
     const options = parseArgs([
       "--fixture",
@@ -513,6 +620,7 @@ function isProcessAlive(pid: number): boolean {
 }
 
 type CapturedRunOptions = {
+  readonly fixtureId?: string
   readonly conditionId: string
   readonly runtimeStatus: string | null
   readonly opencodeStatus?: string | null
@@ -520,8 +628,8 @@ type CapturedRunOptions = {
 }
 
 function writeCapturedRun(captureDir: string, options: CapturedRunOptions): void {
-  const { conditionId, runtimeStatus, opencodeStatus = null, workflowStatus = null } = options
-  const replayRunDir = join(captureDir, "raw", "backend-api-no-stack", conditionId, "r1")
+  const { fixtureId = "backend-api-no-stack", conditionId, runtimeStatus, opencodeStatus = null, workflowStatus = null } = options
+  const replayRunDir = join(captureDir, "raw", fixtureId, conditionId, "r1")
   const workspaceDir = join(replayRunDir, "workspace")
   const logsDir = join(replayRunDir, "raw")
   mkdirSync(join(workspaceDir, "build", "test-results", "test"), { recursive: true })
@@ -581,12 +689,21 @@ function parseReplayResultsText(text: string): ReplayResults {
   }
   return {
     decisionPolicy: typeof parsed.decisionPolicy === "string" ? parsed.decisionPolicy : undefined,
+    fixtureMetadata: isRecord(parsed.fixtureMetadata) ? parsed.fixtureMetadata : {},
+    aggregate: isRecord(parsed.aggregate) ? parsed.aggregate : {},
     runs: parsed.runs.map(parseReplayRuntimeRun),
   }
 }
 
 function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {
-  if (!isRecord(value) || typeof value.conditionId !== "string" || !isRecord(value.outcomes) || !isRecord(value.metrics)) {
+  if (
+    !isRecord(value) ||
+    typeof value.fixtureId !== "string" ||
+    !isRecord(value.fixtureMetadata) ||
+    typeof value.conditionId !== "string" ||
+    !isRecord(value.outcomes) ||
+    !isRecord(value.metrics)
+  ) {
     throw new Error("invalid replay run shape")
   }
   const { outcomes, metrics } = value
@@ -602,6 +719,8 @@ function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {
     throw new Error("invalid replay metrics shape")
   }
   return {
+    fixtureId: value.fixtureId,
+    fixtureMetadata: value.fixtureMetadata,
     conditionId: value.conditionId,
     outcomes: {
       runtimeSmokeOutcome: outcomes.runtimeSmokeOutcome,

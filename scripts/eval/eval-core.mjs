@@ -12,6 +12,26 @@ export const FIXTURE_PATHS = {
   "ambiguous-idea-first": "docs/current/evaluation-fixtures/ambiguous-idea-first.md",
 }
 
+export const FIXTURE_METADATA = {
+  "backend-api-no-stack": {
+    scopeClass: "single-turn",
+    singleTurnEligible: true,
+  },
+  "multi-step-backend": {
+    scopeClass: "stress-continuation",
+    singleTurnEligible: false,
+  },
+  "multi-step-backend-small": {
+    scopeClass: "reduced-single-turn",
+    singleTurnEligible: true,
+    pairedWith: "multi-step-backend",
+  },
+  "ambiguous-idea-first": {
+    scopeClass: "single-turn",
+    singleTurnEligible: true,
+  },
+}
+
 export const CONDITIONS = {
   plain: { id: "plain", label: "plain prompt", harnessState: "OFF" },
   claude: { id: "claude", label: "CLAUDE.md baseline", harnessState: "OFF" },
@@ -150,6 +170,7 @@ export function selectConditions(conditionOption) {
 export function buildPlan(options) {
   const fixtureIds = selectFixtures(options.fixture)
   const conditionIds = selectConditions(options.condition)
+  const fixtureMetadata = fixtureMetadataForIds(fixtureIds)
   const runs = []
 
   for (const fixtureId of fixtureIds) {
@@ -160,7 +181,15 @@ export function buildPlan(options) {
     }
   }
 
-  return { fixtureIds, conditionIds, runs }
+  return { fixtureIds, conditionIds, fixtureMetadata, runs }
+}
+
+function fixtureMetadataForIds(fixtureIds) {
+  return Object.fromEntries(fixtureIds.map((fixtureId) => [fixtureId, fixtureMetadataFor(fixtureId)]))
+}
+
+function fixtureMetadataFor(fixtureId) {
+  return FIXTURE_METADATA[fixtureId] ?? { scopeClass: "single-turn", singleTurnEligible: true }
 }
 
 export function commandExists(command) {
@@ -556,10 +585,13 @@ export function countFailureModes(outcomes) {
 export function aggregateRuns(runs) {
   const byCondition = {}
   for (const run of runs) {
+    const fixtureMetadata = run.fixtureMetadata ?? fixtureMetadataFor(run.fixtureId)
     const key = `${run.fixtureId}:${run.conditionId}`
     const bucket = byCondition[key] ?? {
       fixtureId: run.fixtureId,
       conditionId: run.conditionId,
+      scopeClass: fixtureMetadata.scopeClass,
+      singleTurnEligible: fixtureMetadata.singleTurnEligible,
       runs: 0,
       compileBuildPasses: 0,
       compileBuildKnown: 0,
@@ -594,7 +626,11 @@ export function aggregateRuns(runs) {
     bucket.workflowFinishPassRate = rate(bucket.workflowFinishPasses, bucket.runs)
   }
 
-  return { byCondition: Object.values(byCondition) }
+  const byConditionValues = Object.values(byCondition)
+  return {
+    byCondition: byConditionValues,
+    singleTurnEligibleByCondition: byConditionValues.filter((bucket) => bucket.singleTurnEligible !== false),
+  }
 }
 
 function rate(numerator, denominator) {
@@ -898,6 +934,7 @@ export async function runEval(options) {
       runs: options.runs,
       concurrency: options.concurrency,
     },
+    fixtureMetadata: plan.fixtureMetadata,
     runs,
     aggregate: aggregateRuns(runs),
   }
@@ -1011,6 +1048,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   return {
     runId,
     fixtureId: runPlan.fixtureId,
+    fixtureMetadata: fixtureMetadataFor(runPlan.fixtureId),
     conditionId: runPlan.conditionId,
     repetition: runPlan.repetition,
     startedAt: new Date().toISOString(),
@@ -1135,6 +1173,7 @@ async function replayEval(options) {
     timeoutMs: options.timeoutMs,
     environment,
     options: { replay: replayRoot },
+    fixtureMetadata: fixtureMetadataForIds([...new Set(runs.map((run) => run.fixtureId))]),
     runs,
     aggregate: aggregateRuns(runs),
   }
@@ -1171,6 +1210,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
   return {
     runId: `${environment.platform}-${fixtureId}-${conditionId}-r${repetition}`.toLowerCase(),
     fixtureId,
+    fixtureMetadata: fixtureMetadataFor(fixtureId),
     conditionId,
     repetition,
     replaySource: replayRunDir,

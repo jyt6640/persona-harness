@@ -1,5 +1,6 @@
 export type EvalRun = {
   fixtureId: string
+  fixtureMetadata?: FixtureMetadata
   conditionId: string
   metrics: {
     compileBuildPass: boolean | null
@@ -13,12 +14,21 @@ export type EvalRun = {
   }
 }
 
+export type FixtureMetadata = {
+  scopeClass: "single-turn" | "reduced-single-turn" | "stress-continuation"
+  singleTurnEligible: boolean
+  pairedWith?: string
+}
+
+export const FIXTURE_METADATA: Record<string, FixtureMetadata>
 export function aggregateRuns(runs: readonly EvalRun[]): {
   byCondition: Array<Record<string, unknown>>
+  singleTurnEligibleByCondition: Array<Record<string, unknown>>
 }
 export function buildPlan(options: Record<string, unknown>): {
   fixtureIds: string[]
   conditionIds: string[]
+  fixtureMetadata: Record<string, FixtureMetadata>
   runs: Array<{ fixtureId: string; conditionId: string; repetition: number }>
 }
 export function countFailureModes(outcomes: Record<string, unknown>): { count: number; labels: string[] }
