@@ -763,7 +763,9 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   const rawOutputPaths = {}
   let providerFailed = false
   for (const [name, command] of commands) {
-    const execution = await runShellAsync(command, workspaceDir, options.timeoutMs)
+    const execution = await runShellAsync(command, workspaceDir, options.timeoutMs, {
+      cleanupProcessGroup: name === "opencode",
+    })
     commandResults[name] = execution
     writeCommandLog(join(logsDir, `${name}.log`), execution)
     rawOutputPaths[name] = writeRawExecutionFiles(logsDir, name, execution)

@@ -161,6 +161,59 @@ describe("ON/OFF eval runner core", () => {
     }
   })
 
+  it("cleans up timed-out opencode process groups before grading", () => {
+    const outputRoot = tempDir("persona-eval-opencode-cleanup-")
+    const pidFile = join(outputRoot, "provider-child.pid")
+    const opencodeCommand = [
+      process.execPath,
+      "-e",
+      JSON.stringify(
+        [
+          "const { spawn } = require('node:child_process')",
+          "const { writeFileSync } = require('node:fs')",
+          "const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' })",
+          "child.unref()",
+          `writeFileSync(${JSON.stringify(pidFile)}, String(child.pid))`,
+          "setInterval(() => {}, 1000)",
+        ].join("; "),
+      ),
+    ].join(" ")
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        resolve("scripts/eval/run-onoff-eval.mjs"),
+        "--fixture",
+        "backend-api-no-stack",
+        "--condition",
+        "plain",
+        "--runs",
+        "1",
+        "--capture",
+        "--output-root",
+        outputRoot,
+        "--model",
+        "test-model",
+        "--timeout-ms",
+        "1000",
+        "--opencode-command",
+        opencodeCommand,
+      ],
+      { cwd: resolve("."), encoding: "utf8" },
+    )
+    const childPid = Number.parseInt(readFileSync(pidFile, "utf8"), 10)
+
+    try {
+      expect(result.status).toBe(0)
+      expect(Number.isInteger(childPid)).toBe(true)
+      expect(isProcessAlive(childPid)).toBe(false)
+    } finally {
+      if (Number.isInteger(childPid) && isProcessAlive(childPid)) {
+        process.kill(childPid, "SIGKILL")
+      }
+    }
+  }, 10000)
+
   it("scores stack alignment from observer findings and structure", () => {
     const projectDir = tempDir("persona-eval-stack-")
     mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
