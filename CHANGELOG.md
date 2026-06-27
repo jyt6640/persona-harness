@@ -10,15 +10,31 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 - Added a local eval environment guard so repo-side eval pilot environment files stay untracked.
 - Updated the repo-side eval runner command for the current OpenCode run surface:
-  - default command shape is now `opencode run --model {model} --file {promptFile} {message}`;
+  - `7d23167` tried `opencode run --model {model} --file {promptFile} {message}`;
   - default runner execution avoids unsupported `--prompt-file`, `--temperature`, `--top-p`, and `--seed` flags;
   - the previous actual eval pilot produced real results/capture but failed on the old runner command surface, so it is recorded as a runner/environment failure rather than PH product evidence;
-  - the fix was pushed to origin/main as `7d231677c4440f6ebad99c3d21b9b9b412885940`;
+  - `7d23167` was pushed to origin/main as `7d231677c4440f6ebad99c3d21b9b9b412885940`;
   - post-fix preflight passed and dry-run selected 4 runs;
   - the post-fix QA actual eval rerun also produced real results/capture but failed all conditions because OpenCode treated the positional message after `--file` as a file path: `Error: File not found: README.md 보고 구현해줘`;
   - original results path: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/results.json`;
   - replay results path: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061307346Z/results.json`;
   - this remains a runner/OpenCode invocation failure, not PH product evidence or generated app quality evidence.
+- Patched the eval runner after an OpenCode invocation probe:
+  - `--file prompt.txt --command "README.md 보고 구현해줘"` failed with OpenCode UnknownError;
+  - `opencode run --model <model> "$(cat prompt.txt)"` succeeded in a harmless temp probe;
+  - `505b656 fix(eval): pass opencode prompt as positional text` changed the runner to `opencode run --model {model} {prompt}` and was pushed to origin/main as `505b656ec18efb0f9c8ecfb2af9c1c1ae516ea52`.
+- Recorded the real generated-app eval pilot on HEAD `505b656`:
+  - dry-run passed and selected 4 runs;
+  - original results: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/results.json`;
+  - original raw/capture root: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/`;
+  - replay results: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T070237569Z/results.json`;
+  - pins used model `openai/gpt-5.4-mini-fast`, model version `openai-oauth-2026-06-27-gpt-5.4-mini-fast`, timeout `900000`, and PH install `npm install -D persona-harness@0.3.9-alpha.3`.
+- Eval decision gate remains FAIL:
+  - plain/claude/agents generated Maven/Spring projects and failed Gradle compile/test metrics;
+  - PH ON generated a Gradle/Spring project with wrapper and PH artifacts, with compile PASS and Gradle test PASS;
+  - original decide failed because runtimeSmokeRate was missing and PH ON stack alignment improvement over plain was below 20 percentage points;
+  - replay decide also failed because runtimeSmokeRate was missing and stack alignment improvement stayed below threshold;
+  - this is real eval pilot evidence, but it is not a gate PASS, not proof PH beats baselines, and not generated app product quality certification.
 
 ## [0.3.9-alpha.3] - 2026-06-27
 
