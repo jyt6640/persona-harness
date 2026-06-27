@@ -62,6 +62,14 @@ describe("ON/OFF eval runner core", () => {
     expect(plan.runs).toEqual([{ fixtureId: "backend-api-no-stack", conditionId: "plain", repetition: 1 }])
   })
 
+  it("selects the reduced multi-step fixture for scope-sensitivity evals", () => {
+    const options = parseArgs(["--runs", "1", "--fixture", "multi-step-backend-small", "--condition", "ph-on", "--model", "test-model"])
+    const plan = buildPlan(options)
+
+    expect(plan.fixtureIds).toEqual(["multi-step-backend-small"])
+    expect(plan.runs).toEqual([{ fixtureId: "multi-step-backend-small", conditionId: "ph-on", repetition: 1 }])
+  })
+
   it("uses the current OpenCode CLI surface by default", () => {
     const options = parseArgs(["--runs", "1", "--fixture", "backend-api-no-stack", "--condition", "plain", "--model", "openai/test"])
     const command = formatCommand(options.opencodeCommand, {

@@ -17,6 +17,8 @@ export function aggregateRuns(runs: readonly EvalRun[]): {
   byCondition: Array<Record<string, unknown>>
 }
 export function buildPlan(options: Record<string, unknown>): {
+  fixtureIds: string[]
+  conditionIds: string[]
   runs: Array<{ fixtureId: string; conditionId: string; repetition: number }>
 }
 export function countFailureModes(outcomes: Record<string, unknown>): { count: number; labels: string[] }

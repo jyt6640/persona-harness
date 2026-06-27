@@ -8,6 +8,7 @@ import { spawn, spawnSync } from "node:child_process"
 export const FIXTURE_PATHS = {
   "backend-api-no-stack": "docs/current/evaluation-fixtures/backend-api-no-stack.md",
   "multi-step-backend": "docs/current/evaluation-fixtures/multi-step-backend.md",
+  "multi-step-backend-small": "docs/current/evaluation-fixtures/multi-step-backend-small.md",
   "ambiguous-idea-first": "docs/current/evaluation-fixtures/ambiguous-idea-first.md",
 }
 
