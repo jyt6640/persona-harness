@@ -60,7 +60,14 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - replay results: `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T085815683Z/results.json`;
   - original decide verdict: FAIL because PH ON runtimeSmokeRate regressed below plain and PH ON failure-mode reduction was `-75%`, below the 20% threshold;
   - replay decide verdict: FAIL because PH ON runtimeSmokeRate regressed below claude and PH ON failure-mode reduction was `-75%`, below the 20% threshold;
-  - verdict is stable FAIL, while reason text differs only in strongest-OFF tie/order labeling.
+  - verdict is stable FAIL, and the follow-up tie-break cleanup below makes the runtimeSmokeRate regression reason deterministic.
+- Recorded final runner cleanup after the 2-rep FAIL:
+  - `cde0833 fix(eval): stabilize decide baseline tie-break` leaves verdict logic unchanged and keeps original/replay 2-rep decide as FAIL;
+  - runtimeSmokeRate regression reason now deterministically compares against `claude` in both original and replay;
+  - `dfab6fc fix(eval): clean runtime smoke process groups` adds scoped POSIX process group cleanup only for the runtime-smoke command;
+  - broad process killing was not added;
+  - Windows descendant cleanup remains a future follow-up only if a Windows pilot shows orphaning;
+  - origin/main now points to `dfab6fcf7be4e278ccc417acdc9bd8389a6f7835`.
 - 2-rep aggregate results:
   - plain: runs `2`, build `0%`, test `0%`, runtime `100%`, stack `75%`, workflow `0%`, failures `4`;
   - claude: runs `2`, build `0%`, test `0%`, runtime `50%`, stack `37.5%`, workflow `0%`, failures `6`;
