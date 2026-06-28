@@ -6,6 +6,25 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+## [0.3.9-alpha.5] - 2026-06-28
+
+- Product workflow rail release:
+  - includes `6d29d91 fix(cli): surface ticket context in workflow continue`;
+  - includes `8d3605b test(cli): add product MVP smoke`;
+  - includes `e562f17 fix(cli): make first-run help side-effect free`;
+  - includes `dd1e68f fix(cli): decode Windows Korean stdin`;
+  - includes docs through `1f97743 docs: record Windows Korean stdin fix`.
+- Windows Korean stdin fix:
+  - `workflow draft --stdin` and `workflow capture --stdin` now decode raw stdin buffers as UTF-8 first, then Windows Korean candidates when replacement characters appear;
+  - this targets Windows cmd/PowerShell/SSH CP949/EUC-KR pipe input mojibake;
+  - it does not repair already broken artifacts.
+- Product surface boundary:
+  - no-token product MVP and idea-first smoke paths are product workflow surface evidence only;
+  - this release is not eval evidence, PH superiority proof, generated app quality certification, AST/linter enforcement, or an OpenCode/model outcome claim.
+- Publish/smoke boundary:
+  - registry package smoke is still required after publish;
+  - `latest` is not intentionally moved by this manual release prep unless separately approved.
+
 - Honest eval closure:
   - eval treadmill stopped and `docs/current/injection-value-status.json` keeps `decision: injection-effect-not-proven`;
   - aggregate signal preserved in `experiments/eval-signal/aggregate.json` with original-only results, and experiments disk usage was reduced from `4.0GB` to `132MB`;
