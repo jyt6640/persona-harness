@@ -2,7 +2,7 @@
 
 All notable Persona Harness changes are recorded here.
 
-This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `latest` is kept on the current alpha build to avoid stale default installs. Stable support guarantees are still deferred.
+This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
 ## Unreleased
 
@@ -14,7 +14,11 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Product workflow rail surface:
   - `8d3605b test(cli): add product MVP smoke` adds `npm run smoke:product-mvp` for built-CLI no-token product surface smoke across init/doctor/observe/workflow pass/blocked/next-ticket paths;
   - `6d29d91 fix(cli): surface ticket context in workflow continue` shows pending/current ticket task-card context in the `workflow continue` ticket block;
+  - no-token idea-first External Smoke passed from `TODO 웹 서비스 만들래` through `workflow draft --stdin`, approve, split, next, continue, and check, with expected pending WARNs and no OpenCode/model/eval run;
   - these are product surface and workflow UX signals only, not eval evidence, PH superiority proof, finish-gate weakening, or generated app quality certification.
+- Tester handoff:
+  - refreshed the minimal external tester guide around alpha install, `ph init --default backend`, `ph doctor`, idea-first draft/approve/split/next/continue/check, expected pending WARNs, and feedback format;
+  - the guide keeps `alpha`/`latest` dist-tag caveats and explicitly forbids generated-app quality, eval, superiority, or enforcement claims.
 
 ## [0.3.9-alpha.4] - 2026-06-28
 
