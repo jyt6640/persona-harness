@@ -28,7 +28,13 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - `persona-harness@0.3.9-alpha.5` exists with gitHead `07d36eb3a74c68b880b812dcd755cf6a2c464637` and shasum `74ae2103be553d3e107a7e8167aadabe89a29e91`;
   - dist-tags are `alpha=0.3.9-alpha.5`, `latest=0.3.9-alpha.3`;
   - local/origin tag `v0.3.9-alpha.5` points at `07d36eb3a74c68b880b812dcd755cf6a2c464637`;
-  - published registry install/surface smoke is still pending External Smoke.
+  - alpha5 Windows SSH registry re-smoke passed from `npm install -D persona-harness@alpha` in a Windows remote clean temp path;
+  - Korean `TODO 웹 서비스 만들래` was preserved without mojibake in `workflow next` title and `workflow continue` task-card context;
+  - no-token init/default backend, doctor, bootstrap, draft/approve/split/next/continue/check passed, with expected `workflow check` WARN for pending/template state;
+  - `workflow continue` showed task-card context, next command/action, archive candidate, and no-completion guidance;
+  - `init --help`, `smoke --help`, and `feedback --help` exited 0 without creating `.persona`, `.opencode`, `AGENTS.md`, workflow/smoke/feedback reports;
+  - `npx ph --version` remains unsupported and exited 1, not a blocker because package version was confirmed by npm metadata;
+  - this is final product surface smoke only, not eval/model/OpenCode/A-B evidence, PH superiority proof, or generated app quality certification.
 
 - Honest eval closure:
   - eval treadmill stopped and `docs/current/injection-value-status.json` keeps `decision: injection-effect-not-proven`;
