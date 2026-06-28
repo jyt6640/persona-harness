@@ -9,6 +9,7 @@ import { createImplementationPrompt } from "./plan-prompts.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
 import { workflowContinueFollowUpLines } from "./workflow-continue-followups.js"
 import { planUncheckedItems } from "./workflow-plan-unchecked.js"
+import { postBuildClosureChecklistLines } from "./workflow-post-build-closure.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import {
   pendingWorkflowTicketResumeLines,
@@ -241,6 +242,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     ...linesOfEvidence,
     "",
     ...pendingWorkflowTicketResumeLines(snapshot.pendingTicket, snapshot.projectDir),
+    ...(snapshot.implementationStatus !== "filled" || snapshot.reviewStatus !== "filled" || snapshot.pendingTicket !== undefined ? postBuildClosureChecklistLines(snapshot.pendingTicket?.ticket) : []),
     "Plan unchecked items:",
     ...(uncheckedItems.length > 0 ? uncheckedItems : ["- No unchecked plan checklist items found."]),
     "",

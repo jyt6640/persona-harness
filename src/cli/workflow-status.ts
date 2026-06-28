@@ -8,6 +8,7 @@ import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./ja
 import { readWorkflowReportCoverage, type WorkflowReportCoverageSummary } from "./workflow-report-coverage.js"
 import { readStackAlignment, type StackAlignmentSummary } from "./stack-alignment.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
+import { POST_BUILD_CLOSURE_NEXT_ACTION } from "./workflow-post-build-closure.js"
 import {
   formatPendingWorkflowTicketStatusLines,
   workflowPendingTicketStatus,
@@ -371,7 +372,7 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
     return "review plan, then run `npx ph plan --accept` or `npx ph plan --revise`"
   }
   if (summary.implementation !== "filled") {
-    return "run `npx ph workflow implement`, implement, fill implementation report, then run `npx ph plan --report-filled implementation`"
+    return summary.pendingTickets.length > 0 ? POST_BUILD_CLOSURE_NEXT_ACTION : "run `npx ph workflow implement`, implement, fill implementation report, then run `npx ph plan --report-filled implementation`"
   }
   if (summary.verificationFailureBlocking) return "fix compile/test failure, rerun `./gradlew test` or `gradlew.bat test`, then run `npx ph workflow check`"
   if (summary.review !== "filled") return "fill review report and run `npx ph plan --report-filled review`"

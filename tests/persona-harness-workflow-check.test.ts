@@ -209,6 +209,24 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain("Archive is a candidate action only; do not auto-archive.")
   })
 
+  it("keeps post-build closure as the next action when reports are template and a req ticket remains", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writePendingReqBacklog(projectDir)
+
+    const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain(".persona/workflow/implementation-report.md: template")
+    expect(result.stdout).toContain(".persona/workflow/review-report.md: template")
+    expect(result.stdout).toContain(
+      "Next: if build/test/runtime already pass, fill implementation and review reports, archive the completed ticket after review, then run `npx ph workflow finish implement`",
+    )
+    expect(result.stdout).toContain("Do not claim overall completion while pending tickets remain.")
+    expect(result.stdout).toContain("If this req ticket is actually complete after review: `npx ph workflow archive req-1`")
+  })
+
   it("guides filled-but-template reports back to coverage fill, required reads, and req review", () => {
     const projectDir = createProfiledTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Task API\n\n- Task CRUD\n")
