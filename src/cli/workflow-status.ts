@@ -382,7 +382,11 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.javaRoleReadCoverageBlocking) return "read generated Java role files and rerun `npx ph workflow check`"
   if (summary.stackAlignmentBlocking) return "fix generated project stack to match `.persona/project-profile.jsonc` before finishing"
   if (summary.pendingTickets.length > 0) {
-    return `run \`npx ph workflow next\` or \`npx ph workflow continue\` for pending ticket ${summary.pendingTickets[0]?.ticket ?? "<unknown>"}`
+    const pendingTicket = summary.pendingTickets[0]
+    if (pendingTicket?.archiveState === "history-only") {
+      return `repair archived ticket backlog state with \`npx ph workflow archive ${pendingTicket.ticket}\`, then rerun \`npx ph workflow check\``
+    }
+    return `run \`npx ph workflow next\` or \`npx ph workflow continue\` for pending ticket ${pendingTicket?.ticket ?? "<unknown>"}`
   }
   if (summary.stackAlignmentFinding === "WARN") return "review profile/generated stack mismatch before archiving workflow"
   if (summary.commandDisciplineFinding === "WARN") {

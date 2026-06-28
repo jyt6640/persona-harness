@@ -19,7 +19,7 @@ import {
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
-import { PENDING_TICKETS_COMPLETION_GUIDANCE, pendingWorkflowTickets } from "./workflow-ticket-summary.js"
+import { PENDING_TICKETS_COMPLETION_GUIDANCE, pendingTicketArchiveState, pendingWorkflowTickets } from "./workflow-ticket-summary.js"
 import {
   runWorkflowArchive,
   runWorkflowApproveRequirements,
@@ -97,6 +97,12 @@ function pendingTicketReason(summary: WorkflowStatus): string | undefined {
       `  Ticket: ${ticket.ticket}`,
       `  Title: ${ticket.title}`,
       `  Path: ${ticket.path}`,
+      ...(pendingTicketArchiveState(summary.projectDir, ticket.ticket) === "history-only"
+        ? [
+            "  State: history exists but backlog still marks this ticket pending.",
+            `  Repair backlog state: \`npx ph workflow archive ${ticket.ticket}\``,
+          ]
+        : []),
       "  Next command: `npx ph workflow next`",
       `  If this ticket is complete: \`npx ph workflow archive ${ticket.ticket}\``,
       `  If ${archiveCandidateLabel} is actually complete after review: \`npx ph workflow archive ${ticket.ticket}\``,

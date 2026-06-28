@@ -24,6 +24,7 @@ import {
 import { analyzeRequirementSections, formatRequirementsAnalysis } from "./workflow-requirements-analysis.js"
 import {
   approvalCompleteOutput,
+  archiveBacklogRepairOutput,
   archiveCompleteOutput,
   backlogNotFoundOutput,
   captureCompleteOutput,
@@ -330,6 +331,12 @@ export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOpti
     return backlogNotFound()
   }
   if (!existsSync(workDir)) {
+    const backlog = readFileSync(backlogAbsolutePath, "utf8")
+    const pendingTicket = pendingTickets(backlog).find((ticket) => ticket.ticket === ticketId)
+    if (pendingTicket !== undefined && existsSync(join(historyDir, TASK_CARD_NAME))) {
+      writeFileSync(backlogAbsolutePath, replaceBacklogTicket(backlog, ticketId))
+      return archiveBacklogRepairOutput(ticketId, `${HISTORY_DIR}/${ticketId}`)
+    }
     return { status: 1, stdout: "", stderr: `Workflow work ticket not found: ${WORK_DIR}/${ticketId}\n` }
   }
   if (!existsSync(join(workDir, TASK_CARD_NAME))) {

@@ -1,14 +1,17 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { BACKLOG_PATH, pendingTickets, type BacklogTicket } from "./workflow-ticket-model.js"
+import { BACKLOG_PATH, HISTORY_DIR, pendingTickets, TASK_CARD_NAME, type BacklogTicket, WORK_DIR } from "./workflow-ticket-model.js"
 
 export type WorkflowPendingTicket = {
   readonly ticket: string
   readonly title: string
   readonly path: string
   readonly reviewArchiveCandidate: boolean
+  readonly archiveState: PendingTicketArchiveState
 }
+
+export type PendingTicketArchiveState = "active-work" | "history-only" | "missing-work"
 
 export const PENDING_TICKETS_COMPLETION_GUIDANCE = "Do not claim overall completion while pending tickets remain."
 export const TICKET_BY_TICKET_GUIDANCE =
@@ -30,12 +33,39 @@ function archiveCandidateLabel(ticketId: string): string {
   return /^req[-_]?/i.test(ticketId) ? "this req ticket" : "this ticket"
 }
 
+export function pendingTicketArchiveState(projectDir: string, ticketId: string): PendingTicketArchiveState {
+  if (existsSync(join(projectDir, WORK_DIR, ticketId, TASK_CARD_NAME))) {
+    return "active-work"
+  }
+  if (existsSync(join(projectDir, HISTORY_DIR, ticketId, TASK_CARD_NAME))) {
+    return "history-only"
+  }
+  return "missing-work"
+}
+
+function pendingTicketStateLines(ticketId: string, archiveState: PendingTicketArchiveState): readonly string[] {
+  if (archiveState === "history-only") {
+    return [
+      "  State: history exists but backlog still marks this ticket pending.",
+      `  Repair backlog state: \`npx ph workflow archive ${ticketId}\``,
+    ]
+  }
+  if (archiveState === "missing-work") {
+    return [
+      "  State: task card is missing from both active work and history.",
+      "  Inspect `.persona/workflow/backlog.md` and workflow ticket directories before claiming completion.",
+    ]
+  }
+  return []
+}
+
 export function workflowPendingTicketStatus(projectDir: string): readonly WorkflowPendingTicket[] {
   return pendingWorkflowTickets(projectDir).map((ticket) => ({
     ticket: ticket.ticket,
     title: ticket.title,
     path: ticket.path,
     reviewArchiveCandidate: looksLikeTechnicalConstraints(ticket),
+    archiveState: pendingTicketArchiveState(projectDir, ticket.ticket),
   }))
 }
 
@@ -52,6 +82,7 @@ export function formatPendingWorkflowTicketStatusLines(tickets: readonly Workflo
       `  Ticket: ${ticket.ticket}`,
       `  Title: ${ticket.title}`,
       `  Path: ${ticket.path}`,
+      ...pendingTicketStateLines(ticket.ticket, ticket.archiveState),
       "  Next command: `npx ph workflow next` or `npx ph workflow continue`",
       `  If ${archiveCandidateLabel(ticket.ticket)} is actually complete after review: \`npx ph workflow archive ${ticket.ticket}\``,
       "  Archive is a candidate action only; do not auto-archive.",
@@ -62,12 +93,14 @@ export function formatPendingWorkflowTicketStatusLines(tickets: readonly Workflo
   ]
 }
 
-export function pendingWorkflowTicketResumeLines(ticket: BacklogTicket | undefined): readonly string[] {
+export function pendingWorkflowTicketResumeLines(ticket: BacklogTicket | undefined, projectDir?: string): readonly string[] {
+  const stateLines = ticket === undefined || projectDir === undefined ? [] : pendingTicketStateLines(ticket.ticket, pendingTicketArchiveState(projectDir, ticket.ticket))
   return ticket === undefined ? [] : [
     "Pending workflow ticket:",
     `Ticket: ${ticket.ticket}`,
     `Title: ${ticket.title}`,
     `Path: ${ticket.path}`,
+    ...stateLines.map((line) => line.replace(/^  /u, "")),
     "Next command: npx ph workflow next",
     `If complete: npx ph workflow archive ${ticket.ticket}`,
     `If ${archiveCandidateLabel(ticket.ticket)} is actually complete after review: npx ph workflow archive ${ticket.ticket}`,

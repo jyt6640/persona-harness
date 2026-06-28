@@ -290,7 +290,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
     ...evidenceLines(reportText),
     "",
-    ...pendingWorkflowTicketResumeLines(snapshot.pendingTicket),
+    ...pendingWorkflowTicketResumeLines(snapshot.pendingTicket, snapshot.projectDir),
     "Plan unchecked items:",
     ...(uncheckedItems.length > 0 ? uncheckedItems : ["- No unchecked plan checklist items found."]),
     "",

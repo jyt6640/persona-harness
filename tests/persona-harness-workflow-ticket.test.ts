@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -216,6 +216,66 @@ describe("ph workflow ticket backlog", () => {
     const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
     expect(backlog).toContain("| 1 | step-1 | 기본 일정 구현 | archived | .persona/workflow/history/step-1/00-task-card.md |")
     expect(next.stdout).toContain("Ticket: step-2")
+  })
+
+  it("repairs backlog state when a pending ticket already exists in history", () => {
+    const projectDir = createHarnessProject()
+    writeFileSync(
+      join(projectDir, "README.md"),
+      [
+        "# Decision Memory API",
+        "",
+        "## API Endpoints",
+        "",
+        "- Store and list decisions.",
+        "",
+        "## Ambiguities To Resolve",
+        "",
+        "- Record selected assumptions for alternatives, tags, follow-up notes, and status transitions.",
+        "",
+        "## Filtering",
+        "",
+        "- Filter decisions by status and tag.",
+      ].join("\n"),
+    )
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "Status: filled",
+        "## README ranges read",
+        "- 1-80",
+        "- `npx ph bearshell --shell './gradlew test'`",
+      ].join("\n"),
+    )
+    writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- `npx ph bearshell --shell './gradlew build'`\n")
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    renameSync(
+      join(projectDir, ".persona", "workflow", "work", "req-2"),
+      join(projectDir, ".persona", "workflow", "history", "req-2"),
+    )
+    expect(runPersonaCli(["workflow", "archive", "req-1"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["workflow", "archive", "req-3"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const repair = runPersonaCli(["workflow", "archive", "req-2"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("State: history exists but backlog still marks this ticket pending.")
+    expect(check.stdout).toContain("Repair backlog state: `npx ph workflow archive req-2`")
+    expect(check.stdout).toContain("Next: repair archived ticket backlog state with `npx ph workflow archive req-2`")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Pending workflow tickets remain")
+    expect(finish.stderr).toContain("State: history exists but backlog still marks this ticket pending.")
+    expect(finish.stderr).toContain("Repair backlog state: `npx ph workflow archive req-2`")
+    expect(repair.status).toBe(0)
+    expect(repair.stdout).toContain("Workflow ticket archive state repaired: req-2")
+    expect(backlog).toContain("| 2 | req-2 | Ambiguities To Resolve | archived | .persona/workflow/history/req-2/00-task-card.md |")
   })
 
   it("refuses to overwrite an existing history ticket", () => {

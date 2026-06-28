@@ -226,3 +226,20 @@ export function archiveCompleteOutput(ticketId: string, fromPath: string, toPath
     stderr: "",
   }
 }
+
+export function archiveBacklogRepairOutput(ticketId: string, historyPath: string): CliRunResult {
+  return {
+    status: 0,
+    stdout: [
+      `Workflow ticket archive state repaired: ${ticketId}`,
+      "",
+      `History: ${historyPath}`,
+      "Backlog: .persona/workflow/backlog.md",
+      "",
+      "Next:",
+      "- `npx ph workflow check`",
+      "- `npx ph workflow finish implement`",
+    ].join("\n") + "\n",
+    stderr: "",
+  }
+}
