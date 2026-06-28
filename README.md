@@ -413,7 +413,7 @@ npm view persona-harness dist-tags --json
 npm view persona-harness@alpha version
 ```
 
-During the alpha pilot, `alpha` and `latest` are expected to point at the current alpha package.
+During the alpha pilot, `alpha` is the tester-facing dist-tag. `latest` may lag behind `alpha`, so verify both dist-tags before treating a default install as current.
 
 ### `opencode` is not found
 
