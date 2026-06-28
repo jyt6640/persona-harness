@@ -1,6 +1,6 @@
 # Persona Harness
 
-Persona Harness is an OpenCode plugin and local CLI for AI coding workflow rails, evidence traces, and continuation control.
+Persona Harness is an OpenCode plugin and local CLI for AI coding workflow rails, evidence traces, and continuation control. Its current product direction is a workflow rail product, not an eval-superiority proof project.
 
 It helps an AI agent start from a clean project, read your backend requirements, follow an implementation rail, leave evidence of what it read/injected/ran, continue unfinished tickets, run verification, and fill workflow reports before claiming completion.
 
@@ -11,6 +11,8 @@ It does not certify generated application product quality. The current Java/Spri
 Persona Harness is an alpha experiment.
 
 The injection effect has been measured and is not proven. The ON/OFF eval program is stopped; see [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json) for the frozen aggregate, diagnosis, and stopping rationale.
+
+The current value axis is product workflow rail usefulness: making init, doctor, observe, workflow continue/check/finish, and report-only observer surfaces coherent enough for real users to try.
 
 Do not read the current alpha as generated-app quality certification, evidence that PH beats baselines, an enforcement engine, or an AST/linter gate.
 
