@@ -21,7 +21,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - local proxy and SSH remote smoke on local tarballs were helpful for the no-token idea-first path, including `workflow continue` preserving pending `req-1` task-card context, next command/action, archive candidate, and no-completion guidance;
   - registry-alpha remote commands passed, but that attempt is excluded from the helpful judgment because `workflow continue` lacked task-card context and Windows Korean input mojibake was observed;
   - the smoke source was a local working-tree tarball at `b4e3424` while repo HEAD later moved to `e562f17`, so this is not current released/registry package proof;
-  - next publish gate is a Windows Korean mojibake fix plus published-package smoke after `e562f17`; wrapper/copy-block friction remains deferred until an actual tester gets stuck;
+  - `dd1e68f fix(cli): decode Windows Korean stdin` fixes the code-level mojibake cause for `workflow draft --stdin` and `workflow capture --stdin` by decoding raw stdin buffers as UTF-8 first, then Windows Korean candidates when replacement characters appear;
+  - the registry smoke gate remains open: published-package smoke is still needed after `dd1e68f`; wrapper/copy-block friction remains deferred until an actual tester gets stuck;
   - the guide keeps `alpha`/`latest` dist-tag caveats and explicitly forbids generated-app quality, eval, superiority, or enforcement claims.
 
 ## [0.3.9-alpha.4] - 2026-06-28
