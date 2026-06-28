@@ -97,6 +97,37 @@ _No unreleased changes._
   - no generated app/product quality certification is made;
   - `latest=0.3.9-alpha.3` is recorded as observed state, not as a failure.
 
+### Post-Release Eval Outcome Evidence
+
+- QA ran the first post-alpha4 clean eval with published `persona-harness@0.3.9-alpha.4`.
+- Only fixture `backend-api-no-stack` ran; remaining fixtures stopped after a valid FAIL.
+- Source and markers:
+  - PH install `npm install -D persona-harness@0.3.9-alpha.4`;
+  - policy `external-primary-toolchain-v0.4.2`;
+  - scorer `generated-toolchain-v1`;
+  - output root outside the repo.
+- Results:
+  - original `/var/folders/z8/4909cvgx53n79fj88q94nd200000gn/T/persona-harness-eval-runs/2026-06-28T034057112Z/results.json`;
+  - replay `/var/folders/z8/4909cvgx53n79fj88q94nd200000gn/T/persona-harness-eval-runs/2026-06-28T044041297Z/results.json`;
+  - original/replay decide: FAIL;
+  - baseline purity: PASS;
+  - PH ON instrumentation: valid.
+- Aggregate matched original/replay:
+  - plain build/test/runtime/stack/failures `100%/100%/0%/0%/4`;
+  - claude `100%/100%/0%/0%/4`;
+  - agents `100%/100%/0%/0%/4`;
+  - ph-on `100%/100%/50%/50%/6`, workflow `0%`.
+- PH ON run notes:
+  - r1 Java/Gradle build/test/runtime PASS, but workflow finish FAIL with provider-limit/workflow-dead-end labels;
+  - r2 provider limit, incomplete/unknown output, runtime FAIL, workflow FAIL.
+- Boundary:
+  - this is valid eval outcome evidence for one fixture under the alpha4 scorer;
+  - it is not generated app quality certification;
+  - it is not a full v0.4 matrix result;
+  - it does not support a broad PH superiority claim;
+  - it blocks continuing remaining fixtures until workflow/provider cause is triaged;
+  - alpha4 tooling/scorer release claims remain separate from this post-release eval evidence.
+
 ### Additional Eval History Since Alpha3
 
 - Added a local eval environment guard so repo-side eval pilot environment files stay untracked.
