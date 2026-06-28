@@ -19,12 +19,17 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Boundary:
   - this is a product workflow surface release, not eval proof, PH superiority proof, generated app quality certification, AST/linter enforcement, or an OpenCode/model quality claim;
   - if reports/evidence are still templates, the CLI does not claim build/test/runtime success as confirmed;
-  - model follow-through risk remains, so registry re-smoke is required after publish.
+  - model follow-through risk remains; the post-publish registry smoke below confirms the no-token product workflow surface, not full implementation closure.
 - Post-publish registry facts:
   - `persona-harness@0.3.9-alpha.6` exists with gitHead `7b090bd26068a24d2fd7da5b9b7da680847c3a04` and shasum `e5c8c8efa17eac8e51f49e8f65e4daa579d72468`;
   - dist-tags are `alpha=0.3.9-alpha.6`, `latest=0.3.9-alpha.3`;
   - `latest` was not moved;
-  - registry smoke remains the next handoff before claiming published alpha6 surface behavior.
+  - alpha6 Windows D-drive registry smoke passed from `npm install -D persona-harness@alpha` in `D:\persona-harness-smoke-alpha6-registry-20260628-220759`;
+  - no-token init/default backend, doctor, bootstrap, draft/approve/split/next/continue/check passed;
+  - Korean `TODO 웹 서비스 만들래` was preserved in `workflow next` title and `workflow continue` task-card context;
+  - `workflow continue` showed task-card context, next command/action, archive candidate, no-completion guidance, and the post-build closure checklist;
+  - `workflow check` also showed the closure path in pending/template state, with expected WARN because reports/evidence were still missing and completion remained blocked;
+  - this closes the alpha6 product workflow surface cycle, but remains product surface smoke only, not eval/model/OpenCode/A-B evidence, PH superiority proof, or generated app quality certification.
 
 ## [0.3.9-alpha.5] - 2026-06-28
 
