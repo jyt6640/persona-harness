@@ -127,6 +127,23 @@ _No unreleased changes._
   - it does not support a broad PH superiority claim;
   - it blocks continuing remaining fixtures until workflow/provider cause is triaged;
   - alpha4 tooling/scorer release claims remain separate from this post-release eval evidence.
+- Provider/tool completion semantics were separated:
+  - `80943d2 fix(eval): separate provider completion outcomes`;
+  - fresh results add `completionSemanticsVersion: provider-tool-completion-v1`;
+  - generated app external metrics are separated from operational feasibility metrics;
+  - run-level `providerToolCompletion` is recorded;
+  - aggregate fields include `completionWithinBudgetRate`, `providerLimitRate`, `finishWithinBudgetRate`, and `operationalFailureModeTotal`;
+  - provider incomplete + unknown workspace is runtime NOT RUN, not fake runtime FAIL;
+  - marker-less old/post-alpha4 results are INCONCLUSIVE under the new semantics and existing verdicts are not retroactively changed;
+  - Research accepted the denominator separation approach with no methodology blocker;
+  - QA reported focused/full tests, typecheck, and build PASS.
+- Provider/tool completion boundary:
+  - no actual eval rerun happened after `80943d2`;
+  - no new eval outcome claim is made;
+  - provider-limited/TIMED_OUT is an operational failure, not generated app quality failure;
+  - scorable-only external metrics must be shown with operational rates;
+  - provider failures are not automatically treated as infra noise or INCONCLUSIVE;
+  - no generated app quality certification is made.
 
 ### Additional Eval History Since Alpha3
 
