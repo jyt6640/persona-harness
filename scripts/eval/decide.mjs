@@ -10,7 +10,8 @@ This command does not modify injection-value-status.json or any release state.
 
 Policies:
 - ${DECISION_POLICIES.legacyStackHard} (default; preserves previously recorded old-gate verdict semantics)
-- ${DECISION_POLICIES.externalPrimary} (external-outcome-primary 2-tier gate; use only for newly run evals after preregistration)`
+- ${DECISION_POLICIES.externalPrimaryPreToolchain} (external-outcome-primary pre-toolchain scorer; historical only)
+- ${DECISION_POLICIES.externalPrimary} (external-outcome-primary 2-tier gate with generated-toolchain-aware scoring; use only for fresh evals after preregistration)`
 }
 
 function main() {
@@ -25,6 +26,7 @@ function main() {
   const results = JSON.parse(readFileSync(arg, "utf8"))
   const decision = decideResults(results, { policy })
   console.log(`Policy: ${decision.policy}`)
+  console.log(`Scorer: ${decision.scorer}`)
   console.log(`Verdict: ${decision.verdict}`)
   for (const reason of decision.reasons) {
     console.log(`- ${reason}`)

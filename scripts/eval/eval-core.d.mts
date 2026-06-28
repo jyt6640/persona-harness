@@ -5,6 +5,7 @@ export type EvalRun = {
   repetition?: number
   workspacePurity?: WorkspacePurity
   toolchain?: GeneratedToolchain
+  fixtureStackToolchain?: FixtureStackToolchainScore
   metrics: {
     compileBuildPass: boolean | null
     gradleTestPass: boolean | null
@@ -12,6 +13,12 @@ export type EvalRun = {
     detectedStack?: string
     buildTool?: string
     testTool?: string
+    fixtureExpectedStack?: string
+    fixtureExpectedFramework?: string
+    fixtureExpectedBuildTool?: string
+    fixtureStackToolchainExpectation?: string
+    stackToolchainMatches?: boolean | null
+    stackToolchainMatchReason?: string
     stackAlignmentScore?: number
     stackAlignmentRate?: number
     externalFailureModeCount: number
@@ -42,10 +49,31 @@ export type FixtureMetadata = {
   scopeClass: "single-turn" | "reduced-single-turn" | "stress-continuation"
   singleTurnEligible: boolean
   pairedWith?: string
+  stackToolchain: FixtureStackToolchainExpectation
+}
+
+export type FixtureStackToolchainExpectation = {
+  expectation: "free-stack" | "java-spring-gradle-pinned" | "java-spring-any-build-tool" | "python" | "other"
+  expectedStack: "any" | "java" | "python" | "other"
+  expectedFramework: "any" | "spring" | "other"
+  expectedBuildTool: "any" | "gradle" | "maven" | "python-compileall" | "other"
+}
+
+export type FixtureStackToolchainScore = {
+  matches: boolean
+  reason: string
+  expected: FixtureStackToolchainExpectation
+  detected: GeneratedToolchain
 }
 
 export const FIXTURE_METADATA: Record<string, FixtureMetadata>
 export const DEFAULT_OUTPUT_ROOT: string
+export const TOOLCHAIN_SCORING_VERSION: "generated-toolchain-v1"
+export const SCORER_MARKERS: {
+  readonly legacyStackHard: "legacy-stack-hard-v0.4"
+  readonly externalPrimaryPreToolchain: "gradle-fixed-v0.4.1"
+  readonly externalPrimaryToolchain: "generated-toolchain-v1"
+}
 export function aggregateRuns(runs: readonly EvalRun[]): {
   byCondition: Array<Record<string, unknown>>
   singleTurnEligibleByCondition: Array<Record<string, unknown>>
@@ -73,6 +101,10 @@ export function formatCommand(template: string, values: Record<string, unknown>)
 export function parseJUnitXmlText(xmlText: string): { tests: number; failures: number; errors: number; skipped: number }
 export function collectJUnitResults(workspaceDir: string): Record<string, unknown>
 export function detectGeneratedToolchain(workspaceDir: string): GeneratedToolchain
+export function scoreFixtureStackToolchain(
+  fixtureMetadata: FixtureMetadata,
+  toolchain: GeneratedToolchain,
+): FixtureStackToolchainScore
 export function buildCommandForToolchain(workspaceDir: string, toolchain?: GeneratedToolchain): EvalCommandDescriptor
 export function testCommandForToolchain(workspaceDir: string, toolchain?: GeneratedToolchain): EvalCommandDescriptor
 export function measureGradleTestResult(workspaceDir: string, execution: Record<string, unknown>): Record<string, unknown>
@@ -95,9 +127,10 @@ export function findAmbientInfluencePaths(projectDir: string, outputRoot: string
 export function scanWorkspacePurity(workspaceDir: string, conditionId: string): WorkspacePurity
 export const DECISION_POLICIES: {
   readonly legacyStackHard: "legacy-v0.4-stack-hard"
-  readonly externalPrimary: "external-primary-v0.4.1"
+  readonly externalPrimaryPreToolchain: "external-primary-v0.4.1"
+  readonly externalPrimary: "external-primary-toolchain-v0.4.2"
 }
 export function decideResults(
-  results: { decisionPolicy?: string | null; runs?: readonly EvalRun[] },
+  results: { decisionPolicy?: string | null; toolchainScoringVersion?: string | null; runs?: readonly EvalRun[] },
   options?: { policy?: string },
-): { policy: string; verdict: string; reasons: string[] }
+): { policy: string; scorer: string; verdict: string; reasons: string[] }

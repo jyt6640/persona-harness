@@ -16,19 +16,43 @@ export const FIXTURE_METADATA = {
   "backend-api-no-stack": {
     scopeClass: "single-turn",
     singleTurnEligible: true,
+    stackToolchain: {
+      expectation: "free-stack",
+      expectedStack: "any",
+      expectedFramework: "any",
+      expectedBuildTool: "any",
+    },
   },
   "multi-step-backend": {
     scopeClass: "stress-continuation",
     singleTurnEligible: false,
+    stackToolchain: {
+      expectation: "java-spring-gradle-pinned",
+      expectedStack: "java",
+      expectedFramework: "spring",
+      expectedBuildTool: "gradle",
+    },
   },
   "multi-step-backend-small": {
     scopeClass: "reduced-single-turn",
     singleTurnEligible: true,
     pairedWith: "multi-step-backend",
+    stackToolchain: {
+      expectation: "java-spring-gradle-pinned",
+      expectedStack: "java",
+      expectedFramework: "spring",
+      expectedBuildTool: "gradle",
+    },
   },
   "ambiguous-idea-first": {
     scopeClass: "single-turn",
     singleTurnEligible: true,
+    stackToolchain: {
+      expectation: "free-stack",
+      expectedStack: "any",
+      expectedFramework: "any",
+      expectedBuildTool: "any",
+    },
   },
 }
 
@@ -51,9 +75,16 @@ const STACK_CRITERIA = [
 ]
 export const DEFAULT_OUTPUT_ROOT = join(tmpdir(), "persona-harness-eval-runs")
 const AMBIENT_INFLUENCE_PATHS = ["AGENTS.md", "CLAUDE.md", ".persona", ".opencode"]
+export const TOOLCHAIN_SCORING_VERSION = "generated-toolchain-v1"
+export const SCORER_MARKERS = {
+  legacyStackHard: "legacy-stack-hard-v0.4",
+  externalPrimaryPreToolchain: "gradle-fixed-v0.4.1",
+  externalPrimaryToolchain: TOOLCHAIN_SCORING_VERSION,
+}
 export const DECISION_POLICIES = {
   legacyStackHard: "legacy-v0.4-stack-hard",
-  externalPrimary: "external-primary-v0.4.1",
+  externalPrimaryPreToolchain: "external-primary-v0.4.1",
+  externalPrimary: "external-primary-toolchain-v0.4.2",
 }
 
 export function sha256Text(text) {
@@ -193,7 +224,18 @@ function fixtureMetadataForIds(fixtureIds) {
 }
 
 function fixtureMetadataFor(fixtureId) {
-  return FIXTURE_METADATA[fixtureId] ?? { scopeClass: "single-turn", singleTurnEligible: true }
+  return (
+    FIXTURE_METADATA[fixtureId] ?? {
+      scopeClass: "single-turn",
+      singleTurnEligible: true,
+      stackToolchain: {
+        expectation: "free-stack",
+        expectedStack: "any",
+        expectedFramework: "any",
+        expectedBuildTool: "any",
+      },
+    }
+  )
 }
 
 export function commandExists(command) {
@@ -455,6 +497,47 @@ export function detectGeneratedToolchain(workspaceDir) {
     testTool: "unknown",
     evidence: [],
   }
+}
+
+export function scoreFixtureStackToolchain(fixtureMetadata, toolchain) {
+  const expected = fixtureMetadata?.stackToolchain ?? fixtureMetadataFor("unknown").stackToolchain
+  if (expected.expectation === "free-stack") {
+    return {
+      matches: true,
+      reason: "fixture accepts any generated stack/toolchain",
+      expected,
+      detected: toolchain,
+    }
+  }
+  if (expected.expectedStack !== "any" && toolchain.detectedStack !== expected.expectedStack) {
+    return {
+      matches: false,
+      reason: `expected ${expected.expectedStack} stack but generated ${toolchain.detectedStack}`,
+      expected,
+      detected: toolchain,
+    }
+  }
+  if (expected.expectedBuildTool !== "any" && toolchain.buildTool !== expected.expectedBuildTool) {
+    return {
+      matches: false,
+      reason: `expected ${titleCaseTool(expected.expectedBuildTool)} build tool but generated ${toolchain.buildTool}`,
+      expected,
+      detected: toolchain,
+    }
+  }
+  return {
+    matches: true,
+    reason: "generated stack/toolchain matches fixture expectation",
+    expected,
+    detected: toolchain,
+  }
+}
+
+function titleCaseTool(tool) {
+  if (tool === "gradle") return "Gradle"
+  if (tool === "maven") return "Maven"
+  if (tool === "python-compileall") return "Python compileall"
+  return String(tool)
 }
 
 function hasPythonTests(workspaceDir) {
@@ -814,11 +897,14 @@ export function aggregateRuns(runs) {
       conditionId: run.conditionId,
       scopeClass: fixtureMetadata.scopeClass,
       singleTurnEligible: fixtureMetadata.singleTurnEligible,
+      fixtureStackToolchainExpectation: fixtureMetadata.stackToolchain,
       runs: 0,
       compileBuildPasses: 0,
       compileBuildKnown: 0,
       gradleTestPasses: 0,
       gradleTestKnown: 0,
+      stackToolchainMatches: 0,
+      stackToolchainKnown: 0,
       runtimeSmokePasses: 0,
       runtimeSmokeKnown: 0,
       stackAlignmentTotal: 0,
@@ -831,6 +917,8 @@ export function aggregateRuns(runs) {
     if (run.metrics.compileBuildPass !== null && run.metrics.compileBuildPass !== undefined) bucket.compileBuildKnown += 1
     if (run.metrics.gradleTestPass === true) bucket.gradleTestPasses += 1
     if (run.metrics.gradleTestPass !== null && run.metrics.gradleTestPass !== undefined) bucket.gradleTestKnown += 1
+    if (run.metrics.stackToolchainMatches === true) bucket.stackToolchainMatches += 1
+    if (run.metrics.stackToolchainMatches !== null && run.metrics.stackToolchainMatches !== undefined) bucket.stackToolchainKnown += 1
     if (run.metrics.runtimeSmokePass === true) bucket.runtimeSmokePasses += 1
     if (run.metrics.runtimeSmokePass !== null) bucket.runtimeSmokeKnown += 1
     bucket.stackAlignmentTotal += stackAlignmentRateForRun(run)
@@ -843,6 +931,7 @@ export function aggregateRuns(runs) {
   for (const bucket of Object.values(byCondition)) {
     bucket.compileBuildRate = bucket.compileBuildKnown === 0 ? null : rate(bucket.compileBuildPasses, bucket.compileBuildKnown)
     bucket.gradleTestRate = bucket.gradleTestKnown === 0 ? null : rate(bucket.gradleTestPasses, bucket.gradleTestKnown)
+    bucket.stackToolchainMatchRate = bucket.stackToolchainKnown === 0 ? null : rate(bucket.stackToolchainMatches, bucket.stackToolchainKnown)
     bucket.runtimeSmokeRate = bucket.runtimeSmokeKnown === 0 ? null : rate(bucket.runtimeSmokePasses, bucket.runtimeSmokeKnown)
     bucket.stackAlignmentRate = bucket.runs === 0 ? 0 : bucket.stackAlignmentTotal / bucket.runs
     bucket.workflowFinishPassRate = rate(bucket.workflowFinishPasses, bucket.runs)
@@ -863,11 +952,18 @@ export function decideResults(results, options = {}) {
   const policy = options.policy ?? DECISION_POLICIES.legacyStackHard
   const purityFailures = baselinePurityFailures(results)
   if (purityFailures.length > 0) {
-    return { policy, verdict: "INCONCLUSIVE", reasons: purityFailures }
+    return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "INCONCLUSIVE", reasons: purityFailures }
   }
   if (policy === DECISION_POLICIES.externalPrimary) return decideExternalPrimaryResults(results, policy)
+  if (policy === DECISION_POLICIES.externalPrimaryPreToolchain) return decideExternalPrimaryResults(results, policy)
   if (policy === DECISION_POLICIES.legacyStackHard) return decideLegacyStackHardResults(results, policy)
   throw new Error(`Unknown decision policy: ${policy}`)
+}
+
+function scorerMarkerForPolicy(policy) {
+  if (policy === DECISION_POLICIES.externalPrimary) return SCORER_MARKERS.externalPrimaryToolchain
+  if (policy === DECISION_POLICIES.externalPrimaryPreToolchain) return SCORER_MARKERS.externalPrimaryPreToolchain
+  return SCORER_MARKERS.legacyStackHard
 }
 
 function baselinePurityFailures(results) {
@@ -884,7 +980,7 @@ function decideLegacyStackHardResults(results, policy) {
   const reasons = []
   const runs = Array.isArray(results.runs) ? results.runs : []
   if (runs.length === 0) {
-    return { policy, verdict: "INCONCLUSIVE", reasons: ["results contains no runs"] }
+    return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "INCONCLUSIVE", reasons: ["results contains no runs"] }
   }
 
   const fixtureIds = [...new Set(runs.map((run) => run.fixtureId))]
@@ -961,9 +1057,9 @@ function decideLegacyStackHardResults(results, policy) {
     }
   }
 
-  if (anyFailure) return { policy, verdict: "FAIL", reasons }
-  if (anyInconclusive) return { policy, verdict: "INCONCLUSIVE", reasons }
-  return { policy, verdict: "PASS", reasons: ["PH ON met coded v0.4 threshold checks for supplied results"] }
+  if (anyFailure) return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "FAIL", reasons }
+  if (anyInconclusive) return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "INCONCLUSIVE", reasons }
+  return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "PASS", reasons: ["PH ON met coded v0.4 threshold checks for supplied results"] }
 }
 
 function decideExternalPrimaryResults(results, policy) {
@@ -971,13 +1067,22 @@ function decideExternalPrimaryResults(results, policy) {
   if (results.decisionPolicy !== policy) {
     return {
       policy,
+      scorer: scorerMarkerForPolicy(policy),
       verdict: "INCONCLUSIVE",
       reasons: [`results were not preregistered for ${policy}; rerun eval after gate coding before applying this policy`],
     }
   }
+  if (policy === DECISION_POLICIES.externalPrimary && results.toolchainScoringVersion !== TOOLCHAIN_SCORING_VERSION) {
+    return {
+      policy,
+      scorer: scorerMarkerForPolicy(policy),
+      verdict: "INCONCLUSIVE",
+      reasons: [`results do not declare ${TOOLCHAIN_SCORING_VERSION}; rerun eval with toolchain-aware scorer before applying this policy`],
+    }
+  }
   const runs = Array.isArray(results.runs) ? results.runs : []
   if (runs.length === 0) {
-    return { policy, verdict: "INCONCLUSIVE", reasons: ["results contains no runs"] }
+    return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "INCONCLUSIVE", reasons: ["results contains no runs"] }
   }
 
   const fixtureIds = [...new Set(runs.map((run) => run.fixtureId))]
@@ -1052,9 +1157,9 @@ function decideExternalPrimaryResults(results, policy) {
     }
   }
 
-  if (anyFailure) return { policy, verdict: "FAIL", reasons }
-  if (anyInconclusive) return { policy, verdict: "INCONCLUSIVE", reasons }
-  return { policy, verdict: "PASS", reasons }
+  if (anyFailure) return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "FAIL", reasons }
+  if (anyInconclusive) return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "INCONCLUSIVE", reasons }
+  return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "PASS", reasons }
 }
 
 export function summarizeComparable(runs) {
@@ -1122,6 +1227,18 @@ function capturedDecisionPolicy(replayRoot) {
   }
 }
 
+function capturedToolchainScoringVersion(replayRoot) {
+  const resultsPath = join(replayRoot, "results.json")
+  if (!existsSync(resultsPath)) return null
+  try {
+    const results = JSON.parse(readFileSync(resultsPath, "utf8"))
+    return typeof results.toolchainScoringVersion === "string" ? results.toolchainScoringVersion : null
+  } catch (error) {
+    if (error instanceof Error) return null
+    throw error
+  }
+}
+
 export async function runEval(options) {
   if (options.replayDir) {
     return replayEval(options)
@@ -1148,6 +1265,7 @@ export async function runEval(options) {
   const results = {
     schemaVersion: "persona-onoff-eval.1",
     decisionPolicy: DECISION_POLICIES.externalPrimary,
+    toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
     createdAt: new Date().toISOString(),
     gitCommit,
     installSource: options.installSource,
@@ -1229,6 +1347,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   }
 
   const toolchain = detectGeneratedToolchain(workspaceDir)
+  const fixtureStackToolchain = scoreFixtureStackToolchain(fixtureMetadataFor(runPlan.fixtureId), toolchain)
   const testCommand = testCommandForToolchain(workspaceDir, toolchain)
   const buildCommand = buildCommandForToolchain(workspaceDir, toolchain)
   const testExecution = await runCommandDescriptorAsync(testCommand, workspaceDir, options.timeoutMs)
@@ -1299,6 +1418,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     baselineFile,
     workspacePurity,
     toolchain,
+    fixtureStackToolchain,
     gitCommit,
     metadata: {
       model: options.model,
@@ -1334,6 +1454,12 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       detectedStack: toolchain.detectedStack,
       buildTool: toolchain.buildTool,
       testTool: toolchain.testTool,
+      fixtureExpectedStack: fixtureStackToolchain.expected.expectedStack,
+      fixtureExpectedFramework: fixtureStackToolchain.expected.expectedFramework,
+      fixtureExpectedBuildTool: fixtureStackToolchain.expected.expectedBuildTool,
+      fixtureStackToolchainExpectation: fixtureStackToolchain.expected.expectation,
+      stackToolchainMatches: fixtureStackToolchain.matches,
+      stackToolchainMatchReason: fixtureStackToolchain.reason,
       runtimeSmokePass: runtimeSmokeOutcome === "NOT RUN" ? null : runtimeSmokeOutcome === "PASS",
       stackAlignmentScore: stackAlignment.score,
       stackAlignmentRate: stackAlignment.rate,
@@ -1415,6 +1541,7 @@ async function replayEval(options) {
   const results = {
     schemaVersion: "persona-onoff-eval.1",
     decisionPolicy: capturedDecisionPolicy(replayRoot),
+    toolchainScoringVersion: capturedToolchainScoringVersion(replayRoot),
     replayOf: replayRoot,
     createdAt: new Date().toISOString(),
     gitCommit,
@@ -1435,6 +1562,7 @@ async function replayEval(options) {
 async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, conditionId, repetition, environment, gitCommit) {
   const logsDir = join(replayRunDir, "raw")
   const toolchain = detectGeneratedToolchain(workspaceDir)
+  const fixtureStackToolchain = scoreFixtureStackToolchain(fixtureMetadataFor(fixtureId), toolchain)
   const testCommand = testCommandForToolchain(workspaceDir, toolchain)
   const buildCommand = buildCommandForToolchain(workspaceDir, toolchain)
   const testExecution = runCommandDescriptor(testCommand, workspaceDir, options.timeoutMs)
@@ -1473,6 +1601,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     fixtureHash: existsSync(join(workspaceDir, "README.md")) ? sha256File(join(workspaceDir, "README.md")) : "unknown",
     workspacePurity,
     toolchain,
+    fixtureStackToolchain,
     gitCommit,
     metadata: {
       timeoutMs: options.timeoutMs,
@@ -1496,6 +1625,12 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       detectedStack: toolchain.detectedStack,
       buildTool: toolchain.buildTool,
       testTool: toolchain.testTool,
+      fixtureExpectedStack: fixtureStackToolchain.expected.expectedStack,
+      fixtureExpectedFramework: fixtureStackToolchain.expected.expectedFramework,
+      fixtureExpectedBuildTool: fixtureStackToolchain.expected.expectedBuildTool,
+      fixtureStackToolchainExpectation: fixtureStackToolchain.expected.expectation,
+      stackToolchainMatches: fixtureStackToolchain.matches,
+      stackToolchainMatchReason: fixtureStackToolchain.reason,
       runtimeSmokePass: runtimeSmokeOutcome === "NOT RUN" ? null : runtimeSmokeOutcome === "PASS",
       stackAlignmentScore: stackAlignment.score,
       stackAlignmentRate: stackAlignment.rate,

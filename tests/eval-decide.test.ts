@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { decideResults } from "../scripts/eval/eval-core.mjs"
+import { DECISION_POLICIES, TOOLCHAIN_SCORING_VERSION, decideResults } from "../scripts/eval/eval-core.mjs"
 
 const tempDirs: string[] = []
 
@@ -48,6 +48,7 @@ describe("objective eval decision gate", () => {
 
     expect(decision).toEqual({
       policy: "legacy-v0.4-stack-hard",
+      scorer: "legacy-stack-hard-v0.4",
       verdict: "PASS",
       reasons: ["PH ON met coded v0.4 threshold checks for supplied results"],
     })
@@ -126,16 +127,18 @@ describe("objective eval decision gate", () => {
   it("fails external-primary policy when PH ON regresses a Tier 1 external outcome", () => {
     const decision = decideResults(
       {
-        decisionPolicy: "external-primary-v0.4.1",
+        decisionPolicy: DECISION_POLICIES.externalPrimary,
+        toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
         runs: [
           run("backend-api-no-stack", "plain", true, true, true, 0.5, 2),
           run("backend-api-no-stack", "ph-on", true, false, true, 0.5, 0),
         ],
       },
-      { policy: "external-primary-v0.4.1" },
+      { policy: DECISION_POLICIES.externalPrimary },
     )
 
-    expect(decision.policy).toBe("external-primary-v0.4.1")
+    expect(decision.policy).toBe(DECISION_POLICIES.externalPrimary)
+    expect(decision.scorer).toBe(TOOLCHAIN_SCORING_VERSION)
     expect(decision.verdict).toBe("FAIL")
     expect(decision.reasons).toContain("backend-api-no-stack: Tier 1 external outcome regression: PH ON gradleTestRate below plain")
   })
@@ -143,23 +146,25 @@ describe("objective eval decision gate", () => {
   it("does not fail external-primary policy solely because stack differentiation is not proven", () => {
     const decision = decideResults(
       {
-        decisionPolicy: "external-primary-v0.4.1",
+        decisionPolicy: DECISION_POLICIES.externalPrimary,
+        toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
         runs: [
           run("backend-api-no-stack", "plain", true, true, true, 0.75, 4),
           run("backend-api-no-stack", "claude", true, true, true, 0.5, 6),
           run("backend-api-no-stack", "ph-on", true, true, true, 0.75, 0),
         ],
       },
-      { policy: "external-primary-v0.4.1" },
+      { policy: DECISION_POLICIES.externalPrimary },
     )
 
-    expect(decision.policy).toBe("external-primary-v0.4.1")
+    expect(decision.policy).toBe(DECISION_POLICIES.externalPrimary)
+    expect(decision.scorer).toBe(TOOLCHAIN_SCORING_VERSION)
     expect(decision.verdict).toBe("PASS")
     expect(decision.reasons).toContain("backend-api-no-stack: Tier 1 external outcomes passed")
     expect(decision.reasons).toContain("backend-api-no-stack: Tier 2 stack differentiation not proven against plain")
   })
 
-  it("does not apply external-primary policy to unstamped legacy results", () => {
+  it("does not apply toolchain-aware external-primary policy to unstamped legacy results", () => {
     const dir = tempDir("persona-decide-policy-")
     const resultsPath = join(dir, "results.json")
     writeFileSync(
@@ -189,8 +194,53 @@ describe("objective eval decision gate", () => {
     expect(legacy.stdout).toContain("Policy: legacy-v0.4-stack-hard")
     expect(externalPrimary.status).toBe(0)
     expect(externalPrimary.stdout).toContain("Policy: external-primary-v0.4.1")
+    expect(externalPrimary.stdout).toContain("Scorer: gradle-fixed-v0.4.1")
     expect(externalPrimary.stdout).toContain("Verdict: INCONCLUSIVE")
     expect(externalPrimary.stdout).toContain("results were not preregistered for external-primary-v0.4.1")
+  })
+
+  it("does not treat pre-toolchain external-primary results as toolchain-aware results", () => {
+    const decision = decideResults(
+      {
+        decisionPolicy: DECISION_POLICIES.externalPrimaryPreToolchain,
+        runs: [
+          run("backend-api-no-stack", "plain", true, true, true, 0.75, 4),
+          run("backend-api-no-stack", "ph-on", true, true, true, 0.75, 0),
+        ],
+      },
+      { policy: DECISION_POLICIES.externalPrimary },
+    )
+
+    expect(decision).toEqual({
+      policy: DECISION_POLICIES.externalPrimary,
+      scorer: TOOLCHAIN_SCORING_VERSION,
+      verdict: "INCONCLUSIVE",
+      reasons: [
+        `results were not preregistered for ${DECISION_POLICIES.externalPrimary}; rerun eval after gate coding before applying this policy`,
+      ],
+    })
+  })
+
+  it("requires the toolchain scorer marker even when results use the new policy id", () => {
+    const decision = decideResults(
+      {
+        decisionPolicy: DECISION_POLICIES.externalPrimary,
+        runs: [
+          run("backend-api-no-stack", "plain", true, true, true, 0.75, 4),
+          run("backend-api-no-stack", "ph-on", true, true, true, 0.75, 0),
+        ],
+      },
+      { policy: DECISION_POLICIES.externalPrimary },
+    )
+
+    expect(decision).toEqual({
+      policy: DECISION_POLICIES.externalPrimary,
+      scorer: TOOLCHAIN_SCORING_VERSION,
+      verdict: "INCONCLUSIVE",
+      reasons: [
+        `results do not declare ${TOOLCHAIN_SCORING_VERSION}; rerun eval with toolchain-aware scorer before applying this policy`,
+      ],
+    })
   })
 })
 

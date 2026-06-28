@@ -27,8 +27,10 @@ import {
   preflight,
   runShellAsync,
   scanWorkspacePurity,
+  scoreFixtureStackToolchain,
   scoreStackAlignmentFromObserveReport,
   testCommandForToolchain,
+  TOOLCHAIN_SCORING_VERSION,
 } from "../scripts/eval/eval-core.mjs"
 
 const tempDirs: string[] = []
@@ -37,12 +39,15 @@ type ReplayRuntimeRun = {
   readonly fixtureId: string
   readonly fixtureMetadata: Record<string, unknown>
   readonly conditionId: string
+  readonly fixtureStackToolchain: Record<string, unknown>
   readonly outcomes: {
     readonly runtimeSmokeOutcome: string
     readonly workflowFinishOutcome: string
   }
   readonly metrics: {
     readonly runtimeSmokePass: boolean | null
+    readonly stackToolchainMatches: boolean | null
+    readonly stackToolchainMatchReason: string
     readonly externalFailureModeLabels: readonly string[]
     readonly workflowFinishOutcome: string
   }
@@ -50,6 +55,7 @@ type ReplayRuntimeRun = {
 
 type ReplayResults = {
   readonly decisionPolicy?: string
+  readonly toolchainScoringVersion?: string
   readonly fixtureMetadata: Record<string, unknown>
   readonly aggregate: Record<string, unknown>
   readonly runs: readonly ReplayRuntimeRun[]
@@ -92,6 +98,12 @@ describe("ON/OFF eval runner core", () => {
       scopeClass: "reduced-single-turn",
       singleTurnEligible: true,
       pairedWith: "multi-step-backend",
+      stackToolchain: {
+        expectation: "java-spring-gradle-pinned",
+        expectedStack: "java",
+        expectedFramework: "spring",
+        expectedBuildTool: "gradle",
+      },
     })
     expect(plan.runs).toEqual([{ fixtureId: "multi-step-backend-small", conditionId: "ph-on", repetition: 1 }])
   })
@@ -100,16 +112,46 @@ describe("ON/OFF eval runner core", () => {
     const options = parseArgs(["--runs", "1", "--fixture", "all", "--condition", "plain", "--model", "test-model"])
     const plan = buildPlan(options)
 
-    expect(FIXTURE_METADATA["backend-api-no-stack"]).toEqual({ scopeClass: "single-turn", singleTurnEligible: true })
-    expect(FIXTURE_METADATA["ambiguous-idea-first"]).toEqual({ scopeClass: "single-turn", singleTurnEligible: true })
+    expect(FIXTURE_METADATA["backend-api-no-stack"]).toEqual({
+      scopeClass: "single-turn",
+      singleTurnEligible: true,
+      stackToolchain: {
+        expectation: "free-stack",
+        expectedStack: "any",
+        expectedFramework: "any",
+        expectedBuildTool: "any",
+      },
+    })
+    expect(FIXTURE_METADATA["ambiguous-idea-first"]).toEqual({
+      scopeClass: "single-turn",
+      singleTurnEligible: true,
+      stackToolchain: {
+        expectation: "free-stack",
+        expectedStack: "any",
+        expectedFramework: "any",
+        expectedBuildTool: "any",
+      },
+    })
     expect(plan.fixtureMetadata["multi-step-backend"]).toEqual({
       scopeClass: "stress-continuation",
       singleTurnEligible: false,
+      stackToolchain: {
+        expectation: "java-spring-gradle-pinned",
+        expectedStack: "java",
+        expectedFramework: "spring",
+        expectedBuildTool: "gradle",
+      },
     })
     expect(plan.fixtureMetadata["multi-step-backend-small"]).toEqual({
       scopeClass: "reduced-single-turn",
       singleTurnEligible: true,
       pairedWith: "multi-step-backend",
+      stackToolchain: {
+        expectation: "java-spring-gradle-pinned",
+        expectedStack: "java",
+        expectedFramework: "spring",
+        expectedBuildTool: "gradle",
+      },
     })
   })
 
@@ -262,6 +304,58 @@ describe("ON/OFF eval runner core", () => {
     )
   })
 
+  it("records Gradle-pinned fixture toolchain mismatch separately from Maven external pass", () => {
+    const projectDir = tempDir("persona-eval-maven-pinned-")
+    writeFileSync(join(projectDir, "pom.xml"), "<project></project>\n")
+    mkdirSync(join(projectDir, "target", "surefire-reports"), { recursive: true })
+    mkdirSync(join(projectDir, "target", "classes", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "target", "surefire-reports", "TEST-sample.xml"), '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>\n')
+    writeFileSync(join(projectDir, "target", "classes", "com", "example", "App.class"), "bytecode")
+
+    const toolchain = detectGeneratedToolchain(projectDir)
+    const externalTest = measureToolchainTestResult(projectDir, { status: 0, timedOut: false }, toolchain)
+    const externalBuild = measureCompileResult(projectDir, { status: 0, timedOut: false }, toolchain)
+    const match = scoreFixtureStackToolchain(FIXTURE_METADATA["multi-step-backend-small"], toolchain)
+
+    expect(externalTest).toEqual(expect.objectContaining({ outcome: "PASS" }))
+    expect(externalBuild).toEqual(expect.objectContaining({ outcome: "PASS" }))
+    expect(match).toEqual(
+      expect.objectContaining({
+        matches: false,
+        reason: "expected Gradle build tool but generated maven",
+      }),
+    )
+    expect(match.expected).toEqual(
+      expect.objectContaining({
+        expectation: "java-spring-gradle-pinned",
+        expectedStack: "java",
+        expectedBuildTool: "gradle",
+      }),
+    )
+    expect(match.detected).toEqual(expect.objectContaining({ detectedStack: "java", buildTool: "maven", testTool: "maven" }))
+  })
+
+  it("does not mark free-stack fixtures mismatched for Maven or Python toolchain choice", () => {
+    const freeStack = FIXTURE_METADATA["backend-api-no-stack"]
+
+    expect(
+      scoreFixtureStackToolchain(freeStack, {
+        detectedStack: "java",
+        buildTool: "maven",
+        testTool: "maven",
+        evidence: ["pom.xml"],
+      }),
+    ).toEqual(expect.objectContaining({ matches: true, reason: "fixture accepts any generated stack/toolchain" }))
+    expect(
+      scoreFixtureStackToolchain(freeStack, {
+        detectedStack: "python",
+        buildTool: "python-compileall",
+        testTool: "pytest",
+        evidence: ["pyproject.toml"],
+      }),
+    ).toEqual(expect.objectContaining({ matches: true, reason: "fixture accepts any generated stack/toolchain" }))
+  })
+
   it("keeps Gradle projects on the Gradle command and JUnit path", () => {
     const projectDir = tempDir("persona-eval-gradle-")
     writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
@@ -396,7 +490,8 @@ describe("ON/OFF eval runner core", () => {
         throw new Error(`missing results path in output: ${result.stdout}`)
       }
       const results = parseReplayResultsText(readFileSync(resultsPath, "utf8"))
-      expect(results.decisionPolicy).toBe("external-primary-v0.4.1")
+      expect(results.decisionPolicy).toBe(DECISION_POLICIES.externalPrimary)
+      expect(results.toolchainScoringVersion).toBe(TOOLCHAIN_SCORING_VERSION)
       expect(Number.isInteger(childPid)).toBe(true)
       expect(isProcessAlive(childPid)).toBe(false)
     } finally {
@@ -590,6 +685,7 @@ describe("ON/OFF eval runner core", () => {
 
     expect(result).toEqual({
       policy: DECISION_POLICIES.externalPrimary,
+      scorer: TOOLCHAIN_SCORING_VERSION,
       verdict: "INCONCLUSIVE",
       reasons: [expect.stringContaining("baseline workspace contamination detected")],
     })
@@ -721,18 +817,51 @@ describe("ON/OFF eval runner core", () => {
     expect(results.fixtureMetadata["multi-step-backend"]).toEqual({
       scopeClass: "stress-continuation",
       singleTurnEligible: false,
+      stackToolchain: {
+        expectation: "java-spring-gradle-pinned",
+        expectedStack: "java",
+        expectedFramework: "spring",
+        expectedBuildTool: "gradle",
+      },
     })
     expect(replayRunFor(results, "ph-on").fixtureMetadata).toEqual({
       scopeClass: "stress-continuation",
       singleTurnEligible: false,
+      stackToolchain: {
+        expectation: "java-spring-gradle-pinned",
+        expectedStack: "java",
+        expectedFramework: "spring",
+        expectedBuildTool: "gradle",
+      },
     })
+    expect(replayRunFor(results, "ph-on").fixtureStackToolchain).toEqual(
+      expect.objectContaining({
+        matches: true,
+        reason: "generated stack/toolchain matches fixture expectation",
+        expected: expect.objectContaining({ expectation: "java-spring-gradle-pinned", expectedBuildTool: "gradle" }),
+        detected: expect.objectContaining({ detectedStack: "java", buildTool: "gradle", testTool: "gradle" }),
+      }),
+    )
+    expect(replayRunFor(results, "ph-on").metrics.stackToolchainMatches).toBe(true)
     expect(results.fixtureMetadata["multi-step-backend-small"]).toEqual({
       scopeClass: "reduced-single-turn",
       singleTurnEligible: true,
       pairedWith: "multi-step-backend",
+      stackToolchain: {
+        expectation: "java-spring-gradle-pinned",
+        expectedStack: "java",
+        expectedFramework: "spring",
+        expectedBuildTool: "gradle",
+      },
     })
     expect(results.aggregate["singleTurnEligibleByCondition"]).toEqual(
-      expect.arrayContaining([expect.objectContaining({ fixtureId: "multi-step-backend-small" })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          fixtureId: "multi-step-backend-small",
+          fixtureStackToolchainExpectation: expect.objectContaining({ expectedBuildTool: "gradle" }),
+          stackToolchainMatchRate: 1,
+        }),
+      ]),
     )
     expect(results.aggregate["singleTurnEligibleByCondition"]).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ fixtureId: "multi-step-backend" })]),
@@ -870,6 +999,7 @@ function parseReplayResultsText(text: string): ReplayResults {
   }
   return {
     decisionPolicy: typeof parsed.decisionPolicy === "string" ? parsed.decisionPolicy : undefined,
+    toolchainScoringVersion: typeof parsed.toolchainScoringVersion === "string" ? parsed.toolchainScoringVersion : undefined,
     fixtureMetadata: isRecord(parsed.fixtureMetadata) ? parsed.fixtureMetadata : {},
     aggregate: isRecord(parsed.aggregate) ? parsed.aggregate : {},
     runs: parsed.runs.map(parseReplayRuntimeRun),
@@ -882,6 +1012,7 @@ function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {
     typeof value.fixtureId !== "string" ||
     !isRecord(value.fixtureMetadata) ||
     typeof value.conditionId !== "string" ||
+    !isRecord(value.fixtureStackToolchain) ||
     !isRecord(value.outcomes) ||
     !isRecord(value.metrics)
   ) {
@@ -893,6 +1024,8 @@ function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {
   }
   if (
     !isRuntimePass(metrics.runtimeSmokePass) ||
+    !isRuntimePass(metrics.stackToolchainMatches) ||
+    typeof metrics.stackToolchainMatchReason !== "string" ||
     !Array.isArray(metrics.externalFailureModeLabels) ||
     !metrics.externalFailureModeLabels.every((label) => typeof label === "string") ||
     typeof metrics.workflowFinishOutcome !== "string"
@@ -903,12 +1036,15 @@ function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {
     fixtureId: value.fixtureId,
     fixtureMetadata: value.fixtureMetadata,
     conditionId: value.conditionId,
+    fixtureStackToolchain: value.fixtureStackToolchain,
     outcomes: {
       runtimeSmokeOutcome: outcomes.runtimeSmokeOutcome,
       workflowFinishOutcome: outcomes.workflowFinishOutcome,
     },
     metrics: {
       runtimeSmokePass: metrics.runtimeSmokePass,
+      stackToolchainMatches: metrics.stackToolchainMatches,
+      stackToolchainMatchReason: metrics.stackToolchainMatchReason,
       externalFailureModeLabels: metrics.externalFailureModeLabels,
       workflowFinishOutcome: metrics.workflowFinishOutcome,
     },
@@ -956,6 +1092,8 @@ function decisionTestMetrics() {
     compileBuildPass: true,
     gradleTestPass: true,
     runtimeSmokePass: true,
+    stackToolchainMatches: true,
+    stackToolchainMatchReason: "fixture accepts any generated stack/toolchain",
     stackAlignmentRate: 1,
     externalFailureModeCount: 0,
     workflowFinishOutcome: "PASS",
