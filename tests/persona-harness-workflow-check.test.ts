@@ -588,6 +588,22 @@ describe("ph workflow check", () => {
     expect(feedbackReport).toContain("## 실제 프로젝트에 쓸 수 있나?")
   })
 
+  it("prints smoke and feedback help without writing reports", () => {
+    const projectDir = createProfiledTempProject()
+
+    const smokeHelp = runPersonaCli(["smoke", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const feedbackHelp = runPersonaCli(["feedback", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(smokeHelp.status).toBe(0)
+    expect(smokeHelp.stdout).toContain("Usage: ph smoke")
+    expect(smokeHelp.stdout).toContain("npx ph workflow check")
+    expect(feedbackHelp.status).toBe(0)
+    expect(feedbackHelp.stdout).toContain("Usage: ph feedback")
+    expect(feedbackHelp.stdout).toContain("npx ph doctor")
+    expect(existsSync(join(projectDir, ".persona", "workflow", "smoke-report.md"))).toBe(false)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "feedback-report.md"))).toBe(false)
+  })
+
   it("keeps smoke report output directory creation idempotent", () => {
     const projectDir = createProfiledTempProject()
     const first = runPersonaCli(["smoke"], { cwd: projectDir, env: {}, invocationName: "ph" })

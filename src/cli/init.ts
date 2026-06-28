@@ -23,6 +23,27 @@ export type InitResult = {
   readonly evidenceCopied: false
 }
 
+export function initUsage(invocationName: string): string {
+  return [
+    `Usage: ${invocationName} init`,
+    "",
+    "Install Persona Harness config/rules and OpenCode plugin config.",
+    "",
+    "Creates:",
+    "- .persona/harness.jsonc",
+    "- .persona/rules/",
+    "- .opencode/opencode.json",
+    "- .gitignore entries for generated/vendor context noise",
+    "",
+    "Does not create:",
+    "- AGENTS.md",
+    "- .persona/project-profile.jsonc",
+    "- .persona/workflow plan/report templates",
+    "",
+    "Next for backend projects: npx ph bootstrap backend",
+  ].join("\n")
+}
+
 class PersonaInitError extends Error {
   constructor(message: string) {
     super(message)

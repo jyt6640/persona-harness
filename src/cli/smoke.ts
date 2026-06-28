@@ -12,6 +12,22 @@ type SmokeOptions = {
 
 const SMOKE_REPORT_PATH = ".persona/workflow/smoke-report.md"
 
+function smokeUsage(invocationName: string): string {
+  return [
+    `Usage: ${invocationName} smoke`,
+    "",
+    "Write a report-only local smoke summary to .persona/workflow/smoke-report.md.",
+    "",
+    "Before running:",
+    "- npx ph doctor",
+    "- npx ph workflow check",
+    "",
+    "Scope:",
+    "- report-only smoke summary",
+    "- not generated app product-quality certification",
+  ].join("\n")
+}
+
 function createSmokeReport(projectDir: string): string {
   const status = readWorkflowStatus(projectDir)
   const doctor = readDoctorSummary({ projectDir })
@@ -65,7 +81,10 @@ function createSmokeReport(projectDir: string): string {
   ].join("\n")
 }
 
-export function runSmokeCommand(_args: readonly string[], options: SmokeOptions = {}): CliRunResult {
+export function runSmokeCommand(args: readonly string[], options: SmokeOptions = {}, invocationName = "ph"): CliRunResult {
+  if (args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
+    return { status: 0, stdout: `${smokeUsage(invocationName)}\n`, stderr: "" }
+  }
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const reportPath = join(projectDir, SMOKE_REPORT_PATH)
   mkdirSync(dirname(reportPath), { recursive: true })

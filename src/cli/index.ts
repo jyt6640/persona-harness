@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 
 import { runBootstrapCommand } from "./bootstrap.js"
 import { personaCliUsage } from "./cli-usage.js"
-import { runInitCommand } from "./init.js"
+import { initUsage, runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
 import { runIntakeCommand, runInteractiveIntakeCommand } from "./intake.js"
@@ -34,6 +34,9 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   const invocationName = options.invocationName ?? "ph"
 
   if (command === "init") {
+    if (args[1] === "--help" || args[1] === "-h" || args[1] === "help") {
+      return { status: 0, stdout: `${initUsage(invocationName)}\n`, stderr: "" }
+    }
     return runInitCommand({ projectDir: options.cwd, packageRoot: options.packageRoot })
   }
 
@@ -82,11 +85,11 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "smoke") {
-    return runSmokeCommand(args.slice(1), { projectDir: options.cwd })
+    return runSmokeCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
   if (command === "feedback") {
-    return runFeedbackCommand(args.slice(1), { projectDir: options.cwd })
+    return runFeedbackCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
   if (command === "review") {
@@ -114,17 +117,12 @@ function writeResult(result: CliRunResult): void {
   process.exitCode = result.status
 }
 
-function runInitEntrypoint(): void {
-  const initResult = runInitCommand({ projectDir: process.cwd() })
-  writeResult(initResult)
-}
-
 async function runCliEntrypoint(): Promise<void> {
   const args = process.argv.slice(2)
   const invocationName = process.argv[1]?.endsWith("/persona-harness") ? "persona-harness" : "ph"
 
   if (args[0] === "init") {
-    runInitEntrypoint()
+    writeResult(runPersonaCli(args, { cwd: process.cwd(), env: process.env, invocationName }))
     return
   }
 

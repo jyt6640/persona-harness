@@ -11,6 +11,23 @@ type FeedbackOptions = {
 
 const FEEDBACK_REPORT_PATH = ".persona/workflow/feedback-report.md"
 
+function feedbackUsage(invocationName: string): string {
+  return [
+    `Usage: ${invocationName} feedback`,
+    "",
+    "Write a tester feedback template to .persona/workflow/feedback-report.md.",
+    "",
+    "Useful first checks:",
+    "- npx ph doctor",
+    "- npx ph workflow check",
+    "- npx ph smoke",
+    "",
+    "Scope:",
+    "- report-only tester feedback template",
+    "- not generated app product-quality certification",
+  ].join("\n")
+}
+
 function createFeedbackTemplate(projectDir: string): string {
   const status = readWorkflowStatus(projectDir)
   return [
@@ -53,7 +70,10 @@ function createFeedbackTemplate(projectDir: string): string {
   ].join("\n")
 }
 
-export function runFeedbackCommand(_args: readonly string[], options: FeedbackOptions = {}): CliRunResult {
+export function runFeedbackCommand(args: readonly string[], options: FeedbackOptions = {}, invocationName = "ph"): CliRunResult {
+  if (args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
+    return { status: 0, stdout: `${feedbackUsage(invocationName)}\n`, stderr: "" }
+  }
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const reportPath = join(projectDir, FEEDBACK_REPORT_PATH)
   mkdirSync(dirname(reportPath), { recursive: true })

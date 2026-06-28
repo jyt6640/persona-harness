@@ -1,0 +1,36 @@
+import { existsSync, mkdtempSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+
+import { afterEach, describe, expect, it } from "vitest"
+
+import { runPersonaCli } from "../src/cli/index.js"
+
+const tempProjects: string[] = []
+
+function createTempProject(): string {
+  const projectDir = mkdtempSync(join(tmpdir(), "persona-first-run-help-test-"))
+  tempProjects.push(projectDir)
+  return projectDir
+}
+
+afterEach(() => {
+  for (const projectDir of tempProjects) {
+    rmSync(projectDir, { recursive: true, force: true })
+  }
+  tempProjects.length = 0
+})
+
+describe("first-run command help", () => {
+  it("prints init help without initializing the project", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["init", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Usage: ph init")
+    expect(result.stdout).toContain("Next for backend projects: npx ph bootstrap backend")
+    expect(existsSync(join(projectDir, ".persona"))).toBe(false)
+    expect(existsSync(join(projectDir, ".opencode"))).toBe(false)
+  })
+})
