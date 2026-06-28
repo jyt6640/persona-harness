@@ -18,6 +18,10 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - these are product surface and workflow UX signals only, not eval evidence, PH superiority proof, finish-gate weakening, or generated app quality certification.
 - Tester handoff:
   - refreshed the minimal external tester guide around alpha install, `ph init --default backend`, `ph doctor`, idea-first draft/approve/split/next/continue/check, expected pending WARNs, and feedback format;
+  - local proxy and SSH remote smoke on local tarballs were helpful for the no-token idea-first path, including `workflow continue` preserving pending `req-1` task-card context, next command/action, archive candidate, and no-completion guidance;
+  - registry-alpha remote commands passed, but that attempt is excluded from the helpful judgment because `workflow continue` lacked task-card context and Windows Korean input mojibake was observed;
+  - the smoke source was a local working-tree tarball at `b4e3424` while repo HEAD later moved to `e562f17`, so this is not current released/registry package proof;
+  - next publish gate is a Windows Korean mojibake fix plus published-package smoke after `e562f17`; wrapper/copy-block friction remains deferred until an actual tester gets stuck;
   - the guide keeps `alpha`/`latest` dist-tag caveats and explicitly forbids generated-app quality, eval, superiority, or enforcement claims.
 
 ## [0.3.9-alpha.4] - 2026-06-28
