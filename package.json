@@ -62,6 +62,7 @@
     "demo:init": "npm run build && node scripts/verify-init-demo.mjs",
     "demo:bootstrap": "npm run build && node scripts/verify-bootstrap-demo.mjs",
     "demo:java-mvp": "npm run build && node scripts/verify-java-mvp-demo.mjs",
+    "smoke:product-mvp": "npm run build && node scripts/smoke-product-mvp.mjs",
     "observe:phase1-2": "node scripts/observe-phase1-2.mjs",
     "observe:test-contract": "node scripts/observe-test-contract.mjs",
     "report:rules": "npm run build && node scripts/report-rule-diagnostics.mjs",
