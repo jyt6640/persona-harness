@@ -144,6 +144,21 @@ _No unreleased changes._
   - scorable-only external metrics must be shown with operational rates;
   - provider failures are not automatically treated as infra noise or INCONCLUSIVE;
   - no generated app quality certification is made.
+- Provider/tool completion v1 fresh rerun:
+  - fixture `backend-api-no-stack`;
+  - original `/var/folders/z8/4909cvgx53n79fj88q94nd200000gn/T/persona-harness-eval-runs/2026-06-28T053933590Z/results.json`;
+  - replay `/var/folders/z8/4909cvgx53n79fj88q94nd200000gn/T/persona-harness-eval-runs/2026-06-28T063940663Z/results.json`;
+  - policy/scorer/semantics `external-primary-toolchain-v0.4.2` / `generated-toolchain-v1` / `provider-tool-completion-v1`;
+  - replay parser fix `0276062 fix(eval): preserve replay provider completion`;
+  - original/replay decide: FAIL;
+  - subtype: operational-blocked / provider-tool-completion failure, not generated app quality failure;
+  - PH ON app external outcome build/test/runtime `100%`, external failures `0`;
+  - PH ON operational outcome completion `0%`, providerLimit `100%`, finishWithinBudget `0%`, operational failures `3`;
+  - PH ON r1 app build/test/runtime PASS, then provider timeout and workflow incomplete;
+  - PH ON r2 app build/test/runtime/workflow PASS, but provider timeout remained operationally incomplete;
+  - baselines: plain/claude completed provider work but runtime failed, agents mixed;
+  - no PH ON PASS claim, no matrix-ready claim, no generated app quality certification;
+  - next work is workflow finalization cost reduction, finalization-only continuation policy, or timeout budget policy, then same fixture rerun.
 
 ### Additional Eval History Since Alpha3
 
