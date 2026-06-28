@@ -228,11 +228,10 @@ function planUncheckedItems(projectDir: string): readonly string[] {
 }
 
 function evidenceLines(reportText: string): readonly string[] {
-  const lines = [...READ_COVERAGE_LABELS, ...CONTINUATION_LABELS].flatMap((label) => {
+  return [...READ_COVERAGE_LABELS, ...CONTINUATION_LABELS].flatMap((label) => {
     const value = valueForLabel(reportText, label)
     return value === undefined ? [] : [`- ${label}: ${value}`]
   })
-  return lines.length > 0 ? lines : ["- No filled continuation evidence found."]
 }
 
 function reviewFollowUpLines(snapshot: WorkflowSnapshot): readonly string[] {
@@ -273,7 +272,8 @@ function reportCoverageFollowUpLines(snapshot: WorkflowSnapshot): readonly strin
 }
 
 function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
-  const hasEvidence = evidenceLines(reportText).some((line) => !line.includes("No filled continuation evidence found."))
+  const linesOfEvidence = evidenceLines(reportText)
+  const hasEvidence = linesOfEvidence.length > 0
   const uncheckedItems = planUncheckedItems(snapshot.projectDir)
   return [
     "Persona Harness resume prompt",
@@ -288,7 +288,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     ...reportCoverageFollowUpLines(snapshot),
     ...reviewFollowUpLines(snapshot),
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
-    ...evidenceLines(reportText),
+    ...linesOfEvidence,
     "",
     ...pendingWorkflowTicketResumeLines(snapshot.pendingTicket, snapshot.projectDir),
     "Plan unchecked items:",
