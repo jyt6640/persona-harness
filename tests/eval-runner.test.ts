@@ -25,6 +25,7 @@ import {
   formatCommand,
   parseJUnitXmlText,
   preflight,
+  runEval,
   runShellAsync,
   scanWorkspacePurity,
   scoreFixtureStackToolchain,
@@ -186,6 +187,49 @@ describe("ON/OFF eval runner core", () => {
     expect(options.concurrency).toBe(2)
     expect(uniqueCapturePathKeys.size).toBe(capturePathKeys.length)
   })
+
+  it("records token and time proxy telemetry without changing outcome metrics", async () => {
+    const outputRoot = tempDir("persona-eval-telemetry-")
+    const options = parseArgs([
+      "--runs",
+      "1",
+      "--fixture",
+      "backend-api-no-stack",
+      "--condition",
+      "plain",
+      "--model",
+      "test-model",
+      "--opencode-command",
+      `${process.execPath} -e "require('node:fs').writeFileSync('generated.txt', 'ok')"`,
+      "--output-root",
+      outputRoot,
+    ])
+
+    const result = await runEval(options)
+
+    expect(result.ok).toBe(true)
+    const runResult = result.results?.runs[0]
+    expect(runResult?.metadata.telemetry.input).toEqual(
+      expect.objectContaining({
+        fixtureBytes: expect.any(Number),
+        promptBytes: expect.any(Number),
+        baselineFileBytes: 0,
+      }),
+    )
+    expect(runResult?.metadata.telemetry.input.promptBytes).toBeGreaterThan(
+      runResult?.metadata.telemetry.input.fixtureBytes ?? Number.POSITIVE_INFINITY,
+    )
+    expect(runResult?.metadata.telemetry.commands.opencode).toEqual(
+      expect.objectContaining({
+        status: 0,
+        timedOut: false,
+        elapsedMs: expect.any(Number),
+        stdoutBytes: expect.any(Number),
+        stderrBytes: expect.any(Number),
+      }),
+    )
+    expect(runResult?.metrics.externalFailureModeLabels).toEqual(expect.any(Array))
+  }, 10000)
 
   it("detects ambient Persona Harness files above repo-local output roots during preflight", () => {
     const projectDir = tempDir("persona-eval-ambient-")

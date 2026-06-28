@@ -345,6 +345,7 @@ export function runShell(command, cwd, timeoutMs) {
 export function runShellAsync(command, cwd, timeoutMs, options = {}) {
   const cleanupProcessGroup = options.cleanupProcessGroup === true && process.platform !== "win32"
   return new Promise((resolvePromise) => {
+    const startedMs = Date.now()
     const child = spawn(command, {
       cwd,
       shell: true,
@@ -372,6 +373,7 @@ export function runShellAsync(command, cwd, timeoutMs, options = {}) {
     })
     child.on("close", (status, signal) => {
       clearTimeout(timer)
+      const endedMs = Date.now()
       if (cleanupProcessGroup) {
         terminateChildProcess(child, cleanupProcessGroup, "SIGTERM")
       }
@@ -383,6 +385,7 @@ export function runShellAsync(command, cwd, timeoutMs, options = {}) {
         stdout,
         stderr,
         timedOut,
+        elapsedMs: endedMs - startedMs,
         error: timedOut ? `timed out after ${timeoutMs}ms` : errorMessage,
       })
     })
@@ -887,6 +890,37 @@ export function countFailureModes(outcomes) {
   return { count: labels.length, labels }
 }
 
+function commandTelemetry(execution) {
+  if (!execution) return null
+  return {
+    status: execution.status,
+    signal: execution.signal ?? null,
+    timedOut: execution.timedOut === true,
+    elapsedMs: typeof execution.elapsedMs === "number" ? execution.elapsedMs : null,
+    stdoutBytes: byteLength(execution.stdout ?? ""),
+    stderrBytes: byteLength(execution.stderr ?? ""),
+  }
+}
+
+function byteLength(text) {
+  return Buffer.byteLength(text, "utf8")
+}
+
+function fileSizeOrZero(path) {
+  if (!path || !existsSync(path)) return 0
+  return statSync(path).size
+}
+
+function directoryTelemetry(rootDir) {
+  if (!existsSync(rootDir)) return { fileCount: 0, bytes: 0 }
+  let bytes = 0
+  const files = listFiles(rootDir)
+  for (const file of files) {
+    bytes += fileSizeOrZero(join(rootDir, file))
+  }
+  return { fileCount: files.length, bytes }
+}
+
 export function aggregateRuns(runs) {
   const byCondition = {}
   for (const run of runs) {
@@ -1314,6 +1348,11 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   const prompt = buildPrompt(fixtureText, runPlan.conditionId)
   const promptFile = join(workspaceDir, "prompt.txt")
   await writeFile(promptFile, prompt)
+  const inputTelemetry = {
+    fixtureBytes: byteLength(fixtureText),
+    promptBytes: byteLength(prompt),
+    baselineFileBytes: baselineFile ? fileSizeOrZero(join(workspaceDir, baselineFile)) : 0,
+  }
 
   const logsDir = options.capture ? join(rawDir, "raw") : join(outputDir, "logs", runId)
   mkdirSync(logsDir, { recursive: true })
@@ -1355,9 +1394,11 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   const testCommand = testCommandForToolchain(workspaceDir, toolchain)
   const buildCommand = buildCommandForToolchain(workspaceDir, toolchain)
   const testExecution = await runCommandDescriptorAsync(testCommand, workspaceDir, options.timeoutMs)
+  commandResults.test = testExecution
   writeCommandLog(join(logsDir, "test.log"), testExecution)
   rawOutputPaths.test = writeRawExecutionFiles(logsDir, "test", testExecution)
   const buildExecution = await runCommandDescriptorAsync(buildCommand, workspaceDir, options.timeoutMs)
+  commandResults.build = buildExecution
   writeCommandLog(join(logsDir, "build.log"), buildExecution)
   rawOutputPaths.build = writeRawExecutionFiles(logsDir, "build", buildExecution)
 
@@ -1365,6 +1406,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     ? await runShellAsync(options.runtimeSmokeCommand, workspaceDir, options.timeoutMs, { cleanupProcessGroup: true })
     : null
   if (runtimeExecution) {
+    commandResults["runtime-smoke"] = runtimeExecution
     writeCommandLog(join(logsDir, "runtime-smoke.log"), runtimeExecution)
     rawOutputPaths["runtime-smoke"] = writeRawExecutionFiles(logsDir, "runtime-smoke", runtimeExecution)
   }
@@ -1372,6 +1414,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   const workflowFinishExecution =
     runPlan.conditionId === "ph-on" ? await runShellAsync(options.workflowFinishCommand, workspaceDir, options.timeoutMs) : null
   if (workflowFinishExecution) {
+    commandResults["workflow-finish"] = workflowFinishExecution
     writeCommandLog(join(logsDir, "workflow-finish.log"), workflowFinishExecution)
     rawOutputPaths["workflow-finish"] = writeRawExecutionFiles(logsDir, "workflow-finish", workflowFinishExecution)
   }
@@ -1380,6 +1423,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     ? await runShellAsync(options.backendShapeCommand, workspaceDir, options.timeoutMs)
     : null
   if (backendShapeExecution) {
+    commandResults["backend-shape"] = backendShapeExecution
     writeCommandLog(join(logsDir, "backend-shape.log"), backendShapeExecution)
     rawOutputPaths["backend-shape"] = writeRawExecutionFiles(logsDir, "backend-shape", backendShapeExecution)
   }
@@ -1442,6 +1486,14 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
         build: buildCommand,
         test: testCommand,
         runtimeSmoke: { tool: options.runtimeSmokeCommand ? "external" : "none", command: options.runtimeSmokeCommand || null },
+      },
+      telemetry: {
+        input: inputTelemetry,
+        workspace: {
+          persona: directoryTelemetry(join(workspaceDir, ".persona")),
+          opencode: directoryTelemetry(join(workspaceDir, ".opencode")),
+        },
+        commands: Object.fromEntries(Object.entries(commandResults).map(([name, execution]) => [name, commandTelemetry(execution)])),
       },
     },
     outcomes: {
@@ -1704,6 +1756,7 @@ function writeCommandLog(path, execution) {
       `status: ${execution.status}`,
       `signal: ${execution.signal ?? ""}`,
       execution.error ? `error: ${execution.error}` : "",
+      typeof execution.elapsedMs === "number" ? `elapsedMs: ${execution.elapsedMs}` : "",
       "",
       "## stdout",
       execution.stdout,

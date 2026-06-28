@@ -22,8 +22,38 @@ export type EvalRun = {
     stackAlignmentScore?: number
     stackAlignmentRate?: number
     externalFailureModeCount: number
+    externalFailureModeLabels?: readonly string[]
     workflowFinishOutcome: string
     backendShapeWarnCount: number | null
+  }
+}
+
+export type EvalTelemetry = {
+  input: {
+    fixtureBytes: number
+    promptBytes: number
+    baselineFileBytes: number
+  }
+  workspace: {
+    persona: { fileCount: number; bytes: number }
+    opencode: { fileCount: number; bytes: number }
+  }
+  commands: Record<
+    string,
+    {
+      status: number | null
+      signal: NodeJS.Signals | null
+      timedOut: boolean
+      elapsedMs: number | null
+      stdoutBytes: number
+      stderrBytes: number
+    } | null
+  >
+}
+
+export type EvalResultRun = EvalRun & {
+  metadata: {
+    telemetry: EvalTelemetry
   }
 }
 
@@ -96,7 +126,14 @@ export function runShellAsync(
   cwd: string,
   timeoutMs: number,
   options?: { cleanupProcessGroup?: boolean },
-): Promise<{ status: number | null; signal: NodeJS.Signals | null; stdout: string; stderr: string; timedOut: boolean }>
+): Promise<{
+  status: number | null
+  signal: NodeJS.Signals | null
+  stdout: string
+  stderr: string
+  timedOut: boolean
+  elapsedMs: number
+}>
 export function formatCommand(template: string, values: Record<string, unknown>): string
 export function parseJUnitXmlText(xmlText: string): { tests: number; failures: number; errors: number; skipped: number }
 export function collectJUnitResults(workspaceDir: string): Record<string, unknown>
@@ -123,6 +160,13 @@ export function preflight(
   options: Record<string, unknown>,
   plan?: { fixtureIds: string[]; conditionIds: string[]; fixtureMetadata: Record<string, unknown>; runs: unknown[] },
 ): { ok: boolean; errors: string[] }
+export function runEval(options: Record<string, unknown>): Promise<{
+  ok: boolean
+  preflight: { ok: boolean; errors: string[] }
+  resultsPath: string | null
+  results: { runs: EvalResultRun[] } | null
+  plan?: unknown
+}>
 export function findAmbientInfluencePaths(projectDir: string, outputRoot: string): string[]
 export function scanWorkspacePurity(workspaceDir: string, conditionId: string): WorkspacePurity
 export const DECISION_POLICIES: {
