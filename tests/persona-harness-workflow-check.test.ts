@@ -479,6 +479,42 @@ describe("ph workflow check", () => {
     expect(finish.stderr).toContain("Fix the compile/test failure")
   })
 
+  it("does not block finish when verification notes say the earlier failure was recovered", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "Status: filled",
+        "- README ranges read: 1-220",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell --shell './gradlew test'`",
+        "- `npx ph bearshell --shell './gradlew build'`",
+        "- Read evidence notes: initial `./gradlew test` failed because `./gradlew` was missing; after adding the wrapper, the build failed once on a missing Java 17 toolchain, then succeeded after switching the project toolchain to Java 21.",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeProfileReadEvidence(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("verification failure: no failed verification recorded")
+    expect(check.stdout).toContain("Workflow status: PASS")
+    expect(finish.status).toBe(0)
+  })
+
   it("infers profile read coverage from Persona evidence", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)

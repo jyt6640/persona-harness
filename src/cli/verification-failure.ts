@@ -19,6 +19,8 @@ const FAILURE_LINE_PATTERNS = [
   /\bmissing symbol\b/i,
   /\bBUILD FAILED\b/i,
 ] as const
+const RECOVERED_FAILURE_PATTERN =
+  /\b(?:then|later|afterward|afterwards|subsequently)\b[^.\n]*(?:succeeded|successful|passed|passing)|(?:succeeded|successful|passed|passing)[^.\n]*\bafter\b/i
 const MAX_FAILURE_DETAILS = 4
 
 function readExistingFiles(filePaths: readonly string[]): string {
@@ -39,6 +41,9 @@ function failureEvidenceLines(reportText: string): readonly string[] {
   const seen = new Set<string>()
   for (const line of reportText.split(/\r?\n/)) {
     if (!FAILURE_LINE_PATTERNS.some((pattern) => pattern.test(line))) {
+      continue
+    }
+    if (RECOVERED_FAILURE_PATTERN.test(line)) {
       continue
     }
     const normalized = normalizeEvidenceLine(line)
