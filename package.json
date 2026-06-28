@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.3.9-alpha.3",
+  "version": "0.3.9-alpha.4",
   "private": false,
   "type": "module",
   "description": "OpenCode plugin for Java/Spring backend Clean Code guidance injection and local/tarball Persona Harness verification.",

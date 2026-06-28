@@ -6,7 +6,69 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+_No unreleased changes._
+
+## [0.3.9-alpha.4] - 2026-06-28
+
 ### Changed
+
+- Bumped the prerelease version to `0.3.9-alpha.4` as a tooling/scorer/purity-guard release.
+- Added eval workspace isolation and baseline purity guards:
+  - `1aa55e6 fix(eval): isolate onoff workspaces`;
+  - default eval output root moves outside the repo temp area;
+  - preflight detects ambient `AGENTS.md`, `CLAUDE.md`, `.persona`, and `.opencode` influence;
+  - baseline post-run purity guard detects PH artifact contamination;
+  - contaminated baseline results decide INCONCLUSIVE instead of becoming clean ON/OFF evidence.
+- Added generated-toolchain-aware eval scoring:
+  - `eafd0bf fix(eval): score generated toolchains`;
+  - generated projects are scored according to detected Gradle, Maven, Python, or Unknown toolchain instead of forcing every output through Gradle metrics.
+- Stamped the toolchain-aware policy/scorer state:
+  - `3aeaa1b fix(eval): stamp toolchain-aware policy`;
+  - fresh/replay results record `toolchain` and `fixtureStackToolchain`;
+  - external outcome and stack/toolchain mismatch are reported separately;
+  - old `external-primary-v0.4.1` or unstamped results are not reinterpreted as alpha4 outcome evidence and are INCONCLUSIVE under the new policy if evaluated there.
+- Covered stack/toolchain aggregate separation:
+  - `51f1622 test(eval): cover toolchain aggregate separation`;
+  - `stackToolchainMatchRate` is diagnostic only, not a hard gate or product proof.
+- Confirmed fixture stack/toolchain metadata:
+  - `0a05e6d fix(eval): align fixture toolchain types`;
+  - `backend-api-no-stack` and `ambiguous-idea-first` are free-stack fixtures;
+  - `multi-step-backend` and `multi-step-backend-small` are `java-spring-gradle-pinned`;
+  - full `multi-step-backend` remains stress/continuation, while `multi-step-backend-small` remains the reduced paired fixture.
+- Added backlog mismatch repair for archived tickets:
+  - `212046f fix(cli): repair archived ticket backlog mismatch`;
+  - the CLI diagnoses history-only pending tickets and allows explicit `workflow archive <ticket>` repair;
+  - finish gate remains strict.
+- Retained the previously recorded scope-continuation and reduced-fixture work:
+  - `1e7a97c docs(skills): guide oversized backlog continuation`;
+  - `5bcd4dd fix(cli): clarify ticket scope continuation`;
+  - `e6e5f5e feat(eval): add reduced multi-step fixture`.
+
+### Verification Notes
+
+- This release does not include a fresh actual eval outcome after the final toolchain-aware scorer/marker changes.
+- The SIGINT/interrupted run after scorer work produced no `results.json` and is not outcome evidence.
+- It does not claim PH ON passed under the new toolchain-aware policy.
+- It does not claim the v0.4 matrix improved or passed.
+- It does not reinterpret old v0.4.1/unstamped results.
+- It does not certify generated app product quality.
+- `stackToolchainMatchRate` is diagnostic only.
+
+### Release Prep Verification
+
+- `npm test`: passed, 64 files / 428 tests.
+- `npm run typecheck`: passed.
+- `npm run build`: passed.
+- `npm run check:docs`: passed.
+- `npm pack --dry-run`: passed for `persona-harness@0.3.9-alpha.4`.
+  - filename: `persona-harness-0.3.9-alpha.4.tgz`;
+  - package size: `368.6 kB`;
+  - unpacked size: `1.5 MB`;
+  - shasum: `0df5a3e2fc54ccc6d00dc0ab75e3d82b8854f315`;
+  - total files: `359`.
+- `git diff --check`: passed.
+
+### Additional Eval History Since Alpha3
 
 - Added a local eval environment guard so repo-side eval pilot environment files stay untracked.
 - Updated the repo-side eval runner command for the current OpenCode run surface:
