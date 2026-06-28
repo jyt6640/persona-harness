@@ -30,6 +30,14 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - `workflow continue` showed task-card context, next command/action, archive candidate, no-completion guidance, and the post-build closure checklist;
   - `workflow check` also showed the closure path in pending/template state, with expected WARN because reports/evidence were still missing and completion remained blocked;
   - this closes the alpha6 product workflow surface cycle, but remains product surface smoke only, not eval/model/OpenCode/A-B evidence, PH superiority proof, or generated app quality certification.
+- Alpha6 single implementation-to-finish proxy trial:
+  - Windows D-drive registry trial installed `persona-harness@0.3.9-alpha.6` and passed install/init/doctor/bootstrap/idea-first/continue;
+  - one bounded OpenCode run (`gpt-5.4-mini-fast`) read README/profile/plan/task, generated a Java/Spring/Gradle todo API with Gradle wrapper, and reached `gradlew.bat test` / `gradlew.bat build` BUILD SUCCESSFUL;
+  - runtime/bootRun was attempted, but the model did not return to workflow closure;
+  - implementation/review reports stayed `Status: template`, `req-1` stayed pending, and `workflow finish implement` correctly blocked on filled reports plus pending requirement;
+  - backend-shape was mostly PASS with a verification-report WARN because reports lacked test/build/bootRun output;
+  - classification: closure structure/follow-through remains the problem, not install, encoding, stack steering, or a finish-gate bug;
+  - decision: A-lite closure wording/checklist patches are not sufficient; move to B, where the workflow rail needs state-machine design. Next CLI work should be a design draft, not another wording patch.
 
 ## [0.3.9-alpha.5] - 2026-06-28
 
