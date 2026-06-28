@@ -68,6 +68,35 @@ _No unreleased changes._
   - total files: `359`.
 - `git diff --check`: passed.
 
+### Published Registry Surface Smoke
+
+- `persona-harness@0.3.9-alpha.4` exists on npm registry.
+- Registry facts:
+  - version `0.3.9-alpha.4`;
+  - gitHead `8080699a1029e2740d055cf70af8c4dbc9508813`;
+  - dist.shasum `ccd638553e52fe70a194578653ac1bb84b1eec1a`;
+  - dist-tags `alpha=0.3.9-alpha.4`, `latest=0.3.9-alpha.3`.
+- Git facts:
+  - HEAD `8080699a1029e2740d055cf70af8c4dbc9508813`;
+  - local tag `v0.3.9-alpha.4` points at HEAD;
+  - origin tag `refs/tags/v0.3.9-alpha.4` points at the same HEAD.
+- Publish note:
+  - `npm publish --tag alpha` returned EOTP text, but immediate registry verification showed alpha4 exists and `alpha` points to it;
+  - registry state is the source of truth;
+  - do not republish the same immutable version;
+  - `latest` was not moved and remains `0.3.9-alpha.3`.
+- Registry install smoke:
+  - clean temp project `/private/tmp/persona-alpha4-smoke-oCXdPe`;
+  - `npm install -D persona-harness@alpha` installed `persona-harness@0.3.9-alpha.4`;
+  - `npx ph init --default backend`: PASS;
+  - `npx ph doctor`: PASS with Runtime readiness observed;
+  - `npx ph observe --json` on a tiny Java service fixture: PASS with finding schema keys present.
+- Boundary:
+  - this is install/package surface smoke only;
+  - no actual eval rerun was performed;
+  - no generated app/product quality certification is made;
+  - `latest=0.3.9-alpha.3` is recorded as observed state, not as a failure.
+
 ### Additional Eval History Since Alpha3
 
 - Added a local eval environment guard so repo-side eval pilot environment files stay untracked.
