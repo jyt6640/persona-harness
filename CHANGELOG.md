@@ -24,6 +24,11 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Publish/smoke boundary:
   - registry package smoke is still required after publish;
   - `latest` is not intentionally moved by this manual release prep unless separately approved.
+- Post-publish registry facts:
+  - `persona-harness@0.3.9-alpha.5` exists with gitHead `07d36eb3a74c68b880b812dcd755cf6a2c464637` and shasum `74ae2103be553d3e107a7e8167aadabe89a29e91`;
+  - dist-tags are `alpha=0.3.9-alpha.5`, `latest=0.3.9-alpha.3`;
+  - local/origin tag `v0.3.9-alpha.5` points at `07d36eb3a74c68b880b812dcd755cf6a2c464637`;
+  - published registry install/surface smoke is still pending External Smoke.
 
 - Honest eval closure:
   - eval treadmill stopped and `docs/current/injection-value-status.json` keeps `decision: injection-effect-not-proven`;
