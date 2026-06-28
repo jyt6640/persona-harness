@@ -5,7 +5,12 @@ import { spawnSync } from "node:child_process"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { DECISION_POLICIES, TOOLCHAIN_SCORING_VERSION, decideResults } from "../scripts/eval/eval-core.mjs"
+import {
+  DECISION_POLICIES,
+  COMPLETION_SEMANTICS_VERSION,
+  TOOLCHAIN_SCORING_VERSION,
+  decideResults,
+} from "../scripts/eval/eval-core.mjs"
 
 const tempDirs: string[] = []
 
@@ -129,6 +134,7 @@ describe("objective eval decision gate", () => {
       {
         decisionPolicy: DECISION_POLICIES.externalPrimary,
         toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
+        completionSemanticsVersion: COMPLETION_SEMANTICS_VERSION,
         runs: [
           run("backend-api-no-stack", "plain", true, true, true, 0.5, 2),
           run("backend-api-no-stack", "ph-on", true, false, true, 0.5, 0),
@@ -148,6 +154,7 @@ describe("objective eval decision gate", () => {
       {
         decisionPolicy: DECISION_POLICIES.externalPrimary,
         toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
+        completionSemanticsVersion: COMPLETION_SEMANTICS_VERSION,
         runs: [
           run("backend-api-no-stack", "plain", true, true, true, 0.75, 4),
           run("backend-api-no-stack", "claude", true, true, true, 0.5, 6),
@@ -169,6 +176,7 @@ describe("objective eval decision gate", () => {
       {
         decisionPolicy: DECISION_POLICIES.externalPrimary,
         toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
+        completionSemanticsVersion: COMPLETION_SEMANTICS_VERSION,
         runs: [
           run("backend-api-no-stack", "plain", true, true, false, 0, 2),
           run("backend-api-no-stack", "plain", true, true, false, 0, 2),
@@ -287,7 +295,12 @@ function run(
       gradleTestPass,
       runtimeSmokePass,
       stackAlignmentRate,
+      providerToolCompletionOutcome: "COMPLETED",
+      providerToolCompletionFailureReason: null,
+      completionWithinBudgetPass: true,
+      finishWithinBudgetPass: conditionId === "ph-on" ? workflowFinishOutcome === "PASS" : null,
       externalFailureModeCount,
+      operationalFailureModeCount: 0,
       workflowFinishOutcome,
       backendShapeWarnCount: 0,
     },

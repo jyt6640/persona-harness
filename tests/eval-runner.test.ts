@@ -25,12 +25,14 @@ import {
   formatCommand,
   parseJUnitXmlText,
   preflight,
+  classifyProviderToolCompletion,
   runEval,
   runShellAsync,
   scanWorkspacePurity,
   scoreFixtureStackToolchain,
   scoreStackAlignmentFromObserveReport,
   testCommandForToolchain,
+  COMPLETION_SEMANTICS_VERSION,
   TOOLCHAIN_SCORING_VERSION,
 } from "../scripts/eval/eval-core.mjs"
 
@@ -50,6 +52,7 @@ type ReplayRuntimeRun = {
     readonly stackToolchainMatches: boolean | null
     readonly stackToolchainMatchReason: string
     readonly externalFailureModeLabels: readonly string[]
+    readonly operationalFailureModeLabels: readonly string[]
     readonly workflowFinishOutcome: string
   }
 }
@@ -57,6 +60,7 @@ type ReplayRuntimeRun = {
 type ReplayResults = {
   readonly decisionPolicy?: string
   readonly toolchainScoringVersion?: string
+  readonly completionSemanticsVersion?: string
   readonly fixtureMetadata: Record<string, unknown>
   readonly aggregate: Record<string, unknown>
   readonly runs: readonly ReplayRuntimeRun[]
@@ -571,6 +575,7 @@ describe("ON/OFF eval runner core", () => {
       const results = parseReplayResultsText(readFileSync(resultsPath, "utf8"))
       expect(results.decisionPolicy).toBe(DECISION_POLICIES.externalPrimary)
       expect(results.toolchainScoringVersion).toBe(TOOLCHAIN_SCORING_VERSION)
+      expect(results.completionSemanticsVersion).toBe(COMPLETION_SEMANTICS_VERSION)
       expect(Number.isInteger(childPid)).toBe(true)
       expect(isProcessAlive(childPid)).toBe(false)
     } finally {
@@ -733,9 +738,66 @@ describe("ON/OFF eval runner core", () => {
     })
 
     expect(failures).toEqual({
-      count: 6,
-      labels: ["wrong stack", "compile failure", "test failure", "runtime smoke failure", "provider limit", "workflow dead-end"],
+      external: {
+        count: 3,
+        labels: ["compile failure", "test failure", "runtime smoke failure"],
+      },
+      operational: {
+        count: 2,
+        labels: ["provider-timeout", "workflow-finalization-incomplete-after-provider-timeout"],
+      },
     })
+  })
+
+  it("classifies provider timeout separately from generated app failures", () => {
+    const completion = classifyProviderToolCompletion({
+      status: null,
+      signal: "SIGTERM",
+      timedOut: true,
+      stdout: "",
+      stderr: "",
+      error: "timed out after 900000ms",
+    })
+    const failures = countFailureModes({
+      compileBuildOutcome: "UNKNOWN",
+      gradleTestOutcome: "UNKNOWN",
+      runtimeSmokeOutcome: "NOT RUN",
+      stackAlignmentRate: 1,
+      workflowFinishOutcome: "FAIL",
+      providerToolCompletion: completion,
+    })
+
+    expect(completion).toEqual(
+      expect.objectContaining({
+        completionOutcome: "TIMED_OUT",
+        completionFailureReason: "provider-timeout",
+      }),
+    )
+    expect(failures.external.labels).toEqual([])
+    expect(failures.operational.labels).toEqual(["provider-timeout", "workflow-finalization-incomplete-after-provider-timeout"])
+  })
+
+  it("keeps completed generation runtime crashes as generated app failures", () => {
+    const completion = classifyProviderToolCompletion({
+      status: 0,
+      signal: null,
+      timedOut: false,
+      stdout: "",
+      stderr: "",
+      error: "",
+    })
+    const failures = countFailureModes({
+      compileBuildOutcome: "PASS",
+      gradleTestOutcome: "PASS",
+      runtimeSmokeOutcome: "FAIL",
+      stackAlignmentRate: 1,
+      workflowFinishOutcome: "PASS",
+      providerToolCompletion: completion,
+    })
+
+    expect(completion.completionOutcome).toBe("COMPLETED")
+    expect(failures.external.labels).toEqual(["runtime smoke failure"])
+    expect(failures.operational.labels).toEqual([])
   })
 
   it("returns INCONCLUSIVE instead of a verdict when baseline workspace purity fails", () => {
@@ -768,6 +830,74 @@ describe("ON/OFF eval runner core", () => {
       verdict: "INCONCLUSIVE",
       reasons: [expect.stringContaining("baseline workspace contamination detected")],
     })
+  })
+
+  it("does not apply provider completion semantics to unstamped old results", () => {
+    const result = decideResults(
+      {
+        decisionPolicy: DECISION_POLICIES.externalPrimary,
+        toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
+        runs: [
+          { fixtureId: "backend-api-no-stack", conditionId: "plain", metrics: decisionTestMetrics() },
+          { fixtureId: "backend-api-no-stack", conditionId: "ph-on", metrics: decisionTestMetrics() },
+        ],
+      },
+      { policy: DECISION_POLICIES.externalPrimary },
+    )
+
+    expect(result).toEqual({
+      policy: DECISION_POLICIES.externalPrimary,
+      scorer: TOOLCHAIN_SCORING_VERSION,
+      verdict: "INCONCLUSIVE",
+      reasons: [expect.stringContaining(COMPLETION_SEMANTICS_VERSION)],
+    })
+  })
+
+  it("reports provider completion failures separately from app external failures in decide output", () => {
+    const result = decideResults(
+      {
+        decisionPolicy: DECISION_POLICIES.externalPrimary,
+        toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
+        completionSemanticsVersion: COMPLETION_SEMANTICS_VERSION,
+        runs: [
+          {
+            fixtureId: "backend-api-no-stack",
+            conditionId: "plain",
+            metrics: decisionTestMetrics(),
+          },
+          {
+            fixtureId: "backend-api-no-stack",
+            conditionId: "ph-on",
+            metrics: {
+              ...decisionTestMetrics(),
+              compileBuildPass: null,
+              gradleTestPass: null,
+              runtimeSmokePass: null,
+              providerToolCompletionOutcome: "TIMED_OUT",
+              providerToolCompletionFailureReason: "provider-timeout",
+              completionWithinBudgetPass: false,
+              finishWithinBudgetPass: false,
+              externalFailureModeCount: 0,
+              externalFailureModeLabels: [],
+              operationalFailureModeCount: 2,
+              operationalFailureModeLabels: ["provider-timeout", "workflow-finalization-incomplete-after-provider-timeout"],
+              workflowFinishOutcome: "INCOMPLETE",
+            },
+          },
+        ],
+      },
+      { policy: DECISION_POLICIES.externalPrimary },
+    )
+
+    expect(result.verdict).toBe("FAIL")
+    expect(result.reasons).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("operational feasibility failure"),
+        expect.stringContaining("operational workflow finalization incomplete"),
+      ]),
+    )
+    expect(result.reasons).not.toEqual(expect.arrayContaining([expect.stringContaining("failure-mode count increased")]))
+    expect(result.reasons).not.toEqual(expect.arrayContaining([expect.stringContaining("runtimeSmokeRate below")]))
   })
 
   it("fails preflight before result creation when provider prerequisites are missing", () => {
@@ -862,10 +992,10 @@ describe("ON/OFF eval runner core", () => {
     const results = readReplayResults(result.stdout)
 
     expect(workflowOutcomeFor(results, "ph-on")).toEqual({ outcome: "PASS", metric: "PASS" })
-    expect(failureLabelsFor(results, "ph-on")).toContain("provider limit")
+    expect(operationalLabelsFor(results, "ph-on")).toContain("provider-timeout")
     expect(workflowOutcomeFor(results, "plain")).toEqual({ outcome: "NOT APPLICABLE", metric: "NOT APPLICABLE" })
-    expect(failureLabelsFor(results, "plain")).not.toContain("provider limit")
-    expect(failureLabelsFor(results, "plain")).not.toContain("workflow dead-end")
+    expect(failureLabelsFor(results, "plain")).not.toContain("workflow lifecycle failure")
+    expect(operationalLabelsFor(results, "plain")).toEqual([])
   }, 10000)
 
   it("records fixture scope metadata in replay results without changing verdict semantics", () => {
@@ -1079,6 +1209,7 @@ function parseReplayResultsText(text: string): ReplayResults {
   return {
     decisionPolicy: typeof parsed.decisionPolicy === "string" ? parsed.decisionPolicy : undefined,
     toolchainScoringVersion: typeof parsed.toolchainScoringVersion === "string" ? parsed.toolchainScoringVersion : undefined,
+    completionSemanticsVersion: typeof parsed.completionSemanticsVersion === "string" ? parsed.completionSemanticsVersion : undefined,
     fixtureMetadata: isRecord(parsed.fixtureMetadata) ? parsed.fixtureMetadata : {},
     aggregate: isRecord(parsed.aggregate) ? parsed.aggregate : {},
     runs: parsed.runs.map(parseReplayRuntimeRun),
@@ -1107,6 +1238,8 @@ function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {
     typeof metrics.stackToolchainMatchReason !== "string" ||
     !Array.isArray(metrics.externalFailureModeLabels) ||
     !metrics.externalFailureModeLabels.every((label) => typeof label === "string") ||
+    !Array.isArray(metrics.operationalFailureModeLabels) ||
+    !metrics.operationalFailureModeLabels.every((label) => typeof label === "string") ||
     typeof metrics.workflowFinishOutcome !== "string"
   ) {
     throw new Error("invalid replay metrics shape")
@@ -1125,6 +1258,7 @@ function parseReplayRuntimeRun(value: unknown): ReplayRuntimeRun {
       stackToolchainMatches: metrics.stackToolchainMatches,
       stackToolchainMatchReason: metrics.stackToolchainMatchReason,
       externalFailureModeLabels: metrics.externalFailureModeLabels,
+      operationalFailureModeLabels: metrics.operationalFailureModeLabels,
       workflowFinishOutcome: metrics.workflowFinishOutcome,
     },
   }
@@ -1166,6 +1300,10 @@ function failureLabelsFor(results: ReplayResults, conditionId: string): readonly
   return replayRunFor(results, conditionId).metrics.externalFailureModeLabels
 }
 
+function operationalLabelsFor(results: ReplayResults, conditionId: string): readonly string[] {
+  return replayRunFor(results, conditionId).metrics.operationalFailureModeLabels
+}
+
 function decisionTestMetrics() {
   return {
     compileBuildPass: true,
@@ -1174,7 +1312,14 @@ function decisionTestMetrics() {
     stackToolchainMatches: true,
     stackToolchainMatchReason: "fixture accepts any generated stack/toolchain",
     stackAlignmentRate: 1,
+    providerToolCompletionOutcome: "COMPLETED",
+    providerToolCompletionFailureReason: null,
+    completionWithinBudgetPass: true,
+    finishWithinBudgetPass: true,
     externalFailureModeCount: 0,
+    externalFailureModeLabels: [],
+    operationalFailureModeCount: 0,
+    operationalFailureModeLabels: [],
     workflowFinishOutcome: "PASS",
     backendShapeWarnCount: 0,
   }

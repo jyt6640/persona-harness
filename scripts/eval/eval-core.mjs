@@ -76,6 +76,7 @@ const STACK_CRITERIA = [
 export const DEFAULT_OUTPUT_ROOT = join(tmpdir(), "persona-harness-eval-runs")
 const AMBIENT_INFLUENCE_PATHS = ["AGENTS.md", "CLAUDE.md", ".persona", ".opencode"]
 export const TOOLCHAIN_SCORING_VERSION = "generated-toolchain-v1"
+export const COMPLETION_SEMANTICS_VERSION = "provider-tool-completion-v1"
 export const SCORER_MARKERS = {
   legacyStackHard: "legacy-stack-hard-v0.4",
   externalPrimaryPreToolchain: "gradle-fixed-v0.4.1",
@@ -417,6 +418,24 @@ export function parseCapturedCommandOutcome(logPath) {
   const statusMatch = text.match(/^status:\s*(.+)$/m)
   if (!statusMatch) return "NOT RUN"
   return statusMatch[1].trim() === "0" ? "PASS" : "FAIL"
+}
+
+export function parseCapturedExecution(logPath) {
+  if (!existsSync(logPath)) return null
+  const text = readFileSync(logPath, "utf8")
+  const statusText = text.match(/^status:\s*(.+)$/m)?.[1]?.trim() ?? ""
+  const signalText = text.match(/^signal:\s*(.*)$/m)?.[1]?.trim() ?? ""
+  const errorText = text.match(/^error:\s*(.+)$/m)?.[1]?.trim() ?? ""
+  const elapsedText = text.match(/^elapsedMs:\s*(\d+)$/m)?.[1]?.trim() ?? ""
+  return {
+    status: statusText === "" || statusText === "null" ? null : Number.parseInt(statusText, 10),
+    signal: signalText || null,
+    timedOut: /timed out|timeout|ETIMEDOUT/i.test(text),
+    elapsedMs: elapsedText ? Number.parseInt(elapsedText, 10) : null,
+    stdout: "",
+    stderr: text,
+    error: errorText,
+  }
 }
 
 export function parseJUnitXmlText(xmlText) {
@@ -879,15 +898,89 @@ function skippedExecution(cwd, reason) {
 }
 
 export function countFailureModes(outcomes) {
-  const labels = []
-  if ((outcomes.stackAlignmentRate ?? 0) < 0.5) labels.push("wrong stack")
-  if (outcomes.compileBuildOutcome === "FAIL" || outcomes.compileBuildOutcome === "ERROR") labels.push("compile failure")
-  if (outcomes.gradleTestOutcome === "FAIL" || outcomes.gradleTestOutcome === "ERROR") labels.push("test failure")
-  if (outcomes.runtimeSmokeOutcome === "FAIL") labels.push("runtime smoke failure")
-  if (outcomes.runtimeSmokeOutcome === "NOT RUN") labels.push("runtime smoke failure")
-  if (outcomes.providerFailed) labels.push("provider limit")
-  if (outcomes.workflowFinishOutcome === "FAIL") labels.push("workflow dead-end")
-  return { count: labels.length, labels }
+  const externalLabels = []
+  const operationalLabels = []
+  const providerToolCompletion = outcomes.providerToolCompletion ?? providerToolCompletionFromLegacyFlag(outcomes.providerFailed)
+  const providerCompleted = providerToolCompletion.completionOutcome === "COMPLETED"
+  if ((outcomes.stackAlignmentRate ?? 0) < 0.5 && providerCompleted) externalLabels.push("wrong stack")
+  if (outcomes.compileBuildOutcome === "FAIL" || outcomes.compileBuildOutcome === "ERROR") externalLabels.push("compile failure")
+  if (outcomes.gradleTestOutcome === "FAIL" || outcomes.gradleTestOutcome === "ERROR") externalLabels.push("test failure")
+  if (outcomes.runtimeSmokeOutcome === "FAIL") externalLabels.push("runtime smoke failure")
+  if (outcomes.runtimeSmokeOutcome === "NOT RUN" && providerCompleted) externalLabels.push("runtime smoke failure")
+  if (outcomes.workflowFinishOutcome === "FAIL" && providerCompleted) externalLabels.push("workflow lifecycle failure")
+  if (providerToolCompletion.completionFailureReason) operationalLabels.push(providerToolCompletion.completionFailureReason)
+  if (
+    outcomes.workflowFinishOutcome !== "PASS" &&
+    outcomes.workflowFinishOutcome !== "NOT APPLICABLE" &&
+    !providerCompleted &&
+    providerToolCompletion.completionFailureReason
+  ) {
+    operationalLabels.push(`workflow-finalization-incomplete-after-${providerToolCompletion.completionFailureReason}`)
+  }
+  return {
+    external: { count: externalLabels.length, labels: externalLabels },
+    operational: { count: operationalLabels.length, labels: operationalLabels },
+  }
+}
+
+function providerToolCompletionFromLegacyFlag(providerFailed) {
+  if (providerFailed === true) {
+    return {
+      status: null,
+      signal: null,
+      timedOut: false,
+      elapsedMs: null,
+      completionOutcome: "PROVIDER_LIMITED",
+      completionFailureReason: "provider-timeout",
+    }
+  }
+  return {
+    status: 0,
+    signal: null,
+    timedOut: false,
+    elapsedMs: null,
+    completionOutcome: "COMPLETED",
+    completionFailureReason: null,
+  }
+}
+
+export function classifyProviderToolCompletion(execution) {
+  if (!execution) {
+    return {
+      status: null,
+      signal: null,
+      timedOut: false,
+      elapsedMs: null,
+      completionOutcome: "UNKNOWN",
+      completionFailureReason: "provider-not-run",
+    }
+  }
+  const text = `${execution.stdout ?? ""}\n${execution.stderr ?? ""}\n${execution.error ?? ""}`
+  const base = {
+    status: execution.status ?? null,
+    signal: execution.signal ?? null,
+    timedOut: execution.timedOut === true,
+    elapsedMs: typeof execution.elapsedMs === "number" ? execution.elapsedMs : null,
+  }
+  if (execution.timedOut === true || /timed out|timeout|ETIMEDOUT/i.test(text)) {
+    return { ...base, completionOutcome: "TIMED_OUT", completionFailureReason: "provider-timeout" }
+  }
+  if (/context(?: window| length)?|maximum context|context_length/i.test(text)) {
+    return { ...base, completionOutcome: "PROVIDER_LIMITED", completionFailureReason: "context-limit" }
+  }
+  if (/token limit|max(?:imum)? tokens|output token|too many tokens/i.test(text)) {
+    return { ...base, completionOutcome: "PROVIDER_LIMITED", completionFailureReason: "token-limit" }
+  }
+  if (/rate limit|rate_limit|provider limit|too many requests/i.test(text)) {
+    return { ...base, completionOutcome: "PROVIDER_LIMITED", completionFailureReason: "provider-limit" }
+  }
+  if (execution.signal) {
+    return { ...base, completionOutcome: "INTERRUPTED", completionFailureReason: "interrupted" }
+  }
+  if (execution.status === 0) {
+    return { ...base, completionOutcome: "COMPLETED", completionFailureReason: null }
+  }
+  return { ...base, completionOutcome: "PROVIDER_LIMITED", completionFailureReason: "provider-error" }
 }
 
 function commandTelemetry(execution) {
@@ -943,8 +1036,14 @@ export function aggregateRuns(runs) {
       runtimeSmokeKnown: 0,
       stackAlignmentTotal: 0,
       externalFailureModeTotal: 0,
+      operationalFailureModeTotal: 0,
+      providerToolCompleted: 0,
+      providerToolKnown: 0,
+      providerToolLimited: 0,
       backendShapeWarnTotal: 0,
       workflowFinishPasses: 0,
+      finishWithinBudgetPasses: 0,
+      finishWithinBudgetKnown: 0,
     }
     bucket.runs += 1
     if (run.metrics.compileBuildPass === true) bucket.compileBuildPasses += 1
@@ -957,8 +1056,24 @@ export function aggregateRuns(runs) {
     if (run.metrics.runtimeSmokePass !== null) bucket.runtimeSmokeKnown += 1
     bucket.stackAlignmentTotal += stackAlignmentRateForRun(run)
     bucket.externalFailureModeTotal += run.metrics.externalFailureModeCount
+    bucket.operationalFailureModeTotal += run.metrics.operationalFailureModeCount ?? 0
+    if (run.metrics.providerToolCompletionOutcome && run.metrics.providerToolCompletionOutcome !== "UNKNOWN") {
+      bucket.providerToolKnown += 1
+    }
+    if (run.metrics.providerToolCompletionOutcome === "COMPLETED") bucket.providerToolCompleted += 1
+    if (
+      run.metrics.providerToolCompletionOutcome === "PROVIDER_LIMITED" ||
+      run.metrics.providerToolCompletionOutcome === "TIMED_OUT" ||
+      run.metrics.providerToolCompletionOutcome === "INTERRUPTED"
+    ) {
+      bucket.providerToolLimited += 1
+    }
     bucket.backendShapeWarnTotal += run.metrics.backendShapeWarnCount ?? 0
     if (run.metrics.workflowFinishOutcome === "PASS") bucket.workflowFinishPasses += 1
+    if (run.metrics.finishWithinBudgetPass !== null && run.metrics.finishWithinBudgetPass !== undefined) {
+      bucket.finishWithinBudgetKnown += 1
+    }
+    if (run.metrics.finishWithinBudgetPass === true) bucket.finishWithinBudgetPasses += 1
     byCondition[key] = bucket
   }
 
@@ -969,6 +1084,10 @@ export function aggregateRuns(runs) {
     bucket.runtimeSmokeRate = bucket.runtimeSmokeKnown === 0 ? null : rate(bucket.runtimeSmokePasses, bucket.runtimeSmokeKnown)
     bucket.stackAlignmentRate = bucket.runs === 0 ? 0 : bucket.stackAlignmentTotal / bucket.runs
     bucket.workflowFinishPassRate = rate(bucket.workflowFinishPasses, bucket.runs)
+    bucket.completionWithinBudgetRate = bucket.providerToolKnown === 0 ? null : rate(bucket.providerToolCompleted, bucket.providerToolKnown)
+    bucket.providerLimitRate = bucket.runs === 0 ? 0 : rate(bucket.providerToolLimited, bucket.runs)
+    bucket.finishWithinBudgetRate =
+      bucket.finishWithinBudgetKnown === 0 ? null : rate(bucket.finishWithinBudgetPasses, bucket.finishWithinBudgetKnown)
   }
 
   const byConditionValues = Object.values(byCondition)
@@ -1114,6 +1233,14 @@ function decideExternalPrimaryResults(results, policy) {
       reasons: [`results do not declare ${TOOLCHAIN_SCORING_VERSION}; rerun eval with toolchain-aware scorer before applying this policy`],
     }
   }
+  if (policy === DECISION_POLICIES.externalPrimary && results.completionSemanticsVersion !== COMPLETION_SEMANTICS_VERSION) {
+    return {
+      policy,
+      scorer: scorerMarkerForPolicy(policy),
+      verdict: "INCONCLUSIVE",
+      reasons: [`results do not declare ${COMPLETION_SEMANTICS_VERSION}; rerun eval before separating provider/tool completion semantics`],
+    }
+  }
   const runs = Array.isArray(results.runs) ? results.runs : []
   if (runs.length === 0) {
     return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "INCONCLUSIVE", reasons: ["results contains no runs"] }
@@ -1139,6 +1266,16 @@ function decideExternalPrimaryResults(results, policy) {
       .map((group) => summarizeComparable(group, summaryOptions))
       .sort(compareComparableSummaries)
     let fixtureTierOneFailed = false
+    if (ph.completionWithinBudgetRate !== null && ph.completionWithinBudgetRate < 1) {
+      anyFailure = true
+      fixtureTierOneFailed = true
+      reasons.push(`${fixtureId}: Tier 1 operational feasibility failure: PH ON provider/tool completion did not complete within budget`)
+    }
+    if (ph.finishWithinBudgetRate !== null && ph.finishWithinBudgetRate < 1) {
+      anyFailure = true
+      fixtureTierOneFailed = true
+      reasons.push(`${fixtureId}: Tier 1 operational workflow finalization incomplete within budget`)
+    }
 
     for (const metric of ["compileBuildRate", "gradleTestRate", "runtimeSmokeRate"]) {
       if (ph[metric] === null || offs.some((off) => off[metric] === null)) {
@@ -1218,6 +1355,9 @@ export function summarizeComparable(runs, options = {}) {
     stackAlignmentPrecise,
     workflowFinishRate: total === 0 ? 0 : runs.filter((run) => run.metrics.workflowFinishOutcome === "PASS").length / total,
     externalFailureModeTotal: runs.reduce((sum, run) => sum + run.metrics.externalFailureModeCount, 0),
+    operationalFailureModeTotal: runs.reduce((sum, run) => sum + (run.metrics.operationalFailureModeCount ?? 0), 0),
+    completionWithinBudgetRate: passRate(runs, "completionWithinBudgetPass", { requireComplete: false }),
+    finishWithinBudgetRate: passRate(runs, "finishWithinBudgetPass", { requireComplete: false }),
   }
 }
 
@@ -1277,6 +1417,18 @@ function capturedToolchainScoringVersion(replayRoot) {
   }
 }
 
+function capturedCompletionSemanticsVersion(replayRoot) {
+  const resultsPath = join(replayRoot, "results.json")
+  if (!existsSync(resultsPath)) return null
+  try {
+    const results = JSON.parse(readFileSync(resultsPath, "utf8"))
+    return typeof results.completionSemanticsVersion === "string" ? results.completionSemanticsVersion : null
+  } catch (error) {
+    if (error instanceof Error) return null
+    throw error
+  }
+}
+
 export async function runEval(options) {
   if (options.replayDir) {
     return replayEval(options)
@@ -1304,6 +1456,7 @@ export async function runEval(options) {
     schemaVersion: "persona-onoff-eval.1",
     decisionPolicy: DECISION_POLICIES.externalPrimary,
     toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
+    completionSemanticsVersion: COMPLETION_SEMANTICS_VERSION,
     createdAt: new Date().toISOString(),
     gitCommit,
     installSource: options.installSource,
@@ -1378,7 +1531,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
 
   const commandResults = {}
   const rawOutputPaths = {}
-  let providerFailed = false
+  let providerToolCompletion = classifyProviderToolCompletion(null)
   for (const [name, command] of commands) {
     const execution = await runShellAsync(command, workspaceDir, options.timeoutMs, {
       cleanupProcessGroup: name === "opencode",
@@ -1386,10 +1539,11 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     commandResults[name] = execution
     writeCommandLog(join(logsDir, `${name}.log`), execution)
     rawOutputPaths[name] = writeRawExecutionFiles(logsDir, name, execution)
-    if (name === "opencode" && execution.status !== 0) providerFailed = true
+    if (name === "opencode") providerToolCompletion = classifyProviderToolCompletion(execution)
   }
 
   const toolchain = detectGeneratedToolchain(workspaceDir)
+  const hasScorableWorkspace = providerToolCompletion.completionOutcome === "COMPLETED" || toolchain.detectedStack !== "unknown"
   const fixtureStackToolchain = scoreFixtureStackToolchain(fixtureMetadataFor(runPlan.fixtureId), toolchain)
   const testCommand = testCommandForToolchain(workspaceDir, toolchain)
   const buildCommand = buildCommandForToolchain(workspaceDir, toolchain)
@@ -1402,7 +1556,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   writeCommandLog(join(logsDir, "build.log"), buildExecution)
   rawOutputPaths.build = writeRawExecutionFiles(logsDir, "build", buildExecution)
 
-  const runtimeExecution = options.runtimeSmokeCommand
+  const runtimeExecution = options.runtimeSmokeCommand && hasScorableWorkspace
     ? await runShellAsync(options.runtimeSmokeCommand, workspaceDir, options.timeoutMs, { cleanupProcessGroup: true })
     : null
   if (runtimeExecution) {
@@ -1438,7 +1592,9 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   const workflowFinishOutcome = workflowFinishExecution
     ? workflowFinishExecution.status === 0
       ? "PASS"
-      : "FAIL"
+      : providerToolCompletion.completionOutcome === "COMPLETED"
+        ? "FAIL"
+        : "INCOMPLETE"
     : "NOT APPLICABLE"
   const backendShapeWarnCount = backendShapeExecution
     ? parseBackendShapeWarnCount(`${backendShapeExecution.stdout}\n${backendShapeExecution.stderr}`)
@@ -1449,7 +1605,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     runtimeSmokeOutcome,
     stackAlignmentRate: stackAlignment.rate,
     workflowFinishOutcome,
-    providerFailed,
+    providerToolCompletion,
   })
 
   return {
@@ -1465,6 +1621,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     fixtureHash: sha256Text(fixtureText),
     baselineFile,
     workspacePurity,
+    providerToolCompletion,
     toolchain,
     fixtureStackToolchain,
     gitCommit,
@@ -1501,6 +1658,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       gradleTestOutcome,
       runtimeSmokeOutcome,
       workflowFinishOutcome,
+      providerToolCompletion,
       compileBuild,
       gradleTest,
     },
@@ -1523,8 +1681,15 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       stackAlignmentCriterionDetails: stackAlignment.criterionDetails,
       stackAlignmentPrecise: stackAlignment.stackAlignmentPrecise,
       stackAlignmentRationale: stackAlignment.rationale,
-      externalFailureModeCount: failures.count,
-      externalFailureModeLabels: failures.labels,
+      providerToolCompletionOutcome: providerToolCompletion.completionOutcome,
+      providerToolCompletionFailureReason: providerToolCompletion.completionFailureReason,
+      completionWithinBudgetPass: providerToolCompletion.completionOutcome === "COMPLETED",
+      finishWithinBudgetPass:
+        runPlan.conditionId === "ph-on" ? workflowFinishOutcome === "PASS" && providerToolCompletion.completionOutcome === "COMPLETED" : null,
+      externalFailureModeCount: failures.external.count,
+      externalFailureModeLabels: failures.external.labels,
+      operationalFailureModeCount: failures.operational.count,
+      operationalFailureModeLabels: failures.operational.labels,
       workflowFinishOutcome,
       backendShapeWarnCount,
     },
@@ -1598,6 +1763,7 @@ async function replayEval(options) {
     schemaVersion: "persona-onoff-eval.1",
     decisionPolicy: capturedDecisionPolicy(replayRoot),
     toolchainScoringVersion: capturedToolchainScoringVersion(replayRoot),
+    completionSemanticsVersion: capturedCompletionSemanticsVersion(replayRoot),
     replayOf: replayRoot,
     createdAt: new Date().toISOString(),
     gitCommit,
@@ -1631,19 +1797,26 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
   const workspacePurity = scanWorkspacePurity(workspaceDir, conditionId)
   const compileBuild = measureCompileResult(workspaceDir, buildExecution, toolchain)
   const gradleTest = measureToolchainTestResult(workspaceDir, testExecution, toolchain)
-  const runtimeSmokeOutcome = parseCapturedCommandOutcome(join(logsDir, "runtime-smoke.log"))
-  const providerOutcome = parseCapturedCommandOutcome(join(logsDir, "opencode.log"))
-  const providerFailed = providerOutcome === "FAIL"
+  const providerToolCompletion = classifyProviderToolCompletion(parseCapturedExecution(join(logsDir, "opencode.log")))
+  const capturedRuntimeSmokeOutcome = parseCapturedCommandOutcome(join(logsDir, "runtime-smoke.log"))
+  const runtimeSmokeOutcome =
+    providerToolCompletion.completionOutcome !== "COMPLETED" && toolchain.detectedStack === "unknown"
+      ? "NOT RUN"
+      : capturedRuntimeSmokeOutcome
   const capturedWorkflowFinishOutcome = parseCapturedCommandOutcome(join(logsDir, "workflow-finish.log"))
   const workflowFinishOutcome =
-    capturedWorkflowFinishOutcome === "NOT RUN" ? "NOT APPLICABLE" : capturedWorkflowFinishOutcome
+    capturedWorkflowFinishOutcome === "NOT RUN"
+      ? "NOT APPLICABLE"
+      : capturedWorkflowFinishOutcome === "PASS" || providerToolCompletion.completionOutcome === "COMPLETED"
+        ? capturedWorkflowFinishOutcome
+        : "INCOMPLETE"
   const failures = countFailureModes({
     compileBuildOutcome: compileBuild.outcome,
     gradleTestOutcome: gradleTest.outcome,
     runtimeSmokeOutcome,
     stackAlignmentRate: stackAlignment.rate,
     workflowFinishOutcome,
-    providerFailed,
+    providerToolCompletion,
   })
   return {
     runId: `${environment.platform}-${fixtureId}-${conditionId}-r${repetition}`.toLowerCase(),
@@ -1656,6 +1829,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     logsDir,
     fixtureHash: existsSync(join(workspaceDir, "README.md")) ? sha256File(join(workspaceDir, "README.md")) : "unknown",
     workspacePurity,
+    providerToolCompletion,
     toolchain,
     fixtureStackToolchain,
     gitCommit,
@@ -1672,6 +1846,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       gradleTestOutcome: gradleTest.outcome,
       runtimeSmokeOutcome,
       workflowFinishOutcome,
+      providerToolCompletion,
       compileBuild,
       gradleTest,
     },
@@ -1694,8 +1869,15 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       stackAlignmentCriterionDetails: stackAlignment.criterionDetails,
       stackAlignmentPrecise: stackAlignment.stackAlignmentPrecise,
       stackAlignmentRationale: stackAlignment.rationale,
-      externalFailureModeCount: failures.count,
-      externalFailureModeLabels: failures.labels,
+      providerToolCompletionOutcome: providerToolCompletion.completionOutcome,
+      providerToolCompletionFailureReason: providerToolCompletion.completionFailureReason,
+      completionWithinBudgetPass: providerToolCompletion.completionOutcome === "COMPLETED",
+      finishWithinBudgetPass:
+        conditionId === "ph-on" ? workflowFinishOutcome === "PASS" && providerToolCompletion.completionOutcome === "COMPLETED" : null,
+      externalFailureModeCount: failures.external.count,
+      externalFailureModeLabels: failures.external.labels,
+      operationalFailureModeCount: failures.operational.count,
+      operationalFailureModeLabels: failures.operational.labels,
       workflowFinishOutcome,
       backendShapeWarnCount: null,
     },

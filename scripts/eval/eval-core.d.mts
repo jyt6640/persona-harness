@@ -23,9 +23,32 @@ export type EvalRun = {
     stackAlignmentRate?: number
     externalFailureModeCount: number
     externalFailureModeLabels?: readonly string[]
+    operationalFailureModeCount?: number
+    operationalFailureModeLabels?: readonly string[]
+    providerToolCompletionOutcome?: string
+    providerToolCompletionFailureReason?: string | null
+    completionWithinBudgetPass?: boolean | null
+    finishWithinBudgetPass?: boolean | null
     workflowFinishOutcome: string
     backendShapeWarnCount: number | null
   }
+}
+
+export type ProviderToolCompletion = {
+  status: number | null
+  signal: NodeJS.Signals | string | null
+  timedOut: boolean
+  elapsedMs: number | null
+  completionOutcome: "COMPLETED" | "PROVIDER_LIMITED" | "TIMED_OUT" | "INTERRUPTED" | "UNKNOWN"
+  completionFailureReason:
+    | "provider-timeout"
+    | "token-limit"
+    | "context-limit"
+    | "provider-limit"
+    | "provider-error"
+    | "interrupted"
+    | "provider-not-run"
+    | null
 }
 
 export type EvalTelemetry = {
@@ -55,6 +78,7 @@ export type EvalResultRun = EvalRun & {
   metadata: {
     telemetry: EvalTelemetry
   }
+  providerToolCompletion?: ProviderToolCompletion
 }
 
 export type WorkspacePurity = {
@@ -99,6 +123,7 @@ export type FixtureStackToolchainScore = {
 export const FIXTURE_METADATA: Record<string, FixtureMetadata>
 export const DEFAULT_OUTPUT_ROOT: string
 export const TOOLCHAIN_SCORING_VERSION: "generated-toolchain-v1"
+export const COMPLETION_SEMANTICS_VERSION: "provider-tool-completion-v1"
 export const SCORER_MARKERS: {
   readonly legacyStackHard: "legacy-stack-hard-v0.4"
   readonly externalPrimaryPreToolchain: "gradle-fixed-v0.4.1"
@@ -114,13 +139,18 @@ export function buildPlan(options: Record<string, unknown>): {
   fixtureMetadata: Record<string, FixtureMetadata>
   runs: Array<{ fixtureId: string; conditionId: string; repetition: number }>
 }
-export function countFailureModes(outcomes: Record<string, unknown>): { count: number; labels: string[] }
+export function countFailureModes(outcomes: Record<string, unknown>): {
+  external: { count: number; labels: string[] }
+  operational: { count: number; labels: string[] }
+}
+export function classifyProviderToolCompletion(execution: Record<string, unknown> | null): ProviderToolCompletion
 export function parseArgs(argv: readonly string[]): Record<string, unknown> & {
   model: string
   opencodeCommand: string
 }
 export function parseBackendShapeWarnCount(text: string): number
 export function parseCommandOutcome(execution: Record<string, unknown>): string
+export function parseCapturedExecution(logPath: string): Record<string, unknown> | null
 export function runShellAsync(
   command: string,
   cwd: string,
@@ -175,6 +205,11 @@ export const DECISION_POLICIES: {
   readonly externalPrimary: "external-primary-toolchain-v0.4.2"
 }
 export function decideResults(
-  results: { decisionPolicy?: string | null; toolchainScoringVersion?: string | null; runs?: readonly EvalRun[] },
+  results: {
+    decisionPolicy?: string | null
+    toolchainScoringVersion?: string | null
+    completionSemanticsVersion?: string | null
+    runs?: readonly EvalRun[]
+  },
   options?: { policy?: string },
 ): { policy: string; scorer: string; verdict: string; reasons: string[] }
