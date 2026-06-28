@@ -59,6 +59,27 @@ function pendingTicketStateLines(ticketId: string, archiveState: PendingTicketAr
   return []
 }
 
+function taskCardContextLines(ticket: BacklogTicket, projectDir: string | undefined): readonly string[] {
+  if (projectDir === undefined) {
+    return []
+  }
+  const taskCardAbsolutePath = join(projectDir, ticket.path)
+  if (!existsSync(taskCardAbsolutePath)) {
+    return []
+  }
+  const contextLines = readFileSync(taskCardAbsolutePath, "utf8")
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) =>
+      line.length > 0
+      && !/^Status:/iu.test(line)
+      && !/^Ticket:/iu.test(line)
+      && !/^Source(?:\s|:)/iu.test(line)
+    )
+    .slice(0, 8)
+  return contextLines.length === 0 ? [] : ["Task card context:", ...contextLines.map((line) => `- ${line}`)]
+}
+
 export function workflowPendingTicketStatus(projectDir: string): readonly WorkflowPendingTicket[] {
   return pendingWorkflowTickets(projectDir).map((ticket) => ({
     ticket: ticket.ticket,
@@ -101,7 +122,9 @@ export function pendingWorkflowTicketResumeLines(ticket: BacklogTicket | undefin
     `Title: ${ticket.title}`,
     `Path: ${ticket.path}`,
     ...stateLines.map((line) => line.replace(/^  /u, "")),
+    ...taskCardContextLines(ticket, projectDir),
     "Next command: npx ph workflow next",
+    "Next action: implement only this ticket, then review and archive it when complete.",
     `If complete: npx ph workflow archive ${ticket.ticket}`,
     `If ${archiveCandidateLabel(ticket.ticket)} is actually complete after review: npx ph workflow archive ${ticket.ticket}`,
     "Archive is a candidate action only; do not auto-archive.",

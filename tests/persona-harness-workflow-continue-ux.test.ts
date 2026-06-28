@@ -70,4 +70,53 @@ describe("ph workflow continue UX", () => {
     expect(resume.stdout).toContain("Next action: rerun final verification through `npx ph bearshell`")
     expect(resume.stdout).toContain("Do not claim overall completion until final verification is recorded through bearshell.")
   })
+
+  it("includes the pending ticket card context in the continuation prompt", () => {
+    const projectDir = createProfiledProject()
+    mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-2"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "backlog.md"),
+      [
+        "# Persona Workflow Backlog",
+        "",
+        "Status: active",
+        "",
+        "| Order | Ticket | Title | Status | Path |",
+        "| --- | --- | --- | --- | --- |",
+        "| 1 | req-1 | Task CRUD API | archived | .persona/workflow/history/req-1/00-task-card.md |",
+        "| 2 | req-2 | Return API | pending | .persona/workflow/work/req-2/00-task-card.md |",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "work", "req-2", "00-task-card.md"),
+      [
+        "# Task Card: Requirement 2. Return API",
+        "",
+        "Status: pending",
+        "Ticket: req-2",
+        "",
+        "## Goal",
+        "",
+        "Implement Return API from the source requirements.",
+        "",
+        "## Source Requirement",
+        "",
+        "- Add POST /lendings/{id}/return.",
+        "- Persist returnedAt and reject duplicate returns.",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Pending workflow ticket:")
+    expect(result.stdout).toContain("Ticket: req-2")
+    expect(result.stdout).toContain("Title: Return API")
+    expect(result.stdout).toContain("Task card context:")
+    expect(result.stdout).toContain("- # Task Card: Requirement 2. Return API")
+    expect(result.stdout).toContain("- Implement Return API from the source requirements.")
+    expect(result.stdout).toContain("- Add POST /lendings/{id}/return.")
+    expect(result.stdout).toContain("Next command: npx ph workflow next")
+    expect(result.stdout).toContain("Do not claim overall completion while this ticket remains pending.")
+  })
 })
