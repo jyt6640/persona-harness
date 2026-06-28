@@ -53,10 +53,10 @@ export type FixtureMetadata = {
 }
 
 export type FixtureStackToolchainExpectation = {
-  expectation: "free-stack" | "java-spring-gradle-pinned" | "java-spring-any-build-tool" | "python" | "other"
-  expectedStack: "any" | "java" | "python" | "other"
-  expectedFramework: "any" | "spring" | "other"
-  expectedBuildTool: "any" | "gradle" | "maven" | "python-compileall" | "other"
+  expectation: "free-stack" | "java-spring-gradle-pinned"
+  expectedStack: "any" | "java"
+  expectedFramework: "any" | "spring"
+  expectedBuildTool: "any" | "gradle"
 }
 
 export type FixtureStackToolchainScore = {
