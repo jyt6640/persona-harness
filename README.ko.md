@@ -30,7 +30,7 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 > 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, AST/linter enforcement, 완전한 TDD workflow는 후속 트랙입니다.
 >
-> 현재 source/package 후보: `0.3.9-alpha.4`
+> 현재 source/package 후보: `0.3.9-alpha.6`
 
 ## 요구사항
 
