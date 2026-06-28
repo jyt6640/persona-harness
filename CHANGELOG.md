@@ -6,6 +6,21 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+## [0.3.9-alpha.6] - 2026-06-28
+
+- Product workflow closure UX release:
+  - includes `d9dcd0a fix(cli): guide post-build workflow closure`;
+  - includes `fde990c docs: record post-build closure guidance`;
+  - packages the post-build closure checklist after the alpha5 Windows SSH real-use trial exposed closure friction.
+- Post-build closure checklist:
+  - `workflow continue` and `workflow check` now surface a compact checklist when app generation appears to have happened but reports are still templates and a ticket remains pending;
+  - the checklist says not to generate a new app, then fill implementation/review reports, mark report-filled, review/archive the current requirement candidate, and run `workflow finish implement`;
+  - the finish gate is not weakened and no enforcement, eval-core, fixture, policy, or scorer behavior is added.
+- Boundary:
+  - this is a product workflow surface release, not eval proof, PH superiority proof, generated app quality certification, AST/linter enforcement, or an OpenCode/model quality claim;
+  - if reports/evidence are still templates, the CLI does not claim build/test/runtime success as confirmed;
+  - model follow-through risk remains, so registry re-smoke is required after publish.
+
 ## [0.3.9-alpha.5] - 2026-06-28
 
 - Product workflow rail release:
