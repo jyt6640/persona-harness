@@ -4,6 +4,7 @@ import { join } from "node:path"
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
+import { runWorkflowClosureCommand } from "./workflow-closure.js"
 import { javaRoleReadCoverageReason, reportCoverageReason, stackAlignmentReason, verificationFailureReason } from "./workflow-finish-reasons.js"
 import {
   failedGuardOutput,
@@ -257,6 +258,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
+  }
+  if (parsed.kind === "closure") {
+    return runWorkflowClosureCommand(parsed.closureAction, options)
   }
   if (parsed.kind === "roles") {
     return runWorkflowRolesCommand(options)

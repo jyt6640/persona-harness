@@ -5,6 +5,7 @@ export type ParsedWorkflowArgs =
   | { readonly kind: "check" }
   | { readonly kind: "implement" }
   | { readonly kind: "continue" }
+  | { readonly closureAction: "next" | "status"; readonly kind: "closure" }
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
   | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
   | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
@@ -20,7 +21,7 @@ export type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|continue|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|continue|closure|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
@@ -28,6 +29,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow check is report-only",
     "- workflow implement prints a single AI-facing implementation rail",
     "- workflow continue prints the accepted-plan continuation prompt",
+    "- workflow closure status/next --json prints read-only closure state and next steps",
     "- workflow roles writes and prints non-autonomous role boundaries",
     "- workflow start/finish are AI-facing workflow rails",
     "- workflow draft/approve/capture/split/next/archive manage requirement-derived task tickets",
@@ -48,6 +50,12 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   }
   if (args[0] === "continue") {
     return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
+  }
+  if (args[0] === "closure") {
+    if ((args[1] === "status" || args[1] === "next") && args.length === 3 && args[2] === "--json") {
+      return { closureAction: args[1], kind: "closure" }
+    }
+    return { kind: "invalid", message: "workflow closure requires status --json or next --json." }
   }
   if (args[0] === "roles") {
     return args.length === 1 ? { kind: "roles" } : { kind: "invalid", message: "workflow roles does not accept extra arguments." }
