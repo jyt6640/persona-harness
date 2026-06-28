@@ -7,6 +7,8 @@ import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH, type PlanOpt
 import { PlanStatusError, readWorkflowPlanStatus } from "./plan-status.js"
 import { createImplementationPrompt } from "./plan-prompts.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
+import { workflowContinueFollowUpLines } from "./workflow-continue-followups.js"
+import { planUncheckedItems } from "./workflow-plan-unchecked.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import {
   pendingWorkflowTicketResumeLines,
@@ -214,61 +216,11 @@ function hasRemainingScope(reportText: string): boolean {
   })
 }
 
-function planUncheckedItems(projectDir: string): readonly string[] {
-  const planPath = join(projectDir, PLAN_PATH)
-  if (!existsSync(planPath)) {
-    return []
-  }
-  return readFileSync(planPath, "utf8")
-    .split(/\r?\n/)
-    .flatMap((line) => {
-      const match = /^-\s*\[\s\]\s+(.+)$/.exec(line)
-      return match?.[1] === undefined ? [] : [`- ${match[1]}`]
-    })
-}
-
 function evidenceLines(reportText: string): readonly string[] {
   return [...READ_COVERAGE_LABELS, ...CONTINUATION_LABELS].flatMap((label) => {
     const value = valueForLabel(reportText, label)
     return value === undefined ? [] : [`- ${label}: ${value}`]
   })
-}
-
-function reviewFollowUpLines(snapshot: WorkflowSnapshot): readonly string[] {
-  if (snapshot.implementationStatus !== "filled" || snapshot.reviewStatus === "filled") {
-    return []
-  }
-  return [
-    `Implementation report is filled but review report is ${snapshot.reviewStatus}.`,
-    "Next action: fill .persona/workflow/review-report.md after review/manual QA, then run npx ph plan --report-filled review.",
-    "Do not claim overall completion until review report is filled and finish passes.",
-    "",
-  ]
-}
-
-function verificationFailureFollowUpLines(snapshot: WorkflowSnapshot): readonly string[] {
-  if (!snapshot.verificationFailure.verificationFailureBlocking) {
-    return []
-  }
-  return [
-    `Verification failed: ${snapshot.verificationFailure.verificationFailure}`,
-    "Next action: fix the compile/test failure, rerun `./gradlew test` or Windows `gradlew.bat test`, then run `npx ph workflow check`.",
-    "Do not claim overall completion while verification failed.",
-    "",
-  ]
-}
-
-function reportCoverageFollowUpLines(snapshot: WorkflowSnapshot): readonly string[] {
-  if (!snapshot.workflowStatus.reportCoverageBlocking) {
-    return []
-  }
-  return [
-    "Reports say filled but required coverage is missing.",
-    `Report coverage: ${snapshot.workflowStatus.reportCoverage}`,
-    "Next action: read README/profile/generated Java role files, then update implementation/review reports with actual coverage/checklist evidence.",
-    "Do not archive req tickets until review confirms requirements are satisfied.",
-    "",
-  ]
 }
 
 function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
@@ -284,9 +236,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     `Implementation report status: ${snapshot.implementationStatus}`,
     `Review report status: ${snapshot.reviewStatus}`,
     "",
-    ...verificationFailureFollowUpLines(snapshot),
-    ...reportCoverageFollowUpLines(snapshot),
-    ...reviewFollowUpLines(snapshot),
+    ...workflowContinueFollowUpLines(snapshot),
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
     ...linesOfEvidence,
     "",

@@ -46,7 +46,7 @@
     "aggregationBasis": "original-only; replay results excluded from aggregate signal",
     "historicalCompileTestCaveat": "Historical compile/test aggregates are toolchain-confounded and are not apples-to-apples PH win rates.",
     "completionSemantics": "Provider/tool completion was separated from generated app external outcome before the final frozen step.",
-    "diagnosisInterpretation": "Workflow/stack positive signal exists, but workflow failures are not pure provider noise and actionable CLI defect is not proven from preserved evidence after raw logs/reports/workspaces were pruned.",
+    "diagnosisInterpretation": "Workflow/stack positive signal exists. R1 CLI-only reproduction found and fixed a workflow continuation UX gap: finish surfaced raw final verification/bearshell blockers, but workflow continue did not carry that blocker into its next-action prompt. Remaining historical failures still cannot be fully classified from pruned raw evidence.",
     "stoppingReason": "Deconfounded runtime smoke does not show PH clearly beating the plain baseline; keep injection effect unproven."
   },
   "decision": "injection-effect-not-proven",
