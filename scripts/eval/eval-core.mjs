@@ -423,10 +423,10 @@ export function parseCapturedCommandOutcome(logPath) {
 export function parseCapturedExecution(logPath) {
   if (!existsSync(logPath)) return null
   const text = readFileSync(logPath, "utf8")
-  const statusText = text.match(/^status:\s*(.+)$/m)?.[1]?.trim() ?? ""
-  const signalText = text.match(/^signal:\s*(.*)$/m)?.[1]?.trim() ?? ""
-  const errorText = text.match(/^error:\s*(.+)$/m)?.[1]?.trim() ?? ""
-  const elapsedText = text.match(/^elapsedMs:\s*(\d+)$/m)?.[1]?.trim() ?? ""
+  const statusText = text.match(/^status:[^\S\r\n]*(.+)$/m)?.[1]?.trim() ?? ""
+  const signalText = text.match(/^signal:[^\S\r\n]*(.*)$/m)?.[1]?.trim() ?? ""
+  const errorText = text.match(/^error:[^\S\r\n]*(.+)$/m)?.[1]?.trim() ?? ""
+  const elapsedText = text.match(/^elapsedMs:[^\S\r\n]*(\d+)$/m)?.[1]?.trim() ?? ""
   return {
     status: statusText === "" || statusText === "null" ? null : Number.parseInt(statusText, 10),
     signal: signalText || null,

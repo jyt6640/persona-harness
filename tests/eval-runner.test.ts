@@ -998,6 +998,45 @@ describe("ON/OFF eval runner core", () => {
     expect(operationalLabelsFor(results, "plain")).toEqual([])
   }, 10000)
 
+  it("replays completed provider logs with elapsed metadata without marking them interrupted", () => {
+    const outputRoot = tempDir("persona-eval-replay-provider-elapsed-")
+    const captureDir = join(outputRoot, "capture")
+    writeCapturedRun(captureDir, {
+      conditionId: "plain",
+      runtimeStatus: "status: 0",
+      opencodeStatus: "status: 0\nsignal: \nelapsedMs: 208441",
+      workflowStatus: null,
+    })
+
+    const result = spawnSync(
+      process.execPath,
+      [resolve("scripts/eval/run-onoff-eval.mjs"), "--replay", captureDir, "--output-root", outputRoot],
+      { cwd: resolve("."), encoding: "utf8" },
+    )
+
+    expect(result.status).toBe(0)
+    const resultsPath = result.stdout.match(/results: (.+results\.json)/)?.[1]
+    if (!resultsPath) {
+      throw new Error(`missing replay results path in output: ${result.stdout}`)
+    }
+    const parsed: unknown = JSON.parse(readFileSync(resultsPath, "utf8"))
+    if (!isRecord(parsed) || !Array.isArray(parsed.runs)) {
+      throw new Error("invalid replay results shape")
+    }
+    const run = parsed.runs.find((candidate) => isRecord(candidate) && candidate.conditionId === "plain")
+    if (!isRecord(run)) {
+      throw new Error("missing replay run")
+    }
+    expect(run?.providerToolCompletion).toMatchObject({
+      signal: null,
+      elapsedMs: 208441,
+      completionOutcome: "COMPLETED",
+      completionFailureReason: null,
+    })
+    const results = parseReplayResultsText(readFileSync(resultsPath, "utf8"))
+    expect(operationalLabelsFor(results, "plain")).toEqual([])
+  }, 10000)
+
   it("records fixture scope metadata in replay results without changing verdict semantics", () => {
     const outputRoot = tempDir("persona-eval-replay-scope-")
     const captureDir = join(outputRoot, "capture")
