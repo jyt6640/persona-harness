@@ -45,6 +45,8 @@ export type EvalRun = {
     finalizationContinuationAttempted?: boolean
     finalizationContinuationSucceeded?: boolean
     finalizationContinuationOutcome?: string
+    finalizationContinuationSourceBuildChanged?: boolean
+    finalizationContinuationChangedSourceBuildFiles?: readonly string[]
     completionMode?: "SINGLE_TURN" | "CONTINUATION_ASSISTED" | "OPERATIONAL_FAILURE_WITHOUT_CONTINUATION" | "NOT_APPLICABLE"
     singleTurnCompletionPass?: boolean
     continuationAssistedCompletionPass?: boolean
@@ -58,8 +60,10 @@ export type FinalizationContinuation = {
   needed: boolean
   attempted: boolean
   succeeded: boolean
-  outcome: "NOT_APPLICABLE" | "NEEDED_NOT_ATTEMPTED" | "PASS" | "FAIL" | "INCOMPLETE"
+  outcome: "NOT_APPLICABLE" | "NEEDED_NOT_ATTEMPTED" | "PASS" | "FAIL" | "INCOMPLETE" | "INVALID"
   command: string | null
+  sourceBuildChanged: boolean
+  changedSourceBuildFiles: readonly string[]
 }
 
 export type ProviderToolCompletion = {
@@ -103,6 +107,7 @@ export type EvalTelemetry = {
 }
 
 export type EvalResultRun = EvalRun & {
+  workspaceDir?: string
   metadata: {
     telemetry: EvalTelemetry
   }
@@ -116,9 +121,9 @@ export type WorkspacePurity = {
 }
 
 export type GeneratedToolchain = {
-  detectedStack: "java" | "python" | "unknown"
-  buildTool: "gradle" | "maven" | "python-compileall" | "unknown"
-  testTool: "gradle" | "maven" | "pytest" | "unknown"
+  detectedStack: "java" | "python" | "node" | "unknown"
+  buildTool: "gradle" | "maven" | "python-compileall" | "npm" | "unknown"
+  testTool: "gradle" | "maven" | "pytest" | "npm" | "unknown"
   evidence: string[]
 }
 

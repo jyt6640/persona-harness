@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { cp, mkdtemp, writeFile } from "node:fs/promises"
 import { arch, platform, release, tmpdir, type } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
@@ -67,6 +67,7 @@ const GRADLE_JUNIT_RESULT_DIR = join("build", "test-results", "test")
 const MAVEN_JUNIT_RESULT_DIRS = [join("target", "surefire-reports"), join("target", "failsafe-reports")]
 const PYTEST_JUNIT_RESULT_FILE = join(".persona-eval", "pytest-junit.xml")
 const RAW_ROOT = "raw"
+const PRUNED_CAPTURE_DIRS = ["node_modules", ".gradle", "build", ".opencode"]
 const STACK_CRITERIA = [
   "controllerServiceDependency",
   "noControllerRepositoryDependency",
@@ -520,6 +521,15 @@ export function detectGeneratedToolchain(workspaceDir) {
     }
   }
 
+  if (hasPackageScript(workspaceDir, "test")) {
+    return {
+      detectedStack: "node",
+      buildTool: "npm",
+      testTool: "npm",
+      evidence: ["package.json"],
+    }
+  }
+
   return {
     detectedStack: "unknown",
     buildTool: "unknown",
@@ -574,6 +584,21 @@ function hasPythonTests(workspaceDir) {
   return existsSync(testsDir) && listFiles(testsDir).some((file) => file.endsWith(".py"))
 }
 
+function packageJson(workspaceDir) {
+  const path = join(workspaceDir, "package.json")
+  if (!existsSync(path)) return null
+  try {
+    return JSON.parse(readFileSync(path, "utf8"))
+  } catch {
+    return null
+  }
+}
+
+function hasPackageScript(workspaceDir, scriptName) {
+  const parsed = packageJson(workspaceDir)
+  return typeof parsed?.scripts?.[scriptName] === "string" && parsed.scripts[scriptName].trim().length > 0
+}
+
 export function buildCommandForToolchain(workspaceDir, toolchain = detectGeneratedToolchain(workspaceDir)) {
   if (toolchain.buildTool === "gradle") {
     return { tool: "gradle", command: gradleCommand(workspaceDir, "build"), skippedReason: null }
@@ -585,6 +610,10 @@ export function buildCommandForToolchain(workspaceDir, toolchain = detectGenerat
     const python = pythonExecutable()
     if (!python) return { tool: "python-compileall", command: null, skippedReason: "python executable not found" }
     return { tool: "python-compileall", command: `${python} -m compileall -q .`, skippedReason: null }
+  }
+  if (toolchain.buildTool === "npm") {
+    if (!hasPackageScript(workspaceDir, "build")) return { tool: "npm", command: null, skippedReason: "npm build script not found" }
+    return { tool: "npm", command: "npm run build", skippedReason: null }
   }
   return { tool: "unknown", command: null, skippedReason: "no supported build tool detected" }
 }
@@ -604,6 +633,10 @@ export function testCommandForToolchain(workspaceDir, toolchain = detectGenerate
       command: `${python} -m pytest --junitxml ${quoteShell(PYTEST_JUNIT_RESULT_FILE)}`,
       skippedReason: null,
     }
+  }
+  if (toolchain.testTool === "npm") {
+    if (!hasPackageScript(workspaceDir, "test")) return { tool: "npm", command: null, skippedReason: "npm test script not found" }
+    return { tool: "npm", command: "npm test", skippedReason: null }
   }
   return { tool: "unknown", command: null, skippedReason: "no supported test tool detected" }
 }
@@ -679,6 +712,17 @@ export function measureToolchainTestResult(workspaceDir, execution, toolchain = 
       reason: execution.status === 0 ? "pytest exited 0 without junit xml" : "pytest failed without junit xml",
     }
   }
+  if (toolchain.testTool === "npm") {
+    return {
+      outcome: execution.status === 0 ? "PASS" : "ERROR",
+      tests: 0,
+      failures: 0,
+      errors: execution.status === 0 ? 0 : 1,
+      skipped: 0,
+      files: [],
+      reason: execution.status === 0 ? "npm test exited 0" : "npm test failed",
+    }
+  }
   return { outcome: "UNKNOWN", tests: 0, failures: 0, errors: 0, skipped: 0, files: [], reason: "no supported test tool detected" }
 }
 
@@ -691,6 +735,7 @@ export function measureCompileResult(workspaceDir, execution, toolchain = detect
   }
   const artifacts = buildArtifactsForToolchain(workspaceDir, toolchain)
   if (toolchain.buildTool === "python-compileall") return { outcome: "PASS", artifacts }
+  if (toolchain.buildTool === "npm") return { outcome: "PASS", artifacts }
   return artifacts.length > 0 ? { outcome: "PASS", artifacts } : { outcome: "UNKNOWN", artifacts }
 }
 
@@ -707,6 +752,9 @@ function buildArtifactsForToolchain(workspaceDir, toolchain) {
   }
   if (toolchain.buildTool === "python-compileall") {
     return listFiles(workspaceDir).filter((file) => /__pycache__\/.+\.pyc$/.test(file.replaceAll("\\", "/")))
+  }
+  if (toolchain.buildTool === "npm") {
+    return [...listFiles(join(workspaceDir, "dist")).map((file) => join("dist", file)), ...listFiles(join(workspaceDir, "build")).map((file) => join("build", file))]
   }
   return []
 }
@@ -858,6 +906,80 @@ export function listFiles(rootDir) {
   return result
 }
 
+function sourceBuildFingerprint(workspaceDir) {
+  return Object.fromEntries(
+    listFiles(workspaceDir)
+      .filter(isSourceBuildDefinitionFile)
+      .sort()
+      .map((file) => [file, sha256File(join(workspaceDir, file))]),
+  )
+}
+
+function isSourceBuildDefinitionFile(file) {
+  if (file.startsWith("src/")) return true
+  if (file.startsWith(".mvn/")) return true
+  if (file.startsWith("gradle/")) return true
+  return [
+    "build.gradle",
+    "build.gradle.kts",
+    "settings.gradle",
+    "settings.gradle.kts",
+    "gradle.properties",
+    "gradlew",
+    "gradlew.bat",
+    "pom.xml",
+    "mvnw",
+    "mvnw.cmd",
+    "pyproject.toml",
+    "requirements.txt",
+    "pytest.ini",
+    "setup.cfg",
+    "setup.py",
+    "package.json",
+    "package-lock.json",
+  ].includes(file)
+}
+
+function diffSourceBuildFingerprints(before, after) {
+  const files = new Set([...Object.keys(before), ...Object.keys(after)])
+  return [...files].filter((file) => before[file] !== after[file]).sort()
+}
+
+function writeFinalizationSourceBuildDiff(logsDir, changedSourceBuildFiles) {
+  writeFileSync(
+    join(logsDir, "finalization-source-build-diff.json"),
+    `${JSON.stringify(
+      {
+        sourceBuildChanged: changedSourceBuildFiles.length > 0,
+        changedSourceBuildFiles,
+      },
+      null,
+      2,
+    )}\n`,
+  )
+}
+
+function readFinalizationSourceBuildDiff(logsDir) {
+  const path = join(logsDir, "finalization-source-build-diff.json")
+  if (!existsSync(path)) return { sourceBuildChanged: false, changedSourceBuildFiles: [] }
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8"))
+    const changedSourceBuildFiles = Array.isArray(parsed.changedSourceBuildFiles) ? parsed.changedSourceBuildFiles : []
+    return {
+      sourceBuildChanged: parsed.sourceBuildChanged === true || changedSourceBuildFiles.length > 0,
+      changedSourceBuildFiles,
+    }
+  } catch {
+    return { sourceBuildChanged: false, changedSourceBuildFiles: [] }
+  }
+}
+
+function pruneCapturedWorkspace(workspaceDir) {
+  for (const entry of PRUNED_CAPTURE_DIRS) {
+    rmSync(join(workspaceDir, entry), { recursive: true, force: true })
+  }
+}
+
 export function gradleCommand(workspaceDir, task) {
   const isWindows = process.platform === "win32"
   const bat = join(workspaceDir, "gradlew.bat")
@@ -919,6 +1041,9 @@ export function countFailureModes(outcomes) {
   if (outcomes.finalizationContinuationNeeded === true) {
     operationalLabels.push("finalization-continuation-needed")
   }
+  if (outcomes.finalizationContinuationSourceBuildChanged === true) {
+    operationalLabels.push("finalization-continuation-modified-app")
+  }
   if (
     outcomes.workflowFinishOutcome !== "PASS" &&
     outcomes.workflowFinishOutcome !== "NOT APPLICABLE" &&
@@ -943,6 +1068,8 @@ function finalizationContinuationState({
   command,
   continuationExecution = null,
   verifiedWorkflowFinishOutcome = null,
+  sourceBuildChanged = false,
+  changedSourceBuildFiles = [],
 }) {
   const needed =
     conditionId === "ph-on" &&
@@ -959,7 +1086,9 @@ function finalizationContinuationState({
       ? "NEEDED_NOT_ATTEMPTED"
       : !attempted
         ? "NEEDED_NOT_ATTEMPTED"
-        : verifiedWorkflowFinishOutcome === "PASS"
+        : sourceBuildChanged
+          ? "INVALID"
+          : verifiedWorkflowFinishOutcome === "PASS"
           ? "PASS"
           : commandOutcome === "FAIL"
             ? "FAIL"
@@ -970,6 +1099,8 @@ function finalizationContinuationState({
     succeeded: outcome === "PASS",
     outcome,
     command: command || null,
+    sourceBuildChanged,
+    changedSourceBuildFiles,
   }
 }
 
@@ -1683,6 +1814,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   let finalWorkflowFinishOutcome = workflowFinishOutcome
   let finalizationContinuationExecution = null
   let workflowFinishAfterContinuationExecution = null
+  let finalizationSourceBuildDiff = { sourceBuildChanged: false, changedSourceBuildFiles: [] }
   let finalizationContinuation = finalizationContinuationState({
     conditionId: runPlan.conditionId,
     providerToolCompletion,
@@ -1703,6 +1835,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       topP: options.topP,
       seed: options.seed,
     })
+    const sourceBuildBeforeContinuation = sourceBuildFingerprint(workspaceDir)
     finalizationContinuationExecution = await runShellAsync(
       continuationCommand,
       workspaceDir,
@@ -1716,15 +1849,25 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       "finalization-continuation",
       finalizationContinuationExecution,
     )
-    workflowFinishAfterContinuationExecution = await runShellAsync(options.workflowFinishCommand, workspaceDir, options.timeoutMs)
-    commandResults["workflow-finish-after-continuation"] = workflowFinishAfterContinuationExecution
-    writeCommandLog(join(logsDir, "workflow-finish-after-continuation.log"), workflowFinishAfterContinuationExecution)
-    rawOutputPaths["workflow-finish-after-continuation"] = writeRawExecutionFiles(
-      logsDir,
-      "workflow-finish-after-continuation",
-      workflowFinishAfterContinuationExecution,
-    )
-    finalWorkflowFinishOutcome = workflowFinishAfterContinuationExecution.status === 0 ? "PASS" : "INCOMPLETE"
+    const sourceBuildAfterContinuation = sourceBuildFingerprint(workspaceDir)
+    finalizationSourceBuildDiff = {
+      changedSourceBuildFiles: diffSourceBuildFingerprints(sourceBuildBeforeContinuation, sourceBuildAfterContinuation),
+    }
+    finalizationSourceBuildDiff.sourceBuildChanged = finalizationSourceBuildDiff.changedSourceBuildFiles.length > 0
+    writeFinalizationSourceBuildDiff(logsDir, finalizationSourceBuildDiff.changedSourceBuildFiles)
+    if (finalizationSourceBuildDiff.sourceBuildChanged) {
+      finalWorkflowFinishOutcome = "INCOMPLETE"
+    } else {
+      workflowFinishAfterContinuationExecution = await runShellAsync(options.workflowFinishCommand, workspaceDir, options.timeoutMs)
+      commandResults["workflow-finish-after-continuation"] = workflowFinishAfterContinuationExecution
+      writeCommandLog(join(logsDir, "workflow-finish-after-continuation.log"), workflowFinishAfterContinuationExecution)
+      rawOutputPaths["workflow-finish-after-continuation"] = writeRawExecutionFiles(
+        logsDir,
+        "workflow-finish-after-continuation",
+        workflowFinishAfterContinuationExecution,
+      )
+      finalWorkflowFinishOutcome = workflowFinishAfterContinuationExecution.status === 0 ? "PASS" : "INCOMPLETE"
+    }
     finalizationContinuation = finalizationContinuationState({
       conditionId: runPlan.conditionId,
       providerToolCompletion,
@@ -1735,6 +1878,8 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       command: continuationCommand,
       continuationExecution: finalizationContinuationExecution,
       verifiedWorkflowFinishOutcome: finalWorkflowFinishOutcome,
+      sourceBuildChanged: finalizationSourceBuildDiff.sourceBuildChanged,
+      changedSourceBuildFiles: finalizationSourceBuildDiff.changedSourceBuildFiles,
     })
   }
   const backendShapeWarnCount = backendShapeExecution
@@ -1750,8 +1895,10 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     finalizationContinuationNeeded: finalizationContinuation.needed,
     finalizationContinuationAttempted: finalizationContinuation.attempted,
     finalizationContinuationOutcome: finalizationContinuation.outcome,
+    finalizationContinuationSourceBuildChanged: finalizationContinuation.sourceBuildChanged,
   })
   const mode = completionMode(runPlan.conditionId, providerToolCompletion, finalWorkflowFinishOutcome, finalizationContinuation)
+  if (options.capture) pruneCapturedWorkspace(workspaceDir)
 
   return {
     runId,
@@ -1841,6 +1988,8 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       finalizationContinuationAttempted: finalizationContinuation.attempted,
       finalizationContinuationSucceeded: finalizationContinuation.succeeded,
       finalizationContinuationOutcome: finalizationContinuation.outcome,
+      finalizationContinuationSourceBuildChanged: finalizationContinuation.sourceBuildChanged,
+      finalizationContinuationChangedSourceBuildFiles: finalizationContinuation.changedSourceBuildFiles,
       completionMode: mode,
       singleTurnCompletionPass: mode === "SINGLE_TURN",
       continuationAssistedCompletionPass: mode === "CONTINUATION_ASSISTED",
@@ -1971,8 +2120,11 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
         : "INCOMPLETE"
   const capturedFinalizationContinuation = parseCapturedExecution(join(logsDir, "finalization-continuation.log"))
   const capturedWorkflowFinishAfterContinuation = parseCapturedCommandOutcome(join(logsDir, "workflow-finish-after-continuation.log"))
+  const capturedFinalizationSourceBuildDiff = readFinalizationSourceBuildDiff(logsDir)
   const workflowFinishOutcome =
-    capturedWorkflowFinishAfterContinuation === "NOT RUN"
+    capturedFinalizationSourceBuildDiff.sourceBuildChanged
+      ? "INCOMPLETE"
+      : capturedWorkflowFinishAfterContinuation === "NOT RUN"
       ? initialWorkflowFinishOutcome
       : capturedWorkflowFinishAfterContinuation === "PASS" || providerToolCompletion.completionOutcome === "COMPLETED"
         ? capturedWorkflowFinishAfterContinuation
@@ -1987,6 +2139,8 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     command: capturedFinalizationContinuation ? "captured finalization-continuation" : options.finalizationContinuationCommand,
     continuationExecution: capturedFinalizationContinuation,
     verifiedWorkflowFinishOutcome: workflowFinishOutcome,
+    sourceBuildChanged: capturedFinalizationSourceBuildDiff.sourceBuildChanged,
+    changedSourceBuildFiles: capturedFinalizationSourceBuildDiff.changedSourceBuildFiles,
   })
   const failures = countFailureModes({
     compileBuildOutcome: compileBuild.outcome,
@@ -1998,6 +2152,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     finalizationContinuationNeeded: finalizationContinuation.needed,
     finalizationContinuationAttempted: finalizationContinuation.attempted,
     finalizationContinuationOutcome: finalizationContinuation.outcome,
+    finalizationContinuationSourceBuildChanged: finalizationContinuation.sourceBuildChanged,
   })
   const mode = completionMode(conditionId, providerToolCompletion, workflowFinishOutcome, finalizationContinuation)
   return {
@@ -2066,6 +2221,8 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       finalizationContinuationAttempted: finalizationContinuation.attempted,
       finalizationContinuationSucceeded: finalizationContinuation.succeeded,
       finalizationContinuationOutcome: finalizationContinuation.outcome,
+      finalizationContinuationSourceBuildChanged: finalizationContinuation.sourceBuildChanged,
+      finalizationContinuationChangedSourceBuildFiles: finalizationContinuation.changedSourceBuildFiles,
       completionMode: mode,
       singleTurnCompletionPass: mode === "SINGLE_TURN",
       continuationAssistedCompletionPass: mode === "CONTINUATION_ASSISTED",

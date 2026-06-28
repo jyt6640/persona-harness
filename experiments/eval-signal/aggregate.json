@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "persona-eval-signal.1",
+  "resultCounts": {
+    "total": 30,
+    "original": 12,
+    "replay": 18,
+    "unknown": 0
+  },
+  "originalRunCount": 80,
+  "historicalToolchainConfounded": {
+    "resultCount": 12,
+    "runCount": 80
+  },
+  "byCondition": [
+    {
+      "conditionId": "plain",
+      "runs": 20,
+      "compileBuildKnown": 20,
+      "compileBuildRate": 0,
+      "testKnown": 20,
+      "testRate": 0.05,
+      "runtimeSmokeKnown": 17,
+      "runtimeSmokeRate": 0.8823529411764706,
+      "workflowFinishKnown": 20,
+      "workflowFinishRate": 0,
+      "stackAlignmentKnown": 20,
+      "stackAlignmentRate": 0.625,
+      "externalFailureModeTotal": 51,
+      "operationalFailureModeTotal": 0,
+      "historicalToolchainConfoundedRuns": 20
+    },
+    {
+      "conditionId": "claude",
+      "runs": 20,
+      "compileBuildKnown": 20,
+      "compileBuildRate": 0.05,
+      "testKnown": 20,
+      "testRate": 0.05,
+      "runtimeSmokeKnown": 17,
+      "runtimeSmokeRate": 0.5882352941176471,
+      "workflowFinishKnown": 20,
+      "workflowFinishRate": 0,
+      "stackAlignmentKnown": 20,
+      "stackAlignmentRate": 0.5,
+      "externalFailureModeTotal": 57,
+      "operationalFailureModeTotal": 0,
+      "historicalToolchainConfoundedRuns": 20
+    },
+    {
+      "conditionId": "agents",
+      "runs": 20,
+      "compileBuildKnown": 20,
+      "compileBuildRate": 0,
+      "testKnown": 20,
+      "testRate": 0,
+      "runtimeSmokeKnown": 17,
+      "runtimeSmokeRate": 0.6470588235294118,
+      "workflowFinishKnown": 20,
+      "workflowFinishRate": 0,
+      "stackAlignmentKnown": 20,
+      "stackAlignmentRate": 0.5375,
+      "externalFailureModeTotal": 58,
+      "operationalFailureModeTotal": 0,
+      "historicalToolchainConfoundedRuns": 20
+    },
+    {
+      "conditionId": "ph-on",
+      "runs": 20,
+      "compileBuildKnown": 20,
+      "compileBuildRate": 0.85,
+      "testKnown": 20,
+      "testRate": 0.85,
+      "runtimeSmokeKnown": 17,
+      "runtimeSmokeRate": 0.8235294117647058,
+      "workflowFinishKnown": 20,
+      "workflowFinishRate": 0.5,
+      "stackAlignmentKnown": 20,
+      "stackAlignmentRate": 0.7875,
+      "externalFailureModeTotal": 33,
+      "operationalFailureModeTotal": 0,
+      "historicalToolchainConfoundedRuns": 20
+    }
+  ],
+  "deconfounded": {
+    "runtimeSmokeRate": {
+      "phOn": 0.8235294117647058,
+      "plain": 0.8823529411764706,
+      "strongestBaseline": 0.8823529411764706,
+      "phMinusPlain": -0.05882352941176472,
+      "phMinusStrongest": -0.05882352941176472
+    },
+    "stackAlignmentRate": {
+      "phOn": 0.7875,
+      "plain": 0.625,
+      "strongestBaseline": 0.625,
+      "phMinusPlain": 0.16249999999999998,
+      "phMinusStrongest": 0.16249999999999998
+    },
+    "workflowFinishRate": {
+      "phOn": 0.5,
+      "plain": 0,
+      "strongestBaseline": 0,
+      "phMinusPlain": 0.5,
+      "phMinusStrongest": 0.5
+    }
+  }
+}

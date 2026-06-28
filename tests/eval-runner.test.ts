@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { spawnSync } from "node:child_process"
@@ -478,6 +478,31 @@ describe("ON/OFF eval runner core", () => {
     )
   })
 
+  it("scores npm projects through npm test when package scripts are present", () => {
+    const projectDir = tempDir("persona-eval-npm-")
+    writeFileSync(
+      join(projectDir, "package.json"),
+      JSON.stringify({ scripts: { build: "node build.js", test: "node test.js" } }, null, 2),
+    )
+    mkdirSync(join(projectDir, "dist"), { recursive: true })
+    writeFileSync(join(projectDir, "dist", "app.js"), "console.log('ok')\n")
+
+    const toolchain = detectGeneratedToolchain(projectDir)
+
+    expect(toolchain).toEqual(expect.objectContaining({ detectedStack: "node", buildTool: "npm", testTool: "npm" }))
+    expect(buildCommandForToolchain(projectDir, toolchain)).toEqual(expect.objectContaining({ tool: "npm", command: "npm run build" }))
+    expect(testCommandForToolchain(projectDir, toolchain)).toEqual(expect.objectContaining({ tool: "npm", command: "npm test" }))
+    expect(measureToolchainTestResult(projectDir, { status: 0, timedOut: false }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "PASS", reason: "npm test exited 0" }),
+    )
+    expect(measureToolchainTestResult(projectDir, { status: 1, timedOut: false }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "ERROR", reason: "npm test failed" }),
+    )
+    expect(measureCompileResult(projectDir, { status: 0, timedOut: false }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "PASS", artifacts: ["dist/app.js"] }),
+    )
+  })
+
   it("keeps unknown projects UNKNOWN instead of forcing Gradle scoring", () => {
     const projectDir = tempDir("persona-eval-unknown-")
     const toolchain = detectGeneratedToolchain(projectDir)
@@ -585,6 +610,62 @@ describe("ON/OFF eval runner core", () => {
     }
   }, 10000)
 
+  it("prunes bulky generated directories from captured workspaces after scoring", async () => {
+    const outputRoot = tempDir("persona-eval-capture-prune-")
+    const opencodeCommand = [
+      process.execPath,
+      "-e",
+      JSON.stringify(
+        [
+          "const { mkdirSync, writeFileSync } = require('node:fs')",
+          "mkdirSync('src', { recursive: true })",
+          "mkdirSync('node_modules/pkg', { recursive: true })",
+          "mkdirSync('.gradle/cache', { recursive: true })",
+          "mkdirSync('build/output', { recursive: true })",
+          "mkdirSync('.opencode/state', { recursive: true })",
+          "writeFileSync('src/app.js', 'console.log(1)')",
+          "writeFileSync('node_modules/pkg/index.js', 'vendor')",
+          "writeFileSync('.gradle/cache/file', 'cache')",
+          "writeFileSync('build/output/file', 'build')",
+          "writeFileSync('.opencode/state/file', 'state')",
+        ].join("; "),
+      ),
+    ].join(" ")
+
+    const result = await runEval({
+      fixture: "backend-api-no-stack",
+      condition: "plain",
+      runs: 1,
+      concurrency: 1,
+      outputRoot,
+      timeoutMs: 5000,
+      model: "test-model",
+      modelVersion: "test-version",
+      temperature: "unknown",
+      topP: "unknown",
+      seed: "unknown",
+      opencodeCommand,
+      phInstallCommand: `${process.execPath} -e ""`,
+      phInitCommand: `${process.execPath} -e ""`,
+      workflowFinishCommand: `${process.execPath} -e ""`,
+      finalizationContinuationCommand: "",
+      backendShapeCommand: "",
+      runtimeSmokeCommand: "",
+      installSource: "test",
+      projectDir: resolve("."),
+      capture: true,
+    })
+
+    expect(result.ok).toBe(true)
+    const workspaceDir = result.results?.runs[0]?.workspaceDir
+    expect(workspaceDir).toBeTruthy()
+    expect(existsSync(join(String(workspaceDir), "src", "app.js"))).toBe(true)
+    expect(existsSync(join(String(workspaceDir), "node_modules"))).toBe(false)
+    expect(existsSync(join(String(workspaceDir), ".gradle"))).toBe(false)
+    expect(existsSync(join(String(workspaceDir), "build"))).toBe(false)
+    expect(existsSync(join(String(workspaceDir), ".opencode"))).toBe(false)
+  })
+
   it("runs bounded finalization continuation after provider timeout without marking single-turn completion", async () => {
     const outputRoot = tempDir("persona-eval-finalization-continuation-")
     const opencodeCommand = [
@@ -666,6 +747,99 @@ describe("ON/OFF eval runner core", () => {
       }),
     )
     expect(run?.metrics.operationalFailureModeLabels).toEqual(["provider-timeout", "finalization-continuation-needed"])
+  }, 15000)
+
+  it("invalidates finalization continuation when app source changes", async () => {
+    const outputRoot = tempDir("persona-eval-finalization-source-diff-")
+    const opencodeCommand = [
+      process.execPath,
+      "-e",
+      JSON.stringify(
+        [
+          "const { chmodSync, mkdirSync, writeFileSync } = require('node:fs')",
+          "mkdirSync('src/main/java/com/example', { recursive: true })",
+          "mkdirSync('build/test-results/test', { recursive: true })",
+          "mkdirSync('build/classes/java/main/com/example', { recursive: true })",
+          "writeFileSync('build.gradle', \"plugins { id 'java' }\\n\")",
+          "writeFileSync('settings.gradle', \"rootProject.name = 'sample'\\n\")",
+          "writeFileSync('src/main/java/com/example/OrderController.java', 'class OrderController { OrderService service; }\\n')",
+          "writeFileSync('src/main/java/com/example/OrderResponse.java', 'class OrderResponse {}\\n')",
+          "writeFileSync('build/test-results/test/TEST-sample.xml', '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"></testsuite>\\n')",
+          "writeFileSync('build/classes/java/main/com/example/App.class', 'bytecode')",
+          "writeFileSync('gradlew', '#!/usr/bin/env sh\\nset -eu\\nmkdir -p build/test-results/test build/classes/java/main/com/example\\nprintf \\'<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"></testsuite>\\\\n\\' > build/test-results/test/TEST-sample.xml\\nprintf bytecode > build/classes/java/main/com/example/App.class\\nexit 0\\n')",
+          "chmodSync('gradlew', 0o755)",
+          "setInterval(() => {}, 1000)",
+        ].join("; "),
+      ),
+    ].join(" ")
+    const finishCommand = `${process.execPath} -e "process.exit(require('node:fs').existsSync('finalized.txt') ? 0 : 1)"`
+    const continuationCommand = [
+      process.execPath,
+      "-e",
+      JSON.stringify(
+        [
+          "const { appendFileSync, writeFileSync } = require('node:fs')",
+          "writeFileSync('finalized.txt', 'ok')",
+          "appendFileSync('src/main/java/com/example/OrderController.java', '\\nclass MutatedByContinuation {}\\n')",
+        ].join("; "),
+      ),
+    ].join(" ")
+
+    const result = await runEval({
+      fixture: "backend-api-no-stack",
+      condition: "ph-on",
+      runs: 1,
+      concurrency: 1,
+      outputRoot,
+      timeoutMs: 1000,
+      finalizationContinuationTimeoutMs: 5000,
+      model: "test-model",
+      modelVersion: "test-version",
+      temperature: "unknown",
+      topP: "unknown",
+      seed: "unknown",
+      opencodeCommand,
+      phInstallCommand: `${process.execPath} -e ""`,
+      phInitCommand: `${process.execPath} -e ""`,
+      workflowFinishCommand: finishCommand,
+      finalizationContinuationCommand: continuationCommand,
+      backendShapeCommand: "",
+      runtimeSmokeCommand: `${process.execPath} -e ""`,
+      installSource: "test",
+      projectDir: resolve("."),
+      capture: true,
+    })
+
+    expect(result.ok).toBe(true)
+    const run = result.results?.runs[0]
+    expect(run?.finalizationContinuation).toEqual(
+      expect.objectContaining({
+        needed: true,
+        attempted: true,
+        succeeded: false,
+        outcome: "INVALID",
+        sourceBuildChanged: true,
+        changedSourceBuildFiles: ["src/main/java/com/example/OrderController.java"],
+      }),
+    )
+    expect(run?.outcomes).toEqual(
+      expect.objectContaining({
+        workflowFinishOutcome: "INCOMPLETE",
+        finalizationContinuationOutcome: "INVALID",
+      }),
+    )
+    expect(run?.metrics).toEqual(
+      expect.objectContaining({
+        completionMode: "OPERATIONAL_FAILURE_WITHOUT_CONTINUATION",
+        continuationAssistedCompletionPass: false,
+      }),
+    )
+    expect(run?.metrics.operationalFailureModeLabels).toEqual([
+      "provider-timeout",
+      "finalization-continuation-needed",
+      "finalization-continuation-modified-app",
+      "workflow-finalization-incomplete-after-provider-timeout",
+    ])
   }, 15000)
 
   it("marks stack alignment fallback criteria as low-confidence instead of precise observer evidence", () => {

@@ -12,6 +12,17 @@
     "offPositive": 0,
     "basis": "self-rated qualitative review only; retained for audit, not measured evidence"
   },
+  "evalProgram": {
+    "status": "stopped",
+    "stoppedAt": "2026-06-28",
+    "aggregatePath": "experiments/eval-signal/aggregate.json",
+    "originalResultCount": 12,
+    "originalRunCount": 80,
+    "deconfoundedRuntimeSmokePhMinusPlain": -0.05882352941176472,
+    "deconfoundedStackAlignmentPhMinusPlain": 0.16249999999999998,
+    "deconfoundedWorkflowFinishPhMinusPlain": 0.5,
+    "stoppingReason": "Deconfounded runtime smoke does not show PH clearly beating the plain baseline; keep injection effect unproven."
+  },
   "decision": "injection-effect-not-proven",
-  "decisionRationale": "Existing ON/OFF notes are not measured proof of injection effect."
+  "decisionRationale": "Measured eval signal did not show PH clearly beating baselines on deconfounded runtime/stack/workflow signals; injection effect remains unproven."
 }
