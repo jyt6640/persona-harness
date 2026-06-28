@@ -20,6 +20,11 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - this is a product workflow surface release, not eval proof, PH superiority proof, generated app quality certification, AST/linter enforcement, or an OpenCode/model quality claim;
   - if reports/evidence are still templates, the CLI does not claim build/test/runtime success as confirmed;
   - model follow-through risk remains, so registry re-smoke is required after publish.
+- Post-publish registry facts:
+  - `persona-harness@0.3.9-alpha.6` exists with gitHead `7b090bd26068a24d2fd7da5b9b7da680847c3a04` and shasum `e5c8c8efa17eac8e51f49e8f65e4daa579d72468`;
+  - dist-tags are `alpha=0.3.9-alpha.6`, `latest=0.3.9-alpha.3`;
+  - `latest` was not moved;
+  - registry smoke remains the next handoff before claiming published alpha6 surface behavior.
 
 ## [0.3.9-alpha.5] - 2026-06-28
 
