@@ -6,7 +6,11 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-_No unreleased changes._
+- Honest eval closure:
+  - eval treadmill stopped and `docs/current/injection-value-status.json` keeps `decision: injection-effect-not-proven`;
+  - aggregate signal preserved in `experiments/eval-signal/aggregate.json` with original-only results, and experiments disk usage was reduced from `4.0GB` to `132MB`;
+  - workflow continuation UX fix `19ae341 fix(cli): surface final verification continuation` was added, but fresh finish-rate eval was not rerun, so finish-rate improvement remains unverified;
+  - no new release notes file, no PH superiority claim, no eval PASS claim, and no generated app quality certification.
 
 ## [0.3.9-alpha.4] - 2026-06-28
 

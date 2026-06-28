@@ -6,11 +6,26 @@ It helps an AI agent start from a clean project, read your backend requirements,
 
 It does not certify generated application product quality. The current Java/Spring backend guidance is a stack-steering and workflow-observability surface, not a Clean Code guarantee, AST/linter, or enforcement engine.
 
+## Project Status
+
+Persona Harness is an alpha experiment.
+
+The injection effect has been measured and is not proven. The ON/OFF eval program is stopped; see [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json) for the frozen aggregate, diagnosis, and stopping rationale.
+
+Do not read the current alpha as generated-app quality certification, evidence that PH beats baselines, an enforcement engine, or an AST/linter gate.
+
+Reusable assets remain:
+
+- report-only Java/Spring observer surfaces;
+- workflow rails and finish/check guidance;
+- a toolchain-fair ON/OFF eval framework;
+- honest measurement and observation tooling.
+
 If you only have a product idea, Persona Harness now routes the AI through a requirements draft first. For example, `I want to build a TODO web service` should create `.persona/workflow/requirements/backlog.md` and ask for review instead of starting implementation immediately. Implementation starts after you approve the draft with a phrase such as `proceed`.
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.3.9-alpha.3`
+> Current source/package candidate: `0.3.9-alpha.4`
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
@@ -112,7 +127,7 @@ Expected:
 - `.persona/harness.jsonc` exists
 - `.persona/rules` exists
 - `ph doctor` shows OpenCode is present
-- `ph doctor` shows `Persona package version: 0.3.9-alpha.3` after the current alpha package is installed
+- `ph doctor` shows `Persona package version: 0.3.9-alpha.4` after the current alpha package is installed
 
 ## 3. Write The Project README
 
