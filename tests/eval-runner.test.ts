@@ -12,10 +12,13 @@ import {
   decideResults,
   DECISION_POLICIES,
   DEFAULT_OUTPUT_ROOT,
+  buildCommandForToolchain,
+  detectGeneratedToolchain,
   FIXTURE_METADATA,
   findAmbientInfluencePaths,
   measureCompileResult,
   measureGradleTestResult,
+  measureToolchainTestResult,
   parseArgs,
   parseBackendShapeWarnCount,
   parseCommandOutcome,
@@ -25,6 +28,7 @@ import {
   runShellAsync,
   scanWorkspacePurity,
   scoreStackAlignmentFromObserveReport,
+  testCommandForToolchain,
 } from "../scripts/eval/eval-core.mjs"
 
 const tempDirs: string[] = []
@@ -224,13 +228,93 @@ describe("ON/OFF eval runner core", () => {
     const projectDir = tempDir("persona-eval-compile-")
     expect(measureCompileResult(projectDir, { status: 0, timedOut: false })).toEqual({ outcome: "UNKNOWN", artifacts: [] })
 
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
     mkdirSync(join(projectDir, "build", "classes", "java", "main", "com", "example"), { recursive: true })
     writeFileSync(join(projectDir, "build", "classes", "java", "main", "com", "example", "App.class"), "bytecode")
 
     expect(measureCompileResult(projectDir, { status: 0, timedOut: false })).toEqual(
-      expect.objectContaining({ outcome: "PASS", artifacts: ["classes/java/main/com/example/App.class"] }),
+      expect.objectContaining({ outcome: "PASS", artifacts: ["build/classes/java/main/com/example/App.class"] }),
     )
     expect(measureCompileResult(projectDir, { status: 1, timedOut: false })).toEqual({ outcome: "FAIL", artifacts: [] })
+  })
+
+  it("scores Maven Spring projects with Maven commands and surefire XML", () => {
+    const projectDir = tempDir("persona-eval-maven-")
+    writeFileSync(join(projectDir, "pom.xml"), "<project></project>\n")
+    mkdirSync(join(projectDir, "target", "surefire-reports"), { recursive: true })
+    mkdirSync(join(projectDir, "target", "classes", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "target", "surefire-reports", "TEST-sample.xml"), '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>\n')
+    writeFileSync(join(projectDir, "target", "classes", "com", "example", "App.class"), "bytecode")
+
+    const toolchain = detectGeneratedToolchain(projectDir)
+
+    expect(toolchain).toEqual(
+      expect.objectContaining({ detectedStack: "java", buildTool: "maven", testTool: "maven" }),
+    )
+    expect(testCommandForToolchain(projectDir, toolchain)).toEqual(expect.objectContaining({ tool: "maven" }))
+    expect(testCommandForToolchain(projectDir, toolchain).command).toContain("mvn")
+    expect(testCommandForToolchain(projectDir, toolchain).command).not.toContain("gradle")
+    expect(measureToolchainTestResult(projectDir, { status: 0, timedOut: false }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "PASS", tests: 1, files: ["target/surefire-reports/TEST-sample.xml"] }),
+    )
+    expect(measureCompileResult(projectDir, { status: 0, timedOut: false }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "PASS", artifacts: ["target/classes/com/example/App.class"] }),
+    )
+  })
+
+  it("keeps Gradle projects on the Gradle command and JUnit path", () => {
+    const projectDir = tempDir("persona-eval-gradle-")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
+    mkdirSync(join(projectDir, "build", "test-results", "test"), { recursive: true })
+    writeFileSync(join(projectDir, "build", "test-results", "test", "TEST-sample.xml"), '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>\n')
+
+    const toolchain = detectGeneratedToolchain(projectDir)
+
+    expect(toolchain).toEqual(
+      expect.objectContaining({ detectedStack: "java", buildTool: "gradle", testTool: "gradle" }),
+    )
+    expect(testCommandForToolchain(projectDir, toolchain)).toEqual(expect.objectContaining({ tool: "gradle" }))
+    expect(measureToolchainTestResult(projectDir, { status: 0, timedOut: false }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "PASS", tests: 1, files: ["build/test-results/test/TEST-sample.xml"] }),
+    )
+  })
+
+  it("scores Python projects with pytest path or UNKNOWN when the test command is skipped", () => {
+    const projectDir = tempDir("persona-eval-python-")
+    writeFileSync(join(projectDir, "pyproject.toml"), "[project]\nname = 'sample'\n")
+    mkdirSync(join(projectDir, "tests"), { recursive: true })
+    mkdirSync(join(projectDir, ".persona-eval"), { recursive: true })
+    writeFileSync(join(projectDir, "tests", "test_sample.py"), "def test_sample():\n    assert True\n")
+    writeFileSync(join(projectDir, ".persona-eval", "pytest-junit.xml"), '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>\n')
+
+    const toolchain = detectGeneratedToolchain(projectDir)
+
+    expect(toolchain).toEqual(
+      expect.objectContaining({ detectedStack: "python", buildTool: "python-compileall", testTool: "pytest" }),
+    )
+    expect(testCommandForToolchain(projectDir, toolchain)).toEqual(expect.objectContaining({ tool: "pytest" }))
+    expect(measureToolchainTestResult(projectDir, { status: 0, timedOut: false }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "PASS", tests: 1, files: [".persona-eval/pytest-junit.xml"] }),
+    )
+    expect(measureToolchainTestResult(projectDir, { status: null, skipped: true, error: "pytest unavailable" }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "UNKNOWN", reason: "pytest unavailable" }),
+    )
+  })
+
+  it("keeps unknown projects UNKNOWN instead of forcing Gradle scoring", () => {
+    const projectDir = tempDir("persona-eval-unknown-")
+    const toolchain = detectGeneratedToolchain(projectDir)
+
+    expect(toolchain).toEqual(expect.objectContaining({ detectedStack: "unknown", buildTool: "unknown", testTool: "unknown" }))
+    expect(buildCommandForToolchain(projectDir, toolchain)).toEqual(
+      expect.objectContaining({ command: null, skippedReason: "no supported build tool detected" }),
+    )
+    expect(testCommandForToolchain(projectDir, toolchain)).toEqual(
+      expect.objectContaining({ command: null, skippedReason: "no supported test tool detected" }),
+    )
+    expect(measureCompileResult(projectDir, { status: null, skipped: true, error: "no supported build tool detected" }, toolchain)).toEqual(
+      expect.objectContaining({ outcome: "UNKNOWN", artifacts: [], reason: "no supported build tool detected" }),
+    )
   })
 
   it("keeps runtime command outcome exit-code based only", () => {

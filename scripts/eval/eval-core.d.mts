@@ -4,10 +4,14 @@ export type EvalRun = {
   conditionId: string
   repetition?: number
   workspacePurity?: WorkspacePurity
+  toolchain?: GeneratedToolchain
   metrics: {
     compileBuildPass: boolean | null
     gradleTestPass: boolean | null
     runtimeSmokePass: boolean | null
+    detectedStack?: string
+    buildTool?: string
+    testTool?: string
     stackAlignmentScore?: number
     stackAlignmentRate?: number
     externalFailureModeCount: number
@@ -19,6 +23,19 @@ export type EvalRun = {
 export type WorkspacePurity = {
   status: "PASS" | "FAIL" | "NOT_APPLICABLE"
   violations: string[]
+}
+
+export type GeneratedToolchain = {
+  detectedStack: "java" | "python" | "unknown"
+  buildTool: "gradle" | "maven" | "python-compileall" | "unknown"
+  testTool: "gradle" | "maven" | "pytest" | "unknown"
+  evidence: string[]
+}
+
+export type EvalCommandDescriptor = {
+  tool: string
+  command: string | null
+  skippedReason: string | null
 }
 
 export type FixtureMetadata = {
@@ -55,8 +72,20 @@ export function runShellAsync(
 export function formatCommand(template: string, values: Record<string, unknown>): string
 export function parseJUnitXmlText(xmlText: string): { tests: number; failures: number; errors: number; skipped: number }
 export function collectJUnitResults(workspaceDir: string): Record<string, unknown>
+export function detectGeneratedToolchain(workspaceDir: string): GeneratedToolchain
+export function buildCommandForToolchain(workspaceDir: string, toolchain?: GeneratedToolchain): EvalCommandDescriptor
+export function testCommandForToolchain(workspaceDir: string, toolchain?: GeneratedToolchain): EvalCommandDescriptor
 export function measureGradleTestResult(workspaceDir: string, execution: Record<string, unknown>): Record<string, unknown>
-export function measureCompileResult(workspaceDir: string, execution: Record<string, unknown>): Record<string, unknown>
+export function measureToolchainTestResult(
+  workspaceDir: string,
+  execution: Record<string, unknown>,
+  toolchain?: GeneratedToolchain,
+): Record<string, unknown>
+export function measureCompileResult(
+  workspaceDir: string,
+  execution: Record<string, unknown>,
+  toolchain?: GeneratedToolchain,
+): Record<string, unknown>
 export function scoreStackAlignmentFromObserveReport(report: unknown, workspaceDir?: string): Record<string, unknown>
 export function preflight(
   options: Record<string, unknown>,

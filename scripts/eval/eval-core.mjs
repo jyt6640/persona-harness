@@ -39,7 +39,9 @@ export const CONDITIONS = {
   "ph-on": { id: "ph-on", label: "Persona Harness ON", harnessState: "ON" },
 }
 
-const JUNIT_RESULT_DIR = join("build", "test-results", "test")
+const GRADLE_JUNIT_RESULT_DIR = join("build", "test-results", "test")
+const MAVEN_JUNIT_RESULT_DIRS = [join("target", "surefire-reports"), join("target", "failsafe-reports")]
+const PYTEST_JUNIT_RESULT_FILE = join(".persona-eval", "pytest-junit.xml")
 const RAW_ROOT = "raw"
 const STACK_CRITERIA = [
   "controllerServiceDependency",
@@ -214,7 +216,7 @@ export function preflight(options, plan = buildPlan(options)) {
   if (!commandExists(options.opencodeCommand)) {
     errors.push(`OpenCode command not found: ${options.opencodeCommand.trim().split(/\s+/)[0]}`)
   }
-  for (const requiredCommand of ["java", "gradle", "node", "npm", "git"]) {
+  for (const requiredCommand of ["node", "npm", "git"]) {
     if (!commandExists(requiredCommand)) errors.push(`required command not found: ${requiredCommand}`)
   }
   if (plan.conditionIds.includes("ph-on") && !options.phInstallCommand) {
@@ -412,19 +414,115 @@ function parseJUnitInteger(attributeText, name) {
   return match ? Number.parseInt(match[1], 10) : 0
 }
 
-export function collectJUnitResults(workspaceDir) {
-  const resultDir = join(workspaceDir, JUNIT_RESULT_DIR)
-  if (!existsSync(resultDir)) {
-    return { outcome: "UNKNOWN", tests: 0, failures: 0, errors: 0, skipped: 0, files: [] }
+export function detectGeneratedToolchain(workspaceDir) {
+  const gradleEvidence = ["gradlew", "gradlew.bat", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"].filter((entry) =>
+    existsSync(join(workspaceDir, entry)),
+  )
+  if (gradleEvidence.length > 0) {
+    return {
+      detectedStack: "java",
+      buildTool: "gradle",
+      testTool: "gradle",
+      evidence: gradleEvidence,
+    }
   }
-  const files = listFiles(resultDir)
-    .filter((file) => /^TEST-.*\.xml$/.test(basename(file)))
+
+  const mavenEvidence = ["mvnw", "mvnw.cmd", "pom.xml"].filter((entry) => existsSync(join(workspaceDir, entry)))
+  if (mavenEvidence.length > 0) {
+    return {
+      detectedStack: "java",
+      buildTool: "maven",
+      testTool: "maven",
+      evidence: mavenEvidence,
+    }
+  }
+
+  const pythonEvidence = ["pyproject.toml", "pytest.ini", "requirements.txt", "setup.py"].filter((entry) =>
+    existsSync(join(workspaceDir, entry)),
+  )
+  if (pythonEvidence.length > 0 || hasPythonTests(workspaceDir)) {
+    return {
+      detectedStack: "python",
+      buildTool: "python-compileall",
+      testTool: "pytest",
+      evidence: pythonEvidence.length > 0 ? pythonEvidence : ["tests/*.py"],
+    }
+  }
+
+  return {
+    detectedStack: "unknown",
+    buildTool: "unknown",
+    testTool: "unknown",
+    evidence: [],
+  }
+}
+
+function hasPythonTests(workspaceDir) {
+  const testsDir = join(workspaceDir, "tests")
+  return existsSync(testsDir) && listFiles(testsDir).some((file) => file.endsWith(".py"))
+}
+
+export function buildCommandForToolchain(workspaceDir, toolchain = detectGeneratedToolchain(workspaceDir)) {
+  if (toolchain.buildTool === "gradle") {
+    return { tool: "gradle", command: gradleCommand(workspaceDir, "build"), skippedReason: null }
+  }
+  if (toolchain.buildTool === "maven") {
+    return { tool: "maven", command: mavenCommand(workspaceDir, "-q -DskipTests package"), skippedReason: null }
+  }
+  if (toolchain.buildTool === "python-compileall") {
+    const python = pythonExecutable()
+    if (!python) return { tool: "python-compileall", command: null, skippedReason: "python executable not found" }
+    return { tool: "python-compileall", command: `${python} -m compileall -q .`, skippedReason: null }
+  }
+  return { tool: "unknown", command: null, skippedReason: "no supported build tool detected" }
+}
+
+export function testCommandForToolchain(workspaceDir, toolchain = detectGeneratedToolchain(workspaceDir)) {
+  if (toolchain.testTool === "gradle") {
+    return { tool: "gradle", command: gradleCommand(workspaceDir, "test"), skippedReason: null }
+  }
+  if (toolchain.testTool === "maven") {
+    return { tool: "maven", command: mavenCommand(workspaceDir, "test"), skippedReason: null }
+  }
+  if (toolchain.testTool === "pytest") {
+    const python = pythonExecutable()
+    if (!python) return { tool: "pytest", command: null, skippedReason: "python executable not found" }
+    return {
+      tool: "pytest",
+      command: `${python} -m pytest --junitxml ${quoteShell(PYTEST_JUNIT_RESULT_FILE)}`,
+      skippedReason: null,
+    }
+  }
+  return { tool: "unknown", command: null, skippedReason: "no supported test tool detected" }
+}
+
+function pythonExecutable() {
+  if (commandExists("python3")) return "python3"
+  if (commandExists("python")) return "python"
+  return null
+}
+
+export function collectJUnitResults(workspaceDir, resultDirs = [GRADLE_JUNIT_RESULT_DIR]) {
+  const files = resultDirs.flatMap((resultDir) => collectJUnitFiles(workspaceDir, resultDir))
+  return collectJUnitResultsFromFiles(workspaceDir, files)
+}
+
+function collectJUnitFiles(workspaceDir, resultDir) {
+  const absoluteResultDir = join(workspaceDir, resultDir)
+  if (!existsSync(absoluteResultDir)) {
+    return []
+  }
+  return listFiles(absoluteResultDir)
+    .filter((file) => /^TEST-.*\.xml$/.test(basename(file)) || file.endsWith(".xml"))
     .map((file) => join(resultDir, file))
+}
+
+function collectJUnitResultsFromFiles(workspaceDir, files) {
   if (files.length === 0) {
     return { outcome: "UNKNOWN", tests: 0, failures: 0, errors: 0, skipped: 0, files: [] }
   }
   const totals = files
-    .map((file) => parseJUnitXmlText(readFileSync(file, "utf8")))
+    .map((file) => parseJUnitXmlText(readFileSync(join(workspaceDir, file), "utf8")))
     .reduce(
       (total, suite) => ({
         tests: total.tests + suite.tests,
@@ -439,19 +537,66 @@ export function collectJUnitResults(workspaceDir) {
 }
 
 export function measureGradleTestResult(workspaceDir, execution) {
-  const junit = collectJUnitResults(workspaceDir)
+  const junit = collectJUnitResults(workspaceDir, [GRADLE_JUNIT_RESULT_DIR])
   if (junit.outcome !== "UNKNOWN") return junit
   return { ...junit, outcome: execution.status === 0 ? "UNKNOWN" : "ERROR" }
 }
 
-export function measureCompileResult(workspaceDir, execution) {
+export function measureToolchainTestResult(workspaceDir, execution, toolchain = detectGeneratedToolchain(workspaceDir)) {
+  if (execution.skipped) {
+    return { outcome: "UNKNOWN", tests: 0, failures: 0, errors: 0, skipped: 0, files: [], reason: execution.error }
+  }
+  if (toolchain.testTool === "gradle") return measureGradleTestResult(workspaceDir, execution)
+  if (toolchain.testTool === "maven") {
+    const junit = collectJUnitResults(workspaceDir, MAVEN_JUNIT_RESULT_DIRS)
+    if (junit.outcome !== "UNKNOWN") return junit
+    return { ...junit, outcome: execution.status === 0 ? "UNKNOWN" : "ERROR" }
+  }
+  if (toolchain.testTool === "pytest") {
+    const junitFile = join(workspaceDir, PYTEST_JUNIT_RESULT_FILE)
+    if (existsSync(junitFile)) {
+      return collectJUnitResultsFromFiles(workspaceDir, [PYTEST_JUNIT_RESULT_FILE])
+    }
+    return {
+      outcome: execution.status === 0 ? "PASS" : "ERROR",
+      tests: 0,
+      failures: 0,
+      errors: execution.status === 0 ? 0 : 1,
+      skipped: 0,
+      files: [],
+      reason: execution.status === 0 ? "pytest exited 0 without junit xml" : "pytest failed without junit xml",
+    }
+  }
+  return { outcome: "UNKNOWN", tests: 0, failures: 0, errors: 0, skipped: 0, files: [], reason: "no supported test tool detected" }
+}
+
+export function measureCompileResult(workspaceDir, execution, toolchain = detectGeneratedToolchain(workspaceDir)) {
+  if (execution.skipped) {
+    return { outcome: "UNKNOWN", artifacts: [], reason: execution.error }
+  }
   if (execution.timedOut || execution.status !== 0) {
     return { outcome: "FAIL", artifacts: [] }
   }
-  const artifacts = listFiles(join(workspaceDir, "build")).filter((file) =>
-    /^(classes\/(?:java|kotlin)\/main\/|libs\/.+\.(?:jar|war)$)/.test(file.replaceAll("\\", "/")),
-  )
+  const artifacts = buildArtifactsForToolchain(workspaceDir, toolchain)
+  if (toolchain.buildTool === "python-compileall") return { outcome: "PASS", artifacts }
   return artifacts.length > 0 ? { outcome: "PASS", artifacts } : { outcome: "UNKNOWN", artifacts }
+}
+
+function buildArtifactsForToolchain(workspaceDir, toolchain) {
+  if (toolchain.buildTool === "gradle") {
+    return listFiles(join(workspaceDir, "build"))
+      .filter((file) => /^(classes\/(?:java|kotlin)\/main\/|libs\/.+\.(?:jar|war)$)/.test(file.replaceAll("\\", "/")))
+      .map((file) => join("build", file))
+  }
+  if (toolchain.buildTool === "maven") {
+    return listFiles(join(workspaceDir, "target"))
+      .filter((file) => /^(classes\/|.+\.(?:jar|war)$)/.test(file.replaceAll("\\", "/")))
+      .map((file) => join("target", file))
+  }
+  if (toolchain.buildTool === "python-compileall") {
+    return listFiles(workspaceDir).filter((file) => /__pycache__\/.+\.pyc$/.test(file.replaceAll("\\", "/")))
+  }
+  return []
 }
 
 export function parseBackendShapeWarnCount(text) {
@@ -608,6 +753,43 @@ export function gradleCommand(workspaceDir, task) {
   if (isWindows && existsSync(bat)) return `gradlew.bat ${task}`
   if (existsSync(sh)) return `chmod +x ./gradlew && ./gradlew ${task}`
   return `gradle ${task}`
+}
+
+export function mavenCommand(workspaceDir, task) {
+  const isWindows = process.platform === "win32"
+  const cmd = join(workspaceDir, "mvnw.cmd")
+  const sh = join(workspaceDir, "mvnw")
+  if (isWindows && existsSync(cmd)) return `mvnw.cmd ${task}`
+  if (existsSync(sh)) return `chmod +x ./mvnw && ./mvnw ${task}`
+  return `mvn ${task}`
+}
+
+async function runCommandDescriptorAsync(descriptor, cwd, timeoutMs, options = {}) {
+  if (!descriptor.command) {
+    return skippedExecution(cwd, descriptor.skippedReason ?? "command unavailable")
+  }
+  return runShellAsync(descriptor.command, cwd, timeoutMs, options)
+}
+
+function runCommandDescriptor(descriptor, cwd, timeoutMs) {
+  if (!descriptor.command) {
+    return skippedExecution(cwd, descriptor.skippedReason ?? "command unavailable")
+  }
+  return runShell(descriptor.command, cwd, timeoutMs)
+}
+
+function skippedExecution(cwd, reason) {
+  return {
+    command: "",
+    cwd,
+    status: null,
+    signal: null,
+    stdout: "",
+    stderr: reason,
+    timedOut: false,
+    error: reason,
+    skipped: true,
+  }
 }
 
 export function countFailureModes(outcomes) {
@@ -1046,12 +1228,15 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     if (name === "opencode" && execution.status !== 0) providerFailed = true
   }
 
-  const testExecution = await runShellAsync(gradleCommand(workspaceDir, "test"), workspaceDir, options.timeoutMs)
-  writeCommandLog(join(logsDir, "gradle-test.log"), testExecution)
-  rawOutputPaths["gradle-test"] = writeRawExecutionFiles(logsDir, "gradle-test", testExecution)
-  const buildExecution = await runShellAsync(gradleCommand(workspaceDir, "build"), workspaceDir, options.timeoutMs)
-  writeCommandLog(join(logsDir, "gradle-build.log"), buildExecution)
-  rawOutputPaths["gradle-build"] = writeRawExecutionFiles(logsDir, "gradle-build", buildExecution)
+  const toolchain = detectGeneratedToolchain(workspaceDir)
+  const testCommand = testCommandForToolchain(workspaceDir, toolchain)
+  const buildCommand = buildCommandForToolchain(workspaceDir, toolchain)
+  const testExecution = await runCommandDescriptorAsync(testCommand, workspaceDir, options.timeoutMs)
+  writeCommandLog(join(logsDir, "test.log"), testExecution)
+  rawOutputPaths.test = writeRawExecutionFiles(logsDir, "test", testExecution)
+  const buildExecution = await runCommandDescriptorAsync(buildCommand, workspaceDir, options.timeoutMs)
+  writeCommandLog(join(logsDir, "build.log"), buildExecution)
+  rawOutputPaths.build = writeRawExecutionFiles(logsDir, "build", buildExecution)
 
   const runtimeExecution = options.runtimeSmokeCommand
     ? await runShellAsync(options.runtimeSmokeCommand, workspaceDir, options.timeoutMs, { cleanupProcessGroup: true })
@@ -1078,8 +1263,8 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
 
   const stackAlignment = detectStackAlignment(workspaceDir)
   const workspacePurity = scanWorkspacePurity(workspaceDir, runPlan.conditionId)
-  const compileBuild = measureCompileResult(workspaceDir, buildExecution)
-  const gradleTest = measureGradleTestResult(workspaceDir, testExecution)
+  const compileBuild = measureCompileResult(workspaceDir, buildExecution, toolchain)
+  const gradleTest = measureToolchainTestResult(workspaceDir, testExecution, toolchain)
   const compileBuildOutcome = compileBuild.outcome
   const gradleTestOutcome = gradleTest.outcome
   const runtimeSmokeOutcome = runtimeExecution ? parseCommandOutcome(runtimeExecution) : "NOT RUN"
@@ -1113,6 +1298,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     fixtureHash: sha256Text(fixtureText),
     baselineFile,
     workspacePurity,
+    toolchain,
     gitCommit,
     metadata: {
       model: options.model,
@@ -1128,6 +1314,11 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       timeoutMs: options.timeoutMs,
       environment,
       rawOutputPaths,
+      commands: {
+        build: buildCommand,
+        test: testCommand,
+        runtimeSmoke: { tool: options.runtimeSmokeCommand ? "external" : "none", command: options.runtimeSmokeCommand || null },
+      },
     },
     outcomes: {
       compileBuildOutcome,
@@ -1140,6 +1331,9 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     metrics: {
       compileBuildPass: outcomePassValue(compileBuildOutcome),
       gradleTestPass: outcomePassValue(gradleTestOutcome),
+      detectedStack: toolchain.detectedStack,
+      buildTool: toolchain.buildTool,
+      testTool: toolchain.testTool,
       runtimeSmokePass: runtimeSmokeOutcome === "NOT RUN" ? null : runtimeSmokeOutcome === "PASS",
       stackAlignmentScore: stackAlignment.score,
       stackAlignmentRate: stackAlignment.rate,
@@ -1240,16 +1434,19 @@ async function replayEval(options) {
 
 async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, conditionId, repetition, environment, gitCommit) {
   const logsDir = join(replayRunDir, "raw")
-  const testExecution = runShell(gradleCommand(workspaceDir, "test"), workspaceDir, options.timeoutMs)
-  writeCommandLog(join(logsDir, "replay-gradle-test.log"), testExecution)
-  writeRawExecutionFiles(logsDir, "replay-gradle-test", testExecution)
-  const buildExecution = runShell(gradleCommand(workspaceDir, "build"), workspaceDir, options.timeoutMs)
-  writeCommandLog(join(logsDir, "replay-gradle-build.log"), buildExecution)
-  writeRawExecutionFiles(logsDir, "replay-gradle-build", buildExecution)
+  const toolchain = detectGeneratedToolchain(workspaceDir)
+  const testCommand = testCommandForToolchain(workspaceDir, toolchain)
+  const buildCommand = buildCommandForToolchain(workspaceDir, toolchain)
+  const testExecution = runCommandDescriptor(testCommand, workspaceDir, options.timeoutMs)
+  writeCommandLog(join(logsDir, "replay-test.log"), testExecution)
+  writeRawExecutionFiles(logsDir, "replay-test", testExecution)
+  const buildExecution = runCommandDescriptor(buildCommand, workspaceDir, options.timeoutMs)
+  writeCommandLog(join(logsDir, "replay-build.log"), buildExecution)
+  writeRawExecutionFiles(logsDir, "replay-build", buildExecution)
   const stackAlignment = detectStackAlignment(workspaceDir)
   const workspacePurity = scanWorkspacePurity(workspaceDir, conditionId)
-  const compileBuild = measureCompileResult(workspaceDir, buildExecution)
-  const gradleTest = measureGradleTestResult(workspaceDir, testExecution)
+  const compileBuild = measureCompileResult(workspaceDir, buildExecution, toolchain)
+  const gradleTest = measureToolchainTestResult(workspaceDir, testExecution, toolchain)
   const runtimeSmokeOutcome = parseCapturedCommandOutcome(join(logsDir, "runtime-smoke.log"))
   const providerOutcome = parseCapturedCommandOutcome(join(logsDir, "opencode.log"))
   const providerFailed = providerOutcome === "FAIL"
@@ -1275,8 +1472,16 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     logsDir,
     fixtureHash: existsSync(join(workspaceDir, "README.md")) ? sha256File(join(workspaceDir, "README.md")) : "unknown",
     workspacePurity,
+    toolchain,
     gitCommit,
-    metadata: { timeoutMs: options.timeoutMs, environment },
+    metadata: {
+      timeoutMs: options.timeoutMs,
+      environment,
+      commands: {
+        build: buildCommand,
+        test: testCommand,
+      },
+    },
     outcomes: {
       compileBuildOutcome: compileBuild.outcome,
       gradleTestOutcome: gradleTest.outcome,
@@ -1288,6 +1493,9 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     metrics: {
       compileBuildPass: outcomePassValue(compileBuild.outcome),
       gradleTestPass: outcomePassValue(gradleTest.outcome),
+      detectedStack: toolchain.detectedStack,
+      buildTool: toolchain.buildTool,
+      testTool: toolchain.testTool,
       runtimeSmokePass: runtimeSmokeOutcome === "NOT RUN" ? null : runtimeSmokeOutcome === "PASS",
       stackAlignmentScore: stackAlignment.score,
       stackAlignmentRate: stackAlignment.rate,
