@@ -42,6 +42,11 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - judgment: product value signal exists, but closure friction remains and the helpful/unclear boundary is still active;
   - future Windows SSH smoke should prefer `D:\persona-harness-smoke-*` paths and minimal raw-retention rollups by default;
   - this is not eval/model superiority, PH superiority proof, generated app quality certification, or a finish-gate bug.
+- Post-build closure UX follow-up:
+  - `d9dcd0a fix(cli): guide post-build workflow closure` makes `workflow continue` and `workflow check` show a post-build closure checklist when reports remain templates and a ticket remains pending after successful app generation;
+  - the checklist says not to generate a new app, fill implementation/review reports, mark report-filled, review/archive the current requirement candidate, then run `workflow finish implement`;
+  - this is not finish-gate weakening, enforcement, eval-core/fixture/policy/scorer work, or published alpha5 behavior until the next alpha publish/re-smoke;
+  - if reports/evidence are templates, the CLI still does not claim build/test/runtime success as confirmed, and model follow-through can still fail.
 
 - Honest eval closure:
   - eval treadmill stopped and `docs/current/injection-value-status.json` keeps `decision: injection-effect-not-proven`;
