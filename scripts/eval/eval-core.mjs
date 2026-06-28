@@ -47,6 +47,8 @@ const STACK_CRITERIA = [
   "noServiceStorageOwnership",
   "dtoBoundary",
 ]
+export const DEFAULT_OUTPUT_ROOT = join(tmpdir(), "persona-harness-eval-runs")
+const AMBIENT_INFLUENCE_PATHS = ["AGENTS.md", "CLAUDE.md", ".persona", ".opencode"]
 export const DECISION_POLICIES = {
   legacyStackHard: "legacy-v0.4-stack-hard",
   externalPrimary: "external-primary-v0.4.1",
@@ -65,7 +67,7 @@ export function parseArgs(argv) {
     runs: 5,
     fixture: "all",
     condition: "all",
-    outputRoot: "experiments/eval-runs",
+    outputRoot: DEFAULT_OUTPUT_ROOT,
     timeoutMs: 600000,
     concurrency: 1,
     preflightOnly: false,
@@ -202,6 +204,10 @@ export function commandExists(command) {
 
 export function preflight(options, plan = buildPlan(options)) {
   const errors = []
+  const ambientInfluencePaths = findAmbientInfluencePaths(options.projectDir, options.outputRoot)
+  if (ambientInfluencePaths.length > 0) {
+    errors.push(`output root is not isolated from ambient eval files: ${ambientInfluencePaths.join(", ")}`)
+  }
   if (!options.model) {
     errors.push("model id is required via --model or OPENCODE_MODEL")
   }
@@ -219,6 +225,40 @@ export function preflight(options, plan = buildPlan(options)) {
     if (!existsSync(fixturePath)) errors.push(`fixture file not found: ${fixturePath}`)
   }
   return { ok: errors.length === 0, errors }
+}
+
+export function findAmbientInfluencePaths(projectDir, outputRoot) {
+  const outputBase = resolve(projectDir, outputRoot)
+  const found = []
+  let current = outputBase
+  for (;;) {
+    for (const entry of AMBIENT_INFLUENCE_PATHS) {
+      const candidate = join(current, entry)
+      if (existsSync(candidate)) found.push(candidate)
+    }
+    const parent = dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+  return found
+}
+
+export function scanWorkspacePurity(workspaceDir, conditionId) {
+  if (conditionId === "ph-on") {
+    return { status: "NOT_APPLICABLE", violations: [] }
+  }
+  const disallowed = baselineDisallowedPaths(conditionId)
+  const violations = disallowed.map((entry) => join(workspaceDir, entry)).filter((candidate) => existsSync(candidate))
+  return {
+    status: violations.length === 0 ? "PASS" : "FAIL",
+    violations,
+  }
+}
+
+function baselineDisallowedPaths(conditionId) {
+  if (conditionId === "claude") return ["AGENTS.md", ".persona", ".opencode"]
+  if (conditionId === "agents") return ["CLAUDE.md", ".persona", ".opencode"]
+  return ["AGENTS.md", "CLAUDE.md", ".persona", ".opencode"]
 }
 
 export function formatCommand(template, values) {
@@ -639,9 +679,23 @@ function rate(numerator, denominator) {
 
 export function decideResults(results, options = {}) {
   const policy = options.policy ?? DECISION_POLICIES.legacyStackHard
+  const purityFailures = baselinePurityFailures(results)
+  if (purityFailures.length > 0) {
+    return { policy, verdict: "INCONCLUSIVE", reasons: purityFailures }
+  }
   if (policy === DECISION_POLICIES.externalPrimary) return decideExternalPrimaryResults(results, policy)
   if (policy === DECISION_POLICIES.legacyStackHard) return decideLegacyStackHardResults(results, policy)
   throw new Error(`Unknown decision policy: ${policy}`)
+}
+
+function baselinePurityFailures(results) {
+  const runs = Array.isArray(results?.runs) ? results.runs : []
+  return runs
+    .filter((run) => run?.conditionId !== "ph-on" && run?.workspacePurity?.status === "FAIL")
+    .map((run) => {
+      const violations = Array.isArray(run.workspacePurity.violations) ? run.workspacePurity.violations.join(", ") : "unknown violation"
+      return `${run.fixtureId ?? "unknown"} ${run.conditionId ?? "unknown"} r${run.repetition ?? "?"}: baseline workspace contamination detected: ${violations}`
+    })
 }
 
 function decideLegacyStackHardResults(results, policy) {
@@ -1023,6 +1077,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   }
 
   const stackAlignment = detectStackAlignment(workspaceDir)
+  const workspacePurity = scanWorkspacePurity(workspaceDir, runPlan.conditionId)
   const compileBuild = measureCompileResult(workspaceDir, buildExecution)
   const gradleTest = measureGradleTestResult(workspaceDir, testExecution)
   const compileBuildOutcome = compileBuild.outcome
@@ -1057,6 +1112,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     logsDir,
     fixtureHash: sha256Text(fixtureText),
     baselineFile,
+    workspacePurity,
     gitCommit,
     metadata: {
       model: options.model,
@@ -1191,6 +1247,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
   writeCommandLog(join(logsDir, "replay-gradle-build.log"), buildExecution)
   writeRawExecutionFiles(logsDir, "replay-gradle-build", buildExecution)
   const stackAlignment = detectStackAlignment(workspaceDir)
+  const workspacePurity = scanWorkspacePurity(workspaceDir, conditionId)
   const compileBuild = measureCompileResult(workspaceDir, buildExecution)
   const gradleTest = measureGradleTestResult(workspaceDir, testExecution)
   const runtimeSmokeOutcome = parseCapturedCommandOutcome(join(logsDir, "runtime-smoke.log"))
@@ -1217,6 +1274,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     workspaceDir,
     logsDir,
     fixtureHash: existsSync(join(workspaceDir, "README.md")) ? sha256File(join(workspaceDir, "README.md")) : "unknown",
+    workspacePurity,
     gitCommit,
     metadata: { timeoutMs: options.timeoutMs, environment },
     outcomes: {

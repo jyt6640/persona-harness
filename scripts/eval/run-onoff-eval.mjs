@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { aggregateRuns, buildPlan, parseArgs, preflight, runEval } from "./eval-core.mjs"
+import { aggregateRuns, buildPlan, DEFAULT_OUTPUT_ROOT, parseArgs, preflight, runEval } from "./eval-core.mjs"
 
 function usage() {
   return `Usage: node scripts/eval/run-onoff-eval.mjs [options]
@@ -22,7 +22,7 @@ Options:
   --backend-shape-command <cmd>
   --workflow-finish-command <cmd>
   --timeout-ms <n>           Command timeout in milliseconds (default: 600000)
-  --output-root <dir>        Output root (default: experiments/eval-runs)
+  --output-root <dir>        Output root (default: ${DEFAULT_OUTPUT_ROOT})
   --capture                  Store raw workspace/stdout/stderr artifacts under raw/
   --replay <run-dir>         Re-score a captured run without calling the model
   --preflight                Check environment only; writes no results
@@ -74,6 +74,7 @@ function printPlan(options, plan) {
     condition: options.condition,
     runs: options.runs,
     concurrency: options.concurrency,
+    outputRoot: options.outputRoot,
     totalRuns: plan.runs.length,
     selectedRuns: plan.runs,
   }

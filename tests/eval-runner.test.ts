@@ -9,7 +9,11 @@ import {
   aggregateRuns,
   buildPlan,
   countFailureModes,
+  decideResults,
+  DECISION_POLICIES,
+  DEFAULT_OUTPUT_ROOT,
   FIXTURE_METADATA,
+  findAmbientInfluencePaths,
   measureCompileResult,
   measureGradleTestResult,
   parseArgs,
@@ -19,6 +23,7 @@ import {
   parseJUnitXmlText,
   preflight,
   runShellAsync,
+  scanWorkspacePurity,
   scoreStackAlignmentFromObserveReport,
 } from "../scripts/eval/eval-core.mjs"
 
@@ -65,6 +70,13 @@ describe("ON/OFF eval runner core", () => {
     const plan = buildPlan(options)
 
     expect(plan.runs).toEqual([{ fixtureId: "backend-api-no-stack", conditionId: "plain", repetition: 1 }])
+  })
+
+  it("defaults eval output outside the repository tree", () => {
+    const options = parseArgs(["--runs", "1", "--fixture", "backend-api-no-stack", "--condition", "plain", "--model", "test-model"])
+
+    expect(options.outputRoot).toBe(DEFAULT_OUTPUT_ROOT)
+    expect(resolve(String(options.outputRoot))).toContain(tmpdir())
   })
 
   it("selects the reduced multi-step fixture for scope-sensitivity evals", () => {
@@ -127,6 +139,60 @@ describe("ON/OFF eval runner core", () => {
 
     expect(options.concurrency).toBe(2)
     expect(uniqueCapturePathKeys.size).toBe(capturePathKeys.length)
+  })
+
+  it("detects ambient Persona Harness files above repo-local output roots during preflight", () => {
+    const projectDir = tempDir("persona-eval-ambient-")
+    writeFileSync(join(projectDir, "AGENTS.md"), "# Ambient root rule\n")
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+    const options = parseArgs([
+      "--project-dir",
+      projectDir,
+      "--output-root",
+      "experiments/eval-runs",
+      "--fixture",
+      "backend-api-no-stack",
+      "--condition",
+      "plain",
+      "--model",
+      "test-model",
+      "--opencode-command",
+      "definitely-missing-opencode-binary",
+    ])
+
+    const ambientPaths = findAmbientInfluencePaths(projectDir, String(options.outputRoot))
+    const result = preflight(options, {
+      fixtureIds: [],
+      conditionIds: ["plain"],
+      fixtureMetadata: {},
+      runs: [],
+    })
+
+    expect(ambientPaths).toEqual(expect.arrayContaining([join(projectDir, "AGENTS.md"), join(projectDir, ".persona")]))
+    expect(result.ok).toBe(false)
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.stringContaining("output root is not isolated from ambient eval files")]),
+    )
+  })
+
+  it("guards baseline workspace purity while allowing intended agents baseline and PH ON artifacts", () => {
+    const plainWorkspace = tempDir("persona-eval-plain-contaminated-")
+    writeFileSync(join(plainWorkspace, "AGENTS.md"), "# Should not be inherited by plain\n")
+    mkdirSync(join(plainWorkspace, ".persona"), { recursive: true })
+
+    const agentsWorkspace = tempDir("persona-eval-agents-clean-")
+    writeFileSync(join(agentsWorkspace, "AGENTS.md"), "# Static agents baseline\n")
+
+    const phWorkspace = tempDir("persona-eval-ph-artifacts-")
+    mkdirSync(join(phWorkspace, ".persona"), { recursive: true })
+    mkdirSync(join(phWorkspace, ".opencode"), { recursive: true })
+
+    expect(scanWorkspacePurity(plainWorkspace, "plain")).toEqual({
+      status: "FAIL",
+      violations: expect.arrayContaining([join(plainWorkspace, "AGENTS.md"), join(plainWorkspace, ".persona")]),
+    })
+    expect(scanWorkspacePurity(agentsWorkspace, "agents")).toEqual({ status: "PASS", violations: [] })
+    expect(scanWorkspacePurity(phWorkspace, "ph-on")).toEqual({ status: "NOT_APPLICABLE", violations: [] })
   })
 
   it("measures Gradle test from JUnit XML instead of successful log text", () => {
@@ -411,6 +477,37 @@ describe("ON/OFF eval runner core", () => {
     expect(failures).toEqual({
       count: 6,
       labels: ["wrong stack", "compile failure", "test failure", "runtime smoke failure", "provider limit", "workflow dead-end"],
+    })
+  })
+
+  it("returns INCONCLUSIVE instead of a verdict when baseline workspace purity fails", () => {
+    const result = decideResults(
+      {
+        decisionPolicy: DECISION_POLICIES.externalPrimary,
+        runs: [
+          {
+            fixtureId: "backend-api-no-stack",
+            conditionId: "plain",
+            repetition: 1,
+            workspacePurity: { status: "FAIL", violations: ["/tmp/contaminated/AGENTS.md"] },
+            metrics: decisionTestMetrics(),
+          },
+          {
+            fixtureId: "backend-api-no-stack",
+            conditionId: "ph-on",
+            repetition: 1,
+            workspacePurity: { status: "NOT_APPLICABLE", violations: [] },
+            metrics: decisionTestMetrics(),
+          },
+        ],
+      },
+      { policy: DECISION_POLICIES.externalPrimary },
+    )
+
+    expect(result).toEqual({
+      policy: DECISION_POLICIES.externalPrimary,
+      verdict: "INCONCLUSIVE",
+      reasons: [expect.stringContaining("baseline workspace contamination detected")],
     })
   })
 
@@ -768,4 +865,16 @@ function workflowOutcomeFor(results: ReplayResults, conditionId: string): { outc
 
 function failureLabelsFor(results: ReplayResults, conditionId: string): readonly string[] {
   return replayRunFor(results, conditionId).metrics.externalFailureModeLabels
+}
+
+function decisionTestMetrics() {
+  return {
+    compileBuildPass: true,
+    gradleTestPass: true,
+    runtimeSmokePass: true,
+    stackAlignmentRate: 1,
+    externalFailureModeCount: 0,
+    workflowFinishOutcome: "PASS",
+    backendShapeWarnCount: 0,
+  }
 }

@@ -2,6 +2,8 @@ export type EvalRun = {
   fixtureId: string
   fixtureMetadata?: FixtureMetadata
   conditionId: string
+  repetition?: number
+  workspacePurity?: WorkspacePurity
   metrics: {
     compileBuildPass: boolean | null
     gradleTestPass: boolean | null
@@ -14,6 +16,11 @@ export type EvalRun = {
   }
 }
 
+export type WorkspacePurity = {
+  status: "PASS" | "FAIL" | "NOT_APPLICABLE"
+  violations: string[]
+}
+
 export type FixtureMetadata = {
   scopeClass: "single-turn" | "reduced-single-turn" | "stress-continuation"
   singleTurnEligible: boolean
@@ -21,6 +28,7 @@ export type FixtureMetadata = {
 }
 
 export const FIXTURE_METADATA: Record<string, FixtureMetadata>
+export const DEFAULT_OUTPUT_ROOT: string
 export function aggregateRuns(runs: readonly EvalRun[]): {
   byCondition: Array<Record<string, unknown>>
   singleTurnEligibleByCondition: Array<Record<string, unknown>>
@@ -50,7 +58,12 @@ export function collectJUnitResults(workspaceDir: string): Record<string, unknow
 export function measureGradleTestResult(workspaceDir: string, execution: Record<string, unknown>): Record<string, unknown>
 export function measureCompileResult(workspaceDir: string, execution: Record<string, unknown>): Record<string, unknown>
 export function scoreStackAlignmentFromObserveReport(report: unknown, workspaceDir?: string): Record<string, unknown>
-export function preflight(options: Record<string, unknown>): { ok: boolean; errors: string[] }
+export function preflight(
+  options: Record<string, unknown>,
+  plan?: { fixtureIds: string[]; conditionIds: string[]; fixtureMetadata: Record<string, unknown>; runs: unknown[] },
+): { ok: boolean; errors: string[] }
+export function findAmbientInfluencePaths(projectDir: string, outputRoot: string): string[]
+export function scanWorkspacePurity(workspaceDir: string, conditionId: string): WorkspacePurity
 export const DECISION_POLICIES: {
   readonly legacyStackHard: "legacy-v0.4-stack-hard"
   readonly externalPrimary: "external-primary-v0.4.1"
