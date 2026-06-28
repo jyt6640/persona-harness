@@ -101,6 +101,41 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - coded decide gate remains FAIL because plain baseline already has stackAlignmentRate `75%`, so PH ON does not clear the +20pp stack-improvement threshold;
   - record this as external outcome green, coded gate stack-threshold fail;
   - this is not full v0.4 matrix evidence, broad PH value proof, generated app product quality certification, or a reason to move v0.5 AST forward.
+- Added fixture scope metadata and recorded the intermediate expansion results:
+  - `b361a80 feat(eval): classify fixture scope metadata` adds `scopeClass` and `singleTurnEligible` metadata to fresh eval results;
+  - full `multi-step-backend` is classified as `stress-continuation` and `singleTurnEligible: false`;
+  - `multi-step-backend-small` is classified as `reduced-single-turn`, is eligible, and is paired with the full multi-step fixture;
+  - `backend-api-no-stack` and `ambiguous-idea-first` are single-turn eligible.
+- Recorded the official reduced multi-step external-primary pilot:
+  - fixture `multi-step-backend-small`, original results `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/results.json`;
+  - replay results `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T233834010Z/results.json`;
+  - original had no `replayOf`, gitCommit `e6e5f5e6359674c9e475aa68bfe20ad8cc61c173`, policy `external-primary-v0.4.1`, and 4 conditions x 2 runs;
+  - original/replay decide both PASS;
+  - aggregate matched original/replay: plain build/test/runtime/stack/failures `0%/0%/100%/50%/4`, claude `0%/0%/100%/75%/4`, agents `0%/0%/100%/75%/4`, ph-on `100%/100%/100%/88%/0` with workflow `100%`;
+  - PH ON instrumentation was valid, reports were filled, workflow finish PASSed, and baselines were PH-free.
+- Reduced multi-step interpretation boundary:
+  - the full `multi-step-backend` result remains external-primary FAIL with PH ON workflow `0%`;
+  - the reduced `multi-step-backend-small` result is a Tier 1 external-primary PASS for the reduced fixture only;
+  - this is strong scope-size sensitivity evidence, not a full v0.4 matrix PASS, broad PH value proof, or generated app quality certification;
+  - Tier 2 stack differentiation remains diagnostic/not assessed due fallback/low-confidence output.
+- Recorded the `ambiguous-idea-first` intermediate pilot:
+  - fixture `ambiguous-idea-first`, single-turn eligible;
+  - shape `plain`/`claude`/`agents`/`ph-on` x 2, concurrency 1, capture, runtime smoke, policy `external-primary-v0.4.1`;
+  - original results `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/results.json`;
+  - replay results `/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T010248114Z/results.json`;
+  - original/replay decide both FAIL with reason `ambiguous-idea-first: Tier 1 workflow finish did not complete for every PH ON run`;
+  - aggregate matched original/replay: plain build/test/runtime/workflow/stack/failures `0%/0%/100%/N/A/100%/4`, claude `50%/50%/50%/N/A/50%/4`, agents `0%/0%/50%/N/A/50%/6`, ph-on `100%/100%/100%/50%/100%/2`;
+  - PH ON r1 passed build/test/runtime/stack but workflow failed with filled reports, pending tickets, OpenCode timeout `900000ms`, and provider-limit/workflow-dead-end labels;
+  - PH ON r2 passed build/test/runtime/workflow/stack with failures `0`;
+  - PH ON instrumentation was valid and baselines were PH-free.
+- Ambiguous pilot interpretation boundary:
+  - `backend-api-no-stack` PASS and `multi-step-backend-small` PASS remain valid one-fixture/reduced-fixture signals;
+  - `ambiguous-idea-first` FAIL means the v0.4 single-turn matrix is not ready;
+  - the failure is workflow closure/follow-through variance, not build/test/runtime failure;
+  - Skills lane found no missing prompt surface, made no guidance change, and produced no commit; focused tests passed;
+  - remaining investigation is CLI/QA runner continuation/final-finish mechanics rather than more prompt text;
+  - full v0.4 matrix remains blocked pending CLI/Skills root-cause or rerun policy;
+  - no old result is retroactively rewritten.
 
 ## [0.3.9-alpha.3] - 2026-06-27
 
