@@ -19,6 +19,7 @@ import { runEvidenceCommand } from "./evidence-summary.js"
 import { runFeedbackCommand } from "./feedback.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
+import { decodeCliStdinText } from "./stdin-text.js"
 import { runWorkflowCommand } from "./workflow-command.js"
 
 type PersonaCliOptions = {
@@ -165,7 +166,7 @@ function workflowStdin(args: readonly string[]): string | undefined {
   if (process.stdin.isTTY === true) {
     return undefined
   }
-  return readFileSync(0, "utf8")
+  return decodeCliStdinText(readFileSync(0))
 }
 
 function isCliEntrypoint(): boolean {
