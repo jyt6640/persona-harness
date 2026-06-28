@@ -356,6 +356,41 @@ describe("ON/OFF eval runner core", () => {
     ).toEqual(expect.objectContaining({ matches: true, reason: "fixture accepts any generated stack/toolchain" }))
   })
 
+  it("summarizes external outcome and stack toolchain match separately", () => {
+    const aggregate = aggregateRuns([
+      {
+        fixtureId: "multi-step-backend-small",
+        fixtureMetadata: FIXTURE_METADATA["multi-step-backend-small"],
+        conditionId: "plain",
+        metrics: {
+          compileBuildPass: true,
+          gradleTestPass: true,
+          runtimeSmokePass: true,
+          stackToolchainMatches: false,
+          stackAlignmentRate: 1,
+          externalFailureModeCount: 0,
+          workflowFinishOutcome: "NOT APPLICABLE",
+          backendShapeWarnCount: 0,
+        },
+      },
+    ])
+
+    expect(aggregate.byCondition).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fixtureId: "multi-step-backend-small",
+          compileBuildRate: 1,
+          gradleTestRate: 1,
+          fixtureStackToolchainExpectation: expect.objectContaining({
+            expectation: "java-spring-gradle-pinned",
+            expectedBuildTool: "gradle",
+          }),
+          stackToolchainMatchRate: 0,
+        }),
+      ]),
+    )
+  })
+
   it("keeps Gradle projects on the Gradle command and JUnit path", () => {
     const projectDir = tempDir("persona-eval-gradle-")
     writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
