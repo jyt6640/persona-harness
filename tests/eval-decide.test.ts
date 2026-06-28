@@ -164,6 +164,31 @@ describe("objective eval decision gate", () => {
     expect(decision.reasons).toContain("backend-api-no-stack: Tier 2 stack differentiation not proven against plain")
   })
 
+  it("uses known compile and test observations for toolchain-aware external-primary comparisons", () => {
+    const decision = decideResults(
+      {
+        decisionPolicy: DECISION_POLICIES.externalPrimary,
+        toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
+        runs: [
+          run("backend-api-no-stack", "plain", true, true, false, 0, 2),
+          run("backend-api-no-stack", "plain", true, true, false, 0, 2),
+          run("backend-api-no-stack", "claude", true, true, false, 0, 2),
+          run("backend-api-no-stack", "claude", null, null, false, 0, 2),
+          run("backend-api-no-stack", "agents", true, true, false, 0, 2),
+          run("backend-api-no-stack", "agents", null, null, false, 0, 2),
+          run("backend-api-no-stack", "ph-on", true, true, true, 1, 2, "FAIL"),
+          run("backend-api-no-stack", "ph-on", null, null, false, 0, 4, "FAIL"),
+        ],
+      },
+      { policy: DECISION_POLICIES.externalPrimary },
+    )
+
+    expect(decision.verdict).toBe("FAIL")
+    expect(decision.reasons).not.toContain("backend-api-no-stack: Tier 1 compileBuildRate missing for comparable decision")
+    expect(decision.reasons).not.toContain("backend-api-no-stack: Tier 1 gradleTestRate missing for comparable decision")
+    expect(decision.reasons).toContain("backend-api-no-stack: Tier 1 workflow finish did not complete for every PH ON run")
+  })
+
   it("does not apply toolchain-aware external-primary policy to unstamped legacy results", () => {
     const dir = tempDir("persona-decide-policy-")
     const resultsPath = join(dir, "results.json")
@@ -247,11 +272,12 @@ describe("objective eval decision gate", () => {
 function run(
   fixtureId: string,
   conditionId: string,
-  compileBuildPass: boolean,
-  gradleTestPass: boolean,
+  compileBuildPass: boolean | null,
+  gradleTestPass: boolean | null,
   runtimeSmokePass: boolean,
   stackAlignmentRate: number,
   externalFailureModeCount: number,
+  workflowFinishOutcome = conditionId === "ph-on" ? "PASS" : "NOT APPLICABLE",
 ) {
   return {
     fixtureId,
@@ -262,7 +288,7 @@ function run(
       runtimeSmokePass,
       stackAlignmentRate,
       externalFailureModeCount,
-      workflowFinishOutcome: conditionId === "ph-on" ? "PASS" : "NOT APPLICABLE",
+      workflowFinishOutcome,
       backendShapeWarnCount: 0,
     },
   }

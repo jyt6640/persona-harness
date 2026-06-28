@@ -1099,9 +1099,10 @@ function decideExternalPrimaryResults(results, policy) {
       continue
     }
 
-    const ph = summarizeComparable(phRuns)
+    const summaryOptions = { requireCompleteExternalMetrics: policy !== DECISION_POLICIES.externalPrimary }
+    const ph = summarizeComparable(phRuns, summaryOptions)
     const offs = groupBy(offRuns, (run) => run.conditionId)
-      .map((group) => summarizeComparable(group))
+      .map((group) => summarizeComparable(group, summaryOptions))
       .sort(compareComparableSummaries)
     let fixtureTierOneFailed = false
 
@@ -1162,11 +1163,12 @@ function decideExternalPrimaryResults(results, policy) {
   return { policy, scorer: scorerMarkerForPolicy(policy), verdict: "PASS", reasons }
 }
 
-export function summarizeComparable(runs) {
+export function summarizeComparable(runs, options = {}) {
   const total = runs.length
   const conditionId = runs[0]?.conditionId ?? "unknown"
-  const compileBuildRate = passRate(runs, "compileBuildPass")
-  const gradleTestRate = passRate(runs, "gradleTestPass")
+  const requireCompleteExternalMetrics = options.requireCompleteExternalMetrics ?? true
+  const compileBuildRate = passRate(runs, "compileBuildPass", { requireComplete: requireCompleteExternalMetrics })
+  const gradleTestRate = passRate(runs, "gradleTestPass", { requireComplete: requireCompleteExternalMetrics })
   const runtimeSmokeValues = runs.map((run) => run.metrics.runtimeSmokePass).filter((value) => value !== null)
   const runtimeSmokeRate =
     runtimeSmokeValues.length === 0 ? null : runtimeSmokeValues.filter((value) => value === true).length / runtimeSmokeValues.length
@@ -1194,10 +1196,12 @@ function stackAlignmentRateForRun(run) {
   return run.metrics.stackAlignmentScore === 2 ? 1 : run.metrics.stackAlignmentScore === 1 ? 0.5 : 0
 }
 
-function passRate(runs, key) {
+function passRate(runs, key, options = {}) {
   if (runs.length === 0) return null
-  if (runs.some((run) => run.metrics[key] === null || run.metrics[key] === undefined)) return null
-  return runs.filter((run) => run.metrics[key] === true).length / runs.length
+  const knownRuns = runs.filter((run) => run.metrics[key] !== null && run.metrics[key] !== undefined)
+  if (knownRuns.length === 0) return null
+  if ((options.requireComplete ?? true) && knownRuns.length !== runs.length) return null
+  return knownRuns.filter((run) => run.metrics[key] === true).length / knownRuns.length
 }
 
 function groupBy(items, keyFn) {
