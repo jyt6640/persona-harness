@@ -35,6 +35,13 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - `init --help`, `smoke --help`, and `feedback --help` exited 0 without creating `.persona`, `.opencode`, `AGENTS.md`, workflow/smoke/feedback reports;
   - `npx ph --version` remains unsupported and exited 1, not a blocker because package version was confirmed by npm metadata;
   - this is final product surface smoke only, not eval/model/OpenCode/A-B evidence, PH superiority proof, or generated app quality certification.
+- Alpha5 SSH implementation trial:
+  - Windows SSH registry real-use trial was partially successful: no-token idea-first rail was helpful, Korean was preserved, and `workflow continue` kept task-card context/next action/no-completion guidance;
+  - OpenCode/model generated a Java/Spring/Gradle/H2/Flyway/JDBC app, with `gradlew.bat test` PASS, `gradlew.bat build` PASS, runtime smoke PASS for `/todos` POST/GET/400 checks, and backend-shape mostly PASS;
+  - closure still failed because implementation/review reports remained templates, `req-1` remained pending, and `workflow finish implement` exited 1 correctly blocking completion;
+  - judgment: product value signal exists, but closure friction remains and the helpful/unclear boundary is still active;
+  - future Windows SSH smoke should prefer `D:\persona-harness-smoke-*` paths and minimal raw-retention rollups by default;
+  - this is not eval/model superiority, PH superiority proof, generated app quality certification, or a finish-gate bug.
 
 - Honest eval closure:
   - eval treadmill stopped and `docs/current/injection-value-status.json` keeps `decision: injection-effect-not-proven`;
