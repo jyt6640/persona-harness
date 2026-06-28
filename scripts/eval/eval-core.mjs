@@ -205,10 +205,13 @@ export function selectFixtures(fixtureOption) {
 
 export function selectConditions(conditionOption) {
   if (conditionOption === "all") return Object.keys(CONDITIONS)
-  if (!Object.hasOwn(CONDITIONS, conditionOption)) {
-    throw new Error(`Unknown condition: ${conditionOption}`)
+  const selected = conditionOption.split(",").map((condition) => normalizeConditionId(condition.trim()))
+  for (const condition of selected) {
+    if (!Object.hasOwn(CONDITIONS, condition)) {
+      throw new Error(`Unknown condition: ${condition}`)
+    }
   }
-  return [conditionOption]
+  return [...new Set(selected)]
 }
 
 export function buildPlan(options) {

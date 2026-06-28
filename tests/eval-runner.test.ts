@@ -87,6 +87,19 @@ describe("ON/OFF eval runner core", () => {
     expect(plan.runs).toEqual([{ fixtureId: "backend-api-no-stack", conditionId: "plain", repetition: 1 }])
   })
 
+  it("selects a ph-on/plain screening run plan without adding new conditions", () => {
+    const options = parseArgs(["--runs", "2", "--fixture", "backend-api-no-stack", "--condition", "ph-on,plain", "--model", "test-model"])
+    const plan = buildPlan(options)
+
+    expect(plan.conditionIds).toEqual(["ph-on", "plain"])
+    expect(plan.runs).toEqual([
+      { fixtureId: "backend-api-no-stack", conditionId: "ph-on", repetition: 1 },
+      { fixtureId: "backend-api-no-stack", conditionId: "ph-on", repetition: 2 },
+      { fixtureId: "backend-api-no-stack", conditionId: "plain", repetition: 1 },
+      { fixtureId: "backend-api-no-stack", conditionId: "plain", repetition: 2 },
+    ])
+  })
+
   it("defaults eval output outside the repository tree", () => {
     const options = parseArgs(["--runs", "1", "--fixture", "backend-api-no-stack", "--condition", "plain", "--model", "test-model"])
 
@@ -1331,6 +1344,34 @@ describe("ON/OFF eval runner core", () => {
     expect(runtimeOutcomeFor(results, "agents")).toEqual({ outcome: "NOT RUN", pass: null })
   }, 10000)
 
+  it("keeps replay metrics invariant when scoring the same capture twice", () => {
+    const outputRoot = tempDir("persona-eval-replay-invariant-")
+    const captureDir = join(outputRoot, "capture")
+    writeCapturedRun(captureDir, { conditionId: "plain", runtimeStatus: "status: 0", opencodeStatus: "status: 0", workflowStatus: null })
+    writeCapturedRun(captureDir, {
+      conditionId: "ph-on",
+      runtimeStatus: "status: 0",
+      opencodeStatus: "status: null\nsignal: SIGTERM\nerror: spawnSync /bin/sh ETIMEDOUT",
+      workflowStatus: "status: 0",
+    })
+
+    const first = spawnSync(process.execPath, [resolve("scripts/eval/run-onoff-eval.mjs"), "--replay", captureDir, "--output-root", outputRoot], {
+      cwd: resolve("."),
+      encoding: "utf8",
+    })
+    const second = spawnSync(process.execPath, [resolve("scripts/eval/run-onoff-eval.mjs"), "--replay", captureDir, "--output-root", outputRoot], {
+      cwd: resolve("."),
+      encoding: "utf8",
+    })
+
+    expect(first.status).toBe(0)
+    expect(second.status).toBe(0)
+    const firstResults = readReplayResults(first.stdout)
+    const secondResults = readReplayResults(second.stdout)
+    expect(secondResults.aggregate).toEqual(firstResults.aggregate)
+    expect(secondResults.runs.map(replayInvariantProjection)).toEqual(firstResults.runs.map(replayInvariantProjection))
+  }, 15000)
+
   it("replays captured provider and workflow logs without fabricating missing workflow results", () => {
     const outputRoot = tempDir("persona-eval-replay-workflow-")
     const captureDir = join(outputRoot, "capture")
@@ -1674,6 +1715,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isRuntimePass(value: unknown): value is boolean | null {
   return typeof value === "boolean" || value === null
+}
+
+function replayInvariantProjection(run: ReplayRuntimeRun): Record<string, unknown> {
+  return {
+    fixtureId: run.fixtureId,
+    conditionId: run.conditionId,
+    outcomes: run.outcomes,
+    metrics: run.metrics,
+  }
 }
 
 function replayRunFor(results: ReplayResults, conditionId: string): ReplayRuntimeRun {

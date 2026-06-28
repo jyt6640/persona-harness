@@ -1,0 +1,1087 @@
+{
+  "schemaVersion": "persona-eval-signal-diagnosis.1",
+  "resultFiles": 12,
+  "totalRuns": 80,
+  "phOnRuns": [
+    {
+      "resultId": "2026-06-27T06:05:11.810Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 1,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "provider-limit-timeout",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 6,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "wrong stack",
+        "compile failure",
+        "test failure",
+        "runtime smoke failure",
+        "provider limit",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T060504536Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T060504536Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T06:12:16.169Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 1,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "provider-limit-timeout",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 6,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "wrong stack",
+        "compile failure",
+        "test failure",
+        "runtime smoke failure",
+        "provider limit",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T061107129Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T061107129Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T07:02:02.277Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 1,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "ph-workflow-dead-end",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 2,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "runtime smoke failure",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T063154174Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T063154174Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T07:50:54.417Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 1,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 1,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "provider limit"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T072141547Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T072141547Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T08:57:25.599Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 1,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "ph-workflow-dead-end",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 4,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "compile failure",
+        "test failure",
+        "runtime smoke failure",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T082514617Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T08:57:25.599Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 2,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "provider-limit-timeout",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 3,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "runtime smoke failure",
+        "provider limit",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T082514617Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T082514617Z/raw/backend-api-no-stack/ph-on/r2/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T11:46:55.471Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 1,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 0,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T104740351Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T11:46:55.471Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 2,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 0,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T104740351Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T104740351Z/raw/backend-api-no-stack/ph-on/r2/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T13:08:21.169Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 1,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 0,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T121004349Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T13:08:21.169Z",
+      "fixtureId": "backend-api-no-stack",
+      "repetition": 2,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 0,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T121004349Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T121004349Z/raw/backend-api-no-stack/ph-on/r2/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T14:20:09.292Z",
+      "fixtureId": "multi-step-backend",
+      "repetition": 1,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "provider-limit-timeout",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 2,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "provider limit",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T131440420Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T14:20:09.292Z",
+      "fixtureId": "multi-step-backend",
+      "repetition": 2,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "provider-limit-timeout",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 2,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "provider limit",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T131440420Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T131440420Z/raw/multi-step-backend/ph-on/r2/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T15:33:17.384Z",
+      "fixtureId": "multi-step-backend-small",
+      "repetition": 1,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 0,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T142842139Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T15:33:17.384Z",
+      "fixtureId": "multi-step-backend-small",
+      "repetition": 2,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "provider-limit-timeout",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 2,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "provider limit",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T142842139Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T142842139Z/raw/multi-step-backend-small/ph-on/r2/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T16:34:42.428Z",
+      "fixtureId": "multi-step-backend-small",
+      "repetition": 1,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 0,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T153507167Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-27T16:34:42.428Z",
+      "fixtureId": "multi-step-backend-small",
+      "repetition": 2,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 0,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T153507167Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T153507167Z/raw/multi-step-backend-small/ph-on/r2/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-28T01:02:14.372Z",
+      "fixtureId": "ambiguous-idea-first",
+      "repetition": 1,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "provider-limit-timeout",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 2,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "provider limit",
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T235103424Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-28T01:02:14.372Z",
+      "fixtureId": "ambiguous-idea-first",
+      "repetition": 2,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 0,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-27T235103424Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-27T235103424Z/raw/ambiguous-idea-first/ph-on/r2/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-28T02:23:15.273Z",
+      "fixtureId": "ambiguous-idea-first",
+      "repetition": 1,
+      "workflowFinishOutcome": "PASS",
+      "classification": "pass",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": "provider-limit"
+      },
+      "externalFailureModeCount": 2,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "runtime smoke failure",
+        "provider limit"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-28T011606634Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r1/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    },
+    {
+      "resultId": "2026-06-28T02:23:15.273Z",
+      "fixtureId": "ambiguous-idea-first",
+      "repetition": 2,
+      "workflowFinishOutcome": "FAIL",
+      "classification": "ph-workflow-dead-end",
+      "providerToolCompletion": {
+        "completionOutcome": "UNKNOWN",
+        "completionFailureReason": null
+      },
+      "externalFailureModeCount": 1,
+      "operationalFailureModeCount": 0,
+      "externalFailureModeLabels": [
+        "workflow dead-end"
+      ],
+      "operationalFailureModeLabels": [],
+      "evidencePaths": {
+        "resultPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-signal/runs/2026-06-28T011606634Z/results.json",
+        "workspaceDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/workspace",
+        "logsDir": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw",
+        "rawOutputPaths": {
+          "ph-install": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/ph-install.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/ph-install.stderr.txt"
+          },
+          "ph-init": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/ph-init.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/ph-init.stderr.txt"
+          },
+          "opencode": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/opencode.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/opencode.stderr.txt"
+          },
+          "gradle-test": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/gradle-test.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/gradle-test.stderr.txt"
+          },
+          "gradle-build": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/gradle-build.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/gradle-build.stderr.txt"
+          },
+          "runtime-smoke": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/runtime-smoke.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/runtime-smoke.stderr.txt"
+          },
+          "workflow-finish": {
+            "stdoutPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/workflow-finish.stdout.txt",
+            "stderrPath": "/Users/yongtae/Desktop/persona-harness/experiments/eval-runs/2026-06-28T011606634Z/raw/ambiguous-idea-first/ph-on/r2/raw/workflow-finish.stderr.txt"
+          }
+        }
+      }
+    }
+  ],
+  "workflowFinishFailureSummary": {
+    "pass": 10,
+    "provider-limit-timeout": 7,
+    "ph-workflow-dead-end": 3,
+    "timeout-ambiguous": 0
+  },
+  "labelBreakdown": {
+    "byCondition": {
+      "plain": {
+        "wrong stack": 4,
+        "compile failure": 20,
+        "test failure": 19,
+        "runtime smoke failure": 5,
+        "provider limit": 3
+      },
+      "claude": {
+        "wrong stack": 7,
+        "compile failure": 19,
+        "test failure": 19,
+        "runtime smoke failure": 10,
+        "provider limit": 2
+      },
+      "agents": {
+        "wrong stack": 7,
+        "compile failure": 20,
+        "test failure": 20,
+        "runtime smoke failure": 9,
+        "provider limit": 2
+      },
+      "ph-on": {
+        "wrong stack": 2,
+        "compile failure": 3,
+        "test failure": 3,
+        "runtime smoke failure": 6,
+        "provider limit": 9,
+        "workflow dead-end": 10
+      }
+    },
+    "phOnMinusPlain": {
+      "compile failure": -17,
+      "provider limit": 6,
+      "runtime smoke failure": 1,
+      "test failure": -16,
+      "workflow dead-end": 10,
+      "wrong stack": -2
+    }
+  }
+}
