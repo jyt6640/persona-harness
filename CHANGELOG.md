@@ -159,6 +159,15 @@ _No unreleased changes._
   - baselines: plain/claude completed provider work but runtime failed, agents mixed;
   - no PH ON PASS claim, no matrix-ready claim, no generated app quality certification;
   - next work is workflow finalization cost reduction, finalization-only continuation policy, or timeout budget policy, then same fixture rerun.
+- CLI finalization triage:
+  - `63dc661 fix(cli): ignore recovered verification notes`;
+  - no fresh eval rerun;
+  - r1 bottleneck: app build/test/runtime PASS, tickets/reports filled, role coverage OK, but missing `npx ph bearshell` final verification evidence in filled reports;
+  - CLI false positive fixed: text like "initial failure later recovered" no longer counts as a current compile/test failure;
+  - built CLI r1 smoke now reports verification failure `no failed verification recorded`;
+  - r2 provider TIMED_OUT but workflow PASS;
+  - finish gate false negative ruled out and finish gate not weakened;
+  - next work is a QA/runner finalization-only continuation pass, counted separately from single-turn completion.
 
 ### Additional Eval History Since Alpha3
 
