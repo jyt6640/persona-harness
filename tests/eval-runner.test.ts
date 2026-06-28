@@ -585,6 +585,89 @@ describe("ON/OFF eval runner core", () => {
     }
   }, 10000)
 
+  it("runs bounded finalization continuation after provider timeout without marking single-turn completion", async () => {
+    const outputRoot = tempDir("persona-eval-finalization-continuation-")
+    const opencodeCommand = [
+      process.execPath,
+      "-e",
+      JSON.stringify(
+        [
+          "const { chmodSync, mkdirSync, writeFileSync } = require('node:fs')",
+          "mkdirSync('src/main/java/com/example', { recursive: true })",
+          "mkdirSync('build/test-results/test', { recursive: true })",
+          "mkdirSync('build/classes/java/main/com/example', { recursive: true })",
+          "writeFileSync('build.gradle', \"plugins { id 'java' }\\n\")",
+          "writeFileSync('settings.gradle', \"rootProject.name = 'sample'\\n\")",
+          "writeFileSync('src/main/java/com/example/OrderController.java', 'class OrderController { OrderService service; }\\n')",
+          "writeFileSync('src/main/java/com/example/OrderResponse.java', 'class OrderResponse {}\\n')",
+          "writeFileSync('build/test-results/test/TEST-sample.xml', '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"></testsuite>\\n')",
+          "writeFileSync('build/classes/java/main/com/example/App.class', 'bytecode')",
+          "writeFileSync('gradlew', '#!/usr/bin/env sh\\nset -eu\\nmkdir -p build/test-results/test build/classes/java/main/com/example\\nprintf \\'<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"></testsuite>\\\\n\\' > build/test-results/test/TEST-sample.xml\\nprintf bytecode > build/classes/java/main/com/example/App.class\\nexit 0\\n')",
+          "chmodSync('gradlew', 0o755)",
+          "setInterval(() => {}, 1000)",
+        ].join("; "),
+      ),
+    ].join(" ")
+    const finishCommand = `${process.execPath} -e "process.exit(require('node:fs').existsSync('finalized.txt') ? 0 : 1)"`
+    const continuationCommand = `${process.execPath} -e "require('node:fs').writeFileSync('finalized.txt', 'ok')"`
+
+    const result = await runEval({
+      fixture: "backend-api-no-stack",
+      condition: "ph-on",
+      runs: 1,
+      concurrency: 1,
+      outputRoot,
+      timeoutMs: 1000,
+      finalizationContinuationTimeoutMs: 5000,
+      model: "test-model",
+      modelVersion: "test-version",
+      temperature: "unknown",
+      topP: "unknown",
+      seed: "unknown",
+      opencodeCommand,
+      phInstallCommand: `${process.execPath} -e ""`,
+      phInitCommand: `${process.execPath} -e ""`,
+      workflowFinishCommand: finishCommand,
+      finalizationContinuationCommand: continuationCommand,
+      backendShapeCommand: "",
+      runtimeSmokeCommand: `${process.execPath} -e ""`,
+      installSource: "test",
+      projectDir: resolve("."),
+      capture: true,
+    })
+
+    expect(result.ok).toBe(true)
+    const run = result.results?.runs[0]
+    expect(run).toEqual(
+      expect.objectContaining({
+        finalizationContinuation: expect.objectContaining({
+          needed: true,
+          attempted: true,
+          outcome: "PASS",
+        }),
+      }),
+    )
+    expect(run?.outcomes).toEqual(
+      expect.objectContaining({
+        workflowFinishOutcome: "PASS",
+        initialWorkflowFinishOutcome: "INCOMPLETE",
+        finalizationContinuationOutcome: "PASS",
+      }),
+    )
+    expect(run?.metrics).toEqual(
+      expect.objectContaining({
+        completionWithinBudgetPass: false,
+        finishWithinBudgetPass: false,
+        finalizationContinuationNeeded: true,
+        finalizationContinuationAttempted: true,
+        finalizationContinuationSucceeded: true,
+        completionMode: "CONTINUATION_ASSISTED",
+        externalFailureModeCount: 0,
+      }),
+    )
+    expect(run?.metrics.operationalFailureModeLabels).toEqual(["provider-timeout", "finalization-continuation-needed"])
+  }, 15000)
+
   it("marks stack alignment fallback criteria as low-confidence instead of precise observer evidence", () => {
     const projectDir = tempDir("persona-eval-stack-")
     mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
@@ -777,6 +860,72 @@ describe("ON/OFF eval runner core", () => {
     expect(failures.operational.labels).toEqual(["provider-timeout", "workflow-finalization-incomplete-after-provider-timeout"])
   })
 
+  it("keeps continuation-assisted finalization separate from single-turn completion", () => {
+    const completion = classifyProviderToolCompletion({
+      status: null,
+      signal: "SIGTERM",
+      timedOut: true,
+      stdout: "",
+      stderr: "",
+      error: "timed out after 900000ms",
+    })
+    const failures = countFailureModes({
+      compileBuildOutcome: "PASS",
+      gradleTestOutcome: "PASS",
+      runtimeSmokeOutcome: "PASS",
+      stackAlignmentRate: 1,
+      workflowFinishOutcome: "PASS",
+      providerToolCompletion: completion,
+      finalizationContinuationNeeded: true,
+      finalizationContinuationAttempted: true,
+      finalizationContinuationOutcome: "PASS",
+    })
+    const aggregate = aggregateRuns([
+      {
+        fixtureId: "backend-api-no-stack",
+        conditionId: "ph-on",
+        metrics: {
+          compileBuildPass: true,
+          gradleTestPass: true,
+          runtimeSmokePass: true,
+          stackToolchainMatches: true,
+          stackAlignmentRate: 1,
+          providerToolCompletionOutcome: "TIMED_OUT",
+          providerToolCompletionFailureReason: "provider-timeout",
+          completionWithinBudgetPass: false,
+          finishWithinBudgetPass: false,
+          finalizationContinuationNeeded: true,
+          finalizationContinuationAttempted: true,
+          finalizationContinuationSucceeded: true,
+          completionMode: "CONTINUATION_ASSISTED",
+          externalFailureModeCount: failures.external.count,
+          externalFailureModeLabels: failures.external.labels,
+          operationalFailureModeCount: failures.operational.count,
+          operationalFailureModeLabels: failures.operational.labels,
+          workflowFinishOutcome: "PASS",
+          backendShapeWarnCount: 0,
+        },
+      },
+    ])
+
+    expect(failures.external.labels).toEqual([])
+    expect(failures.operational.labels).toEqual(["provider-timeout", "finalization-continuation-needed"])
+    expect(aggregate.byCondition).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          conditionId: "ph-on",
+          completionWithinBudgetRate: 0,
+          finishWithinBudgetRate: 0,
+          finalizationContinuationNeededRate: 1,
+          finalizationContinuationAttemptRate: 1,
+          finalizationContinuationSuccessRate: 1,
+          continuationAssistedCompletionRate: 1,
+          singleTurnCompletionRate: 0,
+        }),
+      ]),
+    )
+  })
+
   it("keeps completed generation runtime crashes as generated app failures", () => {
     const completion = classifyProviderToolCompletion({
       status: 0,
@@ -898,6 +1047,48 @@ describe("ON/OFF eval runner core", () => {
     )
     expect(result.reasons).not.toEqual(expect.arrayContaining([expect.stringContaining("failure-mode count increased")]))
     expect(result.reasons).not.toEqual(expect.arrayContaining([expect.stringContaining("runtimeSmokeRate below")]))
+  })
+
+  it("keeps continuation-assisted finalization visible in decide output without converting it to single-turn PASS", () => {
+    const result = decideResults(
+      {
+        decisionPolicy: DECISION_POLICIES.externalPrimary,
+        toolchainScoringVersion: TOOLCHAIN_SCORING_VERSION,
+        completionSemanticsVersion: COMPLETION_SEMANTICS_VERSION,
+        runs: [
+          {
+            fixtureId: "backend-api-no-stack",
+            conditionId: "plain",
+            metrics: decisionTestMetrics(),
+          },
+          {
+            fixtureId: "backend-api-no-stack",
+            conditionId: "ph-on",
+            metrics: {
+              ...decisionTestMetrics(),
+              providerToolCompletionOutcome: "TIMED_OUT",
+              providerToolCompletionFailureReason: "provider-timeout",
+              completionWithinBudgetPass: false,
+              finishWithinBudgetPass: false,
+              finalizationContinuationNeeded: true,
+              finalizationContinuationAttempted: true,
+              finalizationContinuationSucceeded: true,
+              completionMode: "CONTINUATION_ASSISTED",
+              externalFailureModeCount: 0,
+              externalFailureModeLabels: [],
+              operationalFailureModeCount: 2,
+              operationalFailureModeLabels: ["provider-timeout", "finalization-continuation-needed"],
+              workflowFinishOutcome: "PASS",
+            },
+          },
+        ],
+      },
+      { policy: DECISION_POLICIES.externalPrimary },
+    )
+
+    expect(result.verdict).toBe("FAIL")
+    expect(result.reasons).toEqual(expect.arrayContaining([expect.stringContaining("continuation-assisted finalization")]))
+    expect(result.reasons).toEqual(expect.arrayContaining([expect.stringContaining("operational feasibility failure")]))
   })
 
   it("fails preflight before result creation when provider prerequisites are missing", () => {

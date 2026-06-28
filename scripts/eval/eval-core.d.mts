@@ -6,6 +6,18 @@ export type EvalRun = {
   workspacePurity?: WorkspacePurity
   toolchain?: GeneratedToolchain
   fixtureStackToolchain?: FixtureStackToolchainScore
+  outcomes?: {
+    compileBuildOutcome?: string
+    gradleTestOutcome?: string
+    runtimeSmokeOutcome?: string
+    initialWorkflowFinishOutcome?: string
+    workflowFinishOutcome?: string
+    finalizationContinuationOutcome?: string
+    providerToolCompletion?: ProviderToolCompletion
+    finalizationContinuation?: FinalizationContinuation
+    compileBuild?: Record<string, unknown>
+    gradleTest?: Record<string, unknown>
+  }
   metrics: {
     compileBuildPass: boolean | null
     gradleTestPass: boolean | null
@@ -29,9 +41,25 @@ export type EvalRun = {
     providerToolCompletionFailureReason?: string | null
     completionWithinBudgetPass?: boolean | null
     finishWithinBudgetPass?: boolean | null
+    finalizationContinuationNeeded?: boolean
+    finalizationContinuationAttempted?: boolean
+    finalizationContinuationSucceeded?: boolean
+    finalizationContinuationOutcome?: string
+    completionMode?: "SINGLE_TURN" | "CONTINUATION_ASSISTED" | "OPERATIONAL_FAILURE_WITHOUT_CONTINUATION" | "NOT_APPLICABLE"
+    singleTurnCompletionPass?: boolean
+    continuationAssistedCompletionPass?: boolean
+    initialWorkflowFinishOutcome?: string
     workflowFinishOutcome: string
     backendShapeWarnCount: number | null
   }
+}
+
+export type FinalizationContinuation = {
+  needed: boolean
+  attempted: boolean
+  succeeded: boolean
+  outcome: "NOT_APPLICABLE" | "NEEDED_NOT_ATTEMPTED" | "PASS" | "FAIL" | "INCOMPLETE"
+  command: string | null
 }
 
 export type ProviderToolCompletion = {
@@ -79,6 +107,7 @@ export type EvalResultRun = EvalRun & {
     telemetry: EvalTelemetry
   }
   providerToolCompletion?: ProviderToolCompletion
+  finalizationContinuation?: FinalizationContinuation
 }
 
 export type WorkspacePurity = {

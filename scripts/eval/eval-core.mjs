@@ -120,6 +120,8 @@ export function parseArgs(argv) {
     phInstallCommand: process.env.PERSONA_HARNESS_INSTALL_COMMAND ?? "",
     phInitCommand: process.env.PERSONA_HARNESS_INIT_COMMAND ?? "npx ph init --default backend",
     workflowFinishCommand: process.env.PERSONA_HARNESS_FINISH_COMMAND ?? "npx ph workflow finish implement",
+    finalizationContinuationCommand: process.env.PERSONA_HARNESS_FINALIZATION_CONTINUATION_COMMAND ?? "",
+    finalizationContinuationTimeoutMs: Number.parseInt(process.env.PERSONA_HARNESS_FINALIZATION_CONTINUATION_TIMEOUT_MS ?? "120000", 10),
     backendShapeCommand: process.env.PERSONA_HARNESS_BACKEND_SHAPE_COMMAND ?? "",
     runtimeSmokeCommand: process.env.EVAL_RUNTIME_SMOKE_COMMAND ?? "",
     installSource: process.env.PERSONA_HARNESS_INSTALL_COMMAND ?? "unknown",
@@ -156,6 +158,8 @@ export function parseArgs(argv) {
       options.installSource = options.phInstallCommand
     } else if (arg === "--ph-init-command") options.phInitCommand = next()
     else if (arg === "--workflow-finish-command") options.workflowFinishCommand = next()
+    else if (arg === "--finalization-continuation-command") options.finalizationContinuationCommand = next()
+    else if (arg === "--finalization-continuation-timeout-ms") options.finalizationContinuationTimeoutMs = Number.parseInt(next(), 10)
     else if (arg === "--backend-shape-command") options.backendShapeCommand = next()
     else if (arg === "--runtime-smoke-command") options.runtimeSmokeCommand = next()
     else if (arg === "--project-dir") options.projectDir = next()
@@ -172,6 +176,9 @@ export function parseArgs(argv) {
   }
   if (!Number.isInteger(options.timeoutMs) || options.timeoutMs < 1000) {
     throw new Error("--timeout-ms requires an integer >= 1000")
+  }
+  if (!Number.isInteger(options.finalizationContinuationTimeoutMs) || options.finalizationContinuationTimeoutMs < 1000) {
+    throw new Error("--finalization-continuation-timeout-ms requires an integer >= 1000")
   }
   if (!Number.isInteger(options.concurrency) || options.concurrency < 1) {
     throw new Error("--concurrency requires a positive integer")
@@ -909,6 +916,9 @@ export function countFailureModes(outcomes) {
   if (outcomes.runtimeSmokeOutcome === "NOT RUN" && providerCompleted) externalLabels.push("runtime smoke failure")
   if (outcomes.workflowFinishOutcome === "FAIL" && providerCompleted) externalLabels.push("workflow lifecycle failure")
   if (providerToolCompletion.completionFailureReason) operationalLabels.push(providerToolCompletion.completionFailureReason)
+  if (outcomes.finalizationContinuationNeeded === true) {
+    operationalLabels.push("finalization-continuation-needed")
+  }
   if (
     outcomes.workflowFinishOutcome !== "PASS" &&
     outcomes.workflowFinishOutcome !== "NOT APPLICABLE" &&
@@ -921,6 +931,53 @@ export function countFailureModes(outcomes) {
     external: { count: externalLabels.length, labels: externalLabels },
     operational: { count: operationalLabels.length, labels: operationalLabels },
   }
+}
+
+function finalizationContinuationState({
+  conditionId,
+  providerToolCompletion,
+  compileBuildOutcome,
+  gradleTestOutcome,
+  runtimeSmokeOutcome,
+  workflowFinishOutcome,
+  command,
+  continuationExecution = null,
+  verifiedWorkflowFinishOutcome = null,
+}) {
+  const needed =
+    conditionId === "ph-on" &&
+    providerToolCompletion.completionOutcome !== "COMPLETED" &&
+    workflowFinishOutcome !== "PASS" &&
+    compileBuildOutcome === "PASS" &&
+    gradleTestOutcome === "PASS" &&
+    (runtimeSmokeOutcome === "PASS" || runtimeSmokeOutcome === "NOT RUN")
+  const attempted = needed && continuationExecution !== null
+  const commandOutcome = continuationExecution ? parseCommandOutcome(continuationExecution) : "NOT RUN"
+  const outcome = !needed
+    ? "NOT_APPLICABLE"
+    : !command
+      ? "NEEDED_NOT_ATTEMPTED"
+      : !attempted
+        ? "NEEDED_NOT_ATTEMPTED"
+        : verifiedWorkflowFinishOutcome === "PASS"
+          ? "PASS"
+          : commandOutcome === "FAIL"
+            ? "FAIL"
+            : "INCOMPLETE"
+  return {
+    needed,
+    attempted,
+    succeeded: outcome === "PASS",
+    outcome,
+    command: command || null,
+  }
+}
+
+function completionMode(conditionId, providerToolCompletion, workflowFinishOutcome, finalizationContinuation) {
+  if (conditionId !== "ph-on") return "NOT_APPLICABLE"
+  if (providerToolCompletion.completionOutcome === "COMPLETED" && workflowFinishOutcome === "PASS") return "SINGLE_TURN"
+  if (finalizationContinuation.succeeded) return "CONTINUATION_ASSISTED"
+  return "OPERATIONAL_FAILURE_WITHOUT_CONTINUATION"
 }
 
 function providerToolCompletionFromLegacyFlag(providerFailed) {
@@ -1044,6 +1101,11 @@ export function aggregateRuns(runs) {
       workflowFinishPasses: 0,
       finishWithinBudgetPasses: 0,
       finishWithinBudgetKnown: 0,
+      finalizationContinuationNeeded: 0,
+      finalizationContinuationAttempted: 0,
+      finalizationContinuationSucceeded: 0,
+      singleTurnCompletions: 0,
+      continuationAssistedCompletions: 0,
     }
     bucket.runs += 1
     if (run.metrics.compileBuildPass === true) bucket.compileBuildPasses += 1
@@ -1074,6 +1136,11 @@ export function aggregateRuns(runs) {
       bucket.finishWithinBudgetKnown += 1
     }
     if (run.metrics.finishWithinBudgetPass === true) bucket.finishWithinBudgetPasses += 1
+    if (run.metrics.finalizationContinuationNeeded === true) bucket.finalizationContinuationNeeded += 1
+    if (run.metrics.finalizationContinuationAttempted === true) bucket.finalizationContinuationAttempted += 1
+    if (run.metrics.finalizationContinuationSucceeded === true) bucket.finalizationContinuationSucceeded += 1
+    if (run.metrics.completionMode === "SINGLE_TURN") bucket.singleTurnCompletions += 1
+    if (run.metrics.completionMode === "CONTINUATION_ASSISTED") bucket.continuationAssistedCompletions += 1
     byCondition[key] = bucket
   }
 
@@ -1088,6 +1155,17 @@ export function aggregateRuns(runs) {
     bucket.providerLimitRate = bucket.runs === 0 ? 0 : rate(bucket.providerToolLimited, bucket.runs)
     bucket.finishWithinBudgetRate =
       bucket.finishWithinBudgetKnown === 0 ? null : rate(bucket.finishWithinBudgetPasses, bucket.finishWithinBudgetKnown)
+    bucket.finalizationContinuationNeededRate = bucket.runs === 0 ? 0 : rate(bucket.finalizationContinuationNeeded, bucket.runs)
+    bucket.finalizationContinuationAttemptRate =
+      bucket.finalizationContinuationNeeded === 0
+        ? null
+        : rate(bucket.finalizationContinuationAttempted, bucket.finalizationContinuationNeeded)
+    bucket.finalizationContinuationSuccessRate =
+      bucket.finalizationContinuationAttempted === 0
+        ? null
+        : rate(bucket.finalizationContinuationSucceeded, bucket.finalizationContinuationAttempted)
+    bucket.singleTurnCompletionRate = bucket.runs === 0 ? 0 : rate(bucket.singleTurnCompletions, bucket.runs)
+    bucket.continuationAssistedCompletionRate = bucket.runs === 0 ? 0 : rate(bucket.continuationAssistedCompletions, bucket.runs)
   }
 
   const byConditionValues = Object.values(byCondition)
@@ -1276,6 +1354,9 @@ function decideExternalPrimaryResults(results, policy) {
       fixtureTierOneFailed = true
       reasons.push(`${fixtureId}: Tier 1 operational workflow finalization incomplete within budget`)
     }
+    if (ph.continuationAssistedCompletionRate > 0) {
+      reasons.push(`${fixtureId}: continuation-assisted finalization observed; not counted as single-turn completion`)
+    }
 
     for (const metric of ["compileBuildRate", "gradleTestRate", "runtimeSmokeRate"]) {
       if (ph[metric] === null || offs.some((off) => off[metric] === null)) {
@@ -1358,6 +1439,8 @@ export function summarizeComparable(runs, options = {}) {
     operationalFailureModeTotal: runs.reduce((sum, run) => sum + (run.metrics.operationalFailureModeCount ?? 0), 0),
     completionWithinBudgetRate: passRate(runs, "completionWithinBudgetPass", { requireComplete: false }),
     finishWithinBudgetRate: passRate(runs, "finishWithinBudgetPass", { requireComplete: false }),
+    continuationAssistedCompletionRate:
+      total === 0 ? 0 : runs.filter((run) => run.metrics.completionMode === "CONTINUATION_ASSISTED").length / total,
   }
 }
 
@@ -1596,6 +1679,64 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
         ? "FAIL"
         : "INCOMPLETE"
     : "NOT APPLICABLE"
+  const initialWorkflowFinishOutcome = workflowFinishOutcome
+  let finalWorkflowFinishOutcome = workflowFinishOutcome
+  let finalizationContinuationExecution = null
+  let workflowFinishAfterContinuationExecution = null
+  let finalizationContinuation = finalizationContinuationState({
+    conditionId: runPlan.conditionId,
+    providerToolCompletion,
+    compileBuildOutcome,
+    gradleTestOutcome,
+    runtimeSmokeOutcome,
+    workflowFinishOutcome: initialWorkflowFinishOutcome,
+    command: options.finalizationContinuationCommand,
+  })
+  if (finalizationContinuation.needed && options.finalizationContinuationCommand) {
+    const continuationCommand = formatCommand(options.finalizationContinuationCommand, {
+      model: options.model,
+      prompt,
+      promptFile,
+      workspaceDir,
+      message: "Persona Harness finalization only: fill missing verification/report notes and run workflow finish. Do not implement new app features.",
+      temperature: options.temperature,
+      topP: options.topP,
+      seed: options.seed,
+    })
+    finalizationContinuationExecution = await runShellAsync(
+      continuationCommand,
+      workspaceDir,
+      options.finalizationContinuationTimeoutMs,
+      { cleanupProcessGroup: true },
+    )
+    commandResults["finalization-continuation"] = finalizationContinuationExecution
+    writeCommandLog(join(logsDir, "finalization-continuation.log"), finalizationContinuationExecution)
+    rawOutputPaths["finalization-continuation"] = writeRawExecutionFiles(
+      logsDir,
+      "finalization-continuation",
+      finalizationContinuationExecution,
+    )
+    workflowFinishAfterContinuationExecution = await runShellAsync(options.workflowFinishCommand, workspaceDir, options.timeoutMs)
+    commandResults["workflow-finish-after-continuation"] = workflowFinishAfterContinuationExecution
+    writeCommandLog(join(logsDir, "workflow-finish-after-continuation.log"), workflowFinishAfterContinuationExecution)
+    rawOutputPaths["workflow-finish-after-continuation"] = writeRawExecutionFiles(
+      logsDir,
+      "workflow-finish-after-continuation",
+      workflowFinishAfterContinuationExecution,
+    )
+    finalWorkflowFinishOutcome = workflowFinishAfterContinuationExecution.status === 0 ? "PASS" : "INCOMPLETE"
+    finalizationContinuation = finalizationContinuationState({
+      conditionId: runPlan.conditionId,
+      providerToolCompletion,
+      compileBuildOutcome,
+      gradleTestOutcome,
+      runtimeSmokeOutcome,
+      workflowFinishOutcome: initialWorkflowFinishOutcome,
+      command: continuationCommand,
+      continuationExecution: finalizationContinuationExecution,
+      verifiedWorkflowFinishOutcome: finalWorkflowFinishOutcome,
+    })
+  }
   const backendShapeWarnCount = backendShapeExecution
     ? parseBackendShapeWarnCount(`${backendShapeExecution.stdout}\n${backendShapeExecution.stderr}`)
     : null
@@ -1604,9 +1745,13 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     gradleTestOutcome,
     runtimeSmokeOutcome,
     stackAlignmentRate: stackAlignment.rate,
-    workflowFinishOutcome,
+    workflowFinishOutcome: finalWorkflowFinishOutcome,
     providerToolCompletion,
+    finalizationContinuationNeeded: finalizationContinuation.needed,
+    finalizationContinuationAttempted: finalizationContinuation.attempted,
+    finalizationContinuationOutcome: finalizationContinuation.outcome,
   })
+  const mode = completionMode(runPlan.conditionId, providerToolCompletion, finalWorkflowFinishOutcome, finalizationContinuation)
 
   return {
     runId,
@@ -1622,6 +1767,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     baselineFile,
     workspacePurity,
     providerToolCompletion,
+    finalizationContinuation,
     toolchain,
     fixtureStackToolchain,
     gitCommit,
@@ -1657,8 +1803,11 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       compileBuildOutcome,
       gradleTestOutcome,
       runtimeSmokeOutcome,
-      workflowFinishOutcome,
+      initialWorkflowFinishOutcome,
+      workflowFinishOutcome: finalWorkflowFinishOutcome,
+      finalizationContinuationOutcome: finalizationContinuation.outcome,
       providerToolCompletion,
+      finalizationContinuation,
       compileBuild,
       gradleTest,
     },
@@ -1685,12 +1834,22 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       providerToolCompletionFailureReason: providerToolCompletion.completionFailureReason,
       completionWithinBudgetPass: providerToolCompletion.completionOutcome === "COMPLETED",
       finishWithinBudgetPass:
-        runPlan.conditionId === "ph-on" ? workflowFinishOutcome === "PASS" && providerToolCompletion.completionOutcome === "COMPLETED" : null,
+        runPlan.conditionId === "ph-on"
+          ? initialWorkflowFinishOutcome === "PASS" && providerToolCompletion.completionOutcome === "COMPLETED"
+          : null,
+      finalizationContinuationNeeded: finalizationContinuation.needed,
+      finalizationContinuationAttempted: finalizationContinuation.attempted,
+      finalizationContinuationSucceeded: finalizationContinuation.succeeded,
+      finalizationContinuationOutcome: finalizationContinuation.outcome,
+      completionMode: mode,
+      singleTurnCompletionPass: mode === "SINGLE_TURN",
+      continuationAssistedCompletionPass: mode === "CONTINUATION_ASSISTED",
       externalFailureModeCount: failures.external.count,
       externalFailureModeLabels: failures.external.labels,
       operationalFailureModeCount: failures.operational.count,
       operationalFailureModeLabels: failures.operational.labels,
-      workflowFinishOutcome,
+      initialWorkflowFinishOutcome,
+      workflowFinishOutcome: finalWorkflowFinishOutcome,
       backendShapeWarnCount,
     },
   }
@@ -1804,12 +1963,31 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       ? "NOT RUN"
       : capturedRuntimeSmokeOutcome
   const capturedWorkflowFinishOutcome = parseCapturedCommandOutcome(join(logsDir, "workflow-finish.log"))
-  const workflowFinishOutcome =
+  const initialWorkflowFinishOutcome =
     capturedWorkflowFinishOutcome === "NOT RUN"
       ? "NOT APPLICABLE"
       : capturedWorkflowFinishOutcome === "PASS" || providerToolCompletion.completionOutcome === "COMPLETED"
         ? capturedWorkflowFinishOutcome
         : "INCOMPLETE"
+  const capturedFinalizationContinuation = parseCapturedExecution(join(logsDir, "finalization-continuation.log"))
+  const capturedWorkflowFinishAfterContinuation = parseCapturedCommandOutcome(join(logsDir, "workflow-finish-after-continuation.log"))
+  const workflowFinishOutcome =
+    capturedWorkflowFinishAfterContinuation === "NOT RUN"
+      ? initialWorkflowFinishOutcome
+      : capturedWorkflowFinishAfterContinuation === "PASS" || providerToolCompletion.completionOutcome === "COMPLETED"
+        ? capturedWorkflowFinishAfterContinuation
+        : "INCOMPLETE"
+  const finalizationContinuation = finalizationContinuationState({
+    conditionId,
+    providerToolCompletion,
+    compileBuildOutcome: compileBuild.outcome,
+    gradleTestOutcome: gradleTest.outcome,
+    runtimeSmokeOutcome,
+    workflowFinishOutcome: initialWorkflowFinishOutcome,
+    command: capturedFinalizationContinuation ? "captured finalization-continuation" : options.finalizationContinuationCommand,
+    continuationExecution: capturedFinalizationContinuation,
+    verifiedWorkflowFinishOutcome: workflowFinishOutcome,
+  })
   const failures = countFailureModes({
     compileBuildOutcome: compileBuild.outcome,
     gradleTestOutcome: gradleTest.outcome,
@@ -1817,7 +1995,11 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     stackAlignmentRate: stackAlignment.rate,
     workflowFinishOutcome,
     providerToolCompletion,
+    finalizationContinuationNeeded: finalizationContinuation.needed,
+    finalizationContinuationAttempted: finalizationContinuation.attempted,
+    finalizationContinuationOutcome: finalizationContinuation.outcome,
   })
+  const mode = completionMode(conditionId, providerToolCompletion, workflowFinishOutcome, finalizationContinuation)
   return {
     runId: `${environment.platform}-${fixtureId}-${conditionId}-r${repetition}`.toLowerCase(),
     fixtureId,
@@ -1830,6 +2012,7 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
     fixtureHash: existsSync(join(workspaceDir, "README.md")) ? sha256File(join(workspaceDir, "README.md")) : "unknown",
     workspacePurity,
     providerToolCompletion,
+    finalizationContinuation,
     toolchain,
     fixtureStackToolchain,
     gitCommit,
@@ -1845,8 +2028,11 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       compileBuildOutcome: compileBuild.outcome,
       gradleTestOutcome: gradleTest.outcome,
       runtimeSmokeOutcome,
+      initialWorkflowFinishOutcome,
       workflowFinishOutcome,
+      finalizationContinuationOutcome: finalizationContinuation.outcome,
       providerToolCompletion,
+      finalizationContinuation,
       compileBuild,
       gradleTest,
     },
@@ -1873,11 +2059,21 @@ async function scoreCapturedRun(options, replayRunDir, workspaceDir, fixtureId, 
       providerToolCompletionFailureReason: providerToolCompletion.completionFailureReason,
       completionWithinBudgetPass: providerToolCompletion.completionOutcome === "COMPLETED",
       finishWithinBudgetPass:
-        conditionId === "ph-on" ? workflowFinishOutcome === "PASS" && providerToolCompletion.completionOutcome === "COMPLETED" : null,
+        conditionId === "ph-on"
+          ? initialWorkflowFinishOutcome === "PASS" && providerToolCompletion.completionOutcome === "COMPLETED"
+          : null,
+      finalizationContinuationNeeded: finalizationContinuation.needed,
+      finalizationContinuationAttempted: finalizationContinuation.attempted,
+      finalizationContinuationSucceeded: finalizationContinuation.succeeded,
+      finalizationContinuationOutcome: finalizationContinuation.outcome,
+      completionMode: mode,
+      singleTurnCompletionPass: mode === "SINGLE_TURN",
+      continuationAssistedCompletionPass: mode === "CONTINUATION_ASSISTED",
       externalFailureModeCount: failures.external.count,
       externalFailureModeLabels: failures.external.labels,
       operationalFailureModeCount: failures.operational.count,
       operationalFailureModeLabels: failures.operational.labels,
+      initialWorkflowFinishOutcome,
       workflowFinishOutcome,
       backendShapeWarnCount: null,
     },

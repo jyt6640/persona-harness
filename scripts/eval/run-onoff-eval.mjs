@@ -21,6 +21,8 @@ Options:
   --runtime-smoke-command <cmd>
   --backend-shape-command <cmd>
   --workflow-finish-command <cmd>
+  --finalization-continuation-command <cmd>
+  --finalization-continuation-timeout-ms <n>
   --timeout-ms <n>           Command timeout in milliseconds (default: 600000)
   --output-root <dir>        Output root (default: ${DEFAULT_OUTPUT_ROOT})
   --capture                  Store raw workspace/stdout/stderr artifacts under raw/
