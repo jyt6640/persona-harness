@@ -105,7 +105,7 @@ function runWorkflowStart(runnerKind: WorkflowRunnerKind, options: WorkflowOptio
   if (reasons.length > 0) {
     return failedRunnerOutput("start", runnerKind, reasons)
   }
-  return passedStartOutput(runnerKind)
+  return passedStartOutput(runnerKind, summary.projectDir)
 }
 
 function runWorkflowImplement(options: WorkflowOptions): CliRunResult {
@@ -117,7 +117,7 @@ function runWorkflowImplement(options: WorkflowOptions): CliRunResult {
   if (reasons.length > 0) {
     return failedRunnerOutput("implement", "implement", reasons)
   }
-  return passedImplementOutput()
+  return passedImplementOutput(summary.projectDir)
 }
 
 function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOptions): CliRunResult {

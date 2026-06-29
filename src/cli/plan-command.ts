@@ -19,6 +19,7 @@ import {
   updateWorkflowPlanStatus,
 } from "./plan-status.js"
 import { createImplementationPrompt, createPlanOnlyPrompt } from "./plan-prompts.js"
+import { workflowRequiredContextLines } from "./workflow-context-guidance.js"
 import {
   WorkflowReportStatusError,
   parseWorkflowReportKind,
@@ -154,7 +155,7 @@ function missingWorkflowArtifacts(options: PlanOptions): readonly string[] {
   return [IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH].filter((relativePath) => !existsSync(join(projectDir, relativePath)))
 }
 
-function implementationGateOutput(planPath: string, status: string): string {
+function implementationGateOutput(planPath: string, status: string, projectDir?: string): string {
   return [
     "Persona Harness implementation gate passed.",
     "",
@@ -162,10 +163,7 @@ function implementationGateOutput(planPath: string, status: string): string {
     `Status: ${status}`,
     "",
     "Required context:",
-    "- README.md",
-    "- .persona/project-profile.jsonc",
-    "- .persona/policies",
-    `- ${PLAN_PATH}`,
+    ...workflowRequiredContextLines(projectDir),
     "- codegraph MCP first for code structure analysis when available",
     "",
     "Required workflow reports:",
@@ -179,7 +177,7 @@ function implementationGateOutput(planPath: string, status: string): string {
     "- Before final answer, fill the review report after manual QA, run `npx ph plan --report-filled review`, then run `npx ph workflow finish implement`.",
     "",
     "Implementation prompt:",
-    createImplementationPrompt(),
+    createImplementationPrompt(projectDir),
   ].join("\n") + "\n"
 }
 
@@ -206,7 +204,7 @@ function runImplementationGate(options: PlanOptions): CliRunResult {
     )
   }
 
-  return { status: 0, stdout: implementationGateOutput(result.planPath, result.status), stderr: "" }
+  return { status: 0, stdout: implementationGateOutput(result.planPath, result.status, projectDirFor(options)), stderr: "" }
 }
 
 export function runPlanCommand(args: readonly string[], options: PlanOptions = {}, invocationName = "ph"): CliRunResult {

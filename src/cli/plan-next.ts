@@ -9,6 +9,7 @@ import { createImplementationPrompt } from "./plan-prompts.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
 import { readWorkflowClosurePayload, type ClosurePayload } from "./workflow-closure.js"
 import { workflowClosureRailLines } from "./workflow-closure-rail.js"
+import { workflowRequiredActionLine } from "./workflow-context-guidance.js"
 import { planUncheckedItems } from "./workflow-plan-unchecked.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets, TICKET_BY_TICKET_GUIDANCE, TIMEBOXED_SCOPE_GUIDANCE } from "./workflow-ticket-summary.js"
@@ -243,7 +244,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     ...(uncheckedItems.length > 0 ? uncheckedItems : ["- No unchecked plan checklist items found."]),
     "",
     "Required action:",
-    "- Read README.md, .persona/project-profile.jsonc, .persona/policies, and .persona/workflow/plan.md.",
+    workflowRequiredActionLine(snapshot.projectDir),
     "- Use the Read Coverage fields to avoid claiming unread ranges as complete.",
     "- Continue only the remaining implementation scope.",
     `- ${TICKET_BY_TICKET_GUIDANCE}`,
@@ -255,7 +256,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     "npx ph workflow implement",
     "",
     "Implementation prompt:",
-    createImplementationPrompt(),
+    createImplementationPrompt(snapshot.projectDir),
   ].join("\n") + "\n"
 }
 

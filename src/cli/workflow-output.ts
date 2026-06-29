@@ -1,4 +1,9 @@
 import type { CliRunResult } from "./bearshell.js"
+import {
+  workflowReadChunkLines,
+  workflowRequiredActionLine,
+  workflowRequiredContextLines,
+} from "./workflow-context-guidance.js"
 
 export type WorkflowGuardKind = "implement" | "final"
 export type WorkflowRunnerKind = "implement"
@@ -62,7 +67,7 @@ export function failedRunnerOutput(
   }
 }
 
-export function passedStartOutput(runnerKind: WorkflowRunnerKind): CliRunResult {
+export function passedStartOutput(runnerKind: WorkflowRunnerKind, projectDir?: string): CliRunResult {
   return {
     status: 0,
     stdout: [
@@ -75,7 +80,7 @@ export function passedStartOutput(runnerKind: WorkflowRunnerKind): CliRunResult 
       "",
       "Run this implementation rail now:",
       "1. `npx ph plan --implement`",
-      "2. Read `README.md`, `.persona/project-profile.jsonc`, `.persona/policies`, and `.persona/workflow/plan.md`.",
+      `2. ${workflowRequiredActionLine(projectDir).replace(/^- /, "")}`,
       "3. Do not read `.persona/rules` directly; use the accepted plan and Persona Harness injection summary.",
       "4. Use codegraph MCP before raw file reads for code structure analysis when available.",
       "5. Implement from the accepted plan.",
@@ -95,7 +100,7 @@ export function passedStartOutput(runnerKind: WorkflowRunnerKind): CliRunResult 
   }
 }
 
-export function passedImplementOutput(): CliRunResult {
+export function passedImplementOutput(projectDir?: string): CliRunResult {
   return {
     status: 0,
     stdout: [
@@ -118,16 +123,7 @@ export function passedImplementOutput(): CliRunResult {
       "- If the user pasted long requirements directly in the TUI prompt and no requirements file exists, save that prompt first: `npx ph workflow capture --stdin`, then run `npx ph workflow split` and `npx ph workflow next`.",
       "- Work from the current workflow ticket when `.persona/workflow/backlog.md` exists.",
       "",
-      "Read README completely through OS-safe bearshell chunks:",
-      "1. macOS/Linux line count: `npx ph bearshell --shell 'wc -l README.md'`",
-      "2. macOS/Linux first chunk: `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`",
-      "3. macOS/Linux next chunk: `npx ph bearshell --shell 'sed -n \"221,440p\" README.md'`.",
-      "4. Windows PowerShell first chunk: `npx ph bearshell powershell -NoProfile -Command \"Get-Content README.md -TotalCount 220\"`",
-      "5. Windows PowerShell next chunk: `npx ph bearshell powershell -NoProfile -Command \"Get-Content README.md | Select-Object -Skip 220 -First 220\"`.",
-      "6. Continue 220-line ranges until README.md and plan are fully covered.",
-      "7. Windows search: `npx ph bearshell powershell -NoProfile -Command \"Select-String -Path README.md -Pattern TODO\"`.",
-      "8. Windows search scope: do not recurse project root or .persona root; search README.md or owned source roots only to avoid node_modules/package vendor matches.",
-      "9. Record README ranges read in `.persona/workflow/implementation-report.md`.",
+      ...workflowReadChunkLines(projectDir),
       "",
       "Read project profile before implementation:",
       "1. macOS/Linux: `npx ph bearshell --shell 'sed -n \"1,220p\" .persona/project-profile.jsonc'`",
@@ -140,10 +136,7 @@ export function passedImplementOutput(): CliRunResult {
       "- If no source files exist, use the Java/Spring greenfield 0% -> 80% baseline.",
       "",
       "Required context:",
-      "- README.md",
-      "- .persona/project-profile.jsonc",
-      "- .persona/policies",
-      "- .persona/workflow/plan.md",
+      ...workflowRequiredContextLines(projectDir),
       "",
       "Do not read `.persona/rules` directly; use the accepted plan and Persona Harness injection summary.",
       "Do not read node_modules, .opencode, package vendor files, or .persona/evidence as implementation context.",

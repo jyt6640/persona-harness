@@ -1,6 +1,12 @@
+import {
+  workflowImplementationContextSentence,
+  workflowReadChunkLines,
+  workflowRequiredContextLines,
+} from "./workflow-context-guidance.js"
+
 export function createPlanOnlyPrompt(): string {
   return [
-    "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 구현하지 말고 architecture/technology plan만 완성해줘.",
+    "README.md가 있으면 함께 읽고, .persona/project-profile.jsonc, .persona/policies/overlay.jsonc, .persona/workflow/plan.md를 읽고 구현하지 말고 architecture/technology plan만 완성해줘.",
     "",
     "node_modules, .opencode, .persona/rules, .persona/evidence 경로는 읽지 마. package/vendor/setup 문서를 계획 컨텍스트로 읽지 마.",
     ".persona/rules를 직접 열어 규칙 원문을 읽지 마. 필요한 규칙은 Persona Harness injection summary와 accepted plan에 이미 요약된다.",
@@ -25,22 +31,18 @@ export function createPlanOnlyPrompt(): string {
   ].join("\n")
 }
 
-export function createImplementationPrompt(): string {
+export function createImplementationPrompt(projectDir?: string): string {
   return [
     "사용자가 `README.md 보고 구현해줘`, `플랜 보고 구현해줘`, `그냥 구현해줘`처럼 짧게 말해도 이 구현 workflow를 생략하지 마.",
     "",
-    "구현을 시작하기 전에 `npx ph workflow implement`를 먼저 실행하고, 그 단일 레일에 따라 README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽은 뒤 accepted plan 기준으로 구현해줘.",
+    workflowImplementationContextSentence(projectDir),
     "",
     "node_modules, .opencode, .persona/rules, .persona/evidence 경로는 읽지 마. package/vendor/setup 문서를 구현 컨텍스트로 읽지 마.",
     ".persona/rules를 직접 열어 규칙 원문을 읽지 마. 필요한 규칙은 Persona Harness injection summary와 accepted plan에 이미 요약된다.",
     "",
     "코드 구조 분석이나 변경 영향 파악이 필요하면 raw file read보다 codegraph MCP를 먼저 사용해줘. codegraph를 사용할 수 없을 때만 필요한 파일 범위를 직접 읽고 그 이유를 implementation-report에 남겨줘.",
     "",
-    "긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고, Read 출력이 잘리면 OS별로 안전한 `npx ph bearshell` 범위를 사용해 끝까지 읽어줘.",
-    "macOS/Linux: `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`, `npx ph bearshell --shell 'sed -n \"221,440p\" README.md'`.",
-    "Windows PowerShell: `npx ph bearshell powershell -NoProfile -Command \"Get-Content README.md -TotalCount 220\"`, then `npx ph bearshell powershell -NoProfile -Command \"Get-Content README.md | Select-Object -Skip 220 -First 220\"`.",
-    "Windows search: `npx ph bearshell powershell -NoProfile -Command \"Select-String -Path README.md -Pattern TODO\"`.",
-    "Windows search scope: do not recurse project root or .persona root; search README.md or owned source roots only to avoid node_modules/package vendor matches.",
+    ...workflowReadChunkLines(projectDir),
     "구현 보고서의 Read Coverage에는 체크만 하지 말고 `README read method`, `README ranges read`, `Project profile read method`, `Project profile ranges read`, `Plan read method`, `Plan ranges read`, `Unread ranges`를 실제 실행 증거 기준으로 적어줘.",
     "",
     "구현 중에는 Java/Spring Gradle backend Clean Code 범위를 유지하고, plan에 없는 frontend/infra/desktop 범위로 확장하지 마.",
@@ -56,5 +58,8 @@ export function createImplementationPrompt(): string {
     "최종 답변 전에 리뷰와 manual QA 결과를 .persona/workflow/review-report.md에 채우고 `npx ph plan --report-filled review`를 실행한 뒤 `npx ph workflow finish implement`를 실행해줘. 이 단계가 남아 있거나 finish가 실패하면 완료했다고 말하지 마.",
     "",
     "명령 실행이 필요하면 `npx ph bearshell`을 우선 사용하고, Persona Harness CLI는 글로벌 `ph`가 아니라 `npx ph`로 실행해줘.",
+    "",
+    "Required context:",
+    ...workflowRequiredContextLines(projectDir),
   ].join("\n")
 }

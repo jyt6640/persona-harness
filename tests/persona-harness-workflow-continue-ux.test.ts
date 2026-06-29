@@ -45,6 +45,25 @@ describe("ph workflow continue UX", () => {
     expect(result.stdout).toContain("npx ph workflow implement")
   })
 
+  it("does not block README-absent implementation entry on README or policy directory reads", () => {
+    const projectDir = createProfiledProject()
+
+    const implement = runPersonaCli(["workflow", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const resume = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(implement.status).toBe(0)
+    expect(resume.status).toBe(0)
+    for (const output of [implement.stdout, resume.stdout]) {
+      expect(output).toContain("README.md is missing")
+      expect(output).toContain(".persona/project-profile.jsonc")
+      expect(output).toContain(".persona/policies/overlay.jsonc")
+      expect(output).toContain(".persona/workflow/plan.md")
+      expect(output).toContain("current workflow ticket")
+      expect(output).not.toContain("Read README.md, .persona/project-profile.jsonc, .persona/policies, and .persona/workflow/plan.md.")
+      expect(output).not.toContain("- .persona/policies\n")
+    }
+  })
+
   it("carries raw final verification blockers into the continuation prompt", () => {
     const projectDir = createProfiledProject()
     writeFileSync(join(projectDir, "README.md"), "# Task API\n\n- Build a backend API.\n")

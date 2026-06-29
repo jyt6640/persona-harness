@@ -42,9 +42,9 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stderr).toBe("")
     expect(implement.stdout).toContain("Persona Harness implementation gate passed.")
     expect(implement.stdout).toContain("Status: accepted")
-    expect(implement.stdout).toContain("README.md")
+    expect(implement.stdout).toContain("README.md: missing; use workflow requirements/task cards instead")
     expect(implement.stdout).toContain(".persona/project-profile.jsonc")
-    expect(implement.stdout).toContain(".persona/policies")
+    expect(implement.stdout).toContain(".persona/policies/overlay.jsonc")
     expect(implement.stdout).toContain(".persona/workflow/plan.md")
     expect(implement.stdout).toContain("node_modules, .opencode, .persona/rules, .persona/evidence")
     expect(implement.stdout).toContain(".persona/rules를 직접 열어 규칙 원문을 읽지 마")
@@ -59,15 +59,10 @@ describe("ph plan prompt and usage output", () => {
     expect(implement.stdout).toContain("README.md 보고 구현해줘")
     expect(implement.stdout).toContain("npx ph workflow finish implement")
     expect(implement.stdout).toContain("finish가 실패하면 완료했다고 말하지 마")
-    expect(implement.stdout).toContain("긴 README.md나 plan은 한 번에 다 읽었다고 가정하지 말고")
-    expect(implement.stdout).toContain("macOS/Linux: `npx ph bearshell --shell 'sed -n \"1,220p\" README.md'`")
-    expect(implement.stdout).toContain(
-      'Windows PowerShell: `npx ph bearshell powershell -NoProfile -Command "Get-Content README.md -TotalCount 220"`',
-    )
-    expect(implement.stdout).toContain(
-      'npx ph bearshell powershell -NoProfile -Command "Get-Content README.md | Select-Object -Skip 220 -First 220"',
-    )
-    expect(implement.stdout).toContain('Select-String -Path README.md -Pattern TODO')
+    expect(implement.stdout).toContain("README.md is missing; do not block implementation entry on README.")
+    expect(implement.stdout).toContain("current workflow ticket/task card")
+    expect(implement.stdout).not.toContain("Get-Content README.md -TotalCount 220")
+    expect(implement.stdout).not.toContain("Select-String -Path README.md -Pattern TODO")
     expect(implement.stdout).toContain("do not recurse project root or .persona root")
     expect(implement.stdout).not.toContain("Get-ChildItem -Path README.md,src,.persona -Recurse")
     expect(implement.stdout).not.toContain("Get-ChildItem -Recurse -File | Select-String -Pattern TODO")
