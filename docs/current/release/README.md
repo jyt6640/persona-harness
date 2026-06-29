@@ -54,6 +54,12 @@ Publish this RC with `next`, not `latest`. Future `latest` moves still need an
 explicit release/dist-tag task because default install can imply a stronger
 stability or value-proof claim than this evidence supports.
 
+RC soak policy: `0.4.0-rc.1` is published under `next` and should soak there.
+The local `@next` implementation-to-finish proxy trial passed, but Windows SSH
+remote validation was blocked by SCP/SSH instability before product behavior.
+Stable `0.4.0` requires real external user feedback plus a stabilized Windows
+validation path or alternate reliable Windows route.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

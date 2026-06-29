@@ -47,6 +47,21 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     `981b7b75d035ad16ee5e2b7f8bec5482d19f2873`;
   - no republish, latest move, eval/model/OpenCode run, PH superiority proof,
     generated app certification, or general reliability guarantee is claimed.
+- `@next` real-user smoke:
+  - registry `next` installed `persona-harness@0.4.0-rc.1`;
+  - Stage 1 no-token closure rail smoke passed in a stable local workspace;
+  - Stage 2 local implementation-to-finish proxy trial passed with OpenCode
+    stdin plus `openai/gpt-5.4-mini-fast`, Java/Spring/Gradle Todo API,
+    Gradle test/build PASS, filled reports, `req-1` archived, terminal
+    `workflow closure next`, and final `workflow finish implement` exit 0;
+  - `closure run` remains deferred because the local trial finished with the
+    planner / continue / finish surfaces only;
+  - Windows SSH remote validation was BLOCKED by SCP/SSH hang before product
+    behavior, so it is not a Windows product PASS or FAIL;
+  - rc.1 should soak under `@next`; stable `0.4.0` waits for real external user
+    feedback and a stabilized Windows validation route;
+  - no eval/A-B, PH superiority proof, generated app quality certification,
+    closure guarantee, general reliability guarantee, or latest move is claimed.
 
 ## [0.3.9-alpha.8] - 2026-06-29
 
