@@ -46,9 +46,10 @@ pending CLI wiring review for closure planner integration into `workflow
 continue`, `plan-next`, finish guidance, and post-build closure guidance.
 
 That prep is now stale because `a8eb03d fix(cli): wire closure planner into
-workflow continue` landed after it. The release lane must wait for QA
-verification and a closure trial rerun before choosing between refreshed
-`0.4.0-rc.1` prep and a narrow `0.3.9-alpha.8`.
+workflow continue` and `e8bb779 fix(cli): converge workflow closure rail` landed
+after it. The release lane must wait for QA verification and a closure trial
+rerun before release prep. Current direction is a narrow `0.3.9-alpha.8`
+vehicle after current-tarball trial PASS, not immediate RC publish.
 
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
