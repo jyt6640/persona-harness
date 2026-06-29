@@ -58,6 +58,20 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     planner / continue / finish surfaces only;
   - Windows SSH remote validation was BLOCKED by SCP/SSH hang before product
     behavior, so it is not a Windows product PASS or FAIL;
+  - Windows local operator direct PowerShell route passed for rc1 `@next`
+    no-model closure/product surface:
+    - source note:
+      `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc1-windows-validation-path-20260629-173647/user-local-operator-pass-20260629/RESULT.md`;
+    - workspace `D:\persona-harness-smoke-rc1-next-local-20260629-174728`;
+    - registry `persona-harness@next` installed `0.4.0-rc.1`;
+    - init/default backend, doctor, bootstrap, and Runtime readiness passed;
+    - Korean `TODO 웹 서비스 만들래` was preserved across
+      requirements/backlog/task-card/continue/closure JSON;
+    - finish blocked as expected in no-model state with `FINISH_EXIT=1` and
+      blockers `verification-unknown`, `implementation-report-missing`,
+      `review-report-missing`, `evidence-missing`, `pending-ticket`;
+    - reports stayed `Status: template`, ticket stayed pending, and no
+      auto-fill, auto-archive, or gate weakening occurred;
   - proxy feedback from existing artifacts marked the workflow rail helpful:
     `closure status` -> `closure next` -> `workflow finish` helped return to
     terminal/complete state without guessing, with decisive cues
@@ -69,7 +83,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     `verification passed` plus report-only WARN/backend-shape split can confuse
     users;
   - rc.1 should soak under `@next`; stable `0.4.0` waits for real external user
-    feedback and a stabilized Windows validation route;
+    feedback, any desired Windows implementation-to-finish/model route, and
+    avoidance of SSH/SCP remote validation instability;
   - no eval/A-B, PH superiority proof, generated app quality certification,
     closure guarantee, general reliability guarantee, or latest move is claimed.
 

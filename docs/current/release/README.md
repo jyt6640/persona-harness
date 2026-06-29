@@ -57,8 +57,11 @@ stability or value-proof claim than this evidence supports.
 RC soak policy: `0.4.0-rc.1` is published under `next` and should soak there.
 The local `@next` implementation-to-finish proxy trial passed, but Windows SSH
 remote validation was blocked by SCP/SSH instability before product behavior.
-Stable `0.4.0` requires real external user feedback plus a stabilized Windows
-validation path or alternate reliable Windows route. Proxy feedback from the
+Windows local operator direct PowerShell no-model closure surface validation now
+passes for rc1 `@next`, including Korean preservation and strict blocked finish
+state. Stable `0.4.0` still requires real external user feedback/soak and any
+desired Windows implementation-to-finish/model route; SSH/SCP remote validation
+remains unsuitable because of instability/mojibake risk. Proxy feedback from the
 existing trial marked the workflow rail helpful, did not request `closure run`,
 and left report consistency/noise as a soak watch item.
 
