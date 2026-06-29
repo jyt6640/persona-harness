@@ -1,0 +1,172 @@
+import { spawnSync } from "node:child_process"
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
+import { join } from "node:path"
+
+import { signalExitCode } from "./bearshell-exit-code.js"
+import { readProfileIntent } from "./stack-alignment-profile.js"
+import type { ClosureVerificationSummary } from "./workflow-closure-verification.js"
+
+const DIRECT_VERIFICATION_TIMEOUT_MS = 120_000
+const JUNIT_RESULT_DIRS = ["build/test-results/test", "target/surefire-reports"] as const
+
+type VerificationCommand = {
+  readonly args: readonly string[]
+  readonly command: string
+  readonly display: string
+}
+
+type JunitTotals = {
+  readonly errors: number
+  readonly failures: number
+  readonly tests: number
+}
+
+export function runDirectClosureVerification(projectDir: string): ClosureVerificationSummary {
+  const verificationCommand = resolveVerificationCommand(projectDir)
+  if (verificationCommand === undefined) {
+    return {
+      reason: "PH direct verification is enabled, but no supported Java/Spring/Gradle verification command was found",
+      verification: "unknown",
+    }
+  }
+
+  const result = spawnSync(verificationCommand.command, [...verificationCommand.args], {
+    cwd: projectDir,
+    encoding: "utf8",
+    killSignal: "SIGTERM",
+    timeout: DIRECT_VERIFICATION_TIMEOUT_MS,
+    windowsHide: true,
+  })
+  const status = result.status ?? signalExitCode(result.signal)
+  const output = [toOutputText(result.stdout), toOutputText(result.stderr)].filter((text) => text.length > 0).join("\n")
+  const evidenceRef = `PH direct verification: ${verificationCommand.display}`
+  if (status !== 0) {
+    return {
+      evidenceRef,
+      reason: `PH direct verification failed (${verificationCommand.display}, exit ${status})${outputReason(output)}`,
+      verification: "failed",
+    }
+  }
+
+  const junit = junitVerification(projectDir)
+  if (junit.verification === "failed") {
+    return { evidenceRef: junit.evidenceRef, reason: `PH direct verification failed: ${junit.reason}`, verification: "failed" }
+  }
+  return {
+    evidenceRef: junit.evidenceRef ?? evidenceRef,
+    reason: junit.verification === "passed"
+      ? `PH direct verification passed (${verificationCommand.display}); ${junit.reason}`
+      : `PH direct verification passed (${verificationCommand.display}, exit 0)`,
+    verification: "passed",
+  }
+}
+
+function resolveVerificationCommand(projectDir: string): VerificationCommand | undefined {
+  if (!looksLikeGradleProject(projectDir)) {
+    return undefined
+  }
+  if (process.platform === "win32" && existsSync(join(projectDir, "gradlew.bat"))) {
+    return { args: ["/d", "/s", "/c", "gradlew.bat", "test"], command: "cmd.exe", display: "gradlew.bat test" }
+  }
+  if (existsSync(join(projectDir, "gradlew"))) {
+    return { args: ["test"], command: "./gradlew", display: "./gradlew test" }
+  }
+  return { args: ["test"], command: "gradle", display: "gradle test" }
+}
+
+function looksLikeGradleProject(projectDir: string): boolean {
+  const profile = readProfileIntent(projectDir)
+  return profile?.buildTool.includes("gradle") === true
+    || existsSync(join(projectDir, "build.gradle"))
+    || existsSync(join(projectDir, "build.gradle.kts"))
+    || existsSync(join(projectDir, "settings.gradle"))
+    || existsSync(join(projectDir, "settings.gradle.kts"))
+    || existsSync(join(projectDir, "gradlew"))
+    || existsSync(join(projectDir, "gradlew.bat"))
+}
+
+function junitVerification(projectDir: string): ClosureVerificationSummary {
+  const files = JUNIT_RESULT_DIRS.flatMap((dir) => junitFiles(join(projectDir, dir), dir))
+  if (files.length === 0) {
+    return { reason: "no JUnit XML verification evidence observed", verification: "unknown" }
+  }
+  const totals = files
+    .map((file) => parseJUnitXml(readFileSync(join(projectDir, file), "utf8")))
+    .reduce(
+      (total, next) => ({
+        errors: total.errors + next.errors,
+        failures: total.failures + next.failures,
+        tests: total.tests + next.tests,
+      }),
+      { errors: 0, failures: 0, tests: 0 },
+    )
+  const evidenceRef = files[0]
+  if (totals.errors > 0 || totals.failures > 0) {
+    return { evidenceRef, reason: `JUnit XML verification failures observed (${totals.failures} failures, ${totals.errors} errors)`, verification: "failed" }
+  }
+  if (totals.tests > 0) {
+    return { evidenceRef, reason: `JUnit XML verification success evidence observed (${totals.tests} tests)`, verification: "passed" }
+  }
+  return { evidenceRef, reason: "JUnit XML verification evidence is present but contains no tests", verification: "unknown" }
+}
+
+function junitFiles(dirPath: string, refPath: string): readonly string[] {
+  if (!existsSync(dirPath)) {
+    return []
+  }
+  return readdirSync(dirPath)
+    .sort()
+    .flatMap((entry) => {
+      const entryPath = join(dirPath, entry)
+      const entryRef = `${refPath}/${entry}`
+      const stat = statSync(entryPath)
+      if (stat.isDirectory()) {
+        return junitFiles(entryPath, entryRef)
+      }
+      return stat.isFile() && entry.endsWith(".xml") ? [entryRef] : []
+    })
+}
+
+function parseJUnitXml(xmlText: string): JunitTotals {
+  const suites = [...xmlText.matchAll(/<testsuite\b([^>]*)>/g)].map((match) => parseJUnitAttributes(match[1] ?? ""))
+  if (suites.length > 0) {
+    return suites.reduce(
+      (total, next) => ({
+        errors: total.errors + next.errors,
+        failures: total.failures + next.failures,
+        tests: total.tests + next.tests,
+      }),
+      { errors: 0, failures: 0, tests: 0 },
+    )
+  }
+  return {
+    errors: [...xmlText.matchAll(/<error\b/g)].length,
+    failures: [...xmlText.matchAll(/<failure\b/g)].length,
+    tests: [...xmlText.matchAll(/<testcase\b/g)].length,
+  }
+}
+
+function parseJUnitAttributes(attributeText: string): JunitTotals {
+  return {
+    errors: parseJUnitInteger(attributeText, "errors"),
+    failures: parseJUnitInteger(attributeText, "failures"),
+    tests: parseJUnitInteger(attributeText, "tests"),
+  }
+}
+
+function parseJUnitInteger(attributeText: string, name: string): number {
+  const match = attributeText.match(new RegExp(`\\b${name}="(\\d+)"`))
+  return match?.[1] === undefined ? 0 : Number.parseInt(match[1], 10)
+}
+
+function toOutputText(value: string | Buffer | null): string {
+  if (value === null) {
+    return ""
+  }
+  return Buffer.isBuffer(value) ? value.toString("utf8") : value
+}
+
+function outputReason(output: string): string {
+  const firstLine = output.split(/\r?\n/u).find((line) => line.trim().length > 0)
+  return firstLine === undefined ? "" : `: ${firstLine.trim()}`
+}

@@ -47,6 +47,16 @@ describe("Phase 0 harness config", () => {
     const config = loadHarnessConfig(projectDir)
 
     expect(config.enabledDomains).toEqual(["backend", "programming", "workflow"])
+    expect(config.enforce.executeVerification).toBe(false)
+  })
+
+  it("uses executeVerification enforcement opt-in from harness.jsonc", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { enforce: { executeVerification: true } })
+
+    const config = loadHarnessConfig(projectDir)
+
+    expect(config.enforce.executeVerification).toBe(true)
   })
 
   it("keeps malformed config diagnostics-only while falling back to defaults", () => {

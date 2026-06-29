@@ -28,12 +28,25 @@ function nextStep(payload: ClosurePayload): ClosureStep | null {
 
 function stepActionLines(step: ClosureStep, currentTicket: ClosureTicket | null): readonly string[] {
   if (step.id === "verify-app") {
+    if (isDirectVerificationReason(step.reason)) {
+      return [
+        "Action: ensure a supported verification command exists for this project, such as `./gradlew test` or Windows `gradlew.bat test`.",
+        "After fix: npx ph workflow closure next --json",
+      ]
+    }
     return [
       "Action: run test/build/runtime verification and record success/failure evidence in the workflow reports.",
       "After evidence: npx ph workflow check",
     ]
   }
   if (step.id === "fix-verification") {
+    if (isDirectVerificationReason(step.reason)) {
+      return [
+        `Verification failed: ${step.reason ?? "verification failed"}`,
+        "Next action: fix the compile/test failure, then rerun `npx ph workflow closure next --json` or `npx ph workflow finish implement`; PH will execute verification directly.",
+        "Do not claim overall completion while verification failed.",
+      ]
+    }
     return [
       `Verification failed: ${step.reason ?? "verification failed"}`,
       "Next action: fix the compile/test failure, rerun `./gradlew test` or Windows `gradlew.bat test`, then run `npx ph workflow check`.",
@@ -159,4 +172,8 @@ function blockerRailLines(blocker: ClosureBlocker): readonly string[] {
 
 function statusFromReason(reason: string): string {
   return reason.split(/\s+/u).at(-1) ?? "unknown"
+}
+
+function isDirectVerificationReason(reason: string | undefined): boolean {
+  return reason?.includes("PH direct verification") === true
 }

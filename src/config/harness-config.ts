@@ -8,10 +8,15 @@ export type HarnessConfig = {
   readonly enabled: boolean
   readonly rulesDir: string
   readonly evidenceDir: string
+  readonly enforce: HarnessEnforceConfig
   readonly maxRulesPerInjection: number
   readonly evidenceMode: "metadata_only"
   readonly enabledDomains: readonly string[]
   readonly scenario: Phase0Scenario
+}
+
+export type HarnessEnforceConfig = {
+  readonly executeVerification: boolean
 }
 
 export type HarnessConfigDiagnostic = {
@@ -29,6 +34,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
   enabled: true,
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",
+  enforce: { executeVerification: false },
   maxRulesPerInjection: 12,
   evidenceMode: "metadata_only",
   enabledDomains: ["backend", "programming", "workflow"],
@@ -61,6 +67,15 @@ function readScenario(value: unknown, fallback: Phase0Scenario): Phase0Scenario 
 
 function readEvidenceMode(value: unknown): "metadata_only" {
   return value === "metadata_only" ? "metadata_only" : DEFAULT_CONFIG.evidenceMode
+}
+
+function readEnforceConfig(value: unknown): HarnessEnforceConfig {
+  if (!isRecord(value)) {
+    return DEFAULT_CONFIG.enforce
+  }
+  return {
+    executeVerification: readBoolean(value.executeVerification, DEFAULT_CONFIG.enforce.executeVerification),
+  }
 }
 
 export function resolveConfiguredPath(projectDir: string, configuredPath: string): string {
@@ -114,6 +129,7 @@ export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadRe
       enabled: readBoolean(parsed.enabled, DEFAULT_CONFIG.enabled),
       rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
       evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
+      enforce: readEnforceConfig(parsed.enforce),
       maxRulesPerInjection: readPositiveInteger(parsed.maxRulesPerInjection, DEFAULT_CONFIG.maxRulesPerInjection),
       evidenceMode: readEvidenceMode(parsed.evidenceMode),
       enabledDomains: readStringArray(parsed.enabledDomains, DEFAULT_CONFIG.enabledDomains),

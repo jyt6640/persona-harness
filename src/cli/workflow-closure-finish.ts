@@ -9,6 +9,17 @@ export function workflowClosureFinishReasons(payload: ClosurePayload): readonly 
 
 function blockerFinishReason(blocker: ClosureBlocker): string {
   if (blocker.id === "verification-failed") {
+    if (isDirectVerificationReason(blocker.reason)) {
+      return [
+        `Closure blocker: ${blocker.id}`,
+        `Verification failed: ${blocker.reason}`,
+        "This is PH-run verification evidence, not generated app product-quality certification.",
+        "Do not claim overall completion while verification failed.",
+        "Required next actions:",
+        "- Fix the compile/test failure reported by PH direct verification.",
+        "- Re-run `npx ph workflow finish implement` or `npx ph workflow closure next --json` after the fix.",
+      ].join("\n")
+    }
     return [
       `Closure blocker: ${blocker.id}`,
       `Verification failed: ${blocker.reason}`,
@@ -21,6 +32,15 @@ function blockerFinishReason(blocker: ClosureBlocker): string {
     ].join("\n")
   }
   if (blocker.id === "verification-unknown") {
+    if (isDirectVerificationReason(blocker.reason)) {
+      return [
+        `Closure blocker: ${blocker.id}`,
+        `Verification evidence incomplete: ${blocker.reason}`,
+        "Required next actions:",
+        "- Ensure this Java/Spring/Gradle project has a supported verification command such as `./gradlew test` or Windows `gradlew.bat test`.",
+        "- Re-run `npx ph workflow finish implement` or `npx ph workflow closure next --json`; PH will execute the verification command directly.",
+      ].join("\n")
+    }
     return [
       `Closure blocker: ${blocker.id}`,
       `Verification evidence incomplete: ${blocker.reason}`,
@@ -165,4 +185,8 @@ function ticketIdFromReason(reason: string): string {
 
 function statusFromReason(reason: string): string {
   return reason.split(/\s+/u).at(-1) ?? "unknown"
+}
+
+function isDirectVerificationReason(reason: string): boolean {
+  return reason.includes("PH direct verification")
 }

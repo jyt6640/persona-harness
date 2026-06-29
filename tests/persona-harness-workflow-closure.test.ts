@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -34,6 +34,17 @@ function writeStructuredVerificationEvidence(projectDir: string, status: number,
     join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
     `${JSON.stringify({ command: "npx ph bearshell ./gradlew test", status, toolOutput: text, tool: "bearshell" }, null, 2)}\n`,
   )
+}
+
+function writeDirectVerificationConfig(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  writeFileSync(join(projectDir, ".persona", "harness.jsonc"), `${JSON.stringify({ enforce: { executeVerification: true } }, null, 2)}\n`)
+}
+
+function writeGradleWrapper(projectDir: string, script: string): void {
+  const wrapperPath = join(projectDir, "gradlew")
+  writeFileSync(wrapperPath, script)
+  chmodSync(wrapperPath, 0o755)
 }
 
 function writeJUnitResult(projectDir: string, xmlText: string): void {
@@ -215,6 +226,55 @@ describe("ph workflow closure read-only planner", () => {
 
     expect(output.state.verification).toBe("passed")
     expect(output.steps[0]).toMatchObject({ id: "fill-implementation-report" })
+  })
+
+  it("uses PH-run direct verification over agent-written success evidence when enforcement is enabled", () => {
+    const projectDir = createWorkflowProject()
+    writeDirectVerificationConfig(projectDir)
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew test\nBUILD SUCCESSFUL")
+    writeGradleWrapper(projectDir, "#!/bin/sh\necho 'BUILD FAILED' >&2\nexit 7\n")
+
+    const output = closureJson(projectDir)
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(output.state.verification).toBe("failed")
+    expect(output.steps[0]).toMatchObject({
+      blockerId: "verification-failed",
+      id: "fix-verification",
+      status: "blocked",
+    })
+    expect(output.steps[0].reason).toContain("PH direct verification failed")
+    expect(finish.status).toBe(1)
+    expect(`${finish.stdout}\n${finish.stderr}`).toContain("PH direct verification failed")
+  })
+
+  it("passes verification from PH-run direct execution when enforcement is enabled", () => {
+    const projectDir = createWorkflowProject()
+    writeDirectVerificationConfig(projectDir)
+    writeGradleWrapper(projectDir, "#!/bin/sh\necho 'BUILD SUCCESSFUL'\nexit 0\n")
+
+    const output = closureJson(projectDir)
+
+    expect(output.state.verification).toBe("passed")
+    expect(output.steps[0]).toMatchObject({ id: "fill-implementation-report" })
+  })
+
+  it("keeps direct verification unknown when enforcement is enabled without a supported command", () => {
+    const projectDir = createWorkflowProject()
+    writeDirectVerificationConfig(projectDir)
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew test\nBUILD SUCCESSFUL")
+
+    const output = closureJson(projectDir)
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(output.state.verification).toBe("unknown")
+    expect(output.steps[0]).toMatchObject({
+      blockerId: "verification-unknown",
+      id: "verify-app",
+      status: "blocked",
+    })
+    expect(output.steps[0].reason).toContain("PH direct verification is enabled")
+    expect(`${finish.stdout}\n${finish.stderr}`).toContain("PH will execute the verification command directly")
   })
 
   it("orders explicit verification failure before report closure", () => {
