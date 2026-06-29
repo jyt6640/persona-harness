@@ -43,7 +43,7 @@ type ClosureStep = {
 type WorkflowClosureState = {
   readonly archive: ClosureArchive
   readonly blockers: readonly ClosureBlocker[]
-  readonly currentTicket: ClosureTicket | undefined
+  readonly currentTicket: ClosureTicket | null
   readonly evidence: ClosureEvidence
   readonly finish: ClosureFinish
   readonly implementationReport: ClosureReportStatus
@@ -117,10 +117,10 @@ function readWorkflowClosureState(projectDir: string): WorkflowClosureState {
   return { ...state, blockers: finish === "blocked" && blockers.length === 0 ? [finishBlocker(summary)] : blockers }
 }
 
-function closureTicket(summary: WorkflowStatusSummary): ClosureTicket | undefined {
+function closureTicket(summary: WorkflowStatusSummary): ClosureTicket | null {
   const ticket = summary.pendingTickets[0]
   return ticket === undefined
-    ? undefined
+    ? null
     : { id: ticket.ticket, path: ticket.path, state: ticket.archiveState, title: ticket.title }
 }
 
@@ -165,7 +165,7 @@ function closureBlockers(
   if (state.reviewReport !== "filled") {
     blockers.push({ id: "review-report-missing", reason: `review report is ${state.reviewReport}`, source: REVIEW_REPORT_PATH })
   }
-  if (state.currentTicket !== undefined) {
+  if (state.currentTicket !== null) {
     blockers.push(
       state.currentTicket.state === "history-only"
         ? { id: "history-backlog-mismatch", reason: `${state.currentTicket.id} exists in history but backlog remains pending`, source: state.currentTicket.path }
@@ -205,10 +205,10 @@ function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, statu
   if (blocker.id === "review-report-missing") {
     return { blockerId: blocker.id, commandAfterContent: "npx ph plan --report-filled review", id: "fill-review-report", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
-  if (blocker.id === "history-backlog-mismatch" && state.currentTicket !== undefined) {
+  if (blocker.id === "history-backlog-mismatch" && state.currentTicket !== null) {
     return { blockerId: blocker.id, command: `npx ph workflow archive ${state.currentTicket.id}`, id: "repair-archive-state", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
   }
-  if (blocker.id === "pending-ticket" && state.currentTicket !== undefined) {
+  if (blocker.id === "pending-ticket" && state.currentTicket !== null) {
     return { blockerId: blocker.id, commandAfterContent: `npx ph workflow archive ${state.currentTicket.id}`, id: "archive-current-ticket", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   return { blockerId: blocker.id, command: "npx ph workflow finish implement", id: "finish-implement", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }

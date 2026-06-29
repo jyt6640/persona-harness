@@ -80,6 +80,20 @@ function closureJson(projectDir: string, action: "next" | "status" = "next") {
   return JSON.parse(result.stdout)
 }
 
+const REQUIRED_STATE_KEYS = [
+  "plan",
+  "currentTicket",
+  "pendingTickets",
+  "implementationReport",
+  "reviewReport",
+  "evidence",
+  "verification",
+  "reportCoverage",
+  "archive",
+  "finish",
+  "blockers",
+] as const
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -102,6 +116,21 @@ describe("ph workflow closure read-only planner", () => {
       command: "npx ph plan",
       source: ".persona/workflow/plan.md",
     })
+  })
+
+  it("keeps the required state schema stable when no current ticket exists", () => {
+    const projectDir = createWorkflowProject()
+    writeEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL")
+
+    const status = closureJson(projectDir, "status")
+    const next = closureJson(projectDir, "next")
+
+    for (const key of REQUIRED_STATE_KEYS) {
+      expect(Object.hasOwn(status.state, key)).toBe(true)
+      expect(Object.hasOwn(next.state, key)).toBe(true)
+    }
+    expect(status.state.currentTicket).toBeNull()
+    expect(next.state.currentTicket).toBeNull()
   })
 
   it("uses report content as the first actionable blocker for the post-build alpha6-like state", () => {
