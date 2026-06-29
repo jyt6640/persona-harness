@@ -34,12 +34,8 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Recommended next line: `0.4.0-rc.1`, if HQ/user wants a user-facing workflow
-rail milestone candidate while keeping prerelease boundaries. Do not cut
-`0.4.0` stable until release messaging, `latest` strategy, and additional user
-or smoke confidence support a stable default-install claim. Use
-`0.3.9-alpha.8` only if another narrow alpha fix is needed before the milestone
-candidate.
+Current release-prep line: `0.3.9-alpha.8`, a narrow alpha for workflow closure
+rail convergence. Do not cut or publish `0.4.0-rc.1` from the parked draft.
 
 Current `0.4.0-rc.1` prep commit `5edb535` is parked and not publish-ready
 pending CLI wiring review for closure planner integration into `workflow
@@ -50,6 +46,11 @@ workflow continue` and `e8bb779 fix(cli): converge workflow closure rail` landed
 after it. The release lane must wait for QA verification and a closure trial
 rerun before release prep. Current direction is a narrow `0.3.9-alpha.8`
 vehicle after current-tarball trial PASS, not immediate RC publish.
+
+Alpha8 packages the code-level convergence after QA no-token convergence PASS.
+The current-tarball implementation-to-finish trial was blocked by remote
+SSH/SCP/PowerShell instability, not classified as Persona Harness PASS or FAIL.
+`latest` must not move.
 
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
@@ -78,9 +79,13 @@ vehicle after current-tarball trial PASS, not immediate RC publish.
 - [v0.3.9-alpha.5 release notes](v0.3.9-alpha.5-release-notes.md)
 - [v0.3.9-alpha.6 release notes](v0.3.9-alpha.6-release-notes.md)
 - [v0.3.9-alpha.7 release notes](v0.3.9-alpha.7-release-notes.md)
-- [v0.4.0-rc.1 release notes](v0.4.0-rc.1-release-notes.md)
+- [v0.3.9-alpha.8 release notes](v0.3.9-alpha.8-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
+
+Parked draft:
+
+- [v0.4.0-rc.1 parked draft notes](v0.4.0-rc.1-release-notes.md)
 
 Release automation lives in `.github/workflows/release.yml`.
 

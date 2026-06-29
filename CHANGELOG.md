@@ -6,6 +6,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+## [0.3.9-alpha.8] - 2026-06-29
+
 - Workflow closure rail convergence:
   - includes `e8bb779 fix(cli): converge workflow closure rail`;
   - active `workflow continue` now uses the closure rail as its single source,
@@ -34,8 +36,19 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - prior release prep commit `5edb535 chore(release): prepare 0.4.0-rc.1` is
     stale/parked because code changed after it;
   - do not publish, tag, push, or move `latest` from that prep;
-  - current direction is a narrow `0.3.9-alpha.8` release vehicle after QA and
-    current-tarball closure trial PASS, not immediate RC publish.
+  - alpha8 is a narrow alpha release vehicle, not immediate RC publish.
+- Verification boundary:
+  - QA verified the convergence with no-token product smoke and read-only
+    closure rail smoke;
+  - current-tarball implementation-to-finish trial was BLOCKED by remote
+    SSH/SCP/PowerShell instability, not classified as Persona Harness PASS or
+    FAIL;
+  - observed preflight included local tarball install/init/doctor/bootstrap,
+    no-token closure preflight, OpenCode sanity, `workflow continue` closure
+    planner next step, closure status/next blocker ordering, and correct
+    pre-implementation `workflow finish implement` blocking;
+  - no eval/A-B, PH superiority proof, generated app quality certification, or
+    `latest` move is claimed.
 
 ## [0.4.0-rc.1] - 2026-06-29
 
