@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../src/config/convention-registry.js"
 import { loadHarnessConfig } from "../src/config/harness-config.js"
 
 const tempProjects: string[] = []
@@ -448,20 +449,24 @@ describe("ph workflow check", () => {
     const closureJson = JSON.parse(closure.stdout)
 
     expect(check.status).toBe(0)
-    expect(check.stdout).toContain("- architecture conventions: controller.repository-dependency block: TaskController directly depends on TaskRepository; route through a Service layer instead.")
-    expect(check.stdout).toContain("Next: route Controller dependencies through a Service layer")
+    expect(check.stdout).toContain(`- architecture conventions: ${CONTROLLER_REPOSITORY_CONVENTION.id} block: TaskController directly depends on TaskRepository; ${CONTROLLER_REPOSITORY_CONVENTION.actionableMessage}`)
+    expect(check.stdout).toContain(`Next: ${CONTROLLER_REPOSITORY_CONVENTION.fixPath}`)
     expect(closureJson.nextStep).toMatchObject({
-      blockerId: "architecture-controller-repository-direct-dependency",
-      id: "fix-controller-repository-dependency",
+      blockerId: CONTROLLER_REPOSITORY_CONVENTION.blockerId,
+      id: CONTROLLER_REPOSITORY_CONVENTION.stepId,
       status: "blocked",
     })
-    expect(resume.stdout).toContain("Blocker: architecture-controller-repository-direct-dependency")
+    expect(closureJson.state.blockers).toContainEqual(expect.objectContaining({
+      id: CONTROLLER_REPOSITORY_CONVENTION.blockerId,
+      reason: expect.stringContaining(CONTROLLER_REPOSITORY_CONVENTION.id),
+    }))
+    expect(resume.stdout).toContain(`Blocker: ${CONTROLLER_REPOSITORY_CONVENTION.blockerId}`)
     expect(resume.stdout).toContain("TaskController directly depends on TaskRepository")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("Closure blocker: architecture-controller-repository-direct-dependency")
-    expect(finish.stderr).toContain("route through a Service layer")
+    expect(finish.stderr).toContain(`Closure blocker: ${CONTROLLER_REPOSITORY_CONVENTION.blockerId}`)
+    expect(finish.stderr).toContain(CONTROLLER_REPOSITORY_CONVENTION.fixPath)
     expect(archive.status).toBe(1)
-    expect(archive.stderr).toContain("architecture-controller-repository-direct-dependency")
+    expect(archive.stderr).toContain(CONTROLLER_REPOSITORY_CONVENTION.blockerId)
   })
 
   it("warns without closure blocking when Controller Repository convention level is warn", () => {
@@ -480,9 +485,32 @@ describe("ph workflow check", () => {
 
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("Workflow status: WARN")
-    expect(check.stdout).toContain("- architecture conventions: controller.repository-dependency warn: TaskController directly depends on TaskRepository")
+    expect(check.stdout).toContain(`- architecture conventions: ${CONTROLLER_REPOSITORY_CONVENTION.id} warn: TaskController directly depends on TaskRepository`)
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
-      "architecture-controller-repository-direct-dependency",
+      CONTROLLER_REPOSITORY_CONVENTION.blockerId,
+    )
+    expect(finish.status).toBe(0)
+  })
+
+  it("reports without closure blocking when Controller Repository convention level is report", () => {
+    const projectDir = createProfiledTempProject()
+    writeConventionLevel(projectDir, "report")
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeJavaRoleFiles(projectDir)
+    writeControllerRepositoryViolation(projectDir)
+    writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("Workflow status: PASS")
+    expect(check.stdout).toContain(`- architecture conventions: ${CONTROLLER_REPOSITORY_CONVENTION.id} report: TaskController directly depends on TaskRepository`)
+    expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
+      CONTROLLER_REPOSITORY_CONVENTION.blockerId,
     )
     expect(finish.status).toBe(0)
   })
@@ -502,9 +530,9 @@ describe("ph workflow check", () => {
 
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("- architecture conventions: Controller -> Repository direct dependency not observed")
-    expect(check.stdout).not.toContain("architecture-controller-repository-direct-dependency")
+    expect(check.stdout).not.toContain(CONTROLLER_REPOSITORY_CONVENTION.blockerId)
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
-      "architecture-controller-repository-direct-dependency",
+      CONTROLLER_REPOSITORY_CONVENTION.blockerId,
     )
     expect(finish.status).toBe(0)
   })

@@ -1,4 +1,4 @@
-import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
+import { findConventionByBlockerId } from "../config/convention-registry.js"
 import type { ClosureBlocker, ClosurePayload, ClosureTicket } from "./workflow-closure.js"
 
 export function workflowClosureFinishReasons(payload: ClosurePayload): readonly string[] {
@@ -112,14 +112,15 @@ function blockerFinishReason(blocker: ClosureBlocker): string {
       "- Re-run `npx ph workflow check`.",
     ].join("\n")
   }
-  if (blocker.id === CONTROLLER_REPOSITORY_CONVENTION.blockerId) {
+  const convention = findConventionByBlockerId(blocker.id)
+  if (convention !== undefined) {
     return [
       `Closure blocker: ${blocker.id}`,
       `Architecture convention violation: ${blocker.reason}`,
-      "PH blocks the Controller->Repository convention violation in this scoped Java/Spring case.",
+      `PH blocks the ${convention.id} convention violation in this scoped Java/Spring case.`,
       "This is a workflow architecture convention gate, not generated app product-quality certification.",
       "Required next actions:",
-      `- ${CONTROLLER_REPOSITORY_CONVENTION.fixPath}`,
+      `- ${convention.fixPath}`,
       "- Re-run `npx ph workflow check`.",
     ].join("\n")
   }

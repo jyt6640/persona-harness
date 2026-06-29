@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
-import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
+import { CONTROLLER_REPOSITORY_CONVENTION, CONVENTION_REGISTRY } from "../config/convention-registry.js"
+import type { ConventionDefinition } from "../config/convention-registry.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import type { ConventionLevel } from "../config/harness-config.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
@@ -10,8 +11,16 @@ import { readProfileIntent } from "./stack-alignment-profile.js"
 
 export type ArchitectureConventionFinding = "PASS" | "WARN"
 
+export type ArchitectureConventionBlocker = {
+  readonly conventionId: string
+  readonly id: string
+  readonly reason: string
+  readonly source: string
+}
+
 export type ArchitectureConventionSummary = {
   readonly architectureConventions: string
+  readonly architectureConventionBlockers: readonly ArchitectureConventionBlocker[]
   readonly architectureConventionsBlocking: boolean
   readonly architectureConventionsFinding: ArchitectureConventionFinding
 }
@@ -85,13 +94,32 @@ function directDependencyFinding(projectDir: string, filePath: string): string |
   return `${className(filePath)} directly depends on ${dependency}; ${CONTROLLER_REPOSITORY_CONVENTION.actionableMessage} Source: ${relative(projectDir, filePath)}`
 }
 
-function conventionLevel(projectDir: string): ConventionLevel {
-  return loadHarnessConfig(projectDir).conventions[CONTROLLER_REPOSITORY_CONVENTION.id] ?? "report"
+function configuredConventionLevel(projectDir: string, definition: ConventionDefinition): ConventionLevel {
+  return loadHarnessConfig(projectDir).conventions[definition.id] ?? "report"
+}
+
+function effectiveConventionLevel(definition: ConventionDefinition, level: ConventionLevel): ConventionLevel {
+  return level === "block" && (!definition.blockAllowed || !definition.highPrecision) ? "warn" : level
+}
+
+function controllerRepositoryConventionFindings(projectDir: string): readonly string[] {
+  return collectControllerFiles(projectDir).flatMap((filePath) => {
+    const finding = directDependencyFinding(projectDir, filePath)
+    return finding === undefined ? [] : [finding]
+  })
+}
+
+function conventionFindings(projectDir: string, definition: ConventionDefinition): readonly string[] {
+  if (definition.id === CONTROLLER_REPOSITORY_CONVENTION.id) {
+    return controllerRepositoryConventionFindings(projectDir)
+  }
+  return []
 }
 
 export function readArchitectureConventions(projectDir: string, implementationStatus: string): ArchitectureConventionSummary {
   if (implementationStatus !== "filled") {
     return {
+      architectureConventionBlockers: [],
       architectureConventions: "not checked until implementation report is filled",
       architectureConventionsBlocking: false,
       architectureConventionsFinding: "PASS",
@@ -99,28 +127,48 @@ export function readArchitectureConventions(projectDir: string, implementationSt
   }
   if (!serviceArchitectureApplies(projectDir)) {
     return {
+      architectureConventionBlockers: [],
       architectureConventions: "not checked; Java/Spring service-layer profile not active",
       architectureConventionsBlocking: false,
       architectureConventionsFinding: "PASS",
     }
   }
 
-  const findings = collectControllerFiles(projectDir).flatMap((filePath) => {
-    const finding = directDependencyFinding(projectDir, filePath)
-    return finding === undefined ? [] : [finding]
-  })
-  if (findings.length === 0) {
+  const summaries: string[] = []
+  const blockers: ArchitectureConventionBlocker[] = []
+  let hasWarnFinding = false
+  for (const definition of CONVENTION_REGISTRY) {
+    const findings = conventionFindings(projectDir, definition)
+    if (findings.length === 0) {
+      continue
+    }
+    const level = effectiveConventionLevel(definition, configuredConventionLevel(projectDir, definition))
+    summaries.push(`${definition.id} ${level}: ${findings.join("; ")}`)
+    if (level !== "report") {
+      hasWarnFinding = true
+    }
+    if (level === "block") {
+      blockers.push({
+        conventionId: definition.id,
+        id: definition.blockerId,
+        reason: `${definition.id} ${level}: ${findings.join("; ")}`,
+        source: "src/main/java",
+      })
+    }
+  }
+
+  if (summaries.length === 0) {
     return {
+      architectureConventionBlockers: [],
       architectureConventions: "Controller -> Repository direct dependency not observed",
       architectureConventionsBlocking: false,
       architectureConventionsFinding: "PASS",
     }
   }
-  const level = conventionLevel(projectDir)
-  const findingText = `${CONTROLLER_REPOSITORY_CONVENTION.id} ${level}: ${findings.join("; ")}`
   return {
-    architectureConventions: findingText,
-    architectureConventionsBlocking: level === "block",
-    architectureConventionsFinding: level === "report" ? "PASS" : "WARN",
+    architectureConventionBlockers: blockers,
+    architectureConventions: summaries.join("; "),
+    architectureConventionsBlocking: blockers.length > 0,
+    architectureConventionsFinding: hasWarnFinding ? "WARN" : "PASS",
   }
 }

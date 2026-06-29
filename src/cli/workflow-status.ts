@@ -2,8 +2,9 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { findConventionByBlockerId } from "../config/convention-registry.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
-import { readArchitectureConventions, type ArchitectureConventionSummary } from "./architecture-conventions.js"
+import { readArchitectureConventions, type ArchitectureConventionBlocker, type ArchitectureConventionSummary } from "./architecture-conventions.js"
 import { backendShapeReportStatus } from "./backend-shape-report-status.js"
 import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./java-role-read-coverage.js"
 import { readWorkflowReportCoverage, type WorkflowReportCoverageSummary } from "./workflow-report-coverage.js"
@@ -45,6 +46,7 @@ export type WorkflowStatusSummary = {
   readonly stackAlignmentBlocking: boolean
   readonly stackAlignmentFinding: "PASS" | "WARN"
   readonly architectureConventions: string
+  readonly architectureConventionBlockers: readonly ArchitectureConventionBlocker[]
   readonly architectureConventionsBlocking: boolean
   readonly architectureConventionsFinding: "PASS" | "WARN"
   readonly pendingTickets: readonly WorkflowPendingTicket[]
@@ -386,7 +388,11 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.profileReadCoverageBlocking) return "record project profile read coverage in `.persona/workflow/implementation-report.md`"
   if (summary.javaRoleReadCoverageBlocking) return "read generated Java role files and rerun `npx ph workflow check`"
   if (summary.stackAlignmentBlocking) return "fix generated project stack to match `.persona/project-profile.jsonc` before finishing"
-  if (summary.architectureConventionsBlocking) return "route Controller dependencies through a Service layer, then run `npx ph workflow check`"
+  if (summary.architectureConventionsBlocking) {
+    const blocker = summary.architectureConventionBlockers[0]
+    const convention = blocker === undefined ? undefined : findConventionByBlockerId(blocker.id)
+    return `${convention?.fixPath ?? "fix architecture convention blockers"}, then run \`npx ph workflow check\``
+  }
   if (summary.pendingTickets.length > 0) {
     const pendingTicket = summary.pendingTickets[0]
     if (pendingTicket?.archiveState === "history-only") {

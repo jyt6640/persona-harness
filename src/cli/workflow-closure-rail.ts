@@ -1,4 +1,4 @@
-import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
+import { findConventionByBlockerId, findConventionByStepId } from "../config/convention-registry.js"
 import type { ClosureBlocker, ClosurePayload, ClosureStep, ClosureTicket } from "./workflow-closure.js"
 
 export const POST_BUILD_CLOSURE_NEXT_ACTION = "if build/test/runtime already pass, fill implementation and review reports, archive the completed ticket after review, then run `npx ph workflow finish implement`"
@@ -108,10 +108,11 @@ function stepActionLines(step: ClosureStep, currentTicket: ClosureTicket | null)
       "Next action: re-read `.persona/project-profile.jsonc`, align the generated stack, then rerun `npx ph workflow check`.",
     ]
   }
-  if (step.id === "fix-controller-repository-dependency") {
+  const stepConvention = findConventionByStepId(step.id)
+  if (stepConvention !== undefined) {
     return [
       ...(step.reason === undefined ? [] : [`Architecture convention violation: ${step.reason}`]),
-      `Next action: ${CONTROLLER_REPOSITORY_CONVENTION.fixPath}, then rerun \`npx ph workflow check\`.`,
+      `Next action: ${stepConvention.fixPath}, then rerun \`npx ph workflow check\`.`,
     ]
   }
   if (step.command !== undefined) {
@@ -162,10 +163,11 @@ function blockerRailLines(blocker: ClosureBlocker): readonly string[] {
       "Do not archive req tickets until review confirms requirements are satisfied.",
     ]
   }
-  if (blocker.id === CONTROLLER_REPOSITORY_CONVENTION.blockerId) {
+  const blockerConvention = findConventionByBlockerId(blocker.id)
+  if (blockerConvention !== undefined) {
     return [
       `Architecture convention violation: ${blocker.reason}`,
-      `Next action: ${CONTROLLER_REPOSITORY_CONVENTION.fixPath}, then rerun \`npx ph workflow check\`.`,
+      `Next action: ${blockerConvention.fixPath}, then rerun \`npx ph workflow check\`.`,
     ]
   }
   return []
