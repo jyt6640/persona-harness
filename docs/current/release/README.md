@@ -129,6 +129,19 @@ rail guidance. `workflow implement`, `workflow continue`, and
 README-present projects keep README chunk guidance. This reduces entry/context
 ambiguity only; it is not model follow-through proof or a closure guarantee.
 
+The `a307ac0` Windows operator retry confirmed that previous input/packaging
+and README-absent path blockers improved: fresh tarball preflight had the
+current command surface, rejected lossy `???` stdin, preserved Korean, passed
+no-token workflow/closure preflight, observed README-absent guidance, and did
+not repeat the duplicated `.persona/policies` path. It still did not reach
+implementation-to-finish PASS. OpenCode read `.persona/policies/overlay.jsonc`
+but generated no app output or `src` / Gradle files; the model filled reports,
+ran report-filled, and archived `step-1` anyway. Final
+`workflow finish implement` exited 1 on `STACK_MISMATCH` plus pending
+`step-2/3/4`. The finish gate correctly blocked, but report-filled/archive
+integrity before real implementation/evidence is now the next blocker. Stable
+`0.4.0` remains deferred.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

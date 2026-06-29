@@ -116,6 +116,26 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - README-present behavior keeps README chunk guidance;
   - this does not guarantee model follow-through, weaken finish gates, auto-fill
     reports, or auto-archive tickets.
+- Current-head `a307ac0` Windows operator retry improved preflight but remained
+  PARTIAL/NOT PASS for implementation-to-finish:
+  - result:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-a307ac0-windows-operator-retry-20260629-212905/RESULT.md`;
+  - fresh tarball preflight passed: stale `dist` was fixed, approve/split/next
+    command surface was available, lossy `???` stdin was rejected, Korean was
+    preserved, no-token workflow/closure preflight passed, README-absent
+    guidance was observed, and the malformed duplicated `.persona/policies`
+    path did not recur;
+  - implementation-to-finish did not pass: OpenCode read
+    `.persona/policies/overlay.jsonc`, but no app output was generated and
+    `src` / Gradle files were absent;
+  - the model still filled reports/report-filled and archived `step-1`;
+  - final `workflow finish implement` exited 1 on `STACK_MISMATCH` plus pending
+    `step-2`, `step-3`, and `step-4`;
+  - interpretation: previous Windows input/packaging/README-absent path
+    blockers improved or resolved, while the new blocker is report/archive
+    integrity before final finish. The finish gate correctly blocked, but
+    report-filled/archive steps may be too permissive before real
+    implementation/evidence. Stable `0.4.0` remains deferred.
 
 ## [0.4.0-rc.1] - 2026-06-29
 
