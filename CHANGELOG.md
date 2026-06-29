@@ -37,6 +37,16 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - do not move `latest`; `latest` is currently observed at `0.3.9-alpha.8`;
   - eval remains stopped and `docs/current/injection-value-status.json` remains
     `injection-effect-not-proven`.
+- Post-publish verification:
+  - `persona-harness@0.4.0-rc.1` exists with gitHead
+    `981b7b75d035ad16ee5e2b7f8bec5482d19f2873` and shasum
+    `c987701b4ed55324e1a555f4e31545e4d0cb3757`;
+  - dist-tags are `next=0.4.0-rc.1`, `alpha=0.3.9-alpha.8`,
+    `latest=0.3.9-alpha.8`;
+  - local/origin tag `v0.4.0-rc.1` points at
+    `981b7b75d035ad16ee5e2b7f8bec5482d19f2873`;
+  - no republish, latest move, eval/model/OpenCode run, PH superiority proof,
+    generated app certification, or general reliability guarantee is claimed.
 
 ## [0.3.9-alpha.8] - 2026-06-29
 
