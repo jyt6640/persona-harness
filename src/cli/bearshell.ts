@@ -1,6 +1,9 @@
 import { spawnSync } from "node:child_process"
 import process from "node:process"
 
+import { writeBearshellExecutionEvidence } from "../runtime/execution-evidence.js"
+import { signalExitCode } from "./bearshell-exit-code.js"
+
 export type CliRunResult = {
   readonly status: number
   readonly stdout: string
@@ -82,6 +85,7 @@ export function runBearshell(args: readonly string[], options: BearshellOptions 
   }
 
   const childEnv = { ...process.env, ...env }
+  const startedMs = Date.now()
   const spawned = parsed.shell
     ? spawnSync(parsed.command, {
         cwd: options.cwd,
@@ -101,14 +105,27 @@ export function runBearshell(args: readonly string[], options: BearshellOptions 
       })
 
   const status = spawned.status ?? signalExitCode(spawned.signal)
+  const endedMs = Date.now()
   const stdout = maybeCondense(toOutputString(spawned.stdout), parsed.budget, env)
   const stderr = maybeCondense(
     spawnErrorMessage(parsed.command, spawned.error, parsed.timeoutMs) ?? toOutputString(spawned.stderr),
     parsed.budget,
     env,
   )
+  writeBearshellExecutionEvidence(options.cwd ?? process.cwd(), {
+    command: commandText(parsed),
+    durationMs: Math.max(0, endedMs - startedMs),
+    endedAt: new Date(endedMs).toISOString(),
+    status,
+    stderr,
+    stdout,
+  })
 
   return formatResult({ status, stdout, stderr }, parsed.json)
+}
+
+function commandText(parsed: Extract<ParsedBearshellArgs, { readonly kind: "exec" }>): string {
+  return parsed.shell ? parsed.command : [parsed.command, ...parsed.args].join(" ")
 }
 
 function parseBearshellArgs(args: readonly string[], env: Readonly<Record<string, string | undefined>>): ParsedBearshellArgs {
@@ -245,48 +262,4 @@ function errorCode(error: Error): string | undefined {
     return undefined
   }
   return typeof error.code === "string" ? error.code : undefined
-}
-
-function signalExitCode(signal: NodeJS.Signals | null): number {
-  if (signal === null) {
-    return 1
-  }
-  const signalCodeByName: Readonly<Partial<Record<NodeJS.Signals, number>>> = {
-    SIGABRT: 6,
-    SIGALRM: 14,
-    SIGBREAK: 21,
-    SIGBUS: 7,
-    SIGCHLD: 17,
-    SIGCONT: 18,
-    SIGFPE: 8,
-    SIGHUP: 1,
-    SIGILL: 4,
-    SIGINT: 2,
-    SIGIO: 29,
-    SIGIOT: 6,
-    SIGKILL: 9,
-    SIGPIPE: 13,
-    SIGPOLL: 29,
-    SIGPROF: 27,
-    SIGPWR: 30,
-    SIGQUIT: 3,
-    SIGSEGV: 11,
-    SIGSTKFLT: 16,
-    SIGSTOP: 19,
-    SIGSYS: 31,
-    SIGTERM: 15,
-    SIGTRAP: 5,
-    SIGTSTP: 20,
-    SIGTTIN: 21,
-    SIGTTOU: 22,
-    SIGUNUSED: 31,
-    SIGURG: 23,
-    SIGUSR1: 10,
-    SIGUSR2: 12,
-    SIGVTALRM: 26,
-    SIGWINCH: 28,
-    SIGXCPU: 24,
-    SIGXFSZ: 25,
-  }
-  return 128 + (signalCodeByName[signal] ?? 1)
 }
