@@ -106,6 +106,18 @@ which can make current guide commands appear missing. This is a current
 HEAD/future package fix; published `0.4.0-rc.1 @next` may not include it until a
 new release, and it does not repair already corrupted artifacts.
 
+The `e688d39` Windows operator retry then confirmed preflight progress but still
+blocked before app output. A fresh current HEAD tarball on Windows D-drive had
+the current command surface, rejected lossy `??? ? ? API ???` stdin without
+writing requirements, preserved Korean `간단한 할 일 API 만들래` with UTF-8
+PowerShell encoding variables, and passed the no-token workflow draft/approve/
+split/next/continue/check/closure status/next path. OpenCode started and read
+workflow/profile/planner context, but README was absent and a malformed
+duplicated `.persona/policies` path hit `external_directory` auto-reject; no
+`src` or Gradle files were generated, reports stayed template, ticket stayed
+pending, and final `workflow finish implement` exited 1. This is preflight PASS
+and implementation-to-finish NOT PASS; stable `0.4.0` remains deferred.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

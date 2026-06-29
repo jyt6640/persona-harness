@@ -78,6 +78,27 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - this does not reconstruct already-lost `?` text or repair existing broken
     artifacts retroactively, and it is a current HEAD/future package fix rather
     than proof that published `0.4.0-rc.1 @next` already contains it.
+- Current-head `e688d39` Windows operator retry moved the blocker but did not
+  reach implementation-to-finish PASS:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-e688d39-windows-operator-retry-20260629-204500`;
+  - fresh current HEAD tarball with `e688d39` installed on a Windows D-drive
+    workspace;
+  - packaging/stale `dist` issue was resolved and the current command surface
+    was available;
+  - lossy `??? ? ? API ???` stdin was rejected without writing requirements;
+  - Korean `간단한 할 일 API 만들래` was preserved when PowerShell encoding
+    variables were set to UTF-8;
+  - no-token `workflow draft` / approve / split / next / continue / check /
+    closure status / closure next preflight passed;
+  - implementation-to-finish blocked before app output: OpenCode started and
+    read workflow/profile/planner context, but README was absent and a malformed
+    duplicated `.persona/policies` path hit `external_directory` auto-reject;
+  - no `src` or Gradle files were generated; reports stayed template, ticket
+    stayed pending, and final `workflow finish implement` exited 1;
+  - interpretation: preflight PASS, implementation-to-finish NOT PASS. The
+    blocker moved from Windows input/packaging/command surface to OpenCode
+    implementation entry/context path. Stable `0.4.0` remains deferred.
 
 ## [0.4.0-rc.1] - 2026-06-29
 
