@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { createInjectionBlock } from "../src/runtime/injection.js"
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../src/config/convention-registry.js"
 import { loadHarnessConfig, loadHarnessConfigResult } from "../src/config/harness-config.js"
 import { loadRulesForRole } from "../src/rules/rule-loader.js"
 import type { TransformMessagesOutput } from "../src/runtime/types.js"
@@ -48,7 +49,9 @@ describe("Phase 0 harness config", () => {
 
     expect(config.enabledDomains).toEqual(["backend", "programming", "workflow"])
     expect(config.enforce.executeVerification).toBe(false)
-    expect(config.conventions["controller.repository-dependency"]).toBe("block")
+    expect(config.conventions[CONTROLLER_REPOSITORY_CONVENTION.id]).toBe(CONTROLLER_REPOSITORY_CONVENTION.defaultLevel)
+    expect(CONTROLLER_REPOSITORY_CONVENTION.blockerId).toBe("architecture-controller-repository-direct-dependency")
+    expect(CONTROLLER_REPOSITORY_CONVENTION.fixPath).toContain("Service layer")
   })
 
   it("uses executeVerification enforcement opt-in from harness.jsonc", () => {

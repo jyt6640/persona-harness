@@ -2,7 +2,11 @@ import { existsSync, readFileSync } from "node:fs"
 import { isAbsolute, join } from "node:path"
 
 import type { Phase0Scenario } from "../rules/rule-frontmatter.js"
+import { DEFAULT_CONVENTION_LEVELS } from "./convention-registry.js"
+import type { ConventionLevel } from "./convention-registry.js"
 import { isRecord, stripJsonComments } from "./jsonc.js"
+
+export type { ConventionLevel } from "./convention-registry.js"
 
 export type HarnessConfig = {
   readonly conventions: Readonly<Record<string, ConventionLevel>>
@@ -15,8 +19,6 @@ export type HarnessConfig = {
   readonly enabledDomains: readonly string[]
   readonly scenario: Phase0Scenario
 }
-
-export type ConventionLevel = "block" | "report" | "warn"
 
 export type HarnessEnforceConfig = {
   readonly executeVerification: boolean
@@ -34,7 +36,7 @@ export type HarnessConfigLoadResult = {
 }
 
 const DEFAULT_CONFIG: HarnessConfig = {
-  conventions: { "controller.repository-dependency": "block" },
+  conventions: DEFAULT_CONVENTION_LEVELS,
   enabled: true,
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",

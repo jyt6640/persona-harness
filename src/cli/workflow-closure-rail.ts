@@ -1,3 +1,4 @@
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import type { ClosureBlocker, ClosurePayload, ClosureStep, ClosureTicket } from "./workflow-closure.js"
 
 export const POST_BUILD_CLOSURE_NEXT_ACTION = "if build/test/runtime already pass, fill implementation and review reports, archive the completed ticket after review, then run `npx ph workflow finish implement`"
@@ -110,7 +111,7 @@ function stepActionLines(step: ClosureStep, currentTicket: ClosureTicket | null)
   if (step.id === "fix-controller-repository-dependency") {
     return [
       ...(step.reason === undefined ? [] : [`Architecture convention violation: ${step.reason}`]),
-      "Next action: route the Controller through a Service layer instead of depending on Repository directly, then rerun `npx ph workflow check`.",
+      `Next action: ${CONTROLLER_REPOSITORY_CONVENTION.fixPath}, then rerun \`npx ph workflow check\`.`,
     ]
   }
   if (step.command !== undefined) {
@@ -161,10 +162,10 @@ function blockerRailLines(blocker: ClosureBlocker): readonly string[] {
       "Do not archive req tickets until review confirms requirements are satisfied.",
     ]
   }
-  if (blocker.id === "architecture-controller-repository-direct-dependency") {
+  if (blocker.id === CONTROLLER_REPOSITORY_CONVENTION.blockerId) {
     return [
       `Architecture convention violation: ${blocker.reason}`,
-      "Next action: route the Controller through a Service layer instead of depending on Repository directly, then rerun `npx ph workflow check`.",
+      `Next action: ${CONTROLLER_REPOSITORY_CONVENTION.fixPath}, then rerun \`npx ph workflow check\`.`,
     ]
   }
   return []

@@ -1,6 +1,7 @@
 import { resolve } from "node:path"
 import process from "node:process"
 
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
@@ -191,7 +192,7 @@ function closureBlockers(
   }
   if (summary.architectureConventionsBlocking) {
     blockers.push({
-      id: "architecture-controller-repository-direct-dependency",
+      id: CONTROLLER_REPOSITORY_CONVENTION.blockerId,
       reason: summary.architectureConventions,
       source: "src/main/java",
     })
@@ -262,7 +263,7 @@ function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, statu
   if (blocker.id === "stack-alignment-mismatch") {
     return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "fix-stack-alignment", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
-  if (blocker.id === "architecture-controller-repository-direct-dependency") {
+  if (blocker.id === CONTROLLER_REPOSITORY_CONVENTION.blockerId) {
     return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "fix-controller-repository-dependency", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "history-backlog-mismatch" && state.currentTicket !== null) {

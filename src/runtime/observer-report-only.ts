@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { relative, resolve } from "node:path"
 
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryObservation } from "../observer/controller-repository-observer.js"
 import { observeControllerServiceDependency } from "../observer/controller-service-observer.js"
@@ -92,7 +93,7 @@ function observeJavaFile(projectDir: string, filePath: string, source: string): 
         observeControllerServiceDependency({ filePath, source }),
       ),
       normalizeObservation(
-        "controller.repository-dependency",
+        CONTROLLER_REPOSITORY_CONVENTION.id,
         relativePath,
         observeControllerRepositoryDependency({ filePath, source }),
       ),

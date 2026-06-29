@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { relative, resolve } from "node:path"
 
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryEvidence } from "../observer/controller-repository-observer.js"
 import { isJavaTargetFile } from "./file-role.js"
@@ -28,10 +29,10 @@ export function createWriteGuardWarning(input: WriteGuardInput): string | undefi
     "[Persona Harness Write Guard]",
     "",
     "Mode: non-blocking warning. The current OpenCode plugin hook can mutate tool args/output but does not expose a controlled write deny/rewrite result.",
-    "Rule: controller.repository-dependency",
+    `Rule: ${CONTROLLER_REPOSITORY_CONVENTION.id}`,
     `File: ${relative(input.projectDir, absoluteTargetPath)}`,
     `Finding: Controller directly depends on Repository (${evidenceText}).`,
-    "Fix path: route the Controller through a Service layer instead of depending on Repository directly.",
+    `Fix path: ${CONTROLLER_REPOSITORY_CONVENTION.fixPath}`,
     "After fix: re-run `npx ph workflow check`; finish/archive may block if this convention remains at level `block`.",
   ].join("\n")
 }

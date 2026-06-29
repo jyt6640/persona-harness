@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { join, relative, resolve } from "node:path"
 import process from "node:process"
 
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import type { CliRunResult } from "./bearshell.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryObservation } from "../observer/controller-repository-observer.js"
@@ -119,7 +120,7 @@ function observeJavaFile(projectDir: string, filePath: string): readonly Observe
   if (filePath.endsWith("Controller.java")) {
     findings.push(
       normalizeObservation("controller.service-dependency", relativePath, observeControllerServiceDependency({ filePath, source })),
-      normalizeObservation("controller.repository-dependency", relativePath, observeControllerRepositoryDependency({ filePath, source })),
+      normalizeObservation(CONTROLLER_REPOSITORY_CONVENTION.id, relativePath, observeControllerRepositoryDependency({ filePath, source })),
       normalizeObservation("controller.sql-access", relativePath, observeControllerSqlAccess({ filePath, source })),
     )
   }

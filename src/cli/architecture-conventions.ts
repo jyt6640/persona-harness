@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import type { ConventionLevel } from "../config/harness-config.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
@@ -16,7 +17,6 @@ export type ArchitectureConventionSummary = {
 }
 
 const JAVA_MAIN_DIR = join("src", "main", "java")
-const CONTROLLER_REPOSITORY_CONVENTION_ID = "controller.repository-dependency"
 const SERVICE_ARCHITECTURE_STYLES = [
   "simple-layered",
   "clean-architecture-light",
@@ -82,11 +82,11 @@ function directDependencyFinding(projectDir: string, filePath: string): string |
   if (dependency === undefined) {
     return undefined
   }
-  return `${className(filePath)} directly depends on ${dependency}; route through a Service layer instead. Source: ${relative(projectDir, filePath)}`
+  return `${className(filePath)} directly depends on ${dependency}; ${CONTROLLER_REPOSITORY_CONVENTION.actionableMessage} Source: ${relative(projectDir, filePath)}`
 }
 
 function conventionLevel(projectDir: string): ConventionLevel {
-  return loadHarnessConfig(projectDir).conventions[CONTROLLER_REPOSITORY_CONVENTION_ID] ?? "report"
+  return loadHarnessConfig(projectDir).conventions[CONTROLLER_REPOSITORY_CONVENTION.id] ?? "report"
 }
 
 export function readArchitectureConventions(projectDir: string, implementationStatus: string): ArchitectureConventionSummary {
@@ -117,7 +117,7 @@ export function readArchitectureConventions(projectDir: string, implementationSt
     }
   }
   const level = conventionLevel(projectDir)
-  const findingText = `${CONTROLLER_REPOSITORY_CONVENTION_ID} ${level}: ${findings.join("; ")}`
+  const findingText = `${CONTROLLER_REPOSITORY_CONVENTION.id} ${level}: ${findings.join("; ")}`
   return {
     architectureConventions: findingText,
     architectureConventionsBlocking: level === "block",

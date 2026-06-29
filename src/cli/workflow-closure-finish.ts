@@ -1,3 +1,4 @@
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import type { ClosureBlocker, ClosurePayload, ClosureTicket } from "./workflow-closure.js"
 
 export function workflowClosureFinishReasons(payload: ClosurePayload): readonly string[] {
@@ -111,14 +112,14 @@ function blockerFinishReason(blocker: ClosureBlocker): string {
       "- Re-run `npx ph workflow check`.",
     ].join("\n")
   }
-  if (blocker.id === "architecture-controller-repository-direct-dependency") {
+  if (blocker.id === CONTROLLER_REPOSITORY_CONVENTION.blockerId) {
     return [
       `Closure blocker: ${blocker.id}`,
       `Architecture convention violation: ${blocker.reason}`,
       "PH blocks the Controller->Repository convention violation in this scoped Java/Spring case.",
       "This is a workflow architecture convention gate, not generated app product-quality certification.",
       "Required next actions:",
-      "- Route the Controller through a Service layer instead of depending on Repository directly.",
+      `- ${CONTROLLER_REPOSITORY_CONVENTION.fixPath}`,
       "- Re-run `npx ph workflow check`.",
     ].join("\n")
   }
