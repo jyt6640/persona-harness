@@ -47,6 +47,22 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     blocker. Stable `0.4.0` remains deferred, and future Windows validation
     should prefer a less script-heavy TUI/operator flow because the current
     automation/PowerShell/SSH route may overfit validation mechanics.
+- Less-script-heavy Windows operator route is also BLOCKED before model until
+  the guide/current CLI surface is corrected and reverified:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/less-script-heavy-windows-operator-exec-20260629-203000`;
+  - a fresh D workspace installed current tarball `0.4.0-rc.1`; init, doctor,
+    and bootstrap passed;
+  - Korean preservation failed even with the guide command
+    `Get-Content -LiteralPath idea-utf8.txt -Raw -Encoding UTF8 | npx ph workflow draft --stdin`;
+    requirements `Original idea` became `??? ? ? API ???`;
+  - the guide expected `workflow approve requirements`, `workflow split`, and
+    `workflow next`, but the installed current CLI reported unknown command for
+    those in the run;
+  - no OpenCode/model implementation executed;
+  - final no-model finish exited 1 with expected blockers;
+  - do not reuse this guide/operator route as stable evidence until command
+    names and Windows encoding behavior are corrected and reverified.
 
 ## [0.4.0-rc.1] - 2026-06-29
 

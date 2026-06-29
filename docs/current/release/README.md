@@ -86,6 +86,16 @@ future Windows validation should use a less script-heavy TUI/operator route
 because the current automation/PowerShell/SSH path may overfit validation
 mechanics.
 
+That less-script-heavy Windows operator route is not validated yet. A fresh
+D-drive current-tarball run installed `0.4.0-rc.1` and passed
+init/doctor/bootstrap, but blocked before model: Korean preservation failed even
+with the guide's `Get-Content ... -Encoding UTF8` pipe, the resulting
+requirements `Original idea` became `??? ? ? API ???`, and the guide's
+`workflow approve requirements` / `workflow split` / `workflow next` commands
+did not match the installed CLI surface in that run. Stable `0.4.0` remains
+deferred until the guide/current CLI surface and Windows validation route are
+corrected and reverified.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
