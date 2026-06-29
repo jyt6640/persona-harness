@@ -27,6 +27,20 @@ Do not start `0.4` eval immediately after the following are complete:
 
 Those items make the release decision ready; they do not authorize Docs Release to publish, push, tag, or start release prep without HQ/user approval.
 
+## Post-Alpha7 Version-Line Readiness
+
+`0.3.9-alpha.7` shipped the read-only workflow closure planner and produced one
+Windows SSH registry implementation-to-finish product usability PASS. That is a
+workflow rail product signal, not eval proof, PH superiority proof, generated
+app quality certification, or a general reliability guarantee.
+
+Recommended next line: `0.4.0-rc.1`, if HQ/user wants a user-facing workflow
+rail milestone candidate while keeping prerelease boundaries. Do not cut
+`0.4.0` stable until release messaging, `latest` strategy, and additional user
+or smoke confidence support a stable default-install claim. Use
+`0.3.9-alpha.8` only if another narrow alpha fix is needed before the milestone
+candidate.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
