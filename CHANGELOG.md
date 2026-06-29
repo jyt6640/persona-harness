@@ -58,6 +58,16 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     planner / continue / finish surfaces only;
   - Windows SSH remote validation was BLOCKED by SCP/SSH hang before product
     behavior, so it is not a Windows product PASS or FAIL;
+  - proxy feedback from existing artifacts marked the workflow rail helpful:
+    `closure status` -> `closure next` -> `workflow finish` helped return to
+    terminal/complete state without guessing, with decisive cues
+    `currentTicket: null`, `pendingTickets: []`, `finish: passed`, and
+    `nextStep: terminal`;
+  - commands-too-many was not triggered, closure confusing was tolerable, and
+    closure run requested was not triggered;
+  - report consistency/noise remains a soak watch item because
+    `verification passed` plus report-only WARN/backend-shape split can confuse
+    users;
   - rc.1 should soak under `@next`; stable `0.4.0` waits for real external user
     feedback and a stabilized Windows validation route;
   - no eval/A-B, PH superiority proof, generated app quality certification,
