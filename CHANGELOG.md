@@ -63,6 +63,21 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - final no-model finish exited 1 with expected blockers;
   - do not reuse this guide/operator route as stable evidence until command
     names and Windows encoding behavior are corrected and reverified.
+- `e688d39 fix(cli): guard lossy Windows stdin and pack stale dist` addresses
+  the two current-head/fresh-tarball blockers exposed by that run:
+  - pure question-mark lossy input such as `??? ? ? API ???` can no longer be
+    stored as requirements; `workflow draft --stdin` and
+    `workflow capture --stdin` reject unrecoverable replacement input before
+    writing requirements;
+  - the existing `媛...???` mojibake guard remains, and normal Korean UTF-8
+    stdin remains preserved;
+  - local tarballs used by smoke could contain stale `dist`, which explained the
+    guide/current CLI mismatch where `workflow approve requirements`,
+    `workflow split`, and `workflow next` appeared missing;
+  - `prepack: npm run build` now prevents stale `dist` in `npm pack`;
+  - this does not reconstruct already-lost `?` text or repair existing broken
+    artifacts retroactively, and it is a current HEAD/future package fix rather
+    than proof that published `0.4.0-rc.1 @next` already contains it.
 
 ## [0.4.0-rc.1] - 2026-06-29
 

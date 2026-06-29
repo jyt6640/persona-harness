@@ -96,6 +96,16 @@ did not match the installed CLI surface in that run. Stable `0.4.0` remains
 deferred until the guide/current CLI surface and Windows validation route are
 corrected and reverified.
 
+Current HEAD `e688d39 fix(cli): guard lossy Windows stdin and pack stale dist`
+addresses the two blockers from that run without changing the release boundary:
+`workflow draft/capture --stdin` now rejects unrecoverable question-mark input
+such as `??? ? ? API ???` before writing requirements, while normal Korean UTF-8
+stdin and the existing `媛...???` mojibake guard remain intact. It also adds
+`prepack: npm run build` so local `npm pack` tarballs do not carry stale `dist`,
+which can make current guide commands appear missing. This is a current
+HEAD/future package fix; published `0.4.0-rc.1 @next` may not include it until a
+new release, and it does not repair already corrupted artifacts.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
