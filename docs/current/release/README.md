@@ -152,6 +152,17 @@ blockers. Pending-ticket and history-repair blockers are not treated as archive
 blockers. Reports marked filled without app/evidence/verification now leave the
 backlog/work ticket pending.
 
+The `8660ef3` Windows operator retry then verified that integrity guard in a
+fresh tarball smoke:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-8660ef3-windows-operator-retry-20260629-221043/RESULT.md`.
+Preflight passed; no-app/no-evidence `workflow archive step-1` exited 1 with
+`verification-unknown`, `implementation-report-missing`, and
+`review-report-missing`; and `workflow next` kept `step-1` current. After
+OpenCode generated a minimal Java/Spring/Gradle skeleton and evidence made
+verification passed, `step-1` moved to history. Final finish remained blocked
+because `step-2`, `step-3`, and `step-4` were still pending, so this is
+INTEGRITY-PASS/PARTIAL rather than stable readiness.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

@@ -151,6 +151,23 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     archive exits 1 and leaves backlog/work ticket pending;
   - this does not auto-fill reports, auto-archive tickets, or weaken the finish
     gate.
+- Current-head `8660ef3` Windows operator retry then classified as
+  INTEGRITY-PASS/PARTIAL:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-8660ef3-windows-operator-retry-20260629-221043/RESULT.md`;
+  - fresh tarball preflight passed: prepack/build, approve/split/next/archive
+    command surface, lossy `???` rejection, Korean UTF-8 preservation,
+    README-absent guidance, and no-token workflow/closure preflight;
+  - no-app/no-evidence `npx ph workflow archive step-1` exited 1 with
+    `verification-unknown`, `implementation-report-missing`, and
+    `review-report-missing`, and `workflow next` kept `step-1` current;
+  - after OpenCode generated a minimal Java/Spring/Gradle skeleton and evidence
+    made verification passed, `step-1` moved to history;
+  - final `workflow finish implement` still exited 1 because `step-2`,
+    `step-3`, and `step-4` remained pending, with backend-shape WARNs remaining.
+    Interpretation: integrity guard verified; single ticket archived after
+    evidence; finish blocked correctly due pending tickets. Stable `0.4.0`
+    remains deferred.
 
 ## [0.4.0-rc.1] - 2026-06-29
 
