@@ -33,6 +33,12 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - this release is product workflow closure planner surface only, not eval
     proof, PH superiority proof, generated app quality certification,
     AST/linter enforcement, or OpenCode/model outcome evidence.
+- Post-publish registry facts:
+  - `persona-harness@0.3.9-alpha.7` exists with gitHead `56f38eb2f37d217267cb51ee347538a18114625f` and shasum `85af4864892a938310c0f1f87ead7bca8cf7a9cb`;
+  - dist-tags are `alpha=0.3.9-alpha.7`, `latest=0.3.9-alpha.3`;
+  - local/origin tag `v0.3.9-alpha.7` points at `56f38eb2f37d217267cb51ee347538a18114625f`;
+  - `latest` was not moved;
+  - no registry smoke, eval/model/OpenCode run, PH superiority proof, or generated app quality certification is claimed by this post-publish verification.
 
 ## [0.3.9-alpha.6] - 2026-06-28
 
