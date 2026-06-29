@@ -18,6 +18,7 @@ import { RailComplianceTracker } from "./rail-compliance.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
+import { createWriteGuardWarning } from "./write-guard.js"
 import type {
   ToolAfterInput,
   ToolAfterOutput,
@@ -43,6 +44,14 @@ function appendInjectionToToolOutput(output: ToolAfterOutput, block: string): vo
 
 function appendJavaRoleDiscoveryToToolOutput(output: ToolAfterOutput, block: string): void {
   if (typeof output.output !== "string" || output.output.includes("[Persona Harness Java Role Discovery]")) {
+    return
+  }
+
+  output.output = `${output.output}\n\n---\n\n${block}`
+}
+
+function appendWriteGuardWarningToToolOutput(output: ToolAfterOutput, block: string): void {
+  if (typeof output.output !== "string" || output.output.includes("[Persona Harness Write Guard]")) {
     return
   }
 
@@ -181,6 +190,14 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         }
 
         appendInjectionToToolOutput(output, injection.block)
+        const warning = createWriteGuardWarning({
+          projectDir,
+          targetFile: injection.targetFile,
+          tool: input.tool,
+        })
+        if (warning !== undefined) {
+          appendWriteGuardWarningToToolOutput(output, warning)
+        }
         writePhase0Evidence(projectDir, {
           hook: "tool.execute.after",
           sessionID: input.sessionID,

@@ -96,6 +96,35 @@ describe("phase0 report-only observer hook", () => {
     )
   })
 
+  it("injects a non-blocking write guard warning for high-confidence Controller Repository dependency", async () => {
+    writeOptInHarnessConfig()
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-write-guard-controller"
+    const targetFile = writeJavaFixture(
+      "ReservationController.java",
+      [
+        "import roomescape.ReservationRepository;",
+        "class ReservationController {",
+        "  ReservationController(ReservationRepository repository) {",
+        "  }",
+        "}",
+        "",
+      ].join("\n"),
+    )
+    const output = { title: "write", output: "ok", metadata: {} }
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "write", sessionID, callID: "call-write-guard-controller", args: { path: targetFile } },
+      output,
+    )
+
+    expect(output.output).toContain("[Persona Harness Write Guard]")
+    expect(output.output).toContain("Mode: non-blocking warning")
+    expect(output.output).toContain("Rule: controller.repository-dependency")
+    expect(output.output).toContain("route the Controller through a Service layer")
+    expect(output.output).toContain("[Persona Harness Injection]")
+  })
+
   it("keeps Java write hooks alive when the observer cannot read the target", async () => {
     writeOptInHarnessConfig()
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
