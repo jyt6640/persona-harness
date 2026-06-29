@@ -39,6 +39,14 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - local/origin tag `v0.3.9-alpha.7` points at `56f38eb2f37d217267cb51ee347538a18114625f`;
   - `latest` was not moved;
   - no registry smoke, eval/model/OpenCode run, PH superiority proof, or generated app quality certification is claimed by this post-publish verification.
+- Alpha7 implementation-to-finish product usability smoke:
+  - External Smoke completed one Windows SSH registry trial from `persona-harness@alpha` / `persona-harness@0.3.9-alpha.7` in `D:\persona-harness-smoke-alpha7-finish-20260629-131050-retryutf`;
+  - OpenCode invocation lesson: positional prompt plus unqualified `gpt-5.4-mini-fast` failed with `EUNKNOWN: unknown error, read`; stdin prompt plus provider-qualified `openai/gpt-5.4-mini-fast` returned OK, and fallback `openai/gpt-5.4-mini` also returned OK. Treat this as a local invocation/wrapper route issue, not a Persona Harness product issue or proven provider outage;
+  - Korean idea-first input was preserved, the no-token rail completed draft/approve/split/next/continue/check, and the closure planner surfaced stable JSON plus first actionable blockers;
+  - OpenCode used the PH rail, generated a Spring Boot/Gradle backend, filled implementation/review reports, ran report-filled commands, archived `req-1`, handled the Java role read coverage blocker, and `workflow finish implement` passed;
+  - `gradlew.bat test`, `bootJar`, and `build` reached `BUILD SUCCESSFUL` after generated test import repairs; runtime smoke observed create/update/delete success plus 404/400 responses;
+  - final `workflow check` WARN had no pending tickets; remaining WARNs were report-only/non-blocking, including backend-shape verification evidence readability;
+  - this is one product usability trial only, not eval/A-B evidence, PH superiority proof, generated app quality certification, or a general reliability claim.
 
 ## [0.3.9-alpha.6] - 2026-06-28
 
