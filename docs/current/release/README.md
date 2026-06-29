@@ -142,6 +142,16 @@ ran report-filled, and archived `step-1` anyway. Final
 integrity before real implementation/evidence is now the next blocker. Stable
 `0.4.0` remains deferred.
 
+Current HEAD `8660ef3 fix(cli): guard ticket archive on closure blockers`
+addresses the archive side of that blocker without turning report markers into
+quality gates. `plan --report-filled` remains a report marker. `workflow archive
+<ticket>` now reads closure state and exits 1 instead of moving work to history
+when non-ticket blockers remain, including `verification-unknown`,
+`evidence-missing`, `report-coverage-missing`, and stack / verification / report
+blockers. Pending-ticket and history-repair blockers are not treated as archive
+blockers. Reports marked filled without app/evidence/verification now leave the
+backlog/work ticket pending.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
