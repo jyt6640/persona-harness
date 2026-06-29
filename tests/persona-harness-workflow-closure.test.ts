@@ -131,6 +131,8 @@ describe("ph workflow closure read-only planner", () => {
     }
     expect(status.state.currentTicket).toBeNull()
     expect(next.state.currentTicket).toBeNull()
+    expect(Object.hasOwn(status, "nextStep")).toBe(false)
+    expect(next.nextStep).toMatchObject(next.steps[0])
   })
 
   it("uses report content as the first actionable blocker for the post-build alpha6-like state", () => {

@@ -28,6 +28,11 @@ afterEach(() => {
 })
 
 describe("ph workflow continue UX", () => {
+  function writeVerificationEvidence(projectDir: string, text: string): void {
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "verification.json"), `${JSON.stringify({ toolOutput: text }, null, 2)}\n`)
+  }
+
   it("prints empty continuation evidence guidance once when reports are still templates", () => {
     const projectDir = createProfiledProject()
 
@@ -73,6 +78,7 @@ describe("ph workflow continue UX", () => {
 
   it("includes the pending ticket card context in the continuation prompt", () => {
     const projectDir = createProfiledProject()
+    writeVerificationEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nruntime smoke PASS")
     mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-2"), { recursive: true })
     writeFileSync(
       join(projectDir, ".persona", "workflow", "backlog.md"),
@@ -107,8 +113,11 @@ describe("ph workflow continue UX", () => {
     )
 
     const result = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
 
     expect(result.status).toBe(0)
+    expect(closureJson.nextStep).toMatchObject({ id: "fill-implementation-report", blockerId: "implementation-report-missing" })
     expect(result.stdout).toContain("Pending workflow ticket:")
     expect(result.stdout).toContain("Ticket: req-2")
     expect(result.stdout).toContain("Title: Return API")
@@ -117,6 +126,9 @@ describe("ph workflow continue UX", () => {
     expect(result.stdout).toContain("- Implement Return API from the source requirements.")
     expect(result.stdout).toContain("- Add POST /lendings/{id}/return.")
     expect(result.stdout).toContain("Next command: npx ph workflow next")
+    expect(result.stdout).toContain("Closure planner next step:")
+    expect(result.stdout).toContain("Step: fill-implementation-report")
+    expect(result.stdout).toContain("Blocker: implementation-report-missing")
     expect(result.stdout).toContain("Post-build closure checklist:")
     expect(result.stdout).toContain("If build/test/runtime already pass, do not start new app generation.")
     expect(result.stdout).toContain("Fill .persona/workflow/implementation-report.md with verification evidence, then run npx ph plan --report-filled implementation.")
@@ -124,5 +136,21 @@ describe("ph workflow continue UX", () => {
     expect(result.stdout).toContain("Review the current req ticket; if it is satisfied, run npx ph workflow archive req-2.")
     expect(result.stdout).toContain("Run npx ph workflow finish implement before claiming completion.")
     expect(result.stdout).toContain("Do not claim overall completion while this ticket remains pending.")
+  })
+
+  it("uses closure blocker ordering in the continuation prompt", () => {
+    const projectDir = createProfiledProject()
+    writeVerificationEvidence(projectDir, "gradlew.bat test")
+
+    const result = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
+
+    expect(result.status).toBe(0)
+    expect(closureJson.nextStep).toMatchObject({ id: "verify-app", blockerId: "verification-unknown" })
+    expect(result.stdout).toContain("Closure planner next step:")
+    expect(result.stdout).toContain("Step: verify-app")
+    expect(result.stdout).toContain("Blocker: verification-unknown")
+    expect(result.stdout).not.toContain("Step: fill-implementation-report")
   })
 })

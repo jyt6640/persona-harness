@@ -1,20 +1,18 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
-import { join, resolve } from "node:path"
+import { resolve } from "node:path"
 import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
+import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 
-type ClosureAction = "next" | "status"
+export type ClosureAction = "next" | "status"
 type ClosureArchive = "complete" | "history-only-repair" | "pending"
 type ClosureEvidence = "missing" | "present"
 type ClosureFinish = "blocked" | "passed"
 type ClosureReportStatus = "filled" | "missing" | "template" | "unknown"
 type ClosureStepKind = "cli-command" | "human-or-model-content" | "terminal"
 type ClosureStepStatus = "blocked" | "complete" | "pending"
-type ClosureVerification = "failed" | "not-run" | "passed" | "unknown"
-
-type ClosureTicket = {
+export type ClosureTicket = {
   readonly id: string
   readonly title: string
   readonly path: string
@@ -28,7 +26,7 @@ type ClosureBlocker = {
   readonly source: string
 }
 
-type ClosureStep = {
+export type ClosureStep = {
   readonly blockerId?: string
   readonly command?: string
   readonly commandAfterContent?: string
@@ -40,7 +38,7 @@ type ClosureStep = {
   readonly status: ClosureStepStatus
 }
 
-type WorkflowClosureState = {
+export type WorkflowClosureState = {
   readonly archive: ClosureArchive
   readonly blockers: readonly ClosureBlocker[]
   readonly currentTicket: ClosureTicket | null
@@ -54,44 +52,42 @@ type WorkflowClosureState = {
   readonly verification: ClosureVerification
 }
 
-type ClosurePayload = {
-  readonly action: ClosureAction
+export type ClosureStatusPayload = {
+  readonly action: "status"
   readonly state: WorkflowClosureState
   readonly steps: readonly ClosureStep[]
 }
 
-type VerificationSummary = {
-  readonly evidenceRef?: string
-  readonly reason: string
-  readonly verification: ClosureVerification
+export type ClosureNextPayload = {
+  readonly action: "next"
+  readonly nextStep: ClosureStep | null
+  readonly state: WorkflowClosureState
+  readonly steps: readonly ClosureStep[]
 }
+
+export type ClosurePayload = ClosureNextPayload | ClosureStatusPayload
 
 const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const PLAN_PATH = ".persona/workflow/plan.md"
 const EVIDENCE_DIR = ".persona/evidence"
-const SUCCESS_PATTERNS = [
-  /BUILD SUCCESSFUL/i,
-  /(?:test|build|runtime smoke|bootRun)\s+PASS/i,
-  /Tomcat started/i,
-  /Started\s+\w*Application/i,
-] as const
-const FAILURE_PATTERNS = [
-  /BUILD FAILED/i,
-  /Could not resolve/i,
-  /exit\s+1/i,
-  /(?:compile|compilation|test|build|runtime smoke|bootRun)\s+failed/i,
-] as const
-const COMMAND_MENTION_PATTERN = /\b(?:\.\/)?gradlew(?:\.bat)?\s+(?:test|build|bootRun)\b|\bbootRun\b|\bcurl\b/i
 
 export function runWorkflowClosureCommand(action: ClosureAction, options: { readonly projectDir?: string }): CliRunResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
-  const state = readWorkflowClosureState(projectDir)
   return {
     status: 0,
-    stdout: `${JSON.stringify({ action, state, steps: closureSteps(state) } satisfies ClosurePayload, null, 2)}\n`,
+    stdout: `${JSON.stringify(readWorkflowClosurePayload(action, projectDir), null, 2)}\n`,
     stderr: "",
   }
+}
+
+export function readWorkflowClosurePayload(action: ClosureAction, projectDir: string): ClosurePayload {
+  const state = readWorkflowClosureState(projectDir)
+  const steps = closureSteps(state)
+  if (action === "next") {
+    return { action, nextStep: steps[0] ?? null, state, steps }
+  }
+  return { action, state, steps }
 }
 
 function readWorkflowClosureState(projectDir: string): WorkflowClosureState {
@@ -147,7 +143,7 @@ function closureArchive(summary: WorkflowStatusSummary): ClosureArchive {
 
 function closureBlockers(
   state: Omit<WorkflowClosureState, "blockers">,
-  verification: VerificationSummary,
+  verification: ReturnType<typeof readClosureVerification>,
   summary: WorkflowStatusSummary,
 ): readonly ClosureBlocker[] {
   if (state.plan !== "accepted") {
@@ -212,55 +208,4 @@ function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, statu
     return { blockerId: blocker.id, commandAfterContent: `npx ph workflow archive ${state.currentTicket.id}`, id: "archive-current-ticket", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   return { blockerId: blocker.id, command: "npx ph workflow finish implement", id: "finish-implement", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
-}
-
-function readClosureVerification(projectDir: string, summary: WorkflowStatusSummary): VerificationSummary {
-  if (summary.verificationFailureBlocking) {
-    return { reason: summary.verificationFailure, verification: "failed" }
-  }
-  const evidence = verificationCorpus(projectDir)
-  if (evidence.text.length === 0) {
-    return { reason: "no verification evidence observed", verification: "not-run" }
-  }
-  if (FAILURE_PATTERNS.some((pattern) => pattern.test(evidence.text))) {
-    return { evidenceRef: evidence.ref, reason: "explicit verification failure evidence observed", verification: "failed" }
-  }
-  if (SUCCESS_PATTERNS.some((pattern) => pattern.test(evidence.text))) {
-    return { evidenceRef: evidence.ref, reason: "verification success evidence observed", verification: "passed" }
-  }
-  if (COMMAND_MENTION_PATTERN.test(evidence.text)) {
-    return { evidenceRef: evidence.ref, reason: "verification commands mentioned without success/failure output", verification: "unknown" }
-  }
-  return { evidenceRef: evidence.ref, reason: "verification evidence is present but inconclusive", verification: "unknown" }
-}
-
-function verificationCorpus(projectDir: string): { readonly ref?: string; readonly text: string } {
-  const reportText = [IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH]
-    .map((path) => join(projectDir, path))
-    .filter((path) => existsSync(path))
-    .map((path) => readFileSync(path, "utf8"))
-    .join("\n")
-  const evidenceDir = join(projectDir, EVIDENCE_DIR)
-  const evidenceText = readFilesDeep(evidenceDir)
-  return {
-    ref: evidenceText.length > 0 ? EVIDENCE_DIR : undefined,
-    text: [reportText, evidenceText].filter((text) => text.length > 0).join("\n"),
-  }
-}
-
-function readFilesDeep(dirPath: string): string {
-  if (!existsSync(dirPath)) {
-    return ""
-  }
-  return readdirSync(dirPath)
-    .map((entry) => {
-      const entryPath = join(dirPath, entry)
-      const stat = statSync(entryPath)
-      if (stat.isDirectory()) {
-        return readFilesDeep(entryPath)
-      }
-      return stat.isFile() ? readFileSync(entryPath, "utf8") : ""
-    })
-    .filter((text) => text.length > 0)
-    .join("\n")
 }

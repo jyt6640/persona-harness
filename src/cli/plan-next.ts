@@ -7,16 +7,12 @@ import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH, type PlanOpt
 import { PlanStatusError, readWorkflowPlanStatus } from "./plan-status.js"
 import { createImplementationPrompt } from "./plan-prompts.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
+import { readWorkflowClosurePayload, type ClosurePayload } from "./workflow-closure.js"
+import { workflowClosureRailLines } from "./workflow-closure-rail.js"
 import { workflowContinueFollowUpLines } from "./workflow-continue-followups.js"
 import { planUncheckedItems } from "./workflow-plan-unchecked.js"
-import { postBuildClosureChecklistLines } from "./workflow-post-build-closure.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
-import {
-  pendingWorkflowTicketResumeLines,
-  pendingWorkflowTickets,
-  TICKET_BY_TICKET_GUIDANCE,
-  TIMEBOXED_SCOPE_GUIDANCE,
-} from "./workflow-ticket-summary.js"
+import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets, TICKET_BY_TICKET_GUIDANCE, TIMEBOXED_SCOPE_GUIDANCE } from "./workflow-ticket-summary.js"
 
 type ReportStatus = "missing" | "template" | "filled" | "unknown"
 
@@ -26,6 +22,7 @@ type WorkflowSnapshot = {
   readonly implementationStatus: ReportStatus
   readonly reviewStatus: ReportStatus
   readonly implementationReportText: string | undefined
+  readonly closurePayload: ClosurePayload
   readonly workflowStatus: WorkflowStatusSummary
   readonly verificationFailure: VerificationFailureSummary
   readonly pendingTicket: ReturnType<typeof pendingWorkflowTickets>[number] | undefined
@@ -105,6 +102,7 @@ function workflowSnapshot(options: PlanOptions): WorkflowSnapshot {
     planStatus,
     implementationStatus,
     reviewStatus,
+    closurePayload: readWorkflowClosurePayload("next", projectDir),
     implementationReportText: reportText(projectDir, IMPLEMENTATION_REPORT_PATH),
     workflowStatus: readWorkflowStatus(projectDir),
     verificationFailure: readVerificationFailure(projectDir, implementationStatus),
@@ -242,7 +240,7 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     ...linesOfEvidence,
     "",
     ...pendingWorkflowTicketResumeLines(snapshot.pendingTicket, snapshot.projectDir),
-    ...(snapshot.implementationStatus !== "filled" || snapshot.reviewStatus !== "filled" || snapshot.pendingTicket !== undefined ? postBuildClosureChecklistLines(snapshot.pendingTicket?.ticket) : []),
+    ...workflowClosureRailLines(snapshot.closurePayload),
     "Plan unchecked items:",
     ...(uncheckedItems.length > 0 ? uncheckedItems : ["- No unchecked plan checklist items found."]),
     "",

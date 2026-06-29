@@ -8,7 +8,7 @@ import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./ja
 import { readWorkflowReportCoverage, type WorkflowReportCoverageSummary } from "./workflow-report-coverage.js"
 import { readStackAlignment, type StackAlignmentSummary } from "./stack-alignment.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
-import { POST_BUILD_CLOSURE_NEXT_ACTION } from "./workflow-post-build-closure.js"
+import { POST_BUILD_CLOSURE_NEXT_ACTION } from "./workflow-closure-rail.js"
 import {
   formatPendingWorkflowTicketStatusLines,
   workflowPendingTicketStatus,
