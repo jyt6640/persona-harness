@@ -50,6 +50,7 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/cli/index.js', 0o755)\"",
+    "prepack": "npm run build",
     "check:docs": "node scripts/check-docs-taxonomy.mjs",
     "check:injection-value": "node scripts/check-injection-value.mjs",
     "experiment:phase0": "node scripts/run-phase0-experiment.mjs",

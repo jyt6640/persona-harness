@@ -23,4 +23,12 @@ describe("CLI stdin encoding", () => {
 
     expect(stdinEncodingError(mojibake)).toContain("Windows PowerShell")
   })
+
+  it("detects unrecoverable replacement-question-mark Korean stdin loss", () => {
+    expect(stdinEncodingError("??? ? ? API ???")).toContain("refused to save")
+  })
+
+  it("does not reject ordinary ASCII questions with punctuation", () => {
+    expect(stdinEncodingError("What is ???")).toBeUndefined()
+  })
 })

@@ -93,6 +93,21 @@ describe("ph workflow ticket backlog", () => {
     expect(existsSync(join(projectDir, ".persona", "workflow", "requirements", "latest.md"))).toBe(false)
   })
 
+  it("refuses to draft replacement-question-mark Korean stdin loss", () => {
+    const projectDir = createHarnessProject()
+
+    const result = runPersonaCli(["workflow", "draft", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: "??? ? ? API ???",
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("refused to save")
+    expect(existsSync(join(projectDir, ".persona", "workflow", "requirements", "latest.md"))).toBe(false)
+  })
+
   it("approves a drafted requirements backlog and then splits it into implementation tickets", () => {
     const projectDir = createHarnessProject()
     expect(

@@ -7,6 +7,7 @@ type DecodeCandidate = {
 
 const WINDOWS_KOREAN_ENCODINGS = ["windows-949", "euc-kr", "ks_c_5601-1987"] as const
 const POWERSHELL_UTF8_AS_ANSI_MARKERS = /[媛留][\u0080-\u009f\uFFFD?꾨뚮]|[꾨떒뚮뱾ㅻ]{2,}/u
+const REPLACEMENT_QUESTION_MARK_RUN = /\?{2,}/gu
 
 export function decodeCliStdinText(input: Buffer): string {
   const utf8 = decodeText("utf-8", input)
@@ -35,7 +36,7 @@ export function decodeCliStdinText(input: Buffer): string {
 }
 
 export function stdinEncodingError(text: string): string | undefined {
-  if (!looksLikePowerShellUtf8FileReadAsAnsi(text)) {
+  if (!looksLikePowerShellUtf8FileReadAsAnsi(text) && !looksLikeLossyQuestionMarkReplacement(text)) {
     return undefined
   }
   return [
@@ -74,4 +75,10 @@ function hangulCharacterCount(text: string): number {
 
 function looksLikePowerShellUtf8FileReadAsAnsi(text: string): boolean {
   return POWERSHELL_UTF8_AS_ANSI_MARKERS.test(text)
+}
+
+function looksLikeLossyQuestionMarkReplacement(text: string): boolean {
+  const matches = [...text.matchAll(REPLACEMENT_QUESTION_MARK_RUN)]
+  const replacementQuestionMarks = matches.reduce((count, match) => count + match[0].length, 0)
+  return matches.length >= 2 && replacementQuestionMarks >= 6 && replacementQuestionMarks / text.length >= 0.25
 }

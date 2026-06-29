@@ -8,6 +8,7 @@ const checkScopeScript = resolve("scripts/check-mvp-scope.mjs")
 const checkInjectionValueScript = resolve("scripts/check-injection-value.mjs")
 const checkDocsTaxonomyScript = resolve("scripts/check-docs-taxonomy.mjs")
 const cleanupScript = resolve("scripts/cleanup-phase-artifacts.mjs")
+const packageJsonPath = resolve("package.json")
 
 let tempDirs: string[] = []
 
@@ -84,6 +85,12 @@ afterEach(() => {
 })
 
 describe("maintenance scripts", () => {
+  it("builds dist before local npm pack so packed CLI surface is current", () => {
+    const parsed: unknown = JSON.parse(readFileSync(packageJsonPath, "utf8"))
+
+    expect(parsed).toMatchObject({ scripts: { prepack: "npm run build" } })
+  })
+
   it("reports PASS when structured scope status matches source and docs", () => {
     const projectDir = createTempDir("persona-scope-pass-")
     writeScopeProject(projectDir)
