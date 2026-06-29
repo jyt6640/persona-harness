@@ -43,6 +43,30 @@ function writeStepReadme(projectDir: string): void {
   )
 }
 
+function writeArchiveReadyWorkflowState(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- README ranges read: 1-220",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- `npx ph bearshell --shell './gradlew build'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+  writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "verification.json"), "{\"toolOutput\":\"BUILD SUCCESSFUL\"}\n")
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -235,6 +259,7 @@ describe("ph workflow ticket backlog", () => {
   it("archives a work ticket into immutable history and advances next ticket", () => {
     const projectDir = createHarnessProject()
     writeStepReadme(projectDir)
+    writeArchiveReadyWorkflowState(projectDir)
     expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const archive = runPersonaCli(["workflow", "archive", "step-1"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -247,6 +272,29 @@ describe("ph workflow ticket backlog", () => {
     const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
     expect(backlog).toContain("| 1 | step-1 | 기본 일정 구현 | archived | .persona/workflow/history/step-1/00-task-card.md |")
     expect(next.stdout).toContain("Ticket: step-2")
+  })
+
+  it("refuses to archive an active ticket while closure evidence is still blocking", () => {
+    const projectDir = createHarnessProject()
+    writeStepReadme(projectDir)
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      "Status: filled\n- Claimed implementation without app output.\n",
+    )
+    writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- Review was claimed without verification.\n")
+    expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+
+    const archive = runPersonaCli(["workflow", "archive", "step-1"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
+
+    expect(archive.status).toBe(1)
+    expect(archive.stderr).toContain("Workflow ticket archive blocked")
+    expect(archive.stderr).toContain("verification-unknown")
+    expect(archive.stderr).toContain("evidence-missing")
+    expect(backlog).toContain("| 1 | step-1 | 기본 일정 구현 | pending | .persona/workflow/work/step-1/00-task-card.md |")
+    expect(existsSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"))).toBe(true)
   })
 
   it("repairs backlog state when a pending ticket already exists in history", () => {
@@ -312,6 +360,7 @@ describe("ph workflow ticket backlog", () => {
   it("refuses to overwrite an existing history ticket", () => {
     const projectDir = createHarnessProject()
     writeStepReadme(projectDir)
+    writeArchiveReadyWorkflowState(projectDir)
     expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["workflow", "archive", "step-1"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     mkdirSync(join(projectDir, ".persona", "workflow", "work", "step-1"), { recursive: true })

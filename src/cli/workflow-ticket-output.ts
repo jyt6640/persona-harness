@@ -1,4 +1,5 @@
 import type { CliRunResult } from "./bearshell.js"
+import type { ClosureBlocker } from "./workflow-closure.js"
 import {
   BACKLOG_PATH,
   DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH,
@@ -224,6 +225,25 @@ export function archiveCompleteOutput(ticketId: string, fromPath: string, toPath
       "- `npx ph workflow next`",
     ].join("\n") + "\n",
     stderr: "",
+  }
+}
+
+export function archiveBlockedOutput(ticketId: string, blockers: readonly ClosureBlocker[]): CliRunResult {
+  return {
+    status: 1,
+    stdout: "",
+    stderr: [
+      `Workflow ticket archive blocked: ${ticketId}`,
+      "",
+      "Archive requires the ticket to be reviewed against current workflow closure state.",
+      "Resolve these non-ticket blockers before archiving:",
+      ...blockers.map((blocker) => `- ${blocker.id}: ${blocker.reason}`),
+      "",
+      "Next:",
+      "- Run `npx ph workflow closure next --json` for the first blocker.",
+      "- Run `npx ph workflow check` after updating reports/evidence.",
+      "- Do not archive or claim completion until blockers are resolved.",
+    ].join("\n") + "\n",
   }
 }
 

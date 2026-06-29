@@ -24,6 +24,7 @@ import {
 import { analyzeRequirementSections, formatRequirementsAnalysis } from "./workflow-requirements-analysis.js"
 import {
   approvalCompleteOutput,
+  archiveBlockedOutput,
   archiveBacklogRepairOutput,
   archiveCompleteOutput,
   backlogNotFoundOutput,
@@ -38,6 +39,7 @@ import {
   splitConflictOutput,
   uninitializedTicketOutput,
 } from "./workflow-ticket-output.js"
+import { readWorkflowClosurePayload, type ClosureBlocker } from "./workflow-closure.js"
 
 type WorkflowTicketOptions = {
   readonly projectDir?: string
@@ -58,6 +60,12 @@ function initializedProjectDir(options: WorkflowTicketOptions): { readonly kind:
 
 function conflictMessage(path: string): CliRunResult {
   return splitConflictOutput(path)
+}
+
+function archiveBlockingBlockers(projectDir: string): readonly ClosureBlocker[] {
+  return readWorkflowClosurePayload("next", projectDir).state.blockers.filter((blocker) =>
+    blocker.id !== "pending-ticket" && blocker.id !== "history-backlog-mismatch"
+  )
 }
 
 function firstMeaningfulLine(markdown: string): string {
@@ -351,6 +359,10 @@ export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOpti
         "Refusing to overwrite completed workflow history.",
       ].join("\n") + "\n",
     }
+  }
+  const blockers = archiveBlockingBlockers(projectDir)
+  if (blockers.length > 0) {
+    return archiveBlockedOutput(ticketId, blockers)
   }
 
   mkdirSync(join(projectDir, HISTORY_DIR), { recursive: true })
