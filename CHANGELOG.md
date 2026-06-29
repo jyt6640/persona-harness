@@ -23,6 +23,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     superiority proof, generated app quality certification, closure guarantee,
     or general reliability guarantee.
 - Release/tag boundary:
+  - release prep commit `5edb535` is parked and not publish-ready pending CLI
+    wiring review for closure planner integration into the active workflow rail;
   - recommended npm publish dist-tag is `next`;
   - `latest` must not move for this release candidate;
   - eval remains stopped and `docs/current/injection-value-status.json` remains

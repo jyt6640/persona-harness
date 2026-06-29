@@ -41,6 +41,10 @@ or smoke confidence support a stable default-install claim. Use
 `0.3.9-alpha.8` only if another narrow alpha fix is needed before the milestone
 candidate.
 
+Current `0.4.0-rc.1` prep commit `5edb535` is parked and not publish-ready
+pending CLI wiring review for closure planner integration into `workflow
+continue`, `plan-next`, finish guidance, and post-build closure guidance.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
