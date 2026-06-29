@@ -34,8 +34,8 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release-prep line: `0.3.9-alpha.8`, a narrow alpha for workflow closure
-rail convergence. Do not cut or publish `0.4.0-rc.1` from the parked draft.
+Current release line: `0.3.9-alpha.8`, a narrow alpha for workflow closure rail
+convergence. Do not cut or publish `0.4.0-rc.1` from the parked draft.
 
 Current `0.4.0-rc.1` prep commit `5edb535` is parked and not publish-ready
 pending CLI wiring review for closure planner integration into `workflow
@@ -43,14 +43,20 @@ continue`, `plan-next`, finish guidance, and post-build closure guidance.
 
 That prep is now stale because `a8eb03d fix(cli): wire closure planner into
 workflow continue` and `e8bb779 fix(cli): converge workflow closure rail` landed
-after it. The release lane must wait for QA verification and a closure trial
-rerun before release prep. Current direction is a narrow `0.3.9-alpha.8`
-vehicle after current-tarball trial PASS, not immediate RC publish.
+after it. Alpha8 is the current alpha vehicle, not immediate RC publish.
 
 Alpha8 packages the code-level convergence after QA no-token convergence PASS.
-The current-tarball implementation-to-finish trial was blocked by remote
+The first current-tarball implementation-to-finish trial was blocked by remote
 SSH/SCP/PowerShell instability, not classified as Persona Harness PASS or FAIL.
-`latest` must not move.
+The later registry alpha8 implementation-to-finish product usability trial
+passed once under closure-state routing.
+
+Channel policy: `@alpha` is the current tester/product smoke channel. `latest`
+is now observed at `0.3.9-alpha.8`, but that should not be read as eval proof,
+generated-app quality certification, or a general reliability guarantee.
+Future `latest` moves still need an explicit release/dist-tag task because
+default install can imply a stronger stability or value-proof claim than this
+alpha evidence supports.
 
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)

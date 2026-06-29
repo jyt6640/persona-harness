@@ -27,7 +27,7 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.3.9-alpha.6`
+> Current source/package candidate: `0.3.9-alpha.8`
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
@@ -129,7 +129,7 @@ Expected:
 - `.persona/harness.jsonc` exists
 - `.persona/rules` exists
 - `ph doctor` shows OpenCode is present
-- `ph doctor` shows `Persona package version: 0.3.9-alpha.6` after the current alpha package is installed
+- `ph doctor` shows `Persona package version: 0.3.9-alpha.8` after the current alpha package is installed
 
 ## 3. Write The Project README
 

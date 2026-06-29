@@ -53,7 +53,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - `persona-harness@0.3.9-alpha.8` exists with gitHead
     `3bb90aa50c8d1231189a5ca00665e8d5bfccade9` and shasum
     `cd26989425223b5145f190c2dfbfa5ad84e57cf9`;
-  - dist-tags are `alpha=0.3.9-alpha.8`, `latest=0.3.9-alpha.3`;
+  - dist-tags are `alpha=0.3.9-alpha.8`, `latest=0.3.9-alpha.8`;
   - local/origin tag `v0.3.9-alpha.8` points at
     `3bb90aa50c8d1231189a5ca00665e8d5bfccade9`;
   - registry no-token closure rail smoke passed: install, Korean idea-first
@@ -65,6 +65,16 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     stayed pending, and no evidence directory/history archive was created;
   - no auto-fill, auto-archive, gate weakening, model/OpenCode implementation,
     eval/A-B, PH superiority proof, or generated app certification is claimed.
+  - `latest` is now observed at `0.3.9-alpha.8`, but this is not eval proof,
+    generated-app quality certification, or a general reliability guarantee.
+- Implementation-to-finish success path smoke:
+  - registry `persona-harness@alpha` installed `0.3.9-alpha.8`;
+  - final `workflow finish implement` passed under closure-state routing;
+  - terminal closure state had `currentTicket: null`, no pending tickets, filled
+    reports, verification passed, and empty blockers;
+  - this is one product usability smoke only, not eval/A-B evidence, PH
+    superiority proof, generated app quality certification, or a general
+    reliability guarantee.
 
 ## [0.4.0-rc.1] - 2026-06-29
 
