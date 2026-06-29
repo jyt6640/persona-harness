@@ -20,6 +20,7 @@ import {
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
+import { stdinEncodingError } from "./stdin-text.js"
 import {
   runWorkflowArchive,
   runWorkflowApproveRequirements,
@@ -72,6 +73,15 @@ function finalGuardReasons(projectDir: string): readonly string[] {
 
 function hasPersonaHarness(summary: WorkflowStatus): boolean {
   return existsSync(join(summary.projectDir, ".persona"))
+}
+
+function stdinEncodingFailure(options: WorkflowOptions): CliRunResult | undefined {
+  const stdin = options.stdin
+  if (stdin === undefined) {
+    return undefined
+  }
+  const message = stdinEncodingError(stdin)
+  return message === undefined ? undefined : { status: 1, stdout: "", stderr: `${message}\n` }
 }
 
 function runWorkflowGuard(guardKind: WorkflowGuardKind, options: WorkflowOptions): CliRunResult {
@@ -146,12 +156,20 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
     return runWorkflowRolesCommand(options)
   }
   if (parsed.kind === "draft") {
+    const encodingFailure = stdinEncodingFailure(options)
+    if (encodingFailure !== undefined) {
+      return encodingFailure
+    }
     return runWorkflowDraft(options)
   }
   if (parsed.kind === "approve-requirements") {
     return runWorkflowApproveRequirements(options)
   }
   if (parsed.kind === "capture") {
+    const encodingFailure = stdinEncodingFailure(options)
+    if (encodingFailure !== undefined) {
+      return encodingFailure
+    }
     return runWorkflowCapture(options)
   }
   if (parsed.kind === "split") {

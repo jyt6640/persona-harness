@@ -6,6 +6,7 @@ type DecodeCandidate = {
 }
 
 const WINDOWS_KOREAN_ENCODINGS = ["windows-949", "euc-kr", "ks_c_5601-1987"] as const
+const POWERSHELL_UTF8_AS_ANSI_MARKERS = /[媛留][\u0080-\u009f\uFFFD?꾨뚮]|[꾨떒뚮뱾ㅻ]{2,}/u
 
 export function decodeCliStdinText(input: Buffer): string {
   const utf8 = decodeText("utf-8", input)
@@ -33,6 +34,20 @@ export function decodeCliStdinText(input: Buffer): string {
   return utf8
 }
 
+export function stdinEncodingError(text: string): string | undefined {
+  if (!looksLikePowerShellUtf8FileReadAsAnsi(text)) {
+    return undefined
+  }
+  return [
+    "Workflow stdin looks like mojibake from Windows PowerShell reading a UTF-8 file as ANSI.",
+    "The original Korean text may already be lossy, so Persona Harness refused to save it.",
+    "",
+    "Re-run with explicit UTF-8 file input:",
+    "- `Get-Content -LiteralPath <path> -Raw -Encoding UTF8 | npx ph workflow draft --stdin`",
+    "- `Get-Content -LiteralPath <path> -Raw -Encoding UTF8 | npx ph workflow capture --stdin`",
+  ].join("\n")
+}
+
 function decodeText(label: string, input: Buffer): string | undefined {
   try {
     return new TextDecoder(label).decode(input)
@@ -55,4 +70,8 @@ function replacementCharacterCount(text: string): number {
 
 function hangulCharacterCount(text: string): number {
   return [...text].filter((character) => character >= "\uAC00" && character <= "\uD7A3").length
+}
+
+function looksLikePowerShellUtf8FileReadAsAnsi(text: string): boolean {
+  return POWERSHELL_UTF8_AS_ANSI_MARKERS.test(text)
 }

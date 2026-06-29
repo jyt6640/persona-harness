@@ -77,6 +77,22 @@ describe("ph workflow ticket backlog", () => {
     expect(existsSync(join(projectDir, ".persona", "workflow", "work"))).toBe(false)
   })
 
+  it("refuses to draft unrecoverable Windows PowerShell mojibake from UTF-8 file stdin", () => {
+    const projectDir = createHarnessProject()
+
+    const result = runPersonaCli(["workflow", "draft", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: "媛꾨떒??????API 留뚮뱾?",
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Windows PowerShell")
+    expect(result.stderr).toContain("Get-Content -LiteralPath <path> -Raw -Encoding UTF8")
+    expect(existsSync(join(projectDir, ".persona", "workflow", "requirements", "latest.md"))).toBe(false)
+  })
+
   it("approves a drafted requirements backlog and then splits it into implementation tickets", () => {
     const projectDir = createHarnessProject()
     expect(

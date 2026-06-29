@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { decodeCliStdinText } from "../src/cli/stdin-text.js"
+import { decodeCliStdinText, stdinEncodingError } from "../src/cli/stdin-text.js"
 
 describe("CLI stdin encoding", () => {
   const koreanIdea = "TODO 웹 서비스 만들래"
@@ -16,5 +16,11 @@ describe("CLI stdin encoding", () => {
     ])
 
     expect(decodeCliStdinText(cp949Bytes)).toBe(koreanIdea)
+  })
+
+  it("detects unrecoverable Windows PowerShell mojibake from a UTF-8 file read as ANSI", () => {
+    const mojibake = "媛꾨떒??????API 留뚮뱾?"
+
+    expect(stdinEncodingError(mojibake)).toContain("Windows PowerShell")
   })
 })
