@@ -6,12 +6,12 @@
 
 Persona Harness 帮助代理从空项目开始，读取 backend 背景，沿着 implementation rail 工作，留下读取/注入/workflow command 的痕迹，继续未完成 ticket，然后再填写 workflow reports 并声明完成。
 
-它不认证 generated app product quality。当前 Java/Spring backend guidance 是 stack steering 和 workflow observability surface，不是 Clean Code 保证、AST/linter 或 enforcement engine。
+它不认证 generated app product quality。当前 Java/Spring backend guidance 是 stack steering、workflow observability 和 scoped opt-in closure enforcement surface，不是 Clean Code 保证、广泛 AST/linter 或 general enforcement engine。
 
 > 当前范围: Java/Spring backend workflow rail MVP.
-> frontend、infra、desktop app、AST/linter enforcement、完整 TDD workflow 都是后续方向。
+> frontend、infra、desktop app、广泛 AST/linter enforcement、完整 TDD workflow 都是后续方向。
 >
-> 当前 source/package 候选版本: `0.3.9-alpha.3`
+> 当前 source/package 候选版本: npm dist-tag `next` 的 `0.4.0-rc.2`
 
 ## 环境要求
 
@@ -60,7 +60,7 @@ Model ID 使用 `provider/model` 格式，例如 `openai/gpt-5.4-mini-fast`.
 然后在 Java/Spring backend 项目中安装 Persona Harness。
 
 ```bash
-npm install -D persona-harness@alpha
+npm install -D persona-harness@next
 npx ph init
 npx ph bootstrap backend
 ```

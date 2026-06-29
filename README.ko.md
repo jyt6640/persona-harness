@@ -6,7 +6,7 @@ OpenCode를 위한 AI coding workflow rail + evidence + continuation harness.
 
 Persona Harness는 에이전트가 빈 프로젝트에서 시작해 backend 맥락을 읽고, 구현 rail을 따라가며, 무엇을 읽고/주입받고/실행했는지 흔적을 남기고, unfinished ticket을 이어서 처리한 뒤 workflow report를 채우고 완료를 주장하도록 돕습니다.
 
-generated app product quality를 인증하지 않습니다. 현재 Java/Spring backend guidance는 stack steering과 workflow observability를 위한 표면이지, Clean Code 보장이나 AST/linter/enforcement 엔진이 아닙니다.
+generated app product quality를 인증하지 않습니다. 현재 Java/Spring backend guidance는 stack steering, workflow observability, scoped opt-in closure enforcement를 위한 표면이지, Clean Code 보장이나 broad AST/linter/general enforcement 엔진이 아닙니다.
 
 ## Project Status
 
@@ -14,7 +14,7 @@ Persona Harness는 alpha experiment입니다.
 
 Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval program은 stopped 상태입니다. frozen aggregate, diagnosis, stopping rationale은 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)을 기준으로 봅니다.
 
-현재 alpha를 generated-app quality certification, PH가 baselines를 이겼다는 evidence, enforcement engine, AST/linter gate로 해석하지 않습니다.
+현재 candidate를 generated-app quality certification, PH가 baselines를 이겼다는 evidence, broad enforcement, AST/linter gate로 해석하지 않습니다.
 
 재사용 가능한 자산은 남아 있습니다.
 
@@ -28,9 +28,9 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
 > 현재 범위: Java/Spring backend workflow rail MVP.
-> frontend, infra, desktop app, AST/linter enforcement, 완전한 TDD workflow는 후속 트랙입니다.
+> frontend, infra, desktop app, broad AST/linter enforcement, 완전한 TDD workflow는 후속 트랙입니다.
 >
-> 현재 source/package 후보: `0.3.9-alpha.8`
+> 현재 source/package 후보: npm dist-tag `next`의 `0.4.0-rc.2`
 
 ## 요구사항
 
@@ -79,7 +79,7 @@ opencode auth list
 그 다음 Java/Spring backend 프로젝트에서 Persona Harness를 설치합니다.
 
 ```bash
-npm install -D persona-harness@alpha
+npm install -D persona-harness@next
 npx ph init
 npx ph bootstrap backend
 ```

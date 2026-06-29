@@ -1,6 +1,6 @@
 # Persona Harness Progress Board
 
-Last updated: 2026-06-24
+Last updated: 2026-06-30
 
 ## Purpose
 
@@ -14,9 +14,25 @@ Detailed historical board content is archived at:
 
 ## Current Position
 
-Current track: v0.3.x AI-facing workflow routing on top of the Java backend MVP.
+Current track: `0.4.0-rc.2` next-channel candidate for scoped product workflow
+guard behavior on top of the Java/Spring backend workflow rail.
 
-Current active candidate: `persona-harness@0.3.7-alpha.1`. The candidate keeps the Java/Spring backend MVP scope, includes the requirements drafting workflow from `0.3.6-alpha.0`, adds top-level intent routing for requirements/debug/review/refactor/git/programming, routes those rails through PH-owned workflow skill reference files, records report-only intent and rail-compliance evidence, adds report-only continuation guidance when workflow artifacts still show pending scope, writes non-autonomous blackbear/Charles/jaeki/roach role boundaries to `.persona/workflow/roles.md`, and adds workflow diagnostics for OpenCode runtime readiness, report status recognition, and Java/Spring/Gradle stack mismatch. This is not a stable support claim.
+Current installable candidate: `persona-harness@next` -> `0.4.0-rc.2`.
+Observed registry channels on 2026-06-30: `next=0.4.0-rc.2`,
+`alpha=0.3.9-alpha.8`, `latest=0.3.9-alpha.8`.
+
+Current claim boundary: GUARD Phase 0-3 is a scoped opt-in closure enforcement
+candidate, not a strong general guard. Phase 0 is opt-in direct verification for
+the supported Java/Spring/Gradle slice; Phase 1 adds convention
+`report|warn|block` levels and the scoped Controller -> Repository blocker;
+Phase 2 is warning-only write guard fallback because deny/rewrite is unsupported;
+Phase 3 is convention registry groundwork. BYO ast-grep conventions remain
+future work.
+
+Historical board entries below may mention older alpha candidates, older
+dist-tag policy, or older eval conclusions. Treat `package.json`, `CHANGELOG.md`,
+and `docs/current/release/v0.4.0-rc.2-release-notes.md` as the current release
+candidate source of truth.
 
 ## Current Decisions
 

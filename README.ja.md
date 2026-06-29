@@ -6,12 +6,12 @@ OpenCode 向け AI coding workflow rail + evidence + continuation harness.
 
 Persona Harness は、エージェントが空のプロジェクトから始め、backend の前提を読み、実装 rail を辿り、何を読んだか・何が注入されたか・どの workflow command を実行したかを記録し、未完了 ticket を継続してから完了を報告するための harness です。
 
-生成された app の product quality は認証しません。現在の Java/Spring backend guidance は stack steering と workflow observability のための surface であり、Clean Code 保証、AST/linter、enforcement engine ではありません。
+生成された app の product quality は認証しません。現在の Java/Spring backend guidance は stack steering、workflow observability、scoped opt-in closure enforcement のための surface であり、Clean Code 保証、広範な AST/linter、general enforcement engine ではありません。
 
 > 現在の範囲: Java/Spring backend workflow rail MVP.
-> frontend、infra、desktop app、AST/linter enforcement、完全な TDD workflow は今後の対象です。
+> frontend、infra、desktop app、広範な AST/linter enforcement、完全な TDD workflow は今後の対象です。
 >
-> 現在の source/package 候補: `0.3.9-alpha.3`
+> 現在の source/package 候補: npm dist-tag `next` の `0.4.0-rc.2`
 
 ## 必要条件
 
@@ -60,7 +60,7 @@ Model ID は `provider/model` 形式です。例: `openai/gpt-5.4-mini-fast`.
 次に Java/Spring backend project で Persona Harness をインストールします。
 
 ```bash
-npm install -D persona-harness@alpha
+npm install -D persona-harness@next
 npx ph init
 npx ph bootstrap backend
 ```

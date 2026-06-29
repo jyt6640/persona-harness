@@ -4,7 +4,7 @@ Persona Harness is an OpenCode plugin and local CLI for AI coding workflow rails
 
 It helps an AI agent start from a clean project, read your backend requirements, follow an implementation rail, leave evidence of what it read/injected/ran, continue unfinished tickets, run verification, and fill workflow reports before claiming completion.
 
-It does not certify generated application product quality. The current Java/Spring backend guidance is a stack-steering and workflow-observability surface, not a Clean Code guarantee, AST/linter, or enforcement engine.
+It does not certify generated application product quality. The current Java/Spring backend guidance is a stack-steering, workflow-observability, and scoped opt-in closure enforcement surface, not a Clean Code guarantee, broad AST/linter, or general enforcement engine.
 
 ## Project Status
 
@@ -14,7 +14,7 @@ The injection effect has been measured and is not proven. The ON/OFF eval progra
 
 The current value axis is product workflow rail usefulness: making init, doctor, observe, workflow continue/check/finish, and report-only observer surfaces coherent enough for real users to try.
 
-Do not read the current alpha as generated-app quality certification, evidence that PH beats baselines, an enforcement engine, or an AST/linter gate.
+Do not read the current candidate as generated-app quality certification, evidence that PH beats baselines, broad enforcement, or an AST/linter gate.
 
 Reusable assets remain:
 
@@ -27,11 +27,11 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.3.9-alpha.8`
+> Current source/package candidate: `0.4.0-rc.2` on npm dist-tag `next`.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
-> Not in scope yet: frontend, infra, desktop app, AST/linter enforcement, generated-app quality certification, and full TDD workflow.
+> Not in scope yet: frontend, infra, desktop app, broad AST/linter enforcement, generated-app quality certification, and full TDD workflow.
 
 ## Who This Is For
 
@@ -109,10 +109,10 @@ openai/gpt-5.4-mini-fast
 Use a new folder. Do not run your first test inside the Persona Harness repository.
 
 ```bash
-mkdir -p /tmp/persona-harness-alpha-check
-cd /tmp/persona-harness-alpha-check
+mkdir -p /tmp/persona-harness-next-check
+cd /tmp/persona-harness-next-check
 npm init -y
-npm install -D persona-harness@alpha
+npm install -D persona-harness@next
 ```
 
 Check the package and local integration:
@@ -129,7 +129,7 @@ Expected:
 - `.persona/harness.jsonc` exists
 - `.persona/rules` exists
 - `ph doctor` shows OpenCode is present
-- `ph doctor` shows `Persona package version: 0.3.9-alpha.8` after the current alpha package is installed
+- `ph doctor` shows `Persona package version: 0.4.0-rc.2` after the current `next` package is installed
 
 ## 3. Write The Project README
 
@@ -168,7 +168,7 @@ Implement an equipment rental REST API with Java/Spring Boot and Gradle.
 EOF
 ```
 
-You can use a different domain. For cleaner feedback, avoid the older `reservation`, `roomescape`, or `book loan` examples when testing the current alpha.
+You can use a different domain. For cleaner feedback, avoid the older `reservation`, `roomescape`, or `book loan` examples when testing the current candidate.
 
 ## 4. Choose The Setup Path
 
@@ -406,16 +406,16 @@ Existing A/B or ON/OFF smoke results are stack-steering signals only. They are n
 
 ## Troubleshooting
 
-### `npm install -D persona-harness@alpha` installs an old version
+### `npm install -D persona-harness@next` installs an old version
 
 Check the registry:
 
 ```bash
 npm view persona-harness dist-tags --json
-npm view persona-harness@alpha version
+npm view persona-harness@next version
 ```
 
-During the alpha pilot, `alpha` is the tester-facing dist-tag. `latest` may lag behind `alpha`, so verify both dist-tags before treating a default install as current.
+For the current release-candidate line, `next` is the tester-facing dist-tag. At the time of this document, `next=0.4.0-rc.2`, while `alpha` and `latest` may remain on older alpha builds such as `0.3.9-alpha.8`. Verify dist-tags before treating a default install as current.
 
 ### `opencode` is not found
 
