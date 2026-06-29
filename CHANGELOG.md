@@ -22,6 +22,31 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - this does not repair already corrupted artifacts and is not eval/A-B
     evidence, PH superiority proof, generated app quality certification, or a
     general reliability/closure guarantee.
+- Current-head `002359c` Windows SSH focused continuation remains
+  PARTIAL/BLOCKED:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-002359c-ssh-focused-continuation-20260629-200215`;
+  - the existing Windows D workspace was reachable over SSH and the previous
+    Korean/stdin issue was no longer the blocker;
+  - timeout alone was not the root cause: wrapper props were absent, but custom
+    `gradlew.bat` could run;
+  - the initial Gradle failure was missing
+    `org.junit.platform:junit-platform-launcher`; repair continuation added
+    `testRuntimeOnly 'org.junit.platform:junit-platform-launcher'`;
+  - after repair, `npx ph bearshell powershell -NoProfile -Command ".\\gradlew.bat test"`
+    passed and build passed;
+  - backend-shape was generated with major shape checks mostly PASS, while DTO
+    boundary and Verification report WARN remain;
+  - product source scan did not observe fake `gradle-shim`, Java `HttpServer`,
+    CommonJS, or Express bypasses;
+  - OpenCode closure continuation hung during the build bearshell step, reports
+    stayed template, `req-1` stayed pending, and final
+    `workflow finish implement` exited 1;
+  - this is product usability validation only: Windows can reach repair
+    build/test PASS, but closure/report/archive/finish follow-through remains a
+    blocker. Stable `0.4.0` remains deferred, and future Windows validation
+    should prefer a less script-heavy TUI/operator flow because the current
+    automation/PowerShell/SSH route may overfit validation mechanics.
 
 ## [0.4.0-rc.1] - 2026-06-29
 

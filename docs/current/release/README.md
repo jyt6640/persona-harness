@@ -74,6 +74,18 @@ or the same form for `workflow capture --stdin`. This guard is not in the
 published rc1 registry package unless a future package includes it, and it is a
 corruption-prevention fix only, not eval proof or generated app certification.
 
+Current-head `002359c` Windows SSH focused continuation is PARTIAL/BLOCKED, not
+an implementation-to-finish PASS. The existing D-drive workspace was reachable
+and Korean/stdin was no longer the blocker. After repairing a missing
+`junit-platform-launcher` test runtime dependency, bearshell `gradlew.bat test`
+and build passed, and source scan did not show fake Gradle shim, Java
+`HttpServer`, CommonJS, or Express bypasses. However OpenCode hung during a
+build bearshell closure step, reports stayed template, `req-1` stayed pending,
+and final `workflow finish implement` exited 1. Stable `0.4.0` remains deferred;
+future Windows validation should use a less script-heavy TUI/operator route
+because the current automation/PowerShell/SSH path may overfit validation
+mechanics.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
