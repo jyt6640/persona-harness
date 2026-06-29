@@ -45,6 +45,11 @@ Current `0.4.0-rc.1` prep commit `5edb535` is parked and not publish-ready
 pending CLI wiring review for closure planner integration into `workflow
 continue`, `plan-next`, finish guidance, and post-build closure guidance.
 
+That prep is now stale because `a8eb03d fix(cli): wire closure planner into
+workflow continue` landed after it. The release lane must wait for QA
+verification and a closure trial rerun before choosing between refreshed
+`0.4.0-rc.1` prep and a narrow `0.3.9-alpha.8`.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

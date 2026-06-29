@@ -6,6 +6,26 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+- Workflow closure planner wiring follow-up:
+  - includes `a8eb03d fix(cli): wire closure planner into workflow continue`;
+  - active `workflow continue` now consumes closure planner payload/`nextStep`
+    through `workflow-closure-rail.ts`;
+  - `workflow closure status --json` remains the state snapshot, while
+    `workflow closure next --json` includes `nextStep`;
+  - retired the old post-build closure string layer
+    `workflow-post-build-closure.ts`;
+  - `workflow-finish-reasons.ts` remains gate-specific final authority wording
+    and `workflow-status.ts` remains report-only summary/next to avoid circular
+    dependency;
+  - no finish gate weakening, no report auto-fill, no ticket auto-archive, and
+    no `closure run` executor were added.
+- Release boundary:
+  - prior release prep commit `5edb535 chore(release): prepare 0.4.0-rc.1` is
+    stale/parked because code changed after it;
+  - do not publish, tag, push, or move `latest` from that prep;
+  - next gate is QA verification and closure trial rerun, then decide whether
+    to refresh RC prep or use a narrow `0.3.9-alpha.8`.
+
 ## [0.4.0-rc.1] - 2026-06-29
 
 - Workflow rail / closure planner milestone candidate:
