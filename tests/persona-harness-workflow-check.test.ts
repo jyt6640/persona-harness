@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { loadHarnessConfig } from "../src/config/harness-config.js"
 
 const tempProjects: string[] = []
 
@@ -994,6 +995,23 @@ describe("ph bootstrap backend", () => {
     expect(agents).toContain("npx ph workflow implement")
     expect(agents).toContain(".persona/project-profile.jsonc")
     expect(agents).toContain("Do not infer a Node/CommonJS project from package.json")
+    expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(false)
+  })
+
+  it("enables direct verification when backend bootstrap is strict", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend", "--strict"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("enabled strict closure verification")
+    expect(result.stdout).toContain("runs the project verification command during closure/finish")
+    expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(true)
   })
 
   it("fills missing backend workflow pieces after init without requiring the user to type every command", () => {

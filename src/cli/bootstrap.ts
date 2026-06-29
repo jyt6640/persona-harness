@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
+import { enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
 import { initializePersonaHarness } from "./init.js"
 import { runIntakeCommand } from "./intake.js"
@@ -17,7 +18,7 @@ type BootstrapOptions = {
 }
 
 type ParsedBootstrapArgs =
-  | { readonly kind: "backend"; readonly force: boolean }
+  | { readonly force: boolean; readonly kind: "backend"; readonly strict: boolean }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
@@ -31,7 +32,7 @@ const ROOT_AGENT_INSTRUCTIONS_PATH = "AGENTS.md"
 
 export function bootstrapUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} bootstrap backend [--force]`,
+    `Usage: ${invocation} bootstrap backend [--force] [--strict]`,
     "",
     "Prepares the backend Persona Harness workflow for AI implementation.",
     "",
@@ -49,6 +50,7 @@ export function bootstrapUsage(invocation = "ph"): string {
     "",
     "Scope:",
     "- Java/Spring backend workflow convenience",
+    "- --strict enables PH-run direct verification during closure/finish; expect toolchain command cost",
     "- no generated app product-quality certification",
     "- no frontend/infra workflow",
   ].join("\n")
@@ -63,15 +65,20 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
   }
 
   let force = false
+  let strict = false
   for (const arg of args.slice(1)) {
     if (arg === "--force") {
       force = true
       continue
     }
+    if (arg === "--strict") {
+      strict = true
+      continue
+    }
     return { kind: "invalid", message: `Unknown option: ${arg}` }
   }
 
-  return { kind: "backend", force }
+  return { kind: "backend", force, strict }
 }
 
 function projectDirFor(options: BootstrapOptions): string {
@@ -144,7 +151,7 @@ function writeBackendAgentInstructions(projectDir: string, skipped: string[], fo
   return `created ${ROOT_AGENT_INSTRUCTIONS_PATH} AI bootstrap instructions`
 }
 
-function runBackendBootstrap(options: BootstrapOptions, force: boolean): CliRunResult {
+function runBackendBootstrap(options: BootstrapOptions, force: boolean, strict: boolean): CliRunResult {
   const projectDir = projectDirFor(options)
   const actions: string[] = []
   const skipped: string[] = []
@@ -154,6 +161,14 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean): CliRunR
     actions.push("initialized .persona and OpenCode plugin config")
   } else {
     skipped.push(".persona already exists")
+  }
+
+  if (strict) {
+    const strictFailure = enableStrictClosureVerification(projectDir)
+    if (strictFailure !== undefined) {
+      return strictFailure
+    }
+    actions.push("enabled strict closure verification; PH runs the project verification command during closure/finish, so expect toolchain command cost")
   }
 
   const profileState = readBackendProjectProfileState(projectDir)
@@ -240,5 +255,5 @@ export function runBootstrapCommand(
   if (parsed.kind === "invalid") {
     return { status: 1, stdout: "", stderr: `${parsed.message}\n\n${bootstrapUsage(invocationName)}\n` }
   }
-  return runBackendBootstrap(options, parsed.force)
+  return runBackendBootstrap(options, parsed.force, parsed.strict)
 }
