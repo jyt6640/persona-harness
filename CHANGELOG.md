@@ -6,6 +6,23 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+- `002359c fix(cli): reject lossy Windows stdin mojibake` adds a
+  corruption-prevention guard for Windows stdin flows:
+  - the rc1 Windows implementation trial was blocked before the model because
+    an ASCII-safe script used `Get-Content -Raw | npx ph workflow draft --stdin`;
+  - Windows PowerShell 5.x can read UTF-8 no-BOM files as ANSI/CP949 first,
+    producing already-lossy text such as `媛꾨떒??????API 留뚮뱾?`;
+  - once `?` replacement appears, Persona Harness cannot reconstruct the
+    original Korean text;
+  - `workflow draft --stdin` and `workflow capture --stdin` now reject lossy
+    mojibake input nonzero instead of writing corrupted requirements;
+  - Windows users should pipe with an explicit encoding, for example
+    `Get-Content -LiteralPath <path> -Raw -Encoding UTF8 | npx ph workflow draft --stdin`,
+    and use the same `-Encoding UTF8` pattern for `workflow capture --stdin`;
+  - this does not repair already corrupted artifacts and is not eval/A-B
+    evidence, PH superiority proof, generated app quality certification, or a
+    general reliability/closure guarantee.
+
 ## [0.4.0-rc.1] - 2026-06-29
 
 - Workflow closure rail product milestone candidate:

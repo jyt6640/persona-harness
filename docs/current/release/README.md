@@ -65,6 +65,15 @@ remains unsuitable because of instability/mojibake risk. Proxy feedback from the
 existing trial marked the workflow rail helpful, did not request `closure run`,
 and left report consistency/noise as a soak watch item.
 
+Post-rc1 current HEAD adds `002359c fix(cli): reject lossy Windows stdin
+mojibake`. The rc1 Windows implementation trial showed that PowerShell 5.x
+`Get-Content -Raw` can corrupt UTF-8 no-BOM Korean before Persona Harness sees
+stdin; once `?` replacement exists, the CLI cannot recover the original text.
+Use `Get-Content -LiteralPath <path> -Raw -Encoding UTF8 | npx ph workflow draft --stdin`
+or the same form for `workflow capture --stdin`. This guard is not in the
+published rc1 registry package unless a future package includes it, and it is a
+corruption-prevention fix only, not eval proof or generated app certification.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)
