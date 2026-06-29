@@ -67,11 +67,16 @@ describe("ph workflow continue UX", () => {
 
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const resume = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
 
     expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Closure blocker: command-discipline-blocking")
     expect(finish.stderr).toContain("Rerun final verification through `npx ph bearshell`.")
     expect(resume.status).toBe(0)
+    expect(closureJson.state.blockers.map((blocker: { id: string }) => blocker.id)).toContain("command-discipline-blocking")
     expect(resume.stdout).toContain("Final verification needs bearshell rerun.")
+    expect(resume.stdout.match(/Final verification needs bearshell rerun\./g)?.length).toBe(1)
     expect(resume.stdout).toContain("Next action: rerun final verification through `npx ph bearshell`")
     expect(resume.stdout).toContain("Do not claim overall completion until final verification is recorded through bearshell.")
   })

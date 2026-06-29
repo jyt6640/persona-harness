@@ -9,7 +9,6 @@ import { createImplementationPrompt } from "./plan-prompts.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
 import { readWorkflowClosurePayload, type ClosurePayload } from "./workflow-closure.js"
 import { workflowClosureRailLines } from "./workflow-closure-rail.js"
-import { workflowContinueFollowUpLines } from "./workflow-continue-followups.js"
 import { planUncheckedItems } from "./workflow-plan-unchecked.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets, TICKET_BY_TICKET_GUIDANCE, TIMEBOXED_SCOPE_GUIDANCE } from "./workflow-ticket-summary.js"
@@ -235,7 +234,6 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     `Implementation report status: ${snapshot.implementationStatus}`,
     `Review report status: ${snapshot.reviewStatus}`,
     "",
-    ...workflowContinueFollowUpLines(snapshot),
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
     ...linesOfEvidence,
     "",

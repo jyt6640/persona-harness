@@ -1,7 +1,6 @@
-import type { ClosurePayload, ClosureStep, ClosureTicket } from "./workflow-closure.js"
+import type { ClosureBlocker, ClosurePayload, ClosureStep, ClosureTicket } from "./workflow-closure.js"
 
-export const POST_BUILD_CLOSURE_NEXT_ACTION =
-  "if build/test/runtime already pass, fill implementation and review reports, archive the completed ticket after review, then run `npx ph workflow finish implement`"
+export const POST_BUILD_CLOSURE_NEXT_ACTION = "if build/test/runtime already pass, fill implementation and review reports, archive the completed ticket after review, then run `npx ph workflow finish implement`"
 
 export function workflowClosureRailLines(payload: ClosurePayload): readonly string[] {
   const step = nextStep(payload)
@@ -15,6 +14,7 @@ export function workflowClosureRailLines(payload: ClosurePayload): readonly stri
     ...(step.reason === undefined ? [] : [`Reason: ${step.reason}`]),
     ...(step.source === undefined ? [] : [`Source: ${step.source}`]),
     ...stepActionLines(step, payload.state.currentTicket),
+    ...additionalBlockerLines(payload.state.blockers.slice(1)),
     "",
   ]
 }
@@ -35,7 +35,10 @@ function stepActionLines(step: ClosureStep, currentTicket: ClosureTicket | null)
   }
   if (step.id === "fix-verification") {
     return [
+      `Verification failed: ${step.reason ?? "verification failed"}`,
+      "Next action: fix the compile/test failure, rerun `./gradlew test` or Windows `gradlew.bat test`, then run `npx ph workflow check`.",
       "Action: fix the compile/test/runtime failure, rerun verification, and record the result in the workflow reports.",
+      "Do not claim overall completion while verification failed.",
       "After evidence: npx ph workflow check",
     ]
   }
@@ -63,6 +66,34 @@ function stepActionLines(step: ClosureStep, currentTicket: ClosureTicket | null)
       "Archive is a candidate action only; do not auto-archive.",
     ]
   }
+  if (step.id === "rerun-bearshell-verification") {
+    return [
+      "Final verification needs bearshell rerun.",
+      ...(step.reason === undefined ? [] : [`Command discipline: ${step.reason}`]),
+      "Next action: rerun final verification through `npx ph bearshell` for test/build/bootRun, update implementation/review reports, then run `npx ph workflow check`.",
+      "Do not claim overall completion until final verification is recorded through bearshell.",
+    ]
+  }
+  if (step.id === "fill-report-coverage") {
+    return [
+      "Reports say filled but required coverage is missing.",
+      ...(step.reason === undefined ? [] : [`Report coverage: ${step.reason}`]),
+      "Next action: read README/profile/generated Java role files, then update implementation/review reports with actual coverage/checklist evidence.",
+      "Do not archive req tickets until review confirms requirements are satisfied.",
+    ]
+  }
+  if (step.id === "record-java-role-read-coverage") {
+    return [
+      ...(step.reason === undefined ? [] : [`Java role read coverage missing: ${step.reason}`]),
+      "Next action: read generated Controller/Service/Repository/Domain/DTO files, then rerun `npx ph workflow check`.",
+    ]
+  }
+  if (step.id === "fix-stack-alignment") {
+    return [
+      ...(step.reason === undefined ? [] : [`Project profile and generated stack mismatch: ${step.reason}`]),
+      "Next action: re-read `.persona/project-profile.jsonc`, align the generated stack, then rerun `npx ph workflow check`.",
+    ]
+  }
   if (step.command !== undefined) {
     return [`Command: ${step.command}`]
   }
@@ -78,4 +109,42 @@ function ticketClosureLines(currentTicket: ClosureTicket | null): readonly strin
   }
   const ticketLabel = /^req[-_]?/iu.test(currentTicket.id) ? "req ticket" : "ticket"
   return [`Review the current ${ticketLabel}; if it is satisfied, run npx ph workflow archive ${currentTicket.id}.`]
+}
+
+function additionalBlockerLines(blockers: readonly ClosureBlocker[]): readonly string[] {
+  return blockers.flatMap((blocker) => {
+    const lines = blockerRailLines(blocker)
+    return lines.length === 0 ? [] : ["", `Additional closure blocker: ${blocker.id}`, ...lines]
+  })
+}
+
+function blockerRailLines(blocker: ClosureBlocker): readonly string[] {
+  if (blocker.id === "command-discipline-blocking") {
+    return [
+      "Final verification needs bearshell rerun.",
+      `Command discipline: ${blocker.reason}`,
+      "Next action: rerun final verification through `npx ph bearshell` for test/build/bootRun, update implementation/review reports, then run `npx ph workflow check`.",
+      "Do not claim overall completion until final verification is recorded through bearshell.",
+    ]
+  }
+  if (blocker.id === "review-report-missing") {
+    return [
+      `Implementation report is filled but review report is ${statusFromReason(blocker.reason)}.`,
+      "Next action: fill .persona/workflow/review-report.md after review/manual QA, then run npx ph plan --report-filled review.",
+      "Do not claim overall completion until review report is filled and finish passes.",
+    ]
+  }
+  if (blocker.id === "report-coverage-missing") {
+    return [
+      "Reports say filled but required coverage is missing.",
+      `Report coverage: ${blocker.reason}`,
+      "Next action: read README/profile/generated Java role files, then update implementation/review reports with actual coverage/checklist evidence.",
+      "Do not archive req tickets until review confirms requirements are satisfied.",
+    ]
+  }
+  return []
+}
+
+function statusFromReason(reason: string): string {
+  return reason.split(/\s+/u).at(-1) ?? "unknown"
 }

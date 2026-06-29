@@ -16,14 +16,17 @@ export type ClosureTicket = {
   readonly id: string
   readonly title: string
   readonly path: string
+  readonly reviewArchiveCandidate: boolean
   readonly state: "active-work" | "history-only" | "missing-work"
+  readonly technicalSignals: readonly string[]
 }
 
-type ClosureBlocker = {
+export type ClosureBlocker = {
   readonly evidenceRef?: string
   readonly id: string
   readonly reason: string
   readonly source: string
+  readonly tickets?: readonly ClosureTicket[]
 }
 
 export type ClosureStep = {
@@ -94,7 +97,7 @@ function readWorkflowClosureState(projectDir: string): WorkflowClosureState {
   const summary = readWorkflowStatus(projectDir)
   const verification = readClosureVerification(projectDir, summary)
   const pendingTickets = summary.pendingTickets.map((ticket) => ticket.ticket)
-  const currentTicket = closureTicket(summary)
+  const currentTicket = closureTickets(summary)[0] ?? null
   const partialState = {
     archive: closureArchive(summary),
     currentTicket,
@@ -108,16 +111,20 @@ function readWorkflowClosureState(projectDir: string): WorkflowClosureState {
     verification: verification.verification,
   }
   const blockers = closureBlockers(partialState, verification, summary)
-  const finish: ClosureFinish = blockers.length === 0 && summary.finding === "PASS" ? "passed" : "blocked"
+  const finish: ClosureFinish = blockers.length === 0 ? "passed" : "blocked"
   const state = { ...partialState, finish }
-  return { ...state, blockers: finish === "blocked" && blockers.length === 0 ? [finishBlocker(summary)] : blockers }
+  return { ...state, blockers }
 }
 
-function closureTicket(summary: WorkflowStatusSummary): ClosureTicket | null {
-  const ticket = summary.pendingTickets[0]
-  return ticket === undefined
-    ? null
-    : { id: ticket.ticket, path: ticket.path, state: ticket.archiveState, title: ticket.title }
+function closureTickets(summary: WorkflowStatusSummary): readonly ClosureTicket[] {
+  return summary.pendingTickets.map((ticket) => ({
+    id: ticket.ticket,
+    path: ticket.path,
+    reviewArchiveCandidate: ticket.reviewArchiveCandidate,
+    state: ticket.archiveState,
+    technicalSignals: ticket.reviewArchiveCandidate ? satisfiedTechnicalConstraintSignals(summary) : [],
+    title: ticket.title,
+  }))
 }
 
 function closureReportStatus(status: string): ClosureReportStatus {
@@ -161,21 +168,47 @@ function closureBlockers(
   if (state.reviewReport !== "filled") {
     blockers.push({ id: "review-report-missing", reason: `review report is ${state.reviewReport}`, source: REVIEW_REPORT_PATH })
   }
+  if (state.evidence !== "present") {
+    blockers.push({ id: "evidence-missing", reason: ".persona/evidence must contain at least one evidence file", source: EVIDENCE_DIR })
+  }
+  if (summary.commandDisciplineBlocking) {
+    blockers.push({ id: "command-discipline-blocking", reason: summary.commandDiscipline, source: "workflow reports" })
+  }
+  if (summary.reportCoverageBlocking) {
+    blockers.push({ id: "report-coverage-missing", reason: summary.reportCoverage, source: "workflow reports" })
+  }
+  if (summary.readCoverageBlocking) {
+    blockers.push({ id: "read-coverage-missing", reason: summary.readCoverage, source: IMPLEMENTATION_REPORT_PATH })
+  }
+  if (summary.profileReadCoverageBlocking) {
+    blockers.push({ id: "profile-read-coverage-missing", reason: summary.profileReadCoverage, source: IMPLEMENTATION_REPORT_PATH })
+  }
+  if (summary.javaRoleReadCoverageBlocking) {
+    blockers.push({ id: "java-role-read-coverage-missing", reason: summary.javaRoleReadCoverage, source: IMPLEMENTATION_REPORT_PATH })
+  }
+  if (summary.stackAlignmentFinding === "WARN") {
+    blockers.push({ id: "stack-alignment-mismatch", reason: summary.stackAlignment, source: ".persona/project-profile.jsonc" })
+  }
   if (state.currentTicket !== null) {
+    const tickets = closureTickets(summary)
     blockers.push(
       state.currentTicket.state === "history-only"
-        ? { id: "history-backlog-mismatch", reason: `${state.currentTicket.id} exists in history but backlog remains pending`, source: state.currentTicket.path }
-        : { id: "pending-ticket", reason: `${state.currentTicket.id} remains pending`, source: state.currentTicket.path },
+        ? { id: "history-backlog-mismatch", reason: `${state.currentTicket.id} exists in history but backlog remains pending`, source: state.currentTicket.path, tickets }
+        : { id: "pending-ticket", reason: `${tickets.map((ticket) => ticket.id).join(", ")} remain pending`, source: state.currentTicket.path, tickets },
     )
-  }
-  if (blockers.length === 0 && summary.finding !== "PASS") {
-    blockers.push(finishBlocker(summary))
   }
   return blockers
 }
 
-function finishBlocker(summary: WorkflowStatusSummary): ClosureBlocker {
-  return { id: "finish-blocked", reason: summary.next, source: "npx ph workflow finish implement" }
+function satisfiedTechnicalConstraintSignals(summary: WorkflowStatusSummary): readonly string[] {
+  return [
+    ...(summary.implementation === "filled" && summary.review === "filled" ? ["workflow reports filled"] : []),
+    ...(summary.readCoverageFinding === "PASS" ? ["README/read coverage PASS"] : []),
+    ...(summary.profileReadCoverageFinding === "PASS" ? ["project profile read coverage PASS"] : []),
+    ...(summary.stackAlignmentFinding === "PASS" ? ["Java/Spring Gradle stack alignment PASS"] : []),
+    ...(summary.commandDisciplineFinding === "PASS" ? ["bearshell command discipline PASS"] : []),
+    ...(summary.evidence === "present" ? ["workflow evidence present"] : []),
+  ]
 }
 
 function closureSteps(state: WorkflowClosureState): readonly ClosureStep[] {
@@ -200,6 +233,27 @@ function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, statu
   }
   if (blocker.id === "review-report-missing") {
     return { blockerId: blocker.id, commandAfterContent: "npx ph plan --report-filled review", id: "fill-review-report", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "evidence-missing") {
+    return { blockerId: blocker.id, id: "record-workflow-evidence", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "command-discipline-blocking") {
+    return { blockerId: blocker.id, command: "npx ph bearshell <verification command>", id: "rerun-bearshell-verification", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "report-coverage-missing") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "fill-report-coverage", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "read-coverage-missing") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "record-read-coverage", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "profile-read-coverage-missing") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "record-profile-read-coverage", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "java-role-read-coverage-missing") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "record-java-role-read-coverage", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "stack-alignment-mismatch") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "fix-stack-alignment", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "history-backlog-mismatch" && state.currentTicket !== null) {
     return { blockerId: blocker.id, command: `npx ph workflow archive ${state.currentTicket.id}`, id: "repair-archive-state", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }

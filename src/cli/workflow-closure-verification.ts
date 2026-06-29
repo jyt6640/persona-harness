@@ -32,6 +32,14 @@ export function readClosureVerification(projectDir: string, summary: WorkflowSta
   if (summary.verificationFailureBlocking) {
     return { reason: summary.verificationFailure, verification: "failed" }
   }
+  if (
+    summary.implementation === "filled"
+    && summary.review === "filled"
+    && !summary.commandDisciplineBlocking
+    && /\bbearshell observed\b/iu.test(summary.commandDiscipline)
+  ) {
+    return { reason: summary.commandDiscipline, verification: "passed" }
+  }
   const evidence = verificationCorpus(projectDir)
   if (evidence.text.length === 0) {
     return { reason: "no verification evidence observed", verification: "not-run" }

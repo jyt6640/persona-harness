@@ -4,8 +4,8 @@ import { join } from "node:path"
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
-import { runWorkflowClosureCommand } from "./workflow-closure.js"
-import { javaRoleReadCoverageReason, reportCoverageReason, stackAlignmentReason, verificationFailureReason } from "./workflow-finish-reasons.js"
+import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
+import { readWorkflowClosurePayload, runWorkflowClosureCommand } from "./workflow-closure.js"
 import {
   failedGuardOutput,
   failedRunnerOutput,
@@ -20,7 +20,6 @@ import {
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
-import { PENDING_TICKETS_COMPLETION_GUIDANCE, pendingTicketArchiveState, pendingWorkflowTickets } from "./workflow-ticket-summary.js"
 import {
   runWorkflowArchive,
   runWorkflowApproveRequirements,
@@ -36,8 +35,6 @@ type WorkflowOptions = {
 }
 
 type WorkflowStatus = ReturnType<typeof readWorkflowStatus>
-
-type PendingTicketSummary = ReturnType<typeof pendingWorkflowTickets>[number]
 
 function implementationGuardReasons(summary: WorkflowStatus): readonly string[] {
   const reasons: string[] = []
@@ -69,125 +66,8 @@ function implementationGuardReasons(summary: WorkflowStatus): readonly string[] 
   return reasons
 }
 
-function ticketLooksTechnicalConstraints(ticket: PendingTicketSummary): boolean {
-  return /technical constraints|constraints|기술|제약/i.test(`${ticket.ticket} ${ticket.title} ${ticket.path}`)
-}
-
-function satisfiedTechnicalConstraintSignals(summary: WorkflowStatus): readonly string[] {
-  const signals = [
-    ...(summary.implementation === "filled" && summary.review === "filled" ? ["workflow reports filled"] : []),
-    ...(summary.readCoverageFinding === "PASS" ? ["README/read coverage PASS"] : []),
-    ...(summary.profileReadCoverageFinding === "PASS" ? ["project profile read coverage PASS"] : []),
-    ...(summary.stackAlignmentFinding === "PASS" ? ["Java/Spring Gradle stack alignment PASS"] : []),
-    ...(summary.commandDisciplineFinding === "PASS" ? ["bearshell command discipline PASS"] : []),
-    ...(summary.evidence === "present" ? ["workflow evidence present"] : []),
-  ]
-  return signals
-}
-
-function pendingTicketReason(summary: WorkflowStatus): string | undefined {
-  const pendingTickets = pendingWorkflowTickets(summary.projectDir)
-  if (pendingTickets.length === 0) {
-    return undefined
-  }
-
-  const ticketLines = pendingTickets.flatMap((ticket) => {
-    const technicalSignals = ticketLooksTechnicalConstraints(ticket) ? satisfiedTechnicalConstraintSignals(summary) : []
-    const archiveCandidateLabel = /^req[-_]?/i.test(ticket.ticket) ? "this req ticket" : "this ticket"
-    return [
-      `  Ticket: ${ticket.ticket}`,
-      `  Title: ${ticket.title}`,
-      `  Path: ${ticket.path}`,
-      ...(pendingTicketArchiveState(summary.projectDir, ticket.ticket) === "history-only"
-        ? [
-            "  State: history exists but backlog still marks this ticket pending.",
-            `  Repair backlog state: \`npx ph workflow archive ${ticket.ticket}\``,
-          ]
-        : []),
-      "  Next command: `npx ph workflow next`",
-      `  If this ticket is complete: \`npx ph workflow archive ${ticket.ticket}\``,
-      `  If ${archiveCandidateLabel} is actually complete after review: \`npx ph workflow archive ${ticket.ticket}\``,
-      "  Archive is a candidate action only; do not auto-archive.",
-      ...(technicalSignals.length > 0
-        ? [
-            `  Technical constraints note: may already be satisfied by ${technicalSignals.join(", ")}.`,
-            `  Archive only after review: \`npx ph workflow archive ${ticket.ticket}\``,
-          ]
-        : []),
-    ]
-  })
-  return [
-    `Pending workflow tickets remain: ${pendingTickets.map((ticket) => ticket.ticket).join(", ")}.`,
-    "Run `npx ph workflow next` to resume the next ticket.",
-    PENDING_TICKETS_COMPLETION_GUIDANCE,
-    ...ticketLines,
-  ].join("\n")
-}
-
-function reviewReportReason(summary: WorkflowStatus): string | undefined {
-  if (summary.review === "filled") {
-    return undefined
-  }
-  if (summary.implementation === "filled") {
-    return [
-      `Implementation report is filled but review report is ${summary.review}.`,
-      ".persona/workflow/review-report.md must be filled before finish.",
-      "Next action: fill .persona/workflow/review-report.md after review/manual QA, then run `npx ph plan --report-filled review`.",
-    ].join(" ")
-  }
-  return ".persona/workflow/review-report.md must be filled"
-}
-
-function finalGuardReasons(summary: WorkflowStatus): readonly string[] {
-  const reasons: string[] = []
-  if (summary.plan !== "accepted") {
-    reasons.push(".persona/workflow/plan.md must be accepted")
-  }
-  if (summary.implementation !== "filled") {
-    reasons.push(".persona/workflow/implementation-report.md must be filled")
-  }
-  const reviewReason = reviewReportReason(summary)
-  if (reviewReason !== undefined) {
-    reasons.push(reviewReason)
-  }
-  if (summary.evidence !== "present") {
-    reasons.push(".persona/evidence must contain at least one evidence file")
-  }
-  if (summary.commandDisciplineBlocking) {
-    reasons.push(`Command discipline blocking: ${summary.commandDiscipline}. Rerun final verification through \`npx ph bearshell\`.`)
-  }
-  const verificationReason = verificationFailureReason(summary)
-  if (verificationReason !== undefined) {
-    reasons.push(verificationReason)
-  }
-  const reportCoverageMissingReason = reportCoverageReason(summary)
-  if (reportCoverageMissingReason !== undefined) {
-    reasons.push(reportCoverageMissingReason)
-  }
-  if (summary.readCoverageBlocking) {
-    reasons.push("README ranges read must be recorded in .persona/workflow/implementation-report.md before finish.")
-  }
-  if (summary.profileReadCoverageBlocking) {
-    reasons.push(
-      "Profile read coverage missing: project profile read coverage must be recorded in .persona/workflow/implementation-report.md. Record project profile read method/ranges before finish.",
-    )
-  }
-  const javaRoleReason = javaRoleReadCoverageReason(summary)
-  if (javaRoleReason !== undefined) {
-    reasons.push(javaRoleReason)
-  }
-  if (summary.stackAlignmentBlocking) {
-    reasons.push(`Stack alignment blocking: ${summary.stackAlignment}. Keep the Java/Spring backend MVP stack aligned before finish.`)
-  }
-  const stackReason = stackAlignmentReason(summary)
-  if (stackReason !== undefined) {
-    reasons.push(stackReason)
-  }
-  const pendingReason = pendingTicketReason(summary)
-  if (pendingReason !== undefined) {
-    reasons.push(pendingReason)
-  }
-  return reasons
+function finalGuardReasons(projectDir: string): readonly string[] {
+  return workflowClosureFinishReasons(readWorkflowClosurePayload("next", projectDir))
 }
 
 function hasPersonaHarness(summary: WorkflowStatus): boolean {
@@ -199,7 +79,7 @@ function runWorkflowGuard(guardKind: WorkflowGuardKind, options: WorkflowOptions
   if (!hasPersonaHarness(summary)) {
     return uninitializedHarnessOutput()
   }
-  const reasons = guardKind === "implement" ? implementationGuardReasons(summary) : finalGuardReasons(summary)
+  const reasons = guardKind === "implement" ? implementationGuardReasons(summary) : finalGuardReasons(summary.projectDir)
   if (reasons.length > 0) {
     return failedGuardOutput(guardKind, reasons)
   }
@@ -235,7 +115,7 @@ function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOpti
   if (!hasPersonaHarness(summary)) {
     return uninitializedHarnessOutput()
   }
-  const reasons = finalGuardReasons(summary)
+  const reasons = finalGuardReasons(summary.projectDir)
   if (reasons.length > 0) {
     return failedRunnerOutput("finish", runnerKind, reasons)
   }
