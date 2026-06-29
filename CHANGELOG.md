@@ -6,6 +6,20 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+- Workflow closure planner first slice:
+  - includes `5df7dc1 feat(cli): add workflow closure planner`;
+  - adds read-only `workflow closure status --json` and
+    `workflow closure next --json`;
+  - moves the B response from more prose/checklist patching toward a
+    state-readable closure planner that exposes workflow state and the first
+    actionable blocker;
+  - `workflow finish implement` remains the final authority;
+  - the planner does not add `closure run`, write reports, archive tickets,
+    finish workflows, weaken gates, or claim retroactive success for the alpha6
+    single finish trial;
+  - design contract:
+    `docs/current/workflow-closure-state-machine-design.md`.
+
 ## [0.3.9-alpha.6] - 2026-06-28
 
 - Product workflow closure UX release:
