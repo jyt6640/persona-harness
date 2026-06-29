@@ -277,6 +277,7 @@ Reason: {{reason}}
 Required flow:
 - 이어서 할 ticket을 찾기 위해 `npx ph workflow next`를 실행한다.
 - accepted plan continuation이 필요하면 `npx ph workflow continue`를 실행한다.
+- README.md가 없으면 막히지 말고 `.persona/project-profile.jsonc`, `.persona/policies/overlay.jsonc`, `.persona/workflow/plan.md`, 현재 task card를 repo-relative path로 읽고, package.json에서 Node/CommonJS stack을 추론하지 않는다.
 - 현재 task card만 구현하고, 남은 ticket이 있으면 전체 완료라고 말하지 않는다.
 - backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
 
