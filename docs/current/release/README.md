@@ -27,23 +27,19 @@ Do not start `0.4` eval immediately after the following are complete:
 
 Those items make the release decision ready; they do not authorize Docs Release to publish, push, tag, or start release prep without HQ/user approval.
 
-## Post-Alpha7 Version-Line Readiness
+## Current Version-Line Readiness
 
 `0.3.9-alpha.7` shipped the read-only workflow closure planner and produced one
 Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release line: `0.3.9-alpha.8`, a narrow alpha for workflow closure rail
-convergence. Do not cut or publish `0.4.0-rc.1` from the parked draft.
+Current release line: fresh `0.4.0-rc.1` prep from alpha8 closure convergence
+state. It is a workflow closure rail product milestone candidate, not stable
+`0.4.0`.
 
-Current `0.4.0-rc.1` prep commit `5edb535` is parked and not publish-ready
-pending CLI wiring review for closure planner integration into `workflow
-continue`, `plan-next`, finish guidance, and post-build closure guidance.
-
-That prep is now stale because `a8eb03d fix(cli): wire closure planner into
-workflow continue` and `e8bb779 fix(cli): converge workflow closure rail` landed
-after it. Alpha8 is the current alpha vehicle, not immediate RC publish.
+Old `0.4.0-rc.1` prep commit `5edb535` remains stale historical context and must
+not be reused. The fresh RC prep must be based on current HEAD/docs.
 
 Alpha8 packages the code-level convergence after QA no-token convergence PASS.
 The first current-tarball implementation-to-finish trial was blocked by remote
@@ -54,9 +50,9 @@ passed once under closure-state routing.
 Channel policy: `@alpha` is the current tester/product smoke channel. `latest`
 is now observed at `0.3.9-alpha.8`, but that should not be read as eval proof,
 generated-app quality certification, or a general reliability guarantee.
-Future `latest` moves still need an explicit release/dist-tag task because
-default install can imply a stronger stability or value-proof claim than this
-alpha evidence supports.
+Publish this RC with `next`, not `latest`. Future `latest` moves still need an
+explicit release/dist-tag task because default install can imply a stronger
+stability or value-proof claim than this evidence supports.
 
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
@@ -86,12 +82,9 @@ alpha evidence supports.
 - [v0.3.9-alpha.6 release notes](v0.3.9-alpha.6-release-notes.md)
 - [v0.3.9-alpha.7 release notes](v0.3.9-alpha.7-release-notes.md)
 - [v0.3.9-alpha.8 release notes](v0.3.9-alpha.8-release-notes.md)
+- [v0.4.0-rc.1 release notes](v0.4.0-rc.1-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
-
-Parked draft:
-
-- [v0.4.0-rc.1 parked draft notes](v0.4.0-rc.1-release-notes.md)
 
 Release automation lives in `.github/workflows/release.yml`.
 
