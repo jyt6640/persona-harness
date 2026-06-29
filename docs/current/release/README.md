@@ -118,6 +118,17 @@ duplicated `.persona/policies` path hit `external_directory` auto-reject; no
 pending, and final `workflow finish implement` exited 1. This is preflight PASS
 and implementation-to-finish NOT PASS; stable `0.4.0` remains deferred.
 
+Current HEAD `a307ac0 fix(cli): guide README-absent workflow entry` addresses
+the CLI-owned part of that blocker. The duplicated `.persona/policies` absolute
+path was not found in CLI/operator prompt output and appears likely
+model/operator generated, but README-absent workspaces still needed clearer
+rail guidance. `workflow implement`, `workflow continue`, and
+`plan --implement` now route agents to repo-relative source-of-truth files:
+`.persona/project-profile.jsonc`, `.persona/policies/overlay.jsonc`,
+`.persona/workflow/plan.md`, and the current ticket / requirements source.
+README-present projects keep README chunk guidance. This reduces entry/context
+ambiguity only; it is not model follow-through proof or a closure guarantee.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

@@ -99,6 +99,23 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - interpretation: preflight PASS, implementation-to-finish NOT PASS. The
     blocker moved from Windows input/packaging/command surface to OpenCode
     implementation entry/context path. Stable `0.4.0` remains deferred.
+- `a307ac0 fix(cli): guide README-absent workflow entry` reduces that
+  README-absent entry/context ambiguity:
+  - trigger: the `e688d39` Windows operator retry reached preflight PASS, then
+    OpenCode stopped before app output with README absent and a malformed
+    duplicated `.persona/policies` path;
+  - CLI investigation did not find the duplicated absolute path in CLI/operator
+    prompt output, so it is likely model/operator generated;
+  - CLI-owned gap: README-absent workspaces still had rail guidance that could
+    over-emphasize README or `.persona/policies` directory reading;
+  - `workflow implement`, `workflow continue`, and `plan --implement` now
+    explicitly handle README absence and guide agents to repo-relative
+    source-of-truth files: `.persona/project-profile.jsonc`,
+    `.persona/policies/overlay.jsonc`, `.persona/workflow/plan.md`, and the
+    current ticket / requirements source;
+  - README-present behavior keeps README chunk guidance;
+  - this does not guarantee model follow-through, weaken finish gates, auto-fill
+    reports, or auto-archive tickets.
 
 ## [0.4.0-rc.1] - 2026-06-29
 
