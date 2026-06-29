@@ -6,6 +6,28 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+## [0.4.0-rc.1] - 2026-06-29
+
+- Workflow rail / closure planner milestone candidate:
+  - packages the read-only closure planner surface shipped through `0.3.9-alpha.7`;
+  - includes `workflow closure status --json` and `workflow closure next --json`;
+  - keeps `workflow finish implement` as final authority;
+  - does not include a `closure run` executor, report auto-fill, ticket
+    auto-archive, workflow auto-finish, or finish gate weakening.
+- Product usability evidence:
+  - alpha7 registry Windows SSH implementation-to-finish proxy trial passed once;
+  - OpenCode used the PH rail, generated a Spring Boot/Gradle backend, filled
+    implementation/review reports, archived `req-1`, handled Java role read
+    coverage, and reached final `workflow finish implement` PASS;
+  - this is a product workflow rail signal only, not eval/A-B evidence, PH
+    superiority proof, generated app quality certification, closure guarantee,
+    or general reliability guarantee.
+- Release/tag boundary:
+  - recommended npm publish dist-tag is `next`;
+  - `latest` must not move for this release candidate;
+  - eval remains stopped and `docs/current/injection-value-status.json` remains
+    `injection-effect-not-proven`.
+
 ## [0.3.9-alpha.7] - 2026-06-29
 
 - Workflow closure planner release:

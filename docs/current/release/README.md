@@ -68,6 +68,7 @@ candidate.
 - [v0.3.9-alpha.5 release notes](v0.3.9-alpha.5-release-notes.md)
 - [v0.3.9-alpha.6 release notes](v0.3.9-alpha.6-release-notes.md)
 - [v0.3.9-alpha.7 release notes](v0.3.9-alpha.7-release-notes.md)
+- [v0.4.0-rc.1 release notes](v0.4.0-rc.1-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
