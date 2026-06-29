@@ -4,7 +4,19 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
-## Unreleased
+## [0.4.0-rc.2] - 2026-06-30
+
+- Next-channel prerelease prep for the current GUARD Phase 0-3 commits after
+  published `0.4.0-rc.1`:
+  - expected publish tag is `next`; do not move `latest`;
+  - packages current HEAD guard/enforcement-loop work, including opt-in direct
+    verification, convention levels, warning-only write guard fallback, and the
+    convention registry;
+  - evidence is QA plus current-tarball package-surface smoke, not published
+    registry `@next` evidence until `0.4.0-rc.2` is actually published;
+  - this is scoped product enforcement behavior, not eval/A-B proof, PH
+    superiority, generated app quality certification, broad architecture
+    correctness, general reliability, or a closure guarantee.
 
 - `002359c fix(cli): reject lossy Windows stdin mojibake` adds a
   corruption-prevention guard for Windows stdin flows:

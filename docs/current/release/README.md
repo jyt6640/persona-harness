@@ -34,9 +34,9 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release line: fresh `0.4.0-rc.1` prep from alpha8 closure convergence
-state. It is a workflow closure rail product milestone candidate, not stable
-`0.4.0`.
+Current release line: `0.4.0-rc.2` prep for GUARD Phase 0-3. It is a
+next-channel prerelease vehicle for scoped product enforcement behavior, not
+stable `0.4.0`.
 
 Old `0.4.0-rc.1` prep commit `5edb535` remains stale historical context and must
 not be reused. The fresh RC prep must be based on current HEAD/docs.
@@ -54,7 +54,8 @@ Publish this RC with `next`, not `latest`. Future `latest` moves still need an
 explicit release/dist-tag task because default install can imply a stronger
 stability or value-proof claim than this evidence supports.
 
-RC soak policy: `0.4.0-rc.1` is published under `next` and should soak there.
+RC soak policy: `0.4.0-rc.1` is published under `next`; `0.4.0-rc.2` should
+also publish under `next` after explicit approval. Do not move `latest`.
 The local `@next` implementation-to-finish proxy trial passed, but Windows SSH
 remote validation was blocked by SCP/SSH instability before product behavior.
 Windows local operator direct PowerShell no-model closure surface validation now
@@ -178,7 +179,9 @@ enforcement.
 
 Current HEAD `7fda771f74008f42082c3a85377262c8fc7ccf5f` also has GUARD Phase
 0-3 QA and package-surface smoke PASS on a fresh local tarball, not the
-published `0.4.0-rc.1 @next` package. The package-surface archive is
+published `0.4.0-rc.1 @next` package. `0.4.0-rc.2` is the release-prep vehicle
+for publishing those commits under `next`; it must not be described as registry
+evidence until publish verification confirms it. The package-surface archive is
 `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-7fda771-guard-package-surface-smoke-20260630-001558`;
 tarball shasum `b703953aab409f1cd7ac578c5af76b3d3e42cf90`, sha256
 `2155ac28c48367c85d2a4163ba56ecea5dd1842b1d0e0935313c665ab9d55b7c`. QA
@@ -221,6 +224,7 @@ the registry; BYO ast-grep conventions remain future work.
 - [v0.3.9-alpha.7 release notes](v0.3.9-alpha.7-release-notes.md)
 - [v0.3.9-alpha.8 release notes](v0.3.9-alpha.8-release-notes.md)
 - [v0.4.0-rc.1 release notes](v0.4.0-rc.1-release-notes.md)
+- [v0.4.0-rc.2 release notes](v0.4.0-rc.2-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
