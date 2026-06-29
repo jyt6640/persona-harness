@@ -212,6 +212,13 @@ function writeControllerRepositoryViolation(projectDir: string): void {
   )
 }
 
+function writeConventionLevel(projectDir: string, level: "block" | "report" | "warn"): void {
+  writeFileSync(
+    join(projectDir, ".persona", "harness.jsonc"),
+    `${JSON.stringify({ conventions: { "controller.repository-dependency": level } }, null, 2)}\n`,
+  )
+}
+
 function writeControllerServiceDependency(projectDir: string): void {
   writeFileSync(
     join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "TaskController.java"),
@@ -440,7 +447,7 @@ describe("ph workflow check", () => {
     const closureJson = JSON.parse(closure.stdout)
 
     expect(check.status).toBe(0)
-    expect(check.stdout).toContain("- architecture conventions: TaskController directly depends on TaskRepository; route through a Service layer instead.")
+    expect(check.stdout).toContain("- architecture conventions: controller.repository-dependency block: TaskController directly depends on TaskRepository; route through a Service layer instead.")
     expect(check.stdout).toContain("Next: route Controller dependencies through a Service layer")
     expect(closureJson.nextStep).toMatchObject({
       blockerId: "architecture-controller-repository-direct-dependency",
@@ -454,6 +461,29 @@ describe("ph workflow check", () => {
     expect(finish.stderr).toContain("route through a Service layer")
     expect(archive.status).toBe(1)
     expect(archive.stderr).toContain("architecture-controller-repository-direct-dependency")
+  })
+
+  it("warns without closure blocking when Controller Repository convention level is warn", () => {
+    const projectDir = createProfiledTempProject()
+    writeConventionLevel(projectDir, "warn")
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeJavaRoleFiles(projectDir)
+    writeControllerRepositoryViolation(projectDir)
+    writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("Workflow status: WARN")
+    expect(check.stdout).toContain("- architecture conventions: controller.repository-dependency warn: TaskController directly depends on TaskRepository")
+    expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
+      "architecture-controller-repository-direct-dependency",
+    )
+    expect(finish.status).toBe(0)
   })
 
   it("does not add an architecture blocker when a Controller depends on Service and Service depends on Repository", () => {

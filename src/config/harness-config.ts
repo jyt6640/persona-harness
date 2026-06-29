@@ -5,6 +5,7 @@ import type { Phase0Scenario } from "../rules/rule-frontmatter.js"
 import { isRecord, stripJsonComments } from "./jsonc.js"
 
 export type HarnessConfig = {
+  readonly conventions: Readonly<Record<string, ConventionLevel>>
   readonly enabled: boolean
   readonly rulesDir: string
   readonly evidenceDir: string
@@ -14,6 +15,8 @@ export type HarnessConfig = {
   readonly enabledDomains: readonly string[]
   readonly scenario: Phase0Scenario
 }
+
+export type ConventionLevel = "block" | "report" | "warn"
 
 export type HarnessEnforceConfig = {
   readonly executeVerification: boolean
@@ -31,6 +34,7 @@ export type HarnessConfigLoadResult = {
 }
 
 const DEFAULT_CONFIG: HarnessConfig = {
+  conventions: { "controller.repository-dependency": "block" },
   enabled: true,
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",
@@ -76,6 +80,24 @@ function readEnforceConfig(value: unknown): HarnessEnforceConfig {
   return {
     executeVerification: readBoolean(value.executeVerification, DEFAULT_CONFIG.enforce.executeVerification),
   }
+}
+
+function readConventionLevel(value: unknown): ConventionLevel | undefined {
+  return value === "block" || value === "report" || value === "warn" ? value : undefined
+}
+
+function readConventionLevels(value: unknown): Readonly<Record<string, ConventionLevel>> {
+  if (!isRecord(value)) {
+    return DEFAULT_CONFIG.conventions
+  }
+  const levels: Record<string, ConventionLevel> = { ...DEFAULT_CONFIG.conventions }
+  for (const [id, rawLevel] of Object.entries(value)) {
+    const level = readConventionLevel(rawLevel)
+    if (level !== undefined) {
+      levels[id] = level
+    }
+  }
+  return levels
 }
 
 export function resolveConfiguredPath(projectDir: string, configuredPath: string): string {
@@ -126,6 +148,7 @@ export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadRe
 
   return {
     config: {
+      conventions: readConventionLevels(parsed.conventions),
       enabled: readBoolean(parsed.enabled, DEFAULT_CONFIG.enabled),
       rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
       evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),

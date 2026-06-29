@@ -1,6 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
+import { loadHarnessConfig } from "../config/harness-config.js"
+import type { ConventionLevel } from "../config/harness-config.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryEvidence } from "../observer/controller-repository-observer.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
@@ -14,6 +16,7 @@ export type ArchitectureConventionSummary = {
 }
 
 const JAVA_MAIN_DIR = join("src", "main", "java")
+const CONTROLLER_REPOSITORY_CONVENTION_ID = "controller.repository-dependency"
 const SERVICE_ARCHITECTURE_STYLES = [
   "simple-layered",
   "clean-architecture-light",
@@ -82,6 +85,10 @@ function directDependencyFinding(projectDir: string, filePath: string): string |
   return `${className(filePath)} directly depends on ${dependency}; route through a Service layer instead. Source: ${relative(projectDir, filePath)}`
 }
 
+function conventionLevel(projectDir: string): ConventionLevel {
+  return loadHarnessConfig(projectDir).conventions[CONTROLLER_REPOSITORY_CONVENTION_ID] ?? "report"
+}
+
 export function readArchitectureConventions(projectDir: string, implementationStatus: string): ArchitectureConventionSummary {
   if (implementationStatus !== "filled") {
     return {
@@ -109,9 +116,11 @@ export function readArchitectureConventions(projectDir: string, implementationSt
       architectureConventionsFinding: "PASS",
     }
   }
+  const level = conventionLevel(projectDir)
+  const findingText = `${CONTROLLER_REPOSITORY_CONVENTION_ID} ${level}: ${findings.join("; ")}`
   return {
-    architectureConventions: findings.join("; "),
-    architectureConventionsBlocking: true,
-    architectureConventionsFinding: "WARN",
+    architectureConventions: findingText,
+    architectureConventionsBlocking: level === "block",
+    architectureConventionsFinding: level === "report" ? "PASS" : "WARN",
   }
 }

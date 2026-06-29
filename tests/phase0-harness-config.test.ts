@@ -48,6 +48,7 @@ describe("Phase 0 harness config", () => {
 
     expect(config.enabledDomains).toEqual(["backend", "programming", "workflow"])
     expect(config.enforce.executeVerification).toBe(false)
+    expect(config.conventions["controller.repository-dependency"]).toBe("block")
   })
 
   it("uses executeVerification enforcement opt-in from harness.jsonc", () => {
@@ -57,6 +58,15 @@ describe("Phase 0 harness config", () => {
     const config = loadHarnessConfig(projectDir)
 
     expect(config.enforce.executeVerification).toBe(true)
+  })
+
+  it("uses convention levels from harness.jsonc", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { conventions: { "controller.repository-dependency": "warn" } })
+
+    const config = loadHarnessConfig(projectDir)
+
+    expect(config.conventions["controller.repository-dependency"]).toBe("warn")
   })
 
   it("keeps malformed config diagnostics-only while falling back to defaults", () => {
