@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { readBackendProjectProfileState } from "../config/project-profile.js"
+import { readArchitectureConventions, type ArchitectureConventionSummary } from "./architecture-conventions.js"
 import { backendShapeReportStatus } from "./backend-shape-report-status.js"
 import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./java-role-read-coverage.js"
 import { readWorkflowReportCoverage, type WorkflowReportCoverageSummary } from "./workflow-report-coverage.js"
@@ -43,6 +44,9 @@ export type WorkflowStatusSummary = {
   readonly stackAlignment: string
   readonly stackAlignmentBlocking: boolean
   readonly stackAlignmentFinding: "PASS" | "WARN"
+  readonly architectureConventions: string
+  readonly architectureConventionsBlocking: boolean
+  readonly architectureConventionsFinding: "PASS" | "WARN"
   readonly pendingTickets: readonly WorkflowPendingTicket[]
   readonly pendingTicketsFinding: "PASS" | "WARN"
   readonly next: string
@@ -382,6 +386,7 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.profileReadCoverageBlocking) return "record project profile read coverage in `.persona/workflow/implementation-report.md`"
   if (summary.javaRoleReadCoverageBlocking) return "read generated Java role files and rerun `npx ph workflow check`"
   if (summary.stackAlignmentBlocking) return "fix generated project stack to match `.persona/project-profile.jsonc` before finishing"
+  if (summary.architectureConventionsBlocking) return "route Controller dependencies through a Service layer, then run `npx ph workflow check`"
   if (summary.pendingTickets.length > 0) {
     const pendingTicket = summary.pendingTickets[0]
     if (pendingTicket?.archiveState === "history-only") {
@@ -419,9 +424,10 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
   const command = commandDiscipline(projectDir, summary.implementation, summary.review)
   const verificationFailure: WorkflowVerificationFailureSummary = readVerificationFailure(projectDir, summary.implementation)
   const stack = stackAlignment(projectDir, summary.implementation)
+  const architectureConventions: ArchitectureConventionSummary = readArchitectureConventions(projectDir, summary.implementation)
   const pendingTickets = workflowPendingTicketStatus(projectDir)
   const pendingTicketsFinding = pendingTickets.length > 0 ? "WARN" : "PASS"
-  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, pendingTickets, pendingTicketsFinding })
+  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, ...architectureConventions, pendingTickets, pendingTicketsFinding })
   const finding =
     summary.plan === "accepted"
     && summary.implementation === "filled"
@@ -433,10 +439,11 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
     && command.commandDisciplineFinding === "PASS"
     && verificationFailure.verificationFailureFinding === "PASS"
     && stack.stackAlignmentFinding === "PASS"
+    && architectureConventions.architectureConventionsFinding === "PASS"
     && pendingTicketsFinding === "PASS"
       ? "PASS"
       : "WARN"
-  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, pendingTickets, pendingTicketsFinding, finding, next }
+  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, ...architectureConventions, pendingTickets, pendingTicketsFinding, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -458,6 +465,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- command discipline: ${summary.commandDiscipline}`,
     `- verification failure: ${summary.verificationFailure}`,
     `- stack alignment: ${summary.stackAlignment}`,
+    `- architecture conventions: ${summary.architectureConventions}`,
     `- backend shape report: ${backendShapeReportStatus(summary.projectDir)}`,
     ...formatPendingWorkflowTicketStatusLines(summary.pendingTickets),
     "",

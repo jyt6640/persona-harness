@@ -94,6 +94,12 @@ function stepActionLines(step: ClosureStep, currentTicket: ClosureTicket | null)
       "Next action: re-read `.persona/project-profile.jsonc`, align the generated stack, then rerun `npx ph workflow check`.",
     ]
   }
+  if (step.id === "fix-controller-repository-dependency") {
+    return [
+      ...(step.reason === undefined ? [] : [`Architecture convention violation: ${step.reason}`]),
+      "Next action: route the Controller through a Service layer instead of depending on Repository directly, then rerun `npx ph workflow check`.",
+    ]
+  }
   if (step.command !== undefined) {
     return [`Command: ${step.command}`]
   }
@@ -140,6 +146,12 @@ function blockerRailLines(blocker: ClosureBlocker): readonly string[] {
       `Report coverage: ${blocker.reason}`,
       "Next action: read README/profile/generated Java role files, then update implementation/review reports with actual coverage/checklist evidence.",
       "Do not archive req tickets until review confirms requirements are satisfied.",
+    ]
+  }
+  if (blocker.id === "architecture-controller-repository-direct-dependency") {
+    return [
+      `Architecture convention violation: ${blocker.reason}`,
+      "Next action: route the Controller through a Service layer instead of depending on Repository directly, then rerun `npx ph workflow check`.",
     ]
   }
   return []

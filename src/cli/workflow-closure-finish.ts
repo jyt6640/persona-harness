@@ -91,6 +91,17 @@ function blockerFinishReason(blocker: ClosureBlocker): string {
       "- Re-run `npx ph workflow check`.",
     ].join("\n")
   }
+  if (blocker.id === "architecture-controller-repository-direct-dependency") {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      `Architecture convention violation: ${blocker.reason}`,
+      "PH blocks the Controller->Repository convention violation in this scoped Java/Spring case.",
+      "This is a workflow architecture convention gate, not generated app product-quality certification.",
+      "Required next actions:",
+      "- Route the Controller through a Service layer instead of depending on Repository directly.",
+      "- Re-run `npx ph workflow check`.",
+    ].join("\n")
+  }
   if (blocker.id === "history-backlog-mismatch") {
     return [`Closure blocker: ${blocker.id}`, "Pending workflow tickets remain.", ...pendingTicketDetailLines(blocker.tickets ?? []), blocker.reason, `Repair backlog state: \`npx ph workflow archive ${ticketIdFromReason(blocker.reason)}\``].join("\n")
   }

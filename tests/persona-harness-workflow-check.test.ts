@@ -128,6 +128,122 @@ function writeJavaRoleFiles(projectDir: string): void {
   writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "dto", "TaskResponse.java"), "record TaskResponse() {}\n")
 }
 
+function writeCompleteWorkflowReportsAndEvidence(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- Project profile ranges read: all",
+      "- Plan ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- Manual QA reviewed controller/service/repository boundary.",
+      "- `npx ph bearshell --shell './gradlew build'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+  mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "workflow.json"),
+    JSON.stringify(
+      {
+        toolOutput: [
+          ".persona/project-profile.jsonc",
+          "src/main/java/com/example/task/presentation/TaskController.java",
+          "src/main/java/com/example/task/application/TaskService.java",
+          "src/main/java/com/example/task/domain/TaskRepository.java",
+          "src/main/java/com/example/task/domain/Task.java",
+          "src/main/java/com/example/task/infrastructure/JdbcTaskRepository.java",
+          "src/main/java/com/example/task/presentation/dto/CreateTaskRequest.java",
+          "src/main/java/com/example/task/presentation/dto/TaskResponse.java",
+          "BUILD SUCCESSFUL",
+        ].join("\n"),
+      },
+      null,
+      2,
+    ),
+  )
+}
+
+function writeControllerRepositoryViolation(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "TaskController.java"),
+    [
+      "import org.springframework.web.bind.annotation.RestController;",
+      "import com.example.task.domain.TaskRepository;",
+      "@RestController",
+      "class TaskController {",
+      "  private final TaskRepository repository;",
+      "  TaskController(TaskRepository repository) {",
+      "    this.repository = repository;",
+      "  }",
+      "  TaskResponse response() {",
+      "    repository.findAll();",
+      "    return new TaskResponse();",
+      "  }",
+      "}",
+    ].join("\n"),
+  )
+}
+
+function writeControllerServiceDependency(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "TaskController.java"),
+    [
+      "import org.springframework.web.bind.annotation.RestController;",
+      "import com.example.task.application.TaskService;",
+      "@RestController",
+      "class TaskController {",
+      "  private final TaskService service;",
+      "  TaskController(TaskService service) {",
+      "    this.service = service;",
+      "  }",
+      "  TaskResponse response() {",
+      "    return service.find();",
+      "  }",
+      "}",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "application", "TaskService.java"),
+    [
+      "import com.example.task.domain.TaskRepository;",
+      "class TaskService {",
+      "  private final TaskRepository repository;",
+      "  TaskService(TaskRepository repository) {",
+      "    this.repository = repository;",
+      "  }",
+      "  TaskResponse find() {",
+      "    return new TaskResponse();",
+      "  }",
+      "}",
+    ].join("\n"),
+  )
+}
+
+function writeSinglePendingTicket(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-1"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "backlog.md"),
+    [
+      "# Persona Workflow Backlog",
+      "",
+      "Status: active",
+      "",
+      "| Order | Ticket | Title | Status | Path |",
+      "| --- | --- | --- | --- | --- |",
+      "| 1 | req-1 | Task API | pending | .persona/workflow/work/req-1/00-task-card.md |",
+    ].join("\n"),
+  )
+  writeFileSync(join(projectDir, ".persona", "workflow", "work", "req-1", "00-task-card.md"), "# Task Card: req-1\n")
+}
+
 function markWorkflowReportsFilledButTemplateLike(projectDir: string): void {
   const implementationReportPath = join(projectDir, ".persona", "workflow", "implementation-report.md")
   const reviewReportPath = join(projectDir, ".persona", "workflow", "review-report.md")
@@ -285,6 +401,61 @@ describe("ph workflow check", () => {
     expect(result.stdout).toContain("Workflow status: PASS")
     expect(result.stdout).toContain("- command discipline: bearshell observed")
     expect(result.stdout).toContain("Next: archive completed workflow")
+  })
+
+  it("blocks closure when a Spring Controller directly depends on a Repository", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeJavaRoleFiles(projectDir)
+    writeControllerRepositoryViolation(projectDir)
+    writeCompleteWorkflowReportsAndEvidence(projectDir)
+    writeSinglePendingTicket(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const resume = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const archive = runPersonaCli(["workflow", "archive", "req-1"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("- architecture conventions: TaskController directly depends on TaskRepository; route through a Service layer instead.")
+    expect(check.stdout).toContain("Next: route Controller dependencies through a Service layer")
+    expect(closureJson.nextStep).toMatchObject({
+      blockerId: "architecture-controller-repository-direct-dependency",
+      id: "fix-controller-repository-dependency",
+      status: "blocked",
+    })
+    expect(resume.stdout).toContain("Blocker: architecture-controller-repository-direct-dependency")
+    expect(resume.stdout).toContain("TaskController directly depends on TaskRepository")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Closure blocker: architecture-controller-repository-direct-dependency")
+    expect(finish.stderr).toContain("route through a Service layer")
+    expect(archive.status).toBe(1)
+    expect(archive.stderr).toContain("architecture-controller-repository-direct-dependency")
+  })
+
+  it("does not add an architecture blocker when a Controller depends on Service and Service depends on Repository", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeJavaRoleFiles(projectDir)
+    writeControllerServiceDependency(projectDir)
+    writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("- architecture conventions: Controller -> Repository direct dependency not observed")
+    expect(check.stdout).not.toContain("architecture-controller-repository-direct-dependency")
+    expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
+      "architecture-controller-repository-direct-dependency",
+    )
+    expect(finish.status).toBe(0)
   })
 
   it("warns and points to workflow next when a pending ticket remains despite passing reports and gates", () => {

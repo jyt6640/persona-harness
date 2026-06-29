@@ -189,6 +189,13 @@ function closureBlockers(
   if (summary.stackAlignmentFinding === "WARN") {
     blockers.push({ id: "stack-alignment-mismatch", reason: summary.stackAlignment, source: ".persona/project-profile.jsonc" })
   }
+  if (summary.architectureConventionsBlocking) {
+    blockers.push({
+      id: "architecture-controller-repository-direct-dependency",
+      reason: summary.architectureConventions,
+      source: "src/main/java",
+    })
+  }
   if (state.currentTicket !== null) {
     const tickets = closureTickets(summary)
     blockers.push(
@@ -254,6 +261,9 @@ function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, statu
   }
   if (blocker.id === "stack-alignment-mismatch") {
     return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "fix-stack-alignment", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "architecture-controller-repository-direct-dependency") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "fix-controller-repository-dependency", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "history-backlog-mismatch" && state.currentTicket !== null) {
     return { blockerId: blocker.id, command: `npx ph workflow archive ${state.currentTicket.id}`, id: "repair-archive-state", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
