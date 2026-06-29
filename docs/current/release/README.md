@@ -176,6 +176,22 @@ Repository paths do not produce the architecture blocker. Other backend-shape
 WARNs remain report-only; this is not broad architecture correctness
 enforcement.
 
+Current HEAD `7fda771f74008f42082c3a85377262c8fc7ccf5f` also has GUARD Phase
+0-3 QA and package-surface smoke PASS on a fresh local tarball, not the
+published `0.4.0-rc.1 @next` package. The package-surface archive is
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-7fda771-guard-package-surface-smoke-20260630-001558`;
+tarball shasum `b703953aab409f1cd7ac578c5af76b3d3e42cf90`, sha256
+`2155ac28c48367c85d2a4163ba56ecea5dd1842b1d0e0935313c665ab9d55b7c`. QA
+reported focused 134 tests PASS, full `npm test` 70 files / 486 tests PASS,
+typecheck/build/product smoke/built CLI smoke PASS. Phase 0 is opt-in direct
+verification via `.persona/harness.jsonc` `enforce.executeVerification: true`
+for the supported Java/Spring/Gradle slice; PH-run direct `gradlew test`/JUnit
+evidence is authoritative and fake agent-written passed evidence is not. Phase 1
+adds `report|warn|block`; only block level hard-blocks. Phase 2 is warning-only
+write guard fallback because hard deny/rewrite is unsupported by the current hook
+result type. Phase 3 centralizes convention id/default level/blocker/fix path in
+the registry; BYO ast-grep conventions remain future work.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

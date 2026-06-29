@@ -185,6 +185,43 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - other backend-shape WARNs remain report-only. This is not broad
     architecture correctness enforcement, does not add `closure run`, custom
     conventions, report auto-fill, auto-archive, or finish gate weakening.
+- GUARD Phase 0-3 landed and passed QA/package-surface smoke on current HEAD
+  `7fda771f74008f42082c3a85377262c8fc7ccf5f`, not the published
+  `0.4.0-rc.1 @next` package:
+  - included commits: `c2819ac fix(cli): add opt-in direct verification gate`,
+    `ffeafa9 fix(cli): support convention blocker levels`,
+    `2f561a0 fix(runtime): warn on write-time convention violations`, and
+    `7fda771 refactor(cli): add convention registry`;
+  - QA reported focused 134 tests PASS, full `npm test` 70 files / 486 tests
+    PASS, plus typecheck, build, product smoke, and built CLI smoke PASS;
+  - package-surface smoke used a fresh current HEAD tarball
+    `persona-harness-0.4.0-rc.1.tgz` with shasum
+    `b703953aab409f1cd7ac578c5af76b3d3e42cf90` and sha256
+    `2155ac28c48367c85d2a4163ba56ecea5dd1842b1d0e0935313c665ab9d55b7c`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-7fda771-guard-package-surface-smoke-20260630-001558`;
+  - Phase 0 PASS: opt-in `.persona/harness.jsonc`
+    `enforce.executeVerification: true` makes PH-run direct `gradlew test` /
+    JUnit evidence authoritative for supported Java/Spring/Gradle verification;
+    fake agent-written passed evidence does not pass, PH-run success passes, and
+    JUnit failure blocks. Disabled mode keeps the existing structured bearshell
+    evidence flow;
+  - Phase 1 PASS: convention levels `report|warn|block` are supported.
+    `controller.repository-dependency` at block level produces
+    `architecture-controller-repository-direct-dependency`; warn/report levels
+    do not hard-block, and compliant Controller -> Service -> Repository has no
+    architecture blocker;
+  - Phase 2 PASS/PARTIAL by design: write-time hook output supports
+    warning-only fallback for convention violations because hard deny/rewrite is
+    not supported by the current plugin hook result type. Do not call this
+    write-time enforcement;
+  - Phase 3 PASS: the convention registry centralizes id/default level/blocker
+    id/fix path for observe, check, closure, continue, and write-warning
+    surfaces. BYO `.persona/conventions/*.yml` ast-grep authoring remains future
+    work;
+  - this is scoped product enforcement behavior, not eval/A-B proof, PH
+    superiority, generated app quality certification, broad architecture
+    correctness, general reliability, or a closure guarantee.
 
 ## [0.4.0-rc.1] - 2026-06-29
 
