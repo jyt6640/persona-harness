@@ -163,7 +163,10 @@ function writeWorkflowPassEvidence(dir) {
   )
   writeFileSync(join(dir, ".persona", "workflow", "review-report.md"), "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n")
   mkdirSync(join(dir, ".persona", "evidence", "phase0"), { recursive: true })
-  writeFileSync(join(dir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+  writeFileSync(
+    join(dir, ".persona", "evidence", "phase0", "verification.json"),
+    `${JSON.stringify({ command: "npx ph bearshell --shell './gradlew test'", status: 0, tool: "bearshell", toolOutput: "BUILD SUCCESSFUL" }, null, 2)}\n`,
+  )
   writeFileSync(
     join(dir, ".persona", "evidence", "phase0", "project-profile.json"),
     `${JSON.stringify({ targetFile: join(dir, ".persona", "project-profile.jsonc"), fileRole: "project-profile" }, null, 2)}\n`,

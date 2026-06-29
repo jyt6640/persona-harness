@@ -28,6 +28,19 @@ function writeEvidence(projectDir: string, text: string): void {
   writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "verification.json"), `${JSON.stringify({ toolOutput: text }, null, 2)}\n`)
 }
 
+function writeStructuredVerificationEvidence(projectDir: string, status: number, text: string): void {
+  mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
+    `${JSON.stringify({ command: "npx ph bearshell ./gradlew test", status, toolOutput: text, tool: "bearshell" }, null, 2)}\n`,
+  )
+}
+
+function writeJUnitResult(projectDir: string, xmlText: string): void {
+  mkdirSync(join(projectDir, "build", "test-results", "test"), { recursive: true })
+  writeFileSync(join(projectDir, "build", "test-results", "test", "TEST-sample.xml"), xmlText)
+}
+
 function writeFilledReports(projectDir: string): void {
   writeFileSync(
     join(projectDir, ".persona", "workflow", "implementation-report.md"),
@@ -137,7 +150,7 @@ describe("ph workflow closure read-only planner", () => {
 
   it("uses report content as the first actionable blocker for the post-build alpha6-like state", () => {
     const projectDir = createWorkflowProject()
-    writeEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nruntime smoke PASS")
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nruntime smoke PASS")
     writeActiveTicket(projectDir)
 
     const output = closureJson(projectDir, "status")
@@ -179,9 +192,34 @@ describe("ph workflow closure read-only planner", () => {
     expect(output.steps[1]).toMatchObject({ id: "fill-implementation-report" })
   })
 
+  it("keeps report prose success unknown without structured execution evidence", () => {
+    const projectDir = createWorkflowProject()
+    writeFilledReports(projectDir)
+
+    const output = closureJson(projectDir)
+
+    expect(output.state.verification).toBe("unknown")
+    expect(output.steps[0]).toMatchObject({
+      id: "verify-app",
+      blockerId: "verification-unknown",
+      status: "blocked",
+    })
+    expect(output.steps[0].reason).toContain("no structured execution evidence")
+  })
+
+  it("accepts structured bearshell execution success evidence", () => {
+    const projectDir = createWorkflowProject()
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL")
+
+    const output = closureJson(projectDir)
+
+    expect(output.state.verification).toBe("passed")
+    expect(output.steps[0]).toMatchObject({ id: "fill-implementation-report" })
+  })
+
   it("orders explicit verification failure before report closure", () => {
     const projectDir = createWorkflowProject()
-    writeEvidence(projectDir, "gradlew.bat build\nBUILD FAILED\nCould not resolve org.springframework.boot:spring-boot-starter-web:.")
+    writeStructuredVerificationEvidence(projectDir, 1, "gradlew.bat build\nBUILD FAILED\nCould not resolve org.springframework.boot:spring-boot-starter-web:.")
 
     const output = closureJson(projectDir)
 
@@ -194,9 +232,24 @@ describe("ph workflow closure read-only planner", () => {
     })
   })
 
+  it("orders JUnit XML verification failure before report closure", () => {
+    const projectDir = createWorkflowProject()
+    writeJUnitResult(projectDir, '<testsuite tests="2" failures="1" errors="0" skipped="0"></testsuite>\n')
+
+    const output = closureJson(projectDir)
+
+    expect(output.state.verification).toBe("failed")
+    expect(output.steps[0]).toMatchObject({
+      id: "fix-verification",
+      blockerId: "verification-failed",
+      status: "blocked",
+    })
+    expect(output.steps[0].reason).toContain("JUnit XML")
+  })
+
   it("moves from implementation report to review report after implementation is filled", () => {
     const projectDir = createWorkflowProject()
-    writeEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL")
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL")
     writeFileSync(join(projectDir, ".persona", "workflow", "implementation-report.md"), "Status: filled\n- verification evidence recorded\n")
 
     const output = closureJson(projectDir)
@@ -212,7 +265,7 @@ describe("ph workflow closure read-only planner", () => {
 
   it("keeps pending active tickets behind a review confirmation boundary", () => {
     const projectDir = createWorkflowProject()
-    writeEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL")
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL")
     writeFilledReports(projectDir)
     writeActiveTicket(projectDir)
 
@@ -229,7 +282,7 @@ describe("ph workflow closure read-only planner", () => {
 
   it("shows history-only backlog mismatch as a repairable action without repairing it", () => {
     const projectDir = createWorkflowProject()
-    writeEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL")
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL")
     writeFilledReports(projectDir)
     writeHistoryOnlyTicket(projectDir)
 
@@ -247,7 +300,7 @@ describe("ph workflow closure read-only planner", () => {
 
   it("returns a terminal step when finish state is passable", () => {
     const projectDir = createWorkflowProject()
-    writeEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nTomcat started on port 8080")
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nTomcat started on port 8080")
     writeFilledReports(projectDir)
 
     const output = closureJson(projectDir)

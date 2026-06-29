@@ -64,7 +64,15 @@ function writeArchiveReadyWorkflowState(projectDir: string): void {
       "- BUILD SUCCESSFUL",
     ].join("\n"),
   )
-  writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "verification.json"), "{\"toolOutput\":\"BUILD SUCCESSFUL\"}\n")
+  writeStructuredVerificationSuccessEvidence(projectDir)
+}
+
+function writeStructuredVerificationSuccessEvidence(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
+    `${JSON.stringify({ command: "npx ph bearshell --shell './gradlew test'", status: 0, tool: "bearshell", toolOutput: "BUILD SUCCESSFUL" }, null, 2)}\n`,
+  )
 }
 
 afterEach(() => {
@@ -330,7 +338,7 @@ describe("ph workflow ticket backlog", () => {
     )
     writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- `npx ph bearshell --shell './gradlew build'`\n")
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     renameSync(
       join(projectDir, ".persona", "workflow", "work", "req-2"),
@@ -464,7 +472,7 @@ describe("ph workflow ticket backlog", () => {
     )
     writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n")
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["workflow", "archive", "step-1"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
@@ -516,7 +524,7 @@ describe("ph workflow ticket backlog", () => {
       ].join("\n"),
     )
     writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n")
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     expect(runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["workflow", "archive", "step-1"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 

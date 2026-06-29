@@ -29,6 +29,23 @@ function writeProfileReadEvidence(projectDir: string): void {
   )
 }
 
+function writeStructuredVerificationSuccessEvidence(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
+    `${JSON.stringify(
+      {
+        command: "npx ph bearshell --shell './gradlew test'",
+        status: 0,
+        tool: "bearshell",
+        toolOutput: "BUILD SUCCESSFUL",
+      },
+      null,
+      2,
+    )}\n`,
+  )
+}
+
 function writePassingWorkflowEvidence(projectDir: string): void {
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
   writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
@@ -48,7 +65,7 @@ function writePassingWorkflowEvidence(projectDir: string): void {
     "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
   )
   mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-  writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+  writeStructuredVerificationSuccessEvidence(projectDir)
   writeProfileReadEvidence(projectDir)
 }
 
@@ -153,6 +170,9 @@ function writeCompleteWorkflowReportsAndEvidence(projectDir: string): void {
     join(projectDir, ".persona", "evidence", "phase0", "workflow.json"),
     JSON.stringify(
       {
+        command: "npx ph bearshell --shell './gradlew test'",
+        status: 0,
+        tool: "bearshell",
         toolOutput: [
           ".persona/project-profile.jsonc",
           "src/main/java/com/example/task/presentation/TaskController.java",
@@ -291,7 +311,7 @@ describe("ph workflow check", () => {
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -392,7 +412,7 @@ describe("ph workflow check", () => {
       "Status: filled\n- [x] `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -519,7 +539,7 @@ describe("ph workflow check", () => {
       ].join("\n"),
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -545,7 +565,7 @@ describe("ph workflow check", () => {
       "Status: filled\n- `npx ph bearshell --shell 'npm test'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -575,7 +595,7 @@ describe("ph workflow check", () => {
       "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -610,7 +630,7 @@ describe("ph workflow check", () => {
       "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -648,7 +668,7 @@ describe("ph workflow check", () => {
       "Status: filled\n- Manual QA blocked by compile failure.\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -693,7 +713,7 @@ describe("ph workflow check", () => {
       "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -744,7 +764,7 @@ describe("ph workflow check", () => {
     )
     writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: filled\n- [x] HTTP smoke checked.\n")
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
@@ -882,7 +902,7 @@ describe("ph workflow guard", () => {
       "Status: filled\n- [x] `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "guard", "final"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -1126,7 +1146,7 @@ describe("ph workflow start and finish", () => {
       "Status: filled\n- [x] `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -1160,7 +1180,7 @@ describe("ph workflow start and finish", () => {
       "Status: filled\n- [x] `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -1196,7 +1216,7 @@ describe("ph workflow start and finish", () => {
       "Status: filled\n- [x] `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -1235,7 +1255,7 @@ describe("ph workflow start and finish", () => {
       "Status: filled\n- `npx ph bearshell --shell './gradlew bootRun'`\n",
     )
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -1275,6 +1295,7 @@ describe("ph workflow start and finish", () => {
       join(projectDir, ".persona", "evidence", "phase0", "2026-06-23T00-00-00-000Z-readme.md.json"),
       `${JSON.stringify({ targetFile: readmePath, fileRole: "project-bootstrap" }, null, 2)}\n`,
     )
+    writeStructuredVerificationSuccessEvidence(projectDir)
     writeProfileReadEvidence(projectDir)
 
     const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })

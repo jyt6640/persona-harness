@@ -33,6 +33,14 @@ describe("ph workflow continue UX", () => {
     writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "verification.json"), `${JSON.stringify({ toolOutput: text }, null, 2)}\n`)
   }
 
+  function writeStructuredVerificationSuccessEvidence(projectDir: string, text: string): void {
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
+      `${JSON.stringify({ command: "npx ph bearshell --shell './gradlew test'", status: 0, tool: "bearshell", toolOutput: text }, null, 2)}\n`,
+    )
+  }
+
   it("prints empty continuation evidence guidance once when reports are still templates", () => {
     const projectDir = createProfiledProject()
 
@@ -102,7 +110,7 @@ describe("ph workflow continue UX", () => {
 
   it("includes the pending ticket card context in the continuation prompt", () => {
     const projectDir = createProfiledProject()
-    writeVerificationEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nruntime smoke PASS")
+    writeStructuredVerificationSuccessEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nruntime smoke PASS")
     mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-2"), { recursive: true })
     writeFileSync(
       join(projectDir, ".persona", "workflow", "backlog.md"),

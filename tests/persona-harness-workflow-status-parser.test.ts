@@ -53,6 +53,13 @@ function writeJavaBackendMarkers(projectDir: string): void {
   writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "class Application {}\n")
 }
 
+function writeStructuredVerificationSuccessEvidence(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
+    `${JSON.stringify({ command: "npx ph bearshell --shell './gradlew test'", status: 0, tool: "bearshell", toolOutput: "BUILD SUCCESSFUL" }, null, 2)}\n`,
+  )
+}
+
 function createPlannedBackendProject(): string {
   const projectDir = createTempProject()
   writeFileSync(join(projectDir, "README.md"), "# Equipment API\n\n- 장비 등록\n")
@@ -62,7 +69,7 @@ function createPlannedBackendProject(): string {
   expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
   writeJavaBackendMarkers(projectDir)
   mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
-  writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+  writeStructuredVerificationSuccessEvidence(projectDir)
   return projectDir
 }
 
