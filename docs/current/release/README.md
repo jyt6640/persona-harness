@@ -163,6 +163,19 @@ verification passed, `step-1` moved to history. Final finish remained blocked
 because `step-2`, `step-3`, and `step-4` were still pending, so this is
 INTEGRITY-PASS/PARTIAL rather than stable readiness.
 
+Current HEAD `0784135 fix(cli): block controller repository closure` adds the
+first scoped hard convention blocker. The existing observer signal
+`controller.repository-dependency` is promoted to workflow closure blocker
+`architecture-controller-repository-direct-dependency` for ready Java/Spring
+service-layer profiles when typed evidence can name the Controller, Repository,
+source file, and direct dependency. The violation is surfaced/blocked through
+`workflow check`, `workflow closure next --json`, `workflow continue`, `workflow
+finish implement`, and `workflow archive <ticket>`, with remediation to route
+the Controller through a Service layer. Compliant Controller -> Service ->
+Repository paths do not produce the architecture blocker. Other backend-shape
+WARNs remain report-only; this is not broad architecture correctness
+enforcement.
+
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
 - [GitHub Actions release automation](github-actions-release-automation.md)

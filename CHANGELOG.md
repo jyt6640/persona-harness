@@ -168,6 +168,23 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     Interpretation: integrity guard verified; single ticket archived after
     evidence; finish blocked correctly due pending tickets. Stable `0.4.0`
     remains deferred.
+- `0784135 fix(cli): block controller repository closure` records the first
+  scoped hard convention blocker in the workflow closure loop:
+  - existing observer signal `controller.repository-dependency` is promoted to
+    hard blocker `architecture-controller-repository-direct-dependency`;
+  - scope is intentionally narrow: ready Java/Spring service-layer profile
+    styles only, and only when typed evidence names the Controller, Repository,
+    source file, and direct dependency;
+  - `workflow check`, `workflow closure next --json`, `workflow continue`,
+    `workflow finish implement`, and `workflow archive <ticket>` now surface or
+    block the violation consistently;
+  - action wording tells the agent to route the Controller through a Service
+    layer instead of depending directly on a Repository;
+  - compliant Controller -> Service -> Repository paths have no architecture
+    blocker;
+  - other backend-shape WARNs remain report-only. This is not broad
+    architecture correctness enforcement, does not add `closure run`, custom
+    conventions, report auto-fill, auto-archive, or finish gate weakening.
 
 ## [0.4.0-rc.1] - 2026-06-29
 
