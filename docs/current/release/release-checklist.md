@@ -78,6 +78,17 @@ npm run check:injection-value
 npm publish --dry-run --tag <dist-tag>
 ```
 
+## 6. Publish / Tag Order
+
+Use this order for prerelease refreshes:
+
+1. Publish explicitly, either locally with `npm publish --tag <dist-tag>` or through the GitHub Actions `workflow_dispatch` publish job.
+2. Verify the registry package with `npm view persona-harness@<version> version gitHead dist.shasum --json`.
+3. Verify dist-tags with `npm dist-tag ls persona-harness`.
+4. Push `main` and the matching `v${package.json.version}` tag only after registry verification succeeds.
+
+Tag pushes are verification/GitHub-release events only. They must not be used as the npm publish trigger, because the package may already be immutable in the registry or require interactive npm auth.
+
 Expected:
 
 - Tests pass.

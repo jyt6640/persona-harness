@@ -235,10 +235,10 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 
 Release automation lives in `.github/workflows/release.yml`.
 
-- Push `vX.Y.Z-alpha.N` to publish with npm dist-tag `alpha`, then synchronize `latest` to the same version during the alpha pilot.
-- Push `vX.Y.Z-beta.N` to publish with npm dist-tag `beta`, then synchronize `latest` to the same version during the beta pilot.
-- Push `vX.Y.Z` to publish with npm dist-tag `latest`.
-- The workflow verifies test/typecheck/build/rule diagnostics/scope/injection-value before publishing.
+- Push `vX.Y.Z*` tags to verify the package and create GitHub release notes only.
+- Publish npm packages from `workflow_dispatch` with `publish=true` and an explicit dist-tag (`alpha`, `beta`, `next`, or `latest`).
+- Release-candidate packages use npm dist-tag `next`; do not move `latest` unless stable release approval is explicit.
+- The workflow verifies test/typecheck/build/rule diagnostics/scope/injection-value before any publish-capable job.
 - The workflow checks that the pushed tag matches `package.json` version.
-- The workflow runs `npm publish --dry-run` before real publish.
+- The workflow runs `npm publish --dry-run`; tag pushes do not run real `npm publish`.
 - GitHub release notes are generated automatically for tag releases.
