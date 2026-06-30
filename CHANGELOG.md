@@ -65,6 +65,38 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   run proof, no PH superiority, no generated app certification, no broad
   architecture correctness, no general reliability, no closure guarantee, no
   token-savings guarantee, no OMO parity, and no autonomous completion claim.
+- External current/local tarball package-surface smoke on HEAD
+  `5fd5a1456ef007d37b37fc5fb22b9849f12485ef` passed the R-MCP.1a code-nav CLI
+  preview surface:
+  - source was a fresh local/current tarball, not registry `@next` and not
+    origin-only;
+  - package/version: `persona-harness@0.4.0-rc.5`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rmcp1a-code-nav-package-surface-20260630-180844/persona-harness-0.4.0-rc.5.tgz`;
+  - npm shasum: `758babb2f6a7a2c45331e02026b541c28937d60e`;
+  - sha256: `59a097989fc21bbf4ff75acf19c754be6468a6a2b28f8c146213ff5e7adb4e4b`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rmcp1a-code-nav-package-surface-20260630-180844`;
+  - tarball contains exactly `package/packages/lsp-tools-mcp/README.md`,
+    `package/packages/lsp-tools-mcp/bin/code-nav-mcp.mjs`, and
+    `package/packages/lsp-tools-mcp/package.json` for the preview package;
+  - `code-nav-mcp.mjs --help` exits 0 with non-empty preview usage and boundary
+    text: opt-in package surface only, no OpenCode registration by default, no
+    codegraph/indexer, no token-saving claim, unavailable tools reported
+    honestly;
+  - `capabilities --json` exits 0 with `ast-grep.availability`,
+    `filesystem.text-search`, `mcpProtocolServer=false`,
+    `registeredWithOpenCode=false`, and `tokenSavingsClaimed=false`;
+  - with `PATH` limited to the Node directory, ast-grep availability is reported
+    unavailable with a limitation, without crash or fake pass;
+  - `search --json TaskController fixture/src/main/java` returns bounded
+    filesystem matches, and missing root returns unavailable with empty matches;
+  - no `.opencode` directory or MCP registration is created.
+- Code-nav boundaries: this is a current/local tarball preview only, not registry
+  `@next` behavior until a later publish verifies gitHead; it is not OpenCode MCP
+  registration evidence, full MCP protocol evidence, token-savings evidence,
+  eval/A-B proof, codegraph replacement proof, OMO parity, PH superiority,
+  generated app certification, broad reliability, or a closure guarantee.
 
 ## [0.4.0-rc.4] - 2026-06-30
 
