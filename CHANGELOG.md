@@ -133,11 +133,38 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - workflow archive and finish still block in incomplete
     verification/report/evidence/pending-ticket state, with no report auto-fill,
     ticket auto-archive, or finish/archive gate weakening.
+- External current/local tarball package-surface smoke on HEAD
+  `ebc57dd2ae72c947255f472145291d424f5d2337` passed the R4 relay validator
+  surface:
+  - source was a fresh local/current tarball, not registry `@next` and not
+    origin-only;
+  - package/version: `persona-harness@0.4.0-rc.4`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r4-relay-validate-ebc57dd-package-surface-20260630-163930/persona-harness-0.4.0-rc.4.tgz`;
+  - npm shasum: `c02cfd8a666db066dac57b7a3d6cc2b5059ba230`;
+  - sha256: `8bd2d4f21ab28fe03992675b8349934cc13efe4ab8abddcb880fb4f1d1e3cf89`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r4-relay-validate-ebc57dd-package-surface-20260630-163930`;
+  - `npx ph workflow relay validate --json` returns `action: validate` in
+    disabled, missing, incomplete, and valid fixture states;
+  - missing-artifact validation does not create the roles directory or change the
+    work ticket file list;
+  - incomplete/template artifacts report `role-test-artifact-incomplete`,
+    `readiness=incomplete`, and
+    `roleCompletionState.incompleteRoles=[test-writer]` without changing artifact
+    hashes;
+  - valid artifacts report no role blockers, gate command
+    `npx ph workflow closure next --json`, complete role state, empty
+    `incompleteRoles`, and `requiredOutputArtifact=null` while preserving all role
+    artifact hashes;
+  - workflow archive and finish still block in incomplete
+    verification/report/evidence/pending-ticket state, with no report auto-fill,
+    ticket auto-archive, or finish/archive gate weakening.
 - Boundaries remain narrow: current/local tarball package-surface evidence only
   plus post-publish registry metadata; no eval/A-B proof, PH superiority,
-  registry `@next` behavior for R1/R2/R3b, model/OpenCode run proof, native subtask
-  dispatch, token-savings guarantee, OMO parity, autonomous completion claim,
-  generated app certification, broad architecture correctness, general
+  registry `@next` behavior for R1/R2/R3b/R4, model/OpenCode run proof, native
+  subtask dispatch, token-savings guarantee, OMO parity, autonomous completion
+  claim, generated app certification, broad architecture correctness, general
   reliability, or closure guarantee is claimed.
 
 ## [0.4.0-rc.3] - 2026-06-30
