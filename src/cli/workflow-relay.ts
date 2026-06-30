@@ -1,10 +1,10 @@
-import { existsSync } from "node:fs"
-import { join, resolve } from "node:path"
+import { resolve } from "node:path"
 import process from "node:process"
 
 import { loadHarnessConfig, type MultiAgentRole } from "../config/harness-config.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readWorkflowClosurePayload, type ClosureBlocker, type ClosureTicket } from "./workflow-closure.js"
+import { readRelayRoleArtifact } from "./workflow-relay-artifacts.js"
 import type {
   RelayAction,
   RelayBlockerId,
@@ -19,14 +19,16 @@ import {
   relayUsage,
 } from "./workflow-relay-ui.js"
 
-const ROLE_BLOCKERS: Readonly<Record<MultiAgentRole, RelayBlockerId>> = {
+const ROLE_MISSING_BLOCKERS: Readonly<Record<MultiAgentRole, RelayBlockerId>> = {
   "test-writer": "role-test-artifact-missing",
   jaeki: "role-implementation-artifact-missing",
   roach: "role-review-artifact-missing",
 }
 
-function roleArtifactPath(ticketId: string, role: MultiAgentRole): string {
-  return `.persona/workflow/work/${ticketId}/roles/${role}.md`
+const ROLE_INCOMPLETE_BLOCKERS: Readonly<Record<MultiAgentRole, RelayBlockerId>> = {
+  "test-writer": "role-test-artifact-incomplete",
+  jaeki: "role-implementation-artifact-incomplete",
+  roach: "role-review-artifact-incomplete",
 }
 
 function parseRelayArgs(args: readonly string[]): RelayAction | "help" | undefined {
@@ -52,18 +54,11 @@ function closureCurrentTicket(projectDir: string): {
 }
 
 function relayRoleArtifacts(projectDir: string, ticketId: string, roles: readonly MultiAgentRole[]): readonly RelayRoleArtifact[] {
-  return roles.map((role) => {
-    const path = roleArtifactPath(ticketId, role)
-    return {
-      path,
-      role,
-      status: existsSync(join(projectDir, path)) ? "present" : "missing",
-    }
-  })
+  return roles.map((role) => readRelayRoleArtifact(projectDir, ticketId, role))
 }
 
-function firstMissingRoleArtifact(artifacts: readonly RelayRoleArtifact[]): RelayRoleArtifact | undefined {
-  return artifacts.find((artifact) => artifact.status === "missing")
+function firstBlockedRoleArtifact(artifacts: readonly RelayRoleArtifact[]): RelayRoleArtifact | undefined {
+  return artifacts.find((artifact) => artifact.readiness !== "complete")
 }
 
 function roleCompletionState(
@@ -72,12 +67,24 @@ function roleCompletionState(
   currentRole: MultiAgentRole | null,
 ): RelayRoleCompletionState {
   return {
-    completedRoles: artifacts.filter((artifact) => artifact.status === "present").map((artifact) => artifact.role),
+    completedRoles: artifacts.filter((artifact) => artifact.readiness === "complete").map((artifact) => artifact.role),
     currentRole,
+    incompleteRoles: artifacts.filter((artifact) => artifact.readiness === "incomplete").map((artifact) => artifact.role),
     missingRoles: artifacts.filter((artifact) => artifact.status === "missing").map((artifact) => artifact.role),
     nextRole: currentRole,
     overall,
   }
+}
+
+function roleArtifactBlockerId(artifact: RelayRoleArtifact): RelayBlockerId {
+  return artifact.readiness === "missing" ? ROLE_MISSING_BLOCKERS[artifact.role] : ROLE_INCOMPLETE_BLOCKERS[artifact.role]
+}
+
+function roleArtifactBlockerReason(artifact: RelayRoleArtifact, ticketId: string): string {
+  if (artifact.readiness === "missing") {
+    return `${artifact.role} ${RELAY_ROLE_ARTIFACT_KIND[artifact.role]} is missing for ${ticketId}.`
+  }
+  return `${artifact.role} ${RELAY_ROLE_ARTIFACT_KIND[artifact.role]} is incomplete for ${ticketId}: ${artifact.reason ?? "Update the role artifact."}`
 }
 
 function scopedInputs(ticket: ClosureTicket, closureBlocker: ClosureBlocker | null): readonly string[] {
@@ -153,8 +160,8 @@ function readWorkflowRelayPayload(action: RelayAction, projectDir: string): Work
     }
   }
   const roleArtifacts = relayRoleArtifacts(projectDir, currentTicket.id, roleOrder)
-  const missingArtifact = firstMissingRoleArtifact(roleArtifacts)
-  if (missingArtifact === undefined) {
+  const blockedArtifact = firstBlockedRoleArtifact(roleArtifacts)
+  if (blockedArtifact === undefined) {
     return {
       action,
       blockers: [],
@@ -181,29 +188,29 @@ function readWorkflowRelayPayload(action: RelayAction, projectDir: string): Work
       scopedInputs: scopedInputs(currentTicket, closureBlocker),
     }
   }
-  const promptLines = relayPromptLinesFor(missingArtifact.role, currentTicket, missingArtifact.path)
+  const promptLines = relayPromptLinesFor(blockedArtifact.role, currentTicket, blockedArtifact.path)
   const scopedInputFiles = scopedInputs(currentTicket, closureBlocker)
   return {
     action,
     blockers: [
       {
-        id: ROLE_BLOCKERS[missingArtifact.role],
-        reason: `${missingArtifact.role} ${RELAY_ROLE_ARTIFACT_KIND[missingArtifact.role]} is missing for ${currentTicket.id}.`,
-        source: missingArtifact.path,
+        id: roleArtifactBlockerId(blockedArtifact),
+        reason: roleArtifactBlockerReason(blockedArtifact, currentTicket.id),
+        source: blockedArtifact.path,
       },
     ],
     closureBlocker,
-    currentRole: missingArtifact.role,
+    currentRole: blockedArtifact.role,
     currentTicket,
     enabled: true,
     gateCommand,
-    nextRole: missingArtifact.role,
+    nextRole: blockedArtifact.role,
     promptBlock: relayPromptBlock(promptLines),
     promptLines,
-    requiredArtifact: missingArtifact.path,
-    requiredOutputArtifact: missingArtifact.path,
+    requiredArtifact: blockedArtifact.path,
+    requiredOutputArtifact: blockedArtifact.path,
     roleArtifacts,
-    roleCompletionState: roleCompletionState(roleArtifacts, "blocked", missingArtifact.role),
+    roleCompletionState: roleCompletionState(roleArtifacts, "blocked", blockedArtifact.role),
     roleOrder,
     scopedInputFiles,
     scopedInputs: scopedInputFiles,

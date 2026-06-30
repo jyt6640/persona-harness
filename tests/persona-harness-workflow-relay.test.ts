@@ -56,9 +56,12 @@ function writeWorkflowWithPendingTicket(projectDir: string, ticketId = "req-1"):
   )
 }
 
-function writeRoleArtifact(projectDir: string, ticketId: string, role: string): void {
+function writeRoleArtifact(projectDir: string, ticketId: string, role: string, content?: string): void {
   mkdirSync(join(projectDir, ".persona", "workflow", "work", ticketId, "roles"), { recursive: true })
-  writeFileSync(join(projectDir, ".persona", "workflow", "work", ticketId, "roles", `${role}.md`), `# ${role}\n`)
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "work", ticketId, "roles", `${role}.md`),
+    content ?? `# ${role}\n`,
+  )
 }
 
 function relayJson(projectDir: string, action: "next" | "status" = "next"): Record<string, unknown> {
@@ -159,7 +162,16 @@ describe("ph workflow relay read-only preview", () => {
     writeHarnessConfig(projectDir, true)
     writeWorkflowWithPendingTicket(projectDir)
 
-    writeRoleArtifact(projectDir, "req-1", "test-writer")
+    writeRoleArtifact(
+      projectDir,
+      "req-1",
+      "test-writer",
+      [
+        "# test-writer",
+        "",
+        "Verification plan: add a failing controller test for task creation and run ./gradlew test.",
+      ].join("\n"),
+    )
     const implementer = relayJson(projectDir)
     expect(implementer.currentRole).toBe("jaeki")
     expect(implementer.nextRole).toBe("jaeki")
@@ -177,7 +189,14 @@ describe("ph workflow relay read-only preview", () => {
       }),
     ])
 
-    writeRoleArtifact(projectDir, "req-1", "jaeki")
+    writeRoleArtifact(
+      projectDir,
+      "req-1",
+      "jaeki",
+      ["# jaeki", "", "Implementation summary: added controller/service/repository code.", "Evidence: ./gradlew test."].join(
+        "\n",
+      ),
+    )
     const reviewer = relayJson(projectDir, "status")
     expect(reviewer.action).toBe("status")
     expect(reviewer.currentRole).toBe("roach")
@@ -196,7 +215,12 @@ describe("ph workflow relay read-only preview", () => {
       }),
     ])
 
-    writeRoleArtifact(projectDir, "req-1", "roach")
+    writeRoleArtifact(
+      projectDir,
+      "req-1",
+      "roach",
+      ["# roach", "", "Review result: workflow check reviewed and review-report.md should be updated."].join("\n"),
+    )
     const complete = relayJson(projectDir)
     expect(complete.currentRole).toBeNull()
     expect(complete.nextRole).toBeNull()

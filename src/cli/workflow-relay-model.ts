@@ -6,8 +6,11 @@ export type RelayAction = "next" | "status"
 export type RelayBlockerId =
   | "multi-agent-disabled"
   | "no-current-ticket"
+  | "role-implementation-artifact-incomplete"
   | "role-implementation-artifact-missing"
+  | "role-review-artifact-incomplete"
   | "role-review-artifact-missing"
+  | "role-test-artifact-incomplete"
   | "role-test-artifact-missing"
 
 export type RelayBlocker = {
@@ -18,6 +21,8 @@ export type RelayBlocker = {
 
 export type RelayRoleArtifact = {
   readonly path: string
+  readonly readiness: "complete" | "incomplete" | "missing"
+  readonly reason: string | null
   readonly role: MultiAgentRole
   readonly status: "missing" | "present"
 }
@@ -25,6 +30,7 @@ export type RelayRoleArtifact = {
 export type RelayRoleCompletionState = {
   readonly completedRoles: readonly MultiAgentRole[]
   readonly currentRole: MultiAgentRole | null
+  readonly incompleteRoles: readonly MultiAgentRole[]
   readonly missingRoles: readonly MultiAgentRole[]
   readonly nextRole: MultiAgentRole | null
   readonly overall: "blocked" | "complete" | "disabled" | "no-current-ticket"
