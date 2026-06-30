@@ -7,8 +7,9 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 ## [0.4.0-rc.2] - 2026-06-30
 
 - Current HEAD after release prep adds
-  `b7b5c45 fix(cli): iterate registry convention blockers`; QA result is not
-  recorded in this changelog entry yet:
+  `b7b5c45 fix(cli): iterate registry convention blockers` and
+  `a9bf926 fix(cli): support ast-grep conventions`; QA was PARTIAL only because
+  docs still had stale BYO wording, while behavior/tests passed:
   - architecture convention closure blockers now flow through registry/config
     metadata instead of a single hard-coded Controller rule path;
   - registry metadata carries `blockAllowed`, `highPrecision`, `blockerId`,
@@ -24,6 +25,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - BYO `.persona/conventions/*.yml` ast-grep authoring is now available as a
     skip-if-missing preview: absent `sg`/`ast-grep` warns instead of faking a
     pass, and block-capable rules still require high precision plus a fix path.
+    Current registry size is 2 conventions, including 1 ast-grep convention:
+    `controller.persistence-import`.
   - hard write-content deny remains SDK-impossible in the current OpenCode hook
     surface because `permission.ask` does not expose proposed file content;
     closure-time enforcement remains authoritative.
@@ -250,8 +253,11 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     write-time enforcement;
   - Phase 3 PASS: the convention registry centralizes id/default level/blocker
     id/fix path for observe, check, closure, continue, and write-warning
-    surfaces. BYO `.persona/conventions/*.yml` ast-grep authoring remains future
-    work;
+    surfaces. Current HEAD through `a9bf926` adds BYO
+    `.persona/conventions/*.yml` ast-grep convention preview support; the
+    registry has 2 conventions, including 1 ast-grep convention
+    (`controller.persistence-import`). Missing `sg`/`ast-grep` skips with a
+    warning instead of faking a pass;
   - this is scoped product enforcement behavior, not eval/A-B proof, PH
     superiority, generated app quality certification, broad architecture
     correctness, general reliability, or a closure guarantee.

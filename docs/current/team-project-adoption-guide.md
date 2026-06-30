@@ -80,8 +80,12 @@ The current GUARD surface is a scoped opt-in enforcement candidate:
 - Phase 3: the convention registry centralizes convention ids, default levels,
   blocker ids, step ids, fix paths, block eligibility, and precision metadata.
   `controller.repository-dependency` is still the first/default block-capable
-  convention. Unsafe or low-precision rules must not become hard blockers. BYO
-  ast-grep convention authoring remains future work.
+  convention. BYO `.persona/conventions/*.yml` ast-grep convention preview is
+  implemented for simple YAML metadata; the default included ast-grep convention
+  is `controller.persistence-import`, so the current registry has 2 conventions
+  including 1 ast-grep convention. Unsafe or low-precision rules must not become
+  hard blockers, and missing `sg`/`ast-grep` skips with a warning instead of
+  faking a pass.
 
 Valid claim: Persona Harness can provide scoped opt-in closure enforcement for
 selected Java/Spring workflow checks.

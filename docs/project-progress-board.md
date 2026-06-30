@@ -26,11 +26,14 @@ candidate, not a strong general guard. Phase 0 is opt-in direct verification for
 the supported Java/Spring/Gradle slice; Phase 1 adds convention
 `report|warn|block` levels and the scoped Controller -> Repository blocker;
 Phase 2 is warning-only write guard fallback because deny/rewrite is unsupported;
-Phase 3 is convention registry groundwork. Current HEAD `b7b5c45` routes closure
-blockers through structured registry metadata with block eligibility and
-precision fields, while keeping `controller.repository-dependency` as the
-first/default block-capable convention. BYO ast-grep conventions remain future
-work.
+Phase 3 is convention registry plus BYO ast-grep preview groundwork. Current
+HEAD through `a9bf926` routes closure blockers through structured registry
+metadata with block eligibility and precision fields, while keeping
+`controller.repository-dependency` as the first/default block-capable convention.
+BYO `.persona/conventions/*.yml` ast-grep convention preview is implemented for
+simple YAML metadata; current registry size is 2 conventions, including 1
+ast-grep convention: `controller.persistence-import`. Missing `sg`/`ast-grep`
+skips with a warning instead of faking a pass.
 
 Historical board entries below may mention older alpha candidates, older
 dist-tag policy, or older eval conclusions. Treat `package.json`, `CHANGELOG.md`,
