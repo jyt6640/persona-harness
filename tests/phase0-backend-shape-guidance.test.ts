@@ -99,6 +99,18 @@ describe("Phase 0 backend product-code shape guidance", () => {
     expect(block).toContain("N+1")
   })
 
+  it("keeps Spring test relay guidance explicit for test-writer scope", () => {
+    const block = blockFor("src/test/java/com/example/library/application/BookServiceTest.java")
+
+    expect(block).toContain("backend/spring-test.md")
+    expect(block).toContain("test-writer")
+    expect(block).toContain("실패/검증 테스트")
+    expect(block).toContain("product code를 구현하지 않고")
+    expect(block).toContain("jaeki")
+    expect(block).toContain("roach")
+    expect(block).toContain("workflow finish implement")
+  })
+
   it("uses programming as limited support without replacing backend Java rules", () => {
     const service = createInjectionBlock("src/main/java/com/example/library/application/BookService.java")
     const gradle = createInjectionBlock("build.gradle")

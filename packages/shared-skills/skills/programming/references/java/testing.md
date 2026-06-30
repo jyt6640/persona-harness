@@ -175,6 +175,12 @@ If a test's location differs from production, re-examine where the responsibilit
 - No dogmatic Red-Green-Refactor stopwatch — improve tests alongside the code.
 - Use the test as a **design feedback tool**: a hard-to-test class is usually a design smell, not a testing problem.
 
+## Persona Harness relay contract
+
+When the multi-agent relay is active, `test-writer` is the test/verification role. It writes failing or verification tests before implementation when the behavior can be tested directly; if code cannot be exercised yet, it writes a precise verification plan with the intended JUnit/Gradle command and expected evidence. `test-writer` does not implement product code.
+
+`jaeki` implements the product code and may update tests only to keep the same behavior claim accurate. It must not weaken, delete, or skip a failing test just to make `gradle test` pass. `roach` reviews the implementation, tests, evidence, and uncovered requirements. Persona Harness workflow reports, report-filled markers, archive discipline, and `workflow finish implement` remain the authoritative gates.
+
 ## Anti-patterns
 
 | Anti-pattern | Fix |

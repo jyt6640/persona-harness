@@ -11,6 +11,10 @@ enforcement: inject_only
 
 # Backend Test Policy
 
+## PH Multi-Agent Relay
+
+- `test-writer`는 구현 전에 실패/검증 테스트 또는 실행 가능한 검증 계획을 작성한다. Java/Spring/Gradle 기본값은 JUnit Jupiter, AssertJ, 필요한 최소 Spring slice, `./gradlew test` 또는 Windows `gradlew.bat test` 증거다. `test-writer`는 product code를 구현하지 않고, `jaeki`가 구현하며, `roach`가 테스트/evidence/요구사항 충족을 리뷰한다. 실패 테스트를 통과시키려고 테스트를 삭제·약화·skip하지 않으며 PH report-filled, archive, `workflow finish implement` gate가 최종 기준이다.
+
 ## 메모리 저장소 테스트 격리
 
 - 메모리 저장소, static Map/List, sequence/id generator를 사용하는 테스트는 `@BeforeEach`에서 Repository `clear()`/`reset()`을 직접 호출해 저장 데이터와 id sequence를 함께 초기화한다. HTTP DELETE 요청으로 지우는 방식은 id sequence를 초기화하지 못하므로 쓰지 않는다.
