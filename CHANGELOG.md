@@ -123,6 +123,29 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   registration evidence, full MCP protocol evidence, token-savings evidence,
   eval/A-B proof, codegraph replacement proof, OMO parity, PH superiority,
   generated app certification, broad reliability, or a closure guarantee.
+- R-MCP.2 development-navigation probe is QA-verified PARTIAL evidence only:
+  - evidence: `.persona/evidence/development-navigation-probe.json`; raw root:
+    `.persona/evidence/development-navigation-probe-2026-06-30T121859218Z`;
+  - HEAD/model/surface: `20a4ff9`, `openai/gpt-5.4-mini-fast`,
+    `opencode run --pure`;
+  - codegraph/OMO OFF was verified with `codegraphOff=true`,
+    `opencodePure=true`, `PH_R0_CODEGRAPH_OFF=1`, OMO sparkshell disabled,
+    CODEGRAPH variables cleared, and raw fixture dirs without `.codegraph` or
+    `.opencode`;
+  - A/B used the same tiny Java/Spring Controller->Repository violation fixture,
+    model, and timeout; B differed by explicit PH code-nav CLI preview command
+    only;
+  - outcome was equal: both runs exited 0, fixed the violation to route
+    `TodoController -> TodoService -> TodoRepository`, and `observe` passed for
+    `controller.repository-dependency` and `controller.service-dependency`;
+  - narrow navigation-shape signal: B-A tool use -7, read calls -3, unique read
+    paths -3, read output chars -1509, tool output chars -8975, OpenCode stdout
+    bytes -8218;
+  - no token/time reduction was proven: elapsed +20675ms, input tokens +7008,
+    output tokens +79, cache-read tokens +13824;
+  - this is a single-run development-navigation probe, not provider billing, not
+    token-saving/product-efficacy evidence, not PH-owned full MCP, not
+    `.opencode` registration, and not codegraph replacement.
 
 ## [0.4.0-rc.4] - 2026-06-30
 
