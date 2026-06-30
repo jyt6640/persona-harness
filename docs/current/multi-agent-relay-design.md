@@ -130,9 +130,17 @@ Missing artifacts block relay progression with preview-only blockers such as `ro
 - Permission/write-deny is unrelated to relay and remains constrained by the current SDK payload limitations.
 - R1 does not promise token savings, OMO parity, autonomous completion, or a full agent loop.
 
-## Suggested R2 Slice
+## R3 Native Subtask Probe
 
-1. Add a no-model/local OpenCode probe for native subtask handoff behavior before any dispatch implementation.
-2. Decide whether PH should submit native `SubtaskPartInput` directly or keep relay as handoff JSON plus human/model copy surface.
-3. If dispatch is added, keep it config-gated, bounded by role artifact checkpoints, and stopped by closure blockers.
+No-model probe result: keep native dispatch deferred. `opencode agent list --pure` recognizes the R1 `.opencode/opencode.json` top-level `agent` map and lists `test-writer`, `jaeki`, and `roach` as subagents, so the agent definition surface is usable without a model run. The available no-model CLI help surfaces expose `opencode run --agent`, `opencode agent list`, `opencode agent create`, `opencode serve`, and `opencode attach`, but not a standalone no-model subtask submission command.
+
+The SDK has typed native delegation shapes: `SubtaskPartInput` (`node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts:1263-1269`) and `SessionPromptData` / `SessionPromptAsyncData` parts that accept subtask inputs (`node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts:2244-2258`, `node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts:2329-2342`). The callable client methods are `session.prompt` and `session.promptAsync`, both documented as creating and sending a new message to a session (`node_modules/@opencode-ai/sdk/dist/gen/sdk.gen.d.ts:172-182`). That means a real dispatch proof requires an active OpenCode session/server and would submit a message, so PH should not implement native subtask dispatch from the CLI yet.
+
+Recommended next slice: tighten deterministic relay role gates and artifacts inside PH's read-only/handoff surfaces, while keeping closure/check/archive/finish authoritative. Native dispatch should wait until a safe no-model API probe or an explicitly approved model/session probe proves the behavior.
+
+## Suggested R3b Slice
+
+1. Keep PH relay JSON/handoff-only until native dispatch has an approved session/model probe.
+2. Tighten deterministic role artifact gates and coordinator status so role progression is explicit and auditable.
+3. If dispatch is later added, keep it config-gated, bounded by role artifact checkpoints, and stopped by closure blockers.
 4. Keep finish/archive/check strict. Relay workers may help clear blockers; they do not bypass them.
