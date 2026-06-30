@@ -76,9 +76,36 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - `workflow relay status/next --json` exposes the preview relay state and role
     progression from `test-writer` to `jaeki` to `roach` to closure next via
     role artifact files.
+- External current/local tarball package-surface smoke on HEAD
+  `4788135b01447f7cbfde3198abfcd45640893ce6` passed the R2 relay coordinator
+  state surface:
+  - source was a fresh local/current tarball, not registry `@next`;
+  - registry `persona-harness@next` remains `0.4.0-rc.4` at gitHead
+    `c3e4c2bc2178e6edc72581a8d34aedd406be922b`, so it does not include the R2
+    relay coordinator commit until a later publish verifies a new gitHead;
+  - package/version: `persona-harness@0.4.0-rc.4`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r2-relay-coordinator-4788135-package-surface-20260630-133442/persona-harness-0.4.0-rc.4.tgz`;
+  - npm shasum: `826097d9ba5445a20d68b091f218af4e7fd208f6`;
+  - sha256: `c4be3eebda709de186ac269b35f6727ec85c825a5f26740e059a7d28520723f9`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r2-relay-coordinator-4788135-package-surface-20260630-133442`;
+  - default/off fixture kept `multiAgent.enabled=false`, surfaced relay blocker
+    `multi-agent-disabled`, reported `currentRole=null`,
+    `requiredOutputArtifact=null`, and `roleCompletionState.overall=disabled`,
+    and generated no relay agent entries or `.opencode/agent` dependency;
+  - preview bootstrap preserved `.opencode/opencode.json` plugin and custom agent
+    fields, then exposed `test-writer`, `jaeki`, and `roach` as subagents;
+  - `workflow relay status/next --json` now includes `currentRole`,
+    `roleCompletionState`, `scopedInputFiles`, `promptBlock`, and
+    `requiredOutputArtifact` while keeping the R1 fields;
+  - role progression remains read-only and artifact-gated from `test-writer` to
+    `jaeki` to `roach` to closure next, with canonical Java guidance references
+    preserved in `promptBlock`/`promptLines`;
+  - finish still exits nonzero in template report/evidence/pending-ticket state.
 - Boundaries remain narrow: current/local tarball package-surface evidence only
   plus post-publish registry metadata; no eval/A-B proof, PH superiority,
-  registry `@next` behavior for R1, model/OpenCode run proof, native subtask
+  registry `@next` behavior for R1/R2, model/OpenCode run proof, native subtask
   dispatch, token-savings guarantee, OMO parity, autonomous completion claim,
   generated app certification, broad architecture correctness, general
   reliability, or closure guarantee is claimed.
