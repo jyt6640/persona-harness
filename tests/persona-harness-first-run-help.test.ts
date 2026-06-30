@@ -54,6 +54,7 @@ describe("first-run command help", () => {
     expect(result.stdout).toContain("does not dispatch native subtasks")
     expect(result.stdout).toContain("Code-nav MCP preview:")
     expect(result.stdout).toContain("opt-in only via --code-nav-preview")
+    expect(result.stdout).toContain("persona-harness-code-nav_search_text")
     expect(result.stdout).toContain("no codegraph/indexer and no token-saving claim")
     expect(existsSync(join(projectDir, ".persona"))).toBe(false)
   })

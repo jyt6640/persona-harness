@@ -188,11 +188,15 @@ describe("PH code-nav MCP package preview", () => {
       }
       return entry.name
     })
+    const searchTool = arrayValue(listResult.tools).find(
+      (entry) => isRecord(entry) && entry.name === "search_text",
+    )
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe("")
     expect(initializeResult.serverInfo).toEqual({ name: "persona-harness-code-nav", version: "1" })
     expect(tools).toEqual(["status", "search_text", "ast_grep_availability"])
+    expect(isRecord(searchTool) ? searchTool.description : "").toContain("persona-harness-code-nav_search_text")
   })
 
   it("serves initialize and tools/list over newline JSON-RPC stdio for OpenCode local MCP", () => {

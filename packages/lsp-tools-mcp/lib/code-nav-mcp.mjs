@@ -108,12 +108,12 @@ function mcpTools() {
   return [
     {
       name: "status",
-      description: "Report PH code-nav preview status and honest capability boundaries.",
+      description: "Report PH code-nav preview status and honest capability boundaries. OpenCode exposes this as persona-harness-code-nav_status.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
     },
     {
       name: "search_text",
-      description: "Run bounded filesystem text search. This is not a symbol graph or codegraph replacement.",
+      description: "Run bounded local source text search before broad reads. OpenCode exposes this as persona-harness-code-nav_search_text. Not a codegraph or semantic index.",
       inputSchema: {
         type: "object",
         properties: {
@@ -126,7 +126,7 @@ function mcpTools() {
     },
     {
       name: "ast_grep_availability",
-      description: "Report whether sg/ast-grep is available on PATH without running rules.",
+      description: "Report whether sg/ast-grep is available on PATH without running rules. OpenCode exposes this as persona-harness-code-nav_ast_grep_availability.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
     },
   ]

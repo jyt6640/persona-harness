@@ -1372,6 +1372,7 @@ describe("ph bootstrap backend", () => {
     expect(result.stdout).toContain("enabled code-nav MCP preview")
     expect(result.stdout).toContain("Code-nav MCP preview:")
     expect(result.stdout).toContain("opt-in only via --code-nav-preview")
+    expect(result.stdout).toContain("persona-harness-code-nav_search_text")
     expect(result.stdout).toContain("no codegraph/indexer and no token-saving claim")
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
@@ -1458,6 +1459,7 @@ describe("ph bootstrap backend", () => {
     expect(smoke.status).toBe(0)
     expect(smoke.stderr).toBe("")
     expect(smoke.stdout).toContain("persona-harness-code-nav")
+    expect(smoke.stdout).toContain("persona-harness-code-nav_search_text")
     expect(smoke.stdout).toContain("search_text")
     expect(smoke.stdout).toContain("ast_grep_availability")
   })

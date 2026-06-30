@@ -66,7 +66,7 @@ function codeNavPreviewSummaryLines(): readonly string[] {
     "Code-nav MCP preview:",
     "- opt-in only via --code-nav-preview; default bootstrap does not register MCP servers",
     "- writes OpenCode mcp.persona-harness-code-nav for the packaged PH code-nav MCP server",
-    "- provides minimal status/search_text/ast_grep_availability tools only",
+    "- exposes bounded lookup tools as persona-harness-code-nav_search_text, persona-harness-code-nav_status, and persona-harness-code-nav_ast_grep_availability",
     "- no codegraph/indexer and no token-saving claim",
   ]
 }
