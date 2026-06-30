@@ -60,6 +60,13 @@ function relayJson(projectDir: string, action: "next" | "validate" = "next"): Re
   return isRecord(parsed) ? parsed : {}
 }
 
+function relayValidateText(projectDir: string): string {
+  const result = runPersonaCli(["workflow", "relay", "validate"], { cwd: projectDir, env: {}, invocationName: "ph" })
+  expect(result.status).toBe(0)
+  expect(result.stderr).toBe("")
+  return result.stdout
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -100,6 +107,28 @@ describe("ph workflow relay role artifact gates", () => {
         id: "role-test-artifact-missing",
       }),
     ])
+    expect(existsSync(rolesDir)).toBe(false)
+  })
+
+  it("prints compact human validation for missing artifacts without writing artifacts", () => {
+    const projectDir = createTempProject()
+    writeHarnessConfig(projectDir)
+    writeWorkflowWithPendingTicket(projectDir)
+
+    const rolesDir = join(projectDir, ".persona", "workflow", "work", "req-1", "roles")
+    const output = relayValidateText(projectDir)
+
+    expect(output).toContain("Persona Harness relay validation")
+    expect(output).toContain("Mode: read-only; no native dispatch, no artifact writes.")
+    expect(output).toContain("Current ticket: req-1 - Task CRUD API")
+    expect(output).toContain("Current role: test-writer")
+    expect(output).toContain("Next role: test-writer")
+    expect(output).toContain("- test-writer: missing - .persona/workflow/work/req-1/roles/test-writer.md")
+    expect(output).toContain("First blocker: role-test-artifact-missing")
+    expect(output).toContain("Required artifact: .persona/workflow/work/req-1/roles/test-writer.md")
+    expect(output).toContain("Gate command: npx ph workflow relay next --json")
+    expect(output).toContain("Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay'.")
+    expect(output).toContain("PH closure/check/archive/finish gates remain authoritative.")
     expect(existsSync(rolesDir)).toBe(false)
   })
 
@@ -169,6 +198,20 @@ describe("ph workflow relay role artifact gates", () => {
     ])
   })
 
+  it("prints compact human validation for incomplete artifacts", () => {
+    const projectDir = createTempProject()
+    writeHarnessConfig(projectDir)
+    writeWorkflowWithPendingTicket(projectDir)
+    writeRoleArtifact(projectDir, "test-writer", "# test-writer\n")
+
+    const output = relayValidateText(projectDir)
+
+    expect(output).toContain("- test-writer: incomplete - .persona/workflow/work/req-1/roles/test-writer.md")
+    expect(output).toContain("test-writer artifact must include failing/verification test evidence or a precise verification plan.")
+    expect(output).toContain("First blocker: role-test-artifact-incomplete")
+    expect(output).toContain("Include failing/verification test evidence or a precise verification plan.")
+  })
+
   it("validates complete artifacts and returns to closure gates", () => {
     const projectDir = createTempProject()
     writeHarnessConfig(projectDir)
@@ -195,5 +238,23 @@ describe("ph workflow relay role artifact gates", () => {
       missingRoles: [],
       overall: "complete",
     })
+  })
+
+  it("prints compact human validation for complete artifacts", () => {
+    const projectDir = createTempProject()
+    writeHarnessConfig(projectDir)
+    writeWorkflowWithPendingTicket(projectDir)
+    writeRoleArtifact(projectDir, "test-writer", "# test-writer\n\nVerification plan: add a failing API test and run ./gradlew test.")
+    writeRoleArtifact(projectDir, "jaeki", "# jaeki\n\nImplementation summary: wired service through repository.\nEvidence: ./gradlew test.")
+    writeRoleArtifact(projectDir, "roach", "# roach\n\nReview result: workflow check reviewed and review-report.md should be filled.")
+
+    const output = relayValidateText(projectDir)
+
+    expect(output).toContain("- test-writer: complete - .persona/workflow/work/req-1/roles/test-writer.md")
+    expect(output).toContain("- jaeki: complete - .persona/workflow/work/req-1/roles/jaeki.md")
+    expect(output).toContain("- roach: complete - .persona/workflow/work/req-1/roles/roach.md")
+    expect(output).toContain("First blocker: none")
+    expect(output).toContain("Required artifact: none")
+    expect(output).toContain("Gate command: npx ph workflow closure next --json")
   })
 })

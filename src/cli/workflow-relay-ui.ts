@@ -1,5 +1,6 @@
 import type { MultiAgentRole } from "../config/harness-config.js"
 import type { ClosureTicket } from "./workflow-closure.js"
+import type { WorkflowRelayPayload } from "./workflow-relay-model.js"
 
 export const RELAY_ROLE_ARTIFACT_KIND: Readonly<Record<MultiAgentRole, string>> = {
   "test-writer": "test/verification artifact",
@@ -24,6 +25,58 @@ export function relayUsage(invocationName: string): string {
 
 export function relayPromptBlock(promptLines: readonly string[]): string {
   return promptLines.join("\n")
+}
+
+function formatRole(role: MultiAgentRole | null): string {
+  return role ?? "none"
+}
+
+function roleAuthoringHints(role: MultiAgentRole | null): readonly string[] {
+  if (role === "test-writer") {
+    return [
+      "Include failing/verification test evidence or a precise verification plan.",
+      "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay'.",
+    ]
+  }
+  if (role === "jaeki") {
+    return [
+      "Include implementation summary and evidence pointers.",
+      "Use the test-writer artifact if present; do not broaden the ticket.",
+    ]
+  }
+  if (role === "roach") {
+    return [
+      "Include review/report/check result pointers.",
+      "Review reports and remaining PH closure blockers; do not implement features unless reassigned.",
+    ]
+  }
+  return ["Run the gate command shown above and continue through PH closure/check/archive/finish gates."]
+}
+
+export function relayValidateText(payload: WorkflowRelayPayload): string {
+  const ticket = payload.currentTicket === null ? "none" : `${payload.currentTicket.id} - ${payload.currentTicket.title}`
+  const firstBlocker = payload.blockers[0] ?? null
+  const lines = [
+    "Persona Harness relay validation",
+    "Mode: read-only; no native dispatch, no artifact writes.",
+    `Current ticket: ${ticket}`,
+    `Current role: ${formatRole(payload.currentRole)}`,
+    `Next role: ${formatRole(payload.nextRole)}`,
+    "Role artifacts:",
+    ...payload.roleArtifacts.map((artifact) =>
+      artifact.reason === null
+        ? `- ${artifact.role}: ${artifact.readiness} - ${artifact.path}`
+        : `- ${artifact.role}: ${artifact.readiness} - ${artifact.path} (${artifact.reason})`,
+    ),
+    `First blocker: ${firstBlocker === null ? "none" : `${firstBlocker.id} - ${firstBlocker.reason}`}`,
+    `Required artifact: ${payload.requiredArtifact ?? "none"}`,
+    `Gate command: ${payload.gateCommand}`,
+    "Authoring hints:",
+    ...roleAuthoringHints(payload.currentRole).map((hint) => `- ${hint}`),
+    "PH closure/check/archive/finish gates remain authoritative.",
+    "Native dispatch remains blocked until a safe OpenCode session/model probe is approved.",
+  ]
+  return `${lines.join("\n")}\n`
 }
 
 export function relayPromptLinesFor(

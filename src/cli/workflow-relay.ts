@@ -16,6 +16,7 @@ import {
   RELAY_ROLE_ARTIFACT_KIND,
   relayPromptBlock,
   relayPromptLinesFor,
+  relayValidateText,
   relayUsage,
 } from "./workflow-relay-ui.js"
 
@@ -31,7 +32,7 @@ const ROLE_INCOMPLETE_BLOCKERS: Readonly<Record<MultiAgentRole, RelayBlockerId>>
   roach: "role-review-artifact-incomplete",
 }
 
-function parseRelayArgs(args: readonly string[]): RelayAction | "help" | undefined {
+function parseRelayArgs(args: readonly string[]): RelayAction | "help" | "validate-text" | undefined {
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
     return "help"
   }
@@ -41,6 +42,9 @@ function parseRelayArgs(args: readonly string[]): RelayAction | "help" | undefin
     args[1] === "--json"
   ) {
     return args[0]
+  }
+  if (args[0] === "validate" && args.length === 1) {
+    return "validate-text"
   }
   return undefined
 }
@@ -238,6 +242,13 @@ export function runWorkflowRelayCommand(
     }
   }
   const projectDir = resolve(options.projectDir ?? process.cwd())
+  if (parsed === "validate-text") {
+    return {
+      status: 0,
+      stdout: relayValidateText(readWorkflowRelayPayload("validate", projectDir)),
+      stderr: "",
+    }
+  }
   return {
     status: 0,
     stdout: `${JSON.stringify(readWorkflowRelayPayload(parsed, projectDir), null, 2)}\n`,
