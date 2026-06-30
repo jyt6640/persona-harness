@@ -118,11 +118,44 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - `search --json TaskController fixture/src/main/java` returns bounded
     filesystem matches, and missing root returns unavailable with empty matches;
   - no `.opencode` directory or MCP registration is created.
-- Code-nav boundaries: this is a current/local tarball preview only, not registry
-  `@next` behavior until a later publish verifies gitHead; it is not OpenCode MCP
-  registration evidence, full MCP protocol evidence, token-savings evidence,
-  eval/A-B proof, codegraph replacement proof, OMO parity, PH superiority,
-  generated app certification, broad reliability, or a closure guarantee.
+- External current/local tarball package-surface smoke on HEAD
+  `abaef744ad9e091215911d3feeac40ba1569ca22` passed the R-MCP.1b minimal stdio
+  MCP protocol surface:
+  - source was a fresh local/current tarball, not registry `@next`;
+  - package/version: `persona-harness@0.4.0-rc.5`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rmcp1b-code-nav-mcp-protocol-20260630-220253/persona-harness-0.4.0-rc.5.tgz`;
+  - npm shasum: `c050ad0c799dfd9ecabe34b303cff12806a401fb`;
+  - sha256: `4432a0e17da2c81db7e7fcbf99313d2dab2537f919f6a0d7daafd7d40d31e77a`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rmcp1b-code-nav-mcp-protocol-20260630-220253`;
+  - package entries include `README.md`, `bin/code-nav-mcp.mjs`,
+    `lib/code-nav-core.mjs`, `lib/code-nav-mcp.mjs`, and `package.json` under
+    `package/packages/lsp-tools-mcp`;
+  - help shows `ph-code-nav-mcp mcp`, minimal stdio MCP protocol server, no
+    OpenCode registration by default, no codegraph/indexer, and no token-saving
+    claim;
+  - `capabilities --json` reports `mcpProtocolServer=true`,
+    `registeredWithOpenCode=false`, `tokenSavingsClaimed=false`,
+    `ast-grep.availability`, and `filesystem.text-search`;
+  - CLI search compatibility remained: fixture search returns matches, missing
+    query exits 1 with usage, and missing root returns `status=unavailable` with
+    `matches=[]`;
+  - framed stdio MCP covered `initialize`, `notifications/initialized`,
+    `tools/list`, and `tools/call` for `status`, `search_text`, and
+    `ast_grep_availability`; `tools/list` contained exactly
+    `ast_grep_availability`, `search_text`, and `status`;
+  - normal PATH found ast-grep via `/opt/homebrew/bin/sg`; limited PATH reported
+    `ast_grep_availability` unavailable with no crash or fake pass;
+  - no `.opencode` directory or registration was created, and there was no
+    OpenCode/model/eval/native dispatch run.
+- Code-nav boundaries: these are current/local tarball previews only, not
+  registry `@next` behavior until a later publish verifies gitHead. R-MCP.1b is
+  minimal stdio MCP protocol evidence, not OpenCode registration evidence;
+  R-MCP.1c registration remains a separate future task. This is not
+  token-savings evidence, provider-token accounting, product-efficacy evidence,
+  codegraph replacement proof, OMO parity, PH superiority, generated app
+  certification, broad reliability, or a closure guarantee.
 - R-MCP.2 development-navigation probe is QA-verified PARTIAL evidence only:
   - evidence: `.persona/evidence/development-navigation-probe.json`; raw root:
     `.persona/evidence/development-navigation-probe-2026-06-30T121859218Z`;
