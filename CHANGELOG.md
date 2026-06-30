@@ -152,10 +152,46 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - Code-nav boundaries: these are current/local tarball previews only, not
   registry `@next` behavior until a later publish verifies gitHead. R-MCP.1b is
   minimal stdio MCP protocol evidence, not OpenCode registration evidence;
-  R-MCP.1c registration remains a separate future task. This is not
+  R-MCP.1c opt-in registration evidence is recorded below. This is not
   token-savings evidence, provider-token accounting, product-efficacy evidence,
   codegraph replacement proof, OMO parity, PH superiority, generated app
   certification, broad reliability, or a closure guarantee.
+- External current/local tarball package-surface smoke on HEAD
+  `42348cc1aa0dacde81080741e8ad8531305690c2` passed the R-MCP.1c opt-in
+  OpenCode config registration surface:
+  - source was a fresh local/current tarball, not registry `@next`;
+  - package/version: `persona-harness@0.4.0-rc.5`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rmcp1c-code-nav-opencode-registration-20260630-222627/persona-harness-0.4.0-rc.5.tgz`;
+  - npm shasum: `052e9bf6e3c501fa3bd7c431d965d59149058757`;
+  - sha256: `2cb078c3ca5a72dc357d4c78e1b7f91b318b0c7bb4d8e29403215250f0012162`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rmcp1c-code-nav-opencode-registration-20260630-222627`;
+  - default clean install plus init/bootstrap exits 0 and does not add
+    `.opencode/opencode.json` `mcp.persona-harness-code-nav`;
+  - `npx ph bootstrap backend --code-nav-preview` exits 0, labels the feature
+    as Code-nav MCP preview, opt-in only, no codegraph/indexer, and no
+    token-saving claim;
+  - existing `.opencode/opencode.json` plugin, agent, custom MCP, and top-level
+    theme entries are preserved;
+  - generated `mcp.persona-harness-code-nav` has `type=local`, `enabled=true`,
+    and command `["node", <installed package path to packages/lsp-tools-mcp/bin/code-nav-mcp.mjs>, "mcp"]`;
+  - the generated target file exists, and the generated command passed no-model
+    framed JSON-RPC `initialize`, `tools/list`, and `tools/call` for `status`,
+    `search_text`, and `ast_grep_availability`;
+  - `tools/list` contained exactly `ast_grep_availability`, `search_text`, and
+    `status`; `status` reported `mcpProtocolServer=true`,
+    `registeredWithOpenCode=false`, and `tokenSavingsClaimed=false`;
+  - fixture search returned bounded matches, missing root returned unavailable,
+    and limited PATH reported ast-grep unavailable with no crash or fake pass;
+  - there was no model/OpenCode/eval/native dispatch evidence.
+- R-MCP.1c boundaries: this is opt-in registration package-surface evidence
+  only, not default registration and not registry `@next` behavior until a later
+  publish verifies gitHead. It registers the minimal PH code-nav MCP server in
+  config, not OMO/external codegraph, codegraph replacement, LSP daemon,
+  provider-token accounting, token-saving/product-efficacy evidence, OMO parity,
+  PH superiority, generated app certification, broad reliability, or a closure
+  guarantee.
 - R-MCP.2 development-navigation probe is QA-verified PARTIAL evidence only:
   - evidence: `.persona/evidence/development-navigation-probe.json`; raw root:
     `.persona/evidence/development-navigation-probe-2026-06-30T121859218Z`;
