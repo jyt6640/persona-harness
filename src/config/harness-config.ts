@@ -22,6 +22,9 @@ export type HarnessConfig = {
 
 export type HarnessEnforceConfig = {
   readonly executeVerification: boolean
+  readonly idleContinuation: boolean
+  readonly systemConstitution: boolean
+  readonly writeDeny: boolean
 }
 
 export type HarnessConfigDiagnostic = {
@@ -40,7 +43,12 @@ const DEFAULT_CONFIG: HarnessConfig = {
   enabled: true,
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",
-  enforce: { executeVerification: false },
+  enforce: {
+    executeVerification: false,
+    idleContinuation: false,
+    systemConstitution: true,
+    writeDeny: false,
+  },
   maxRulesPerInjection: 12,
   evidenceMode: "metadata_only",
   enabledDomains: ["backend", "programming", "workflow"],
@@ -81,6 +89,9 @@ function readEnforceConfig(value: unknown): HarnessEnforceConfig {
   }
   return {
     executeVerification: readBoolean(value.executeVerification, DEFAULT_CONFIG.enforce.executeVerification),
+    idleContinuation: readBoolean(value.idleContinuation, DEFAULT_CONFIG.enforce.idleContinuation),
+    systemConstitution: readBoolean(value.systemConstitution, DEFAULT_CONFIG.enforce.systemConstitution),
+    writeDeny: readBoolean(value.writeDeny, DEFAULT_CONFIG.enforce.writeDeny),
   }
 }
 

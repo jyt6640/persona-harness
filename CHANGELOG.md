@@ -6,6 +6,20 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## [0.4.0-rc.3] - 2026-06-30
 
+- Added a conservative PH hook-lever slice for the current OpenCode plugin
+  surface:
+  - `experimental.chat.system.transform` now injects an idempotent PH system
+    constitution with turn-local intent reset, context-completion gate, and
+    finish guard wording; this is still prose and may be ignored, while
+    finish/archive gates remain authoritative;
+  - `enforce.systemConstitution` defaults on, while `enforce.idleContinuation`
+    and `enforce.writeDeny` default off in `.persona/harness.jsonc`;
+  - opt-in idle continuation can send a bounded follow-up prompt on
+    `session.idle` when closure blockers remain, but it is a nudge, not
+    orchestration or a hard stop;
+  - hard write-content deny remains SDK-impossible in the current hook surface
+    because `permission.ask` does not expose proposed file content/path enough
+    to evaluate writes safely.
 - Prepared `0.4.0-rc.3` as the next-channel prerelease refresh for GUARD Phase
   0-3 after published `@next` remained behind the current BYO ast-grep and
   observe-alignment fixes:

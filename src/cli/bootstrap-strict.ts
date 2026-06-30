@@ -34,6 +34,7 @@ export function enableStrictClosureVerification(projectDir: string): CliRunResul
     enforce: {
       ...enforce,
       executeVerification: true,
+      systemConstitution: true,
     },
   }
   writeFileSync(harnessConfigPath, `${JSON.stringify(nextConfig, null, 2)}\n`, "utf8")

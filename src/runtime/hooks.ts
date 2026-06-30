@@ -5,7 +5,10 @@ import { ContinuationTracker } from "./continuation.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
+import { IdleContinuationTracker } from "./idle-continuation.js"
+import type { IdleContinuationClient } from "./idle-continuation.js"
 import { maybeInjectIntentWorkflow } from "./intent-workflow.js"
+import { injectSystemConstitution } from "./system-constitution.js"
 import {
   createJavaRoleReadFollowUp,
   discoverJavaRoleInjections,
@@ -24,12 +27,16 @@ import type {
   ToolAfterOutput,
   ToolBeforeInput,
   ToolBeforeOutput,
+  EventInput,
   TextCompleteInput,
   TextCompleteOutput,
   TransformMessagesOutput,
+  TransformSystemInput,
+  TransformSystemOutput,
 } from "./types.js"
 
 type Phase0HookOptions = {
+  client?: IdleContinuationClient
   projectDir?: string
   store?: PendingInjectionStore
 }
@@ -75,12 +82,26 @@ function runHostHook(hookName: string, operation: () => void): void {
   }
 }
 
+async function runHostHookAsync(hookName: string, operation: () => Promise<void>): Promise<void> {
+  try {
+    await operation()
+  } catch (error) {
+    const scope = `hook.${hookName}`
+    if (error instanceof Error) {
+      warnRuntimeFailure("hook-boundary", scope, undefined, error)
+      return
+    }
+    warnRuntimeFailure("hook-boundary", scope, undefined, new Error(String(error)))
+  }
+}
+
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const store = options.store ?? new PendingInjectionStore()
   const compliance = new RailComplianceTracker()
   const continuation = new ContinuationTracker()
   const projectDir = options.projectDir ?? process.cwd()
   const config = loadHarnessConfig(projectDir)
+  const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
 
   function captureTargetFile(
     hook: "tool.execute.before" | "tool.execute.after",
@@ -156,6 +177,15 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   }
 
   return {
+    event: async (input: EventInput): Promise<void> => {
+      await runHostHookAsync("event", async () => {
+        if (!config.enabled || !config.enforce.idleContinuation || input.event.type !== "session.idle") {
+          return
+        }
+        await idleContinuation.continueIfBlocked(input.event.properties.sessionID)
+      })
+    },
+
     "tool.execute.before": async (input: ToolBeforeInput, output: ToolBeforeOutput): Promise<void> => {
       runHostHook("tool.execute.before", () => {
         captureTargetFile(
@@ -241,6 +271,15 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
             injection,
           })
         }
+      })
+    },
+
+    "experimental.chat.system.transform": async (
+      _input: TransformSystemInput,
+      output: TransformSystemOutput,
+    ): Promise<void> => {
+      runHostHook("experimental.chat.system.transform", () => {
+        injectSystemConstitution(output, config)
       })
     },
 

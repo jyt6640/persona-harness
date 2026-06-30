@@ -49,6 +49,9 @@ describe("Phase 0 harness config", () => {
 
     expect(config.enabledDomains).toEqual(["backend", "programming", "workflow"])
     expect(config.enforce.executeVerification).toBe(false)
+    expect(config.enforce.idleContinuation).toBe(false)
+    expect(config.enforce.systemConstitution).toBe(true)
+    expect(config.enforce.writeDeny).toBe(false)
     expect(config.conventions[CONTROLLER_REPOSITORY_CONVENTION.id]).toBe(CONTROLLER_REPOSITORY_CONVENTION.defaultLevel)
     expect(CONTROLLER_REPOSITORY_CONVENTION.blockerId).toBe("architecture-controller-repository-direct-dependency")
     expect(CONTROLLER_REPOSITORY_CONVENTION.fixPath).toContain("Service layer")
@@ -56,11 +59,21 @@ describe("Phase 0 harness config", () => {
 
   it("uses executeVerification enforcement opt-in from harness.jsonc", () => {
     const projectDir = createProject()
-    writeHarnessConfig(projectDir, { enforce: { executeVerification: true } })
+    writeHarnessConfig(projectDir, {
+      enforce: {
+        executeVerification: true,
+        idleContinuation: true,
+        systemConstitution: false,
+        writeDeny: true,
+      },
+    })
 
     const config = loadHarnessConfig(projectDir)
 
     expect(config.enforce.executeVerification).toBe(true)
+    expect(config.enforce.idleContinuation).toBe(true)
+    expect(config.enforce.systemConstitution).toBe(false)
+    expect(config.enforce.writeDeny).toBe(true)
   })
 
   it("uses convention levels from harness.jsonc", () => {

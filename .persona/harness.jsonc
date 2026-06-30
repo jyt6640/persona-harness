@@ -7,7 +7,10 @@
     "controller.persistence-import": "warn"
   },
   "enforce": {
-    "executeVerification": false
+    "executeVerification": false,
+    "systemConstitution": true,
+    "writeDeny": false,
+    "idleContinuation": false
   },
   "maxRulesPerInjection": 12,
   "evidenceMode": "metadata_only",
