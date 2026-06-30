@@ -65,6 +65,19 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   run proof, no PH superiority, no generated app certification, no broad
   architecture correctness, no general reliability, no closure guarantee, no
   token-savings guarantee, no OMO parity, and no autonomous completion claim.
+- Local post-rc5 commit `5b8d2ef fix(runtime): tier workflow injection guidance`
+  was QA-verified but not measured for token impact:
+  - injection guidance is split into Tier0 source-of-truth boundaries, Tier1
+    implement/continue workflow rail, and Tier3 finish/review/archive
+    verification;
+  - plan prompts and workflow output now say to use PH-owned surfaces first:
+    accepted plan, injection summary, workflow check/closure, ast-grep
+    conventions, relay handoff, and bearshell;
+  - external codegraph/code-nav tools are described as optional and only when
+    actually installed, not PH-owned and not token-saving;
+  - R1-after measurement was not performed, so there is no token-reduction claim;
+  - registry `@next` remains the rc5 release package until a later publish
+    verifies a new gitHead.
 - External current/local tarball package-surface smoke on HEAD
   `5fd5a1456ef007d37b37fc5fb22b9849f12485ef` passed the R-MCP.1a code-nav CLI
   preview surface:
