@@ -23,6 +23,7 @@ export type HarnessConfig = {
 }
 
 export type HarnessEnforceConfig = {
+  readonly compaction: HarnessCompactionConfig
   readonly executeVerification: boolean
   readonly idleContinuation: boolean
   readonly systemConstitution: boolean
@@ -35,6 +36,12 @@ export type HarnessEnforceConfig = {
    * (finish gate + ast-grep conventions).
    */
   readonly writeDeny: boolean
+}
+
+export type HarnessCompactionConfig = {
+  readonly cooldownMs: number
+  readonly enabled: boolean
+  readonly threshold: number
 }
 
 export type HarnessTelemetryConfig = {
@@ -68,6 +75,11 @@ const DEFAULT_CONFIG: HarnessConfig = {
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",
   enforce: {
+    compaction: {
+      cooldownMs: 600_000,
+      enabled: false,
+      threshold: 0.78,
+    },
     executeVerification: false,
     idleContinuation: false,
     systemConstitution: true,
@@ -99,6 +111,10 @@ function readPositiveInteger(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : fallback
 }
 
+function readRatio(value: unknown, fallback: number): number {
+  return typeof value === "number" && value > 0 && value <= 1 ? value : fallback
+}
+
 function readStringArray(value: unknown, fallback: readonly string[]): readonly string[] {
   if (!Array.isArray(value)) {
     return fallback
@@ -120,10 +136,22 @@ function readEnforceConfig(value: unknown): HarnessEnforceConfig {
     return DEFAULT_CONFIG.enforce
   }
   return {
+    compaction: readCompactionConfig(value.compaction),
     executeVerification: readBoolean(value.executeVerification, DEFAULT_CONFIG.enforce.executeVerification),
     idleContinuation: readBoolean(value.idleContinuation, DEFAULT_CONFIG.enforce.idleContinuation),
     systemConstitution: readBoolean(value.systemConstitution, DEFAULT_CONFIG.enforce.systemConstitution),
     writeDeny: readBoolean(value.writeDeny, DEFAULT_CONFIG.enforce.writeDeny),
+  }
+}
+
+function readCompactionConfig(value: unknown): HarnessCompactionConfig {
+  if (!isRecord(value)) {
+    return DEFAULT_CONFIG.enforce.compaction
+  }
+  return {
+    cooldownMs: readPositiveInteger(value.cooldownMs, DEFAULT_CONFIG.enforce.compaction.cooldownMs),
+    enabled: readBoolean(value.enabled, DEFAULT_CONFIG.enforce.compaction.enabled),
+    threshold: readRatio(value.threshold, DEFAULT_CONFIG.enforce.compaction.threshold),
   }
 }
 

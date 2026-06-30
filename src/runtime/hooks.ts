@@ -9,6 +9,8 @@ import { IdleContinuationTracker } from "./idle-continuation.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
 import { maybeInjectIntentWorkflow } from "./intent-workflow.js"
 import { injectSystemConstitution } from "./system-constitution.js"
+import { TokenCompactionTracker } from "./token-compaction.js"
+import type { TokenCompactionClient } from "./token-compaction.js"
 import { TokenTelemetryRecorder } from "./token-telemetry.js"
 import {
   createJavaRoleReadFollowUp,
@@ -37,7 +39,7 @@ import type {
 } from "./types.js"
 
 type Phase0HookOptions = {
-  client?: IdleContinuationClient
+  client?: IdleContinuationClient & TokenCompactionClient
   projectDir?: string
   store?: PendingInjectionStore
 }
@@ -104,6 +106,11 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const config = loadHarnessConfig(projectDir)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
   const tokenTelemetry = new TokenTelemetryRecorder(projectDir)
+  const tokenCompaction = new TokenCompactionTracker({
+    client: options.client,
+    config: config.enforce.compaction,
+    projectDir,
+  })
 
   function captureTargetFile(
     hook: "tool.execute.before" | "tool.execute.after",
@@ -185,7 +192,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           return
         }
         if (config.telemetry.tokenUsage && input.event.type === "message.updated") {
-          tokenTelemetry.recordMessage(input.event.properties.info)
+          const telemetryResult = tokenTelemetry.recordMessage(input.event.properties.info)
+          await tokenCompaction.maybeSummarize(input.event.properties.info, telemetryResult)
         }
         if (!config.enforce.idleContinuation || input.event.type !== "session.idle") {
           return

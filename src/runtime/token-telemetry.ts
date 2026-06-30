@@ -7,7 +7,7 @@ import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-conf
 import { isRecord } from "../config/jsonc.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
-type TokenUsage = {
+export type TokenUsage = {
   readonly cacheRead: number
   readonly cacheWrite: number
   readonly input: number
@@ -35,7 +35,7 @@ type TokenMessageEntry = {
   readonly updatedAt: string
 }
 
-type TokenUsageEvidence = {
+export type TokenUsageEvidence = {
   readonly aggregate: TokenUsage
   readonly createdAt: string
   readonly messages: readonly TokenMessageEntry[]
@@ -57,7 +57,7 @@ export type TokenTelemetryRecordResult =
 
 const LIMIT_UNAVAILABLE_REASON = "model context limit not observed for this session; ratio not computed"
 
-function safeSessionKey(sessionID: string): string {
+export function safeSessionKey(sessionID: string): string {
   return sessionID.replace(/[^a-zA-Z0-9._-]+/g, "-").toLowerCase() || "session"
 }
 

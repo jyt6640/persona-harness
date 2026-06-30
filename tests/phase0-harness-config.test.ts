@@ -49,6 +49,11 @@ describe("Phase 0 harness config", () => {
 
     expect(config.enabledDomains).toEqual(["backend", "programming", "workflow"])
     expect(config.enforce.executeVerification).toBe(false)
+    expect(config.enforce.compaction).toEqual({
+      cooldownMs: 600_000,
+      enabled: false,
+      threshold: 0.78,
+    })
     expect(config.enforce.idleContinuation).toBe(false)
     expect(config.enforce.systemConstitution).toBe(true)
     expect(config.enforce.writeDeny).toBe(false)
@@ -76,6 +81,11 @@ describe("Phase 0 harness config", () => {
     const projectDir = createProject()
     writeHarnessConfig(projectDir, {
       enforce: {
+        compaction: {
+          cooldownMs: 120_000,
+          enabled: true,
+          threshold: 0.8,
+        },
         executeVerification: true,
         idleContinuation: true,
         systemConstitution: false,
@@ -86,6 +96,11 @@ describe("Phase 0 harness config", () => {
     const config = loadHarnessConfig(projectDir)
 
     expect(config.enforce.executeVerification).toBe(true)
+    expect(config.enforce.compaction).toEqual({
+      cooldownMs: 120_000,
+      enabled: true,
+      threshold: 0.8,
+    })
     expect(config.enforce.idleContinuation).toBe(true)
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.writeDeny).toBe(true)
