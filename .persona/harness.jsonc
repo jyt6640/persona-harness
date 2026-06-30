@@ -2,6 +2,13 @@
   "enabled": true,
   "rulesDir": ".persona/rules",
   "evidenceDir": ".persona/evidence",
+  "conventions": {
+    "controller.repository-dependency": "block",
+    "controller.persistence-import": "warn"
+  },
+  "enforce": {
+    "executeVerification": false
+  },
   "maxRulesPerInjection": 12,
   "evidenceMode": "metadata_only",
   "scenario": "step1",

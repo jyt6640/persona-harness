@@ -11,7 +11,7 @@ export function formatInitResult(result: InitResult): string {
     ...backupLines,
     "",
     "Init scope:",
-    "- `ph init` installs Persona Harness config/rules and OpenCode plugin config only.",
+    "- `ph init` installs Persona Harness config/conventions/rules and OpenCode plugin config only.",
     "- It does not create `AGENTS.md`, `.persona/project-profile.jsonc`, or workflow plan/report templates.",
     "- Do not enter implementation before the backend project profile exists.",
     "",

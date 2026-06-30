@@ -36,6 +36,7 @@ describe("persona-harness init", () => {
     const result = initializePersonaHarness({ projectDir, packageRoot: process.cwd() })
 
     expect(existsSync(join(projectDir, ".persona", "harness.jsonc"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "conventions", "controller-persistence-import.yml"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "java-common.md"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "step1-api-contract.md"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "step2-3-api-contract.md"))).toBe(false)
@@ -51,6 +52,7 @@ describe("persona-harness init", () => {
     expect(result.installed).toEqual(
       expect.arrayContaining([
         ".persona/harness.jsonc",
+        ".persona/conventions/",
         ".persona/rules/",
         ".opencode/opencode.json",
         ".gitignore",
@@ -108,12 +110,12 @@ describe("persona-harness init", () => {
       projectDir: "/tmp/project",
       packageRoot: process.cwd(),
       pluginPath: join(process.cwd(), "dist", "index.js"),
-      installed: [".persona/harness.jsonc", ".persona/rules/", ".opencode/opencode.json"],
+      installed: [".persona/harness.jsonc", ".persona/conventions/", ".persona/rules/", ".opencode/opencode.json"],
       backups: [],
       evidenceCopied: false,
     })
 
-    expect(result).toContain("`ph init` installs Persona Harness config/rules and OpenCode plugin config only.")
+    expect(result).toContain("`ph init` installs Persona Harness config/conventions/rules and OpenCode plugin config only.")
     expect(result).toContain("It does not create `AGENTS.md`, `.persona/project-profile.jsonc`, or workflow plan/report templates.")
     expect(result).toContain("Do not enter implementation before the backend project profile exists.")
     expect(result).toContain("npx ph bootstrap backend")

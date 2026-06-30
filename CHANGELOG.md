@@ -21,8 +21,12 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - `workflow check`, `workflow closure`, `workflow continue`,
     `workflow finish`, and the archive guard consume structured registry blocker
     metadata;
-  - BYO `.persona/conventions/*.yml` ast-grep authoring remains future work and
-    is not supported by this commit.
+  - BYO `.persona/conventions/*.yml` ast-grep authoring is now available as a
+    skip-if-missing preview: absent `sg`/`ast-grep` warns instead of faking a
+    pass, and block-capable rules still require high precision plus a fix path.
+  - hard write-content deny remains SDK-impossible in the current OpenCode hook
+    surface because `permission.ask` does not expose proposed file content;
+    closure-time enforcement remains authoritative.
 - Next-channel prerelease prep for the current GUARD Phase 0-3 commits after
   published `0.4.0-rc.1`:
   - expected publish tag is `next`; do not move `latest`;

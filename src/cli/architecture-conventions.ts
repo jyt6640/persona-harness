@@ -7,6 +7,7 @@ import { loadHarnessConfig } from "../config/harness-config.js"
 import type { ConventionLevel } from "../config/harness-config.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryEvidence } from "../observer/controller-repository-observer.js"
+import { loadAstGrepConventionDefinitions, runAstGrepConvention } from "./ast-grep-convention-runner.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
 
 export type ArchitectureConventionFinding = "PASS" | "WARN"
@@ -95,11 +96,11 @@ function directDependencyFinding(projectDir: string, filePath: string): string |
 }
 
 function configuredConventionLevel(projectDir: string, definition: ConventionDefinition): ConventionLevel {
-  return loadHarnessConfig(projectDir).conventions[definition.id] ?? "report"
+  return loadHarnessConfig(projectDir).conventions[definition.id] ?? definition.defaultLevel
 }
 
 function effectiveConventionLevel(definition: ConventionDefinition, level: ConventionLevel): ConventionLevel {
-  return level === "block" && (!definition.blockAllowed || !definition.highPrecision) ? "warn" : level
+  return level === "block" && (!definition.blockAllowed || !definition.highPrecision || definition.fixPath.trim() === "") ? "warn" : level
 }
 
 function controllerRepositoryConventionFindings(projectDir: string): readonly string[] {
@@ -109,11 +110,34 @@ function controllerRepositoryConventionFindings(projectDir: string): readonly st
   })
 }
 
-function conventionFindings(projectDir: string, definition: ConventionDefinition): readonly string[] {
-  if (definition.id === CONTROLLER_REPOSITORY_CONVENTION.id) {
-    return controllerRepositoryConventionFindings(projectDir)
+type ConventionEvaluation = {
+  readonly findings: readonly string[]
+  readonly warnings: readonly string[]
+}
+
+function conventionDefinitions(projectDir: string): readonly ConventionDefinition[] {
+  const staticIds = new Set(CONVENTION_REGISTRY.map((definition) => definition.id))
+  const dynamicDefinitions = loadAstGrepConventionDefinitions(projectDir).filter((definition) => !staticIds.has(definition.id))
+  return [...CONVENTION_REGISTRY, ...dynamicDefinitions]
+}
+
+function conventionFindings(projectDir: string, definition: ConventionDefinition): ConventionEvaluation {
+  if (definition.check.kind === "observer" && definition.id === CONTROLLER_REPOSITORY_CONVENTION.id) {
+    return { findings: controllerRepositoryConventionFindings(projectDir), warnings: [] }
   }
-  return []
+  if (definition.check.kind === "ast-grep") {
+    const result = runAstGrepConvention(projectDir, definition)
+    if (result.status === "skipped") {
+      return { findings: [], warnings: [result.warning] }
+    }
+    if (result.status === "checked") {
+      const findings = result.findings.map((finding) => {
+        return `${definition.actionableMessage} Source: ${finding.path}:${finding.line}`
+      })
+      return { findings, warnings: [] }
+    }
+  }
+  return { findings: [], warnings: [] }
 }
 
 export function readArchitectureConventions(projectDir: string, implementationStatus: string): ArchitectureConventionSummary {
@@ -137,13 +161,17 @@ export function readArchitectureConventions(projectDir: string, implementationSt
   const summaries: string[] = []
   const blockers: ArchitectureConventionBlocker[] = []
   let hasWarnFinding = false
-  for (const definition of CONVENTION_REGISTRY) {
-    const findings = conventionFindings(projectDir, definition)
-    if (findings.length === 0) {
+  for (const definition of conventionDefinitions(projectDir)) {
+    const result = conventionFindings(projectDir, definition)
+    for (const warning of result.warnings) {
+      summaries.push(warning)
+      hasWarnFinding = true
+    }
+    if (result.findings.length === 0) {
       continue
     }
     const level = effectiveConventionLevel(definition, configuredConventionLevel(projectDir, definition))
-    summaries.push(`${definition.id} ${level}: ${findings.join("; ")}`)
+    summaries.push(`${definition.id} ${level}: ${result.findings.join("; ")}`)
     if (level !== "report") {
       hasWarnFinding = true
     }
@@ -151,7 +179,7 @@ export function readArchitectureConventions(projectDir: string, implementationSt
       blockers.push({
         conventionId: definition.id,
         id: definition.blockerId,
-        reason: `${definition.id} ${level}: ${findings.join("; ")}`,
+        reason: `${definition.id} ${level}: ${result.findings.join("; ")}`,
         source: "src/main/java",
       })
     }

@@ -24,6 +24,7 @@ type ParsedBootstrapArgs =
 
 const PERSONA_DIR = ".persona"
 const HARNESS_CONFIG_PATH = ".persona/harness.jsonc"
+const CONVENTIONS_DIR_PATH = ".persona/conventions/"
 const RULES_DIR_PATH = ".persona/rules/"
 const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
 const GITIGNORE_PATH = ".gitignore"
@@ -38,6 +39,7 @@ export function bootstrapUsage(invocation = "ph"): string {
     "",
     "What it fills when missing:",
     `- ${HARNESS_CONFIG_PATH}`,
+    `- ${CONVENTIONS_DIR_PATH}`,
     `- ${RULES_DIR_PATH}`,
     `- ${OPENCODE_CONFIG_PATH}`,
     `- ${GITIGNORE_PATH}`,
@@ -221,6 +223,7 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean, strict: 
       "",
       "Ready backend bootstrap files:",
       `- ${HARNESS_CONFIG_PATH}`,
+      `- ${CONVENTIONS_DIR_PATH}`,
       `- ${RULES_DIR_PATH}`,
       `- ${OPENCODE_CONFIG_PATH}`,
       `- ${GITIGNORE_PATH}`,

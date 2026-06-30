@@ -172,7 +172,7 @@ You can use a different domain. For cleaner feedback, avoid the older `reservati
 
 ## 4. Choose The Setup Path
 
-`npx ph init` is the minimal install and OpenCode integration step. It installs `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`, and `.gitignore` entries, then exits with next-step guidance.
+`npx ph init` is the minimal install and OpenCode integration step. It installs `.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, and `.gitignore` entries, then exits with next-step guidance.
 
 `npx ph init` does not create `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay files, an accepted plan, or workflow report templates.
 

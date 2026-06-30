@@ -1,11 +1,15 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
-import { CONTROLLER_REPOSITORY_CONVENTION } from "../src/config/convention-registry.js"
+import {
+  CONVENTION_REGISTRY,
+  CONTROLLER_PERSISTENCE_IMPORT_CONVENTION,
+  CONTROLLER_REPOSITORY_CONVENTION,
+} from "../src/config/convention-registry.js"
 import { loadHarnessConfig } from "../src/config/harness-config.js"
 
 const tempProjects: string[] = []
@@ -215,10 +219,83 @@ function writeControllerRepositoryViolation(projectDir: string): void {
 }
 
 function writeConventionLevel(projectDir: string, level: "block" | "report" | "warn"): void {
+  writeConventionLevels(projectDir, { [CONTROLLER_REPOSITORY_CONVENTION.id]: level })
+}
+
+function writeConventionLevels(projectDir: string, conventions: Record<string, "block" | "report" | "warn">): void {
   writeFileSync(
     join(projectDir, ".persona", "harness.jsonc"),
-    `${JSON.stringify({ conventions: { "controller.repository-dependency": level } }, null, 2)}\n`,
+    `${JSON.stringify({ conventions }, null, 2)}\n`,
   )
+}
+
+function writeControllerPersistenceImportRule(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "conventions"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "conventions", "controller-persistence-import.yml"),
+    [
+      "id: controller.persistence-import",
+      "language: Java",
+      "message: Controllers should not import Jakarta persistence types; keep entities behind service/DTO boundaries.",
+      "# persona-harness-level: warn",
+      "# persona-harness-scope: single-file",
+      "# persona-harness-profile-scope: java-spring-service-architecture",
+      "# persona-harness-target-suffix: Controller.java",
+      "# persona-harness-high-precision: true",
+      "# persona-harness-block-allowed: true",
+      "# persona-harness-fix-path: move persistence/entity access behind a Service and expose DTOs at the Controller boundary.",
+      "rule:",
+      "  pattern: import jakarta.persistence.$ENTITY;",
+    ].join("\n"),
+  )
+}
+
+function writeControllerPersistenceImportViolation(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "TaskController.java"),
+    [
+      "import org.springframework.web.bind.annotation.RestController;",
+      "import jakarta.persistence.Entity;",
+      "@RestController",
+      "class TaskController {",
+      "  TaskResponse response() {",
+      "    return new TaskResponse();",
+      "  }",
+      "}",
+    ].join("\n"),
+  )
+}
+
+function writeFakeAstGrepBinary(projectDir: string): string {
+  const fakeBinary = join(projectDir, "fake-sg.js")
+  writeFileSync(
+    fakeBinary,
+    [
+      "#!/usr/bin/env node",
+      "const { existsSync, readdirSync, readFileSync, statSync } = require('node:fs')",
+      "const { join } = require('node:path')",
+      "const root = process.argv[process.argv.length - 1]",
+      "const findings = []",
+      "function visit(dir) {",
+      "  if (!existsSync(dir)) return",
+      "  for (const entry of readdirSync(dir)) {",
+      "    const path = join(dir, entry)",
+      "    const stat = statSync(path)",
+      "    if (stat.isDirectory()) visit(path)",
+      "    if (stat.isFile() && path.endsWith('.java')) {",
+      "      const source = readFileSync(path, 'utf8')",
+      "      if (source.includes('import jakarta.persistence.')) {",
+      "        findings.push({ file: path, message: 'Controllers should not import Jakarta persistence types; keep entities behind service/DTO boundaries.', range: { start: { line: 1 } } })",
+      "      }",
+      "    }",
+      "  }",
+      "}",
+      "visit(root)",
+      "process.stdout.write(JSON.stringify(findings))",
+    ].join("\n"),
+  )
+  chmodSync(fakeBinary, 0o755)
+  return fakeBinary
 }
 
 function writeControllerServiceDependency(projectDir: string): void {
@@ -535,6 +612,150 @@ describe("ph workflow check", () => {
       CONTROLLER_REPOSITORY_CONVENTION.blockerId,
     )
     expect(finish.status).toBe(0)
+  })
+
+  it("keeps a registry with observer and ast-grep conventions", () => {
+    expect(CONVENTION_REGISTRY.length).toBeGreaterThanOrEqual(2)
+    expect(CONVENTION_REGISTRY.some((definition) => definition.check.kind === "ast-grep")).toBe(true)
+  })
+
+  it("blocks closure from an ast-grep convention when the configured level is block", () => {
+    const projectDir = createProfiledTempProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
+    try {
+      writeConventionLevels(projectDir, { [CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id]: "block" })
+      expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      writeJavaRoleFiles(projectDir)
+      writeControllerPersistenceImportRule(projectDir)
+      writeControllerPersistenceImportViolation(projectDir)
+      writeCompleteWorkflowReportsAndEvidence(projectDir)
+      writeSinglePendingTicket(projectDir)
+
+      const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const archive = runPersonaCli(["workflow", "archive", "req-1"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closureJson = JSON.parse(closure.stdout)
+
+      expect(check.status).toBe(0)
+      expect(check.stdout).toContain(`${CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id} block`)
+      expect(check.stdout).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.actionableMessage)
+      expect(check.stdout).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.fixPath)
+      expect(closureJson.state.blockers).toContainEqual(expect.objectContaining({
+        id: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId,
+        reason: expect.stringContaining(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id),
+      }))
+      expect(finish.status).toBe(1)
+      expect(finish.stderr).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId)
+      expect(finish.stderr).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.fixPath)
+      expect(archive.status).toBe(1)
+      expect(archive.stderr).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId)
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
+  })
+
+  it("does not hard block an ast-grep convention at warn level", () => {
+    const projectDir = createProfiledTempProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
+    try {
+      writeConventionLevels(projectDir, { [CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id]: "warn" })
+      expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      writeJavaRoleFiles(projectDir)
+      writeControllerPersistenceImportRule(projectDir)
+      writeControllerPersistenceImportViolation(projectDir)
+      writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+      const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closureJson = JSON.parse(closure.stdout)
+
+      expect(check.status).toBe(0)
+      expect(check.stdout).toContain(`${CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id} warn`)
+      expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
+        CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId,
+      )
+      expect(finish.status).toBe(0)
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
+  })
+
+  it("does not add an ast-grep blocker when the convention does not match", () => {
+    const projectDir = createProfiledTempProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
+    try {
+      writeConventionLevels(projectDir, { [CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id]: "block" })
+      expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      writeJavaRoleFiles(projectDir)
+      writeControllerPersistenceImportRule(projectDir)
+      writeControllerServiceDependency(projectDir)
+      writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+      const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closureJson = JSON.parse(closure.stdout)
+
+      expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
+        CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId,
+      )
+      expect(finish.status).toBe(0)
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
+  })
+
+  it("warns and skips without a fake pass when ast-grep is unavailable", () => {
+    const projectDir = createProfiledTempProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = join(projectDir, "missing-sg")
+    try {
+      writeConventionLevels(projectDir, { [CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id]: "block" })
+      expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      writeJavaRoleFiles(projectDir)
+      writeControllerPersistenceImportRule(projectDir)
+      writeControllerPersistenceImportViolation(projectDir)
+      writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+      const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closureJson = JSON.parse(closure.stdout)
+
+      expect(check.status).toBe(0)
+      expect(check.stdout).toContain("ast-grep binary not found")
+      expect(check.stdout).toContain("Workflow status: WARN")
+      expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
+        CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId,
+      )
+      expect(finish.status).toBe(0)
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
   })
 
   it("warns and points to workflow next when a pending ticket remains despite passing reports and gates", () => {

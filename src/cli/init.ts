@@ -31,6 +31,7 @@ export function initUsage(invocationName: string): string {
     "",
     "Creates:",
     "- .persona/harness.jsonc",
+    "- .persona/conventions/",
     "- .persona/rules/",
     "- .opencode/opencode.json",
     "- .gitignore entries for generated/vendor context noise",
@@ -165,8 +166,10 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
   const packageRoot = resolve(options.packageRoot ?? defaultPackageRoot())
   const personaDir = join(projectDir, ".persona")
   const sourceHarnessConfig = join(packageRoot, ".persona", "harness.jsonc")
+  const sourceConventionsDir = join(packageRoot, ".persona", "conventions")
   const sourceRulesDir = join(packageRoot, ".persona", "rules")
   const targetHarnessConfig = join(personaDir, "harness.jsonc")
+  const targetConventionsDir = join(personaDir, "conventions")
   const targetRulesDir = join(personaDir, "rules")
   const pluginPath = join(packageRoot, "dist", "index.js")
 
@@ -179,6 +182,9 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
 
   mkdirSync(personaDir, { recursive: true })
   cpSync(sourceHarnessConfig, targetHarnessConfig)
+  if (existsSync(sourceConventionsDir)) {
+    cpSync(sourceConventionsDir, targetConventionsDir, { recursive: true })
+  }
   cpSync(sourceRulesDir, targetRulesDir, {
     recursive: true,
     filter: (sourcePath) => shouldCopyPublicRuleTemplate(sourcePath, sourceRulesDir),
@@ -192,6 +198,7 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
     pluginPath: isAbsolute(pluginPath) ? pluginPath : resolve(pluginPath),
     installed: [
       ".persona/harness.jsonc",
+      ".persona/conventions/",
       ".persona/rules/",
       ".opencode/opencode.json",
       ".gitignore",
