@@ -2,7 +2,7 @@
 
 Status: evidence-bound measurement report, not a token-saving claim.
 
-This report summarizes the PH-owned measurement, compaction, and hashline feasibility work through HEAD `0599215` (`docs: record compaction trigger smoke`). It does not claim OMO parity, codegraph replacement, provider-token savings, product efficacy, broad reliability, or closure guarantees.
+This report summarizes the PH-owned measurement, compaction, and hashline feasibility work through HEAD `75c7f38` (`fix(runtime): bind compaction summarize call`). It includes the R1/R2 telemetry and compaction mechanics stack through `0599215`, plus the follow-up summarize binding fix in `75c7f38`. It does not claim OMO parity, codegraph replacement, provider-token savings, product efficacy, broad reliability, or closure guarantees.
 
 ## Scope
 
@@ -112,6 +112,8 @@ Fix scope: this follow-up change.
 Follow-up evidence: `.persona/evidence/r2-compaction-binding-fix-probe-2026-06-30T19-14-14-097Z.json`.
 
 Raw logs: `.persona/evidence/r2-compaction-binding-fix-probe-2026-06-30T19-14-14-097Z-raw/`.
+
+Metadata note: the ignored follow-up evidence file preserves the original run metadata and still records `head: db03653`. This tracked report is the correction record: the follow-up behavior and report interpretation apply to `75c7f38`.
 
 Behavior fixed:
 
