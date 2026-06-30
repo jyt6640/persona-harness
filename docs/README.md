@@ -4,11 +4,13 @@ This directory is intentionally packaged by document purpose, not by creation da
 
 Root-level docs are restricted to this index and the compact progress board. New docs must go under one of the packages below; `npm run check:docs` enforces that shape.
 
-## Packages
+## Documentation Areas
+
+These are documentation directories, not npm packages or release channels.
 
 - `current/`: active policy, current decisions, install guides, status JSON, and productization direction.
 - `current/release/`: release checklist, release note templates, and repeated release operations.
-- `evidence-reviews/`: A/B reviews, actual-run reviews, regrades, generated-run observations, and evidence summaries.
+- `evidence-reviews/`: A/B reviews, actual-run reviews, regrades, generated-run observations, and evidence summaries. This is a docs taxonomy area, not a published `evidence-review` package or npm channel.
 - `phases/`: phase-specific plans, designs, decisions, and completion notes.
 - `archive/`: historical snapshots and superseded transition plans.
 

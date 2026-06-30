@@ -415,7 +415,11 @@ npm view persona-harness dist-tags --json
 npm view persona-harness@next version
 ```
 
-For the current release-candidate line, `next` is the tester-facing dist-tag. At the time of this document, the intended next-channel refresh is `0.4.0-rc.4`, while `alpha` and `latest` may remain on older alpha builds such as `0.3.9-alpha.8`. Verify dist-tags before treating a default install as current.
+For the current release-candidate line, `next` is the tester-facing dist-tag.
+As of the latest registry check, `next=0.4.0-rc.5` and `alpha`/`latest` remain
+at `0.3.9-alpha.8`. Local `main` may include later docs or preview code that is
+not in the registry package until a later publish verifies gitHead. Verify
+dist-tags and package gitHead before treating any install as current.
 
 ### `opencode` is not found
 

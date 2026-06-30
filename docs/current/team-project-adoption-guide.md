@@ -12,7 +12,7 @@ npx ph doctor
 
 As of 2026-06-30, the observed registry channels are:
 
-- `next=0.4.0-rc.2`
+- `next=0.4.0-rc.5`
 - `alpha=0.3.9-alpha.8`
 - `latest=0.3.9-alpha.8`
 
@@ -22,6 +22,11 @@ Verify current channels before onboarding a team:
 npm dist-tag ls persona-harness
 npm view persona-harness@next version gitHead dist.shasum --json
 ```
+
+Keep registry packages, local/current HEAD, and fresh local tarballs separate
+when reporting evidence. Current local commits after the rc5 release may include
+docs, injection guidance cleanup, or preview package surfaces that are not
+registry `@next` behavior until a later publish verifies the same gitHead.
 
 ## Positioning
 

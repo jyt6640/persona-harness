@@ -38,10 +38,22 @@ Current release line: `0.4.0-rc.5` is published under `next` for the no-model
 multi-agent relay preview surface. Registry `@next` points at `0.4.0-rc.5` with
 gitHead `78addeb5dc992973589e7f99635fe8ca277e4ad6`.
 
-Previous published release line: `0.4.0-rc.4` is published under `next` for GUARD
-Phase 0-3/runtime hook refresh. It is a next-channel prerelease vehicle for
-scoped product enforcement behavior, including BYO ast-grep observe alignment
-and runtime hook guard levers, not stable `0.4.0`.
+Post-rc5 local/origin docs and preview work may include later commits such as
+R1 injection/prose cleanup, the code-nav CLI/package preview, and token proxy
+measurement notes. Treat those as local/current HEAD or fresh local-tarball
+evidence only unless a later registry publish verifies the same gitHead. Ignored
+`.persona/evidence` measurement data may be cited as measurement evidence, but
+it is not part of the npm package surface.
+
+`docs/evidence-reviews/` is a documentation taxonomy area for observations and
+review records. It is not a published `evidence-review` package, not a dist-tag,
+and not a separate release channel.
+
+Previous published package line `0.4.0-rc.4` covered the GUARD
+Phase 0-3/runtime hook refresh before `next` moved to rc5. It was a
+next-channel prerelease vehicle for scoped product enforcement behavior,
+including BYO ast-grep observe alignment and runtime hook guard levers, not
+stable `0.4.0`.
 
 Old `0.4.0-rc.1` prep commit `5edb535` remains stale historical context and must
 not be reused. The fresh RC prep must be based on current HEAD/docs.
