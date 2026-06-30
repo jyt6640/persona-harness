@@ -24,6 +24,14 @@ export type HarnessEnforceConfig = {
   readonly executeVerification: boolean
   readonly idleContinuation: boolean
   readonly systemConstitution: boolean
+  /**
+   * Known no-op (SDK limitation): the OpenCode `permission.ask` API exposes only
+   * `{ type, title, callID, metadata }` and not the proposed write content, while the
+   * hook that does see content (`tool.execute.before`) cannot return a deny status.
+   * Content-based write-time deny is therefore not cleanly feasible in this runtime.
+   * Retained as an experimental opt-in; authoritative enforcement is closure-time
+   * (finish gate + ast-grep conventions).
+   */
   readonly writeDeny: boolean
 }
 

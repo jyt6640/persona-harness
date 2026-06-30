@@ -22,6 +22,16 @@ Evidence means local traces of file reads, injected context, selected rails, tar
 
 A/B and ON/OFF smoke results are stack-steering signals only. They remain limited by small sample size, often `n=1`, non-blind execution, same-operator bias, and model/version/prompt/timeout/continuation dependence.
 
+## Enforcement Lever Feasibility (R0 finding)
+
+PH evaluated the three OpenCode hooks OMO uses to enforce on the agent:
+
+- `experimental.chat.system.transform` — available and used (system constitution: turn-local intent reset, context-completion gate, finish guard). Caveat: system text is still prose and may be ignored.
+- `event` (`session.idle`) — available and used (bounded idle continuation, capped at 3 per session). Re-drives toward closure; it is not a hard stop-block.
+- `permission.ask` hard write-deny — **not cleanly feasible in this runtime.** The SDK `Permission` input exposes only `{ id, type, pattern?, sessionID, messageID, callID?, title, metadata, time }`; it does not expose the proposed write content. The hook that does see content (`tool.execute.before`) cannot return a deny status (its output is `{ args }` only). The deny lever and the content lever are split across two hooks, so a content-based write-time deny cannot be implemented without depending on an undocumented `metadata` shape. The `enforce.writeDeny` flag is therefore retained as a no-op experimental opt-in, and the system constitution states this to the model.
+
+Conclusion: PH enforcement is **closure-time** (finish gate + ast-grep conventions, optionally `--strict` direct verification). The system constitution and idle continuation are **persuasion** levers that raise the probability the agent reaches the closure gate; they are not write-time enforcement. Write-time hard deny is a dead end in this SDK and is not pursued.
+
 ## Version Judgment
 
 ### Semver-Like Project Version

@@ -17,9 +17,7 @@ export function createSystemConstitutionBlock(config: HarnessConfig): string {
     config.enforce.executeVerification
       ? "Strict verification is enabled: finish/closure may run the project verification command directly and use that result as authoritative."
       : "Direct execution verification is not enabled unless project config opts in; report prose remains non-authoritative for strict verification.",
-    config.enforce.writeDeny
-      ? "Write-deny is requested in config, but it only applies when the host exposes proposed write content safely."
-      : "Write-deny is off by default; closure-time checks remain authoritative.",
+    "Write-deny is a no-op in this runtime: the OpenCode `permission.ask` API does not expose proposed write content, so PH cannot block a write mid-flight based on its content. Enforcement is closure-time (finish gate + ast-grep conventions), not write-time.",
     config.enforce.idleContinuation
       ? "Idle continuation is enabled: PH may send a bounded follow-up prompt when closure blockers remain after session idle."
       : "Idle continuation is off by default.",
