@@ -34,11 +34,11 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release prep: `0.4.0-rc.5` is a local next-channel prerelease candidate
-for the no-model multi-agent relay preview surface. Registry `@next` still
-points at `0.4.0-rc.4` until rc5 is explicitly published and verified.
+Current release line: `0.4.0-rc.5` is published under `next` for the no-model
+multi-agent relay preview surface. Registry `@next` points at `0.4.0-rc.5` with
+gitHead `78addeb5dc992973589e7f99635fe8ca277e4ad6`.
 
-Current published release line: `0.4.0-rc.4` is published under `next` for GUARD
+Previous published release line: `0.4.0-rc.4` is published under `next` for GUARD
 Phase 0-3/runtime hook refresh. It is a next-channel prerelease vehicle for
 scoped product enforcement behavior, including BYO ast-grep observe alignment
 and runtime hook guard levers, not stable `0.4.0`.
@@ -59,7 +59,7 @@ Publish this RC with `next`, not `latest`. Future `latest` moves still need an
 explicit release/dist-tag task because default install can imply a stronger
 stability or value-proof claim than this evidence supports.
 
-RC soak policy: prepare/publish rc5 under `next` only; `latest` remains
+RC soak policy: rc5 is published under `next` only; `latest` remains
 `0.3.9-alpha.8` unless HQ explicitly approves a stable/default-channel move.
 The local `@next` implementation-to-finish proxy trial passed, but Windows SSH
 remote validation was blocked by SCP/SSH instability before product behavior.
