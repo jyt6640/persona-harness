@@ -48,8 +48,38 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - local `HEAD`, `origin/main`, local tag `v0.4.0-rc.4`, and origin tag
     `v0.4.0-rc.4` all point to
     `c3e4c2bc2178e6edc72581a8d34aedd406be922b`.
+- External current/local tarball package-surface smoke on HEAD
+  `12562195719745ed371320d04590c68037ab0b05` passed the R1 relay preview
+  surface:
+  - source was a fresh local/current tarball, not registry `@next`;
+  - registry `persona-harness@next` remains `0.4.0-rc.4` at gitHead
+    `c3e4c2bc2178e6edc72581a8d34aedd406be922b`, so it does not include the R1
+    relay preview commits until a later publish verifies a new gitHead;
+  - package/version: `persona-harness@0.4.0-rc.4`;
+  - included commits `3c0d675`, `2b452af`, `d46f698`, and `1256219`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r1-relay-preview-1256219-package-surface-20260630-131649/persona-harness-0.4.0-rc.4.tgz`;
+  - npm shasum: `97ca79d47158b7e560f47c6255e01b382d63ba1d`;
+  - sha256: `70df6c1abedc08c50ad61ba9bca5523eb0f751140cd30734146485df371f590d`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r1-relay-preview-1256219-package-surface-20260630-131649`;
+  - default/off fixture kept `multiAgent.enabled=false`, surfaced relay blocker
+    `multi-agent-disabled`, and did not generate the three-role agent map or
+    depend on `.opencode/agent`;
+  - preview bootstrap preserved existing `.opencode/opencode.json` plugin and
+    agent fields, then added top-level `agent` entries for exactly
+    `test-writer`, `jaeki`, and `roach` with `mode: subagent`;
+  - `test-writer` references `.persona/rules/backend/spring-test.md` section
+    `PH Multi-Agent Relay` and
+    `packages/shared-skills/skills/programming/references/java/testing.md`
+    section `Persona Harness relay contract`;
+  - `workflow relay status/next --json` exposes the preview relay state and role
+    progression from `test-writer` to `jaeki` to `roach` to closure next via
+    role artifact files.
 - Boundaries remain narrow: current/local tarball package-surface evidence only
   plus post-publish registry metadata; no eval/A-B proof, PH superiority,
+  registry `@next` behavior for R1, model/OpenCode run proof, native subtask
+  dispatch, token-savings guarantee, OMO parity, autonomous completion claim,
   generated app certification, broad architecture correctness, general
   reliability, or closure guarantee is claimed.
 
