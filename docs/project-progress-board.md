@@ -33,7 +33,10 @@ metadata with block eligibility and precision fields, while keeping
 BYO `.persona/conventions/*.yml` ast-grep convention preview is implemented for
 simple YAML metadata; current registry size is 2 conventions, including 1
 ast-grep convention: `controller.persistence-import`. Missing `sg`/`ast-grep`
-skips with a warning instead of faking a pass.
+skips with a warning instead of faking a pass. Current BYO targeted smoke is
+PARTIAL: check/closure/continue/finish/archive passed, but `observe --json` did
+not emit BYO ast-grep `controller.persistence-import`; observe alignment is
+pending.
 
 Historical board entries below may mention older alpha candidates, older
 dist-tag policy, or older eval conclusions. Treat `package.json`, `CHANGELOG.md`,

@@ -27,6 +27,10 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     pass, and block-capable rules still require high precision plus a fix path.
     Current registry size is 2 conventions, including 1 ast-grep convention:
     `controller.persistence-import`.
+  - External targeted smoke is PARTIAL for BYO surface alignment: BYO
+    check/closure/continue/finish/archive passed, but `observe --json` did not
+    yet emit BYO ast-grep `controller.persistence-import`; observe alignment is
+    pending a CLI/QA fix.
   - hard write-content deny remains SDK-impossible in the current OpenCode hook
     surface because `permission.ask` does not expose proposed file content;
     closure-time enforcement remains authoritative.
@@ -251,13 +255,15 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     warning-only fallback for convention violations because hard deny/rewrite is
     not supported by the current plugin hook result type. Do not call this
     write-time enforcement;
-  - Phase 3 PASS: the convention registry centralizes id/default level/blocker
-    id/fix path for observe, check, closure, continue, and write-warning
-    surfaces. Current HEAD through `a9bf926` adds BYO
+  - Phase 3 PASS/PARTIAL: the convention registry centralizes id/default
+    level/blocker id/fix path for check, closure, continue, finish, archive, and
+    write-warning surfaces. Current HEAD through `a9bf926` adds BYO
     `.persona/conventions/*.yml` ast-grep convention preview support; the
     registry has 2 conventions, including 1 ast-grep convention
     (`controller.persistence-import`). Missing `sg`/`ast-grep` skips with a
-    warning instead of faking a pass;
+    warning instead of faking a pass. External targeted smoke passed BYO
+    check/closure/continue/finish/archive, but `observe --json` BYO emission is
+    not aligned yet and remains pending;
   - this is scoped product enforcement behavior, not eval/A-B proof, PH
     superiority, generated app quality certification, broad architecture
     correctness, general reliability, or a closure guarantee.

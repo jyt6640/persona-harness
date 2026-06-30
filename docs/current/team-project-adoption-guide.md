@@ -85,7 +85,8 @@ The current GUARD surface is a scoped opt-in enforcement candidate:
   is `controller.persistence-import`, so the current registry has 2 conventions
   including 1 ast-grep convention. Unsafe or low-precision rules must not become
   hard blockers, and missing `sg`/`ast-grep` skips with a warning instead of
-  faking a pass.
+  faking a pass. Current BYO targeted smoke is PARTIAL: check/closure/continue,
+  finish, and archive aligned, but `observe --json` BYO emission is pending.
 
 Valid claim: Persona Harness can provide scoped opt-in closure enforcement for
 selected Java/Spring workflow checks.
