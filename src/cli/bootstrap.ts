@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
+import { enableMultiAgentPreview } from "./bootstrap-multi-agent.js"
 import { enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
 import { initializePersonaHarness } from "./init.js"
@@ -10,6 +11,7 @@ import { runIntakeCommand } from "./intake.js"
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH } from "./plan.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
+import { loadHarnessConfig } from "../config/harness-config.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 
 type BootstrapOptions = {
@@ -18,7 +20,7 @@ type BootstrapOptions = {
 }
 
 type ParsedBootstrapArgs =
-  | { readonly force: boolean; readonly kind: "backend"; readonly strict: boolean }
+  | { readonly force: boolean; readonly kind: "backend"; readonly multiAgentPreview: boolean; readonly strict: boolean }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
@@ -41,9 +43,19 @@ function strictModeSummaryLines(): readonly string[] {
   ]
 }
 
+function multiAgentPreviewSummaryLines(): readonly string[] {
+  return [
+    "Multi-agent relay preview:",
+    "- opt-in only via --multi-agent-preview; default bootstrap stays single-agent",
+    "- writes OpenCode subagent config entries for test-writer, jaeki, and roach",
+    "- does not dispatch native subtasks, auto-fill reports, auto-archive tickets, or weaken finish",
+    "- PH closure/workflow state remains the orchestrator/gate; OpenCode subagents are workers",
+  ]
+}
+
 export function bootstrapUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} bootstrap backend [--force] [--strict]`,
+    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview]`,
     "",
     "Prepares the backend Persona Harness workflow for AI implementation.",
     "",
@@ -66,6 +78,8 @@ export function bootstrapUsage(invocation = "ph"): string {
     "- no frontend/infra workflow",
     "",
     ...strictModeSummaryLines(),
+    "",
+    ...multiAgentPreviewSummaryLines(),
   ].join("\n")
 }
 
@@ -79,6 +93,7 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
 
   let force = false
   let strict = false
+  let multiAgentPreview = false
   for (const arg of args.slice(1)) {
     if (arg === "--force") {
       force = true
@@ -88,10 +103,14 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
       strict = true
       continue
     }
+    if (arg === "--multi-agent-preview") {
+      multiAgentPreview = true
+      continue
+    }
     return { kind: "invalid", message: `Unknown option: ${arg}` }
   }
 
-  return { kind: "backend", force, strict }
+  return { kind: "backend", force, multiAgentPreview, strict }
 }
 
 function projectDirFor(options: BootstrapOptions): string {
@@ -164,7 +183,12 @@ function writeBackendAgentInstructions(projectDir: string, skipped: string[], fo
   return `created ${ROOT_AGENT_INSTRUCTIONS_PATH} AI bootstrap instructions`
 }
 
-function runBackendBootstrap(options: BootstrapOptions, force: boolean, strict: boolean): CliRunResult {
+function runBackendBootstrap(
+  options: BootstrapOptions,
+  force: boolean,
+  strict: boolean,
+  multiAgentPreview: boolean,
+): CliRunResult {
   const projectDir = projectDirFor(options)
   const actions: string[] = []
   const skipped: string[] = []
@@ -182,6 +206,14 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean, strict: 
       return strictFailure
     }
     actions.push("enabled strict closure verification")
+  }
+
+  if (multiAgentPreview) {
+    const previewFailure = enableMultiAgentPreview(projectDir, loadHarnessConfig(projectDir).multiAgent)
+    if (previewFailure !== undefined) {
+      return previewFailure
+    }
+    actions.push("enabled multi-agent relay preview for test-writer, jaeki, and roach")
   }
 
   const profileState = readBackendProjectProfileState(projectDir)
@@ -233,6 +265,7 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean, strict: 
       ...(skipped.length > 0 ? skipped.map((item) => `- ${item}`) : ["- none"]),
       "",
       ...(strict ? [...strictModeSummaryLines(), ""] : []),
+      ...(multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
       "Ready backend bootstrap files:",
       `- ${HARNESS_CONFIG_PATH}`,
       `- ${CONVENTIONS_DIR_PATH}`,
@@ -270,5 +303,5 @@ export function runBootstrapCommand(
   if (parsed.kind === "invalid") {
     return { status: 1, stdout: "", stderr: `${parsed.message}\n\n${bootstrapUsage(invocationName)}\n` }
   }
-  return runBackendBootstrap(options, parsed.force, parsed.strict)
+  return runBackendBootstrap(options, parsed.force, parsed.strict, parsed.multiAgentPreview)
 }

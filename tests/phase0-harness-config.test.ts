@@ -52,6 +52,11 @@ describe("Phase 0 harness config", () => {
     expect(config.enforce.idleContinuation).toBe(false)
     expect(config.enforce.systemConstitution).toBe(true)
     expect(config.enforce.writeDeny).toBe(false)
+    expect(config.multiAgent).toEqual({
+      enabled: false,
+      roles: ["test-writer", "jaeki", "roach"],
+      models: {},
+    })
     expect(config.conventions[CONTROLLER_REPOSITORY_CONVENTION.id]).toBe(CONTROLLER_REPOSITORY_CONVENTION.defaultLevel)
     expect(CONTROLLER_REPOSITORY_CONVENTION.blockerId).toBe("architecture-controller-repository-direct-dependency")
     expect(CONTROLLER_REPOSITORY_CONVENTION.fixPath).toContain("Service layer")
@@ -74,6 +79,25 @@ describe("Phase 0 harness config", () => {
     expect(config.enforce.idleContinuation).toBe(true)
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.writeDeny).toBe(true)
+  })
+
+  it("uses multi-agent relay opt-in from harness.jsonc", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, {
+      multiAgent: {
+        enabled: true,
+        roles: ["test-writer", "jaeki", "roach"],
+        models: {
+          roach: "provider/strong-reviewer",
+        },
+      },
+    })
+
+    const config = loadHarnessConfig(projectDir)
+
+    expect(config.multiAgent.enabled).toBe(true)
+    expect(config.multiAgent.roles).toEqual(["test-writer", "jaeki", "roach"])
+    expect(config.multiAgent.models).toEqual({ roach: "provider/strong-reviewer" })
   })
 
   it("uses convention levels from harness.jsonc", () => {

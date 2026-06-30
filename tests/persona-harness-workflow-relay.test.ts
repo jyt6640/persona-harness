@@ -1,0 +1,166 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+
+import { afterEach, describe, expect, it } from "vitest"
+
+import { runPersonaCli } from "../src/cli/index.js"
+import { isRecord } from "../src/config/jsonc.js"
+
+const tempProjects: string[] = []
+
+function createTempProject(): string {
+  const projectDir = mkdtempSync(join(tmpdir(), "persona-workflow-relay-test-"))
+  tempProjects.push(projectDir)
+  return projectDir
+}
+
+function writeHarnessConfig(projectDir: string, enabled: boolean): void {
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "harness.jsonc"),
+    `${JSON.stringify(
+      {
+        multiAgent: {
+          enabled,
+          roles: ["test-writer", "jaeki", "roach"],
+          models: {},
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  )
+}
+
+function writeWorkflowWithPendingTicket(projectDir: string, ticketId = "req-1"): void {
+  mkdirSync(join(projectDir, ".persona", "workflow", "work", ticketId), { recursive: true })
+  writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
+  writeFileSync(join(projectDir, ".persona", "workflow", "implementation-report.md"), "Status: template\n")
+  writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: template\n")
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "backlog.md"),
+    [
+      "# Persona Workflow Backlog",
+      "",
+      "Status: active",
+      "",
+      "| Order | Ticket | Title | Status | Path |",
+      "| --- | --- | --- | --- | --- |",
+      `| 1 | ${ticketId} | Task CRUD API | pending | .persona/workflow/work/${ticketId}/00-task-card.md |`,
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "work", ticketId, "00-task-card.md"),
+    ["# Task Card: req-1", "", "Build the task CRUD API."].join("\n"),
+  )
+}
+
+function writeRoleArtifact(projectDir: string, ticketId: string, role: string): void {
+  mkdirSync(join(projectDir, ".persona", "workflow", "work", ticketId, "roles"), { recursive: true })
+  writeFileSync(join(projectDir, ".persona", "workflow", "work", ticketId, "roles", `${role}.md`), `# ${role}\n`)
+}
+
+function relayJson(projectDir: string, action: "next" | "status" = "next"): Record<string, unknown> {
+  const result = runPersonaCli(["workflow", "relay", action, "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+  expect(result.status).toBe(0)
+  expect(result.stderr).toBe("")
+  const parsed: unknown = JSON.parse(result.stdout)
+  expect(isRecord(parsed)).toBe(true)
+  return isRecord(parsed) ? parsed : {}
+}
+
+afterEach(() => {
+  for (const projectDir of tempProjects) {
+    rmSync(projectDir, { recursive: true, force: true })
+  }
+  tempProjects.length = 0
+})
+
+describe("ph workflow relay read-only preview", () => {
+  it("stays disabled by default and points to the opt-in bootstrap flag", () => {
+    const projectDir = createTempProject()
+    writeHarnessConfig(projectDir, false)
+    writeWorkflowWithPendingTicket(projectDir)
+
+    const output = relayJson(projectDir)
+
+    expect(output.enabled).toBe(false)
+    expect(output.nextRole).toBeNull()
+    expect(output.requiredArtifact).toBeNull()
+    expect(output.roleOrder).toEqual(["test-writer", "jaeki", "roach"])
+    expect(output.blockers).toEqual([
+      expect.objectContaining({
+        id: "multi-agent-disabled",
+        source: ".persona/harness.jsonc",
+      }),
+    ])
+  })
+
+  it("emits the first missing role handoff from the current ticket and closure blocker", () => {
+    const projectDir = createTempProject()
+    writeHarnessConfig(projectDir, true)
+    writeWorkflowWithPendingTicket(projectDir)
+
+    const output = relayJson(projectDir)
+
+    expect(output.enabled).toBe(true)
+    expect(output.nextRole).toBe("test-writer")
+    expect(output.requiredArtifact).toBe(".persona/workflow/work/req-1/roles/test-writer.md")
+    expect(output.scopedInputs).toEqual(
+      expect.arrayContaining([
+        ".persona/workflow/plan.md",
+        ".persona/workflow/work/req-1/00-task-card.md",
+        ".persona/workflow/implementation-report.md",
+        ".persona/workflow/review-report.md",
+      ]),
+    )
+    expect(output.blockers).toEqual([
+      expect.objectContaining({
+        id: "role-test-artifact-missing",
+        source: ".persona/workflow/work/req-1/roles/test-writer.md",
+      }),
+    ])
+    expect(output.promptLines).toEqual(
+      expect.arrayContaining([
+        "Role: test-writer.",
+        "Do not implement production code.",
+        "Then rerun `npx ph workflow relay next --json`.",
+      ]),
+    )
+  })
+
+  it("progresses through jaeki and roach artifacts before returning to closure gates", () => {
+    const projectDir = createTempProject()
+    writeHarnessConfig(projectDir, true)
+    writeWorkflowWithPendingTicket(projectDir)
+
+    writeRoleArtifact(projectDir, "req-1", "test-writer")
+    const implementer = relayJson(projectDir)
+    expect(implementer.nextRole).toBe("jaeki")
+    expect(implementer.blockers).toEqual([
+      expect.objectContaining({
+        id: "role-implementation-artifact-missing",
+        source: ".persona/workflow/work/req-1/roles/jaeki.md",
+      }),
+    ])
+
+    writeRoleArtifact(projectDir, "req-1", "jaeki")
+    const reviewer = relayJson(projectDir, "status")
+    expect(reviewer.action).toBe("status")
+    expect(reviewer.nextRole).toBe("roach")
+    expect(reviewer.blockers).toEqual([
+      expect.objectContaining({
+        id: "role-review-artifact-missing",
+        source: ".persona/workflow/work/req-1/roles/roach.md",
+      }),
+    ])
+
+    writeRoleArtifact(projectDir, "req-1", "roach")
+    const complete = relayJson(projectDir)
+    expect(complete.nextRole).toBeNull()
+    expect(complete.requiredArtifact).toBeNull()
+    expect(complete.blockers).toEqual([])
+    expect(complete.gateCommand).toBe("npx ph workflow closure next --json")
+  })
+})

@@ -1,6 +1,6 @@
-# Multi-Agent Relay R0 Measurement
+# Multi-Agent Relay Design
 
-Status: R0 measurement and design note only. No relay implementation is present.
+Status: R1 preview implemented. The relay is default-off, read-only, and non-autonomous.
 
 ## Scope
 
@@ -63,28 +63,26 @@ R0 conclusion:
 - PH cannot make `experimental.chat.system.transform` agent-specific from its typed input alone because that hook exposes `sessionID?` and `model`, not `agent`.
 - R1 should avoid agent-specific system constitution until PH either uses `chat.message` to record session/agent state or OpenCode exposes `agent` directly to system transform.
 
-## R1 Relay Preview Recommendation
+## R1 Relay Preview
 
-Subagent promotion should be opt-in. Proposed config surface for a later implementation:
+Subagent promotion is opt-in. The implemented config surface is:
 
 ```jsonc
 {
-  "multiAgentRelay": {
+  "multiAgent": {
     "enabled": false,
-    "preview": true,
-    "agents": {
-      "jaeki": { "mode": "subagent", "role": "implementer" },
-      "test-writer": { "mode": "subagent", "role": "tester" },
-      "roach": { "mode": "subagent", "role": "reviewer" }
-    }
+    "roles": ["test-writer", "jaeki", "roach"],
+    "models": {}
   }
 }
 ```
 
-First 3-role preview:
+`ph bootstrap backend --multi-agent-preview` turns this on for the project and updates `.opencode/opencode.json` with top-level `agent` entries for exactly `test-writer`, `jaeki`, and `roach`, each with `mode: "subagent"`. It preserves the existing OpenCode config and does not use `.opencode/agent/*.md`.
 
-- `jaeki`: implementer. Takes the accepted plan/current ticket and writes production code/tests plus implementation report evidence.
+First 3-role preview order:
+
 - `test-writer`: tester. Owns focused failing tests, verification commands, and structured evidence expectations.
+- `jaeki`: implementer. Takes the accepted plan/current ticket and writes production code/tests plus implementation report evidence.
 - `roach`: reviewer. Owns review-report pressure, closure blocker review, and regression risk notes.
 
 Reserved but not workerized at first:
@@ -98,6 +96,21 @@ Core invariant:
 - OpenCode subagents are workers.
 - `workflow closure next`, `workflow check`, `workflow archive`, and `workflow finish implement` remain the authoritative state/gate surfaces.
 
+Implemented read-only surfaces:
+
+- `ph workflow relay status --json`
+- `ph workflow relay next --json`
+
+These commands do not call OpenCode and do not dispatch native subtasks. They read the current workflow ticket and closure blocker, then emit a scoped handoff object with `enabled`, `currentTicket`, `nextRole`, `roleOrder`, `scopedInputs`, `promptLines`, `requiredArtifact`, `gateCommand`, and blocker fields.
+
+R1 role artifacts live under `.persona/workflow/work/<ticket>/roles/`:
+
+- `.persona/workflow/work/<ticket>/roles/test-writer.md`
+- `.persona/workflow/work/<ticket>/roles/jaeki.md`
+- `.persona/workflow/work/<ticket>/roles/roach.md`
+
+Missing artifacts block relay progression with preview-only blockers such as `role-test-artifact-missing`, `role-implementation-artifact-missing`, and `role-review-artifact-missing`. These are relay handoff blockers only; they do not weaken or replace workflow closure/check/archive/finish gates.
+
 ## Token/Cost Guardrails
 
 - Scoped context only: each handoff should include current ticket id, blocker id, source path, and exact expected artifact, not the full project history.
@@ -109,14 +122,15 @@ Core invariant:
 
 ## R1 Blockers / Unknowns
 
-- `.opencode/agent/*.md` support is not source-proven in the installed SDK/plugin artifacts measured here.
+- `.opencode/agent/*.md` support is not source-proven in the installed SDK/plugin artifacts measured here, so R1 does not use it.
 - Agent-specific system constitution is not source-proven through `experimental.chat.system.transform`; R1 needs either a `chat.message` session-agent cache or a future hook input with `agent`.
 - Native subtask dispatch should be tested with a no-model/local probe before productizing; R0 did not run OpenCode or models.
 - Permission/write-deny is unrelated to relay and remains constrained by the current SDK payload limitations.
+- R1 does not promise token savings, OMO parity, autonomous completion, or a full agent loop.
 
-## Suggested R1 Slice
+## Suggested R2 Slice
 
-1. Add opt-in generation of `.opencode/opencode.json` top-level `agent` entries for `jaeki`, `test-writer`, and `roach`, preserving existing config.
-2. Add `ph workflow relay next --json` as read-only preview that converts the first closure blocker/current ticket into one scoped worker handoff object.
-3. Do not dispatch native subtasks yet unless a local no-model OpenCode probe confirms the subtask part or command behavior.
+1. Add a no-model/local OpenCode probe for native subtask handoff behavior before any dispatch implementation.
+2. Decide whether PH should submit native `SubtaskPartInput` directly or keep relay as handoff JSON plus human/model copy surface.
+3. If dispatch is added, keep it config-gated, bounded by role artifact checkpoints, and stopped by closure blockers.
 4. Keep finish/archive/check strict. Relay workers may help clear blockers; they do not bypass them.

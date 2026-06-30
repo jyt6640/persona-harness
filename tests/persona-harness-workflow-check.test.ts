@@ -11,6 +11,7 @@ import {
   CONTROLLER_REPOSITORY_CONVENTION,
 } from "../src/config/convention-registry.js"
 import { loadHarnessConfig } from "../src/config/harness-config.js"
+import { isRecord } from "../src/config/jsonc.js"
 
 const tempProjects: string[] = []
 
@@ -105,6 +106,12 @@ function workflowStatusRows(stdout: string): ReadonlyMap<string, string> {
     rows.set(line.slice(2, separatorIndex), line.slice(separatorIndex + 1).trim())
   }
   return rows
+}
+
+function readJsonObject(path: string): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(readFileSync(path, "utf8"))
+  expect(isRecord(parsed)).toBe(true)
+  return isRecord(parsed) ? parsed : {}
 }
 
 function writeJavaRoleFiles(projectDir: string): void {
@@ -1270,6 +1277,79 @@ describe("ph bootstrap backend", () => {
     expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(true)
     expect(loadHarnessConfig(projectDir).enforce.writeDeny).toBe(false)
     expect(loadHarnessConfig(projectDir).enforce.idleContinuation).toBe(false)
+  })
+
+  it("enables the multi-agent relay preview only when explicitly requested", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend", "--multi-agent-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("enabled multi-agent relay preview for test-writer, jaeki, and roach")
+    expect(result.stdout).toContain("Multi-agent relay preview:")
+    expect(result.stdout).toContain("does not dispatch native subtasks")
+    expect(loadHarnessConfig(projectDir).multiAgent).toEqual({
+      enabled: true,
+      roles: ["test-writer", "jaeki", "roach"],
+      models: {},
+    })
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    expect(isRecord(opencodeConfig.agent)).toBe(true)
+    const agents = isRecord(opencodeConfig.agent) ? opencodeConfig.agent : {}
+    expect(agents["test-writer"]).toMatchObject({ mode: "subagent" })
+    expect(agents.jaeki).toMatchObject({ mode: "subagent" })
+    expect(agents.roach).toMatchObject({ mode: "subagent" })
+    expect(JSON.stringify(agents["test-writer"])).toContain("Do not implement production code")
+    expect(JSON.stringify(agents.jaeki)).toContain("PH closure/workflow state is the orchestrator/gate")
+    expect(JSON.stringify(agents.roach)).toContain("Do not implement features unless explicitly reassigned")
+    expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))
+  })
+
+  it("preserves existing OpenCode plugin and agent fields when enabling the relay preview", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".opencode"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".opencode", "opencode.json"),
+      `${JSON.stringify(
+        {
+          plugin: ["/tmp/existing-plugin.js"],
+          agent: {
+            jaeki: {
+              model: "provider/existing-jaeki",
+              custom: "kept",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const result = runPersonaCli(["bootstrap", "backend", "--multi-agent-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    expect(opencodeConfig.plugin).toEqual(
+      expect.arrayContaining(["/tmp/existing-plugin.js", expect.stringContaining("dist/index.js")]),
+    )
+    const agents = isRecord(opencodeConfig.agent) ? opencodeConfig.agent : {}
+    expect(agents.jaeki).toMatchObject({
+      custom: "kept",
+      model: "provider/existing-jaeki",
+      mode: "subagent",
+    })
+    expect(agents["test-writer"]).toMatchObject({ mode: "subagent" })
+    expect(agents.roach).toMatchObject({ mode: "subagent" })
   })
 
   it("fills missing backend workflow pieces after init without requiring the user to type every command", () => {

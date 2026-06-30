@@ -12,6 +12,11 @@
     "writeDeny": false,
     "idleContinuation": false
   },
+  "multiAgent": {
+    "enabled": false,
+    "roles": ["test-writer", "jaeki", "roach"],
+    "models": {}
+  },
   "maxRulesPerInjection": 12,
   "evidenceMode": "metadata_only",
   "scenario": "step1",

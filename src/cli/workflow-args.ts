@@ -6,6 +6,7 @@ export type ParsedWorkflowArgs =
   | { readonly kind: "implement" }
   | { readonly kind: "continue" }
   | { readonly closureAction: "next" | "status"; readonly kind: "closure" }
+  | { readonly kind: "relay"; readonly relayArgs: readonly string[] }
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
   | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
   | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
@@ -21,7 +22,7 @@ export type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|continue|closure|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|continue|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
@@ -30,6 +31,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow implement prints a single AI-facing implementation rail",
     "- workflow continue prints the accepted-plan continuation prompt",
     "- workflow closure status/next --json prints read-only closure state and next steps",
+    "- workflow relay status/next --json prints the read-only multi-agent relay preview",
     "- workflow roles writes and prints non-autonomous role boundaries",
     "- workflow start/finish are AI-facing workflow rails",
     "- workflow draft/approve/capture/split/next/archive manage requirement-derived task tickets",
@@ -56,6 +58,9 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
       return { closureAction: args[1], kind: "closure" }
     }
     return { kind: "invalid", message: "workflow closure requires status --json or next --json." }
+  }
+  if (args[0] === "relay") {
+    return { kind: "relay", relayArgs: args.slice(1) }
   }
   if (args[0] === "roles") {
     return args.length === 1 ? { kind: "roles" } : { kind: "invalid", message: "workflow roles does not accept extra arguments." }

@@ -14,6 +14,7 @@ export type HarnessConfig = {
   readonly rulesDir: string
   readonly evidenceDir: string
   readonly enforce: HarnessEnforceConfig
+  readonly multiAgent: HarnessMultiAgentConfig
   readonly maxRulesPerInjection: number
   readonly evidenceMode: "metadata_only"
   readonly enabledDomains: readonly string[]
@@ -33,6 +34,16 @@ export type HarnessEnforceConfig = {
    * (finish gate + ast-grep conventions).
    */
   readonly writeDeny: boolean
+}
+
+export const DEFAULT_MULTI_AGENT_ROLES = ["test-writer", "jaeki", "roach"] as const
+
+export type MultiAgentRole = (typeof DEFAULT_MULTI_AGENT_ROLES)[number]
+
+export type HarnessMultiAgentConfig = {
+  readonly enabled: boolean
+  readonly roles: readonly MultiAgentRole[]
+  readonly models: Readonly<Partial<Record<MultiAgentRole, string>>>
 }
 
 export type HarnessConfigDiagnostic = {
@@ -56,6 +67,11 @@ const DEFAULT_CONFIG: HarnessConfig = {
     idleContinuation: false,
     systemConstitution: true,
     writeDeny: false,
+  },
+  multiAgent: {
+    enabled: false,
+    roles: DEFAULT_MULTI_AGENT_ROLES,
+    models: {},
   },
   maxRulesPerInjection: 12,
   evidenceMode: "metadata_only",
@@ -100,6 +116,43 @@ function readEnforceConfig(value: unknown): HarnessEnforceConfig {
     idleContinuation: readBoolean(value.idleContinuation, DEFAULT_CONFIG.enforce.idleContinuation),
     systemConstitution: readBoolean(value.systemConstitution, DEFAULT_CONFIG.enforce.systemConstitution),
     writeDeny: readBoolean(value.writeDeny, DEFAULT_CONFIG.enforce.writeDeny),
+  }
+}
+
+function isMultiAgentRole(value: unknown): value is MultiAgentRole {
+  return value === "test-writer" || value === "jaeki" || value === "roach"
+}
+
+function readMultiAgentRoles(value: unknown): readonly MultiAgentRole[] {
+  if (!Array.isArray(value)) {
+    return DEFAULT_CONFIG.multiAgent.roles
+  }
+  const roles = value.filter(isMultiAgentRole)
+  return roles.length > 0 ? roles : DEFAULT_CONFIG.multiAgent.roles
+}
+
+function readMultiAgentModels(value: unknown): HarnessMultiAgentConfig["models"] {
+  if (!isRecord(value)) {
+    return DEFAULT_CONFIG.multiAgent.models
+  }
+  const models: Partial<Record<MultiAgentRole, string>> = {}
+  for (const role of DEFAULT_MULTI_AGENT_ROLES) {
+    const model = value[role]
+    if (typeof model === "string" && model.trim() !== "") {
+      models[role] = model
+    }
+  }
+  return models
+}
+
+function readMultiAgentConfig(value: unknown): HarnessMultiAgentConfig {
+  if (!isRecord(value)) {
+    return DEFAULT_CONFIG.multiAgent
+  }
+  return {
+    enabled: readBoolean(value.enabled, DEFAULT_CONFIG.multiAgent.enabled),
+    roles: readMultiAgentRoles(value.roles),
+    models: readMultiAgentModels(value.models),
   }
 }
 
@@ -174,6 +227,7 @@ export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadRe
       rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
       evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
       enforce: readEnforceConfig(parsed.enforce),
+      multiAgent: readMultiAgentConfig(parsed.multiAgent),
       maxRulesPerInjection: readPositiveInteger(parsed.maxRulesPerInjection, DEFAULT_CONFIG.maxRulesPerInjection),
       evidenceMode: readEvidenceMode(parsed.evidenceMode),
       enabledDomains: readStringArray(parsed.enabledDomains, DEFAULT_CONFIG.enabledDomains),

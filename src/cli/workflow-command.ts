@@ -18,6 +18,7 @@ import {
   uninitializedHarnessOutput,
 } from "./workflow-output.js"
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
+import { runWorkflowRelayCommand } from "./workflow-relay.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import { stdinEncodingError } from "./stdin-text.js"
@@ -151,6 +152,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "closure") {
     return runWorkflowClosureCommand(parsed.closureAction, options)
+  }
+  if (parsed.kind === "relay") {
+    return runWorkflowRelayCommand(parsed.relayArgs, { projectDir: options.projectDir }, invocationName)
   }
   if (parsed.kind === "roles") {
     return runWorkflowRolesCommand(options)
