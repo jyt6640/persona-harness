@@ -17,6 +17,39 @@ function dedupePolicies(policies: string[]): string[] {
   return Array.from(new Set(policies))
 }
 
+function tier0GuidanceLines(): readonly string[] {
+  return [
+    "Tier0 - source-of-truth boundaries:",
+    "- PH guidance is project-local prerelease guidance; it is not generated app product-quality certification.",
+    "- `.persona/project-profile.jsonc`, when present, is the stack/source-of-truth boundary before implementation; profile exists but not read → do not implement yet.",
+    "- Do not read node_modules, .opencode, package vendor files, .persona/rules, or .persona/evidence as implementation context.",
+    "- Use PH-owned surfaces first: accepted plan, injection summary, workflow check/closure, ast-grep conventions, relay handoff, and bearshell.",
+    "- Optional external code-nav tools may help only when actually installed; do not present them as PH-owned or token-saving.",
+  ]
+}
+
+function tier1WorkflowRailLines(): readonly string[] {
+  return [
+    "Tier1 - implement/continue workflow rail:",
+    "- If `.persona` exists but profile/policy/plan is empty, do not implement yet; in AI/non-TTY shell run `npx ph bootstrap backend`.",
+    "- For short implementation requests, run `npx ph workflow implement` first and follow that single rail.",
+    "- For pasted requirements, run `npx ph workflow capture --stdin`, `npx ph workflow split`, and `npx ph workflow next` before code.",
+    "- If `npx ph workflow implement` fails, stop and report the plan/status blocker instead of coding.",
+    "- Read long README/plan content in bounded chunks with `npx ph bearshell`; record unread ranges in implementation-report.",
+  ]
+}
+
+function tier3ClosureLines(): readonly string[] {
+  return [
+    "Tier3 - finish/review/archive verification:",
+    "- Fill implementation-report with real read/verification evidence before `npx ph plan --report-filled implementation`.",
+    "- Fill review-report after review/manual QA, then run `npx ph plan --report-filled review`.",
+    "- Archive only reviewed/completed tickets; pending tickets remain honest blockers.",
+    "- Before claiming done, run `npx ph workflow finish implement` and do not claim completion if it fails.",
+    "- If blocked, use `npx ph workflow closure next --json` or `npx ph workflow continue` for the first actionable blocker.",
+  ]
+}
+
 export function createInjectionBlock(targetFile: string, projectDir = process.cwd()): PendingInjection {
   const configResult = loadHarnessConfigResult(projectDir)
   const config = configResult.config
@@ -83,21 +116,8 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
     ...policies.map((policy) => `- ${policy}`),
     "",
     "주의:",
-    "이 Phase 0 블록은 .persona/rules 정본과 최소 frontmatter/glob/scenario catalog layer를 읽는 MVP rule-loader 결과이며, 아직 full rule engine은 아니다.",
-    "구현 전에 `.persona/project-profile.jsonc`가 있으면 반드시 읽고 language/framework/build tool을 따른다. profile exists but not read → do not implement yet.",
-    "코드 구조 분석이나 변경 영향 파악이 필요하면 raw file read보다 codegraph MCP를 먼저 사용한다. codegraph를 사용할 수 없을 때만 필요한 파일 범위를 직접 읽고 그 이유를 남긴다.",
-    "repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.",
-    "`.persona`가 있는데 프로젝트 프로필/정책/계획이 비어 있으면 구현하지 말고, AI/non-TTY shell에서는 먼저 `npx ph bootstrap backend`를 실행한다.",
-    "사용자가 직접 터미널을 쓰는 상황이면 `npx ph init` 또는 `npx ph intake --interactive`로 프로필 인터뷰를 완료하게 안내한다.",
-    "`.persona`가 없는 일반 프로젝트에는 Persona Harness workflow를 강제하지 않는다. 하네스를 쓰려면 사용자가 `npx ph init`으로 opt in한다.",
-    "짧은 구현 지시(예: '플랜 보고 구현해줘', '계획대로 해줘', '이제 구현해줘')를 받으면 먼저 `npx ph workflow implement`를 실행하고, 그 단일 레일을 따른다.",
-    "프롬프트에 요구사항이 직접 들어오면 구현 전에 `npx ph workflow capture --stdin`, `npx ph workflow split`, `npx ph workflow next`로 요구사항 분석과 backlog를 먼저 남긴다.",
-    "`npx ph workflow split`은 Step heading이 없어도 `.persona/workflow/requirements-analysis.md`와 fallback task ticket을 만든다.",
-    "`npx ph workflow implement`가 실패하면 구현하지 말고 plan/status 문제를 사용자에게 보고한다.",
-    "긴 README/plan은 `npx ph bearshell --shell 'sed -n \"1,220p\" <file>'`처럼 범위를 나눠 끝까지 읽는다.",
-    "중간에 멈추면 implementation-report에 남은 범위를 기록한다.",
-    "최종 답변 전에는 review-report를 채우고 `npx ph plan --report-filled review`와 `npx ph workflow finish implement`를 실행한다.",
-    "`npx ph workflow finish implement`가 실패하면 완료 보고를 하지 말고 부족한 workflow evidence를 먼저 채운다.",
+    ...tier0GuidanceLines(),
+    ...(shouldLoadJavaRules ? ["", ...tier1WorkflowRailLines(), "", ...tier3ClosureLines()] : []),
   ].join("\n")
 
   return {

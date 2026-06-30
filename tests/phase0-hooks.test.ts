@@ -597,17 +597,25 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
     const injection = createInjectionBlock(targetFile, fixtureWorkspace)
 
-    expect(injection.block).toContain("repo inspection, CLI smoke test, 큰 출력 확인은 `ph bearshell`을 우선 사용한다.")
+    expect(injection.block).toContain("bearshell")
     expect(injection.block).not.toContain("omo sparkshell")
   })
 
-  it("prefers codegraph for injected code analysis guidance", () => {
+  it("keeps injected code analysis guidance PH-owned first without codegraph ownership claims", () => {
     const targetFile = fixturePath("ReservationController.java")
 
     const injection = createInjectionBlock(targetFile, fixtureWorkspace)
 
-    expect(injection.block).toContain("코드 구조 분석이나 변경 영향 파악이 필요하면 raw file read보다 codegraph MCP를 먼저 사용한다.")
-    expect(injection.block).toContain("codegraph를 사용할 수 없을 때만 필요한 파일 범위를 직접 읽고 그 이유를 남긴다.")
+    const tier0 = injection.block.split("Tier1 - implement/continue workflow rail:")[0] ?? ""
+    const tier0Lines = tier0
+      .split("\n")
+      .slice(tier0.split("\n").findIndex((line) => line === "Tier0 - source-of-truth boundaries:"))
+      .filter((line) => line.trim() !== "")
+    expect(tier0Lines).toHaveLength(6)
+    expect(injection.block).toContain("Use PH-owned surfaces first")
+    expect(injection.block).toContain("Optional external code-nav tools may help only when actually installed")
+    expect(injection.block).not.toContain("codegraph MCP를 먼저 사용한다")
+    expect(injection.block).not.toContain("PH-owned MCP/codegraph")
   })
 
   it("routes short implementation intent through the accepted workflow plan gate", () => {
@@ -615,13 +623,13 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
     const injection = createInjectionBlock(targetFile, fixtureWorkspace)
 
-    expect(injection.block).toContain("짧은 구현 지시")
-    expect(injection.block).toContain("플랜 보고 구현해줘")
+    expect(injection.block).toContain("Tier1 - implement/continue workflow rail:")
+    expect(injection.block).toContain("short implementation requests")
     expect(injection.block).toContain("npx ph workflow implement")
     expect(injection.block).toContain("profile exists but not read → do not implement yet")
-    expect(injection.block).toContain("실패하면 구현하지 말고")
-    expect(injection.block).toContain("긴 README/plan은 `npx ph bearshell --shell 'sed -n")
-    expect(injection.block).toContain("중간에 멈추면 implementation-report에 남은 범위를 기록한다.")
+    expect(injection.block).toContain("If `npx ph workflow implement` fails, stop")
+    expect(injection.block).toContain("Read long README/plan content in bounded chunks with `npx ph bearshell`")
+    expect(injection.block).toContain("Tier3 - finish/review/archive verification:")
   })
 
   it("keeps selectedRules evidence as rule path strings", () => {
