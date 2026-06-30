@@ -103,9 +103,39 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     `jaeki` to `roach` to closure next, with canonical Java guidance references
     preserved in `promptBlock`/`promptLines`;
   - finish still exits nonzero in template report/evidence/pending-ticket state.
+- External current/local tarball package-surface smoke on HEAD
+  `7d9329449063888092f9a9a1a0141f94728c5e0e` passed the R3b deterministic
+  relay artifact gate surface:
+  - source was a fresh local/current tarball, not registry `@next` and not
+    origin-only;
+  - package/version: `persona-harness@0.4.0-rc.4`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r3b-relay-artifact-gates-7d93294-package-surface-20260630-162610/persona-harness-0.4.0-rc.4.tgz`;
+  - npm shasum: `642a9d95fdff0892e089f3d449a193854e9e236c`;
+  - sha256: `5a39ecca7bfc05aa9f624cd87b8fd958bb36830401f1d7514acbb012fd399a4d`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r3b-relay-artifact-gates-7d93294-package-surface-20260630-162610`;
+  - disabled/default kept relay `enabled=false`, blocker `multi-agent-disabled`,
+    and no unintended relay agent behavior;
+  - missing artifacts report `role-test-artifact-missing`, `readiness=missing`,
+    and reason `Role artifact is missing.`;
+  - incomplete/template-like or role-boundary-violating artifacts block with
+    `role-test-artifact-incomplete`, `role-implementation-artifact-incomplete`,
+    or `role-review-artifact-incomplete`;
+  - valid artifacts progress read-only and artifact-gated through
+    `test-writer` -> `jaeki` -> `roach` -> `npx ph workflow closure next --json`;
+  - complete state reports `currentRole=null`, `nextRole=null`,
+    `roleCompletionState.overall=complete`, `incompleteRoles=[]`, and
+    `requiredOutputArtifact=null`;
+  - JSON includes `roleArtifacts[].readiness`, `roleArtifacts[].reason`, and
+    `roleCompletionState.incompleteRoles`; canonical Java guidance references
+    remain in the `test-writer` handoff/agent prompt;
+  - workflow archive and finish still block in incomplete
+    verification/report/evidence/pending-ticket state, with no report auto-fill,
+    ticket auto-archive, or finish/archive gate weakening.
 - Boundaries remain narrow: current/local tarball package-surface evidence only
   plus post-publish registry metadata; no eval/A-B proof, PH superiority,
-  registry `@next` behavior for R1/R2, model/OpenCode run proof, native subtask
+  registry `@next` behavior for R1/R2/R3b, model/OpenCode run proof, native subtask
   dispatch, token-savings guarantee, OMO parity, autonomous completion claim,
   generated app certification, broad architecture correctness, general
   reliability, or closure guarantee is claimed.
