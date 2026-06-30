@@ -1259,8 +1259,17 @@ describe("ph bootstrap backend", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("enabled strict closure verification")
-    expect(result.stdout).toContain("runs the project verification command during closure/finish")
+    expect(result.stdout).toContain("Strict mode:")
+    expect(result.stdout).toContain("sets enforce.executeVerification: true")
+    expect(result.stdout).toContain("PH runs the project verification command during closure/finish")
+    expect(result.stdout).toContain("expect toolchain command cost")
+    expect(result.stdout).toContain("sets enforce.systemConstitution: true")
+    expect(result.stdout).toContain("does not enable enforce.writeDeny or enforce.idleContinuation")
+    expect(result.stdout).toContain("no generated app product-quality certification or closure guarantee")
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(true)
+    expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(true)
+    expect(loadHarnessConfig(projectDir).enforce.writeDeny).toBe(false)
+    expect(loadHarnessConfig(projectDir).enforce.idleContinuation).toBe(false)
   })
 
   it("fills missing backend workflow pieces after init without requiring the user to type every command", () => {

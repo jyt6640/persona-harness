@@ -31,6 +31,16 @@ const GITIGNORE_PATH = ".gitignore"
 const POLICY_OVERLAY_PATH = ".persona/policies/overlay.jsonc"
 const ROOT_AGENT_INSTRUCTIONS_PATH = "AGENTS.md"
 
+function strictModeSummaryLines(): readonly string[] {
+  return [
+    "Strict mode:",
+    "- sets enforce.executeVerification: true, so PH runs the project verification command during closure/finish; expect toolchain command cost",
+    "- sets enforce.systemConstitution: true, so PH finish/intent guard prose is injected into the system prompt where supported",
+    "- does not enable enforce.writeDeny or enforce.idleContinuation; those stay explicit opt-ins",
+    "- still no generated app product-quality certification or closure guarantee",
+  ]
+}
+
 export function bootstrapUsage(invocation = "ph"): string {
   return [
     `Usage: ${invocation} bootstrap backend [--force] [--strict]`,
@@ -52,9 +62,10 @@ export function bootstrapUsage(invocation = "ph"): string {
     "",
     "Scope:",
     "- Java/Spring backend workflow convenience",
-    "- --strict enables PH-run direct verification during closure/finish; expect toolchain command cost",
     "- no generated app product-quality certification",
     "- no frontend/infra workflow",
+    "",
+    ...strictModeSummaryLines(),
   ].join("\n")
 }
 
@@ -170,7 +181,7 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean, strict: 
     if (strictFailure !== undefined) {
       return strictFailure
     }
-    actions.push("enabled strict closure verification; PH runs the project verification command during closure/finish, so expect toolchain command cost")
+    actions.push("enabled strict closure verification")
   }
 
   const profileState = readBackendProjectProfileState(projectDir)
@@ -221,6 +232,7 @@ function runBackendBootstrap(options: BootstrapOptions, force: boolean, strict: 
       "Skipped:",
       ...(skipped.length > 0 ? skipped.map((item) => `- ${item}`) : ["- none"]),
       "",
+      ...(strict ? [...strictModeSummaryLines(), ""] : []),
       "Ready backend bootstrap files:",
       `- ${HARNESS_CONFIG_PATH}`,
       `- ${CONVENTIONS_DIR_PATH}`,

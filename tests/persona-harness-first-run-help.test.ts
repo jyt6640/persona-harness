@@ -33,4 +33,20 @@ describe("first-run command help", () => {
     expect(existsSync(join(projectDir, ".persona"))).toBe(false)
     expect(existsSync(join(projectDir, ".opencode"))).toBe(false)
   })
+
+  it("prints strict bootstrap cost and opt-in boundaries in help", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Usage: ph bootstrap backend [--force] [--strict]")
+    expect(result.stdout).toContain("Strict mode:")
+    expect(result.stdout).toContain("sets enforce.executeVerification: true")
+    expect(result.stdout).toContain("expect toolchain command cost")
+    expect(result.stdout).toContain("sets enforce.systemConstitution: true")
+    expect(result.stdout).toContain("does not enable enforce.writeDeny or enforce.idleContinuation")
+    expect(result.stdout).toContain("no generated app product-quality certification or closure guarantee")
+    expect(existsSync(join(projectDir, ".persona"))).toBe(false)
+  })
 })
