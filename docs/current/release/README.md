@@ -54,6 +54,14 @@ and protocol-surface evidence only: not model/OpenCode/eval or native-dispatch
 evidence, not token-saving/product-efficacy evidence, and not codegraph
 replacement.
 
+Post-rc6 local/current tarball smoke at
+`38f4e8b1100bd6812212d4d5dfbebbef4d2b10eb` verified an OpenCode local MCP
+newline transport compatibility fix: direct framed JSON-RPC and
+newline-delimited JSON-RPC both worked, and `opencode mcp list --pure` connected
+to `persona-harness-code-nav` from the opt-in generated config. This is local
+tarball compatibility evidence only until a later registry publish verifies the
+same gitHead; it is not a token-saving or product-efficacy claim.
+
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
 and not a separate release channel.

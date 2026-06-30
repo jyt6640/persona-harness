@@ -65,6 +65,25 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - workflow check remained WARN/actionable and `workflow finish implement`
     still exited 1 for missing verification evidence/template reports; no
     finish/check weakening.
+- Post-rc6 local/current tarball OpenCode MCP transport compatibility smoke:
+  - source HEAD: `38f4e8b1100bd6812212d4d5dfbebbef4d2b10eb`
+    (`38f4e8b fix(cli): support OpenCode MCP newline transport`);
+  - source was a fresh local/current tarball only, not registry `@next`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rmcp-newline-transport-38f4e8b-20260630-235636/persona-harness-0.4.0-rc.6.tgz`;
+  - npm shasum: `ade4b761d87d01c76a0e42b03d73d6bae3c1be15`;
+  - sha256: `f74cf365b69b37b89f4a0cd0039dcea67b596682d7074bff31ec671686b80357`;
+  - direct Content-Length framed JSON-RPC returned Content-Length framed
+    responses, and direct newline-delimited JSON-RPC returned newline responses
+    with no Content-Length;
+  - opt-in `bootstrap --code-nav-preview` registered
+    `mcp.persona-harness-code-nav`, default init/bootstrap did not register it,
+    and existing plugin/agent/custom MCP/top-level entries were preserved;
+  - `opencode mcp list --pure` exited 0 and showed
+    `persona-harness-code-nav` connected;
+  - this records an OpenCode local MCP newline transport/adoption compatibility
+    fix only, not token-saving, product-efficacy, navigation-benefit, model,
+    eval, native dispatch, or registry `@next` evidence.
 
 ## [0.4.0-rc.5] - 2026-06-30
 
