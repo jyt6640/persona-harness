@@ -160,9 +160,38 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - workflow archive and finish still block in incomplete
     verification/report/evidence/pending-ticket state, with no report auto-fill,
     ticket auto-archive, or finish/archive gate weakening.
+- External current/local tarball package-surface smoke on HEAD
+  `24f85001605b7c121f11a2933a3ebfd0453434a7` passed the R5 relay validate text
+  surface:
+  - source was a fresh local/current tarball, not registry `@next` and not
+    origin-only;
+  - package/version: `persona-harness@0.4.0-rc.4`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r5-relay-validate-text-24f8500-package-surface-20260630-165522/persona-harness-0.4.0-rc.4.tgz`;
+  - npm shasum: `022dd98f49e8d018800309213af6ea062be1af23`;
+  - sha256: `40b3ff2d0f2715754a4f58191d8a8a3083b55053bc4ecd22bc2c0509a9175496`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r5-relay-validate-text-24f8500-package-surface-20260630-165522`;
+  - `ph workflow relay validate` human text works in missing, incomplete, and
+    complete role-artifact states;
+  - missing text includes current ticket, current/next role, readiness, first
+    blocker `role-test-artifact-missing`, required artifact, gate command,
+    authoring hints, and read-only/no native dispatch/no artifact writes/PH
+    closure gate boundary;
+  - incomplete text prints `role-test-artifact-incomplete` and reason;
+  - complete text prints all role artifacts complete, first blocker none,
+    required artifact none, and gate command
+    `npx ph workflow closure next --json`;
+  - `validate --json` remains compatible with `action: validate`, blockers,
+    readiness, reason, `incompleteRoles`, and closure-next gate command for
+    complete artifacts;
+  - no-write evidence remained intact: missing human validate did not create
+    roles files, and incomplete/complete artifact hashes were unchanged;
+  - workflow archive and finish still block when closure blockers remain, with no
+    report auto-fill, ticket auto-archive, or finish/archive gate weakening.
 - Boundaries remain narrow: current/local tarball package-surface evidence only
   plus post-publish registry metadata; no eval/A-B proof, PH superiority,
-  registry `@next` behavior for R1/R2/R3b/R4, model/OpenCode run proof, native
+  registry `@next` behavior for R1/R2/R3b/R4/R5, model/OpenCode run proof, native
   subtask dispatch, token-savings guarantee, OMO parity, autonomous completion
   claim, generated app certification, broad architecture correctness, general
   reliability, or closure guarantee is claimed.
