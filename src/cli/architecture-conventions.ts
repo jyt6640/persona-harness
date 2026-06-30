@@ -1,13 +1,14 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
-import { CONTROLLER_REPOSITORY_CONVENTION, CONVENTION_REGISTRY } from "../config/convention-registry.js"
+import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import type { ConventionDefinition } from "../config/convention-registry.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import type { ConventionLevel } from "../config/harness-config.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryEvidence } from "../observer/controller-repository-observer.js"
-import { loadAstGrepConventionDefinitions, runAstGrepConvention } from "./ast-grep-convention-runner.js"
+import { runAstGrepConvention } from "./ast-grep-convention-runner.js"
+import { readConventionDefinitions } from "./convention-definitions.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
 
 export type ArchitectureConventionFinding = "PASS" | "WARN"
@@ -115,12 +116,6 @@ type ConventionEvaluation = {
   readonly warnings: readonly string[]
 }
 
-function conventionDefinitions(projectDir: string): readonly ConventionDefinition[] {
-  const staticIds = new Set(CONVENTION_REGISTRY.map((definition) => definition.id))
-  const dynamicDefinitions = loadAstGrepConventionDefinitions(projectDir).filter((definition) => !staticIds.has(definition.id))
-  return [...CONVENTION_REGISTRY, ...dynamicDefinitions]
-}
-
 function conventionFindings(projectDir: string, definition: ConventionDefinition): ConventionEvaluation {
   if (definition.check.kind === "observer" && definition.id === CONTROLLER_REPOSITORY_CONVENTION.id) {
     return { findings: controllerRepositoryConventionFindings(projectDir), warnings: [] }
@@ -161,7 +156,7 @@ export function readArchitectureConventions(projectDir: string, implementationSt
   const summaries: string[] = []
   const blockers: ArchitectureConventionBlocker[] = []
   let hasWarnFinding = false
-  for (const definition of conventionDefinitions(projectDir)) {
+  for (const definition of readConventionDefinitions(projectDir)) {
     const result = conventionFindings(projectDir, definition)
     for (const warning of result.warnings) {
       summaries.push(warning)

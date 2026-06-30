@@ -3,7 +3,10 @@ import { join, relative, resolve } from "node:path"
 import process from "node:process"
 
 import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
+import type { ConventionDefinition, ConventionLevel } from "../config/convention-registry.js"
 import type { CliRunResult } from "./bearshell.js"
+import { runAstGrepConvention } from "./ast-grep-convention-runner.js"
+import { readConventionDefinitions } from "./convention-definitions.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryObservation } from "../observer/controller-repository-observer.js"
 import { observeControllerServiceDependency } from "../observer/controller-service-observer.js"
@@ -23,7 +26,7 @@ type ObserveOptions = {
 
 type ObserveResult = "PASS" | "WARN" | "UNKNOWN"
 type ObserveConfidence = "HIGH" | "MEDIUM" | "LOW" | "NONE"
-type ObserverSource = "manual/text"
+type ObserverSource = "ast-grep" | "manual/text"
 
 type ObserveFinding = {
   readonly ruleId: string
@@ -33,6 +36,11 @@ type ObserveFinding = {
   readonly source: ObserverSource
   readonly limitations: readonly string[]
   readonly filePath: string
+  readonly checkKind?: "ast-grep" | "observer"
+  readonly fixPath?: string
+  readonly level?: ConventionLevel
+  readonly line?: number
+  readonly message?: string
 }
 
 type ObserveReport = {
@@ -100,7 +108,10 @@ function collectJavaFiles(targetPath: string): readonly string[] {
 }
 
 function buildObserveReport(projectDir: string, targetPath: string, javaFiles: readonly string[]): ObserveReport {
-  const findings = javaFiles.flatMap((filePath) => observeJavaFile(projectDir, filePath))
+  const findings = [
+    ...javaFiles.flatMap((filePath) => observeJavaFile(projectDir, filePath)),
+    ...observeAstGrepConventions(projectDir, javaFiles),
+  ]
   return {
     command: "ph observe",
     targetPath: relative(projectDir, targetPath) || ".",
@@ -111,6 +122,62 @@ function buildObserveReport(projectDir: string, targetPath: string, javaFiles: r
       "Java parsing is text based and may miss equivalent AST shapes.",
     ],
   }
+}
+
+function observeAstGrepConventions(projectDir: string, javaFiles: readonly string[]): readonly ObserveFinding[] {
+  const inspectedFilePaths = new Set(javaFiles.map((filePath) => relative(projectDir, filePath).replace(/\\/g, "/")))
+  return readConventionDefinitions(projectDir).flatMap((definition) => {
+    if (definition.check.kind !== "ast-grep") {
+      return []
+    }
+    return observeAstGrepConvention(projectDir, definition, inspectedFilePaths)
+  })
+}
+
+function observeAstGrepConvention(
+  projectDir: string,
+  definition: ConventionDefinition,
+  inspectedFilePaths: ReadonlySet<string>,
+): readonly ObserveFinding[] {
+  const result = runAstGrepConvention(projectDir, definition)
+  if (result.status === "inactive") {
+    return []
+  }
+  if (result.status === "skipped") {
+    return [{
+      ruleId: definition.id,
+      result: "WARN",
+      evidence: { status: "skipped", warning: result.warning },
+      confidence: "NONE",
+      source: "ast-grep",
+      limitations: [result.warning],
+      filePath: ".persona/conventions",
+      checkKind: "ast-grep",
+      fixPath: definition.fixPath,
+      level: definition.defaultLevel,
+      message: result.warning,
+    }]
+  }
+
+  return result.findings.flatMap((finding) => {
+    if (!inspectedFilePaths.has(finding.path)) {
+      return []
+    }
+    return [{
+      ruleId: definition.id,
+      result: "WARN",
+      evidence: { message: finding.message, source: finding.path, line: finding.line },
+      confidence: definition.highPrecision ? "HIGH" : "LOW",
+      source: "ast-grep",
+      limitations: ["ast-grep structural convention finding; report-only observe output."],
+      filePath: finding.path,
+      checkKind: "ast-grep",
+      fixPath: definition.fixPath,
+      level: definition.defaultLevel,
+      line: finding.line,
+      message: definition.actionableMessage,
+    }]
+  })
 }
 
 function observeJavaFile(projectDir: string, filePath: string): readonly ObserveFinding[] {

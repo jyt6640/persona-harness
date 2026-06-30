@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import process from "node:process"
@@ -6,6 +6,7 @@ import process from "node:process"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { CONTROLLER_PERSISTENCE_IMPORT_CONVENTION } from "../src/config/convention-registry.js"
 
 const tempProjects: string[] = []
 
@@ -65,6 +66,56 @@ function findingByRule(findings: readonly unknown[], ruleId: string): Record<str
     return finding
   }
   throw new Error(`Missing observe finding: ${ruleId}`)
+}
+
+function optionalFindingByRule(findings: readonly unknown[], ruleId: string): Record<string, unknown> | undefined {
+  return findings.map(recordValue).find((entry) => entry.ruleId === ruleId)
+}
+
+function writeControllerPersistenceImportRule(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona", "conventions"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "conventions", "controller-persistence-import.yml"),
+    [
+      "id: controller.persistence-import",
+      "language: Java",
+      "message: Controllers should not import Jakarta persistence types; keep entities behind service/DTO boundaries.",
+      "rule:",
+      "  pattern: import jakarta.persistence.$ENTITY;",
+    ].join("\n"),
+  )
+}
+
+function writeFakeAstGrepBinary(projectDir: string): string {
+  const fakeBinary = join(projectDir, "fake-sg.js")
+  writeFileSync(
+    fakeBinary,
+    [
+      "#!/usr/bin/env node",
+      "const { existsSync, readdirSync, readFileSync, statSync } = require('node:fs')",
+      "const { join } = require('node:path')",
+      "const root = process.argv[process.argv.length - 1]",
+      "const findings = []",
+      "function visit(dir) {",
+      "  if (!existsSync(dir)) return",
+      "  for (const entry of readdirSync(dir)) {",
+      "    const path = join(dir, entry)",
+      "    const stat = statSync(path)",
+      "    if (stat.isDirectory()) visit(path)",
+      "    if (stat.isFile() && path.endsWith('.java')) {",
+      "      const source = readFileSync(path, 'utf8')",
+      "      if (source.includes('import jakarta.persistence.')) {",
+      "        findings.push({ file: path, message: 'Controllers should not import Jakarta persistence types; keep entities behind service/DTO boundaries.', range: { start: { line: 1 } } })",
+      "      }",
+      "    }",
+      "  }",
+      "}",
+      "visit(root)",
+      "process.stdout.write(JSON.stringify(findings))",
+    ].join("\n"),
+  )
+  chmodSync(fakeBinary, 0o755)
+  return fakeBinary
 }
 
 describe("ph observe", () => {
@@ -173,6 +224,121 @@ class OrderResponse {
         }),
       ]),
     )
+  })
+
+  it("emits BYO ast-grep convention findings with registry metadata", () => {
+    const projectDir = createProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
+    try {
+      writeControllerPersistenceImportRule(projectDir)
+      writeJava(
+        projectDir,
+        "src/main/java/com/example/TodoController.java",
+        `
+import jakarta.persistence.Entity;
+
+class TodoController {
+}
+`,
+      )
+
+      const result = runPersonaCli(["observe", "--json", "src/main/java"], { cwd: projectDir, invocationName: "ph" })
+
+      expect(result.status).toBe(0)
+      expect(result.stderr).toBe("")
+      const report = recordValue(JSON.parse(result.stdout))
+      const finding = findingByRule(arrayValue(report.findings), CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id)
+      expect(finding).toEqual(expect.objectContaining({
+        ruleId: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id,
+        result: "WARN",
+        confidence: "HIGH",
+        source: "ast-grep",
+        filePath: "src/main/java/com/example/TodoController.java",
+        checkKind: "ast-grep",
+        fixPath: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.fixPath,
+        level: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.defaultLevel,
+        line: 2,
+        message: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.actionableMessage,
+      }))
+      expect(recordValue(finding.evidence).source).toBe("src/main/java/com/example/TodoController.java")
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
+  })
+
+  it("does not emit a BYO ast-grep finding for compliant Java files", () => {
+    const projectDir = createProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
+    try {
+      writeControllerPersistenceImportRule(projectDir)
+      writeJava(
+        projectDir,
+        "src/main/java/com/example/TodoController.java",
+        `
+class TodoController {
+}
+`,
+      )
+
+      const result = runPersonaCli(["observe", "--json", "src/main/java"], { cwd: projectDir, invocationName: "ph" })
+
+      expect(result.status).toBe(0)
+      const report = recordValue(JSON.parse(result.stdout))
+      expect(optionalFindingByRule(arrayValue(report.findings), CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id)).toBeUndefined()
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
+  })
+
+  it("surfaces BYO ast-grep skip warnings when the binary is unavailable", () => {
+    const projectDir = createProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = join(projectDir, "missing-sg")
+    try {
+      writeControllerPersistenceImportRule(projectDir)
+      writeJava(
+        projectDir,
+        "src/main/java/com/example/TodoController.java",
+        `
+import jakarta.persistence.Entity;
+
+class TodoController {
+}
+`,
+      )
+
+      const result = runPersonaCli(["observe", "--json", "src/main/java"], { cwd: projectDir, invocationName: "ph" })
+
+      expect(result.status).toBe(0)
+      const report = recordValue(JSON.parse(result.stdout))
+      const finding = findingByRule(arrayValue(report.findings), CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id)
+      expect(finding).toEqual(expect.objectContaining({
+        ruleId: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id,
+        result: "WARN",
+        confidence: "NONE",
+        source: "ast-grep",
+        filePath: ".persona/conventions",
+        checkKind: "ast-grep",
+        message: expect.stringContaining("ast-grep binary not found"),
+      }))
+      expect(recordValue(finding.evidence).status).toBe("skipped")
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
   })
 
   it("runs against the repo example Java app with --json", () => {
