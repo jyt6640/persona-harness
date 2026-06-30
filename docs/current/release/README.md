@@ -79,6 +79,15 @@ opt-out. It is not registry `@next` behavior until a later publish verifies that
 gitHead, and it is not token-saving, provider-token-saving, product-efficacy, or
 compaction-effectiveness evidence.
 
+Post-rc6 R2 compaction trigger at
+`a0116785e7e013154c4e4c8a75b4d87515fce828` is local/current tarball trigger
+mechanics only: `enforce.compaction` is default-off, evaluates measured R1 token
+ratio, calls `session.summarize` only when opt-in threshold/cooldown data permit,
+and writes `token-compaction.1` evidence with `afterMeasurement.measured=false`.
+It is not registry `@next` behavior until a later publish verifies that gitHead,
+and it is not compaction-effectiveness, token-saving, provider-token-saving, or
+product-efficacy evidence.
+
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
 and not a separate release channel.

@@ -120,6 +120,31 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - this is measurement infrastructure only, not token-saving,
     provider-token-saving, product-efficacy, compaction-effectiveness, R2
     compaction, R3 hashline, code-nav, or dispatch evidence.
+- Post-rc6 R2 compaction trigger mechanics smoke:
+  - source HEAD: `a0116785e7e013154c4e4c8a75b4d87515fce828`
+    (`a011678 fix(runtime): add measured compaction gate`);
+  - source was a fresh local/current tarball only, not registry `@next`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r2-token-compaction-a011678-20260701-032810/persona-harness-0.4.0-rc.6.tgz`;
+  - npm shasum: `5465781a54c809ea09d4c42c8eb4d032fd0a44b7`;
+  - sha256: `2cdd812a82d9a46efb2446808162cec4fe3a54c470e75f77c99120e370a594d9`;
+  - package included `dist/runtime/token-compaction.js`, its `.d.ts`,
+    `token-telemetry.js`, hooks, and config surfaces;
+  - default/off fixture wrote token usage ratio 0.8, made zero summarize calls,
+    and wrote no compaction evidence;
+  - opt-in trigger fixture with `enforce.compaction.enabled=true`,
+    threshold 0.78, and known ratio 0.8 called fake
+    `client.session.summarize` exactly once with `{ path:{id},
+    query:{directory}, body:{providerID, modelID} }` and no `auto:true`;
+  - `token-compaction.1` evidence recorded status `triggered`,
+    beforeMeasurement ratio 0.8, and afterMeasurement measured false with a
+    no-token-saving-claim reason;
+  - skip cases covered ratio-unavailable, below-threshold,
+    summarize-client-unavailable, and cooldown-active;
+  - this is default-off, measurement-gated trigger mechanics and evidence shape
+    only, not real compaction effectiveness, token-saving, provider-token
+    saving, product-efficacy, R3 hashline, code-nav, dispatch, or codegraph/OMO
+    evidence.
 
 ## [0.4.0-rc.5] - 2026-06-30
 
