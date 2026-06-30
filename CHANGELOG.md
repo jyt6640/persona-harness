@@ -100,6 +100,26 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - this is parser accuracy and measurement hygiene only, not natural-adoption,
     efficacy, token-saving, provider-token saving, navigation-benefit, or
     product-efficacy evidence.
+- Post-rc6 R1 token telemetry measurement infrastructure smoke:
+  - source HEAD: `163a85e0433f6d713afa3f619b3cc6b2d2bcf100`
+    (`163a85e fix(runtime): record token telemetry evidence`);
+  - source was a fresh local/current tarball only, not registry `@next`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/r1-token-telemetry-163a85e-20260701-030900/persona-harness-0.4.0-rc.6.tgz`;
+  - npm shasum: `1172d79ca49958dacb66fd06725ea8a4ede4062c`;
+  - sha256: `3008ad6de5f2bfe1f3279095a5704a4ebe20472e5fcf7ef6a83f2b3eac03bf39`;
+  - installed package runtime wrote
+    `.persona/evidence/token-usage/session-with-unsafe-key.json` from
+    `message.updated` assistant events, with the unsafe session filename
+    sanitized and the original session key preserved in the payload;
+  - latest-per-message dedupe and aggregate totals were observed:
+    input 15, output 13, reasoning 2, cacheRead 31, cacheWrite 4, total 65;
+  - known `modelLimit=100` produced ratio 0.46, while unknown modelLimit
+    recorded null ratio with an explicit reason;
+  - `telemetry.tokenUsage=false` opt-out wrote no evidence;
+  - this is measurement infrastructure only, not token-saving,
+    provider-token-saving, product-efficacy, compaction-effectiveness, R2
+    compaction, R3 hashline, code-nav, or dispatch evidence.
 
 ## [0.4.0-rc.5] - 2026-06-30
 

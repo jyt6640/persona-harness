@@ -69,6 +69,16 @@ prose/free-text mentions of namespaced OpenCode MCP tools. It improves
 measurement accuracy and discoverability language; it is not natural-adoption,
 token-saving, navigation-benefit, or product-efficacy evidence.
 
+Post-rc6 R1 token telemetry at
+`163a85e0433f6d713afa3f619b3cc6b2d2bcf100` is local/current tarball
+measurement infrastructure only: installed runtime writes
+`.persona/evidence/token-usage/<safe-session-key>.json` from `message.updated`
+assistant events, with latest-per-message dedupe, session aggregate, known
+model-limit ratio, unknown-limit reason, and `telemetry.tokenUsage=false`
+opt-out. It is not registry `@next` behavior until a later publish verifies that
+gitHead, and it is not token-saving, provider-token-saving, product-efficacy, or
+compaction-effectiveness evidence.
+
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
 and not a separate release channel.
