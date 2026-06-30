@@ -10,8 +10,13 @@ Current command:
 node packages/lsp-tools-mcp/bin/code-nav-mcp.mjs --help
 node packages/lsp-tools-mcp/bin/code-nav-mcp.mjs capabilities --json
 node packages/lsp-tools-mcp/bin/code-nav-mcp.mjs search --json Controller src/main/java
+node packages/lsp-tools-mcp/bin/code-nav-mcp.mjs mcp
 ```
 
 The preview reports `sg`/`ast-grep` availability honestly and falls back to a
-bounded filesystem text search capability. It is not registered into
-`.opencode/opencode.json` by default.
+bounded filesystem text search capability. The `mcp` mode serves a minimal
+stdio JSON-RPC MCP surface for `status`, `search_text`, and
+`ast_grep_availability`.
+
+It is not registered into `.opencode/opencode.json` by default. It is not a
+codegraph replacement and does not claim token savings.

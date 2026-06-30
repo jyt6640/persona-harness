@@ -47,6 +47,7 @@
     "packages/lsp-tools-mcp/package.json",
     "packages/lsp-tools-mcp/README.md",
     "packages/lsp-tools-mcp/bin",
+    "packages/lsp-tools-mcp/lib",
     "packages/shared-skills/skills/programming/SKILL.md",
     "packages/shared-skills/skills/programming/references/java",
     "packages/shared-skills/skills/workflow"
