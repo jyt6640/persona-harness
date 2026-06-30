@@ -34,14 +34,10 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release-prep line: `0.4.0-rc.6` is the next-channel prerelease refresh
-for the PH code-nav preview package surface. Publish it with `next`, not
-`latest`.
-
-Current published release line: `0.4.0-rc.5` remains published under `next` for
-the no-model multi-agent relay preview surface until rc6 is published. Registry
-`@next` points at `0.4.0-rc.5` with gitHead
-`78addeb5dc992973589e7f99635fe8ca277e4ad6`.
+Current published release line: `0.4.0-rc.6` is published under `next` for the
+PH code-nav preview package surface. Registry `@next` points at `0.4.0-rc.6`
+with gitHead `30ded278ab5726e4f910d94b62d131647963807b`. `latest` remains
+`0.3.9-alpha.8`.
 
 Post-rc5 local/origin docs and preview work may include later commits such as
 R1 injection/prose cleanup, the code-nav CLI/package preview, and token proxy
@@ -50,12 +46,13 @@ evidence only unless a later registry publish verifies the same gitHead. Ignored
 `.persona/evidence` measurement data may be cited as measurement evidence, but
 it is not part of the npm package surface.
 
-Rc6 packages the verified local/current code-nav package-surface sequence:
+Rc6 packages and registry-smokes the verified code-nav package-surface sequence:
 minimal stdio MCP protocol server plus opt-in `.opencode/opencode.json`
 registration through `npx ph bootstrap backend --code-nav-preview`. Default
-bootstrap still has no code-nav registration. This is not model/OpenCode/eval
-or native-dispatch evidence, not token-saving/product-efficacy evidence, and not
-codegraph replacement.
+bootstrap still has no code-nav registration. This is registry package-surface
+and protocol-surface evidence only: not model/OpenCode/eval or native-dispatch
+evidence, not token-saving/product-efficacy evidence, and not codegraph
+replacement.
 
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,

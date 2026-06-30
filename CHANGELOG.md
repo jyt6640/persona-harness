@@ -36,6 +36,35 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   no OMO parity, no PH superiority, no generated app certification, no broad
   reliability, and no closure guarantee. Publish rc6 with `next`; do not move
   `latest`.
+- Post-publish registry facts and External registry package-surface smoke:
+  - `persona-harness@0.4.0-rc.6` exists with gitHead
+    `30ded278ab5726e4f910d94b62d131647963807b`;
+  - registry shasum: `ab3e2074d739add4bca547ceb9a2961b409e6250`;
+  - dist-tags: `next=0.4.0-rc.6`, `latest=0.3.9-alpha.8`,
+    `alpha=0.3.9-alpha.8`;
+  - External registry-only smoke installed `persona-harness@next` as
+    `persona-harness@0.4.0-rc.6`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc6-registry-code-nav-package-surface-20260630-230144`;
+  - default init/bootstrap exited 0 and did not add
+    `mcp.persona-harness-code-nav`;
+  - strict bootstrap printed/wrote `executeVerification=true`,
+    `systemConstitution=true`, `writeDeny=false`, and `idleContinuation=false`
+    without generated-app certification or closure guarantee wording;
+  - opt-in `bootstrap backend --code-nav-preview` exited 0, preserved existing
+    plugin/agent/custom MCP/top-level entries, and added
+    `mcp.persona-harness-code-nav` with `type=local`, `enabled=true`, and a node
+    command to the installed code-nav MCP server;
+  - `--help`, `capabilities --json`, and `search --json` fixture/missing-root
+    paths worked; capabilities reported `mcpProtocolServer=true`,
+    `registeredWithOpenCode=false`, and `tokenSavingsClaimed=false`;
+  - generated command protocol smoke passed no-model framed JSON-RPC
+    `initialize`, `tools/list`, and `tools/call` for `status`, `search_text`,
+    and `ast_grep_availability`; limited PATH reported ast-grep unavailable
+    without crash or fake pass;
+  - workflow check remained WARN/actionable and `workflow finish implement`
+    still exited 1 for missing verification evidence/template reports; no
+    finish/check weakening.
 
 ## [0.4.0-rc.5] - 2026-06-30
 
