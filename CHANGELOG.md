@@ -4,6 +4,39 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
+## [0.4.0-rc.6] - 2026-06-30
+
+- Prepared `0.4.0-rc.6` as the next-channel prerelease refresh after registry
+  `@next=0.4.0-rc.5` still pointed at gitHead
+  `78addeb5dc992973589e7f99635fe8ca277e4ad6` and did not include the post-rc5
+  PH code-nav package-surface work.
+- The rc6 candidate includes local/current verified package-surface behavior
+  for the PH code-nav preview:
+  - R-MCP.1b minimal stdio MCP protocol server from
+    `abaef744ad9e091215911d3feeac40ba1569ca22`;
+  - R-MCP.1c opt-in `.opencode/opencode.json` registration through
+    `npx ph bootstrap backend --code-nav-preview` from
+    `42348cc1aa0dacde81080741e8ad8531305690c2`;
+  - existing plugin, agent, custom MCP, and top-level `.opencode/opencode.json`
+    entries are preserved during opt-in registration;
+  - default bootstrap does not register `mcp.persona-harness-code-nav`.
+- Evidence is current/local tarball package-surface only until a post-publish
+  registry check verifies `persona-harness@0.4.0-rc.6` gitHead:
+  - R-MCP.1b tarball shasum
+    `c050ad0c799dfd9ecabe34b303cff12806a401fb`;
+  - R-MCP.1c tarball shasum
+    `052e9bf6e3c501fa3bd7c431d965d59149058757`.
+- R-MCP.2 development-navigation probe remains PARTIAL: one actual OpenCode
+  development run observed fewer broad tool/read outputs with the PH code-nav
+  prompt, but no token/time reduction was proven. OpenCode real-run A/B remains
+  a separate post-refresh measurement, not an rc6 release blocker.
+- Boundaries remain narrow: no default registration, no registry claim before
+  publish verification, no model/OpenCode/eval/native dispatch evidence, no
+  provider-token/token-saving/product-efficacy claim, no codegraph replacement,
+  no OMO parity, no PH superiority, no generated app certification, no broad
+  reliability, and no closure guarantee. Publish rc6 with `next`; do not move
+  `latest`.
+
 ## [0.4.0-rc.5] - 2026-06-30
 
 - Prepared `0.4.0-rc.5` as the next-channel prerelease candidate for the

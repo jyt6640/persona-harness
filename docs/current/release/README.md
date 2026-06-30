@@ -34,9 +34,14 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release line: `0.4.0-rc.5` is published under `next` for the no-model
-multi-agent relay preview surface. Registry `@next` points at `0.4.0-rc.5` with
-gitHead `78addeb5dc992973589e7f99635fe8ca277e4ad6`.
+Current release-prep line: `0.4.0-rc.6` is the next-channel prerelease refresh
+for the PH code-nav preview package surface. Publish it with `next`, not
+`latest`.
+
+Current published release line: `0.4.0-rc.5` remains published under `next` for
+the no-model multi-agent relay preview surface until rc6 is published. Registry
+`@next` points at `0.4.0-rc.5` with gitHead
+`78addeb5dc992973589e7f99635fe8ca277e4ad6`.
 
 Post-rc5 local/origin docs and preview work may include later commits such as
 R1 injection/prose cleanup, the code-nav CLI/package preview, and token proxy
@@ -44,6 +49,13 @@ measurement notes. Treat those as local/current HEAD or fresh local-tarball
 evidence only unless a later registry publish verifies the same gitHead. Ignored
 `.persona/evidence` measurement data may be cited as measurement evidence, but
 it is not part of the npm package surface.
+
+Rc6 packages the verified local/current code-nav package-surface sequence:
+minimal stdio MCP protocol server plus opt-in `.opencode/opencode.json`
+registration through `npx ph bootstrap backend --code-nav-preview`. Default
+bootstrap still has no code-nav registration. This is not model/OpenCode/eval
+or native-dispatch evidence, not token-saving/product-efficacy evidence, and not
+codegraph replacement.
 
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
@@ -249,6 +261,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.3 release notes](v0.4.0-rc.3-release-notes.md)
 - [v0.4.0-rc.4 release notes](v0.4.0-rc.4-release-notes.md)
 - [v0.4.0-rc.5 release notes](v0.4.0-rc.5-release-notes.md)
+- [v0.4.0-rc.6 release notes](v0.4.0-rc.6-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
