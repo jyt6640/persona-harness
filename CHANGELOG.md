@@ -20,6 +20,30 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - hard write-content deny remains SDK-impossible in the current hook surface
     because `permission.ask` does not expose proposed file content/path enough
     to evaluate writes safely.
+- External current/local tarball package-surface smoke on HEAD
+  `bd9d0a8882b12ee44f470488dd51815ca1e487c9` passed the runtime hook guard
+  surface:
+  - source was a fresh current local tarball, not registry `@next`;
+  - tarball version: `0.4.0-rc.3`;
+  - tarball shasum: `181823b63edec7488d550848884a2715190b72ab`;
+  - sha256: `78e876211c3a59422c25e9dab0c826b4ea23263e270a89deea7c4edee91afd1a`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/runtime-hooks-bd9d0a8-package-surface-20260630-guard`;
+  - system constitution injected exactly once and can be disabled with
+    `enforce.systemConstitution=false`;
+  - idle continuation is default-off and opt-in; with repeated same blocker it
+    emits one bounded `session.promptAsync` nudge, and no-blocker state emits
+    none;
+  - `bootstrap backend --strict` writes/prints
+    `executeVerification=true`, `systemConstitution=true`, `writeDeny=false`,
+    and `idleContinuation=false`;
+  - `ph observe --json` still emitted `controller.repository-dependency`.
+- This runtime hook evidence remains package-surface evidence only. System
+  constitution is system-level prose and may be ignored; finish/archive/closure
+  gates remain authoritative. Write guard remains warning-only /
+  SDK-impossible; no hard write-deny, model/OpenCode/eval proof, generated app
+  certification, broad architecture correctness, general reliability, or closure
+  guarantee is claimed.
 - Prepared `0.4.0-rc.3` as the next-channel prerelease refresh for GUARD Phase
   0-3 after published `@next` remained behind the current BYO ast-grep and
   observe-alignment fixes:
