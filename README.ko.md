@@ -30,7 +30,7 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 > 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, broad AST/linter enforcement, 완전한 TDD workflow는 후속 트랙입니다.
 >
-> 현재 source/package 후보: npm dist-tag `next`의 `0.4.0-rc.2`
+> 현재 source/package 후보: npm dist-tag `next`의 `0.4.0-rc.4`
 
 ## 요구사항
 

@@ -27,7 +27,7 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.4.0-rc.2` on npm dist-tag `next`.
+> Current source/package candidate: `0.4.0-rc.4` on npm dist-tag `next`.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
@@ -129,7 +129,7 @@ Expected:
 - `.persona/harness.jsonc` exists
 - `.persona/rules` exists
 - `ph doctor` shows OpenCode is present
-- `ph doctor` shows `Persona package version: 0.4.0-rc.2` after the current `next` package is installed
+- `ph doctor` shows `Persona package version: 0.4.0-rc.4` after the current `next` package is installed
 
 ## 3. Write The Project README
 
@@ -415,7 +415,7 @@ npm view persona-harness dist-tags --json
 npm view persona-harness@next version
 ```
 
-For the current release-candidate line, `next` is the tester-facing dist-tag. At the time of this document, `next=0.4.0-rc.2`, while `alpha` and `latest` may remain on older alpha builds such as `0.3.9-alpha.8`. Verify dist-tags before treating a default install as current.
+For the current release-candidate line, `next` is the tester-facing dist-tag. At the time of this document, the intended next-channel refresh is `0.4.0-rc.4`, while `alpha` and `latest` may remain on older alpha builds such as `0.3.9-alpha.8`. Verify dist-tags before treating a default install as current.
 
 ### `opencode` is not found
 

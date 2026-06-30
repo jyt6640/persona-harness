@@ -11,7 +11,7 @@ Persona Harness 帮助代理从空项目开始，读取 backend 背景，沿着 
 > 当前范围: Java/Spring backend workflow rail MVP.
 > frontend、infra、desktop app、广泛 AST/linter enforcement、完整 TDD workflow 都是后续方向。
 >
-> 当前 source/package 候选版本: npm dist-tag `next` 的 `0.4.0-rc.2`
+> 当前 source/package 候选版本: npm dist-tag `next` 的 `0.4.0-rc.4`
 
 ## 环境要求
 

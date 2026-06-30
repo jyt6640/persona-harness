@@ -4,6 +4,46 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
+## [0.4.0-rc.4] - 2026-06-30
+
+- Prepared `0.4.0-rc.4` as the next-channel prerelease refresh after registry
+  `@next=0.4.0-rc.3` still pointed at gitHead
+  `cf1204ef77dd6479af2ca65099e4bae9ffedbda0`, which does not include the
+  later runtime hook guard levers, strict bootstrap clarity, release
+  tag/publish split, or write-deny boundary clarification.
+- The rc4 package candidate includes:
+  - `3b3754d fix(runtime): add PH hook guard levers`;
+  - `d53083c fix(cli): clarify strict bootstrap mode`;
+  - `bd9d0a8 ci: decouple tag pushes from npm publish`;
+  - `a72ed31 docs(runtime): clarify write deny boundary`;
+  - `9318a65 docs: record a72ed31 runtime hook smoke`.
+- External current/local tarball package-surface re-smoke on HEAD
+  `a72ed31d9f644d054a5614a293c75e4367b7157d` passed the runtime hook guard
+  surface:
+  - tarball version: `0.4.0-rc.3` before this release-prep bump;
+  - tarball shasum: `542d3234d8590f28e516d428afb93f336cd88a81`;
+  - sha256: `52c5beff1f3b01a229f61a0f64814d14ddd5c16008bc4f1ba666b040392d1dea`;
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/runtime-hooks-a72ed31-package-surface-20260630-guard`;
+  - system constitution injects exactly once and can be disabled with
+    `enforce.systemConstitution=false`;
+  - write-deny is explicitly documented as a no-op in this runtime because the
+    current OpenCode SDK does not expose proposed write content to
+    `permission.ask`; enforcement remains closure-time, not write-time;
+  - idle continuation remains default-off and opt-in bounded;
+  - `bootstrap backend --strict` writes/prints
+    `executeVerification=true`, `systemConstitution=true`, `writeDeny=false`,
+    and `idleContinuation=false`;
+  - `ph observe --json` still emits `controller.repository-dependency`.
+- Release workflow now separates tag verification from npm publishing:
+  - tag pushes verify and create GitHub release notes only;
+  - npm publish is explicit `workflow_dispatch` or local publish only;
+  - `next` is the rc dist-tag; do not move `latest`.
+- Boundaries remain narrow: current/local tarball package-surface evidence only
+  until registry publish verifies gitHead; no eval/A-B proof, PH superiority,
+  generated app certification, broad architecture correctness, general
+  reliability, or closure guarantee is claimed.
+
 ## [0.4.0-rc.3] - 2026-06-30
 
 - Added a conservative PH hook-lever slice for the current OpenCode plugin

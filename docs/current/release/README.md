@@ -34,9 +34,10 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release line: `0.4.0-rc.3` prep for GUARD Phase 0-3 refresh. It is a
+Current release line: `0.4.0-rc.4` prep for GUARD Phase 0-3/runtime hook refresh. It is a
 next-channel prerelease vehicle for scoped product enforcement behavior,
-including BYO ast-grep observe alignment, not stable `0.4.0`.
+including BYO ast-grep observe alignment and runtime hook guard levers, not
+stable `0.4.0`.
 
 Old `0.4.0-rc.1` prep commit `5edb535` remains stale historical context and must
 not be reused. The fresh RC prep must be based on current HEAD/docs.
@@ -54,7 +55,7 @@ Publish this RC with `next`, not `latest`. Future `latest` moves still need an
 explicit release/dist-tag task because default install can imply a stronger
 stability or value-proof claim than this evidence supports.
 
-RC soak policy: publish `0.4.0-rc.3` under `next` after explicit approval. Do
+RC soak policy: publish `0.4.0-rc.4` under `next` after explicit approval. Do
 not move `latest`.
 The local `@next` implementation-to-finish proxy trial passed, but Windows SSH
 remote validation was blocked by SCP/SSH instability before product behavior.
@@ -230,6 +231,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.1 release notes](v0.4.0-rc.1-release-notes.md)
 - [v0.4.0-rc.2 release notes](v0.4.0-rc.2-release-notes.md)
 - [v0.4.0-rc.3 release notes](v0.4.0-rc.3-release-notes.md)
+- [v0.4.0-rc.4 release notes](v0.4.0-rc.4-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
