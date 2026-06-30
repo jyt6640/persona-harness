@@ -65,8 +65,9 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   run proof, no PH superiority, no generated app certification, no broad
   architecture correctness, no general reliability, no closure guarantee, no
   token-savings guarantee, no OMO parity, and no autonomous completion claim.
-- Local post-rc5 commit `5b8d2ef fix(runtime): tier workflow injection guidance`
-  was QA-verified but not measured for token impact:
+- Local post-rc5 commits through `28efb8e docs: record injection cleanup and
+  code-nav preview` have a QA-verified codegraph-OFF CLI output proxy
+  measurement in `.persona/evidence/token-baseline.json`:
   - injection guidance is split into Tier0 source-of-truth boundaries, Tier1
     implement/continue workflow rail, and Tier3 finish/review/archive
     verification;
@@ -75,7 +76,19 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     conventions, relay handoff, and bearshell;
   - external codegraph/code-nav tools are described as optional and only when
     actually installed, not PH-owned and not token-saving;
-  - R1-after measurement was not performed, so there is no token-reduction claim;
+  - label: `post-r1-cleanup-plus-rmcp1a-local`; included commits: `5b8d2ef`,
+    `5fd5a14`, and `28efb8e`;
+  - R0 baseline: 26,572 bytes / 25,274 chars / 2,912 whitespaceTokens / 6,319
+    chars/4 proxy;
+  - latest same-method measurement: 26,619 bytes / 25,323 chars / 2,910
+    whitespaceTokens / 6,331 chars/4 proxy;
+  - delta: +47 bytes / +49 chars / -2 whitespaceTokens / +12 chars/4 proxy;
+  - no measured reduction in this same-method codegraph-OFF CLI output proxy
+    scenario; whitespace token proxy decreased by 2, but chars/4 proxy
+    increased by 12, and neither is provider-token accounting;
+  - therefore there is no token-saving or product-efficacy claim, no PH-owned
+    MCP registration claim, and R2 cache design is not justified by this
+    measurement alone;
   - registry `@next` remains the rc5 release package until a later publish
     verifies a new gitHead.
 - External current/local tarball package-surface smoke on HEAD
