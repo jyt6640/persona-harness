@@ -34,9 +34,9 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release line: `0.4.0-rc.2` prep for GUARD Phase 0-3. It is a
-next-channel prerelease vehicle for scoped product enforcement behavior, not
-stable `0.4.0`.
+Current release line: `0.4.0-rc.3` prep for GUARD Phase 0-3 refresh. It is a
+next-channel prerelease vehicle for scoped product enforcement behavior,
+including BYO ast-grep observe alignment, not stable `0.4.0`.
 
 Old `0.4.0-rc.1` prep commit `5edb535` remains stale historical context and must
 not be reused. The fresh RC prep must be based on current HEAD/docs.
@@ -54,8 +54,8 @@ Publish this RC with `next`, not `latest`. Future `latest` moves still need an
 explicit release/dist-tag task because default install can imply a stronger
 stability or value-proof claim than this evidence supports.
 
-RC soak policy: `0.4.0-rc.1` is published under `next`; `0.4.0-rc.2` should
-also publish under `next` after explicit approval. Do not move `latest`.
+RC soak policy: publish `0.4.0-rc.3` under `next` after explicit approval. Do
+not move `latest`.
 The local `@next` implementation-to-finish proxy trial passed, but Windows SSH
 remote validation was blocked by SCP/SSH instability before product behavior.
 Windows local operator direct PowerShell no-model closure surface validation now
@@ -177,11 +177,10 @@ Repository paths do not produce the architecture blocker. Other backend-shape
 WARNs remain report-only; this is not broad architecture correctness
 enforcement.
 
-Current HEAD `7fda771f74008f42082c3a85377262c8fc7ccf5f` also has GUARD Phase
-0-3 QA and package-surface smoke PASS on a fresh local tarball, not the
-published `0.4.0-rc.1 @next` package. `0.4.0-rc.2` is the release-prep vehicle
-for publishing those commits under `next`; it must not be described as registry
-evidence until publish verification confirms it. The package-surface archive is
+Current HEAD `1c304e412093dd0621d911ce379ef3f66ea7f224` has GUARD Phase 0-3
+plus BYO ast-grep observe alignment package-surface smoke PASS on fresh current
+tarballs, not published registry `@next` evidence until rc3 is published and
+verified. The original GUARD Phase 0-3 package-surface archive is
 `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-7fda771-guard-package-surface-smoke-20260630-001558`;
 tarball shasum `b703953aab409f1cd7ac578c5af76b3d3e42cf90`, sha256
 `2155ac28c48367c85d2a4163ba56ecea5dd1842b1d0e0935313c665ab9d55b7c`. QA
@@ -193,7 +192,12 @@ evidence is authoritative and fake agent-written passed evidence is not. Phase 1
 adds `report|warn|block`; only block level hard-blocks. Phase 2 is warning-only
 write guard fallback because hard deny/rewrite is unsupported by the current hook
 result type. Phase 3 centralizes convention id/default level/blocker/fix path in
-the registry; BYO ast-grep conventions remain future work.
+the registry. `a9bf926` adds BYO `.persona/conventions/*.yml` ast-grep preview;
+`1c304e4` aligns `ph observe --json` with check/closure/continue for
+`controller.persistence-import`. The observe-alignment archive is
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-1c304e4-ast-grep-observe-resmoke-20260630-100023`;
+tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
+`e25571678cd53db525f2af8796f0270c707127bb5355feb0b32640eced0dc566`.
 
 - [Release checklist](release-checklist.md)
 - [Release notes template](release-notes-template.md)
@@ -225,6 +229,7 @@ the registry; BYO ast-grep conventions remain future work.
 - [v0.3.9-alpha.8 release notes](v0.3.9-alpha.8-release-notes.md)
 - [v0.4.0-rc.1 release notes](v0.4.0-rc.1-release-notes.md)
 - [v0.4.0-rc.2 release notes](v0.4.0-rc.2-release-notes.md)
+- [v0.4.0-rc.3 release notes](v0.4.0-rc.3-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

@@ -4,6 +4,39 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
+## [0.4.0-rc.3] - 2026-06-30
+
+- Prepared `0.4.0-rc.3` as the next-channel prerelease refresh for GUARD Phase
+  0-3 after published `@next` remained behind the current BYO ast-grep and
+  observe-alignment fixes:
+  - includes strict backend bootstrap from `c499169`;
+  - includes registry blocker iteration from `b7b5c45`;
+  - includes BYO `.persona/conventions/*.yml` ast-grep preview from `a9bf926`;
+  - includes `1c304e4 fix(cli): emit ast-grep observe findings`.
+- External current-tarball package-surface re-smoke on HEAD
+  `1c304e412093dd0621d911ce379ef3f66ea7f224` passed BYO ast-grep observe
+  alignment:
+  - `ph observe --json` emits `controller.persistence-import` with
+    `source=ast-grep`, `checkKind=ast-grep`, file/line evidence, evidence
+    message, and `fixPath`;
+  - workflow check/closure/continue align on
+    `architecture-controller-persistence-import`, step
+    `fix-controller-persistence-import`, and the Service/DTO fix path;
+  - finish/archive block for level `block`; `warn` and `report` stay
+    non-hard-blocking; compliant fixtures have no BYO blocker and finish 0;
+  - missing `sg`/`ast-grep` skips with a warning instead of crashing or faking a
+    hard blocker;
+  - existing Controller -> Repository blocker regression remained PASS.
+- Boundaries remain narrow: BYO ast-grep is preview/simple YAML metadata, not a
+  broad YAML ecosystem or broad architecture correctness claim. Hard
+  write-content deny remains SDK-impossible in the current hook surface; the
+  write guard is warning-only and closure-time enforcement remains
+  authoritative. Evidence is QA plus current-tarball package-surface smoke, not
+  eval/A-B proof, PH superiority, generated app quality certification, broad
+  architecture correctness, general reliability, or a closure guarantee.
+- This is release prep only. Expected publish tag is `next`; do not move
+  `latest`.
+
 ## [0.4.0-rc.2] - 2026-06-30
 
 - Current HEAD after release prep adds
