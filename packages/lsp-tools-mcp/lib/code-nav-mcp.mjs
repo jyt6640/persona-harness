@@ -22,26 +22,62 @@ export async function runMcpServer(runtime) {
 function drainMcpFrames(buffer, runtime) {
   let cursor = 0
   while (cursor < buffer.length) {
-    const headerEnd = buffer.indexOf("\r\n\r\n", cursor)
-    if (headerEnd === -1) break
-    const header = buffer.subarray(cursor, headerEnd).toString("utf8")
-    const match = /^Content-Length: (?<length>\d+)$/m.exec(header)
-    if (match?.groups?.length === undefined) break
-    const length = Number.parseInt(match.groups.length, 10)
-    const bodyStart = headerEnd + 4
-    const bodyEnd = bodyStart + length
-    if (buffer.length < bodyEnd) break
-    const request = JSON.parse(buffer.subarray(bodyStart, bodyEnd).toString("utf8"))
+    const frame = readNextInputFrame(buffer, cursor)
+    if (frame === undefined) break
+    const request = JSON.parse(frame.body)
     const response = handleMcpRequest(request, runtime)
-    if (response !== undefined) writeMcpFrame(runtime.stdout, response)
-    cursor = bodyStart + length
+    if (response !== undefined) writeMcpResponse(runtime.stdout, response, frame.transport)
+    cursor = frame.nextCursor
   }
   return buffer.subarray(cursor)
 }
 
-function writeMcpFrame(output, response) {
+function readNextInputFrame(buffer, cursor) {
+  const contentLengthFrame = readContentLengthFrame(buffer, cursor)
+  if (contentLengthFrame !== undefined) return contentLengthFrame
+  return readJsonLineFrame(buffer, cursor)
+}
+
+function readContentLengthFrame(buffer, cursor) {
+  const headerEnd = buffer.indexOf("\r\n\r\n", cursor)
+  if (headerEnd === -1) return undefined
+  const header = buffer.subarray(cursor, headerEnd).toString("utf8")
+  const match = /^Content-Length: (?<length>\d+)$/im.exec(header)
+  if (match?.groups?.length === undefined) return undefined
+  const length = Number.parseInt(match.groups.length, 10)
+  const bodyStart = headerEnd + 4
+  const bodyEnd = bodyStart + length
+  if (buffer.length < bodyEnd) return undefined
+  return {
+    body: buffer.subarray(bodyStart, bodyEnd).toString("utf8"),
+    nextCursor: bodyEnd,
+    transport: "content-length",
+  }
+}
+
+function readJsonLineFrame(buffer, cursor) {
+  const lineEnd = buffer.indexOf("\n", cursor)
+  if (lineEnd === -1) return undefined
+  const body = buffer.subarray(cursor, lineEnd).toString("utf8").trim()
+  if (body === "") return { body: "null", nextCursor: lineEnd + 1, transport: "json-line" }
+  return { body, nextCursor: lineEnd + 1, transport: "json-line" }
+}
+
+function writeMcpResponse(output, response, transport) {
+  if (transport === "json-line") {
+    writeJsonLine(output, response)
+    return
+  }
+  writeContentLengthFrame(output, response)
+}
+
+function writeContentLengthFrame(output, response) {
   const body = JSON.stringify({ jsonrpc: "2.0", ...response })
   output.write(`Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`)
+}
+
+function writeJsonLine(output, response) {
+  output.write(`${JSON.stringify({ jsonrpc: "2.0", ...response })}\n`)
 }
 
 function handleMcpRequest(input, runtime) {

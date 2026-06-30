@@ -103,6 +103,14 @@ function parseMcpBodies(transcript: string): readonly JsonRecord[] {
   return bodies
 }
 
+function lineMcpRequest(request: JsonRecord): string {
+  return `${JSON.stringify({ jsonrpc: "2.0", ...request })}\n`
+}
+
+function parseJsonLineBodies(transcript: string): readonly JsonRecord[] {
+  return transcript.split(/\r?\n/u).filter(Boolean).map((line) => parseJsonRecord(line))
+}
+
 function resultRecord(response: JsonRecord): JsonRecord {
   if (!isRecord(response.result)) {
     throw new Error("Expected MCP result object")
@@ -183,6 +191,36 @@ describe("PH code-nav MCP package preview", () => {
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe("")
+    expect(initializeResult.serverInfo).toEqual({ name: "persona-harness-code-nav", version: "1" })
+    expect(tools).toEqual(["status", "search_text", "ast_grep_availability"])
+  })
+
+  it("serves initialize and tools/list over newline JSON-RPC stdio for OpenCode local MCP", () => {
+    const result = runCodeNavMcp([
+      lineMcpRequest({
+        id: 1,
+        method: "initialize",
+        params: {
+          capabilities: { roots: {} },
+          clientInfo: { name: "opencode", version: "1.17.7" },
+          protocolVersion: "2025-11-25",
+        },
+      }),
+      lineMcpRequest({ id: 2, method: "tools/list", params: {} }),
+    ].join(""))
+    const responses = parseJsonLineBodies(result.stdout)
+    const initializeResult = resultRecord(responses[0] ?? {})
+    const listResult = resultRecord(responses[1] ?? {})
+    const tools = arrayValue(listResult.tools).map((entry) => {
+      if (!isRecord(entry)) {
+        throw new Error("Expected MCP tool object")
+      }
+      return entry.name
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe("")
+    expect(initializeResult.protocolVersion).toBe("2025-11-25")
     expect(initializeResult.serverInfo).toEqual({ name: "persona-harness-code-nav", version: "1" })
     expect(tools).toEqual(["status", "search_text", "ast_grep_availability"])
   })
