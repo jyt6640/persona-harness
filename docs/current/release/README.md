@@ -62,6 +62,13 @@ to `persona-harness-code-nav` from the opt-in generated config. This is local
 tarball compatibility evidence only until a later registry publish verifies the
 same gitHead; it is not a token-saving or product-efficacy claim.
 
+Post-rc6 parser/guidance hardening at `f93d52d` and
+`e52f73f3c3cdb36866d74aecb39757cdf520d0ee` is repo-only measurement hygiene:
+code-nav metrics now distinguish actual JSON tool-name field calls from
+prose/free-text mentions of namespaced OpenCode MCP tools. It improves
+measurement accuracy and discoverability language; it is not natural-adoption,
+token-saving, navigation-benefit, or product-efficacy evidence.
+
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
 and not a separate release channel.

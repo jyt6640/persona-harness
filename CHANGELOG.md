@@ -84,6 +84,22 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - this records an OpenCode local MCP newline transport/adoption compatibility
     fix only, not token-saving, product-efficacy, navigation-benefit, model,
     eval, native dispatch, or registry `@next` evidence.
+- Post-rc6 parser/guidance measurement hygiene:
+  - `f93d52d` added namespaced code-nav MCP tool detection and guidance for
+    OpenCode tool names such as `persona-harness-code-nav_status` and
+    `persona-harness-code-nav_search_text`;
+  - `e52f73f3c3cdb36866d74aecb39757cdf520d0ee` separates actual JSON tool-name
+    field calls from prose/free-text mentions;
+  - QA verified R-MCP.3 raw logs as `codeNavToolCallCount=2`, with exact calls
+    `persona-harness-code-nav_status=1` and
+    `persona-harness-code-nav_search_text=1`, while exact prose mentions are
+    counted separately as `codeNavToolMentionCount=2`;
+  - a prose-only stdin fixture reports call count 0 and mention count 1;
+  - External package smoke was not needed because this is repo-only metrics
+    parser/test behavior;
+  - this is parser accuracy and measurement hygiene only, not natural-adoption,
+    efficacy, token-saving, provider-token saving, navigation-benefit, or
+    product-efficacy evidence.
 
 ## [0.4.0-rc.5] - 2026-06-30
 
