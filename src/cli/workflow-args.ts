@@ -31,7 +31,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow implement prints a single AI-facing implementation rail",
     "- workflow continue prints the accepted-plan continuation prompt",
     "- workflow closure status/next --json prints read-only closure state and next steps",
-    "- workflow relay status/next --json prints the read-only multi-agent relay preview",
+    "- workflow relay status/next/validate --json prints the read-only multi-agent relay preview",
     "- workflow roles writes and prints non-autonomous role boundaries",
     "- workflow start/finish are AI-facing workflow rails",
     "- workflow draft/approve/capture/split/next/archive manage requirement-derived task tickets",

@@ -9,9 +9,10 @@ export const RELAY_ROLE_ARTIFACT_KIND: Readonly<Record<MultiAgentRole, string>> 
 
 export function relayUsage(invocationName: string): string {
   return [
-    `Usage: ${invocationName} workflow relay <status|next> --json`,
+    `Usage: ${invocationName} workflow relay <status|next|validate> --json`,
     "",
     "Prints the read-only multi-agent relay preview state.",
+    "Use validate --json to inspect role artifact readiness without writing artifacts.",
     "",
     "Scope:",
     "- requires multiAgent.enabled: true in .persona/harness.jsonc",

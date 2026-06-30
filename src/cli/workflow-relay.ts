@@ -35,7 +35,11 @@ function parseRelayArgs(args: readonly string[]): RelayAction | "help" | undefin
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
     return "help"
   }
-  if ((args[0] === "status" || args[0] === "next") && args.length === 2 && args[1] === "--json") {
+  if (
+    (args[0] === "status" || args[0] === "next" || args[0] === "validate") &&
+    args.length === 2 &&
+    args[1] === "--json"
+  ) {
     return args[0]
   }
   return undefined
@@ -227,7 +231,11 @@ export function runWorkflowRelayCommand(
     return { status: 0, stdout: `${relayUsage(invocationName)}\n`, stderr: "" }
   }
   if (parsed === undefined) {
-    return { status: 1, stdout: "", stderr: `workflow relay requires status --json or next --json.\n\n${relayUsage(invocationName)}\n` }
+    return {
+      status: 1,
+      stdout: "",
+      stderr: `workflow relay requires status --json, next --json, or validate --json.\n\n${relayUsage(invocationName)}\n`,
+    }
   }
   const projectDir = resolve(options.projectDir ?? process.cwd())
   return {

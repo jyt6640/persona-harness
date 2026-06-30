@@ -1,7 +1,7 @@
 import type { MultiAgentRole } from "../config/harness-config.js"
 import type { ClosureBlocker, ClosureTicket } from "./workflow-closure.js"
 
-export type RelayAction = "next" | "status"
+export type RelayAction = "next" | "status" | "validate"
 
 export type RelayBlockerId =
   | "multi-agent-disabled"
