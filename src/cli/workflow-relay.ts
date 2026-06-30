@@ -132,7 +132,8 @@ function promptLinesFor(role: MultiAgentRole, ticket: ClosureTicket, artifactPat
     return [
       ...common,
       "Role: test-writer.",
-      "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md and the current ticket/scenario contract rule.",
+      "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay' and the current ticket/scenario contract rule.",
+      "Detailed reference, if available in this package: packages/shared-skills/skills/programming/references/java/testing.md section 'Persona Harness relay contract'.",
       "Write the expected failing test, verification test, or verification plan for this ticket.",
       "Do not implement production code.",
       "Do not weaken, delete, or rewrite existing tests to pass without preserving behavior.",
