@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
+import { enableCodeNavMcpPreview } from "./bootstrap-code-nav.js"
 import { enableMultiAgentPreview } from "./bootstrap-multi-agent.js"
 import { enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
@@ -19,8 +20,15 @@ type BootstrapOptions = {
   readonly packageRoot?: string
 }
 
+type BackendBootstrapFlags = {
+  readonly codeNavPreview: boolean
+  readonly force: boolean
+  readonly multiAgentPreview: boolean
+  readonly strict: boolean
+}
+
 type ParsedBootstrapArgs =
-  | { readonly force: boolean; readonly kind: "backend"; readonly multiAgentPreview: boolean; readonly strict: boolean }
+  | ({ readonly kind: "backend" } & BackendBootstrapFlags)
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
@@ -53,9 +61,19 @@ function multiAgentPreviewSummaryLines(): readonly string[] {
   ]
 }
 
+function codeNavPreviewSummaryLines(): readonly string[] {
+  return [
+    "Code-nav MCP preview:",
+    "- opt-in only via --code-nav-preview; default bootstrap does not register MCP servers",
+    "- writes OpenCode mcp.persona-harness-code-nav for the packaged PH code-nav MCP server",
+    "- provides minimal status/search_text/ast_grep_availability tools only",
+    "- no codegraph/indexer and no token-saving claim",
+  ]
+}
+
 export function bootstrapUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview]`,
+    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview]`,
     "",
     "Prepares the backend Persona Harness workflow for AI implementation.",
     "",
@@ -80,6 +98,8 @@ export function bootstrapUsage(invocation = "ph"): string {
     ...strictModeSummaryLines(),
     "",
     ...multiAgentPreviewSummaryLines(),
+    "",
+    ...codeNavPreviewSummaryLines(),
   ].join("\n")
 }
 
@@ -94,6 +114,7 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
   let force = false
   let strict = false
   let multiAgentPreview = false
+  let codeNavPreview = false
   for (const arg of args.slice(1)) {
     if (arg === "--force") {
       force = true
@@ -107,10 +128,14 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
       multiAgentPreview = true
       continue
     }
+    if (arg === "--code-nav-preview") {
+      codeNavPreview = true
+      continue
+    }
     return { kind: "invalid", message: `Unknown option: ${arg}` }
   }
 
-  return { kind: "backend", force, multiAgentPreview, strict }
+  return { kind: "backend", codeNavPreview, force, multiAgentPreview, strict }
 }
 
 function projectDirFor(options: BootstrapOptions): string {
@@ -185,9 +210,7 @@ function writeBackendAgentInstructions(projectDir: string, skipped: string[], fo
 
 function runBackendBootstrap(
   options: BootstrapOptions,
-  force: boolean,
-  strict: boolean,
-  multiAgentPreview: boolean,
+  flags: BackendBootstrapFlags,
 ): CliRunResult {
   const projectDir = projectDirFor(options)
   const actions: string[] = []
@@ -200,7 +223,7 @@ function runBackendBootstrap(
     skipped.push(".persona already exists")
   }
 
-  if (strict) {
+  if (flags.strict) {
     const strictFailure = enableStrictClosureVerification(projectDir)
     if (strictFailure !== undefined) {
       return strictFailure
@@ -208,7 +231,7 @@ function runBackendBootstrap(
     actions.push("enabled strict closure verification")
   }
 
-  if (multiAgentPreview) {
+  if (flags.multiAgentPreview) {
     const previewFailure = enableMultiAgentPreview(projectDir, loadHarnessConfig(projectDir).multiAgent)
     if (previewFailure !== undefined) {
       return previewFailure
@@ -216,8 +239,16 @@ function runBackendBootstrap(
     actions.push("enabled multi-agent relay preview for test-writer, jaeki, and roach")
   }
 
+  if (flags.codeNavPreview) {
+    const codeNavFailure = enableCodeNavMcpPreview(projectDir, options.packageRoot)
+    if (codeNavFailure !== undefined) {
+      return codeNavFailure
+    }
+    actions.push("enabled code-nav MCP preview")
+  }
+
   const profileState = readBackendProjectProfileState(projectDir)
-  if (force || profileState.status !== "ready") {
+  if (flags.force || profileState.status !== "ready") {
     const result = runIntakeCommand(["--default", "backend", "--force"], { projectDir }, "ph")
     const failure = runAndRecord(actions, "profile", result, "created default backend profile")
     if (failure !== undefined) {
@@ -227,8 +258,8 @@ function runBackendBootstrap(
     skipped.push(`${PROFILE_PATH} already ready`)
   }
 
-  if (force || !existsSync(join(projectDir, POLICY_OVERLAY_PATH))) {
-    const policyArgs = force ? ["init", "--force"] : ["init"]
+  if (flags.force || !existsSync(join(projectDir, POLICY_OVERLAY_PATH))) {
+    const policyArgs = flags.force ? ["init", "--force"] : ["init"]
     const result = runPolicyCommand(policyArgs, { projectDir }, "ph")
     const failure = runAndRecord(actions, "policy", result, "created backend policy overlay")
     if (failure !== undefined) {
@@ -238,7 +269,7 @@ function runBackendBootstrap(
     skipped.push(`${POLICY_OVERLAY_PATH} already exists`)
   }
 
-  if (force || !existsSync(join(projectDir, PLAN_PATH))) {
+  if (flags.force || !existsSync(join(projectDir, PLAN_PATH))) {
     const result = runPlanCommand(["--auto-accept"], { projectDir }, "ph")
     const failure = runAndRecord(actions, "plan", result, "created and accepted backend workflow plan")
     if (failure !== undefined) {
@@ -248,7 +279,7 @@ function runBackendBootstrap(
     skipped.push(`${PLAN_PATH} already exists`)
   }
 
-  const agentInstructionAction = writeBackendAgentInstructions(projectDir, skipped, force)
+  const agentInstructionAction = writeBackendAgentInstructions(projectDir, skipped, flags.force)
   if (agentInstructionAction !== undefined) {
     actions.push(agentInstructionAction)
   }
@@ -264,8 +295,9 @@ function runBackendBootstrap(
       "Skipped:",
       ...(skipped.length > 0 ? skipped.map((item) => `- ${item}`) : ["- none"]),
       "",
-      ...(strict ? [...strictModeSummaryLines(), ""] : []),
-      ...(multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
+      ...(flags.strict ? [...strictModeSummaryLines(), ""] : []),
+      ...(flags.multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
+      ...(flags.codeNavPreview ? [...codeNavPreviewSummaryLines(), ""] : []),
       "Ready backend bootstrap files:",
       `- ${HARNESS_CONFIG_PATH}`,
       `- ${CONVENTIONS_DIR_PATH}`,
@@ -303,5 +335,5 @@ export function runBootstrapCommand(
   if (parsed.kind === "invalid") {
     return { status: 1, stdout: "", stderr: `${parsed.message}\n\n${bootstrapUsage(invocationName)}\n` }
   }
-  return runBackendBootstrap(options, parsed.force, parsed.strict, parsed.multiAgentPreview)
+  return runBackendBootstrap(options, parsed)
 }

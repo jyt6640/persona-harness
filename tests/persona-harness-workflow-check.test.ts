@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process"
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -1252,6 +1253,8 @@ describe("ph bootstrap backend", () => {
     expect(agents).toContain(".persona/project-profile.jsonc")
     expect(agents).toContain("Do not infer a Node/CommonJS project from package.json")
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(false)
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    expect(isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp["persona-harness-code-nav"] : undefined).toBeUndefined()
   })
 
   it("enables direct verification when backend bootstrap is strict", () => {
@@ -1353,6 +1356,110 @@ describe("ph bootstrap backend", () => {
     })
     expect(agents["test-writer"]).toMatchObject({ mode: "subagent" })
     expect(agents.roach).toMatchObject({ mode: "subagent" })
+  })
+
+  it("enables the code-nav MCP preview only when explicitly requested", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend", "--code-nav-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("enabled code-nav MCP preview")
+    expect(result.stdout).toContain("Code-nav MCP preview:")
+    expect(result.stdout).toContain("opt-in only via --code-nav-preview")
+    expect(result.stdout).toContain("no codegraph/indexer and no token-saving claim")
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    expect(mcp["persona-harness-code-nav"]).toMatchObject({
+      type: "local",
+      enabled: true,
+      command: ["node", join(process.cwd(), "packages", "lsp-tools-mcp", "bin", "code-nav-mcp.mjs"), "mcp"],
+    })
+    expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))
+  })
+
+  it("preserves existing OpenCode plugin, agent, and MCP fields when enabling code-nav preview", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".opencode"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".opencode", "opencode.json"),
+      `${JSON.stringify(
+        {
+          plugin: ["/tmp/existing-plugin.js"],
+          agent: { custom: { mode: "primary" } },
+          mcp: {
+            existing: {
+              type: "local",
+              enabled: true,
+              command: ["node", "/tmp/existing.js", "mcp"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const result = runPersonaCli(["bootstrap", "backend", "--code-nav-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    expect(opencodeConfig.plugin).toEqual(
+      expect.arrayContaining(["/tmp/existing-plugin.js", expect.stringContaining("dist/index.js")]),
+    )
+    expect(opencodeConfig.agent).toEqual({ custom: { mode: "primary" } })
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    expect(mcp.existing).toMatchObject({ command: ["node", "/tmp/existing.js", "mcp"] })
+    expect(mcp["persona-harness-code-nav"]).toMatchObject({
+      type: "local",
+      enabled: true,
+      command: ["node", join(process.cwd(), "packages", "lsp-tools-mcp", "bin", "code-nav-mcp.mjs"), "mcp"],
+    })
+  })
+
+  it("writes a code-nav MCP command that can initialize and list tools without a model", () => {
+    const projectDir = createTempProject()
+    const result = runPersonaCli(["bootstrap", "backend", "--code-nav-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    const entry = isRecord(mcp["persona-harness-code-nav"]) ? mcp["persona-harness-code-nav"] : {}
+    const command = Array.isArray(entry.command) ? entry.command.filter((part): part is string => typeof part === "string") : []
+    const initialize = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "0" } },
+    })
+    const list = JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} })
+    const input = [
+      `Content-Length: ${Buffer.byteLength(initialize)}\r\n\r\n${initialize}`,
+      `Content-Length: ${Buffer.byteLength(list)}\r\n\r\n${list}`,
+    ].join("")
+
+    const smoke = spawnSync(command[0] ?? "", command.slice(1), { cwd: projectDir, encoding: "utf8", input })
+
+    expect(result.status).toBe(0)
+    expect(command).toHaveLength(3)
+    expect(smoke.status).toBe(0)
+    expect(smoke.stderr).toBe("")
+    expect(smoke.stdout).toContain("persona-harness-code-nav")
+    expect(smoke.stdout).toContain("search_text")
+    expect(smoke.stdout).toContain("ast_grep_availability")
   })
 
   it("fills missing backend workflow pieces after init without requiring the user to type every command", () => {

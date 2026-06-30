@@ -40,7 +40,9 @@ describe("first-run command help", () => {
     const result = runPersonaCli(["bootstrap", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain("Usage: ph bootstrap backend [--force] [--strict] [--multi-agent-preview]")
+    expect(result.stdout).toContain(
+      "Usage: ph bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview]",
+    )
     expect(result.stdout).toContain("Strict mode:")
     expect(result.stdout).toContain("sets enforce.executeVerification: true")
     expect(result.stdout).toContain("expect toolchain command cost")
@@ -50,6 +52,9 @@ describe("first-run command help", () => {
     expect(result.stdout).toContain("Multi-agent relay preview:")
     expect(result.stdout).toContain("opt-in only via --multi-agent-preview")
     expect(result.stdout).toContain("does not dispatch native subtasks")
+    expect(result.stdout).toContain("Code-nav MCP preview:")
+    expect(result.stdout).toContain("opt-in only via --code-nav-preview")
+    expect(result.stdout).toContain("no codegraph/indexer and no token-saving claim")
     expect(existsSync(join(projectDir, ".persona"))).toBe(false)
   })
 })
