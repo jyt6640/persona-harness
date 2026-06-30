@@ -29,18 +29,76 @@ function runMetrics(inputPath: string) {
 }
 
 describe("code-nav MCP tool metrics parser", () => {
-  it("counts OpenCode namespaced MCP tool names and raw MCP tool names", () => {
+  it("separates actual OpenCode tool-use calls from prose mentions", () => {
     const dir = createTempDir()
     const logPath = join(dir, "opencode.jsonl")
     writeFileSync(
       logPath,
       [
-        JSON.stringify({ type: "tool", name: "persona-harness-code-nav_search_text", id: "call-1" }),
+        JSON.stringify({
+          type: "tool_use",
+          part: { type: "tool", tool: "persona-harness-code-nav_search_text", callID: "call-1" },
+        }),
         JSON.stringify({ part: { type: "tool", tool: "persona-harness-code-nav_status" } }),
+        JSON.stringify({
+          type: "text",
+          part: { type: "text", text: "I used persona-harness-code-nav_status and persona-harness-code-nav_search_text." },
+        }),
+      ].join("\n"),
+    )
+
+    const result = runMetrics(logPath)
+    const metrics = JSON.parse(result.stdout) as {
+      canonicalToolMentionCounts: Record<string, number>
+      canonicalToolCallCounts: Record<string, number>
+      codeNavToolCallCount: number
+      codeNavToolCallCounts: Record<string, number>
+      codeNavToolMentionCount: number
+      codeNavToolMentionCounts: Record<string, number>
+      exactMentionNames: string[]
+      exactToolNames: string[]
+      recognizedToolNames: { namespaced: string[]; raw: string[] }
+    }
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe("")
+    expect(metrics.codeNavToolCallCount).toBe(2)
+    expect(metrics.codeNavToolCallCounts["persona-harness-code-nav_search_text"]).toBe(1)
+    expect(metrics.codeNavToolCallCounts["persona-harness-code-nav_status"]).toBe(1)
+    expect(metrics.canonicalToolCallCounts).toEqual({
+      ast_grep_availability: 0,
+      search_text: 1,
+      status: 1,
+    })
+    expect(metrics.codeNavToolMentionCount).toBe(2)
+    expect(metrics.codeNavToolMentionCounts["persona-harness-code-nav_search_text"]).toBe(1)
+    expect(metrics.codeNavToolMentionCounts["persona-harness-code-nav_status"]).toBe(1)
+    expect(metrics.canonicalToolMentionCounts).toEqual({
+      ast_grep_availability: 0,
+      search_text: 1,
+      status: 1,
+    })
+    expect(metrics.exactToolNames).toEqual([
+      "persona-harness-code-nav_search_text",
+      "persona-harness-code-nav_status",
+    ])
+    expect(metrics.exactMentionNames).toEqual([
+      "persona-harness-code-nav_search_text",
+      "persona-harness-code-nav_status",
+    ])
+    expect(metrics.recognizedToolNames.namespaced).toContain("persona-harness-code-nav_ast_grep_availability")
+    expect(metrics.recognizedToolNames.raw).toContain("search_text")
+  })
+
+  it("counts raw MCP tool names only when they appear in tool-name fields", () => {
+    const dir = createTempDir()
+    const logPath = join(dir, "opencode-raw.jsonl")
+    writeFileSync(
+      logPath,
+      [
         JSON.stringify({ event: { toolName: "search_text" } }),
         JSON.stringify({ event: { tool_name: "ast_grep_availability" } }),
         JSON.stringify({ message: "status should not count when it is prose" }),
-        "human log: persona-harness-code-nav_search_text completed",
       ].join("\n"),
     )
 
@@ -48,30 +106,16 @@ describe("code-nav MCP tool metrics parser", () => {
     const metrics = JSON.parse(result.stdout) as {
       canonicalToolCallCounts: Record<string, number>
       codeNavToolCallCount: number
-      codeNavToolCallCounts: Record<string, number>
-      exactToolNames: string[]
-      recognizedToolNames: { namespaced: string[]; raw: string[] }
+      codeNavToolMentionCount: number
     }
 
     expect(result.status).toBe(0)
-    expect(result.stderr).toBe("")
-    expect(metrics.codeNavToolCallCount).toBe(5)
-    expect(metrics.codeNavToolCallCounts["persona-harness-code-nav_search_text"]).toBe(2)
-    expect(metrics.codeNavToolCallCounts["persona-harness-code-nav_status"]).toBe(1)
-    expect(metrics.codeNavToolCallCounts.search_text).toBe(1)
-    expect(metrics.codeNavToolCallCounts.ast_grep_availability).toBe(1)
+    expect(metrics.codeNavToolCallCount).toBe(2)
+    expect(metrics.codeNavToolMentionCount).toBe(0)
     expect(metrics.canonicalToolCallCounts).toEqual({
       ast_grep_availability: 1,
-      search_text: 3,
-      status: 1,
+      search_text: 1,
+      status: 0,
     })
-    expect(metrics.exactToolNames).toEqual([
-      "ast_grep_availability",
-      "persona-harness-code-nav_search_text",
-      "persona-harness-code-nav_status",
-      "search_text",
-    ])
-    expect(metrics.recognizedToolNames.namespaced).toContain("persona-harness-code-nav_ast_grep_availability")
-    expect(metrics.recognizedToolNames.raw).toContain("search_text")
   })
 })

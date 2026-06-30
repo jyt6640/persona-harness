@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs"
 const SERVER_PREFIX = "persona-harness-code-nav_"
 const RAW_TOOL_NAMES = ["status", "search_text", "ast_grep_availability"]
 const NAMESPACED_TOOL_NAMES = RAW_TOOL_NAMES.map((name) => `${SERVER_PREFIX}${name}`)
-const EXACT_TOOL_NAMES = new Set([...RAW_TOOL_NAMES, ...NAMESPACED_TOOL_NAMES])
 const NAMESPACED_TOOL_PATTERN = /\bpersona-harness-code-nav_(?:status|search_text|ast_grep_availability)\b/gu
 const TOOL_NAME_KEY_PATTERN = /(^|\.|_)(tool|toolName|tool_name|name|id|identifier)$/iu
 
@@ -23,22 +22,27 @@ export function isCodeNavToolName(name) {
 }
 
 export function collectCodeNavToolMetrics(text) {
-  const counts = new Map()
+  const toolUseCounts = new Map()
+  const mentionCounts = new Map()
   let eventsScanned = 0
   for (const line of text.split(/\r?\n/u)) {
     if (line.trim() === "") continue
     eventsScanned += 1
     const names = collectToolNamesFromLine(line)
-    for (const name of names) {
-      counts.set(name, (counts.get(name) ?? 0) + 1)
-    }
+    incrementCounts(toolUseCounts, names.toolUses)
+    incrementCounts(mentionCounts, names.mentions)
   }
-  const exactToolNames = [...counts.keys()].sort()
+  const exactToolNames = [...toolUseCounts.keys()].sort()
+  const exactMentionNames = [...mentionCounts.keys()].sort()
   return {
-    codeNavToolCallCount: [...counts.values()].reduce((sum, count) => sum + count, 0),
-    codeNavToolCallCounts: Object.fromEntries(exactToolNames.map((name) => [name, counts.get(name) ?? 0])),
+    codeNavToolCallCount: sumCounts(toolUseCounts),
+    codeNavToolCallCounts: Object.fromEntries(exactToolNames.map((name) => [name, toolUseCounts.get(name) ?? 0])),
+    codeNavToolMentionCount: sumCounts(mentionCounts),
+    codeNavToolMentionCounts: Object.fromEntries(exactMentionNames.map((name) => [name, mentionCounts.get(name) ?? 0])),
     exactToolNames,
-    canonicalToolCallCounts: canonicalCounts(counts),
+    exactMentionNames,
+    canonicalToolCallCounts: canonicalCounts(toolUseCounts),
+    canonicalToolMentionCounts: canonicalCounts(mentionCounts),
     recognizedToolNames: {
       namespaced: NAMESPACED_TOOL_NAMES,
       raw: RAW_TOOL_NAMES,
@@ -50,21 +54,35 @@ export function collectCodeNavToolMetrics(text) {
 function collectToolNamesFromLine(line) {
   const parsed = parseJson(line)
   if (parsed !== undefined) return collectToolNamesFromJson(parsed)
-  return new Set([...line.matchAll(NAMESPACED_TOOL_PATTERN)].map((match) => match[0]))
+  return {
+    mentions: new Set([...line.matchAll(NAMESPACED_TOOL_PATTERN)].map((match) => match[0])),
+    toolUses: new Set(),
+  }
 }
 
 function collectToolNamesFromJson(value) {
-  const names = new Set()
+  const toolUses = new Set()
+  const mentions = new Set()
   visitJson(value, "", (path, stringValue) => {
-    if (NAMESPACED_TOOL_NAMES.includes(stringValue)) {
-      names.add(stringValue)
+    if (isCodeNavToolName(stringValue) && TOOL_NAME_KEY_PATTERN.test(path)) {
+      toolUses.add(stringValue)
       return
     }
-    if (RAW_TOOL_NAMES.includes(stringValue) && TOOL_NAME_KEY_PATTERN.test(path)) {
-      names.add(stringValue)
+    for (const match of stringValue.matchAll(NAMESPACED_TOOL_PATTERN)) {
+      mentions.add(match[0])
     }
   })
-  return names
+  return { mentions, toolUses }
+}
+
+function incrementCounts(counts, names) {
+  for (const name of names) {
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+}
+
+function sumCounts(counts) {
+  return [...counts.values()].reduce((sum, count) => sum + count, 0)
 }
 
 function visitJson(value, path, onString) {
