@@ -9,6 +9,7 @@ import { IdleContinuationTracker } from "./idle-continuation.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
 import { maybeInjectIntentWorkflow } from "./intent-workflow.js"
 import { injectSystemConstitution } from "./system-constitution.js"
+import { TokenTelemetryRecorder } from "./token-telemetry.js"
 import {
   createJavaRoleReadFollowUp,
   discoverJavaRoleInjections,
@@ -102,6 +103,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const projectDir = options.projectDir ?? process.cwd()
   const config = loadHarnessConfig(projectDir)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
+  const tokenTelemetry = new TokenTelemetryRecorder(projectDir)
 
   function captureTargetFile(
     hook: "tool.execute.before" | "tool.execute.after",
@@ -179,7 +181,13 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   return {
     event: async (input: EventInput): Promise<void> => {
       await runHostHookAsync("event", async () => {
-        if (!config.enabled || !config.enforce.idleContinuation || input.event.type !== "session.idle") {
+        if (!config.enabled) {
+          return
+        }
+        if (config.telemetry.tokenUsage && input.event.type === "message.updated") {
+          tokenTelemetry.recordMessage(input.event.properties.info)
+        }
+        if (!config.enforce.idleContinuation || input.event.type !== "session.idle") {
           return
         }
         await idleContinuation.continueIfBlocked(input.event.properties.sessionID)
@@ -275,10 +283,13 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     },
 
     "experimental.chat.system.transform": async (
-      _input: TransformSystemInput,
+      input: TransformSystemInput,
       output: TransformSystemOutput,
     ): Promise<void> => {
       runHostHook("experimental.chat.system.transform", () => {
+        if (config.enabled && config.telemetry.tokenUsage) {
+          tokenTelemetry.rememberModelLimit(input.sessionID, input.model)
+        }
         injectSystemConstitution(output, config)
       })
     },

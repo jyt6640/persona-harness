@@ -14,6 +14,7 @@ export type HarnessConfig = {
   readonly rulesDir: string
   readonly evidenceDir: string
   readonly enforce: HarnessEnforceConfig
+  readonly telemetry: HarnessTelemetryConfig
   readonly multiAgent: HarnessMultiAgentConfig
   readonly maxRulesPerInjection: number
   readonly evidenceMode: "metadata_only"
@@ -34,6 +35,10 @@ export type HarnessEnforceConfig = {
    * (finish gate + ast-grep conventions).
    */
   readonly writeDeny: boolean
+}
+
+export type HarnessTelemetryConfig = {
+  readonly tokenUsage: boolean
 }
 
 export const DEFAULT_MULTI_AGENT_ROLES = ["test-writer", "jaeki", "roach"] as const
@@ -67,6 +72,9 @@ const DEFAULT_CONFIG: HarnessConfig = {
     idleContinuation: false,
     systemConstitution: true,
     writeDeny: false,
+  },
+  telemetry: {
+    tokenUsage: true,
   },
   multiAgent: {
     enabled: false,
@@ -143,6 +151,15 @@ function readMultiAgentModels(value: unknown): HarnessMultiAgentConfig["models"]
     }
   }
   return models
+}
+
+function readTelemetryConfig(value: unknown): HarnessTelemetryConfig {
+  if (!isRecord(value)) {
+    return DEFAULT_CONFIG.telemetry
+  }
+  return {
+    tokenUsage: readBoolean(value.tokenUsage, DEFAULT_CONFIG.telemetry.tokenUsage),
+  }
 }
 
 function readMultiAgentConfig(value: unknown): HarnessMultiAgentConfig {
@@ -227,6 +244,7 @@ export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadRe
       rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
       evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
       enforce: readEnforceConfig(parsed.enforce),
+      telemetry: readTelemetryConfig(parsed.telemetry),
       multiAgent: readMultiAgentConfig(parsed.multiAgent),
       maxRulesPerInjection: readPositiveInteger(parsed.maxRulesPerInjection, DEFAULT_CONFIG.maxRulesPerInjection),
       evidenceMode: readEvidenceMode(parsed.evidenceMode),
