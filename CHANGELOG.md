@@ -4,6 +4,42 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
+## [0.4.0-rc.5] - 2026-06-30
+
+- Prepared `0.4.0-rc.5` as the next-channel prerelease candidate for the
+  no-model multi-agent relay preview surface after registry `@next=0.4.0-rc.4`
+  still pointed at gitHead `c3e4c2bc2178e6edc72581a8d34aedd406be922b` and did
+  not include the relay R1-R5 work through
+  `24f85001605b7c121f11a2933a3ebfd0453434a7`.
+- The rc5 package candidate includes the coherent no-model relay preview set:
+  - opt-in relay agent map generation for `test-writer`, `jaeki`, and `roach`;
+  - relay coordinator status/next JSON with current role, completion state,
+    scoped inputs, prompt block, and required artifact;
+  - deterministic role artifact gates for missing, incomplete, and
+    role-boundary-violating artifacts;
+  - read-only `workflow relay validate --json`;
+  - compact human text mode for `workflow relay validate`.
+- Evidence remains package-surface/no-model only:
+  - R1 current-tarball smoke on HEAD
+    `12562195719745ed371320d04590c68037ab0b05`;
+  - R2 current-tarball smoke on HEAD
+    `4788135b01447f7cbfde3198abfcd45640893ce6`;
+  - R3b current-tarball smoke on HEAD
+    `7d9329449063888092f9a9a1a0141f94728c5e0e`;
+  - R4 current-tarball smoke on HEAD
+    `ebc57dd2ae72c947255f472145291d424f5d2337`;
+  - R5 current-tarball smoke on HEAD
+    `24f85001605b7c121f11a2933a3ebfd0453434a7`.
+- Post-publish smoke must verify registry `persona-harness@next`, version,
+  gitHead, shasum, dist-tags, strict/default config surface, relay validate
+  human text, `validate --json` compatibility, no-write roles-dir/hash behavior,
+  unchanged archive/finish blockers, and no dispatch/model/eval/certification
+  claims.
+- Boundaries remain narrow: no native subtask dispatch, no model/OpenCode/eval
+  run proof, no PH superiority, no generated app certification, no broad
+  architecture correctness, no general reliability, no closure guarantee, no
+  token-savings guarantee, no OMO parity, and no autonomous completion claim.
+
 ## [0.4.0-rc.4] - 2026-06-30
 
 - Prepared `0.4.0-rc.4` as the next-channel prerelease refresh after registry
