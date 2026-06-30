@@ -39,8 +39,17 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - tag pushes verify and create GitHub release notes only;
   - npm publish is explicit `workflow_dispatch` or local publish only;
   - `next` is the rc dist-tag; do not move `latest`.
+- Post-publish registry facts:
+  - `persona-harness@0.4.0-rc.4` exists with gitHead
+    `c3e4c2bc2178e6edc72581a8d34aedd406be922b`;
+  - registry shasum: `7cecf41e5baf6ebf383ea82fd352ab0d8a686b23`;
+  - dist-tags: `next=0.4.0-rc.4`, `latest=0.3.9-alpha.8`,
+    `alpha=0.3.9-alpha.8`;
+  - local `HEAD`, `origin/main`, local tag `v0.4.0-rc.4`, and origin tag
+    `v0.4.0-rc.4` all point to
+    `c3e4c2bc2178e6edc72581a8d34aedd406be922b`.
 - Boundaries remain narrow: current/local tarball package-surface evidence only
-  until registry publish verifies gitHead; no eval/A-B proof, PH superiority,
+  plus post-publish registry metadata; no eval/A-B proof, PH superiority,
   generated app certification, broad architecture correctness, general
   reliability, or closure guarantee is claimed.
 
