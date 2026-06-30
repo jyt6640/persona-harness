@@ -86,6 +86,19 @@ function evidenceAttempts(projectDir: string): readonly Record<string, unknown>[
   })
 }
 
+class BoundSummarizeSession {
+  readonly calls: TokenCompactionSummarizeOptions[] = []
+
+  promptAsync(): undefined {
+    return undefined
+  }
+
+  summarize(options: TokenCompactionSummarizeOptions): true {
+    this.calls.push(options)
+    return true
+  }
+}
+
 async function sendMessageUpdated(projectDir: string, message: AssistantMessage): Promise<readonly TokenCompactionSummarizeOptions[]> {
   const summarizeCalls: TokenCompactionSummarizeOptions[] = []
   const hooks = createPhase0Hooks({
@@ -144,6 +157,27 @@ describe("Phase 0 token compaction", () => {
         status: "triggered",
       }),
     ])
+  })
+
+  it("calls summarize through the owning SDK session object", async () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { enforce: { compaction: { enabled: true, threshold: 0.78 } } })
+    const session = new BoundSummarizeSession()
+    const hooks = createPhase0Hooks({
+      client: {
+        session,
+      },
+      projectDir,
+    })
+    await hooks["experimental.chat.system.transform"]?.(
+      { sessionID: "session-token-compaction", model: modelWithContextLimit(100) },
+      { system: [] },
+    )
+
+    await hooks.event?.({ event: { type: "message.updated", properties: { info: highRatioMessage() } } })
+
+    expect(session.calls).toHaveLength(1)
+    expect(evidenceAttempts(projectDir)).toEqual([expect.objectContaining({ status: "triggered" })])
   })
 
   it("records skipped evidence when ratio is unknown or below threshold", async () => {

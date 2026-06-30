@@ -105,12 +105,40 @@ Interpretation:
 
 Verdict: keep compaction default-off and defer effectiveness claims. The next smallest implementation fix is to call/bind `client.session.summarize` through the SDK client object, then rerun this real-provider probe. No token-saving claim is supported.
 
+## R2 Binding Fix Follow-up
+
+Fix scope: this follow-up change.
+
+Follow-up evidence: `.persona/evidence/r2-compaction-binding-fix-probe-2026-06-30T19-14-14-097Z.json`.
+
+Raw logs: `.persona/evidence/r2-compaction-binding-fix-probe-2026-06-30T19-14-14-097Z-raw/`.
+
+Behavior fixed:
+
+- `TokenCompactionTracker` now calls `session.summarize(request)` through the owning session object instead of extracting the method into an unbound local function.
+- A focused regression test uses a `this`-dependent fake session so an unbound call fails.
+- A built hook smoke imported compiled `createPhase0Hooks`, used the same `this`-dependent fake session, and observed one summarize call plus compaction evidence `status: triggered`.
+
+Provider rerun:
+
+| Condition | Status | Cache read | Input | Reasoning | Total | Compaction evidence |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| Control/default-off | step1 timed out (`124`), step2 skipped | 0 | 64,017 | 1,465 | 65,727 | No compaction file, as expected. |
+| ON/compaction enabled | step1 timed out (`124`), step2 skipped | 0 | 7,437 | 374 | 7,811 | Only initial `ratio-unavailable`; no measured trigger. |
+| ON smaller no-tools smoke | timed out (`124`) | 0 | 7,275 | 1,522 | 8,797 | Only initial `ratio-unavailable`; no measured trigger. |
+
+Interpretation:
+
+- The binding defect is fixed at the runtime surface and no longer reproduces in the built hook smoke.
+- The real-provider rerun did not reach a successful measured compaction trigger, so it cannot measure cacheRead/total movement.
+- Compaction remains default-off/deferred. No token-saving claim is supported.
+
 ## Lever Decision Table
 
 | Lever | Current status | Measured before/after | Decision |
 | --- | --- | --- | --- |
 | Token telemetry | Implemented and externally verified | Writes provider token evidence in safe isolated non-pure mode. | Keep as measurement infrastructure. |
-| Proactive compaction | Default-off mechanics implemented and externally verified | Real-provider ON run attempted summarize but failed before trigger; no after-summarize measurement. | Defer/default-off; fix summarize invocation before rerun. |
+| Proactive compaction | Default-off mechanics implemented and externally verified; summarize binding fixed in follow-up | Built hook smoke reaches `triggered`; real-provider rerun timed out or only reached `ratio-unavailable`, so no after-summarize measurement. | Defer/default-off; needs a stable real-provider run that reaches `triggered` before effectiveness can be judged. |
 | Hashline edit routing | Feasibility no-go for hard routing | No provider-token experiment run because SDK payload cannot enforce native write routing. | Defer/no-go for enforced route. |
 
 ## Boundaries
@@ -125,4 +153,4 @@ Verdict: keep compaction default-off and defer effectiveness claims. The next sm
 
 ## Recommended Next Step
 
-Fix the compaction SDK invocation in `TokenCompactionTracker` so the summarize call preserves the SDK client binding. After QA/External verifies that narrow fix, rerun the same safe-mode R2 real-provider probe. Keep `enforce.compaction.enabled` default-off unless a later real measurement shows favorable provider telemetry movement.
+Have QA/External verify the narrow binding fix package surface. After that, rerun a stable safe-mode real-provider probe only if it can reach compaction evidence `status: triggered` and then produce later provider telemetry. Keep `enforce.compaction.enabled` default-off unless a later real measurement shows favorable provider telemetry movement.

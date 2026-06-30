@@ -235,8 +235,8 @@ export class TokenCompactionTracker {
       return skipped("cooldown-active")
     }
 
-    const summarize = this.options.client?.session.summarize
-    if (summarize === undefined) {
+    const session = this.options.client?.session
+    if (session?.summarize === undefined) {
       return skipped("summarize-client-unavailable")
     }
 
@@ -250,7 +250,7 @@ export class TokenCompactionTracker {
     }
 
     try {
-      await summarize(request)
+      await session.summarize(request)
       this.cooldownUntilBySession.set(message.sessionID, now.getTime() + this.options.config.cooldownMs)
       const path = writeAttempt(
         this.options.projectDir,
