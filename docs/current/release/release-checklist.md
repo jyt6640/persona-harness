@@ -29,6 +29,8 @@ Run this guard before release prep and again before publish if any smoke, runtim
 Check:
 
 - `package.json`, `package-lock.json`, `CHANGELOG.md`, the current release note, and the develop README/current-status record all name the same intended release version.
+- The current release note and CHANGELOG name the package/source type for every cited smoke result: registry package, local tarball, current tarball, or workspace install.
+- Current-tarball or workspace smoke is never described as published registry behavior. Registry behavior may be claimed only after `npm view persona-harness@<version> version gitHead dist.shasum --json` and `npm dist-tag ls persona-harness` confirm the published package and dist-tag state.
 - `CHANGELOG.md` and the release note both distinguish surface-verified smoke from full generated-app behavior verification.
 - The release note explicitly says generated app product quality is not certified unless there is a separate, explicit product-quality certification decision.
 - Registry state is recorded when relevant:
