@@ -1,0 +1,8 @@
+{
+  "name": "@persona-harness/code-nav-mcp-preview",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ph-code-nav-mcp": "./bin/code-nav-mcp.mjs"
+  }
+}

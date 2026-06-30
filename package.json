@@ -44,6 +44,9 @@
     "docs/current/v0.3.0-alpha-publish-readiness.md",
     "docs/current/persona-harness-detailed-usage.md",
     "docs/current/release",
+    "packages/lsp-tools-mcp/package.json",
+    "packages/lsp-tools-mcp/README.md",
+    "packages/lsp-tools-mcp/bin",
     "packages/shared-skills/skills/programming/SKILL.md",
     "packages/shared-skills/skills/programming/references/java",
     "packages/shared-skills/skills/workflow"
