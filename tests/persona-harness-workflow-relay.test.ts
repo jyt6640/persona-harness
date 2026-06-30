@@ -86,9 +86,17 @@ describe("ph workflow relay read-only preview", () => {
     const output = relayJson(projectDir)
 
     expect(output.enabled).toBe(false)
+    expect(output.currentRole).toBeNull()
     expect(output.nextRole).toBeNull()
+    expect(output.promptBlock).toBe("")
     expect(output.requiredArtifact).toBeNull()
+    expect(output.requiredOutputArtifact).toBeNull()
     expect(output.roleOrder).toEqual(["test-writer", "jaeki", "roach"])
+    expect(output.roleCompletionState).toMatchObject({
+      currentRole: null,
+      nextRole: null,
+      overall: "disabled",
+    })
     expect(output.blockers).toEqual([
       expect.objectContaining({
         id: "multi-agent-disabled",
@@ -105,9 +113,11 @@ describe("ph workflow relay read-only preview", () => {
     const output = relayJson(projectDir)
 
     expect(output.enabled).toBe(true)
+    expect(output.currentRole).toBe("test-writer")
     expect(output.nextRole).toBe("test-writer")
     expect(output.requiredArtifact).toBe(".persona/workflow/work/req-1/roles/test-writer.md")
-    expect(output.scopedInputs).toEqual(
+    expect(output.requiredOutputArtifact).toBe(".persona/workflow/work/req-1/roles/test-writer.md")
+    expect(output.scopedInputFiles).toEqual(
       expect.arrayContaining([
         ".persona/workflow/plan.md",
         ".persona/workflow/work/req-1/00-task-card.md",
@@ -115,6 +125,14 @@ describe("ph workflow relay read-only preview", () => {
         ".persona/workflow/review-report.md",
       ]),
     )
+    expect(output.scopedInputFiles).toEqual(output.scopedInputs)
+    expect(output.roleCompletionState).toMatchObject({
+      completedRoles: [],
+      currentRole: "test-writer",
+      missingRoles: ["test-writer", "jaeki", "roach"],
+      nextRole: "test-writer",
+      overall: "blocked",
+    })
     expect(output.blockers).toEqual([
       expect.objectContaining({
         id: "role-test-artifact-missing",
@@ -131,6 +149,9 @@ describe("ph workflow relay read-only preview", () => {
         "Then rerun `npx ph workflow relay next --json`.",
       ]),
     )
+    expect(output.promptBlock).toContain("Role: test-writer.")
+    expect(output.promptBlock).toContain("PH Multi-Agent Relay")
+    expect(output.promptBlock).toContain("Persona Harness relay contract")
   })
 
   it("progresses through jaeki and roach artifacts before returning to closure gates", () => {
@@ -140,7 +161,15 @@ describe("ph workflow relay read-only preview", () => {
 
     writeRoleArtifact(projectDir, "req-1", "test-writer")
     const implementer = relayJson(projectDir)
+    expect(implementer.currentRole).toBe("jaeki")
     expect(implementer.nextRole).toBe("jaeki")
+    expect(implementer.roleCompletionState).toMatchObject({
+      completedRoles: ["test-writer"],
+      currentRole: "jaeki",
+      missingRoles: ["jaeki", "roach"],
+      nextRole: "jaeki",
+      overall: "blocked",
+    })
     expect(implementer.blockers).toEqual([
       expect.objectContaining({
         id: "role-implementation-artifact-missing",
@@ -151,7 +180,15 @@ describe("ph workflow relay read-only preview", () => {
     writeRoleArtifact(projectDir, "req-1", "jaeki")
     const reviewer = relayJson(projectDir, "status")
     expect(reviewer.action).toBe("status")
+    expect(reviewer.currentRole).toBe("roach")
     expect(reviewer.nextRole).toBe("roach")
+    expect(reviewer.roleCompletionState).toMatchObject({
+      completedRoles: ["test-writer", "jaeki"],
+      currentRole: "roach",
+      missingRoles: ["roach"],
+      nextRole: "roach",
+      overall: "blocked",
+    })
     expect(reviewer.blockers).toEqual([
       expect.objectContaining({
         id: "role-review-artifact-missing",
@@ -161,9 +198,19 @@ describe("ph workflow relay read-only preview", () => {
 
     writeRoleArtifact(projectDir, "req-1", "roach")
     const complete = relayJson(projectDir)
+    expect(complete.currentRole).toBeNull()
     expect(complete.nextRole).toBeNull()
     expect(complete.requiredArtifact).toBeNull()
+    expect(complete.requiredOutputArtifact).toBeNull()
+    expect(complete.roleCompletionState).toMatchObject({
+      completedRoles: ["test-writer", "jaeki", "roach"],
+      currentRole: null,
+      missingRoles: [],
+      nextRole: null,
+      overall: "complete",
+    })
     expect(complete.blockers).toEqual([])
     expect(complete.gateCommand).toBe("npx ph workflow closure next --json")
+    expect(complete.promptBlock).toContain("Relay preview role artifacts are present.")
   })
 })

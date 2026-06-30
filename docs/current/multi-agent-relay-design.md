@@ -103,7 +103,7 @@ Implemented read-only surfaces:
 - `ph workflow relay status --json`
 - `ph workflow relay next --json`
 
-These commands do not call OpenCode and do not dispatch native subtasks. They read the current workflow ticket and closure blocker, then emit a scoped handoff object with `enabled`, `currentTicket`, `nextRole`, `roleOrder`, `scopedInputs`, `promptLines`, `requiredArtifact`, `gateCommand`, and blocker fields.
+These commands do not call OpenCode and do not dispatch native subtasks. They read the current workflow ticket and closure blocker, then emit a scoped handoff object with `enabled`, `currentTicket`, `currentRole`, `roleCompletionState`, `nextRole`, `roleOrder`, `scopedInputFiles`, `promptBlock`, `promptLines`, `requiredOutputArtifact`, `requiredArtifact`, `gateCommand`, and blocker fields.
 
 R1 role artifacts live under `.persona/workflow/work/<ticket>/roles/`:
 

@@ -5,42 +5,19 @@ import process from "node:process"
 import { loadHarnessConfig, type MultiAgentRole } from "../config/harness-config.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readWorkflowClosurePayload, type ClosureBlocker, type ClosureTicket } from "./workflow-closure.js"
-
-type RelayAction = "next" | "status"
-
-type RelayBlockerId =
-  | "multi-agent-disabled"
-  | "no-current-ticket"
-  | "role-implementation-artifact-missing"
-  | "role-review-artifact-missing"
-  | "role-test-artifact-missing"
-
-type RelayBlocker = {
-  readonly id: RelayBlockerId
-  readonly reason: string
-  readonly source: string
-}
-
-type RelayRoleArtifact = {
-  readonly path: string
-  readonly role: MultiAgentRole
-  readonly status: "missing" | "present"
-}
-
-type WorkflowRelayPayload = {
-  readonly action: RelayAction
-  readonly blockers: readonly RelayBlocker[]
-  readonly closureBlocker: ClosureBlocker | null
-  readonly currentTicket: ClosureTicket | null
-  readonly enabled: boolean
-  readonly gateCommand: string
-  readonly nextRole: MultiAgentRole | null
-  readonly promptLines: readonly string[]
-  readonly requiredArtifact: string | null
-  readonly roleArtifacts: readonly RelayRoleArtifact[]
-  readonly roleOrder: readonly MultiAgentRole[]
-  readonly scopedInputs: readonly string[]
-}
+import type {
+  RelayAction,
+  RelayBlockerId,
+  RelayRoleArtifact,
+  RelayRoleCompletionState,
+  WorkflowRelayPayload,
+} from "./workflow-relay-model.js"
+import {
+  RELAY_ROLE_ARTIFACT_KIND,
+  relayPromptBlock,
+  relayPromptLinesFor,
+  relayUsage,
+} from "./workflow-relay-ui.js"
 
 const ROLE_BLOCKERS: Readonly<Record<MultiAgentRole, RelayBlockerId>> = {
   "test-writer": "role-test-artifact-missing",
@@ -48,28 +25,8 @@ const ROLE_BLOCKERS: Readonly<Record<MultiAgentRole, RelayBlockerId>> = {
   roach: "role-review-artifact-missing",
 }
 
-const ROLE_KIND: Readonly<Record<MultiAgentRole, string>> = {
-  "test-writer": "test/verification artifact",
-  jaeki: "implementation artifact",
-  roach: "review artifact",
-}
-
 function roleArtifactPath(ticketId: string, role: MultiAgentRole): string {
   return `.persona/workflow/work/${ticketId}/roles/${role}.md`
-}
-
-function relayUsage(invocationName: string): string {
-  return [
-    `Usage: ${invocationName} workflow relay <status|next> --json`,
-    "",
-    "Prints the read-only multi-agent relay preview state.",
-    "",
-    "Scope:",
-    "- requires multiAgent.enabled: true in .persona/harness.jsonc",
-    "- does not dispatch native subtasks",
-    "- does not auto-fill reports or auto-archive tickets",
-    "- finish/check/archive remain the workflow gates",
-  ].join("\n")
 }
 
 function parseRelayArgs(args: readonly string[]): RelayAction | "help" | undefined {
@@ -109,6 +66,20 @@ function firstMissingRoleArtifact(artifacts: readonly RelayRoleArtifact[]): Rela
   return artifacts.find((artifact) => artifact.status === "missing")
 }
 
+function roleCompletionState(
+  artifacts: readonly RelayRoleArtifact[],
+  overall: RelayRoleCompletionState["overall"],
+  currentRole: MultiAgentRole | null,
+): RelayRoleCompletionState {
+  return {
+    completedRoles: artifacts.filter((artifact) => artifact.status === "present").map((artifact) => artifact.role),
+    currentRole,
+    missingRoles: artifacts.filter((artifact) => artifact.status === "missing").map((artifact) => artifact.role),
+    nextRole: currentRole,
+    overall,
+  }
+}
+
 function scopedInputs(ticket: ClosureTicket, closureBlocker: ClosureBlocker | null): readonly string[] {
   const inputs = [
     ".persona/workflow/plan.md",
@@ -120,45 +91,6 @@ function scopedInputs(ticket: ClosureTicket, closureBlocker: ClosureBlocker | nu
     inputs.push(closureBlocker.source)
   }
   return Array.from(new Set(inputs))
-}
-
-function promptLinesFor(role: MultiAgentRole, ticket: ClosureTicket, artifactPath: string): readonly string[] {
-  const common = [
-    "PH closure/workflow state is the orchestrator/gate; OpenCode subagents are workers.",
-    `Current ticket: ${ticket.id} - ${ticket.title}`,
-    `Scoped inputs are paths only; read only what is needed from those files.`,
-  ]
-  if (role === "test-writer") {
-    return [
-      ...common,
-      "Role: test-writer.",
-      "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay' and the current ticket/scenario contract rule.",
-      "Detailed reference, if available in this package: packages/shared-skills/skills/programming/references/java/testing.md section 'Persona Harness relay contract'.",
-      "Write the expected failing test, verification test, or verification plan for this ticket.",
-      "Do not implement production code.",
-      "Do not weaken, delete, or rewrite existing tests to pass without preserving behavior.",
-      `Record the role artifact at ${artifactPath}.`,
-      "Then rerun `npx ph workflow relay next --json`.",
-    ]
-  }
-  if (role === "jaeki") {
-    return [
-      ...common,
-      "Role: jaeki.",
-      "Implement or refactor only this scoped ticket; avoid broad redesign.",
-      "Use the test-writer artifact if present and keep workflow reports/evidence honest.",
-      `Record the role artifact at ${artifactPath}.`,
-      "Then rerun `npx ph workflow relay next --json`.",
-    ]
-  }
-  return [
-    ...common,
-    "Role: roach.",
-    "Review/QA the scoped ticket and pressure implementation/review reports.",
-    "Do not implement features unless explicitly reassigned.",
-    `Record the role artifact at ${artifactPath}.`,
-    "Then rerun `npx ph workflow relay next --json`.",
-  ]
 }
 
 function readWorkflowRelayPayload(action: RelayAction, projectDir: string): WorkflowRelayPayload {
@@ -177,14 +109,19 @@ function readWorkflowRelayPayload(action: RelayAction, projectDir: string): Work
         },
       ],
       closureBlocker,
+      currentRole: null,
       currentTicket,
       enabled: false,
       gateCommand,
       nextRole: null,
+      promptBlock: "",
       promptLines: [],
       requiredArtifact: null,
+      requiredOutputArtifact: null,
       roleArtifacts: [],
+      roleCompletionState: roleCompletionState([], "disabled", null),
       roleOrder,
+      scopedInputFiles: currentTicket === null ? [] : scopedInputs(currentTicket, closureBlocker),
       scopedInputs: currentTicket === null ? [] : scopedInputs(currentTicket, closureBlocker),
     }
   }
@@ -199,14 +136,19 @@ function readWorkflowRelayPayload(action: RelayAction, projectDir: string): Work
         },
       ],
       closureBlocker,
+      currentRole: null,
       currentTicket,
       enabled: true,
       gateCommand,
       nextRole: null,
+      promptBlock: "",
       promptLines: [],
       requiredArtifact: null,
+      requiredOutputArtifact: null,
       roleArtifacts: [],
+      roleCompletionState: roleCompletionState([], "no-current-ticket", null),
       roleOrder,
+      scopedInputFiles: [],
       scopedInputs: [],
     }
   }
@@ -217,39 +159,54 @@ function readWorkflowRelayPayload(action: RelayAction, projectDir: string): Work
       action,
       blockers: [],
       closureBlocker,
+      currentRole: null,
       currentTicket,
       enabled: true,
       gateCommand: "npx ph workflow closure next --json",
       nextRole: null,
+      promptBlock: relayPromptBlock([
+        "Relay preview role artifacts are present.",
+        "Run `npx ph workflow closure next --json` and continue through PH closure/check/finish gates.",
+      ]),
       promptLines: [
         "Relay preview role artifacts are present.",
         "Run `npx ph workflow closure next --json` and continue through PH closure/check/finish gates.",
       ],
       requiredArtifact: null,
+      requiredOutputArtifact: null,
       roleArtifacts,
+      roleCompletionState: roleCompletionState(roleArtifacts, "complete", null),
       roleOrder,
+      scopedInputFiles: scopedInputs(currentTicket, closureBlocker),
       scopedInputs: scopedInputs(currentTicket, closureBlocker),
     }
   }
+  const promptLines = relayPromptLinesFor(missingArtifact.role, currentTicket, missingArtifact.path)
+  const scopedInputFiles = scopedInputs(currentTicket, closureBlocker)
   return {
     action,
     blockers: [
       {
         id: ROLE_BLOCKERS[missingArtifact.role],
-        reason: `${missingArtifact.role} ${ROLE_KIND[missingArtifact.role]} is missing for ${currentTicket.id}.`,
+        reason: `${missingArtifact.role} ${RELAY_ROLE_ARTIFACT_KIND[missingArtifact.role]} is missing for ${currentTicket.id}.`,
         source: missingArtifact.path,
       },
     ],
     closureBlocker,
+    currentRole: missingArtifact.role,
     currentTicket,
     enabled: true,
     gateCommand,
     nextRole: missingArtifact.role,
-    promptLines: promptLinesFor(missingArtifact.role, currentTicket, missingArtifact.path),
+    promptBlock: relayPromptBlock(promptLines),
+    promptLines,
     requiredArtifact: missingArtifact.path,
+    requiredOutputArtifact: missingArtifact.path,
     roleArtifacts,
+    roleCompletionState: roleCompletionState(roleArtifacts, "blocked", missingArtifact.role),
     roleOrder,
-    scopedInputs: scopedInputs(currentTicket, closureBlocker),
+    scopedInputFiles,
+    scopedInputs: scopedInputFiles,
   }
 }
 
