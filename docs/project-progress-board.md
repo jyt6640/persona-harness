@@ -26,8 +26,11 @@ candidate, not a strong general guard. Phase 0 is opt-in direct verification for
 the supported Java/Spring/Gradle slice; Phase 1 adds convention
 `report|warn|block` levels and the scoped Controller -> Repository blocker;
 Phase 2 is warning-only write guard fallback because deny/rewrite is unsupported;
-Phase 3 is convention registry groundwork. BYO ast-grep conventions remain
-future work.
+Phase 3 is convention registry groundwork. Current HEAD `b7b5c45` routes closure
+blockers through structured registry metadata with block eligibility and
+precision fields, while keeping `controller.repository-dependency` as the
+first/default block-capable convention. BYO ast-grep conventions remain future
+work.
 
 Historical board entries below may mention older alpha candidates, older
 dist-tag policy, or older eval conclusions. Treat `package.json`, `CHANGELOG.md`,

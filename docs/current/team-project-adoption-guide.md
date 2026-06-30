@@ -78,8 +78,10 @@ The current GUARD surface is a scoped opt-in enforcement candidate:
 - Phase 2: write guard is warning-only because the current hook result type
   does not support deny/rewrite. Do not treat it as hard enforcement.
 - Phase 3: the convention registry centralizes convention ids, default levels,
-  blocker ids, and fix paths. BYO ast-grep convention authoring remains future
-  work.
+  blocker ids, step ids, fix paths, block eligibility, and precision metadata.
+  `controller.repository-dependency` is still the first/default block-capable
+  convention. Unsafe or low-precision rules must not become hard blockers. BYO
+  ast-grep convention authoring remains future work.
 
 Valid claim: Persona Harness can provide scoped opt-in closure enforcement for
 selected Java/Spring workflow checks.

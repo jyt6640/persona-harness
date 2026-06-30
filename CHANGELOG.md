@@ -6,6 +6,23 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## [0.4.0-rc.2] - 2026-06-30
 
+- Current HEAD after release prep adds
+  `b7b5c45 fix(cli): iterate registry convention blockers`; QA result is not
+  recorded in this changelog entry yet:
+  - architecture convention closure blockers now flow through registry/config
+    metadata instead of a single hard-coded Controller rule path;
+  - registry metadata carries `blockAllowed`, `highPrecision`, `blockerId`,
+    `stepId`, and `fixPath`, plus lookup helpers;
+  - `controller.repository-dependency` remains the first/default block-capable
+    convention;
+  - `report|warn|block` levels are honored: `block` creates closure, archive,
+    and finish blockers, while `warn` and `report` do not hard-block;
+  - unsafe or low-precision rules must not become hard blockers;
+  - `workflow check`, `workflow closure`, `workflow continue`,
+    `workflow finish`, and the archive guard consume structured registry blocker
+    metadata;
+  - BYO `.persona/conventions/*.yml` ast-grep authoring remains future work and
+    is not supported by this commit.
 - Next-channel prerelease prep for the current GUARD Phase 0-3 commits after
   published `0.4.0-rc.1`:
   - expected publish tag is `next`; do not move `latest`;
