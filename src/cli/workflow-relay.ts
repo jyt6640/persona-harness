@@ -132,8 +132,10 @@ function promptLinesFor(role: MultiAgentRole, ticket: ClosureTicket, artifactPat
     return [
       ...common,
       "Role: test-writer.",
+      "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md and the current ticket/scenario contract rule.",
       "Write the expected failing test, verification test, or verification plan for this ticket.",
       "Do not implement production code.",
+      "Do not weaken, delete, or rewrite existing tests to pass without preserving behavior.",
       `Record the role artifact at ${artifactPath}.`,
       "Then rerun `npx ph workflow relay next --json`.",
     ]

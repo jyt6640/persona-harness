@@ -85,6 +85,8 @@ First 3-role preview order:
 - `jaeki`: implementer. Takes the accepted plan/current ticket and writes production code/tests plus implementation report evidence.
 - `roach`: reviewer. Owns review-report pressure, closure blocker review, and regression risk notes.
 
+The `test-writer` prompt points to canonical PH test guidance instead of embedding a separate TDD essay: `.persona/rules/backend/spring-test.md` plus the current ticket/scenario contract rule. Skills Prompting still owns broader consolidation of shared Java TDD/test-writing guidance; R1 only needs a stable PH rule path and the boundary that `test-writer` must not implement product code or weaken/delete tests.
+
 Reserved but not workerized at first:
 
 - `blackbear`: remains the plan artifact/requirements decomposition role.

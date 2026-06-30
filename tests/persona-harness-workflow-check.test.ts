@@ -1305,6 +1305,8 @@ describe("ph bootstrap backend", () => {
     expect(agents.jaeki).toMatchObject({ mode: "subagent" })
     expect(agents.roach).toMatchObject({ mode: "subagent" })
     expect(JSON.stringify(agents["test-writer"])).toContain("Do not implement production code")
+    expect(JSON.stringify(agents["test-writer"])).toContain(".persona/rules/backend/spring-test.md")
+    expect(JSON.stringify(agents["test-writer"])).toContain("Do not weaken, delete, or rewrite existing tests")
     expect(JSON.stringify(agents.jaeki)).toContain("PH closure/workflow state is the orchestrator/gate")
     expect(JSON.stringify(agents.roach)).toContain("Do not implement features unless explicitly reassigned")
     expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))

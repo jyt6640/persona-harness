@@ -124,7 +124,9 @@ describe("ph workflow relay read-only preview", () => {
     expect(output.promptLines).toEqual(
       expect.arrayContaining([
         "Role: test-writer.",
+        "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md and the current ticket/scenario contract rule.",
         "Do not implement production code.",
+        "Do not weaken, delete, or rewrite existing tests to pass without preserving behavior.",
         "Then rerun `npx ph workflow relay next --json`.",
       ]),
     )
