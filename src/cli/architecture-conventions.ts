@@ -1,7 +1,10 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
-import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
+import {
+  CONTROLLER_REPOSITORY_CONVENTION,
+  SERVICE_STATE_OWNERSHIP_CONVENTION,
+} from "../config/convention-registry.js"
 import type { ConventionDefinition } from "../config/convention-registry.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import type { ConventionLevel } from "../config/harness-config.js"
@@ -43,6 +46,14 @@ function serviceArchitectureApplies(projectDir: string): boolean {
 }
 
 function collectControllerFiles(projectDir: string): readonly string[] {
+  return collectJavaFiles(projectDir, "Controller.java")
+}
+
+function collectServiceFiles(projectDir: string): readonly string[] {
+  return collectJavaFiles(projectDir, "Service.java")
+}
+
+function collectJavaFiles(projectDir: string, suffix: string): readonly string[] {
   const rootDir = join(projectDir, JAVA_MAIN_DIR)
   const files: string[] = []
 
@@ -57,7 +68,7 @@ function collectControllerFiles(projectDir: string): readonly string[] {
         visit(entryPath)
         continue
       }
-      if (stat.isFile() && entryPath.endsWith("Controller.java")) {
+      if (stat.isFile() && entryPath.endsWith(suffix)) {
         files.push(entryPath)
       }
     }
@@ -111,6 +122,86 @@ function controllerRepositoryConventionFindings(projectDir: string): readonly st
   })
 }
 
+type ServiceStateField = {
+  readonly fieldName: string
+  readonly line: number
+  readonly terms: readonly string[]
+  readonly typeName: string
+}
+
+function stripJavaCommentsAndLiterals(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//gu, (match) => match.replace(/[^\n]/gu, " "))
+    .replace(/\/\/[^\r\n]*/gu, "")
+    .replace(/"""[\s\S]*?"""/gu, (match) => match.replace(/[^\n]/gu, " "))
+    .replace(/"(?:\\.|[^"\\])*"/gu, "\"\"")
+    .replace(/'(?:\\.|[^'\\])*'/gu, "''")
+}
+
+function rawJavaType(typeName: string): string {
+  const withoutAnnotations = typeName.replace(/@\w+(?:\([^)]*\))?\s*/gu, "")
+  const withoutGenerics = withoutAnnotations.replace(/<[\s\S]*>/gu, "")
+  const parts = withoutGenerics.trim().split(/\s+/u)
+  return parts.at(-1)?.replace(/\[\]$/u, "") ?? withoutGenerics.trim()
+}
+
+function lineNumberAt(source: string, index: number): number {
+  return source.slice(0, Math.max(0, index)).split(/\r?\n/u).length
+}
+
+function serviceStateTerms(typeName: string, fieldName: string): readonly string[] {
+  const terms: string[] = []
+  const rawType = rawJavaType(typeName)
+  if (rawType === "Map" || rawType === "AtomicLong") {
+    terms.push(rawType)
+  }
+  if (/^(nextId|idCounter)$/u.test(fieldName)) {
+    terms.push(fieldName)
+  }
+  return terms
+}
+
+function javaPrivateFields(source: string): readonly ServiceStateField[] {
+  const codeOnly = stripJavaCommentsAndLiterals(source)
+  const fields: ServiceStateField[] = []
+  const fieldPattern = /\bprivate\s+(?:(?:static|final|volatile|transient)\s+)*(?<type>[A-Za-z_$][\w$]*(?:\s*<[^;{}=]+>)?(?:\[\])?)\s+(?<name>[A-Za-z_$][\w$]*)\b[^;{}]*;/gu
+  for (const match of codeOnly.matchAll(fieldPattern)) {
+    const typeName = match.groups?.type?.trim()
+    const fieldName = match.groups?.name?.trim()
+    if (typeName === undefined || fieldName === undefined || match.index === undefined) {
+      continue
+    }
+    const terms = serviceStateTerms(typeName, fieldName)
+    if (terms.length === 0) {
+      continue
+    }
+    fields.push({
+      fieldName,
+      line: lineNumberAt(codeOnly, match.index),
+      terms,
+      typeName,
+    })
+  }
+  return fields
+}
+
+function serviceStateOwnershipConventionFindings(projectDir: string): readonly string[] {
+  return collectServiceFiles(projectDir).flatMap((filePath) => {
+    const source = readFileSync(filePath, "utf8")
+    const stateFields = javaPrivateFields(source)
+    if (stateFields.length === 0) {
+      return []
+    }
+    const evidence = stateFields
+      .map((field) => `${field.typeName} ${field.fieldName} at ${relative(projectDir, filePath)}:${field.line}`)
+      .join(", ")
+    const terms = Array.from(new Set(stateFields.flatMap((field) => field.terms))).join("/")
+    return [
+      `${className(filePath)} owns in-memory state/id sequence (${terms}); ${SERVICE_STATE_OWNERSHIP_CONVENTION.actionableMessage} Source: ${evidence}`,
+    ]
+  })
+}
+
 type ConventionEvaluation = {
   readonly findings: readonly string[]
   readonly warnings: readonly string[]
@@ -119,6 +210,9 @@ type ConventionEvaluation = {
 function conventionFindings(projectDir: string, definition: ConventionDefinition): ConventionEvaluation {
   if (definition.check.kind === "observer" && definition.id === CONTROLLER_REPOSITORY_CONVENTION.id) {
     return { findings: controllerRepositoryConventionFindings(projectDir), warnings: [] }
+  }
+  if (definition.check.kind === "observer" && definition.id === SERVICE_STATE_OWNERSHIP_CONVENTION.id) {
+    return { findings: serviceStateOwnershipConventionFindings(projectDir), warnings: [] }
   }
   if (definition.check.kind === "ast-grep") {
     const result = runAstGrepConvention(projectDir, definition)
@@ -183,7 +277,7 @@ export function readArchitectureConventions(projectDir: string, implementationSt
   if (summaries.length === 0) {
     return {
       architectureConventionBlockers: [],
-      architectureConventions: "Controller -> Repository direct dependency not observed",
+      architectureConventions: "architecture convention violations not observed",
       architectureConventionsBlocking: false,
       architectureConventionsFinding: "PASS",
     }

@@ -10,6 +10,7 @@ import {
   CONVENTION_REGISTRY,
   CONTROLLER_PERSISTENCE_IMPORT_CONVENTION,
   CONTROLLER_REPOSITORY_CONVENTION,
+  SERVICE_STATE_OWNERSHIP_CONVENTION,
 } from "../src/config/convention-registry.js"
 import { loadHarnessConfig } from "../src/config/harness-config.js"
 import { isRecord } from "../src/config/jsonc.js"
@@ -341,6 +342,41 @@ function writeControllerServiceDependency(projectDir: string): void {
   )
 }
 
+function writeServiceStateOwnershipViolation(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "application", "TaskService.java"),
+    [
+      "import java.util.LinkedHashMap;",
+      "import java.util.Map;",
+      "import java.util.concurrent.atomic.AtomicLong;",
+      "class TaskService {",
+      "  private final Map<Long, Task> tasks = new LinkedHashMap<>();",
+      "  private final AtomicLong nextId = new AtomicLong();",
+      "  TaskResponse create(CreateTaskRequest request) {",
+      "    return new TaskResponse();",
+      "  }",
+      "}",
+    ].join("\n"),
+  )
+}
+
+function writeServiceLocalStateLookalikes(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "task", "application", "TaskService.java"),
+    [
+      "import java.util.Map;",
+      "class TaskService {",
+      "  TaskResponse create(CreateTaskRequest request) {",
+      "    // private final Map<Long, Task> tasks = new LinkedHashMap<>();",
+      "    String sample = \"private AtomicLong nextId = new AtomicLong()\";",
+      "    Map<String, String> labels = Map.of(\"status\", \"open\");",
+      "    return new TaskResponse();",
+      "  }",
+      "}",
+    ].join("\n"),
+  )
+}
+
 function writeSinglePendingTicket(projectDir: string): void {
   mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-1"), { recursive: true })
   writeFileSync(
@@ -614,7 +650,7 @@ describe("ph workflow check", () => {
     const closureJson = JSON.parse(closure.stdout)
 
     expect(check.status).toBe(0)
-    expect(check.stdout).toContain("- architecture conventions: Controller -> Repository direct dependency not observed")
+    expect(check.stdout).toContain("- architecture conventions: architecture convention violations not observed")
     expect(check.stdout).not.toContain(CONTROLLER_REPOSITORY_CONVENTION.blockerId)
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
       CONTROLLER_REPOSITORY_CONVENTION.blockerId,
@@ -623,8 +659,85 @@ describe("ph workflow check", () => {
   })
 
   it("keeps a registry with observer and ast-grep conventions", () => {
-    expect(CONVENTION_REGISTRY.length).toBeGreaterThanOrEqual(2)
+    expect(CONVENTION_REGISTRY.length).toBeGreaterThanOrEqual(3)
     expect(CONVENTION_REGISTRY.some((definition) => definition.check.kind === "ast-grep")).toBe(true)
+  })
+
+  it("blocks closure when a Spring Service owns in-memory state or id counters", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeJavaRoleFiles(projectDir)
+    writeControllerServiceDependency(projectDir)
+    writeServiceStateOwnershipViolation(projectDir)
+    writeCompleteWorkflowReportsAndEvidence(projectDir)
+    writeSinglePendingTicket(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const archive = runPersonaCli(["workflow", "archive", "req-1"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain(`- architecture conventions: ${SERVICE_STATE_OWNERSHIP_CONVENTION.id} block: TaskService owns in-memory state/id sequence`)
+    expect(check.stdout).toContain("Map/AtomicLong/nextId")
+    expect(check.stdout).toContain("src/main/java/com/example/task/application/TaskService.java:5")
+    expect(check.stdout).toContain(SERVICE_STATE_OWNERSHIP_CONVENTION.fixPath)
+    expect(closureJson.nextStep).toMatchObject({
+      blockerId: SERVICE_STATE_OWNERSHIP_CONVENTION.blockerId,
+      id: SERVICE_STATE_OWNERSHIP_CONVENTION.stepId,
+      status: "blocked",
+    })
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain(SERVICE_STATE_OWNERSHIP_CONVENTION.blockerId)
+    expect(archive.status).toBe(1)
+    expect(archive.stderr).toContain(SERVICE_STATE_OWNERSHIP_CONVENTION.blockerId)
+  })
+
+  it("warns without closure blocking when Service state ownership level is warn", () => {
+    const projectDir = createProfiledTempProject()
+    writeConventionLevels(projectDir, { [SERVICE_STATE_OWNERSHIP_CONVENTION.id]: "warn" })
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeJavaRoleFiles(projectDir)
+    writeControllerServiceDependency(projectDir)
+    writeServiceStateOwnershipViolation(projectDir)
+    writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain(`${SERVICE_STATE_OWNERSHIP_CONVENTION.id} warn`)
+    expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
+      SERVICE_STATE_OWNERSHIP_CONVENTION.blockerId,
+    )
+    expect(finish.status).toBe(0)
+  })
+
+  it("does not block on Service local variables, comments, or string lookalikes", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeJavaRoleFiles(projectDir)
+    writeControllerServiceDependency(projectDir)
+    writeServiceLocalStateLookalikes(projectDir)
+    writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const closureJson = JSON.parse(closure.stdout)
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("- architecture conventions: architecture convention violations not observed")
+    expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
+      SERVICE_STATE_OWNERSHIP_CONVENTION.blockerId,
+    )
+    expect(finish.status).toBe(0)
   })
 
   it("blocks closure from an ast-grep convention when the configured level is block", () => {

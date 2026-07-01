@@ -72,4 +72,86 @@ describe("ph evidence summary", () => {
     expect(summary).toContain("Unreadable evidence files: 1")
     expect(summary).toContain("bad.json")
   })
+
+  it("prints read-only evidence metrics as JSON from structured token, tool, MCP, and finish evidence", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona", "evidence", "token-usage"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "token-usage", "session-a.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: "token-usage.1",
+          sessionID: "session-a",
+          providerID: "openai",
+          modelID: "gpt-test",
+          modelLimit: 1000,
+          ratio: 0.15,
+          aggregate: {
+            cacheRead: 30,
+            cacheWrite: 5,
+            input: 100,
+            output: 20,
+            reasoning: 10,
+            total: 160,
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    )
+    mkdirSync(join(projectDir, ".persona", "evidence", "logs"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "logs", "events.jsonl"),
+      [
+        JSON.stringify({ type: "tool_use", name: "codegraph_explore", readChars: 120 }),
+        JSON.stringify({ event: "tool_call", toolName: "context7_get-library-docs" }),
+        JSON.stringify({ kind: "mcp_tool_call", tool_name: "grep_app_search" }),
+        JSON.stringify({ type: "tool_use", name: "persona-harness-code-nav_search_text" }),
+      ].join("\n"),
+    )
+    writeEvidence(projectDir, "finish-pass.json", {
+      command: "npx ph workflow finish implement",
+      status: 0,
+    })
+    writeEvidence(projectDir, "finish-fail.json", {
+      command: "npx ph workflow finish implement",
+      exitCode: 1,
+    })
+    writeFileSync(join(projectDir, ".persona", "evidence", "logs", "bad.json"), "{ nope\n")
+
+    const result = runPersonaCli(["evidence", "metrics", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const metrics = JSON.parse(result.stdout)
+
+    expect(result.status).toBe(0)
+    expect(metrics.schemaVersion).toBe("evidence-metrics.1")
+    expect(metrics.filesScanned).toBe(5)
+    expect(metrics.unreadableFiles).toHaveLength(1)
+    expect(metrics.tokenUsage.sessions).toHaveLength(1)
+    expect(metrics.tokenUsage.aggregate).toMatchObject({
+      cacheRead: 30,
+      input: 100,
+      total: 160,
+    })
+    expect(metrics.toolCalls.total).toBe(4)
+    expect(metrics.mcp.byFamily).toMatchObject({
+      codegraph: 1,
+      context7: 1,
+      grep_app: 1,
+      "persona-harness-code-nav": 1,
+    })
+    expect(metrics.readChars.total).toBe(120)
+    expect(metrics.finish).toMatchObject({ fail: 1, pass: 1, unknown: 0 })
+    expect(metrics.limitations.join("\n")).toContain("not an effectiveness or token-saving claim")
+  })
+
+  it("prints human evidence metrics without writing dashboard files", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["evidence", "metrics"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("# Persona Evidence Metrics")
+    expect(result.stdout).toContain("Structured read chars unavailable")
+    expect(existsSync(join(projectDir, ".persona", "evidence", "metrics.md"))).toBe(false)
+  })
 })

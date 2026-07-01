@@ -51,14 +51,32 @@ export const CONTROLLER_PERSISTENCE_IMPORT_CONVENTION = {
   writeGuard: false,
 } satisfies ConventionDefinition
 
+export const SERVICE_STATE_OWNERSHIP_CONVENTION = {
+  actionableMessage: "move in-memory state or id generation behind a Repository/persistence boundary.",
+  blockAllowed: true,
+  blockerId: "architecture-service-state-ownership",
+  check: { kind: "observer" },
+  defaultLevel: "block",
+  fixPath: "move Service-owned Map/AtomicLong/id counters into a Repository or persistence-backed boundary.",
+  highPrecision: true,
+  id: "service.state-ownership",
+  profileScope: "java-spring-service-architecture",
+  scope: "single-file",
+  stepId: "fix-service-state-ownership",
+  targetFileSuffixes: ["Service.java"],
+  writeGuard: false,
+} satisfies ConventionDefinition
+
 export const CONVENTION_REGISTRY = [
   CONTROLLER_REPOSITORY_CONVENTION,
   CONTROLLER_PERSISTENCE_IMPORT_CONVENTION,
+  SERVICE_STATE_OWNERSHIP_CONVENTION,
 ] as const
 
 export const DEFAULT_CONVENTION_LEVELS: Readonly<Record<string, ConventionLevel>> = {
   [CONTROLLER_REPOSITORY_CONVENTION.id]: CONTROLLER_REPOSITORY_CONVENTION.defaultLevel,
   [CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id]: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.defaultLevel,
+  [SERVICE_STATE_OWNERSHIP_CONVENTION.id]: SERVICE_STATE_OWNERSHIP_CONVENTION.defaultLevel,
 }
 
 export function findConventionDefinition(id: string): ConventionDefinition | undefined {
