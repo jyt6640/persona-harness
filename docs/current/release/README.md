@@ -460,12 +460,23 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
-Release automation lives in `.github/workflows/release.yml`.
+Release verification and GitHub release-note automation live in
+`.github/workflows/release.yml`. Npm publishing lives in
+`.github/workflows/publish.yml`; see
+[`npm-trusted-publishing-runbook.md`](npm-trusted-publishing-runbook.md).
 
 - Push `vX.Y.Z*` tags to verify the package and create GitHub release notes only.
-- Publish npm packages from `workflow_dispatch` with `publish=true` and an explicit dist-tag (`alpha`, `beta`, `next`, or `latest`).
-- Release-candidate packages use npm dist-tag `next`; do not move `latest` unless stable release approval is explicit.
-- The workflow verifies test/typecheck/build/rule diagnostics/scope/injection-value before any publish-capable job.
+- Publish npm packages from `.github/workflows/publish.yml` after QA release GO
+  with an explicit dist-tag (`next` or `latest`).
+- Release-candidate packages use npm dist-tag `next`; stable packages use
+  `latest`.
+- The publish workflow verifies docs, injection-value, typecheck, tests, build,
+  product smoke, and package dry-run before npm publish.
+- The publish workflow uses npm Trusted Publishing/OIDC; no `NPM_TOKEN` secret
+  is required for the trusted path.
 - The workflow checks that the pushed tag matches `package.json` version.
-- The workflow runs `npm publish --dry-run`; tag pushes do not run real `npm publish`.
+- The publish workflow verifies registry gitHead, dist.shasum, and dist-tag
+  state after publish.
+- Create/push the matching git tag only after registry verification succeeds.
+- Tag pushes do not run real `npm publish`.
 - GitHub release notes are generated automatically for tag releases.

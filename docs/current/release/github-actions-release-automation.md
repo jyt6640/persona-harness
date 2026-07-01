@@ -2,21 +2,33 @@
 
 ## Goal
 
-Release Persona Harness alpha/beta/stable packages from a pushed git tag with repeatable verification, npm publish, and GitHub release notes.
+Release Persona Harness packages with repeatable verification, npm trusted
+publishing, registry post-checks, and GitHub release notes.
 
 ## Workflow
 
-Automation lives in:
+Verification and GitHub release-note automation lives in:
 
 ```text
 .github/workflows/release.yml
 ```
 
-The release workflow has three jobs:
+Npm publishing lives in:
+
+```text
+.github/workflows/publish.yml
+```
+
+See:
+
+```text
+docs/current/release/npm-trusted-publishing-runbook.md
+```
+
+The tag release workflow has two jobs:
 
 1. `verify`
-2. `publish`
-3. `github-release`
+2. `github-release`
 
 ## Tag Policy
 
@@ -62,13 +74,16 @@ npm publish --dry-run --access public --tag <resolved-dist-tag>
 
 ## Publish
 
-Tag publish behavior:
+Npm publish is no longer performed by the tag workflow. Use
+`.github/workflows/publish.yml` through `workflow_dispatch` after QA release GO.
 
-- `vX.Y.Z-alpha.N` publishes with npm dist-tag `alpha`.
-- `vX.Y.Z-beta.N` publishes with npm dist-tag `beta`.
-- `vX.Y.Z` publishes with npm dist-tag `latest`.
+Supported dist-tags:
 
-During the current alpha/beta pilot, prerelease publishes also synchronize `latest` to the same version. This is a temporary tester convenience and does not imply stable support.
+- `next` for prerelease candidates.
+- `latest` for stable releases.
+
+The publish workflow rejects prerelease versions published as `latest` and
+stable versions published as `next`.
 
 ## GitHub Release Notes
 
@@ -82,31 +97,26 @@ Use `docs/current/release/release-notes-template.md` to draft human-facing notes
 
 ## npm Authentication Policy
 
-Preferred future path: npm trusted publishing with GitHub Actions OIDC.
+Required path: npm trusted publishing with GitHub Actions OIDC.
 
-Official npm guidance recommends trusted publishing for CI/CD because it avoids long-lived access tokens and can generate provenance from GitHub Actions.
+Configure the npm package trusted publisher for:
 
-Current fallback path: repository secret `NPM_TOKEN`.
+- repository: `jyt6640/persona-harness`
+- workflow file: `.github/workflows/publish.yml`
+- environment: `npm-publish`, if using an npm/GitHub environment constraint
 
-Use this only until trusted publishing is configured for the package.
-
-Requirements:
-
-- repository secret name: `NPM_TOKEN`
-- token type: granular automation/publish token
-- token must be allowed to publish while account 2FA is enabled
-- workflow keeps `id-token: write` for provenance/trusted-publishing readiness
+No `NPM_TOKEN` secret is required for the trusted publishing path.
 
 ## Manual Dispatch
 
-Manual dispatch exists for recovery or controlled tester releases.
+Manual dispatch exists for controlled publishes after QA release GO.
 
 Inputs:
 
-- `publish`: must be true to publish
-- `dist_tag`: `alpha`, `beta`, or `latest`
+- `dist_tag`: `next` or `latest`
 
-Default use should still be tag-based release. Manual dispatch should not replace version commits and tags.
+Manual dispatch does not replace version commits, registry verification, or
+post-publish git tags.
 
 ## Release Sequence
 
@@ -116,11 +126,13 @@ Default use should still be tag-based release. Manual dispatch should not replac
 4. Run local verification.
 5. Commit the release prep.
 6. Push the commit.
-7. Create and push the matching tag.
+7. Run `.github/workflows/publish.yml` with the intended dist-tag.
+8. Verify registry gitHead and shasum from the workflow post-check.
+9. Create and push the matching tag.
 
 ```bash
-git tag v0.3.0-alpha.3
 git push origin main
+git tag v0.3.0-alpha.3 <verified-gitHead>
 git push origin v0.3.0-alpha.3
 ```
 

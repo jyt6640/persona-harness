@@ -82,12 +82,12 @@ npm publish --dry-run --tag <dist-tag>
 
 Use this order for prerelease refreshes:
 
-1. Publish explicitly, either locally with `npm publish --tag <dist-tag>` or through the GitHub Actions `workflow_dispatch` publish job.
+1. Publish through `.github/workflows/publish.yml` after QA release GO.
 2. Verify the registry package with `npm view persona-harness@<version> version gitHead dist.shasum --json`.
 3. Verify dist-tags with `npm dist-tag ls persona-harness`.
 4. Push `main` and the matching `v${package.json.version}` tag only after registry verification succeeds.
 
-Tag pushes are verification/GitHub-release events only. They must not be used as the npm publish trigger, because the package may already be immutable in the registry or require interactive npm auth.
+Tag pushes are verification/GitHub-release events only. They must not be used as the npm publish trigger, because npm publish happens through the trusted publishing workflow and must be verified before tag creation.
 
 Expected:
 
@@ -136,36 +136,39 @@ For a local pre-publish smoke, install the generated tarball instead of the regi
 
 ## 7. Publish
 
-Only run real publish after explicit approval.
+Only run real publish after explicit QA approval.
 
-```bash
-npm publish --tag <dist-tag>
+Use the GitHub Actions workflow:
+
+```text
+.github/workflows/publish.yml
 ```
 
-For the current alpha line:
+Inputs:
 
-```bash
-npm publish --tag alpha
-```
+- `dist_tag=next` for prerelease candidates.
+- `dist_tag=latest` for stable releases.
 
-During the alpha/beta pilot, keep `latest` synchronized to the current prerelease package to avoid stale default installs. This does not imply stable support guarantees.
+### GitHub Actions trusted publishing path
 
-### GitHub Actions path
+The `.github/workflows/publish.yml` workflow publishes the current ref with
+trusted publishing.
 
-The `.github/workflows/release.yml` workflow publishes from tags that match `v*.*.*`.
-
-- `vX.Y.Z-alpha.N` publishes with dist-tag `alpha`, then synchronizes `latest` to the same version.
-- `vX.Y.Z-beta.N` publishes with dist-tag `beta`, then synchronizes `latest` to the same version.
-- `vX.Y.Z` publishes with dist-tag `latest`.
+- prerelease versions can publish only with dist-tag `next`.
+- stable versions can publish only with dist-tag `latest`.
+- after publish, the workflow verifies registry `gitHead`, `dist.shasum`, and
+  dist-tag state.
 
 Required repository setup:
 
-- preferred future setup: configure npm trusted publishing for this GitHub repository and remove long-lived token dependency;
-- current fallback setup: add an `NPM_TOKEN` repository secret with granular publish permission and 2FA-compatible automation behavior;
-- keep `id-token: write` enabled for npm provenance/trusted-publishing readiness;
-- push the version commit before pushing the tag.
+- configure npm trusted publishing for this GitHub repository;
+- trusted publisher workflow file: `.github/workflows/publish.yml`;
+- GitHub environment: `npm-publish`, if configured in npm/GitHub;
+- push the version commit before running the publish workflow;
+- create/push the git tag only after registry verification.
 
-Manual dispatch can publish the current ref with an explicit `alpha`, `beta`, or `latest` dist-tag, but should stay reserved for recovery or controlled tester releases.
+The `.github/workflows/release.yml` workflow verifies pushed tags and creates
+GitHub release notes. It is not the npm publish path.
 
 ## 8. Post-publish
 

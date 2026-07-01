@@ -5,22 +5,6 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
-    inputs:
-      publish:
-        description: "Publish the current ref to npm after verification"
-        required: true
-        default: false
-        type: boolean
-      dist_tag:
-        description: "npm dist-tag to use when publishing from workflow_dispatch"
-        required: true
-        default: "next"
-        type: choice
-        options:
-          - alpha
-          - beta
-          - next
-          - latest
 
 concurrency:
   group: release-${{ github.ref }}
@@ -83,9 +67,8 @@ jobs:
       - name: Publish dry run
         env:
           TAG_NAME: ${{ github.ref_name }}
-          DISPATCH_DIST_TAG: ${{ inputs.dist_tag || 'next' }}
         run: |
-          dist_tag="$DISPATCH_DIST_TAG"
+          dist_tag=next
           if [[ "$TAG_NAME" == v* ]]; then
             dist_tag=latest
             if [[ "$TAG_NAME" == *"-alpha."* ]]; then
@@ -97,38 +80,6 @@ jobs:
             fi
           fi
           npm publish --dry-run --access public --tag "$dist_tag"
-
-  publish:
-    name: Publish npm package
-    needs: verify
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && inputs.publish == true
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          registry-url: https://registry.npmjs.org
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Publish manual release
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm publish --provenance --access public --tag "${{ inputs.dist_tag }}"
 
   github-release:
     name: Create GitHub release notes

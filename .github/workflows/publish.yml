@@ -1,0 +1,144 @@
+name: Publish npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      dist_tag:
+        description: "npm dist-tag to publish"
+        required: true
+        default: "next"
+        type: choice
+        options:
+          - next
+          - latest
+
+concurrency:
+  group: publish-${{ github.ref }}-${{ inputs.dist_tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Verify and publish
+    runs-on: ubuntu-latest
+    environment: npm-publish
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check docs
+        run: npm run check:docs
+
+      - name: Check injection value
+        run: npm run check:injection-value
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Product smoke
+        run: npm run smoke:product-mvp
+
+      - name: Validate publish inputs
+        env:
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "EXPECTED_GIT_HEAD=${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+          if [[ "$DIST_TAG" == "latest" && "$version" == *-* ]]; then
+            echo "Refusing to publish prerelease version $version with dist-tag latest"
+            exit 1
+          fi
+
+          if [[ "$DIST_TAG" == "next" && "$version" != *-* ]]; then
+            echo "Refusing to publish stable version $version with dist-tag next"
+            exit 1
+          fi
+
+          echo "Publishing persona-harness@$version with dist-tag $DIST_TAG"
+
+      - name: Pack dry run
+        run: npm pack --dry-run --json
+
+      - name: Publish to npm
+        env:
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: npm publish --access public --tag "$DIST_TAG" --provenance
+
+      - name: Verify registry package
+        env:
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: |
+          set -euo pipefail
+
+          for attempt in {1..30}; do
+            if npm view "persona-harness@${PACKAGE_VERSION}" version gitHead dist.shasum --json > registry-package.json 2>/dev/null; then
+              break
+            fi
+            echo "Waiting for npm registry package metadata, attempt $attempt..."
+            sleep 10
+          done
+
+          node <<'NODE'
+          const fs = require("node:fs");
+          const actual = JSON.parse(fs.readFileSync("registry-package.json", "utf8"));
+          const expectedVersion = process.env.PACKAGE_VERSION;
+          const expectedHead = process.env.EXPECTED_GIT_HEAD;
+          if (actual.version !== expectedVersion) {
+            throw new Error(`Expected version ${expectedVersion}, got ${actual.version}`);
+          }
+          if (actual.gitHead !== expectedHead) {
+            throw new Error(`Expected gitHead ${expectedHead}, got ${actual.gitHead}`);
+          }
+          if (!actual["dist.shasum"]) {
+            throw new Error("Missing dist.shasum in npm registry metadata");
+          }
+          console.log(`Verified ${actual.version} ${actual.gitHead} ${actual["dist.shasum"]}`);
+          NODE
+
+          npm dist-tag ls persona-harness > dist-tags.txt
+          grep -F "${DIST_TAG}: ${PACKAGE_VERSION}" dist-tags.txt
+
+      - name: Publish summary
+        run: |
+          {
+            echo "## npm publish verified"
+            echo
+            echo "- package: persona-harness@${PACKAGE_VERSION}"
+            echo "- gitHead: ${EXPECTED_GIT_HEAD}"
+            echo "- dist-tag: ${{ inputs.dist_tag }}"
+            echo
+            echo "### Registry package"
+            echo '```json'
+            cat registry-package.json
+            echo '```'
+            echo
+            echo "### Dist-tags"
+            echo '```text'
+            cat dist-tags.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
