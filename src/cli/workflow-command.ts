@@ -71,7 +71,7 @@ function implementationGuardReasons(summary: WorkflowStatus): readonly string[] 
 }
 
 function finalGuardReasons(projectDir: string): readonly string[] {
-  return workflowClosureFinishReasons(readWorkflowClosurePayload("next", projectDir, { recordTddGreenEvidence: true }))
+  return workflowClosureFinishReasons(readWorkflowClosurePayload("next", projectDir, { recordTddGreenEvidence: true }), projectDir)
 }
 
 function hasPersonaHarness(summary: WorkflowStatus): boolean {

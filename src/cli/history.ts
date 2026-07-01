@@ -34,6 +34,7 @@ class WorkflowHistoryError extends Error {
 
 const WORKFLOW_DIR = ".persona/workflow"
 const HISTORY_DIR = ".persona/workflow/history"
+const EVIDENCE_SUMMARY_PATH = ".persona/evidence/summary.md"
 const WORKFLOW_ARTIFACTS: readonly WorkflowArtifact[] = [
   { filename: "plan.md" },
   { filename: "implementation-report.md" },
@@ -181,12 +182,15 @@ export function runHistoryCommand(args: readonly string[], options: HistoryOptio
 
   try {
     const result = archiveWorkflowHistory(options, parsed.archiveId)
+    const projectDir = resolve(options.projectDir ?? process.cwd())
     return {
       status: 0,
       stdout: [
         "Persona Harness workflow history archived.",
         "",
         `Archive: ${result.archiveDir}`,
+        `Summary: ${join(result.archiveDir, "summary.md")}`,
+        `Evidence summary source: ${join(projectDir, EVIDENCE_SUMMARY_PATH)}`,
         `Archived files: ${result.archivedFiles.length}`,
         `Missing files: ${result.missingFiles.length}`,
       ].join("\n") + "\n",

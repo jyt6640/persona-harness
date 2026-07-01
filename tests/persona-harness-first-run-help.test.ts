@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { personaHarnessVersion } from "../src/cli/version.js"
 
 const tempProjects: string[] = []
 
@@ -22,6 +23,17 @@ afterEach(() => {
 })
 
 describe("first-run command help", () => {
+  it("prints the packaged Persona Harness version", () => {
+    const projectDir = createTempProject()
+
+    const flagResult = runPersonaCli(["--version"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const commandResult = runPersonaCli(["version"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(flagResult).toEqual({ status: 0, stdout: `${personaHarnessVersion()}\n`, stderr: "" })
+    expect(commandResult).toEqual({ status: 0, stdout: `${personaHarnessVersion()}\n`, stderr: "" })
+    expect(existsSync(join(projectDir, ".persona"))).toBe(false)
+  })
+
   it("prints init help without initializing the project", () => {
     const projectDir = createTempProject()
 

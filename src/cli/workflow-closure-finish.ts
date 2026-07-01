@@ -1,14 +1,15 @@
 import { findConventionByBlockerId } from "../config/convention-registry.js"
+import { personaHarnessSelfProfileGuidance } from "./self-profile-guidance.js"
 import type { ClosureBlocker, ClosurePayload, ClosureTicket } from "./workflow-closure.js"
 
-export function workflowClosureFinishReasons(payload: ClosurePayload): readonly string[] {
+export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir?: string): readonly string[] {
   if (payload.state.finish === "passed" && payload.state.blockers.length === 0) {
     return []
   }
-  return payload.state.blockers.map((blocker) => blockerFinishReason(blocker))
+  return payload.state.blockers.map((blocker) => blockerFinishReason(blocker, projectDir))
 }
 
-function blockerFinishReason(blocker: ClosureBlocker): string {
+function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): string {
   if (blocker.id === "verification-failed") {
     if (isDirectVerificationReason(blocker.reason)) {
       return [
@@ -107,6 +108,7 @@ function blockerFinishReason(blocker: ClosureBlocker): string {
       "This is a workflow/profile alignment gate, not generated app product-quality certification.",
       "Required next actions:",
       "- Re-read `.persona/project-profile.jsonc`.",
+      ...personaHarnessSelfProfileGuidance(projectDir).map((line) => `- ${line}`),
       "- Change the generated project to Spring Boot/Gradle/JPA/database structure.",
       "- Remove fake `gradle-shim.js`/Node shim files.",
       "- Re-run `npx ph workflow check`.",

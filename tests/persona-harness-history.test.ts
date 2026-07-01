@@ -64,6 +64,9 @@ describe("ph history", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Persona Harness workflow history archived.")
+    expect(result.stdout).toContain(`Archive: ${workflowPath(projectDir, "history/run-001")}`)
+    expect(result.stdout).toContain(`Summary: ${workflowPath(projectDir, "history/run-001/summary.md")}`)
+    expect(result.stdout).toContain(`Evidence summary source: ${join(projectDir, ".persona", "evidence", "summary.md")}`)
     expect(readHistoryFile(projectDir, "run-001", "plan.md")).toBe("completed plan\n")
     expect(readHistoryFile(projectDir, "run-001", "implementation-report.md")).toBe("implementation evidence\n")
     expect(readHistoryFile(projectDir, "run-001", "review-report.md")).toBe("review evidence\n")

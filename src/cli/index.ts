@@ -20,6 +20,7 @@ import { runFeedbackCommand } from "./feedback.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
 import { decodeCliStdinText } from "./stdin-text.js"
+import { personaHarnessVersion } from "./version.js"
 import { runWorkflowCommand } from "./workflow-command.js"
 
 type PersonaCliOptions = {
@@ -33,6 +34,10 @@ type PersonaCliOptions = {
 export function runPersonaCli(args: readonly string[], options: PersonaCliOptions = {}): CliRunResult {
   const command = args[0]
   const invocationName = options.invocationName ?? "ph"
+
+  if (command === "version" || command === "--version" || command === "-v") {
+    return { status: 0, stdout: `${personaHarnessVersion()}\n`, stderr: "" }
+  }
 
   if (command === "init") {
     if (args[1] === "--help" || args[1] === "-h" || args[1] === "help") {

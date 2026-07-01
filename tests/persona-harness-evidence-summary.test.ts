@@ -47,6 +47,7 @@ describe("ph evidence summary", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Evidence summary written")
+    expect(result.stdout).toContain(`Evidence directory: ${join(projectDir, ".persona", "evidence")}`)
     const summary = readFileSync(join(projectDir, ".persona", "evidence", "summary.md"), "utf8")
     expect(summary).toContain("# Persona Evidence Summary")
     expect(summary).toContain("Total evidence files: 2")
@@ -151,6 +152,7 @@ describe("ph evidence summary", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("# Persona Evidence Metrics")
+    expect(result.stdout).toContain(`Evidence directory: \`${join(projectDir, ".persona", "evidence")}\``)
     expect(result.stdout).toContain("Structured read chars unavailable")
     expect(existsSync(join(projectDir, ".persona", "evidence", "metrics.md"))).toBe(false)
   })

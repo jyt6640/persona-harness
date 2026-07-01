@@ -77,6 +77,7 @@ type EvidenceMetrics = {
 }
 
 const SUMMARY_PATH = ".persona/evidence/summary.md"
+const EVIDENCE_DIR = ".persona/evidence"
 const TOKEN_ZERO: TokenAggregate = {
   cacheRead: 0,
   cacheWrite: 0,
@@ -460,6 +461,7 @@ function formatEvidenceMetrics(metrics: EvidenceMetrics): string {
     "# Persona Evidence Metrics",
     "",
     `Project: \`${metrics.projectDir}\``,
+    `Evidence directory: \`${metrics.evidenceDir}\``,
     `Evidence files scanned: ${metrics.filesScanned}`,
     `Unreadable evidence files: ${metrics.unreadableFiles.length}`,
     "",
@@ -513,7 +515,15 @@ export function writeEvidenceSummary(options: EvidenceOptions = {}): string {
 export function runEvidenceCommand(args: readonly string[], options: EvidenceOptions = {}, invocationName = "ph"): CliRunResult {
   if (args.length === 1 && args[0] === "summary") {
     const outputPath = writeEvidenceSummary(options)
-    return { status: 0, stdout: `Evidence summary written: ${outputPath}\n`, stderr: "" }
+    const projectDir = resolve(options.projectDir ?? process.cwd())
+    return {
+      status: 0,
+      stdout: [
+        `Evidence summary written: ${outputPath}`,
+        `Evidence directory: ${join(projectDir, EVIDENCE_DIR)}`,
+      ].join("\n") + "\n",
+      stderr: "",
+    }
   }
   if ((args.length === 1 || args.length === 2) && args[0] === "metrics") {
     const metrics = readEvidenceMetrics(options)

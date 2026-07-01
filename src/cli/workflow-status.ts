@@ -7,6 +7,7 @@ import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { readArchitectureConventions, type ArchitectureConventionBlocker, type ArchitectureConventionSummary } from "./architecture-conventions.js"
 import { backendShapeReportStatus } from "./backend-shape-report-status.js"
 import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./java-role-read-coverage.js"
+import { personaHarnessSelfProfileGuidance } from "./self-profile-guidance.js"
 import { readWorkflowReportCoverage, type WorkflowReportCoverageSummary } from "./workflow-report-coverage.js"
 import { readStackAlignment, type StackAlignmentSummary } from "./stack-alignment.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
@@ -453,6 +454,7 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
+  const selfProfileGuidance = summary.stackAlignmentFinding === "WARN" ? personaHarnessSelfProfileGuidance(summary.projectDir) : []
   return [
     "Persona Harness Workflow Check",
     "",
@@ -474,6 +476,13 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- architecture conventions: ${summary.architectureConventions}`,
     `- backend shape report: ${backendShapeReportStatus(summary.projectDir)}`,
     ...formatPendingWorkflowTicketStatusLines(summary.pendingTickets),
+    ...(selfProfileGuidance.length === 0
+      ? []
+      : [
+          "",
+          "Self-profile note:",
+          ...selfProfileGuidance.map((line) => `- ${line}`),
+        ]),
     "",
     `Next: ${summary.next}`,
     "",

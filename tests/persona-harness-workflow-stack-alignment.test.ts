@@ -64,6 +64,13 @@ function writeWorkflowEvidence(projectDir: string): void {
   )
 }
 
+function writePersonaHarnessPackageJson(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, "package.json"),
+    `${JSON.stringify({ name: "persona-harness", version: "0.0.0-test" }, null, 2)}\n`,
+  )
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -114,9 +121,33 @@ describe("ph workflow check stack alignment", () => {
     expect(result.stderr).toContain("STACK_MISMATCH")
     expect(result.stderr).toContain("This is a workflow/profile alignment gate, not generated app product-quality certification.")
     expect(result.stderr).toContain("Re-read `.persona/project-profile.jsonc`.")
+    expect(result.stderr).not.toContain("Persona Harness package repository detected")
     expect(result.stderr).toContain("Change the generated project to Spring Boot/Gradle/JPA/database structure.")
     expect(result.stderr).toContain("Remove fake `gradle-shim.js`/Node shim files.")
     expect(result.stderr).toContain("Re-run `npx ph workflow check`.")
+  })
+
+  it("adds self-profile guidance for stack mismatch inside the Persona Harness package repo", () => {
+    const projectDir = createTempProject()
+    writeReadyJpaProfile(projectDir)
+    writeWorkflowEvidence(projectDir)
+    writePersonaHarnessPackageJson(projectDir)
+    writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'fake-http-server'\n")
+    writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
+    writeFileSync(join(projectDir, "gradle-shim.js"), "console.log('fake gradle build')\n")
+    mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "Application.java"), "package com.example;\nimport com.sun.net.httpserver.HttpServer;\nclass Application { HttpServer server; }\n")
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain("Self-profile note:")
+    expect(check.stdout).toContain("Persona Harness package repository detected")
+    expect(check.stdout).toContain("use a separate Java/Spring fixture workspace")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Persona Harness package repository detected")
+    expect(finish.stderr).toContain("Do not force generated Java/Spring app files into the PH package repo")
   })
 
   it("keeps pending ticket guidance when stack mismatch and pending tickets both remain", () => {
