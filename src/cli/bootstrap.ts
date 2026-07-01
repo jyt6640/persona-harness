@@ -4,6 +4,7 @@ import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
 import { enableCodeNavMcpPreview } from "./bootstrap-code-nav.js"
+import { enableExternalCodeGraphPreview } from "./bootstrap-codegraph.js"
 import { enableMultiAgentPreview } from "./bootstrap-multi-agent.js"
 import { enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
@@ -16,11 +17,13 @@ import { loadHarnessConfig } from "../config/harness-config.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 
 type BootstrapOptions = {
+  readonly env?: Readonly<Record<string, string | undefined>>
   readonly projectDir?: string
   readonly packageRoot?: string
 }
 
 type BackendBootstrapFlags = {
+  readonly codeGraphPreview: boolean
   readonly codeNavPreview: boolean
   readonly force: boolean
   readonly multiAgentPreview: boolean
@@ -71,9 +74,19 @@ function codeNavPreviewSummaryLines(): readonly string[] {
   ]
 }
 
+function codeGraphPreviewSummaryLines(): readonly string[] {
+  return [
+    "External CodeGraph preview:",
+    "- opt-in only via --codegraph-preview; default bootstrap does not register external CodeGraph",
+    "- registers OpenCode mcp.codegraph only when a codegraph binary is already on PATH",
+    "- does not run codegraph init; create .codegraph intentionally with `codegraph init` before expecting indexed answers",
+    "- external optional integration only; no PH-owned codegraph, OMO replacement, or token-saving claim",
+  ]
+}
+
 export function bootstrapUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview]`,
+    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--codegraph-preview]`,
     "",
     "Prepares the backend Persona Harness workflow for AI implementation.",
     "",
@@ -100,6 +113,8 @@ export function bootstrapUsage(invocation = "ph"): string {
     ...multiAgentPreviewSummaryLines(),
     "",
     ...codeNavPreviewSummaryLines(),
+    "",
+    ...codeGraphPreviewSummaryLines(),
   ].join("\n")
 }
 
@@ -115,6 +130,7 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
   let strict = false
   let multiAgentPreview = false
   let codeNavPreview = false
+  let codeGraphPreview = false
   for (const arg of args.slice(1)) {
     if (arg === "--force") {
       force = true
@@ -132,10 +148,14 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
       codeNavPreview = true
       continue
     }
+    if (arg === "--codegraph-preview") {
+      codeGraphPreview = true
+      continue
+    }
     return { kind: "invalid", message: `Unknown option: ${arg}` }
   }
 
-  return { kind: "backend", codeNavPreview, force, multiAgentPreview, strict }
+  return { kind: "backend", codeGraphPreview, codeNavPreview, force, multiAgentPreview, strict }
 }
 
 function projectDirFor(options: BootstrapOptions): string {
@@ -247,6 +267,18 @@ function runBackendBootstrap(
     actions.push("enabled code-nav MCP preview")
   }
 
+  if (flags.codeGraphPreview) {
+    const codeGraphResult = enableExternalCodeGraphPreview(projectDir, options.env)
+    if (codeGraphResult.kind === "failure") {
+      return codeGraphResult.result
+    }
+    if (codeGraphResult.kind === "registered") {
+      actions.push("registered external CodeGraph MCP preview for OpenCode")
+    } else {
+      skipped.push("external CodeGraph MCP preview: codegraph binary not found on PATH")
+    }
+  }
+
   const profileState = readBackendProjectProfileState(projectDir)
   if (flags.force || profileState.status !== "ready") {
     const result = runIntakeCommand(["--default", "backend", "--force"], { projectDir }, "ph")
@@ -298,6 +330,7 @@ function runBackendBootstrap(
       ...(flags.strict ? [...strictModeSummaryLines(), ""] : []),
       ...(flags.multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
       ...(flags.codeNavPreview ? [...codeNavPreviewSummaryLines(), ""] : []),
+      ...(flags.codeGraphPreview ? [...codeGraphPreviewSummaryLines(), ""] : []),
       "Ready backend bootstrap files:",
       `- ${HARNESS_CONFIG_PATH}`,
       `- ${CONVENTIONS_DIR_PATH}`,

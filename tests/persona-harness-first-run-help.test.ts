@@ -41,7 +41,7 @@ describe("first-run command help", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain(
-      "Usage: ph bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview]",
+      "Usage: ph bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--codegraph-preview]",
     )
     expect(result.stdout).toContain("Strict mode:")
     expect(result.stdout).toContain("sets enforce.executeVerification: true")
@@ -56,6 +56,10 @@ describe("first-run command help", () => {
     expect(result.stdout).toContain("opt-in only via --code-nav-preview")
     expect(result.stdout).toContain("persona-harness-code-nav_search_text")
     expect(result.stdout).toContain("no codegraph/indexer and no token-saving claim")
+    expect(result.stdout).toContain("External CodeGraph preview:")
+    expect(result.stdout).toContain("opt-in only via --codegraph-preview")
+    expect(result.stdout).toContain("does not run codegraph init")
+    expect(result.stdout).toContain("no PH-owned codegraph")
     expect(existsSync(join(projectDir, ".persona"))).toBe(false)
   })
 })

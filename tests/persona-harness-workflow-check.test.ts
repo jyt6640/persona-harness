@@ -1255,6 +1255,7 @@ describe("ph bootstrap backend", () => {
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(false)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     expect(isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp["persona-harness-code-nav"] : undefined).toBeUndefined()
+    expect(isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp.codegraph : undefined).toBeUndefined()
   })
 
   it("enables direct verification when backend bootstrap is strict", () => {
@@ -1462,6 +1463,104 @@ describe("ph bootstrap backend", () => {
     expect(smoke.stdout).toContain("persona-harness-code-nav_search_text")
     expect(smoke.stdout).toContain("search_text")
     expect(smoke.stdout).toContain("ast_grep_availability")
+  })
+
+  it("skips external CodeGraph preview with guidance when the binary is missing", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend", "--codegraph-preview"], {
+      cwd: projectDir,
+      env: { PATH: "" },
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("external CodeGraph MCP preview: codegraph binary not found on PATH")
+    expect(result.stdout).toContain("External CodeGraph preview:")
+    expect(result.stdout).toContain("opt-in only via --codegraph-preview")
+    expect(result.stdout).toContain("does not run codegraph init")
+    expect(result.stdout).toContain("no PH-owned codegraph")
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    expect(isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp.codegraph : undefined).toBeUndefined()
+  })
+
+  it("registers external CodeGraph MCP when explicitly requested and codegraph is on PATH", () => {
+    const projectDir = createTempProject()
+    const binDir = join(projectDir, "fake-bin")
+    mkdirSync(binDir)
+    const codegraphPath = join(binDir, process.platform === "win32" ? "codegraph.cmd" : "codegraph")
+    writeFileSync(codegraphPath, process.platform === "win32" ? "@echo off\r\n" : "#!/bin/sh\n")
+    chmodSync(codegraphPath, 0o755)
+
+    const result = runPersonaCli(["bootstrap", "backend", "--codegraph-preview"], {
+      cwd: projectDir,
+      env: { PATH: binDir },
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("registered external CodeGraph MCP preview for OpenCode")
+    expect(result.stdout).toContain("External CodeGraph preview:")
+    expect(result.stdout).toContain("codegraph init")
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    expect(mcp.codegraph).toMatchObject({
+      type: "local",
+      enabled: true,
+      command: ["codegraph", "serve", "--mcp"],
+    })
+    expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))
+  })
+
+  it("preserves existing OpenCode plugin, agent, and MCP fields when enabling external CodeGraph preview", () => {
+    const projectDir = createTempProject()
+    const binDir = join(projectDir, "fake-bin")
+    mkdirSync(binDir)
+    const codegraphPath = join(binDir, process.platform === "win32" ? "codegraph.cmd" : "codegraph")
+    writeFileSync(codegraphPath, process.platform === "win32" ? "@echo off\r\n" : "#!/bin/sh\n")
+    chmodSync(codegraphPath, 0o755)
+    mkdirSync(join(projectDir, ".opencode"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".opencode", "opencode.json"),
+      `${JSON.stringify(
+        {
+          plugin: ["/tmp/existing-plugin.js"],
+          agent: { custom: { mode: "primary" } },
+          mcp: {
+            existing: {
+              type: "local",
+              enabled: true,
+              command: ["node", "/tmp/existing.js", "mcp"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const result = runPersonaCli(["bootstrap", "backend", "--codegraph-preview"], {
+      cwd: projectDir,
+      env: { PATH: binDir },
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    expect(opencodeConfig.plugin).toEqual(
+      expect.arrayContaining(["/tmp/existing-plugin.js", expect.stringContaining("dist/index.js")]),
+    )
+    expect(opencodeConfig.agent).toEqual({ custom: { mode: "primary" } })
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    expect(mcp.existing).toMatchObject({ command: ["node", "/tmp/existing.js", "mcp"] })
+    expect(mcp.codegraph).toMatchObject({
+      type: "local",
+      enabled: true,
+      command: ["codegraph", "serve", "--mcp"],
+    })
   })
 
   it("fills missing backend workflow pieces after init without requiring the user to type every command", () => {
