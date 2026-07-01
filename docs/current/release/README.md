@@ -36,7 +36,9 @@ app quality certification, or a general reliability guarantee.
 
 Current published release line: `0.4.0-rc.6` is published under `next` for the
 PH code-nav preview package surface. Registry `@next` points at `0.4.0-rc.6`
-with gitHead `30ded278ab5726e4f910d94b62d131647963807b`. `latest` remains
+with gitHead `30ded278ab5726e4f910d94b62d131647963807b`. `0.4.0-rc.7` is in
+local release prep for the default OpenCode developer MCP bundle; it is not
+registry behavior until publish verifies rc7 gitHead. `latest` remains
 `0.3.9-alpha.8`.
 
 Post-rc5 local/origin docs and preview work may include later commits such as
@@ -123,6 +125,11 @@ CodeGraph connected means the wrapper/facade connected, not usable indexing or
 effectiveness. This is not token-saving, provider-token, product-efficacy,
 navigation-benefit, PH-owned CodeGraph, OMO parity/replacement, Codex support,
 generated app certification, broad reliability, or closure guarantee evidence.
+
+`0.4.0-rc.7` release prep packages that default developer MCP bundle for the
+next channel. Publish with `next`, not `latest`; after publish, verify registry
+gitHead and run a registry-only package-surface smoke before recording registry
+facts.
 
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
@@ -329,6 +336,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.4 release notes](v0.4.0-rc.4-release-notes.md)
 - [v0.4.0-rc.5 release notes](v0.4.0-rc.5-release-notes.md)
 - [v0.4.0-rc.6 release notes](v0.4.0-rc.6-release-notes.md)
+- [v0.4.0-rc.7 release notes](v0.4.0-rc.7-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

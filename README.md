@@ -27,11 +27,13 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.4.0-rc.4` on npm dist-tag `next`.
+> Current source candidate: `0.4.0-rc.7` release prep. The published npm
+> `next` package remains `0.4.0-rc.6` until an rc7 publish verifies gitHead.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
-> Not in scope yet: frontend, infra, desktop app, broad AST/linter enforcement, generated-app quality certification, and full TDD workflow.
+> Not in scope yet: frontend, infra, desktop app, broad AST/linter enforcement,
+> generated-app quality certification, and final TDD workflow.
 
 ## Who This Is For
 
@@ -129,7 +131,7 @@ Expected:
 - `.persona/harness.jsonc` exists
 - `.persona/rules` exists
 - `ph doctor` shows OpenCode is present
-- `ph doctor` shows `Persona package version: 0.4.0-rc.4` after the current `next` package is installed
+- `ph doctor` shows the installed Persona package version
 
 ## 3. Write The Project README
 
@@ -186,6 +188,30 @@ npx ph workflow check
 ```
 
 `npx ph bootstrap backend` prepares the backend workflow for AI implementation. It fills missing `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay files, an accepted `.persona/workflow/plan.md`, implementation/review report templates, harness config, and OpenCode config.
+
+By default, the rc7 source candidate also prepares an OpenCode developer MCP
+bundle:
+
+- remote `grep_app`;
+- remote `context7`;
+- local PH `codegraph` wrapper MCP.
+
+The CodeGraph wrapper is an external optional integration. It does not run
+`codegraph init`, does not create `.codegraph/`, and does not claim token
+savings, navigation benefit, product efficacy, or PH-owned CodeGraph behavior.
+If external CodeGraph is missing or unusable, the wrapper stays protocol-alive
+with an honest unavailable `status` facade instead of exposing fake indexed
+tools.
+
+Use these opt-outs when you need a smaller or stricter OpenCode config:
+
+```bash
+npx ph bootstrap backend --no-developer-mcp
+npx ph bootstrap backend --no-codegraph
+```
+
+`--codegraph-preview` remains compatible with the same wrapper-backed CodeGraph
+registration.
 
 If you want to choose the profile manually instead of using the backend-ready bootstrap path:
 
@@ -354,6 +380,8 @@ These commands are intentionally visible so AI agents can call them from OpenCod
 - `ph intake --default backend`: creates a ready default backend profile without an interactive terminal.
 - `ph intake --interactive`: asks backend planning questions and writes `.persona/project-profile.jsonc`.
 - `ph bootstrap backend`: backend-ready path that fills `AGENTS.md`, the default backend profile, policy overlay, accepted plan, report templates, harness config, and OpenCode config.
+- `ph bootstrap backend --no-developer-mcp`: skips the default OpenCode developer MCP bundle.
+- `ph bootstrap backend --no-codegraph`: keeps the developer MCP bundle but omits the local CodeGraph wrapper.
 - `ph policy init`: creates company and personal backend policy overlay files.
 - `ph plan`: creates `.persona/workflow/plan.md`.
 - `ph plan --auto-accept`: creates workflow plan/report templates and marks the plan accepted for a fast smoke.
@@ -416,7 +444,7 @@ npm view persona-harness@next version
 ```
 
 For the current release-candidate line, `next` is the tester-facing dist-tag.
-As of the latest registry check, `next=0.4.0-rc.5` and `alpha`/`latest` remain
+As of the latest registry check, `next=0.4.0-rc.6` and `alpha`/`latest` remain
 at `0.3.9-alpha.8`. Local `main` may include later docs or preview code that is
 not in the registry package until a later publish verifies gitHead. Verify
 dist-tags and package gitHead before treating any install as current.

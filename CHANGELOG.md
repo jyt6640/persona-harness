@@ -4,6 +4,34 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
+## [0.4.0-rc.7] - 2026-07-01
+
+- Prepared `0.4.0-rc.7` as the next-channel prerelease candidate for the
+  default OpenCode developer MCP bundle.
+- This candidate packages the QA/External-accepted `a9dcf04 feat(cli): add
+  developer MCP bundle` surface:
+  - default `ph bootstrap backend` registers remote `grep_app`, remote
+    `context7`, and a local PH CodeGraph wrapper MCP;
+  - `--no-developer-mcp`, `--no-codegraph`, `--codegraph-preview`, and config
+    preservation passed package-surface smoke;
+  - the CodeGraph wrapper is protocol-alive when external CodeGraph is missing,
+    exposes status-only unavailable behavior, and does not fake indexed/search
+    tools;
+  - no fake `git_bash` or `lsp` MCP surfaces are registered;
+  - PH does not run `codegraph init` and does not create `.codegraph/`.
+- External local/current tarball evidence for `a9dcf04`:
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/developer-mcp-bundle-a9dcf04-20260701-125655/persona-harness-0.4.0-rc.6.tgz`;
+  - npm shasum: `24631c91d8ad4791ab7b8a3ca139312ddd8989eb`;
+  - sha256:
+    `7adc96fdbd14bf9447f70ff8de7dc3fe0192c8d875516aaabbd454170d12936a`.
+- Registry `@next` remains `0.4.0-rc.6` until rc7 is published and verified.
+  Publish rc7 with `next`; do not move `latest`.
+- No token-saving, provider-token saving, product-efficacy, navigation-benefit,
+  PH-owned CodeGraph, CodeGraph replacement, OMO parity/replacement, Codex
+  support, generated app certification, broad reliability, or closure guarantee
+  claim.
+
 ## [0.4.0-rc.6] - 2026-06-30
 
 - Prepared `0.4.0-rc.6` as the next-channel prerelease refresh after registry
