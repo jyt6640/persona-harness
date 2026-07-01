@@ -14,6 +14,30 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   keeps prior CodeGraph package/facade behavior available without claiming
   token savings, navigation benefit, product efficacy, PH-owned CodeGraph, or
   default CodeGraph effectiveness.
+  QA and External accepted the local/current package-runtime surface for
+  `451e4867a5cbaed9dc50eeafc7b76fdd42593764`, with registry evidence deferred
+  until a future publish includes that gitHead:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/codegraph-default-downgrade-451e486-20260701T170739Z`;
+  - tarball shasum: `e60649b2e42a8a69b30e10fb1834a0d83e61985a`;
+    sha256:
+    `3ecb656f4eb84ceba21448f3f159c8ceb078259771a9e244fbc0e837eea7250f`;
+  - default bootstrap produced remote-only `context7` and `grep_app`;
+  - `--codegraph-preview` opt-in added the local PH CodeGraph wrapper while
+    keeping `context7` and `grep_app`;
+  - `--no-codegraph` stayed remote-only, `--no-developer-mcp` registered none,
+    existing config was preserved, and no `.codegraph` auto-init occurred;
+  - `ph-codegraph-mcp --help` described opt-in use through
+    `--codegraph-preview`, not default developer convenience;
+  - `capabilities --json` reported
+    `registeredWithOpenCodeByDefault=false`, `optInFlag=--codegraph-preview`,
+    and `tokenSavingsClaimed=false`;
+  - the unavailable facade remained protocol-alive/status-only over framed and
+    newline MCP, with no fake `search_text`.
+  This remains package/runtime behavior evidence only, not registry evidence,
+  token/provider-token saving, product-efficacy/navigation-benefit,
+  default-CodeGraph-effectiveness, PH-owned CodeGraph, CodeGraph replacement,
+  OMO parity, Codex support, broad reliability, or closure guarantee evidence.
 
 - Added read-only `ph instructions infer backend [--json]`,
   `ph instructions adopt [--json]`, and `ph instructions check [--json]` as the first
