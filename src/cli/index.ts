@@ -10,6 +10,7 @@ import { initUsage, runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
 import { runIntakeCommand, runInteractiveIntakeCommand } from "./intake.js"
+import { runInstructionsCommand } from "./instructions-infer.js"
 import { runLanguageCommand } from "./language.js"
 import { runObserveCommand } from "./observe.js"
 import { runPlanCommand } from "./plan-command.js"
@@ -56,6 +57,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
 
   if (command === "intake") {
     return runIntakeCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+  }
+
+  if (command === "instructions") {
+    return runInstructionsCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
   if (command === "plan") {
