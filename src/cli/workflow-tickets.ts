@@ -63,7 +63,7 @@ function conflictMessage(path: string): CliRunResult {
 }
 
 function archiveBlockingBlockers(projectDir: string): readonly ClosureBlocker[] {
-  return readWorkflowClosurePayload("next", projectDir).state.blockers.filter((blocker) =>
+  return readWorkflowClosurePayload("next", projectDir, { recordTddGreenEvidence: true }).state.blockers.filter((blocker) =>
     blocker.id !== "pending-ticket" && blocker.id !== "history-backlog-mismatch"
   )
 }

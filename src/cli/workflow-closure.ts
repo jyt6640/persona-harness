@@ -5,6 +5,7 @@ import { findConventionByBlockerId } from "../config/convention-registry.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
+import { readTddClosureFinding, type TddClosureFinding } from "./workflow-tdd.js"
 
 export type ClosureAction = "next" | "status"
 type ClosureArchive = "complete" | "history-only-repair" | "pending"
@@ -53,6 +54,7 @@ export type WorkflowClosureState = {
   readonly plan: string
   readonly reportCoverage: "missing" | "not-checked" | "sufficient"
   readonly reviewReport: ClosureReportStatus
+  readonly tdd: TddClosureFinding
   readonly verification: ClosureVerification
 }
 
@@ -85,8 +87,12 @@ export function runWorkflowClosureCommand(action: ClosureAction, options: { read
   }
 }
 
-export function readWorkflowClosurePayload(action: ClosureAction, projectDir: string): ClosurePayload {
-  const state = readWorkflowClosureState(projectDir)
+export function readWorkflowClosurePayload(
+  action: ClosureAction,
+  projectDir: string,
+  options: { readonly recordTddGreenEvidence?: boolean } = {},
+): ClosurePayload {
+  const state = readWorkflowClosureState(projectDir, options)
   const steps = closureSteps(state)
   if (action === "next") {
     return { action, nextStep: steps[0] ?? null, state, steps }
@@ -94,11 +100,12 @@ export function readWorkflowClosurePayload(action: ClosureAction, projectDir: st
   return { action, state, steps }
 }
 
-function readWorkflowClosureState(projectDir: string): WorkflowClosureState {
+function readWorkflowClosureState(projectDir: string, options: { readonly recordTddGreenEvidence?: boolean }): WorkflowClosureState {
   const summary = readWorkflowStatus(projectDir)
   const verification = readClosureVerification(projectDir, summary)
   const pendingTickets = summary.pendingTickets.map((ticket) => ticket.ticket)
   const currentTicket = closureTickets(summary)[0] ?? null
+  const tdd = readTddClosureFinding(projectDir, currentTicket?.id ?? null, { recordGreenEvidence: options.recordTddGreenEvidence })
   const partialState = {
     archive: closureArchive(summary),
     currentTicket,
@@ -109,6 +116,7 @@ function readWorkflowClosureState(projectDir: string): WorkflowClosureState {
     plan: summary.plan,
     reportCoverage: closureReportCoverage(summary),
     reviewReport: closureReportStatus(summary.review),
+    tdd,
     verification: verification.verification,
   }
   const blockers = closureBlockers(partialState, verification, summary)
@@ -197,6 +205,21 @@ function closureBlockers(
       source: blocker.source,
     })))
   }
+  if (state.tdd.kind === "red-missing") {
+    blockers.push({
+      evidenceRef: state.tdd.evidenceRef,
+      id: "tdd-red-evidence-missing",
+      reason: state.tdd.reason,
+      source: state.tdd.source,
+    })
+  } else if (state.tdd.kind === "red-without-green") {
+    blockers.push({
+      evidenceRef: state.tdd.evidenceRef,
+      id: "tdd-not-red-then-green",
+      reason: state.tdd.reason,
+      source: state.tdd.source,
+    })
+  }
   if (state.currentTicket !== null) {
     const tickets = closureTickets(summary)
     blockers.push(
@@ -244,6 +267,12 @@ function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, statu
   }
   if (blocker.id === "evidence-missing") {
     return { blockerId: blocker.id, id: "record-workflow-evidence", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "tdd-red-evidence-missing") {
+    return { blockerId: blocker.id, command: "npx ph workflow test", evidenceRef: blocker.evidenceRef, id: "record-tdd-red", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "tdd-not-red-then-green") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow finish implement", evidenceRef: blocker.evidenceRef, id: "record-tdd-green", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "command-discipline-blocking") {
     return { blockerId: blocker.id, command: "npx ph bearshell <verification command>", id: "rerun-bearshell-verification", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }

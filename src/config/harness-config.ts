@@ -27,6 +27,7 @@ export type HarnessEnforceConfig = {
   readonly executeVerification: boolean
   readonly idleContinuation: boolean
   readonly systemConstitution: boolean
+  readonly tdd: boolean
   /**
    * Known no-op (SDK limitation): the OpenCode `permission.ask` API exposes only
    * `{ type, title, callID, metadata }` and not the proposed write content, while the
@@ -83,6 +84,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
     executeVerification: false,
     idleContinuation: false,
     systemConstitution: true,
+    tdd: false,
     writeDeny: false,
   },
   telemetry: {
@@ -140,6 +142,7 @@ function readEnforceConfig(value: unknown): HarnessEnforceConfig {
     executeVerification: readBoolean(value.executeVerification, DEFAULT_CONFIG.enforce.executeVerification),
     idleContinuation: readBoolean(value.idleContinuation, DEFAULT_CONFIG.enforce.idleContinuation),
     systemConstitution: readBoolean(value.systemConstitution, DEFAULT_CONFIG.enforce.systemConstitution),
+    tdd: readBoolean(value.tdd, DEFAULT_CONFIG.enforce.tdd),
     writeDeny: readBoolean(value.writeDeny, DEFAULT_CONFIG.enforce.writeDeny),
   }
 }

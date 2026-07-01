@@ -22,6 +22,7 @@ import { runWorkflowRelayCommand } from "./workflow-relay.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import { stdinEncodingError } from "./stdin-text.js"
+import { recordTddGreenForCurrentTicket, runWorkflowTddTest } from "./workflow-tdd.js"
 import {
   runWorkflowArchive,
   runWorkflowApproveRequirements,
@@ -69,7 +70,7 @@ function implementationGuardReasons(summary: WorkflowStatus): readonly string[] 
 }
 
 function finalGuardReasons(projectDir: string): readonly string[] {
-  return workflowClosureFinishReasons(readWorkflowClosurePayload("next", projectDir))
+  return workflowClosureFinishReasons(readWorkflowClosurePayload("next", projectDir, { recordTddGreenEvidence: true }))
 }
 
 function hasPersonaHarness(summary: WorkflowStatus): boolean {
@@ -133,6 +134,14 @@ function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOpti
   return passedFinishOutput(runnerKind)
 }
 
+function runWorkflowCheck(options: WorkflowOptions): CliRunResult {
+  const summary = readWorkflowStatus(options.projectDir)
+  if (hasPersonaHarness(summary)) {
+    recordTddGreenForCurrentTicket(summary.projectDir)
+  }
+  return { status: 0, stdout: `${formatWorkflowStatus(readWorkflowStatus(options.projectDir))}\n`, stderr: "" }
+}
+
 export function runWorkflowCommand(args: readonly string[], options: WorkflowOptions = {}, invocationName = "ph"): CliRunResult {
   const parsed = parseWorkflowArgs(args)
   if (parsed.kind === "help") {
@@ -146,6 +155,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "implement") {
     return runWorkflowImplement(options)
+  }
+  if (parsed.kind === "test") {
+    return runWorkflowTddTest(options)
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
@@ -191,5 +203,5 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   if (parsed.kind === "finish") {
     return runWorkflowFinish(parsed.runnerKind, options)
   }
-  return { status: 0, stdout: `${formatWorkflowStatus(readWorkflowStatus(options.projectDir))}\n`, stderr: "" }
+  return runWorkflowCheck(options)
 }

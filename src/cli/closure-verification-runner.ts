@@ -9,10 +9,20 @@ import type { ClosureVerificationSummary } from "./workflow-closure-verification
 const DIRECT_VERIFICATION_TIMEOUT_MS = 120_000
 const JUNIT_RESULT_DIRS = ["build/test-results/test", "target/surefire-reports"] as const
 
-type VerificationCommand = {
+export type VerificationCommand = {
   readonly args: readonly string[]
   readonly command: string
   readonly display: string
+}
+
+export type JunitTestCaseOutcome = "error" | "failure" | "passed"
+
+export type JunitTestCase = {
+  readonly classname: string
+  readonly name: string
+  readonly outcome: JunitTestCaseOutcome
+  readonly ref: string
+  readonly testId: string
 }
 
 type JunitTotals = {
@@ -21,15 +31,56 @@ type JunitTotals = {
   readonly tests: number
 }
 
+export type DirectTestVerificationResult = {
+  readonly command?: VerificationCommand
+  readonly evidenceRef?: string
+  readonly exitCode?: number
+  readonly junitCases: readonly JunitTestCase[]
+  readonly junitRefs: readonly string[]
+  readonly output: string
+  readonly reason: string
+  readonly verification: ClosureVerificationSummary["verification"]
+}
+
 export function runDirectClosureVerification(projectDir: string): ClosureVerificationSummary {
+  const result = runDirectTestVerification(projectDir)
+  if (result.command === undefined) {
+    return { reason: result.reason, verification: result.verification }
+  }
+  if (result.verification === "failed") {
+    return {
+      evidenceRef: result.evidenceRef,
+      reason: result.reason,
+      verification: "failed",
+    }
+  }
+  if (result.verification === "passed") {
+    return {
+      evidenceRef: result.evidenceRef,
+      reason: result.reason,
+      verification: "passed",
+    }
+  }
+  return {
+    evidenceRef: result.evidenceRef,
+    reason: result.reason,
+    verification: "unknown",
+  }
+}
+
+export function runDirectTestVerification(projectDir: string): DirectTestVerificationResult {
   const verificationCommand = resolveVerificationCommand(projectDir)
   if (verificationCommand === undefined) {
     return {
+      junitCases: [],
+      junitRefs: [],
+      output: "",
       reason: "PH direct verification is enabled, but no supported Java/Spring/Gradle verification command was found",
       verification: "unknown",
     }
   }
 
+  const startedAtMs = Date.now()
   const result = spawnSync(verificationCommand.command, [...verificationCommand.args], {
     cwd: projectDir,
     encoding: "utf8",
@@ -40,20 +91,54 @@ export function runDirectClosureVerification(projectDir: string): ClosureVerific
   const status = result.status ?? signalExitCode(result.signal)
   const output = [toOutputText(result.stdout), toOutputText(result.stderr)].filter((text) => text.length > 0).join("\n")
   const evidenceRef = `PH direct verification: ${verificationCommand.display}`
+  const junitFiles = recentJunitFiles(projectDir, startedAtMs)
+  const junitCases = junitFiles.flatMap((file) => parseJUnitTestCases(readFileSync(join(projectDir, file), "utf8"), file))
   if (status !== 0) {
+    const junit = junitVerificationFromFiles(projectDir, junitFiles)
+    if (junit.verification === "failed") {
+      return {
+        command: verificationCommand,
+        evidenceRef: junit.evidenceRef,
+        exitCode: status,
+        junitCases,
+        junitRefs: junitFiles,
+        output,
+        reason: `PH direct verification failed: ${junit.reason}`,
+        verification: "failed",
+      }
+    }
     return {
+      command: verificationCommand,
       evidenceRef,
+      exitCode: status,
+      junitCases,
+      junitRefs: junitFiles,
+      output,
       reason: `PH direct verification failed (${verificationCommand.display}, exit ${status})${outputReason(output)}`,
       verification: "failed",
     }
   }
 
-  const junit = junitVerification(projectDir)
+  const junit = junitVerificationFromFiles(projectDir, junitFiles)
   if (junit.verification === "failed") {
-    return { evidenceRef: junit.evidenceRef, reason: `PH direct verification failed: ${junit.reason}`, verification: "failed" }
+    return {
+      command: verificationCommand,
+      evidenceRef: junit.evidenceRef,
+      exitCode: status,
+      junitCases,
+      junitRefs: junitFiles,
+      output,
+      reason: `PH direct verification failed: ${junit.reason}`,
+      verification: "failed",
+    }
   }
   return {
+    command: verificationCommand,
     evidenceRef: junit.evidenceRef ?? evidenceRef,
+    exitCode: status,
+    junitCases,
+    junitRefs: junitFiles,
+    output,
     reason: junit.verification === "passed"
       ? `PH direct verification passed (${verificationCommand.display}); ${junit.reason}`
       : `PH direct verification passed (${verificationCommand.display}, exit 0)`,
@@ -85,8 +170,7 @@ function looksLikeGradleProject(projectDir: string): boolean {
     || existsSync(join(projectDir, "gradlew.bat"))
 }
 
-function junitVerification(projectDir: string): ClosureVerificationSummary {
-  const files = JUNIT_RESULT_DIRS.flatMap((dir) => junitFiles(join(projectDir, dir), dir))
+function junitVerificationFromFiles(projectDir: string, files: readonly string[]): ClosureVerificationSummary {
   if (files.length === 0) {
     return { reason: "no JUnit XML verification evidence observed", verification: "unknown" }
   }
@@ -110,7 +194,11 @@ function junitVerification(projectDir: string): ClosureVerificationSummary {
   return { evidenceRef, reason: "JUnit XML verification evidence is present but contains no tests", verification: "unknown" }
 }
 
-function junitFiles(dirPath: string, refPath: string): readonly string[] {
+function recentJunitFiles(projectDir: string, startedAtMs: number): readonly string[] {
+  return JUNIT_RESULT_DIRS.flatMap((dir) => junitFiles(join(projectDir, dir), dir, startedAtMs))
+}
+
+function junitFiles(dirPath: string, refPath: string, minMtimeMs?: number): readonly string[] {
   if (!existsSync(dirPath)) {
     return []
   }
@@ -121,9 +209,12 @@ function junitFiles(dirPath: string, refPath: string): readonly string[] {
       const entryRef = `${refPath}/${entry}`
       const stat = statSync(entryPath)
       if (stat.isDirectory()) {
-        return junitFiles(entryPath, entryRef)
+        return junitFiles(entryPath, entryRef, minMtimeMs)
       }
-      return stat.isFile() && entry.endsWith(".xml") ? [entryRef] : []
+      if (!stat.isFile() || !entry.endsWith(".xml")) {
+        return []
+      }
+      return minMtimeMs === undefined || stat.mtimeMs >= minMtimeMs - 1_000 ? [entryRef] : []
     })
 }
 
@@ -154,9 +245,45 @@ function parseJUnitAttributes(attributeText: string): JunitTotals {
   }
 }
 
+function parseJUnitTestCases(xmlText: string, ref: string): readonly JunitTestCase[] {
+  const nestedCases = [...xmlText.matchAll(/<testcase\b([^>]*)>([\s\S]*?)<\/testcase>/g)].map((match) =>
+    parseJUnitTestCase(match[1] ?? "", match[2] ?? "", ref)
+  )
+  const selfClosingCases = [...xmlText.matchAll(/<testcase\b([^>]*)\/>/g)].map((match) => parseJUnitTestCase(match[1] ?? "", "", ref))
+  return [...nestedCases, ...selfClosingCases]
+}
+
+function parseJUnitTestCase(attributeText: string, body: string, ref: string): JunitTestCase {
+  const classname = parseJUnitString(attributeText, "classname")
+  const name = parseJUnitString(attributeText, "name")
+  const fallbackName = name.length > 0 ? name : "unnamed"
+  const testId = classname.length > 0 ? `${classname}#${fallbackName}` : fallbackName
+  return {
+    classname,
+    name: fallbackName,
+    outcome: body.includes("<failure") ? "failure" : body.includes("<error") ? "error" : "passed",
+    ref,
+    testId,
+  }
+}
+
 function parseJUnitInteger(attributeText: string, name: string): number {
   const match = attributeText.match(new RegExp(`\\b${name}="(\\d+)"`))
   return match?.[1] === undefined ? 0 : Number.parseInt(match[1], 10)
+}
+
+function parseJUnitString(attributeText: string, name: string): string {
+  const match = attributeText.match(new RegExp(`\\b${name}="([^"]*)"`))
+  return match?.[1] === undefined ? "" : decodeXmlAttribute(match[1])
+}
+
+function decodeXmlAttribute(value: string): string {
+  return value
+    .replaceAll("&quot;", "\"")
+    .replaceAll("&apos;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&")
 }
 
 function toOutputText(value: string | Buffer | null): string {

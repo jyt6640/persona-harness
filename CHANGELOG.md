@@ -4,6 +4,19 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
+## Unreleased
+
+- Added the opt-in TDD workflow rail behind `enforce.tdd`. `ph workflow test`
+  records red evidence only from PH-run strict Gradle/JUnit verification
+  (`enforce.executeVerification=true`), and workflow closure blocks archive or
+  finish until the same ticket/test id has red evidence followed by PH-observed
+  green evidence.
+- `enforce.tdd` is default-off. Without strict execution verification, the TDD
+  rail is advisory/unavailable and writes no fake red/green evidence.
+- This is a deterministic finish/archive gate, not a full TDD framework:
+  Persona Harness does not scaffold tests, prove test sufficiency, run coverage,
+  or run mutation testing.
+
 ## [0.4.0-rc.7] - 2026-07-01
 
 - Prepared `0.4.0-rc.7` as the next-channel prerelease candidate for the

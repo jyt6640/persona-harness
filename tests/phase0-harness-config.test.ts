@@ -56,6 +56,7 @@ describe("Phase 0 harness config", () => {
     })
     expect(config.enforce.idleContinuation).toBe(false)
     expect(config.enforce.systemConstitution).toBe(true)
+    expect(config.enforce.tdd).toBe(false)
     expect(config.enforce.writeDeny).toBe(false)
     expect(config.telemetry.tokenUsage).toBe(true)
     expect(config.multiAgent).toEqual({
@@ -89,6 +90,7 @@ describe("Phase 0 harness config", () => {
         executeVerification: true,
         idleContinuation: true,
         systemConstitution: false,
+        tdd: true,
         writeDeny: true,
       },
     })
@@ -103,6 +105,7 @@ describe("Phase 0 harness config", () => {
     })
     expect(config.enforce.idleContinuation).toBe(true)
     expect(config.enforce.systemConstitution).toBe(false)
+    expect(config.enforce.tdd).toBe(true)
     expect(config.enforce.writeDeny).toBe(true)
   })
 

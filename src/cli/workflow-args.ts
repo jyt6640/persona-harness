@@ -4,6 +4,7 @@ import { workflowTicketUsage } from "./workflow-tickets.js"
 export type ParsedWorkflowArgs =
   | { readonly kind: "check" }
   | { readonly kind: "implement" }
+  | { readonly kind: "test" }
   | { readonly kind: "continue" }
   | { readonly closureAction: "next" | "status"; readonly kind: "closure" }
   | { readonly kind: "relay"; readonly relayArgs: readonly string[] }
@@ -22,13 +23,14 @@ export type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|continue|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|test|continue|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
     "Scope:",
-    "- workflow check is report-only",
+    "- workflow check is report-only except opt-in TDD green evidence capture when enforce.tdd is enabled",
     "- workflow implement prints a single AI-facing implementation rail",
+    "- workflow test records opt-in TDD red evidence from PH-run strict Gradle/JUnit verification",
     "- workflow continue prints the accepted-plan continuation prompt",
     "- workflow closure status/next --json prints read-only closure state and next steps",
     "- workflow relay status/next/validate --json prints the read-only multi-agent relay preview",
@@ -49,6 +51,9 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   }
   if (args[0] === "implement") {
     return args.length === 1 ? { kind: "implement" } : { kind: "invalid", message: "workflow implement does not accept extra arguments." }
+  }
+  if (args[0] === "test") {
+    return args.length === 1 ? { kind: "test" } : { kind: "invalid", message: "workflow test does not accept extra arguments." }
   }
   if (args[0] === "continue") {
     return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
