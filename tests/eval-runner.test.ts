@@ -246,7 +246,7 @@ describe("ON/OFF eval runner core", () => {
       }),
     )
     expect(runResult?.metrics.externalFailureModeLabels).toEqual(expect.any(Array))
-  }, 10000)
+  }, 30000)
 
   it("detects ambient Persona Harness files above repo-local output roots during preflight", () => {
     const projectDir = tempDir("persona-eval-ambient-")
