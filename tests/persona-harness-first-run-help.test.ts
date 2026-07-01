@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -25,12 +25,15 @@ afterEach(() => {
 describe("first-run command help", () => {
   it("prints the packaged Persona Harness version", () => {
     const projectDir = createTempProject()
+    const packageJson = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as { readonly version?: unknown }
+    const expectedVersion = typeof packageJson.version === "string" ? packageJson.version : "0.0.0-unknown"
 
     const flagResult = runPersonaCli(["--version"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const commandResult = runPersonaCli(["version"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
-    expect(flagResult).toEqual({ status: 0, stdout: `${personaHarnessVersion()}\n`, stderr: "" })
-    expect(commandResult).toEqual({ status: 0, stdout: `${personaHarnessVersion()}\n`, stderr: "" })
+    expect(personaHarnessVersion()).toBe(expectedVersion)
+    expect(flagResult).toEqual({ status: 0, stdout: `${expectedVersion}\n`, stderr: "" })
+    expect(commandResult).toEqual({ status: 0, stdout: `${expectedVersion}\n`, stderr: "" })
     expect(existsSync(join(projectDir, ".persona"))).toBe(false)
   })
 
