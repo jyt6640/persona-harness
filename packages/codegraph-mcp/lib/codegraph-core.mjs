@@ -35,7 +35,7 @@ function usage() {
     "  ph-codegraph-mcp mcp",
     "",
     "Scope:",
-    "- default developer convenience for OpenCode bootstrap",
+    "- opt-in only for OpenCode bootstrap via `ph bootstrap backend --codegraph-preview`",
     "- wraps external @colbymchenry/codegraph or a PATH/PH_CODEGRAPH_BIN binary",
     "- if CodeGraph is unavailable, serves a status-only MCP facade instead of crashing",
     "- no PH-owned codegraph, OMO replacement, or token-saving claim",
@@ -54,7 +54,8 @@ export function capabilities(env) {
     name: "persona-harness-codegraph-wrapper",
     mode: "external-codegraph-wrapper",
     mcpProtocolServer: true,
-    registeredWithOpenCodeByDefault: true,
+    registeredWithOpenCodeByDefault: false,
+    optInFlag: "--codegraph-preview",
     tokenSavingsClaimed: false,
     codegraph: resolution.kind === "available"
       ? {

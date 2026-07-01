@@ -1712,6 +1712,33 @@ describe("ph bootstrap backend", () => {
     expect(smoke.stdout).toContain("PH_CODEGRAPH_BIN")
   })
 
+  it("describes the CodeGraph wrapper as explicit opt-in in help and capabilities", () => {
+    const command = process.execPath
+    const args = [join(process.cwd(), "packages", "codegraph-mcp", "bin", "codegraph-mcp.mjs")]
+    const help = spawnSync(command, [...args, "--help"], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: { ...process.env },
+    })
+    const capabilities = spawnSync(command, [...args, "capabilities", "--json"], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: { ...process.env, PH_CODEGRAPH_BIN: join(process.cwd(), "missing-codegraph") },
+    })
+    const payload: unknown = JSON.parse(capabilities.stdout)
+
+    expect(help.status).toBe(0)
+    expect(help.stdout).toContain("opt-in only")
+    expect(help.stdout).toContain("--codegraph-preview")
+    expect(help.stdout).not.toContain("default developer convenience")
+    expect(capabilities.status).toBe(0)
+    expect(isRecord(payload)).toBe(true)
+    if (!isRecord(payload)) return
+    expect(payload.registeredWithOpenCodeByDefault).toBe(false)
+    expect(payload.optInFlag).toBe("--codegraph-preview")
+    expect(payload.tokenSavingsClaimed).toBe(false)
+  })
+
   it("uses PH_CODEGRAPH_BIN when the CodeGraph wrapper MCP starts", () => {
     const projectDir = createTempProject()
     const binDir = join(projectDir, "fake-bin")
