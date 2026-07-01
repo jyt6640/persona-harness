@@ -6,6 +6,15 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Moved the PH CodeGraph wrapper out of the default backend developer MCP
+  bundle. `ph bootstrap backend` now registers the remote `grep_app` and
+  `context7` entries by default; `ph bootstrap backend --codegraph-preview`
+  explicitly opts into the local PH CodeGraph wrapper. `--no-codegraph` remains
+  accepted as compatibility/no-op guard for default remote-only bootstrap. This
+  keeps prior CodeGraph package/facade behavior available without claiming
+  token savings, navigation benefit, product efficacy, PH-owned CodeGraph, or
+  default CodeGraph effectiveness.
+
 - Added read-only `ph instructions infer backend [--json]`,
   `ph instructions adopt [--json]`, and `ph instructions check [--json]` as the first
   instruction inference preview. It inventories project profile, source tree,

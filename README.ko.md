@@ -177,9 +177,10 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 - 아래 명령어들은 사용자가 직접 외우는 CLI라기보다, OpenCode/Codex-style 세션에서 AI가 호출하기 쉽게 만든 workflow surface입니다.
 - `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, `.gitignore` 설치
-- `ph bootstrap backend`: `AGENTS.md`, ready 기본 backend profile, policy overlay, accepted plan, report template, harness/OpenCode config 준비. 현재 backend bootstrap은 기본 OpenCode developer MCP bundle로 remote `grep_app`, remote `context7`, local PH `codegraph` wrapper도 등록합니다.
+- `ph bootstrap backend`: `AGENTS.md`, ready 기본 backend profile, policy overlay, accepted plan, report template, harness/OpenCode config 준비. 현재 backend bootstrap은 기본 OpenCode developer MCP bundle로 remote `grep_app`, remote `context7`을 등록합니다.
 - `ph bootstrap backend --no-developer-mcp`: 기본 developer MCP bundle 등록을 건너뜁니다.
-- `ph bootstrap backend --no-codegraph`: `grep_app`/`context7`은 유지하고 local CodeGraph wrapper만 생략합니다.
+- `ph bootstrap backend --codegraph-preview`: local PH CodeGraph wrapper를 명시적으로 opt-in 등록합니다.
+- `ph bootstrap backend --no-codegraph`: 호환성용 flag입니다. 기본 상태에서는 CodeGraph가 등록되지 않고 `grep_app`/`context7`만 유지합니다.
 - `ph intake`: 수정 가능한 draft backend profile 생성
 - `ph intake --default backend`: 대화형 터미널 없이 ready 기본 backend profile 생성
 - `ph intake --interactive`: backend planning 질문 후 `.persona/project-profile.jsonc` 생성
@@ -237,13 +238,12 @@ testing을 실행하지 않으며, generated app product quality를 인증하지
 
 ## 기본 developer MCP bundle
 
-현재 `ph bootstrap backend`는 OpenCode 개발 편의를 위해 기본 developer MCP bundle을 준비합니다.
+현재 `ph bootstrap backend`는 OpenCode 개발 편의를 위해 기본 developer MCP bundle을 remote-only로 준비합니다.
 
 - `grep_app`: remote MCP
 - `context7`: remote MCP
-- `codegraph`: PH가 포장한 local wrapper MCP
 
-CodeGraph는 외부 optional integration입니다. PH가 CodeGraph를 소유하거나 대체한다는 뜻이 아닙니다. PH는 `codegraph init`을 자동 실행하지 않고 `.codegraph/`도 만들지 않습니다. 외부 CodeGraph가 없거나 사용할 수 없으면 wrapper는 죽지 않고 unavailable `status` facade로 정직하게 응답합니다. 이것은 token saving, provider-token saving, navigation benefit, product efficacy 증거가 아닙니다.
+PH CodeGraph wrapper는 `--codegraph-preview`로만 등록되는 외부 optional integration입니다. PH가 CodeGraph를 소유하거나 대체한다는 뜻이 아닙니다. PH는 `codegraph init`을 자동 실행하지 않고 `.codegraph/`도 만들지 않습니다. 외부 CodeGraph가 없거나 사용할 수 없으면 wrapper는 죽지 않고 unavailable `status` facade로 정직하게 응답합니다. 이것은 token saving, provider-token saving, navigation benefit, product efficacy 증거가 아닙니다.
 
 ## 권장하는 코드 모양
 

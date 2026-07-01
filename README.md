@@ -192,18 +192,17 @@ npx ph workflow check
 
 `npx ph bootstrap backend` prepares the backend workflow for AI implementation. It fills missing `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay files, an accepted `.persona/workflow/plan.md`, implementation/review report templates, harness config, and OpenCode config.
 
-By default, the current backend bootstrap also prepares an OpenCode developer MCP bundle:
+By default, the current backend bootstrap also prepares a remote-only OpenCode developer MCP bundle:
 
 - remote `grep_app`;
-- remote `context7`;
-- local PH `codegraph` wrapper MCP.
+- remote `context7`.
 
-The CodeGraph wrapper is an external optional integration. It does not run
-`codegraph init`, does not create `.codegraph/`, and does not claim token
-savings, navigation benefit, product efficacy, or PH-owned CodeGraph behavior.
-If external CodeGraph is missing or unusable, the wrapper stays protocol-alive
-with an honest unavailable `status` facade instead of exposing fake indexed
-tools.
+The PH CodeGraph wrapper is an external optional integration and is opt-in via
+`--codegraph-preview`. It does not run `codegraph init`, does not create
+`.codegraph/`, and does not claim token savings, navigation benefit, product
+efficacy, or PH-owned CodeGraph behavior. If external CodeGraph is missing or
+unusable, the wrapper stays protocol-alive with an honest unavailable `status`
+facade instead of exposing fake indexed tools.
 
 Use these opt-outs when you need a smaller or stricter OpenCode config:
 
@@ -212,8 +211,11 @@ npx ph bootstrap backend --no-developer-mcp
 npx ph bootstrap backend --no-codegraph
 ```
 
-`--codegraph-preview` remains compatible with the same wrapper-backed CodeGraph
-registration.
+Use explicit opt-in when you want the wrapper-backed CodeGraph registration:
+
+```bash
+npx ph bootstrap backend --codegraph-preview
+```
 
 If you want to choose the profile manually instead of using the backend-ready bootstrap path:
 

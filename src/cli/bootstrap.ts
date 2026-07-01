@@ -94,11 +94,11 @@ function developerMcpSummaryLines(flags: Pick<BackendBootstrapFlags, "codeGraphE
     return []
   }
   const codeGraphLine = flags.codeGraphEnabled
-    ? "- codegraph is registered through the PH wrapper; if CodeGraph is unavailable, the wrapper keeps MCP protocol alive with an honest status-only MCP facade"
-    : "- codegraph is disabled by --no-codegraph; grep_app and context7 remain registered"
+    ? "- codegraph is opt-in via --codegraph-preview and registered through the PH wrapper; if CodeGraph is unavailable, the wrapper keeps MCP protocol alive with an honest status-only MCP facade"
+    : "- codegraph is not registered by default; use --codegraph-preview only when you explicitly want the PH CodeGraph wrapper"
   return [
     "Developer MCP bundle:",
-    "- registered by default for backend bootstrap; disable all bundle entries with --no-developer-mcp",
+    "- remote grep_app and context7 are registered by default for backend bootstrap; disable all bundle entries with --no-developer-mcp",
     "- registers remote grep_app and context7 MCP entries using OpenCode remote URL config",
     codeGraphLine,
     "- PH does not run codegraph init; create .codegraph intentionally when you want an index",
@@ -139,7 +139,7 @@ export function bootstrapUsage(invocation = "ph"): string {
     "",
     ...lspPreviewSummaryLines(),
     "",
-    ...developerMcpSummaryLines({ codeGraphEnabled: true, developerMcpEnabled: true }),
+    ...developerMcpSummaryLines({ codeGraphEnabled: false, developerMcpEnabled: true }),
   ].join("\n")
 }
 
@@ -155,7 +155,7 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
   let strict = false
   let multiAgentPreview = false
   let codeNavPreview = false
-  let codeGraphEnabled = true
+  let codeGraphEnabled = false
   let codeGraphPreview = false
   let developerMcpEnabled = true
   let lspPreview = false
