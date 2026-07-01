@@ -2,7 +2,7 @@
 
 Status: evidence-bound measurement report, not a token-saving claim.
 
-This report summarizes the PH-owned measurement, compaction, and hashline feasibility work through the stable same-session compaction lifecycle follow-up. It includes the R1/R2 telemetry and compaction mechanics stack through `0599215`, the summarize binding fix in `75c7f38`, the stable same-session compaction scenario recorded at `b7b5a20`, and the follow-up durable cooldown fix. It does not claim OMO parity, codegraph replacement, provider-token savings, product efficacy, broad reliability, or closure guarantees.
+This report summarizes the PH-owned measurement, compaction, and hashline feasibility work through the stable same-session compaction lifecycle follow-up. It includes the R1/R2 telemetry and compaction mechanics stack through `0599215`, the summarize binding fix in `75c7f38`, the stable same-session compaction scenario recorded at `b7b5a20`, and the follow-up durable cooldown fix in `3b97ae7`. It does not claim OMO parity, codegraph replacement, provider-token savings, product efficacy, broad reliability, or closure guarantees.
 
 ## Scope
 
@@ -189,6 +189,19 @@ PH-owned fix:
 - `TokenCompactionTracker` previously kept cooldown only in an in-memory map. Separate `opencode run --session` processes therefore had fresh tracker instances and could call `session.summarize` again despite recent compaction evidence.
 - The tracker now consults `.persona/evidence/compaction/<session>.json` before calling summarize. Recent `triggered` or `failed` attempts within `cooldownMs` are treated as `cooldown-active` across processes.
 - A focused regression test creates a fresh hook/tracker instance in the same project/session and verifies the second instance skips summarize while persisted evidence cooldown is active.
+
+External local/current tarball smoke:
+
+- Source HEAD: `3b97ae71e75b249ca2003221ffeec162ca76d2fb` (`3b97ae7 fix(runtime): persist compaction cooldown`).
+- Source type: local/current tarball only, not registry `@next`.
+- Package/version: `persona-harness@0.4.0-rc.6`.
+- Tarball: `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/compaction-persisted-cooldown-3b97ae7-20260701-114228/persona-harness-0.4.0-rc.6.tgz`.
+- npm shasum: `f16d2aff714012a06d947f62147709be5e3c7199`.
+- sha256: `c085a09da355260fabd5e587ab9610af4ef673cc0dd9aafe9af41724cec481bd`.
+- Archive: `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/compaction-persisted-cooldown-3b97ae7-20260701-114228`.
+- Default/off fixture wrote token usage ratio `0.8`, made zero summarize calls, and wrote no compaction evidence.
+- Enabled persisted cooldown fixture: first fresh hook/tracker triggered summarize exactly once with SDK shape and no `auto:true`; second fresh hook/tracker read evidence and skipped `cooldown-active` with no additional summarize call.
+- Evidence schema `token-compaction.1` contains `triggered` plus `skipped` / `cooldown-active`, with `afterMeasurement.measured=false` and no token-saving claim.
 
 Interpretation:
 
