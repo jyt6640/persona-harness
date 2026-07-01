@@ -40,6 +40,18 @@ opt-in TDD Workflow Rail package/runtime surface. Registry `@next` points at
 `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`. `latest` remains
 `0.3.9-alpha.8`.
 
+Current release-prep target: `0.4.0-rc.9` packages the P1.5/P2/P3/P4 workflow
+rail delivery after rc8:
+
+- read-only `ph workflow tdd` status helper;
+- scoped `service.state-ownership` Java/Spring service-architecture blocker;
+- read-only `ph evidence metrics [--json]`.
+
+This prep is not registry `@next` behavior until publish and registry gitHead
+verification. It does not move `latest`, certify generated app quality, provide
+a full TDD framework, add a broad AST/linter product, or prove token
+saving/product efficacy.
+
 `0.4.0-rc.8` packages `b5d98e1286c5a7f0349af8a461efdf2ce84a653e`
 (`feat(cli): add tdd workflow rail`) plus the release-prep docs. Post-publish
 registry verification confirmed shasum
@@ -378,6 +390,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.6 release notes](v0.4.0-rc.6-release-notes.md)
 - [v0.4.0-rc.7 release notes](v0.4.0-rc.7-release-notes.md)
 - [v0.4.0-rc.8 release notes](v0.4.0-rc.8-release-notes.md)
+- [v0.4.0-rc.9 release notes](v0.4.0-rc.9-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

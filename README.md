@@ -27,16 +27,15 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current `next` package: `0.4.0-rc.8`.
-> Registry verification: gitHead
-> `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`; `latest` remains
-> `0.3.9-alpha.8`.
+> Release prep target: `0.4.0-rc.9`.
+> Current registry `next` remains `0.4.0-rc.8` until rc9 is published and
+> registry gitHead is verified. `latest` remains `0.3.9-alpha.8`.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
 > Not in scope yet: frontend, infra, desktop app, broad AST/linter enforcement,
-> generated-app quality certification, and a full TDD framework/test-sufficiency
-> proof.
+> generated-app quality certification, token-saving/product-efficacy proof, and
+> a full TDD framework/test-sufficiency proof.
 
 ## Who This Is For
 
@@ -348,6 +347,7 @@ After the OpenCode run, inspect the project:
 ```bash
 npx ph workflow check
 npx ph evidence summary
+npx ph evidence metrics --json
 npx ph review backend-shape
 ```
 
@@ -357,6 +357,8 @@ For a healthy alpha smoke, look for:
 - `.persona/workflow/implementation-report.md` is filled
 - `.persona/workflow/review-report.md` is filled
 - `.persona/evidence/summary.md` exists after `npx ph evidence summary`
+- `npx ph evidence metrics --json` reports only local evidence that exists; it
+  does not prove token saving or product efficacy
 - `npx ph review backend-shape` is mostly PASS or all PASS
 - `gradle test` passed
 - `gradle build` passed
@@ -403,6 +405,9 @@ These commands are intentionally visible so AI agents can call them from OpenCod
 - `ph smoke`: writes `.persona/workflow/smoke-report.md`.
 - `ph feedback`: writes `.persona/workflow/feedback-report.md`.
 - `ph evidence summary`: summarizes raw evidence files.
+- `ph evidence metrics [--json]`: read-only local evidence metrics for
+  provider-token evidence, structured tool/MCP calls, read chars when present,
+  and workflow finish command records.
 - `ph review backend-shape`: writes report-only backend workflow shape observations.
 - `ph history`: archives completed workflow artifacts.
 
@@ -472,10 +477,11 @@ npm view persona-harness@next version
 ```
 
 For the current release-candidate line, `next` is the tester-facing dist-tag.
-As of the latest registry check, `next=0.4.0-rc.8`, `alpha=0.3.9-alpha.8`, and
-`latest=0.3.9-alpha.8`. Local `main` may include later docs or preview code that
-is not in the registry package until a later publish verifies gitHead. Verify
-dist-tags and package gitHead before treating any install as current.
+As of the latest registry check before rc9 publish, `next=0.4.0-rc.8`,
+`alpha=0.3.9-alpha.8`, and `latest=0.3.9-alpha.8`. Local `main` may include
+release-prep package metadata for `0.4.0-rc.9` before the registry package
+exists. Verify dist-tags and package gitHead before treating any install as
+current.
 
 ### `opencode` is not found
 

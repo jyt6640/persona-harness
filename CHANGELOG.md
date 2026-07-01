@@ -6,8 +6,15 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-- Updated English/Korean README release status now that `0.4.0-rc.8` is
-  published under `next`, with `latest` still at `0.3.9-alpha.8`.
+- No unreleased changes after `0.4.0-rc.9` release prep.
+
+## [0.4.0-rc.9] - 2026-07-01
+
+- Prepared `0.4.0-rc.9` as the next-channel prerelease candidate for the
+  P1.5/P2/P3/P4 package delivery after published `0.4.0-rc.8`.
+- Updated English/Korean README release status to make `0.4.0-rc.9` a release
+  prep target while registry `next` remains `0.4.0-rc.8` until publish and
+  gitHead verification. `latest` remains `0.3.9-alpha.8`.
 - Added `ph workflow tdd` as a read-only TDD Workflow Rail status helper. It
   reports the current ticket's red→green state and next action without writing
   red/green evidence; `ph workflow test`, `workflow check`, archive, and finish
@@ -16,7 +23,7 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   `ph evidence metrics [--json]` aggregate. External local/current tarball
   package-runtime smoke for
   `df6319f5f38372217873964f8aa0713c9570d1e6` accepted the behavior as version
-  `0.4.0-rc.8`, not registry `@next` behavior:
+  `0.4.0-rc.8`, not registry `@next` behavior before this rc9 release prep:
   - archive:
     `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/p3-p4-conformance-metrics-df6319f-20260701-202755`;
   - npm shasum: `8d84bfda2116b9edd1d5d5c5f0880a05315d5020`;

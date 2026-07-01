@@ -27,14 +27,14 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
-> 현재 `next` package: `0.4.0-rc.8`.
-> registry verification: gitHead
-> `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`; `latest`는
-> `0.3.9-alpha.8` 그대로입니다.
+> release prep target: `0.4.0-rc.9`.
+> 현재 registry `next`는 rc9 publish와 gitHead 검증 전까지
+> `0.4.0-rc.8`입니다. `latest`는 `0.3.9-alpha.8` 그대로입니다.
 >
 > 현재 범위: Java/Spring backend workflow rail MVP.
-> frontend, infra, desktop app, broad AST/linter enforcement, full TDD
-> framework/test-sufficiency proof는 후속 트랙입니다.
+> frontend, infra, desktop app, broad AST/linter enforcement,
+> token-saving/product-efficacy proof, full TDD framework/test-sufficiency
+> proof는 후속 트랙입니다.
 
 ## 요구사항
 
@@ -205,7 +205,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph workflow finish implement`: workflow report/evidence가 준비되기 전 완료 보고 차단
 - `ph workflow guard implement/final`: workflow rail이 재사용하는 저수준 strict gate
 - `ph doctor`: OpenCode와 Persona Harness 연동 상태 진단
-- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph review backend-shape`: report-only 검증/피드백 artifact 생성
+- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph evidence metrics [--json]`, `ph review backend-shape`: report-only 검증/피드백/집계 surface
 - OpenCode injection: 관련 파일을 읽을 때 Java/Spring backend workflow/guidance context 주입
 
 ## evidence의 의미
