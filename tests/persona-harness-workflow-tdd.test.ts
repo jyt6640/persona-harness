@@ -163,9 +163,33 @@ describe("ph workflow test TDD rail", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("TDD Workflow Rail status")
     expect(result.stdout).toContain("State: red-missing")
+    expect(result.stdout).toContain("Source: .persona/evidence/tdd/req-1")
     expect(result.stdout).toContain("Next: write a behavior test")
     expect(result.stdout).toContain("Boundary: read-only status")
     expect(tddEvidenceFiles(projectDir)).toEqual([])
+  })
+
+  it("reports recorded red waiting for green, then passed, without writing from status", () => {
+    const projectDir = createWorkflowProject()
+    writeState(projectDir, "red")
+    expect(runWorkflow(projectDir, ["test"]).status).toBe(0)
+    const afterRedFiles = tddEvidenceFiles(projectDir)
+
+    const waiting = runWorkflow(projectDir, ["tdd"])
+    writeState(projectDir, "green")
+    expect(runWorkflow(projectDir, ["check"]).status).toBe(0)
+    const afterCheckFiles = tddEvidenceFiles(projectDir)
+    const passed = runWorkflow(projectDir, ["tdd"])
+
+    expect(waiting.status).toBe(0)
+    expect(waiting.stdout).toContain("State: red-without-green")
+    expect(waiting.stdout).toContain("Next: make the recorded red test pass")
+    expect(tddEvidenceFiles(projectDir)).toEqual(afterCheckFiles)
+    expect(afterRedFiles.some((entry) => entry.startsWith("red-"))).toBe(true)
+    expect(afterCheckFiles.some((entry) => entry.startsWith("green-"))).toBe(true)
+    expect(passed.status).toBe(0)
+    expect(passed.stdout).toContain("State: passed")
+    expect(passed.stdout).toContain("Next: continue normal closure/archive/finish flow")
   })
 
   it("lists the read-only TDD helper in workflow and root help", () => {

@@ -14,7 +14,7 @@ The injection effect has been measured and is not proven. The ON/OFF eval progra
 
 The current value axis is product workflow rail usefulness: making init, doctor, observe, workflow continue/check/finish, and report-only observer surfaces coherent enough for real users to try.
 
-Do not read the current candidate as generated-app quality certification, evidence that PH beats baselines, broad enforcement, or an AST/linter gate.
+Do not read the current rc package as generated-app quality certification, evidence that PH beats baselines, broad enforcement, or an AST/linter gate.
 
 Reusable assets remain:
 
@@ -173,7 +173,7 @@ Implement an equipment rental REST API with Java/Spring Boot and Gradle.
 EOF
 ```
 
-You can use a different domain. For cleaner feedback, avoid the older `reservation`, `roomescape`, or `book loan` examples when testing the current candidate.
+You can use a different domain. For cleaner feedback, avoid the older `reservation`, `roomescape`, or `book loan` examples when testing the current package line.
 
 ## 4. Choose The Setup Path
 
@@ -192,7 +192,7 @@ npx ph workflow check
 
 `npx ph bootstrap backend` prepares the backend workflow for AI implementation. It fills missing `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay files, an accepted `.persona/workflow/plan.md`, implementation/review report templates, harness config, and OpenCode config.
 
-By default, the current candidate also prepares an OpenCode developer MCP bundle:
+By default, the current backend bootstrap also prepares an OpenCode developer MCP bundle:
 
 - remote `grep_app`;
 - remote `context7`;

@@ -1,3 +1,5 @@
+import process from "node:process"
+
 import type { CliRunResult } from "./bearshell.js"
 import { readWorkflowClosurePayload } from "./workflow-closure.js"
 import type { TddClosureFinding } from "./workflow-tdd.js"
@@ -12,12 +14,17 @@ export function runWorkflowTddStatus(options: { readonly projectDir?: string }):
       "TDD Workflow Rail status",
       `State: ${tdd.kind}`,
       `Reason: ${tdd.reason}`,
+      ...sourceLines(tdd),
       ...evidenceLines(tdd),
       `Next: ${nextAction(tdd)}`,
       "Boundary: read-only status; use `ph workflow test` to record red and `ph workflow check`/archive/finish to record green.",
     ].join("\n") + "\n",
     stderr: "",
   }
+}
+
+function sourceLines(tdd: TddClosureFinding): readonly string[] {
+  return "source" in tdd ? [`Source: ${tdd.source}`] : []
 }
 
 function evidenceLines(tdd: TddClosureFinding): readonly string[] {

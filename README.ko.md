@@ -14,7 +14,7 @@ Persona Harness는 alpha experiment입니다.
 
 Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval program은 stopped 상태입니다. frozen aggregate, diagnosis, stopping rationale은 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)을 기준으로 봅니다.
 
-현재 candidate를 generated-app quality certification, PH가 baselines를 이겼다는 evidence, broad enforcement, AST/linter gate로 해석하지 않습니다.
+현재 rc package를 generated-app quality certification, PH가 baselines를 이겼다는 evidence, broad enforcement, AST/linter gate로 해석하지 않습니다.
 
 재사용 가능한 자산은 남아 있습니다.
 
@@ -177,7 +177,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 - 아래 명령어들은 사용자가 직접 외우는 CLI라기보다, OpenCode/Codex-style 세션에서 AI가 호출하기 쉽게 만든 workflow surface입니다.
 - `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, `.gitignore` 설치
-- `ph bootstrap backend`: `AGENTS.md`, ready 기본 backend profile, policy overlay, accepted plan, report template, harness/OpenCode config 준비. 현재 후보에서는 기본 OpenCode developer MCP bundle로 remote `grep_app`, remote `context7`, local PH `codegraph` wrapper도 등록합니다.
+- `ph bootstrap backend`: `AGENTS.md`, ready 기본 backend profile, policy overlay, accepted plan, report template, harness/OpenCode config 준비. 현재 backend bootstrap은 기본 OpenCode developer MCP bundle로 remote `grep_app`, remote `context7`, local PH `codegraph` wrapper도 등록합니다.
 - `ph bootstrap backend --no-developer-mcp`: 기본 developer MCP bundle 등록을 건너뜁니다.
 - `ph bootstrap backend --no-codegraph`: `grep_app`/`context7`은 유지하고 local CodeGraph wrapper만 생략합니다.
 - `ph intake`: 수정 가능한 draft backend profile 생성
@@ -237,7 +237,7 @@ testing을 실행하지 않으며, generated app product quality를 인증하지
 
 ## 기본 developer MCP bundle
 
-현재 후보의 `ph bootstrap backend`는 OpenCode 개발 편의를 위해 기본 developer MCP bundle을 준비합니다.
+현재 `ph bootstrap backend`는 OpenCode 개발 편의를 위해 기본 developer MCP bundle을 준비합니다.
 
 - `grep_app`: remote MCP
 - `context7`: remote MCP
