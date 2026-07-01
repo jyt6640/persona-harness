@@ -181,9 +181,11 @@ describe("PH LSP MCP preview wrapper", () => {
     writeFileSync(
       fakeUpstream,
       [
-        "#!/bin/sh",
-        "cat >/dev/null",
-        "printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"serverInfo\":{\"name\":\"fake-upstream\"}}}'",
+        "#!/usr/bin/env node",
+        "process.stdin.resume()",
+        "process.stdin.on('end', () => {",
+        "  process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, result: { serverInfo: { name: 'fake-upstream' } } })}\\n`)",
+        "})",
       ].join("\n"),
     )
     writeFileSync(fakeJdtls, "#!/bin/sh\nexit 0\n")
@@ -196,8 +198,8 @@ describe("PH LSP MCP preview wrapper", () => {
       {
         env: {
           ...process.env,
-          PATH: fakeBin,
           PH_LSP_MCP_BIN: fakeUpstream,
+          PH_LSP_JAVA_SERVER: fakeJdtls,
         },
         input: `${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })}\n`,
         encoding: "utf8",
@@ -205,6 +207,7 @@ describe("PH LSP MCP preview wrapper", () => {
     )
 
     expect(result.status).toBe(0)
+    expect(result.stderr).toBe("")
     expect(result.stdout).toContain("fake-upstream")
   })
 })
