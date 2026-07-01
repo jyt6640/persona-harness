@@ -34,11 +34,32 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current published release line: `0.4.0-rc.10` is published under `next` for the
-P6 opt-in OpenCode LSP MCP wrapper package/runtime surface. Registry `@next`
-points at `0.4.0-rc.10` with gitHead
-`58f9ac255b615f40cdd8046e9a73b772e7ceae36`. `latest` remains
-`0.3.9-alpha.8`.
+Current release prep target: official `0.4.0` for the `latest` channel after
+verified `0.4.0-rc.10`. Do not publish until QA release-ready explicitly says
+GO. Registry `@next` points at `0.4.0-rc.10` with gitHead
+`58f9ac255b615f40cdd8046e9a73b772e7ceae36`; registry `latest` remains
+`0.3.9-alpha.8` until official publish and gitHead verification.
+
+`0.4.0` packages the verified workflow rail/product surfaces:
+
+- workflow rails, evidence traces, continuation/report lifecycle, and finish
+  gates;
+- opt-in TDD rail plus read-only `ph workflow tdd`;
+- precise conformance blockers including Controller→Repository and
+  `service.state-ownership`;
+- read-only `ph evidence metrics [--json]`;
+- default developer MCP bundle package surfaces;
+- opt-in LSP MCP wrapper with missing-dependency unavailable facade and proxy
+  guard.
+
+The official release still does not claim token saving/provider-token saving,
+app/product quality, full TDD framework/test sufficiency, LSP effectiveness or
+real Java LSP tool-call evidence, broad AST/linter behavior, broad reliability,
+closure guarantee, generated app certification, Codex support, or code-nav
+relabeling/replacement.
+
+Previously, `0.4.0-rc.10` was published under `next` for the P6 opt-in OpenCode
+LSP MCP wrapper package/runtime surface.
 
 `0.4.0-rc.10` packages the P6 LSP MCP wrapper after rc9:
 
@@ -426,6 +447,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.8 release notes](v0.4.0-rc.8-release-notes.md)
 - [v0.4.0-rc.9 release notes](v0.4.0-rc.9-release-notes.md)
 - [v0.4.0-rc.10 release notes](v0.4.0-rc.10-release-notes.md)
+- [v0.4.0 release notes](v0.4.0-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

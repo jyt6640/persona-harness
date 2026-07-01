@@ -4,6 +4,30 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
+## [0.4.0] - 2026-07-01
+
+- Prepared official `0.4.0` release metadata for the `latest` channel after
+  verified `0.4.0-rc.10`; publish remains gated on QA release-ready approval.
+- Updated README/README.ko release status for the `0.4.0` prep: registry
+  `next=0.4.0-rc.10` is verified, while `latest` remains
+  `0.3.9-alpha.8` until official publish and registry gitHead verification.
+- Collected the verified rc-line product surfaces into the `0.4.0` release
+  claim boundary:
+  - workflow rails, evidence traces, continuation/report lifecycle, and finish
+    gates;
+  - opt-in TDD rail plus read-only `ph workflow tdd`;
+  - precise conformance blockers including Controller→Repository and
+    `service.state-ownership`;
+  - read-only `ph evidence metrics [--json]`;
+  - default developer MCP bundle package surfaces;
+  - opt-in LSP MCP wrapper with missing-dependency unavailable facade and proxy
+    guard.
+- Claim audit for `0.4.0`: no token-saving/provider-token saving,
+  app/product quality guarantee, full TDD framework/test sufficiency, LSP
+  effectiveness/default/real Java LSP tool-call claim, broad AST/linter product,
+  broad reliability/closure guarantee/generated app certification, Codex support,
+  or code-nav relabeling/replacement claim.
+
 ## [0.4.0-rc.10] - 2026-07-01
 
 - Prepared `0.4.0-rc.10` as the next-channel prerelease candidate for the P6

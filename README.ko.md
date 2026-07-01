@@ -14,7 +14,7 @@ Persona Harness는 alpha experiment입니다.
 
 Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval program은 stopped 상태입니다. frozen aggregate, diagnosis, stopping rationale은 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)을 기준으로 봅니다.
 
-현재 rc package를 generated-app quality certification, PH가 baselines를 이겼다는 evidence, broad enforcement, AST/linter gate로 해석하지 않습니다.
+현재 package를 generated-app quality certification, PH가 baselines를 이겼다는 evidence, broad enforcement, AST/linter gate로 해석하지 않습니다.
 
 재사용 가능한 자산은 남아 있습니다.
 
@@ -27,9 +27,9 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
-> release prep target: `0.4.0-rc.10`.
-> 현재 registry `next`는 rc10 publish와 gitHead 검증 전까지
-> `0.4.0-rc.9`입니다. `latest`는 `0.3.9-alpha.8` 그대로입니다.
+> release prep target: `0.4.0`.
+> registry `next`는 `0.4.0-rc.10`으로 검증됐지만, 공식 `0.4.0`
+> publish와 gitHead 검증 전까지 `latest`는 `0.3.9-alpha.8` 그대로입니다.
 >
 > 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, broad AST/linter enforcement,
@@ -83,7 +83,7 @@ opencode auth list
 그 다음 Java/Spring backend 프로젝트에서 Persona Harness를 설치합니다.
 
 ```bash
-npm install -D persona-harness@next
+npm install -D persona-harness@latest
 npx ph init
 npx ph bootstrap backend
 ```

@@ -14,7 +14,7 @@ The injection effect has been measured and is not proven. The ON/OFF eval progra
 
 The current value axis is product workflow rail usefulness: making init, doctor, observe, workflow continue/check/finish, and report-only observer surfaces coherent enough for real users to try.
 
-Do not read the current rc package as generated-app quality certification, evidence that PH beats baselines, broad enforcement, or an AST/linter gate.
+Do not read the current package as generated-app quality certification, evidence that PH beats baselines, broad enforcement, or an AST/linter gate.
 
 Reusable assets remain:
 
@@ -27,9 +27,9 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Release prep target: `0.4.0-rc.10`.
-> Current registry `next` remains `0.4.0-rc.9` until rc10 is published and
-> registry gitHead is verified. `latest` remains `0.3.9-alpha.8`.
+> Release prep target: `0.4.0`.
+> Registry `next` is verified at `0.4.0-rc.10`, but registry `latest` remains
+> `0.3.9-alpha.8` until the official `0.4.0` publish and gitHead verification.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
@@ -113,10 +113,10 @@ openai/gpt-5.4-mini-fast
 Use a new folder. Do not run your first test inside the Persona Harness repository.
 
 ```bash
-mkdir -p /tmp/persona-harness-next-check
-cd /tmp/persona-harness-next-check
+mkdir -p /tmp/persona-harness-check
+cd /tmp/persona-harness-check
 npm init -y
-npm install -D persona-harness@next
+npm install -D persona-harness@latest
 ```
 
 Check the package and local integration:
@@ -467,21 +467,19 @@ Existing A/B or ON/OFF smoke results are stack-steering signals only. They are n
 
 ## Troubleshooting
 
-### `npm install -D persona-harness@next` installs an old version
+### `npm install -D persona-harness@latest` installs an old version
 
 Check the registry:
 
 ```bash
 npm view persona-harness dist-tags --json
-npm view persona-harness@next version
+npm view persona-harness@latest version
 ```
 
-For the current release-candidate line, `next` is the tester-facing dist-tag.
-As of the latest registry check before rc10 publish, `next=0.4.0-rc.9`,
-`alpha=0.3.9-alpha.8`, and `latest=0.3.9-alpha.8`. Local `main` may include
-release-prep package metadata for `0.4.0-rc.10` before the registry package
-exists. Verify dist-tags and package gitHead before treating any install as
-current.
+For the official `0.4.0` release prep, `latest` is intentionally still
+`0.3.9-alpha.8` until QA approves the publish and registry gitHead is verified.
+The `next` dist-tag is verified at `0.4.0-rc.10`. Verify dist-tags and package
+gitHead before treating any install as current.
 
 ### `opencode` is not found
 
