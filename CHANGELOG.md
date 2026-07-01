@@ -13,6 +13,30 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   fields are present, and reports missing telemetry as unavailable. This is
   evidence visibility only, not a token-saving, provider-token, product-efficacy,
   or app-quality claim.
+  QA and External accepted the local/current package-runtime surface for
+  `451ab5863d131ac60993e0fa7aa62270ec2f9af3`, with registry evidence deferred
+  until a future publish includes that gitHead:
+  - built-CLI A/B archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/p1-tdd-ab-completion-integrity-451ab5863d13-20260701T155535Z`;
+  - TDD OFF green-only completion passed 5/5 with
+    `blocked-invalid-completion=0`; TDD ON blocked the same green-only
+    completion 5/5 with `blocked-invalid-completion=5`;
+  - fresh local/current tarball archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/external-p1-ab-report-tarball-451ab5863d13-20260701T155754Z`;
+  - tarball shasum: `89b2efdc09d829bf0c225b6baca0914d704d16b5`;
+    sha256:
+    `dde9d14de69f6c1fc53aa5bdc574f7f14e1f5ce0a033dfed917c7744596d3893`;
+  - package included `dist/cli/evidence-ab-report.js`; help listed
+    `evidence ab-report [--json]`; JSON/human output exited 0;
+  - tarball smoke scanned 3 evidence files with 1 unreadable file, preserved
+    unavailable token/read samples, and reported `a-off` finish pass 2 / blocked
+    0 plus `b-on` finish blocked 3 / pass 0;
+  - read-only behavior was verified by unchanged evidence file sets and no
+    `ab-report.md` or dashboard file output.
+  This remains local/current tarball package-runtime evidence only, not registry
+  evidence, model/OpenCode/eval proof, token-saving/provider-token saving,
+  product-efficacy/navigation-benefit, app-quality/test-sufficiency/full-TDD
+  framework, broad reliability, or closure guarantee.
 
 ## [0.4.0] - 2026-07-01
 
