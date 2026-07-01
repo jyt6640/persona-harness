@@ -34,11 +34,10 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current published release line: `0.4.0-rc.6` is published under `next` for the
-PH code-nav preview package surface. Registry `@next` points at `0.4.0-rc.6`
-with gitHead `30ded278ab5726e4f910d94b62d131647963807b`. `0.4.0-rc.7` is in
-local release prep for the default OpenCode developer MCP bundle; it is not
-registry behavior until publish verifies rc7 gitHead. `latest` remains
+Current published release line: `0.4.0-rc.7` is published under `next` for the
+default OpenCode developer MCP bundle package surface. Registry `@next` points
+at `0.4.0-rc.7` with gitHead
+`640b8d3833e8de12657cdebf4ff0bc2877878c6d`. `latest` remains
 `0.3.9-alpha.8`.
 
 Post-rc5 local/origin docs and preview work may include later commits such as
@@ -126,10 +125,13 @@ effectiveness. This is not token-saving, provider-token, product-efficacy,
 navigation-benefit, PH-owned CodeGraph, OMO parity/replacement, Codex support,
 generated app certification, broad reliability, or closure guarantee evidence.
 
-`0.4.0-rc.7` release prep packages that default developer MCP bundle for the
-next channel. Publish with `next`, not `latest`; after publish, verify registry
-gitHead and run a registry-only package-surface smoke before recording registry
-facts.
+`0.4.0-rc.7` packages that default developer MCP bundle for the next channel.
+Post-publish registry verification confirmed gitHead
+`640b8d3833e8de12657cdebf4ff0bc2877878c6d`, shasum
+`9d6cb2167fbbf5aa3bdb925b4ec2b6d3652ccd07`, and dist-tags
+`next=0.4.0-rc.7`, `latest=0.3.9-alpha.8`, `alpha=0.3.9-alpha.8`.
+Registry-only package-surface smoke remains a separate check before recording
+registry-smoke behavior.
 
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,

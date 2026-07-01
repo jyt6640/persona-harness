@@ -27,8 +27,7 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
-> 현재 source 후보: `0.4.0-rc.7` release prep. npm `next`에 published된
-> 패키지는 rc7 publish가 gitHead를 검증하기 전까지 `0.4.0-rc.6`입니다.
+> 현재 source/package 후보: npm dist-tag `next`의 `0.4.0-rc.7`
 >
 > 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, broad AST/linter enforcement, 최종 TDD workflow는 후속 트랙입니다.
@@ -174,7 +173,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 - 아래 명령어들은 사용자가 직접 외우는 CLI라기보다, OpenCode/Codex-style 세션에서 AI가 호출하기 쉽게 만든 workflow surface입니다.
 - `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, `.gitignore` 설치
-- `ph bootstrap backend`: `AGENTS.md`, ready 기본 backend profile, policy overlay, accepted plan, report template, harness/OpenCode config 준비. rc7 source 후보에서는 기본 OpenCode developer MCP bundle로 remote `grep_app`, remote `context7`, local PH `codegraph` wrapper도 등록합니다.
+- `ph bootstrap backend`: `AGENTS.md`, ready 기본 backend profile, policy overlay, accepted plan, report template, harness/OpenCode config 준비. rc7 후보에서는 기본 OpenCode developer MCP bundle로 remote `grep_app`, remote `context7`, local PH `codegraph` wrapper도 등록합니다.
 - `ph bootstrap backend --no-developer-mcp`: 기본 developer MCP bundle 등록을 건너뜁니다.
 - `ph bootstrap backend --no-codegraph`: `grep_app`/`context7`은 유지하고 local CodeGraph wrapper만 생략합니다.
 - `ph intake`: 수정 가능한 draft backend profile 생성
@@ -206,7 +205,7 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 ## 기본 developer MCP bundle
 
-rc7 source 후보의 `ph bootstrap backend`는 OpenCode 개발 편의를 위해 기본 developer MCP bundle을 준비합니다.
+rc7 후보의 `ph bootstrap backend`는 OpenCode 개발 편의를 위해 기본 developer MCP bundle을 준비합니다.
 
 - `grep_app`: remote MCP
 - `context7`: remote MCP

@@ -27,8 +27,7 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source candidate: `0.4.0-rc.7` release prep. The published npm
-> `next` package remains `0.4.0-rc.6` until an rc7 publish verifies gitHead.
+> Current source/package candidate: `0.4.0-rc.7` on npm dist-tag `next`.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
@@ -189,8 +188,7 @@ npx ph workflow check
 
 `npx ph bootstrap backend` prepares the backend workflow for AI implementation. It fills missing `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay files, an accepted `.persona/workflow/plan.md`, implementation/review report templates, harness config, and OpenCode config.
 
-By default, the rc7 source candidate also prepares an OpenCode developer MCP
-bundle:
+By default, the rc7 candidate also prepares an OpenCode developer MCP bundle:
 
 - remote `grep_app`;
 - remote `context7`;
@@ -444,7 +442,7 @@ npm view persona-harness@next version
 ```
 
 For the current release-candidate line, `next` is the tester-facing dist-tag.
-As of the latest registry check, `next=0.4.0-rc.6` and `alpha`/`latest` remain
+As of the latest registry check, `next=0.4.0-rc.7` and `alpha`/`latest` remain
 at `0.3.9-alpha.8`. Local `main` may include later docs or preview code that is
 not in the registry package until a later publish verifies gitHead. Verify
 dist-tags and package gitHead before treating any install as current.

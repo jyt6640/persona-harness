@@ -25,8 +25,12 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   - npm shasum: `24631c91d8ad4791ab7b8a3ca139312ddd8989eb`;
   - sha256:
     `7adc96fdbd14bf9447f70ff8de7dc3fe0192c8d875516aaabbd454170d12936a`.
-- Registry `@next` remains `0.4.0-rc.6` until rc7 is published and verified.
-  Publish rc7 with `next`; do not move `latest`.
+- Published `0.4.0-rc.7` under `next` and verified registry gitHead
+  `640b8d3833e8de12657cdebf4ff0bc2877878c6d`, registry shasum
+  `9d6cb2167fbbf5aa3bdb925b4ec2b6d3652ccd07`, and dist-tags
+  `next=0.4.0-rc.7`, `latest=0.3.9-alpha.8`, `alpha=0.3.9-alpha.8`.
+- Created and pushed `v0.4.0-rc.7` after registry gitHead verification; the tag
+  points at `640b8d3833e8de12657cdebf4ff0bc2877878c6d`.
 - No token-saving, provider-token saving, product-efficacy, navigation-benefit,
   PH-owned CodeGraph, CodeGraph replacement, OMO parity/replacement, Codex
   support, generated app certification, broad reliability, or closure guarantee
