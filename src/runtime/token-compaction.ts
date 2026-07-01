@@ -156,6 +156,18 @@ function writeAttempt(projectDir: string, sessionID: string, attempt: Compaction
   return outputPath
 }
 
+function evidenceCooldownUntil(projectDir: string, sessionID: string, cooldownMs: number): number {
+  const previous = readExistingEvidence(compactionEvidencePath(projectDir, sessionID))
+  const latestAttemptMs = previous?.attempts.reduce((latest, attempt) => {
+    if (attempt.status !== "failed" && attempt.status !== "triggered") {
+      return latest
+    }
+    const attemptMs = Date.parse(attempt.timestamp)
+    return Number.isFinite(attemptMs) && attemptMs > latest ? attemptMs : latest
+  }, 0)
+  return latestAttemptMs === undefined ? 0 : latestAttemptMs + cooldownMs
+}
+
 function beforeMeasurement(payload: TokenUsageEvidence): CompactionMeasurement {
   if (payload.ratio === null) {
     return {
@@ -231,7 +243,12 @@ export class TokenCompactionTracker {
     }
 
     const cooldownUntil = this.cooldownUntilBySession.get(message.sessionID) ?? 0
-    if (now.getTime() < cooldownUntil) {
+    const persistedCooldownUntil = evidenceCooldownUntil(
+      this.options.projectDir,
+      message.sessionID,
+      this.options.config.cooldownMs,
+    )
+    if (now.getTime() < Math.max(cooldownUntil, persistedCooldownUntil)) {
       return skipped("cooldown-active")
     }
 

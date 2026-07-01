@@ -239,4 +239,20 @@ describe("Phase 0 token compaction", () => {
       expect.objectContaining({ reason: "cooldown-active", status: "skipped" }),
     ])
   })
+
+  it("does not summarize again from a fresh hook instance while evidence cooldown is active", async () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, {
+      enforce: { compaction: { cooldownMs: 120_000, enabled: true, threshold: 0.78 } },
+    })
+    const firstCalls = await sendMessageUpdated(projectDir, highRatioMessage())
+    const secondCalls = await sendMessageUpdated(projectDir, highRatioMessage())
+
+    expect(firstCalls).toHaveLength(1)
+    expect(secondCalls).toHaveLength(0)
+    expect(evidenceAttempts(projectDir)).toEqual([
+      expect.objectContaining({ status: "triggered" }),
+      expect.objectContaining({ reason: "cooldown-active", status: "skipped" }),
+    ])
+  })
 })

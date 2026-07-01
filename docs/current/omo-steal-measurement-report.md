@@ -2,7 +2,7 @@
 
 Status: evidence-bound measurement report, not a token-saving claim.
 
-This report summarizes the PH-owned measurement, compaction, and hashline feasibility work through HEAD `b7b5a20` (`docs: correct omo steal report metadata`). It includes the R1/R2 telemetry and compaction mechanics stack through `0599215`, the summarize binding fix in `75c7f38`, and the stable same-session compaction scenario evidence recorded after that fix. It does not claim OMO parity, codegraph replacement, provider-token savings, product efficacy, broad reliability, or closure guarantees.
+This report summarizes the PH-owned measurement, compaction, and hashline feasibility work through the stable same-session compaction lifecycle follow-up. It includes the R1/R2 telemetry and compaction mechanics stack through `0599215`, the summarize binding fix in `75c7f38`, the stable same-session compaction scenario recorded at `b7b5a20`, and the follow-up durable cooldown fix. It does not claim OMO parity, codegraph replacement, provider-token savings, product efficacy, broad reliability, or closure guarantees.
 
 ## Scope
 
@@ -174,12 +174,34 @@ Interpretation:
 
 Verdict: `measurement-scenario-blocked`. Keep compaction default-off and defer effectiveness claims. The next smallest investigation is OpenCode summarize/compaction lifecycle behavior in a long-lived or otherwise stable session, plus whether PH cooldown needs durable evidence-backed suppression across separate `opencode run --session` processes. No token-saving claim is supported.
 
+## OpenCode Summarize Lifecycle Follow-up
+
+Lifecycle evidence: `.persona/evidence/opencode-compaction-lifecycle-2026-07-01T02-35-42-395Z.json`.
+
+Source-backed findings:
+
+- Local SDK types show PH is using the exposed summarize shape: `node_modules/@opencode-ai/sdk/dist/gen/sdk.gen.d.ts` exposes `session.summarize`, and `node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts` defines body `{ providerID, modelID }`, path `{ id }`, and optional query `{ directory }`.
+- Local plugin types expose compaction customization hooks, including `experimental.session.compacting` and `experimental.compaction.autocontinue`, but no OpenCode CLI help or local type surface found a clear API to wait for summarize completion or clear the internal compaction-agent state.
+- Stable scenario raw logs show OpenCode `agent=compaction` streams after the initial prompt and on later `opencode run --session` calls. Step 2 and step 3 then failed with provider `AI_APICallError` before `step_finish`, so no post-trigger telemetry was available.
+
+PH-owned fix:
+
+- `TokenCompactionTracker` previously kept cooldown only in an in-memory map. Separate `opencode run --session` processes therefore had fresh tracker instances and could call `session.summarize` again despite recent compaction evidence.
+- The tracker now consults `.persona/evidence/compaction/<session>.json` before calling summarize. Recent `triggered` or `failed` attempts within `cooldownMs` are treated as `cooldown-active` across processes.
+- A focused regression test creates a fresh hook/tracker instance in the same project/session and verifies the second instance skips summarize while persisted evidence cooldown is active.
+
+Interpretation:
+
+- This does not fix OpenCode's internal compaction-agent provider failure or prove compaction effectiveness.
+- It does stop PH from repeatedly triggering summarize against the same session during the configured cooldown window.
+- Compaction remains default-off/deferred. No token-saving claim is supported.
+
 ## Lever Decision Table
 
 | Lever | Current status | Measured before/after | Decision |
 | --- | --- | --- | --- |
 | Token telemetry | Implemented and externally verified | Writes provider token evidence in safe isolated non-pure mode. | Keep as measurement infrastructure. |
-| Proactive compaction | Default-off mechanics implemented and externally verified; summarize binding fixed in follow-up | Built hook smoke reaches `triggered`; stable same-session provider scenario also reached `triggered`, but later provider responses failed before post-summarize `step_finish` telemetry. | Defer/default-off; needs a stable post-trigger provider telemetry scenario before effectiveness can be judged. |
+| Proactive compaction | Default-off mechanics implemented and externally verified; summarize binding fixed; persisted evidence cooldown now suppresses repeat triggers across CLI processes | Built hook smoke reaches `triggered`; stable same-session provider scenario also reached `triggered`, but later provider responses failed before post-summarize `step_finish` telemetry. | Defer/default-off; needs a stable post-trigger provider telemetry scenario before effectiveness can be judged. |
 | Hashline edit routing | Feasibility no-go for hard routing | No provider-token experiment run because SDK payload cannot enforce native write routing. | Defer/no-go for enforced route. |
 
 ## Boundaries
@@ -194,4 +216,4 @@ Verdict: `measurement-scenario-blocked`. Keep compaction default-off and defer e
 
 ## Recommended Next Step
 
-Do not run another broad effectiveness loop yet. The next smallest useful step is to inspect OpenCode summarize/compaction lifecycle behavior for why same-session continuations after a PH summarize trigger route into `agent=compaction` and fail before `step_finish`. Keep `enforce.compaction.enabled` default-off unless a later real measurement shows favorable provider telemetry movement.
+Do not run another broad effectiveness loop yet. The PH-owned repeat-trigger issue is fixed; the remaining blocker is OpenCode's internal compaction-agent lifecycle/provider failure before post-trigger telemetry. Keep `enforce.compaction.enabled` default-off unless a later real measurement shows favorable provider telemetry movement.
