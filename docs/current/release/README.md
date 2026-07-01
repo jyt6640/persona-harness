@@ -88,6 +88,16 @@ It is not registry `@next` behavior until a later publish verifies that gitHead,
 and it is not compaction-effectiveness, token-saving, provider-token-saving, or
 product-efficacy evidence.
 
+Post-rc6 external OpenCode CodeGraph preview at
+`6e69ca3e78b8664384c83221297f336d4c7f9c8c` is local/current tarball
+config-surface evidence only: default bootstrap does not register CodeGraph,
+missing-binary `--codegraph-preview` skips with guidance, and present-binary
+`--codegraph-preview` registers OpenCode `mcp.codegraph` with
+`["codegraph","serve","--mcp"]` without creating `.codegraph`. It is external,
+optional, OpenCode-only, and not registry `@next` behavior until a later publish
+verifies that gitHead. It is not PH-owned codegraph, OMO parity/replacement,
+Codex support, real CodeGraph MCP connection evidence, or token-saving evidence.
+
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
 and not a separate release channel.

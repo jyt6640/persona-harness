@@ -145,6 +145,25 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     only, not real compaction effectiveness, token-saving, provider-token
     saving, product-efficacy, R3 hashline, code-nav, dispatch, or codegraph/OMO
     evidence.
+- Post-rc6 external OpenCode CodeGraph preview smoke:
+  - source HEAD: `6e69ca3e78b8664384c83221297f336d4c7f9c8c`
+    (`6e69ca3 feat(cli): add external codegraph preview`);
+  - source was a fresh local/current tarball only, not registry `@next`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/codegraph-preview-6e69ca3-20260701-120832/persona-harness-0.4.0-rc.6.tgz`;
+  - npm shasum: `37d27b36797edb243cf1cf4674219c4672140ca0`;
+  - sha256: `b3d5d44baea8e95f39a882ceb3cc117bf6bae7678982f89539431b2783b1f8a2`;
+  - default bootstrap created no `mcp.codegraph` entry and no `.codegraph`
+    directory;
+  - missing-binary `--codegraph-preview` skipped/no-opped with guidance and
+    still created no `mcp.codegraph` entry or `.codegraph` directory;
+  - present fake-binary `--codegraph-preview` registered OpenCode
+    `mcp.codegraph` with command `["codegraph","serve","--mcp"]`, preserved
+    existing config, and still did not create `.codegraph`;
+  - this is external optional OpenCode CodeGraph MCP config/guidance only, not
+    real CodeGraph MCP connected evidence, not Codex support, not PH-owned
+    codegraph, not OMO parity/replacement, and not token-saving or
+    product-efficacy evidence.
 
 ## [0.4.0-rc.5] - 2026-06-30
 
