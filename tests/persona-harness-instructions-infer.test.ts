@@ -115,7 +115,7 @@ describe("ph instructions infer backend", () => {
     const projectDir = createTempProject()
 
     const help = runPersonaCli(["instructions", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
-    const bad = runPersonaCli(["instructions", "adopt"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const bad = runPersonaCli(["instructions", "unknown"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const rootHelp = runPersonaCli(["--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(help.status).toBe(0)
@@ -174,6 +174,27 @@ describe("ph instructions check", () => {
     expect(check.status).toBe(0)
     expect(JSON.stringify(report)).toContain("drift.controller-repository-direct-dependency")
     expect(JSON.stringify(report)).toContain("TaskController.java")
+    expect(existsSync(join(projectDir, ".persona", "workflow", "closure.json"))).toBe(false)
+  })
+})
+
+describe("ph instructions adopt", () => {
+  it("copies reviewed inferred candidates into adopted policy by confidence without adopting conflicts", () => {
+    const projectDir = createTempProject()
+    writeProfile(projectDir)
+    writeJavaFixture(projectDir)
+    writeFileSync(join(projectDir, "README.md"), "# Task API\n\nUse Maven and pom.xml for builds.\n")
+    const infer = runPersonaCli(["instructions", "infer", "backend"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    const adopt = runPersonaCli(["instructions", "adopt", "--min-confidence", "high", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const adopted = readJsonObject(join(projectDir, ".persona", "instructions", "adopted.json"))
+
+    expect(infer.status).toBe(0)
+    expect(adopt.status).toBe(0)
+    expect(adopted.schemaVersion).toBe("instructions-adopted.1")
+    expect(JSON.stringify(adopted)).toContain("profile.package-style")
+    expect(JSON.stringify(adopted)).toContain("architecture.controller-service-repository")
+    expect(JSON.stringify(adopted)).not.toContain("conflict.docs-buildtool-maven-vs-profile-gradle")
     expect(existsSync(join(projectDir, ".persona", "workflow", "closure.json"))).toBe(false)
   })
 })
