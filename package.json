@@ -8,7 +8,8 @@
   "bin": {
     "persona-harness": "dist/cli/index.js",
     "ph": "dist/cli/index.js",
-    "ph-codegraph-mcp": "packages/codegraph-mcp/bin/codegraph-mcp.mjs"
+    "ph-codegraph-mcp": "packages/codegraph-mcp/bin/codegraph-mcp.mjs",
+    "ph-lsp-mcp": "packages/lsp-mcp/bin/lsp-mcp.mjs"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -47,6 +48,10 @@
     "docs/current/release",
     "packages/codegraph-mcp/bin",
     "packages/codegraph-mcp/lib",
+    "packages/lsp-mcp/package.json",
+    "packages/lsp-mcp/README.md",
+    "packages/lsp-mcp/bin",
+    "packages/lsp-mcp/lib",
     "packages/lsp-tools-mcp/package.json",
     "packages/lsp-tools-mcp/README.md",
     "packages/lsp-tools-mcp/bin",
@@ -83,7 +88,8 @@
     "@opencode-ai/plugin": "1.15.13"
   },
   "optionalDependencies": {
-    "@colbymchenry/codegraph": "1.1.6"
+    "@colbymchenry/codegraph": "1.1.6",
+    "@theupsider/lsp-mcp": "1.1.2"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -5,6 +5,7 @@ import process from "node:process"
 import type { CliRunResult } from "./bearshell.js"
 import { enableCodeNavMcpPreview } from "./bootstrap-code-nav.js"
 import { enableDeveloperMcpBundle } from "./bootstrap-codegraph.js"
+import { enableLspMcpPreview } from "./bootstrap-lsp.js"
 import { enableMultiAgentPreview } from "./bootstrap-multi-agent.js"
 import { enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
@@ -28,6 +29,7 @@ type BackendBootstrapFlags = {
   readonly codeNavPreview: boolean
   readonly developerMcpEnabled: boolean
   readonly force: boolean
+  readonly lspPreview: boolean
   readonly multiAgentPreview: boolean
   readonly strict: boolean
 }
@@ -76,6 +78,17 @@ function codeNavPreviewSummaryLines(): readonly string[] {
   ]
 }
 
+function lspPreviewSummaryLines(): readonly string[] {
+  return [
+    "LSP MCP preview:",
+    "- opt-in only via --lsp-preview; default bootstrap does not register the PH LSP wrapper",
+    "- writes OpenCode mcp.persona-harness-lsp for the packaged PH LSP MCP wrapper",
+    "- proxies to a real external LSP MCP only when @theupsider/lsp-mcp and a Java LSP binary are available",
+    "- otherwise keeps MCP protocol alive with an honest lsp_status unavailable facade",
+    "- no auto-install, no code-nav relabeling, and no token-saving or product-quality claim",
+  ]
+}
+
 function developerMcpSummaryLines(flags: Pick<BackendBootstrapFlags, "codeGraphEnabled" | "developerMcpEnabled">): readonly string[] {
   if (!flags.developerMcpEnabled) {
     return []
@@ -96,7 +109,7 @@ function developerMcpSummaryLines(flags: Pick<BackendBootstrapFlags, "codeGraphE
 
 export function bootstrapUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]`,
+    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--lsp-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]`,
     "",
     "Prepares the backend Persona Harness workflow for AI implementation.",
     "",
@@ -124,6 +137,8 @@ export function bootstrapUsage(invocation = "ph"): string {
     "",
     ...codeNavPreviewSummaryLines(),
     "",
+    ...lspPreviewSummaryLines(),
+    "",
     ...developerMcpSummaryLines({ codeGraphEnabled: true, developerMcpEnabled: true }),
   ].join("\n")
 }
@@ -143,6 +158,7 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
   let codeGraphEnabled = true
   let codeGraphPreview = false
   let developerMcpEnabled = true
+  let lspPreview = false
   for (const arg of args.slice(1)) {
     if (arg === "--force") {
       force = true
@@ -158,6 +174,10 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
     }
     if (arg === "--code-nav-preview") {
       codeNavPreview = true
+      continue
+    }
+    if (arg === "--lsp-preview") {
+      lspPreview = true
       continue
     }
     if (arg === "--codegraph-preview") {
@@ -179,7 +199,7 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
     return { kind: "invalid", message: `Unknown option: ${arg}` }
   }
 
-  return { kind: "backend", codeGraphEnabled, codeGraphPreview, codeNavPreview, developerMcpEnabled, force, multiAgentPreview, strict }
+  return { kind: "backend", codeGraphEnabled, codeGraphPreview, codeNavPreview, developerMcpEnabled, force, lspPreview, multiAgentPreview, strict }
 }
 
 function projectDirFor(options: BootstrapOptions): string {
@@ -291,6 +311,14 @@ function runBackendBootstrap(
     actions.push("enabled code-nav MCP preview")
   }
 
+  if (flags.lspPreview) {
+    const lspFailure = enableLspMcpPreview(projectDir, options.packageRoot)
+    if (lspFailure !== undefined) {
+      return lspFailure
+    }
+    actions.push("enabled LSP MCP preview")
+  }
+
   if (flags.developerMcpEnabled) {
     const developerMcpResult = enableDeveloperMcpBundle(projectDir, {
       codeGraphEnabled: flags.codeGraphEnabled,
@@ -357,6 +385,7 @@ function runBackendBootstrap(
       ...(flags.strict ? [...strictModeSummaryLines(), ""] : []),
       ...(flags.multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
       ...(flags.codeNavPreview ? [...codeNavPreviewSummaryLines(), ""] : []),
+      ...(flags.lspPreview ? [...lspPreviewSummaryLines(), ""] : []),
       ...(flags.developerMcpEnabled ? [...developerMcpSummaryLines(flags), ""] : []),
       "Ready backend bootstrap files:",
       `- ${HARNESS_CONFIG_PATH}`,

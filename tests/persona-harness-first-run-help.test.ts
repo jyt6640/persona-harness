@@ -41,7 +41,7 @@ describe("first-run command help", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain(
-      "Usage: ph bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]",
+      "Usage: ph bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--lsp-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]",
     )
     expect(result.stdout).toContain("Strict mode:")
     expect(result.stdout).toContain("sets enforce.executeVerification: true")
@@ -56,6 +56,10 @@ describe("first-run command help", () => {
     expect(result.stdout).toContain("opt-in only via --code-nav-preview")
     expect(result.stdout).toContain("persona-harness-code-nav_search_text")
     expect(result.stdout).toContain("no codegraph/indexer and no token-saving claim")
+    expect(result.stdout).toContain("LSP MCP preview:")
+    expect(result.stdout).toContain("opt-in only via --lsp-preview")
+    expect(result.stdout).toContain("lsp_status unavailable facade")
+    expect(result.stdout).toContain("no auto-install")
     expect(result.stdout).toContain("Developer MCP bundle:")
     expect(result.stdout).toContain("registered by default for backend bootstrap")
     expect(result.stdout).toContain("disable all bundle entries with --no-developer-mcp")

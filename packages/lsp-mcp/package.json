@@ -1,0 +1,8 @@
+{
+  "name": "@persona-harness/lsp-mcp-wrapper",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ph-lsp-mcp": "./bin/lsp-mcp.mjs"
+  }
+}

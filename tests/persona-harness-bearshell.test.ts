@@ -252,6 +252,7 @@ describe("ph package bin", () => {
     expect(bin).toEqual({
       "persona-harness": "dist/cli/index.js",
       "ph-codegraph-mcp": "packages/codegraph-mcp/bin/codegraph-mcp.mjs",
+      "ph-lsp-mcp": "packages/lsp-mcp/bin/lsp-mcp.mjs",
       ph: "dist/cli/index.js",
     })
   })
