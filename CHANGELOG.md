@@ -4,8 +4,11 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
 
-## Unreleased
+## [0.4.0-rc.10] - 2026-07-01
 
+- Prepared `0.4.0-rc.10` as the next-channel prerelease candidate for the P6
+  opt-in OpenCode LSP MCP wrapper after published `0.4.0-rc.9`.
+- Updated English/Korean README release status for `0.4.0-rc.10`.
 - Added the opt-in OpenCode LSP MCP wrapper surface from
   `23465e2b3a6a503b2dc4eff510ebbe0fb96186ad`. External local/current tarball
   package-runtime smoke accepted the behavior as version `0.4.0-rc.9`, not

@@ -27,15 +27,15 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Release prep target: `0.4.0-rc.9`.
-> Current registry `next` remains `0.4.0-rc.8` until rc9 is published and
+> Release prep target: `0.4.0-rc.10`.
+> Current registry `next` remains `0.4.0-rc.9` until rc10 is published and
 > registry gitHead is verified. `latest` remains `0.3.9-alpha.8`.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
 > Not in scope yet: frontend, infra, desktop app, broad AST/linter enforcement,
-> generated-app quality certification, token-saving/product-efficacy proof, and
-> a full TDD framework/test-sufficiency proof.
+> generated-app quality certification, token-saving/product-efficacy proof,
+> Codex/LSP effectiveness proof, and a full TDD framework/test-sufficiency proof.
 
 ## Who This Is For
 
@@ -477,9 +477,9 @@ npm view persona-harness@next version
 ```
 
 For the current release-candidate line, `next` is the tester-facing dist-tag.
-As of the latest registry check before rc9 publish, `next=0.4.0-rc.8`,
+As of the latest registry check before rc10 publish, `next=0.4.0-rc.9`,
 `alpha=0.3.9-alpha.8`, and `latest=0.3.9-alpha.8`. Local `main` may include
-release-prep package metadata for `0.4.0-rc.9` before the registry package
+release-prep package metadata for `0.4.0-rc.10` before the registry package
 exists. Verify dist-tags and package gitHead before treating any install as
 current.
 

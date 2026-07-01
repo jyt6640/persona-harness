@@ -34,13 +34,26 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current published release line: `0.4.0-rc.9` is published under `next` for the
-P1.5/P2/P3/P4 workflow rail package/runtime surface. Registry `@next` points at
-`0.4.0-rc.9` with gitHead
+Current release prep target: `0.4.0-rc.10` for the P6 opt-in OpenCode LSP MCP
+wrapper package surface. Until rc10 is published and registry gitHead is
+verified, registry `@next` remains published `0.4.0-rc.9` with gitHead
 `fd597970877756f0523fb73ad1e093473e75a97a`. `latest` remains
 `0.3.9-alpha.8`.
 
-`0.4.0-rc.9` packages the P1.5/P2/P3/P4 workflow rail delivery after rc8:
+`0.4.0-rc.10` packages the P6 LSP MCP wrapper after rc9:
+
+- opt-in `ph bootstrap backend --lsp-preview`;
+- root bin `ph-lsp-mcp` and package `packages/lsp-mcp`;
+- missing dependency unavailable facade exposing `lsp_status` only;
+- proxy guard requiring both an upstream LSP MCP and Java LSP before proxying
+  symbol/definition/reference-style calls.
+
+This rc10 prep has no real Java LSP tool-call observation, no default LSP
+registration, no A/B or effectiveness claim, no fake symbol/definition/reference
+results, and no Codex support claim.
+
+Previously, `0.4.0-rc.9` packaged the P1.5/P2/P3/P4 workflow rail delivery
+after rc8:
 
 - read-only `ph workflow tdd` status helper;
 - scoped `service.state-ownership` Java/Spring service-architecture blocker;
@@ -397,6 +410,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.7 release notes](v0.4.0-rc.7-release-notes.md)
 - [v0.4.0-rc.8 release notes](v0.4.0-rc.8-release-notes.md)
 - [v0.4.0-rc.9 release notes](v0.4.0-rc.9-release-notes.md)
+- [v0.4.0-rc.10 release notes](v0.4.0-rc.10-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

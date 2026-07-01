@@ -27,14 +27,14 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
-> release prep target: `0.4.0-rc.9`.
-> 현재 registry `next`는 rc9 publish와 gitHead 검증 전까지
-> `0.4.0-rc.8`입니다. `latest`는 `0.3.9-alpha.8` 그대로입니다.
+> release prep target: `0.4.0-rc.10`.
+> 현재 registry `next`는 rc10 publish와 gitHead 검증 전까지
+> `0.4.0-rc.9`입니다. `latest`는 `0.3.9-alpha.8` 그대로입니다.
 >
 > 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, broad AST/linter enforcement,
-> token-saving/product-efficacy proof, full TDD framework/test-sufficiency
-> proof는 후속 트랙입니다.
+> token-saving/product-efficacy proof, Codex/LSP effectiveness proof,
+> full TDD framework/test-sufficiency proof는 후속 트랙입니다.
 
 ## 요구사항
 
