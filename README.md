@@ -27,9 +27,10 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Release prep target: `0.4.0`.
-> Registry `next` is verified at `0.4.0-rc.10`, but registry `latest` remains
-> `0.3.9-alpha.8` until the official `0.4.0` publish and gitHead verification.
+> Current stable package: `persona-harness@latest` is verified at `0.4.0`
+> with gitHead `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`.
+> The `next` dist-tag remains `0.4.0-rc.10`; `alpha` remains
+> `0.3.9-alpha.8`.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
@@ -467,7 +468,7 @@ Existing A/B or ON/OFF smoke results are stack-steering signals only. They are n
 
 ## Troubleshooting
 
-### `npm install -D persona-harness@latest` installs an old version
+### `npm install -D persona-harness@latest` installs an unexpected version
 
 Check the registry:
 
@@ -476,10 +477,9 @@ npm view persona-harness dist-tags --json
 npm view persona-harness@latest version
 ```
 
-For the official `0.4.0` release prep, `latest` is intentionally still
-`0.3.9-alpha.8` until QA approves the publish and registry gitHead is verified.
-The `next` dist-tag is verified at `0.4.0-rc.10`. Verify dist-tags and package
-gitHead before treating any install as current.
+The official `0.4.0` release is published under `latest`; the `next` dist-tag
+remains `0.4.0-rc.10`, and `alpha` remains `0.3.9-alpha.8`. Verify dist-tags
+and package gitHead before treating any install as current.
 
 ### `opencode` is not found
 

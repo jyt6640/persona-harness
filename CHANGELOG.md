@@ -2,15 +2,29 @@
 
 All notable Persona Harness changes are recorded here.
 
-This project uses npm prerelease versions for tester-facing alpha builds. During the alpha pilot, `alpha` is the tester-facing dist-tag and `latest` may lag, so verify both before treating a default install as current. Stable support guarantees are still deferred.
+This project uses npm prerelease versions for tester-facing alpha and release-candidate builds. Verify `latest`, `next`, and `alpha` before treating a default install as current. Stable support guarantees are still deferred.
 
 ## [0.4.0] - 2026-07-01
 
-- Prepared official `0.4.0` release metadata for the `latest` channel after
-  verified `0.4.0-rc.10`; publish remains gated on QA release-ready approval.
-- Updated README/README.ko release status for the `0.4.0` prep: registry
-  `next=0.4.0-rc.10` is verified, while `latest` remains
-  `0.3.9-alpha.8` until official publish and registry gitHead verification.
+- Published official `0.4.0` under `latest` and verified registry gitHead
+  `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`, registry shasum
+  `45e3b49d162eeed6d9bc443b5b44508c1e956ebf`, and dist-tags
+  `latest=0.4.0`, `next=0.4.0-rc.10`, `alpha=0.3.9-alpha.8`.
+- Created and pushed `v0.4.0` after registry gitHead verification; the tag
+  points at `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`.
+- Updated README/README.ko release status for the stable `0.4.0` package:
+  registry `latest=0.4.0` is verified, while `next=0.4.0-rc.10` and
+  `alpha=0.3.9-alpha.8` remain on their prior channels.
+- External registry-only smoke installed `persona-harness@latest` as `0.4.0`
+  and verified the registry package/runtime surface:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/v040-latest-registry-package-runtime-20260701-221728`;
+  - basic CLI clean install/help/init/doctor/bootstrap;
+  - default developer MCP bundle package surface;
+  - opt-in TDD rail plus read-only `ph workflow tdd`;
+  - precise `service.state-ownership` blocker;
+  - read-only `ph evidence metrics [--json]`;
+  - opt-in LSP MCP wrapper unavailable facade and proxy guard.
 - Collected the verified rc-line product surfaces into the `0.4.0` release
   claim boundary:
   - workflow rails, evidence traces, continuation/report lifecycle, and finish
@@ -27,6 +41,12 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   effectiveness/default/real Java LSP tool-call claim, broad AST/linter product,
   broad reliability/closure guarantee/generated app certification, Codex support,
   or code-nav relabeling/replacement claim.
+- The `0.4.0` latest smoke is registry package/runtime surface evidence only:
+  no model/OpenCode implementation run, eval result, token-saving,
+  provider-token saving, product-efficacy, navigation-benefit, generated-app
+  certification, broad reliability, closure guarantee, full TDD/test
+  sufficiency, broad AST/linter product, real Java LSP default/effectiveness, or
+  Codex/code-nav replacement claim.
 
 ## [0.4.0-rc.10] - 2026-07-01
 

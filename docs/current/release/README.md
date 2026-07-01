@@ -34,11 +34,12 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release prep target: official `0.4.0` for the `latest` channel after
-verified `0.4.0-rc.10`. Do not publish until QA release-ready explicitly says
-GO. Registry `@next` points at `0.4.0-rc.10` with gitHead
-`58f9ac255b615f40cdd8046e9a73b772e7ceae36`; registry `latest` remains
-`0.3.9-alpha.8` until official publish and gitHead verification.
+Current stable package: official `0.4.0` is published under `latest` after
+verified `0.4.0-rc.10`. Registry `latest` points at gitHead
+`af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055` with shasum
+`45e3b49d162eeed6d9bc443b5b44508c1e956ebf`; registry `next` remains
+`0.4.0-rc.10`, and `alpha` remains `0.3.9-alpha.8`. The `v0.4.0` tag points at
+the same gitHead after registry verification.
 
 `0.4.0` packages the verified workflow rail/product surfaces:
 
@@ -51,6 +52,14 @@ GO. Registry `@next` points at `0.4.0-rc.10` with gitHead
 - default developer MCP bundle package surfaces;
 - opt-in LSP MCP wrapper with missing-dependency unavailable facade and proxy
   guard.
+
+External latest registry smoke installed `persona-harness@latest` as `0.4.0`
+and verified the registry package/runtime surface: basic CLI clean
+install/help/init/doctor/bootstrap, default developer MCP bundle, opt-in TDD
+rail plus read-only `ph workflow tdd`, precise `service.state-ownership`,
+read-only `ph evidence metrics [--json]`, and opt-in LSP MCP wrapper unavailable
+facade/proxy guard. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/v040-latest-registry-package-runtime-20260701-221728`.
 
 The official release still does not claim token saving/provider-token saving,
 app/product quality, full TDD framework/test sufficiency, LSP effectiveness or
