@@ -34,23 +34,29 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current published release line: `0.4.0-rc.8` is published under `next` for the
-opt-in TDD Workflow Rail package/runtime surface. Registry `@next` points at
-`0.4.0-rc.8` with gitHead
-`18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`. `latest` remains
+Current published release line: `0.4.0-rc.9` is published under `next` for the
+P1.5/P2/P3/P4 workflow rail package/runtime surface. Registry `@next` points at
+`0.4.0-rc.9` with gitHead
+`fd597970877756f0523fb73ad1e093473e75a97a`. `latest` remains
 `0.3.9-alpha.8`.
 
-Current release-prep target: `0.4.0-rc.9` packages the P1.5/P2/P3/P4 workflow
-rail delivery after rc8:
+`0.4.0-rc.9` packages the P1.5/P2/P3/P4 workflow rail delivery after rc8:
 
 - read-only `ph workflow tdd` status helper;
 - scoped `service.state-ownership` Java/Spring service-architecture blocker;
 - read-only `ph evidence metrics [--json]`.
 
-This prep is not registry `@next` behavior until publish and registry gitHead
-verification. It does not move `latest`, certify generated app quality, provide
-a full TDD framework, add a broad AST/linter product, or prove token
-saving/product efficacy.
+Post-publish registry verification confirmed shasum
+`7bd42b00d669275b0995d37ec108cbb28b8b66b8`; `v0.4.0-rc.9` points at the same
+gitHead after registry verification. External registry-only smoke installed
+`persona-harness@next` as `0.4.0-rc.9` and verified read-only `workflow tdd`,
+TDD rail regressions, precise `service.state-ownership`, and read-only
+`evidence metrics` behavior. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc9-registry-package-runtime-20260701-205115`.
+This is registry package/runtime surface evidence only: it does not move
+`latest`, certify generated app quality, provide a full TDD framework, add a
+broad AST/linter product, prove token saving/product efficacy, or claim
+model/OpenCode/eval evidence.
 
 `0.4.0-rc.8` packages `b5d98e1286c5a7f0349af8a461efdf2ce84a653e`
 (`feat(cli): add tdd workflow rail`) plus the release-prep docs. Post-publish

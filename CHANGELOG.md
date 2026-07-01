@@ -6,15 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-- No unreleased changes after `0.4.0-rc.9` release prep.
+- No unreleased changes after `0.4.0-rc.9` registry smoke.
 
 ## [0.4.0-rc.9] - 2026-07-01
 
 - Prepared `0.4.0-rc.9` as the next-channel prerelease candidate for the
   P1.5/P2/P3/P4 package delivery after published `0.4.0-rc.8`.
-- Updated English/Korean README release status to make `0.4.0-rc.9` a release
-  prep target while registry `next` remains `0.4.0-rc.8` until publish and
-  gitHead verification. `latest` remains `0.3.9-alpha.8`.
+- Updated English/Korean README release status for `0.4.0-rc.9`.
 - Added `ph workflow tdd` as a read-only TDD Workflow Rail status helper. It
   reports the current ticket's red→green state and next action without writing
   red/green evidence; `ph workflow test`, `workflow check`, archive, and finish
@@ -43,6 +41,34 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   product-efficacy, navigation-benefit, generated-app certification, broad
   reliability, closure guarantee, model/OpenCode/eval, publish, tag, latest, or
   version-move claim.
+- Published `0.4.0-rc.9` under `next` and verified registry gitHead
+  `fd597970877756f0523fb73ad1e093473e75a97a`, registry shasum
+  `7bd42b00d669275b0995d37ec108cbb28b8b66b8`, and dist-tags
+  `next=0.4.0-rc.9`, `latest=0.3.9-alpha.8`, `alpha=0.3.9-alpha.8`.
+- Created and pushed `v0.4.0-rc.9` after registry gitHead verification; the tag
+  points at `fd597970877756f0523fb73ad1e093473e75a97a`.
+- External registry-only smoke installed `persona-harness@next` as
+  `0.4.0-rc.9` and verified the P1.5/P2/P3/P4 package/runtime surface:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc9-registry-package-runtime-20260701-205115`;
+  - `ph workflow tdd` read-only status helper passed disabled, red-missing,
+    red-without-green, passed, invalid extra arg, help listing, and no extra TDD
+    evidence writes;
+  - TDD rail regressions passed for strict-off/no fake evidence, valid PH-run
+    red evidence, invalid red rejection, green-only/no-red block, forged
+    evidence ignored, and red→green archive/finish PASS;
+  - `service.state-ownership` produced check/WARN plus closure blocker/fix step
+    and archive/finish block; safe nearby code did not block; Controller→
+    Repository regression was still observed;
+  - `ph evidence metrics [--json]` reported schema `evidence-metrics.1`,
+    token/tool/MCP/read-char/finish/unreadable aggregates, read-only no-write
+    behavior, and honest missing evidence handling.
+- The rc9 registry smoke is package/runtime surface evidence only: no
+  model/OpenCode/eval evidence, no quality, test-sufficiency,
+  full-TDD-framework, scaffolding, coverage, mutation, token-saving,
+  provider-token, product-efficacy, navigation-benefit, generated-app
+  certification, broad reliability, broad AST/linter product, or closure
+  guarantee claim.
 
 ## [0.4.0-rc.8] - 2026-07-01
 
