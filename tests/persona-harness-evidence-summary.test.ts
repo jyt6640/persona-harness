@@ -156,4 +156,97 @@ describe("ph evidence summary", () => {
     expect(result.stdout).toContain("Structured read chars unavailable")
     expect(existsSync(join(projectDir, ".persona", "evidence", "metrics.md"))).toBe(false)
   })
+
+  it("prints read-only A/B reports as JSON from structured matched-scenario evidence", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona", "evidence", "ab"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "ab", "tdd-ab.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: "persona-ab-measurement.1",
+          scenarioId: "tdd-rail-completion-integrity",
+          scenarioLabel: "TDD rail completion integrity",
+          source: "local-fixture",
+          conditions: [
+            {
+              id: "tdd-off",
+              label: "TDD OFF",
+              runs: [
+                {
+                  id: "off-1",
+                  outcome: "green-only-finished",
+                  finishStatus: "pass",
+                  blockedInvalidCompletion: false,
+                  elapsedMs: 100,
+                  providerTokens: { total: 1000, input: 700, output: 200, reasoning: 100 },
+                  readChars: 50,
+                  toolCalls: 2,
+                  mcpCalls: 0,
+                },
+              ],
+            },
+            {
+              id: "tdd-on",
+              label: "TDD ON",
+              runs: [
+                {
+                  id: "on-1",
+                  outcome: "green-only-blocked",
+                  finishStatus: "blocked",
+                  blockedInvalidCompletion: true,
+                  elapsedMs: 120,
+                  providerTokens: null,
+                  readChars: null,
+                  toolCalls: 3,
+                  mcpCalls: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const result = runPersonaCli(["evidence", "ab-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const report = JSON.parse(result.stdout)
+
+    expect(result.status).toBe(0)
+    expect(report.schemaVersion).toBe("evidence-ab-report.1")
+    expect(report.scenarios).toHaveLength(1)
+    expect(report.scenarios[0].id).toBe("tdd-rail-completion-integrity")
+    expect(report.scenarios[0].conditions).toHaveLength(2)
+    expect(report.scenarios[0].conditions[0]).toMatchObject({
+      id: "tdd-off",
+      finish: { pass: 1, blocked: 0 },
+      metrics: {
+        providerTokenTotal: { samples: 1, total: 1000, unavailable: 0 },
+        readChars: { samples: 1, total: 50, unavailable: 0 },
+      },
+    })
+    expect(report.scenarios[0].conditions[1]).toMatchObject({
+      id: "tdd-on",
+      blockedInvalidCompletion: 1,
+      finish: { pass: 0, blocked: 1 },
+      metrics: {
+        providerTokenTotal: { samples: 0, total: null, unavailable: 1 },
+        readChars: { samples: 0, total: null, unavailable: 1 },
+      },
+    })
+    expect(report.limitations.join("\n")).toContain("not token-saving or product-efficacy claims")
+  })
+
+  it("prints human A/B reports without writing dashboard files", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["evidence", "ab-report"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("# Persona A/B Evidence Report")
+    expect(result.stdout).toContain("A/B reports aggregate local structured evidence only")
+    expect(result.stdout).toContain("- none")
+    expect(existsSync(join(projectDir, ".persona", "evidence", "ab-report.md"))).toBe(false)
+  })
 })

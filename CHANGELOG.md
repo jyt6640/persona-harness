@@ -4,6 +4,16 @@ All notable Persona Harness changes are recorded here.
 
 This project uses npm prerelease versions for tester-facing alpha and release-candidate builds. Verify `latest`, `next`, and `alpha` before treating a default install as current. Stable support guarantees are still deferred.
 
+## Unreleased
+
+- Added read-only `ph evidence ab-report [--json]` for structured local A/B
+  evidence. The report groups matched scenarios and conditions, summarizes
+  finish pass/fail/blocked counts, blocked-invalid-completion counts, elapsed
+  time, provider-token totals, read chars, tool calls, and MCP calls when those
+  fields are present, and reports missing telemetry as unavailable. This is
+  evidence visibility only, not a token-saving, provider-token, product-efficacy,
+  or app-quality claim.
+
 ## [0.4.0] - 2026-07-01
 
 - Published official `0.4.0` under `latest` and verified registry gitHead
