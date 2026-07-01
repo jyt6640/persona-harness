@@ -27,9 +27,10 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
-> 현재 source/package 후보: next-channel release prep용 `0.4.0-rc.8`.
-> 현재 npm dist-tag `next` package는 rc8 registry verification 전까지
-> `0.4.0-rc.7`입니다.
+> 현재 `next` package: `0.4.0-rc.8`.
+> registry verification: gitHead
+> `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`; `latest`는
+> `0.3.9-alpha.8` 그대로입니다.
 >
 > 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, broad AST/linter enforcement, full TDD
@@ -191,6 +192,8 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph workflow test`: opt-in `enforce.tdd`와 strict
   `enforce.executeVerification`가 켜졌을 때 PH가 직접 Gradle/JUnit을
   실행하고, 실제 JUnit `<failure>` testcase만 red evidence로 기록
+- `ph workflow tdd`: 현재 ticket의 TDD red→green 상태와 다음 행동을
+  읽기 전용으로 출력. red/green evidence는 쓰지 않음
 - `ph workflow draft --stdin`: 모호한 제품 아이디어를 요구사항 초안으로 만들고 사용자 검토에서 멈춤
 - `ph workflow approve requirements`: 사용자가 초안을 승인한 뒤 accepted 상태로 표시
 - `ph workflow capture --stdin`: 이미 작성된 긴 프롬프트 요구사항을 latest source로 저장
@@ -215,6 +218,9 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 `enforce.tdd=true`와 strict `enforce.executeVerification=true`를 둘 다 켰을
 때만 `ph workflow test`가 PH direct Gradle/JUnit verification을 실행하고,
 JUnit `<failure>` testcase가 실제로 있을 때만 red evidence를 기록합니다.
+`ph workflow tdd`는 읽기 전용 status helper입니다. 현재 ticket이 red
+evidence 누락, green 대기, 통과, disabled, unavailable 중 어디에 있는지와
+다음 행동을 보여주지만 evidence를 쓰지는 않습니다.
 
 이후 `ph workflow check`, `ph workflow archive <ticket>`,
 `ph workflow finish implement`는 같은 ticket/test id가 통과하면 green

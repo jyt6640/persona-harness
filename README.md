@@ -27,9 +27,10 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.4.0-rc.8` for the next-channel release
-> prep. The currently published `next` package remains `0.4.0-rc.7` until rc8
-> registry verification completes.
+> Current `next` package: `0.4.0-rc.8`.
+> Registry verification: gitHead
+> `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`; `latest` remains
+> `0.3.9-alpha.8`.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
@@ -393,6 +394,8 @@ These commands are intentionally visible so AI agents can call them from OpenCod
 - `ph workflow test`: with opt-in `enforce.tdd` and strict
   `enforce.executeVerification`, records red evidence only from PH-run
   Gradle/JUnit failing testcases.
+- `ph workflow tdd`: prints read-only TDD red→green status and the next action
+  without writing red/green evidence.
 - `ph workflow implement`: prints the single AI-facing implementation rail, including README chunk-read commands.
 - `ph workflow start implement`: prints the AI-facing implementation workflow.
 - `ph workflow finish implement`: checks whether the workflow can be reported complete.
@@ -426,6 +429,9 @@ These are steering targets and review cues. They are not proof that the generate
 `enforce.tdd=true` and strict `enforce.executeVerification=true`,
 `ph workflow test` runs PH direct Gradle/JUnit verification and records red
 evidence only when a testcase genuinely fails with a JUnit `<failure>`.
+`ph workflow tdd` is a read-only status helper: it reports whether the current
+ticket is missing red evidence, waiting for green, passed, disabled, or
+unavailable. It does not write evidence.
 
 Later `ph workflow check`, `ph workflow archive <ticket>`, or
 `ph workflow finish implement` can record green evidence when the same
@@ -466,11 +472,10 @@ npm view persona-harness@next version
 ```
 
 For the current release-candidate line, `next` is the tester-facing dist-tag.
-As of the latest registry check before rc8 publish, `next=0.4.0-rc.7` and
-`alpha`/`latest` remain at `0.3.9-alpha.8`. Local `main` may include later docs
-or preview code that is not in the registry package until a later publish
-verifies gitHead. Verify dist-tags and package gitHead before treating any
-install as current.
+As of the latest registry check, `next=0.4.0-rc.8`, `alpha=0.3.9-alpha.8`, and
+`latest=0.3.9-alpha.8`. Local `main` may include later docs or preview code that
+is not in the registry package until a later publish verifies gitHead. Verify
+dist-tags and package gitHead before treating any install as current.
 
 ### `opencode` is not found
 

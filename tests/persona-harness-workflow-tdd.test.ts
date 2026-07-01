@@ -154,6 +154,34 @@ describe("ph workflow test TDD rail", () => {
     expect(output.state.blockers.map((blocker) => blocker.id)).not.toContain("tdd-red-evidence-missing")
   })
 
+  it("prints read-only TDD status and next action without writing evidence", () => {
+    const projectDir = createWorkflowProject()
+    writeState(projectDir, "red")
+
+    const result = runWorkflow(projectDir, ["tdd"])
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("TDD Workflow Rail status")
+    expect(result.stdout).toContain("State: red-missing")
+    expect(result.stdout).toContain("Next: write a behavior test")
+    expect(result.stdout).toContain("Boundary: read-only status")
+    expect(tddEvidenceFiles(projectDir)).toEqual([])
+  })
+
+  it("lists the read-only TDD helper in workflow and root help", () => {
+    const projectDir = createWorkflowProject()
+
+    const workflowHelp = runWorkflow(projectDir, ["--help"])
+    const rootHelp = runPersonaCli(["help"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(workflowHelp.status).toBe(0)
+    expect(workflowHelp.stdout).toContain("workflow <check|implement|test|tdd|continue")
+    expect(workflowHelp.stdout).toContain("workflow tdd prints read-only TDD red→green status")
+    expect(rootHelp.status).toBe(0)
+    expect(rootHelp.stdout).toContain("workflow tdd")
+    expect(rootHelp.stdout).toContain("Print read-only TDD red→green status")
+  })
+
   it("blocks green-only test and implementation work because no red evidence exists", () => {
     const projectDir = createWorkflowProject()
     writeState(projectDir, "green")

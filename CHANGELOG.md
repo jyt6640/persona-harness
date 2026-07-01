@@ -6,7 +6,12 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-No unreleased changes yet.
+- Updated English/Korean README release status now that `0.4.0-rc.8` is
+  published under `next`, with `latest` still at `0.3.9-alpha.8`.
+- Added `ph workflow tdd` as a read-only TDD Workflow Rail status helper. It
+  reports the current ticket's red→green state and next action without writing
+  red/green evidence; `ph workflow test`, `workflow check`, archive, and finish
+  remain the evidence-writing and blocking surfaces.
 
 ## [0.4.0-rc.8] - 2026-07-01
 

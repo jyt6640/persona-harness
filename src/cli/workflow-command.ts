@@ -22,6 +22,7 @@ import { runWorkflowRelayCommand } from "./workflow-relay.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import { stdinEncodingError } from "./stdin-text.js"
+import { runWorkflowTddStatus } from "./workflow-tdd-status.js"
 import { recordTddGreenForCurrentTicket, runWorkflowTddTest } from "./workflow-tdd.js"
 import {
   runWorkflowArchive,
@@ -158,6 +159,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "test") {
     return runWorkflowTddTest(options)
+  }
+  if (parsed.kind === "tdd") {
+    return runWorkflowTddStatus(options)
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
