@@ -164,6 +164,31 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     real CodeGraph MCP connected evidence, not Codex support, not PH-owned
     codegraph, not OMO parity/replacement, and not token-saving or
     product-efficacy evidence.
+- R-CG.2 external CodeGraph real-MCP measurement:
+  - target HEAD for the measurement was local/current
+    `b7adc7cc481baca07e6626ae6f91848b0dce3ef3`; registry `@next` was not used;
+  - evidence files were `.persona/evidence/codegraph-real-mcp-smoke-20260701T033048Z.json`
+    and `.persona/evidence/codegraph-dev-ab-20260701T033048Z.json`, with raw
+    logs under `.persona/evidence/codegraph-rcg2-raw-20260701T033048Z/`;
+  - Stage 1 used temp-installed `@colbymchenry/codegraph@1.1.6`, explicit
+    `codegraph init`, and observed real OpenCode MCP tool event
+    `codegraph_codegraph_explore` / canonical `codegraph_explore` once;
+  - freshness caveat: Stage 1 reported `pendingChanges.added=1`, so no
+    clean-fresh claim;
+  - Stage 2 A/B fixed the Controller-to-Repository violation in both OFF and ON
+    via `TodoService`, and `observe` passed;
+  - A OFF: CodeGraph calls 0, elapsed 52,746ms, tool uses 7, reads 3, read chars
+    11,080, provider total/input/output/reasoning/cacheRead
+    68,648 / 36,430 / 1,007 / 491 / 30,720;
+  - B ON: CodeGraph calls 1, elapsed 70,826ms, tool uses 22, reads 11, read
+    chars 34,180, provider total/input/output/reasoning/cacheRead
+    309,411 / 79,903 / 3,272 / 1,468 / 224,768;
+  - ON-OFF delta was +18,080ms, +15 tool uses, +8 reads, +23,100 read chars,
+    +240,763 provider total, and +194,048 cacheRead;
+  - interpretation: real external CodeGraph MCP tool-call adoption is proven,
+    but this bounded A/B was worse with CodeGraph ON; effectiveness is
+    deferred/no-keep, with no token-saving, provider-token, product-efficacy, or
+    navigation-benefit claim.
 
 ## [0.4.0-rc.5] - 2026-06-30
 

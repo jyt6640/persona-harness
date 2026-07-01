@@ -98,6 +98,16 @@ optional, OpenCode-only, and not registry `@next` behavior until a later publish
 verifies that gitHead. It is not PH-owned codegraph, OMO parity/replacement,
 Codex support, real CodeGraph MCP connection evidence, or token-saving evidence.
 
+R-CG.2 later proved a real external OpenCode CodeGraph MCP tool call
+(`codegraph_codegraph_explore`, canonical `codegraph_explore`) with
+`@colbymchenry/codegraph@1.1.6` and explicit `codegraph init`, but the bounded
+Java/Spring A/B was worse with CodeGraph ON: ON used 1 CodeGraph call, 70,826ms,
+11 reads, 34,180 read chars, and provider total/cacheRead 309,411 / 224,768
+versus OFF 0 calls, 52,746ms, 3 reads, 11,080 read chars, and
+68,648 / 30,720. This is an exact-scenario PARTIAL/defer measurement, not a
+token-saving, provider-token, product-efficacy, navigation-benefit, PH-owned
+codegraph, OMO parity/replacement, Codex support, or auto-init claim.
+
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
 and not a separate release channel.
