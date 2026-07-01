@@ -60,6 +60,12 @@ function assertNotIncludes(text, rejected, label, result) {
   }
 }
 
+function assertDoctorRuntimeReadiness(stdout, result) {
+  if (stdout.includes("Runtime readiness: PASS")) return
+  if (stdout.includes("Runtime readiness: WARN") && stdout.includes("OpenCode CLI is missing")) return
+  throw new SmokeAssertionError("doctor readiness: missing acceptable runtime readiness", result)
+}
+
 function projectDir(name) {
   const dir = join(tempRoot, name)
   mkdirSync(dir, { recursive: true })
@@ -200,7 +206,7 @@ try {
   writeSpringishProject(initDir)
   assertCommand(runCli(initDir, ["init"]), 0, "clean workspace ph init")
   const doctor = assertCommand(runCli(initDir, ["doctor"]), 0, "ph doctor readiness")
-  assertIncludes(doctor.stdout, "Runtime readiness: PASS", "doctor readiness", doctor)
+  assertDoctorRuntimeReadiness(doctor.stdout, doctor)
   const observe = assertCommand(runCli(initDir, ["observe", "--json", "src/main/java"]), 0, "ph observe --json schema")
   assertObserveReport(observe.stdout, observe)
 
