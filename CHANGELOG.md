@@ -16,6 +16,27 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 - This is a deterministic finish/archive gate, not a full TDD framework:
   Persona Harness does not scaffold tests, prove test sufficiency, run coverage,
   or run mutation testing.
+- External local/current tarball package-runtime smoke for
+  `b5d98e1286c5a7f0349af8a461efdf2ce84a653e` accepted the TDD rail behavior as
+  package version `0.4.0-rc.7`, not registry `@next` behavior:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/tdd-workflow-rail-b5d98e1-20260701-164350`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/tdd-workflow-rail-b5d98e1-20260701-164350/persona-harness-0.4.0-rc.7.tgz`;
+  - npm shasum: `6665daa2fc01d01cbc8095bddadffc7654589572`;
+  - sha256: `7262e64d80d713f6d124a37fec0a4fb7762be22ab0f2c6ae32e422d19f961360`;
+  - strict-off/advisory wrote no red/green evidence; strict PH-run
+    Gradle/JUnit `<failure>` recorded red evidence with
+    `execution=ph-direct-gradle-junit`, `generatedBy=persona-harness`, test id,
+    JUnit snapshot, and digest;
+  - compile/no-JUnit failure and JUnit `<error>` did not write red evidence;
+    green-only/no-red blocked with `tdd-red-evidence-missing`; hand-written
+    minimal evidence was ignored; red->green for the same ticket/test id passed
+    check/archive/finish in an isolated fixture.
+  This is not model/OpenCode/eval evidence and does not claim test sufficiency,
+  product quality, generated-app certification, a full TDD framework,
+  scaffolding, coverage, mutation testing, broad reliability, or closure
+  guarantee.
 
 ## [0.4.0-rc.7] - 2026-07-01
 
