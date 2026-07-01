@@ -27,12 +27,15 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current source/package candidate: `0.4.0-rc.7` on npm dist-tag `next`.
+> Current source/package candidate: `0.4.0-rc.8` for the next-channel release
+> prep. The currently published `next` package remains `0.4.0-rc.7` until rc8
+> registry verification completes.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
 >
 > Not in scope yet: frontend, infra, desktop app, broad AST/linter enforcement,
-> generated-app quality certification, and final TDD workflow.
+> generated-app quality certification, and a full TDD framework/test-sufficiency
+> proof.
 
 ## Who This Is For
 
@@ -188,7 +191,7 @@ npx ph workflow check
 
 `npx ph bootstrap backend` prepares the backend workflow for AI implementation. It fills missing `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay files, an accepted `.persona/workflow/plan.md`, implementation/review report templates, harness config, and OpenCode config.
 
-By default, the rc7 candidate also prepares an OpenCode developer MCP bundle:
+By default, the current candidate also prepares an OpenCode developer MCP bundle:
 
 - remote `grep_app`;
 - remote `context7`;
@@ -387,6 +390,9 @@ These commands are intentionally visible so AI agents can call them from OpenCod
 - `ph plan --implement`: checks that implementation may start and prints the implementation rail.
 - `ph bearshell`: runs timeout-bounded and output-bounded shell commands.
 - `ph workflow check`: reports plan/report/evidence status.
+- `ph workflow test`: with opt-in `enforce.tdd` and strict
+  `enforce.executeVerification`, records red evidence only from PH-run
+  Gradle/JUnit failing testcases.
 - `ph workflow implement`: prints the single AI-facing implementation rail, including README chunk-read commands.
 - `ph workflow start implement`: prints the AI-facing implementation workflow.
 - `ph workflow finish implement`: checks whether the workflow can be reported complete.
@@ -414,6 +420,24 @@ These are steering targets and review cues. They are not proof that the generate
 
 `.persona/evidence` records local traces such as file reads, injected workflow/rule context, selected rails, target file roles, and workflow command activity. Evidence is useful for asking "did the agent see and follow the intended rail?" It is not a quality score, and higher evidence counts do not prove better generated code.
 
+## Opt-In TDD Workflow Rail
+
+`enforce.tdd` is default-off. When a project explicitly enables both
+`enforce.tdd=true` and strict `enforce.executeVerification=true`,
+`ph workflow test` runs PH direct Gradle/JUnit verification and records red
+evidence only when a testcase genuinely fails with a JUnit `<failure>`.
+
+Later `ph workflow check`, `ph workflow archive <ticket>`, or
+`ph workflow finish implement` can record green evidence when the same
+ticket/test id passes. With `enforce.tdd` enabled, archive/finish block until
+that same ticket/test id has red evidence followed by PH-observed green
+evidence. If strict execution verification is off, the rail is advisory and
+writes no fake red/green evidence.
+
+This is a deterministic red-first completion gate. It does not scaffold tests,
+prove tests are sufficient, run coverage, run mutation testing, or certify the
+generated app's product quality.
+
 ## A/B And ON/OFF Smoke Limits
 
 Existing A/B or ON/OFF smoke results are stack-steering signals only. They are not product-quality proof because the samples are small, often `n=1`, non-blind, run by the same operator, and sensitive to model, provider, version, prompt, timeout, and continuation behavior.
@@ -426,7 +450,7 @@ Existing A/B or ON/OFF smoke results are stack-steering signals only. They are n
 - It does not turn evidence counts into quality improvement claims.
 - It does not prove tests are sufficient.
 - It does not productize frontend, infra, or desktop workflows yet.
-- It is not the final TDD workflow yet.
+- It does not provide a full TDD framework, test scaffolding, coverage, or mutation testing.
 - It is not useful as a full workflow without OpenCode.
 - `ph bearshell` is not a sandbox. It limits runtime and output size, but commands still run on your machine.
 
@@ -442,10 +466,11 @@ npm view persona-harness@next version
 ```
 
 For the current release-candidate line, `next` is the tester-facing dist-tag.
-As of the latest registry check, `next=0.4.0-rc.7` and `alpha`/`latest` remain
-at `0.3.9-alpha.8`. Local `main` may include later docs or preview code that is
-not in the registry package until a later publish verifies gitHead. Verify
-dist-tags and package gitHead before treating any install as current.
+As of the latest registry check before rc8 publish, `next=0.4.0-rc.7` and
+`alpha`/`latest` remain at `0.3.9-alpha.8`. Local `main` may include later docs
+or preview code that is not in the registry package until a later publish
+verifies gitHead. Verify dist-tags and package gitHead before treating any
+install as current.
 
 ### `opencode` is not found
 

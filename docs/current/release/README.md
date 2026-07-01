@@ -40,6 +40,12 @@ at `0.4.0-rc.7` with gitHead
 `640b8d3833e8de12657cdebf4ff0bc2877878c6d`. `latest` remains
 `0.3.9-alpha.8`.
 
+`0.4.0-rc.8` is the current next-channel release-prep candidate for the opt-in
+TDD Workflow Rail. It packages `b5d98e1286c5a7f0349af8a461efdf2ce84a653e`
+(`feat(cli): add tdd workflow rail`) plus the one-surface changelog smoke
+record. Until publish verifies the rc8 gitHead, registry `@next` remains rc7
+behavior.
+
 Post-rc5 local/origin docs and preview work may include later commits such as
 R1 injection/prose cleanup, the code-nav CLI/package preview, and token proxy
 measurement notes. Treat those as local/current HEAD or fresh local-tarball
@@ -138,6 +144,19 @@ config preservation, no `.codegraph` auto-init, and the missing-binary
 CodeGraph unavailable facade. `opencode mcp list --pure` showing `codegraph`
 connected is protocol-alive facade evidence only, not usable indexing or
 effectiveness.
+
+Post-rc7 TDD Workflow Rail at
+`b5d98e1286c5a7f0349af8a461efdf2ce84a653e` is opt-in package-runtime behavior:
+`enforce.tdd` is default-off; `ph workflow test` records red evidence only from
+PH-run strict Gradle/JUnit testcase failures; compile/no-JUnit failure and JUnit
+`<error>` do not count as red; and archive/finish can hard-block until the same
+ticket/test id has red evidence followed by PH-observed green evidence. Fresh
+local/current tarball smoke passed for strict-off advisory, valid red,
+invalid-red rejection, hand-written minimal evidence rejection, and red-to-green
+archive/finish. This is not registry `@next` behavior until rc8 publish verifies
+the same gitHead, and it is not test-sufficiency, product-quality, full TDD
+framework, scaffolding, coverage, mutation-testing, generated-app certification,
+broad reliability, or closure-guarantee evidence.
 
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
@@ -345,6 +364,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.5 release notes](v0.4.0-rc.5-release-notes.md)
 - [v0.4.0-rc.6 release notes](v0.4.0-rc.6-release-notes.md)
 - [v0.4.0-rc.7 release notes](v0.4.0-rc.7-release-notes.md)
+- [v0.4.0-rc.8 release notes](v0.4.0-rc.8-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

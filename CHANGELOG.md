@@ -6,6 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## [0.4.0-rc.8] - 2026-07-01
+
+- Prepared `0.4.0-rc.8` as the next-channel prerelease candidate for the
+  opt-in TDD Workflow Rail. Until registry publish and gitHead verification,
+  this is release-prep/local-current evidence only.
 - Added the opt-in TDD workflow rail behind `enforce.tdd`. `ph workflow test`
   records red evidence only from PH-run strict Gradle/JUnit verification
   (`enforce.executeVerification=true`), and workflow closure blocks archive or
@@ -18,7 +25,8 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   or run mutation testing.
 - External local/current tarball package-runtime smoke for
   `b5d98e1286c5a7f0349af8a461efdf2ce84a653e` accepted the TDD rail behavior as
-  package version `0.4.0-rc.7`, not registry `@next` behavior:
+  package version `0.4.0-rc.7`; rc8 packages that accepted behavior for the
+  next-channel candidate after release prep:
   - archive:
     `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/tdd-workflow-rail-b5d98e1-20260701-164350`;
   - tarball:
