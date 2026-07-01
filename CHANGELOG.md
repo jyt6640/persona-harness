@@ -31,6 +31,25 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   `next=0.4.0-rc.7`, `latest=0.3.9-alpha.8`, `alpha=0.3.9-alpha.8`.
 - Created and pushed `v0.4.0-rc.7` after registry gitHead verification; the tag
   points at `640b8d3833e8de12657cdebf4ff0bc2877878c6d`.
+- External registry-only smoke installed `persona-harness@next` as
+  `0.4.0-rc.7` and verified the default developer MCP bundle package/runtime
+  surface:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc7-registry-developer-mcp-20260701-134918`;
+  - work root: `/tmp/persona-rc7-registry-developer-mcp-20260701-134918`;
+  - package entries included `ph-codegraph-mcp`,
+    `packages/codegraph-mcp/bin/codegraph-mcp.mjs`,
+    `packages/codegraph-mcp/lib/codegraph-core.mjs`, and optional dependency
+    metadata for `@colbymchenry/codegraph@1.1.6`;
+  - default init/bootstrap registered remote `grep_app`, remote `context7`, and
+    the local PH `codegraph` wrapper, with no fake `git_bash`/`lsp` and no
+    `.codegraph` auto-init;
+  - `--no-developer-mcp`, `--no-codegraph`, and config preservation passed;
+  - missing-binary CodeGraph facade passed framed and newline JSON-RPC as a
+    protocol-alive status-only unavailable surface with `isError:true` payloads,
+    no fake indexed/search tools, and clean stderr;
+  - `opencode mcp list --pure` showed `grep_app`, `context7`, and `codegraph`
+    connected, which is facade/protocol evidence only.
 - No token-saving, provider-token saving, product-efficacy, navigation-benefit,
   PH-owned CodeGraph, CodeGraph replacement, OMO parity/replacement, Codex
   support, generated app certification, broad reliability, or closure guarantee

@@ -130,8 +130,14 @@ Post-publish registry verification confirmed gitHead
 `640b8d3833e8de12657cdebf4ff0bc2877878c6d`, shasum
 `9d6cb2167fbbf5aa3bdb925b4ec2b6d3652ccd07`, and dist-tags
 `next=0.4.0-rc.7`, `latest=0.3.9-alpha.8`, `alpha=0.3.9-alpha.8`.
-Registry-only package-surface smoke remains a separate check before recording
-registry-smoke behavior.
+Registry-only package-surface smoke installed `persona-harness@next` as
+`0.4.0-rc.7` and passed for default developer MCP bundle package/runtime
+surface: package entries/bin metadata, default `grep_app`/`context7`/PH
+`codegraph` wrapper registration, `--no-developer-mcp`, `--no-codegraph`,
+config preservation, no `.codegraph` auto-init, and the missing-binary
+CodeGraph unavailable facade. `opencode mcp list --pure` showing `codegraph`
+connected is protocol-alive facade evidence only, not usable indexing or
+effectiveness.
 
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
