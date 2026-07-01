@@ -6,7 +6,33 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
 
 ## Unreleased
 
-- No unreleased changes after `0.4.0-rc.9` registry smoke.
+- Added the opt-in OpenCode LSP MCP wrapper surface from
+  `23465e2b3a6a503b2dc4eff510ebbe0fb96186ad`. External local/current tarball
+  package-runtime smoke accepted the behavior as version `0.4.0-rc.9`, not
+  registry `@next` behavior:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/p6-lsp-mcp-local-current-23465e2-20260701-214302`;
+  - npm shasum: `cff4ffae5601392efc4e3e2110b33409612f2e42`;
+  - sha256: `6472a7b19a826b80612d76aa8a303e9735cd8f33b6bb3c2637c261af5ec876b6`;
+  - package entries include `packages/lsp-mcp` manifest, README, bin, core,
+    stdio libs, root `ph-lsp-mcp`, and optional `@theupsider/lsp-mcp@1.1.2`
+    metadata;
+  - default bootstrap does not register `mcp.persona-harness-lsp`; opt-in
+    `--lsp-preview --no-developer-mcp` registers only the wrapper and preserves
+    existing OpenCode config;
+  - missing-dependency facade passed newline and framed MCP with
+    protocol-alive `lsp_status` only, unavailable status, clean stderr, and
+    `isError:true` for fake `lsp_definition` / unknown tools;
+  - proxy guard passed with fake binaries: upstream-only and Java-LSP-only stay
+    status-only, while fake upstream plus fake Java LSP exposes upstream
+    `lsp_definition`.
+  This is package/runtime surface and guard-mechanics evidence only. OpenCode
+  connected means the wrapper/facade is protocol-alive, not real Java LSP
+  usability. It is not registry evidence, not a real Java LSP tool-call, not
+  A/B/default/effectiveness evidence, and not a fake LSP result, code-nav
+  relabeling/replacement, Codex support, token-saving, provider-token,
+  product-efficacy, navigation-benefit, product-quality, generated-app
+  certification, broad reliability, or closure guarantee claim.
 
 ## [0.4.0-rc.9] - 2026-07-01
 
