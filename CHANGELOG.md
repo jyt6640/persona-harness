@@ -189,6 +189,35 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
     but this bounded A/B was worse with CodeGraph ON; effectiveness is
     deferred/no-keep, with no token-saving, provider-token, product-efficacy, or
     navigation-benefit claim.
+- Post-rc6 default developer MCP bundle smoke:
+  - source HEAD: `a9dcf044ff423fc4b94e549d365febe0844ab960`
+    (`a9dcf04 feat(cli): add developer MCP bundle`);
+  - source was a fresh local/current tarball only, not registry `@next`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/developer-mcp-bundle-a9dcf04-20260701-125655/persona-harness-0.4.0-rc.6.tgz`;
+  - npm shasum: `24631c91d8ad4791ab7b8a3ca139312ddd8989eb`;
+  - sha256: `7adc96fdbd14bf9447f70ff8de7dc3fe0192c8d875516aaabbd454170d12936a`;
+  - package includes `packages/codegraph-mcp/bin/codegraph-mcp.mjs`,
+    `packages/codegraph-mcp/lib/codegraph-core.mjs`, root bin
+    `ph-codegraph-mcp`, and optional dependency metadata for
+    `@colbymchenry/codegraph@1.1.6`;
+  - default init/bootstrap registers remote `grep_app`, remote `context7`, and
+    local PH `codegraph` wrapper, with no fake `git_bash` or `lsp` surfaces and
+    no `.codegraph` auto-init;
+  - `--no-developer-mcp`, `--no-codegraph`, `--codegraph-preview`, and config
+    preservation passed;
+  - missing-binary CodeGraph unavailable facade passed framed and newline MCP:
+    protocol alive, `tools/list` status-only, `tools/call status` and unknown
+    tool returned `isError:true` unavailable payloads, no fake indexed/search
+    tools, and clean stderr;
+  - `opencode mcp list --pure` showed `grep_app`, `context7`, and `codegraph`
+    connected, where CodeGraph connected means protocol-alive wrapper/facade,
+    not usable indexing or effectiveness;
+  - this is local/current package-runtime surface evidence only, not registry
+    `@next` behavior, token-saving, provider-token saving, product-efficacy,
+    navigation-benefit, PH-owned CodeGraph, OMO parity/replacement, Codex
+    support, generated app certification, broad reliability, or closure
+    guarantee evidence.
 
 ## [0.4.0-rc.5] - 2026-06-30
 

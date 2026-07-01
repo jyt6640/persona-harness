@@ -108,6 +108,22 @@ versus OFF 0 calls, 52,746ms, 3 reads, 11,080 read chars, and
 token-saving, provider-token, product-efficacy, navigation-benefit, PH-owned
 codegraph, OMO parity/replacement, Codex support, or auto-init claim.
 
+Post-rc6 default developer MCP bundle at
+`a9dcf044ff423fc4b94e549d365febe0844ab960` is local/current tarball
+package-runtime surface evidence only, not registry `@next` behavior until a
+later publish verifies that gitHead. Default init/bootstrap registers remote
+`grep_app`, remote `context7`, and a local PH `codegraph` wrapper, with no fake
+`git_bash`/`lsp` OpenCode MCP surfaces and no `.codegraph` auto-init.
+`--no-developer-mcp`, `--no-codegraph`, `--codegraph-preview`, and config
+preservation passed. The missing-binary CodeGraph wrapper stays protocol-alive
+as an unavailable facade: `tools/list` is status-only, `tools/call status` and
+unknown tools return `isError:true` unavailable payloads, no fake indexed/search
+tools are exposed, and stderr is clean. `opencode mcp list --pure` showing
+CodeGraph connected means the wrapper/facade connected, not usable indexing or
+effectiveness. This is not token-saving, provider-token, product-efficacy,
+navigation-benefit, PH-owned CodeGraph, OMO parity/replacement, Codex support,
+generated app certification, broad reliability, or closure guarantee evidence.
+
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
 and not a separate release channel.
