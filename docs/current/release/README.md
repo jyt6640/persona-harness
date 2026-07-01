@@ -34,10 +34,10 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release prep target: `0.4.0-rc.10` for the P6 opt-in OpenCode LSP MCP
-wrapper package surface. Until rc10 is published and registry gitHead is
-verified, registry `@next` remains published `0.4.0-rc.9` with gitHead
-`fd597970877756f0523fb73ad1e093473e75a97a`. `latest` remains
+Current published release line: `0.4.0-rc.10` is published under `next` for the
+P6 opt-in OpenCode LSP MCP wrapper package/runtime surface. Registry `@next`
+points at `0.4.0-rc.10` with gitHead
+`58f9ac255b615f40cdd8046e9a73b772e7ceae36`. `latest` remains
 `0.3.9-alpha.8`.
 
 `0.4.0-rc.10` packages the P6 LSP MCP wrapper after rc9:
@@ -51,6 +51,21 @@ verified, registry `@next` remains published `0.4.0-rc.9` with gitHead
 This rc10 prep has no real Java LSP tool-call observation, no default LSP
 registration, no A/B or effectiveness claim, no fake symbol/definition/reference
 results, and no Codex support claim.
+
+Post-publish registry verification confirmed shasum
+`f00f78e578a4b89390ffb8a91c907bf5033189c7`; `v0.4.0-rc.10` points at the same
+gitHead after registry verification. External registry-only smoke installed
+`persona-harness@next` as `0.4.0-rc.10` and verified the registry package
+entries/root `ph-lsp-mcp`, default no-LSP bootstrap, opt-in
+`--lsp-preview --no-developer-mcp` registration with config preservation,
+missing-dependency unavailable facade, and proxy guard with fake binaries.
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc10-registry-lsp-mcp-20260701-220032`.
+This is registry package/runtime surface and guard-mechanics evidence only:
+OpenCode connected means protocol-alive wrapper/facade, not real Java LSP
+capability, default LSP behavior, A/B effectiveness, token saving, product
+quality, code-nav replacement, Codex support, broad reliability, or closure
+guarantee.
 
 Previously, `0.4.0-rc.9` packaged the P1.5/P2/P3/P4 workflow rail delivery
 after rc8:

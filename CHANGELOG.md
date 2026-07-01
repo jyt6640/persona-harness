@@ -36,6 +36,38 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   relabeling/replacement, Codex support, token-saving, provider-token,
   product-efficacy, navigation-benefit, product-quality, generated-app
   certification, broad reliability, or closure guarantee claim.
+- Published `0.4.0-rc.10` under `next` and verified registry gitHead
+  `58f9ac255b615f40cdd8046e9a73b772e7ceae36`, registry shasum
+  `f00f78e578a4b89390ffb8a91c907bf5033189c7`, and dist-tags
+  `next=0.4.0-rc.10`, `latest=0.3.9-alpha.8`, `alpha=0.3.9-alpha.8`.
+- Created and pushed `v0.4.0-rc.10` after registry gitHead verification; the
+  tag points at `58f9ac255b615f40cdd8046e9a73b772e7ceae36`.
+- External registry-only smoke installed `persona-harness@next` as
+  `0.4.0-rc.10` and verified the LSP MCP package/runtime surface:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc10-registry-lsp-mcp-20260701-220032`;
+  - registry package included `packages/lsp-mcp` manifest, README, bin, core,
+    stdio libs, root `ph-lsp-mcp`, and optional `@theupsider/lsp-mcp@1.1.2`
+    metadata;
+  - default backend bootstrap did not register `mcp.persona-harness-lsp`;
+  - opt-in `--lsp-preview --no-developer-mcp` registered the wrapper, preserved
+    config, and did not auto-create `.codegraph`;
+  - help/capabilities kept opt-in, no-auto-install, no-code-nav-relabeling, and
+    no token/product-quality boundaries;
+  - missing-dependency facade passed newline/framed MCP with clean stderr,
+    initialize/tools-list/tools-call, `lsp_status` only, unavailable status, and
+    `isError:true` for fake `lsp_definition` / unknown tools;
+  - proxy guard with fake binaries kept upstream-only and Java-LSP-only
+    status-only, while fake upstream plus fake Java LSP exposed upstream
+    `lsp_definition`;
+  - `opencode mcp list --pure` connected, meaning protocol-alive
+    wrapper/facade only.
+- The rc10 registry smoke is package/runtime surface and guard-mechanics
+  evidence only: no real Java LSP tool calls, default LSP registration,
+  A/B/effectiveness, token/provider-token savings, product
+  efficacy/navigation-benefit, product quality, generated-app certification,
+  broad reliability, closure guarantee, Codex support, or code-nav
+  relabeling/replacement claim.
 
 ## [0.4.0-rc.9] - 2026-07-01
 
