@@ -1,15 +1,17 @@
 import { join } from "node:path"
 
 import type { CliRunResult } from "./bearshell.js"
+import { formatInstructionCheckReport, readInstructionCheckReport } from "./instructions-check.js"
 import { inferBackendInstructions } from "./instructions-engine.js"
 import { INSTRUCTIONS_OUTPUT_DIR, type InstructionInferenceResult } from "./instructions-model.js"
 
 export function instructionsUsage(invocationName: string): string {
   return [
-    `Usage: ${invocationName} instructions infer backend [--json]`,
+    `Usage: ${invocationName} instructions <command> [--json]`,
     "",
     "Commands:",
     "  instructions infer backend [--json]  Infer backend instruction candidates with provenance.",
+    "  instructions check [--json]          Check adopted instruction rules only.",
     "",
     "Boundaries:",
     "  Inference writes .persona/instructions/inferred.json and conflicts.json.",
@@ -27,15 +29,31 @@ export function runInstructionsCommand(
   }
   const json = args.includes("--json")
   const positional = args.filter((arg) => arg !== "--json")
-  if (positional.length !== 2 || positional[0] !== "infer" || positional[1] !== "backend") {
+  if (positional.length === 2 && positional[0] === "infer" && positional[1] === "backend") {
+    return runInstructionsInfer(options.projectDir ?? process.cwd(), json)
+  }
+  if (positional.length === 1 && positional[0] === "check") {
+    return runInstructionsCheck(options.projectDir ?? process.cwd(), json)
+  }
+  {
     return { status: 1, stdout: "", stderr: `Unknown instructions command.\n\n${instructionsUsage(invocationName)}\n` }
   }
-  const projectDir = options.projectDir ?? process.cwd()
+}
+
+function runInstructionsInfer(projectDir: string, json: boolean): CliRunResult {
   const result = inferBackendInstructions(projectDir)
   if (json) {
     return { status: 0, stdout: `${JSON.stringify(result.inferred, null, 2)}\n`, stderr: "" }
   }
   return { status: 0, stdout: formatInstructionInference(result), stderr: "" }
+}
+
+function runInstructionsCheck(projectDir: string, json: boolean): CliRunResult {
+  const report = readInstructionCheckReport(projectDir)
+  if (json) {
+    return { status: 0, stdout: `${JSON.stringify(report, null, 2)}\n`, stderr: "" }
+  }
+  return { status: 0, stdout: formatInstructionCheckReport(report), stderr: "" }
 }
 
 function formatInstructionInference(result: InstructionInferenceResult): string {

@@ -6,13 +6,15 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-- Added read-only `ph instructions infer backend [--json]` as the first
+- Added read-only `ph instructions infer backend [--json]` and
+  `ph instructions check [--json]` as the first
   instruction inference preview. It inventories project profile, source tree,
   Gradle shape, Java role files, test naming, DTO/domain separation, and
   README/profile build-tool conflicts into `.persona/instructions/inferred.json`
-  and `conflicts.json` with source refs. Inferred rules are not adopted policy,
-  closure blockers, company compliance guarantees, app-quality guarantees, or
-  broad linter claims.
+  and `conflicts.json` with source refs. The check surface reads
+  `.persona/instructions/adopted.json` only and ignores inferred-only
+  candidates. Inferred rules are not adopted policy, closure blockers, company
+  compliance guarantees, app-quality guarantees, or broad linter claims.
 
 - Added a precise `spring.bootjar-enabled` conformance blocker for executable
   Java/Spring/Gradle profiles. It blocks only when a Spring Boot application

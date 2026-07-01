@@ -119,9 +119,61 @@ describe("ph instructions infer backend", () => {
     const rootHelp = runPersonaCli(["--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain("Usage: ph instructions infer backend [--json]")
+    expect(help.stdout).toContain("Usage: ph instructions <command> [--json]")
+    expect(help.stdout).toContain("instructions check [--json]")
     expect(bad.status).toBe(1)
     expect(bad.stderr).toContain("Unknown instructions command")
     expect(rootHelp.stdout).toContain("instructions infer backend")
+  })
+})
+
+describe("ph instructions check", () => {
+  it("does not check inferred-only rules when no adopted policy exists", () => {
+    const projectDir = createTempProject()
+    writeProfile(projectDir)
+    writeJavaFixture(projectDir)
+    const infer = runPersonaCli(["instructions", "infer", "backend"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    const check = runPersonaCli(["instructions", "check", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const report = JSON.parse(check.stdout)
+
+    expect(infer.status).toBe(0)
+    expect(check.status).toBe(0)
+    expect(report.schemaVersion).toBe("instructions-check.1")
+    expect(report.adoptedRules).toBe(0)
+    expect(report.findings).toEqual([])
+    expect(report.limitations.join("\n")).toContain("Only adopted rules are checked")
+  })
+
+  it("reports drift only for adopted deterministic rules without blocking closure", () => {
+    const projectDir = createTempProject()
+    writeProfile(projectDir)
+    writeJavaFixture(projectDir)
+    const adoptedDir = join(projectDir, ".persona", "instructions")
+    mkdirSync(adoptedDir, { recursive: true })
+    writeFileSync(
+      join(adoptedDir, "adopted.json"),
+      `${JSON.stringify(
+        {
+          rules: [{ id: "architecture.controller-service-repository", mode: "advisory" }],
+          schemaVersion: "instructions-adopted.1",
+        },
+        null,
+        2,
+      )}\n`,
+    )
+    const controllerPath = join(projectDir, "src", "main", "java", "com", "example", "task", "presentation", "TaskController.java")
+    writeFileSync(
+      controllerPath,
+      "import com.example.task.domain.TaskRepository;\nclass TaskController { private final TaskRepository repository; }\n",
+    )
+
+    const check = runPersonaCli(["instructions", "check", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const report = JSON.parse(check.stdout)
+
+    expect(check.status).toBe(0)
+    expect(JSON.stringify(report)).toContain("drift.controller-repository-direct-dependency")
+    expect(JSON.stringify(report)).toContain("TaskController.java")
+    expect(existsSync(join(projectDir, ".persona", "workflow", "closure.json"))).toBe(false)
   })
 })
