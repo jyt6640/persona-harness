@@ -17,6 +17,36 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   reads `.persona/instructions/adopted.json` only and ignores inferred-only
   candidates. Inferred rules are not adopted policy, closure blockers, company
   compliance guarantees, app-quality guarantees, or broad linter claims.
+  QA and External accepted the local/current package-runtime surface for
+  `ef18f8f20ff0bffe1de6c65481b4141740888b95`, with registry evidence deferred
+  until a future publish includes that gitHead:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/instructions-infer-adopt-check-ef18f8f-20260701T164452Z`;
+  - tarball:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/instructions-infer-adopt-check-ef18f8f-20260701T164452Z/persona-harness-0.4.0.tgz`;
+  - npm shasum: `9a5c115cbe112e3e9974968821bdd47c3d828c92`;
+    sha256:
+    `af5d1ab225e24ae12a8a9813f98af2809b8484f695b4dc32b12ef84bebd5ea6a`;
+  - package entries included `dist/cli/instructions-infer.js`,
+    `instructions-adopt.js`, `instructions-check.js`,
+    `instructions-engine.js`, and `instructions-model.js`;
+  - help surfaces exited 0; invalid `instructions wat` exited 1;
+  - `infer backend --json` wrote schemas `instructions-inferred.1` and
+    `instructions-conflicts.1`, including
+    `conflict.docs-buildtool-maven-vs-profile-gradle`, with no auto-fix;
+  - `check --json` before adoption reported schema `instructions-check.1`,
+    `adoptedRules=0`, and no findings;
+  - `adopt --min-confidence high --json` wrote
+    `instructions-adopt-result.1` and `instructions-adopted.1` without adopting
+    conflict ids;
+  - check after adopted `architecture.controller-service-repository` emitted
+    `drift.controller-repository-direct-dependency` with source refs;
+  - only `.persona/instructions/inferred.json`, `conflicts.json`, and
+    `adopted.json` were created; no harness config, workflow closure, or finish
+    blocker state was mutated.
+  This remains preview/package-runtime evidence only, not registry evidence,
+  company compliance, app-quality, Clean Code superiority, broad linter, closure
+  guarantee, token-saving, or product-efficacy evidence.
 
 - Added a precise `spring.bootjar-enabled` conformance blocker for executable
   Java/Spring/Gradle profiles. It blocks only when a Spring Boot application
