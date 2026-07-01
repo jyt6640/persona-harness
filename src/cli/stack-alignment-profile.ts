@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
 
 export type ProfileIntent = {
+  readonly applicationType: string
   readonly architectureStyle: string
   readonly buildTool: string
   readonly framework: string
@@ -36,6 +37,7 @@ export function readProfileIntent(projectDir: string): ProfileIntent | undefined
     }
   }
   return {
+    applicationType: answers.get("application-type") ?? "",
     architectureStyle: answers.get("architecture-style") ?? "",
     buildTool: readString(parsed.defaults.buildTool),
     framework: readString(parsed.defaults.framework),

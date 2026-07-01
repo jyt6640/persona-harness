@@ -67,16 +67,33 @@ export const SERVICE_STATE_OWNERSHIP_CONVENTION = {
   writeGuard: false,
 } satisfies ConventionDefinition
 
+export const SPRING_BOOTJAR_ENABLED_CONVENTION = {
+  actionableMessage: "keep bootJar enabled for executable Spring Boot applications.",
+  blockAllowed: true,
+  blockerId: "architecture-spring-bootjar-disabled",
+  check: { kind: "observer" },
+  defaultLevel: "block",
+  fixPath: "remove the bootJar disabled override and fix Spring Boot plugin/JDK/Gradle compatibility instead.",
+  highPrecision: true,
+  id: "spring.bootjar-enabled",
+  profileScope: "java-spring-service-architecture",
+  scope: "tree",
+  stepId: "fix-spring-bootjar-enabled",
+  writeGuard: false,
+} satisfies ConventionDefinition
+
 export const CONVENTION_REGISTRY = [
   CONTROLLER_REPOSITORY_CONVENTION,
   CONTROLLER_PERSISTENCE_IMPORT_CONVENTION,
   SERVICE_STATE_OWNERSHIP_CONVENTION,
+  SPRING_BOOTJAR_ENABLED_CONVENTION,
 ] as const
 
 export const DEFAULT_CONVENTION_LEVELS: Readonly<Record<string, ConventionLevel>> = {
   [CONTROLLER_REPOSITORY_CONVENTION.id]: CONTROLLER_REPOSITORY_CONVENTION.defaultLevel,
   [CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id]: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.defaultLevel,
   [SERVICE_STATE_OWNERSHIP_CONVENTION.id]: SERVICE_STATE_OWNERSHIP_CONVENTION.defaultLevel,
+  [SPRING_BOOTJAR_ENABLED_CONVENTION.id]: SPRING_BOOTJAR_ENABLED_CONVENTION.defaultLevel,
 }
 
 export function findConventionDefinition(id: string): ConventionDefinition | undefined {

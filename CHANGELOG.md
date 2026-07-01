@@ -6,6 +6,15 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added a precise `spring.bootjar-enabled` conformance blocker for executable
+  Java/Spring/Gradle profiles. It blocks only when a Spring Boot application
+  (`@SpringBootApplication` plus Spring Boot build signal) disables `bootJar`,
+  reports file:line evidence and a fix path through the existing closure guard,
+  and leaves comments, string lookalikes, other Gradle tasks, and non-executable
+  app profiles alone. This is a narrow deterministic violation gate, not a
+  broad AST/linter, product-quality, generated-app certification, broad
+  reliability, or closure-success guarantee.
+
 - Added read-only `ph evidence ab-report [--json]` for structured local A/B
   evidence. The report groups matched scenarios and conditions, summarizes
   finish pass/fail/blocked counts, blocked-invalid-completion counts, elapsed
