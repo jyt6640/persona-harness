@@ -15,6 +15,11 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   broad AST/linter, product-quality, generated-app certification, broad
   reliability, or closure-success guarantee.
 
+- Hardened TDD rail adversarial coverage for stale red evidence with mismatched
+  JUnit snapshot digests and red evidence recorded under a different ticket.
+  This is test coverage for the existing PH-run evidence gate, not a new full
+  TDD framework, test-sufficiency, or app-quality claim.
+
 - Added read-only `ph evidence ab-report [--json]` for structured local A/B
   evidence. The report groups matched scenarios and conditions, summarizes
   finish pass/fail/blocked counts, blocked-invalid-completion counts, elapsed
