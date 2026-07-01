@@ -45,6 +45,37 @@ No unreleased changes yet.
   product quality, generated-app certification, a full TDD framework,
   scaffolding, coverage, mutation testing, broad reliability, or closure
   guarantee.
+- Published `0.4.0-rc.8` under `next` and verified registry gitHead
+  `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`, registry shasum
+  `fc4de25901d4c678799ea66b8e63293dc5f46a12`, and dist-tags
+  `next=0.4.0-rc.8`, `latest=0.3.9-alpha.8`, `alpha=0.3.9-alpha.8`.
+- Created and pushed `v0.4.0-rc.8` after registry gitHead verification; the tag
+  points at `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`.
+- External registry-only smoke installed `persona-harness@next` as
+  `0.4.0-rc.8` and verified the opt-in TDD Workflow Rail package/runtime
+  surface:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc8-registry-tdd-workflow-rail-20260701-193324`;
+  - package entries included `dist/cli/workflow-tdd.js` and
+    `dist/cli/closure-verification-runner.js`;
+  - default generated config omits `enforce.tdd` and the installed runtime
+    default remains `tdd:false`;
+  - strict-off/advisory with `enforce.tdd=true` and
+    `executeVerification=false` exited 0, wrote no red/green evidence, and did
+    not add a TDD hard blocker;
+  - strict PH-run Gradle/JUnit `<failure>` recorded red evidence with
+    `execution=ph-direct-gradle-junit`, `generatedBy=persona-harness`, test id,
+    JUnit snapshot, and digest;
+  - compile/no-JUnit failure and JUnit `<error>` wrote no red evidence;
+  - green-only/no-red and hand-written minimal forged evidence blocked with
+    `tdd-red-evidence-missing`;
+  - red->green for the same ticket/test id passed `workflow test`,
+    `workflow check`, `workflow archive req-1`, and
+    `workflow finish implement`.
+- The rc8 registry smoke is package/runtime surface evidence only: no
+  model/OpenCode/eval evidence, no token-saving claim, no product-quality,
+  test-sufficiency, full-TDD-framework, scaffolding, coverage, mutation,
+  generated-app certification, broad reliability, or closure guarantee claim.
 
 ## [0.4.0-rc.7] - 2026-07-01
 

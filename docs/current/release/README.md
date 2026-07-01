@@ -34,17 +34,17 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current published release line: `0.4.0-rc.7` is published under `next` for the
-default OpenCode developer MCP bundle package surface. Registry `@next` points
-at `0.4.0-rc.7` with gitHead
-`640b8d3833e8de12657cdebf4ff0bc2877878c6d`. `latest` remains
+Current published release line: `0.4.0-rc.8` is published under `next` for the
+opt-in TDD Workflow Rail package/runtime surface. Registry `@next` points at
+`0.4.0-rc.8` with gitHead
+`18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd`. `latest` remains
 `0.3.9-alpha.8`.
 
-`0.4.0-rc.8` is the current next-channel release-prep candidate for the opt-in
-TDD Workflow Rail. It packages `b5d98e1286c5a7f0349af8a461efdf2ce84a653e`
-(`feat(cli): add tdd workflow rail`) plus the one-surface changelog smoke
-record. Until publish verifies the rc8 gitHead, registry `@next` remains rc7
-behavior.
+`0.4.0-rc.8` packages `b5d98e1286c5a7f0349af8a461efdf2ce84a653e`
+(`feat(cli): add tdd workflow rail`) plus the release-prep docs. Post-publish
+registry verification confirmed shasum
+`fc4de25901d4c678799ea66b8e63293dc5f46a12`; `v0.4.0-rc.8` points at the same
+gitHead after registry verification.
 
 Post-rc5 local/origin docs and preview work may include later commits such as
 R1 injection/prose cleanup, the code-nav CLI/package preview, and token proxy
@@ -153,10 +153,23 @@ PH-run strict Gradle/JUnit testcase failures; compile/no-JUnit failure and JUnit
 ticket/test id has red evidence followed by PH-observed green evidence. Fresh
 local/current tarball smoke passed for strict-off advisory, valid red,
 invalid-red rejection, hand-written minimal evidence rejection, and red-to-green
-archive/finish. This is not registry `@next` behavior until rc8 publish verifies
-the same gitHead, and it is not test-sufficiency, product-quality, full TDD
-framework, scaffolding, coverage, mutation-testing, generated-app certification,
-broad reliability, or closure-guarantee evidence.
+archive/finish.
+
+`0.4.0-rc.8` publishes that TDD Workflow Rail under `next`. External
+registry-only smoke installed `persona-harness@next` as `0.4.0-rc.8` from
+registry gitHead `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd` and verified:
+package entries `dist/cli/workflow-tdd.js` and
+`dist/cli/closure-verification-runner.js`, default `tdd:false`, strict-off
+advisory with no fake evidence, valid PH-run Gradle/JUnit red evidence,
+invalid-red rejection for compile/no-JUnit failure and JUnit `<error>`,
+green-only/no-red and hand-written forged evidence blocking with
+`tdd-red-evidence-missing`, and red-to-green check/archive/finish PASS for the
+same ticket/test id. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc8-registry-tdd-workflow-rail-20260701-193324`.
+This is registry package/runtime surface evidence only, not model/OpenCode/eval
+evidence, and not test-sufficiency, product-quality, full TDD framework,
+scaffolding, coverage, mutation-testing, generated-app certification, broad
+reliability, or closure-guarantee evidence.
 
 `docs/evidence-reviews/` is a documentation taxonomy area for observations and
 review records. It is not a published `evidence-review` package, not a dist-tag,
