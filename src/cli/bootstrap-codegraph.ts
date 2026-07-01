@@ -1,18 +1,22 @@
-import { accessSync, constants, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { delimiter, dirname, join } from "node:path"
-import process from "node:process"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { dirname, join, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
 import type { CliRunResult } from "./bearshell.js"
 
 const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
 const CODEGRAPH_MCP_ID = "codegraph"
+const CONTEXT7_MCP_ID = "context7"
+const GREP_APP_MCP_ID = "grep_app"
 
 type JsonObject = Record<string, unknown>
-type CodeGraphPreviewResult =
-  | { readonly kind: "missing-binary" }
-  | { readonly kind: "registered" }
-  | { readonly kind: "failure"; readonly result: CliRunResult }
+type DeveloperMcpBundleResult = { readonly kind: "registered" } | { readonly kind: "failure"; readonly result: CliRunResult }
+
+type DeveloperMcpBundleOptions = {
+  readonly codeGraphEnabled?: boolean
+  readonly packageRoot?: string
+}
 
 type ReadConfigResult =
   | { readonly kind: "config"; readonly value: JsonObject }
@@ -30,7 +34,7 @@ function readJsonObject(path: string, label: string): ReadConfigResult {
         result: {
           status: 1,
           stdout: "",
-          stderr: `Persona Harness backend bootstrap failed during external CodeGraph preview.\n\n${label} must contain a JSON object.\n`,
+          stderr: `Persona Harness backend bootstrap failed during developer MCP bundle registration.\n\n${label} must contain a JSON object.\n`,
         },
       }
     }
@@ -42,7 +46,7 @@ function readJsonObject(path: string, label: string): ReadConfigResult {
         result: {
           status: 1,
           stdout: "",
-          stderr: `Persona Harness backend bootstrap failed during external CodeGraph preview.\n\nFailed to parse ${label}: ${error.message}\n`,
+          stderr: `Persona Harness backend bootstrap failed during developer MCP bundle registration.\n\nFailed to parse ${label}: ${error.message}\n`,
         },
       }
     }
@@ -55,51 +59,44 @@ function writeJsonObject(path: string, value: JsonObject): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8")
 }
 
-function candidateNames(): readonly string[] {
-  return process.platform === "win32" ? ["codegraph.cmd", "codegraph.exe", "codegraph"] : ["codegraph"]
+function defaultPackageRoot(): string {
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 }
 
-function hasExecutableCodeGraph(env: Readonly<Record<string, string | undefined>>): boolean {
-  const pathValue = env.PATH ?? process.env.PATH ?? ""
-  for (const directory of pathValue.split(delimiter)) {
-    if (directory.length === 0) {
-      continue
-    }
-    for (const candidate of candidateNames()) {
-      try {
-        accessSync(join(directory, candidate), constants.X_OK)
-        return true
-      } catch {
-        continue
-      }
-    }
-  }
-  return false
+function codeGraphMcpCommand(packageRoot: string): readonly string[] {
+  return ["node", join(packageRoot, "packages", "codegraph-mcp", "bin", "codegraph-mcp.mjs"), "mcp"]
 }
 
-export function enableExternalCodeGraphPreview(
-  projectDir: string,
-  env: Readonly<Record<string, string | undefined>> = process.env,
-): CodeGraphPreviewResult {
-  if (!hasExecutableCodeGraph(env)) {
-    return { kind: "missing-binary" }
-  }
-
+export function enableDeveloperMcpBundle(projectDir: string, options: DeveloperMcpBundleOptions = {}): DeveloperMcpBundleResult {
   const opencodeConfigPath = join(projectDir, OPENCODE_CONFIG_PATH)
   const parsed = readJsonObject(opencodeConfigPath, OPENCODE_CONFIG_PATH)
   if (parsed.kind === "failure") {
     return { kind: "failure", result: parsed.result }
   }
   const existingMcp = isRecord(parsed.value.mcp) ? parsed.value.mcp : {}
+  const packageRoot = resolve(options.packageRoot ?? defaultPackageRoot())
+  const codeGraphEntry = options.codeGraphEnabled === false
+    ? {}
+    : {
+        [CODEGRAPH_MCP_ID]: {
+          type: "local",
+          enabled: true,
+          command: codeGraphMcpCommand(packageRoot),
+        },
+      }
   writeJsonObject(opencodeConfigPath, {
     ...parsed.value,
     mcp: {
       ...existingMcp,
-      [CODEGRAPH_MCP_ID]: {
-        type: "local",
-        enabled: true,
-        command: ["codegraph", "serve", "--mcp"],
+      [GREP_APP_MCP_ID]: {
+        type: "remote",
+        url: "https://mcp.grep.app",
       },
+      [CONTEXT7_MCP_ID]: {
+        type: "remote",
+        url: "https://mcp.context7.com/mcp",
+      },
+      ...codeGraphEntry,
     },
   })
   return { kind: "registered" }

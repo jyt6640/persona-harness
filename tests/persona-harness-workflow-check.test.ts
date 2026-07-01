@@ -1255,7 +1255,68 @@ describe("ph bootstrap backend", () => {
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(false)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     expect(isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp["persona-harness-code-nav"] : undefined).toBeUndefined()
-    expect(isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp.codegraph : undefined).toBeUndefined()
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    expect(mcp.grep_app).toMatchObject({
+      type: "remote",
+      url: "https://mcp.grep.app",
+    })
+    expect(mcp.context7).toMatchObject({
+      type: "remote",
+      url: "https://mcp.context7.com/mcp",
+    })
+    expect(mcp.codegraph).toMatchObject({
+      type: "local",
+      enabled: true,
+      command: ["node", join(process.cwd(), "packages", "codegraph-mcp", "bin", "codegraph-mcp.mjs"), "mcp"],
+    })
+    expect(existsSync(join(projectDir, ".codegraph"))).toBe(false)
+  })
+
+  it("does not register the developer MCP bundle when backend bootstrap opts out", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend", "--no-developer-mcp"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("developer MCP bundle disabled by --no-developer-mcp")
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    expect(mcp.grep_app).toBeUndefined()
+    expect(mcp.context7).toBeUndefined()
+    expect(mcp.codegraph).toBeUndefined()
+    expect(existsSync(join(projectDir, ".codegraph"))).toBe(false)
+  })
+
+  it("keeps remote developer MCPs while disabling only CodeGraph", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend", "--no-codegraph"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("registered developer MCP bundle for OpenCode without CodeGraph")
+    expect(result.stdout).toContain("codegraph is disabled by --no-codegraph")
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    expect(mcp.grep_app).toMatchObject({
+      type: "remote",
+      url: "https://mcp.grep.app",
+    })
+    expect(mcp.context7).toMatchObject({
+      type: "remote",
+      url: "https://mcp.context7.com/mcp",
+    })
+    expect(mcp.codegraph).toBeUndefined()
+    expect(existsSync(join(projectDir, ".codegraph"))).toBe(false)
   })
 
   it("enables direct verification when backend bootstrap is strict", () => {
@@ -1465,62 +1526,134 @@ describe("ph bootstrap backend", () => {
     expect(smoke.stdout).toContain("ast_grep_availability")
   })
 
-  it("skips external CodeGraph preview with guidance when the binary is missing", () => {
+  it("keeps --codegraph-preview as a compatible alias for the default CodeGraph wrapper registration", () => {
     const projectDir = createTempProject()
 
     const result = runPersonaCli(["bootstrap", "backend", "--codegraph-preview"], {
       cwd: projectDir,
-      env: { PATH: "" },
+      env: {},
       invocationName: "ph",
       packageRoot: process.cwd(),
     })
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain("external CodeGraph MCP preview: codegraph binary not found on PATH")
-    expect(result.stdout).toContain("External CodeGraph preview:")
-    expect(result.stdout).toContain("opt-in only via --codegraph-preview")
-    expect(result.stdout).toContain("does not run codegraph init")
+    expect(result.stdout).toContain("registered developer MCP bundle for OpenCode")
+    expect(result.stdout).toContain("Developer MCP bundle:")
+    expect(result.stdout).toContain("registered by default for backend bootstrap")
+    expect(result.stdout).toContain("PH does not run codegraph init")
     expect(result.stdout).toContain("no PH-owned codegraph")
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
-    expect(isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp.codegraph : undefined).toBeUndefined()
-  })
-
-  it("registers external CodeGraph MCP when explicitly requested and codegraph is on PATH", () => {
-    const projectDir = createTempProject()
-    const binDir = join(projectDir, "fake-bin")
-    mkdirSync(binDir)
-    const codegraphPath = join(binDir, process.platform === "win32" ? "codegraph.cmd" : "codegraph")
-    writeFileSync(codegraphPath, process.platform === "win32" ? "@echo off\r\n" : "#!/bin/sh\n")
-    chmodSync(codegraphPath, 0o755)
-
-    const result = runPersonaCli(["bootstrap", "backend", "--codegraph-preview"], {
-      cwd: projectDir,
-      env: { PATH: binDir },
-      invocationName: "ph",
-      packageRoot: process.cwd(),
-    })
-
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain("registered external CodeGraph MCP preview for OpenCode")
-    expect(result.stdout).toContain("External CodeGraph preview:")
-    expect(result.stdout).toContain("codegraph init")
-    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    expect(mcp.grep_app).toMatchObject({
+      type: "remote",
+      url: "https://mcp.grep.app",
+    })
+    expect(mcp.context7).toMatchObject({
+      type: "remote",
+      url: "https://mcp.context7.com/mcp",
+    })
     expect(mcp.codegraph).toMatchObject({
       type: "local",
       enabled: true,
-      command: ["codegraph", "serve", "--mcp"],
+      command: ["node", join(process.cwd(), "packages", "codegraph-mcp", "bin", "codegraph-mcp.mjs"), "mcp"],
     })
-    expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))
   })
 
-  it("preserves existing OpenCode plugin, agent, and MCP fields when enabling external CodeGraph preview", () => {
+  it("writes a CodeGraph wrapper MCP command that reports unavailable instead of crashing", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    const entry = isRecord(mcp.codegraph) ? mcp.codegraph : {}
+    const command = Array.isArray(entry.command) ? entry.command.filter((part): part is string => typeof part === "string") : []
+    const initialize = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "0" } },
+    })
+    const list = JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} })
+    const status = JSON.stringify({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "status", arguments: {} } })
+    const input = [
+      `Content-Length: ${Buffer.byteLength(initialize)}\r\n\r\n${initialize}`,
+      `Content-Length: ${Buffer.byteLength(list)}\r\n\r\n${list}`,
+      `Content-Length: ${Buffer.byteLength(status)}\r\n\r\n${status}`,
+    ].join("")
+
+    const smoke = spawnSync(command[0] ?? "", command.slice(1), {
+      cwd: projectDir,
+      encoding: "utf8",
+      env: { ...process.env, PH_CODEGRAPH_BIN: join(projectDir, "missing-codegraph") },
+      input,
+    })
+
+    expect(result.status).toBe(0)
+    expect(command).toHaveLength(3)
+    expect(smoke.status).toBe(0)
+    expect(smoke.stderr).toBe("")
+    expect(smoke.stdout).toContain("codegraph")
+    expect(smoke.stdout).toContain("status")
+    expect(smoke.stdout).toContain("unavailable")
+    expect(smoke.stdout).toContain("PH_CODEGRAPH_BIN")
+  })
+
+  it("uses PH_CODEGRAPH_BIN when the CodeGraph wrapper MCP starts", () => {
     const projectDir = createTempProject()
     const binDir = join(projectDir, "fake-bin")
     mkdirSync(binDir)
-    const codegraphPath = join(binDir, process.platform === "win32" ? "codegraph.cmd" : "codegraph")
-    writeFileSync(codegraphPath, process.platform === "win32" ? "@echo off\r\n" : "#!/bin/sh\n")
+    const codegraphPath = join(binDir, "fake-codegraph.mjs")
+    writeFileSync(
+      codegraphPath,
+      [
+        "#!/usr/bin/env node",
+        "if (process.argv.slice(2).join(' ') !== 'serve --mcp') process.exit(2)",
+        "process.stdin.resume()",
+        "process.stdin.on('end', () => {",
+        "  process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { serverInfo: { name: 'fake-codegraph' } } }) + '\\n')",
+        "})",
+        "",
+      ].join("\n"),
+    )
     chmodSync(codegraphPath, 0o755)
+
+    const result = runPersonaCli(["bootstrap", "backend"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+    const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
+    const entry = isRecord(mcp.codegraph) ? mcp.codegraph : {}
+    const command = Array.isArray(entry.command) ? entry.command.filter((part): part is string => typeof part === "string") : []
+    const initialize = `${JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "0" } },
+    })}\n`
+
+    const smoke = spawnSync(command[0] ?? "", command.slice(1), {
+      cwd: projectDir,
+      encoding: "utf8",
+      env: { ...process.env, PH_CODEGRAPH_BIN: codegraphPath },
+      input: initialize,
+    })
+
+    expect(result.status).toBe(0)
+    expect(smoke.status).toBe(0)
+    expect(smoke.stderr).toBe("")
+    expect(smoke.stdout).toContain("fake-codegraph")
+  })
+
+  it("preserves existing OpenCode plugin, agent, and MCP fields when registering the default developer MCP bundle", () => {
+    const projectDir = createTempProject()
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     writeFileSync(
       join(projectDir, ".opencode", "opencode.json"),
@@ -1541,9 +1674,9 @@ describe("ph bootstrap backend", () => {
       )}\n`,
     )
 
-    const result = runPersonaCli(["bootstrap", "backend", "--codegraph-preview"], {
+    const result = runPersonaCli(["bootstrap", "backend"], {
       cwd: projectDir,
-      env: { PATH: binDir },
+      env: {},
       invocationName: "ph",
       packageRoot: process.cwd(),
     })
@@ -1556,10 +1689,18 @@ describe("ph bootstrap backend", () => {
     expect(opencodeConfig.agent).toEqual({ custom: { mode: "primary" } })
     const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
     expect(mcp.existing).toMatchObject({ command: ["node", "/tmp/existing.js", "mcp"] })
+    expect(mcp.grep_app).toMatchObject({
+      type: "remote",
+      url: "https://mcp.grep.app",
+    })
+    expect(mcp.context7).toMatchObject({
+      type: "remote",
+      url: "https://mcp.context7.com/mcp",
+    })
     expect(mcp.codegraph).toMatchObject({
       type: "local",
       enabled: true,
-      command: ["codegraph", "serve", "--mcp"],
+      command: ["node", join(process.cwd(), "packages", "codegraph-mcp", "bin", "codegraph-mcp.mjs"), "mcp"],
     })
   })
 

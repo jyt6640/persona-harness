@@ -4,7 +4,7 @@ import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
 import { enableCodeNavMcpPreview } from "./bootstrap-code-nav.js"
-import { enableExternalCodeGraphPreview } from "./bootstrap-codegraph.js"
+import { enableDeveloperMcpBundle } from "./bootstrap-codegraph.js"
 import { enableMultiAgentPreview } from "./bootstrap-multi-agent.js"
 import { enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
@@ -23,8 +23,10 @@ type BootstrapOptions = {
 }
 
 type BackendBootstrapFlags = {
+  readonly codeGraphEnabled: boolean
   readonly codeGraphPreview: boolean
   readonly codeNavPreview: boolean
+  readonly developerMcpEnabled: boolean
   readonly force: boolean
   readonly multiAgentPreview: boolean
   readonly strict: boolean
@@ -67,26 +69,34 @@ function multiAgentPreviewSummaryLines(): readonly string[] {
 function codeNavPreviewSummaryLines(): readonly string[] {
   return [
     "Code-nav MCP preview:",
-    "- opt-in only via --code-nav-preview; default bootstrap does not register MCP servers",
+    "- opt-in only via --code-nav-preview; default bootstrap does not register the PH code-nav MCP server",
     "- writes OpenCode mcp.persona-harness-code-nav for the packaged PH code-nav MCP server",
     "- exposes bounded lookup tools as persona-harness-code-nav_search_text, persona-harness-code-nav_status, and persona-harness-code-nav_ast_grep_availability",
     "- no codegraph/indexer and no token-saving claim",
   ]
 }
 
-function codeGraphPreviewSummaryLines(): readonly string[] {
+function developerMcpSummaryLines(flags: Pick<BackendBootstrapFlags, "codeGraphEnabled" | "developerMcpEnabled">): readonly string[] {
+  if (!flags.developerMcpEnabled) {
+    return []
+  }
+  const codeGraphLine = flags.codeGraphEnabled
+    ? "- codegraph is registered through the PH wrapper; if CodeGraph is unavailable, the wrapper keeps MCP protocol alive with an honest status-only MCP facade"
+    : "- codegraph is disabled by --no-codegraph; grep_app and context7 remain registered"
   return [
-    "External CodeGraph preview:",
-    "- opt-in only via --codegraph-preview; default bootstrap does not register external CodeGraph",
-    "- registers OpenCode mcp.codegraph only when a codegraph binary is already on PATH",
-    "- does not run codegraph init; create .codegraph intentionally with `codegraph init` before expecting indexed answers",
-    "- external optional integration only; no PH-owned codegraph, OMO replacement, or token-saving claim",
+    "Developer MCP bundle:",
+    "- registered by default for backend bootstrap; disable all bundle entries with --no-developer-mcp",
+    "- registers remote grep_app and context7 MCP entries using OpenCode remote URL config",
+    codeGraphLine,
+    "- PH does not run codegraph init; create .codegraph intentionally when you want an index",
+    "- git_bash and lsp are not registered: PH has no packaged OpenCode-compatible MCP surface for them in this release",
+    "- external developer tooling only; no PH-owned codegraph, OMO replacement, or token-saving claim",
   ]
 }
 
 export function bootstrapUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--codegraph-preview]`,
+    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]`,
     "",
     "Prepares the backend Persona Harness workflow for AI implementation.",
     "",
@@ -114,7 +124,7 @@ export function bootstrapUsage(invocation = "ph"): string {
     "",
     ...codeNavPreviewSummaryLines(),
     "",
-    ...codeGraphPreviewSummaryLines(),
+    ...developerMcpSummaryLines({ codeGraphEnabled: true, developerMcpEnabled: true }),
   ].join("\n")
 }
 
@@ -130,7 +140,9 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
   let strict = false
   let multiAgentPreview = false
   let codeNavPreview = false
+  let codeGraphEnabled = true
   let codeGraphPreview = false
+  let developerMcpEnabled = true
   for (const arg of args.slice(1)) {
     if (arg === "--force") {
       force = true
@@ -149,13 +161,25 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
       continue
     }
     if (arg === "--codegraph-preview") {
+      developerMcpEnabled = true
+      codeGraphEnabled = true
       codeGraphPreview = true
+      continue
+    }
+    if (arg === "--no-codegraph") {
+      codeGraphEnabled = false
+      codeGraphPreview = false
+      continue
+    }
+    if (arg === "--no-developer-mcp") {
+      developerMcpEnabled = false
+      codeGraphPreview = false
       continue
     }
     return { kind: "invalid", message: `Unknown option: ${arg}` }
   }
 
-  return { kind: "backend", codeGraphPreview, codeNavPreview, force, multiAgentPreview, strict }
+  return { kind: "backend", codeGraphEnabled, codeGraphPreview, codeNavPreview, developerMcpEnabled, force, multiAgentPreview, strict }
 }
 
 function projectDirFor(options: BootstrapOptions): string {
@@ -267,16 +291,19 @@ function runBackendBootstrap(
     actions.push("enabled code-nav MCP preview")
   }
 
-  if (flags.codeGraphPreview) {
-    const codeGraphResult = enableExternalCodeGraphPreview(projectDir, options.env)
-    if (codeGraphResult.kind === "failure") {
-      return codeGraphResult.result
+  if (flags.developerMcpEnabled) {
+    const developerMcpResult = enableDeveloperMcpBundle(projectDir, {
+      codeGraphEnabled: flags.codeGraphEnabled,
+      packageRoot: options.packageRoot,
+    })
+    if (developerMcpResult.kind === "failure") {
+      return developerMcpResult.result
     }
-    if (codeGraphResult.kind === "registered") {
-      actions.push("registered external CodeGraph MCP preview for OpenCode")
-    } else {
-      skipped.push("external CodeGraph MCP preview: codegraph binary not found on PATH")
-    }
+    actions.push(flags.codeGraphEnabled
+      ? "registered developer MCP bundle for OpenCode"
+      : "registered developer MCP bundle for OpenCode without CodeGraph")
+  } else {
+    skipped.push("developer MCP bundle disabled by --no-developer-mcp")
   }
 
   const profileState = readBackendProjectProfileState(projectDir)
@@ -330,7 +357,7 @@ function runBackendBootstrap(
       ...(flags.strict ? [...strictModeSummaryLines(), ""] : []),
       ...(flags.multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
       ...(flags.codeNavPreview ? [...codeNavPreviewSummaryLines(), ""] : []),
-      ...(flags.codeGraphPreview ? [...codeGraphPreviewSummaryLines(), ""] : []),
+      ...(flags.developerMcpEnabled ? [...developerMcpSummaryLines(flags), ""] : []),
       "Ready backend bootstrap files:",
       `- ${HARNESS_CONFIG_PATH}`,
       `- ${CONVENTIONS_DIR_PATH}`,
