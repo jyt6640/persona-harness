@@ -12,6 +12,30 @@ This project uses npm prerelease versions for tester-facing alpha builds. During
   reports the current ticket's red→green state and next action without writing
   red/green evidence; `ph workflow test`, `workflow check`, archive, and finish
   remain the evidence-writing and blocking surfaces.
+- Added the scoped `service.state-ownership` conformance blocker and read-only
+  `ph evidence metrics [--json]` aggregate. External local/current tarball
+  package-runtime smoke for
+  `df6319f5f38372217873964f8aa0713c9570d1e6` accepted the behavior as version
+  `0.4.0-rc.8`, not registry `@next` behavior:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/p3-p4-conformance-metrics-df6319f-20260701-202755`;
+  - npm shasum: `8d84bfda2116b9edd1d5d5c5f0880a05315d5020`;
+  - sha256: `2cbdcc2b129c6c52a2a83901c0bdd0c8bfdaa1c122be09fcd991bf18b4529aa4`;
+  - `service.state-ownership` blocks precise Java/Spring service-architecture
+    state fields with file:line evidence and fix guidance; closure next exposes
+    `architecture-service-state-ownership` / `fix-service-state-ownership`;
+    archive and finish block, while safe comments/strings/local variables do
+    not;
+  - Controller→Repository blocking remains unchanged, while repository
+    interface placement and bootJar candidates are deferred;
+  - `ph evidence metrics` reports schema `evidence-metrics.1` in human/json
+    modes, read-only over local `.persona/evidence`, with token totals,
+    structured tool/MCP calls, read chars when present, finish pass/fail
+    command records, and honest unavailable/unreadable evidence reporting.
+  This is not a broad AST/linter product, token-saving, provider-token,
+  product-efficacy, navigation-benefit, generated-app certification, broad
+  reliability, closure guarantee, model/OpenCode/eval, publish, tag, latest, or
+  version-move claim.
 
 ## [0.4.0-rc.8] - 2026-07-01
 
