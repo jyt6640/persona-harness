@@ -27,9 +27,11 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
+> 현재 repo release-prep target은 `next` dist-tag용 `0.5.0-rc.1`입니다.
 > 현재 stable package: `persona-harness@latest`는 `0.4.0`으로 검증됐고,
 > gitHead는 `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`입니다.
-> `next` dist-tag는 `0.4.0-rc.10`, `alpha`는 `0.3.9-alpha.8`입니다.
+> `0.5.0-rc.1`이 publish되기 전까지 registry `next` dist-tag는
+> `0.4.0-rc.10`, `alpha`는 `0.3.9-alpha.8`입니다.
 >
 > 현재 범위: Java/Spring backend workflow rail MVP.
 > frontend, infra, desktop app, broad AST/linter enforcement,
