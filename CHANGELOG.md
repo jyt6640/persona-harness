@@ -158,6 +158,72 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   CodeGraph/LSP default/effectiveness, Codex/code-nav replacement, automatic
   downgrade/removal, or release-action evidence. The Agent A/B negative result
   is valid P-minus input, not an automatic removal action.
+- Accepted a local-current acceptance run plus a 10-pair OpenCode PH OFF/ON A/B
+  evidence archive as scoped evidence/probe records against source
+  `1563a25ca5bbddcaf3d63e7f5e7e73d61b9b718d` and package version
+  `0.4.1-rc.2`; registry remained unchanged at `latest=0.4.0`,
+  `next=0.4.1-rc.2`, `alpha=0.3.9-alpha.8`, with no product source, package,
+  publish, tag, or latest action:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/local-current-acceptance-ab-20260702-20260702-153213`;
+  - local-current tarball `package/persona-harness-0.4.1-rc.2.tgz` had npm
+    shasum/sha1 `d8a5f85b5b7ce98c73fef547b99a941509bba518`, sha256
+    `406f86348b9eac20c612030400a1065f9765a8d3322f04462b4e9f535076f00c`,
+    entryCount `522`, and integrity
+    `sha512-CuiodvOwtLyRdOcLB1S9r/fp9BkhFl5QoOl0TPjx+tpVlXQA8a59n6OadDMgdc4A01WU2EGRWrNV3HvioVfsvA==`;
+  - `acceptance-summary.json` parsed as schema
+    `persona-acceptance-checklist.1`, with PASS 49, N.A 5, FAIL 0;
+  - accepted N.A items were B8 full B loop not separately run, F2/F3 runtime
+    injection/system-prompt internals not deterministically observable from
+    package-surface logs, F4 hook-error isolation not forced in package
+    acceptance, and I3 compaction opt-in not triggered/forced;
+  - verification commands exited 0 for typecheck, full npm test, build,
+    `smoke:product-mvp`, `check:docs`, `check:injection-value`, npm pack
+    dry-run, and git diff check; archived final git status was clean/aligned;
+  - A/B summary schema `persona-agent-session-ab.1` covered 10 paired tasks and
+    20 OpenCode app-generation sessions, with concurrency cap 2,
+    pair-internal sequential execution, and counterbalanced order 5 OFF->ON and
+    5 ON->OFF;
+  - each pair used the same prompt and README hash, README sha256
+    `35dbcd343428d9de73fbfabb9c76c35334755e8996bd48c0441eb8fadac30f1c`;
+  - `partial-results.json` had 20 records, 10 `ph-off` and 10 `ph-on`,
+    badCount 0, no discarded failures, and all OpenCode and verification exits
+    0;
+  - 20 `persona-ab-measurement.1` records were written under
+    `agent-ab-10/report-workspace/.persona/evidence/ab/opencode-app-generation/`;
+    `ab-report.json`, `pminus-report.json`, and `pminus-status.json` parsed as
+    `evidence-ab-report.1`, `evidence-pminus-report.1`, and
+    `evidence-pminus-status.1`, each scanning 20 files with zero unreadable;
+  - success was OFF 10/10 and ON 10/10;
+  - means were provider total OFF `119,320.7` versus ON `712,935.8`, elapsed
+    OFF `51,261.7ms` versus ON `152,525.5ms`, read chars OFF `1,152.7` versus
+    ON `20,650`, tool calls OFF `15.4` versus ON `38.9`, and MCP calls both
+    `0`;
+  - all 10 provider total, read char, tool call, and elapsed paired deltas were
+    positive for PH ON; MCP deltas were zero;
+  - independent sign check was two-sided `p≈0.00195` for provider total, read
+    chars, tool calls, and elapsed, with elapsed carrying a concurrency/noisy
+    timing caveat;
+  - narrow accepted interpretation: PH ON increased measured provider-token
+    totals, read chars, and tool calls in this OpenCode app-generation fixture
+    set. Elapsed also increased in all pairs but remains timing/contention
+    noisy;
+  - `pminus-report` scenario `opencode-app-generation` had outcome `worse`,
+    hint `remove-candidate`, and reason `Candidate condition has higher
+    measured provider-token total in this scenario.`; `pminus-status` surface
+    `ph-runtime-injection` had outcome `worse=1`, provider telemetry
+    `available`, and recommended next action `remove-candidate`;
+  - all 20 runs had phase provider-token totals reconciling to run totals.
+    Aggregate phase reporting excluded `injection/context`; per-run records had
+    zero placeholders, but the aggregate limitation records that OpenCode did
+    not expose transformed system prompt/injection-context cost separately and
+    that cost remains embedded in classified model steps/unknown buckets.
+  This is local-current acceptance and scoped negative A/B measurement evidence
+  for this fixture/task set only. It supports P-minus review/decision support
+  and does not prove token-saving/provider-token saving, product
+  efficacy/navigation benefit, app-quality/full-TDD/test-sufficiency,
+  CodeGraph/LSP default/effectiveness, broad reliability, closure guarantee,
+  Codex/code-nav replacement, or automatic downgrade/removal.
 
 ## [0.4.1-rc.2] - 2026-07-02
 
