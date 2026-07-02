@@ -7,11 +7,23 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 ## Unreleased
 
 - Added a default-off/read-only `ph workflow ralph-loop [--dry-run] [--json]`
-  spike for `ralph-loop: blocker-driven continuation`. It inspects
-  deterministic PH closure blockers, reports retry eligibility with a capped
-  dry-run policy, and prints an n=30 blocker/completion A/B measurement plan.
-  It writes no workflow state or evidence and is not a success, reliability,
-  generated-app quality, token-saving, or closure guarantee.
+  spike for `ralph-loop: blocker-driven continuation`, accepted at
+  `1178fbd5e0bb559bcd5995fd50559bae7266e441`
+  (`feat(cli): add ralph-loop dry run`). The command is deterministic dry-run
+  only and emits schema `workflow-ralph-loop.1`.
+  - The output records `mutates=false`, `defaultOff=true`, retry cap metadata
+    `maxAttempts=3`, `attemptsUsed=0`, and
+    `stateSource=not-persisted-dry-run`.
+  - It reads PH closure blockers through `readWorkflowClosurePayload("next")`,
+    then provides the first blocker, next action, prompt preview, boundaries,
+    and an n=30 blocker-completion A/B measurement plan.
+  - It sends no prompt, writes no evidence or workflow state, and does not run
+    an autonomous loop.
+  This is a read-only/default-off spike, not a persisted loop-state mechanism,
+  autonomous continuation, success/reliability/closure guarantee,
+  token-saving/product-efficacy claim, app-quality/full-TDD claim,
+  generated-app certification, or automatic completion claim. No version,
+  publish, tag, or latest movement occurred.
 - Recorded official `0.5.0` post-publish registry smoke facts after QA accepted
   External registry package-runtime evidence. This docs record is after the
   `v0.5.0` tag and does not change package code, version, publish, tag, or
