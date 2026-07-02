@@ -19,6 +19,41 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
     `keep-gathering`; it does not imply token-saving, product efficacy,
     app-quality, full-TDD sufficiency, broad reliability, closure guarantee,
     autonomous continuation, or automatic removal/downgrade.
+  - QA accepted `5f1534dd2212e9171a7da2c81f6125d5c77e1f3c`
+    (`feat(cli): add closure metrics to ab evidence`) through a fresh
+    local-current tarball only; registry was not used. Installed version was
+    `0.5.0`; tarball shasum `f2fe633cb1957a26f16fa98aa1cacab7dc40179e`;
+    sha256 `e62241a1375208437c423a584244106ab281e5de3eef544e0edcf5b9a1365823`;
+    entryCount `535`.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/closure-metrics-ab-evidence-5f1534d-20260702T190732Z`;
+    `RESULT.md` classified PASS.
+  - Package entries were present for `evidence-ab-run`,
+    `evidence-ab-run-options`, `evidence-ab-report`,
+    `evidence-pminus-report`, and `evidence-pminus-status`.
+  - Runtime smoke verified `ph evidence ab-run --help` listed closure option
+    usage; 3 OFF, 3 ON, and 1 missing-closure synthetic records were written by
+    `ab-run` with exit 0; `ab-report`, `pminus-report`, and `pminus-status`
+    JSON/human outputs exited 0 with schemas `evidence-ab-report.1`,
+    `evidence-pminus-report.1`, and `evidence-pminus-status.1`.
+  - OFF stayed blocked with no blocker reduction. ON reduced blockers, applied
+    continuation, blocked early completion, avoided retry-cap hit, lowered
+    runaway retries, and finish-after passed 2/3. The missing-closure sample
+    retained null closure fields and blocker sample count 0, not zero-filled.
+  - P-minus closure integrity interpretation was
+    `completion-integrity-improved`; decision hint `keep-gathering`; status
+    action `keep gathering`.
+  - Mutation boundaries held: report commands wrote no files; `ab-run` wrote
+    only expected `.persona/evidence/ab/` files; there was no
+    `.persona/harness.jsonc`, `.persona/workflow`,
+    `.persona/instructions/adopted.json`, report artifact,
+    autonomous-loop artifact, or automatic completion/removal/downgrade
+    mutation.
+  This remains local-current package-runtime evidence only, with no registry
+  evidence until a future publish includes the commit. It is not
+  token/provider-token saving, product efficacy, app quality, full-TDD
+  sufficiency, broad reliability, closure guarantee, autonomous loop,
+  automatic completion, removal, or downgrade evidence.
 - Added a default-off/read-only `ph workflow ralph-loop [--dry-run] [--json]`
   spike for `ralph-loop: blocker-driven continuation`, accepted at
   `1178fbd5e0bb559bcd5995fd50559bae7266e441`
