@@ -6,14 +6,39 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-- Tightened `ph evidence pminus-report` / `ph evidence pminus-status`
-  interpretation so aggregate provider-token means are reported alongside
-  paired consistency. `pminus-report` now emits per-metric paired
-  lower/higher/tied counts and sign-test p-values, and aggregate-lower but
-  paired-inconsistent evidence lowers the decision hint to `keep-gathering`
-  instead of treating aggregate mean alone as `keep`. This is decision support
-  only, with no token-saving, provider-token saving, product-efficacy, or
-  automatic downgrade/removal claim.
+- Accepted `ebcd42b35d5bda61d3f1a79193611953bfcb1afb`
+  (`fix(cli): add pminus paired consistency`) as a narrow pminus
+  aggregate-vs-paired interpretation cleanup before stable. Package version
+  remains `0.5.0-rc.2`; no publish, tag, latest, or dist-tag movement
+  occurred.
+  - `ph evidence pminus-report --json` now includes paired consistency metadata
+    for provider/read/tool/MCP/elapsed metrics. The accepted
+    aggregate-lower/paired-inconsistent fixture reports `candidateLower=3`,
+    `candidateHigher=7`, `totalComparable=10`, sign-test
+    `pValue=0.34375`, and interpretation
+    `aggregate-lower-but-paired-inconsistent`.
+  - Built CLI smoke kept descriptive `outcome=improved`, but lowered
+    `surfaceDecisionHint` to `keep-gathering`; `ph evidence pminus-status
+    --json` reports `keep-gathering` and recommended action `keep gathering`.
+    Human output includes paired aggregate direction, counts, p-value, and
+    interpretation.
+  - Existing worse/downgrade, inconclusive/no-claim, missing telemetry, and
+    read-only/no-write behavior remains preserved.
+  - Verification accepted: focused test, typecheck, build,
+    `check:injection-value`, `git diff --check`, and `npm pack --dry-run`
+    passed. Pack shasum was `bf74f21ddbc3121dba8814615ceb18459f3a6e3b`,
+    entryCount `531`, and the package includes
+    `dist/cli/evidence-pminus-paired.js`.
+  - Schema caveat: `evidence-pminus-report.1` and status output now add
+    `pairedConsistency` plus the new `keep-gathering` decision hint without a
+    schema version bump. QA accepted this as additive preview output, but
+    strict external consumers pinned to the old enum or shape may need
+    tolerance or a later schema bump.
+  This is read-only decision support only: aggregate-lower evidence with weak
+  paired consistency must not be recorded as token-saving, provider-token
+  saving, product-efficacy/navigation-benefit, app-quality/full-TDD,
+  broad reliability, closure guarantee, or automatic downgrade/removal
+  evidence.
 - Accepted registry `0.5.0-rc.2` default-off PH ON clean-exit calibrated A/B
   as PASS for evidence integrity and PARTIAL for efficacy/statistical
   interpretation. QA accepted archive
