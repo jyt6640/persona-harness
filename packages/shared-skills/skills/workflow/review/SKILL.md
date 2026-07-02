@@ -20,17 +20,17 @@ Detected intent: {{detectedIntent}}
 Secondary intents: {{secondaryIntents}}
 Reason: {{reason}}
 
-의도 감지: 리뷰 요청으로 판단함.
-근거: 사용자가 구현보다 검토/분석/QA를 요구함.
-다음 행동: 수정하지 말고 findings를 먼저 정리한다.
+Intent classification: review request.
+Basis: the user is asking for review, analysis, or QA rather than implementation.
+Next action: do not edit; present findings first.
 
 Required flow:
-- 코드를 수정하지 않는다.
-- 현재 목표, 변경 범위, 관련 파일을 먼저 확인한다.
-- Findings를 먼저 쓴다. 심각도 높은 순서로 정리한다.
-- 각 finding에는 파일/라인/증거/영향을 포함한다.
-- 문제가 없으면 `No findings`라고 명확히 말하고 남은 리스크를 적는다.
-- 수정은 사용자가 명시적으로 요청할 때만 별도 구현/debug/refactor rail로 진행한다.
+- Do not modify code.
+- First confirm the current goal, change scope, and relevant files.
+- Write findings first, ordered by severity.
+- Each finding must include file/line/evidence/impact.
+- If there are no issues, say `No findings` clearly and list residual risks.
+- Make fixes only when the user explicitly requests them, and then use a separate implementation/debug/refactor rail.
 
 Evidence checklist:
 - Reviewed files
@@ -39,8 +39,8 @@ Evidence checklist:
 - Residual risks
 
 Non-goals:
-- 자동 수정 rail이 아니다.
-- generated app product quality 보증이 아니다.
-- AST/linter/enforcement gate가 아니다.
-- 구현/리팩터링을 시작하지 않는다.
+- This is not an automatic fix rail.
+- This is not generated app product-quality certification.
+- This is not an AST/linter/enforcement gate.
+- Do not start implementation or refactoring.
 <!-- /PH_RUNTIME_BLOCK -->

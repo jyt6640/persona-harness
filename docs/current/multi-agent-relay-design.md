@@ -71,19 +71,19 @@ Subagent promotion is opt-in. The implemented config surface is:
 {
   "multiAgent": {
     "enabled": false,
-    "roles": ["test-writer", "jaeki", "roach"],
+    "roles": ["test-writer", "implementer", "reviewer"],
     "models": {}
   }
 }
 ```
 
-`ph bootstrap backend --multi-agent-preview` turns this on for the project and updates `.opencode/opencode.json` with top-level `agent` entries for exactly `test-writer`, `jaeki`, and `roach`, each with `mode: "subagent"`. It preserves the existing OpenCode config and does not use `.opencode/agent/*.md`.
+`ph bootstrap backend --multi-agent-preview` turns this on for the project and updates `.opencode/opencode.json` with top-level `agent` entries for exactly `test-writer`, `implementer`, and `reviewer`, each with `mode: "subagent"`. It preserves the existing OpenCode config and does not use `.opencode/agent/*.md`. Preview-era `jaeki` and `roach` agent keys are migrated to `implementer` and `reviewer` when no new key already exists.
 
 First 3-role preview order:
 
 - `test-writer`: tester. Owns focused failing tests, verification commands, and structured evidence expectations.
-- `jaeki`: implementer. Takes the accepted plan/current ticket and writes production code/tests plus implementation report evidence.
-- `roach`: reviewer. Owns review-report pressure, closure blocker review, and regression risk notes.
+- `implementer`: implementation worker. Takes the accepted plan/current ticket and writes production code/tests plus implementation report evidence.
+- `reviewer`: review worker. Owns review-report pressure, closure blocker review, and regression risk notes.
 
 The `test-writer` prompt points to canonical PH test guidance instead of embedding a separate TDD essay: `.persona/rules/backend/spring-test.md` section `PH Multi-Agent Relay`, the current ticket/scenario contract rule, and the detailed shared reference `packages/shared-skills/skills/programming/references/java/testing.md` section `Persona Harness relay contract`. Skills Prompting owns that shared guidance; R1 only consumes the stable PH rule/reference paths and the boundary that `test-writer` must not implement product code or weaken/delete tests.
 
@@ -108,8 +108,10 @@ These commands do not call OpenCode and do not dispatch native subtasks. They re
 R1 role artifacts live under `.persona/workflow/work/<ticket>/roles/`:
 
 - `.persona/workflow/work/<ticket>/roles/test-writer.md`
-- `.persona/workflow/work/<ticket>/roles/jaeki.md`
-- `.persona/workflow/work/<ticket>/roles/roach.md`
+- `.persona/workflow/work/<ticket>/roles/implementer.md`
+- `.persona/workflow/work/<ticket>/roles/reviewer.md`
+
+Relay reads legacy `.persona/workflow/work/<ticket>/roles/jaeki.md` and `.persona/workflow/work/<ticket>/roles/roach.md` artifacts for compatibility, but new prompts and missing-artifact paths point to the new role names.
 
 Missing artifacts block relay progression with preview-only blockers such as `role-test-artifact-missing`, `role-implementation-artifact-missing`, and `role-review-artifact-missing`. These are relay handoff blockers only; they do not weaken or replace workflow closure/check/archive/finish gates.
 
@@ -132,7 +134,7 @@ Missing artifacts block relay progression with preview-only blockers such as `ro
 
 ## R3 Native Subtask Probe
 
-No-model probe result: keep native dispatch deferred. `opencode agent list --pure` recognizes the R1 `.opencode/opencode.json` top-level `agent` map and lists `test-writer`, `jaeki`, and `roach` as subagents, so the agent definition surface is usable without a model run. The available no-model CLI help surfaces expose `opencode run --agent`, `opencode agent list`, `opencode agent create`, `opencode serve`, and `opencode attach`, but not a standalone no-model subtask submission command.
+No-model probe result: keep native dispatch deferred. `opencode agent list --pure` recognized the R1 `.opencode/opencode.json` top-level `agent` map and listed the relay roles as subagents, so the agent definition surface is usable without a model run. The current public preview role names are `test-writer`, `implementer`, and `reviewer`. The available no-model CLI help surfaces expose `opencode run --agent`, `opencode agent list`, `opencode agent create`, `opencode serve`, and `opencode attach`, but not a standalone no-model subtask submission command.
 
 The SDK has typed native delegation shapes: `SubtaskPartInput` (`node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts:1263-1269`) and `SessionPromptData` / `SessionPromptAsyncData` parts that accept subtask inputs (`node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts:2244-2258`, `node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts:2329-2342`). The callable client methods are `session.prompt` and `session.promptAsync`, both documented as creating and sending a new message to a session (`node_modules/@opencode-ai/sdk/dist/gen/sdk.gen.d.ts:172-182`). That means a real dispatch proof requires an active OpenCode session/server and would submit a message, so PH should not implement native subtask dispatch from the CLI yet.
 

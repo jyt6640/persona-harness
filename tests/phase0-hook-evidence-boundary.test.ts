@@ -90,7 +90,7 @@ describe("runtime hook evidence write boundary", () => {
     ).resolves.toBeUndefined()
 
     expect(output.output).toContain("[Persona Harness Injection]")
-    expect(output.output).toContain("파일 역할: project-bootstrap")
+    expect(output.output).toContain("File role: project-bootstrap")
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[Persona Harness Runtime Warning]"))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("kind=evidence-write"))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("scope=evidence-write"))

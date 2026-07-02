@@ -73,7 +73,7 @@ function multiAgentPreviewSummaryLines(): readonly string[] {
   return [
     "Multi-agent relay preview:",
     "- opt-in only via --multi-agent-preview; default bootstrap stays single-agent",
-    "- writes OpenCode subagent config entries for test-writer, jaeki, and roach",
+    "- writes OpenCode subagent config entries for test-writer, implementer, and reviewer",
     "- does not dispatch native subtasks, auto-fill reports, auto-archive tickets, or weaken finish",
     "- PH closure/workflow state remains the orchestrator/gate; OpenCode subagents are workers",
   ]
@@ -337,7 +337,7 @@ function runBackendBootstrap(
     if (previewFailure !== undefined) {
       return previewFailure
     }
-    actions.push("enabled multi-agent relay preview for test-writer, jaeki, and roach")
+    actions.push("enabled multi-agent relay preview for test-writer, implementer, and reviewer")
   }
 
   if (flags.codeNavPreview) {

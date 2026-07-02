@@ -20,17 +20,17 @@ Detected intent: {{detectedIntent}}
 Secondary intents: {{secondaryIntents}}
 Reason: {{reason}}
 
-의도 감지: 디버그 요청으로 판단함.
-근거: 실패/에러/동작 이상을 해결해달라는 신호가 있음.
-다음 행동: 구현부터 하지 말고 재현, 가설, evidence 확인을 먼저 수행한다.
+Intent classification: debug request.
+Basis: the prompt asks to resolve a failure, error, or broken behavior.
+Next action: do not start with implementation; reproduce first, then record hypotheses and evidence.
 
 Required flow:
-- 실패를 먼저 재현한다. 실패 명령, 에러 핵심, 관찰한 증상을 기록한다.
-- 최소 3개 가설을 세운다. 각 가설은 서로 다른 원인 축을 가져야 한다.
-- 각 가설마다 확인/반박 evidence를 남긴다. 추측만으로 수정하지 않는다.
-- 확인된 원인만 수정한다. 원인과 무관한 리팩터링이나 기능 추가는 하지 않는다.
-- 수정 후 같은 실패 명령을 다시 실행한다.
-- 관련 테스트/빌드/스모크를 재실행하고 결과를 보고한다.
+- Reproduce the failure first. Record the failing command, key error, and observed symptoms.
+- Form at least three hypotheses. Each hypothesis must cover a distinct cause axis.
+- Record confirm/refute evidence for each hypothesis. Do not fix from guesses alone.
+- Fix only the confirmed cause. Do not add unrelated refactors or features.
+- After the fix, rerun the same failing command.
+- Rerun relevant tests/build/smoke and report the result.
 
 Evidence checklist:
 - Reproduction command
@@ -42,8 +42,8 @@ Evidence checklist:
 - Verification command
 
 Non-goals:
-- generated app product quality 보증이 아니다.
-- AST/linter/enforcement gate가 아니다.
-- 원인 확인 없는 대규모 리팩터링을 하지 않는다.
-- README/requirements 구현 workflow가 아니다.
+- This is not generated app product-quality certification.
+- This is not an AST/linter/enforcement gate.
+- Do not perform broad refactoring without a confirmed cause.
+- This is not the README/requirements implementation workflow.
 <!-- /PH_RUNTIME_BLOCK -->

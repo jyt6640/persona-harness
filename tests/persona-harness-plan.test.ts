@@ -115,7 +115,7 @@ describe("ph plan", () => {
     expect(plan).not.toContain("Select-String -Recurse")
 
     const implementationReport = readImplementationReport(projectDir)
-    expect(implementationReport).toContain("# Jaeki Implementation Report")
+    expect(implementationReport).toContain("# Implementer Implementation Report")
     expect(implementationReport).toContain("Status: template")
     expect(implementationReport).toContain("## Read Coverage")
     expect(implementationReport).toContain("README read method:")
@@ -148,7 +148,7 @@ describe("ph plan", () => {
     expect(implementationReport).toContain("다음 프롬프트 힌트:")
 
     const reviewReport = readReviewReport(projectDir)
-    expect(reviewReport).toContain("# Roach Review Report")
+    expect(reviewReport).toContain("# Reviewer Review Report")
     expect(reviewReport).toContain("Status: template")
     expect(reviewReport).toContain("## Requirements Check")
     expect(reviewReport).toContain("README/plan read method와 ranges가 implementation report에 남아 있다.")
@@ -248,8 +248,8 @@ describe("ph plan", () => {
     expect(forced.status).toBe(0)
     expect(readPlan(projectDir)).toContain("# Blackbear Architecture Plan")
     expect(readPlan(projectDir)).toContain("Status: draft")
-    expect(readImplementationReport(projectDir)).toContain("# Jaeki Implementation Report")
-    expect(readReviewReport(projectDir)).toContain("# Roach Review Report")
+    expect(readImplementationReport(projectDir)).toContain("# Implementer Implementation Report")
+    expect(readReviewReport(projectDir)).toContain("# Reviewer Review Report")
   })
 
   it("reads and updates the plan acceptance status", () => {

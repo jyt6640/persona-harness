@@ -49,7 +49,7 @@ describe("Phase 0 backend profile summary injection", () => {
     const projectDir = createTempProject()
     const injection = createInjectionBlock("src/main/java/com/example/coupon/application/CouponService.java", projectDir)
 
-    expect(injection.block).not.toContain("프로젝트 프로필 요약:")
+    expect(injection.block).not.toContain("Project profile summary:")
     expect(injection.selectedRules).toContain("backend/spring-service.md")
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
   })
@@ -74,7 +74,7 @@ describe("Phase 0 backend profile summary injection", () => {
 
     const injection = createInjectionBlock("src/main/java/com/example/coupon/application/CouponService.java", projectDir)
 
-    expect(injection.block).toContain("프로젝트 프로필 요약:")
+    expect(injection.block).toContain("Project profile summary:")
     expect(injection.block).toContain("- project-context: solo")
     expect(injection.block).toContain("- project-goal: production-service")
     expect(injection.block).toContain("- application-type: rest-api")
@@ -82,8 +82,8 @@ describe("Phase 0 backend profile summary injection", () => {
     expect(injection.block).toContain("- package-style: domain-first")
     expect(injection.block).toContain("- architecture-style: clean-architecture-light")
     expect(injection.block).toContain("- boundary-strictness: strict")
-    expect(injection.block).toContain("구현 전 architecture/technology plan 참고용")
-    expect(injection.block).toContain("rule enforcement나 product-quality 보증이 아니다")
+    expect(injection.block).toContain("architecture/technology planning context")
+    expect(injection.block).toContain("not rule enforcement or a product-quality guarantee")
     expect(injection.selectedRules).toContain("backend/spring-service.md")
   })
 
@@ -129,7 +129,7 @@ describe("Phase 0 backend profile summary injection", () => {
 
     const injection = createInjectionBlock("README.md", projectDir)
 
-    expect(injection.block).toContain("프로젝트 프로필 요약:")
+    expect(injection.block).toContain("Project profile summary:")
     expect(injection.block).toContain("- package-style: domain-first")
     expect(injection.block).not.toContain("- project-context:")
     expect(injection.block).not.toContain("- storage:")
@@ -141,7 +141,7 @@ describe("Phase 0 backend profile summary injection", () => {
 
     const injection = createInjectionBlock("src/main/java/com/example/coupon/application/CouponService.java", projectDir)
 
-    expect(injection.block).not.toContain("프로젝트 프로필 요약:")
+    expect(injection.block).not.toContain("Project profile summary:")
     expect(injection.selectedRules).toContain("backend/spring-service.md")
   })
 
@@ -152,7 +152,7 @@ describe("Phase 0 backend profile summary injection", () => {
     const injection = createInjectionBlock("README.md", projectDir)
 
     expect(injection.fileRole).toBe("project-bootstrap")
-    expect(injection.block).toContain("프로젝트 프로필 요약:")
+    expect(injection.block).toContain("Project profile summary:")
     expect(injection.block).toContain("- storage: database")
     expect(injection.selectedRules).toContain("backend/java-backend-bootstrap.md")
   })
@@ -164,7 +164,7 @@ describe("Phase 0 backend profile summary injection", () => {
     const injection = createInjectionBlock("src/components/App.tsx", projectDir)
 
     expect(injection.fileRole).toBe("frontend")
-    expect(injection.block).not.toContain("프로젝트 프로필 요약:")
+    expect(injection.block).not.toContain("Project profile summary:")
     expect(injection.selectedRules).toEqual([])
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming", "frontend"])
   })
@@ -190,7 +190,7 @@ describe("Phase 0 backend profile summary injection", () => {
 
     const injection = createInjectionBlock("src/main/java/com/example/coupon/application/CouponService.java", projectDir)
 
-    expect(injection.block).not.toContain("프로젝트 프로필 요약:")
+    expect(injection.block).not.toContain("Project profile summary:")
     expect(injection.selectedRules).toContain("backend/spring-service.md")
   })
 })

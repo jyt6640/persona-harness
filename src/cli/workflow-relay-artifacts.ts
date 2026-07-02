@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import type { MultiAgentRole } from "../config/harness-config.js"
+import { deprecatedMultiAgentRoleFor, type MultiAgentRole } from "../config/harness-config.js"
 import type { RelayRoleArtifact } from "./workflow-relay-model.js"
 
 const ROLE_RULES: Readonly<
@@ -28,22 +28,33 @@ const ROLE_RULES: Readonly<
     ],
     requiredReason: "test-writer artifact must include failing/verification test evidence or a precise verification plan.",
   },
-  jaeki: {
+  implementer: {
     forbiddenAny: ["review only", "no implementation"],
-    forbiddenReason: "jaeki artifact must not be review-only prose.",
+    forbiddenReason: "implementer artifact must not be review-only prose.",
     requiredAny: ["implementation summary", "implemented", "changed files", "evidence:", "production code"],
-    requiredReason: "jaeki artifact must include implementation summary or evidence pointers.",
+    requiredReason: "implementer artifact must include implementation summary or evidence pointers.",
   },
-  roach: {
+  reviewer: {
     forbiddenAny: ["implemented final", "implementation summary", "production code only"],
-    forbiddenReason: "roach artifact must not be implementation-only prose.",
+    forbiddenReason: "reviewer artifact must not be implementation-only prose.",
     requiredAny: ["review result", "review:", "qa", "workflow check", "review-report", "check result"],
-    requiredReason: "roach artifact must include review/report/check result pointers.",
+    requiredReason: "reviewer artifact must include review/report/check result pointers.",
   },
 }
 
 export function roleArtifactPath(ticketId: string, role: MultiAgentRole): string {
   return `.persona/workflow/work/${ticketId}/roles/${role}.md`
+}
+
+function legacyRoleArtifactPath(ticketId: string, role: MultiAgentRole): string | undefined {
+  const legacyRole = deprecatedMultiAgentRoleFor(role)
+  return legacyRole === undefined ? undefined : `.persona/workflow/work/${ticketId}/roles/${legacyRole}.md`
+}
+
+function roleArtifactCandidatePaths(ticketId: string, role: MultiAgentRole): readonly string[] {
+  const primaryPath = roleArtifactPath(ticketId, role)
+  const legacyPath = legacyRoleArtifactPath(ticketId, role)
+  return legacyPath === undefined ? [primaryPath] : [primaryPath, legacyPath]
 }
 
 function normalizeArtifactText(content: string): string {
@@ -70,23 +81,24 @@ function artifactReadiness(role: MultiAgentRole, content: string): Pick<RelayRol
 }
 
 export function readRelayRoleArtifact(projectDir: string, ticketId: string, role: MultiAgentRole): RelayRoleArtifact {
-  const path = roleArtifactPath(ticketId, role)
-  const absolutePath = join(projectDir, path)
-  if (!existsSync(absolutePath)) {
-    return {
-      path,
-      readiness: "missing",
-      reason: "Role artifact is missing.",
-      role,
-      status: "missing",
+  for (const path of roleArtifactCandidatePaths(ticketId, role)) {
+    const absolutePath = join(projectDir, path)
+    if (existsSync(absolutePath)) {
+      const readiness = artifactReadiness(role, readFileSync(absolutePath, "utf8"))
+      return {
+        path,
+        readiness: readiness.readiness,
+        reason: readiness.reason,
+        role,
+        status: "present",
+      }
     }
   }
-  const readiness = artifactReadiness(role, readFileSync(absolutePath, "utf8"))
   return {
-    path,
-    readiness: readiness.readiness,
-    reason: readiness.reason,
+    path: roleArtifactPath(ticketId, role),
+    readiness: "missing",
+    reason: "Role artifact is missing.",
     role,
-    status: "present",
+    status: "missing",
   }
 }

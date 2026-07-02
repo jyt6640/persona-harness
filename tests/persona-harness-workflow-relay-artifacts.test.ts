@@ -19,7 +19,7 @@ function writeHarnessConfig(projectDir: string): void {
   mkdirSync(join(projectDir, ".persona"), { recursive: true })
   writeFileSync(
     join(projectDir, ".persona", "harness.jsonc"),
-    `${JSON.stringify({ multiAgent: { enabled: true, roles: ["test-writer", "jaeki", "roach"], models: {} } }, null, 2)}\n`,
+    `${JSON.stringify({ multiAgent: { enabled: true, roles: ["test-writer", "implementer", "reviewer"], models: {} } }, null, 2)}\n`,
   )
 }
 
@@ -99,7 +99,7 @@ describe("ph workflow relay role artifact gates", () => {
     expect(output.roleCompletionState).toMatchObject({
       completedRoles: [],
       incompleteRoles: [],
-      missingRoles: ["test-writer", "jaeki", "roach"],
+      missingRoles: ["test-writer", "implementer", "reviewer"],
       overall: "blocked",
     })
     expect(output.blockers).toEqual([
@@ -182,15 +182,19 @@ describe("ph workflow relay role artifact gates", () => {
     ])
 
     writeRoleArtifact(projectDir, "test-writer", "# test-writer\n\nVerification plan: add a failing API test, then run gradlew.bat test.")
-    writeRoleArtifact(projectDir, "jaeki", "# jaeki\n\nReview only: looks fine.")
+    writeRoleArtifact(projectDir, "implementer", "# implementer\n\nReview only: looks fine.")
     expect(relayJson(projectDir).blockers).toEqual([
       expect.objectContaining({
         id: "role-implementation-artifact-incomplete",
       }),
     ])
 
-    writeRoleArtifact(projectDir, "jaeki", "# jaeki\n\nImplementation summary: wired service through repository.\nEvidence: ./gradlew test.")
-    writeRoleArtifact(projectDir, "roach", "# roach\n\nImplemented final cleanup.")
+    writeRoleArtifact(
+      projectDir,
+      "implementer",
+      "# implementer\n\nImplementation summary: wired service through repository.\nEvidence: ./gradlew test.",
+    )
+    writeRoleArtifact(projectDir, "reviewer", "# reviewer\n\nImplemented final cleanup.")
     expect(relayJson(projectDir).blockers).toEqual([
       expect.objectContaining({
         id: "role-review-artifact-incomplete",
@@ -217,8 +221,16 @@ describe("ph workflow relay role artifact gates", () => {
     writeHarnessConfig(projectDir)
     writeWorkflowWithPendingTicket(projectDir)
     writeRoleArtifact(projectDir, "test-writer", "# test-writer\n\nVerification plan: add a failing API test and run ./gradlew test.")
-    writeRoleArtifact(projectDir, "jaeki", "# jaeki\n\nImplementation summary: wired service through repository.\nEvidence: ./gradlew test.")
-    writeRoleArtifact(projectDir, "roach", "# roach\n\nReview result: workflow check reviewed and review-report.md should be filled.")
+    writeRoleArtifact(
+      projectDir,
+      "implementer",
+      "# implementer\n\nImplementation summary: wired service through repository.\nEvidence: ./gradlew test.",
+    )
+    writeRoleArtifact(
+      projectDir,
+      "reviewer",
+      "# reviewer\n\nReview result: workflow check reviewed and review-report.md should be filled.",
+    )
 
     const output = relayJson(projectDir, "validate")
 
@@ -228,12 +240,12 @@ describe("ph workflow relay role artifact gates", () => {
     expect(output.roleArtifacts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ readiness: "complete", role: "test-writer" }),
-        expect.objectContaining({ readiness: "complete", role: "jaeki" }),
-        expect.objectContaining({ readiness: "complete", role: "roach" }),
+        expect.objectContaining({ readiness: "complete", role: "implementer" }),
+        expect.objectContaining({ readiness: "complete", role: "reviewer" }),
       ]),
     )
     expect(output.roleCompletionState).toMatchObject({
-      completedRoles: ["test-writer", "jaeki", "roach"],
+      completedRoles: ["test-writer", "implementer", "reviewer"],
       incompleteRoles: [],
       missingRoles: [],
       overall: "complete",
@@ -245,16 +257,53 @@ describe("ph workflow relay role artifact gates", () => {
     writeHarnessConfig(projectDir)
     writeWorkflowWithPendingTicket(projectDir)
     writeRoleArtifact(projectDir, "test-writer", "# test-writer\n\nVerification plan: add a failing API test and run ./gradlew test.")
-    writeRoleArtifact(projectDir, "jaeki", "# jaeki\n\nImplementation summary: wired service through repository.\nEvidence: ./gradlew test.")
-    writeRoleArtifact(projectDir, "roach", "# roach\n\nReview result: workflow check reviewed and review-report.md should be filled.")
+    writeRoleArtifact(
+      projectDir,
+      "implementer",
+      "# implementer\n\nImplementation summary: wired service through repository.\nEvidence: ./gradlew test.",
+    )
+    writeRoleArtifact(
+      projectDir,
+      "reviewer",
+      "# reviewer\n\nReview result: workflow check reviewed and review-report.md should be filled.",
+    )
 
     const output = relayValidateText(projectDir)
 
     expect(output).toContain("- test-writer: complete - .persona/workflow/work/req-1/roles/test-writer.md")
-    expect(output).toContain("- jaeki: complete - .persona/workflow/work/req-1/roles/jaeki.md")
-    expect(output).toContain("- roach: complete - .persona/workflow/work/req-1/roles/roach.md")
+    expect(output).toContain("- implementer: complete - .persona/workflow/work/req-1/roles/implementer.md")
+    expect(output).toContain("- reviewer: complete - .persona/workflow/work/req-1/roles/reviewer.md")
     expect(output).toContain("First blocker: none")
     expect(output).toContain("Required artifact: none")
     expect(output).toContain("Gate command: npx ph workflow closure next --json")
+  })
+
+  it("reads legacy jaeki and roach artifacts while writing new role paths going forward", () => {
+    const projectDir = createTempProject()
+    writeHarnessConfig(projectDir)
+    writeWorkflowWithPendingTicket(projectDir)
+    writeRoleArtifact(projectDir, "test-writer", "# test-writer\n\nVerification plan: add a failing API test and run ./gradlew test.")
+    writeRoleArtifact(projectDir, "jaeki", "# jaeki\n\nImplementation summary: wired service through repository.\nEvidence: ./gradlew test.")
+
+    const output = relayJson(projectDir)
+
+    expect(output.currentRole).toBe("reviewer")
+    expect(output.requiredArtifact).toBe(".persona/workflow/work/req-1/roles/reviewer.md")
+    expect(output.roleArtifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ".persona/workflow/work/req-1/roles/jaeki.md",
+          readiness: "complete",
+          role: "implementer",
+          status: "present",
+        }),
+        expect.objectContaining({
+          path: ".persona/workflow/work/req-1/roles/reviewer.md",
+          readiness: "missing",
+          role: "reviewer",
+          status: "missing",
+        }),
+      ]),
+    )
   })
 })

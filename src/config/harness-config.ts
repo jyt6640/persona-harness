@@ -54,9 +54,15 @@ export type HarnessTelemetryConfig = {
   readonly tokenUsage: boolean
 }
 
-export const DEFAULT_MULTI_AGENT_ROLES = ["test-writer", "jaeki", "roach"] as const
+export const DEFAULT_MULTI_AGENT_ROLES = ["test-writer", "implementer", "reviewer"] as const
 
 export type MultiAgentRole = (typeof DEFAULT_MULTI_AGENT_ROLES)[number]
+type DeprecatedMultiAgentRole = "jaeki" | "roach"
+
+const DEPRECATED_MULTI_AGENT_ROLE_ALIASES: Readonly<Record<DeprecatedMultiAgentRole, MultiAgentRole>> = {
+  jaeki: "implementer",
+  roach: "reviewer",
+}
 
 export type HarnessMultiAgentConfig = {
   readonly enabled: boolean
@@ -176,14 +182,40 @@ function readCompactionConfig(value: unknown): HarnessCompactionConfig {
 }
 
 function isMultiAgentRole(value: unknown): value is MultiAgentRole {
-  return value === "test-writer" || value === "jaeki" || value === "roach"
+  return value === "test-writer" || value === "implementer" || value === "reviewer"
+}
+
+function isDeprecatedMultiAgentRole(value: unknown): value is DeprecatedMultiAgentRole {
+  return value === "jaeki" || value === "roach"
+}
+
+export function normalizeMultiAgentRole(value: unknown): MultiAgentRole | undefined {
+  if (isMultiAgentRole(value)) {
+    return value
+  }
+  return isDeprecatedMultiAgentRole(value) ? DEPRECATED_MULTI_AGENT_ROLE_ALIASES[value] : undefined
+}
+
+export function deprecatedMultiAgentRoleFor(role: MultiAgentRole): DeprecatedMultiAgentRole | undefined {
+  for (const [deprecatedRole, normalizedRole] of Object.entries(DEPRECATED_MULTI_AGENT_ROLE_ALIASES)) {
+    if (normalizedRole === role) {
+      return isDeprecatedMultiAgentRole(deprecatedRole) ? deprecatedRole : undefined
+    }
+  }
+  return undefined
 }
 
 function readMultiAgentRoles(value: unknown): readonly MultiAgentRole[] {
   if (!Array.isArray(value)) {
     return DEFAULT_CONFIG.multiAgent.roles
   }
-  const roles = value.filter(isMultiAgentRole)
+  const roles: MultiAgentRole[] = []
+  for (const item of value) {
+    const role = normalizeMultiAgentRole(item)
+    if (role !== undefined && !roles.includes(role)) {
+      roles.push(role)
+    }
+  }
   return roles.length > 0 ? roles : DEFAULT_CONFIG.multiAgent.roles
 }
 
@@ -193,7 +225,8 @@ function readMultiAgentModels(value: unknown): HarnessMultiAgentConfig["models"]
   }
   const models: Partial<Record<MultiAgentRole, string>> = {}
   for (const role of DEFAULT_MULTI_AGENT_ROLES) {
-    const model = value[role]
+    const legacyRole = deprecatedMultiAgentRoleFor(role)
+    const model = typeof value[role] === "string" ? value[role] : legacyRole === undefined ? undefined : value[legacyRole]
     if (typeof model === "string" && model.trim() !== "") {
       models[role] = model
     }

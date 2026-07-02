@@ -22,14 +22,14 @@ import {
 
 const ROLE_MISSING_BLOCKERS: Readonly<Record<MultiAgentRole, RelayBlockerId>> = {
   "test-writer": "role-test-artifact-missing",
-  jaeki: "role-implementation-artifact-missing",
-  roach: "role-review-artifact-missing",
+  implementer: "role-implementation-artifact-missing",
+  reviewer: "role-review-artifact-missing",
 }
 
 const ROLE_INCOMPLETE_BLOCKERS: Readonly<Record<MultiAgentRole, RelayBlockerId>> = {
   "test-writer": "role-test-artifact-incomplete",
-  jaeki: "role-implementation-artifact-incomplete",
-  roach: "role-review-artifact-incomplete",
+  implementer: "role-implementation-artifact-incomplete",
+  reviewer: "role-review-artifact-incomplete",
 }
 
 function parseRelayArgs(args: readonly string[]): RelayAction | "help" | "validate-text" | undefined {

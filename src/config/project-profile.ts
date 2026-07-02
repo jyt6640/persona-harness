@@ -90,13 +90,13 @@ function formatSummaryLines(answers: ReadonlyMap<string, string>, projectNote?: 
   const noteLines = projectNote === undefined ? [] : [`- notes.project: ${projectNote}`]
 
   return [
-    "프로젝트 프로필 요약:",
-    ...(answerLines.length > 0 || noteLines.length > 0 ? [...answerLines, ...noteLines] : ["- 응답된 항목 없음"]),
+    "Project profile summary:",
+    ...(answerLines.length > 0 || noteLines.length > 0 ? [...answerLines, ...noteLines] : ["- No answered fields"]),
     "",
-    "프로필 사용 원칙:",
-    "- 이 요약은 구현 전 architecture/technology plan 참고용이다.",
-    "- 사용자의 README/요구사항과 명시 지시가 우선한다.",
-    "- 이 요약은 rule enforcement나 product-quality 보증이 아니다.",
+    "Project profile usage principles:",
+    "- Use this summary as architecture/technology planning context before implementation.",
+    "- The user's README, requirements, and explicit instructions take precedence.",
+    "- This summary is not rule enforcement or a product-quality guarantee.",
   ]
 }
 

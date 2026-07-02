@@ -1486,30 +1486,32 @@ describe("ph bootstrap backend", () => {
     })
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain("enabled multi-agent relay preview for test-writer, jaeki, and roach")
+    expect(result.stdout).toContain("enabled multi-agent relay preview for test-writer, implementer, and reviewer")
     expect(result.stdout).toContain("Multi-agent relay preview:")
     expect(result.stdout).toContain("does not dispatch native subtasks")
     expect(loadHarnessConfig(projectDir).multiAgent).toEqual({
       enabled: true,
-      roles: ["test-writer", "jaeki", "roach"],
+      roles: ["test-writer", "implementer", "reviewer"],
       models: {},
     })
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     expect(isRecord(opencodeConfig.agent)).toBe(true)
     const agents = isRecord(opencodeConfig.agent) ? opencodeConfig.agent : {}
     expect(agents["test-writer"]).toMatchObject({ mode: "subagent" })
-    expect(agents.jaeki).toMatchObject({ mode: "subagent" })
-    expect(agents.roach).toMatchObject({ mode: "subagent" })
+    expect(agents.implementer).toMatchObject({ mode: "subagent" })
+    expect(agents.reviewer).toMatchObject({ mode: "subagent" })
+    expect(agents.jaeki).toBeUndefined()
+    expect(agents.roach).toBeUndefined()
     expect(JSON.stringify(agents["test-writer"])).toContain("Do not implement production code")
     expect(JSON.stringify(agents["test-writer"])).toContain(".persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay'")
     expect(JSON.stringify(agents["test-writer"])).toContain("Persona Harness relay contract")
     expect(JSON.stringify(agents["test-writer"])).toContain("Do not weaken, delete, or rewrite existing tests")
-    expect(JSON.stringify(agents.jaeki)).toContain("PH closure/workflow state is the orchestrator/gate")
-    expect(JSON.stringify(agents.roach)).toContain("Do not implement features unless explicitly reassigned")
+    expect(JSON.stringify(agents.implementer)).toContain("PH closure/workflow state is the orchestrator/gate")
+    expect(JSON.stringify(agents.reviewer)).toContain("Do not implement features unless explicitly reassigned")
     expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))
   })
 
-  it("preserves existing OpenCode plugin and agent fields when enabling the relay preview", () => {
+  it("preserves existing OpenCode plugin and migrates old relay agent keys when enabling the relay preview", () => {
     const projectDir = createTempProject()
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     writeFileSync(
@@ -1542,13 +1544,30 @@ describe("ph bootstrap backend", () => {
       expect.arrayContaining(["/tmp/existing-plugin.js", expect.stringContaining("dist/index.js")]),
     )
     const agents = isRecord(opencodeConfig.agent) ? opencodeConfig.agent : {}
-    expect(agents.jaeki).toMatchObject({
+    expect(agents.implementer).toMatchObject({
       custom: "kept",
       model: "provider/existing-jaeki",
       mode: "subagent",
     })
+    expect(agents.jaeki).toBeUndefined()
     expect(agents["test-writer"]).toMatchObject({ mode: "subagent" })
-    expect(agents.roach).toMatchObject({ mode: "subagent" })
+    expect(agents.reviewer).toMatchObject({ mode: "subagent" })
+
+    const secondResult = runPersonaCli(["bootstrap", "backend", "--multi-agent-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+    expect(secondResult.status).toBe(0)
+    const secondConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
+    const secondAgents = isRecord(secondConfig.agent) ? secondConfig.agent : {}
+    expect(secondAgents.implementer).toMatchObject({
+      custom: "kept",
+      model: "provider/existing-jaeki",
+      mode: "subagent",
+    })
+    expect(secondAgents.jaeki).toBeUndefined()
   })
 
   it("enables the code-nav MCP preview only when explicitly requested", () => {
@@ -1940,12 +1959,12 @@ describe("ph workflow start and finish", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Persona Harness Workflow Implement")
     expect(result.stdout).toContain("Implementation rail status: PASS")
-    expect(result.stdout).toContain("의도 감지: 구현 요청으로 판단함.")
-    expect(result.stdout).toContain("근거: 사용자가 README/요구사항/플랜을 보고 구현하라고 요청한 상황에서 사용하는 AI-facing rail이다.")
-    expect(result.stdout).toContain("다음 행동:")
-    expect(result.stdout).toContain("1. 요구사항 source를 split/capture/next로 ticket화한다.")
-    expect(result.stdout).toContain("2. 현재 ticket만 구현한다.")
-    expect(result.stdout).toContain("금지: ticket 없이 바로 production code 작성.")
+    expect(result.stdout).toContain("Intent classification: implementation request.")
+    expect(result.stdout).toContain("Basis: this AI-facing rail is used when the user asks to implement from README")
+    expect(result.stdout).toContain("Next action:")
+    expect(result.stdout).toContain("1. Turn the requirements source into tickets with split/capture/next.")
+    expect(result.stdout).toContain("2. Implement only the current ticket.")
+    expect(result.stdout).toContain("Forbidden: writing production code directly without a ticket.")
     expect(result.stdout).toContain("macOS/Linux line count")
     expect(result.stdout).toContain("npx ph bearshell --shell 'wc -l README.md'")
     expect(result.stdout).toContain("macOS/Linux first chunk")

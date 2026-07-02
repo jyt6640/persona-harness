@@ -25,31 +25,31 @@ Do not use this skill for explanation-only, debugging-only, or code-review-only 
 
 ## Intent Preamble
 
-Before acting, state the Persona Harness interpretation in Korean. Do not copy the OMO
+Before acting, state the Persona Harness interpretation in English. Do not copy the OMO
 `I detect ...` sentence. Use a PH-style preamble and immediately connect it to the next
 `npx ph` command.
 
 Use these forms:
 
 - Vague product idea:
-  - `의도 감지: 제품 아이디어 초안 작성 요청으로 판단함.`
-  - `다음 행동: 구현하지 않고 requirements draft를 작성한 뒤 사용자 검토를 기다린다.`
+  - `Intent classification: product idea drafting request.`
+  - `Next action: do not implement; write a requirements draft and wait for user review.`
 - README or requirements file implementation:
-  - `의도 감지: README.md 기반 구현 요청으로 판단함.`
-  - `다음 행동: 요구사항 파일을 ticket backlog로 나눈 뒤 현재 ticket만 구현한다.`
+  - `Intent classification: implementation request based on README.md.`
+  - `Next action: split the requirements file into a ticket backlog, then implement only the current ticket.`
 - Pasted prompt requirements:
-  - `의도 감지: 프롬프트 기반 요구사항 구현 요청으로 판단함.`
-  - `다음 행동: 프롬프트를 요구사항 source로 저장하고 ticket backlog를 만든 뒤 현재 ticket만 구현한다.`
+  - `Intent classification: prompt-based requirements implementation request.`
+  - `Next action: save the prompt as a requirements source, create a ticket backlog, and implement only the current ticket.`
 - Requirements draft approval:
-  - `의도 감지: 요구사항 draft 승인 요청으로 판단함.`
-  - `다음 행동: draft를 승인하고 ticket backlog를 만든 뒤 첫 ticket으로 이동한다.`
+  - `Intent classification: requirements draft approval request.`
+  - `Next action: approve the draft, create the ticket backlog, and move to the first ticket.`
 - Continuation:
-  - `의도 감지: 이어서 진행 요청으로 판단함.`
-  - `다음 행동: 다음 pending ticket을 확인하고 현재 ticket만 이어서 진행한다.`
+  - `Intent classification: continuation request.`
+  - `Next action: inspect the next pending ticket and continue only the current ticket.`
 
 Bad form:
 
-- `의도 감지: 구현 요청입니다. 바로 구현하겠습니다.`
+- `Intent classification: implementation request. I will implement immediately.`
 
 The preamble is not decoration. It must choose the next command rail.
 
@@ -125,33 +125,33 @@ Detected intent: {{detectedIntent}}
 Selected skill: workflow-requirements ({{selectedSkillPath}})
 Reason: {{reason}}
 
-의도 감지: 제품 아이디어 초안 작성 요청으로 판단함.
-근거: 구체 요구사항 파일 없이 새 서비스 아이디어를 말함.
-다음 행동: 구현하지 않고 requirements draft를 작성한 뒤 사용자 검토를 기다린다.
+Intent classification: product idea drafting request.
+Basis: the user described a new service idea without a concrete requirements file.
+Next action: do not implement; write a requirements draft and wait for user review.
 
 Required flow:
-- 프롬프트 본문을 제품 아이디어 source로 취급한다.
-- 구현하지 않는다.
-- 먼저 `npx ph workflow draft --stdin`로 requirements draft를 작성한다.
-- `.persona/workflow/requirements/backlog.md`, `questions.md`, `assumptions.md`를 사용자에게 검토하라고 보고한다.
-- 사용자가 `진행하자`라고 승인하기 전에는 `split`, `next`, `implement`를 실행하지 않는다.
-- Draft complete message에는 `Say `진행하자``를 포함한다.
+- Treat the prompt body as the product idea source.
+- Do not implement.
+- First create a requirements draft with `npx ph workflow draft --stdin`.
+- Tell the user to review `.persona/workflow/requirements/backlog.md`, `questions.md`, and `assumptions.md`.
+- Do not run `split`, `next`, or `implement` before the user approves the draft.
+- Include a clear instruction asking the user to approve before implementation.
 
 Finish gate:
-- build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After build/test success, fill `.persona/workflow/implementation-report.md` with real evidence.
 - After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
-- `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
-- `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
-- `npx ph workflow check`를 실행하고 blocker를 해결한다.
+- Fill `.persona/workflow/review-report.md` with real review evidence.
+- Run `npx ph plan --report-filled implementation` and `npx ph plan --report-filled review`.
+- Run `npx ph workflow check` and resolve blockers.
 - Do not archive req tickets until review confirms requirements are satisfied.
-- 확인된 ticket만 `npx ph workflow archive <ticket>`로 history에 남긴다.
-- 최종 완료 전 `npx ph workflow finish implement`를 실행한다.
-- pending ticket이 남아 있으면 전체 완료라고 말하지 말고 다음 ticket을 보고한다.
+- Archive only confirmed tickets with `npx ph workflow archive <ticket>`.
+- Before final completion, run `npx ph workflow finish implement`.
+- If pending tickets remain, do not claim full completion; report the next ticket.
 
 Non-goals:
-- generated app product quality 보증이 아니다.
-- AST/linter/enforcement gate가 아니다.
-- `.persona`가 없는 프로젝트에는 이 workflow를 강제하지 않는다.
+- This is not generated app product-quality certification.
+- This is not an AST/linter/enforcement gate.
+- This does not force the workflow in projects without `.persona`.
 <!-- /PH_RUNTIME_BLOCK -->
 
 <!-- PH_RUNTIME_BLOCK:approval -->
@@ -161,33 +161,33 @@ Detected intent: {{detectedIntent}}
 Selected skill: workflow-requirements ({{selectedSkillPath}})
 Reason: {{reason}}
 
-의도 감지: 요구사항 draft 승인 요청으로 판단함.
-근거: 사용자가 draft 검토 후 진행을 승인하는 표현을 사용함.
-다음 행동: draft를 승인하고 ticket backlog를 만든 뒤 첫 ticket으로 이동한다.
+Intent classification: requirements draft approval request.
+Basis: the user used wording that approves proceeding after draft review.
+Next action: approve the draft, create the ticket backlog, and move to the first ticket.
 
 Required flow:
-- 사용자가 requirements draft를 승인한 것으로 처리한다.
-- `npx ph workflow approve requirements`를 실행한다.
-- `npx ph workflow split .persona/workflow/requirements/backlog.md`를 실행해 implementation tickets를 만든다.
-- `npx ph workflow next`로 첫 ticket을 확인한다.
-- `npx ph workflow implement`로 구현 레일을 시작하고 현재 task card만 구현한다.
-- backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
+- Treat the requirements draft as user-approved.
+- Run `npx ph workflow approve requirements`.
+- Run `npx ph workflow split .persona/workflow/requirements/backlog.md` to create implementation tickets.
+- Run `npx ph workflow next` to inspect the first ticket.
+- Start the implementation rail with `npx ph workflow implement` and implement only the current task card.
+- If the backlog is too large for one session, complete only the bounded subset/current ticket and leave remaining tickets pending for continuation; do not claim the whole backlog.
 
 Finish gate:
-- build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After build/test success, fill `.persona/workflow/implementation-report.md` with real evidence.
 - After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
-- `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
-- `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
-- `npx ph workflow check`를 실행하고 blocker를 해결한다.
+- Fill `.persona/workflow/review-report.md` with real review evidence.
+- Run `npx ph plan --report-filled implementation` and `npx ph plan --report-filled review`.
+- Run `npx ph workflow check` and resolve blockers.
 - Do not archive req tickets until review confirms requirements are satisfied.
-- 확인된 ticket만 `npx ph workflow archive <ticket>`로 history에 남긴다.
-- 최종 완료 전 `npx ph workflow finish implement`를 실행한다.
-- pending ticket이 남아 있으면 전체 완료라고 말하지 말고 다음 ticket을 보고한다.
+- Archive only confirmed tickets with `npx ph workflow archive <ticket>`.
+- Before final completion, run `npx ph workflow finish implement`.
+- If pending tickets remain, do not claim full completion; report the next ticket.
 
 Non-goals:
-- generated app product quality 보증이 아니다.
-- AST/linter/enforcement gate가 아니다.
-- `.persona`가 없는 프로젝트에는 이 workflow를 강제하지 않는다.
+- This is not generated app product-quality certification.
+- This is not an AST/linter/enforcement gate.
+- This does not force the workflow in projects without `.persona`.
 <!-- /PH_RUNTIME_BLOCK -->
 
 <!-- PH_RUNTIME_BLOCK:file -->
@@ -197,35 +197,35 @@ Detected intent: {{detectedIntent}}
 Selected skill: workflow-requirements ({{selectedSkillPath}})
 Reason: {{reason}}
 
-의도 감지: {{sourceFile}} 기반 구현 요청으로 판단함.
-근거: 사용자가 {{sourceFile}}/리드미 같은 요구사항 파일을 보고 구현하라고 요청함.
-다음 행동: 요구사항 파일을 ticket backlog로 나눈 뒤 현재 ticket만 구현한다.
+Intent classification: implementation request based on {{sourceFile}}.
+Basis: the user asked to implement from a requirements file such as {{sourceFile}} or README.
+Next action: split the requirements file into a ticket backlog, then implement only the current ticket.
 
 Required flow:
-- 요구사항 파일: `{{sourceFile}}`
-- 바로 구현하지 않는다.
-- split/next 전에는 production code를 작성하지 않는다.
-- 먼저 `npx ph bearshell --shell 'sed -n "1,220p" {{sourceFile}}'`처럼 범위를 나눠 파일을 끝까지 읽는다.
-- 그 다음 `npx ph workflow split {{sourceFile}}`를 실행해 requirements-analysis/backlog/task card를 만든다.
-- `npx ph workflow next`를 실행하고 현재 task card만 구현한다.
-- backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
-- backlog에 pending ticket이 남아 있으면 전체 완료라고 말하지 않는다.
+- Requirements file: `{{sourceFile}}`
+- Do not implement immediately.
+- Do not write production code before split/next.
+- First read the file through the end in bounded ranges, such as `npx ph bearshell --shell 'sed -n "1,220p" {{sourceFile}}'`.
+- Then run `npx ph workflow split {{sourceFile}}` to create requirements analysis, backlog, and task cards.
+- Run `npx ph workflow next` and implement only the current task card.
+- If the backlog is too large for one session, complete only the bounded subset/current ticket and leave remaining tickets pending for continuation; do not claim the whole backlog.
+- If backlog still has pending tickets, do not claim full completion.
 
 Finish gate:
-- build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After build/test success, fill `.persona/workflow/implementation-report.md` with real evidence.
 - After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
-- `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
-- `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
-- `npx ph workflow check`를 실행하고 blocker를 해결한다.
+- Fill `.persona/workflow/review-report.md` with real review evidence.
+- Run `npx ph plan --report-filled implementation` and `npx ph plan --report-filled review`.
+- Run `npx ph workflow check` and resolve blockers.
 - Do not archive req tickets until review confirms requirements are satisfied.
-- 확인된 ticket만 `npx ph workflow archive <ticket>`로 history에 남긴다.
-- 최종 완료 전 `npx ph workflow finish implement`를 실행한다.
-- pending ticket이 남아 있으면 전체 완료라고 말하지 말고 다음 ticket을 보고한다.
+- Archive only confirmed tickets with `npx ph workflow archive <ticket>`.
+- Before final completion, run `npx ph workflow finish implement`.
+- If pending tickets remain, do not claim full completion; report the next ticket.
 
 Non-goals:
-- generated app product quality 보증이 아니다.
-- AST/linter/enforcement gate가 아니다.
-- `.persona`가 없는 프로젝트에는 이 workflow를 강제하지 않는다.
+- This is not generated app product-quality certification.
+- This is not an AST/linter/enforcement gate.
+- This does not force the workflow in projects without `.persona`.
 <!-- /PH_RUNTIME_BLOCK -->
 
 <!-- PH_RUNTIME_BLOCK:prompt -->
@@ -235,32 +235,32 @@ Detected intent: {{detectedIntent}}
 Selected skill: workflow-requirements ({{selectedSkillPath}})
 Reason: {{reason}}
 
-의도 감지: 프롬프트 기반 요구사항 구현 요청으로 판단함.
-근거: 사용자가 요구사항 본문이나 기능 설명을 프롬프트로 직접 제공함.
-다음 행동: 프롬프트를 요구사항 source로 저장하고 ticket backlog를 만든 뒤 현재 ticket만 구현한다.
+Intent classification: prompt-based requirements implementation request.
+Basis: the user provided requirements text or a feature description directly in the prompt.
+Next action: save the prompt as a requirements source, create a ticket backlog, and implement only the current ticket.
 
 Required flow:
-- 프롬프트 본문을 요구사항 source로 취급한다.
-- 구현 전에 `npx ph workflow capture --stdin`로 요구사항을 저장한다.
-- 그 다음 `npx ph workflow split`를 실행해 requirements-analysis/backlog/task card를 만든다.
-- `npx ph workflow next`를 실행하고 현재 task card만 구현한다.
-- backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
+- Treat the prompt body as the requirements source.
+- Before implementation, save the requirements with `npx ph workflow capture --stdin`.
+- Then run `npx ph workflow split` to create requirements analysis, backlog, and task cards.
+- Run `npx ph workflow next` and implement only the current task card.
+- If the backlog is too large for one session, complete only the bounded subset/current ticket and leave remaining tickets pending for continuation; do not claim the whole backlog.
 
 Finish gate:
-- build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After build/test success, fill `.persona/workflow/implementation-report.md` with real evidence.
 - After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
-- `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
-- `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
-- `npx ph workflow check`를 실행하고 blocker를 해결한다.
+- Fill `.persona/workflow/review-report.md` with real review evidence.
+- Run `npx ph plan --report-filled implementation` and `npx ph plan --report-filled review`.
+- Run `npx ph workflow check` and resolve blockers.
 - Do not archive req tickets until review confirms requirements are satisfied.
-- 확인된 ticket만 `npx ph workflow archive <ticket>`로 history에 남긴다.
-- 최종 완료 전 `npx ph workflow finish implement`를 실행한다.
-- pending ticket이 남아 있으면 전체 완료라고 말하지 말고 다음 ticket을 보고한다.
+- Archive only confirmed tickets with `npx ph workflow archive <ticket>`.
+- Before final completion, run `npx ph workflow finish implement`.
+- If pending tickets remain, do not claim full completion; report the next ticket.
 
 Non-goals:
-- generated app product quality 보증이 아니다.
-- AST/linter/enforcement gate가 아니다.
-- `.persona`가 없는 프로젝트에는 이 workflow를 강제하지 않는다.
+- This is not generated app product-quality certification.
+- This is not an AST/linter/enforcement gate.
+- This does not force the workflow in projects without `.persona`.
 <!-- /PH_RUNTIME_BLOCK -->
 
 <!-- PH_RUNTIME_BLOCK:continuation -->
@@ -270,30 +270,30 @@ Detected intent: {{detectedIntent}}
 Selected skill: workflow-requirements ({{selectedSkillPath}})
 Reason: {{reason}}
 
-의도 감지: 이어서 진행 요청으로 판단함.
-근거: 사용자가 다음 단계/이어서 진행을 요청함.
-다음 행동: 다음 pending ticket을 확인하고 현재 ticket만 이어서 진행한다.
+Intent classification: continuation request.
+Basis: the user asked for the next step or to continue.
+Next action: inspect the next pending ticket and continue only the current ticket.
 
 Required flow:
-- 이어서 할 ticket을 찾기 위해 `npx ph workflow next`를 실행한다.
-- accepted plan continuation이 필요하면 `npx ph workflow continue`를 실행한다.
-- README.md가 없으면 막히지 말고 `.persona/project-profile.jsonc`, `.persona/policies/overlay.jsonc`, `.persona/workflow/plan.md`, 현재 task card를 repo-relative path로 읽고, package.json에서 Node/CommonJS stack을 추론하지 않는다.
-- 현재 task card만 구현하고, 남은 ticket이 있으면 전체 완료라고 말하지 않는다.
-- backlog가 한 세션에 너무 크면 bounded subset/current ticket만 완료하고 leave remaining tickets pending for continuation; do not claim the whole backlog.
+- Run `npx ph workflow next` to find the ticket to continue.
+- If accepted plan continuation is needed, run `npx ph workflow continue`.
+- If README.md is absent, do not block; read `.persona/project-profile.jsonc`, `.persona/policies/overlay.jsonc`, `.persona/workflow/plan.md`, and the current task card by repo-relative path, and do not infer a Node/CommonJS stack from package.json.
+- Implement only the current task card; if tickets remain, do not claim full completion.
+- If the backlog is too large for one session, complete only the bounded subset/current ticket and leave remaining tickets pending for continuation; do not claim the whole backlog.
 
 Finish gate:
-- build/test 성공 후 `.persona/workflow/implementation-report.md`를 실제 evidence로 채운다.
+- After build/test success, fill `.persona/workflow/implementation-report.md` with real evidence.
 - After any bounded bootRun/manual QA attempt, stop the app if needed, summarize the observed result, and record a verification limitation/blocker instead of looping when it hangs or is inconclusive.
-- `.persona/workflow/review-report.md`를 실제 review evidence로 채운다.
-- `npx ph plan --report-filled implementation`과 `npx ph plan --report-filled review`를 실행한다.
-- `npx ph workflow check`를 실행하고 blocker를 해결한다.
+- Fill `.persona/workflow/review-report.md` with real review evidence.
+- Run `npx ph plan --report-filled implementation` and `npx ph plan --report-filled review`.
+- Run `npx ph workflow check` and resolve blockers.
 - Do not archive req tickets until review confirms requirements are satisfied.
-- 확인된 ticket만 `npx ph workflow archive <ticket>`로 history에 남긴다.
-- 최종 완료 전 `npx ph workflow finish implement`를 실행한다.
-- pending ticket이 남아 있으면 전체 완료라고 말하지 말고 다음 ticket을 보고한다.
+- Archive only confirmed tickets with `npx ph workflow archive <ticket>`.
+- Before final completion, run `npx ph workflow finish implement`.
+- If pending tickets remain, do not claim full completion; report the next ticket.
 
 Non-goals:
-- generated app product quality 보증이 아니다.
-- AST/linter/enforcement gate가 아니다.
-- `.persona`가 없는 프로젝트에는 이 workflow를 강제하지 않는다.
+- This is not generated app product-quality certification.
+- This is not an AST/linter/enforcement gate.
+- This does not force the workflow in projects without `.persona`.
 <!-- /PH_RUNTIME_BLOCK -->

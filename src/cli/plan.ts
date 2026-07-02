@@ -46,13 +46,13 @@ function profileSummaryLines(projectDir: string): readonly string[] {
   }
 
   return [
-    "프로젝트 프로필 요약:",
-    "- 응답된 항목 없음",
+    "Project profile summary:",
+    "- No answered fields",
     "",
-    "프로필 사용 원칙:",
-    "- 이 요약은 구현 전 architecture/technology plan 참고용이다.",
-    "- 사용자의 README/요구사항과 명시 지시가 우선한다.",
-    "- 이 요약은 rule enforcement나 product-quality 보증이 아니다.",
+    "Project profile usage principles:",
+    "- Use this summary as architecture/technology planning context before implementation.",
+    "- The user's README, requirements, and explicit instructions take precedence.",
+    "- This summary is not rule enforcement or a product-quality guarantee.",
   ]
 }
 

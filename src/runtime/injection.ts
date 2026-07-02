@@ -82,40 +82,40 @@ export function createInjectionBlock(targetFile: string, projectDir = process.cw
   const block = [
     "[Persona Harness Injection]",
     "",
-    `현재 파일: ${targetFile}`,
-    `파일 역할: ${fileRole}`,
+    `Current file: ${targetFile}`,
+    `File role: ${fileRole}`,
     "",
     ...(projectProfileSummary.length > 0 ? [...projectProfileSummary, ""] : []),
     ...(projectProfileState !== undefined && projectProfileState.status !== "ready"
       ? [
-          "프로젝트 프로필 상태:",
+          "Project profile status:",
           `- ${projectProfileState.message}`,
-          "- 사용자 직접 터미널에서는 `npx ph init` 또는 `npx ph intake --interactive`로 프로필 인터뷰를 완료한다.",
-          "- AI/non-TTY shell에서는 interactive prompt를 시도하지 말고 `npx ph bootstrap backend`를 실행한다.",
-          "- 프로필이 ready가 되기 전에는 하네스 workflow 구현 레일을 시작하지 않는다.",
+          "- In a user-operated terminal, run `npx ph init` or `npx ph intake --interactive` to complete the profile interview.",
+          "- In an AI/non-TTY shell, do not attempt interactive prompts; run `npx ph bootstrap backend`.",
+          "- Do not start the Harness workflow implementation rail until the profile is ready.",
           "",
         ]
       : []),
     ...(policyOverlay.summaryLines.length > 0 ? [...policyOverlay.summaryLines, ""] : []),
-    "선택 규칙:",
+    "Selected rules:",
     ...selectedRules.map((rule) => `- ${rule}`),
     "",
-    "선택 스킬:",
+    "Selected skills:",
     ...(selectedSharedSkills.length > 0
       ? selectedSharedSkills.map((skill) => `- ${skill.name} (${skill.domain}): ${skill.reason}`)
-      : ["- 없음"]),
+      : ["- None"]),
     "",
     ...(configResult.diagnostics.length > 0
       ? [
-          "설정 진단:",
+          "Config diagnostics:",
           ...configResult.diagnostics.map((diagnostic) => `- ${diagnostic.code}: ${diagnostic.message}`),
           "",
         ]
       : []),
-    "적용 정책:",
+    "Applied policies:",
     ...policies.map((policy) => `- ${policy}`),
     "",
-    "주의:",
+    "Notes:",
     ...tier0GuidanceLines(),
     ...(shouldLoadJavaRules ? ["", ...tier1WorkflowRailLines(), "", ...tier3ClosureLines()] : []),
   ].join("\n")

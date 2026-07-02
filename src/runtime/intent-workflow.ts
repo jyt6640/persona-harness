@@ -16,12 +16,12 @@ import { detectTopLevelIntent, type TopLevelIntent } from "./top-level-intent-ro
 import type { TransformMessagesOutput } from "./types.js"
 
 const IMPLEMENTATION_PROFILE_GUARD_LINES = [
-  "- 구현 전에 `.persona/project-profile.jsonc`가 있으면 반드시 읽고, language/framework/build tool/profile constraints와 다른 stack을 만들지 않는다.",
-  "- profile이 존재하지만 아직 읽지 않았다면 구현하지 말고 먼저 profile과 README/requirements/current task card를 읽는다.",
+  "- Before implementation, if `.persona/project-profile.jsonc` exists, read it and do not create a stack that conflicts with its language/framework/build tool/profile constraints.",
+  "- If the profile exists but has not been read yet, do not implement; read the profile plus README/requirements/current task card first.",
 ] as const
 
 const FINISH_SEQUENCE_GUARD =
-  "- 완료 보고 전 `.persona/workflow/implementation-report.md`, `.persona/workflow/review-report.md`, `npx ph plan --report-filled review`, `npx ph workflow finish implement` 순서를 지킨다."
+  "- Before reporting completion, follow this sequence: `.persona/workflow/implementation-report.md`, `.persona/workflow/review-report.md`, `npx ph plan --report-filled review`, then `npx ph workflow finish implement`."
 
 function latestUserText(output: TransformMessagesOutput): string | undefined {
   const latestUserMessage = [...output.messages].reverse().find((message) => message.info.role === "user")
@@ -48,34 +48,34 @@ function runtimeReliabilityGuardLines(intent: TopLevelIntent): readonly string[]
 
   if (intent.requirementsIntent.kind === "requirement-drafting") {
     return [
-      "- prompt-only requirements는 구현하지 않고 draft/review-before-implementation으로 유도한다. 사용자가 승인하기 전에는 implement를 실행하지 않는다.",
+      "- Do not implement prompt-only requirements; route them through draft/review-before-implementation and do not run implement before user approval.",
     ]
   }
 
   if (intent.requirementsIntent.kind === "requirement-approval") {
     return [
       ...baseLines,
-      "- 승인된 draft만 backlog로 전환하고 `npx ph workflow next`로 첫 pending ticket을 확인한 뒤 현재 ticket만 구현한다.",
+      "- Convert only an approved draft into backlog, run `npx ph workflow next` to inspect the first pending ticket, and implement only the current ticket.",
     ]
   }
 
   if (intent.requirementsIntent.kind === "requirement-continuation") {
     return [
       ...baseLines,
-      "- pending tickets remain → `npx ph workflow next` / `npx ph workflow continue`로 다음 ticket을 이어가고 전체 완료라고 주장하지 않는다.",
+      "- If pending tickets remain, use `npx ph workflow next` / `npx ph workflow continue` to proceed to the next ticket and do not claim the whole backlog is complete.",
     ]
   }
 
   if (intent.requirementsIntent.source === "prompt") {
     return [
       ...baseLines,
-      "- prompt-only requirements는 사용자가 이미 승인한 draft가 아니라면 바로 구현하지 않고 `npx ph workflow capture --stdin` 또는 `npx ph workflow draft --stdin`로 요구사항 source/backlog를 먼저 만든다.",
+      "- If prompt-only requirements are not already an approved draft, do not implement directly; first create the requirements source/backlog with `npx ph workflow capture --stdin` or `npx ph workflow draft --stdin`.",
     ]
   }
 
   return [
     ...baseLines,
-    "- README/requirements 기반 구현은 파일을 끝까지 읽고 `npx ph workflow next` 또는 `npx ph workflow continue`로 pending ticket을 확인한 뒤 현재 ticket만 구현한다.",
+    "- For README/requirements-based implementation, read the file through the end, use `npx ph workflow next` or `npx ph workflow continue` to inspect the pending ticket, and implement only the current ticket.",
   ]
 }
 

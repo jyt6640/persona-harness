@@ -4,8 +4,8 @@ import type { WorkflowRelayPayload } from "./workflow-relay-model.js"
 
 export const RELAY_ROLE_ARTIFACT_KIND: Readonly<Record<MultiAgentRole, string>> = {
   "test-writer": "test/verification artifact",
-  jaeki: "implementation artifact",
-  roach: "review artifact",
+  implementer: "implementation artifact",
+  reviewer: "review artifact",
 }
 
 export function relayUsage(invocationName: string): string {
@@ -38,13 +38,13 @@ function roleAuthoringHints(role: MultiAgentRole | null): readonly string[] {
       "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay'.",
     ]
   }
-  if (role === "jaeki") {
+  if (role === "implementer") {
     return [
       "Include implementation summary and evidence pointers.",
       "Use the test-writer artifact if present; do not broaden the ticket.",
     ]
   }
-  if (role === "roach") {
+  if (role === "reviewer") {
     return [
       "Include review/report/check result pointers.",
       "Review reports and remaining PH closure blockers; do not implement features unless reassigned.",
@@ -102,10 +102,10 @@ export function relayPromptLinesFor(
       "Then rerun `npx ph workflow relay next --json`.",
     ]
   }
-  if (role === "jaeki") {
+  if (role === "implementer") {
     return [
       ...common,
-      "Role: jaeki.",
+      "Role: implementer.",
       "Implement or refactor only this scoped ticket; avoid broad redesign.",
       "Use the test-writer artifact if present and keep workflow reports/evidence honest.",
       `Record the role artifact at ${artifactPath}.`,
@@ -114,7 +114,7 @@ export function relayPromptLinesFor(
   }
   return [
     ...common,
-    "Role: roach.",
+    "Role: reviewer.",
     "Review/QA the scoped ticket and pressure implementation/review reports.",
     "Do not implement features unless explicitly reassigned.",
     `Record the role artifact at ${artifactPath}.`,

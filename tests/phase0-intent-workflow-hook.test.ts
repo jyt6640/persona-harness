@@ -142,8 +142,8 @@ describe("intent workflow hook boundary", () => {
 
     expect(text).toContain("[Persona Harness Programming Workflow]")
     expect(text).toContain("Detected intent: programming")
-    expect(text).toContain("`.persona/project-profile.jsonc`가 있으면 반드시 읽고")
-    expect(text).toContain("profile이 존재하지만 아직 읽지 않았다면 구현하지 말고")
+    expect(text).toContain("if `.persona/project-profile.jsonc` exists, read it")
+    expect(text).toContain("If the profile exists but has not been read yet")
     expect(text).not.toContain("[Persona Harness Requirements Workflow]")
     expectIntentEvidence("programming", "[Persona Harness Programming Workflow]")
   })
@@ -154,7 +154,7 @@ describe("intent workflow hook boundary", () => {
     expect(text).toContain("[Persona Harness Requirements Workflow]")
     expect(text).toContain("Detected intent: requirement-implementation")
     expect(text).toContain("npx ph workflow split README.md")
-    expect(text).toContain("`.persona/project-profile.jsonc`가 있으면 반드시 읽고")
+    expect(text).toContain("if `.persona/project-profile.jsonc` exists, read it")
     expect(text).not.toContain("[Persona Harness Programming Workflow]")
     expectIntentEvidence("requirements", "[Persona Harness Requirements Workflow]")
   })
@@ -164,25 +164,25 @@ describe("intent workflow hook boundary", () => {
       prompt: "테스트가 실패해. 고쳐줘",
       primaryIntent: "debug",
       railMarker: "[Persona Harness Debug Workflow]",
-      phrase: "실패를 먼저 재현한다",
+      phrase: "Reproduce the failure first",
     },
     {
       prompt: "이 코드 냉정하게 리뷰해줘",
       primaryIntent: "review",
       railMarker: "[Persona Harness Review Workflow]",
-      phrase: "Findings를 먼저 쓴다",
+      phrase: "Write findings first",
     },
     {
       prompt: "구조 정리해줘",
       primaryIntent: "refactor",
       railMarker: "[Persona Harness Refactor Workflow]",
-      phrase: "public behavior를 먼저 고정한다",
+      phrase: "lock current public behavior first",
     },
     {
       prompt: "커밋하고 푸쉬해",
       primaryIntent: "git",
       railMarker: "[Persona Harness Git Workflow]",
-      phrase: "관련 파일만 stage",
+      phrase: "Stage only relevant files",
     },
   ] as const)("routes $primaryIntent intent before programming at the hook boundary", async (example) => {
     const text = await transformPrompt(`session-${example.primaryIntent}`, example.prompt)

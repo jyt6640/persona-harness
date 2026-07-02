@@ -94,11 +94,11 @@ export function formatJavaRoleDiscoveryBlock(injections: readonly PendingInjecti
   return [
     "[Persona Harness Java Role Discovery]",
     "",
-    "발견된 Java 역할 파일:",
+    "Discovered Java role files:",
     ...roleLines,
     "",
-    "다음 단계:",
-    "- Controller, Service, Repository, Request DTO, Response DTO 역할 파일을 read 도구로 최소 1개씩 열어 역할별 rule injection을 실제 model input에 태운다.",
+    "Next step:",
+    "- Open at least one Controller, Service, Repository, Request DTO, and Response DTO role file with a read tool so role-specific rule injection reaches actual model input.",
   ].join("\n")
 }
 
@@ -129,8 +129,8 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
       "",
       "[Persona Harness Java Role Read Follow-up]",
       "",
-      "발견된 Java 역할 파일을 다음 수정 전에 read 도구로 연다.",
-      "이 단계는 Controller/Service/Repository/Request DTO/Response DTO 등 역할별 rule injection을 실제 model input에 태운다.",
+      "Open the discovered Java role files with a read tool before the next edit.",
+      "This step routes Controller/Service/Repository/Request DTO/Response DTO role-specific rule injection into actual model input.",
       "",
       ...readLines,
     ].join("\n"),

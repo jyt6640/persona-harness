@@ -1,8 +1,8 @@
 export function createImplementationReportTemplate(inputLines: readonly string[]): string {
   return [
-    "# Jaeki Implementation Report",
+    "# Implementer Implementation Report",
     "",
-    "Role: `jaeki`",
+    "Role: `implementer`",
     "Status: template",
     "",
     "## Inputs",
@@ -72,9 +72,9 @@ export function createImplementationReportTemplate(inputLines: readonly string[]
 
 export function createReviewReportTemplate(inputLines: readonly string[]): string {
   return [
-    "# Roach Review Report",
+    "# Reviewer Review Report",
     "",
-    "Role: `roach`",
+    "Role: `reviewer`",
     "Status: template",
     "",
     "## Inputs",

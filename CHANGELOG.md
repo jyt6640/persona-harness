@@ -6,6 +6,18 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Renamed the multi-agent relay preview roles from `jaeki` / `roach` to
+  `implementer` / `reviewer`, while keeping `test-writer`.
+  `ph bootstrap backend --multi-agent-preview` now writes the new OpenCode
+  agent keys and migrates old keys when it can do so without overwriting an
+  existing new key. Relay reads legacy `jaeki.md` / `roach.md` artifacts for
+  compatibility, but new handoff prompts and missing-artifact paths use
+  `implementer.md` / `reviewer.md`. Model-injected runtime guard text and
+  workflow runtime blocks were also normalized to English. This is a
+  preview-breaking naming cleanup only; it does not add autonomous subtask
+  dispatch, a success guarantee, token/provider-token saving, product efficacy,
+  broad reliability, closure guarantee, app-quality/full-TDD, or generated-app
+  certification claims.
 - Fixed multi-agent runtime guidance isolation for OpenCode subagent sessions.
   When `multiAgent.enabled=true` and `features.runtimeInjection=true`, PH now
   uses deterministic `session.created` / `session.updated` `Session.parentID`

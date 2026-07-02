@@ -18,7 +18,7 @@ describe("workflow skill loader", () => {
     expect(block).toContain("Detected intent: debug")
     expect(block).toContain("Secondary intents: programming")
     expect(block).toContain("Reason: Failure signal detected.")
-    expect(block).toContain("최소 3개 가설")
+    expect(block).toContain("Form at least three hypotheses")
   })
 
   it("loads requirements file workflow blocks with source-file placeholders", () => {
@@ -31,7 +31,7 @@ describe("workflow skill loader", () => {
 
     expect(block).toContain("[Persona Harness Requirements Workflow]")
     expect(block).toContain("Selected skill: workflow-requirements")
-    expect(block).toContain("요구사항 파일: `README.md`")
+    expect(block).toContain("Requirements file: `README.md`")
     expect(block).toContain("npx ph workflow split README.md")
     expect(block).toContain("bounded subset/current ticket")
     expect(block).toContain("leave remaining tickets pending for continuation")
@@ -59,7 +59,7 @@ describe("workflow skill loader", () => {
       "packages/shared-skills/skills/workflow/programming/SKILL.md",
     )
     expect(block).toContain("[Persona Harness Programming Workflow]")
-    expect(block).toContain("의도 감지: 직접 프로그래밍 요청으로 판단함.")
-    expect(block).toContain("관련 파일을 먼저 읽는다")
+    expect(block).toContain("Intent classification: direct programming request.")
+    expect(block).toContain("Read the relevant files first")
   })
 })

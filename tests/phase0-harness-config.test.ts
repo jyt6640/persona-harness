@@ -62,7 +62,7 @@ describe("Phase 0 harness config", () => {
     expect(config.telemetry.tokenUsage).toBe(true)
     expect(config.multiAgent).toEqual({
       enabled: false,
-      roles: ["test-writer", "jaeki", "roach"],
+      roles: ["test-writer", "implementer", "reviewer"],
       models: {},
     })
     expect(config.conventions[CONTROLLER_REPOSITORY_CONVENTION.id]).toBe(CONTROLLER_REPOSITORY_CONVENTION.defaultLevel)
@@ -124,8 +124,28 @@ describe("Phase 0 harness config", () => {
     writeHarnessConfig(projectDir, {
       multiAgent: {
         enabled: true,
-        roles: ["test-writer", "jaeki", "roach"],
+        roles: ["test-writer", "implementer", "reviewer"],
         models: {
+          reviewer: "provider/strong-reviewer",
+        },
+      },
+    })
+
+    const config = loadHarnessConfig(projectDir)
+
+    expect(config.multiAgent.enabled).toBe(true)
+    expect(config.multiAgent.roles).toEqual(["test-writer", "implementer", "reviewer"])
+    expect(config.multiAgent.models).toEqual({ reviewer: "provider/strong-reviewer" })
+  })
+
+  it("normalizes deprecated multi-agent relay role names from harness.jsonc", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, {
+      multiAgent: {
+        enabled: true,
+        roles: ["test-writer", "jaeki", "roach", "implementer"],
+        models: {
+          jaeki: "provider/fast-impl",
           roach: "provider/strong-reviewer",
         },
       },
@@ -134,8 +154,11 @@ describe("Phase 0 harness config", () => {
     const config = loadHarnessConfig(projectDir)
 
     expect(config.multiAgent.enabled).toBe(true)
-    expect(config.multiAgent.roles).toEqual(["test-writer", "jaeki", "roach"])
-    expect(config.multiAgent.models).toEqual({ roach: "provider/strong-reviewer" })
+    expect(config.multiAgent.roles).toEqual(["test-writer", "implementer", "reviewer"])
+    expect(config.multiAgent.models).toEqual({
+      implementer: "provider/fast-impl",
+      reviewer: "provider/strong-reviewer",
+    })
   })
 
   it("uses convention levels from harness.jsonc", () => {
@@ -163,7 +186,7 @@ describe("Phase 0 harness config", () => {
       }),
     ])
     expect(injection.selectedHarnessConfigDiagnostics).toEqual(result.diagnostics)
-    expect(injection.block).toContain("설정 진단:")
+    expect(injection.block).toContain("Config diagnostics:")
     expect(injection.block).toContain("malformed_config")
   })
 

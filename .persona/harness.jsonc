@@ -17,7 +17,7 @@
   },
   "multiAgent": {
     "enabled": false,
-    "roles": ["test-writer", "jaeki", "roach"],
+    "roles": ["test-writer", "implementer", "reviewer"],
     "models": {}
   },
   "maxRulesPerInjection": 12,

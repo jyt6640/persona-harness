@@ -282,7 +282,7 @@ describe("Phase 0 Java role discovery", () => {
     expect(text).toContain("read src/main/java/com/example/library/presentation/dto/request/CreateBookRequest.java")
     expect(text).toContain("read src/main/java/com/example/library/presentation/dto/response/BookResponse.java")
     expect(text).not.toContain("read src/main/java/com/example/library/infrastructure/JdbcBookRepository.java")
-    expect(text).toContain("역할별 rule injection을 실제 model input에 태운다")
+    expect(text).toContain("role-specific rule injection into actual model input")
 
     const payloads = evidencePayloads(projectDir)
     expect(payloads).toEqual(

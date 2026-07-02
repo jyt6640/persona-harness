@@ -20,18 +20,18 @@ Detected intent: {{detectedIntent}}
 Secondary intents: {{secondaryIntents}}
 Reason: {{reason}}
 
-의도 감지: git 작업 요청으로 판단함.
-근거: 사용자가 commit/push/tag/history 같은 저장소 작업을 명시함.
-다음 행동: 작업트리와 diff를 먼저 확인하고 요청된 git 작업만 수행한다.
+Intent classification: git work request.
+Basis: the user explicitly asked for repository work such as commit, push, tag, or history.
+Next action: inspect the worktree and diff first, then perform only the requested git work.
 
 Required flow:
-- git status를 확인한다.
-- diff를 확인한다. staged diff와 unstaged diff를 구분한다.
-- 관련 파일만 stage한다. unrelated dirty work는 섞지 않는다.
-- atomic commit을 만든다. 메시지는 repo의 기존 스타일을 따른다.
-- push는 사용자가 명시적으로 요청한 경우에만 수행한다.
-- push 전에는 현재 브랜치와 upstream 상태를 확인한다.
-- 완료 후 commit hash와 남은 worktree 상태를 보고한다.
+- Check git status.
+- Inspect the diff and distinguish staged from unstaged changes.
+- Stage only relevant files. Do not mix unrelated dirty work.
+- Create an atomic commit using the repository's existing message style.
+- Push only when the user explicitly requested a push.
+- Before pushing, check the current branch and upstream state.
+- After completion, report the commit hash and remaining worktree state.
 
 Evidence checklist:
 - git status
@@ -42,8 +42,8 @@ Evidence checklist:
 - remaining worktree state
 
 Non-goals:
-- 구현/debug/refactor rail이 아니다.
-- 사용자가 요청하지 않은 rebase/reset/stash/drop을 하지 않는다.
-- generated app product quality 보증이 아니다.
-- AST/linter/enforcement gate가 아니다.
+- This is not implementation/debug/refactor work.
+- Do not run rebase/reset/stash/drop unless the user requested it.
+- This is not generated app product-quality certification.
+- This is not an AST/linter/enforcement gate.
 <!-- /PH_RUNTIME_BLOCK -->

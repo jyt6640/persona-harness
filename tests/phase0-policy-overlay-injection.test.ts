@@ -90,8 +90,8 @@ describe("Phase 0 policy overlay injection", () => {
 
     const injection = createInjectionBlock("src/main/java/com/example/coupon/application/CouponService.java", projectDir)
 
-    expect(injection.block).toContain("정책/철학 오버레이:")
-    expect(injection.block).toContain("우선순위: company > personal > Clean Code baseline")
+    expect(injection.block).toContain("Policy/philosophy overlay:")
+    expect(injection.block).toContain("Priority: company > personal > Clean Code baseline")
     expect(injection.block).toContain("Company policy:")
     expect(injection.block).toContain("- Use company package conventions.")
     expect(injection.block).toContain("- Keep repository ports in domain.")
@@ -116,7 +116,7 @@ describe("Phase 0 policy overlay injection", () => {
     initializeWorkflowPlan({ projectDir })
 
     const plan = readFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "utf8")
-    expect(plan).toContain("정책/철학 오버레이:")
+    expect(plan).toContain("Policy/philosophy overlay:")
     expect(plan).toContain("- Use company package conventions.")
     expect(plan).toContain("- Domain models should own state decisions.")
     expect(plan).not.toContain("- Keep repository ports in domain.")

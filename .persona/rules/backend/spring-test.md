@@ -13,7 +13,7 @@ enforcement: inject_only
 
 ## PH Multi-Agent Relay
 
-- `test-writer`는 구현 전에 실패/검증 테스트 또는 실행 가능한 검증 계획을 작성한다. Java/Spring/Gradle 기본값은 JUnit Jupiter, AssertJ, 필요한 최소 Spring slice, `./gradlew test` 또는 Windows `gradlew.bat test` 증거다. `test-writer`는 product code를 구현하지 않고, `jaeki`가 구현하며, `roach`가 테스트/evidence/요구사항 충족을 리뷰한다. 실패 테스트를 통과시키려고 테스트를 삭제·약화·skip하지 않으며 PH report-filled, archive, `workflow finish implement` gate가 최종 기준이다.
+- `test-writer` writes failing/verification tests or an executable verification plan before implementation. Java/Spring/Gradle defaults are JUnit Jupiter, AssertJ, the smallest necessary Spring slice, and `./gradlew test` or Windows `gradlew.bat test` evidence. `test-writer` does not implement product code, `implementer` implements, and `reviewer` reviews tests, evidence, and requirement satisfaction. Never delete, weaken, or skip tests just to make a failing test pass; PH report-filled, archive, and `workflow finish implement` gates remain authoritative.
 
 ## 메모리 저장소 테스트 격리
 

@@ -31,7 +31,7 @@ function writeRuntimeMultiAgentConfig(extra: Record<string, unknown> = {}): void
     features: { runtimeInjection: true },
     multiAgent: {
       enabled: true,
-      roles: ["test-writer", "jaeki", "roach"],
+      roles: ["test-writer", "implementer", "reviewer"],
     },
     ...extra,
   })
@@ -251,7 +251,7 @@ describe("runtime session classification for multi-agent hooks", () => {
     const text = firstText(output)
     expect(text).toContain("[Persona Harness Requirements Workflow]")
     expect(text).toContain("[Persona Harness Injection]")
-    expect(text).toContain("파일 역할: controller")
+    expect(text).toContain("File role: controller")
     expect(skipEvidencePayloads()).toEqual([])
   })
 

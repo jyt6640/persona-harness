@@ -73,7 +73,7 @@ describe("Phase 0 shared skill routing", () => {
 
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toContain("programming")
     expect(injection.selectedSharedSkills.map((skill) => skill.path)).toContain("packages/shared-skills/skills/programming/SKILL.md")
-    expect(injection.block).toContain("선택 스킬:")
+    expect(injection.block).toContain("Selected skills:")
     expect(injection.block).not.toContain("packages/shared-skills/skills/programming/SKILL.md")
     expect(injection.block).toContain("TypeScript")
   })
@@ -141,7 +141,7 @@ describe("Phase 0 shared skill routing", () => {
 
     const text = firstText(output)
     expect(text).toContain("[Persona Harness Injection]")
-    expect(text).toContain("선택 스킬:")
+    expect(text).toContain("Selected skills:")
     expect(text).toContain("programming")
     expect(text).toContain("frontend")
     expect(text).toContain("TypeScript 코드를 수정해줘.")
@@ -200,8 +200,8 @@ describe("Phase 0 shared skill routing", () => {
     expect(terraformInjection.fileRole).toBe("infra")
     expect(terraformInjection.selectedRules).toEqual([])
     expect(terraformInjection.selectedSharedSkills).toEqual([])
-    expect(terraformInjection.block).toContain("파일 역할: infra")
-    expect(terraformInjection.block).toContain("- 없음")
+    expect(terraformInjection.block).toContain("File role: infra")
+    expect(terraformInjection.block).toContain("- None")
 
     expect(dockerInjection.fileRole).toBe("infra")
     expect(dockerInjection.selectedRules).toEqual([])

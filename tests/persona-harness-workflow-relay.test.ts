@@ -23,7 +23,7 @@ function writeHarnessConfig(projectDir: string, enabled: boolean): void {
       {
         multiAgent: {
           enabled,
-          roles: ["test-writer", "jaeki", "roach"],
+          roles: ["test-writer", "implementer", "reviewer"],
           models: {},
         },
       },
@@ -94,7 +94,7 @@ describe("ph workflow relay read-only preview", () => {
     expect(output.promptBlock).toBe("")
     expect(output.requiredArtifact).toBeNull()
     expect(output.requiredOutputArtifact).toBeNull()
-    expect(output.roleOrder).toEqual(["test-writer", "jaeki", "roach"])
+    expect(output.roleOrder).toEqual(["test-writer", "implementer", "reviewer"])
     expect(output.roleCompletionState).toMatchObject({
       currentRole: null,
       nextRole: null,
@@ -132,7 +132,7 @@ describe("ph workflow relay read-only preview", () => {
     expect(output.roleCompletionState).toMatchObject({
       completedRoles: [],
       currentRole: "test-writer",
-      missingRoles: ["test-writer", "jaeki", "roach"],
+      missingRoles: ["test-writer", "implementer", "reviewer"],
       nextRole: "test-writer",
       overall: "blocked",
     })
@@ -157,7 +157,7 @@ describe("ph workflow relay read-only preview", () => {
     expect(output.promptBlock).toContain("Persona Harness relay contract")
   })
 
-  it("progresses through jaeki and roach artifacts before returning to closure gates", () => {
+  it("progresses through implementer and reviewer artifacts before returning to closure gates", () => {
     const projectDir = createTempProject()
     writeHarnessConfig(projectDir, true)
     writeWorkflowWithPendingTicket(projectDir)
@@ -173,53 +173,56 @@ describe("ph workflow relay read-only preview", () => {
       ].join("\n"),
     )
     const implementer = relayJson(projectDir)
-    expect(implementer.currentRole).toBe("jaeki")
-    expect(implementer.nextRole).toBe("jaeki")
+    expect(implementer.currentRole).toBe("implementer")
+    expect(implementer.nextRole).toBe("implementer")
     expect(implementer.roleCompletionState).toMatchObject({
       completedRoles: ["test-writer"],
-      currentRole: "jaeki",
-      missingRoles: ["jaeki", "roach"],
-      nextRole: "jaeki",
+      currentRole: "implementer",
+      missingRoles: ["implementer", "reviewer"],
+      nextRole: "implementer",
       overall: "blocked",
     })
     expect(implementer.blockers).toEqual([
       expect.objectContaining({
         id: "role-implementation-artifact-missing",
-        source: ".persona/workflow/work/req-1/roles/jaeki.md",
+        source: ".persona/workflow/work/req-1/roles/implementer.md",
       }),
     ])
 
     writeRoleArtifact(
       projectDir,
       "req-1",
-      "jaeki",
-      ["# jaeki", "", "Implementation summary: added controller/service/repository code.", "Evidence: ./gradlew test."].join(
-        "\n",
-      ),
+      "implementer",
+      [
+        "# implementer",
+        "",
+        "Implementation summary: added controller/service/repository code.",
+        "Evidence: ./gradlew test.",
+      ].join("\n"),
     )
     const reviewer = relayJson(projectDir, "status")
     expect(reviewer.action).toBe("status")
-    expect(reviewer.currentRole).toBe("roach")
-    expect(reviewer.nextRole).toBe("roach")
+    expect(reviewer.currentRole).toBe("reviewer")
+    expect(reviewer.nextRole).toBe("reviewer")
     expect(reviewer.roleCompletionState).toMatchObject({
-      completedRoles: ["test-writer", "jaeki"],
-      currentRole: "roach",
-      missingRoles: ["roach"],
-      nextRole: "roach",
+      completedRoles: ["test-writer", "implementer"],
+      currentRole: "reviewer",
+      missingRoles: ["reviewer"],
+      nextRole: "reviewer",
       overall: "blocked",
     })
     expect(reviewer.blockers).toEqual([
       expect.objectContaining({
         id: "role-review-artifact-missing",
-        source: ".persona/workflow/work/req-1/roles/roach.md",
+        source: ".persona/workflow/work/req-1/roles/reviewer.md",
       }),
     ])
 
     writeRoleArtifact(
       projectDir,
       "req-1",
-      "roach",
-      ["# roach", "", "Review result: workflow check reviewed and review-report.md should be updated."].join("\n"),
+      "reviewer",
+      ["# reviewer", "", "Review result: workflow check reviewed and review-report.md should be updated."].join("\n"),
     )
     const complete = relayJson(projectDir)
     expect(complete.currentRole).toBeNull()
@@ -227,7 +230,7 @@ describe("ph workflow relay read-only preview", () => {
     expect(complete.requiredArtifact).toBeNull()
     expect(complete.requiredOutputArtifact).toBeNull()
     expect(complete.roleCompletionState).toMatchObject({
-      completedRoles: ["test-writer", "jaeki", "roach"],
+      completedRoles: ["test-writer", "implementer", "reviewer"],
       currentRole: null,
       missingRoles: [],
       nextRole: null,

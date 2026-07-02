@@ -3,6 +3,7 @@ import { dirname, join } from "node:path"
 
 import {
   DEFAULT_MULTI_AGENT_ROLES,
+  deprecatedMultiAgentRoleFor,
   type HarnessMultiAgentConfig,
   type MultiAgentRole,
 } from "../config/harness-config.js"
@@ -33,20 +34,20 @@ const ROLE_DEFINITIONS: Readonly<Record<MultiAgentRole, RoleDefinition>> = {
       "PH closure/workflow state is the orchestrator/gate; OpenCode subagents are workers.",
     ].join("\n"),
   },
-  jaeki: {
+  implementer: {
     description: "Persona Harness relay preview implementer for one scoped workflow ticket.",
     prompt: [
-      "Persona Harness relay preview role: jaeki.",
+      "Persona Harness relay preview role: implementer.",
       "Implement or refactor only the scoped current ticket.",
       "Do not broaden the design or start unrelated requirements.",
       "Use the test-writer artifact when it exists and keep PH reports/evidence honest.",
       "PH closure/workflow state is the orchestrator/gate; OpenCode subagents are workers.",
     ].join("\n"),
   },
-  roach: {
+  reviewer: {
     description: "Persona Harness relay preview reviewer for workflow closure pressure.",
     prompt: [
-      "Persona Harness relay preview role: roach.",
+      "Persona Harness relay preview role: reviewer.",
       "Review, QA, and pressure the implementation/review reports for the scoped ticket.",
       "Do not implement features unless explicitly reassigned.",
       "Surface remaining blockers and required verification evidence.",
@@ -97,6 +98,28 @@ function roleAgentConfig(role: MultiAgentRole, model: string | undefined, existi
   }
 }
 
+function migrateLegacyAgentKeys(existingAgent: JsonObject): JsonObject {
+  const nextAgent: JsonObject = { ...existingAgent }
+  for (const role of DEFAULT_MULTI_AGENT_ROLES) {
+    const legacyRole = deprecatedMultiAgentRoleFor(role)
+    if (legacyRole !== undefined && nextAgent[role] === undefined && nextAgent[legacyRole] !== undefined) {
+      nextAgent[role] = nextAgent[legacyRole]
+      delete nextAgent[legacyRole]
+    }
+  }
+  return nextAgent
+}
+
+function modelForRole(
+  multiAgent: HarnessMultiAgentConfig,
+  existingModels: JsonObject,
+  role: MultiAgentRole,
+): string | undefined {
+  const legacyRole = deprecatedMultiAgentRoleFor(role)
+  const model = multiAgent.models[role] ?? existingModels[role] ?? (legacyRole === undefined ? undefined : existingModels[legacyRole])
+  return typeof model === "string" && model.trim() !== "" ? model : undefined
+}
+
 function writeJsonObject(path: string, value: JsonObject): void {
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8")
@@ -112,8 +135,8 @@ function enableHarnessMultiAgent(projectDir: string, multiAgent: HarnessMultiAge
   const existingModels = isRecord(existingMultiAgent.models) ? existingMultiAgent.models : {}
   const models: JsonObject = {}
   for (const role of DEFAULT_MULTI_AGENT_ROLES) {
-    const model = multiAgent.models[role] ?? existingModels[role]
-    if (typeof model === "string" && model.trim() !== "") {
+    const model = modelForRole(multiAgent, existingModels, role)
+    if (model !== undefined) {
       models[role] = model
     }
   }
@@ -136,9 +159,9 @@ function enableOpenCodeAgents(projectDir: string, multiAgent: HarnessMultiAgentC
     return parsed
   }
   const existingAgent = isRecord(parsed.agent) ? parsed.agent : {}
-  const nextAgent: JsonObject = { ...existingAgent }
+  const nextAgent = migrateLegacyAgentKeys(existingAgent)
   for (const role of DEFAULT_MULTI_AGENT_ROLES) {
-    nextAgent[role] = roleAgentConfig(role, multiAgent.models[role], existingAgent[role])
+    nextAgent[role] = roleAgentConfig(role, multiAgent.models[role], nextAgent[role])
   }
   writeJsonObject(opencodeConfigPath, { ...parsed, agent: nextAgent })
   return undefined

@@ -65,8 +65,8 @@ describe("ph workflow roles", () => {
     expect(result.stdout).toContain("Persona Workflow Role Boundaries")
     expect(result.stdout).toContain("blackbear")
     expect(result.stdout).toContain("Charles")
-    expect(result.stdout).toContain("jaeki")
-    expect(result.stdout).toContain("roach")
+    expect(result.stdout).toContain("implementer")
+    expect(result.stdout).toContain("reviewer")
     expect(result.stdout).toContain("No autonomous role-agent execution")
     expect(existsSync(rolesPath(projectDir))).toBe(true)
     expect(readFileSync(rolesPath(projectDir), "utf8")).toContain(
@@ -83,7 +83,7 @@ describe("ph workflow roles", () => {
 
     expect(result.status).toBe(0)
     expect(existsSync(rolesPath(projectDir))).toBe(true)
-    expect(readFileSync(rolesPath(projectDir), "utf8")).toContain("`jaeki` | implementation")
+    expect(readFileSync(rolesPath(projectDir), "utf8")).toContain("`implementer` | implementation")
   })
 
   it("keeps workflow roles inactive before Persona Harness opt-in", () => {

@@ -104,10 +104,10 @@ describe("Phase 0 backend product-code shape guidance", () => {
 
     expect(block).toContain("backend/spring-test.md")
     expect(block).toContain("test-writer")
-    expect(block).toContain("실패/검증 테스트")
-    expect(block).toContain("product code를 구현하지 않고")
-    expect(block).toContain("jaeki")
-    expect(block).toContain("roach")
+    expect(block).toContain("failing/verification tests")
+    expect(block).toContain("does not implement product code")
+    expect(block).toContain("implementer")
+    expect(block).toContain("reviewer")
     expect(block).toContain("workflow finish implement")
   })
 

@@ -103,7 +103,7 @@ describe("PH LSP MCP preview wrapper", () => {
       join(projectDir, ".opencode", "opencode.json"),
       `${JSON.stringify(
         {
-          agent: { roach: { mode: "subagent" } },
+          agent: { reviewer: { mode: "subagent" } },
           custom: { unchanged: true },
           mcp: {
             existing: {
@@ -128,7 +128,7 @@ describe("PH LSP MCP preview wrapper", () => {
     expect(result.status).toBe(0)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     expect(opencodeConfig.plugin).toEqual(["./plugin.mjs", join(process.cwd(), "dist", "index.js")])
-    expect(opencodeConfig.agent).toEqual({ roach: { mode: "subagent" } })
+    expect(opencodeConfig.agent).toEqual({ reviewer: { mode: "subagent" } })
     expect(opencodeConfig.custom).toEqual({ unchanged: true })
     const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
     expect(mcp.existing).toMatchObject({ type: "local", command: ["node", "existing.mjs"] })

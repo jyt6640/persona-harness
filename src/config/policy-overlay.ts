@@ -106,14 +106,14 @@ function readPolicySource(
 
 function formatSummary(sources: readonly PolicyOverlaySource[]): readonly string[] {
   return [
-    "정책/철학 오버레이:",
-    "우선순위: company > personal > Clean Code baseline",
+    "Policy/philosophy overlay:",
+    "Priority: company > personal > Clean Code baseline",
     "",
     ...sources.flatMap((source) => [source.heading, ...source.bullets, ""]),
-    "오버레이 사용 원칙:",
-    "- README, 현재 사용자 지시, accepted plan의 기능 요구사항이 우선한다.",
-    "- company policy는 personal philosophy보다 우선한다.",
-    "- 이 오버레이는 rule enforcement나 product-quality 보증이 아니다.",
+    "Overlay usage principles:",
+    "- README, current user instructions, and accepted plan functional requirements take precedence.",
+    "- Company policy takes precedence over personal philosophy.",
+    "- This overlay is not rule enforcement or a product-quality guarantee.",
   ]
 }
 

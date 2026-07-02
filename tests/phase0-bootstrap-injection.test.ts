@@ -228,8 +228,8 @@ describe("Phase 0 bootstrap injection", () => {
     const output = modelInput(sessionID)
     await hooks["experimental.chat.messages.transform"]?.({}, output)
 
-    expect(toolOutput.output).toContain("파일 역할: project-bootstrap")
-    expect(toolOutput.output).toContain("프로젝트 프로필 요약:")
+    expect(toolOutput.output).toContain("File role: project-bootstrap")
+    expect(toolOutput.output).toContain("Project profile summary:")
     expect(firstText(output)).toContain("backend/java-backend-bootstrap.md")
     expect(
       evidencePayloads(projectDir).some(
