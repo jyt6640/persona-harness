@@ -249,4 +249,101 @@ describe("ph evidence summary", () => {
     expect(result.stdout).toContain("- none")
     expect(existsSync(join(projectDir, ".persona", "evidence", "ab-report.md"))).toBe(false)
   })
+
+  it("prints P-minus decision support from positive, negative, and inconclusive A/B evidence", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona", "evidence", "ab"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "ab", "pminus.json"),
+      `${JSON.stringify(
+        [
+          {
+            schemaVersion: "persona-ab-measurement.1",
+            scenarioId: "tdd-integrity",
+            scenarioLabel: "TDD integrity",
+            surface: { id: "tdd", label: "TDD rail", defaultState: "opt-in" },
+            conditions: [
+              {
+                id: "off",
+                label: "TDD OFF",
+                runs: [{ id: "off-1", finishStatus: "pass", blockedInvalidCompletion: false, providerTokens: { total: 1000 }, elapsedMs: 100, readChars: 90, toolCalls: 2, mcpCalls: 0 }],
+              },
+              {
+                id: "on",
+                label: "TDD ON",
+                runs: [{ id: "on-1", finishStatus: "blocked", blockedInvalidCompletion: true, providerTokens: { total: 1200 }, elapsedMs: 110, readChars: 95, toolCalls: 3, mcpCalls: 0 }],
+              },
+            ],
+          },
+          {
+            schemaVersion: "persona-ab-measurement.1",
+            scenarioId: "codegraph-navigation",
+            scenarioLabel: "CodeGraph navigation",
+            surface: { id: "codegraph", label: "CodeGraph wrapper", defaultState: "default" },
+            conditions: [
+              {
+                id: "off",
+                label: "CodeGraph OFF",
+                runs: [{ id: "off-1", finishStatus: "pass", providerTokens: null, elapsedMs: 100, readChars: 200, toolCalls: 4, mcpCalls: 0 }],
+              },
+              {
+                id: "on",
+                label: "CodeGraph ON",
+                runs: [{ id: "on-1", finishStatus: "pass", providerTokens: null, elapsedMs: 180, readChars: 400, toolCalls: 8, mcpCalls: 2 }],
+              },
+            ],
+          },
+          {
+            schemaVersion: "persona-ab-measurement.1",
+            scenarioId: "missing-telemetry",
+            scenarioLabel: "Missing telemetry",
+            conditions: [
+              { id: "off", label: "OFF", runs: [{ id: "off-1", finishStatus: "unknown", providerTokens: null }] },
+              { id: "on", label: "ON", runs: [{ id: "on-1", finishStatus: "unknown", providerTokens: null }] },
+            ],
+          },
+        ],
+        null,
+        2,
+      )}\n`,
+    )
+
+    const result = runPersonaCli(["evidence", "pminus-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const report = JSON.parse(result.stdout)
+
+    expect(result.status).toBe(0)
+    expect(report.schemaVersion).toBe("evidence-pminus-report.1")
+    expect(report.scenarios).toHaveLength(3)
+    expect(report.scenarios[0]).toMatchObject({
+      id: "codegraph-navigation",
+      outcome: "worse",
+      surfaceDecisionHint: "downgrade",
+      telemetry: { providerTokens: "missing" },
+    })
+    expect(report.scenarios[1]).toMatchObject({
+      id: "missing-telemetry",
+      outcome: "inconclusive",
+      surfaceDecisionHint: "no-claim",
+      telemetry: { providerTokens: "missing" },
+    })
+    expect(report.scenarios[2]).toMatchObject({
+      id: "tdd-integrity",
+      outcome: "improved",
+      surfaceDecisionHint: "keep",
+      reason: "ON condition blocked invalid completion while OFF did not.",
+    })
+    expect(report.limitations.join("\n")).toContain("does not delete, downgrade, or mutate")
+  })
+
+  it("prints human P-minus decision support without writing files", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["evidence", "pminus-report"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("# Persona P-minus Evidence Report")
+    expect(result.stdout).toContain("Kill criteria are decision support only")
+    expect(result.stdout).toContain("- none")
+    expect(existsSync(join(projectDir, ".persona", "evidence", "pminus-report.md"))).toBe(false)
+  })
 })

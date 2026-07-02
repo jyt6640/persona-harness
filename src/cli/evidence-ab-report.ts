@@ -56,12 +56,21 @@ type NumberMetric = {
   readonly unavailable: number
 }
 
+type SurfaceDefaultState = "default" | "off" | "opt-in" | "unknown"
+
+type AbSurfaceReport = {
+  readonly defaultState: SurfaceDefaultState
+  readonly id: string
+  readonly label: string
+}
+
 type AbScenarioReport = {
   readonly conditions: readonly AbConditionReport[]
   readonly files: readonly string[]
   readonly id: string
   readonly label: string
   readonly sources: readonly string[]
+  readonly surface: AbSurfaceReport
 }
 
 export type EvidenceAbReport = {
@@ -110,7 +119,8 @@ function objectsFromEvidenceFile(filePath: string): readonly unknown[] {
       .filter((line) => line.trim() !== "")
       .map((line) => JSON.parse(line) as unknown)
   }
-  return [JSON.parse(source) as unknown]
+  const parsed: unknown = JSON.parse(source)
+  return Array.isArray(parsed) ? parsed : [parsed]
 }
 
 function numberValue(value: unknown): number | null {
@@ -132,6 +142,10 @@ function finishStatus(value: unknown): "blocked" | "fail" | "pass" | "unknown" {
     return "pass"
   }
   return "unknown"
+}
+
+function surfaceDefaultState(value: unknown): SurfaceDefaultState {
+  return value === "default" || value === "off" || value === "opt-in" ? value : "unknown"
 }
 
 function tokenAggregate(value: unknown): TokenAggregate {
@@ -224,12 +238,19 @@ function scenarioReport(value: unknown, filePath: string): AbScenarioReport | un
       })
     : []
   const id = stringValue(value.scenarioId) ?? basename(filePath).replace(/\.(json|jsonl)$/u, "")
+  const surface = isRecord(value.surface) ? value.surface : undefined
+  const surfaceId = stringValue(surface?.id) ?? stringValue(value.surfaceId) ?? id
   return {
     conditions,
     files: [filePath],
     id,
     label: stringValue(value.scenarioLabel) ?? id,
     sources: [stringValue(value.source) ?? "unknown"],
+    surface: {
+      defaultState: surfaceDefaultState(surface?.defaultState ?? value.surfaceDefaultState),
+      id: surfaceId,
+      label: stringValue(surface?.label) ?? stringValue(value.surfaceLabel) ?? surfaceId,
+    },
   }
 }
 
@@ -261,6 +282,7 @@ function mergeScenario(left: AbScenarioReport, right: AbScenarioReport): AbScena
     id: left.id,
     label: left.label,
     sources: Array.from(new Set([...left.sources, ...right.sources])).sort(),
+    surface: left.surface,
   }
 }
 

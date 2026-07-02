@@ -5,6 +5,7 @@ import process from "node:process"
 import { isRecord } from "../config/jsonc.js"
 import type { CliRunResult } from "./bearshell.js"
 import { formatEvidenceAbReport, readEvidenceAbReport } from "./evidence-ab-report.js"
+import { formatEvidencePminusReport, readEvidencePminusReport } from "./evidence-pminus-report.js"
 
 type EvidenceOptions = {
   readonly projectDir?: string
@@ -544,5 +545,18 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
       return { status: 0, stdout: formatEvidenceAbReport(report), stderr: "" }
     }
   }
-  return { status: 1, stdout: "", stderr: `Usage: ${invocationName} evidence <summary|metrics [--json]|ab-report [--json]>\n` }
+  if ((args.length === 1 || args.length === 2) && args[0] === "pminus-report") {
+    const report = readEvidencePminusReport(options)
+    if (args.length === 2 && args[1] === "--json") {
+      return { status: 0, stdout: `${JSON.stringify(report, null, 2)}\n`, stderr: "" }
+    }
+    if (args.length === 1) {
+      return { status: 0, stdout: formatEvidencePminusReport(report), stderr: "" }
+    }
+  }
+  return {
+    status: 1,
+    stdout: "",
+    stderr: `Usage: ${invocationName} evidence <summary|metrics [--json]|ab-report [--json]|pminus-report [--json]>\n`,
+  }
 }
