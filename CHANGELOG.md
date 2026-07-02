@@ -6,6 +6,43 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added read-only `ph evidence pminus-report [--json]` as a local evidence
+  decision-support surface for P-minus/P1 A/B evidence. It reads structured
+  `persona-ab-measurement.1` evidence and emits schema
+  `evidence-pminus-report.1`, classifying scenarios as `improved`,
+  `no-improvement`, `worse`, or `inconclusive` with hints such as `keep`,
+  `keep-opt-in`, `downgrade`, `remove-candidate`, and `no-claim`.
+  Provider-token telemetry is reported as available only when both compared
+  sides have samples; missing telemetry remains missing rather than fabricated.
+  The command is read-only: it writes no files, creates no report artifact,
+  mutates no config or closure state, and does not automatically delete,
+  downgrade, or remove surfaces.
+  QA and External accepted the local/current tarball package-runtime surface for
+  `29b532eea707ab843917a4835d8793a44c2cb82f`, with registry evidence deferred
+  until a future publish includes that gitHead:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/pminus-evidence-report-29b532e-20260702T013931Z`;
+  - tarball shasum: `13305cf4988c404bf9b097721b78fb0f55b55f3b`;
+    sha256:
+    `6eca787158295efc140a281eb43956dab34bb4c781140a2b835540298e66c74c`;
+  - package entry `dist/cli/evidence-pminus-report.js` was present;
+  - `ph --help` and `ph evidence` listed `evidence pminus-report`;
+  - `ph evidence pminus-report` and `--json` exited 0, while invalid extra
+    args exited 1 with usage;
+  - input evidence covered JSON array and JSONL `persona-ab-measurement.1`
+    files;
+  - observed outcomes/hints were `improved/keep`,
+    `no-improvement/keep-opt-in`, `worse/downgrade`,
+    `worse/remove-candidate`, and `inconclusive/no-claim`;
+  - read-only boundaries passed with unchanged fixture file set, no
+    `pminus-report.md` or other report artifact, no `.persona/harness.jsonc`,
+    and no `.persona/workflow/closure.json`.
+  This remains evidence/reporting/decision-support only, not registry evidence,
+  token-saving/provider-token saving, product-efficacy/navigation-benefit,
+  app-quality/full-TDD/test-sufficiency, CodeGraph/LSP default/effectiveness,
+  broad reliability, closure guarantee, Codex support, or code-nav replacement
+  evidence.
+
 ## [0.4.1-rc.1] - 2026-07-02
 
 - Prepared `0.4.1-rc.1` as the next-channel release candidate after official
