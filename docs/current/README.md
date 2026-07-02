@@ -43,6 +43,7 @@ Common anchors:
 - `evidence-reviews/v0.3.8-alpha.1-clean-tarball-workflow-smoke.md`
 - `release/v0.3.8-alpha.1-release-notes.md`
 - `desktop-test-artifacts-index.md`
+- `acceptance-results/README.md`
 - `v0.3.0-domain-behavior-guidance-review.md`
 - `release/release-checklist.md`
 - `release/release-notes-template.md`
