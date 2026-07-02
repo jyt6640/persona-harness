@@ -1,167 +1,186 @@
 # Persona Harness
 
-OpenCode를 위한 AI coding workflow rail + evidence + continuation harness.
+Persona Harness는 Java/Spring 백엔드 프로젝트를 위한 로컬 CLI와 OpenCode workflow rail입니다.
+
+AI 코딩 에이전트가 다음을 하도록 돕습니다.
+
+- 아이디어나 README를 구현 ticket으로 나눔
+- 반복 가능한 백엔드 workflow를 따름
+- 제한된 명령 실행으로 검증을 남김
+- 무엇을 읽고 실행하고 완료했는지 로컬 evidence로 기록
+- 필요한 report/evidence가 없으면 완료 주장을 차단
+
+Persona Harness는 코드 품질 보장, 토큰 절약 제품, broad linter, generated app production-ready 증명이 아닙니다.
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-Persona Harness는 에이전트가 빈 프로젝트에서 시작해 backend 맥락을 읽고, 구현 rail을 따라가며, 무엇을 읽고/주입받고/실행했는지 흔적을 남기고, unfinished ticket을 이어서 처리한 뒤 workflow report를 채우고 완료를 주장하도록 돕습니다.
+## 설치
 
-generated app product quality를 인증하지 않습니다. 현재 Java/Spring backend guidance는 stack steering, workflow observability, scoped opt-in closure enforcement를 위한 표면이지, Clean Code 보장이나 broad AST/linter/general enforcement 엔진이 아닙니다.
-
-## Project Status
-
-Persona Harness는 alpha experiment입니다.
-
-Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval program은 stopped 상태입니다. frozen aggregate, diagnosis, stopping rationale은 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)을 기준으로 봅니다.
-
-현재 package를 generated-app quality certification, PH가 baselines를 이겼다는 evidence, broad enforcement, AST/linter gate로 해석하지 않습니다.
-
-재사용 가능한 자산은 남아 있습니다.
-
-- report-only Java/Spring observer surface
-- workflow rails와 finish/check guidance
-- toolchain-fair ON/OFF eval framework
-- honest measurement/observation tooling
-
-`ph` 명령어는 주로 AI가 쓰는 workflow surface입니다. 사용자는 설치와 초기화만 해두고, OpenCode나 Codex-style TUI에서 “README 보고 구현해줘”처럼 자연어로 요청하는 흐름을 목표로 합니다. 이후 `ph workflow implement`, `ph bearshell`, report-fill, `ph workflow finish implement` 명령은 에이전트가 실행해야 합니다.
-
-요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
-
-> 현재 next-channel package는 `0.4.x` line의 `persona-harness@next`
-> `0.4.1-rc.2`로 검증됐습니다.
-> 현재 stable package: `persona-harness@latest`는 `0.4.0`으로 검증됐고,
-> gitHead는 `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`입니다.
-> registry `next`는 잠시 superseded `0.5.0-rc.1` build로 이동했지만,
-> 이는 wrong-channel incident이며 accepted release evidence가 아닙니다.
-> `alpha`는 `0.3.9-alpha.8`입니다.
->
-> 현재 범위: Java/Spring backend workflow rail MVP.
-> frontend, infra, desktop app, broad AST/linter enforcement,
-> token-saving/product-efficacy proof, Codex/LSP effectiveness proof,
-> full TDD framework/test-sufficiency proof는 후속 트랙입니다.
-
-## 요구사항
+필요한 것:
 
 - Node.js 20+
 - npm
-- OpenCode terminal CLI
-- OpenCode에 연결된 model/provider
+- Java 21+
+- Gradle
+- model/provider가 연결된 OpenCode CLI
 
-## 빠른 시작
-
-먼저 OpenCode를 설치합니다. OpenCode 공식 문서 기준으로 install script 또는 npm global install을 사용할 수 있습니다.
+OpenCode 설치:
 
 ```bash
 curl -fsSL https://opencode.ai/install | bash
-```
-
-또는:
-
-```bash
+# 또는
 npm install -g opencode-ai
 ```
 
-설치 확인:
-
-```bash
-opencode --version
-opencode
-```
-
-OpenCode에 model provider를 연결합니다.
+Provider 연결:
 
 ```bash
 opencode auth login
 opencode auth list
 ```
 
-또는 OpenCode TUI에서 실행합니다.
+프로젝트에 현재 preview package 설치:
 
-```text
-/connect
-/models
+```bash
+npm install -D persona-harness@next
+npx ph --help
+npx ph init
+npx ph doctor
 ```
 
-모델 ID는 `provider/model` 형식입니다. 예: `openai/gpt-5.4-mini-fast`.
-
-그 다음 Java/Spring backend 프로젝트에서 Persona Harness를 설치합니다.
+오래된 stable package가 필요하면 stable channel을 사용합니다.
 
 ```bash
 npm install -D persona-harness@latest
+```
+
+## Java/Spring 백엔드 프로젝트 시작
+
+깨끗한 프로젝트 디렉토리에서 시작하세요. 첫 smoke test를 Persona Harness repo 안에서 돌리지 마세요.
+
+```bash
+mkdir -p /tmp/persona-harness-demo
+cd /tmp/persona-harness-demo
+npm init -y
+npm install -D persona-harness@next
+```
+
+앱 요구사항과 제약을 담은 짧은 `README.md`를 만듭니다.
+
+```bash
+cat > README.md <<'EOF'
+# Todo API
+
+Java 21, Spring Boot, Gradle 기반 REST API를 만든다.
+
+## 요구사항
+
+- todo를 생성할 수 있다.
+- todo 목록을 조회할 수 있다.
+- todo를 완료 처리할 수 있다.
+- 없는 todo는 적절한 오류 응답을 반환한다.
+
+## 기술 제약
+
+- Java 21
+- Spring Boot 3
+- Gradle only
+- REST API only
+- 필요하면 in-memory persistence로 시작한다.
+- Controller는 Application Service에 위임한다.
+- Repository interface는 domain에 둔다.
+- Repository 구현체는 infrastructure에 둔다.
+- Application Service가 storage state나 id sequence를 직접 소유하지 않는다.
+EOF
+```
+
+Persona Harness 초기화:
+
+```bash
 npx ph init
 npx ph bootstrap backend
-```
-
-Persona Harness 자체를 개발 중이면 local install을 사용합니다.
-
-```bash
-npm install -D /absolute/path/to/persona-harness
-npx ph init
-npx ph bootstrap backend
-```
-
-`npx ph init`은 최소 설치/연동 단계입니다. `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore`만 준비하고, `AGENTS.md`, `.persona/project-profile.jsonc`, plan/report template은 만들지 않습니다.
-
-backend-ready 상태가 필요하면 `npx ph bootstrap backend`를 실행합니다. 이 명령은 `AGENTS.md`, 기본 backend profile, policy overlay, accepted plan, implementation/review report template, harness/OpenCode config 상태를 준비합니다.
-
-초기 설정 이후에는 사용자가 모든 명령어를 외울 필요가 없습니다. 먼저 OpenCode에게 계획만 완성하게 합니다.
-
-```bash
-opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "$(npx ph plan --prompt)"
-```
-
-이미 `npx ph bootstrap backend`를 실행한 빠른 alpha smoke에서는 준비된 backend profile과 accepted plan을 확인할 수 있습니다.
-
-```bash
-npx ph doctor
 npx ph workflow check
 ```
 
-프로젝트 조건을 직접 정하고 싶으면 수동 profile 흐름을 사용합니다.
+`ph init`은 최소 연동 파일만 만듭니다.
+
+- `.persona/harness.jsonc`
+- `.persona/conventions/`
+- `.persona/rules/`
+- `.opencode/opencode.json`
+- `.gitignore` 항목
+
+`ph bootstrap backend`는 AI 구현을 위한 백엔드 workflow를 준비합니다.
+
+- `AGENTS.md`
+- `.persona/project-profile.jsonc`
+- policy overlay 파일
+- accepted `.persona/workflow/plan.md`
+- implementation/review report template
+- OpenCode 설정
+
+## 에이전트에게 구현 요청
+
+OpenCode에서는 짧게 요청하세요.
 
 ```bash
-npx ph intake --interactive --force
-# 또는 비대화형 기본 profile만 필요하면:
-npx ph intake --default backend
-npx ph policy init
-npx ph plan
-npx ph plan --accept
+opencode run --dir . \
+  --model <provider/model> \
+  --dangerously-skip-permissions \
+  "README.md를 읽고 구현해줘."
 ```
 
-`.persona/project-profile.jsonc`가 없거나 draft/invalid/incomplete 상태면 `ph plan`과 `ph workflow implement`는 구현으로 넘어가지 않고 intake부터 하라고 막습니다.
+TUI를 쓰면:
 
-그 다음에는 짧게 구현을 요청합니다.
+```bash
+opencode
+```
+
+입력:
 
 ```text
-README 보고 계획대로 구현해줘.
+README.md를 읽고 구현해줘.
 ```
 
-README가 아직 없고 아이디어만 있다면 먼저 이렇게 말합니다.
+에이전트는 Persona Harness rail을 스스로 실행해야 합니다.
 
 ```text
-TODO 웹 서비스 만들래.
+npx ph workflow implement
+npx ph bearshell ...
+npx ph plan --report-filled implementation
+npx ph plan --report-filled review
+npx ph workflow finish implement
 ```
 
-에이전트는 바로 구현하지 않고 다음 workflow를 사용해야 합니다.
+`workflow finish`가 실패하면 완료라고 말하지 말고, 출력된 blocker를 먼저 고쳐야 합니다.
+
+## README 없이 아이디어만 있을 때
+
+아이디어만 말해도 됩니다.
+
+```text
+TODO 웹 서비스를 만들고 싶어.
+```
+
+이때 에이전트는 바로 코딩하지 말고 요구사항 초안을 먼저 만들어야 합니다.
 
 ```text
 npx ph workflow draft --stdin
 ```
 
-생성되는 초안:
+생성 파일:
 
 - `.persona/workflow/requirements/backlog.md`
 - `.persona/workflow/requirements/questions.md`
 - `.persona/workflow/requirements/assumptions.md`
 
-사용자가 초안을 검토하고 괜찮으면 이렇게 말합니다.
+내용이 맞으면 이렇게 말합니다.
 
 ```text
-진행하자
+진행하자.
 ```
 
-그때 에이전트는 다음 흐름으로 구현 ticket을 만들어야 합니다.
+그 다음 에이전트가 실행할 흐름:
 
 ```text
 npx ph workflow approve requirements
@@ -170,122 +189,199 @@ npx ph workflow next
 npx ph workflow implement
 ```
 
-에이전트가 workflow를 놓치면 아래처럼 더 강한 프롬프트를 사용합니다.
+## 여러 ticket으로 작업하기
+
+요구사항이 길면 ticket으로 나눕니다.
 
 ```bash
-opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤 Java/Spring Gradle 기반으로 요구사항 전체를 구현해줘. 명령 실행은 가능하면 npx ph bearshell로 하고, 구현 후 npx ph bearshell gradle test, npx ph bearshell gradle build, 실행 가능한 Spring Boot 앱이면 npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"', HTTP happy path와 failure path smoke를 실행해줘. .persona/workflow/implementation-report.md와 .persona/workflow/review-report.md를 채우고 npx ph plan --report-filled implementation 및 npx ph plan --report-filled review를 실행해줘."
+npx ph workflow split README.md
+npx ph workflow next
 ```
 
-## 제공하는 것
+ticket 하나가 구현/검토되면:
 
-- 아래 명령어들은 사용자가 직접 외우는 CLI라기보다, OpenCode/Codex-style 세션에서 AI가 호출하기 쉽게 만든 workflow surface입니다.
-- `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config, `.gitignore` 설치
-- `ph bootstrap backend`: `AGENTS.md`, ready 기본 backend profile, policy overlay, accepted plan, report template, harness/OpenCode config 준비. 현재 backend bootstrap은 기본 OpenCode developer MCP bundle로 remote `grep_app`, remote `context7`을 등록합니다.
-- `ph bootstrap backend --no-developer-mcp`: 기본 developer MCP bundle 등록을 건너뜁니다.
-- `ph bootstrap backend --codegraph-preview`: local PH CodeGraph wrapper를 명시적으로 opt-in 등록합니다.
-- `ph bootstrap backend --no-codegraph`: 호환성용 flag입니다. 기본 상태에서는 CodeGraph가 등록되지 않고 `grep_app`/`context7`만 유지합니다.
-- `ph intake`: 수정 가능한 draft backend profile 생성
-- `ph intake --default backend`: 대화형 터미널 없이 ready 기본 backend profile 생성
-- `ph intake --interactive`: backend planning 질문 후 `.persona/project-profile.jsonc` 생성
-- `ph policy init`: 회사/개인 backend policy overlay 파일 생성
-- `ph plan`: `blackbear` planning role용 `.persona/workflow/plan.md` 생성
-- `ph plan --auto-accept`: 빠른 smoke를 위해 plan/report template 생성 후 plan을 accepted 처리
-- `ph bearshell`: bounded shell command helper
-- `ph history`: 사용한 workflow artifact를 `.persona/workflow/history/`에 보존
-- `ph workflow check`: 현재 plan/report/evidence 상태 확인
-- `ph workflow test`: opt-in `enforce.tdd`와 strict
-  `enforce.executeVerification`가 켜졌을 때 PH가 직접 Gradle/JUnit을
-  실행하고, 실제 JUnit `<failure>` testcase만 red evidence로 기록
-- `ph workflow tdd`: 현재 ticket의 TDD red→green 상태와 다음 행동을
-  읽기 전용으로 출력. red/green evidence는 쓰지 않음
-- `ph workflow draft --stdin`: 모호한 제품 아이디어를 요구사항 초안으로 만들고 사용자 검토에서 멈춤
-- `ph workflow approve requirements`: 사용자가 초안을 승인한 뒤 accepted 상태로 표시
-- `ph workflow capture --stdin`: 이미 작성된 긴 프롬프트 요구사항을 latest source로 저장
-- `ph workflow split [source.md]`: 요구사항 source를 ticket/backlog로 분리
-- `ph workflow next`: 첫 pending ticket 출력
-- `ph workflow archive <ticket>`: 완료한 ticket을 history로 이동
-- `ph workflow implement`: accepted plan workflow 상태가 준비된 뒤 AI용 단일 구현 레일과 README chunk-read 명령 출력
-- `ph workflow start implement`: accepted plan workflow 상태가 준비된 뒤 AI용 구현 레일 출력
-- `ph workflow finish implement`: workflow report/evidence가 준비되기 전 완료 보고 차단
-- `ph workflow guard implement/final`: workflow rail이 재사용하는 저수준 strict gate
-- `ph doctor`: OpenCode와 Persona Harness 연동 상태 진단
-- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph evidence metrics [--json]`, `ph evidence ab-report [--json]`, `ph evidence pminus-report [--json]`, `ph evidence pminus-status [--json]`, `ph review backend-shape`: report-only 검증/피드백/집계 surface
-- `ph evidence ab-run`: 명시적으로 실행한 local A/B condition을 `.persona/evidence/ab/` 아래 `persona-ab-measurement.1` evidence로 기록. 이 기록은 `ab-report`와 `pminus-report`가 읽으며, 자동 downgrade/removal이나 product-efficacy 증명이 아님
-- `ph evidence pminus-status [--json]`: local A/B scenario를 surface/tool별로 집계하는 읽기 전용 P-minus status. harness config 변경, 자동 downgrade/removal, product-efficacy 증명이 아님
-- OpenCode injection: 관련 파일을 읽을 때 Java/Spring backend workflow/guidance context 주입
+```bash
+npx ph workflow archive <ticket-id>
+npx ph workflow next
+```
 
-## evidence의 의미
+workflow 기록 위치:
 
-`.persona/evidence`는 파일 read, 주입된 workflow/rule context, 선택된 rail, target file role, workflow command activity 같은 실행 흔적입니다. “에이전트가 의도한 rail을 보고 따라갔는가”를 확인하기 위한 기록이지, 품질 점수나 품질 향상 증거가 아닙니다.
+- 진행 중 작업: `.persona/workflow/work/`
+- 완료 ticket history: `.persona/workflow/history/`
+- 요구사항 source: `.persona/workflow/requirements/`
 
-## Opt-In TDD Workflow Rail
+## 자주 쓰는 명령
 
-`enforce.tdd`는 기본값이 off입니다. 프로젝트가 명시적으로
-`enforce.tdd=true`와 strict `enforce.executeVerification=true`를 둘 다 켰을
-때만 `ph workflow test`가 PH direct Gradle/JUnit verification을 실행하고,
-JUnit `<failure>` testcase가 실제로 있을 때만 red evidence를 기록합니다.
-`ph workflow tdd`는 읽기 전용 status helper입니다. 현재 ticket이 red
-evidence 누락, green 대기, 통과, disabled, unavailable 중 어디에 있는지와
-다음 행동을 보여주지만 evidence를 쓰지는 않습니다.
+설정:
 
-이후 `ph workflow check`, `ph workflow archive <ticket>`,
-`ph workflow finish implement`는 같은 ticket/test id가 통과하면 green
-evidence를 기록할 수 있습니다. `enforce.tdd`가 켜져 있으면 같은
-ticket/test id에 대해 red evidence가 먼저 있고 그 뒤 PH가 관측한 green
-evidence가 있어야 archive/finish가 통과합니다. strict 실행 검증이 꺼져
-있으면 이 rail은 advisory/unavailable로 정직하게 내려가고 가짜 red/green
-evidence를 쓰지 않습니다.
+```bash
+npx ph init
+npx ph bootstrap backend
+npx ph doctor
+```
 
-이 기능은 deterministic red-first completion gate입니다. 테스트를
-스캐폴딩하지 않고, 테스트 충분성을 증명하지 않고, coverage나 mutation
-testing을 실행하지 않으며, generated app product quality를 인증하지
-않습니다.
+Workflow:
 
-## 기본 developer MCP bundle
+```bash
+npx ph workflow check
+npx ph workflow implement
+npx ph workflow finish implement
+npx ph workflow archive <ticket-id>
+```
 
-현재 `ph bootstrap backend`는 OpenCode 개발 편의를 위해 기본 developer MCP bundle을 remote-only로 준비합니다.
+제한된 명령 실행:
 
-- `grep_app`: remote MCP
-- `context7`: remote MCP
+```bash
+npx ph bearshell --shell 'gradle test'
+npx ph bearshell --shell 'gradle build'
+```
 
-PH CodeGraph wrapper는 `--codegraph-preview`로만 등록되는 외부 optional integration입니다. PH가 CodeGraph를 소유하거나 대체한다는 뜻이 아닙니다. PH는 `codegraph init`을 자동 실행하지 않고 `.codegraph/`도 만들지 않습니다. 외부 CodeGraph가 없거나 사용할 수 없으면 wrapper는 죽지 않고 unavailable `status` facade로 정직하게 응답합니다. 이것은 token saving, provider-token saving, navigation benefit, product efficacy 증거가 아닙니다.
+Evidence와 report:
 
-## 권장하는 코드 모양
+```bash
+npx ph evidence summary
+npx ph evidence metrics --json
+npx ph evidence ab-report --json
+npx ph evidence pminus-report --json
+npx ph review backend-shape
+```
 
-- Gradle 기반 Java/Spring backend
-- `presentation`, `application`, `domain`, `infrastructure`, `global` 경계
-- Controller는 Service에 위임
-- Application Service는 use case 흐름만 담당하고 저장소 상태/id sequence를 직접 소유하지 않음
-- Domain은 단순 record가 아니라 자기 필드로 판단과 행동을 가짐
-- Repository interface는 domain, 구현체는 infrastructure에 위치
+preview/local-current 빌드에는 다음이 있을 수 있습니다.
+
+```bash
+npx ph evidence pminus-status --json
+```
+
+명시적 local A/B evidence 기록:
+
+```bash
+npx ph evidence ab-run \
+  --scenario demo \
+  --condition baseline \
+  -- ./gradlew test
+```
+
+## 선택 기능
+
+기본 backend bootstrap은 remote developer MCP `grep_app`, `context7`을 등록합니다.
+
+CodeGraph는 opt-in입니다.
+
+```bash
+npx ph bootstrap backend --codegraph-preview
+```
+
+LSP도 opt-in입니다.
+
+```bash
+npx ph bootstrap backend --lsp-preview
+```
+
+필수 외부 도구가 없으면 wrapper는 fake success를 내지 않고 unavailable status를 보고해야 합니다.
+
+developer MCP 등록을 끄려면:
+
+```bash
+npx ph bootstrap backend --no-developer-mcp
+```
+
+## TDD Rail
+
+TDD rail은 opt-in입니다. 두 설정이 모두 켜져야 동작합니다.
+
+```json
+{
+  "enforce": {
+    "executeVerification": true,
+    "tdd": true
+  }
+}
+```
+
+켜져 있으면 `ph workflow test`가 PH가 직접 실행한 Gradle/JUnit failure에서만 red evidence를 기록합니다. 이후 `workflow check`, `workflow archive`, `workflow finish`는 같은 ticket/test id의 green evidence를 기록할 수 있습니다.
+
+이 기능은 red-first completion gate입니다. 테스트를 만들어주거나, 테스트 충분성/coverage/mutation testing/app 품질을 증명하지 않습니다.
+
+## Evidence의 의미
+
+`.persona/evidence`는 파일 읽기, 주입된 workflow context, 명령 실행, TDD 기록, A/B 측정 같은 로컬 흔적입니다.
+
+Evidence가 답하는 질문은 “에이전트가 기대한 rail을 보고 따랐는가?”입니다.
+
+Evidence가 증명하지 않는 것:
+
+- generated app 품질
+- token saving
+- product efficacy
+- full TDD coverage
+- broad reliability
+- 모든 상황에서의 closure 성공
+
+## 권장 백엔드 모양
+
+Persona Harness는 Java/Spring 프로젝트를 다음 방향으로 유도합니다.
+
+- Gradle-first Java/Spring backend
+- `presentation`, `application`, `domain`, `infrastructure`, `global` package 경계
+- Controller는 Application Service에 위임
+- Application Service는 use case를 orchestration하고 storage state/id sequence를 직접 소유하지 않음
+- Repository interface는 `domain`
+- Repository 구현체는 `infrastructure`
+- Domain object는 behavior를 가짐
 - Request/response DTO boundary 명확화
 
-위 항목은 steering target과 review cue입니다. 생성된 앱이 정확하거나 유지보수 가능하거나 안전하거나 production-ready임을 증명하지 않습니다.
+이것은 steering target과 review cue이지 품질 보장이 아닙니다.
 
-## A/B와 ON/OFF smoke 한계
+## 문제 해결
 
-기존 A/B 또는 ON/OFF smoke 결과는 stack steering 신호로만 봅니다. 대부분 표본이 작고, 때로는 `n=1`이며, non-blind, same operator, model/version/prompt/timeout/continuation behavior에 의존하므로 product quality 입증으로 쓰지 않습니다.
+설치 버전 확인:
+
+```bash
+npm view persona-harness dist-tags --json
+npm view persona-harness@latest version
+npm view persona-harness@next version
+```
+
+`opencode`가 없으면:
+
+```bash
+curl -fsSL https://opencode.ai/install | bash
+opencode --version
+opencode auth login
+```
+
+`ph workflow check`가 WARN을 내면 출력된 blocker를 확인하세요. 구현 전 template report 경고는 정상입니다. 구현 후에는 evidence 누락, report 미작성, 기대한 rail 밖에서 실행한 verification이 흔한 원인입니다.
+
+에이전트가 workflow를 무시하면 아래 프롬프트를 붙여 넣으세요.
+
+```text
+README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽어라.
+구현 전 `npx ph workflow implement`를 실행하라.
+검증 명령은 가능하면 `npx ph bearshell`로 실행하라.
+구현 후 `.persona/workflow/implementation-report.md`와 `.persona/workflow/review-report.md`를 채워라.
+`npx ph plan --report-filled implementation`, `npx ph plan --report-filled review`, `npx ph workflow finish implement`를 실행하라.
+finish가 실패하면 완료라고 말하지 말고 blocker를 먼저 고쳐라.
+```
 
 ## 보장하지 않는 것
 
-- generated app product quality 인증
-- AST/linter/build failure 기반 rule enforcement
-- Clean Code 품질 보장
-- evidence count를 품질 향상으로 해석하는 주장
-- 테스트 충분성 증명
-- frontend, infra, desktop workflow productization
+- generated application quality certification
+- token saving
+- product-efficacy 또는 navigation-benefit proof
+- Clean Code guarantee
+- broad AST/linter enforcement
 - full TDD framework, test scaffolding, coverage, mutation testing
-- OpenCode 없는 독립 agent workflow
+- frontend, infra, desktop workflow productization
+- OpenCode 없는 완전한 workflow
+
+`ph bearshell`은 sandbox가 아닙니다. 실행 시간과 출력 크기를 제한하지만, 명령은 여전히 사용자의 머신에서 실행됩니다.
 
 ## 문서
 
 - [Changelog](CHANGELOG.md)
-- [Release checklist](docs/current/release/release-checklist.md)
-- [Release notes template](docs/current/release/release-notes-template.md)
-- [상세 사용 노트](docs/current/persona-harness-detailed-usage.md)
-- [Alpha publish readiness](docs/current/v0.3.0-alpha-publish-readiness.md)
-- [External tester guide](docs/current/v0.3.0-external-tester-guide.md)
+- [Release notes](docs/current/release/README.md)
+- [Acceptance test checklist](docs/current/acceptance-test-checklist.md)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 
 ## 라이선스

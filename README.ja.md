@@ -1,113 +1,151 @@
 # Persona Harness
 
-OpenCode 向け AI coding workflow rail + evidence + continuation harness.
+Persona Harness は、Java/Spring backend project 向けの local CLI と OpenCode workflow rail です。
+
+AI coding agent が次を行うための補助をします。
+
+- idea や README を implementation ticket に分割する
+- repeatable backend workflow に従う
+- bounded command で verification を実行する
+- 何を読んだか、実行したか、完了したかを local evidence として残す
+- 必要な report/evidence がない場合に completion claim を止める
+
+Persona Harness は code quality guarantee、token-saving product、broad linter、generated app production-ready proof ではありません。
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-Persona Harness は、エージェントが空のプロジェクトから始め、backend の前提を読み、実装 rail を辿り、何を読んだか・何が注入されたか・どの workflow command を実行したかを記録し、未完了 ticket を継続してから完了を報告するための harness です。
+## Install
 
-生成された app の product quality は認証しません。現在の Java/Spring backend guidance は stack steering、workflow observability、scoped opt-in closure enforcement のための surface であり、Clean Code 保証、広範な AST/linter、general enforcement engine ではありません。
-
-> 現在の範囲: Java/Spring backend workflow rail MVP.
-> frontend、infra、desktop app、広範な AST/linter enforcement、完全な TDD workflow は今後の対象です。
->
-> 現在の source/package 候補: npm dist-tag `next` の `0.4.0-rc.4`
-
-## 必要条件
+Requirements:
 
 - Node.js 20+
 - npm
-- OpenCode terminal CLI
-- OpenCode に設定済みの model/provider
+- Java 21+
+- Gradle
+- model/provider configured in OpenCode CLI
 
-## クイックスタート
-
-まず OpenCode をインストールします。OpenCode 公式ドキュメントでは install script または npm global install が案内されています。
+Install OpenCode:
 
 ```bash
 curl -fsSL https://opencode.ai/install | bash
-```
-
-または:
-
-```bash
+# or
 npm install -g opencode-ai
 ```
 
-確認:
-
-```bash
-opencode --version
-opencode
-```
-
-OpenCode に model provider を接続します。
+Connect a provider:
 
 ```bash
 opencode auth login
 opencode auth list
 ```
 
-または OpenCode TUI で実行します。
-
-```text
-/connect
-/models
-```
-
-Model ID は `provider/model` 形式です。例: `openai/gpt-5.4-mini-fast`.
-
-次に Java/Spring backend project で Persona Harness をインストールします。
+Install the current preview package:
 
 ```bash
 npm install -D persona-harness@next
+npx ph --help
+npx ph init
+npx ph doctor
+```
+
+Use the stable channel if you need the older stable package:
+
+```bash
+npm install -D persona-harness@latest
+```
+
+## Start A Java/Spring Backend Project
+
+Use a clean project directory.
+
+```bash
+mkdir -p /tmp/persona-harness-demo
+cd /tmp/persona-harness-demo
+npm init -y
+npm install -D persona-harness@next
+```
+
+Create a short `README.md`:
+
+```bash
+cat > README.md <<'EOF'
+# Todo API
+
+Build a Java 21 Spring Boot REST API with Gradle.
+
+## Requirements
+
+- Users can create todos.
+- Users can list todos.
+- Users can mark a todo completed.
+- Missing todos return an appropriate error response.
+
+## Technical Constraints
+
+- Java 21
+- Spring Boot 3
+- Gradle only
+- REST API only
+- Controllers delegate to application services.
+- Repository interfaces live in domain.
+- Repository implementations live in infrastructure.
+EOF
+```
+
+Initialize the workflow:
+
+```bash
 npx ph init
 npx ph bootstrap backend
+npx ph workflow check
 ```
 
-Persona Harness 自体を開発する場合は local install を使います。
+`ph init` creates minimal integration files. `ph bootstrap backend` prepares `AGENTS.md`, backend profile, policy files, accepted plan, report templates, and OpenCode configuration.
+
+## Ask The Agent To Implement
+
+Run OpenCode with a short prompt:
 
 ```bash
-npm install -D /absolute/path/to/persona-harness
-npx ph init
-npx ph bootstrap backend
+opencode run --dir . \
+  --model <provider/model> \
+  --dangerously-skip-permissions \
+  "Read README.md and implement it."
 ```
 
-まず OpenCode に plan だけを作らせます。
-
-```bash
-opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "$(npx ph plan --prompt)"
-```
-
-plan が十分なら accept します。
-
-```bash
-npx ph plan --status
-npx ph plan --accept
-```
-
-その後、実装を依頼します。
-
-README がまだなく、アイデアだけがある場合は、先に requirements draft を作ります。
+The agent should run the rail:
 
 ```text
-TODO Web サービスを作りたい
+npx ph workflow implement
+npx ph bearshell ...
+npx ph plan --report-filled implementation
+npx ph plan --report-filled review
+npx ph workflow finish implement
 ```
 
-この場合、エージェントはすぐ実装せず、次を実行します。
+If `workflow finish` fails, the agent should fix the blocker before claiming completion.
+
+## Start From An Idea
+
+If there is no README yet:
+
+```text
+I want to build a todo web service.
+```
+
+The agent should draft requirements first:
 
 ```text
 npx ph workflow draft --stdin
 ```
 
-生成される draft:
+Review:
 
 - `.persona/workflow/requirements/backlog.md`
 - `.persona/workflow/requirements/questions.md`
 - `.persona/workflow/requirements/assumptions.md`
 
-内容を確認し、よければ `進めてください` と伝えます。その後、エージェントは次を実行します。
+Then tell the agent to proceed. It should run:
 
 ```text
 npx ph workflow approve requirements
@@ -116,69 +154,91 @@ npx ph workflow next
 npx ph workflow implement
 ```
 
-README が既にある場合は、通常の実装依頼を使います。
+## Useful Commands
 
 ```bash
-opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.mdを読み、plan が accepted であることを確認してから Java/Spring Gradle ベースで要求全体を実装してください。コマンド実行は可能なら npx ph bearshell を使い、実装後に npx ph bearshell gradle test, npx ph bearshell gradle build, 実行可能な Spring Boot app なら npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"', HTTP happy path と failure path smoke を実行してください。.persona/workflow/implementation-report.md と .persona/workflow/review-report.md を記入し、npx ph plan --report-filled implementation と npx ph plan --report-filled review を実行してください。"
+npx ph init
+npx ph bootstrap backend
+npx ph doctor
+npx ph workflow check
+npx ph workflow implement
+npx ph workflow finish implement
+npx ph bearshell --shell 'gradle test'
+npx ph bearshell --shell 'gradle build'
+npx ph evidence summary
+npx ph evidence metrics --json
+npx ph evidence ab-report --json
+npx ph evidence pminus-report --json
+npx ph review backend-shape
 ```
 
-## 提供するもの
+Preview/local-current builds may include:
 
-- `ph init`: `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config を作成
-- `ph bootstrap backend`: `AGENTS.md`, backend profile, policy overlay, accepted plan, report template を準備
-- `ph intake --interactive`: backend planning 質問を行い `.persona/project-profile.jsonc` を作成
-- `ph policy init`: company/personal backend policy overlay を作成
-- `ph plan`: `blackbear` planning role 用 `.persona/workflow/plan.md` を作成
-- `ph workflow draft --stdin`: vague product idea から requirements draft を作成し、review で止める
-- `ph workflow approve requirements`: review 済み draft を accepted にする
-- `ph workflow split [source.md]`: requirements source を ticket/backlog に分割
-- `ph workflow next`: 次の pending ticket を表示
-- `ph bearshell`: bounded shell command helper
-- `ph history`: 使用済み workflow artifact を `.persona/workflow/history/` に保存
-- OpenCode injection: 関連ファイルを読むと Java/Spring backend workflow/guidance context を注入
+```bash
+npx ph evidence pminus-status --json
+```
 
-## Evidence の意味
+Explicit A/B evidence recording:
 
-`.persona/evidence` は file read、注入された workflow/rule context、選択された rail、target file role、workflow command activity などの実行痕跡です。これは「agent が意図した rail を見て従ったか」を確認するための記録であり、品質スコアでも品質向上の証明でもありません。
+```bash
+npx ph evidence ab-run \
+  --scenario demo \
+  --condition baseline \
+  -- ./gradlew test
+```
 
-## 推奨するコード構造
+## Optional Integrations
+
+CodeGraph is opt-in:
+
+```bash
+npx ph bootstrap backend --codegraph-preview
+```
+
+LSP is opt-in:
+
+```bash
+npx ph bootstrap backend --lsp-preview
+```
+
+Disable developer MCP registration:
+
+```bash
+npx ph bootstrap backend --no-developer-mcp
+```
+
+## TDD Rail
+
+The TDD rail is opt-in. When `enforce.executeVerification=true` and `enforce.tdd=true`, `ph workflow test` records red evidence only from PH-run Gradle/JUnit failures. `workflow check`, `workflow archive`, and `workflow finish` can later record green evidence for the same ticket/test id.
+
+This is a red-first completion gate. It does not scaffold tests, prove test sufficiency, run coverage, run mutation testing, or certify application quality.
+
+## What Evidence Means
+
+`.persona/evidence` stores local traces such as file reads, injected workflow context, command activity, TDD records, and A/B measurements.
+
+Evidence answers whether the agent saw and followed the expected rail. It does not prove generated app quality, token savings, product efficacy, full TDD coverage, broad reliability, or universal closure success.
+
+## Recommended Backend Shape
 
 - Gradle-first Java/Spring backend
-- `presentation`, `application`, `domain`, `infrastructure`, `global` の境界
-- Controller は Service に委譲
-- Application Service は use case の流れを扱い、storage state や id sequence を直接保持しない
-- Domain は passive record ではなく、自身のフィールドで判断と振る舞いを持つ
-- Repository interface は domain、実装は infrastructure
-- Request/response DTO boundary を明確にする
+- `presentation`, `application`, `domain`, `infrastructure`, and `global` package boundaries
+- Controller delegates to application service
+- Application service does not own storage state or id sequences
+- Repository interfaces live in `domain`
+- Repository implementations live in `infrastructure`
+- Domain objects have behavior
+- Request/response DTO boundaries are explicit
 
-これらは steering target と review cue です。生成された app が正しい、保守しやすい、安全、production-ready であることは証明しません。
+These are steering targets, not quality guarantees.
 
-## A/B と ON/OFF smoke の限界
-
-既存の A/B または ON/OFF smoke 結果は stack steering signal として扱います。多くは小さい sample、場合によっては `n=1`、non-blind、same operator であり、model/version/prompt/timeout/continuation behavior に依存するため、product quality の証明ではありません。
-
-## 保証しないこと
-
-- 生成された app の product quality 認証
-- AST/linter/build failure による rule enforcement
-- Clean Code 品質保証
-- evidence count を品質向上として扱う主張
-- test sufficiency の証明
-- frontend, infra, desktop workflow の productization
-- 最終的な TDD workflow
-- OpenCode なしの独立 agent workflow
-
-## ドキュメント
+## Docs
 
 - [Changelog](CHANGELOG.md)
-- [Release checklist](docs/current/release/release-checklist.md)
-- [Release notes template](docs/current/release/release-notes-template.md)
-- [Detailed usage notes](docs/current/persona-harness-detailed-usage.md)
-- [Alpha publish readiness](docs/current/v0.3.0-alpha-publish-readiness.md)
-- [External tester guide](docs/current/v0.3.0-external-tester-guide.md)
+- [Release notes](docs/current/release/README.md)
+- [Acceptance test checklist](docs/current/acceptance-test-checklist.md)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 
-## ライセンス
+## License
 
 Apache-2.0. See [LICENSE](LICENSE).

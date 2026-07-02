@@ -1,113 +1,151 @@
 # Persona Harness
 
-面向 OpenCode 的 AI coding workflow rail + evidence + continuation harness.
+Persona Harness 是面向 Java/Spring 后端项目的本地 CLI 和 OpenCode workflow rail。
+
+它帮助 AI coding agent：
+
+- 将想法或 README 拆成 implementation tickets；
+- 跟随可重复的后端 workflow；
+- 通过 bounded commands 执行验证；
+- 记录读取、执行、完成过的本地 evidence；
+- 在缺少 report/evidence 时阻止完成声明。
+
+Persona Harness 不是代码质量保证、token-saving 产品、broad linter，也不证明 generated app production-ready。
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-Persona Harness 帮助代理从空项目开始，读取 backend 背景，沿着 implementation rail 工作，留下读取/注入/workflow command 的痕迹，继续未完成 ticket，然后再填写 workflow reports 并声明完成。
+## 安装
 
-它不认证 generated app product quality。当前 Java/Spring backend guidance 是 stack steering、workflow observability 和 scoped opt-in closure enforcement surface，不是 Clean Code 保证、广泛 AST/linter 或 general enforcement engine。
-
-> 当前范围: Java/Spring backend workflow rail MVP.
-> frontend、infra、desktop app、广泛 AST/linter enforcement、完整 TDD workflow 都是后续方向。
->
-> 当前 source/package 候选版本: npm dist-tag `next` 的 `0.4.0-rc.4`
-
-## 环境要求
+Requirements:
 
 - Node.js 20+
 - npm
-- OpenCode terminal CLI
-- 已在 OpenCode 中配置的 model/provider
+- Java 21+
+- Gradle
+- 已配置 model/provider 的 OpenCode CLI
 
-## 快速开始
-
-先安装 OpenCode。OpenCode 官方文档推荐 install script，也可以使用 npm global install。
+安装 OpenCode:
 
 ```bash
 curl -fsSL https://opencode.ai/install | bash
-```
-
-或者:
-
-```bash
+# or
 npm install -g opencode-ai
 ```
 
-确认安装:
-
-```bash
-opencode --version
-opencode
-```
-
-在 OpenCode 中连接 model provider。
+连接 provider:
 
 ```bash
 opencode auth login
 opencode auth list
 ```
 
-也可以在 OpenCode TUI 中运行:
-
-```text
-/connect
-/models
-```
-
-Model ID 使用 `provider/model` 格式，例如 `openai/gpt-5.4-mini-fast`.
-
-然后在 Java/Spring backend 项目中安装 Persona Harness。
+安装当前 preview package:
 
 ```bash
 npm install -D persona-harness@next
+npx ph --help
+npx ph init
+npx ph doctor
+```
+
+如果需要较旧的 stable package，请使用 stable channel:
+
+```bash
+npm install -D persona-harness@latest
+```
+
+## 启动 Java/Spring 后端项目
+
+使用干净的项目目录。
+
+```bash
+mkdir -p /tmp/persona-harness-demo
+cd /tmp/persona-harness-demo
+npm init -y
+npm install -D persona-harness@next
+```
+
+创建简短的 `README.md`:
+
+```bash
+cat > README.md <<'EOF'
+# Todo API
+
+Build a Java 21 Spring Boot REST API with Gradle.
+
+## Requirements
+
+- Users can create todos.
+- Users can list todos.
+- Users can mark a todo completed.
+- Missing todos return an appropriate error response.
+
+## Technical Constraints
+
+- Java 21
+- Spring Boot 3
+- Gradle only
+- REST API only
+- Controllers delegate to application services.
+- Repository interfaces live in domain.
+- Repository implementations live in infrastructure.
+EOF
+```
+
+初始化 workflow:
+
+```bash
 npx ph init
 npx ph bootstrap backend
+npx ph workflow check
 ```
 
-如果你正在开发 Persona Harness 本身，请使用 local install。
+`ph init` 只创建最小集成文件。`ph bootstrap backend` 会准备 `AGENTS.md`、backend profile、policy files、accepted plan、report templates 和 OpenCode 配置。
+
+## 让 Agent 实现
+
+用短 prompt 运行 OpenCode:
 
 ```bash
-npm install -D /absolute/path/to/persona-harness
-npx ph init
-npx ph bootstrap backend
+opencode run --dir . \
+  --model <provider/model> \
+  --dangerously-skip-permissions \
+  "Read README.md and implement it."
 ```
 
-先让 OpenCode 只完成计划:
-
-```bash
-opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "$(npx ph plan --prompt)"
-```
-
-计划足够清楚后接受它:
-
-```bash
-npx ph plan --status
-npx ph plan --accept
-```
-
-然后让 OpenCode 实现:
-
-如果还没有 README，只有一个产品想法，请先生成 requirements draft。
+Agent 应该自己运行 rail:
 
 ```text
-我想做一个 TODO Web 服务
+npx ph workflow implement
+npx ph bearshell ...
+npx ph plan --report-filled implementation
+npx ph plan --report-filled review
+npx ph workflow finish implement
 ```
 
-这种情况下，代理不应该立刻实现，而应该先运行:
+如果 `workflow finish` 失败，agent 应先修复 blocker，再声明完成。
+
+## 只有想法、没有 README
+
+如果还没有 README:
+
+```text
+I want to build a todo web service.
+```
+
+Agent 应先生成 requirements draft:
 
 ```text
 npx ph workflow draft --stdin
 ```
 
-生成的 draft:
+Review:
 
 - `.persona/workflow/requirements/backlog.md`
 - `.persona/workflow/requirements/questions.md`
 - `.persona/workflow/requirements/assumptions.md`
 
-确认内容后，如果方向正确，告诉代理 `继续`。之后代理应运行:
+确认后让 agent 继续。它应运行:
 
 ```text
 npx ph workflow approve requirements
@@ -116,69 +154,91 @@ npx ph workflow next
 npx ph workflow implement
 ```
 
-如果 README 已经存在，请使用普通实现请求。
+## 常用命令
 
 ```bash
-opencode run --dir . --model <model> --dangerously-skip-permissions \
-  "请阅读 README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md，确认 plan 是 accepted 状态，然后基于 Java/Spring Gradle 实现全部需求。执行命令时尽量使用 npx ph bearshell；实现后运行 npx ph bearshell gradle test, npx ph bearshell gradle build；如果是可运行的 Spring Boot app，运行 npx ph bearshell --shell 'gradle bootRun --args=\"--server.port=<port>\"'；再执行 HTTP happy path 和 failure path smoke。填写 .persona/workflow/implementation-report.md 与 .persona/workflow/review-report.md，并运行 npx ph plan --report-filled implementation 和 npx ph plan --report-filled review。"
+npx ph init
+npx ph bootstrap backend
+npx ph doctor
+npx ph workflow check
+npx ph workflow implement
+npx ph workflow finish implement
+npx ph bearshell --shell 'gradle test'
+npx ph bearshell --shell 'gradle build'
+npx ph evidence summary
+npx ph evidence metrics --json
+npx ph evidence ab-report --json
+npx ph evidence pminus-report --json
+npx ph review backend-shape
 ```
 
-## 提供内容
+Preview/local-current builds may include:
 
-- `ph init`: 安装 `.persona/rules`, `.persona/harness.jsonc`, OpenCode plugin config
-- `ph bootstrap backend`: 准备 `AGENTS.md`, backend profile, policy overlay, accepted plan, report template
-- `ph intake --interactive`: 询问 backend planning 问题并写入 `.persona/project-profile.jsonc`
-- `ph policy init`: 创建 company/personal backend policy overlay
-- `ph plan`: 创建 `blackbear` planning role 的 `.persona/workflow/plan.md`
-- `ph workflow draft --stdin`: 从 vague product idea 创建 requirements draft，并停在 review 阶段
-- `ph workflow approve requirements`: 将已 review 的 draft 标记为 accepted
-- `ph workflow split [source.md]`: 将 requirements source 拆分成 ticket/backlog
-- `ph workflow next`: 输出下一个 pending ticket
-- `ph bearshell`: bounded shell command helper
-- `ph history`: 将使用过的 workflow artifact 保存到 `.persona/workflow/history/`
-- OpenCode injection: 当代理读取相关文件时注入 Java/Spring backend workflow/guidance context
+```bash
+npx ph evidence pminus-status --json
+```
+
+显式记录 A/B evidence:
+
+```bash
+npx ph evidence ab-run \
+  --scenario demo \
+  --condition baseline \
+  -- ./gradlew test
+```
+
+## Optional Integrations
+
+CodeGraph is opt-in:
+
+```bash
+npx ph bootstrap backend --codegraph-preview
+```
+
+LSP is opt-in:
+
+```bash
+npx ph bootstrap backend --lsp-preview
+```
+
+Disable developer MCP registration:
+
+```bash
+npx ph bootstrap backend --no-developer-mcp
+```
+
+## TDD Rail
+
+TDD rail 是 opt-in。启用 `enforce.executeVerification=true` 和 `enforce.tdd=true` 后，`ph workflow test` 只会从 PH-run Gradle/JUnit failure 记录 red evidence。之后 `workflow check`、`workflow archive`、`workflow finish` 可以为同一个 ticket/test id 记录 green evidence。
+
+这是 red-first completion gate。它不生成测试脚手架，不证明测试充分性，不运行 coverage/mutation testing，也不认证应用质量。
 
 ## Evidence 的含义
 
-`.persona/evidence` 记录 file read、被注入的 workflow/rule context、选中的 rail、target file role、workflow command activity 等执行痕迹。它用于确认“代理是否看见并跟随了预期 rail”，不是质量分数，也不能把 evidence count 当成质量提升证明。
+`.persona/evidence` 保存本地 traces，例如 file reads、injected workflow context、command activity、TDD records 和 A/B measurements。
 
-## 鼓励的代码结构
+Evidence 回答的是 agent 是否看见并跟随了 expected rail。它不证明 generated app quality、token savings、product efficacy、full TDD coverage、broad reliability 或 universal closure success。
+
+## 推荐的后端结构
 
 - Gradle-first Java/Spring backend
-- `presentation`, `application`, `domain`, `infrastructure`, `global` 边界
-- Controller 委托给 Service
-- Application Service 只编排 use case，不直接持有 storage state 或 id sequence
-- Domain 不是 passive record，而是用自己的字段进行判断和行为
-- Repository interface 在 domain，具体实现放在 infrastructure
-- 明确 request/response DTO boundary
+- `presentation`, `application`, `domain`, `infrastructure`, `global` package boundaries
+- Controller delegates to application service
+- Application service does not own storage state or id sequences
+- Repository interfaces live in `domain`
+- Repository implementations live in `infrastructure`
+- Domain objects have behavior
+- Request/response DTO boundaries are explicit
 
-这些是 steering target 和 review cue。它们不证明生成的 app 正确、可维护、安全或 production-ready。
+这些是 steering targets，不是质量保证。
 
-## A/B 与 ON/OFF smoke 的限制
-
-现有 A/B 或 ON/OFF smoke 结果只能视为 stack steering signal。样本很小，常见 `n=1`，non-blind，同一操作者执行，并且依赖 model/version/prompt/timeout/continuation behavior，因此不能作为 product quality 证明。
-
-## 不承诺
-
-- 生成 app 的 product quality 认证
-- AST/linter/build failure 级别的 rule enforcement
-- Clean Code 质量保证
-- 把 evidence count 解读为质量提升的说法
-- 测试充分性证明
-- frontend, infra, desktop workflow productization
-- 最终 TDD workflow
-- 没有 OpenCode 的独立 agent workflow
-
-## 文档
+## Docs
 
 - [Changelog](CHANGELOG.md)
-- [Release checklist](docs/current/release/release-checklist.md)
-- [Release notes template](docs/current/release/release-notes-template.md)
-- [Detailed usage notes](docs/current/persona-harness-detailed-usage.md)
-- [Alpha publish readiness](docs/current/v0.3.0-alpha-publish-readiness.md)
-- [External tester guide](docs/current/v0.3.0-external-tester-guide.md)
+- [Release notes](docs/current/release/README.md)
+- [Acceptance test checklist](docs/current/acceptance-test-checklist.md)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 
-## 许可证
+## License
 
 Apache-2.0. See [LICENSE](LICENSE).
