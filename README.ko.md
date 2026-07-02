@@ -27,7 +27,8 @@ Injection effect는 측정했지만 입증되지 않았습니다. ON/OFF eval pr
 
 요구사항이 아직 README로 정리되지 않았고 “TODO 웹 서비스 만들래”처럼 아이디어만 있는 경우에는 바로 구현하지 않는 것이 목표입니다. 이때 에이전트는 먼저 `.persona/workflow/requirements/backlog.md` 초안을 만들고, 사용자가 검토 후 “진행하자”라고 말한 뒤에만 implementation ticket으로 넘어가야 합니다.
 
-> 현재 next-channel package는 `persona-harness@next=0.4.1-rc.1`로 복구됐습니다.
+> 현재 release-prep target은 `0.4.1-rc.2`이며 `0.4.x` line에 있습니다.
+> publish 전까지 registry `persona-harness@next`는 `0.4.1-rc.1`입니다.
 > 현재 stable package: `persona-harness@latest`는 `0.4.0`으로 검증됐고,
 > gitHead는 `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`입니다.
 > registry `next`는 잠시 superseded `0.5.0-rc.1` build로 이동했지만,
@@ -209,7 +210,8 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph workflow finish implement`: workflow report/evidence가 준비되기 전 완료 보고 차단
 - `ph workflow guard implement/final`: workflow rail이 재사용하는 저수준 strict gate
 - `ph doctor`: OpenCode와 Persona Harness 연동 상태 진단
-- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph evidence metrics [--json]`, `ph review backend-shape`: report-only 검증/피드백/집계 surface
+- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph evidence metrics [--json]`, `ph evidence ab-report [--json]`, `ph evidence pminus-report [--json]`, `ph review backend-shape`: report-only 검증/피드백/집계 surface
+- `ph evidence ab-run`: 명시적으로 실행한 local A/B condition을 `.persona/evidence/ab/` 아래 `persona-ab-measurement.1` evidence로 기록. 이 기록은 `ab-report`와 `pminus-report`가 읽으며, 자동 downgrade/removal이나 product-efficacy 증명이 아님
 - OpenCode injection: 관련 파일을 읽을 때 Java/Spring backend workflow/guidance context 주입
 
 ## evidence의 의미

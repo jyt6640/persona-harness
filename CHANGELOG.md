@@ -6,6 +6,16 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- No unreleased changes.
+
+## [0.4.1-rc.2] - 2026-07-02
+
+- Prepared `0.4.1-rc.2` as the next-channel release candidate on the
+  corrected `0.4.x` line. Until publish and registry verification,
+  `persona-harness@next` remains `0.4.1-rc.1`; stable `latest` remains
+  `0.4.0`; `alpha` remains `0.3.9-alpha.8`. Do not treat this release-prep
+  commit as registry evidence until npm gitHead/shasum verification confirms
+  the exact prep commit.
 - Added explicit-write `ph evidence ab-run --scenario <id> --condition <id>
   -- <command>` as a local A/B evidence recording surface for P1/P-minus
   measurement runs. It writes scoped `persona-ab-measurement.1` records under

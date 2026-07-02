@@ -34,11 +34,16 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current next-channel package: `0.4.1-rc.1` under npm dist-tag `next`. It
-packages post-0.4.0 accepted surfaces, especially the instruction
-inference/adoption/check preview and the CodeGraph default downgrade. Registry
-`next` briefly moved to a superseded `0.5.0-rc.1` build; that is treated as a
-wrong-channel/version incident, not an accepted release record.
+Current release-prep target: `0.4.1-rc.2` under npm dist-tag `next` after QA
+release GO. It packages the accepted local/current P-minus A/B evidence
+surfaces: read-only `ph evidence pminus-report [--json]`, explicit-write
+`ph evidence ab-run --scenario <id> --condition <id> -- <command>`, and
+downstream compatibility with `ab-report` and `pminus-report`. Until publish and
+registry verification, the live registry `next` package remains
+`0.4.1-rc.1`.
+
+Registry `next` briefly moved to a superseded `0.5.0-rc.1` build; that is
+treated as a wrong-channel/version incident, not an accepted release record.
 
 Post-publish registry verification for `0.4.1-rc.1` confirmed gitHead
 `9d80e9c7f63986a3223901e9fe54550e86b8b425`, shasum
@@ -62,6 +67,13 @@ move `latest`, prove token saving/provider-token saving, product
 efficacy/navigation benefit, app quality, full TDD/test sufficiency, default
 CodeGraph/LSP effectiveness, broad reliability, closure guarantee, Codex
 support, or code-nav replacement.
+
+`0.4.1-rc.2` prep inherits those claim boundaries and adds no automatic
+downgrade/removal behavior. The A/B recorder and P-minus report are local
+evidence generation/reporting surfaces only; they do not prove token saving,
+provider-token saving, product efficacy, navigation benefit, app quality, full
+TDD/test sufficiency, CodeGraph/LSP effectiveness, broad reliability, closure
+guarantee, Codex support, or code-nav replacement.
 
 Current stable package: official `0.4.0` remains published under `latest`.
 Registry `latest` points at gitHead
@@ -487,6 +499,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.10 release notes](v0.4.0-rc.10-release-notes.md)
 - [v0.4.0 release notes](v0.4.0-release-notes.md)
 - [v0.4.1-rc.1 release notes](v0.4.1-rc.1-release-notes.md)
+- [v0.4.1-rc.2 release notes](v0.4.1-rc.2-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

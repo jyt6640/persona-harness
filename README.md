@@ -27,8 +27,8 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current next-channel package: `persona-harness@next` is restored to
-> `0.4.1-rc.1`.
+> Current release-prep target: `0.4.1-rc.2` on the `0.4.x` line.
+> Until publish, registry `persona-harness@next` remains `0.4.1-rc.1`.
 > Current stable package: `persona-harness@latest` is verified at `0.4.0`
 > with gitHead `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`.
 > Registry `next` briefly moved to a superseded `0.5.0-rc.1` build; treat that
@@ -354,6 +354,8 @@ After the OpenCode run, inspect the project:
 npx ph workflow check
 npx ph evidence summary
 npx ph evidence metrics --json
+npx ph evidence ab-report --json
+npx ph evidence pminus-report --json
 npx ph review backend-shape
 ```
 
@@ -365,6 +367,10 @@ For a healthy alpha smoke, look for:
 - `.persona/evidence/summary.md` exists after `npx ph evidence summary`
 - `npx ph evidence metrics --json` reports only local evidence that exists; it
   does not prove token saving or product efficacy
+- `npx ph evidence ab-report --json` and
+  `npx ph evidence pminus-report --json` read local structured A/B evidence
+  only; they are decision-support surfaces, not automatic downgrade/removal or
+  product-efficacy proof
 - `npx ph review backend-shape` is mostly PASS or all PASS
 - `gradle test` passed
 - `gradle build` passed
@@ -414,6 +420,13 @@ These commands are intentionally visible so AI agents can call them from OpenCod
 - `ph evidence metrics [--json]`: read-only local evidence metrics for
   provider-token evidence, structured tool/MCP calls, read chars when present,
   and workflow finish command records.
+- `ph evidence ab-report [--json]`: read-only aggregation for local structured
+  `persona-ab-measurement.1` evidence.
+- `ph evidence pminus-report [--json]`: read-only P-minus decision support for
+  local A/B evidence; no automatic downgrade/removal.
+- `ph evidence ab-run`: explicit local A/B evidence writer under
+  `.persona/evidence/ab/`; generated records feed `ab-report` and
+  `pminus-report`.
 - `ph review backend-shape`: writes report-only backend workflow shape observations.
 - `ph history`: archives completed workflow artifacts.
 
@@ -482,11 +495,12 @@ npm view persona-harness dist-tags --json
 npm view persona-harness@latest version
 ```
 
-The official `0.4.0` release is published under `latest`. Registry `next` is
-restored to `0.4.1-rc.1`; the superseded `0.5.0-rc.1` build is a
-wrong-channel incident, not accepted release evidence. `alpha` remains
-`0.3.9-alpha.8`. Verify dist-tags and package gitHead before treating any
-install as current.
+The official `0.4.0` release is published under `latest`. The current
+release-prep target is `0.4.1-rc.2`, but registry `next` remains
+`0.4.1-rc.1` until that package is published and verified. The superseded
+`0.5.0-rc.1` build is a wrong-channel incident, not accepted release evidence.
+`alpha` remains `0.3.9-alpha.8`. Verify dist-tags and package gitHead before
+treating any install as current.
 
 ### `opencode` is not found
 
