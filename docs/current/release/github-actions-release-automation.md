@@ -68,6 +68,7 @@ npm run build
 npm run report:rules
 npm run check:scope:strict
 npm run check:injection-value
+npm run check:github-release-notes
 npm pack --dry-run
 npm publish --dry-run --access public --tag <resolved-dist-tag>
 ```
@@ -90,10 +91,20 @@ stable versions published as `next`.
 For tag releases, the workflow runs:
 
 ```bash
-gh release create "$TAG_NAME" --generate-notes --title "$TAG_NAME"
+node scripts/generate-github-release-notes.mjs --tag "$TAG_NAME" --out github-release-notes.md
+gh release create "$TAG_NAME" --notes-file github-release-notes.md --title "$TAG_NAME"
 ```
 
-Use `docs/current/release/release-notes-template.md` to draft human-facing notes before tagging. GitHub generated notes are still created automatically from merged commits and tags.
+The generator reads `docs/current/release/v<version>-release-notes.md`, appends
+automation metadata and claim boundaries, and fails if the tag does not match
+`package.json`.
+
+Use `docs/current/release/release-notes-template.md` to draft human-facing
+notes before tagging. Release prep should run:
+
+```bash
+npm run check:github-release-notes
+```
 
 ## npm Authentication Policy
 

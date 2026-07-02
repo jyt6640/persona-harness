@@ -532,8 +532,11 @@ Release verification and GitHub release-note automation live in
 - The publish workflow uses npm Trusted Publishing/OIDC; no `NPM_TOKEN` secret
   is required for the trusted path.
 - The workflow checks that the pushed tag matches `package.json` version.
+- The tag workflow generates the GitHub Release body from
+  `docs/current/release/v<version>-release-notes.md`.
 - The publish workflow verifies registry gitHead, dist.shasum, and dist-tag
   state after publish.
 - Create/push the matching git tag only after registry verification succeeds.
 - Tag pushes do not run real `npm publish`.
-- GitHub release notes are generated automatically for tag releases.
+- GitHub release notes are generated from repository release notes for tag
+  releases.

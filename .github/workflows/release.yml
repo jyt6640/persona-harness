@@ -61,6 +61,9 @@ jobs:
       - name: Injection value check
         run: npm run check:injection-value
 
+      - name: GitHub release notes check
+        run: npm run check:github-release-notes
+
       - name: Package dry run
         run: npm pack --dry-run
 
@@ -93,8 +96,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate release body
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: node scripts/generate-github-release-notes.mjs --tag "$TAG_NAME" --out github-release-notes.md
+
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
-        run: gh release create "$TAG_NAME" --generate-notes --title "$TAG_NAME"
+        run: gh release create "$TAG_NAME" --notes-file github-release-notes.md --title "$TAG_NAME"

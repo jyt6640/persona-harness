@@ -178,4 +178,6 @@ GitHub release notes. It is not the npm publish path.
 - Confirm `npx ph init` works from the published package.
 - Update `CHANGELOG.md` date if it was left as `Unreleased`.
 - Create GitHub release notes from the release notes template if this release gets a GitHub release.
-- For tag releases, GitHub Actions creates GitHub release notes with `gh release create --generate-notes`.
+- For tag releases, GitHub Actions creates GitHub release notes from
+  `docs/current/release/v<version>-release-notes.md` using
+  `scripts/generate-github-release-notes.mjs`.

@@ -6,6 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added GitHub Release body automation for tag releases. The tag workflow now
+  checks `docs/current/release/v<version>-release-notes.md`, generates
+  `github-release-notes.md` from that repo release note, appends automation
+  metadata and no-claim boundaries, and passes the file to
+  `gh release create --notes-file`. `npm run check:docs` now includes the
+  GitHub release-note check so release prep fails before tagging when the
+  matching release note is missing or the tag/version boundary is inconsistent.
 - Added read-only `ph evidence pminus-status [--json]` as a local
   surface/tool-level P-minus decision-support aggregation. It reads local A/B
   and P-minus evidence, emits schema `evidence-pminus-status.1`, and summarizes
