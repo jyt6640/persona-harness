@@ -13,9 +13,42 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   Classified child sessions and unclassified sessions skip runtime injection,
   system constitution prose, workflow prompt prose, text continuation, and idle
   continuation; skip evidence is aggregated to one ignored file per session.
+  QA accepted `12fe8ec060471028b4f4a77bf28a468688106a1b`
+  (`fix(runtime): skip injection in subagent sessions`) through a fresh
+  local-current tarball only; registry was not used. Installed version was
+  `0.5.0`; tarball shasum `a38381c5651101c06747b7aad3e7b918e63884df`;
+  sha256 `f948091b13652b0b3e49a026ca9bb6e4f0c9ef269cb4cfa767dfa50ec272f684`;
+  entryCount `538`.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/subagent-injection-skip-12fe8ec-20260702T193819Z`;
+    `RESULT.md` classified PASS.
+  - Package entries were present for `dist/runtime/session-registry.js`,
+    `dist/runtime/hooks.js`, `dist/runtime/system-constitution.js`, and
+    `dist/config/harness-config.js`; `ph --help` and `ph version` exited 0.
+  - Runtime fixture coverage: classified main sessions received target-file and
+    tool-output injection; classified child/subagent sessions skipped
+    target-file/tool-output injection, system constitution, text continuation,
+    model-input/chat-message injection, and idle continuation; unclassified or
+    unknown sessions skipped the same surfaces and failed closed; disabling
+    `multiAgent` preserved child-session target-file/tool-output injection.
+  - No new config toggle was added.
+  - Skip evidence aggregates one file per safe session id under
+    `.persona/evidence/session-injection-skips/`, not per-message spam.
+    `child-session-1.json` used schema `session-injection-skip.1`,
+    classification `subagent`, parent `main-session`, count `7`, and
+    lastReason `subagent-session`; `unknown-session.json` used schema
+    `session-injection-skip.1`, classification `unknown`, state
+    `unclassified`, count `7`, and lastReason `classification-unavailable`.
+  - Per-surface counts covered `target-file`, `java-role-discovery`,
+    `intent-workflow`, `model-input`, `system-constitution`,
+    `text-continuation`, and `idle-continuation`.
   This is a defect fix for contamination boundaries, not a new autonomous
-  subagent loop, success guarantee, reliability claim, token-saving claim, or
-  product-efficacy claim.
+  subagent loop, success guarantee, reliability claim, token/provider-token
+  saving claim, or product-efficacy claim. It remains local-current
+  package-runtime evidence only, with no registry evidence until a future
+  publish includes the commit; it is also not navigation-benefit,
+  app-quality/full-TDD, broad reliability, closure guarantee, autonomous-loop,
+  generated-app certification, or broader product evidence.
 - Added first-class closure/blocker metrics to local A/B evidence and
   P-minus decision support. `ph evidence ab-run` now accepts optional
   read-only metadata for closure blocker counts, finish status before/after,
