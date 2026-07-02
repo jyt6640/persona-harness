@@ -6,7 +6,22 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-- No unreleased changes after the `0.5.0-rc.1` release-prep commit.
+- No unreleased changes after the `0.5.0-rc.2` release-prep commit.
+
+## [0.5.0-rc.2] - 2026-07-02
+
+- Prepared corrected `0.5.0-rc.2` as the publishable first gate-first release
+  candidate on the `next` channel. `0.5.0-rc.1` already exists in npm and the
+  remote `v0.5.0-rc.1` tag points at the prior wrong-channel commit
+  `dcc34e071d167923b8cf40be095b303ba649d3ca`, so the corrected release target
+  advances to `0.5.0-rc.2` rather than attempting an impossible republish.
+- Kept the same gate-first content from the `0.5.0-rc.1` prep: runtime
+  injection, system constitution injection, workflow prompt rail injection, and
+  continuation text are default-off; `--runtime-injection-preview` is explicit
+  opt-in; `--strict` intentionally opts into runtime guidance plus direct
+  verification.
+- Kept the README logo/package allowlist and `img/Persona-Harness-Logo.png`
+  packaged asset.
 
 ## [0.5.0-rc.1] - 2026-07-02
 
