@@ -6,7 +6,52 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-- No unreleased changes.
+- Added read-only `ph evidence pminus-status [--json]` as a local
+  surface/tool-level P-minus decision-support aggregation. It reads local A/B
+  and P-minus evidence, emits schema `evidence-pminus-status.1`, and summarizes
+  by `surface.id`: outcome counts, decision-hint counts, latest decision
+  hints/evidence file, provider-token telemetry coverage, default-state summary,
+  scenario ids, and recommended next action wording. The recommended actions are
+  review hints only, including `keep gathering`, `keep opt-in`,
+  `downgrade candidate`, `remove-candidate`, `no-claim`, and
+  `needs larger A/B`.
+  QA and External accepted the local/current tarball package-runtime surface for
+  `6d0dd081f5e454ea2f3694558a8cc22c1a107d2d`; registry evidence remains NO-GO
+  until a future publish includes that gitHead:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/pminus-status-tarball-6d0dd08-20260702T025253Z`;
+  - tarball shasum: `b9cab81500323a40be452bba99d5cf905d1274cf`;
+    sha256:
+    `04b569089b3c29ccde5bd18c506f1919edfb3d37b2fe726338507b32a34a87c7`;
+  - package entries included `dist/cli/evidence-pminus-status.js`,
+    `dist/cli/evidence-pminus-report.js`, `dist/cli/evidence-ab-run.js`,
+    `dist/cli/evidence-ab-run-options.js`, and
+    `dist/cli/evidence-ab-report.js`;
+  - `ph evidence pminus-status --help`, `ph evidence pminus-status --json`,
+    and human `ph evidence pminus-status` exited 0;
+  - seven packaged `ph evidence ab-run` fixture records exited 0 and wrote
+    expected A/B evidence;
+  - generated local A/B evidence from packaged `ab-run` was consumed by
+    `ab-report`, `pminus-report`, and `pminus-status`;
+  - mixed CodeGraph evidence produced defaultState `mixed`, provider telemetry
+    `available`, outcomes `improved=1` and `worse=1`, latest hint
+    `remove-candidate`, and recommended next action `downgrade candidate`;
+  - opt-in LSP no-improvement evidence produced provider telemetry
+    `available`, hint `keep-opt-in`, and recommended next action
+    `keep opt-in`;
+  - unknown/missing telemetry evidence produced provider telemetry `missing`,
+    hint `no-claim`, and recommended next action `no-claim`;
+  - `pminus-status` wrote no files; `ab-run` wrote only expected
+    `.persona/evidence/ab/` evidence; there was no report artifact,
+    `.persona/harness.jsonc`, `.persona/workflow`, or
+    `.persona/instructions/adopted.json` mutation.
+  This remains local/current tarball package-runtime evidence for read-only
+  decision support only, not registry evidence, token-saving/provider-token
+  saving, product-efficacy/navigation-benefit, app-quality/full-TDD/test
+  sufficiency, CodeGraph/LSP default/effectiveness, broad reliability, closure
+  guarantee, Codex support, code-nav replacement, or automatic
+  downgrade/removal evidence. QA recommends the next work move to actual
+  measurement/evidence execution rather than additional CLI surface expansion.
 
 ## [0.4.1-rc.2] - 2026-07-02
 
