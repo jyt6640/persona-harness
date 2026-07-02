@@ -94,6 +94,70 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   of token saving/provider-token saving, product efficacy/navigation benefit,
   app-quality/full-TDD/test-sufficiency, broad reliability, closure guarantee,
   automatic downgrade/removal, or any release action.
+- Accepted two follow-up evidence/probe archives against repo/source metadata
+  `4634d9a27d746db945a89d440c48f36beff99815` and package version
+  `0.4.1-rc.2`; registry/dist-tags remained `latest=0.4.0`,
+  `next=0.4.1-rc.2`, `alpha=0.3.9-alpha.8`, with no publish/tag/latest action:
+  - P0 Java/Spring TDD red-to-green archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/p0-java-spring-tdd-red-green-20260702-122018`;
+    PASS for this disposable Java/Gradle/JUnit fixture only, using strict
+    `enforce.executeVerification=true` and `enforce.tdd=true`;
+  - PH-generated red evidence path
+    `.persona/evidence/tdd/req-1/red-2026-07-02T03-15-12-542Z.json` had schema
+    `tdd-workflow.1`, status `red`, ticket `req-1`,
+    `generatedBy=persona-harness`, `execution=ph-direct-gradle-junit`,
+    command `./gradlew test`, exitCode `1`, and JUnit ref/snapshot/digest;
+  - PH-generated green evidence path
+    `.persona/evidence/tdd/req-1/green-2026-07-02T03-18-47-329Z.json` used the
+    same ticket and testId
+    `com.example.todo.TodoLogicTest#createsTodoThroughService()`, command
+    `./gradlew test`, exitCode `0`, and JUnit ref/snapshot/digest;
+  - JUnit snapshots supported the transition: red XML had one failure for
+    expected `todo-created` versus `todo`, while green XML had zero
+    failures/errors;
+  - final statuses were `workflowTestRed=0`, `workflowCheckGreenRerun=0`,
+    `workflowTddFinal=0`, `workflowArchiveFinal=0`, and
+    `workflowFinishFinal=0`; final stdout included `State: passed`, archive
+    moved `req-1` to history, and finish passed;
+  - adversarial green-only/no-red fixture was accepted as blocked:
+    `workflow test` exited 1 with already-green refusal, `workflow tdd` state
+    was `red-missing`, and finish exited 1 with
+    `tdd-red-evidence-missing` among expected fixture blockers;
+  - P0 limitations: forged/stale/wrong-ticket adversarial cases were not run in
+    this archive, and an intermediate green capture/archive/finish attempt had
+    failure/UP-TO-DATE nuance before the accepted final rerun evidence;
+  - Agent-session A/B pilot archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/agent-session-ab-pilot-20260702-122327`;
+    PARTIAL underpowered negative pilot evidence only, using actual OpenCode
+    Java calculator bugfix sessions with paired `n=2`, counterbalanced order
+    `pair1 off->on` and `pair2 on->off`, isolated HOME/XDG dirs, and final
+    `./gradlew test` exit 0 as success criterion;
+  - OFF and ON both succeeded 2/2. Mean provider-token total was OFF 57,870
+    versus ON 109,769; mean elapsed was OFF 30,585ms versus ON 59,890ms; mean
+    read chars were OFF 1,356.5 versus ON 18,355; mean tool calls were OFF 7
+    versus ON 10;
+  - paired deltas were worse for PH ON in both pairs: token total +25,946 and
+    +77,852; elapsed +21,089ms and +37,521ms; read chars +14,377 and +19,620;
+    tool calls +3 and +3;
+  - four `persona-ab-measurement.1` records under
+    `report-workspace/.persona/evidence/ab/agent-session-java-calculator-fix/`
+    populated providerTokens, readChars, and toolCalls; `ab-report.json`,
+    `pminus-report.json`, and `pminus-status.json` parsed as
+    `evidence-ab-report.1`, `evidence-pminus-report.1`, and
+    `evidence-pminus-status.1`, each scanning four files with zero unreadable;
+  - `pminus-report` outcome was `worse`, decision hint `remove-candidate`,
+    reason `Candidate condition has higher measured provider-token total in
+    this scenario.`; `pminus-status` reported surface `ph-runtime-injection`,
+    outcome `worse=1`, provider telemetry `available`, and recommended next
+    action `remove-candidate`;
+  - statistical limitation: `n=2` is too small for significance, with no
+    confidence interval/significance claim.
+  These are evidence/probe records only, not product source, package, release,
+  app-quality, full-TDD/test-sufficiency, broad reliability, closure guarantee,
+  token-saving/provider-token saving, product-efficacy/navigation-benefit,
+  CodeGraph/LSP default/effectiveness, Codex/code-nav replacement, automatic
+  downgrade/removal, or release-action evidence. The Agent A/B negative result
+  is valid P-minus input, not an automatic removal action.
 
 ## [0.4.1-rc.2] - 2026-07-02
 
