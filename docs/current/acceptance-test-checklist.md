@@ -1,8 +1,9 @@
-# Persona Harness 인수 테스트 평가표 (0.4.1-rc.2 + local-current 기준)
+# Persona Harness 인수 테스트 평가표 (0.5.0-rc.2 registry 기준)
 
-작성일: 2026-07-02. 기본 registry 대상: `persona-harness@0.4.1-rc.2`
-(HEAD `bcb5f08`). `0.4.1-rc.2` 이후 아직 publish되지 않은 surface는
-local-current tarball mode에서만 평가한다.
+작성일: 2026-07-02. 기본 registry 대상: `persona-harness@next`
+(`0.5.0-rc.2`, gitHead `64696dce6daf5e4501609648f3ceb9acb830db87`).
+`0.5.0-rc.2` 이후 아직 publish되지 않은 surface는 local-current tarball
+mode에서만 평가한다.
 
 ## 판정 규칙
 
@@ -25,9 +26,8 @@ local-current tarball mode에서만 평가한다.
 준비:
 
 ```bash
-cd /Users/yongtae/Desktop/persona-harness && npm pack
 mkdir -p /tmp/ph-acceptance && cd /tmp/ph-acceptance
-npm init -y && npm i /Users/yongtae/Desktop/persona-harness/persona-harness-0.4.1-rc.2.tgz
+npm init -y && npm i persona-harness@next
 alias ph="npx ph"
 ```
 
@@ -38,7 +38,7 @@ alias ph="npx ph"
 | ID | 등급 | 항목 | 실행 | PASS 기준 | 판정 |
 | --- | --- | --- | --- | --- | --- |
 | A1 | [B] | fresh 설치 | `npm i <tarball>` | exit 0, 경고성 스크립트 실행 없음 | |
-| A2 | [B] | 버전 출력 | `ph --version` / `ph version` | `0.4.1-rc.2` 정확히 출력, package metadata와 일치 | |
+| A2 | [B] | 버전 출력 | `ph --version` / `ph version` | `0.5.0-rc.2` 정확히 출력, package metadata와 일치 | |
 | A3 | [B] | 도움말 | `ph` (인자 없음) | usage 출력, exit 0 또는 명시적 non-zero 규약 | |
 | A4 | [M] | doctor | `ph doctor` | OpenCode 부재 시 오류가 아니라 진단으로 보고 | |
 | A5 | [B] | init 멱등성 | `ph init` 2회 연속 | 2회째도 exit 0, 기존 설정 파괴 없음 | |
@@ -91,7 +91,7 @@ alias ph="npx ph"
 | E2 | [M] | ab-run | `ph evidence ab-run` (조건 1회) | 실제 커맨드 실행 + 구조화 evidence JSON 기록 | |
 | E3 | [M] | ab-report | `ph evidence ab-report --json` | E2 산출물 집계, **클레임 문구 없음** | |
 | E4 | [M] | pminus-report | `ph evidence pminus-report` | 매칭 시나리오 없으면 `none`, 있으면 keep/downgrade/remove-candidate 힌트. **설정 변경/삭제 없음** (read-only) | |
-| E5 | [M] | pminus-status | `ph evidence pminus-status --json` | local-current tarball에서 평가. matching evidence가 있으면 surface decision/status non-empty, 없으면 none/empty를 정직 보고. registry `0.4.1-rc.2`에는 아직 없으므로 N.A. **설정 변경/삭제 없음** (read-only) | |
+| E5 | [M] | pminus-status | `ph evidence pminus-status --json` | matching evidence가 있으면 surface decision/status non-empty, 없으면 none/empty를 정직 보고. **설정 변경/삭제 없음** (read-only) | |
 | E6 | [m] | evidence 경로 발견성 | 각 커맨드 출력 확인 | 산출물 경로가 출력에 표시됨 | |
 
 ## F. OpenCode 플러그인 런타임 (OpenCode 설치 환경 필요)
@@ -103,8 +103,8 @@ fresh package acceptance에서는 F열 전체를 N.A로 기록할 수 있으며,
 | ID | 등급 | 항목 | 실행 | PASS 기준 | 판정 |
 | --- | --- | --- | --- | --- | --- |
 | F1 | [B] | 플러그인 로드 | OpenCode 세션 시작 | 로드 오류 없음, 세션 정상 | |
-| F2 | [B] | .java 주입 트리거 | .java 파일 편집 세션 | injection block 주입 확인 (결정론: 파일 role 기반) | |
-| F3 | [M] | 비-.java 무간섭 | .ts 파일 작업 | Java rail 주입 없음 | |
+| F2 | [B] | default-off runtime guidance | 기본 `ph bootstrap backend` 후 OpenCode 세션 | model-facing runtime injection/system constitution/workflow prompt injection이 기본 off. 주입 부재가 PASS | |
+| F3 | [M] | explicit opt-in runtime guidance | `ph bootstrap backend --runtime-injection-preview` 후 OpenCode 세션 | opt-in에서만 runtime guidance/measurement hook evidence가 관측됨. 없으면 N.A/FAIL 사유 기록 | |
 | F4 | [B] | hook 오류 격리 | hook 내부 오류 유발 | 세션이 죽지 않고 runtime warning으로 격리 | |
 | F5 | [M] | codegraph opt-in no-op | codegraph 바이너리 없는 환경 | 등록 안 함, 오류 없음 (default 미등록 확인) | |
 | F6 | [M] | LSP facade 정직성 | jdtls 없는 환경에서 LSP wrapper | protocol-alive + status-only "unavailable" 보고, 크래시 없음 | |
@@ -115,7 +115,7 @@ fresh package acceptance에서는 F열 전체를 N.A로 기록할 수 있으며,
 | ID | 등급 | 항목 | 실행 | PASS 기준 | 판정 |
 | --- | --- | --- | --- | --- | --- |
 | G1 | [B] | Forbidden Claim 감사 | README + CLI 출력 전수 | "token 절약/품질 보장/full TDD/LSP 효과" 클레임 **0건** | |
-| G2 | [B] | not-proven 유지 | README Project Status | injection-effect-not-proven 명시 유지 | |
+| G2 | [B] | measured-negative 유지 | README Project Status + `docs/current/injection-value-status.json` | accepted 10-pair negative A/B와 `freeze-expansion`/default-off 결정 명시. 효과 claim 없음 | |
 | G3 | [M] | A/B 산출물 boundaries | ab-report/pminus 출력 | no-claim/limitations 문구 포함 | |
 | G4 | [m] | external archive 포인터 | README 또는 metrics 출력 | 아카이브 증거 위치 안내 존재 (현재 알려진 갭 — FAIL 예상) | |
 
@@ -213,7 +213,7 @@ elapsed를 기록하고, phase 합계가 run total과 맞는지 확인한다.
 
 | 순위 | 시나리오 | OFF | ON | 현재 상태 |
 | --- | --- | --- | --- | --- |
-| 1 | **주입 레이어 agent-session A/B** | 플러그인 미설치 | 플러그인 설치(기본 설정) | **미측정 — injection-value 0/3을 채우는 그 측정. 최우선** |
+| 1 | **runtime injection default-off 재측정** | PH 미설치/비활성 | `persona-harness@next` 기본 bootstrap(default-off) | **0.5.0-rc.2 이후 10쌍 재측정 필요. 이전 10쌍은 always-on/old default negative 판정** |
 | 2 | developer MCP bundle | bundle 미등록 | 등록 | docs/search-heavy task에서만 의미 |
 | 3 | compaction | off | on + 장기 세션 | post-trigger telemetry 불안정 → ratio 관측 가능해질 때까지 defer |
 | 4 | codegraph / LSP | 미등록 | 등록 | target tool 실호출이 관측된 run만 해석 대상 |
