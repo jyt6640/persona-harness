@@ -6,15 +6,19 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-## [0.5.0-rc.1] - 2026-07-02
+## [0.4.1-rc.1] - 2026-07-02
 
-- Prepared `0.5.0-rc.1` as the next-channel release candidate after official
+- Prepared `0.4.1-rc.1` as the next-channel release candidate after official
   `0.4.0`. This release candidate packages post-0.4.0 local/current accepted
   surfaces, including instruction inference/adoption/check preview,
   deterministic Spring bootJar and TDD adversarial hardening, A/B evidence
   reporting, and the CodeGraph default downgrade. Publish target is `next`, not
   `latest`; stable `latest` remains `0.4.0` until a future explicit stable
   release decision.
+- Corrected a superseded `0.5.0-rc.1` next-channel attempt back to the `0.4.x`
+  version line. The `0.5.0-rc.1` package should not be treated as an accepted
+  release milestone, QA/External target, or docs evidence record; the channel is
+  expected to be restored by a verified `0.4.1-rc.1` publish.
 
 - Moved the PH CodeGraph wrapper out of the default backend developer MCP
   bundle. `ph bootstrap backend` now registers the remote `grep_app` and

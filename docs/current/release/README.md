@@ -34,10 +34,11 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release-prep target: `0.5.0-rc.1` for npm dist-tag `next`. This prep
+Current release-prep target: `0.4.1-rc.1` for npm dist-tag `next`. This prep
 packages post-0.4.0 local/current accepted surfaces, especially the instruction
-inference/adoption/check preview and the CodeGraph default downgrade. It is not
-published yet; registry `next` remains `0.4.0-rc.10` until publish verification.
+inference/adoption/check preview and the CodeGraph default downgrade. Registry
+`next` briefly moved to a superseded `0.5.0-rc.1` build; that is treated as a
+wrong-channel/version incident to correct, not an accepted release record.
 
 Current stable package: official `0.4.0` is published under `latest` after
 verified `0.4.0-rc.10`. Registry `latest` points at gitHead
@@ -462,7 +463,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0-rc.9 release notes](v0.4.0-rc.9-release-notes.md)
 - [v0.4.0-rc.10 release notes](v0.4.0-rc.10-release-notes.md)
 - [v0.4.0 release notes](v0.4.0-release-notes.md)
-- [v0.5.0-rc.1 release notes](v0.5.0-rc.1-release-notes.md)
+- [v0.4.1-rc.1 release notes](v0.4.1-rc.1-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
