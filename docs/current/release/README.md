@@ -34,18 +34,41 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current stable release prep: `0.5.0`. This prep moves package metadata from
-`0.5.0-rc.2` to `0.5.0` and keeps the gate-first runtime injection downgrade:
-runtime injection, system constitution injection, workflow prompt rail
-injection, and continuation text are default-off;
-`--runtime-injection-preview` is explicit opt-in; `--strict` intentionally opts
-into runtime guidance plus direct verification. It also packages the README
-logo asset at `img/Persona-Harness-Logo.png`.
+Current stable package: official `0.5.0` is published under npm dist-tag
+`latest`. Registry verification confirmed `persona-harness@latest=0.5.0`,
+gitHead `c0f1085a5182cdd17411bd043173aabc9a76b30e`, shasum
+`3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`, and dist-tags
+`latest=0.5.0`, `next=0.5.0-rc.2`, `alpha=0.3.9-alpha.8`. The local and
+remote `v0.5.0` tags point at that gitHead. Trusted Publisher run
+`28611027369` succeeded; Release workflow run `28611144533` succeeded; the
+GitHub release exists as a non-prerelease:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.5.0`.
 
-Pre-publish registry verification for this prep found `persona-harness@0.5.0`
-unpublished, `latest=0.4.0`, `next=0.5.0-rc.2`, and
-`alpha=0.3.9-alpha.8`; no local or remote `v0.5.0` tag exists. Do not publish
-or tag until QA release GO.
+`0.5.0` keeps the gate-first runtime injection downgrade: runtime injection,
+system constitution injection, workflow prompt rail injection, and continuation
+text are default-off; `--runtime-injection-preview` is explicit opt-in;
+`--strict` intentionally opts into runtime guidance plus direct verification.
+It also packages the README logo asset at `img/Persona-Harness-Logo.png`.
+
+External stable registry smoke installed `persona-harness@latest` as `0.5.0`
+and verified package-runtime surfaces. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/v050-stable-registry-smoke-20260702T180404Z`.
+The smoke classified PASS in `RESULT.md`; `summary-final.json` parsed and
+confirmed command exits/surfaces. It observed localized READMEs, the logo,
+`docs/current/release/v0.5.0-release-notes.md`, P-minus paired/status dist
+files, instruction infer/adopt/check dist files, and CodeGraph/LSP wrappers.
+Basic CLI/bootstrap passed. Default bootstrap wrote
+`features.runtimeInjection=false`, `enforce.systemConstitution=false`, and
+`enforce.executeVerification=false`; default developer MCPs were only
+`grep_app`/`context7`; CodeGraph and LSP remained opt-in; no `.codegraph`
+auto-init occurred.
+
+The stable registry smoke also verified `--runtime-injection-preview`,
+`--strict`, CodeGraph/LSP opt-in unavailable facades, P-minus paired consistency
+lowering aggregate-lower/paired-inconsistent evidence to `keep-gathering`,
+instruction infer/adopt/check drift detection after adoption, read-only
+report/status/metrics surfaces, `workflow tdd` exit 0, and incomplete strict
+`workflow finish implement` exit 1.
 
 `0.5.0` also includes the P-minus aggregate-vs-paired interpretation cleanup:
 aggregate-lower provider-token evidence with weak paired consistency remains

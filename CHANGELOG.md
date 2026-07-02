@@ -6,13 +6,46 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-- No unreleased changes after the `0.5.0` release-prep snapshot.
+- Recorded official `0.5.0` post-publish registry smoke facts after QA accepted
+  External registry package-runtime evidence. This docs record is after the
+  `v0.5.0` tag and does not change package code, version, publish, tag, or
+  dist-tags.
 
 ## [0.5.0] - 2026-07-03
 
-- Prepared stable `0.5.0` for the `latest` channel. This is release prep only:
-  npm publish, `latest` movement, and the `v0.5.0` tag remain blocked until QA
-  release GO and registry gitHead/shasum verification.
+- Published stable `0.5.0` to the `latest` channel after QA release GO. Trusted
+  Publisher run `28611027369` succeeded from gitHead
+  `c0f1085a5182cdd17411bd043173aabc9a76b30e`; registry shasum is
+  `3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`, with dist-tags
+  `latest=0.5.0`, `next=0.5.0-rc.2`, and `alpha=0.3.9-alpha.8`. The
+  `v0.5.0` local and remote tags point at that gitHead, Release workflow run
+  `28611144533` succeeded, and the GitHub release exists as a non-prerelease:
+  `https://github.com/jyt6640/persona-harness/releases/tag/v0.5.0`.
+- External registry smoke PASS archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/v050-stable-registry-smoke-20260702T180404Z`.
+  `RESULT.md` classified the smoke as PASS, and `summary-final.json` parsed and
+  confirmed command exits/surfaces.
+- The stable registry smoke installed `persona-harness@latest=0.5.0` and
+  observed package entries for localized READMEs, the logo,
+  `docs/current/release/v0.5.0-release-notes.md`, P-minus paired/status dist
+  files, instruction infer/adopt/check dist files, and CodeGraph/LSP wrappers.
+  Basic CLI/bootstrap passed.
+- Default bootstrap is gate-first/default-off:
+  `features.runtimeInjection=false`, `enforce.systemConstitution=false`,
+  `enforce.executeVerification=false`; default developer MCPs are only
+  `grep_app`/`context7`; CodeGraph and LSP are not default, and no `.codegraph`
+  auto-init occurs. `--runtime-injection-preview` enables runtime injection
+  only, while `--strict` intentionally enables runtime injection, system
+  constitution, and execute verification.
+- CodeGraph/LSP opt-in facades passed without token-saving, default, or
+  effectiveness claims. Evidence surfaces passed, including P-minus paired
+  consistency where aggregate-lower/paired-inconsistent evidence lowers to
+  `keep-gathering` and `aggregate-lower-but-paired-inconsistent`; report,
+  status, and metrics surfaces remained read-only.
+- Instruction preview passed: infer/adopt/check surfaces worked, an adopted
+  Controller→Repository rule detected drift, and no harness config or closure
+  mutation occurred. Workflow spot checks passed: `workflow tdd` exited 0, and
+  incomplete strict `workflow finish implement` exited 1.
 - Bumped package metadata from `0.5.0-rc.2` to `0.5.0`.
 - Kept the product center gate-first: workflow/check/finish/archive gates,
   PH-generated evidence, deterministic blockers, read-only evidence reports,
@@ -28,7 +61,9 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 - Preserved claim boundaries: no token-saving/provider-token-saving,
   product-efficacy/navigation-benefit, app-quality/full-TDD/test-sufficiency,
   CodeGraph/LSP default/effectiveness, broad reliability, closure guarantee,
-  Codex/code-nav replacement, or automatic downgrade/removal claim.
+  Codex/code-nav replacement, generated-app certification, or automatic
+  downgrade/removal claim. The stable smoke is registry package-runtime
+  evidence only.
 
 - Accepted `ebcd42b35d5bda61d3f1a79193611953bfcb1afb`
   (`fix(cli): add pminus paired consistency`) as a narrow pminus
