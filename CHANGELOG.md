@@ -6,6 +6,53 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Accepted the gate-first runtime injection downgrade as local/current tarball
+  package-runtime evidence only for
+  `e377d18d4de40e6bd81e5c67130da603c89c8950`
+  (`fix(runtime): default runtime injection off`), version `0.4.1-rc.2`.
+  Registry remained unchanged at `latest=0.4.0`, `next=0.4.1-rc.2`, and
+  `alpha=0.3.9-alpha.8`; no version, publish, tag, or latest action occurred.
+  External archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/gate-first-runtime-injection-e377d18-20260702T082934Z`.
+  - Tarball shasum: `350cb8dfb922abe181ba76fdf52a7b18adcf53cb`;
+    sha256:
+    `33ec654574285af253bed991cd40eaae892532ff421f7fb124298d76d284ae7a`;
+    entryCount `522`; integrity:
+    `sha512-GfDASfIm2wV509H7Q4J6myhZFFXo8HNcu4ngPaY8tbYjCZTwCY7s13VaVJ+jLGdGVtpdt0byYtNuUjs/X9vm4g==`.
+  - Package entries were present for `dist/cli/bootstrap.js`,
+    `dist/config/harness-config.js`, `dist/runtime/hooks.js`,
+    `dist/runtime/system-constitution.js`, `dist/cli/evidence-summary.js`, and
+    `dist/cli/workflow-tdd-status.js`.
+  - `ph --help` and `ph version` exited 0.
+  - Default bootstrap wrote `features.runtimeInjection=false`,
+    `enforce.systemConstitution=false`, and `enforce.executeVerification=false`;
+    output kept gate/workflow scope and no generated-app quality certification
+    boundary.
+  - `--runtime-injection-preview` wrote `features.runtimeInjection=true` while
+    keeping `enforce.systemConstitution=false` and
+    `enforce.executeVerification=false`; output said opt-in only, gate-first
+    CLI/evidence remains default, the accepted 10-pair A/B was worse for
+    runtime injection, and no token-saving/product-efficacy claim is made.
+  - `--strict` wrote `features.runtimeInjection=true`,
+    `enforce.systemConstitution=true`, and `enforce.executeVerification=true`;
+    output included no generated-app product-quality certification or closure
+    guarantee.
+  - Gate/evidence spot smoke passed: `workflow check` exited 0/WARN in an
+    incomplete fixture, `workflow finish implement` exited 1 as expected for a
+    strict incomplete finish gate, `workflow tdd` exited 0, and
+    `evidence metrics --json` exited 0 with schema `evidence-metrics.1`.
+  - Packaged README/status boundary check passed with gate-first wording and
+    narrow 10-pair negative A/B status; no disallowed guarantee wording.
+  - Smoke artifacts were confined to `/tmp` and the archive.
+  This remains local/current tarball package-runtime evidence only, not
+  registry evidence, token-saving/provider-token saving, product
+  efficacy/navigation benefit, app-quality/full-TDD/test-sufficiency,
+  CodeGraph/LSP default/effectiveness, broad reliability, closure guarantee,
+  Codex/code-nav replacement, or automatic downgrade/removal evidence beyond
+  read-only P-minus support. An unrelated untracked
+  `img/Persona-Harness-Logo.png` observed during External/QA was left untouched
+  and is not package-runtime behavior.
+
 - Added GitHub Release body automation for tag releases. The tag workflow now
   checks `docs/current/release/v<version>-release-notes.md`, generates
   `github-release-notes.md` from that repo release note, appends automation
