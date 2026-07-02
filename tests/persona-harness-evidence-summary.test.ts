@@ -335,6 +335,91 @@ describe("ph evidence summary", () => {
     expect(report.limitations.join("\n")).toContain("does not delete, downgrade, or mutate")
   })
 
+  it("keeps gathering when aggregate provider tokens are lower but paired evidence is inconsistent", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona", "evidence", "ab", "paired"), { recursive: true })
+    const baselineTotals = [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 100000]
+    const candidateTotals = [100, 100, 100, 1100, 1100, 1100, 1100, 1100, 1100, 100001]
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "ab", "paired", "measurement.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: "persona-ab-measurement.1",
+          scenarioId: "runtime-injection-clean-exit",
+          scenarioLabel: "Runtime injection clean-exit",
+          surface: { id: "ph-runtime-injection", label: "PH runtime injection", defaultState: "off" },
+          conditions: [
+            {
+              id: "ph-off",
+              label: "PH OFF",
+              runs: baselineTotals.map((total, index) => ({
+                id: `pair-${index + 1}-off`,
+                finishStatus: "pass",
+                providerTokens: { total },
+              })),
+            },
+            {
+              id: "ph-on",
+              label: "PH ON",
+              runs: candidateTotals.map((total, index) => ({
+                id: `pair-${index + 1}-on`,
+                finishStatus: "pass",
+                providerTokens: { total },
+              })),
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const reportResult = runPersonaCli(["evidence", "pminus-report", "--json"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const textResult = runPersonaCli(["evidence", "pminus-report"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const statusResult = runPersonaCli(["evidence", "pminus-status", "--json"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const report = JSON.parse(reportResult.stdout)
+    const status = JSON.parse(statusResult.stdout)
+
+    expect(reportResult.status).toBe(0)
+    expect(textResult.status).toBe(0)
+    expect(statusResult.status).toBe(0)
+    expect(report.scenarios[0]).toMatchObject({
+      id: "runtime-injection-clean-exit",
+      outcome: "improved",
+      surfaceDecisionHint: "keep-gathering",
+      pairedConsistency: {
+        metrics: {
+          providerTokenTotal: {
+            aggregateDirection: "lower",
+            candidateHigher: 7,
+            candidateLower: 3,
+            interpretation: "aggregate-lower-but-paired-inconsistent",
+            signTestPValue: 0.34375,
+            tied: 0,
+            totalComparable: 10,
+          },
+        },
+      },
+    })
+    expect(report.scenarios[0].reason).toContain("paired evidence is inconsistent")
+    expect(textResult.stdout).toContain("paired provider tokens")
+    expect(textResult.stdout).toContain("interpretation aggregate-lower-but-paired-inconsistent")
+    expect(textResult.stdout).toContain("decision hint: keep-gathering")
+    expect(status.surfaces[0]).toMatchObject({
+      latestDecisionHints: ["keep-gathering"],
+      recommendedNextAction: "keep gathering",
+      surfaceDecisionHints: { "keep-gathering": 1 },
+    })
+  })
+
   it("prints human P-minus decision support without writing files", () => {
     const projectDir = createTempProject()
 

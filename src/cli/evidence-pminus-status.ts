@@ -15,6 +15,7 @@ type OutcomeCount = {
 type DecisionHintCount = {
   readonly downgrade: number
   readonly keep: number
+  readonly "keep-gathering": number
   readonly "keep-opt-in": number
   readonly "no-claim": number
   readonly "remove-candidate": number
@@ -81,6 +82,7 @@ function emptyDecisionHintCount(): MutableDecisionHintCount {
   return {
     downgrade: 0,
     keep: 0,
+    "keep-gathering": 0,
     "keep-opt-in": 0,
     "no-claim": 0,
     "remove-candidate": 0,

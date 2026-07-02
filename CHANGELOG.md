@@ -6,6 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Tightened `ph evidence pminus-report` / `ph evidence pminus-status`
+  interpretation so aggregate provider-token means are reported alongside
+  paired consistency. `pminus-report` now emits per-metric paired
+  lower/higher/tied counts and sign-test p-values, and aggregate-lower but
+  paired-inconsistent evidence lowers the decision hint to `keep-gathering`
+  instead of treating aggregate mean alone as `keep`. This is decision support
+  only, with no token-saving, provider-token saving, product-efficacy, or
+  automatic downgrade/removal claim.
 - Accepted registry `0.5.0-rc.2` default-off PH ON clean-exit calibrated A/B
   as PASS for evidence integrity and PARTIAL for efficacy/statistical
   interpretation. QA accepted archive
@@ -53,12 +61,13 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
     residual was assigned to unknown; injection/context was not zero-filled as
     a product-impact claim. With runtime injection disabled, this supports only
     the default-off config assertion, not an injection effect claim.
-  - P-minus output was read-only decision support for this calibrated fixture:
-    `pminus-report` reported scenario `improved` with decision hint `keep`
-    because aggregate candidate provider-token total was lower; `pminus-status`
-    surface `ph-runtime-injection` recommended `keep gathering`. This is not
-    automatic config mutation, removal, downgrade, product efficacy, or
-    token-saving evidence.
+  - P-minus output is read-only decision support for this calibrated fixture:
+    `pminus-report` classifies the scenario as `improved` descriptively because
+    aggregate candidate provider-token total is lower, but paired evidence is
+    inconsistent (ON lower in 3/10, sign-test `p=0.34375`), so the decision hint
+    is `keep-gathering`; `pminus-status` surface `ph-runtime-injection`
+    recommends `keep gathering`. This is not automatic config mutation,
+    removal, downgrade, product efficacy, or token-saving evidence.
   Final interpretation: PASS for clean-exit/calibrated evidence integrity,
   PARTIAL for efficacy/statistical interpretation, and scoped tiny-fixture
   evidence only. This is not a token-saving/provider-token saving,

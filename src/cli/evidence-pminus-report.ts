@@ -1,5 +1,8 @@
 import type { EvidenceAbReport } from "./evidence-ab-report.js"
 import { readEvidenceAbReport } from "./evidence-ab-report.js"
+export { formatEvidencePminusReport } from "./evidence-pminus-format.js"
+import type { PairedConsistencyReport, PairedMetricComparison } from "./evidence-pminus-paired.js"
+import { pairedConsistencyReport } from "./evidence-pminus-paired.js"
 
 type EvidencePminusOptions = {
   readonly projectDir?: string
@@ -10,7 +13,13 @@ type AbCondition = AbScenario["conditions"][number]
 type NumberMetric = AbCondition["metrics"]["elapsedMs"]
 
 type MetricDirection = "higher" | "lower" | "same" | "unavailable"
-type PminusDecisionHint = "downgrade" | "keep" | "keep-opt-in" | "no-claim" | "remove-candidate"
+export type PminusDecisionHint =
+  | "downgrade"
+  | "keep"
+  | "keep-gathering"
+  | "keep-opt-in"
+  | "no-claim"
+  | "remove-candidate"
 type PminusOutcome = "improved" | "inconclusive" | "no-improvement" | "worse"
 type TelemetryAvailability = "available" | "missing" | "partial"
 
@@ -22,6 +31,7 @@ export type EvidencePminusScenarioReport = {
   readonly killCriterion: string
   readonly label: string
   readonly outcome: PminusOutcome
+  readonly pairedConsistency: PairedConsistencyReport
   readonly reason: string
   readonly surface: AbScenario["surface"]
   readonly surfaceDecisionHint: PminusDecisionHint
@@ -46,7 +56,7 @@ export type EvidencePminusReport = {
   readonly unreadableFiles: readonly string[]
 }
 
-const KILL_CRITERION =
+export const KILL_CRITERION =
   "Kill criteria are decision support only: repeated matched scenarios with worse or no-improvement should trigger keep-opt-in, downgrade, or remove review; this command does not delete, downgrade, or mutate configuration."
 
 function conditionRolePattern(role: "baseline" | "candidate"): RegExp {
@@ -89,16 +99,39 @@ function metricDirection(left: NumberMetric, right: NumberMetric): MetricDirecti
   return "same"
 }
 
-function outcomeFromProviderTokens(left: NumberMetric, right: NumberMetric): {
+function pairedProviderPhrase(comparison: PairedMetricComparison): string {
+  const signTest = comparison.signTestPValue === null ? "n/a" : comparison.signTestPValue.toFixed(5)
+  return `paired candidate-lower ${comparison.candidateLower}/${comparison.totalComparable}, higher ${comparison.candidateHigher}, tied ${comparison.tied}, sign-test p ${signTest}`
+}
+
+function outcomeFromProviderTokens(left: NumberMetric, right: NumberMetric, pairedProviderTokens: PairedMetricComparison): {
   readonly outcome: PminusOutcome
   readonly reason: string
 } | undefined {
   const direction = metricDirection(left, right)
   if (direction === "lower") {
-    return { outcome: "improved", reason: "Candidate condition has lower measured provider-token total in this scenario." }
+    if (pairedProviderTokens.interpretation === "aggregate-lower-but-paired-inconsistent") {
+      return {
+        outcome: "improved",
+        reason: `Candidate condition has lower aggregate measured provider-token total, but paired evidence is inconsistent (${pairedProviderPhrase(pairedProviderTokens)}).`,
+      }
+    }
+    return {
+      outcome: "improved",
+      reason: `Candidate condition has lower measured provider-token total in this scenario (${pairedProviderPhrase(pairedProviderTokens)}).`,
+    }
   }
   if (direction === "higher") {
-    return { outcome: "worse", reason: "Candidate condition has higher measured provider-token total in this scenario." }
+    if (pairedProviderTokens.interpretation === "aggregate-higher-but-paired-inconsistent") {
+      return {
+        outcome: "worse",
+        reason: `Candidate condition has higher aggregate measured provider-token total, but paired evidence is inconsistent (${pairedProviderPhrase(pairedProviderTokens)}).`,
+      }
+    }
+    return {
+      outcome: "worse",
+      reason: `Candidate condition has higher measured provider-token total in this scenario (${pairedProviderPhrase(pairedProviderTokens)}).`,
+    }
   }
   if (direction === "same") {
     return { outcome: "no-improvement", reason: "Candidate condition has the same measured provider-token total." }
@@ -138,8 +171,15 @@ function secondaryOutcome(directions: readonly MetricDirection[]): {
   }
 }
 
-function decisionHint(outcome: PminusOutcome, surface: AbScenario["surface"]): PminusDecisionHint {
+function decisionHint(
+  outcome: PminusOutcome,
+  surface: AbScenario["surface"],
+  pairedProviderTokens: PairedMetricComparison,
+): PminusDecisionHint {
   if (outcome === "improved") {
+    if (pairedProviderTokens.interpretation === "aggregate-lower-but-paired-inconsistent") {
+      return "keep-gathering"
+    }
     return "keep"
   }
   if (outcome === "no-improvement") {
@@ -162,6 +202,56 @@ function classifyScenario(scenario: AbScenario): EvidencePminusScenarioReport {
       killCriterion: KILL_CRITERION,
       label: scenario.label,
       outcome: "inconclusive",
+      pairedConsistency: {
+        metrics: {
+          elapsedMs: {
+            aggregateDirection: "unavailable",
+            candidateHigher: 0,
+            candidateLower: 0,
+            interpretation: "unavailable",
+            signTestPValue: null,
+            tied: 0,
+            totalComparable: 0,
+          },
+          mcpCalls: {
+            aggregateDirection: "unavailable",
+            candidateHigher: 0,
+            candidateLower: 0,
+            interpretation: "unavailable",
+            signTestPValue: null,
+            tied: 0,
+            totalComparable: 0,
+          },
+          providerTokenTotal: {
+            aggregateDirection: "unavailable",
+            candidateHigher: 0,
+            candidateLower: 0,
+            interpretation: "unavailable",
+            signTestPValue: null,
+            tied: 0,
+            totalComparable: 0,
+          },
+          readChars: {
+            aggregateDirection: "unavailable",
+            candidateHigher: 0,
+            candidateLower: 0,
+            interpretation: "unavailable",
+            signTestPValue: null,
+            tied: 0,
+            totalComparable: 0,
+          },
+          toolCalls: {
+            aggregateDirection: "unavailable",
+            candidateHigher: 0,
+            candidateLower: 0,
+            interpretation: "unavailable",
+            signTestPValue: null,
+            tied: 0,
+            totalComparable: 0,
+          },
+        },
+        primaryMetric: "providerTokenTotal",
+      },
       reason: "Need at least two matched conditions before comparing a surface.",
       surface: scenario.surface,
       surfaceDecisionHint: "no-claim",
@@ -177,6 +267,7 @@ function classifyScenario(scenario: AbScenario): EvidencePminusScenarioReport {
     }
   }
 
+  const pairedConsistency = pairedConsistencyReport(baseline, candidate)
   const secondaryMetrics = {
     elapsedMs: metricDirection(baseline.metrics.elapsedMs, candidate.metrics.elapsedMs),
     mcpCalls: metricDirection(baseline.metrics.mcpCalls, candidate.metrics.mcpCalls),
@@ -186,7 +277,11 @@ function classifyScenario(scenario: AbScenario): EvidencePminusScenarioReport {
   const providerTokens = telemetryAvailability(baseline.metrics.providerTokenTotal, candidate.metrics.providerTokenTotal)
   const providerOutcome =
     providerTokens === "available"
-      ? outcomeFromProviderTokens(baseline.metrics.providerTokenTotal, candidate.metrics.providerTokenTotal)
+      ? outcomeFromProviderTokens(
+          baseline.metrics.providerTokenTotal,
+          candidate.metrics.providerTokenTotal,
+          pairedConsistency.metrics.providerTokenTotal,
+        )
       : undefined
   const classification =
     candidate.blockedInvalidCompletion > baseline.blockedInvalidCompletion
@@ -203,9 +298,10 @@ function classifyScenario(scenario: AbScenario): EvidencePminusScenarioReport {
     killCriterion: KILL_CRITERION,
     label: scenario.label,
     outcome: classification.outcome,
+    pairedConsistency,
     reason: classification.reason,
     surface: scenario.surface,
-    surfaceDecisionHint: decisionHint(classification.outcome, scenario.surface),
+    surfaceDecisionHint: decisionHint(classification.outcome, scenario.surface, pairedConsistency.metrics.providerTokenTotal),
     telemetry: {
       providerTokens,
       secondaryMetrics,
@@ -221,6 +317,7 @@ export function readEvidencePminusReport(options: EvidencePminusOptions = {}): E
     limitations: [
       "P-minus reports are read-only decision support; this command writes no files and does not delete, downgrade, or mutate configuration.",
       "Outcomes are local evidence classifications, not token-saving, product-efficacy, navigation-benefit, or quality claims.",
+      "Aggregate mean deltas and paired consistency can diverge; paired inconsistency lowers decision hints to keep-gathering/no-claim style review.",
       "Missing provider-token telemetry is reported as missing; non-provider metrics are secondary evidence only.",
     ],
     projectDir: abReport.projectDir,
@@ -228,40 +325,4 @@ export function readEvidencePminusReport(options: EvidencePminusOptions = {}): E
     schemaVersion: "evidence-pminus-report.1",
     unreadableFiles: abReport.unreadableFiles,
   }
-}
-
-export function formatEvidencePminusReport(report: EvidencePminusReport): string {
-  const lines = [
-    "# Persona P-minus Evidence Report",
-    "",
-    `Project: \`${report.projectDir}\``,
-    `Evidence directory: \`${report.evidenceDir}\``,
-    `Evidence files scanned: ${report.filesScanned}`,
-    `Unreadable evidence files: ${report.unreadableFiles.length}`,
-    "",
-    "## Surface Decisions",
-    "",
-  ]
-  if (report.scenarios.length === 0) {
-    lines.push("- none")
-    lines.push("", `- ${KILL_CRITERION}`)
-  }
-  for (const scenario of report.scenarios) {
-    lines.push(`### ${scenario.label}`, "")
-    lines.push(`- id: ${scenario.id}`)
-    lines.push(
-      `- surface: ${scenario.surface.label} (${scenario.surface.id}, default-state ${scenario.surface.defaultState})`,
-    )
-    lines.push(`- compared: ${scenario.baselineCondition ?? "unknown"} -> ${scenario.candidateCondition ?? "unknown"}`)
-    lines.push(`- outcome: ${scenario.outcome}`)
-    lines.push(`- decision hint: ${scenario.surfaceDecisionHint}`)
-    lines.push(`- provider-token telemetry: ${scenario.telemetry.providerTokens}`)
-    lines.push(`- reason: ${scenario.reason}`)
-    lines.push(`- ${scenario.killCriterion}`)
-    lines.push("")
-  }
-  lines.push("## Limitations", "")
-  lines.push(...report.limitations.map((limitation) => `- ${limitation}`))
-  lines.push("")
-  return lines.join("\n")
 }
