@@ -1,71 +1,93 @@
+<!-- <CENTERED SECTION FOR GITHUB DISPLAY> -->
+
+<div align="center">
+
 # Persona Harness
 
-Persona Harness is a local CLI and OpenCode workflow rail for Java/Spring backend projects.
+**A completion gate for AI coding agents building Java/Spring backends.**
 
-It helps an AI coding agent:
-
-- turn a project idea or README into implementation tickets;
-- follow a repeatable backend workflow;
-- run verification through bounded commands;
-- leave local evidence of what it read, ran, and finished;
-- block completion when required reports or evidence are missing.
-
-Persona Harness is not a code-quality guarantee, token-saving product, broad linter, or proof that generated apps are production-ready.
+[![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
+[![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
+[![node](https://img.shields.io/badge/node-%3E%3D20-c4f042?labelColor=black&style=flat-square)](https://nodejs.org)
+[![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](./LICENSE)
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
+
+</div>
+
+<!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
+
+> AI agents love to say "Done!" — Persona Harness makes them prove it. It is a local CLI and OpenCode workflow rail that blocks completion claims until required reports, PH-generated evidence, and real test results exist on disk.
+
+> [!IMPORTANT]
+> **Project status: alpha experiment.**
+> The injection effect has been measured and is **not proven**. The ON/OFF eval program is stopped; see [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json) for the frozen aggregate and stopping rationale.
+> What PH *does* claim — and has evidence for — is narrower: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
+
+## Measured Behavior
+
+Unlike most agent-harness projects, PH publishes what it has actually measured — including negatives.
+
+| Scenario | Result | Evidence |
+| :--- | :--- | :--- |
+| **Forged TDD evidence** — a hand-written `red-forged.json` planted before `workflow finish` | `finish` exits **1**; forged file ignored | P0 real-Gradle run archive |
+| **Green-only completion** (tests + implementation together, no red-first) — 5 repetitions each | TDD OFF: allowed **5/5** · TDD ON: blocked **5/5** | P1 completion-integrity A/B |
+| **Compile error passed off as "red"** | `workflow test` exits **1**, no evidence written | P0 real-Gradle run archive |
+| Injection layer token/quality effect | **not proven** — reported as-is | frozen eval status |
+
+These are completion-integrity measurements on bounded local fixtures. They are *not* token-saving, app-quality, or product-efficacy claims.
+
+## TL;DR
+
+> Q. What is it?
+
+A workflow rail + evidence system + completion guard for Java/Spring backend work done by AI agents, shipped as a local CLI (`ph`) and an OpenCode plugin.
+
+> Q. What does it actually do?
+
+- turns a project idea or README into implementation tickets;
+- keeps the agent on a repeatable backend workflow;
+- runs verification through bounded commands;
+- records local evidence of what was read, run, and finished;
+- **blocks completion when required reports or evidence are missing.**
+
+> Q. Does it guarantee code quality, save tokens, or replace a linter?
+
+No. It is not a code-quality guarantee, token-saving product, broad linter, or proof that generated apps are production-ready. Every claim broader than the completion gate must be earned by measurement first — that rule is part of the project.
 
 ## Install
 
 Requirements:
 
-- Node.js 20+
-- npm
-- Java 21+
-- Gradle
+- Node.js 20+, npm
+- Java 21+, Gradle
 - OpenCode CLI with a configured model/provider
 
-Install OpenCode:
-
 ```bash
-curl -fsSL https://opencode.ai/install | bash
-# or
-npm install -g opencode-ai
-```
-
-Connect a provider:
-
-```bash
+# OpenCode
+curl -fsSL https://opencode.ai/install | bash   # or: npm install -g opencode-ai
 opencode auth login
-opencode auth list
-```
 
-Install the current preview package in a project:
-
-```bash
+# Persona Harness (preview channel)
 npm install -D persona-harness@next
 npx ph --help
 npx ph init
 npx ph doctor
 ```
 
-Use the stable channel if you need the older stable package:
+Use `persona-harness@latest` if you need the older stable package.
+
+## Quick Start — Java/Spring Backend
+
+Use a clean project directory (not the Persona Harness repository itself).
 
 ```bash
-npm install -D persona-harness@latest
-```
-
-## Start A Java/Spring Backend Project
-
-Use a clean project directory. Do not do your first smoke test inside the Persona Harness repository itself.
-
-```bash
-mkdir -p /tmp/persona-harness-demo
-cd /tmp/persona-harness-demo
+mkdir -p /tmp/persona-harness-demo && cd /tmp/persona-harness-demo
 npm init -y
 npm install -D persona-harness@next
 ```
 
-Create a short `README.md` that describes the app and constraints:
+Create a short `README.md` describing the app and constraints:
 
 ```bash
 cat > README.md <<'EOF'
@@ -74,27 +96,21 @@ cat > README.md <<'EOF'
 Build a Java 21 Spring Boot REST API with Gradle.
 
 ## Requirements
-
 - Users can create todos.
 - Users can list todos.
 - Users can mark a todo completed.
 - Missing todos return an appropriate error response.
 
 ## Technical Constraints
-
-- Java 21
-- Spring Boot 3
-- Gradle only
-- REST API only
+- Java 21, Spring Boot 3, Gradle only, REST API only
 - Start with in-memory persistence if needed.
 - Controllers delegate to application services.
-- Repository interfaces live in domain.
-- Repository implementations live in infrastructure.
+- Repository interfaces live in domain; implementations in infrastructure.
 - Application services must not own storage state or id sequences.
 EOF
 ```
 
-Initialize Persona Harness:
+Initialize:
 
 ```bash
 npx ph init
@@ -102,47 +118,15 @@ npx ph bootstrap backend
 npx ph workflow check
 ```
 
-`ph init` creates only the minimal integration files:
+`ph init` creates only minimal integration files (`.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore` entries). `ph bootstrap backend` prepares the full backend workflow: `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlays, an accepted plan, report templates, and OpenCode configuration.
 
-- `.persona/harness.jsonc`
-- `.persona/conventions/`
-- `.persona/rules/`
-- `.opencode/opencode.json`
-- `.gitignore` entries
-
-`ph bootstrap backend` prepares the backend workflow for AI implementation:
-
-- `AGENTS.md`
-- `.persona/project-profile.jsonc`
-- policy overlay files
-- an accepted `.persona/workflow/plan.md`
-- implementation and review report templates
-- OpenCode configuration
-
-## Ask The Agent To Implement
-
-In OpenCode, keep the prompt short:
-
-```bash
-opencode run --dir . \
-  --model <provider/model> \
-  --dangerously-skip-permissions \
-  "Read README.md and implement it."
-```
-
-Or open the TUI:
-
-```bash
-opencode
-```
-
-Then type:
+Then ask the agent, in OpenCode, with a short prompt:
 
 ```text
 Read README.md and implement it.
 ```
 
-The agent should run the Persona Harness rail itself, including:
+The agent should run the rail itself:
 
 ```text
 npx ph workflow implement
@@ -152,11 +136,12 @@ npx ph plan --report-filled review
 npx ph workflow finish implement
 ```
 
-If `workflow finish` fails, the agent should fix the reported blocker before claiming completion.
+> [!NOTE]
+> If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. That failure is the product working, not a bug.
 
 ## Start From An Idea Instead Of A README
 
-If you only have an idea, tell the agent the idea:
+Tell the agent the idea:
 
 ```text
 I want to build a todo web service.
@@ -168,19 +153,7 @@ The agent should draft requirements first, not start coding:
 npx ph workflow draft --stdin
 ```
 
-Review the generated files:
-
-- `.persona/workflow/requirements/backlog.md`
-- `.persona/workflow/requirements/questions.md`
-- `.persona/workflow/requirements/assumptions.md`
-
-If the draft is right, tell the agent:
-
-```text
-Proceed.
-```
-
-The agent should then run:
+Review `.persona/workflow/requirements/` (`backlog.md`, `questions.md`, `assumptions.md`), then say `Proceed.` The agent runs:
 
 ```text
 npx ph workflow approve requirements
@@ -191,104 +164,19 @@ npx ph workflow implement
 
 ## Work With Multiple Tickets
 
-For long requirements, split them into tickets:
-
 ```bash
 npx ph workflow split README.md
 npx ph workflow next
-```
-
-After a ticket is implemented and reviewed:
-
-```bash
+# ... implement & review ...
 npx ph workflow archive <ticket-id>
 npx ph workflow next
 ```
 
-The workflow ledger lives under `.persona/workflow/`:
+The workflow ledger lives under `.persona/workflow/`: active work in `work/`, completed history in `history/`, requirement sources in `requirements/`.
 
-- active work: `.persona/workflow/work/`
-- completed ticket history: `.persona/workflow/history/`
-- requirement sources: `.persona/workflow/requirements/`
+## TDD Rail (opt-in)
 
-## Useful Commands
-
-Setup:
-
-```bash
-npx ph init
-npx ph bootstrap backend
-npx ph doctor
-```
-
-Workflow:
-
-```bash
-npx ph workflow check
-npx ph workflow implement
-npx ph workflow finish implement
-npx ph workflow archive <ticket-id>
-```
-
-Bounded command execution:
-
-```bash
-npx ph bearshell --shell 'gradle test'
-npx ph bearshell --shell 'gradle build'
-```
-
-Evidence and reports:
-
-```bash
-npx ph evidence summary
-npx ph evidence metrics --json
-npx ph evidence ab-report --json
-npx ph evidence pminus-report --json
-npx ph review backend-shape
-```
-
-Preview/local-current builds may also include:
-
-```bash
-npx ph evidence pminus-status --json
-```
-
-Explicit local A/B evidence recording:
-
-```bash
-npx ph evidence ab-run \
-  --scenario demo \
-  --condition baseline \
-  -- ./gradlew test
-```
-
-## Optional Integrations
-
-The default backend bootstrap registers the remote developer MCP tools `grep_app` and `context7`.
-
-CodeGraph is opt-in:
-
-```bash
-npx ph bootstrap backend --codegraph-preview
-```
-
-LSP is opt-in:
-
-```bash
-npx ph bootstrap backend --lsp-preview
-```
-
-Both wrappers are preview surfaces. If required external tools are missing, they should report an unavailable status rather than fake successful results.
-
-Disable developer MCP registration:
-
-```bash
-npx ph bootstrap backend --no-developer-mcp
-```
-
-## TDD Rail
-
-The TDD rail is opt-in. It only runs when both settings are enabled:
+Enable both settings:
 
 ```json
 {
@@ -299,35 +187,68 @@ The TDD rail is opt-in. It only runs when both settings are enabled:
 }
 ```
 
-When enabled, `ph workflow test` records red evidence only from PH-run Gradle/JUnit failures. Later `workflow check`, `workflow archive`, or `workflow finish` can record green evidence for the same ticket/test id.
+When enabled, `ph workflow test` records red evidence **only from PH-run Gradle/JUnit failures** — agent-reported evidence is never accepted. Later `workflow check` / `archive` / `finish` record green evidence for the same ticket/test id.
 
-This is a red-first completion gate. It does not scaffold tests, prove test sufficiency, run coverage, run mutation testing, or certify application quality.
+This is a red-first completion gate. It does not scaffold tests, prove test sufficiency, run coverage or mutation testing, or certify application quality.
+
+## Useful Commands
+
+```bash
+# Setup
+npx ph init && npx ph bootstrap backend && npx ph doctor
+
+# Workflow
+npx ph workflow check
+npx ph workflow implement
+npx ph workflow finish implement
+npx ph workflow archive <ticket-id>
+
+# Bounded command execution
+npx ph bearshell --shell 'gradle test'
+
+# Evidence and reports
+npx ph evidence summary
+npx ph evidence metrics --json
+npx ph evidence ab-report --json
+npx ph evidence pminus-report --json
+npx ph review backend-shape
+
+# Explicit local A/B evidence recording
+npx ph evidence ab-run --scenario demo --condition baseline -- ./gradlew test
+```
+
+Preview/local-current builds may also include `npx ph evidence pminus-status --json`.
+
+## Optional Integrations
+
+The default backend bootstrap registers the remote developer MCP tools `grep_app` and `context7`.
+
+```bash
+npx ph bootstrap backend --codegraph-preview   # CodeGraph, opt-in
+npx ph bootstrap backend --lsp-preview         # LSP, opt-in
+npx ph bootstrap backend --no-developer-mcp    # disable developer MCP
+```
+
+> [!NOTE]
+> Both wrappers are preview surfaces. If required external tools are missing, they report an **unavailable** status instead of faking successful results.
 
 ## What Evidence Means
 
-`.persona/evidence` stores local traces such as file reads, injected workflow context, command activity, TDD records, and A/B measurements.
+`.persona/evidence` stores local traces: file reads, injected workflow context, command activity, TDD records, and A/B measurements.
 
-Evidence answers: "Did the agent see and follow the expected rail?"
+Evidence answers one question: **"Did the agent see and follow the expected rail?"**
 
-Evidence does not prove:
-
-- generated app quality;
-- token savings;
-- product efficacy;
-- full TDD coverage;
-- broad reliability;
-- successful closure in all cases.
+Evidence does **not** prove: generated app quality, token savings, product efficacy, full TDD coverage, broad reliability, or successful closure in all cases.
 
 ## Recommended Backend Shape
 
 Persona Harness steers Java/Spring projects toward:
 
 - Gradle-first Java/Spring backend;
-- `presentation`, `application`, `domain`, `infrastructure`, and `global` package boundaries;
+- `presentation` / `application` / `domain` / `infrastructure` / `global` package boundaries;
 - controllers delegating to application services;
 - application services orchestrating use cases without owning storage state or id sequences;
-- repository interfaces in `domain`;
-- repository implementations in `infrastructure`;
+- repository interfaces in `domain`, implementations in `infrastructure`;
 - domain objects with behavior;
 - explicit request/response DTO boundaries.
 
@@ -335,23 +256,12 @@ These are steering targets and review cues, not quality guarantees.
 
 ## Troubleshooting
 
-Check installed versions:
-
 ```bash
 npm view persona-harness dist-tags --json
-npm view persona-harness@latest version
-npm view persona-harness@next version
-```
-
-If `opencode` is missing:
-
-```bash
-curl -fsSL https://opencode.ai/install | bash
 opencode --version
-opencode auth login
 ```
 
-If `ph workflow check` reports warnings, inspect the listed blockers. Before implementation, warnings about template reports are normal. After implementation, common blockers are missing evidence, unfilled reports, or verification that was not run through the expected rail.
+If `ph workflow check` reports warnings, inspect the listed blockers. Before implementation, template-report warnings are normal. After implementation, common blockers are missing evidence, unfilled reports, or verification that bypassed the rail.
 
 If the agent ignores the workflow, paste a stricter prompt:
 
@@ -375,7 +285,8 @@ If finish fails, do not claim completion. Fix the reported blocker first.
 - frontend, infrastructure, or desktop workflow productization;
 - a complete workflow without OpenCode.
 
-`ph bearshell` is not a sandbox. It limits runtime and output size, but commands still run on your machine.
+> [!WARNING]
+> `ph bearshell` is not a sandbox. It limits runtime and output size, but commands still run on your machine.
 
 ## Docs
 
