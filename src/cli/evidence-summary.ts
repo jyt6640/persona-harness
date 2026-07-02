@@ -7,6 +7,7 @@ import type { CliRunResult } from "./bearshell.js"
 import { evidenceAbRunUsage, runEvidenceAbRunCommand } from "./evidence-ab-run.js"
 import { formatEvidenceAbReport, readEvidenceAbReport } from "./evidence-ab-report.js"
 import { formatEvidencePminusReport, readEvidencePminusReport } from "./evidence-pminus-report.js"
+import { formatEvidencePminusStatus, readEvidencePminusStatus } from "./evidence-pminus-status.js"
 
 type EvidenceOptions = {
   readonly env?: Readonly<Record<string, string | undefined>>
@@ -562,9 +563,18 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
       return { status: 0, stdout: formatEvidencePminusReport(report), stderr: "" }
     }
   }
+  if ((args.length === 1 || args.length === 2) && args[0] === "pminus-status") {
+    const report = readEvidencePminusStatus(options)
+    if (args.length === 2 && args[1] === "--json") {
+      return { status: 0, stdout: `${JSON.stringify(report, null, 2)}\n`, stderr: "" }
+    }
+    if (args.length === 1) {
+      return { status: 0, stdout: formatEvidencePminusStatus(report), stderr: "" }
+    }
+  }
   return {
     status: 1,
     stdout: "",
-    stderr: `Usage: ${invocationName} evidence <summary|metrics [--json]|ab-report [--json]|pminus-report [--json]|ab-run ...>\n`,
+    stderr: `Usage: ${invocationName} evidence <summary|metrics [--json]|ab-report [--json]|pminus-report [--json]|pminus-status [--json]|ab-run ...>\n`,
   }
 }

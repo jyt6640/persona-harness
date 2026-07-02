@@ -210,8 +210,9 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 - `ph workflow finish implement`: workflow report/evidence가 준비되기 전 완료 보고 차단
 - `ph workflow guard implement/final`: workflow rail이 재사용하는 저수준 strict gate
 - `ph doctor`: OpenCode와 Persona Harness 연동 상태 진단
-- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph evidence metrics [--json]`, `ph evidence ab-report [--json]`, `ph evidence pminus-report [--json]`, `ph review backend-shape`: report-only 검증/피드백/집계 surface
+- `ph smoke`, `ph feedback`, `ph evidence summary`, `ph evidence metrics [--json]`, `ph evidence ab-report [--json]`, `ph evidence pminus-report [--json]`, `ph evidence pminus-status [--json]`, `ph review backend-shape`: report-only 검증/피드백/집계 surface
 - `ph evidence ab-run`: 명시적으로 실행한 local A/B condition을 `.persona/evidence/ab/` 아래 `persona-ab-measurement.1` evidence로 기록. 이 기록은 `ab-report`와 `pminus-report`가 읽으며, 자동 downgrade/removal이나 product-efficacy 증명이 아님
+- `ph evidence pminus-status [--json]`: local A/B scenario를 surface/tool별로 집계하는 읽기 전용 P-minus status. harness config 변경, 자동 downgrade/removal, product-efficacy 증명이 아님
 - OpenCode injection: 관련 파일을 읽을 때 Java/Spring backend workflow/guidance context 주입
 
 ## evidence의 의미

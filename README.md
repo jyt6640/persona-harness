@@ -356,6 +356,7 @@ npx ph evidence summary
 npx ph evidence metrics --json
 npx ph evidence ab-report --json
 npx ph evidence pminus-report --json
+npx ph evidence pminus-status --json
 npx ph review backend-shape
 ```
 
@@ -371,6 +372,9 @@ For a healthy alpha smoke, look for:
   `npx ph evidence pminus-report --json` read local structured A/B evidence
   only; they are decision-support surfaces, not automatic downgrade/removal or
   product-efficacy proof
+- `npx ph evidence pminus-status --json` summarizes local P-minus outcomes by
+  surface/tool; it is read-only decision support and does not mutate harness
+  config or remove/downgrade surfaces
 - `npx ph review backend-shape` is mostly PASS or all PASS
 - `gradle test` passed
 - `gradle build` passed
@@ -424,6 +428,8 @@ These commands are intentionally visible so AI agents can call them from OpenCod
   `persona-ab-measurement.1` evidence.
 - `ph evidence pminus-report [--json]`: read-only P-minus decision support for
   local A/B evidence; no automatic downgrade/removal.
+- `ph evidence pminus-status [--json]`: read-only surface-level P-minus status
+  across local A/B scenarios; no automatic downgrade/removal.
 - `ph evidence ab-run`: explicit local A/B evidence writer under
   `.persona/evidence/ab/`; generated records feed `ab-report` and
   `pminus-report`.
