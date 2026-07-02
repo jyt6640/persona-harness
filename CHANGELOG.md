@@ -24,6 +24,50 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   token-saving/product-efficacy claim, app-quality/full-TDD claim,
   generated-app certification, or automatic completion claim. No version,
   publish, tag, or latest movement occurred.
+- Accepted a deterministic ralph-loop blocker/completion A/B probe as
+  blocker-reduction feasibility evidence only. Archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-blocker-ab-30-20260702T183856Z`.
+  Product repo HEAD was `b2ba08be6338aead4fcad50466bbefdf01a120f5`,
+  clean/aligned; the probe made no product code/docs changes and no version,
+  publish, tag, latest, or dist-tag movement.
+  - QA verified `RESULT.md` PASS, `summary.json` schema
+    `ralph-loop-blocker-ab.1`, parsed `ab-report.json`,
+    `pminus-report.json`, and `pminus-status.json` schemas, 60
+    `persona-ab-measurement.1` records under the report workspace, raw run
+    artifacts, `command-log.ndjson`, and 174 JSON files with 0 parse failures.
+  - Design: evidence-only deterministic n=30 paired probe with 60 condition
+    runs and no model/provider sessions. OFF observed blocked finish and
+    stopped. ON observed blocked finish, ran `ph workflow ralph-loop --json`,
+    used the prompt preview / first blocker / next action for one bounded
+    scripted continuation attempt, then rechecked.
+  - Probe cap was 1; product dry-run metadata remains `maxAttempts=3`.
+    There was no autonomous loop, no model prompt sending, and no runaway retry
+    path.
+  - Metrics: early completion was blocked in OFF 30/30 and ON 30/30; final
+    finish pass was OFF 0/30 and ON 10/30. OFF mean blockers stayed
+    `2.3333 -> 2.3333` with delta 0. ON mean blockers moved
+    `2.3333 -> 1.0`, mean delta `1.3333`, median `1`. ON reduced blocker
+    count in 30/30; OFF changed blocker count in 0/30. ON continuation applied
+    30/30; OFF continuation applied 0/30. Retry cap hits/runaway retries were
+    OFF 0/0 and ON 0/0.
+  - Fixture detail: `review-report` ON reached finish pass 10/10;
+    `verify-app` and `implementation-report` ON reduced blockers but did not
+    finish under the single scripted attempt.
+  - P-minus/report limitation: `pminus-report` outcome remained
+    `inconclusive`, hint `no-claim`, provider telemetry missing;
+    `pminus-status` surface `ralph-loop` recommended `no-claim`. Current
+    `persona-ab-measurement.1` / P-minus schema lacks native blocker-count
+    metrics, so blocker deltas live in `summary.json` and must not be inferred
+    as provider-token, product-efficacy, or model-session evidence.
+  Recommended next work: add native blocker-count / closure-outcome metrics to
+  A/B evidence and reporting before expecting P-minus/status to classify
+  ralph-loop value directly. Any bounded non-dry-run preview remains separate,
+  default-off, and retry-capped, and should wait until blocker metrics and kill
+  criteria are first-class. This probe is not autonomous loop proof,
+  model-session efficacy, a success/reliability/closure guarantee,
+  token-saving/product-efficacy evidence, app-quality/full-TDD evidence,
+  generated-app certification, automatic completion, or automatic
+  downgrade/removal evidence.
 - Recorded official `0.5.0` post-publish registry smoke facts after QA accepted
   External registry package-runtime evidence. This docs record is after the
   `v0.5.0` tag and does not change package code, version, publish, tag, or
