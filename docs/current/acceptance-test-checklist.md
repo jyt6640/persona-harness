@@ -144,6 +144,7 @@ fresh package acceptance에서는 F열 전체를 N.A로 기록할 수 있으며,
 | I3 | [M] | compaction opt-in 동작 | `enforce.compaction` on + ratio 유발 가능 시 | 트리거 시 cooldown이 persist되고 중복 트리거 없음. ratio 관측 불가 환경이면 N.A로 기록 (FAIL 아님) | |
 | I4 | [M] | ab-run 토큰 필드 | `ph evidence ab-run` (providerTokens 제공/미제공 각 1회) | 제공 시 기록, 미제공 시 `null`로 정직 기록 (추정치 fabricate 없음) | |
 | I5 | [B] | 절약 클레임 부재 | README/CLI/evidence 출력 전수 | "token saving/절약" 단정 문구 0건 (G1과 중복 확인) | |
+| I6 | [M] | 단계별 토큰 breakdown | agent-session A/B 1쌍 이상 + phase 라벨/타임라인 | setup/bootstrap, injection/context, exploration, edit, verification, report/finish, unknown 버킷별 provider token/read/tool/elapsed 집계. phase 라벨이 없으면 `unknown`으로 정직 보고하고 0-fill 금지. 합계가 run total과 reconcile됨 | |
 
 ## 인수 판정 기준
 
@@ -193,6 +194,12 @@ README.md, 동일 시작 커밋, 동일 task prompt를 사용한다. README나 t
 closure success는 claim하지 않는다. token/provider telemetry는 계측 검증과
 별도 A/B 분석의 입력일 뿐이다. missing telemetry는 0으로 치지 말고 missing으로
 기록한다.
+
+토큰 분석은 총량만 기록하지 말고 단계별로 나눈다. 최소 phase taxonomy는
+setup/bootstrap, injection/context, exploration, edit, verification,
+report/finish, unknown이다. phase를 자동 판별할 수 없으면 추정하지 말고
+unknown에 넣는다. 각 phase별 provider token, read chars, tool calls, MCP calls,
+elapsed를 기록하고, phase 합계가 run total과 맞는지 확인한다.
 ```
 
 ---
@@ -220,8 +227,20 @@ closure success는 claim하지 않는다. token/provider telemetry는 계측 검
    input/output/reasoning/cacheRead/total, read chars, tool calls, MCP calls,
    elapsed, success/failure. provider 토큰은 telemetry JSON
    (`.persona/evidence/token-usage/`)에서 가져와 결합한다.
-3. 집계는 `ph evidence ab-report --json` → `ph evidence pminus-report`.
-4. 해석 규칙:
+3. 각 run을 단계별로 분해한다. 최소 phase taxonomy:
+   * `setup/bootstrap`: 설치, 초기화, bootstrap, 환경 준비
+   * `injection/context`: PH 규칙/지침/context 주입 및 session 시작 오버헤드
+   * `exploration`: 파일 읽기, 검색, 코드 이해
+   * `edit`: 실제 코드/문서 변경
+   * `verification`: 테스트, typecheck, build, smoke
+   * `report/finish`: evidence/report/archive/finish/요약
+   * `unknown`: 로그만으로 phase를 확정할 수 없는 비용
+4. phase별 provider token, read chars, tool calls, MCP calls, elapsed를 기록하고
+   phase 합계가 run total과 맞는지 확인한다. phase를 확정할 수 없는 비용은
+   0으로 숨기지 말고 `unknown`에 넣는다. "어디가 많이 먹는지"는 총량 해석과
+   별도 표로 남긴다.
+5. 집계는 `ph evidence ab-report --json` → `ph evidence pminus-report`.
+6. 해석 규칙:
    * success rate이 다르면 토큰 비교 무효 (실패한 run은 싸다).
    * cacheRead가 총량의 대부분인 워크로드에서는 평균이 아니라 **p95와
      variance**를 본다. 5회에서 variance가 크면 반복을 늘린다.
@@ -229,10 +248,14 @@ closure success는 claim하지 않는다. token/provider telemetry는 계측 검
      기록한다. 표본이 작으면 "underpowered"로 표시하고 claim하지 않는다.
    * target tool(코드그래프/LSP/MCP)이 한 번도 호출 안 된 run은 그
      시나리오의 증거가 아니다 — "등록됐지만 미사용"으로 분류.
-5. 결과 처리:
+7. 결과 처리:
    * 개선 관측 → scoped claim ("fixture X, N회, ON이 total -Y%, 동일 성공률").
    * 무개선/악화 → pminus-report의 keep-opt-in/downgrade/remove-candidate
      판정에 반영. **이것도 성공한 측정이다.**
+   * 단계별 breakdown에서 특정 phase가 지배적이면 claim이 아니라 다음 작업
+     후보로 기록한다. 예: `injection/context` 지배 → 주입 축소 후보,
+     `exploration` 지배 → 검색/읽기 전략 후보, `verification` 지배 → 테스트
+     matrix 분리 후보.
 
 ### J.3 예상에 대한 정직한 메모
 
