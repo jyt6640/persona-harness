@@ -17,7 +17,7 @@ function writeOptInHarnessConfig(): void {
   mkdirSync(join(fixtureWorkspace, ".persona"), { recursive: true })
   writeFileSync(
     join(fixtureWorkspace, ".persona", "harness.jsonc"),
-    `${JSON.stringify({ enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+    `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
   )
 }
 

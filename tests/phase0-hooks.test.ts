@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import type { Part, UserMessage } from "@opencode-ai/sdk"
@@ -83,9 +83,10 @@ function modelInputWithText(sessionID: string, text: string): TransformMessagesO
 
 function writeOptInHarnessConfig(projectDir: string): void {
   mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  cpSync(join(process.cwd(), ".persona", "rules"), join(projectDir, ".persona", "rules"), { recursive: true })
   writeFileSync(
     join(projectDir, ".persona", "harness.jsonc"),
-    `${JSON.stringify({ enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+    `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
   )
 }
 
@@ -130,8 +131,26 @@ function selectedRulePaths(
 }
 
 describe("Phase 0 OpenCode hook feasibility", () => {
+  it("does not inject target-file guidance by default", async () => {
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-default-off"
+    const targetFile = fixturePath("ReservationController.java")
+
+    await hooks["tool.execute.before"]?.(
+      { tool: "edit", sessionID, callID: "call-1" },
+      { args: { filePath: targetFile } },
+    )
+
+    const output = modelInput(sessionID)
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(firstText(output)).toBe("예약 생성 API 추가해줘.")
+    expect(evidencePayloads(fixtureWorkspace)).toEqual([])
+  })
+
   it("captures a Controller target file and injects the block into the next model input", async () => {
-    const hooks = createPhase0Hooks()
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-controller"
     const targetFile = fixturePath("ReservationController.java")
 
@@ -463,7 +482,8 @@ describe("Phase 0 OpenCode hook feasibility", () => {
   })
 
   it("selects a service-specific injection block for Service files", async () => {
-    const hooks = createPhase0Hooks()
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-service"
     const targetFile = fixturePath("ReservationService.java")
 
@@ -489,7 +509,8 @@ describe("Phase 0 OpenCode hook feasibility", () => {
   })
 
   it("selects an entity-specific injection block for Entity files", async () => {
-    const hooks = createPhase0Hooks()
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-entity"
     const targetFile = fixturePath("ReservationEntity.java")
 
@@ -507,7 +528,8 @@ describe("Phase 0 OpenCode hook feasibility", () => {
   })
 
   it("appends the injection block to read tool output so the same model turn can see it", async () => {
-    const hooks = createPhase0Hooks()
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-tool-output"
     const targetFile = fixturePath("ReservationController.java")
     const output = { title: "read", output: "class ReservationController {}", metadata: {} }

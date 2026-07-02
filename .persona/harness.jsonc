@@ -6,9 +6,12 @@
     "controller.repository-dependency": "block",
     "controller.persistence-import": "warn"
   },
+  "features": {
+    "runtimeInjection": false
+  },
   "enforce": {
     "executeVerification": false,
-    "systemConstitution": true,
+    "systemConstitution": false,
     "writeDeny": false,
     "idleContinuation": false
   },

@@ -77,8 +77,22 @@ afterEach(() => {
 })
 
 describe("Phase 0 system constitution hook", () => {
-  it("injects the PH system constitution once by default", async () => {
+  it("does not inject the PH system constitution by default", async () => {
     const projectDir = createProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const output = { system: ["Existing host system prompt."] }
+
+    await hooks["experimental.chat.system.transform"]?.({ model: testModel() }, output)
+
+    expect(output.system).toEqual(["Existing host system prompt."])
+  })
+
+  it("injects the PH system constitution once when runtime injection is explicitly enabled", async () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, {
+      features: { runtimeInjection: true },
+      enforce: { systemConstitution: true },
+    })
     const hooks = createPhase0Hooks({ projectDir })
     const output = { system: ["Existing host system prompt."] }
 
@@ -96,7 +110,10 @@ describe("Phase 0 system constitution hook", () => {
 
   it("does not inject when systemConstitution is disabled", async () => {
     const projectDir = createProject()
-    writeHarnessConfig(projectDir, { enforce: { systemConstitution: false } })
+    writeHarnessConfig(projectDir, {
+      features: { runtimeInjection: true },
+      enforce: { systemConstitution: false },
+    })
     const hooks = createPhase0Hooks({ projectDir })
     const output = { system: ["Existing host system prompt."] }
 
@@ -107,6 +124,10 @@ describe("Phase 0 system constitution hook", () => {
 
   it("does not duplicate an existing PH constitution marker", async () => {
     const projectDir = createProject()
+    writeHarnessConfig(projectDir, {
+      features: { runtimeInjection: true },
+      enforce: { systemConstitution: true },
+    })
     const hooks = createPhase0Hooks({ projectDir })
     const output = { system: [`${SYSTEM_CONSTITUTION_MARKER}\nexisting`] }
 

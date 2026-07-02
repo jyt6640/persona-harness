@@ -17,11 +17,11 @@
 
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-> AI agents love to say "Done!" — Persona Harness makes them prove it. It is a local CLI and OpenCode workflow rail that blocks completion claims until required reports, PH-generated evidence, and real test results exist on disk.
+> AI agents love to say "Done!" — Persona Harness makes them prove it. It is a local CLI completion gate that blocks completion claims until required reports, PH-generated evidence, and real test results exist on disk. OpenCode runtime guidance is optional preview behavior, not the product center.
 
 > [!IMPORTANT]
 > **Project status: alpha experiment.**
-> The injection effect has been measured and is **not proven**. The ON/OFF eval program is stopped; see [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json) for the frozen aggregate and stopping rationale.
+> The runtime injection effect has been measured and is **negative in the accepted 10-pair local-current OpenCode fixture set**. See [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json). Runtime guidance is therefore default-off and opt-in only; this is a scoped measurement, not a universal product-efficacy claim.
 > What PH *does* claim — and has evidence for — is narrower: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
 
 ## Measured Behavior
@@ -33,7 +33,7 @@ Unlike most agent-harness projects, PH publishes what it has actually measured �
 | **Forged TDD evidence** — a hand-written `red-forged.json` planted before `workflow finish` | `finish` exits **1**; forged file ignored | P0 real-Gradle run archive |
 | **Green-only completion** (tests + implementation together, no red-first) — 5 repetitions each | TDD OFF: allowed **5/5** · TDD ON: blocked **5/5** | P1 completion-integrity A/B |
 | **Compile error passed off as "red"** | `workflow test` exits **1**, no evidence written | P0 real-Gradle run archive |
-| Injection layer token/quality effect | **not proven** — reported as-is | frozen eval status |
+| Runtime injection PH OFF/ON app-generation — 10 paired OpenCode runs | PH ON succeeded **10/10**, PH OFF succeeded **10/10**, but PH ON increased provider-token total, read chars, tool calls, and elapsed time in all 10 pairs | accepted local-current A/B archive |
 
 These are completion-integrity measurements on bounded local fixtures. They are *not* token-saving, app-quality, or product-efficacy claims.
 
@@ -41,7 +41,7 @@ These are completion-integrity measurements on bounded local fixtures. They are 
 
 > Q. What is it?
 
-A workflow rail + evidence system + completion guard for Java/Spring backend work done by AI agents, shipped as a local CLI (`ph`) and an OpenCode plugin.
+A workflow/evidence CLI + completion guard for Java/Spring backend work done by AI agents. It ships as a local CLI (`ph`) with an OpenCode plugin for optional runtime guidance and measurement hooks.
 
 > Q. What does it actually do?
 
@@ -118,7 +118,7 @@ npx ph bootstrap backend
 npx ph workflow check
 ```
 
-`ph init` creates only minimal integration files (`.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore` entries). `ph bootstrap backend` prepares the full backend workflow: `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlays, an accepted plan, report templates, and OpenCode configuration.
+`ph init` creates only minimal integration files (`.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore` entries). `ph bootstrap backend` prepares the full backend workflow: `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlays, an accepted plan, report templates, and OpenCode configuration. Fresh setup is gate-first: model-facing runtime guidance is off unless explicitly enabled.
 
 Then ask the agent, in OpenCode, with a short prompt:
 
@@ -226,6 +226,7 @@ The default backend bootstrap registers the remote developer MCP tools `grep_app
 ```bash
 npx ph bootstrap backend --codegraph-preview   # CodeGraph, opt-in
 npx ph bootstrap backend --lsp-preview         # LSP, opt-in
+npx ph bootstrap backend --runtime-injection-preview  # optional model-facing PH guidance
 npx ph bootstrap backend --no-developer-mcp    # disable developer MCP
 ```
 
@@ -234,7 +235,7 @@ npx ph bootstrap backend --no-developer-mcp    # disable developer MCP
 
 ## What Evidence Means
 
-`.persona/evidence` stores local traces: file reads, injected workflow context, command activity, TDD records, and A/B measurements.
+`.persona/evidence` stores local traces: file reads, optional injected workflow context, command activity, TDD records, and A/B measurements.
 
 Evidence answers one question: **"Did the agent see and follow the expected rail?"**
 

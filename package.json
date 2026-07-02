@@ -3,7 +3,7 @@
   "version": "0.4.1-rc.2",
   "private": false,
   "type": "module",
-  "description": "OpenCode plugin for Java/Spring backend Clean Code guidance injection and local/tarball Persona Harness verification.",
+  "description": "Gate-first CLI for Java/Spring backend workflow evidence, completion checks, and optional OpenCode runtime guidance.",
   "main": "dist/index.js",
   "bin": {
     "persona-harness": "dist/cli/index.js",

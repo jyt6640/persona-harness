@@ -7,7 +7,7 @@ import { enableCodeNavMcpPreview } from "./bootstrap-code-nav.js"
 import { enableDeveloperMcpBundle } from "./bootstrap-codegraph.js"
 import { enableLspMcpPreview } from "./bootstrap-lsp.js"
 import { enableMultiAgentPreview } from "./bootstrap-multi-agent.js"
-import { enableStrictClosureVerification } from "./bootstrap-strict.js"
+import { enableRuntimeInjectionPreview, enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
 import { initializePersonaHarness } from "./init.js"
 import { runIntakeCommand } from "./intake.js"
@@ -31,6 +31,7 @@ type BackendBootstrapFlags = {
   readonly force: boolean
   readonly lspPreview: boolean
   readonly multiAgentPreview: boolean
+  readonly runtimeInjectionPreview: boolean
   readonly strict: boolean
 }
 
@@ -52,9 +53,19 @@ function strictModeSummaryLines(): readonly string[] {
   return [
     "Strict mode:",
     "- sets enforce.executeVerification: true, so PH runs the project verification command during closure/finish; expect toolchain command cost",
-    "- sets enforce.systemConstitution: true, so PH finish/intent guard prose is injected into the system prompt where supported",
+    "- sets features.runtimeInjection: true and enforce.systemConstitution: true, so optional PH finish/intent guard prose is injected where supported",
     "- does not enable enforce.writeDeny or enforce.idleContinuation; those stay explicit opt-ins",
     "- still no generated app product-quality certification or closure guarantee",
+  ]
+}
+
+function runtimeInjectionPreviewSummaryLines(): readonly string[] {
+  return [
+    "Runtime injection preview:",
+    "- opt-in only via --runtime-injection-preview or --strict; default init/bootstrap keeps PH as gate-first CLI/evidence tooling",
+    "- enables model-facing PH guidance such as target-file injection, workflow prompt rails, continuation text, and system constitution where supported",
+    "- measured 10-pair OpenCode A/B was worse for runtime injection on the bounded fixture set; keep this as guidance preview, not a token-saving or product-efficacy claim",
+    "- closure/check/archive/finish gates remain authoritative whether runtime injection is on or off",
   ]
 }
 
@@ -109,7 +120,7 @@ function developerMcpSummaryLines(flags: Pick<BackendBootstrapFlags, "codeGraphE
 
 export function bootstrapUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--lsp-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]`,
+    `Usage: ${invocation} bootstrap backend [--force] [--strict] [--runtime-injection-preview] [--multi-agent-preview] [--code-nav-preview] [--lsp-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]`,
     "",
     "Prepares the backend Persona Harness workflow for AI implementation.",
     "",
@@ -132,6 +143,8 @@ export function bootstrapUsage(invocation = "ph"): string {
     "- no frontend/infra workflow",
     "",
     ...strictModeSummaryLines(),
+    "",
+    ...runtimeInjectionPreviewSummaryLines(),
     "",
     ...multiAgentPreviewSummaryLines(),
     "",
@@ -159,6 +172,7 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
   let codeGraphPreview = false
   let developerMcpEnabled = true
   let lspPreview = false
+  let runtimeInjectionPreview = false
   for (const arg of args.slice(1)) {
     if (arg === "--force") {
       force = true
@@ -166,6 +180,10 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
     }
     if (arg === "--strict") {
       strict = true
+      continue
+    }
+    if (arg === "--runtime-injection-preview") {
+      runtimeInjectionPreview = true
       continue
     }
     if (arg === "--multi-agent-preview") {
@@ -199,7 +217,18 @@ function parseBootstrapArgs(args: readonly string[]): ParsedBootstrapArgs {
     return { kind: "invalid", message: `Unknown option: ${arg}` }
   }
 
-  return { kind: "backend", codeGraphEnabled, codeGraphPreview, codeNavPreview, developerMcpEnabled, force, lspPreview, multiAgentPreview, strict }
+  return {
+    kind: "backend",
+    codeGraphEnabled,
+    codeGraphPreview,
+    codeNavPreview,
+    developerMcpEnabled,
+    force,
+    lspPreview,
+    multiAgentPreview,
+    runtimeInjectionPreview,
+    strict,
+  }
 }
 
 function projectDirFor(options: BootstrapOptions): string {
@@ -295,6 +324,14 @@ function runBackendBootstrap(
     actions.push("enabled strict closure verification")
   }
 
+  if (flags.runtimeInjectionPreview && !flags.strict) {
+    const injectionFailure = enableRuntimeInjectionPreview(projectDir)
+    if (injectionFailure !== undefined) {
+      return injectionFailure
+    }
+    actions.push("enabled runtime injection preview")
+  }
+
   if (flags.multiAgentPreview) {
     const previewFailure = enableMultiAgentPreview(projectDir, loadHarnessConfig(projectDir).multiAgent)
     if (previewFailure !== undefined) {
@@ -383,6 +420,7 @@ function runBackendBootstrap(
       ...(skipped.length > 0 ? skipped.map((item) => `- ${item}`) : ["- none"]),
       "",
       ...(flags.strict ? [...strictModeSummaryLines(), ""] : []),
+      ...(flags.runtimeInjectionPreview && !flags.strict ? [...runtimeInjectionPreviewSummaryLines(), ""] : []),
       ...(flags.multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
       ...(flags.codeNavPreview ? [...codeNavPreviewSummaryLines(), ""] : []),
       ...(flags.lspPreview ? [...lspPreviewSummaryLines(), ""] : []),

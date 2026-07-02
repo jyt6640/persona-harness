@@ -13,6 +13,7 @@ export type HarnessConfig = {
   readonly enabled: boolean
   readonly rulesDir: string
   readonly evidenceDir: string
+  readonly features: HarnessFeaturesConfig
   readonly enforce: HarnessEnforceConfig
   readonly telemetry: HarnessTelemetryConfig
   readonly multiAgent: HarnessMultiAgentConfig
@@ -20,6 +21,10 @@ export type HarnessConfig = {
   readonly evidenceMode: "metadata_only"
   readonly enabledDomains: readonly string[]
   readonly scenario: Phase0Scenario
+}
+
+export type HarnessFeaturesConfig = {
+  readonly runtimeInjection: boolean
 }
 
 export type HarnessEnforceConfig = {
@@ -75,6 +80,9 @@ const DEFAULT_CONFIG: HarnessConfig = {
   enabled: true,
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",
+  features: {
+    runtimeInjection: false,
+  },
   enforce: {
     compaction: {
       cooldownMs: 600_000,
@@ -83,7 +91,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
     },
     executeVerification: false,
     idleContinuation: false,
-    systemConstitution: true,
+    systemConstitution: false,
     tdd: false,
     writeDeny: false,
   },
@@ -144,6 +152,15 @@ function readEnforceConfig(value: unknown): HarnessEnforceConfig {
     systemConstitution: readBoolean(value.systemConstitution, DEFAULT_CONFIG.enforce.systemConstitution),
     tdd: readBoolean(value.tdd, DEFAULT_CONFIG.enforce.tdd),
     writeDeny: readBoolean(value.writeDeny, DEFAULT_CONFIG.enforce.writeDeny),
+  }
+}
+
+function readFeaturesConfig(value: unknown): HarnessFeaturesConfig {
+  if (!isRecord(value)) {
+    return DEFAULT_CONFIG.features
+  }
+  return {
+    runtimeInjection: readBoolean(value.runtimeInjection, DEFAULT_CONFIG.features.runtimeInjection),
   }
 }
 
@@ -230,6 +247,10 @@ export function loadHarnessConfig(projectDir: string): HarnessConfig {
   return loadHarnessConfigResult(projectDir).config
 }
 
+export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
+  return config.enabled && config.features.runtimeInjection
+}
+
 export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadResult {
   const harnessPath = join(projectDir, ".persona", "harness.jsonc")
   if (!existsSync(harnessPath)) {
@@ -274,6 +295,7 @@ export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadRe
       enabled: readBoolean(parsed.enabled, DEFAULT_CONFIG.enabled),
       rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
       evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
+      features: readFeaturesConfig(parsed.features),
       enforce: readEnforceConfig(parsed.enforce),
       telemetry: readTelemetryConfig(parsed.telemetry),
       multiAgent: readMultiAgentConfig(parsed.multiAgent),

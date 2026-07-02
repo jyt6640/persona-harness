@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -9,9 +9,16 @@ import type { TransformMessagesOutput } from "../src/runtime/types.js"
 
 const tempProjects: string[] = []
 
-function createTempProject(): string {
+function createTempProject(options: { readonly runtimeInjection?: boolean } = {}): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-role-discovery-"))
   tempProjects.push(projectDir)
+  if (options.runtimeInjection !== false) {
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "harness.jsonc"),
+      `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+    )
+  }
   return projectDir
 }
 
@@ -72,7 +79,7 @@ afterEach(() => {
 
 describe("Phase 0 Java role discovery", () => {
   it("ignores installed persona-harness Java fixtures during direct target capture", async () => {
-    const projectDir = createTempProject()
+    const projectDir = createTempProject({ runtimeInjection: false })
     const hooks = createPhase0Hooks({ projectDir })
     const sessionID = "installed-fixture-direct-session"
     const installedFixture =

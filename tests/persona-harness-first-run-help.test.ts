@@ -56,14 +56,17 @@ describe("first-run command help", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain(
-      "Usage: ph bootstrap backend [--force] [--strict] [--multi-agent-preview] [--code-nav-preview] [--lsp-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]",
+      "Usage: ph bootstrap backend [--force] [--strict] [--runtime-injection-preview] [--multi-agent-preview] [--code-nav-preview] [--lsp-preview] [--codegraph-preview] [--no-codegraph] [--no-developer-mcp]",
     )
     expect(result.stdout).toContain("Strict mode:")
     expect(result.stdout).toContain("sets enforce.executeVerification: true")
     expect(result.stdout).toContain("expect toolchain command cost")
-    expect(result.stdout).toContain("sets enforce.systemConstitution: true")
+    expect(result.stdout).toContain("sets features.runtimeInjection: true and enforce.systemConstitution: true")
     expect(result.stdout).toContain("does not enable enforce.writeDeny or enforce.idleContinuation")
     expect(result.stdout).toContain("no generated app product-quality certification or closure guarantee")
+    expect(result.stdout).toContain("Runtime injection preview:")
+    expect(result.stdout).toContain("default init/bootstrap keeps PH as gate-first CLI/evidence tooling")
+    expect(result.stdout).toContain("measured 10-pair OpenCode A/B was worse")
     expect(result.stdout).toContain("Multi-agent relay preview:")
     expect(result.stdout).toContain("opt-in only via --multi-agent-preview")
     expect(result.stdout).toContain("does not dispatch native subtasks")

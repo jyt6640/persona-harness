@@ -188,6 +188,10 @@ describe("Phase 0 bootstrap injection", () => {
 
   it("records bootstrap fileRole evidence when README injection reaches model input", async () => {
     const projectDir = createTempProject()
+    writeFileSync(
+      join(projectDir, ".persona", "harness.jsonc"),
+      `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+    )
     writeFileSync(join(projectDir, "README.md"), "# Coupon API\n")
     writeFileSync(
       join(projectDir, ".persona", "project-profile.jsonc"),

@@ -3,7 +3,7 @@ import type { Hooks } from "@opencode-ai/plugin"
 import { writePhase0Evidence } from "./evidence.js"
 import { ContinuationTracker } from "./continuation.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
-import { loadHarnessConfig } from "../config/harness-config.js"
+import { isRuntimeInjectionEnabled, loadHarnessConfig } from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
 import { IdleContinuationTracker } from "./idle-continuation.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
@@ -104,6 +104,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const continuation = new ContinuationTracker()
   const projectDir = options.projectDir ?? process.cwd()
   const config = loadHarnessConfig(projectDir)
+  const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
   const tokenTelemetry = new TokenTelemetryRecorder(projectDir)
   const tokenCompaction = new TokenCompactionTracker({
@@ -119,7 +120,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     callID: string | undefined,
     args: Record<string, unknown>,
   ): ReturnType<typeof createInjectionBlock> | undefined {
-    if (!config.enabled) {
+    if (!runtimeInjectionEnabled) {
       return undefined
     }
 
@@ -152,7 +153,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   }
 
   function captureJavaRoleDiscovery(input: ToolAfterInput, output: ToolAfterOutput): void {
-    if (!config.enabled || typeof output.output !== "string" || !config.enabledDomains.includes("backend")) {
+    if (!runtimeInjectionEnabled || typeof output.output !== "string" || !config.enabledDomains.includes("backend")) {
       return
     }
 
@@ -272,9 +273,11 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           return
         }
 
-        maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance)
+        if (runtimeInjectionEnabled) {
+          maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance)
+        }
 
-        const injection = store.take(sessionId)
+        const injection = runtimeInjectionEnabled ? store.take(sessionId) : undefined
         if (!injection) {
           return
         }
@@ -298,7 +301,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         if (config.enabled && config.telemetry.tokenUsage) {
           tokenTelemetry.rememberModelLimit(input.sessionID, input.model)
         }
-        injectSystemConstitution(output, config)
+        if (runtimeInjectionEnabled) {
+          injectSystemConstitution(output, config)
+        }
       })
     },
 
@@ -307,6 +312,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       output: TextCompleteOutput,
     ): Promise<void> => {
       runHostHook("experimental.text.complete", () => {
+        if (!runtimeInjectionEnabled) {
+          return
+        }
         const block = continuation.completeText(projectDir, input.sessionID, output.text)
         if (block === undefined || output.text.includes("[Persona Harness Continuation]")) {
           return

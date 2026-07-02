@@ -1,10 +1,61 @@
 {
-  "requiredPairs": 3,
-  "currentPairs": 0,
+  "requiredPairs": 10,
+  "currentPairs": 10,
   "onPositive": 0,
   "neutralOrMixed": 0,
-  "offPositive": 0,
-  "countBasis": "not-measured-evidence",
+  "offPositive": 10,
+  "countBasis": "measured-evidence",
+  "acceptedMeasurement": {
+    "label": "local-current-acceptance-ab-20260702",
+    "archivePath": "/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/local-current-acceptance-ab-20260702-20260702-153213",
+    "head": "1563a25ca5bbddcaf3d63e7f5e7e73d61b9b718d",
+    "packageVersion": "0.4.1-rc.2",
+    "acceptanceChecklist": {
+      "pass": 49,
+      "notApplicable": 5,
+      "fail": 0
+    },
+    "pairedOpenCodeSessions": {
+      "pairs": 10,
+      "totalSessions": 20,
+      "pairControls": [
+        "same README inside each pair",
+        "same task prompt inside each pair",
+        "same starting state inside each pair",
+        "counterbalanced OFF/ON order"
+      ],
+      "offSuccess": "10/10",
+      "onSuccess": "10/10",
+      "allProviderTokenTotalDeltasFavoredOff": true,
+      "allReadCharDeltasFavoredOff": true,
+      "allToolCallDeltasFavoredOff": true,
+      "allElapsedDeltasFavoredOff": true,
+      "meanProviderTotal": {
+        "off": 119320.7,
+        "on": 712935.8
+      },
+      "meanReadChars": {
+        "off": 1152.7,
+        "on": 20650
+      },
+      "meanToolCalls": {
+        "off": 15.4,
+        "on": 38.9
+      },
+      "meanElapsedMs": {
+        "off": 51261.7,
+        "on": 152525.5
+      }
+    },
+    "pminus": {
+      "surface": "ph-runtime-injection",
+      "outcome": "worse",
+      "decisionHint": "remove-candidate",
+      "automaticRemoval": false
+    },
+    "scope": "bounded local-current OpenCode app-generation fixture set",
+    "claimBoundary": "This is not a universal token-saving, provider-token-saving, product-efficacy, navigation-benefit, or generated-app-quality claim."
+  },
   "legacySelfRatedCounts": {
     "currentPairs": 3,
     "onPositive": 3,
@@ -58,6 +109,6 @@
     "closureRecommendation": "No further eval or analysis loop is recommended without a new acceptance question and explicit HQ approval.",
     "stoppingReason": "Deconfounded runtime smoke does not show PH clearly beating the plain baseline; keep injection effect unproven."
   },
-  "decision": "injection-effect-not-proven",
-  "decisionRationale": "Measured eval signal did not show PH clearly beating baselines on deconfounded runtime/stack/workflow signals; injection effect remains unproven."
+  "decision": "freeze-expansion",
+  "decisionRationale": "Accepted 10-pair local-current OpenCode PH OFF/ON evidence found PH runtime injection worse for provider-token total, read chars, tool calls, and elapsed time in all pairs. Runtime guidance is downgraded to explicit opt-in preview while gate/evidence CLI surfaces remain the product center."
 }

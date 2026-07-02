@@ -49,13 +49,14 @@ describe("Phase 0 harness config", () => {
 
     expect(config.enabledDomains).toEqual(["backend", "programming", "workflow"])
     expect(config.enforce.executeVerification).toBe(false)
+    expect(config.features.runtimeInjection).toBe(false)
     expect(config.enforce.compaction).toEqual({
       cooldownMs: 600_000,
       enabled: false,
       threshold: 0.78,
     })
     expect(config.enforce.idleContinuation).toBe(false)
-    expect(config.enforce.systemConstitution).toBe(true)
+    expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.tdd).toBe(false)
     expect(config.enforce.writeDeny).toBe(false)
     expect(config.telemetry.tokenUsage).toBe(true)
@@ -107,6 +108,15 @@ describe("Phase 0 harness config", () => {
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.tdd).toBe(true)
     expect(config.enforce.writeDeny).toBe(true)
+  })
+
+  it("uses runtime injection preview opt-in from harness.jsonc", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { features: { runtimeInjection: true } })
+
+    const config = loadHarnessConfig(projectDir)
+
+    expect(config.features.runtimeInjection).toBe(true)
   })
 
   it("uses multi-agent relay opt-in from harness.jsonc", () => {

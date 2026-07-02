@@ -1366,6 +1366,7 @@ describe("ph bootstrap backend", () => {
     expect(agents).toContain(".persona/project-profile.jsonc")
     expect(agents).toContain("Do not infer a Node/CommonJS project from package.json")
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(false)
+    expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(false)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     expect(isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp["persona-harness-code-nav"] : undefined).toBeUndefined()
     const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
@@ -1444,13 +1445,34 @@ describe("ph bootstrap backend", () => {
     expect(result.stdout).toContain("sets enforce.executeVerification: true")
     expect(result.stdout).toContain("PH runs the project verification command during closure/finish")
     expect(result.stdout).toContain("expect toolchain command cost")
-    expect(result.stdout).toContain("sets enforce.systemConstitution: true")
+    expect(result.stdout).toContain("sets features.runtimeInjection: true and enforce.systemConstitution: true")
     expect(result.stdout).toContain("does not enable enforce.writeDeny or enforce.idleContinuation")
     expect(result.stdout).toContain("no generated app product-quality certification or closure guarantee")
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(true)
+    expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(true)
     expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(true)
     expect(loadHarnessConfig(projectDir).enforce.writeDeny).toBe(false)
     expect(loadHarnessConfig(projectDir).enforce.idleContinuation).toBe(false)
+  })
+
+  it("enables runtime injection preview without strict verification when explicitly requested", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend", "--runtime-injection-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("enabled runtime injection preview")
+    expect(result.stdout).toContain("Runtime injection preview:")
+    expect(result.stdout).toContain("default init/bootstrap keeps PH as gate-first CLI/evidence tooling")
+    expect(result.stdout).toContain("measured 10-pair OpenCode A/B was worse")
+    expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(true)
+    expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(false)
+    expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(false)
   })
 
   it("enables the multi-agent relay preview only when explicitly requested", () => {

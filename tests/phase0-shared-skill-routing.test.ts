@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest"
-import { existsSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+
+import { afterEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import { createInjectionBlock } from "../src/runtime/injection.js"
@@ -9,6 +12,26 @@ import {
   REMOVED_SHARED_SKILL_NAMES,
 } from "../src/runtime/shared-skill-router.js"
 import type { TransformMessagesOutput } from "../src/runtime/types.js"
+
+const tempProjects: string[] = []
+
+function createOptInProject(): string {
+  const projectDir = mkdtempSync(join(tmpdir(), "persona-shared-skill-routing-"))
+  tempProjects.push(projectDir)
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "harness.jsonc"),
+    `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["programming", "frontend"] }, null, 2)}\n`,
+  )
+  return projectDir
+}
+
+afterEach(() => {
+  for (const projectDir of tempProjects) {
+    rmSync(projectDir, { recursive: true, force: true })
+  }
+  tempProjects.length = 0
+})
 
 function modelInput(sessionID: string): TransformMessagesOutput {
   return {
@@ -104,7 +127,8 @@ describe("Phase 0 shared skill routing", () => {
   })
 
   it("injects shared skill guidance for TypeScript files through hooks", async () => {
-    const hooks = createPhase0Hooks()
+    const projectDir = createOptInProject()
+    const hooks = createPhase0Hooks({ projectDir })
     const sessionID = "session-typescript"
 
     await hooks["tool.execute.before"]?.(

@@ -19,6 +19,7 @@ function createProjectWithBlockedEvidence(): string {
     join(projectDir, ".persona", "harness.jsonc"),
     `${JSON.stringify(
       {
+        features: { runtimeInjection: true },
         enabledDomains: ["backend", "programming", "workflow"],
         evidenceDir: ".persona/evidence-file",
       },

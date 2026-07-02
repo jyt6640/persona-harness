@@ -17,11 +17,11 @@
 
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-> AI 에이전트는 "다 됐습니다!"라고 말하기를 좋아합니다 — Persona Harness는 그것을 증명하게 만듭니다. 필요한 report, PH가 생성한 evidence, 실제 테스트 결과가 디스크에 존재하기 전까지 완료 주장을 차단하는 로컬 CLI + OpenCode workflow rail입니다.
+> AI 에이전트는 "다 됐습니다!"라고 말하기를 좋아합니다 — Persona Harness는 그것을 증명하게 만듭니다. 필요한 report, PH가 생성한 evidence, 실제 테스트 결과가 디스크에 존재하기 전까지 완료 주장을 차단하는 로컬 CLI completion gate입니다. OpenCode runtime guidance는 선택형 preview이지 제품의 중심이 아닙니다.
 
 > [!IMPORTANT]
 > **프로젝트 상태: alpha experiment.**
-> 주입(injection) 효과는 측정되었고 **증명되지 않았습니다**. ON/OFF eval 프로그램은 중단 상태이며, 동결된 집계와 중단 근거는 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)에 있습니다.
+> runtime injection 효과는 측정되었고 **승인된 10쌍 local-current OpenCode fixture에서는 부정적**이었습니다. 근거는 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)에 있습니다. 따라서 runtime guidance는 기본 꺼짐이며 명시적 opt-in preview입니다. 이 결과는 해당 fixture 범위의 측정이지 보편적 product-efficacy 주장이 아닙니다.
 > PH가 실제로 주장하는 것 — 그리고 증거를 가진 것 — 은 더 좁습니다: **명시적으로 정의된 evidence gate와 결정론적 위반에 대해, 검증되지 않은 완료를 차단한다.**
 
 ## 측정된 동작
@@ -33,7 +33,7 @@
 | **위조된 TDD evidence** — 수기로 만든 `red-forged.json`을 `workflow finish` 전에 심어둠 | `finish`가 **exit 1** — 위조 파일 무시 | P0 실제 Gradle run 아카이브 |
 | **Green-only 완료** (테스트+구현 동시, red-first 없음) — 각 5회 반복 | TDD OFF: 허용 **5/5** · TDD ON: 차단 **5/5** | P1 completion-integrity A/B |
 | **컴파일 에러를 "red"로 속임** | `workflow test`가 **exit 1**, evidence 미생성 | P0 실제 Gradle run 아카이브 |
-| 주입 레이어의 토큰/품질 효과 | **증명되지 않음** — 있는 그대로 보고 | 동결된 eval status |
+| Runtime injection PH OFF/ON app-generation — 10 paired OpenCode runs | PH ON **10/10**, PH OFF **10/10** 성공. 다만 PH ON이 provider-token total, read chars, tool calls, elapsed time을 모든 10쌍에서 증가시킴 | accepted local-current A/B archive |
 
 이것은 제한된 로컬 fixture에서의 completion-integrity 측정입니다. 토큰 절약, 앱 품질, 제품 효능 주장이 *아닙니다*.
 
@@ -41,7 +41,7 @@
 
 > Q. 이게 뭔가요?
 
-AI 에이전트가 수행하는 Java/Spring 백엔드 작업을 위한 workflow rail + evidence 시스템 + 완료 가드입니다. 로컬 CLI(`ph`)와 OpenCode 플러그인으로 제공됩니다.
+AI 에이전트가 수행하는 Java/Spring 백엔드 작업을 위한 workflow/evidence CLI + completion guard입니다. 로컬 CLI(`ph`)와 선택형 runtime guidance/measurement hook용 OpenCode 플러그인으로 제공됩니다.
 
 > Q. 실제로 뭘 하나요?
 
@@ -118,7 +118,7 @@ npx ph bootstrap backend
 npx ph workflow check
 ```
 
-`ph init`은 최소 통합 파일만 만듭니다(`.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore` 항목). `ph bootstrap backend`는 백엔드 workflow 전체를 준비합니다: `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay, 승인된 plan, report 템플릿, OpenCode 설정.
+`ph init`은 최소 통합 파일만 만듭니다(`.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore` 항목). `ph bootstrap backend`는 백엔드 workflow 전체를 준비합니다: `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay, 승인된 plan, report 템플릿, OpenCode 설정. 새 setup은 gate-first입니다: model-facing runtime guidance는 명시적으로 켜기 전까지 꺼져 있습니다.
 
 그다음 OpenCode에서 에이전트에게 짧게 요청합니다:
 
@@ -226,6 +226,7 @@ Preview/local-current 빌드에는 `npx ph evidence pminus-status --json`이 추
 ```bash
 npx ph bootstrap backend --codegraph-preview   # CodeGraph, opt-in
 npx ph bootstrap backend --lsp-preview         # LSP, opt-in
+npx ph bootstrap backend --runtime-injection-preview  # 선택형 model-facing PH guidance
 npx ph bootstrap backend --no-developer-mcp    # developer MCP 비활성화
 ```
 
@@ -234,7 +235,7 @@ npx ph bootstrap backend --no-developer-mcp    # developer MCP 비활성화
 
 ## Evidence의 의미
 
-`.persona/evidence`는 로컬 흔적을 저장합니다: 파일 읽기, 주입된 workflow 컨텍스트, 명령 활동, TDD 기록, A/B 측정.
+`.persona/evidence`는 로컬 흔적을 저장합니다: 파일 읽기, 선택형 주입 workflow 컨텍스트, 명령 활동, TDD 기록, A/B 측정.
 
 Evidence는 하나의 질문에 답합니다: **"에이전트가 기대된 rail을 보고 따랐는가?"**
 
