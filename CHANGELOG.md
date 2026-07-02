@@ -6,6 +6,16 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Fixed multi-agent runtime guidance isolation for OpenCode subagent sessions.
+  When `multiAgent.enabled=true` and `features.runtimeInjection=true`, PH now
+  uses deterministic `session.created` / `session.updated` `Session.parentID`
+  classification to inject runtime guidance only into classified main sessions.
+  Classified child sessions and unclassified sessions skip runtime injection,
+  system constitution prose, workflow prompt prose, text continuation, and idle
+  continuation; skip evidence is aggregated to one ignored file per session.
+  This is a defect fix for contamination boundaries, not a new autonomous
+  subagent loop, success guarantee, reliability claim, token-saving claim, or
+  product-efficacy claim.
 - Added first-class closure/blocker metrics to local A/B evidence and
   P-minus decision support. `ph evidence ab-run` now accepts optional
   read-only metadata for closure blocker counts, finish status before/after,

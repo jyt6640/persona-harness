@@ -21,6 +21,8 @@ import { warnRuntimeFailure } from "./error-boundary.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
 import { observeJavaWriteReportOnly } from "./observer-report-only.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
+import { RuntimeSessionRegistry } from "./session-registry.js"
+import type { RuntimeInjectionSurface } from "./session-registry.js"
 import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
@@ -112,6 +114,15 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     config: config.enforce.compaction,
     projectDir,
   })
+  const sessionRegistry = new RuntimeSessionRegistry({
+    multiAgentEnabled: config.multiAgent.enabled,
+    projectDir,
+    runtimeInjectionEnabled,
+  })
+
+  function allowsRuntimeInjection(sessionID: string | undefined, surface: RuntimeInjectionSurface): boolean {
+    return sessionRegistry.allowsRuntimeInjection(sessionID, surface)
+  }
 
   function captureTargetFile(
     hook: "tool.execute.before" | "tool.execute.after",
@@ -121,6 +132,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     args: Record<string, unknown>,
   ): ReturnType<typeof createInjectionBlock> | undefined {
     if (!runtimeInjectionEnabled) {
+      return undefined
+    }
+    if (!allowsRuntimeInjection(sessionID, "target-file")) {
       return undefined
     }
 
@@ -154,6 +168,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
 
   function captureJavaRoleDiscovery(input: ToolAfterInput, output: ToolAfterOutput): void {
     if (!runtimeInjectionEnabled || typeof output.output !== "string" || !config.enabledDomains.includes("backend")) {
+      return
+    }
+    if (!allowsRuntimeInjection(input.sessionID, "java-role-discovery")) {
       return
     }
 
@@ -192,11 +209,15 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         if (!config.enabled) {
           return
         }
+        sessionRegistry.observeEvent(input.event)
         if (config.telemetry.tokenUsage && input.event.type === "message.updated") {
           const telemetryResult = tokenTelemetry.recordMessage(input.event.properties.info)
           await tokenCompaction.maybeSummarize(input.event.properties.info, telemetryResult)
         }
         if (!config.enforce.idleContinuation || input.event.type !== "session.idle") {
+          return
+        }
+        if (!allowsRuntimeInjection(input.event.properties.sessionID, "idle-continuation")) {
           return
         }
         await idleContinuation.continueIfBlocked(input.event.properties.sessionID)
@@ -273,11 +294,12 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           return
         }
 
-        if (runtimeInjectionEnabled) {
+        if (runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "intent-workflow")) {
           maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance)
         }
 
-        const injection = runtimeInjectionEnabled ? store.take(sessionId) : undefined
+        const injection =
+          runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "model-input") ? store.take(sessionId) : undefined
         if (!injection) {
           return
         }
@@ -301,7 +323,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         if (config.enabled && config.telemetry.tokenUsage) {
           tokenTelemetry.rememberModelLimit(input.sessionID, input.model)
         }
-        if (runtimeInjectionEnabled) {
+        if (runtimeInjectionEnabled && allowsRuntimeInjection(input.sessionID, "system-constitution")) {
           injectSystemConstitution(output, config)
         }
       })
@@ -313,6 +335,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     ): Promise<void> => {
       runHostHook("experimental.text.complete", () => {
         if (!runtimeInjectionEnabled) {
+          return
+        }
+        if (!allowsRuntimeInjection(input.sessionID, "text-continuation")) {
           return
         }
         const block = continuation.completeText(projectDir, input.sessionID, output.text)
