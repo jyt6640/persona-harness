@@ -6,6 +6,66 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Accepted registry `0.5.0-rc.2` default-off PH ON clean-exit calibrated A/B
+  as PASS for evidence integrity and PARTIAL for efficacy/statistical
+  interpretation. QA accepted archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc050-registry-default-off-clean-javac-ab-10-20260702T154007Z`.
+  This run is separate from the prior timeout-heavy
+  `rc050-registry-default-off-agent-ab-10-north-mini-20260702T093748Z`
+  archive and uses a smaller tiny Java `javac`/`java` Calculator fixture.
+  Registry source was `persona-harness@next=0.5.0-rc.2`, gitHead
+  `64696dce6daf5e4501609648f3ceb9acb830db87`, shasum
+  `a09d6e84f368befddfc7193308ac4912568c4557`, with dist-tags
+  `latest=0.4.0`, `next=0.5.0-rc.2`, and `alpha=0.3.9-alpha.8`.
+  - Calibration/design: timeout policy was 1800s per OpenCode session, no
+    session reached the cap, concurrency cap was 1, and the run used 10 paired
+    tasks / 20 sessions counterbalanced 5 OFF->ON and 5 ON->OFF. Each pair used
+    the same prompt, README sha256
+    `011d27cd9d433fbf81f44a6cae3412b5eea05bba43d5ecc83bfbb8fbab67ac73`, and
+    baseline commit.
+  - OFF setup kept PH inactive/no install. ON setup installed
+    `persona-harness@next` and ran
+    `ph bootstrap backend --no-developer-mcp --no-codegraph`, without
+    `--runtime-injection-preview`; all 10 ON runs verified
+    `features.runtimeInjection=false` and `enforce.systemConstitution=false`.
+  - Evidence/reports: `summary.json` parsed as `persona-agent-session-ab.1`,
+    `aggregate.json` parsed as `persona-ab-aggregate.1`, and the report
+    workspace contained 20 `persona-ab-measurement.1` records under
+    `.persona/evidence/ab/opencode-app-generation-rc050-default-off-clean/`,
+    with 10 OFF and 10 ON. `ab-report.json`, `pminus-report.json`, and
+    `pminus-status.json` parsed as `evidence-ab-report.1`,
+    `evidence-pminus-report.1`, and `evidence-pminus-status.1`; archive JSON
+    parse passed for all discovered non-`node_modules` JSON files.
+  - Clean-exit outcome: OFF had 10/10 clean exits, 10/10 verification pass, and
+    0 timeouts; ON had 10/10 clean exits, 10/10 verification pass, and 0
+    timeouts. MCP calls were `0` in both conditions.
+  - Metrics/statistics: provider total mean OFF `71,162.1` vs ON `33,103`,
+    mean delta `-38,059.1`, but paired deltas were mixed with ON lower in 3/10
+    and sign-test `p=0.34375`; the aggregate drop was dominated by large OFF
+    outliers and is not statistically consistent token-saving. Elapsed mean was
+    OFF `37,065ms` vs ON `25,963.9ms`, mean delta `-11,101.1`, ON lower in
+    3/10, `p=0.34375`, descriptive only. Read chars mean was OFF `2,294.7` vs
+    ON `2,477.3`, mean delta `+182.6`; paired ON was lower in 9/10 with
+    `p=0.021484375`, but the mean skewed upward because pair 1 had a low-read
+    OFF outlier. Tool calls mean was OFF `12.2` vs ON `5.1`, mean delta `-7.1`,
+    only 3 non-tied pairs, `p=1.0`, descriptive only.
+  - Phase token reconciliation was true for every run. Unattributed elapsed
+    residual was assigned to unknown; injection/context was not zero-filled as
+    a product-impact claim. With runtime injection disabled, this supports only
+    the default-off config assertion, not an injection effect claim.
+  - P-minus output was read-only decision support for this calibrated fixture:
+    `pminus-report` reported scenario `improved` with decision hint `keep`
+    because aggregate candidate provider-token total was lower; `pminus-status`
+    surface `ph-runtime-injection` recommended `keep gathering`. This is not
+    automatic config mutation, removal, downgrade, product efficacy, or
+    token-saving evidence.
+  Final interpretation: PASS for clean-exit/calibrated evidence integrity,
+  PARTIAL for efficacy/statistical interpretation, and scoped tiny-fixture
+  evidence only. This is not a token-saving/provider-token saving,
+  product-efficacy/navigation-benefit, app-quality/full-TDD/test-sufficiency,
+  broad reliability, closure guarantee, CodeGraph/LSP effectiveness,
+  Codex/code-nav replacement, automatic removal/downgrade, or release action
+  claim.
 - Accepted registry `0.5.0-rc.2` default-off PH ON A/B as PARTIAL scoped
   negative measurement evidence only. QA accepted archive
   `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc050-registry-default-off-agent-ab-10-north-mini-20260702T093748Z`;
