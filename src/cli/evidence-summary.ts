@@ -4,10 +4,12 @@ import process from "node:process"
 
 import { isRecord } from "../config/jsonc.js"
 import type { CliRunResult } from "./bearshell.js"
+import { evidenceAbRunUsage, runEvidenceAbRunCommand } from "./evidence-ab-run.js"
 import { formatEvidenceAbReport, readEvidenceAbReport } from "./evidence-ab-report.js"
 import { formatEvidencePminusReport, readEvidencePminusReport } from "./evidence-pminus-report.js"
 
 type EvidenceOptions = {
+  readonly env?: Readonly<Record<string, string | undefined>>
   readonly projectDir?: string
 }
 
@@ -515,6 +517,12 @@ export function writeEvidenceSummary(options: EvidenceOptions = {}): string {
 }
 
 export function runEvidenceCommand(args: readonly string[], options: EvidenceOptions = {}, invocationName = "ph"): CliRunResult {
+  if (args[0] === "ab-run") {
+    if (args[1] === "--help" || args[1] === "-h" || args[1] === "help") {
+      return { status: 0, stdout: evidenceAbRunUsage(invocationName), stderr: "" }
+    }
+    return runEvidenceAbRunCommand(args.slice(1), options)
+  }
   if (args.length === 1 && args[0] === "summary") {
     const outputPath = writeEvidenceSummary(options)
     const projectDir = resolve(options.projectDir ?? process.cwd())
@@ -557,6 +565,6 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
   return {
     status: 1,
     stdout: "",
-    stderr: `Usage: ${invocationName} evidence <summary|metrics [--json]|ab-report [--json]|pminus-report [--json]>\n`,
+    stderr: `Usage: ${invocationName} evidence <summary|metrics [--json]|ab-report [--json]|pminus-report [--json]|ab-run ...>\n`,
   }
 }

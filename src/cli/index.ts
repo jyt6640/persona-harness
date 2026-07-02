@@ -96,7 +96,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "evidence") {
-    return runEvidenceCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+    return runEvidenceCommand(args.slice(1), { env: options.env, projectDir: options.cwd }, invocationName)
   }
 
   if (command === "smoke") {
