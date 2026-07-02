@@ -19,6 +19,7 @@ import {
 } from "./workflow-output.js"
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRelayCommand } from "./workflow-relay.js"
+import { runWorkflowRalphLoopCommand } from "./workflow-ralph-loop.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import { stdinEncodingError } from "./stdin-text.js"
@@ -165,6 +166,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
+  }
+  if (parsed.kind === "ralph-loop") {
+    return runWorkflowRalphLoopCommand({ json: parsed.json, projectDir: options.projectDir })
   }
   if (parsed.kind === "closure") {
     return runWorkflowClosureCommand(parsed.closureAction, options)

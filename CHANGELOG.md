@@ -6,6 +6,12 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added a default-off/read-only `ph workflow ralph-loop [--dry-run] [--json]`
+  spike for `ralph-loop: blocker-driven continuation`. It inspects
+  deterministic PH closure blockers, reports retry eligibility with a capped
+  dry-run policy, and prints an n=30 blocker/completion A/B measurement plan.
+  It writes no workflow state or evidence and is not a success, reliability,
+  generated-app quality, token-saving, or closure guarantee.
 - Recorded official `0.5.0` post-publish registry smoke facts after QA accepted
   External registry package-runtime evidence. This docs record is after the
   `v0.5.0` tag and does not change package code, version, publish, tag, or
