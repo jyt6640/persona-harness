@@ -34,7 +34,7 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release-prep target: `0.5.0-rc.2` for npm dist-tag `next`. This prep
+Current next-channel package: `0.5.0-rc.2` under npm dist-tag `next`. It
 packages the gate-first runtime injection downgrade: runtime injection, system
 constitution injection, workflow prompt rail injection, and continuation text
 are default-off; `--runtime-injection-preview` is explicit opt-in; `--strict`
@@ -46,12 +46,19 @@ the prior wrong-channel commit `dcc34e071d167923b8cf40be095b303ba649d3ca`.
 Because npm package versions are immutable, the corrected gate-first release
 target advances to `0.5.0-rc.2`.
 
-Before publish and registry verification, current next-channel package remains
-`0.4.1-rc.2` under npm dist-tag `next`. It packages the accepted P-minus A/B
-evidence surfaces: read-only `ph evidence pminus-report [--json]`,
-explicit-write `ph evidence ab-run --scenario <id> --condition <id> --
-<command>`, and downstream compatibility with `ab-report` and
-`pminus-report`.
+Post-publish registry verification for `0.5.0-rc.2` confirmed gitHead
+`64696dce6daf5e4501609648f3ceb9acb830db87`, shasum
+`a09d6e84f368befddfc7193308ac4912568c4557`, and dist-tags
+`latest=0.4.0`, `next=0.5.0-rc.2`, `alpha=0.3.9-alpha.8`. The
+`v0.5.0-rc.2` tag was created only after registry gitHead/shasum verification
+and points at the same gitHead locally and remotely. The tag-triggered GitHub
+Release workflow succeeded, including GitHub release creation, and the GitHub
+release is marked prerelease.
+
+Fresh registry smoke installed `persona-harness@next` as `0.5.0-rc.2` and
+verified the packaged logo, rc2 release notes, default gate-first bootstrap
+config, and explicit runtime-injection preview opt-in config. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc050-rc2-registry-smoke-20260702T090723Z`.
 
 The `0.5.0-rc.2` prep is justified by the accepted 10-pair local-current
 OpenCode A/B result: PH OFF and PH ON both succeeded 10/10, but PH ON increased

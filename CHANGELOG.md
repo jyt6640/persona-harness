@@ -6,7 +6,23 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-- No unreleased changes after the `0.5.0-rc.2` release-prep commit.
+- Recorded `0.5.0-rc.2` post-publish registry/package-runtime smoke. Trusted
+  Publisher workflow run `28578211093` published `persona-harness@0.5.0-rc.2`
+  to `next` from gitHead `64696dce6daf5e4501609648f3ceb9acb830db87`;
+  registry shasum is `a09d6e84f368befddfc7193308ac4912568c4557`, with
+  dist-tags `latest=0.4.0`, `next=0.5.0-rc.2`, and `alpha=0.3.9-alpha.8`.
+  The `v0.5.0-rc.2` tag points at the same gitHead, release workflow run
+  `28578342990` succeeded, and the GitHub release exists as a prerelease.
+  Fresh registry smoke PASS archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc050-rc2-registry-smoke-20260702T090723Z`.
+  The smoke installed `persona-harness@next`, verified the packaged logo and
+  rc2 release notes, default bootstrap `runtimeInjection=false`,
+  `systemConstitution=false`, `executeVerification=false`, and
+  `--runtime-injection-preview` bootstrap `runtimeInjection=true` with
+  system constitution and execute verification still false. This is registry
+  package-runtime evidence only, not a token-saving, product-efficacy,
+  app-quality, broad reliability, closure guarantee, or automatic removal
+  claim.
 
 ## [0.5.0-rc.2] - 2026-07-02
 
