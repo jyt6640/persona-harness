@@ -52,6 +52,48 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   guarantee, Codex support, code-nav replacement, or automatic
   downgrade/removal evidence. QA recommends the next work move to actual
   measurement/evidence execution rather than additional CLI surface expansion.
+- Accepted an actual P-minus A/B evidence probe archive as evidence/probe
+  acceptance only, not product source, package, release, or effectiveness
+  evidence. The run used the existing `ph evidence ab-run` path to create
+  exactly six PH-generated `persona-ab-measurement.1` records for a controlled
+  TDD completion-integrity fixture, then captured `ab-report`, `pminus-report`,
+  and `pminus-status` outputs:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/pminus-tdd-completion-integrity-20260702-115936`;
+  - required files were present: `RESULT.md`, `ab-report.json/.txt`,
+    `pminus-report.json/.txt`, `pminus-status.json/.txt`, and raw `ab-run`
+    stdout/stderr;
+  - JSON schemas parsed as `evidence-ab-report.1`,
+    `evidence-pminus-report.1`, and `evidence-pminus-status.1`; each scanned
+    six files with zero unreadable;
+  - all six records were under
+    `workspace/.persona/evidence/ab/tdd-completion-integrity/`, had
+    `source="ph evidence ab-run"`, and their raw stdout recorded
+    `A/B evidence written`;
+  - OFF condition records were 3/3 `finishStatus=pass`,
+    `blockedInvalidCompletion=false`, outcome `invalid-completion-permitted`;
+  - ON condition records were 3/3 `finishStatus=blocked`,
+    `blockedInvalidCompletion=true`, outcome `invalid-completion-blocked`;
+  - provider-token telemetry was honestly absent/null, and downstream reports
+    marked provider telemetry `missing`;
+  - `pminus-report` compared `off -> on` for scenario
+    `tdd-completion-integrity`, outcome `improved`, decision hint `keep`,
+    reason `ON condition blocked invalid completion while OFF did not.`;
+  - `pminus-status` reported surface `tdd`, default state `opt-in`, outcomes
+    `improved=1`, latest hint `keep`, provider telemetry `missing`, and
+    recommended next action `keep gathering`;
+  - disposable workspace writes were limited to expected
+    `.persona/evidence/ab/tdd-completion-integrity/*.json` files, with no
+    `.persona/harness.jsonc`, `.persona/workflow`,
+    `.persona/instructions/adopted.json`, or `.persona/evidence/tdd` side
+    effects; repo worktree stayed clean/aligned at
+    `e182ee5dc39da51c0caa4ac43a6b2260f72d8b16`.
+  This proves the existing A/B evidence path can produce a non-empty P-minus
+  decision/status for the controlled fixture. It did not generate TDD red/green
+  evidence, was not a real Java/Spring red-to-green cycle, and is not evidence
+  of token saving/provider-token saving, product efficacy/navigation benefit,
+  app-quality/full-TDD/test-sufficiency, broad reliability, closure guarantee,
+  automatic downgrade/removal, or any release action.
 
 ## [0.4.1-rc.2] - 2026-07-02
 
