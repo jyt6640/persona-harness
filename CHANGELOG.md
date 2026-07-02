@@ -6,6 +6,62 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Accepted registry `0.5.0-rc.2` default-off PH ON A/B as PARTIAL scoped
+  negative measurement evidence only. QA accepted archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc050-registry-default-off-agent-ab-10-north-mini-20260702T093748Z`;
+  older partial archives `rc050-default-off-agent-ab-10-20260702T091644Z` and
+  `rc050-registry-default-off-agent-ab-10-20260702T091957Z` are excluded.
+  Registry source was `persona-harness@next=0.5.0-rc.2`, gitHead
+  `64696dce6daf5e4501609648f3ceb9acb830db87`, shasum
+  `a09d6e84f368befddfc7193308ac4912568c4557`, with dist-tags
+  `latest=0.4.0`, `next=0.5.0-rc.2`, and `alpha=0.3.9-alpha.8`.
+  - Design/evidence: `summary.json` schema `persona-agent-session-ab.1` and
+    `aggregate.json` schema `persona-agent-session-ab-aggregate.1`; 10 paired
+    tasks / 20 sessions, counterbalanced 5 OFF->ON and 5 ON->OFF, concurrency
+    cap 2, pair-internal sequential, same prompt, README sha256
+    `35dbcd343428d9de73fbfabb9c76c35334755e8996bd48c0441eb8fadac30f1c`, and
+    same start baseline within every pair.
+  - OFF condition used no PH setup. ON condition installed
+    `persona-harness@next` and ran
+    `ph bootstrap backend --no-developer-mcp --no-codegraph`, without
+    `--runtime-injection-preview`; all 10 ON runs verified
+    `features.runtimeInjection=false` and `enforce.systemConstitution=false`.
+  - The report workspace contained 20 `persona-ab-measurement.1` records under
+    `.persona/evidence/ab/opencode-app-generation-rc050-default-off/`.
+    `ab-report.json`, `pminus-report.json`, and `pminus-status.json` parsed as
+    `evidence-ab-report.1`, `evidence-pminus-report.1`, and
+    `evidence-pminus-status.1`; each scanned 20 files with zero unreadable.
+  - Limitation/outcome: completed sessions were 20/20 and pairs 10/10, but
+    OpenCode clean exits were OFF 0/10 and ON 0/10, OpenCode timeouts were OFF
+    10/10 and ON 10/10, and final verification pass was OFF 2/10 vs ON 1/10.
+    This is timeout-bounded negative evidence, not clean app-generation success
+    or product-efficacy comparison.
+  - Metrics: provider total mean OFF `57,375.2` vs ON `76,459.7`, median
+    paired delta `+27,804`, sign test `p=0.75390625` with mixed 6 positive / 4
+    negative deltas, descriptive only; elapsed mean OFF `301,676.5ms` vs ON
+    `306,602.4ms`, median delta `+4,289ms`, sign test `p=0.109375` with
+    concurrency/timeout noise; read chars mean OFF `786.8` vs ON `6,551.6`,
+    median delta `+5,369`, sign test `p=0.001953125` with 10/10 positive
+    deltas, the strongest supported directional increase; tool calls mean OFF
+    `9.1` vs ON `12.0`, median delta `+5`, sign test `p=0.5078125`,
+    mixed/weak; MCP calls were `0` for both conditions.
+  - Phase totals reconcile to provider totals where recorded. Injection/context
+    cost was unavailable/not separately observable and must not be read as zero
+    effect beyond the default-off config assertion.
+  - P-minus output was read-only decision support: `pminus-report` scenario
+    `opencode-app-generation-rc050-default-off` reported outcome `worse`, hint
+    `remove-candidate`, reason candidate provider-token total was higher;
+    `pminus-status` surface `ph-runtime-injection` recommended
+    `remove-candidate`. This is not automatic removal or downgrade behavior.
+  Final interpretation: registry `0.5.0-rc.2` default-off PH ON produced
+  PARTIAL / negative scoped A/B evidence: both OFF and ON timed out in all
+  sessions; PH ON showed substantially higher read chars across all 10 pairs
+  and descriptively higher provider/elapsed/tool means, while final
+  verification was low in both conditions. This is not a token-saving,
+  provider-token saving, product-efficacy/navigation-benefit, app-quality,
+  full-TDD/test-sufficiency, CodeGraph/LSP effectiveness, broad reliability,
+  closure guarantee, Codex/code-nav replacement, or automatic
+  downgrade/removal claim.
 - Recorded `0.5.0-rc.2` post-publish registry/package-runtime smoke. Trusted
   Publisher workflow run `28578211093` published `persona-harness@0.5.0-rc.2`
   to `next` from gitHead `64696dce6daf5e4501609648f3ceb9acb830db87`;
