@@ -6,6 +6,28 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- No unreleased changes after the `0.5.0-rc.1` release-prep commit.
+
+## [0.5.0-rc.1] - 2026-07-02
+
+- Prepared `0.5.0-rc.1` as the first gate-first release candidate on the
+  `next` channel. This is release prep only until npm Trusted Publisher
+  publishes and registry gitHead/shasum verification passes. Before publish,
+  registry remains `latest=0.4.0`, `next=0.4.1-rc.2`, and
+  `alpha=0.3.9-alpha.8`.
+- Added the Persona Harness logo to the npm/GitHub README hero and package
+  allowlist. The packaged asset is `img/Persona-Harness-Logo.png`.
+- Framed the release around the measured gate-first default: runtime injection,
+  system constitution injection, workflow prompt rail injection, and
+  continuation text are default-off; `--runtime-injection-preview` is explicit
+  opt-in; `--strict` intentionally opts into runtime guidance plus direct
+  verification.
+- Kept the accepted 10-pair local-current OpenCode A/B result as the release
+  decision record: PH OFF and PH ON both succeeded 10/10, but PH ON increased
+  measured provider-token totals, read chars, tool calls, and elapsed time in
+  all 10 pairs for that fixture set. This justifies the default-off downgrade
+  and gate-first positioning; it is not a universal product-efficacy claim.
+
 - Accepted the gate-first runtime injection downgrade as local/current tarball
   package-runtime evidence only for
   `e377d18d4de40e6bd81e5c67130da603c89c8950`

@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="img/Persona-Harness-Logo.png" alt="Persona Harness ロゴ" width="180">
+
 # Persona Harness
 
 **Java/Spring バックエンドを作る AI コーディングエージェントのための完了ゲート。**
@@ -17,11 +19,11 @@
 
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-> AI エージェントは「完了しました！」と言いたがります — Persona Harness はそれを証明させます。必要な report、PH が生成した evidence、実際のテスト結果がディスク上に存在するまで完了主張をブロックする、ローカル CLI + OpenCode workflow rail です。
+> AI エージェントは「完了しました！」と言いたがります — Persona Harness はそれを証明させます。必要な report、PH が生成した evidence、実際のテスト結果がディスク上に存在するまで完了主張をブロックするローカル CLI completion gate です。OpenCode runtime guidance は任意の preview であり、プロダクトの中心ではありません。
 
 > [!IMPORTANT]
 > **プロジェクト状態: alpha experiment。**
-> 注入（injection）効果は測定済みで、**証明されていません**。ON/OFF eval プログラムは停止中です。凍結された集計と停止理由は [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json) を参照してください。
+> runtime injection 効果は測定済みで、**受理済みの 10 ペア local-current OpenCode fixture では negative** でした。根拠は [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json) を参照してください。そのため runtime guidance は default-off で、明示的な opt-in preview のみです。これは該当 fixture 範囲の測定であり、普遍的な product-efficacy claim ではありません。
 > PH が実際に主張すること — そして証拠を持つこと — はより狭い範囲です: **明示的に定義された evidence gate と決定論的違反に対して、未検証の完了をブロックする。**
 
 ## 測定された動作
@@ -33,7 +35,7 @@
 | **偽造された TDD evidence** — 手書きの `red-forged.json` を `workflow finish` の前に仕込む | `finish` が **exit 1** — 偽造ファイルは無視 | P0 実 Gradle run アーカイブ |
 | **Green-only 完了**（テスト+実装を同時、red-first なし）— 各 5 回反復 | TDD OFF: 許可 **5/5** · TDD ON: ブロック **5/5** | P1 completion-integrity A/B |
 | **コンパイルエラーを「red」と偽る** | `workflow test` が **exit 1**、evidence 未生成 | P0 実 Gradle run アーカイブ |
-| 注入レイヤーのトークン/品質効果 | **未証明** — そのまま報告 | 凍結された eval status |
+| Runtime injection PH OFF/ON app-generation — 10 paired OpenCode runs | PH ON **10/10**、PH OFF **10/10** 成功。ただし PH ON は provider-token total、read chars、tool calls、elapsed time を全 10 ペアで増加させた | accepted local-current A/B archive |
 
 これは限定されたローカル fixture での completion-integrity 測定です。トークン節約、アプリ品質、プロダクト効能の主張では*ありません*。
 
@@ -41,7 +43,7 @@
 
 > Q. これは何？
 
-AI エージェントが行う Java/Spring バックエンド作業のための workflow rail + evidence システム + 完了ガードです。ローカル CLI（`ph`）と OpenCode プラグインとして提供されます。
+AI エージェントが行う Java/Spring バックエンド作業のための workflow/evidence CLI + completion guard です。ローカル CLI（`ph`）と、任意の runtime guidance/measurement hook 用 OpenCode プラグインとして提供されます。
 
 > Q. 実際に何をする？
 
@@ -118,7 +120,7 @@ npx ph bootstrap backend
 npx ph workflow check
 ```
 
-`ph init` は最小限の統合ファイルのみを作成します（`.persona/harness.jsonc`、`.persona/conventions/`、`.persona/rules/`、`.opencode/opencode.json`、`.gitignore` エントリ）。`ph bootstrap backend` はバックエンド workflow 全体を準備します: `AGENTS.md`、`.persona/project-profile.jsonc`、policy overlay、承認済み plan、report テンプレート、OpenCode 設定。
+`ph init` は最小限の統合ファイルのみを作成します（`.persona/harness.jsonc`、`.persona/conventions/`、`.persona/rules/`、`.opencode/opencode.json`、`.gitignore` エントリ）。`ph bootstrap backend` はバックエンド workflow 全体を準備します: `AGENTS.md`、`.persona/project-profile.jsonc`、policy overlay、承認済み plan、report テンプレート、OpenCode 設定。新しい setup は gate-first です: model-facing runtime guidance は明示的に有効化するまで off です。
 
 その後、OpenCode でエージェントに短く依頼します:
 

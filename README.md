@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="img/Persona-Harness-Logo.png" alt="Persona Harness logo" width="180">
+
 # Persona Harness
 
 **A completion gate for AI coding agents building Java/Spring backends.**

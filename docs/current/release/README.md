@@ -34,11 +34,26 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current next-channel package: `0.4.1-rc.2` under npm dist-tag `next`. It
-packages the accepted P-minus A/B evidence surfaces: read-only
-`ph evidence pminus-report [--json]`, explicit-write
-`ph evidence ab-run --scenario <id> --condition <id> -- <command>`, and
-downstream compatibility with `ab-report` and `pminus-report`.
+Current release-prep target: `0.5.0-rc.1` for npm dist-tag `next`. This prep
+packages the gate-first runtime injection downgrade: runtime injection, system
+constitution injection, workflow prompt rail injection, and continuation text
+are default-off; `--runtime-injection-preview` is explicit opt-in; `--strict`
+intentionally opts into runtime guidance plus direct verification. It also
+packages the README logo asset at `img/Persona-Harness-Logo.png`.
+
+Before publish and registry verification, current next-channel package remains
+`0.4.1-rc.2` under npm dist-tag `next`. It packages the accepted P-minus A/B
+evidence surfaces: read-only `ph evidence pminus-report [--json]`,
+explicit-write `ph evidence ab-run --scenario <id> --condition <id> --
+<command>`, and downstream compatibility with `ab-report` and
+`pminus-report`.
+
+The `0.5.0-rc.1` prep is justified by the accepted 10-pair local-current
+OpenCode A/B result: PH OFF and PH ON both succeeded 10/10, but PH ON increased
+measured provider-token totals, read chars, tool calls, and elapsed time in all
+10 pairs for that fixture set. The release message is gate-first and
+default-off; it is not a token-saving, provider-token saving, product-efficacy,
+navigation-benefit, app-quality, broad reliability, or closure-guarantee claim.
 
 Registry `next` briefly moved to a superseded `0.5.0-rc.1` build; that is
 treated as a wrong-channel/version incident, not an accepted release record.
@@ -514,6 +529,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.4.0 release notes](v0.4.0-release-notes.md)
 - [v0.4.1-rc.1 release notes](v0.4.1-rc.1-release-notes.md)
 - [v0.4.1-rc.2 release notes](v0.4.1-rc.2-release-notes.md)
+- [v0.5.0-rc.1 release notes](v0.5.0-rc.1-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

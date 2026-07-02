@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="img/Persona-Harness-Logo.png" alt="Persona Harness 로고" width="180">
+
 # Persona Harness
 
 **Java/Spring 백엔드를 만드는 AI 코딩 에이전트를 위한 완료 게이트.**

@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="img/Persona-Harness-Logo.png" alt="Persona Harness 标志" width="180">
+
 # Persona Harness
 
 **为构建 Java/Spring 后端的 AI 编码智能体提供的完成门禁。**
@@ -17,11 +19,11 @@
 
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-> AI 智能体总喜欢说"完成了！"—— Persona Harness 让它们拿出证明。这是一个本地 CLI + OpenCode workflow rail：在所需 report、由 PH 生成的 evidence、真实测试结果落盘之前，阻止任何完成声明。
+> AI 智能体总喜欢说"完成了！"—— Persona Harness 让它们拿出证明。这是一个本地 CLI completion gate：在所需 report、由 PH 生成的 evidence、真实测试结果落盘之前，阻止任何完成声明。OpenCode runtime guidance 是可选 preview，不是产品中心。
 
 > [!IMPORTANT]
 > **项目状态：alpha experiment。**
-> 注入（injection）效果已经测量，**尚未被证明**。ON/OFF eval 计划处于停止状态；冻结的汇总数据与停止理由见 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)。
+> runtime injection 效果已经测量，**在已接受的 10 组 local-current OpenCode fixture 中为负面**。依据见 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)。因此 runtime guidance 默认关闭，只能显式 opt-in preview；这是该 fixture 范围内的测量，不是通用 product-efficacy 主张。
 > PH 实际主张的 —— 也是有证据支撑的 —— 范围更窄：**对明确定义的 evidence gate 和确定性违规，阻止未经验证的完成。**
 
 ## 已测量的行为
@@ -33,7 +35,7 @@
 | **伪造的 TDD evidence** —— 在 `workflow finish` 前手工放置 `red-forged.json` | `finish` 以 **exit 1** 退出 —— 伪造文件被忽略 | P0 真实 Gradle run 归档 |
 | **Green-only 完成**（测试+实现同时提交，无 red-first）—— 各重复 5 次 | TDD OFF：放行 **5/5** · TDD ON：拦截 **5/5** | P1 completion-integrity A/B |
 | **将编译错误冒充为 "red"** | `workflow test` 以 **exit 1** 退出，不生成 evidence | P0 真实 Gradle run 归档 |
-| 注入层的 token/质量效果 | **未证明** —— 如实报告 | 冻结的 eval status |
+| Runtime injection PH OFF/ON app-generation — 10 paired OpenCode runs | PH ON **10/10**、PH OFF **10/10** 成功。但 PH ON 在所有 10 组配对中都增加了 provider-token total、read chars、tool calls 和 elapsed time | accepted local-current A/B archive |
 
 以上是在受限本地 fixture 上的 completion-integrity 测量。它们*不是* token 节省、应用质量或产品效能的主张。
 
@@ -41,7 +43,7 @@
 
 > Q. 这是什么？
 
-为 AI 智能体执行的 Java/Spring 后端工作提供的 workflow rail + evidence 系统 + 完成守卫，以本地 CLI（`ph`）和 OpenCode 插件的形式提供。
+为 AI 智能体执行的 Java/Spring 后端工作提供的 workflow/evidence CLI + completion guard，以本地 CLI（`ph`）和可选 runtime guidance/measurement hook 的 OpenCode 插件形式提供。
 
 > Q. 它实际做什么？
 
@@ -118,7 +120,7 @@ npx ph bootstrap backend
 npx ph workflow check
 ```
 
-`ph init` 只创建最小集成文件（`.persona/harness.jsonc`、`.persona/conventions/`、`.persona/rules/`、`.opencode/opencode.json`、`.gitignore` 条目）。`ph bootstrap backend` 准备完整的后端 workflow：`AGENTS.md`、`.persona/project-profile.jsonc`、policy overlay、已接受的 plan、report 模板、OpenCode 配置。
+`ph init` 只创建最小集成文件（`.persona/harness.jsonc`、`.persona/conventions/`、`.persona/rules/`、`.opencode/opencode.json`、`.gitignore` 条目）。`ph bootstrap backend` 准备完整的后端 workflow：`AGENTS.md`、`.persona/project-profile.jsonc`、policy overlay、已接受的 plan、report 模板、OpenCode 配置。新的 setup 是 gate-first：model-facing runtime guidance 在显式启用前保持关闭。
 
 然后在 OpenCode 中用简短提示词请求智能体：
 
