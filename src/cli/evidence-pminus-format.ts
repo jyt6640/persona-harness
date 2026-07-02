@@ -17,6 +17,20 @@ function pairedLine(label: string, comparison: PairedMetricComparison): string {
   ].join(", ")
 }
 
+function closureLine(scenario: EvidencePminusReport["scenarios"][number]): string {
+  const finishPassDelta = scenario.closureIntegrity.finishPassDelta ?? "unavailable"
+  return [
+    `interpretation ${scenario.closureIntegrity.interpretation}`,
+    `candidate reduced ${scenario.closureIntegrity.candidateReducedBlockers}`,
+    `baseline reduced ${scenario.closureIntegrity.baselineReducedBlockers}`,
+    `paired better ${scenario.closureIntegrity.pairedBetter}`,
+    `worse ${scenario.closureIntegrity.pairedWorse}`,
+    `tied ${scenario.closureIntegrity.tied}`,
+    `total comparable ${scenario.closureIntegrity.totalComparable}`,
+    `finish-pass delta ${finishPassDelta}`,
+  ].join(", ")
+}
+
 export function formatEvidencePminusReport(report: EvidencePminusReport): string {
   const lines = [
     "# Persona P-minus Evidence Report",
@@ -43,6 +57,7 @@ export function formatEvidencePminusReport(report: EvidencePminusReport): string
     lines.push(`- outcome: ${scenario.outcome}`)
     lines.push(`- decision hint: ${scenario.surfaceDecisionHint}`)
     lines.push(`- provider-token telemetry: ${scenario.telemetry.providerTokens}`)
+    lines.push(`- closure integrity: ${closureLine(scenario)}`)
     lines.push(`- paired primary metric: ${scenario.pairedConsistency.primaryMetric}`)
     lines.push(`- paired provider tokens: ${pairedLine("providerTokenTotal", scenario.pairedConsistency.metrics.providerTokenTotal)}`)
     lines.push(`- paired elapsed ms: ${pairedLine("elapsedMs", scenario.pairedConsistency.metrics.elapsedMs)}`)

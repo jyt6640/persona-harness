@@ -22,6 +22,23 @@ export type PminusDecisionHint =
   | "remove-candidate"
 type PminusOutcome = "improved" | "inconclusive" | "no-improvement" | "worse"
 type TelemetryAvailability = "available" | "missing" | "partial"
+type ClosureIntegrityInterpretation =
+  | "completion-integrity-improved"
+  | "completion-integrity-worse"
+  | "insufficient-closure-metrics"
+  | "no-closure-improvement"
+  | "unavailable"
+
+type ClosureIntegrityReport = {
+  readonly baselineReducedBlockers: number
+  readonly candidateReducedBlockers: number
+  readonly finishPassDelta: number | null
+  readonly interpretation: ClosureIntegrityInterpretation
+  readonly pairedBetter: number
+  readonly pairedWorse: number
+  readonly tied: number
+  readonly totalComparable: number
+}
 
 export type EvidencePminusScenarioReport = {
   readonly baselineCondition: string | null
@@ -30,6 +47,7 @@ export type EvidencePminusScenarioReport = {
   readonly id: string
   readonly killCriterion: string
   readonly label: string
+  readonly closureIntegrity: ClosureIntegrityReport
   readonly outcome: PminusOutcome
   readonly pairedConsistency: PairedConsistencyReport
   readonly reason: string
@@ -58,6 +76,19 @@ export type EvidencePminusReport = {
 
 export const KILL_CRITERION =
   "Kill criteria are decision support only: repeated matched scenarios with worse or no-improvement should trigger keep-opt-in, downgrade, or remove review; this command does not delete, downgrade, or mutate configuration."
+
+function unavailableClosureIntegrity(): ClosureIntegrityReport {
+  return {
+    baselineReducedBlockers: 0,
+    candidateReducedBlockers: 0,
+    finishPassDelta: null,
+    interpretation: "unavailable",
+    pairedBetter: 0,
+    pairedWorse: 0,
+    tied: 0,
+    totalComparable: 0,
+  }
+}
 
 function conditionRolePattern(role: "baseline" | "candidate"): RegExp {
   return role === "baseline" ? /\b(baseline|control|off)\b/iu : /\b(candidate|enabled|on|preview|treatment)\b/iu
@@ -97,6 +128,94 @@ function metricDirection(left: NumberMetric, right: NumberMetric): MetricDirecti
     return "lower"
   }
   return "same"
+}
+
+function closureIntegrityReport(baseline: AbCondition, candidate: AbCondition): ClosureIntegrityReport {
+  let pairedBetter = 0
+  let pairedWorse = 0
+  let tied = 0
+  const pairCount = Math.min(baseline.runs.length, candidate.runs.length)
+  for (let index = 0; index < pairCount; index += 1) {
+    const baselineRun = baseline.runs[index]
+    const candidateRun = candidate.runs[index]
+    if (baselineRun === undefined || candidateRun === undefined) {
+      continue
+    }
+    const baselineDelta = baselineRun.closure.closureBlockerDelta
+    const candidateDelta = candidateRun.closure.closureBlockerDelta
+    if (baselineDelta === null || candidateDelta === null) {
+      continue
+    }
+    if (candidateDelta > baselineDelta) {
+      pairedBetter += 1
+    } else if (candidateDelta < baselineDelta) {
+      pairedWorse += 1
+    } else {
+      tied += 1
+    }
+  }
+  const totalComparable = pairedBetter + pairedWorse + tied
+  const baselineReducedBlockers = baseline.runs.filter((run) => (run.closure.closureBlockerDelta ?? 0) > 0).length
+  const candidateReducedBlockers = candidate.runs.filter((run) => (run.closure.closureBlockerDelta ?? 0) > 0).length
+  const finishPassDelta =
+    baseline.closure.finishAfter.unavailable === baseline.runs.length
+    || candidate.closure.finishAfter.unavailable === candidate.runs.length
+      ? null
+      : candidate.closure.finishAfter.pass - baseline.closure.finishAfter.pass
+  if (totalComparable === 0 && finishPassDelta === null) {
+    return unavailableClosureIntegrity()
+  }
+  if (totalComparable < 10 && finishPassDelta !== null && finishPassDelta <= 0) {
+    return {
+      baselineReducedBlockers,
+      candidateReducedBlockers,
+      finishPassDelta,
+      interpretation: "insufficient-closure-metrics",
+      pairedBetter,
+      pairedWorse,
+      tied,
+      totalComparable,
+    }
+  }
+  const pairedImproved = totalComparable > 0 && pairedBetter >= Math.ceil(totalComparable * 0.7)
+  const pairedWorsened = totalComparable > 0 && pairedWorse >= Math.ceil(totalComparable * 0.7)
+  if (
+    pairedImproved
+    || (finishPassDelta !== null && finishPassDelta > 0 && candidateReducedBlockers > baselineReducedBlockers)
+  ) {
+    return {
+      baselineReducedBlockers,
+      candidateReducedBlockers,
+      finishPassDelta,
+      interpretation: "completion-integrity-improved",
+      pairedBetter,
+      pairedWorse,
+      tied,
+      totalComparable,
+    }
+  }
+  if (pairedWorsened || (finishPassDelta !== null && finishPassDelta < 0)) {
+    return {
+      baselineReducedBlockers,
+      candidateReducedBlockers,
+      finishPassDelta,
+      interpretation: "completion-integrity-worse",
+      pairedBetter,
+      pairedWorse,
+      tied,
+      totalComparable,
+    }
+  }
+  return {
+    baselineReducedBlockers,
+    candidateReducedBlockers,
+    finishPassDelta,
+    interpretation: totalComparable < 10 ? "insufficient-closure-metrics" : "no-closure-improvement",
+    pairedBetter,
+    pairedWorse,
+    tied,
+    totalComparable,
+  }
 }
 
 function pairedProviderPhrase(comparison: PairedMetricComparison): string {
@@ -139,6 +258,25 @@ function outcomeFromProviderTokens(left: NumberMetric, right: NumberMetric, pair
   return undefined
 }
 
+function outcomeFromClosureIntegrity(closureIntegrity: ClosureIntegrityReport): {
+  readonly outcome: PminusOutcome
+  readonly reason: string
+} | undefined {
+  if (closureIntegrity.interpretation === "completion-integrity-improved") {
+    return {
+      outcome: "improved",
+      reason: `Candidate condition improved closure blocker evidence: blocker reductions ${closureIntegrity.candidateReducedBlockers} vs ${closureIntegrity.baselineReducedBlockers}, paired better ${closureIntegrity.pairedBetter}/${closureIntegrity.totalComparable}, finish-pass delta ${closureIntegrity.finishPassDelta ?? "unavailable"}.`,
+    }
+  }
+  if (closureIntegrity.interpretation === "completion-integrity-worse") {
+    return {
+      outcome: "worse",
+      reason: `Candidate condition worsened closure blocker evidence: blocker reductions ${closureIntegrity.candidateReducedBlockers} vs ${closureIntegrity.baselineReducedBlockers}, paired worse ${closureIntegrity.pairedWorse}/${closureIntegrity.totalComparable}, finish-pass delta ${closureIntegrity.finishPassDelta ?? "unavailable"}.`,
+    }
+  }
+  return undefined
+}
+
 function secondaryOutcome(directions: readonly MetricDirection[]): {
   readonly outcome: PminusOutcome
   readonly reason: string
@@ -174,9 +312,13 @@ function secondaryOutcome(directions: readonly MetricDirection[]): {
 function decisionHint(
   outcome: PminusOutcome,
   surface: AbScenario["surface"],
+  closureIntegrity: ClosureIntegrityReport,
   pairedProviderTokens: PairedMetricComparison,
 ): PminusDecisionHint {
   if (outcome === "improved") {
+    if (closureIntegrity.interpretation === "completion-integrity-improved") {
+      return "keep-gathering"
+    }
     if (pairedProviderTokens.interpretation === "aggregate-lower-but-paired-inconsistent") {
       return "keep-gathering"
     }
@@ -201,6 +343,7 @@ function classifyScenario(scenario: AbScenario): EvidencePminusScenarioReport {
       id: scenario.id,
       killCriterion: KILL_CRITERION,
       label: scenario.label,
+      closureIntegrity: unavailableClosureIntegrity(),
       outcome: "inconclusive",
       pairedConsistency: {
         metrics: {
@@ -268,6 +411,7 @@ function classifyScenario(scenario: AbScenario): EvidencePminusScenarioReport {
   }
 
   const pairedConsistency = pairedConsistencyReport(baseline, candidate)
+  const closureIntegrity = closureIntegrityReport(baseline, candidate)
   const secondaryMetrics = {
     elapsedMs: metricDirection(baseline.metrics.elapsedMs, candidate.metrics.elapsedMs),
     mcpCalls: metricDirection(baseline.metrics.mcpCalls, candidate.metrics.mcpCalls),
@@ -283,9 +427,12 @@ function classifyScenario(scenario: AbScenario): EvidencePminusScenarioReport {
           pairedConsistency.metrics.providerTokenTotal,
         )
       : undefined
+  const closureOutcome = outcomeFromClosureIntegrity(closureIntegrity)
   const classification =
     candidate.blockedInvalidCompletion > baseline.blockedInvalidCompletion
       ? { outcome: "improved" as const, reason: "ON condition blocked invalid completion while OFF did not." }
+      : closureOutcome !== undefined
+        ? closureOutcome
       : candidate.finish.pass < baseline.finish.pass
         ? { outcome: "worse" as const, reason: "Candidate condition has fewer passing finish outcomes." }
         : providerOutcome ?? secondaryOutcome(Object.values(secondaryMetrics))
@@ -297,11 +444,12 @@ function classifyScenario(scenario: AbScenario): EvidencePminusScenarioReport {
     id: scenario.id,
     killCriterion: KILL_CRITERION,
     label: scenario.label,
+    closureIntegrity,
     outcome: classification.outcome,
     pairedConsistency,
     reason: classification.reason,
     surface: scenario.surface,
-    surfaceDecisionHint: decisionHint(classification.outcome, scenario.surface, pairedConsistency.metrics.providerTokenTotal),
+    surfaceDecisionHint: decisionHint(classification.outcome, scenario.surface, closureIntegrity, pairedConsistency.metrics.providerTokenTotal),
     telemetry: {
       providerTokens,
       secondaryMetrics,
@@ -318,6 +466,7 @@ export function readEvidencePminusReport(options: EvidencePminusOptions = {}): E
       "P-minus reports are read-only decision support; this command writes no files and does not delete, downgrade, or mutate configuration.",
       "Outcomes are local evidence classifications, not token-saving, product-efficacy, navigation-benefit, or quality claims.",
       "Aggregate mean deltas and paired consistency can diverge; paired inconsistency lowers decision hints to keep-gathering/no-claim style review.",
+      "Closure blocker and finish-outcome metrics are completion-integrity decision support only, not closure guarantees.",
       "Missing provider-token telemetry is reported as missing; non-provider metrics are secondary evidence only.",
     ],
     projectDir: abReport.projectDir,

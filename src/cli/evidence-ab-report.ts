@@ -17,8 +17,21 @@ type TokenAggregate = {
   readonly total: number | null
 }
 
+type ClosureRunReport = {
+  readonly closureBlockerDelta: number | null
+  readonly closureBlockersAfter: number | null
+  readonly closureBlockersBefore: number | null
+  readonly continuationApplied: boolean | null
+  readonly earlyCompletionBlocked: boolean | null
+  readonly finishStatusAfter: "blocked" | "fail" | "pass" | "unknown" | null
+  readonly finishStatusBefore: "blocked" | "fail" | "pass" | "unknown" | null
+  readonly retryCapHit: boolean | null
+  readonly runawayRetries: number | null
+}
+
 type AbRunReport = {
   readonly blockedInvalidCompletion: boolean | null
+  readonly closure: ClosureRunReport
   readonly elapsedMs: number | null
   readonly finishStatus: "blocked" | "fail" | "pass" | "unknown"
   readonly id: string
@@ -31,6 +44,31 @@ type AbRunReport = {
 
 type AbConditionReport = {
   readonly blockedInvalidCompletion: number
+  readonly closure: {
+    readonly continuationApplied: number
+    readonly earlyCompletionBlocked: number
+    readonly finishAfter: {
+      readonly blocked: number
+      readonly fail: number
+      readonly pass: number
+      readonly unavailable: number
+      readonly unknown: number
+    }
+    readonly finishBefore: {
+      readonly blocked: number
+      readonly fail: number
+      readonly pass: number
+      readonly unavailable: number
+      readonly unknown: number
+    }
+    readonly metrics: {
+      readonly blockerDelta: NumberMetric
+      readonly blockersAfter: NumberMetric
+      readonly blockersBefore: NumberMetric
+      readonly runawayRetries: NumberMetric
+    }
+    readonly retryCapHit: number
+  }
   readonly finish: {
     readonly blocked: number
     readonly fail: number
@@ -144,6 +182,14 @@ function finishStatus(value: unknown): "blocked" | "fail" | "pass" | "unknown" {
   return "unknown"
 }
 
+function nullableFinishStatus(value: unknown): "blocked" | "fail" | "pass" | "unknown" | null {
+  return value === undefined ? null : finishStatus(value)
+}
+
+function booleanValue(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null
+}
+
 function surfaceDefaultState(value: unknown): SurfaceDefaultState {
   return value === "default" || value === "off" || value === "opt-in" ? value : "unknown"
 }
@@ -170,9 +216,28 @@ function runReport(value: unknown, index: number): AbRunReport | undefined {
     return undefined
   }
   const providerTokens = tokenAggregate(value.providerTokens ?? value.providerTokenTotal)
+  const closureSource = isRecord(value.closure) ? value.closure : value
+  const closureBlockersBefore = numberValue(closureSource.closureBlockersBefore)
+  const closureBlockersAfter = numberValue(closureSource.closureBlockersAfter)
+  const closureBlockerDelta =
+    numberValue(closureSource.closureBlockerDelta)
+    ?? (closureBlockersBefore !== null && closureBlockersAfter !== null
+      ? closureBlockersBefore - closureBlockersAfter
+      : null)
   return {
     blockedInvalidCompletion:
       typeof value.blockedInvalidCompletion === "boolean" ? value.blockedInvalidCompletion : null,
+    closure: {
+      closureBlockerDelta,
+      closureBlockersAfter,
+      closureBlockersBefore,
+      continuationApplied: booleanValue(closureSource.continuationApplied),
+      earlyCompletionBlocked: booleanValue(closureSource.earlyCompletionBlocked),
+      finishStatusAfter: nullableFinishStatus(closureSource.finishStatusAfter),
+      finishStatusBefore: nullableFinishStatus(closureSource.finishStatusBefore),
+      retryCapHit: booleanValue(closureSource.retryCapHit),
+      runawayRetries: numberValue(closureSource.runawayRetries),
+    },
     elapsedMs: numberValue(value.elapsedMs),
     finishStatus: finishStatus(value.finishStatus),
     id: stringValue(value.id) ?? `run-${index + 1}`,
@@ -195,6 +260,22 @@ function numberMetric(values: readonly (number | null)[]): NumberMetric {
   }
 }
 
+function finishStatusCounts(values: readonly ("blocked" | "fail" | "pass" | "unknown" | null)[]): {
+  readonly blocked: number
+  readonly fail: number
+  readonly pass: number
+  readonly unavailable: number
+  readonly unknown: number
+} {
+  return {
+    blocked: values.filter((value) => value === "blocked").length,
+    fail: values.filter((value) => value === "fail").length,
+    pass: values.filter((value) => value === "pass").length,
+    unavailable: values.filter((value) => value === null).length,
+    unknown: values.filter((value) => value === "unknown").length,
+  }
+}
+
 function conditionReport(value: unknown, index: number): AbConditionReport | undefined {
   if (!isRecord(value)) {
     return undefined
@@ -213,6 +294,19 @@ function conditionReport(value: unknown, index: number): AbConditionReport | und
   }
   return {
     blockedInvalidCompletion: runs.filter((run) => run.blockedInvalidCompletion === true).length,
+    closure: {
+      continuationApplied: runs.filter((run) => run.closure.continuationApplied === true).length,
+      earlyCompletionBlocked: runs.filter((run) => run.closure.earlyCompletionBlocked === true).length,
+      finishAfter: finishStatusCounts(runs.map((run) => run.closure.finishStatusAfter)),
+      finishBefore: finishStatusCounts(runs.map((run) => run.closure.finishStatusBefore)),
+      metrics: {
+        blockerDelta: numberMetric(runs.map((run) => run.closure.closureBlockerDelta)),
+        blockersAfter: numberMetric(runs.map((run) => run.closure.closureBlockersAfter)),
+        blockersBefore: numberMetric(runs.map((run) => run.closure.closureBlockersBefore)),
+        runawayRetries: numberMetric(runs.map((run) => run.closure.runawayRetries)),
+      },
+      retryCapHit: runs.filter((run) => run.closure.retryCapHit === true).length,
+    },
     finish,
     id: stringValue(value.id) ?? `condition-${index + 1}`,
     label: stringValue(value.label) ?? stringValue(value.id) ?? `Condition ${index + 1}`,
@@ -359,6 +453,19 @@ export function formatEvidenceAbReport(report: EvidenceAbReport): string {
         `- finish: pass ${condition.finish.pass}, fail ${condition.finish.fail}, blocked ${condition.finish.blocked}, unknown ${condition.finish.unknown}`,
       )
       lines.push(`- blocked invalid completion: ${condition.blockedInvalidCompletion}`)
+      lines.push(`- early completion blocked: ${condition.closure.earlyCompletionBlocked}`)
+      lines.push(`- continuation applied: ${condition.closure.continuationApplied}`)
+      lines.push(`- retry cap hits: ${condition.closure.retryCapHit}`)
+      lines.push(
+        `- finish before: pass ${condition.closure.finishBefore.pass}, fail ${condition.closure.finishBefore.fail}, blocked ${condition.closure.finishBefore.blocked}, unknown ${condition.closure.finishBefore.unknown}, unavailable ${condition.closure.finishBefore.unavailable}`,
+      )
+      lines.push(
+        `- finish after: pass ${condition.closure.finishAfter.pass}, fail ${condition.closure.finishAfter.fail}, blocked ${condition.closure.finishAfter.blocked}, unknown ${condition.closure.finishAfter.unknown}, unavailable ${condition.closure.finishAfter.unavailable}`,
+      )
+      lines.push(metricLine("closure blockers before", condition.closure.metrics.blockersBefore))
+      lines.push(metricLine("closure blockers after", condition.closure.metrics.blockersAfter))
+      lines.push(metricLine("closure blocker delta", condition.closure.metrics.blockerDelta))
+      lines.push(metricLine("runaway retries", condition.closure.metrics.runawayRetries))
       lines.push(metricLine("elapsed ms", condition.metrics.elapsedMs))
       lines.push(metricLine("provider token total", condition.metrics.providerTokenTotal))
       lines.push(metricLine("read chars", condition.metrics.readChars))

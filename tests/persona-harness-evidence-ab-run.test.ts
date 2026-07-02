@@ -86,6 +86,22 @@ describe("ph evidence ab-run", () => {
       "blocked",
       "--blocked-invalid-completion",
       "true",
+      "--finish-status-before",
+      "blocked",
+      "--finish-status-after",
+      "blocked",
+      "--early-completion-blocked",
+      "true",
+      "--continuation-applied",
+      "true",
+      "--closure-blockers-before",
+      "2",
+      "--closure-blockers-after",
+      "1",
+      "--retry-cap-hit",
+      "false",
+      "--runaway-retries",
+      "0",
       "--elapsed-ms",
       "120",
       ...nodeCommand,
@@ -169,6 +185,25 @@ describe("ph evidence ab-run", () => {
       runPersonaCli(["evidence", "ab-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }).stdout,
     )
     expect(abReport.scenarios).toHaveLength(3)
+    expect(abReport.scenarios.find((scenario: { readonly id: string }) => scenario.id === "tdd-integrity")).toMatchObject({
+      conditions: [
+        { id: "off", closure: { metrics: { blockerDelta: { samples: 0 } } } },
+        {
+          id: "on",
+          closure: {
+            continuationApplied: 1,
+            earlyCompletionBlocked: 1,
+            finishAfter: { blocked: 1 },
+            metrics: {
+              blockerDelta: { samples: 1, total: 1 },
+              blockersAfter: { samples: 1, total: 1 },
+              blockersBefore: { samples: 1, total: 2 },
+            },
+            retryCapHit: 0,
+          },
+        },
+      ],
+    })
     expect(abReport.scenarios.find((scenario: { readonly id: string }) => scenario.id === "codegraph-navigation"))
       .toMatchObject({
         conditions: [

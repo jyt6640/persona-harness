@@ -250,6 +250,117 @@ describe("ph evidence summary", () => {
     expect(existsSync(join(projectDir, ".persona", "evidence", "ab-report.md"))).toBe(false)
   })
 
+  it("classifies strong closure blocker reduction evidence without provider telemetry claims", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona", "evidence", "ab"), { recursive: true })
+    const offRuns = Array.from({ length: 30 }, (_, index) => ({
+      id: `pair-${index + 1}-off`,
+      outcome: "blocked-no-continuation",
+      finishStatus: "blocked",
+      finishStatusBefore: "blocked",
+      finishStatusAfter: "blocked",
+      earlyCompletionBlocked: true,
+      continuationApplied: false,
+      closureBlockersBefore: index % 3 === 0 ? 1 : 3,
+      closureBlockersAfter: index % 3 === 0 ? 1 : 3,
+      closureBlockerDelta: 0,
+      retryCapHit: false,
+      runawayRetries: 0,
+      providerTokens: null,
+    }))
+    const onRuns = Array.from({ length: 30 }, (_, index) => ({
+      id: `pair-${index + 1}-on`,
+      outcome: index % 3 === 2 ? "finish-passed-after-continuation" : "blockers-reduced-after-continuation",
+      finishStatus: index % 3 === 2 ? "pass" : "blocked",
+      finishStatusBefore: "blocked",
+      finishStatusAfter: index % 3 === 2 ? "pass" : "blocked",
+      earlyCompletionBlocked: true,
+      continuationApplied: true,
+      closureBlockersBefore: index % 3 === 0 ? 1 : 3,
+      closureBlockersAfter: index % 3 === 0 ? 0 : 1,
+      closureBlockerDelta: index % 3 === 0 ? 1 : 2,
+      retryCapHit: false,
+      runawayRetries: 0,
+      providerTokens: null,
+    }))
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "ab", "ralph-loop.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: "persona-ab-measurement.1",
+          scenarioId: "ralph-loop-blocker-completion",
+          scenarioLabel: "ralph-loop blocker/completion",
+          surface: { id: "ralph-loop", label: "ralph-loop dry run", defaultState: "opt-in" },
+          conditions: [
+            { id: "off", label: "ralph-loop OFF", runs: offRuns },
+            { id: "on", label: "ralph-loop ON", runs: onRuns },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const abReport = JSON.parse(
+      runPersonaCli(["evidence", "ab-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }).stdout,
+    )
+    const pminusReport = JSON.parse(
+      runPersonaCli(["evidence", "pminus-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }).stdout,
+    )
+    const pminusText = runPersonaCli(["evidence", "pminus-report"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const pminusStatus = JSON.parse(
+      runPersonaCli(["evidence", "pminus-status", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }).stdout,
+    )
+
+    expect(abReport.scenarios[0].conditions[0]).toMatchObject({
+      closure: {
+        continuationApplied: 0,
+        earlyCompletionBlocked: 30,
+        finishAfter: { blocked: 30, pass: 0, unavailable: 0 },
+        metrics: {
+          blockerDelta: { samples: 30, total: 0 },
+          blockersAfter: { samples: 30, total: 70 },
+          blockersBefore: { samples: 30, total: 70 },
+        },
+        retryCapHit: 0,
+      },
+    })
+    expect(abReport.scenarios[0].conditions[1]).toMatchObject({
+      closure: {
+        continuationApplied: 30,
+        earlyCompletionBlocked: 30,
+        finishAfter: { blocked: 20, pass: 10, unavailable: 0 },
+        metrics: {
+          blockerDelta: { samples: 30, total: 50 },
+          blockersAfter: { samples: 30, total: 20 },
+          blockersBefore: { samples: 30, total: 70 },
+        },
+        retryCapHit: 0,
+      },
+    })
+    expect(pminusReport.scenarios[0]).toMatchObject({
+      closureIntegrity: {
+        baselineReducedBlockers: 0,
+        candidateReducedBlockers: 30,
+        finishPassDelta: 10,
+        interpretation: "completion-integrity-improved",
+        pairedBetter: 30,
+        totalComparable: 30,
+      },
+      outcome: "improved",
+      surfaceDecisionHint: "keep-gathering",
+      telemetry: { providerTokens: "missing" },
+    })
+    expect(pminusReport.scenarios[0].reason).toContain("improved closure blocker evidence")
+    expect(pminusText.stdout).toContain("closure integrity: interpretation completion-integrity-improved")
+    expect(pminusText.stdout).toContain("not token-saving")
+    expect(pminusStatus.surfaces[0]).toMatchObject({
+      latestDecisionHints: ["keep-gathering"],
+      recommendedNextAction: "keep gathering",
+      surfaceDecisionHints: { "keep-gathering": 1 },
+    })
+  })
+
   it("prints P-minus decision support from positive, negative, and inconclusive A/B evidence", () => {
     const projectDir = createTempProject()
     mkdirSync(join(projectDir, ".persona", "evidence", "ab"), { recursive: true })

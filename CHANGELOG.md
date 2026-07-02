@@ -6,6 +6,19 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added first-class closure/blocker metrics to local A/B evidence and
+  P-minus decision support. `ph evidence ab-run` now accepts optional
+  read-only metadata for closure blocker counts, finish status before/after,
+  early-completion blocking, continuation application, retry-cap hits, and
+  runaway retries; missing fields remain unavailable rather than zero.
+  `ab-report`, `pminus-report`, and `pminus-status` aggregate those metrics so
+  ralph-loop-style completion-integrity evidence can be classified even when
+  provider-token telemetry is missing.
+  - Strong blocker-reduction / finish-pass evidence is reported narrowly as
+    completion-integrity decision support and currently lowers to
+    `keep-gathering`; it does not imply token-saving, product efficacy,
+    app-quality, full-TDD sufficiency, broad reliability, closure guarantee,
+    autonomous continuation, or automatic removal/downgrade.
 - Added a default-off/read-only `ph workflow ralph-loop [--dry-run] [--json]`
   spike for `ralph-loop: blocker-driven continuation`, accepted at
   `1178fbd5e0bb559bcd5995fd50559bae7266e441`

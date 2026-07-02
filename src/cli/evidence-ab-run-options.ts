@@ -1,6 +1,18 @@
 type FinishStatus = "blocked" | "fail" | "pass" | "unknown"
 type SurfaceDefaultState = "default" | "off" | "opt-in" | "unknown"
 
+type ClosureRunMetrics = {
+  readonly closureBlockerDelta: number | null
+  readonly closureBlockersAfter: number | null
+  readonly closureBlockersBefore: number | null
+  readonly continuationApplied: boolean | null
+  readonly earlyCompletionBlocked: boolean | null
+  readonly finishStatusAfter: FinishStatus | null
+  readonly finishStatusBefore: FinishStatus | null
+  readonly retryCapHit: boolean | null
+  readonly runawayRetries: number | null
+}
+
 type TokenAggregate = {
   readonly cacheRead: number | null
   readonly cacheWrite: number | null
@@ -17,6 +29,7 @@ export type EvidenceAbRunOptions = {
 
 export type AbRunConfig = {
   readonly blockedInvalidCompletion: boolean | null
+  readonly closure: ClosureRunMetrics
   readonly command: readonly string[]
   readonly condition: string
   readonly conditionLabel: string | null
@@ -39,15 +52,24 @@ export type AbRunConfig = {
 }
 
 export type AbRunRecord = {
+  readonly closureBlockerDelta: number | null
+  readonly closureBlockersAfter: number | null
+  readonly closureBlockersBefore: number | null
   readonly command: readonly string[]
+  readonly continuationApplied: boolean | null
+  readonly earlyCompletionBlocked: boolean | null
   readonly elapsedMs: number | null
   readonly exitStatus: number | null
   readonly finishStatus: FinishStatus
+  readonly finishStatusAfter: FinishStatus | null
+  readonly finishStatusBefore: FinishStatus | null
   readonly id: string
   readonly mcpCalls: number | null
   readonly outcome: string
   readonly providerTokens: TokenAggregate | null
   readonly readChars: number | null
+  readonly retryCapHit: boolean | null
+  readonly runawayRetries: number | null
   readonly signal: string | null
   readonly stderrChars: number
   readonly stdoutChars: number
@@ -55,7 +77,19 @@ export type AbRunRecord = {
 }
 
 export const EVIDENCE_AB_RUN_USAGE =
-  "Usage: ph evidence ab-run --scenario <id> --condition <id> [metadata...] -- <command> [args...]\n"
+  [
+    "Usage: ph evidence ab-run --scenario <id> --condition <id> [metadata...] -- <command> [args...]",
+    "",
+    "Optional closure metrics:",
+    "  --closure-blockers-before <n> --closure-blockers-after <n>",
+    "  --closure-blocker-delta <n>",
+    "  --finish-status-before <pass|fail|blocked|unknown>",
+    "  --finish-status-after <pass|fail|blocked|unknown>",
+    "  --early-completion-blocked <true|false>",
+    "  --continuation-applied <true|false>",
+    "  --retry-cap-hit <true|false> --runaway-retries <n>",
+    "",
+  ].join("\n")
 
 export function safeEvidenceSlug(value: string): string {
   const slug = value
@@ -111,10 +145,17 @@ export function parseAbRunConfig(args: readonly string[]): AbRunConfig | undefin
   const command = args.slice(commandSeparator + 1)
   const flags = args.slice(0, commandSeparator)
   let blockedInvalidCompletion: boolean | null = null
+  let closureBlockerDelta: number | null = null
+  let closureBlockersAfter: number | null = null
+  let closureBlockersBefore: number | null = null
   let condition: string | null = null
   let conditionLabel: string | null = null
+  let continuationApplied: boolean | null = null
   let elapsedMs: number | null = null
+  let earlyCompletionBlocked: boolean | null = null
   let configuredFinishStatus: FinishStatus | null = null
+  let finishStatusAfter: FinishStatus | null = null
+  let finishStatusBefore: FinishStatus | null = null
   let mcpCalls: number | null = null
   let outcome: string | null = null
   let providerCacheRead: number | null = null
@@ -124,7 +165,9 @@ export function parseAbRunConfig(args: readonly string[]): AbRunConfig | undefin
   let providerTokenReasoning: number | null = null
   let providerTokenTotal: number | null = null
   let readChars: number | null = null
+  let retryCapHit: boolean | null = null
   let runId: string | null = null
+  let runawayRetries: number | null = null
   let scenario: string | null = null
   let scenarioLabel: string | null = null
   let source: string | null = null
@@ -143,17 +186,38 @@ export function parseAbRunConfig(args: readonly string[]): AbRunConfig | undefin
       case "--blocked-invalid-completion":
         blockedInvalidCompletion = booleanValue(value)
         break
+      case "--closure-blocker-delta":
+        closureBlockerDelta = numberValue(value)
+        break
+      case "--closure-blockers-after":
+        closureBlockersAfter = numberValue(value)
+        break
+      case "--closure-blockers-before":
+        closureBlockersBefore = numberValue(value)
+        break
       case "--condition":
         condition = value
         break
       case "--condition-label":
         conditionLabel = value
         break
+      case "--continuation-applied":
+        continuationApplied = booleanValue(value)
+        break
       case "--elapsed-ms":
         elapsedMs = numberValue(value)
         break
+      case "--early-completion-blocked":
+        earlyCompletionBlocked = booleanValue(value)
+        break
       case "--finish-status":
         configuredFinishStatus = finishStatus(value)
+        break
+      case "--finish-status-after":
+        finishStatusAfter = finishStatus(value)
+        break
+      case "--finish-status-before":
+        finishStatusBefore = finishStatus(value)
         break
       case "--mcp-calls":
         mcpCalls = numberValue(value)
@@ -182,8 +246,14 @@ export function parseAbRunConfig(args: readonly string[]): AbRunConfig | undefin
       case "--read-chars":
         readChars = numberValue(value)
         break
+      case "--retry-cap-hit":
+        retryCapHit = booleanValue(value)
+        break
       case "--run-id":
         runId = value
+        break
+      case "--runaway-retries":
+        runawayRetries = numberValue(value)
         break
       case "--scenario":
         scenario = value
@@ -223,6 +293,21 @@ export function parseAbRunConfig(args: readonly string[]): AbRunConfig | undefin
   }
   return {
     blockedInvalidCompletion,
+    closure: {
+      closureBlockerDelta:
+        closureBlockerDelta
+        ?? (closureBlockersBefore !== null && closureBlockersAfter !== null
+          ? closureBlockersBefore - closureBlockersAfter
+          : null),
+      closureBlockersAfter,
+      closureBlockersBefore,
+      continuationApplied,
+      earlyCompletionBlocked,
+      finishStatusAfter,
+      finishStatusBefore,
+      retryCapHit,
+      runawayRetries,
+    },
     command,
     condition,
     conditionLabel,
