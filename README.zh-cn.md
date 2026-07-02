@@ -22,7 +22,7 @@
 > AI 智能体总喜欢说"完成了！"—— Persona Harness 让它们拿出证明。这是一个本地 CLI completion gate：在所需 report、由 PH 生成的 evidence、真实测试结果落盘之前，阻止任何完成声明。OpenCode runtime guidance 是可选 preview，不是产品中心。
 
 > [!IMPORTANT]
-> **项目状态：alpha experiment。**
+> **项目状态：gate-first measured release。**
 > runtime injection 效果已经测量，**在已接受的 10 组 local-current OpenCode fixture 中为负面**。依据见 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)。因此 runtime guidance 默认关闭，只能显式 opt-in preview；这是该 fixture 范围内的测量，不是通用 product-efficacy 主张。
 > PH 实际主张的 —— 也是有证据支撑的 —— 范围更窄：**对明确定义的 evidence gate 和确定性违规，阻止未经验证的完成。**
 
@@ -70,14 +70,12 @@
 curl -fsSL https://opencode.ai/install | bash   # 或：npm install -g opencode-ai
 opencode auth login
 
-# Persona Harness（preview 频道）
-npm install -D persona-harness@next
+# Persona Harness
+npm install -D persona-harness
 npx ph --help
 npx ph init
 npx ph doctor
 ```
-
-如需旧的 stable 包，请使用 `persona-harness@latest`。
 
 ## 快速开始 —— Java/Spring 后端
 
@@ -86,7 +84,7 @@ npx ph doctor
 ```bash
 mkdir -p /tmp/persona-harness-demo && cd /tmp/persona-harness-demo
 npm init -y
-npm install -D persona-harness@next
+npm install -D persona-harness
 ```
 
 创建一个描述应用与约束的简短 `README.md`：
@@ -219,7 +217,7 @@ npx ph review backend-shape
 npx ph evidence ab-run --scenario demo --condition baseline -- ./gradlew test
 ```
 
-Preview/local-current 构建可能还包含 `npx ph evidence pminus-status --json`。
+Stable builds also include `npx ph evidence pminus-status --json` for read-only surface decision summaries.
 
 ## 可选集成
 

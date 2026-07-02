@@ -22,7 +22,7 @@
 > AI agents love to say "Done!" — Persona Harness makes them prove it. It is a local CLI completion gate that blocks completion claims until required reports, PH-generated evidence, and real test results exist on disk. OpenCode runtime guidance is optional preview behavior, not the product center.
 
 > [!IMPORTANT]
-> **Project status: alpha experiment.**
+> **Project status: gate-first measured release.**
 > The runtime injection effect has been measured and is **negative in the accepted 10-pair local-current OpenCode fixture set**. See [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json). Runtime guidance is therefore default-off and opt-in only; this is a scoped measurement, not a universal product-efficacy claim.
 > What PH *does* claim — and has evidence for — is narrower: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
 
@@ -70,14 +70,12 @@ Requirements:
 curl -fsSL https://opencode.ai/install | bash   # or: npm install -g opencode-ai
 opencode auth login
 
-# Persona Harness (preview channel)
-npm install -D persona-harness@next
+# Persona Harness
+npm install -D persona-harness
 npx ph --help
 npx ph init
 npx ph doctor
 ```
-
-Use `persona-harness@latest` if you need the older stable package.
 
 ## Quick Start — Java/Spring Backend
 
@@ -86,7 +84,7 @@ Use a clean project directory (not the Persona Harness repository itself).
 ```bash
 mkdir -p /tmp/persona-harness-demo && cd /tmp/persona-harness-demo
 npm init -y
-npm install -D persona-harness@next
+npm install -D persona-harness
 ```
 
 Create a short `README.md` describing the app and constraints:
@@ -219,7 +217,7 @@ npx ph review backend-shape
 npx ph evidence ab-run --scenario demo --condition baseline -- ./gradlew test
 ```
 
-Preview/local-current builds may also include `npx ph evidence pminus-status --json`.
+Stable builds also include `npx ph evidence pminus-status --json` for read-only surface decision summaries.
 
 ## Optional Integrations
 

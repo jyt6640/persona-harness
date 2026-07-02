@@ -22,7 +22,7 @@
 > AI 에이전트는 "다 됐습니다!"라고 말하기를 좋아합니다 — Persona Harness는 그것을 증명하게 만듭니다. 필요한 report, PH가 생성한 evidence, 실제 테스트 결과가 디스크에 존재하기 전까지 완료 주장을 차단하는 로컬 CLI completion gate입니다. OpenCode runtime guidance는 선택형 preview이지 제품의 중심이 아닙니다.
 
 > [!IMPORTANT]
-> **프로젝트 상태: alpha experiment.**
+> **프로젝트 상태: gate-first measured release.**
 > runtime injection 효과는 측정되었고 **승인된 10쌍 local-current OpenCode fixture에서는 부정적**이었습니다. 근거는 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)에 있습니다. 따라서 runtime guidance는 기본 꺼짐이며 명시적 opt-in preview입니다. 이 결과는 해당 fixture 범위의 측정이지 보편적 product-efficacy 주장이 아닙니다.
 > PH가 실제로 주장하는 것 — 그리고 증거를 가진 것 — 은 더 좁습니다: **명시적으로 정의된 evidence gate와 결정론적 위반에 대해, 검증되지 않은 완료를 차단한다.**
 
@@ -70,14 +70,12 @@ AI 에이전트가 수행하는 Java/Spring 백엔드 작업을 위한 workflow/
 curl -fsSL https://opencode.ai/install | bash   # 또는: npm install -g opencode-ai
 opencode auth login
 
-# Persona Harness (preview 채널)
-npm install -D persona-harness@next
+# Persona Harness
+npm install -D persona-harness
 npx ph --help
 npx ph init
 npx ph doctor
 ```
-
-이전 stable 패키지가 필요하면 `persona-harness@latest`를 사용하세요.
 
 ## 빠른 시작 — Java/Spring 백엔드
 
@@ -86,7 +84,7 @@ npx ph doctor
 ```bash
 mkdir -p /tmp/persona-harness-demo && cd /tmp/persona-harness-demo
 npm init -y
-npm install -D persona-harness@next
+npm install -D persona-harness
 ```
 
 앱과 제약을 설명하는 짧은 `README.md`를 만듭니다:
@@ -219,7 +217,7 @@ npx ph review backend-shape
 npx ph evidence ab-run --scenario demo --condition baseline -- ./gradlew test
 ```
 
-Preview/local-current 빌드에는 `npx ph evidence pminus-status --json`이 추가로 있을 수 있습니다.
+Stable 빌드에는 read-only surface decision summary인 `npx ph evidence pminus-status --json`도 포함됩니다.
 
 ## 선택적 통합
 

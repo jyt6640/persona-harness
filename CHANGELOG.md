@@ -6,11 +6,35 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- No unreleased changes after the `0.5.0` release-prep snapshot.
+
+## [0.5.0] - 2026-07-03
+
+- Prepared stable `0.5.0` for the `latest` channel. This is release prep only:
+  npm publish, `latest` movement, and the `v0.5.0` tag remain blocked until QA
+  release GO and registry gitHead/shasum verification.
+- Bumped package metadata from `0.5.0-rc.2` to `0.5.0`.
+- Kept the product center gate-first: workflow/check/finish/archive gates,
+  PH-generated evidence, deterministic blockers, read-only evidence reports,
+  and completion guard behavior.
+- Kept runtime injection, system constitution injection, workflow prompt rail
+  injection, and continuation text default-off. `--runtime-injection-preview`
+  remains explicit opt-in; `--strict` remains intentional heavier opt-in.
+- Kept CodeGraph and LSP developer integrations opt-in preview surfaces:
+  `--codegraph-preview` and `--lsp-preview`. Neither is default behavior or
+  effectiveness evidence.
+- Added stable `v0.5.0` release notes and refreshed localized README install
+  examples from `persona-harness@next` to the stable package name.
+- Preserved claim boundaries: no token-saving/provider-token-saving,
+  product-efficacy/navigation-benefit, app-quality/full-TDD/test-sufficiency,
+  CodeGraph/LSP default/effectiveness, broad reliability, closure guarantee,
+  Codex/code-nav replacement, or automatic downgrade/removal claim.
+
 - Accepted `ebcd42b35d5bda61d3f1a79193611953bfcb1afb`
   (`fix(cli): add pminus paired consistency`) as a narrow pminus
-  aggregate-vs-paired interpretation cleanup before stable. Package version
-  remains `0.5.0-rc.2`; no publish, tag, latest, or dist-tag movement
-  occurred.
+  aggregate-vs-paired interpretation cleanup before stable. At acceptance time
+  the package remained `0.5.0-rc.2` and no publish, tag, latest, or dist-tag
+  movement occurred.
   - `ph evidence pminus-report --json` now includes paired consistency metadata
     for provider/read/tool/MCP/elapsed metrics. The accepted
     aggregate-lower/paired-inconsistent fixture reports `candidateLower=3`,
