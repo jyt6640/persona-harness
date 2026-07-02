@@ -34,16 +34,30 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release-prep target: `0.4.1-rc.2` under npm dist-tag `next` after QA
-release GO. It packages the accepted local/current P-minus A/B evidence
-surfaces: read-only `ph evidence pminus-report [--json]`, explicit-write
+Current next-channel package: `0.4.1-rc.2` under npm dist-tag `next`. It
+packages the accepted P-minus A/B evidence surfaces: read-only
+`ph evidence pminus-report [--json]`, explicit-write
 `ph evidence ab-run --scenario <id> --condition <id> -- <command>`, and
-downstream compatibility with `ab-report` and `pminus-report`. Until publish and
-registry verification, the live registry `next` package remains
-`0.4.1-rc.1`.
+downstream compatibility with `ab-report` and `pminus-report`.
 
 Registry `next` briefly moved to a superseded `0.5.0-rc.1` build; that is
 treated as a wrong-channel/version incident, not an accepted release record.
+
+Post-publish registry verification for `0.4.1-rc.2` confirmed gitHead
+`bcb5f08cc7c0c99ac07ca3e93d04b3b35b7a1f70`, shasum
+`ab59b9d7e7689cdff6f997ae956edd2c3d3ab6b1`, and dist-tags
+`latest=0.4.0`, `next=0.4.1-rc.2`, `alpha=0.3.9-alpha.8`. The
+`v0.4.1-rc.2` tag was created only after registry gitHead/shasum verification
+and points at the same gitHead locally and remotely. The tag-triggered GitHub
+Release workflow succeeded, including GitHub release creation.
+
+External registry-only smoke installed `persona-harness@next` as
+`0.4.1-rc.2` and verified basic CLI help/version/init/doctor/bootstrap, the
+explicit-write `ab-run` recorder, read-only `ab-report` and `pminus-report`
+consumption of generated evidence, all expected P-minus outcome/hint
+categories, and no mutation outside explicit `.persona/evidence/ab/<scenario>/`
+files. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc041-rc2-registry-package-runtime-20260702T022527Z`.
 
 Post-publish registry verification for `0.4.1-rc.1` confirmed gitHead
 `9d80e9c7f63986a3223901e9fe54550e86b8b425`, shasum
@@ -68,9 +82,9 @@ efficacy/navigation benefit, app quality, full TDD/test sufficiency, default
 CodeGraph/LSP effectiveness, broad reliability, closure guarantee, Codex
 support, or code-nav replacement.
 
-`0.4.1-rc.2` prep inherits those claim boundaries and adds no automatic
-downgrade/removal behavior. The A/B recorder and P-minus report are local
-evidence generation/reporting surfaces only; they do not prove token saving,
+`0.4.1-rc.2` inherits those claim boundaries and adds no automatic
+downgrade/removal behavior. The A/B recorder and P-minus report are evidence
+generation/reporting surfaces only; they do not prove token saving,
 provider-token saving, product efficacy, navigation benefit, app quality, full
 TDD/test sufficiency, CodeGraph/LSP effectiveness, broad reliability, closure
 guarantee, Codex support, or code-nav replacement.

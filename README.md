@@ -27,8 +27,8 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current release-prep target: `0.4.1-rc.2` on the `0.4.x` line.
-> Until publish, registry `persona-harness@next` remains `0.4.1-rc.1`.
+> Current next-channel package: `persona-harness@next` is verified at
+> `0.4.1-rc.2` on the `0.4.x` line.
 > Current stable package: `persona-harness@latest` is verified at `0.4.0`
 > with gitHead `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`.
 > Registry `next` briefly moved to a superseded `0.5.0-rc.1` build; treat that
@@ -496,11 +496,10 @@ npm view persona-harness@latest version
 ```
 
 The official `0.4.0` release is published under `latest`. The current
-release-prep target is `0.4.1-rc.2`, but registry `next` remains
-`0.4.1-rc.1` until that package is published and verified. The superseded
-`0.5.0-rc.1` build is a wrong-channel incident, not accepted release evidence.
-`alpha` remains `0.3.9-alpha.8`. Verify dist-tags and package gitHead before
-treating any install as current.
+next-channel package is verified as `0.4.1-rc.2`. The superseded `0.5.0-rc.1`
+build is a wrong-channel incident, not accepted release evidence. `alpha`
+remains `0.3.9-alpha.8`. Verify dist-tags and package gitHead before treating
+any install as current.
 
 ### `opencode` is not found
 

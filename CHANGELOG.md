@@ -10,12 +10,15 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## [0.4.1-rc.2] - 2026-07-02
 
-- Prepared `0.4.1-rc.2` as the next-channel release candidate on the
-  corrected `0.4.x` line. Until publish and registry verification,
-  `persona-harness@next` remains `0.4.1-rc.1`; stable `latest` remains
-  `0.4.0`; `alpha` remains `0.3.9-alpha.8`. Do not treat this release-prep
-  commit as registry evidence until npm gitHead/shasum verification confirms
-  the exact prep commit.
+- Published `0.4.1-rc.2` under `next` on the corrected `0.4.x` line and
+  verified registry gitHead `bcb5f08cc7c0c99ac07ca3e93d04b3b35b7a1f70`,
+  registry shasum `ab59b9d7e7689cdff6f997ae956edd2c3d3ab6b1`, and dist-tags
+  `latest=0.4.0`, `next=0.4.1-rc.2`, `alpha=0.3.9-alpha.8`. Stable `latest`
+  remains `0.4.0`; this release does not move `latest`.
+- Created and pushed `v0.4.1-rc.2` only after registry gitHead/shasum
+  verification; the local and remote tag point at
+  `bcb5f08cc7c0c99ac07ca3e93d04b3b35b7a1f70`. The tag-triggered GitHub Release
+  workflow succeeded, including GitHub release creation.
 - Added explicit-write `ph evidence ab-run --scenario <id> --condition <id>
   -- <command>` as a local A/B evidence recording surface for P1/P-minus
   measurement runs. It writes scoped `persona-ab-measurement.1` records under
@@ -26,8 +29,7 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   recorder can exit 0 after a successful evidence write while preserving the
   child exit status and failed finish status inside the record.
   QA and External accepted the local/current tarball package-runtime surface for
-  `b02317cd3d276b4fe547dab57e51fbbdcef968fd`, with registry evidence deferred
-  until a future publish includes that gitHead:
+  `b02317cd3d276b4fe547dab57e51fbbdcef968fd` before the rc2 registry smoke:
   - archive:
     `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ab-evidence-runner-b02317c-20260702T020151Z`;
   - tarball shasum: `88d9bbc1841f9201c0020598dda9962af770f7c0`;
@@ -68,8 +70,7 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   mutates no config or closure state, and does not automatically delete,
   downgrade, or remove surfaces.
   QA and External accepted the local/current tarball package-runtime surface for
-  `29b532eea707ab843917a4835d8793a44c2cb82f`, with registry evidence deferred
-  until a future publish includes that gitHead:
+  `29b532eea707ab843917a4835d8793a44c2cb82f` before the rc2 registry smoke:
   - archive:
     `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/pminus-evidence-report-29b532e-20260702T013931Z`;
   - tarball shasum: `13305cf4988c404bf9b097721b78fb0f55b55f3b`;
@@ -92,6 +93,36 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   app-quality/full-TDD/test-sufficiency, CodeGraph/LSP default/effectiveness,
   broad reliability, closure guarantee, Codex support, or code-nav replacement
   evidence.
+- External registry-only smoke installed `persona-harness@next` as
+  `0.4.1-rc.2` and verified the registry package/runtime surface:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc041-rc2-registry-package-runtime-20260702T022527Z`;
+  - package entries included `dist/cli/evidence-pminus-report.js`,
+    `dist/cli/evidence-ab-run.js`, `dist/cli/evidence-ab-run-options.js`, and
+    `dist/cli/evidence-ab-report.js`;
+  - basic CLI help/version/init/doctor/bootstrap exited 0;
+  - `ph evidence ab-run --help` exited 0 and invalid missing separator exited
+    1;
+  - passing and failing child `ab-run` commands both recorded evidence, and the
+    recorder exited 0 when the evidence write succeeded;
+  - `ph evidence ab-report --json` and `ph evidence pminus-report --json`
+    exited 0 and consumed generated evidence;
+  - published `ab-run` generated P-minus scenarios covering `improved/keep`,
+    `no-improvement/keep-opt-in`, `worse/downgrade`,
+    `worse/remove-candidate`, missing provider telemetry, and single-condition
+    `inconclusive/no-claim`;
+  - the failing child command recorded child exit 7 with no provider telemetry;
+  - the runner scenario classified as `worse/downgrade` with provider telemetry
+    `partial`;
+  - report commands wrote no artifacts, `ab-run` wrote only expected
+    `.persona/evidence/ab/<scenario>/` files, and there was no
+    `.persona/harness.jsonc`, `.persona/workflow`, or
+    `.persona/instructions/adopted.json` mutation.
+  This is registry package/runtime smoke only: no latest move, token-saving or
+  provider-token saving, product-efficacy/navigation-benefit,
+  app-quality/full-TDD/test-sufficiency, CodeGraph/LSP default/effectiveness,
+  broad reliability, closure guarantee, Codex support, code-nav replacement, or
+  automatic downgrade/removal claim.
 
 ## [0.4.1-rc.1] - 2026-07-02
 
