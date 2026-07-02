@@ -6,6 +6,46 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added explicit-write `ph evidence ab-run --scenario <id> --condition <id>
+  -- <command>` as a local A/B evidence recording surface for P1/P-minus
+  measurement runs. It writes scoped `persona-ab-measurement.1` records under
+  `.persona/evidence/ab/<safe-scenario>/`, capturing the child command,
+  `exitStatus`, `finishStatus`, elapsed time, stdout/stderr character counts,
+  optional provider/read/tool/MCP telemetry, and null/unavailable telemetry when
+  samples are absent. Child command failures are recordable evidence: the
+  recorder can exit 0 after a successful evidence write while preserving the
+  child exit status and failed finish status inside the record.
+  QA and External accepted the local/current tarball package-runtime surface for
+  `b02317cd3d276b4fe547dab57e51fbbdcef968fd`, with registry evidence deferred
+  until a future publish includes that gitHead:
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ab-evidence-runner-b02317c-20260702T020151Z`;
+  - tarball shasum: `88d9bbc1841f9201c0020598dda9962af770f7c0`;
+    sha256:
+    `b953dc20a6d413bd4b966240daa60f3a53c1ff512d8a191186b40dc538f9261e`;
+  - package entries `dist/cli/evidence-ab-run.js` and
+    `dist/cli/evidence-ab-run-options.js` were present;
+  - `ph --help` listed `evidence ab-run`, `ph evidence ab-run --help` exited
+    0, and missing `--scenario`, `--condition`, or `--` separator exited 1
+    with usage;
+  - passing and failing child commands both wrote evidence under
+    `.persona/evidence/ab/runner-demo/`; the failing child preserved
+    `exitStatus=7` and `finishStatus=fail`;
+  - generated evidence was consumed by `ab-report` as
+    `evidence-ab-report.1` and by `pminus-report` as
+    `evidence-pminus-report.1`, where the sample classified as
+    `worse/downgrade` with provider telemetry `partial`;
+  - mutation boundaries passed with only expected A/B evidence files written,
+    no `.persona/harness.jsonc`, no `.persona/workflow` mutation, no
+    `.persona/instructions/adopted.json`, and no `ab-report.md` or
+    `pminus-report.md` artifact.
+  This remains explicit local A/B evidence recording and downstream report
+  compatibility only, not registry evidence, effect-size proof, token-saving or
+  provider-token saving, product-efficacy/navigation-benefit, app-quality/full
+  TDD/test-sufficiency, CodeGraph/LSP default/effectiveness, broad reliability,
+  closure guarantee, Codex support, code-nav replacement, or automatic
+  downgrade/removal evidence.
+
 - Added read-only `ph evidence pminus-report [--json]` as a local evidence
   decision-support surface for P-minus/P1 A/B evidence. It reads structured
   `persona-ab-measurement.1` evidence and emits schema
