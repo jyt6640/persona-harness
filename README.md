@@ -27,11 +27,12 @@ If you only have a product idea, Persona Harness now routes the AI through a req
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
-> Current repo release-prep target: `0.4.1-rc.1` for the `next` dist-tag.
+> Current next-channel package: `persona-harness@next` is restored to
+> `0.4.1-rc.1`.
 > Current stable package: `persona-harness@latest` is verified at `0.4.0`
 > with gitHead `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055`.
-> Registry `next` briefly moved to a superseded `0.5.0-rc.1` build; this repo
-> is correcting the channel back to the `0.4.x` line with `0.4.1-rc.1`.
+> Registry `next` briefly moved to a superseded `0.5.0-rc.1` build; treat that
+> as a wrong-channel incident, not accepted release evidence.
 > `alpha` remains `0.3.9-alpha.8`.
 >
 > Current scope: Java/Spring backend workflow rail MVP.
@@ -481,10 +482,9 @@ npm view persona-harness dist-tags --json
 npm view persona-harness@latest version
 ```
 
-The official `0.4.0` release is published under `latest`. This repository is
-prepared for `0.4.1-rc.1` on the `next` dist-tag. Registry `next` briefly moved
-to a superseded `0.5.0-rc.1` build and should be treated as a channel/version
-correction target until a verified `0.4.x` publish replaces it. `alpha` remains
+The official `0.4.0` release is published under `latest`. Registry `next` is
+restored to `0.4.1-rc.1`; the superseded `0.5.0-rc.1` build is a
+wrong-channel incident, not accepted release evidence. `alpha` remains
 `0.3.9-alpha.8`. Verify dist-tags and package gitHead before treating any
 install as current.
 

@@ -34,18 +34,41 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current release-prep target: `0.4.1-rc.1` for npm dist-tag `next`. This prep
-packages post-0.4.0 local/current accepted surfaces, especially the instruction
+Current next-channel package: `0.4.1-rc.1` under npm dist-tag `next`. It
+packages post-0.4.0 accepted surfaces, especially the instruction
 inference/adoption/check preview and the CodeGraph default downgrade. Registry
 `next` briefly moved to a superseded `0.5.0-rc.1` build; that is treated as a
-wrong-channel/version incident to correct, not an accepted release record.
+wrong-channel/version incident, not an accepted release record.
 
-Current stable package: official `0.4.0` is published under `latest` after
-verified `0.4.0-rc.10`. Registry `latest` points at gitHead
+Post-publish registry verification for `0.4.1-rc.1` confirmed gitHead
+`9d80e9c7f63986a3223901e9fe54550e86b8b425`, shasum
+`fbcc0cc5617d616983a48d3d20b51afe74de0b01`, and dist-tags
+`latest=0.4.0`, `next=0.4.1-rc.1`, `alpha=0.3.9-alpha.8`. The
+`v0.4.1-rc.1` tag was created only after registry gitHead verification and
+points at the same gitHead locally and remotely. The tag-triggered GitHub
+Release workflow succeeded after the checkout fix.
+
+External registry-only smoke installed `persona-harness@next` as
+`0.4.1-rc.1` and did not use the superseded `0.5.0-rc.1` package. It verified
+basic CLI help/version/init/doctor/bootstrap, instruction infer/adopt/check,
+read-only evidence metrics and `ab-report`, the default remote-only developer
+MCP bundle with `--codegraph-preview` opt-in, service-state,
+Controller→Repository, Spring bootJar, read-only `workflow tdd`, and LSP preview
+unavailable facade surfaces. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc041-rc1-registry-package-runtime-20260702T010930Z`.
+
+The `0.4.1-rc.1` smoke is registry package/runtime evidence only. It does not
+move `latest`, prove token saving/provider-token saving, product
+efficacy/navigation benefit, app quality, full TDD/test sufficiency, default
+CodeGraph/LSP effectiveness, broad reliability, closure guarantee, Codex
+support, or code-nav replacement.
+
+Current stable package: official `0.4.0` remains published under `latest`.
+Registry `latest` points at gitHead
 `af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055` with shasum
-`45e3b49d162eeed6d9bc443b5b44508c1e956ebf`; registry `next` remains
-`0.4.0-rc.10`, and `alpha` remains `0.3.9-alpha.8`. The `v0.4.0` tag points at
-the same gitHead after registry verification.
+`45e3b49d162eeed6d9bc443b5b44508c1e956ebf`; `alpha` remains
+`0.3.9-alpha.8`. The `v0.4.0` tag points at the same gitHead after registry
+verification.
 
 `0.4.0` packages the verified workflow rail/product surfaces:
 

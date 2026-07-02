@@ -12,13 +12,42 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   `0.4.0`. This release candidate packages post-0.4.0 local/current accepted
   surfaces, including instruction inference/adoption/check preview,
   deterministic Spring bootJar and TDD adversarial hardening, A/B evidence
-  reporting, and the CodeGraph default downgrade. Publish target is `next`, not
-  `latest`; stable `latest` remains `0.4.0` until a future explicit stable
+  reporting, and the CodeGraph default downgrade. It is published under `next`,
+  not `latest`; stable `latest` remains `0.4.0` until a future explicit stable
   release decision.
 - Corrected a superseded `0.5.0-rc.1` next-channel attempt back to the `0.4.x`
   version line. The `0.5.0-rc.1` package should not be treated as an accepted
   release milestone, QA/External target, or docs evidence record; the channel is
-  expected to be restored by a verified `0.4.1-rc.1` publish.
+  restored by the verified `0.4.1-rc.1` publish below.
+- Published corrected `0.4.1-rc.1` under `next` with Trusted Publisher and
+  verified registry gitHead `9d80e9c7f63986a3223901e9fe54550e86b8b425`,
+  registry shasum `fbcc0cc5617d616983a48d3d20b51afe74de0b01`, and dist-tags
+  `latest=0.4.0`, `next=0.4.1-rc.1`, `alpha=0.3.9-alpha.8`.
+- Created and pushed `v0.4.1-rc.1` only after registry gitHead verification;
+  the local and remote tag point at
+  `9d80e9c7f63986a3223901e9fe54550e86b8b425`. The tag-triggered GitHub Release
+  workflow succeeded after adding checkout before `gh release create`.
+- External registry-only smoke installed `persona-harness@next` as
+  `0.4.1-rc.1`; the superseded wrong-channel `0.5.0-rc.1` package was not used.
+  - archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc041-rc1-registry-package-runtime-20260702T010930Z`;
+  - package entries included instruction infer/adopt/check, evidence
+    `ab-report`, workflow TDD status, Spring bootJar and service-state
+    conventions, the CodeGraph MCP wrapper, and the LSP MCP wrapper;
+  - basic CLI help/version/init/doctor/bootstrap passed;
+  - developer MCP/CodeGraph downgrade passed: default remote-only
+    `context7`/`grep_app`, `--codegraph-preview` opt-in, `--no-codegraph`
+    remote-only, `--no-developer-mcp` none, no `.codegraph` auto-init, and
+    corrected CodeGraph metadata/facade;
+  - instruction preview infer/adopt/check passed with schemas, conflict/drift
+    output, and no harness config or closure mutation;
+  - evidence metrics and `ab-report` JSON/human read-only surfaces passed;
+  - regression spots passed for service-state, Controller→Repository, Spring
+    bootJar, read-only `workflow tdd`, and LSP preview unavailable facade.
+  This is registry package/runtime evidence only: no latest move, token-saving,
+  provider-token saving, product-efficacy, navigation-benefit, app-quality,
+  full TDD/test-sufficiency, default CodeGraph/LSP effectiveness, broad
+  reliability, closure guarantee, Codex support, or code-nav replacement claim.
 
 - Moved the PH CodeGraph wrapper out of the default backend developer MCP
   bundle. `ph bootstrap backend` now registers the remote `grep_app` and
