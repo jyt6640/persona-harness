@@ -96,6 +96,21 @@ OpenCode task/subagent invocation. It does not remove the `--multi-agent-preview
 surface or the OpenCode subagent config entries; it narrows their wording and
 decision status.
 
+## Role-Boundary Caveat
+
+`workflow role-boundary` heuristic write observation is report-only. It uses
+time-window, path, and current-role context and cannot deterministically identify
+the actor behind a write.
+
+A role-boundary finding may come from the main session, the current role
+checklist pass, or an unrelated subagent/session. It must not be treated as
+deterministic role enforcement, blocked-write evidence, closure-blocker
+evidence, or proof of a wrong actor.
+
+Block/enforcement mode remains unavailable until stable per-session role
+identity exists. The current relay direction is a main-session checklist rail
+with optional host-dependent subagent use, not deterministic actor attribution.
+
 ## Stage 14 Implication
 
 If Stage 14 proceeds, multi-agent preview wording should remain conservative:

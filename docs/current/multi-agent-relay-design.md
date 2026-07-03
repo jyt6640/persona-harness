@@ -131,6 +131,22 @@ This reframe does not remove the `.opencode/opencode.json` agent entries. It
 does remove any product implication that PH can guarantee, enforce, or certify
 native host subagent orchestration.
 
+## Role-Boundary Heuristic Blind Spot
+
+`workflow role-boundary` heuristic write observation is report-only. It uses
+time-window, path, and current-role context; it cannot deterministically identify
+the actor behind a write.
+
+A finding may originate from the main session, the current role checklist pass,
+or an unrelated subagent/session. It must not be treated as deterministic role
+enforcement, blocked-write evidence, closure-blocker evidence, or proof of a
+wrong actor.
+
+Block/enforcement mode remains unavailable until stable per-session role
+identity exists. This limitation is intentional: relay currently remains a
+main-session checklist rail with optional host subagent use, not deterministic
+write attribution or enforcement.
+
 R1 role artifacts live under `.persona/workflow/work/<ticket>/roles/`:
 
 - `.persona/workflow/work/<ticket>/roles/test-writer.md`

@@ -6,6 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added an append-only role-boundary caveat: `workflow role-boundary`
+  heuristic write observations are report-only time-window/path/role-context
+  signals. They cannot deterministically identify whether a write came from the
+  main session, the current role checklist pass, or an unrelated
+  subagent/session. Findings must not be treated as deterministic role
+  enforcement, blocked-write evidence, closure-blocker evidence, or proof of a
+  wrong actor. Block/enforcement mode remains unavailable until stable
+  per-session role identity exists.
 - Reframed the multi-agent relay preview as a main-session role checklist rail.
   `workflow relay next --json` still asks the host to invoke the current role
   subagent via a task tool when that capability is available, but the first-class

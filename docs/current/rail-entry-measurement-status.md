@@ -131,6 +131,11 @@ attribution only; the write may originate from the main session or an unrelated
 subagent. They do not block writes, auto-fix files, mutate workflow state, or
 create closure blockers.
 
+Wrong-actor attribution remains a blind spot. A heuristic finding may originate
+from the main session, the current role checklist pass, or an unrelated
+subagent/session. It must not be treated as deterministic role enforcement,
+blocked-write evidence, closure-blocker evidence, or proof of a wrong actor.
+
 Block/enforcement mode remains unavailable without stable per-session role
 identity. This is not deterministic per-session role enforcement and not a
 success, reliability, closure, product-efficacy, app-quality, full-TDD, token
