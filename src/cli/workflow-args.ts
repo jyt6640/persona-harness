@@ -8,6 +8,7 @@ export type ParsedWorkflowArgs =
   | { readonly kind: "tdd" }
   | { readonly kind: "continue" }
   | { readonly json: boolean; readonly kind: "ralph-loop" }
+  | { readonly json: boolean; readonly kind: "role-boundary" }
   | { readonly closureAction: "next" | "status"; readonly kind: "closure" }
   | { readonly kind: "relay"; readonly relayArgs: readonly string[] }
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
@@ -25,7 +26,7 @@ export type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|test|tdd|continue|ralph-loop|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|test|tdd|continue|ralph-loop|role-boundary|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
@@ -36,6 +37,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow tdd prints read-only TDD red→green status and next action",
     "- workflow continue prints the accepted-plan continuation prompt",
     "- workflow ralph-loop [--dry-run] [--json] previews default-off blocker-driven continuation eligibility",
+    "- workflow role-boundary [--json] reports likely relay role-boundary issues without blocking writes",
     "- workflow closure status/next --json prints read-only closure state and next steps",
     "- workflow relay status/next/validate --json prints the read-only multi-agent relay preview",
     "- workflow roles writes and prints non-autonomous role boundaries",
@@ -71,6 +73,13 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
       return { kind: "invalid", message: "workflow ralph-loop accepts only --dry-run and --json." }
     }
     return { json: flags.includes("--json"), kind: "ralph-loop" }
+  }
+  if (args[0] === "role-boundary") {
+    const flags = args.slice(1)
+    if (!flags.every((flag) => flag === "--json")) {
+      return { kind: "invalid", message: "workflow role-boundary accepts only --json." }
+    }
+    return { json: flags.includes("--json"), kind: "role-boundary" }
   }
   if (args[0] === "closure") {
     if ((args[1] === "status" || args[1] === "next") && args.length === 3 && args[2] === "--json") {

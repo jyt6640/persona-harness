@@ -20,6 +20,7 @@ import {
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRelayCommand } from "./workflow-relay.js"
 import { runWorkflowRalphLoopCommand } from "./workflow-ralph-loop.js"
+import { runWorkflowRoleBoundaryCommand } from "./workflow-role-boundary.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import { stdinEncodingError } from "./stdin-text.js"
@@ -169,6 +170,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "ralph-loop") {
     return runWorkflowRalphLoopCommand({ json: parsed.json, projectDir: options.projectDir })
+  }
+  if (parsed.kind === "role-boundary") {
+    return runWorkflowRoleBoundaryCommand({ json: parsed.json, projectDir: options.projectDir })
   }
   if (parsed.kind === "closure") {
     return runWorkflowClosureCommand(parsed.closureAction, options)

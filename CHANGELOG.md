@@ -6,6 +6,20 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added `ph workflow role-boundary [--json]` as a report-only relay role
+  boundary observation surface. It reads current/legacy role artifacts for the
+  active workflow ticket, reports likely role-boundary findings and unknown
+  role artifact paths, and writes no workflow state.
+  - Block/enforcement mode is explicitly reported as unavailable because stable
+    per-session agent/role identity is not available at PH runtime boundaries;
+    Stage 1A only confirmed deterministic `Session.parentID` subagent
+    classification.
+  - Current role names remain `test-writer`, `implementer`, and `reviewer`;
+    legacy `jaeki`/`roach` artifact paths are read as compatibility inputs but
+    are not written going forward.
+  - This is not deterministic write enforcement, OMO/team-mode parity,
+    token-saving, product-efficacy, app-quality, full-TDD, broad reliability,
+    closure guarantee, or automatic completion/removal evidence.
 - Promoted `ralph-loop: blocker-driven continuation` from read-only dry-run
   spike to a default-off runtime execution path guarded by
   `enforce.ralphLoop.enabled=false` by default. When explicitly enabled, the
