@@ -17,9 +17,61 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   - Current role names remain `test-writer`, `implementer`, and `reviewer`;
     legacy `jaeki`/`roach` artifact paths are read as compatibility inputs but
     are not written going forward.
+  - QA accepted `f16117f1c8a33e43ab37a1fa132801c58923b4f9`
+    (`feat(cli): add role-boundary report`) through a fresh local-current
+    tarball only; registry was not used. Installed version was `0.5.0`;
+    tarball shasum `b457a0fdbc09ef63093385a2b726874e430f96fa`; sha256
+    `17ec2818d99b0f9e128704bc923a9ca07d9bd5210ec95030c0872e5314d68855`;
+    integrity
+    `sha512-XmXXxHGvpVB9MzXuMpofF6f4vgI3H82XHbcW7bz6Z1EI1+q9d7Lgt3kvy+26Fr7+HLJeVoq2R3YRhReRD0Mgxg==`;
+    entryCount `553`.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage6-role-boundary-report-f16117f-20260703T044131Z`;
+    tarball:
+    `/tmp/persona-stage6-role-boundary-report-f16117f-20260703T044131Z/pack/persona-harness-0.5.0.tgz`.
+  - Package entries were present for
+    `dist/cli/workflow-role-boundary.js`,
+    `dist/cli/workflow-role-boundary.d.ts`,
+    `dist/cli/workflow-relay-artifacts.js`,
+    `dist/cli/workflow-relay-artifacts.d.ts`,
+    `dist/cli/workflow-command.js`, `dist/cli/workflow-args.js`, and
+    `dist/cli/cli-usage.js`.
+  - `ph --help` and `ph version` exited 0; help listed
+    `workflow role-boundary`. `ph workflow role-boundary --bad` exited 1 with
+    usage.
+  - Fixture setup exited 0 for `init`,
+    `bootstrap --multi-agent-preview --force --no-developer-mcp
+    --no-codegraph`, `workflow draft`, `approve`, `split`, and `next`.
+  - `ph workflow role-boundary --json` and human
+    `ph workflow role-boundary` exited 0. JSON schema was
+    `workflow-role-boundary-report.1`; `mode=report-only`;
+    `blockMode.available=false`; `stableSessionRoleIdentity=unavailable`.
+  - Block-mode reason was scoped to the Stage 1A limitation: stable
+    per-session agent/role identity is unavailable at PH runtime boundaries;
+    Stage 1A only confirmed `Session.parentID` subagent classification.
+  - Findings observed `role-boundary-forbidden-claim` on
+    `.persona/workflow/work/req-1/roles/reviewer.md` and
+    `unknown-role-artifact-path` on
+    `.persona/workflow/work/req-1/roles/mystery.md`.
+  - Legacy aliases read compatibly only: `jaeki.md -> implementer` and
+    `roach.md -> reviewer`. Compatibility notes state PH reads legacy paths
+    for compatibility but writes current role names.
+  - Human output stated report-only/no writes/no workflow state mutation and
+    block mode unavailable.
+  - Mutation boundaries held: `workflow role-boundary --json` and human report
+    wrote no files; there was no `.persona/workflow/role-boundary.json` report
+    artifact, closure blocker, auto-fix, workflow state mutation, registry
+    usage, publish/tag/latest/dist-tag/version movement. Product repo status
+    stayed clean/aligned.
   - This is not deterministic write enforcement, OMO/team-mode parity,
     token-saving, product-efficacy, app-quality, full-TDD, broad reliability,
-    closure guarantee, or automatic completion/removal evidence.
+    closure guarantee, or automatic completion/removal evidence. It remains
+    local-current package-runtime evidence only; block mode remains
+    unavailable/deferred with no fake block mode, and registry evidence remains
+    NO-GO until a future publish includes `f16117f`. It is also not
+    token/provider-token saving, navigation benefit, test-sufficiency,
+    autonomous loop, generated-app certification, automatic downgrade, or an
+    enforcement claim.
 - Promoted `ralph-loop: blocker-driven continuation` from read-only dry-run
   spike to a default-off runtime execution path guarded by
   `enforce.ralphLoop.enabled=false` by default. When explicitly enabled, the
