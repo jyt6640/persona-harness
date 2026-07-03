@@ -2,6 +2,12 @@
 
 Use this package for repeatable release operations and release note drafting.
 
+Durable versioned summaries now live under `docs/releases/`. For the current
+prerelease line, start with
+[`docs/releases/v0.6.0-rc.1/README.md`](../../releases/v0.6.0-rc.1/README.md).
+The files in this directory remain the release-operation and release-note
+sources used by the existing workflow.
+
 ## Release Messaging Guardrail
 
 Describe Persona Harness as an AI coding workflow rail + evidence + continuation harness.

@@ -1,54 +1,66 @@
-# Current Docs
+# Current Docs Pointer Index
 
-This package contains active decisions, current policy, release-facing guides, and status JSON used by maintenance checks.
+`docs/current/` is the working area for active decisions, status files, release
+operations, and maintenance-check inputs. Durable release facts should now be
+recorded first under [`docs/releases/`](../releases/README.md).
 
-Use this package for documents that should guide the next implementation or productization loop.
+This cleanup intentionally preserves older `current/` files in place. Many are
+historical records that were created before the versioned release-docs
+structure. Prefer append-only correction, summary, or migration pointers over
+deleting evidence/status history.
 
-## Product Positioning
+## Current Canonical Pointers
 
-Persona Harness is currently positioned as an AI coding workflow rail + evidence + continuation harness.
+- Versioned release capsule:
+  [`docs/releases/v0.6.0-rc.1/`](../releases/v0.6.0-rc.1/README.md).
+- Release operations and workflow-compatible release notes:
+  [`release/README.md`](release/README.md) and
+  [`release/v0.6.0-rc.1-release-notes.md`](release/v0.6.0-rc.1-release-notes.md).
+- Ralph-loop measurement status:
+  [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
+- Multi-agent relay status:
+  [`multiagent-relay-trial-status.md`](multiagent-relay-trial-status.md).
+- Rail-entry and runtime-injection status:
+  [`rail-entry-measurement-status.md`](rail-entry-measurement-status.md).
+- Measurement scorecard:
+  [`measurement-scorecard.md`](measurement-scorecard.md).
+- Runtime-injection value status JSON:
+  [`injection-value-status.json`](injection-value-status.json).
 
-It is not a Java Clean Code guarantee, generated app quality certification, broad AST/linter, or general enforcement engine. Java/Spring backend guidance remains the first steering target, and GUARD is currently a scoped opt-in closure enforcement candidate. Evidence means local traces of reads, injections, selected rails, target file roles, and workflow command activity. Evidence count is not a quality score.
+## Current Facts To Preserve
 
-A/B and ON/OFF smoke results should be read as stack-steering signals only. Current evidence is small, often `n=1`, non-blind, run by the same operator, and sensitive to model, version, prompt, timeout, and continuation behavior.
+- `0.6.0-rc.1` is published to npm `next`; `latest` remains `0.5.0`; `alpha`
+  remains `0.3.9-alpha.8`.
+- `runtimeInjection` remains a parked opt-in preview.
+- Ralph-loop idle trigger delivery failed to prove model-facing continuation.
+  The later default-off hybrid tool-output trigger has accepted
+  trigger-survival evidence, including n=15 PASS for marker/state/follow-up,
+  but completion-integrity movement and default-change are not proven.
+- Relay is a Multi-Agent/role checklist rail with optional host-dependent
+  subagent invocation. There is no reliable automatic OpenCode role subagent
+  orchestration claim.
+- `workflow role-boundary` remains report-only/heuristic. The wrong-actor
+  attribution blind spot is documented.
+- `scorecard.1` is secondary archive observation only and does not override
+  preregistered kill criteria.
 
-Common anchors:
+## Classification
 
-- `mvp-goal.md`
-- `phase2-scope-settlement.md`
-- `backend-clean-code-uniformity-rubric.md`
-- `injection-value-stopping-rule.md`
-- `java-backend-mvp-install-guide.md`
-- `java-backend-bootstrap-injection-design.md`
-- `v0.3.0-project-intake-philosophy-workflow.md`
-- `v0.3.0-backend-profile-summary-injection-design.md`
-- `v0.3.0-workflow-next-surface-decision.md`
-- `v0.3.0-interactive-intake-design.md`
-- `v0.3.0-intake-transcript-fixture.md`
-- `v0.3.0-profile-schema-decision.md`
-- `v0.3.0-blackbear-plan-artifact.md`
-- `v0.3.0-plan-acceptance.md`
-- `v0.3.0-workflow-history.md`
-- `v0.3.0-workflow-report-status-lifecycle.md`
-- `v0.3.6-workflow-ticket-backlog.md`
-- `v0.3.6-requirements-draft-workflow.md`
-- `top-level-intent-router-design.md`
-- `next-rail-prompt-drafts.md`
-- `skill-hook-role-agentization-roadmap.md`
-- `v0.3.0-gradle-spring-build-guidance.md`
-- `v0.3.0-installed-package-evidence-noise-policy.md`
-- `v0.3.1-external-tester-guide.md`
-- `v0.3.1-external-tester-feedback-template.md`
-- `v0.3.0-alpha-publish-readiness.md`
-- `evidence-reviews/v0.3.8-alpha.1-clean-tarball-workflow-smoke.md`
-- `release/v0.3.8-alpha.1-release-notes.md`
-- `desktop-test-artifacts-index.md`
-- `acceptance-results/README.md`
-- `v0.3.0-domain-behavior-guidance-review.md`
-- `release/release-checklist.md`
-- `release/release-notes-template.md`
-- `persona-harness-detailed-usage.md`
-- `team-project-adoption-guide.md`
-- `persona-workflow-roles-v0.3.md`
-- `mvp-scope-status.json`
-- `injection-value-status.json`
+- Versioned release records belong in `docs/releases/v<version>/`.
+- Release runbooks and workflow-compatible note files remain in
+  `docs/current/release/`.
+- Active measurements and decision statuses may remain in `docs/current/` while
+  they are changing.
+- Older `v0.3.*`, `v0.4.*`, and transitional files under `docs/current/` are
+  historical unless a current pointer above names them. Do not rewrite them to
+  look current; add explicit correction or migration notes if needed.
+
+## Product Positioning Boundary
+
+Persona Harness is a gate-first workflow rail, evidence, and continuation
+harness. Do not claim token/provider-token saving, product efficacy, navigation
+benefit, app quality, full-TDD/test sufficiency, broad reliability, closure
+guarantee, autonomous completion, generated-app certification, deterministic
+role enforcement, production-ready delegation, automatic
+completion/downgrade/removal, CodeGraph/LSP default/effectiveness, or broad
+product guarantees.

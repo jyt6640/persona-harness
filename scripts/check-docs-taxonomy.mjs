@@ -4,7 +4,7 @@ import { resolve } from "node:path"
 const PROJECT_DIR = process.argv[2] === undefined ? process.cwd() : resolve(process.argv[2])
 
 const ROOT_ALLOWED_FILES = new Set(["README.md", "project-progress-board.md"])
-const ROOT_ALLOWED_DIRS = new Set(["archive", "current", "evidence-reviews", "phases"])
+const ROOT_ALLOWED_DIRS = new Set(["archive", "current", "evidence-reviews", "phases", "releases"])
 
 function suggestedDirectory(fileName) {
   if (fileName.endsWith(".json")) {

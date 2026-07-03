@@ -6,6 +6,11 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added a versioned docs structure under `docs/releases/` and converted
+  `docs/current/README.md` into a pointer index. The first capsule,
+  `docs/releases/v0.6.0-rc.1/`, preserves registry facts, measurement
+  summaries, and caveats for `0.6.0-rc.1` while keeping legacy `docs/current`
+  records append-only. The docs taxonomy check now allows `docs/releases/`.
 - Added a default-off ralph-loop tool-output trigger candidate for the
   post-blocker delivery path. When `enforce.ralphLoop.enabled=true` and the new
   `enforce.ralphLoop.toolOutputTrigger=true`, PH scopes the trigger to
