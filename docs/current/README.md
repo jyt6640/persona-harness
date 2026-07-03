@@ -26,6 +26,8 @@ deleting evidence/status history.
   [`measurement-scorecard.md`](measurement-scorecard.md).
 - Runtime-injection value status JSON:
   [`injection-value-status.json`](injection-value-status.json).
+- Full docs inventory:
+  [`docs-inventory.md`](docs-inventory.md).
 
 ## Current Facts To Preserve
 
@@ -51,6 +53,8 @@ deleting evidence/status history.
   `docs/current/release/`.
 - Active measurements and decision statuses may remain in `docs/current/` while
   they are changing.
+- `docs-inventory.md` tracks every file under `docs/**`, including files that
+  are intentionally retained in legacy locations.
 - Older `v0.3.*`, `v0.4.*`, and transitional files under `docs/current/` are
   historical unless a current pointer above names them. Do not rewrite them to
   look current; add explicit correction or migration notes if needed.

@@ -6,6 +6,12 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added a full `docs/**` inventory at `docs/current/docs-inventory.md`. It
+  classifies every docs file as current active pointer/status, versioned
+  durable record, version-specific release note, historical current doc,
+  operational stable doc, evidence review archive, phase archive, or archived
+  historical record so old evidence can stay append-only while future facts move
+  toward versioned release capsules.
 - Added a versioned docs structure under `docs/releases/` and converted
   `docs/current/README.md` into a pointer index. The first capsule,
   `docs/releases/v0.6.0-rc.1/`, preserves registry facts, measurement

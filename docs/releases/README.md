@@ -23,3 +23,10 @@ changes during roadmap work.
 
 - [`v0.6.0-rc.1`](v0.6.0-rc.1/README.md): prerelease `next` registry smoke,
   Stage 1-14 package-runtime facts, and current post-rc1 measurement pointers.
+
+## Inventory Relationship
+
+The full docs inventory lives at
+[`docs/current/docs-inventory.md`](../current/docs-inventory.md). Files marked
+as version-specific but still located under `docs/current/` are compatibility
+records. Summarize them into a version capsule before moving them.

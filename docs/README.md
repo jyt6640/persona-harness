@@ -13,7 +13,7 @@ These are documentation directories, not npm packages or release channels.
 - `releases/`: versioned release capsules for durable release facts, registry
   smoke records, measurement summaries, and caveats.
 - `current/`: active policy, current decisions, install guides, status JSON,
-  and current pointers into versioned records.
+  current pointers into versioned records, and the full docs inventory.
 - `current/release/`: release checklist, release note templates, and repeated
   release operations. Version-specific release-note files remain here for
   release workflow compatibility, with durable summaries linked from
@@ -26,6 +26,8 @@ These are documentation directories, not npm packages or release channels.
 
 - `project-progress-board.md`: short current-state board.
 - `README.md`: this taxonomy and placement guide.
+- `current/docs-inventory.md`: classification index for every file under
+  `docs/**`.
 
 ## Placement Rules
 
@@ -37,6 +39,8 @@ These are documentation directories, not npm packages or release channels.
 - Put superseded plans or historical snapshots in `archive/`.
 - Preserve old `current/` records by append-only correction or index/pointer
   updates before considering deletion.
+- When a file cannot be moved safely, keep it in place and classify it in
+  `current/docs-inventory.md`.
 - Do not add new `.md` or `.json` files directly under `docs/`.
 
 ## Checks
