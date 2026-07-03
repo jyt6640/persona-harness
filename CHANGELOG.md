@@ -22,11 +22,69 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   - Added `docs/current/measurement-scorecard.md` as canonical
     `scorecard.1` for experiment archive scorecards only. This does not expand
     `.persona/evidence` schemas.
+  - QA accepted `5ae69c6c8ee0e8a5a581141c46c6543ca2747463`
+    (`feat(cli): park runtime injection and add relay guidance`) through a
+    fresh local-current tarball only; registry was not used. Installed version
+    was `0.5.0`; tarball shasum
+    `fbac570dc4f7871bdcc23ca5e2cb174be2bdd700`; sha256
+    `e32f5af2e90f17fa43f64284240f897dc7815992ce2b9b98597ed28201e6302b`;
+    integrity
+    `sha512-qGpiltxbBNoHGN9W2ozAQ5D3A/hZ2QSY6iTiKja/inPXP1nedJTwifhffUvLibHuB0+yb59ZLdSEobxT4JHnXg==`;
+    entryCount `562`.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage11-park-static-relay-5ae69c6-20260703T085638Z`;
+    `RESULT.md` classified PASS.
+  - Package entries were present for `dist/cli/bootstrap.js`,
+    role-boundary heuristic/policy/evidence runtime files, runtime hooks,
+    `workflow-role-boundary`, `README.md`, and `README.ko.md`.
+  - Basic CLI passed: `ph --help`, `ph version`, and `ph bootstrap --help`.
+    `ph bootstrap backend --help` exited 1 while printing usage; QA accepted
+    this as a caveat/pre-existing parser shape, not a Stage 11 blocker, because
+    after selecting concrete `backend`, `--help` is treated as an invalid
+    backend option path rather than top-level bootstrap help.
+  - Runtime-injection copy in bootstrap help and packaged README/README.ko
+    frames runtime injection as parked opt-in preview, not recommended/default.
+    `--runtime-injection-preview` remains available. No
+    token/product-efficacy claim was observed.
+  - Default/non-preview bootstrap did not add
+    `Persona Harness Multi-Agent Relay Preview` guidance to `AGENTS.md`.
+  - `ph bootstrap backend --multi-agent-preview --force --no-developer-mcp
+    --no-codegraph` added relay guidance with
+    `npx ph workflow relay next --json`, roles `test-writer` / `implementer` /
+    `reviewer`, `npx ph workflow closure next --json`, and main-session
+    bypass/direct-role-work warning.
+  - Re-running preview bootstrap was idempotent; relay section count stayed
+    `1`.
+  - Role-boundary heuristic matcher observed `write=true`, `edit=true`,
+    `todowrite=false`, and `todo_write=false`. With `multiAgent.enabled=false`,
+    write observation created no role-boundary evidence. `todowrite` /
+    `todo_write` created no role-boundary evidence.
+  - File `write` plus `edit` created one aggregate
+    `.persona/evidence/role-boundary/session-role-boundary.json` with count
+    `2`. `workflow role-boundary --json` remained schema
+    `workflow-role-boundary-report.2` and included a heuristic finding with
+    `source=runtime-write-observation`, possible delegation-bypass wording, and
+    heuristic time-window limitation.
+  - Mutation boundaries held: report commands wrote no unexpected files; the
+    runtime fixture wrote only expected
+    `.persona/evidence/role-boundary/session-role-boundary.json` in the file
+    write/edit scenario. There was no workflow state mutation, closure blocker,
+    auto-fix, blocked write, report artifact, registry usage,
+    publish/tag/latest/dist-tag/version movement.
+  - Scorecard package caveat: `docs/current/measurement-scorecard.md` is the
+    repo-current canonical `scorecard.1` and is absent from the npm tarball
+    under current package files policy. QA accepted this as non-blocking for
+    this External package-runtime smoke. No scorecard package-presence claim is
+    made.
   - Defaults, release channels, and claims are unchanged: no token/provider-token
     saving, product-efficacy/navigation benefit, app-quality/full-TDD, broad
     reliability/closure guarantee, deterministic role enforcement, autonomous
     completion, generated-app certification, or automatic
-    completion/downgrade/removal claim.
+    completion/downgrade/removal claim. This remains local-current
+    package-runtime evidence only; registry evidence remains NO-GO until a
+    future publish includes `5ae69c6`. It is also not test-sufficiency, a new
+    evidence schema claim, scorecard package-presence evidence, or a
+    release/registry claim.
 - Added Stage 10 role-boundary scope honesty and report-only heuristic write
   observation.
   - `ph workflow role-boundary [--json]` now emits
