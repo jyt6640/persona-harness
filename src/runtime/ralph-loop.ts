@@ -33,6 +33,22 @@ type RalphLoopContinuationOptions = {
   readonly projectDir: string
 }
 
+type AttemptedSessionStateInput = {
+  readonly blockerId: string
+  readonly maxAttempts: number
+  readonly maxSessionAttempts: number
+  readonly now: string
+  readonly previous: RalphLoopSessionState
+}
+
+type CapSummaryInput = {
+  readonly blockerId: string
+  readonly maxAttempts: number
+  readonly maxSessionAttempts: number
+  readonly reason: string
+  readonly sessionAttemptsUsed: number
+}
+
 function elapsedMsSince(isoTimestamp: string | null, nowMs: number): number | null {
   if (isoTimestamp === null) {
     return null
@@ -59,6 +75,10 @@ function cappedSessionState(previous: RalphLoopSessionState): RalphLoopSessionSt
   }
 }
 
+function blockerAttempts(previous: RalphLoopSessionState, blockerId: string): number {
+  return previous.blockerAttempts[blockerId]?.attempts ?? 0
+}
+
 function markCapSummaryNotified(previous: RalphLoopSessionState): RalphLoopSessionState {
   return {
     ...previous,
@@ -66,17 +86,12 @@ function markCapSummaryNotified(previous: RalphLoopSessionState): RalphLoopSessi
   }
 }
 
-function attemptedSessionState(
-  previous: RalphLoopSessionState,
-  blockerId: string,
-  now: string,
-  maxAttempts: number,
-): RalphLoopSessionState {
-  const previousBlocker = previous.blockerAttempts[blockerId] ?? EMPTY_RALPH_LOOP_SESSION_STATE.blockerAttempts[blockerId]
-  const blockerAttempts = previousBlocker?.attempts ?? 0
-  const nextBlockerAttempts = blockerAttempts + 1
+function attemptedSessionState(input: AttemptedSessionStateInput): RalphLoopSessionState {
+  const { blockerId, maxAttempts, maxSessionAttempts, now, previous } = input
+  const nextBlockerAttempts = blockerAttempts(previous, blockerId) + 1
   const attemptsUsed = previous.attemptsUsed + 1
-  const capped = attemptsUsed >= maxAttempts || nextBlockerAttempts >= maxAttempts
+  const blockerCapped = nextBlockerAttempts >= maxAttempts
+  const sessionCapped = attemptsUsed >= maxSessionAttempts
   return {
     ...previous,
     attemptsUsed,
@@ -84,25 +99,26 @@ function attemptedSessionState(
       ...previous.blockerAttempts,
       [blockerId]: {
         attempts: nextBlockerAttempts,
-        capped,
+        capped: blockerCapped,
         lastUtteranceAt: now,
       },
     },
-    capped,
-    capSummaryNotified: capped ? previous.capSummaryNotified : false,
+    capped: sessionCapped,
+    capSummaryNotified: sessionCapped ? previous.capSummaryNotified : false,
     lastBlockerId: blockerId,
-    lastStopReason: capped ? "max-attempts" : null,
+    lastStopReason: sessionCapped ? "max-attempts" : null,
     lastUtteranceAt: now,
   }
 }
 
-function capSummaryText(blockerId: string, reason: string, attemptsUsed: number, maxAttempts: number): string {
+function capSummaryText(input: CapSummaryInput): string {
   return [
     "[Persona Harness Ralph Loop]",
     "Retry cap reached; no further blocker continuation prompt will be sent for this session.",
-    `Blocker: ${blockerId}`,
-    `Reason: ${reason}`,
-    `Attempts used: ${attemptsUsed}/${maxAttempts}`,
+    `Blocker: ${input.blockerId}`,
+    `Reason: ${input.reason}`,
+    `Attempts used: ${input.sessionAttemptsUsed}/${input.maxSessionAttempts}`,
+    `Per-blocker cap: ${input.maxAttempts}`,
     "PH finish/closure gates remain authoritative. Fix blockers directly, then rerun `npx ph workflow finish implement`.",
   ].join("\n")
 }
@@ -141,7 +157,16 @@ export class RalphLoopContinuationTracker {
       if (sessionState.capSummaryNotified) {
         return { status: "capped" }
       }
-      await this.sendPrompt(sessionID, capSummaryText(blocker.id, blocker.reason, sessionState.attemptsUsed, this.options.config.maxAttempts))
+      await this.sendPrompt(
+        sessionID,
+        capSummaryText({
+          blockerId: blocker.id,
+          maxAttempts: this.options.config.maxAttempts,
+          maxSessionAttempts: this.options.config.maxSessionAttempts,
+          reason: blocker.reason,
+          sessionAttemptsUsed: sessionState.attemptsUsed,
+        }),
+      )
       writeRalphLoopState(
         this.options.projectDir,
         withRalphLoopSessionState(state, sessionID, markCapSummaryNotified(sessionState), now),
@@ -149,7 +174,15 @@ export class RalphLoopContinuationTracker {
       return { status: "summary-sent" }
     }
 
-    if (sessionState.attemptsUsed >= this.options.config.maxAttempts) {
+    if (sessionState.attemptsUsed >= this.options.config.maxSessionAttempts) {
+      writeRalphLoopState(
+        this.options.projectDir,
+        withRalphLoopSessionState(state, sessionID, cappedSessionState(sessionState), now),
+      )
+      return { status: "capped" }
+    }
+
+    if (blockerAttempts(sessionState, blocker.id) >= this.options.config.maxAttempts) {
       writeRalphLoopState(
         this.options.projectDir,
         withRalphLoopSessionState(state, sessionID, cappedSessionState(sessionState), now),
@@ -165,7 +198,7 @@ export class RalphLoopContinuationTracker {
     const decision = this.utteranceGate.tryBegin({
       allowSameBlockerRetry: true,
       blockerId: blocker.id,
-      maxAttempts: this.options.config.maxAttempts,
+      maxAttempts: this.options.config.maxSessionAttempts,
       sessionId: sessionID,
     })
     if (decision.kind === "blocked") {
@@ -173,7 +206,13 @@ export class RalphLoopContinuationTracker {
     }
 
     try {
-      const nextSessionState = attemptedSessionState(sessionState, blocker.id, now, this.options.config.maxAttempts)
+      const nextSessionState = attemptedSessionState({
+        blockerId: blocker.id,
+        maxAttempts: this.options.config.maxAttempts,
+        maxSessionAttempts: this.options.config.maxSessionAttempts,
+        now,
+        previous: sessionState,
+      })
       writeRalphLoopState(this.options.projectDir, withRalphLoopSessionState(state, sessionID, nextSessionState, now))
       await this.sendPrompt(
         sessionID,

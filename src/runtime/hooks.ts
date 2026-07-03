@@ -134,6 +134,10 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     return sessionRegistry.allowsMainSession(sessionID, surface)
   }
 
+  function allowsUtterance(sessionID: string | undefined, surface: RuntimeInjectionSurface): boolean {
+    return sessionRegistry.allowsUtterance(sessionID, surface)
+  }
+
   function captureTargetFile(
     hook: "tool.execute.before" | "tool.execute.after",
     tool: string,
@@ -228,7 +232,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           return
         }
         if (config.enforce.ralphLoop.enabled) {
-          if (!allowsMainSession(input.event.properties.sessionID, "ralph-loop")) {
+          if (!allowsUtterance(input.event.properties.sessionID, "ralph-loop")) {
             return
           }
           await ralphLoop.continueIfBlocked(input.event.properties.sessionID)
@@ -237,7 +241,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         if (!config.enforce.idleContinuation) {
           return
         }
-        if (!allowsRuntimeInjection(input.event.properties.sessionID, "idle-continuation")) {
+        if (!allowsUtterance(input.event.properties.sessionID, "idle-continuation")) {
           return
         }
         await idleContinuation.continueIfBlocked(input.event.properties.sessionID)

@@ -55,6 +55,7 @@ export type HarnessRalphLoopConfig = {
   readonly cooldownMs: number
   readonly enabled: boolean
   readonly maxAttempts: number
+  readonly maxSessionAttempts: number
 }
 
 export type HarnessTelemetryConfig = {
@@ -108,6 +109,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
       cooldownMs: 30_000,
       enabled: false,
       maxAttempts: 3,
+      maxSessionAttempts: 9,
     },
     systemConstitution: false,
     tdd: false,
@@ -202,10 +204,13 @@ function readRalphLoopConfig(value: unknown): HarnessRalphLoopConfig {
   if (!isRecord(value)) {
     return DEFAULT_CONFIG.enforce.ralphLoop
   }
+  const maxAttempts = readPositiveInteger(value.maxAttempts, DEFAULT_CONFIG.enforce.ralphLoop.maxAttempts)
+  const maxSessionAttempts = readPositiveInteger(value.maxSessionAttempts, maxAttempts * 3)
   return {
     cooldownMs: readNonNegativeInteger(value.cooldownMs, DEFAULT_CONFIG.enforce.ralphLoop.cooldownMs),
     enabled: readBoolean(value.enabled, DEFAULT_CONFIG.enforce.ralphLoop.enabled),
-    maxAttempts: readPositiveInteger(value.maxAttempts, DEFAULT_CONFIG.enforce.ralphLoop.maxAttempts),
+    maxAttempts,
+    maxSessionAttempts: Math.max(maxSessionAttempts, maxAttempts),
   }
 }
 

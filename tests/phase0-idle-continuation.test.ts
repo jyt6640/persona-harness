@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
+import type { Event } from "@opencode-ai/sdk"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
@@ -59,6 +60,19 @@ function deferredClient(calls: IdlePromptAsyncOptions[]): {
   }
 }
 
+function sessionEvent(projectDir: string, type: "session.created" | "session.updated", sessionID: string, parentID?: string): Event {
+  const base = {
+    directory: projectDir,
+    id: sessionID,
+    projectID: "project",
+    time: { created: 1, updated: 1 },
+    title: sessionID,
+    version: "1",
+  }
+  const info = parentID === undefined ? base : { ...base, parentID }
+  return { properties: { info }, type }
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -85,6 +99,7 @@ describe("Phase 0 idle continuation hook", () => {
     const calls: IdlePromptAsyncOptions[] = []
     const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
 
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-idle-enabled") })
     await hooks.event?.({ event: { properties: { sessionID: "session-idle-enabled" }, type: "session.idle" } })
     await hooks.event?.({ event: { properties: { sessionID: "session-idle-enabled" }, type: "session.idle" } })
 
@@ -108,6 +123,7 @@ describe("Phase 0 idle continuation hook", () => {
     const fake = deferredClient(calls)
     const hooks = createPhase0Hooks({ client: fake.client, projectDir })
 
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-idle-in-flight") })
     const first = hooks.event?.({ event: { properties: { sessionID: "session-idle-in-flight" }, type: "session.idle" } })
     await hooks.event?.({ event: { properties: { sessionID: "session-idle-in-flight" }, type: "session.idle" } })
     fake.resolve()
@@ -124,6 +140,34 @@ describe("Phase 0 idle continuation hook", () => {
     const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
 
     await hooks.event?.({ event: { properties: {}, type: "server.connected" } })
+
+    expect(calls).toEqual([])
+  })
+
+  it("fails closed for unknown sessions and can utter after late main-session classification", async () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { enforce: { idleContinuation: true } })
+    writeBlockedWorkflow(projectDir)
+    const calls: IdlePromptAsyncOptions[] = []
+    const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+
+    await hooks.event?.({ event: { properties: { sessionID: "session-late-main" }, type: "session.idle" } })
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-late-main") })
+    await hooks.event?.({ event: { properties: { sessionID: "session-late-main" }, type: "session.idle" } })
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.path.id).toBe("session-late-main")
+  })
+
+  it("does not utter into a known subagent session even when multi-agent is disabled", async () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { enforce: { idleContinuation: true }, multiAgent: { enabled: false } })
+    writeBlockedWorkflow(projectDir)
+    const calls: IdlePromptAsyncOptions[] = []
+    const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-subagent", "session-main") })
+    await hooks.event?.({ event: { properties: { sessionID: "session-subagent" }, type: "session.idle" } })
 
     expect(calls).toEqual([])
   })

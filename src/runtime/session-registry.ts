@@ -173,6 +173,19 @@ export class RuntimeSessionRegistry {
     return false
   }
 
+  allowsUtterance(sessionID: string | undefined, surface: RuntimeInjectionSurface): boolean {
+    const resolvedSessionID = sessionID ?? "unknown-session"
+    const classification = this.classification(resolvedSessionID)
+    if (classification.kind === "main") {
+      return true
+    }
+    const reason = classification.kind === "subagent"
+      ? "subagent-session"
+      : "classification-unavailable"
+    this.recordSkip({ classification, reason, sessionID: resolvedSessionID, surface })
+    return false
+  }
+
   private recordSkip(input: SkipRecordInput): void {
     const outputPath = skipEvidencePath(this.options.projectDir, input.sessionID)
     const now = new Date().toISOString()

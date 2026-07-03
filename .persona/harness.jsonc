@@ -17,6 +17,7 @@
     "ralphLoop": {
       "enabled": false,
       "maxAttempts": 3,
+      "maxSessionAttempts": 9,
       "cooldownMs": 30000
     }
   },

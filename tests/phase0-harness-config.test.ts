@@ -60,6 +60,7 @@ describe("Phase 0 harness config", () => {
       cooldownMs: 30_000,
       enabled: false,
       maxAttempts: 3,
+      maxSessionAttempts: 9,
     })
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.tdd).toBe(false)
@@ -99,6 +100,7 @@ describe("Phase 0 harness config", () => {
           cooldownMs: 45_000,
           enabled: true,
           maxAttempts: 2,
+          maxSessionAttempts: 4,
         },
         systemConstitution: false,
         tdd: true,
@@ -119,10 +121,29 @@ describe("Phase 0 harness config", () => {
       cooldownMs: 45_000,
       enabled: true,
       maxAttempts: 2,
+      maxSessionAttempts: 4,
     })
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.tdd).toBe(true)
     expect(config.enforce.writeDeny).toBe(true)
+  })
+
+  it("clamps ralph-loop session cap to at least the per-blocker cap", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, {
+      enforce: {
+        ralphLoop: {
+          enabled: true,
+          maxAttempts: 3,
+          maxSessionAttempts: 1,
+        },
+      },
+    })
+
+    const config = loadHarnessConfig(projectDir)
+
+    expect(config.enforce.ralphLoop.maxAttempts).toBe(3)
+    expect(config.enforce.ralphLoop.maxSessionAttempts).toBe(3)
   })
 
   it("uses runtime injection preview opt-in from harness.jsonc", () => {

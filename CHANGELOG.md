@@ -6,6 +6,23 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Separated ralph-loop per-blocker and per-session retry budgets while keeping
+  `enforce.ralphLoop.enabled=false` by default. `maxAttempts` remains the
+  per-blocker cap; new `maxSessionAttempts` defaults to `maxAttempts * 3`
+  (`9` with defaults) and is clamped to at least `maxAttempts`.
+  - `ph workflow ralph-loop [--dry-run] [--json]` now emits
+    `workflow-ralph-loop.3` so the dry-run policy preview can report both
+    caps accurately.
+  - Runtime ralph-loop and ordinary idle-continuation utterances now use an
+    utterance-specific session classification gate: known subagent and unknown
+    sessions fail closed even when `multiAgent.enabled=false`. If
+    `session.created` has not arrived yet, the first idle can be skipped; a
+    later idle can utter after main-session classification arrives. This
+    prefers late utterance over wrong-session utterance.
+  - No default change, autonomous completion, success/reliability/closure
+    guarantee, token/provider-token saving, product-efficacy/navigation
+    benefit, app-quality/full-TDD claim, generated-app certification, or
+    automatic completion/downgrade/removal claim.
 - Corrected the Stage 3 rail-entry A/B interpretation as an append-only
   record. The archive measurement plan defined PH OFF as no local PH install,
   no workspace OpenCode plugin, and `NPM_CONFIG_OFFLINE=true` for agent

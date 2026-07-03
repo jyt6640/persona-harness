@@ -35,7 +35,7 @@ describe("ph workflow ralph-loop", () => {
     expect(result.status).toBe(0)
     expect(result.stderr).toBe("")
     expect(output).toMatchObject({
-      schemaVersion: "workflow-ralph-loop.2",
+      schemaVersion: "workflow-ralph-loop.3",
       name: "ralph-loop",
       subtitle: "blocker-driven continuation",
       mode: "dry-run",
@@ -49,9 +49,10 @@ describe("ph workflow ralph-loop", () => {
       },
       retryPolicy: {
         maxAttempts: 3,
+        maxSessionAttempts: 9,
         attemptsUsed: 0,
         knownSessions: 0,
-        remainingAttempts: 3,
+        remainingSessionAttempts: 9,
         stateSource: "persisted-workflow-state",
       },
       retry: {
@@ -80,7 +81,7 @@ describe("ph workflow ralph-loop", () => {
     expect(result.stdout).toContain("Mode: dry-run (read-only, default-off, no prompt sent)")
     expect(result.stdout).toContain("Execution config: disabled; runtime surface: session.idle")
     expect(result.stdout).toContain("Early completion: blocked by PH closure gate")
-    expect(result.stdout).toContain("Retry cap: 3 attempts")
+    expect(result.stdout).toContain("Retry cap: 3 attempts per blocker; 9 attempts per session")
     expect(result.stdout).toContain("n=30 blocker/completion A/B")
     expect(result.stdout).toContain("not a success, reliability, generated-app quality, or closure guarantee")
   })

@@ -14,7 +14,7 @@ type RalphLoopOptions = {
 }
 
 type RalphLoopPayload = {
-  readonly schemaVersion: "workflow-ralph-loop.2"
+  readonly schemaVersion: "workflow-ralph-loop.3"
   readonly name: "ralph-loop"
   readonly subtitle: "blocker-driven continuation"
   readonly mode: "dry-run"
@@ -29,9 +29,10 @@ type RalphLoopPayload = {
   }
   readonly retryPolicy: {
     readonly maxAttempts: number
+    readonly maxSessionAttempts: number
     readonly attemptsUsed: number
     readonly knownSessions: number
-    readonly remainingAttempts: number
+    readonly remainingSessionAttempts: number
     readonly stateSource: "persisted-workflow-state"
   }
   readonly state: {
@@ -71,7 +72,7 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
   const nextStep = closure.action === "next" ? closure.nextStep : null
   const knownSessions = Object.keys(persistedState.sessions).length
   return {
-    schemaVersion: "workflow-ralph-loop.2",
+    schemaVersion: "workflow-ralph-loop.3",
     name: "ralph-loop",
     subtitle: "blocker-driven continuation",
     mode: "dry-run",
@@ -86,9 +87,10 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
     },
     retryPolicy: {
       maxAttempts: config.enforce.ralphLoop.maxAttempts,
+      maxSessionAttempts: config.enforce.ralphLoop.maxSessionAttempts,
       attemptsUsed: 0,
       knownSessions,
-      remainingAttempts: config.enforce.ralphLoop.maxAttempts,
+      remainingSessionAttempts: config.enforce.ralphLoop.maxSessionAttempts,
       stateSource: "persisted-workflow-state",
     },
     state: {
@@ -136,7 +138,7 @@ function formatRalphLoopText(payload: RalphLoopPayload): string {
     `Execution config: ${payload.execution.enabled ? "enabled" : "disabled"}; runtime surface: ${payload.execution.runtimeSurface}`,
     `Closure blockers: ${payload.state.blockerCount}`,
     `Finish state: ${payload.state.finish}`,
-    `Retry cap: ${payload.retryPolicy.maxAttempts} attempts; dry-run attempts used: ${payload.retryPolicy.attemptsUsed}; known sessions: ${payload.retryPolicy.knownSessions}`,
+    `Retry cap: ${payload.retryPolicy.maxAttempts} attempts per blocker; ${payload.retryPolicy.maxSessionAttempts} attempts per session; dry-run attempts used: ${payload.retryPolicy.attemptsUsed}; known sessions: ${payload.retryPolicy.knownSessions}`,
   ]
   if (payload.blocker === null) {
     lines.push("Result: no closure blockers remain; continuation is not eligible.")

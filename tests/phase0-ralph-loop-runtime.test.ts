@@ -58,11 +58,25 @@ function writePassableWorkflow(projectDir: string): void {
   writeFilledReports(projectDir)
 }
 
+function fillImplementationReport(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    ["Status: filled", "- `npx ph bearshell ./gradlew test`", "BUILD SUCCESSFUL"].join("\n"),
+  )
+}
+
+function fillReviewReport(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    ["Status: filled", "- `npx ph bearshell ./gradlew bootRun`", "Tomcat started on port 8080"].join("\n"),
+  )
+}
+
 function writeRalphLoopConfig(projectDir: string, extra: Record<string, unknown> = {}): void {
   writeHarnessConfig(projectDir, {
     enforce: {
       idleContinuation: true,
-      ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 3 },
+      ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 3, maxSessionAttempts: 9 },
     },
     ...extra,
   })
@@ -147,19 +161,16 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     writeRalphLoopConfig(projectDir, { enforce: { ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 2 } } })
     writeBlockedWorkflow(projectDir)
     const calls: IdlePromptAsyncOptions[] = []
+    async function runFreshIdle(): Promise<void> {
+      const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+      await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-restart") })
+      await hooks.event?.({ event: { properties: { sessionID: "session-restart" }, type: "session.idle" } })
+    }
 
-    await createPhase0Hooks({ client: fakeClient(calls), projectDir }).event?.({
-      event: { properties: { sessionID: "session-restart" }, type: "session.idle" },
-    })
-    await createPhase0Hooks({ client: fakeClient(calls), projectDir }).event?.({
-      event: { properties: { sessionID: "session-restart" }, type: "session.idle" },
-    })
-    await createPhase0Hooks({ client: fakeClient(calls), projectDir }).event?.({
-      event: { properties: { sessionID: "session-restart" }, type: "session.idle" },
-    })
-    await createPhase0Hooks({ client: fakeClient(calls), projectDir }).event?.({
-      event: { properties: { sessionID: "session-restart" }, type: "session.idle" },
-    })
+    await runFreshIdle()
+    await runFreshIdle()
+    await runFreshIdle()
+    await runFreshIdle()
 
     expect(calls).toHaveLength(3)
     expect(calls[0]?.body.parts[0]?.text).toContain("[Persona Harness Ralph Loop]")
@@ -169,23 +180,75 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     expect(sessionState).toMatchObject({ attemptsUsed: 2, capped: true, capSummaryNotified: true })
   })
 
-  it("tracks blocker-specific attempts while preserving the session cap", async () => {
+  it("does not cap prematurely across three resolved blockers", async () => {
     const projectDir = createProject()
-    writeRalphLoopConfig(projectDir, { enforce: { ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 2 } } })
+    writeRalphLoopConfig(projectDir)
     writeBlockedWorkflow(projectDir)
     const calls: IdlePromptAsyncOptions[] = []
     const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
 
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-blocker-change") })
     await hooks.event?.({ event: { properties: { sessionID: "session-blocker-change" }, type: "session.idle" } })
     writeStructuredVerificationEvidence(projectDir, 0, "gradlew test\nBUILD SUCCESSFUL\ngradlew build\nBUILD SUCCESSFUL")
     await hooks.event?.({ event: { properties: { sessionID: "session-blocker-change" }, type: "session.idle" } })
+    fillImplementationReport(projectDir)
+    await hooks.event?.({ event: { properties: { sessionID: "session-blocker-change" }, type: "session.idle" } })
+    fillReviewReport(projectDir)
+    await hooks.event?.({ event: { properties: { sessionID: "session-blocker-change" }, type: "session.idle" } })
 
     const sessionState = readRalphLoopState(projectDir).sessions["session-blocker-change"]
-    expect(calls).toHaveLength(2)
-    expect(sessionState?.attemptsUsed).toBe(2)
+    expect(calls).toHaveLength(3)
+    expect(sessionState?.attemptsUsed).toBe(3)
     expect(sessionState?.blockerAttempts["verification-unknown"]?.attempts).toBe(1)
     expect(sessionState?.blockerAttempts["implementation-report-missing"]?.attempts).toBe(1)
-    expect(sessionState?.capped).toBe(true)
+    expect(sessionState?.blockerAttempts["review-report-missing"]?.attempts).toBe(1)
+    expect(sessionState?.capped).toBe(false)
+    expect(sessionState?.lastStopReason).toBe("no-blockers")
+  })
+
+  it("caps a same-blocker session after the per-blocker retry budget and sends one summary", async () => {
+    const projectDir = createProject()
+    writeRalphLoopConfig(projectDir)
+    writeBlockedWorkflow(projectDir)
+    const calls: IdlePromptAsyncOptions[] = []
+    async function runFreshIdle(): Promise<void> {
+      const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+      await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-same-blocker") })
+      await hooks.event?.({ event: { properties: { sessionID: "session-same-blocker" }, type: "session.idle" } })
+    }
+
+    for (let index = 0; index < 5; index += 1) {
+      await runFreshIdle()
+    }
+
+    const sessionState = readRalphLoopState(projectDir).sessions["session-same-blocker"]
+    expect(calls).toHaveLength(4)
+    expect(calls.filter((call) => call.body.parts[0]?.text.includes("Retry cap reached"))).toHaveLength(1)
+    expect(sessionState).toMatchObject({ attemptsUsed: 3, capped: true, capSummaryNotified: true })
+    expect(sessionState?.blockerAttempts["verification-unknown"]?.attempts).toBe(3)
+  })
+
+  it("caps the whole session after maxSessionAttempts and sends one summary", async () => {
+    const projectDir = createProject()
+    writeRalphLoopConfig(projectDir, {
+      enforce: { ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 3, maxSessionAttempts: 3 } },
+    })
+    writeBlockedWorkflow(projectDir)
+    const calls: IdlePromptAsyncOptions[] = []
+    const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-session-cap") })
+    await hooks.event?.({ event: { properties: { sessionID: "session-session-cap" }, type: "session.idle" } })
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew test\nBUILD SUCCESSFUL\ngradlew build\nBUILD SUCCESSFUL")
+    await hooks.event?.({ event: { properties: { sessionID: "session-session-cap" }, type: "session.idle" } })
+    fillImplementationReport(projectDir)
+    await hooks.event?.({ event: { properties: { sessionID: "session-session-cap" }, type: "session.idle" } })
+    await hooks.event?.({ event: { properties: { sessionID: "session-session-cap" }, type: "session.idle" } })
+
+    const sessionState = readRalphLoopState(projectDir).sessions["session-session-cap"]
+    expect(calls).toHaveLength(4)
+    expect(calls.filter((call) => call.body.parts[0]?.text.includes("Retry cap reached"))).toHaveLength(1)
+    expect(sessionState).toMatchObject({ attemptsUsed: 3, capped: true, capSummaryNotified: true })
   })
 
   it("stops when closure blockers are exhausted", async () => {
@@ -195,6 +258,7 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     const calls: IdlePromptAsyncOptions[] = []
     const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
 
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-pass") })
     await hooks.event?.({ event: { properties: { sessionID: "session-pass" }, type: "session.idle" } })
 
     expect(calls).toEqual([])
@@ -208,10 +272,40 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     const calls: IdlePromptAsyncOptions[] = []
     const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
 
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-mutual-exclusion") })
     await hooks.event?.({ event: { properties: { sessionID: "session-mutual-exclusion" }, type: "session.idle" } })
 
     expect(calls).toHaveLength(1)
     expect(calls[0]?.body.parts[0]?.text).toContain("[Persona Harness Ralph Loop]")
     expect(calls[0]?.body.parts[0]?.text).not.toContain("[Persona Harness Idle Continuation]")
+  })
+
+  it("does not utter into known subagent or unknown sessions when multi-agent is disabled", async () => {
+    const projectDir = createProject()
+    writeRalphLoopConfig(projectDir, { multiAgent: { enabled: false } })
+    writeBlockedWorkflow(projectDir)
+    const calls: IdlePromptAsyncOptions[] = []
+    const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-subagent-no-multi", "session-main") })
+    await hooks.event?.({ event: { properties: { sessionID: "session-subagent-no-multi" }, type: "session.idle" } })
+    await hooks.event?.({ event: { properties: { sessionID: "session-unknown-no-multi" }, type: "session.idle" } })
+
+    expect(calls).toEqual([])
+  })
+
+  it("skips the first unknown idle and can utter after late main-session classification", async () => {
+    const projectDir = createProject()
+    writeRalphLoopConfig(projectDir)
+    writeBlockedWorkflow(projectDir)
+    const calls: IdlePromptAsyncOptions[] = []
+    const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+
+    await hooks.event?.({ event: { properties: { sessionID: "session-late-classified" }, type: "session.idle" } })
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-late-classified") })
+    await hooks.event?.({ event: { properties: { sessionID: "session-late-classified" }, type: "session.idle" } })
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.path.id).toBe("session-late-classified")
   })
 })
