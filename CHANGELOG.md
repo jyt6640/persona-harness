@@ -6,6 +6,30 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Corrected the Stage 3 rail-entry A/B interpretation as an append-only
+  record. The archive measurement plan defined PH OFF as no local PH install,
+  no workspace OpenCode plugin, and `NPM_CONFIG_OFFLINE=true` for agent
+  commands, while PH ON installed the local-current PH tarball and bootstrapped
+  with `--runtime-injection-preview`.
+  - Stage 3 is therefore reclassified as `stack-vs-nothing rail entry`
+    evidence. It must not be cited as banner-only or runtimeInjection H1
+    evidence.
+  - The preregistered H1 question, `runtimeInjection ON vs OFF with all other
+    PH stack setup equal`, remains unmeasured by Stage 3.
+  - `runtimeInjection` remains default OFF because the default-changing H1
+    measurement is still absent, not because Stage 3 proved a positive or
+    negative banner-only/runtimeInjection effect.
+  - Status/correction doc:
+    `docs/current/rail-entry-measurement-status.md`. Historical archive files
+    were not modified.
+  - Stage 10 remains deferred: `workflow role-boundary` currently observes
+    relay artifact scans only, not production source writes; any
+    wording/time-window heuristic requires separate Stage 10 approval.
+  - This correction adds no product behavior, evidence schema, default change,
+    token/provider-token saving, product-efficacy/navigation-benefit,
+    app-quality/full-TDD, broad reliability, closure guarantee, autonomous
+    loop, generated-app certification, automatic completion/downgrade/removal,
+    or enforcement claim.
 - Added `ph workflow role-boundary [--json]` as a report-only relay role
   boundary observation surface. It reads current/legacy role artifacts for the
   active workflow ticket, reports likely role-boundary findings and unknown
