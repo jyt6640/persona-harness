@@ -50,6 +50,73 @@ or negative banner-only/runtimeInjection effect.
 - No product behavior, evidence schema, default, version, publish, tag, latest,
   or dist-tag movement is made by this correction.
 
+## Stage 9 Banner-Only H1 Measurement
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage9-banner-only-rail-entry-ab-10-20260703T053234Z`
+
+Relevant archive files:
+`KILL_CRITERIA.md`, `measurement-plan.json`, `runs.json`, `summary.json`,
+`RESULT.md`, and raw per-run OpenCode JSONL/stderr logs under `raw/`.
+
+Stage 9 measured the H1 that Stage 3 did not measure:
+with PH installed and bootstrap artifacts present in both conditions, does
+`runtimeInjection ON` increase rail entry compared with `runtimeInjection OFF`?
+
+Condition definitions:
+
+- OFF: local-current tarball installed, `ph bootstrap backend
+  --no-developer-mcp --no-codegraph --force` exited 0, and
+  `runtimeInjection=false` was asserted.
+- ON: same as OFF plus `--runtime-injection-preview`, and
+  `runtimeInjection=true` was asserted.
+
+Validity checks passed:
+
+- 10/10 paired rows accepted.
+- invalid run count: 0.
+- OFF and ON setup assertions passed for all pairs.
+- README SHA-256, TASK SHA-256, and fixture start commit matched inside every
+  pair.
+- All archive JSON/JSONL files parsed.
+
+Rail-entry result:
+
+- OFF rail entry: 10/10.
+- ON rail entry: 10/10.
+- Paired delta: 0 percentage points.
+- Paired sign test: improved 0, worsened 0, tied 10; one-sided p = 1.
+
+H1 judgment: not supported for this fixture. The preregistered positive
+criterion, `ON - OFF >= +30pp` and one-sided sign test `p < 0.05`, was not met.
+
+Runtime-injection decision state: `runtimeInjection` remains default OFF. This
+is not a claim that runtime injection is broadly useless; it means the
+banner-only H1 did not show a rail-entry increase in this controlled fixture.
+The OFF condition already entered PH rails in 10/10 sessions with the PH stack
+installed and bootstrap artifacts present, so follow-up hypotheses should
+inspect where AGENTS/profile/bootstrap context is sufficient without runtime
+banner injection.
+
+Telemetry was captured as a snapshot only:
+
+- elapsed mean: OFF 21648.3 ms, ON 21888.8 ms.
+- provider total token mean: OFF 48467.5, ON 54504.4.
+
+These telemetry values are not token-saving, product-efficacy, or navigation
+benefit evidence.
+
+## Stage 7-9 Summary
+
+- Stage 7 corrected Stage 3 interpretation: Stage 3 was
+  `stack-vs-nothing rail entry`, not banner-only/runtimeInjection H1 evidence.
+- Stage 8 separated ralph-loop per-blocker and per-session budgets and added
+  conservative utterance session classification for ralph-loop/idle
+  continuation. This did not change defaults.
+- Stage 9 measured the corrected banner-only H1. Result: H1 not supported for
+  this fixture; `runtimeInjection` remains default OFF.
+- Stage 10 remains deferred; see the note below.
+
 ## Deferred Stage 10 Note
 
 Stage 10 remains deferred. The current `ph workflow role-boundary [--json]`
