@@ -6,6 +6,49 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Accepted Stage 3 rail-entry A/B measurement as scoped rail-entry evidence
+  only. Archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage3-rail-entry-ab-15-20260703T025514Z`.
+  Product repo was clean/aligned at
+  `d52ee77172865046c69d4d4ecb1c0c8223710cd4`; no product source, release,
+  version, publish, tag, latest, or dist-tag movement occurred.
+  - Archive integrity PASS: required artifacts were present (`RESULT.md`,
+    `KILL_CRITERIA.md`, `measurement-plan.json`, `runs.json`, `summary.json`,
+    `partial-results.json`, raw JSONL logs, and per-run analysis). JSON/JSONL
+    parsing covered 193 JSON files, 30 JSONL logs, and 696 JSONL lines with 0
+    parse failures.
+  - No `persona-ab-measurement.1` / `.persona/evidence/ab` schema expansion
+    was found. `docs/current/injection-value-status.json` was not changed.
+  - Design: 15 paired rows / 30 sessions, counterbalanced 8 OFF-first and 7
+    ON-first. The primary stratum was 10 pairs with prompt type
+    `b-no-explicit-rail`; the secondary stratum was 5 pairs with prompt type
+    `a-explicit-rail` for ceiling-effect observation only. Pair comparability
+    was verified through matching `readmeSha256`, `taskSha256`, and
+    `startCommit` within each OFF/ON pair.
+  - PH OFF setup was absent/null. PH ON setup succeeded in all 15 runs with
+    install/bootstrap status 0, `runtimeInjection=true`, and
+    `systemConstitution=false`.
+  - Clean exits were OFF 15/15 and ON 15/15; timeouts were 0/30; invalid runs
+    were 0.
+  - Rail-entry judgment was a mechanical parser over the first 10 tool-use
+    events. ON rail entries in the primary stratum were all
+    `npx ph workflow implement` at tool index `<= 10`.
+  - Primary rail entry: OFF 0/10, ON 9/10, delta +90pp. Primary sign test was
+    `+9 / -0 / =1`, one-sided `p=0.001953125`; the predeclared positive
+    criterion was met (`ON-OFF >= +30pp` and `p < 0.05`).
+  - Secondary rail entry: OFF 0/5, ON 5/5, recorded as secondary
+    ceiling-effect observation only. Overall rail entry was OFF 0/15 and ON
+    14/15.
+  - Provider-token, elapsed, tool, and read metrics are telemetry snapshots
+    only, not claim support. OpenCode used its default model/provider; token
+    events existed but a stable provider/model identifier was unavailable.
+    Phase labels were unavailable; unknown phase cost was not zero-filled and
+    is recorded in `summary.phaseBreakdown`.
+  This supports rail-entry behavior only. It is not app completion, product
+  efficacy, navigation benefit, token/provider-token saving, app-quality,
+  full-TDD/test-sufficiency, broad reliability, closure guarantee,
+  autonomous-loop, generated-app certification, automatic downgrade/removal, or
+  broader product evidence.
 - Renamed the multi-agent relay preview roles from `jaeki` / `roach` to
   `implementer` / `reviewer`, while keeping `test-writer`.
   `ph bootstrap backend --multi-agent-preview` now writes the new OpenCode
