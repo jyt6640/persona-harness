@@ -38,6 +38,29 @@ Ralph-loop remains a default-off preview/parked continuation surface until a
 new real-session fixture can reliably exercise idle continuation and then run a
 valid paired sample.
 
+## Stage 12 Retry: Trigger-Survival Pilot
+
+- Archive: `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-trigger-survival-pilot-20260703T102108Z`
+- Source package: registry `persona-harness@next=0.6.0-rc.1`, gitHead `b673633533a314e1a64dd6dcb18c4097c5889a2c`, shasum `5c8bcd5c1bd4165dd129e39624408672f88091ce`.
+- Runner repair: archive-local measurement runner uses detached process-group `SIGTERM`, bounded 5000 ms grace, then `SIGKILL`.
+- Pilot 1 fixture: one-blocker transition.
+- Pilot 2 fixture: smaller finish-only blocker observation.
+
+Both retry pilots had valid OFF/ON setup and clean OpenCode exits. In both ON
+pilots, `.persona/workflow/ralph-loop-state.json` existed with two attempts,
+while OFF had zero attempts. That shows the ralph-loop runtime hook reached
+`continueIfBlocked`.
+
+The retry still failed the preregistered pilot gate because neither ON pilot
+showed model-facing ralph-loop prompt/utterance evidence in raw OpenCode JSONL
+or isolated OpenCode store search. The main n=15 sample was not run.
+
+Retry judgment: PARTIAL trigger-survival signal only. The hook/state path can
+fire, but observable `idle -> ralph-loop utterance -> resumed continuation` was
+not proven. The next step should be trigger design review, for example
+`experimental.text.complete` or blocker-declaration/continuation hook placement,
+before another n=15 real-session measurement.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.
