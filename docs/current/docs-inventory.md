@@ -25,9 +25,9 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - operational stable: 31
 - phase archive: 46
 - version-specific release note: 48
-- versioned durable: 4
+- versioned durable: 5
 
-Total indexed files: 255
+Total indexed files: 256
 
 ## File Inventory
 
@@ -284,7 +284,8 @@ Total indexed files: 255
 | `docs/phases/phase1/phase1-test-contract-time-list-matcher-decision.md` | phase archive | - | Phase plan/decision/result record; durable phase history. |
 | `docs/phases/phase1/phase1-test-contract-time-list-matcher-result.md` | phase archive | - | Phase plan/decision/result record; durable phase history. |
 | `docs/project-progress-board.md` | operational stable | - | Stable non-versioned guide or index. |
-| `docs/releases/README.md` | versioned durable | - | Canonical versioned release capsule or release-capsule index. |
-| `docs/releases/v0.6.0-rc.1/README.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule or release-capsule index. |
-| `docs/releases/v0.6.0-rc.1/measurements.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule or release-capsule index. |
-| `docs/releases/v0.6.0-rc.1/release-facts.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule or release-capsule index. |
+| `docs/releases/README.md` | versioned durable | - | Canonical versioned release capsule, package/version index, or release-capsule index. |
+| `docs/releases/package-index.md` | versioned durable | - | Canonical versioned release capsule, package/version index, or release-capsule index. |
+| `docs/releases/v0.6.0-rc.1/README.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule, package/version index, or release-capsule index. |
+| `docs/releases/v0.6.0-rc.1/measurements.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule, package/version index, or release-capsule index. |
+| `docs/releases/v0.6.0-rc.1/release-facts.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule, package/version index, or release-capsule index. |

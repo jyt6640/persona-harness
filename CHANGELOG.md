@@ -6,6 +6,12 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added `docs/releases/package-index.md` as a chronological package/version
+  timeline from undocumented early rows (`0.1.0`, `0.2.0`, `0.2.1`) through
+  the current `0.6.0-rc.1` prerelease. The index links release notes, the
+  current version capsule, documented channel state, and registry/archive
+  evidence without performing a new registry lookup or expanding release
+  claims.
 - Added a full `docs/**` inventory at `docs/current/docs-inventory.md`. It
   classifies every docs file as current active pointer/status, versioned
   durable record, version-specific release note, historical current doc,

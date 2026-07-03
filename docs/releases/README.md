@@ -21,6 +21,8 @@ changes during roadmap work.
 
 ## Releases
 
+- [Package version index](package-index.md): chronological package/version
+  timeline from undocumented early rows through the current `0.6.0-rc.1` RC.
 - [`v0.6.0-rc.1`](v0.6.0-rc.1/README.md): prerelease `next` registry smoke,
   Stage 1-14 package-runtime facts, and current post-rc1 measurement pointers.
 

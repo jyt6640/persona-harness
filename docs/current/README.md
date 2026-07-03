@@ -13,6 +13,8 @@ deleting evidence/status history.
 
 - Versioned release capsule:
   [`docs/releases/v0.6.0-rc.1/`](../releases/v0.6.0-rc.1/README.md).
+- Chronological package/version index:
+  [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
   [`release/v0.6.0-rc.1-release-notes.md`](release/v0.6.0-rc.1-release-notes.md).

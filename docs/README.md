@@ -28,6 +28,8 @@ These are documentation directories, not npm packages or release channels.
 - `README.md`: this taxonomy and placement guide.
 - `current/docs-inventory.md`: classification index for every file under
   `docs/**`.
+- `releases/package-index.md`: chronological package/version index from early
+  undocumented versions through the current release candidate.
 
 ## Placement Rules
 
