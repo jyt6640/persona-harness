@@ -35,7 +35,7 @@ describe("ph workflow ralph-loop", () => {
     expect(result.status).toBe(0)
     expect(result.stderr).toBe("")
     expect(output).toMatchObject({
-      schemaVersion: "workflow-ralph-loop.3",
+      schemaVersion: "workflow-ralph-loop.4",
       name: "ralph-loop",
       subtitle: "blocker-driven continuation",
       mode: "dry-run",
@@ -46,6 +46,8 @@ describe("ph workflow ralph-loop", () => {
         enabled: false,
         ordinaryIdleContinuationDisabledWhenEnabled: true,
         runtimeSurface: "session.idle",
+        runtimeSurfaces: ["session.idle"],
+        toolOutputTriggerEnabled: false,
       },
       retryPolicy: {
         maxAttempts: 3,
@@ -80,6 +82,7 @@ describe("ph workflow ralph-loop", () => {
     expect(result.stdout).toContain("Persona Harness ralph-loop: blocker-driven continuation")
     expect(result.stdout).toContain("Mode: dry-run (read-only, default-off, no prompt sent)")
     expect(result.stdout).toContain("Execution config: disabled; runtime surface: session.idle")
+    expect(result.stdout).toContain("Tool-output trigger: disabled; idle fallback: available when ralph-loop is enabled")
     expect(result.stdout).toContain("Early completion: blocked by PH closure gate")
     expect(result.stdout).toContain("Retry cap: 3 attempts per blocker; 9 attempts per session")
     expect(result.stdout).toContain("n=30 blocker/completion A/B")

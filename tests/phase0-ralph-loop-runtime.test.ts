@@ -118,11 +118,140 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     writeBlockedWorkflow(projectDir)
     const calls: IdlePromptAsyncOptions[] = []
     const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+    const output = {
+      metadata: {},
+      output: "Workflow finish failed: implement\nClosure blocker: verification-unknown",
+      title: "finish",
+    }
 
     await hooks.event?.({ event: { properties: { sessionID: "session-default" }, type: "session.idle" } })
+    await hooks["tool.execute.after"]?.(
+      {
+        args: { command: "npx ph workflow finish implement" },
+        callID: "call-default",
+        sessionID: "session-default",
+        tool: "bash",
+      },
+      output,
+    )
 
     expect(calls).toEqual([])
+    expect(output.output).not.toContain("[Persona Harness Ralph Loop Tool Continuation]")
     expect(existsSync(ralphLoopStatePath(projectDir))).toBe(false)
+  })
+
+  it("appends tool-output ralph-loop continuation for eligible PH blocker output", async () => {
+    const projectDir = createProject()
+    writeRalphLoopConfig(projectDir, {
+      enforce: {
+        ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 3, maxSessionAttempts: 9, toolOutputTrigger: true },
+      },
+    })
+    writeBlockedWorkflow(projectDir)
+    const calls: IdlePromptAsyncOptions[] = []
+    const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+    const output = {
+      metadata: {},
+      output: "Workflow finish failed: implement\n\nRequired fixes:\n- Closure blocker: verification-unknown",
+      title: "finish",
+    }
+
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-tool-output") })
+    await hooks["tool.execute.after"]?.(
+      {
+        args: { command: "npx ph workflow finish implement" },
+        callID: "call-tool-output",
+        sessionID: "session-tool-output",
+        tool: "bash",
+      },
+      output,
+    )
+    await hooks.event?.({ event: { properties: { sessionID: "session-tool-output" }, type: "session.idle" } })
+
+    expect(output.output).toContain("[Persona Harness Ralph Loop Tool Continuation]")
+    expect(output.output).toContain("[Persona Harness Ralph Loop]")
+    expect(output.output).toContain("Closure blockers remain; do not claim completion.")
+    expect(readRalphLoopState(projectDir).sessions["session-tool-output"]?.attemptsUsed).toBe(1)
+    expect(calls).toEqual([])
+  })
+
+  it("does not append tool-output continuation to arbitrary tool output", async () => {
+    const projectDir = createProject()
+    writeRalphLoopConfig(projectDir, {
+      enforce: {
+        ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 3, maxSessionAttempts: 9, toolOutputTrigger: true },
+      },
+    })
+    writeBlockedWorkflow(projectDir)
+    const hooks = createPhase0Hooks({ projectDir })
+    const output = {
+      metadata: {},
+      output: "Workflow finish failed: implement\nClosure blocker: verification-unknown",
+      title: "not finish",
+    }
+
+    await hooks["tool.execute.after"]?.(
+      {
+        args: { command: "npm test" },
+        callID: "call-arbitrary-output",
+        sessionID: "session-arbitrary-output",
+        tool: "bash",
+      },
+      output,
+    )
+
+    expect(output.output).not.toContain("[Persona Harness Ralph Loop Tool Continuation]")
+    expect(readRalphLoopState(projectDir).sessions["session-arbitrary-output"]).toBeUndefined()
+    expect(
+      existsSync(join(projectDir, ".persona", "evidence", "session-injection-skips", "session-arbitrary-output.json")),
+    ).toBe(false)
+  })
+
+  it("fails closed for subagent and unknown tool-output continuation sessions", async () => {
+    const projectDir = createProject()
+    writeRalphLoopConfig(projectDir, {
+      enforce: {
+        ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 3, maxSessionAttempts: 9, toolOutputTrigger: true },
+      },
+      multiAgent: { enabled: false },
+    })
+    writeBlockedWorkflow(projectDir)
+    const hooks = createPhase0Hooks({ projectDir })
+    const subagentOutput = {
+      metadata: {},
+      output: "Workflow finish failed: implement\nClosure blocker: verification-unknown",
+      title: "subagent finish",
+    }
+    const unknownOutput = {
+      metadata: {},
+      output: "Workflow finish failed: implement\nClosure blocker: verification-unknown",
+      title: "unknown finish",
+    }
+
+    await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-subagent-tool", "session-main") })
+    await hooks["tool.execute.after"]?.(
+      {
+        args: { command: "npx ph workflow finish implement" },
+        callID: "call-subagent-tool",
+        sessionID: "session-subagent-tool",
+        tool: "bash",
+      },
+      subagentOutput,
+    )
+    await hooks["tool.execute.after"]?.(
+      {
+        args: { command: "npx ph workflow finish implement" },
+        callID: "call-unknown-tool",
+        sessionID: "session-unknown-tool",
+        tool: "bash",
+      },
+      unknownOutput,
+    )
+
+    expect(subagentOutput.output).not.toContain("[Persona Harness Ralph Loop Tool Continuation]")
+    expect(unknownOutput.output).not.toContain("[Persona Harness Ralph Loop Tool Continuation]")
+    expect(readRalphLoopState(projectDir).sessions["session-subagent-tool"]).toBeUndefined()
+    expect(readRalphLoopState(projectDir).sessions["session-unknown-tool"]).toBeUndefined()
   })
 
   it("emits ralph-loop continuation only for classified main sessions when multi-agent is enabled", async () => {

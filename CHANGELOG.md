@@ -6,6 +6,25 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added a default-off ralph-loop tool-output trigger candidate for the
+  post-blocker delivery path. When `enforce.ralphLoop.enabled=true` and the new
+  `enforce.ralphLoop.toolOutputTrigger=true`, PH scopes the trigger to
+  deterministic PH blocker-producing tool outputs such as
+  `ph workflow finish implement` and `ph workflow check`, appends the existing
+  ralph-loop continuation prompt with the marker
+  `[Persona Harness Ralph Loop Tool Continuation]`, reuses persisted retry caps,
+  and suppresses the idle fallback to avoid duplicate prompts. The default
+  remains off.
+  - `ph workflow ralph-loop --json` now emits additive schema
+    `workflow-ralph-loop.4` so dry-run output can distinguish the active runtime
+    surface and whether the tool-output trigger is enabled.
+  - Tiny local-current pilot archive
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-tool-output-trigger-pilot-20260703T135815Z`
+    observed the tool-output marker in raw OpenCode JSONL, ralph-loop state
+    attempts `1`, clean OpenCode exit, and 13 follow-up tool calls after the
+    marker. This is trigger-survival evidence only; no n=15 measurement,
+    default change, token/product-efficacy, closure-success, reliability, or
+    autonomous-completion claim is made.
 - Added an append-only role-boundary caveat: `workflow role-boundary`
   heuristic write observations are report-only time-window/path/role-context
   signals. They cannot deterministically identify whether a write came from the

@@ -56,6 +56,7 @@ export type HarnessRalphLoopConfig = {
   readonly enabled: boolean
   readonly maxAttempts: number
   readonly maxSessionAttempts: number
+  readonly toolOutputTrigger: boolean
 }
 
 export type HarnessTelemetryConfig = {
@@ -110,6 +111,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
       enabled: false,
       maxAttempts: 3,
       maxSessionAttempts: 9,
+      toolOutputTrigger: false,
     },
     systemConstitution: false,
     tdd: false,
@@ -211,6 +213,7 @@ function readRalphLoopConfig(value: unknown): HarnessRalphLoopConfig {
     enabled: readBoolean(value.enabled, DEFAULT_CONFIG.enforce.ralphLoop.enabled),
     maxAttempts,
     maxSessionAttempts: Math.max(maxSessionAttempts, maxAttempts),
+    toolOutputTrigger: readBoolean(value.toolOutputTrigger, DEFAULT_CONFIG.enforce.ralphLoop.toolOutputTrigger),
   }
 }
 

@@ -61,6 +61,7 @@ describe("Phase 0 harness config", () => {
       enabled: false,
       maxAttempts: 3,
       maxSessionAttempts: 9,
+      toolOutputTrigger: false,
     })
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.tdd).toBe(false)
@@ -101,6 +102,7 @@ describe("Phase 0 harness config", () => {
           enabled: true,
           maxAttempts: 2,
           maxSessionAttempts: 4,
+          toolOutputTrigger: true,
         },
         systemConstitution: false,
         tdd: true,
@@ -122,6 +124,7 @@ describe("Phase 0 harness config", () => {
       enabled: true,
       maxAttempts: 2,
       maxSessionAttempts: 4,
+      toolOutputTrigger: true,
     })
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.tdd).toBe(true)

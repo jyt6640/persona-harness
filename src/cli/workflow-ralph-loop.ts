@@ -14,7 +14,7 @@ type RalphLoopOptions = {
 }
 
 type RalphLoopPayload = {
-  readonly schemaVersion: "workflow-ralph-loop.3"
+  readonly schemaVersion: "workflow-ralph-loop.4"
   readonly name: "ralph-loop"
   readonly subtitle: "blocker-driven continuation"
   readonly mode: "dry-run"
@@ -25,7 +25,9 @@ type RalphLoopPayload = {
     readonly enabled: boolean
     readonly ordinaryIdleContinuationDisabledWhenEnabled: true
     readonly statePath: string
-    readonly runtimeSurface: "session.idle"
+    readonly runtimeSurface: "session.idle" | "tool.execute.after"
+    readonly runtimeSurfaces: readonly ("session.idle" | "tool.execute.after")[]
+    readonly toolOutputTriggerEnabled: boolean
   }
   readonly retryPolicy: {
     readonly maxAttempts: number
@@ -72,7 +74,7 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
   const nextStep = closure.action === "next" ? closure.nextStep : null
   const knownSessions = Object.keys(persistedState.sessions).length
   return {
-    schemaVersion: "workflow-ralph-loop.3",
+    schemaVersion: "workflow-ralph-loop.4",
     name: "ralph-loop",
     subtitle: "blocker-driven continuation",
     mode: "dry-run",
@@ -83,7 +85,9 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
       enabled: config.enforce.ralphLoop.enabled,
       ordinaryIdleContinuationDisabledWhenEnabled: true,
       statePath: ralphLoopStatePath(projectDir),
-      runtimeSurface: "session.idle",
+      runtimeSurface: config.enforce.ralphLoop.toolOutputTrigger ? "tool.execute.after" : "session.idle",
+      runtimeSurfaces: config.enforce.ralphLoop.toolOutputTrigger ? ["tool.execute.after"] : ["session.idle"],
+      toolOutputTriggerEnabled: config.enforce.ralphLoop.toolOutputTrigger,
     },
     retryPolicy: {
       maxAttempts: config.enforce.ralphLoop.maxAttempts,
@@ -136,6 +140,7 @@ function formatRalphLoopText(payload: RalphLoopPayload): string {
     "Persona Harness ralph-loop: blocker-driven continuation",
     "Mode: dry-run (read-only, default-off, no prompt sent)",
     `Execution config: ${payload.execution.enabled ? "enabled" : "disabled"}; runtime surface: ${payload.execution.runtimeSurface}`,
+    `Tool-output trigger: ${payload.execution.toolOutputTriggerEnabled ? "enabled" : "disabled"}; idle fallback: ${payload.execution.toolOutputTriggerEnabled ? "suppressed to avoid duplicate prompts" : "available when ralph-loop is enabled"}`,
     `Closure blockers: ${payload.state.blockerCount}`,
     `Finish state: ${payload.state.finish}`,
     `Retry cap: ${payload.retryPolicy.maxAttempts} attempts per blocker; ${payload.retryPolicy.maxSessionAttempts} attempts per session; dry-run attempts used: ${payload.retryPolicy.attemptsUsed}; known sessions: ${payload.retryPolicy.knownSessions}`,

@@ -125,6 +125,47 @@ post-blocker continuation surface. If it succeeds, the next measurement should
 still be trigger-survival first, not completion-effectiveness or default-change
 evidence.
 
+## Tool-Output Trigger Implementation and Tiny Pilot
+
+Status: default-off implementation plus tiny pilot complete; no n=15
+measurement was run.
+
+- Archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-tool-output-trigger-pilot-20260703T135815Z`.
+- Package source: local-current tarball from the Stage implementation worktree,
+  package version `0.6.0-rc.1`, tarball shasum
+  `54e0d0f6ab7134d4ea0b26303cdb5cd1cb3dc23c`.
+- Config policy: `enforce.ralphLoop.toolOutputTrigger=false` by default. The
+  pilot explicitly set `enforce.ralphLoop.enabled=true`,
+  `enforce.ralphLoop.toolOutputTrigger=true`, `enforce.idleContinuation=false`,
+  `features.runtimeInjection=false`, and `multiAgent.enabled=false`.
+- Runtime scope: the tool-output trigger is limited to deterministic PH
+  blocker-producing command outputs such as `ph workflow finish implement` and
+  `ph workflow check`. It appends
+  `[Persona Harness Ralph Loop Tool Continuation]` plus the existing
+  ralph-loop continuation prompt to eligible tool output, reuses persisted
+  ralph-loop retry caps/state, and suppresses the `session.idle` fallback while
+  the tool-output trigger is enabled to avoid duplicate prompts.
+- Dry-run/reporting: `ph workflow ralph-loop --json` now reports
+  `workflow-ralph-loop.4` with the active runtime surface and
+  `toolOutputTriggerEnabled`.
+
+Pilot gate result:
+
+- Setup validity: PASS.
+- OpenCode clean exit: PASS.
+- Raw OpenCode JSONL marker observed: PASS.
+- `.persona/workflow/ralph-loop-state.json` attempt count: `1`.
+- Follow-up actions after marker: `13` tool calls, including later `write` and
+  `bash` calls.
+
+Judgment: PASS for the tiny trigger-survival pilot only. The pilot demonstrates
+that the marker can be returned through tool output and that the same model
+session can continue with bounded follow-up actions afterward. It does not
+measure n=15 completion integrity, does not support a default change, and does
+not make a token, product-efficacy, app-quality, reliability, closure-success,
+or autonomous-completion claim.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.

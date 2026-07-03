@@ -13,6 +13,7 @@ import { TokenCompactionTracker } from "./token-compaction.js"
 import type { TokenCompactionClient } from "./token-compaction.js"
 import { TokenTelemetryRecorder } from "./token-telemetry.js"
 import { RalphLoopContinuationTracker } from "./ralph-loop.js"
+import { RalphLoopToolOutputContinuationTracker, isRalphLoopToolOutputCandidate } from "./ralph-loop-tool-output.js"
 import {
   createJavaRoleReadFollowUp,
   discoverJavaRoleInjections,
@@ -112,6 +113,10 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
   const ralphLoop = new RalphLoopContinuationTracker({
     client: options.client,
+    config: config.enforce.ralphLoop,
+    projectDir,
+  })
+  const ralphLoopToolOutput = new RalphLoopToolOutputContinuationTracker({
     config: config.enforce.ralphLoop,
     projectDir,
   })
@@ -233,6 +238,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           return
         }
         if (config.enforce.ralphLoop.enabled) {
+          if (config.enforce.ralphLoop.toolOutputTrigger) {
+            return
+          }
           if (!allowsUtterance(input.event.properties.sessionID, "ralph-loop")) {
             return
           }
@@ -279,6 +287,21 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           callID: input.callID,
           targetFile: observedTargetFile,
         })
+
+        if (typeof output.output === "string") {
+          const toolOutputInput = {
+            args: input.args as Record<string, unknown>,
+            output: output.output,
+            sessionID: input.sessionID,
+            tool: input.tool,
+          }
+          if (isRalphLoopToolOutputCandidate(toolOutputInput) && allowsUtterance(input.sessionID, "ralph-loop")) {
+            const result = ralphLoopToolOutput.appendIfEligible(toolOutputInput)
+            if (result.kind === "appended") {
+              output.output = result.output
+            }
+          }
+        }
 
         const injection = captureTargetFile(
           "tool.execute.after",
