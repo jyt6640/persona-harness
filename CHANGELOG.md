@@ -8,11 +8,19 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## [0.6.0-rc.1] - 2026-07-03
 
-Release prep only. The target package version is `0.6.0-rc.1` and the intended
-npm dist-tag after QA publish GO is `next`, not `latest`. Until a future publish
-verifies registry gitHead and `dist.shasum`, stable `latest` remains `0.5.0`
-and registry `next` remains `0.5.0-rc.2`. No publish, tag, latest, or dist-tag
-movement is part of this prep commit.
+Published `0.6.0-rc.1` to the prerelease `next` channel after QA publish GO.
+Trusted Publisher run `28653322434` succeeded from gitHead
+`b673633533a314e1a64dd6dcb18c4097c5889a2c`; registry shasum is
+`5c8bcd5c1bd4165dd129e39624408672f88091ce`, with dist-tags
+`latest=0.5.0`, `next=0.6.0-rc.1`, and `alpha=0.3.9-alpha.8`. The
+`v0.6.0-rc.1` local and remote tags point at that gitHead after registry
+verification. Release workflow run `28653429619` succeeded, and the GitHub
+release exists as a prerelease.
+
+External registry smoke PASS archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage14-rc060-rc1-registry-smoke-20260703T100732Z`.
+`RESULT.md` classified the smoke as PASS. The smoke source was registry
+`persona-harness@next` only; no local tarball was used.
 
 Release highlights:
 
@@ -42,9 +50,35 @@ Release highlights:
   definition for experiment archives. It is a secondary observation surface, not
   a kill-criteria override, evidence schema expansion, or package-presence
   claim.
-- Local-current NO-GO registry notes remain unresolved until a future registry
-  publish includes the relevant commits and External registry smoke verifies
-  gitHead and `dist.shasum`.
+- Local-current NO-GO notes for the post-0.5 commits included in
+  `b673633533a314e1a64dd6dcb18c4097c5889a2c` are registry-smoked by this
+  accepted `0.6.0-rc.1` record. Any later local-current records still require a
+  future publish plus registry smoke before they become registry evidence.
+- Accepted registry package-runtime smoke observed localized READMEs,
+  `CHANGELOG.md`, `docs/current/release/v0.6.0-rc.1-release-notes.md`,
+  ralph-loop/state runtime, session registry, hooks, role-boundary
+  heuristic/policy/evidence, continuation utterance gate,
+  `workflow ralph-loop`, `workflow role-boundary`, bootstrap, workflow relay,
+  and continuation prompt package entries.
+- Accepted command surfaces exited 0: `ph --help`, `ph version`,
+  `ph bootstrap --help`, `workflow ralph-loop --json`,
+  `workflow role-boundary --json` and human output, default init/bootstrap,
+  multi-agent preview init/bootstrap/rerun, `workflow relay status --json`,
+  `workflow relay next --json`, and the smoke driver. `ph version` returned
+  `0.6.0-rc.1`.
+- `workflow ralph-loop --json` emitted schema `workflow-ralph-loop.3`, stayed
+  default-off/dry-run/no-write, and reported `maxAttempts=3` plus
+  `maxSessionAttempts=9`.
+- `workflow role-boundary --json` emitted schema
+  `workflow-role-boundary-report.2`, stayed report-only/heuristic, reported
+  block mode unavailable/no deterministic enforcement, and wrote no files.
+- Bootstrap relay guidance remained absent by default, present and idempotent
+  with `--multi-agent-preview`; relay status/next JSON used role order
+  `test-writer`, `implementer`, `reviewer`.
+- Mutation boundaries held: ralph-loop dry-run and role-boundary report wrote
+  no files; other writes were confined to disposable fixture
+  init/bootstrap/workflow state. External did not publish again, tag, move
+  latest/dist-tags, or change the version; repo status stayed clean.
 
 Claim boundaries are unchanged: no token/provider-token saving,
 product-efficacy/navigation benefit, app-quality/full-TDD/test-sufficiency,

@@ -34,12 +34,21 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Release prep target: `0.6.0-rc.1` for the npm prerelease `next` channel. This
-is prep-only: do not treat it as registry evidence until QA gives publish GO and
-registry gitHead plus `dist.shasum` verify the exact prep commit. Stable
-`latest` remains `0.5.0`; registry `next` remains `0.5.0-rc.2` until the RC is
-published; `alpha` remains `0.3.9-alpha.8`. No `v0.6.0-rc.1` tag should be
-created before registry verification.
+Current prerelease package: official `0.6.0-rc.1` is published under npm
+dist-tag `next`. Registry verification confirmed
+`persona-harness@next=0.6.0-rc.1`, gitHead
+`b673633533a314e1a64dd6dcb18c4097c5889a2c`, shasum
+`5c8bcd5c1bd4165dd129e39624408672f88091ce`, and dist-tags
+`latest=0.5.0`, `next=0.6.0-rc.1`, `alpha=0.3.9-alpha.8`. The local and
+remote `v0.6.0-rc.1` tags point at that gitHead after registry verification.
+Trusted Publisher run `28653322434` succeeded; Release workflow run
+`28653429619` succeeded; the GitHub release exists as a prerelease:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.1`.
+
+External registry smoke installed `persona-harness@next` as `0.6.0-rc.1` from
+the registry only and verified package-runtime surfaces. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage14-rc060-rc1-registry-smoke-20260703T100732Z`.
+`RESULT.md` classified PASS.
 
 `0.6.0-rc.1` packages the post-0.5 Stage 1-13 line conservatively: session
 classification/subagent injection skip, utterance gates, role naming cleanup,
@@ -52,12 +61,30 @@ so ralph-loop remains parked/default-off preview with no default-ON evidence;
 Stage 13 observed a static relay guidance path but no reliable OpenCode role
 subagent invocation or orchestration.
 
+The rc1 registry smoke observed localized READMEs, `CHANGELOG.md`,
+`docs/current/release/v0.6.0-rc.1-release-notes.md`, ralph-loop/state runtime,
+session registry, hooks, role-boundary heuristic/policy/evidence, continuation
+utterance gate, `workflow ralph-loop`, `workflow role-boundary`, bootstrap,
+workflow relay, and continuation prompt package entries. `ph --help`,
+`ph version`, `ph bootstrap --help`, `workflow ralph-loop --json`,
+`workflow role-boundary --json` and human output, default init/bootstrap,
+multi-agent preview init/bootstrap/rerun, `workflow relay status --json`,
+`workflow relay next --json`, and the smoke driver exited 0. `ph version`
+returned `0.6.0-rc.1`; `workflow ralph-loop --json` emitted
+`workflow-ralph-loop.3` with default-off/dry-run/no-write and
+`maxAttempts=3` / `maxSessionAttempts=9`; `workflow role-boundary --json`
+emitted `workflow-role-boundary-report.2` with report-only/heuristic block mode
+unavailable/no deterministic enforcement and no file writes. Bootstrap relay
+guidance remained absent by default, present/idempotent with
+`--multi-agent-preview`, and relay status/next JSON used role order
+`test-writer`, `implementer`, `reviewer`.
+
 Current stable package: official `0.5.0` is published under npm dist-tag
 `latest`. Registry verification confirmed `persona-harness@latest=0.5.0`,
 gitHead `c0f1085a5182cdd17411bd043173aabc9a76b30e`, shasum
-`3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`, and dist-tags
-`latest=0.5.0`, `next=0.5.0-rc.2`, `alpha=0.3.9-alpha.8`. The local and
-remote `v0.5.0` tags point at that gitHead. Trusted Publisher run
+`3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`. Current dist-tags are
+`latest=0.5.0`, `next=0.6.0-rc.1`, `alpha=0.3.9-alpha.8`. The local and remote
+`v0.5.0` tags point at the `0.5.0` gitHead. Trusted Publisher run
 `28611027369` succeeded; Release workflow run `28611144533` succeeded; the
 GitHub release exists as a non-prerelease:
 `https://github.com/jyt6640/persona-harness/releases/tag/v0.5.0`.
@@ -93,9 +120,10 @@ aggregate-lower provider-token evidence with weak paired consistency remains
 descriptive local evidence and lowers the decision hint to `keep-gathering`
 rather than a token-saving claim.
 
-Current next-channel package: `0.5.0-rc.2` under npm dist-tag `next`. It
-packages the gate-first runtime injection downgrade and is the final release
-candidate before stable prep.
+Historical next-channel package: `0.5.0-rc.2` previously lived under npm
+dist-tag `next`. It packaged the gate-first runtime injection downgrade and was
+the final release candidate before stable prep; current `next` is
+`0.6.0-rc.1`.
 
 `0.5.0-rc.1` already exists in npm and the remote `v0.5.0-rc.1` tag points at
 the prior wrong-channel commit `dcc34e071d167923b8cf40be095b303ba649d3ca`.
