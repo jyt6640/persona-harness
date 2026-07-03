@@ -38,6 +38,40 @@ initial role artifact, but it did not demonstrate end-to-end
 This result is a usability breakpoint record only. It does not support
 multi-agent reliability, product efficacy, app quality, or default changes.
 
+## Relay PromptBlock Subagent Retry
+
+Status: PARTIAL negative signal.
+
+- Archive: `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/relay-promptblock-subagent-retry-20260703T103717Z`
+- Source package: local-current `persona-harness@0.6.0-rc.1` tarball built
+  after the promptBlock wording change; package shasum
+  `cc00d7dc4c9b6e179b75ea06cc567458709a1827`.
+- Trial type: n=1 usability proxy, not A/B and not statistical evidence.
+- Setup: `ph bootstrap backend --multi-agent-preview --force`; OpenCode agents
+  existed for `test-writer`, `implementer`, and `reviewer`; `runtimeInjection`
+  and `ralphLoop` were both false.
+- OpenCode result: clean exit 0 in 42581 ms using `openai/gpt-5.4-mini-fast`.
+
+Observed items:
+
+- Main session called `npx ph workflow relay next --json`: yes.
+- PromptBlock contained the explicit `test-writer` subagent/task-tool
+  instruction: yes.
+- Role subagents invoked: no OpenCode task/agent/subagent tool invocation
+  observed.
+- Role artifacts created: none.
+- Closure/finish gate connected: no.
+- Breakpoint:
+  `relay-called-and-promptBlock-read-but-no-subagent-invocation-observed`.
+
+Interpretation: promptBlock wording alone did not overcome the Stage 13
+breakpoint in this fixture. Unless a later approved track funds stronger
+orchestration or hook work, relay should be framed as a main-session role
+checklist rail rather than reliable OpenCode subagent orchestration. Caveat:
+the probe prompt also asked the run to stop after the gate result was clear,
+which may have reinforced the observed stop behavior; the task scope allowed
+exactly one cheap retry, so no second run was performed.
+
 ## Stage 14 Implication
 
 If Stage 14 proceeds, multi-agent preview wording should remain conservative:

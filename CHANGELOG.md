@@ -6,6 +6,18 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- `workflow relay next --json` role-stage `promptBlock` now explicitly asks the
+  host to invoke the current OpenCode subagent via the task tool when that host
+  surface is available, and to record the limitation in the role artifact when
+  subagent invocation is unavailable. This is wording guidance only, not a
+  dispatch guarantee.
+- Follow-up n=1 relay proxy retry archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/relay-promptblock-subagent-retry-20260703T103717Z`
+  observed `workflow relay next --json` and the new promptBlock text, but did
+  not observe an OpenCode task/subagent invocation. Treat this as a usability
+  breakpoint record only; no reliability, product-efficacy, or
+  production-ready subagent orchestration claim is made.
+
 ## [0.6.0-rc.1] - 2026-07-03
 
 Published `0.6.0-rc.1` to the prerelease `next` channel after QA publish GO.

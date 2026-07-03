@@ -145,6 +145,9 @@ describe("ph workflow relay read-only preview", () => {
     expect(output.promptLines).toEqual(
       expect.arrayContaining([
         "Role: test-writer.",
+        "Invoke the `test-writer` subagent via the task tool for this role stage when the host exposes subagent/task invocation.",
+        "Do not perform the role work directly in the main session unless subagent invocation is unavailable.",
+        "If subagent invocation is unavailable, record that limitation in the role artifact.",
         "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay' and the current ticket/scenario contract rule.",
         "Detailed reference, if available in this package: packages/shared-skills/skills/programming/references/java/testing.md section 'Persona Harness relay contract'.",
         "Do not implement production code.",
@@ -153,6 +156,10 @@ describe("ph workflow relay read-only preview", () => {
       ]),
     )
     expect(output.promptBlock).toContain("Role: test-writer.")
+    expect(output.promptBlock).toContain("Invoke the `test-writer` subagent via the task tool")
+    expect(output.promptBlock).toContain("when the host exposes subagent/task invocation")
+    expect(output.promptBlock).toContain("unless subagent invocation is unavailable")
+    expect(output.promptBlock).toContain("record that limitation in the role artifact")
     expect(output.promptBlock).toContain("PH Multi-Agent Relay")
     expect(output.promptBlock).toContain("Persona Harness relay contract")
   })
@@ -175,6 +182,8 @@ describe("ph workflow relay read-only preview", () => {
     const implementer = relayJson(projectDir)
     expect(implementer.currentRole).toBe("implementer")
     expect(implementer.nextRole).toBe("implementer")
+    expect(implementer.promptBlock).toContain("Invoke the `implementer` subagent via the task tool")
+    expect(implementer.promptBlock).toContain("Do not perform the role work directly in the main session")
     expect(implementer.roleCompletionState).toMatchObject({
       completedRoles: ["test-writer"],
       currentRole: "implementer",
@@ -204,6 +213,8 @@ describe("ph workflow relay read-only preview", () => {
     expect(reviewer.action).toBe("status")
     expect(reviewer.currentRole).toBe("reviewer")
     expect(reviewer.nextRole).toBe("reviewer")
+    expect(reviewer.promptBlock).toContain("Invoke the `reviewer` subagent via the task tool")
+    expect(reviewer.promptBlock).toContain("If subagent invocation is unavailable, record that limitation")
     expect(reviewer.roleCompletionState).toMatchObject({
       completedRoles: ["test-writer", "implementer"],
       currentRole: "reviewer",

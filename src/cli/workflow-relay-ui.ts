@@ -53,6 +53,14 @@ function roleAuthoringHints(role: MultiAgentRole | null): readonly string[] {
   return ["Run the gate command shown above and continue through PH closure/check/archive/finish gates."]
 }
 
+function roleSubagentInvocationLines(role: MultiAgentRole): readonly string[] {
+  return [
+    `Invoke the \`${role}\` subagent via the task tool for this role stage when the host exposes subagent/task invocation.`,
+    "Do not perform the role work directly in the main session unless subagent invocation is unavailable.",
+    "If subagent invocation is unavailable, record that limitation in the role artifact.",
+  ]
+}
+
 export function relayValidateText(payload: WorkflowRelayPayload): string {
   const ticket = payload.currentTicket === null ? "none" : `${payload.currentTicket.id} - ${payload.currentTicket.title}`
   const firstBlocker = payload.blockers[0] ?? null
@@ -93,6 +101,7 @@ export function relayPromptLinesFor(
     return [
       ...common,
       "Role: test-writer.",
+      ...roleSubagentInvocationLines(role),
       "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay' and the current ticket/scenario contract rule.",
       "Detailed reference, if available in this package: packages/shared-skills/skills/programming/references/java/testing.md section 'Persona Harness relay contract'.",
       "Write the expected failing test, verification test, or verification plan for this ticket.",
@@ -106,6 +115,7 @@ export function relayPromptLinesFor(
     return [
       ...common,
       "Role: implementer.",
+      ...roleSubagentInvocationLines(role),
       "Implement or refactor only this scoped ticket; avoid broad redesign.",
       "Use the test-writer artifact if present and keep workflow reports/evidence honest.",
       `Record the role artifact at ${artifactPath}.`,
@@ -115,6 +125,7 @@ export function relayPromptLinesFor(
   return [
     ...common,
     "Role: reviewer.",
+    ...roleSubagentInvocationLines(role),
     "Review/QA the scoped ticket and pressure implementation/review reports.",
     "Do not implement features unless explicitly reassigned.",
     `Record the role artifact at ${artifactPath}.`,
