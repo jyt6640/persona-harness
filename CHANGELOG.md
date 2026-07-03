@@ -20,9 +20,60 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   - `ph workflow ralph-loop [--dry-run] [--json]` remains read-only and now
     emits schema `workflow-ralph-loop.2` with execution config and persisted
     state metadata. The command itself still writes no workflow/evidence state.
+  - QA accepted `d198047dddaf46f637eb48c588a7b15793e74bae`
+    (`feat(runtime): add ralph-loop execution gate`) through a fresh
+    local-current tarball only; registry was not used. Installed version was
+    `0.5.0`; tarball shasum `1679c3958fd20baed67ebc4ff669bf57276a7c9b`;
+    sha256 `715cd3aadf023e49e0ed853f7bfe1953cac3410777c0f6a38102a427d4ac7ed0`;
+    integrity
+    `sha512-l9DABRCHqUJu4Aubjtwayy5vG2AHve9KUUM5eYqu1XlvTcem4CfroSWyoAXSCFCyQId+y4bwu1PF4Q1KrYvvaw==`;
+    entryCount `550`. Prepack followed `prepack -> npm run build -> clean +
+    tsc`.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage5-ralph-loop-execution-gate-d198047-20260703T041630Z`;
+    work root:
+    `/tmp/persona-stage5-ralph-loop-execution-gate-d198047-20260703T041630Z`;
+    tarball:
+    `/tmp/persona-stage5-ralph-loop-execution-gate-d198047-20260703T041630Z/pack/persona-harness-0.5.0.tgz`.
+  - Package entries were present for `dist/runtime/ralph-loop.*`,
+    `dist/runtime/ralph-loop-state.*`, hooks, session registry,
+    continuation utterance gate, `workflow-ralph-loop`, harness config, and
+    bootstrap. Basic CLI help/version passed.
+  - Default init/bootstrap kept `enforce.ralphLoop.enabled=false`,
+    `maxAttempts=3`, and `cooldownMs=30000`. Workflow fixture setup passed
+    `init`, `bootstrap`, `workflow draft`, `approve`, `split`, and `next`.
+  - `ph workflow ralph-loop --json` passed with schema
+    `workflow-ralph-loop.2`, `mode=dry-run`, `mutates=false`,
+    `defaultOff=true`, state path `.persona/workflow/ralph-loop-state.json`,
+    runtime surface `session.idle`, retry policy `maxAttempts=3` /
+    `stateSource=persisted-workflow-state`, and
+    `[Persona Harness Ralph Loop]` prompt preview. Dry-run wrote no files.
+    Human `ph workflow ralph-loop` output stated dry-run/read-only/no prompt
+    sent and included the no success/reliability/closure guarantee boundary.
+  - Runtime with `enforce.ralphLoop.enabled=true` sent same-blocker
+    continuation prompts for main-session idle until cap, emitted exactly one
+    cap summary, then stayed capped on later same-session idle. Ordinary idle
+    continuation did not double-fire while ralph-loop was enabled.
+  - Subagent and unknown/unclassified sessions failed closed with no prompts.
+    Skip evidence aggregated for subagent/unknown under
+    `session-injection-skips` with surface `ralph-loop`.
+  - Persisted state was written at `.persona/workflow/ralph-loop-state.json`
+    with schema `workflow-ralph-loop-state.1`; main session state had
+    `attemptsUsed=3`, `capped=true`, `capSummaryNotified=true`, and blocker
+    `verification-unknown` attempts `3`.
+  - Mutation boundaries held: only expected runtime state and skip evidence
+    files were written. There were no report artifacts, registry usage,
+    publish/tag/latest/dist-tag/version movement, and repo status stayed clean.
+  - External smoke did not separately force blocker-change handling; it covered
+    stable same-blocker retry/cap behavior. Blocker-change handling remains
+    supported by local Stage 5 tests/QA, but not by this External
+    package-runtime smoke.
   - This is retry-capped blocker continuation only: no autonomous completion,
     no success/reliability/closure guarantee, no token/provider-token saving,
-    no product-efficacy/navigation-benefit, and no app-quality/full-TDD claim.
+    no product-efficacy/navigation-benefit, no app-quality/full-TDD
+    test-sufficiency, no generated-app certification, no automatic completion,
+    downgrade, or removal, and no broader product claim. Registry evidence
+    remains NO-GO until a future publish includes `d198047`.
 - Accepted Stage 4 continuation prompt/gate refactor as local-current
   package-runtime smoke for refactor and behavior preservation only. Source was
   HEAD `731a3011246163755e2b25b959e3632be2b5fb01`
