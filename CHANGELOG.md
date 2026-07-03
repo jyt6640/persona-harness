@@ -13,6 +13,60 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   - `ph workflow ralph-loop [--dry-run] [--json]` now emits
     `workflow-ralph-loop.3` so the dry-run policy preview can report both
     caps accurately.
+  - QA accepted `93a1d2494e5dcd79fa58b914b6b3f4fee6e1174a`
+    (`fix(runtime): separate ralph-loop budgets`) through a fresh
+    local-current tarball only; registry was not used. Installed version was
+    `0.5.0`; tarball shasum `a194a35a4377065b2f52a3ed972d24d70accd893`;
+    sha256 `36af3efa8a5e41a416ceaf38df703740c1ed560b2bf08187c82b7908db6c2189`;
+    integrity
+    `sha512-+Fo660pxQdt9PniwEo3tNghXgMEHN0zTxbx66BKQVTmhgz/nU+ba3S5t45BpBGfXBgVZcxnt6MQ4ue2T+2N1SQ==`;
+    entryCount `553`.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage8-ralph-loop-budget-separation-93a1d24-20260703T051908Z`;
+    tarball:
+    `/tmp/persona-stage8-ralph-loop-budget-separation-93a1d24-20260703T051908Z/pack/persona-harness-0.5.0.tgz`.
+    External `RESULT.md` and `summary.json` parsed/recorded PASS with no
+    failures.
+  - Package entries were present for `dist/runtime/ralph-loop.js`,
+    `dist/runtime/ralph-loop.d.ts`, `dist/runtime/ralph-loop-state.js`,
+    `dist/runtime/ralph-loop-state.d.ts`, `dist/runtime/session-registry.js`,
+    `dist/runtime/session-registry.d.ts`, `dist/runtime/hooks.js`,
+    `dist/cli/workflow-ralph-loop.js`, `dist/cli/workflow-ralph-loop.d.ts`,
+    `dist/config/harness-config.js`, and `dist/config/harness-config.d.ts`.
+  - Basic commands passed: `ph --help`, `ph version`, default
+    `init`/`bootstrap`, clamp fixture, CLI ralph-loop JSON/text fixture, and
+    runtime fixture driver.
+  - Default config/bootstrap observed `enforce.ralphLoop.enabled=false`,
+    `maxAttempts=3`, `maxSessionAttempts=9`, and `cooldownMs=30000`.
+  - Clamp fixture observed configured `maxAttempts=4`,
+    `maxSessionAttempts=2`, and effective `maxSessionAttempts=4`.
+  - `ph workflow ralph-loop --json` observed schema `workflow-ralph-loop.3`,
+    `mutates=false`, `defaultOff=true`, `mode=dry-run`, retry policy
+    `maxAttempts=3`, `maxSessionAttempts=9`, and
+    `remainingSessionAttempts=9`. Dry-run wrote no state/evidence files.
+    Human ralph-loop output distinguishes attempts per blocker from attempts
+    per session.
+  - Runtime unknown/unclassified idle produced no prompt, no ralph-loop session
+    state write, and skip evidence for `ralph-loop`. Known subagent idle
+    skipped/fail-closed with aggregated skip evidence for `ralph-loop`.
+  - Late lifecycle path passed: first unknown idle skipped; after main
+    classification, later idle emitted `[Persona Harness Ralph Loop]` and
+    wrote state schema `workflow-ralph-loop-state.1` with `attemptsUsed=1`.
+  - Same-blocker cap passed: attempts reached cap, cap summary emitted once,
+    and later same blocker stayed capped. Ordinary idle-continuation did not
+    double-fire while ralph-loop was enabled. Sparse/old state read safely.
+  - Session cap via `maxSessionAttempts` was validated in schema/config/clamp
+    and runtime state fields. External smoke did not separately force the
+    session-cap prompt path because the deterministic closure fixture kept one
+    first blocker, so per-blocker cap is reached before a higher session cap
+    without synthetic blocker changes. Local QA already covered the session-cap
+    summary path, so this is an External smoke limitation, not an acceptance
+    blocker.
+  - Mutation boundaries held: dry-run wrote no files; runtime fixture wrote
+    only expected disposable `.persona/workflow/ralph-loop-state.json` and
+    `.persona/evidence/session-injection-skips/*.json`; no report artifacts
+    were written. Product repo remained clean/aligned, and there was no
+    publish/tag/latest/dist-tag/version movement.
   - Runtime ralph-loop and ordinary idle-continuation utterances now use an
     utterance-specific session classification gate: known subagent and unknown
     sessions fail closed even when `multiAgent.enabled=false`. If
@@ -22,7 +76,9 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   - No default change, autonomous completion, success/reliability/closure
     guarantee, token/provider-token saving, product-efficacy/navigation
     benefit, app-quality/full-TDD claim, generated-app certification, or
-    automatic completion/downgrade/removal claim.
+    automatic completion/downgrade/removal claim. This remains local-current
+    package-runtime evidence only; registry evidence remains NO-GO until a
+    future publish includes `93a1d24`, and this is not a Stage 9/10 claim.
 - Corrected the Stage 3 rail-entry A/B interpretation as an append-only
   record. The archive measurement plan defined PH OFF as no local PH install,
   no workspace OpenCode plugin, and `NPM_CONFIG_OFFLINE=true` for agent
