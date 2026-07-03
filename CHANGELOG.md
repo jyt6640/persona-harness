@@ -6,6 +6,50 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Accepted Stage 4 continuation prompt/gate refactor as local-current
+  package-runtime smoke for refactor and behavior preservation only. Source was
+  HEAD `731a3011246163755e2b25b959e3632be2b5fb01`
+  (`refactor(cli): unify continuation prompts`), version/install `0.5.0`;
+  registry was not used.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage4-continuation-gate-refactor-731a301-20260703T034315Z`.
+    Tarball:
+    `/tmp/persona-stage4-continuation-gate-refactor-731a301-20260703T034315Z/pack/persona-harness-0.5.0.tgz`;
+    npm shasum `8e9388a232d72e414c292e65e412bb14f64aafc9`;
+    sha256 `1edbb638e138a4c89513ffc98968b9ed50e0a220457454c55f605e5889371ad5`;
+    entryCount `544`.
+  - Package contained shared continuation prompt and utterance gate surfaces:
+    `dist/cli/continuation-prompt.js`, `dist/cli/continuation-prompt.d.ts`,
+    `dist/runtime/continuation-utterance-gate.js`, and
+    `dist/runtime/continuation-utterance-gate.d.ts`, plus updated
+    idle/closure/ralph-loop runtime files.
+  - Basic CLI help/version passed and the installed version was `0.5.0`.
+    Fixture setup passed through init/bootstrap/workflow draft/approve/split/next.
+  - `workflow continue` preserved exit 0 and showed the shared continuation
+    marker/body with blocker reason/source/next action and deterministic
+    boundary text; no report/evidence writes occurred.
+  - `workflow closure next --json` preserved its output shape:
+    `action=next`, `nextStep`, `state`, and `steps`; first blocker was
+    `verification-unknown`.
+  - `workflow ralph-loop --json` preserved schema `workflow-ralph-loop.1`,
+    `mode=dry-run`, `mutates=false`, `defaultOff=true`, retry cap `3`, and the
+    shared prompt marker; no workflow/evidence writes occurred. Human
+    `workflow ralph-loop` output stated dry-run/read-only/no prompt sent.
+  - Idle runtime fixture verified the shared gate: exactly one fake
+    `session.promptAsync` call; in-flight duplicate and completed same-blocker
+    duplicate were suppressed; the prompt used
+    `[Persona Harness Idle Continuation]` and the shared continuation core; no
+    idle evidence files were written.
+  - Writes were confined to disposable temp projects and expected
+    init/bootstrap/workflow fixture state; repo status stayed clean.
+  This record accepts no evidence schema expansion, no public JSON
+  schema/output-shape change beyond the existing shape, no new firing path, and
+  no executable/autonomous ralph-loop. Registry evidence remains NO-GO until a
+  future publish includes `731a301`. It is not token/provider-token saving,
+  product-efficacy/navigation-benefit, app-quality/full-TDD,
+  test-sufficiency, broad reliability, closure guarantee, autonomous-loop,
+  generated-app certification, automatic completion, downgrade, removal, or
+  broader product evidence.
 - Accepted Stage 3 rail-entry A/B measurement as scoped rail-entry evidence
   only. Archive:
   `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage3-rail-entry-ab-15-20260703T025514Z`.
