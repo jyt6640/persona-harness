@@ -22,6 +22,7 @@ import { warnRuntimeFailure } from "./error-boundary.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
 import { observeJavaWriteReportOnly } from "./observer-report-only.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
+import { observeRoleBoundaryWrite } from "./role-boundary-heuristic.js"
 import { RuntimeSessionRegistry } from "./session-registry.js"
 import type { RuntimeInjectionSurface } from "./session-registry.js"
 import { PendingInjectionStore } from "./store.js"
@@ -269,6 +270,14 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           args: input.args as Record<string, unknown>,
         })
         captureJavaRoleDiscovery(input, output)
+        const observedTargetFile = extractTargetFile(input.tool, input.args as Record<string, unknown>)
+        observeRoleBoundaryWrite({
+          projectDir,
+          tool: input.tool,
+          sessionID: input.sessionID,
+          callID: input.callID,
+          targetFile: observedTargetFile,
+        })
 
         const injection = captureTargetFile(
           "tool.execute.after",

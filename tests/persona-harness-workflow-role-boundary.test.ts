@@ -91,7 +91,7 @@ describe("ph workflow role-boundary", () => {
       blockMode: {
         available: false,
       },
-      schemaVersion: "workflow-role-boundary-report.1",
+      schemaVersion: "workflow-role-boundary-report.2",
       stableSessionRoleIdentity: "unavailable",
       summary: {
         enabled: true,
@@ -102,6 +102,9 @@ describe("ph workflow role-boundary", () => {
     expect(JSON.stringify(output.findings)).toContain("role-boundary-forbidden-claim")
     expect(JSON.stringify(output.findings)).toContain("unknown-role-artifact-path")
     expect(JSON.stringify(output.boundaries)).toContain("report-only role-boundary observation; no writes are blocked")
+    expect(JSON.stringify(output.boundaries)).toContain(
+      "artifact-scan only; production-source writes are not observed by the artifact scan",
+    )
     expect(existsSync(join(projectDir, ".persona", "workflow", "role-boundary.json"))).toBe(false)
   })
 
@@ -144,6 +147,7 @@ describe("ph workflow role-boundary", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Persona Harness role-boundary report")
     expect(result.stdout).toContain("Mode: report-only; no writes are blocked")
+    expect(result.stdout).toContain("artifact-scan only; production-source writes are not observed by the artifact scan")
     expect(result.stdout).toContain("Block mode: unavailable")
     expect(result.stdout).toContain("PH closure/check/archive/finish gates remain authoritative")
   })

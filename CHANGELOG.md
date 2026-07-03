@@ -6,6 +6,28 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added Stage 10 role-boundary scope honesty and report-only heuristic write
+  observation.
+  - `ph workflow role-boundary [--json]` now emits
+    `workflow-role-boundary-report.2` so the public report can distinguish
+    relay artifact-scan findings from heuristic runtime write observations.
+  - The report boundaries now state that the artifact scan is artifact-scan
+    only and does not observe production-source writes.
+  - When `multiAgent.enabled=true` and relay preview has a current role,
+    write/edit target paths are observed through the existing runtime hook and
+    suspicious role/path mismatches are aggregated under
+    `.persona/evidence/role-boundary/`.
+  - Heuristic findings are warning/report-only findings. They include the
+    limitation that attribution is a time-window heuristic and the write may
+    originate from the main session or an unrelated subagent.
+  - No writes are blocked, no auto-fix is attempted, no workflow state or
+    closure blocker is created, and block mode remains unavailable without
+    stable per-session role identity.
+  - Default OFF behavior, release channels, and product claims are unchanged:
+    no deterministic role enforcement, token/provider-token saving,
+    product-efficacy/navigation benefit, app-quality/full-TDD, broad
+    reliability/closure guarantee, generated-app certification, or automatic
+    completion/downgrade/removal claim.
 - Separated ralph-loop per-blocker and per-session retry budgets while keeping
   `enforce.ralphLoop.enabled=false` by default. `maxAttempts` remains the
   per-blocker cap; new `maxSessionAttempts` defaults to `maxAttempts * 3`

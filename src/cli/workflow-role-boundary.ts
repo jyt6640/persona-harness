@@ -4,6 +4,8 @@ import process from "node:process"
 
 import { loadHarnessConfig } from "../config/harness-config.js"
 import type { MultiAgentRole } from "../config/harness-config.js"
+import { readRoleBoundaryHeuristicFindings } from "../runtime/role-boundary-heuristic.js"
+import type { RoleBoundaryHeuristicFinding } from "../runtime/role-boundary-heuristic.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readWorkflowClosurePayload } from "./workflow-closure.js"
 import type { ClosureTicket } from "./workflow-closure.js"
@@ -13,6 +15,12 @@ import {
   roleArtifactPath,
 } from "./workflow-relay-artifacts.js"
 import type { RelayRoleArtifactFile, RelayRoleBoundaryFinding } from "./workflow-relay-artifacts.js"
+
+type RoleBoundaryFinding = RelayRoleArtifactBoundaryFinding | RoleBoundaryHeuristicFinding
+
+type RelayRoleArtifactBoundaryFinding = RelayRoleBoundaryFinding & {
+  readonly heuristic?: false
+}
 
 type RoleBoundaryBlockMode = {
   readonly available: false
@@ -30,10 +38,10 @@ type RoleBoundarySummary = {
 type WorkflowRoleBoundaryPayload = {
   readonly blockMode: RoleBoundaryBlockMode
   readonly boundaries: readonly string[]
-  readonly findings: readonly RelayRoleBoundaryFinding[]
+  readonly findings: readonly RoleBoundaryFinding[]
   readonly roleArtifactFiles: readonly RelayRoleArtifactFile[]
   readonly roleOrder: readonly MultiAgentRole[]
-  readonly schemaVersion: "workflow-role-boundary-report.1"
+  readonly schemaVersion: "workflow-role-boundary-report.2"
   readonly stableSessionRoleIdentity: "unavailable"
   readonly summary: RoleBoundarySummary
 }
@@ -73,8 +81,8 @@ function unknownPathFindings(files: readonly RelayRoleArtifactFile[]): readonly 
 function roleArtifactFindings(
   projectDir: string,
   files: readonly RelayRoleArtifactFile[],
-): readonly RelayRoleBoundaryFinding[] {
-  const findings: RelayRoleBoundaryFinding[] = []
+): readonly RelayRoleArtifactBoundaryFinding[] {
+  const findings: RelayRoleArtifactBoundaryFinding[] = []
   for (const file of files) {
     if (file.role === "unknown") {
       continue
@@ -94,12 +102,14 @@ function readWorkflowRoleBoundaryPayload(projectDir: string): WorkflowRoleBounda
   const closure = readWorkflowClosurePayload("next", projectDir)
   const currentTicket = closure.state.currentTicket
   const roleArtifactFiles = currentTicket === null ? [] : relayRoleArtifactFiles(projectDir, currentTicket.id, roleOrder)
-  const findings = currentTicket === null
+  const artifactFindings = currentTicket === null
     ? []
     : [
         ...roleArtifactFindings(projectDir, roleArtifactFiles),
         ...unknownPathFindings(roleArtifactFiles),
       ]
+  const heuristicFindings = readRoleBoundaryHeuristicFindings(projectDir)
+  const findings = [...artifactFindings, ...heuristicFindings]
   return {
     blockMode: {
       available: false,
@@ -108,13 +118,15 @@ function readWorkflowRoleBoundaryPayload(projectDir: string): WorkflowRoleBounda
     boundaries: [
       "report-only role-boundary observation; no writes are blocked",
       "findings use relay artifacts and artifact path ownership only",
+      "artifact-scan only; production-source writes are not observed by the artifact scan",
+      "runtime write findings, when present, are heuristic time-window observations and do not prove deterministic session role identity",
       "no deterministic write enforcement is claimed without stable session-role identity",
       "PH closure/check/archive/finish gates remain authoritative",
     ],
     findings,
     roleArtifactFiles,
     roleOrder,
-    schemaVersion: "workflow-role-boundary-report.1",
+    schemaVersion: "workflow-role-boundary-report.2",
     stableSessionRoleIdentity: "unavailable",
     summary: {
       compatibilityNotes: compatibilityNotes(roleArtifactFiles),

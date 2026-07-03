@@ -108,7 +108,7 @@ function scopedInputs(ticket: ClosureTicket, closureBlocker: ClosureBlocker | nu
   return Array.from(new Set(inputs))
 }
 
-function readWorkflowRelayPayload(action: RelayAction, projectDir: string): WorkflowRelayPayload {
+export function readWorkflowRelayPayload(action: RelayAction, projectDir: string): WorkflowRelayPayload {
   const config = loadHarnessConfig(projectDir)
   const roleOrder = config.multiAgent.roles
   const { closureBlocker, currentTicket } = closureCurrentTicket(projectDir)

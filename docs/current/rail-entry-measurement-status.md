@@ -115,12 +115,24 @@ benefit evidence.
   continuation. This did not change defaults.
 - Stage 9 measured the corrected banner-only H1. Result: H1 not supported for
   this fixture; `runtimeInjection` remains default OFF.
-- Stage 10 remains deferred; see the note below.
+- Stage 10 adds role-boundary scope honesty and report-only heuristic
+  production-source write observation; see the note below.
 
-## Deferred Stage 10 Note
+## Stage 10 Role-Boundary Note
 
-Stage 10 remains deferred. The current `ph workflow role-boundary [--json]`
-surface observes relay artifact scans only; it does not observe production
-source writes and does not enforce write blocking. Any wording/time-window
-heuristic for production source role-boundary observation requires separate
-Stage 10 approval.
+Stage 10 keeps `ph workflow role-boundary [--json]` report-only. The role
+artifact scan remains artifact-scan only; production-source writes are not
+observed by the artifact scan itself.
+
+When `multiAgent.enabled=true` and relay preview has a current role, runtime
+write/edit target paths can be aggregated as heuristic report-only findings
+under `.persona/evidence/role-boundary/`. These findings use time-window
+attribution only; the write may originate from the main session or an unrelated
+subagent. They do not block writes, auto-fix files, mutate workflow state, or
+create closure blockers.
+
+Block/enforcement mode remains unavailable without stable per-session role
+identity. This is not deterministic per-session role enforcement and not a
+success, reliability, closure, product-efficacy, app-quality, full-TDD, token
+saving, generated-app certification, automatic completion, downgrade, or
+removal claim.
