@@ -3,6 +3,7 @@ import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
 import type { ClosureBlocker, ClosureStep } from "./workflow-closure.js"
+import { closureStepNextAction, createContinuationPromptLines } from "./continuation-prompt.js"
 import { readWorkflowClosurePayload } from "./workflow-closure.js"
 
 const RALPH_LOOP_MAX_ATTEMPTS = 3
@@ -81,8 +82,8 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
     },
     blocker,
     nextStep,
-    nextAction: nextStep === null ? null : nextActionForStep(nextStep),
-    promptLines: blocker === null ? [] : continuationPromptLines(blocker, nextStep),
+    nextAction: nextStep === null ? null : closureStepNextAction(nextStep),
+    promptLines: blocker === null ? [] : createContinuationPromptLines({ blocker, context: "ralph-loop", step: nextStep }),
     measurementPlan: {
       sample: "n=30 blocker/completion A/B",
       metrics: [
@@ -107,23 +108,6 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
       "not a success, reliability, generated-app quality, or closure guarantee",
     ],
   }
-}
-
-function nextActionForStep(step: ClosureStep): string {
-  return step.command ?? step.commandAfterContent ?? "npx ph workflow continue"
-}
-
-function continuationPromptLines(blocker: ClosureBlocker, step: ClosureStep | null): readonly string[] {
-  return [
-    "[Persona Harness Ralph Loop]",
-    "Closure blockers remain; do not claim completion.",
-    `Blocker: ${blocker.id}`,
-    `Reason: ${blocker.reason}`,
-    `Source: ${blocker.source}`,
-    `Next action: ${step === null ? "npx ph workflow continue" : nextActionForStep(step)}`,
-    "Fix only this blocker, then rerun `npx ph workflow finish implement`.",
-    "This is a default-off, retry-capped continuation preview, not a success guarantee or autonomous loop.",
-  ]
 }
 
 function formatRalphLoopText(payload: RalphLoopPayload): string {

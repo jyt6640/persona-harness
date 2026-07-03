@@ -1,9 +1,13 @@
 import { findConventionByBlockerId, findConventionByStepId } from "../config/convention-registry.js"
+import { createContinuationPromptLines, type ContinuationPromptContext } from "./continuation-prompt.js"
 import type { ClosureBlocker, ClosurePayload, ClosureStep, ClosureTicket } from "./workflow-closure.js"
 
 export const POST_BUILD_CLOSURE_NEXT_ACTION = "if build/test/runtime already pass, fill implementation and review reports, archive the completed ticket after review, then run `npx ph workflow finish implement`"
 
-export function workflowClosureRailLines(payload: ClosurePayload): readonly string[] {
+export function workflowClosureRailLines(
+  payload: ClosurePayload,
+  context: Extract<ContinuationPromptContext, "cli-continue" | "closure-next"> = "cli-continue",
+): readonly string[] {
   const step = nextStep(payload)
   if (step === null || step.id === "terminal") {
     return []
@@ -15,8 +19,25 @@ export function workflowClosureRailLines(payload: ClosurePayload): readonly stri
     ...(step.reason === undefined ? [] : [`Reason: ${step.reason}`]),
     ...(step.source === undefined ? [] : [`Source: ${step.source}`]),
     ...stepActionLines(step, payload.state.currentTicket),
+    ...closureContinuationPromptPreviewLines(payload, step, context),
     ...additionalBlockerLines(payload.state.blockers.slice(1)),
     "",
+  ]
+}
+
+function closureContinuationPromptPreviewLines(
+  payload: ClosurePayload,
+  step: ClosureStep,
+  context: Extract<ContinuationPromptContext, "cli-continue" | "closure-next">,
+): readonly string[] {
+  const blocker = payload.state.blockers.find((candidate) => candidate.id === step.blockerId) ?? payload.state.blockers[0]
+  if (blocker === undefined) {
+    return []
+  }
+  return [
+    "",
+    "Continuation prompt body:",
+    ...createContinuationPromptLines({ blocker, context, step }).map((line) => `  ${line}`),
   ]
 }
 

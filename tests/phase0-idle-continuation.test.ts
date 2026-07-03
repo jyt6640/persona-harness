@@ -37,6 +37,28 @@ function fakeClient(calls: IdlePromptAsyncOptions[]): IdleContinuationClient {
   }
 }
 
+function deferredClient(calls: IdlePromptAsyncOptions[]): {
+  readonly client: IdleContinuationClient
+  readonly resolve: () => void
+} {
+  let resolvePrompt: (() => void) | undefined
+  return {
+    client: {
+      session: {
+        promptAsync: (options) => {
+          calls.push(options)
+          return new Promise<void>((resolve) => {
+            resolvePrompt = resolve
+          })
+        },
+      },
+    },
+    resolve: () => {
+      resolvePrompt?.()
+    },
+  }
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -76,6 +98,22 @@ describe("Phase 0 idle continuation hook", () => {
     expect(calls[0]?.body.parts[0]?.text).toContain("Blocker: verification-unknown")
     expect(calls[0]?.body.parts[0]?.text).toContain("npx ph workflow continue")
     expect(calls[0]?.body.parts[0]?.text).toContain("not a hard stop")
+  })
+
+  it("does not send duplicate prompts while a continuation is in flight", async () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { enforce: { idleContinuation: true } })
+    writeBlockedWorkflow(projectDir)
+    const calls: IdlePromptAsyncOptions[] = []
+    const fake = deferredClient(calls)
+    const hooks = createPhase0Hooks({ client: fake.client, projectDir })
+
+    const first = hooks.event?.({ event: { properties: { sessionID: "session-idle-in-flight" }, type: "session.idle" } })
+    await hooks.event?.({ event: { properties: { sessionID: "session-idle-in-flight" }, type: "session.idle" } })
+    fake.resolve()
+    await first
+
+    expect(calls).toHaveLength(1)
   })
 
   it("ignores non-idle events", async () => {
