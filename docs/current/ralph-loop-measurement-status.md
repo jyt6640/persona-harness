@@ -61,6 +61,70 @@ not proven. The next step should be trigger design review, for example
 `experimental.text.complete` or blocker-declaration/continuation hook placement,
 before another n=15 real-session measurement.
 
+## Trigger Design Review After Stage 12 Retry
+
+Status: design review complete; no product behavior change in this record.
+
+Evidence read:
+
+- Stage 12 retry archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-trigger-survival-pilot-20260703T102108Z`.
+- `summary.json` recorded two valid ON pilots with
+  `.persona/workflow/ralph-loop-state.json` attempts `2`, clean OpenCode exits,
+  and `modelFacingContinuation=false`.
+- `RESULT.md` recorded the same failure mode: PH reached
+  `continueIfBlocked`, but raw OpenCode JSONL and isolated OpenCode store search
+  did not show model-facing `[Persona Harness Ralph Loop]` continuation prompt
+  evidence.
+- Source inspection: `src/runtime/hooks.ts:221-249` fires ralph-loop only from
+  `session.idle`; `src/runtime/ralph-loop.ts:208-225` writes state before
+  calling `sendPrompt`; `src/runtime/ralph-loop.ts:231-239` calls
+  `client.session.promptAsync` and treats API completion as `prompt-sent`.
+
+Observed failure mode:
+
+- `session.idle` delivery is late in the run lifecycle for `opencode run`.
+- PH can persist a ralph-loop attempt and call `promptAsync`, but the current
+  pilot did not prove that the prompt is delivered into a model turn the same
+  `opencode run` process will consume.
+- Therefore, `prompt-sent` is currently an API-acceptance/status label, not a
+  model-facing delivery proof.
+
+Candidate trigger surfaces:
+
+| Surface | Model-facing delivery potential | Main risks | Verification gate |
+| --- | --- | --- | --- |
+| Keep `session.idle` + `promptAsync` | Unproven in `opencode run`; plausible only if the host keeps the session alive for another model turn. | State can advance without observable prompt delivery; repeated n=15 runs would measure trigger absence again. | Add a delivery check before counting an attempt as exercised, then pilot. |
+| `tool.execute.after` for PH finish/check blocker output | Strongest candidate. The `ph workflow finish implement` or `workflow check` blocker text is tool output returned to the model before it decides whether to stop. `src/runtime/hooks.ts:252-317` already modifies tool output for other PH runtime guidance. | Must be default-off, scoped only to PH closure/check command outputs, retry-capped, session-classified, and must not create closure blockers or fake completion. | Tiny pilot where raw OpenCode JSONL shows `[Persona Harness Ralph Loop]` appended to blocker tool output and the model performs one bounded follow-up action. |
+| `experimental.text.complete` | Can append visible text to the assistant response (`src/runtime/hooks.ts:366-383`, `src/runtime/continuation.ts:127-154`). | It modifies completed assistant text, not necessarily the model's next input. Current hook is tied to `runtimeInjectionEnabled`, so using it for ralph-loop would require careful decoupling. It is better as delivery/status instrumentation than as the primary resume trigger. | Pilot can verify visible appended text, but resumed model continuation still needs separate proof. |
+| `experimental.chat.messages.transform` | Strong model-input surface before a turn. | It runs before the model declares blockers, so it cannot react to freshly observed closure blockers in the same turn. It risks becoming runtimeInjection-style banner work rather than blocker-driven continuation. | Not recommended for ralph-loop execution unless used only for a pre-existing persisted blocker at the start of a new turn. |
+| `chat.message` / `chat.params` / `chat.headers` | Typed plugin surfaces expose `agent` and session context in `node_modules/@opencode-ai/plugin/dist/index.d.ts`. | These surfaces adjust incoming message/provider parameters, not post-blocker continuation delivery. They are useful for classification/instrumentation, not the primary trigger. | Defer unless a later role/session identity task needs them. |
+| OpenCode compaction hooks | Host-specific lifecycle hooks exist, but they are for compaction prompts/autocontinue, not ordinary closure blockers. | Wrong lifecycle; would couple ralph-loop to compaction. | Not recommended. |
+
+Recommendation:
+
+- Do not run another `session.idle` n=15 measurement yet.
+- Implement a default-off hybrid trigger candidate for a new pilot:
+  1. Primary trigger: `tool.execute.after` observes PH `workflow finish
+     implement` / `workflow check` outputs that contain deterministic closure
+     blockers, then appends the existing ralph-loop continuation prompt to that
+     tool output.
+  2. Fallback trigger: keep `session.idle + promptAsync`, but count it as
+     exercised only when delivery is observed in raw logs or a delivery marker.
+  3. Keep Stage 1B/8B main-session classification and fail-closed behavior for
+     subagent/unknown sessions.
+  4. Reuse the persisted ralph-loop state and retry caps; do not add a new
+     evidence schema.
+  5. Run a tiny pilot before any n=15: setup validity, raw JSONL marker in tool
+     output, state attempt, and one bounded model follow-up action must all be
+     present.
+
+If the tool-output pilot fails to show a model-facing marker or follow-up
+action, park ralph-loop execution until OpenCode provides a reliable
+post-blocker continuation surface. If it succeeds, the next measurement should
+still be trigger-survival first, not completion-effectiveness or default-change
+evidence.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.
