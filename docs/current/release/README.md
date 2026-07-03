@@ -34,6 +34,24 @@ Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
+Release prep target: `0.6.0-rc.1` for the npm prerelease `next` channel. This
+is prep-only: do not treat it as registry evidence until QA gives publish GO and
+registry gitHead plus `dist.shasum` verify the exact prep commit. Stable
+`latest` remains `0.5.0`; registry `next` remains `0.5.0-rc.2` until the RC is
+published; `alpha` remains `0.3.9-alpha.8`. No `v0.6.0-rc.1` tag should be
+created before registry verification.
+
+`0.6.0-rc.1` packages the post-0.5 Stage 1-13 line conservatively: session
+classification/subagent injection skip, utterance gates, role naming cleanup,
+static relay guidance, continuation prompt/gate unification, report-only
+role-boundary observation with heuristic write warnings, ralph-loop default-off
+retry-capped blocker continuation, and the canonical `scorecard.1` measurement
+scorecard definition. The release message must also preserve the accepted
+negative/partial results: Stage 12 did not exercise ralph-loop in the ON pilot,
+so ralph-loop remains parked/default-off preview with no default-ON evidence;
+Stage 13 observed a static relay guidance path but no reliable OpenCode role
+subagent invocation or orchestration.
+
 Current stable package: official `0.5.0` is published under npm dist-tag
 `latest`. Registry verification confirmed `persona-harness@latest=0.5.0`,
 gitHead `c0f1085a5182cdd17411bd043173aabc9a76b30e`, shasum
@@ -582,6 +600,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.5.0-rc.1 release notes](v0.5.0-rc.1-release-notes.md)
 - [v0.5.0-rc.2 release notes](v0.5.0-rc.2-release-notes.md)
 - [v0.5.0 release notes](v0.5.0-release-notes.md)
+- [v0.6.0-rc.1 release notes](v0.6.0-rc.1-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

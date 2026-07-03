@@ -23,7 +23,7 @@
 
 > [!IMPORTANT]
 > **Project status: gate-first measured release.**
-> Stable npm channel: `persona-harness@latest=0.5.0`; prerelease channel remains `next=0.5.0-rc.2`; alpha remains `0.3.9-alpha.8`.
+> Stable npm channel: `persona-harness@latest=0.5.0`; release prep target is `0.6.0-rc.1` for the prerelease `next` channel. Until QA publish GO plus registry gitHead/shasum verification, registry `next` remains `0.5.0-rc.2`; alpha remains `0.3.9-alpha.8`.
 > The runtime injection effect has been measured and is **negative in the accepted 10-pair local-current OpenCode fixture set**. See [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json). Runtime guidance is therefore default-off and opt-in only; this is a scoped measurement, not a universal product-efficacy claim.
 > What PH *does* claim — and has evidence for — is narrower: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
 

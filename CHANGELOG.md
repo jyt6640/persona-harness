@@ -6,6 +6,52 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+## [0.6.0-rc.1] - 2026-07-03
+
+Release prep only. The target package version is `0.6.0-rc.1` and the intended
+npm dist-tag after QA publish GO is `next`, not `latest`. Until a future publish
+verifies registry gitHead and `dist.shasum`, stable `latest` remains `0.5.0`
+and registry `next` remains `0.5.0-rc.2`. No publish, tag, latest, or dist-tag
+movement is part of this prep commit.
+
+Release highlights:
+
+- Session classification and utterance gates now keep runtime injection,
+  continuation, ralph-loop, and subagent/unknown-session surfaces fail-closed
+  when session identity is unavailable or classified as subagent.
+- Multi-agent role naming uses `test-writer`, `implementer`, and `reviewer`;
+  legacy `jaeki`/`roach` paths remain compatibility/readback artifacts only.
+- Rail-entry measurements are recorded with correction history: Stage 3 is
+  stack-vs-nothing rail-entry evidence and must not be cited as banner-only or
+  runtimeInjection H1 evidence; Stage 9 banner-only H1 evidence was null, so
+  runtimeInjection remains parked opt-in preview rather than recommended or
+  default.
+- Continuation prompt/gate surfaces are unified across workflow continue,
+  closure, idle continuation, and ralph-loop preview/runtime paths.
+- Ralph-loop has a default-off, retry-capped blocker-continuation execution
+  path, but Stage 12 pilot did not exercise ralph-loop in the ON condition.
+  Ralph-loop therefore remains parked/default-off preview with no default-ON,
+  autonomous completion, closure-success, or reliability evidence.
+- Role-boundary reporting is report-only and heuristic where runtime writes are
+  observed. Block mode remains unavailable without stable per-session role
+  identity; no deterministic enforcement or fake block mode is claimed.
+- Static relay guidance is available behind `--multi-agent-preview`, but the
+  Stage 13 proxy trial observed guidance-path behavior only and did not show
+  reliable OpenCode role subagent invocation or orchestration.
+- `docs/current/measurement-scorecard.md` is the canonical `scorecard.1`
+  definition for experiment archives. It is a secondary observation surface, not
+  a kill-criteria override, evidence schema expansion, or package-presence
+  claim.
+- Local-current NO-GO registry notes remain unresolved until a future registry
+  publish includes the relevant commits and External registry smoke verifies
+  gitHead and `dist.shasum`.
+
+Claim boundaries are unchanged: no token/provider-token saving,
+product-efficacy/navigation benefit, app-quality/full-TDD/test-sufficiency,
+CodeGraph/LSP default/effectiveness, broad reliability, closure guarantee,
+autonomous completion, generated-app certification, deterministic role
+enforcement, automatic completion/downgrade/removal, or registry evidence claim.
+
 - Added Stage 11 runtime-injection park record, static relay guidance, role-boundary
   heuristic tightening, and the canonical measurement scorecard definition.
   - `docs/current/rail-entry-measurement-status.md` now records runtime
