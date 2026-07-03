@@ -18,6 +18,43 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   dispatch, a success guarantee, token/provider-token saving, product efficacy,
   broad reliability, closure guarantee, app-quality/full-TDD, or generated-app
   certification claims.
+  QA accepted `c726f5df910d8876c2efd49be0eaffbebf4c3024`
+  (`fix(cli): clean relay role names and injected prompts`) through a fresh
+  local-current tarball only; registry was not used. Installed version was
+  `0.5.0`; tarball shasum `e196704788b85013a3d9eb6dd658618577ed382e`;
+  sha256 `0affcb6e89d1095237ee3275e48e9ac37b323d83fbc89b1dc2c3e34adda49252`;
+  entryCount `538`.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage2-role-prompt-cleanup-c726f5d-20260703T023941Z`.
+  - Package/runtime smoke covered bootstrap, multi-agent relay, runtime
+    hooks/session registry, system constitution, continuation, intent workflow,
+    and workflow shared skill surfaces; `ph --help` and `ph version` passed.
+  - `ph bootstrap backend --multi-agent-preview --force
+    --no-developer-mcp --no-codegraph` wrote OpenCode agent keys
+    `test-writer`, `implementer`, and `reviewer`, while preserving a
+    pre-existing custom key.
+  - Legacy OpenCode `jaeki` / `roach` keys migrated to `implementer` /
+    `reviewer` while preserving legacy model/custom fields; a second bootstrap
+    was idempotent.
+  - Relay flow commands passed with role order `test-writer -> implementer ->
+    reviewer`; new missing/next artifact paths use `implementer.md` and
+    `reviewer.md`.
+  - Legacy relay artifacts `jaeki.md` and `roach.md` remain readable only as
+    compatibility artifacts. Completion reached `overall=complete` and gate
+    command `npx ph workflow closure next --json`.
+  - Runtime target surfaces were English-only for target-file injection, system
+    constitution, text continuation, and intent workflow. Relay validate text
+    was English. Legacy role file paths appeared only as compatibility
+    evidence.
+  - Writes were confined to disposable temp fixtures and expected temp
+    `.persona/evidence` runtime evidence.
+  This remains local-current package-runtime smoke only. Registry smoke remains
+  NO-GO until a future publish includes `c726f5d`; legacy names remain
+  compatibility/readback artifacts and historical docs/changelog references,
+  not active public role keys. It is not token/provider-token saving,
+  product-efficacy/navigation-benefit, app-quality/full-TDD,
+  test-sufficiency, broad reliability, closure guarantee, autonomous-loop,
+  generated-app certification, or broader product evidence.
 - Fixed multi-agent runtime guidance isolation for OpenCode subagent sessions.
   When `multiAgent.enabled=true` and `features.runtimeInjection=true`, PH now
   uses deterministic `session.created` / `session.updated` `Session.parentID`
