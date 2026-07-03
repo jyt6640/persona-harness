@@ -13,7 +13,12 @@
     "executeVerification": false,
     "systemConstitution": false,
     "writeDeny": false,
-    "idleContinuation": false
+    "idleContinuation": false,
+    "ralphLoop": {
+      "enabled": false,
+      "maxAttempts": 3,
+      "cooldownMs": 30000
+    }
   },
   "multiAgent": {
     "enabled": false,

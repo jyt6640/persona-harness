@@ -1446,13 +1446,14 @@ describe("ph bootstrap backend", () => {
     expect(result.stdout).toContain("PH runs the project verification command during closure/finish")
     expect(result.stdout).toContain("expect toolchain command cost")
     expect(result.stdout).toContain("sets features.runtimeInjection: true and enforce.systemConstitution: true")
-    expect(result.stdout).toContain("does not enable enforce.writeDeny or enforce.idleContinuation")
+    expect(result.stdout).toContain("does not enable enforce.writeDeny, enforce.idleContinuation, or enforce.ralphLoop")
     expect(result.stdout).toContain("no generated app product-quality certification or closure guarantee")
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(true)
     expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(true)
     expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(true)
     expect(loadHarnessConfig(projectDir).enforce.writeDeny).toBe(false)
     expect(loadHarnessConfig(projectDir).enforce.idleContinuation).toBe(false)
+    expect(loadHarnessConfig(projectDir).enforce.ralphLoop.enabled).toBe(false)
   })
 
   it("enables runtime injection preview without strict verification when explicitly requested", () => {

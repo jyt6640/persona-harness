@@ -12,6 +12,7 @@ import { injectSystemConstitution } from "./system-constitution.js"
 import { TokenCompactionTracker } from "./token-compaction.js"
 import type { TokenCompactionClient } from "./token-compaction.js"
 import { TokenTelemetryRecorder } from "./token-telemetry.js"
+import { RalphLoopContinuationTracker } from "./ralph-loop.js"
 import {
   createJavaRoleReadFollowUp,
   discoverJavaRoleInjections,
@@ -108,6 +109,11 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const config = loadHarnessConfig(projectDir)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
+  const ralphLoop = new RalphLoopContinuationTracker({
+    client: options.client,
+    config: config.enforce.ralphLoop,
+    projectDir,
+  })
   const tokenTelemetry = new TokenTelemetryRecorder(projectDir)
   const tokenCompaction = new TokenCompactionTracker({
     client: options.client,
@@ -122,6 +128,10 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
 
   function allowsRuntimeInjection(sessionID: string | undefined, surface: RuntimeInjectionSurface): boolean {
     return sessionRegistry.allowsRuntimeInjection(sessionID, surface)
+  }
+
+  function allowsMainSession(sessionID: string | undefined, surface: RuntimeInjectionSurface): boolean {
+    return sessionRegistry.allowsMainSession(sessionID, surface)
   }
 
   function captureTargetFile(
@@ -214,7 +224,17 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           const telemetryResult = tokenTelemetry.recordMessage(input.event.properties.info)
           await tokenCompaction.maybeSummarize(input.event.properties.info, telemetryResult)
         }
-        if (!config.enforce.idleContinuation || input.event.type !== "session.idle") {
+        if (input.event.type !== "session.idle") {
+          return
+        }
+        if (config.enforce.ralphLoop.enabled) {
+          if (!allowsMainSession(input.event.properties.sessionID, "ralph-loop")) {
+            return
+          }
+          await ralphLoop.continueIfBlocked(input.event.properties.sessionID)
+          return
+        }
+        if (!config.enforce.idleContinuation) {
           return
         }
         if (!allowsRuntimeInjection(input.event.properties.sessionID, "idle-continuation")) {

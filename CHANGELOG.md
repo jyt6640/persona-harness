@@ -6,6 +6,23 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Promoted `ralph-loop: blocker-driven continuation` from read-only dry-run
+  spike to a default-off runtime execution path guarded by
+  `enforce.ralphLoop.enabled=false` by default. When explicitly enabled, the
+  runtime listens on main-session `session.idle` only, reads deterministic PH
+  closure blockers, sends retry-capped blocker continuation prompts through
+  `session.promptAsync`, and persists per-session attempts in
+  `.persona/workflow/ralph-loop-state.json`.
+  - Added `enforce.ralphLoop.maxAttempts` (default `3`) and
+    `enforce.ralphLoop.cooldownMs` (default `30000`). When ralph-loop is
+    enabled it takes priority over ordinary idle continuation to avoid double
+    utterances.
+  - `ph workflow ralph-loop [--dry-run] [--json]` remains read-only and now
+    emits schema `workflow-ralph-loop.2` with execution config and persisted
+    state metadata. The command itself still writes no workflow/evidence state.
+  - This is retry-capped blocker continuation only: no autonomous completion,
+    no success/reliability/closure guarantee, no token/provider-token saving,
+    no product-efficacy/navigation-benefit, and no app-quality/full-TDD claim.
 - Accepted Stage 4 continuation prompt/gate refactor as local-current
   package-runtime smoke for refactor and behavior preservation only. Source was
   HEAD `731a3011246163755e2b25b959e3632be2b5fb01`

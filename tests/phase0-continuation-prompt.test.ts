@@ -100,4 +100,33 @@ describe("ContinuationUtteranceGate", () => {
       "allowed",
     )
   })
+
+  it("allows explicit same-blocker retry mode for retry-capped ralph-loop", () => {
+    const gate = new ContinuationUtteranceGate()
+    const first = gate.tryBegin({
+      allowSameBlockerRetry: true,
+      blockerId: "verification-unknown",
+      maxAttempts: 2,
+      sessionId: "session-3",
+    })
+    expect(first.kind).toBe("allowed")
+    if (first.kind === "allowed") {
+      first.complete()
+    }
+
+    const second = gate.tryBegin({
+      allowSameBlockerRetry: true,
+      blockerId: "verification-unknown",
+      maxAttempts: 2,
+      sessionId: "session-3",
+    })
+    expect(second.kind).toBe("allowed")
+    if (second.kind === "allowed") {
+      second.complete()
+    }
+    expect(gate.tryBegin({ allowSameBlockerRetry: true, blockerId: "verification-unknown", maxAttempts: 2, sessionId: "session-3" })).toEqual({
+      kind: "blocked",
+      reason: "retry-cap-reached",
+    })
+  })
 })

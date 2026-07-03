@@ -31,6 +31,7 @@ export type HarnessEnforceConfig = {
   readonly compaction: HarnessCompactionConfig
   readonly executeVerification: boolean
   readonly idleContinuation: boolean
+  readonly ralphLoop: HarnessRalphLoopConfig
   readonly systemConstitution: boolean
   readonly tdd: boolean
   /**
@@ -48,6 +49,12 @@ export type HarnessCompactionConfig = {
   readonly cooldownMs: number
   readonly enabled: boolean
   readonly threshold: number
+}
+
+export type HarnessRalphLoopConfig = {
+  readonly cooldownMs: number
+  readonly enabled: boolean
+  readonly maxAttempts: number
 }
 
 export type HarnessTelemetryConfig = {
@@ -97,6 +104,11 @@ const DEFAULT_CONFIG: HarnessConfig = {
     },
     executeVerification: false,
     idleContinuation: false,
+    ralphLoop: {
+      cooldownMs: 30_000,
+      enabled: false,
+      maxAttempts: 3,
+    },
     systemConstitution: false,
     tdd: false,
     writeDeny: false,
@@ -127,6 +139,10 @@ function readPositiveInteger(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : fallback
 }
 
+function readNonNegativeInteger(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : fallback
+}
+
 function readRatio(value: unknown, fallback: number): number {
   return typeof value === "number" && value > 0 && value <= 1 ? value : fallback
 }
@@ -155,6 +171,7 @@ function readEnforceConfig(value: unknown): HarnessEnforceConfig {
     compaction: readCompactionConfig(value.compaction),
     executeVerification: readBoolean(value.executeVerification, DEFAULT_CONFIG.enforce.executeVerification),
     idleContinuation: readBoolean(value.idleContinuation, DEFAULT_CONFIG.enforce.idleContinuation),
+    ralphLoop: readRalphLoopConfig(value.ralphLoop),
     systemConstitution: readBoolean(value.systemConstitution, DEFAULT_CONFIG.enforce.systemConstitution),
     tdd: readBoolean(value.tdd, DEFAULT_CONFIG.enforce.tdd),
     writeDeny: readBoolean(value.writeDeny, DEFAULT_CONFIG.enforce.writeDeny),
@@ -178,6 +195,17 @@ function readCompactionConfig(value: unknown): HarnessCompactionConfig {
     cooldownMs: readPositiveInteger(value.cooldownMs, DEFAULT_CONFIG.enforce.compaction.cooldownMs),
     enabled: readBoolean(value.enabled, DEFAULT_CONFIG.enforce.compaction.enabled),
     threshold: readRatio(value.threshold, DEFAULT_CONFIG.enforce.compaction.threshold),
+  }
+}
+
+function readRalphLoopConfig(value: unknown): HarnessRalphLoopConfig {
+  if (!isRecord(value)) {
+    return DEFAULT_CONFIG.enforce.ralphLoop
+  }
+  return {
+    cooldownMs: readNonNegativeInteger(value.cooldownMs, DEFAULT_CONFIG.enforce.ralphLoop.cooldownMs),
+    enabled: readBoolean(value.enabled, DEFAULT_CONFIG.enforce.ralphLoop.enabled),
+    maxAttempts: readPositiveInteger(value.maxAttempts, DEFAULT_CONFIG.enforce.ralphLoop.maxAttempts),
   }
 }
 

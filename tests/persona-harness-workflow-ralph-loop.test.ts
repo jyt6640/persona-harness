@@ -35,17 +35,24 @@ describe("ph workflow ralph-loop", () => {
     expect(result.status).toBe(0)
     expect(result.stderr).toBe("")
     expect(output).toMatchObject({
-      schemaVersion: "workflow-ralph-loop.1",
+      schemaVersion: "workflow-ralph-loop.2",
       name: "ralph-loop",
       subtitle: "blocker-driven continuation",
       mode: "dry-run",
       mutates: false,
       defaultOff: true,
+      execution: {
+        cooldownMs: 30000,
+        enabled: false,
+        ordinaryIdleContinuationDisabledWhenEnabled: true,
+        runtimeSurface: "session.idle",
+      },
       retryPolicy: {
         maxAttempts: 3,
         attemptsUsed: 0,
+        knownSessions: 0,
         remainingAttempts: 3,
-        stateSource: "not-persisted-dry-run",
+        stateSource: "persisted-workflow-state",
       },
       retry: {
         eligible: true,
@@ -58,6 +65,7 @@ describe("ph workflow ralph-loop", () => {
     expect(output.measurementPlan.sample).toBe("n=30 blocker/completion A/B")
     expect(output.boundaries).toContain("read-only dry-run; no workflow state or evidence is written")
     expect(existsSync(join(projectDir, ".persona", "workflow", "ralph-loop.json"))).toBe(false)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "ralph-loop-state.json"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", "evidence", "ralph-loop"))).toBe(false)
   })
 
@@ -70,6 +78,7 @@ describe("ph workflow ralph-loop", () => {
     expect(result.stderr).toBe("")
     expect(result.stdout).toContain("Persona Harness ralph-loop: blocker-driven continuation")
     expect(result.stdout).toContain("Mode: dry-run (read-only, default-off, no prompt sent)")
+    expect(result.stdout).toContain("Execution config: disabled; runtime surface: session.idle")
     expect(result.stdout).toContain("Early completion: blocked by PH closure gate")
     expect(result.stdout).toContain("Retry cap: 3 attempts")
     expect(result.stdout).toContain("n=30 blocker/completion A/B")

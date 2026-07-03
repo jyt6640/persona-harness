@@ -56,6 +56,11 @@ describe("Phase 0 harness config", () => {
       threshold: 0.78,
     })
     expect(config.enforce.idleContinuation).toBe(false)
+    expect(config.enforce.ralphLoop).toEqual({
+      cooldownMs: 30_000,
+      enabled: false,
+      maxAttempts: 3,
+    })
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.tdd).toBe(false)
     expect(config.enforce.writeDeny).toBe(false)
@@ -90,6 +95,11 @@ describe("Phase 0 harness config", () => {
         },
         executeVerification: true,
         idleContinuation: true,
+        ralphLoop: {
+          cooldownMs: 45_000,
+          enabled: true,
+          maxAttempts: 2,
+        },
         systemConstitution: false,
         tdd: true,
         writeDeny: true,
@@ -105,6 +115,11 @@ describe("Phase 0 harness config", () => {
       threshold: 0.8,
     })
     expect(config.enforce.idleContinuation).toBe(true)
+    expect(config.enforce.ralphLoop).toEqual({
+      cooldownMs: 45_000,
+      enabled: true,
+      maxAttempts: 2,
+    })
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.tdd).toBe(true)
     expect(config.enforce.writeDeny).toBe(true)

@@ -5,8 +5,8 @@ import type { CliRunResult } from "./bearshell.js"
 import type { ClosureBlocker, ClosureStep } from "./workflow-closure.js"
 import { closureStepNextAction, createContinuationPromptLines } from "./continuation-prompt.js"
 import { readWorkflowClosurePayload } from "./workflow-closure.js"
-
-const RALPH_LOOP_MAX_ATTEMPTS = 3
+import { loadHarnessConfig } from "../config/harness-config.js"
+import { readRalphLoopState, ralphLoopStatePath } from "../runtime/ralph-loop-state.js"
 
 type RalphLoopOptions = {
   readonly json: boolean
@@ -14,17 +14,25 @@ type RalphLoopOptions = {
 }
 
 type RalphLoopPayload = {
-  readonly schemaVersion: "workflow-ralph-loop.1"
+  readonly schemaVersion: "workflow-ralph-loop.2"
   readonly name: "ralph-loop"
   readonly subtitle: "blocker-driven continuation"
   readonly mode: "dry-run"
   readonly mutates: false
   readonly defaultOff: true
+  readonly execution: {
+    readonly cooldownMs: number
+    readonly enabled: boolean
+    readonly ordinaryIdleContinuationDisabledWhenEnabled: true
+    readonly statePath: string
+    readonly runtimeSurface: "session.idle"
+  }
   readonly retryPolicy: {
     readonly maxAttempts: number
     readonly attemptsUsed: number
+    readonly knownSessions: number
     readonly remainingAttempts: number
-    readonly stateSource: "not-persisted-dry-run"
+    readonly stateSource: "persisted-workflow-state"
   }
   readonly state: {
     readonly blockerCount: number
@@ -56,21 +64,32 @@ export function runWorkflowRalphLoopCommand(options: RalphLoopOptions): CliRunRe
 }
 
 function ralphLoopPayload(projectDir: string): RalphLoopPayload {
+  const config = loadHarnessConfig(projectDir)
+  const persistedState = readRalphLoopState(projectDir)
   const closure = readWorkflowClosurePayload("next", projectDir)
   const blocker = closure.state.blockers[0] ?? null
   const nextStep = closure.action === "next" ? closure.nextStep : null
+  const knownSessions = Object.keys(persistedState.sessions).length
   return {
-    schemaVersion: "workflow-ralph-loop.1",
+    schemaVersion: "workflow-ralph-loop.2",
     name: "ralph-loop",
     subtitle: "blocker-driven continuation",
     mode: "dry-run",
     mutates: false,
     defaultOff: true,
+    execution: {
+      cooldownMs: config.enforce.ralphLoop.cooldownMs,
+      enabled: config.enforce.ralphLoop.enabled,
+      ordinaryIdleContinuationDisabledWhenEnabled: true,
+      statePath: ralphLoopStatePath(projectDir),
+      runtimeSurface: "session.idle",
+    },
     retryPolicy: {
-      maxAttempts: RALPH_LOOP_MAX_ATTEMPTS,
+      maxAttempts: config.enforce.ralphLoop.maxAttempts,
       attemptsUsed: 0,
-      remainingAttempts: RALPH_LOOP_MAX_ATTEMPTS,
-      stateSource: "not-persisted-dry-run",
+      knownSessions,
+      remainingAttempts: config.enforce.ralphLoop.maxAttempts,
+      stateSource: "persisted-workflow-state",
     },
     state: {
       blockerCount: closure.state.blockers.length,
@@ -114,9 +133,10 @@ function formatRalphLoopText(payload: RalphLoopPayload): string {
   const lines = [
     "Persona Harness ralph-loop: blocker-driven continuation",
     "Mode: dry-run (read-only, default-off, no prompt sent)",
+    `Execution config: ${payload.execution.enabled ? "enabled" : "disabled"}; runtime surface: ${payload.execution.runtimeSurface}`,
     `Closure blockers: ${payload.state.blockerCount}`,
     `Finish state: ${payload.state.finish}`,
-    `Retry cap: ${payload.retryPolicy.maxAttempts} attempts; dry-run attempts used: ${payload.retryPolicy.attemptsUsed}`,
+    `Retry cap: ${payload.retryPolicy.maxAttempts} attempts; dry-run attempts used: ${payload.retryPolicy.attemptsUsed}; known sessions: ${payload.retryPolicy.knownSessions}`,
   ]
   if (payload.blocker === null) {
     lines.push("Result: no closure blockers remain; continuation is not eligible.")

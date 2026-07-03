@@ -62,7 +62,7 @@ describe("first-run command help", () => {
     expect(result.stdout).toContain("sets enforce.executeVerification: true")
     expect(result.stdout).toContain("expect toolchain command cost")
     expect(result.stdout).toContain("sets features.runtimeInjection: true and enforce.systemConstitution: true")
-    expect(result.stdout).toContain("does not enable enforce.writeDeny or enforce.idleContinuation")
+    expect(result.stdout).toContain("does not enable enforce.writeDeny, enforce.idleContinuation, or enforce.ralphLoop")
     expect(result.stdout).toContain("no generated app product-quality certification or closure guarantee")
     expect(result.stdout).toContain("Runtime injection preview:")
     expect(result.stdout).toContain("default init/bootstrap keeps PH as gate-first CLI/evidence tooling")

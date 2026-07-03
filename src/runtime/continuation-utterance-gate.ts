@@ -1,6 +1,7 @@
 export type ContinuationUtteranceBlockReason = "in-flight" | "retry-cap-reached" | "same-blocker"
 
 type ContinuationUtteranceRequest = {
+  readonly allowSameBlockerRetry?: boolean
   readonly blockerId: string
   readonly maxAttempts: number
   readonly sessionId: string
@@ -39,7 +40,7 @@ export class ContinuationUtteranceGate {
       return { kind: "blocked", reason: "retry-cap-reached" }
     }
 
-    if (this.lastBlockerIds.get(request.sessionId) === request.blockerId) {
+    if (request.allowSameBlockerRetry !== true && this.lastBlockerIds.get(request.sessionId) === request.blockerId) {
       return { kind: "blocked", reason: "same-blocker" }
     }
 

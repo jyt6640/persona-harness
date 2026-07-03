@@ -54,7 +54,7 @@ function strictModeSummaryLines(): readonly string[] {
     "Strict mode:",
     "- sets enforce.executeVerification: true, so PH runs the project verification command during closure/finish; expect toolchain command cost",
     "- sets features.runtimeInjection: true and enforce.systemConstitution: true, so optional PH finish/intent guard prose is injected where supported",
-    "- does not enable enforce.writeDeny or enforce.idleContinuation; those stay explicit opt-ins",
+    "- does not enable enforce.writeDeny, enforce.idleContinuation, or enforce.ralphLoop; those stay explicit opt-ins",
     "- still no generated app product-quality certification or closure guarantee",
   ]
 }

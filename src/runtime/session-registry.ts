@@ -14,6 +14,7 @@ export type RuntimeInjectionSurface =
   | "intent-workflow"
   | "java-role-discovery"
   | "model-input"
+  | "ralph-loop"
   | "system-constitution"
   | "target-file"
   | "text-continuation"
@@ -53,6 +54,7 @@ const RUNTIME_INJECTION_SURFACES: readonly RuntimeInjectionSurface[] = [
   "intent-workflow",
   "java-role-discovery",
   "model-input",
+  "ralph-loop",
   "system-constitution",
   "target-file",
   "text-continuation",
@@ -150,6 +152,13 @@ export class RuntimeSessionRegistry {
 
   allowsRuntimeInjection(sessionID: string | undefined, surface: RuntimeInjectionSurface): boolean {
     if (!this.options.runtimeInjectionEnabled || !this.options.multiAgentEnabled) {
+      return true
+    }
+    return this.allowsMainSession(sessionID, surface)
+  }
+
+  allowsMainSession(sessionID: string | undefined, surface: RuntimeInjectionSurface): boolean {
+    if (!this.options.multiAgentEnabled) {
       return true
     }
     const resolvedSessionID = sessionID ?? "unknown-session"
