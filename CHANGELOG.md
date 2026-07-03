@@ -23,11 +23,65 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   - No writes are blocked, no auto-fix is attempted, no workflow state or
     closure blocker is created, and block mode remains unavailable without
     stable per-session role identity.
+  - QA accepted `aaf896428769d802d7b21abf64c0322f30d98518`
+    (`feat(cli): report role-boundary write heuristics`) through a fresh
+    local-current tarball only; registry was not used. Installed version was
+    `0.5.0`; tarball shasum `4d9401be976a3973da7acebee0fc5fcf40e714fd`;
+    sha256 `ebc27782f94c60fa02af07b9665228f7f59e3cfd5c17f04c0acf1463faf215db`;
+    integrity
+    `sha512-nxL4pW+eI+8GeOKG5rzCpwVf9oLGlBc/efS04XWVH0YxQJQJXjwtyaAInEv7zkUpmr2qQI7R6QgZbCsho4CrFQ==`;
+    entryCount `562`.
+  - External PASS archive:
+    `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage10-role-boundary-heuristic-aaf8964-20260703T081056Z`;
+    `RESULT.md` classified PASS.
+  - Package entries were present for `workflow-role-boundary`,
+    `role-boundary-evidence`, `role-boundary-heuristic`,
+    `role-boundary-policy`, runtime hooks, and relay.
+  - Basic commands passed: `ph --help`, `ph version`; invalid
+    `ph workflow role-boundary --bad` exited 1 with usage.
+  - Artifact fixture and heuristic fixture `workflow role-boundary --json` and
+    human outputs exited 0. JSON schema observed:
+    `workflow-role-boundary-report.2`.
+  - Scope honesty was observed in JSON/human output: artifact scan is
+    artifact-scan only; production-source writes are not observed by artifact
+    scan; runtime write findings are heuristic time-window observations; there
+    is no deterministic write enforcement; PH closure/check/archive/finish
+    gates remain authoritative.
+  - Block mode remains unavailable, stable session role identity remains
+    unavailable, and no `block-enabled` or deterministic enforcement wording
+    was observed.
+  - Existing artifact scan stayed intact: `role-boundary-forbidden-claim` and
+    `unknown-role-artifact-path` findings were present.
+  - Runtime hook from the installed package observed a disallowed production
+    write for current `test-writer` role and wrote one aggregate
+    `.persona/evidence/role-boundary/session-role-boundary.json` file with
+    schema `role-boundary-heuristic.1`, `count=2`, `reportOnly=true`,
+    `enforcement=false`, limitation text, and no per-message spam.
+  - `workflow role-boundary --json` surfaced warning finding
+    `role-boundary-heuristic-write-outside-role` with
+    `source=runtime-write-observation`, `severity=warning`, and limitation
+    text. An allowed test path write created no heuristic evidence/finding; a
+    no-current-role fixture created no heuristic evidence.
+  - Mutation boundaries held: report commands wrote no files; there was no
+    `.persona/workflow/role-boundary.json` report artifact, blocked write,
+    auto-fix, workflow state mutation, closure blocker, registry usage,
+    publish/tag/latest/dist-tag/version movement. The runtime fixture wrote
+    only expected aggregate
+    `.persona/evidence/role-boundary/session-role-boundary.json`.
+  - `role-boundary-heuristic.1` is accepted narrowly as local report-only
+    heuristic evidence under the Stage 10-approved
+    `.persona/evidence/role-boundary/` aggregation path. It is not
+    deterministic role enforcement, closure/effectiveness evidence, a blocker,
+    or a claim surface. Attribution is heuristic time-window based and may
+    originate from the main session or an unrelated subagent.
   - Default OFF behavior, release channels, and product claims are unchanged:
     no deterministic role enforcement, token/provider-token saving,
     product-efficacy/navigation benefit, app-quality/full-TDD, broad
     reliability/closure guarantee, generated-app certification, or automatic
-    completion/downgrade/removal claim.
+    completion/downgrade/removal claim. This remains local-current
+    package-runtime evidence only; registry evidence remains NO-GO until a
+    future publish includes `aaf8964`. It is also not test-sufficiency,
+    autonomous loop, or a release/registry claim.
 - Separated ralph-loop per-blocker and per-session retry budgets while keeping
   `enforce.ralphLoop.enabled=false` by default. `maxAttempts` remains the
   per-blocker cap; new `maxSessionAttempts` defaults to `maxAttempts * 3`
