@@ -75,9 +75,10 @@ function multiAgentPreviewSummaryLines(): readonly string[] {
   return [
     "Multi-agent relay preview:",
     "- opt-in only via --multi-agent-preview; default bootstrap stays single-agent",
-    "- writes OpenCode subagent config entries for test-writer, implementer, and reviewer",
-    "- does not dispatch native subtasks, auto-fill reports, auto-archive tickets, or weaken finish",
-    "- PH closure/workflow state remains the orchestrator/gate; OpenCode subagents are workers",
+    "- writes role checklist guidance for test-writer, implementer, and reviewer",
+    "- writes OpenCode subagent config entries as optional host capability when OpenCode chooses to use them",
+    "- does not guarantee or enforce host subagent invocation, auto-fill reports, auto-archive tickets, or weaken finish",
+    "- if host subagent invocation is unavailable, the main session completes the current role checklist and records the limitation",
   ]
 }
 
@@ -268,12 +269,15 @@ function multiAgentRelayProcedureGuidance(): readonly string[] {
     MULTI_AGENT_RELAY_SECTION_TITLE,
     "",
     "This section is present only when `ph bootstrap backend --multi-agent-preview` is used.",
+    "Relay is a main-session checklist rail through role lenses: `test-writer`, `implementer`, and `reviewer`.",
+    "Hosts may expose subagent/task invocation, but Persona Harness does not guarantee or enforce host subagent invocation.",
     "",
     "At the start of each active ticket:",
     "- Run `npx ph workflow relay next --json` to identify the current role and required role artifact.",
-    "- Delegate with scoped input to the matching OpenCode subagent: `test-writer`, `implementer`, or `reviewer`.",
+    "- If the host exposes subagent/task invocation, use the matching OpenCode subagent: `test-writer`, `implementer`, or `reviewer`.",
+    "- If subagent invocation is unavailable or not taken, complete the current role checklist in the main session.",
+    "- In every role artifact, record whether subagent invocation was used or unavailable.",
     "- After the role artifact is complete, run `npx ph workflow closure next --json` to connect the next gate step.",
-    "- The main session must not perform role work directly. Bypassing delegation is disallowed in this preview workflow.",
     "",
   ]
 }

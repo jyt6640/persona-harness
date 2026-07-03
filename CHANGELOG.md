@@ -6,6 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Reframed the multi-agent relay preview as a main-session role checklist rail.
+  `workflow relay next --json` still asks the host to invoke the current role
+  subagent via a task tool when that capability is available, but the first-class
+  path is now completing the `test-writer` / `implementer` / `reviewer`
+  checklist and role artifact in the main session when host subagent invocation
+  is unavailable or not taken. PH does not guarantee or enforce OpenCode
+  subagent invocation.
 - `workflow relay next --json` role-stage `promptBlock` now explicitly asks the
   host to invoke the current OpenCode subagent via the task tool when that host
   surface is available, and to record the limitation in the role artifact when

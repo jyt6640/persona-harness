@@ -12,12 +12,14 @@ export function relayUsage(invocationName: string): string {
   return [
     `Usage: ${invocationName} workflow relay <status|next|validate> --json`,
     "",
-    "Prints the read-only multi-agent relay preview state.",
+    "Prints the read-only multi-agent relay checklist state.",
     "Use validate --json to inspect role artifact readiness without writing artifacts.",
     "",
     "Scope:",
     "- requires multiAgent.enabled: true in .persona/harness.jsonc",
-    "- does not dispatch native subtasks",
+    "- main-session checklist rail for test-writer, implementer, and reviewer role lenses",
+    "- may ask a host subagent/task tool to take a role when the host exposes that capability",
+    "- does not guarantee or enforce host subagent invocation",
     "- does not auto-fill reports or auto-archive tickets",
     "- finish/check/archive remain the workflow gates",
   ].join("\n")
@@ -55,9 +57,9 @@ function roleAuthoringHints(role: MultiAgentRole | null): readonly string[] {
 
 function roleSubagentInvocationLines(role: MultiAgentRole): readonly string[] {
   return [
-    `Invoke the \`${role}\` subagent via the task tool for this role stage when the host exposes subagent/task invocation.`,
-    "Do not perform the role work directly in the main session unless subagent invocation is unavailable.",
-    "If subagent invocation is unavailable, record that limitation in the role artifact.",
+    `When the host exposes subagent/task invocation, invoke the \`${role}\` subagent via the task tool for this role stage.`,
+    "If host subagent invocation is unavailable or not taken, complete this role checklist in the main session.",
+    "Record whether subagent invocation was used or unavailable in the role artifact.",
   ]
 }
 
@@ -66,7 +68,7 @@ export function relayValidateText(payload: WorkflowRelayPayload): string {
   const firstBlocker = payload.blockers[0] ?? null
   const lines = [
     "Persona Harness relay validation",
-    "Mode: read-only; no native dispatch, no artifact writes.",
+    "Mode: read-only checklist rail; no guaranteed host subagent invocation, no artifact writes.",
     `Current ticket: ${ticket}`,
     `Current role: ${formatRole(payload.currentRole)}`,
     `Next role: ${formatRole(payload.nextRole)}`,
@@ -82,7 +84,7 @@ export function relayValidateText(payload: WorkflowRelayPayload): string {
     "Authoring hints:",
     ...roleAuthoringHints(payload.currentRole).map((hint) => `- ${hint}`),
     "PH closure/check/archive/finish gates remain authoritative.",
-    "Native dispatch remains blocked until a safe OpenCode session/model probe is approved.",
+    "Host subagent/task invocation is optional and host-dependent; when unavailable, complete the current role checklist in the main session and record that limitation.",
   ]
   return `${lines.join("\n")}\n`
 }
@@ -93,7 +95,7 @@ export function relayPromptLinesFor(
   artifactPath: string,
 ): readonly string[] {
   const common = [
-    "PH closure/workflow state is the orchestrator/gate; OpenCode subagents are workers.",
+    "PH relay is a main-session role checklist rail; host subagents are optional workers when available.",
     `Current ticket: ${ticket.id} - ${ticket.title}`,
     "Scoped inputs are paths only; read only what is needed from those files.",
   ]

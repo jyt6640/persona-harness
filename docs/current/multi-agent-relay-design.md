@@ -1,6 +1,8 @@
 # Multi-Agent Relay Design
 
-Status: R1 preview implemented. The relay is default-off, read-only, and non-autonomous.
+Status: R1 preview implemented; current accepted direction is main-session role
+checklist rail with optional host-dependent subagent use. The relay is
+default-off, read-only, and non-autonomous.
 
 ## Scope
 
@@ -65,7 +67,7 @@ R0 conclusion:
 
 ## R1 Relay Preview
 
-Subagent promotion is opt-in. The implemented config surface is:
+Relay role checklist preview is opt-in. The implemented config surface is:
 
 ```jsonc
 {
@@ -77,13 +79,13 @@ Subagent promotion is opt-in. The implemented config surface is:
 }
 ```
 
-`ph bootstrap backend --multi-agent-preview` turns this on for the project and updates `.opencode/opencode.json` with top-level `agent` entries for exactly `test-writer`, `implementer`, and `reviewer`, each with `mode: "subagent"`. It preserves the existing OpenCode config and does not use `.opencode/agent/*.md`. Preview-era `jaeki` and `roach` agent keys are migrated to `implementer` and `reviewer` when no new key already exists.
+`ph bootstrap backend --multi-agent-preview` turns this on for the project and updates `.opencode/opencode.json` with top-level `agent` entries for exactly `test-writer`, `implementer`, and `reviewer`, each with `mode: "subagent"`. These entries are optional host capability: PH promptBlocks may ask the host to use them, but PH does not guarantee or enforce host subagent invocation. It preserves the existing OpenCode config and does not use `.opencode/agent/*.md`. Preview-era `jaeki` and `roach` agent keys are migrated to `implementer` and `reviewer` when no new key already exists.
 
-First 3-role preview order:
+First 3-role checklist order:
 
-- `test-writer`: tester. Owns focused failing tests, verification commands, and structured evidence expectations.
-- `implementer`: implementation worker. Takes the accepted plan/current ticket and writes production code/tests plus implementation report evidence.
-- `reviewer`: review worker. Owns review-report pressure, closure blocker review, and regression risk notes.
+- `test-writer`: tester lens. Owns focused failing tests, verification commands, and structured evidence expectations.
+- `implementer`: implementation lens. Takes the accepted plan/current ticket and writes production code/tests plus implementation report evidence.
+- `reviewer`: review lens. Owns review-report pressure, closure blocker review, and regression risk notes.
 
 The `test-writer` prompt points to canonical PH test guidance instead of embedding a separate TDD essay: `.persona/rules/backend/spring-test.md` section `PH Multi-Agent Relay`, the current ticket/scenario contract rule, and the detailed shared reference `packages/shared-skills/skills/programming/references/java/testing.md` section `Persona Harness relay contract`. Skills Prompting owns that shared guidance; R1 only consumes the stable PH rule/reference paths and the boundary that `test-writer` must not implement product code or weaken/delete tests.
 
@@ -95,7 +97,8 @@ Reserved but not workerized at first:
 Core invariant:
 
 - PH closure/workflow state remains the orchestrator/gate.
-- OpenCode subagents are workers.
+- The main session can complete each current role checklist and artifact.
+- OpenCode subagents are optional host-provided workers when the host chooses to invoke them.
 - `workflow closure next`, `workflow check`, `workflow archive`, and `workflow finish implement` remain the authoritative state/gate surfaces.
 
 Implemented read-only surfaces:
@@ -104,6 +107,29 @@ Implemented read-only surfaces:
 - `ph workflow relay next --json`
 
 These commands do not call OpenCode and do not dispatch native subtasks. They read the current workflow ticket and closure blocker, then emit a scoped handoff object with `enabled`, `currentTicket`, `currentRole`, `roleCompletionState`, `nextRole`, `roleOrder`, `scopedInputFiles`, `promptBlock`, `promptLines`, `requiredOutputArtifact`, `requiredArtifact`, `gateCommand`, and blocker fields.
+
+## Accepted Reframe After Stage 13
+
+Stage 13 and the follow-up promptBlock retry observed that OpenCode noticed the
+relay command/prompt path, but did not reliably invoke role subagents. The
+current product wording therefore treats relay as a main-session checklist rail,
+not automatic OpenCode subagent orchestration.
+
+The expected path is:
+
+1. Run `npx ph workflow relay next --json`.
+2. Follow the current role lens: `test-writer`, `implementer`, or `reviewer`.
+3. If the host exposes and chooses a task/subagent invocation surface, use the
+   matching role subagent.
+4. If subagent invocation is unavailable or not taken, complete the role
+   checklist in the main session.
+5. Record whether subagent invocation was used or unavailable in the role
+   artifact.
+6. Re-run relay/closure/check/finish gates.
+
+This reframe does not remove the `.opencode/opencode.json` agent entries. It
+does remove any product implication that PH can guarantee, enforce, or certify
+native host subagent orchestration.
 
 R1 role artifacts live under `.persona/workflow/work/<ticket>/roles/`:
 
@@ -120,7 +146,7 @@ Missing artifacts block relay progression with preview-only blockers such as `ro
 - Scoped context only: each handoff should include current ticket id, blocker id, source path, and exact expected artifact, not the full project history.
 - Model tiering: implementer/reviewer/tester may use different model levels, but R1 should keep model choice config-driven and default conservative.
 - Gate-before-next-role: do not start reviewer until implementation artifacts and verification evidence exist; do not start archive/finish until closure blockers clear.
-- Evidence logging: each role handoff should write structured PH evidence with role, ticket, blocker, source files, command/evidence refs, and result.
+- Evidence logging: each role artifact should record role, ticket, blocker, source files, command/evidence refs, result, and whether host subagent invocation was used or unavailable.
 - Repetition cap: if the same closure blocker repeats, stop and surface the blocker instead of spawning another worker.
 - No automatic report fabrication: workers may fill reports, but PH must not invent evidence or mark substantive reports complete without content.
 
@@ -130,7 +156,7 @@ Missing artifacts block relay progression with preview-only blockers such as `ro
 - Agent-specific system constitution is not source-proven through `experimental.chat.system.transform`; R1 needs either a `chat.message` session-agent cache or a future hook input with `agent`.
 - Native subtask dispatch should be tested with a no-model/local probe before productizing; R0 did not run OpenCode or models.
 - Permission/write-deny is unrelated to relay and remains constrained by the current SDK payload limitations.
-- R1 does not promise token savings, OMO parity, autonomous completion, or a full agent loop.
+- R1 does not promise token savings, OMO parity, autonomous completion, reliable host subagent orchestration, or a full agent loop.
 
 ## R3 Native Subtask Probe
 

@@ -31,7 +31,7 @@ const ROLE_DEFINITIONS: Readonly<Record<MultiAgentRole, RoleDefinition>> = {
       "Define the expected failing test, verification test, or verification plan.",
       "Do not implement production code.",
       "Do not weaken, delete, or rewrite existing tests to pass without preserving behavior.",
-      "PH closure/workflow state is the orchestrator/gate; OpenCode subagents are workers.",
+      "PH relay is a main-session role checklist rail; host subagents are optional workers when available.",
     ].join("\n"),
   },
   implementer: {
@@ -41,7 +41,7 @@ const ROLE_DEFINITIONS: Readonly<Record<MultiAgentRole, RoleDefinition>> = {
       "Implement or refactor only the scoped current ticket.",
       "Do not broaden the design or start unrelated requirements.",
       "Use the test-writer artifact when it exists and keep PH reports/evidence honest.",
-      "PH closure/workflow state is the orchestrator/gate; OpenCode subagents are workers.",
+      "PH relay is a main-session role checklist rail; host subagents are optional workers when available.",
     ].join("\n"),
   },
   reviewer: {
@@ -51,7 +51,7 @@ const ROLE_DEFINITIONS: Readonly<Record<MultiAgentRole, RoleDefinition>> = {
       "Review, QA, and pressure the implementation/review reports for the scoped ticket.",
       "Do not implement features unless explicitly reassigned.",
       "Surface remaining blockers and required verification evidence.",
-      "PH closure/workflow state is the orchestrator/gate; OpenCode subagents are workers.",
+      "PH relay is a main-session role checklist rail; host subagents are optional workers when available.",
     ].join("\n"),
   },
 }
