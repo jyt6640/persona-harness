@@ -6,6 +6,27 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added Stage 11 runtime-injection park record, static relay guidance, role-boundary
+  heuristic tightening, and the canonical measurement scorecard definition.
+  - `docs/current/rail-entry-measurement-status.md` now records runtime
+    injection as parked, not removed. `--runtime-injection-preview` remains an
+    explicit preview, but additional investment is paused unless an approved
+    long-session post-compaction rail-retention ON/OFF measurement is designed.
+  - `ph bootstrap backend --multi-agent-preview` now writes idempotent static
+    relay procedure guidance into `AGENTS.md`; default bootstrap does not add
+    this section.
+  - Role-boundary heuristic observation now avoids relay-state disk reads when
+    `multiAgent.enabled=false`, matches only explicit file write/edit tools,
+    and words findings as possible delegation bypass by the main session while
+    preserving heuristic attribution limits.
+  - Added `docs/current/measurement-scorecard.md` as canonical
+    `scorecard.1` for experiment archive scorecards only. This does not expand
+    `.persona/evidence` schemas.
+  - Defaults, release channels, and claims are unchanged: no token/provider-token
+    saving, product-efficacy/navigation benefit, app-quality/full-TDD, broad
+    reliability/closure guarantee, deterministic role enforcement, autonomous
+    completion, generated-app certification, or automatic
+    completion/downgrade/removal claim.
 - Added Stage 10 role-boundary scope honesty and report-only heuristic write
   observation.
   - `ph workflow role-boundary [--json]` now emits

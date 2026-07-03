@@ -6,19 +6,29 @@ import { isWriteOrEditTool, normalizeObservedPath, roleBoundaryPathPolicy } from
 export type { RoleBoundaryHeuristicFinding }
 export { readRoleBoundaryHeuristicFindings }
 
+type RoleBoundaryWriteDeps = {
+  readonly appendObservation?: typeof appendRoleBoundaryObservation
+  readonly readRelayPayload?: typeof readWorkflowRelayPayload
+}
+
 type ObserveRoleBoundaryWriteInput = {
   readonly callID?: string
+  readonly multiAgentEnabled: boolean
   readonly projectDir: string
   readonly sessionID: string
   readonly targetFile?: string
   readonly tool: string
 }
 
-export function observeRoleBoundaryWrite(input: ObserveRoleBoundaryWriteInput): void {
+export function observeRoleBoundaryWrite(input: ObserveRoleBoundaryWriteInput, deps: RoleBoundaryWriteDeps = {}): void {
+  if (!input.multiAgentEnabled) {
+    return
+  }
   if (!isWriteOrEditTool(input.tool) || input.targetFile === undefined) {
     return
   }
-  const relay = readWorkflowRelayPayload("status", input.projectDir)
+  const readRelayPayload = deps.readRelayPayload ?? readWorkflowRelayPayload
+  const relay = readRelayPayload("status", input.projectDir)
   if (!relay.enabled || relay.currentRole === null || relay.currentTicket === null) {
     return
   }
@@ -27,7 +37,8 @@ export function observeRoleBoundaryWrite(input: ObserveRoleBoundaryWriteInput): 
   if (policy.allowed) {
     return
   }
-  appendRoleBoundaryObservation(input.projectDir, {
+  const appendObservation = deps.appendObservation ?? appendRoleBoundaryObservation
+  appendObservation(input.projectDir, {
     callID: input.callID,
     currentTicketId: relay.currentTicket.id,
     path,

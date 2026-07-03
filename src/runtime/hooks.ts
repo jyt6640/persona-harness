@@ -272,6 +272,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         captureJavaRoleDiscovery(input, output)
         const observedTargetFile = extractTargetFile(input.tool, input.args as Record<string, unknown>)
         observeRoleBoundaryWrite({
+          multiAgentEnabled: config.multiAgent.enabled,
           projectDir,
           tool: input.tool,
           sessionID: input.sessionID,

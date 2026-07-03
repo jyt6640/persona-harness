@@ -210,7 +210,7 @@ export function readRoleBoundaryHeuristicFindings(projectDir: string): readonly 
         heuristic: true,
         id: "role-boundary-heuristic-write-outside-role",
         limitation: observation.limitation,
-        message: `${observation.role} wrote ${observation.path} outside the heuristic role path policy: ${observation.policy}.`,
+        message: `${observation.role} wrote ${observation.path} outside the heuristic role path policy: ${observation.policy}. This time-window signal may indicate possible delegation bypass by the main session, but it is not deterministic role attribution.`,
         path: observation.path,
         role: observation.role,
         sessionID: evidence.sessionID,

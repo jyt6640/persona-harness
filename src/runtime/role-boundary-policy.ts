@@ -13,16 +13,19 @@ export const ROLE_BOUNDARY_LIMITATIONS = [
 
 export function isWriteOrEditTool(tool: string): boolean {
   const normalizedTool = tool.toLowerCase()
-  return (
-    normalizedTool === "write" ||
-    normalizedTool === "edit" ||
-    normalizedTool === "patch" ||
-    normalizedTool === "multiedit" ||
-    normalizedTool === "multi_edit" ||
-    normalizedTool.includes("write") ||
-    normalizedTool.includes("edit")
-  )
+  return FILE_WRITE_OR_EDIT_TOOLS.has(normalizedTool)
 }
+
+const FILE_WRITE_OR_EDIT_TOOLS = new Set([
+  "apply_patch",
+  "edit",
+  "multi_edit",
+  "multiedit",
+  "patch",
+  "str_replace_based_edit_tool",
+  "str_replace_editor",
+  "write",
+])
 
 export function normalizeObservedPath(projectDir: string, targetFile: string): string {
   const absolutePath = resolve(projectDir, targetFile)

@@ -227,12 +227,13 @@ The default backend bootstrap registers the remote developer MCP tools `grep_app
 ```bash
 npx ph bootstrap backend --codegraph-preview   # CodeGraph, opt-in
 npx ph bootstrap backend --lsp-preview         # LSP, opt-in
-npx ph bootstrap backend --runtime-injection-preview  # optional model-facing PH guidance
+npx ph bootstrap backend --runtime-injection-preview  # parked opt-in model-facing PH guidance
 npx ph bootstrap backend --no-developer-mcp    # disable developer MCP
 ```
 
 > [!NOTE]
 > Both wrappers are preview surfaces. If required external tools are missing, they report an **unavailable** status instead of faking successful results.
+> Runtime injection remains an explicit preview. It is parked after the Stage 9 banner-only H1 measurement and should not be treated as the recommended/default path.
 
 ## What Evidence Means
 

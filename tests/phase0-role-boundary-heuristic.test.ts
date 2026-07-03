@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from "vitest"
 import { runPersonaCli } from "../src/cli/index.js"
 import { isRecord } from "../src/config/jsonc.js"
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { observeRoleBoundaryWrite } from "../src/runtime/role-boundary-heuristic.js"
+import { isWriteOrEditTool } from "../src/runtime/role-boundary-policy.js"
 
 const tempProjects: string[] = []
 
@@ -101,6 +103,40 @@ afterEach(() => {
 })
 
 describe("role-boundary heuristic write observation", () => {
+  it("matches only explicit file write/edit tools", () => {
+    expect(isWriteOrEditTool("write")).toBe(true)
+    expect(isWriteOrEditTool("edit")).toBe(true)
+    expect(isWriteOrEditTool("multi_edit")).toBe(true)
+    expect(isWriteOrEditTool("apply_patch")).toBe(true)
+    expect(isWriteOrEditTool("todowrite")).toBe(false)
+    expect(isWriteOrEditTool("todo_write")).toBe(false)
+    expect(isWriteOrEditTool("read")).toBe(false)
+  })
+
+  it("does not read relay state when multi-agent is disabled", () => {
+    const projectDir = createProject()
+    let relayReadCount = 0
+
+    observeRoleBoundaryWrite(
+      {
+        multiAgentEnabled: false,
+        projectDir,
+        sessionID: "session-disabled",
+        targetFile: "src/main/java/demo/ReservationService.java",
+        tool: "write",
+      },
+      {
+        readRelayPayload() {
+          relayReadCount += 1
+          throw new Error("relay state should not be read while multiAgent is disabled")
+        },
+      },
+    )
+
+    expect(relayReadCount).toBe(0)
+    expect(roleBoundaryEvidence(projectDir)).toEqual([])
+  })
+
   it("aggregates disallowed production writes for the current test-writer role and reports them", async () => {
     const projectDir = createProject()
     writeHarnessConfig(projectDir)

@@ -1365,6 +1365,7 @@ describe("ph bootstrap backend", () => {
     expect(agents).toContain("npx ph workflow implement")
     expect(agents).toContain(".persona/project-profile.jsonc")
     expect(agents).toContain("Do not infer a Node/CommonJS project from package.json")
+    expect(agents).not.toContain("Persona Harness Multi-Agent Relay Preview")
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(false)
     expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(false)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
@@ -1490,6 +1491,14 @@ describe("ph bootstrap backend", () => {
     expect(result.stdout).toContain("enabled multi-agent relay preview for test-writer, implementer, and reviewer")
     expect(result.stdout).toContain("Multi-agent relay preview:")
     expect(result.stdout).toContain("does not dispatch native subtasks")
+    const agentsMd = readFileSync(join(projectDir, "AGENTS.md"), "utf8")
+    expect(agentsMd).toContain("Persona Harness Multi-Agent Relay Preview")
+    expect(agentsMd).toContain("npx ph workflow relay next --json")
+    expect(agentsMd).toContain("npx ph workflow closure next --json")
+    expect(agentsMd).toContain("test-writer")
+    expect(agentsMd).toContain("implementer")
+    expect(agentsMd).toContain("reviewer")
+    expect(agentsMd).toContain("The main session must not perform role work directly")
     expect(loadHarnessConfig(projectDir).multiAgent).toEqual({
       enabled: true,
       roles: ["test-writer", "implementer", "reviewer"],
@@ -1561,6 +1570,10 @@ describe("ph bootstrap backend", () => {
       packageRoot: process.cwd(),
     })
     expect(secondResult.status).toBe(0)
+    const agentsMd = readFileSync(join(projectDir, "AGENTS.md"), "utf8")
+    const firstIndex = agentsMd.indexOf("Persona Harness Multi-Agent Relay Preview")
+    expect(firstIndex).toBeGreaterThanOrEqual(0)
+    expect(agentsMd.indexOf("Persona Harness Multi-Agent Relay Preview", firstIndex + 1)).toBe(-1)
     const secondConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     const secondAgents = isRecord(secondConfig.agent) ? secondConfig.agent : {}
     expect(secondAgents.implementer).toMatchObject({

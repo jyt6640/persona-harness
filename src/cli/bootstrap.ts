@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
@@ -48,6 +48,7 @@ const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
 const GITIGNORE_PATH = ".gitignore"
 const POLICY_OVERLAY_PATH = ".persona/policies/overlay.jsonc"
 const ROOT_AGENT_INSTRUCTIONS_PATH = "AGENTS.md"
+const MULTI_AGENT_RELAY_SECTION_TITLE = "## Persona Harness Multi-Agent Relay Preview"
 
 function strictModeSummaryLines(): readonly string[] {
   return [
@@ -64,6 +65,7 @@ function runtimeInjectionPreviewSummaryLines(): readonly string[] {
     "Runtime injection preview:",
     "- opt-in only via --runtime-injection-preview or --strict; default init/bootstrap keeps PH as gate-first CLI/evidence tooling",
     "- enables model-facing PH guidance such as target-file injection, workflow prompt rails, continuation text, and system constitution where supported",
+    "- parked after the Stage 9 banner-only H1 measurement; resume only with an approved long-session post-compaction rail-retention measurement",
     "- measured 10-pair OpenCode A/B was worse for runtime injection on the bounded fixture set; keep this as guidance preview, not a token-saving or product-efficacy claim",
     "- closure/check/archive/finish gates remain authoritative whether runtime injection is on or off",
   ]
@@ -261,8 +263,23 @@ function runAndRecord(
   return undefined
 }
 
-function backendAgentInstructions(): string {
+function multiAgentRelayProcedureGuidance(): readonly string[] {
   return [
+    MULTI_AGENT_RELAY_SECTION_TITLE,
+    "",
+    "This section is present only when `ph bootstrap backend --multi-agent-preview` is used.",
+    "",
+    "At the start of each active ticket:",
+    "- Run `npx ph workflow relay next --json` to identify the current role and required role artifact.",
+    "- Delegate with scoped input to the matching OpenCode subagent: `test-writer`, `implementer`, or `reviewer`.",
+    "- After the role artifact is complete, run `npx ph workflow closure next --json` to connect the next gate step.",
+    "- The main session must not perform role work directly. Bypassing delegation is disallowed in this preview workflow.",
+    "",
+  ]
+}
+
+function backendAgentInstructions(includeMultiAgentRelayGuidance = false): string {
+  const lines = [
     "# Persona Harness Agent Instructions",
     "",
     "This project is initialized with Persona Harness for Java/Spring backend work.",
@@ -288,16 +305,34 @@ function backendAgentInstructions(): string {
     "- Fill `.persona/workflow/review-report.md`.",
     "- Run `npx ph workflow finish implement` before claiming completion.",
     "",
-  ].join("\n")
+  ]
+  if (includeMultiAgentRelayGuidance) {
+    lines.push(...multiAgentRelayProcedureGuidance())
+  }
+  return lines.join("\n")
 }
 
-function writeBackendAgentInstructions(projectDir: string, skipped: string[], force: boolean): string | undefined {
+function writeBackendAgentInstructions(
+  projectDir: string,
+  skipped: string[],
+  force: boolean,
+  includeMultiAgentRelayGuidance: boolean,
+): string | undefined {
   const targetPath = join(projectDir, ROOT_AGENT_INSTRUCTIONS_PATH)
   if (existsSync(targetPath) && !force) {
+    if (includeMultiAgentRelayGuidance) {
+      const current = readFileSync(targetPath, "utf8")
+      if (current.includes(MULTI_AGENT_RELAY_SECTION_TITLE)) {
+        skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} multi-agent relay guidance already exists`)
+        return undefined
+      }
+      writeFileSync(targetPath, `${current.trimEnd()}\n\n${multiAgentRelayProcedureGuidance().join("\n")}`, "utf8")
+      return `updated ${ROOT_AGENT_INSTRUCTIONS_PATH} with multi-agent relay procedure guidance`
+    }
     skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} already exists`)
     return undefined
   }
-  writeFileSync(targetPath, backendAgentInstructions(), "utf8")
+  writeFileSync(targetPath, backendAgentInstructions(includeMultiAgentRelayGuidance), "utf8")
   return `created ${ROOT_AGENT_INSTRUCTIONS_PATH} AI bootstrap instructions`
 }
 
@@ -403,7 +438,7 @@ function runBackendBootstrap(
     skipped.push(`${PLAN_PATH} already exists`)
   }
 
-  const agentInstructionAction = writeBackendAgentInstructions(projectDir, skipped, flags.force)
+  const agentInstructionAction = writeBackendAgentInstructions(projectDir, skipped, flags.force, flags.multiAgentPreview)
   if (agentInstructionAction !== undefined) {
     actions.push(agentInstructionAction)
   }

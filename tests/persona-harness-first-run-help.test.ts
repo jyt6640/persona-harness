@@ -66,6 +66,7 @@ describe("first-run command help", () => {
     expect(result.stdout).toContain("no generated app product-quality certification or closure guarantee")
     expect(result.stdout).toContain("Runtime injection preview:")
     expect(result.stdout).toContain("default init/bootstrap keeps PH as gate-first CLI/evidence tooling")
+    expect(result.stdout).toContain("parked after the Stage 9 banner-only H1 measurement")
     expect(result.stdout).toContain("measured 10-pair OpenCode A/B was worse")
     expect(result.stdout).toContain("Multi-agent relay preview:")
     expect(result.stdout).toContain("opt-in only via --multi-agent-preview")

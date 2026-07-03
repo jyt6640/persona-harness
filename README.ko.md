@@ -227,12 +227,13 @@ Stable 빌드에는 read-only surface decision summary인 `npx ph evidence pminu
 ```bash
 npx ph bootstrap backend --codegraph-preview   # CodeGraph, opt-in
 npx ph bootstrap backend --lsp-preview         # LSP, opt-in
-npx ph bootstrap backend --runtime-injection-preview  # 선택형 model-facing PH guidance
+npx ph bootstrap backend --runtime-injection-preview  # 보류된 선택형 model-facing PH guidance
 npx ph bootstrap backend --no-developer-mcp    # developer MCP 비활성화
 ```
 
 > [!NOTE]
 > 두 wrapper 모두 preview 표면입니다. 필요한 외부 도구가 없으면 성공을 위조하지 않고 **unavailable** 상태를 보고합니다.
+> Runtime injection은 계속 명시적 preview입니다. Stage 9 banner-only H1 측정 이후 보류 상태이며 권장/default 경로로 해석하면 안 됩니다.
 
 ## Evidence의 의미
 

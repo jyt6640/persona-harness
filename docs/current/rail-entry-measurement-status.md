@@ -136,3 +136,22 @@ identity. This is not deterministic per-session role enforcement and not a
 success, reliability, closure, product-efficacy, app-quality, full-TDD, token
 saving, generated-app certification, automatic completion, downgrade, or
 removal claim.
+
+## Runtime Injection Park Decision
+
+Runtime injection is parked. The basis is the Stage 9 banner-only H1 result
+and the observed static setup path: with PH installed and bootstrap artifacts
+present in both conditions, the banner-only H1 was not supported, while static
+AGENTS/profile/bootstrap artifacts alone produced rail entry 10/10 for the
+measured fixture.
+
+Parked does not mean removed. `ph bootstrap backend --runtime-injection-preview`
+remains available as an explicit preview, but additional runtime-injection
+investment is paused.
+
+Runtime-injection work may resume only under a designed and approved
+long-session post-compaction rail-retention ON/OFF measurement. Until then,
+runtimeInjection remains default OFF and must not be cited as token-saving,
+product-efficacy, navigation-benefit, app-quality, full-TDD, broad reliability,
+closure-guarantee, generated-app certification, or automatic completion
+evidence.
