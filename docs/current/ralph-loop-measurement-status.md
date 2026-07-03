@@ -166,6 +166,62 @@ measure n=15 completion integrity, does not support a default change, and does
 not make a token, product-efficacy, app-quality, reliability, closure-success,
 or autonomous-completion claim.
 
+## Tool-Output Trigger n=15 Measurement
+
+Status: trigger-survival criterion met for the calibrated fixture; no default
+change is supported by this record.
+
+- Archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-tool-output-trigger-ab-15-20260703T142344Z`.
+- Source package: local-current tarball from commit
+  `5cdeb692b278f498f0c81b903bb6100791c13022`, version `0.6.0-rc.1`,
+  shasum `b2bab6805d840bdd19b2fd07ba030d467442db5e`.
+- Excluded aborted archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-tool-output-trigger-ab-15-20260703T142028Z`.
+  That first runner attempt was stopped after the archive-local parser counted
+  the marker literal in `TASK.md` read output. It is marked `ABORTED` and must
+  not be used as evidence.
+
+Design:
+
+- n=15 paired OFF/ON rows, pair-internal sequential, concurrency 1.
+- OFF: PH installed and bootstrapped, `runtimeInjection=false`,
+  `multiAgent=false`, `idleContinuation=false`, `ralphLoop.enabled=false`, and
+  `toolOutputTrigger=false`.
+- ON: same setup with `ralphLoop.enabled=true` and
+  `toolOutputTrigger=true`.
+- Marker detection was strict: only marker text returned in PH
+  `workflow finish implement` / `workflow check` tool output counted as
+  delivery evidence.
+- Primary criterion: ON marker + persisted state attempt + follow-up action in
+  at least 12/15 rows, OFF marker 0/15, and zero ON runaway retries/session cap
+  hits.
+
+Results:
+
+- Valid comparable pairs: 15/15.
+- Clean OpenCode exits: OFF 15/15, ON 15/15.
+- OFF marker observed: 0/15.
+- ON marker + state + follow-up observed: 15/15.
+- ON ralph-loop state attempts: 15/15 rows had attempts; each observed attempt
+  count was `1`.
+- ON session cap hits: 0.
+- ON runaway retries: 0.
+- Mean elapsed snapshot: OFF 23943 ms, ON 24396 ms.
+- Mean provider token total snapshot: OFF 55090, ON 70143. These are telemetry
+  snapshots only and do not support any token-saving claim.
+- Final `workflow finish implement` pass rate after the run: OFF 0/15, ON
+  0/15.
+- Mean blocker-count delta did not improve: OFF -1.20, ON -3.00 by the archive
+  runner's `firstFinishBlockers - postFinishBlockers` calculation.
+
+Judgment: PASS for trigger-survival in this calibrated fixture. The tool-output
+trigger reliably delivered a model-facing marker and the model performed
+bounded follow-up actions after the marker. Completion-integrity movement is
+not positive by final finish pass, and the blocker-count snapshot does not
+support an improvement claim. Ralph-loop remains default-off; any larger
+completion-integrity or default-change trial must be separately preregistered.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.
