@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 9
+- current active pointer/status: 10
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 49
 - versioned durable: 8
 
-Total indexed files: 261
+Total indexed files: 262
 
 ## File Inventory
 
@@ -45,6 +45,7 @@ Total indexed files: 261
 | `docs/current/ast-enforcement-rfc.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/backend-clean-code-uniformity-rubric.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/backend-product-code-style-direction.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
+| `docs/current/canonical-docs-index.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/clean-opencode-ph-bearshell-smoke.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/desktop-test-artifacts-index.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/docs-inventory.md` | current index | - | Inventory for all docs files; active pointer/index file. |

@@ -18,6 +18,8 @@ deleting evidence/status history.
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
   [`release/v0.6.0-rc.2-release-notes.md`](release/v0.6.0-rc.2-release-notes.md).
+- Canonical/archive/generated docs map:
+  [`canonical-docs-index.md`](canonical-docs-index.md).
 - Ralph-loop measurement status:
   [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
 - Role Checklist Relay status:

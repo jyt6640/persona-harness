@@ -6,6 +6,11 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stage 16-c adds `docs/current/canonical-docs-index.md` as a navigation map
+  for canonical current records, archive/history areas, generated/check-
+  maintained docs, measurement status files, and the desktop-run archive path
+  convention. The index is packaged because `docs/current/README.md` links it;
+  it is navigation only, not release evidence or a product/measurement claim.
 - Stage 16-d maintenance adds a package files policy regression test for the
   package-visible `docs/current/README.md` surface. The test keeps direct
   relative README links covered by `package.json` `files` entries so future

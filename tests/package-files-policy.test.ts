@@ -32,6 +32,7 @@ describe("package files policy", () => {
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
       "docs/current/release/v0.6.0-rc.2-release-notes.md",
+      "docs/current/canonical-docs-index.md",
       "docs/current/ralph-loop-measurement-status.md",
       "docs/current/multiagent-relay-trial-status.md",
       "docs/current/rail-entry-measurement-status.md",
