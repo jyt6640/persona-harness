@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import { isRecord } from "../config/jsonc.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
 export type RalphLoopStopReason = "finish-passed" | "max-attempts" | "no-blockers" | "unmapped-blocker"
@@ -147,7 +148,7 @@ export function writeRalphLoopState(projectDir: string, state: RalphLoopStateFil
   const outputPath = ralphLoopStatePath(projectDir)
   try {
     mkdirSync(dirname(outputPath), { recursive: true })
-    writeFileSync(outputPath, `${JSON.stringify(state, null, 2)}\n`)
+    writeFileAtomic(outputPath, `${JSON.stringify(state, null, 2)}\n`)
     return true
   } catch (error) {
     if (error instanceof Error) {

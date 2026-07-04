@@ -490,6 +490,20 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     expect(sessionState).toMatchObject({ attemptsUsed: 2, capped: true, capSummaryNotified: true })
   })
 
+  it("falls back to an empty diagnosable state when the persisted state is truncated", () => {
+    const projectDir = createProject()
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+    writeFileSync(ralphLoopStatePath(projectDir), "{ nope\n")
+
+    const state = readRalphLoopState(projectDir, "2026-07-05T00:00:00.000Z")
+
+    expect(state).toEqual({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-05T00:00:00.000Z",
+    })
+  })
+
   it("does not cap prematurely across three resolved blockers", async () => {
     const projectDir = createProject()
     writeRalphLoopConfig(projectDir)
