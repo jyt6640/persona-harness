@@ -171,6 +171,7 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     expect(output.output).toContain("[Persona Harness Ralph Loop Tool Continuation]")
     expect(output.output).toContain("[Persona Harness Ralph Loop]")
     expect(output.output).toContain("Closure blockers remain; do not claim completion.")
+    expect(output.output).toContain("Blocker: verification-unknown (blocker 1/")
     expect(readRalphLoopState(projectDir).sessions["session-tool-output"]?.attemptsUsed).toBe(1)
     expect(calls).toEqual([])
   })
@@ -269,6 +270,7 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     expect(calls).toHaveLength(1)
     expect(calls[0]?.path.id).toBe("session-main")
     expect(calls[0]?.body.parts[0]?.text).toContain("[Persona Harness Ralph Loop]")
+    expect(calls[0]?.body.parts[0]?.text).toContain("Blocker: verification-unknown (blocker 1/")
     expect(readRalphLoopState(projectDir).sessions["session-main"]?.attemptsUsed).toBe(1)
   })
 

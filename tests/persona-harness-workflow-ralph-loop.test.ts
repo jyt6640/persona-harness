@@ -65,6 +65,7 @@ describe("ph workflow ralph-loop", () => {
     expect(output.blocker.id).toBe("verification-unknown")
     expect(output.nextStep).toMatchObject({ blockerId: "verification-unknown", id: "verify-app" })
     expect(output.promptLines.join("\n")).toContain("Closure blockers remain; do not claim completion.")
+    expect(output.promptLines.join("\n")).toContain("Blocker: verification-unknown (blocker 1/")
     expect(output.measurementPlan.sample).toBe("n=30 blocker/completion A/B")
     expect(output.boundaries).toContain("read-only dry-run; no workflow state or evidence is written")
     expect(existsSync(join(projectDir, ".persona", "workflow", "ralph-loop.json"))).toBe(false)

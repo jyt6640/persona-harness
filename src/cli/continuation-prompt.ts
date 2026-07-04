@@ -5,17 +5,40 @@ export type ContinuationPromptContext = "cli-continue" | "closure-next" | "idle"
 type ContinuationPromptOptions = {
   readonly blocker: ClosureBlocker
   readonly context: ContinuationPromptContext
+  readonly depth?: ContinuationPromptDepth
   readonly step: ClosureStep | null
+}
+
+type ContinuationPromptDepth = {
+  readonly index: number
+  readonly total: number
 }
 
 export function closureStepNextAction(step: ClosureStep | null): string {
   return step?.command ?? step?.commandAfterContent ?? "npx ph workflow continue"
 }
 
-export function continuationPromptCoreLines(blocker: ClosureBlocker, step: ClosureStep | null): readonly string[] {
+function blockerLabel(blocker: ClosureBlocker, depth?: ContinuationPromptDepth): string {
+  if (
+    depth === undefined ||
+    !Number.isInteger(depth.index) ||
+    !Number.isInteger(depth.total) ||
+    depth.index < 1 ||
+    depth.total < depth.index
+  ) {
+    return `Blocker: ${blocker.id}`
+  }
+  return `Blocker: ${blocker.id} (blocker ${depth.index}/${depth.total})`
+}
+
+export function continuationPromptCoreLines(
+  blocker: ClosureBlocker,
+  step: ClosureStep | null,
+  depth?: ContinuationPromptDepth,
+): readonly string[] {
   return [
     "Closure blockers remain; do not claim completion.",
-    `Blocker: ${blocker.id}`,
+    blockerLabel(blocker, depth),
     `Reason: ${blocker.reason}`,
     `Source: ${blocker.source}`,
     `Next action: ${closureStepNextAction(step)}`,
@@ -51,7 +74,7 @@ function contextBoundaryLine(context: ContinuationPromptContext): string {
 export function createContinuationPromptLines(options: ContinuationPromptOptions): readonly string[] {
   return [
     ...contextPrefixLines(options.context),
-    ...continuationPromptCoreLines(options.blocker, options.step),
+    ...continuationPromptCoreLines(options.blocker, options.step, options.depth),
     contextBoundaryLine(options.context),
   ]
 }

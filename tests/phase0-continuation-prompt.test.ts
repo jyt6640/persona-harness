@@ -59,12 +59,36 @@ describe("shared continuation prompt body", () => {
       expect(continueLines.join("\n")).toContain(line)
       expect(closureNextLines.join("\n")).toContain(line)
       expect(idleLines).toContain(line)
-      expect(ralphLines).toContain(line)
+      if (!line.startsWith("Blocker: ")) {
+        expect(ralphLines).toContain(line)
+      }
     }
     expect(continueLines.join("\n")).toContain("[Persona Harness Closure Continuation]")
     expect(closureNextLines.join("\n")).toContain("[Persona Harness Closure Next]")
     expect(idleLines).toContain("[Persona Harness Idle Continuation]")
     expect(ralphLines).toContain("[Persona Harness Ralph Loop]")
+    expect(ralphLines).toContain(`Blocker: ${blocker.id} (blocker 1/${closure.state.blockers.length})`)
+  })
+
+  it("can include blocker depth without changing non-ralph core prompts", () => {
+    const projectDir = createBlockedProject()
+    const closure = readWorkflowClosurePayload("next", projectDir)
+    const blocker = closure.state.blockers[0]
+    if (blocker === undefined) {
+      throw new Error("Expected a closure blocker fixture")
+    }
+    const step = closure.action === "next" ? closure.nextStep : null
+
+    const withoutDepth = createContinuationPromptLines({ blocker, context: "idle", step })
+    const withDepth = createContinuationPromptLines({
+      blocker,
+      context: "ralph-loop",
+      depth: { index: 1, total: closure.state.blockers.length },
+      step,
+    })
+
+    expect(withoutDepth).toContain(`Blocker: ${blocker.id}`)
+    expect(withDepth).toContain(`Blocker: ${blocker.id} (blocker 1/${closure.state.blockers.length})`)
   })
 })
 

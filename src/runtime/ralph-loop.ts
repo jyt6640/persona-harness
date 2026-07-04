@@ -219,6 +219,7 @@ export class RalphLoopContinuationTracker {
         createContinuationPromptText({
           blocker,
           context: "ralph-loop",
+          depth: { index: 1, total: closure.state.blockers.length },
           step: closure.action === "next" ? closure.nextStep : null,
         }),
       )

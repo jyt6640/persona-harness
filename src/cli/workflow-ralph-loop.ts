@@ -73,6 +73,7 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
   const blocker = closure.state.blockers[0] ?? null
   const nextStep = closure.action === "next" ? closure.nextStep : null
   const knownSessions = Object.keys(persistedState.sessions).length
+  const depth = blocker === null ? undefined : { index: 1, total: closure.state.blockers.length }
   return {
     schemaVersion: "workflow-ralph-loop.4",
     name: "ralph-loop",
@@ -108,7 +109,7 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
     blocker,
     nextStep,
     nextAction: nextStep === null ? null : closureStepNextAction(nextStep),
-    promptLines: blocker === null ? [] : createContinuationPromptLines({ blocker, context: "ralph-loop", step: nextStep }),
+    promptLines: blocker === null ? [] : createContinuationPromptLines({ blocker, context: "ralph-loop", depth, step: nextStep }),
     measurementPlan: {
       sample: "n=30 blocker/completion A/B",
       metrics: [
