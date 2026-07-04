@@ -6,6 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- HARDEN-1 H1-4 makes block-level toolchain-dependent conventions fail closed
+  when their required ast-grep toolchain is missing or fails. The built-in
+  ast-grep convention `controller.persistence-import` still defaults to `warn`,
+  so default installs keep the existing skip+warning behavior; only explicit
+  block-level ast-grep conventions now add a walkable `convention-toolchain-missing`
+  closure blocker. Observer conventions remain toolchain-independent. No
+  defaults, schemas, versions, or broad product/reliability claims changed.
 - HARDEN-1 H1-2 adds a permanent mechanical finish regression test. A tiny
   finish-reachable Java/Spring-shaped fixture now follows `workflow closure
   next --json` steps through real PH closure/report/evidence/read-coverage gates

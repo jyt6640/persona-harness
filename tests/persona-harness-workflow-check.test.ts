@@ -845,7 +845,7 @@ describe("ph workflow check", () => {
     }
   })
 
-  it("warns and skips without a fake pass when ast-grep is unavailable", () => {
+  it("blocks closure for an explicit block-level ast-grep convention when ast-grep is unavailable", () => {
     const projectDir = createProfiledTempProject()
     const previousAstGrep = process.env.PH_AST_GREP_BIN
     process.env.PH_AST_GREP_BIN = join(projectDir, "missing-sg")
@@ -866,9 +866,79 @@ describe("ph workflow check", () => {
       expect(check.status).toBe(0)
       expect(check.stdout).toContain("ast-grep binary not found")
       expect(check.stdout).toContain("Workflow status: WARN")
-      expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
-        CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId,
-      )
+      expect(closureJson.state.blockers).toContainEqual(expect.objectContaining({
+        id: "convention-toolchain-missing",
+        reason: expect.stringContaining("install sg/ast-grep or set PH_AST_GREP_BIN"),
+      }))
+      expect(closureJson.nextStep).toMatchObject({
+        commandAfterContent: "npx ph workflow check",
+        id: "install-convention-toolchain",
+      })
+      expect(finish.status).toBe(1)
+      expect(finish.stderr).toContain("convention-toolchain-missing")
+      expect(finish.stderr).toContain("lower convention level to warn/report")
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
+  })
+
+  it("keeps report-level ast-grep toolchain misses warning-only", () => {
+    const projectDir = createProfiledTempProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = join(projectDir, "missing-sg")
+    try {
+      writeConventionLevels(projectDir, { [CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id]: "report" })
+      expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      writeJavaRoleFiles(projectDir)
+      writeControllerPersistenceImportRule(projectDir)
+      writeControllerPersistenceImportViolation(projectDir)
+      writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+      const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closureJson = JSON.parse(closure.stdout)
+
+      expect(check.status).toBe(0)
+      expect(check.stdout).toContain("ast-grep binary not found")
+      expect(check.stdout).toContain("Workflow status: WARN")
+      expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain("convention-toolchain-missing")
+      expect(finish.status).toBe(0)
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
+  })
+
+  it("keeps default warn-level ast-grep toolchain misses warning-only", () => {
+    const projectDir = createProfiledTempProject()
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = join(projectDir, "missing-sg")
+    try {
+      expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+      writeJavaRoleFiles(projectDir)
+      writeControllerPersistenceImportRule(projectDir)
+      writeControllerPersistenceImportViolation(projectDir)
+      writeCompleteWorkflowReportsAndEvidence(projectDir)
+
+      const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closure = runPersonaCli(["workflow", "closure", "next", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+      const closureJson = JSON.parse(closure.stdout)
+
+      expect(check.status).toBe(0)
+      expect(check.stdout).toContain("ast-grep binary not found")
+      expect(check.stdout).toContain("Workflow status: WARN")
+      expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain("convention-toolchain-missing")
       expect(finish.status).toBe(0)
     } finally {
       if (previousAstGrep === undefined) {

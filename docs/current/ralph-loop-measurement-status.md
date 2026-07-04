@@ -2,6 +2,36 @@
 
 Status: Stage 12 partial; real model-session measurement is blocked at the pilot gate.
 
+## HARDEN-1 H1-4 Toolchain-Dependent Convention Audit
+
+H1-4 audits closure conventions before changing fail-closed behavior. The safe
+implementation set is the intersection of explicit `block` level and
+toolchain-dependent ast-grep conventions.
+
+| Convention family / id | Toolchain dependency | Default level | H1-4 fail-closed applicability |
+| --- | --- | --- | --- |
+| `controller.repository-dependency` | none; built-in TypeScript observer | `block` | Not applicable; observer remains toolchain-independent. |
+| `service.state-ownership` | none; built-in TypeScript observer | `block` | Not applicable; observer remains toolchain-independent. |
+| `spring.bootjar-enabled` | none; built-in TypeScript observer | `block` | Not applicable; observer remains toolchain-independent. |
+| `controller.persistence-import` | ast-grep / `sg` | `warn` | Applicable only when explicitly configured/effective level is `block`; default install remains skip+warning if `sg` is missing. |
+| BYO `.persona/conventions/*.yml` ast-grep conventions | ast-grep / `sg` | metadata default `report` unless convention metadata says otherwise | Applicable only when explicitly/effective level is `block` and block eligibility remains valid. |
+
+The audit found no default-install path that would add a new finish blocker
+solely because ast-grep is missing: the built-in ast-grep convention defaults to
+`warn`, while built-in `block` conventions use internal observers.
+
+H1-4 therefore adds a walkable `convention-toolchain-missing` closure blocker
+only for explicit block-level ast-grep/toolchain-dependent conventions when
+`sg`/ast-grep is missing or the scan fails. The next step is to install
+`sg`/ast-grep or set `PH_AST_GREP_BIN`, or lower that convention level to
+`warn`/`report`, then rerun `npx ph workflow check`.
+
+This is workflow foundation hardening only. It does not change defaults,
+schemas, stable status, or any product-efficacy, reliability, app-quality,
+closure-guarantee, deterministic-enforcement, or token-saving claim. The H1-0
+real n>=5 rail-entry regression caveat remains open and stable GO is not
+claimed.
+
 ## HARDEN-1 H1-2 Mechanical Finish Regression
 
 H1-2 adds a permanent CI regression test for mechanical finish reachability. The

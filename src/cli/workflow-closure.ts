@@ -2,6 +2,7 @@ import { resolve } from "node:path"
 import process from "node:process"
 
 import { findConventionByBlockerId } from "../config/convention-registry.js"
+import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventions.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
@@ -296,6 +297,9 @@ export function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState
   }
   if (blocker.id === "stack-alignment-mismatch") {
     return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "fix-stack-alignment", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID) {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "install-convention-toolchain", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   const convention = findConventionByBlockerId(blocker.id)
   if (convention !== undefined) {

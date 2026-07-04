@@ -40,6 +40,7 @@ const SERVICE_ARCHITECTURE_STYLES = [
   "hexagonal-light",
   "strict-clean-architecture",
 ] as const
+export const CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID = "convention-toolchain-missing"
 
 function serviceArchitectureApplies(projectDir: string): boolean {
   const intent = readProfileIntent(projectDir)
@@ -173,15 +174,27 @@ export function readArchitectureConventions(projectDir: string, implementationSt
   const blockers: ArchitectureConventionBlocker[] = []
   let hasWarnFinding = false
   for (const definition of readConventionDefinitions(projectDir)) {
+    const level = effectiveConventionLevel(definition, configuredConventionLevel(projectDir, definition))
     const result = conventionFindings(projectDir, definition)
     for (const warning of result.warnings) {
       summaries.push(warning)
       hasWarnFinding = true
+      if (definition.check.kind === "ast-grep" && level === "block") {
+        blockers.push({
+          conventionId: definition.id,
+          id: CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID,
+          reason: [
+            `${definition.id} block: required ast-grep toolchain unavailable.`,
+            warning,
+            "install sg/ast-grep or set PH_AST_GREP_BIN, or lower convention level to warn/report.",
+          ].join(" "),
+          source: ".persona/conventions",
+        })
+      }
     }
     if (result.findings.length === 0) {
       continue
     }
-    const level = effectiveConventionLevel(definition, configuredConventionLevel(projectDir, definition))
     summaries.push(`${definition.id} ${level}: ${result.findings.join("; ")}`)
     if (level !== "report") {
       hasWarnFinding = true

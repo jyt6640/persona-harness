@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "../src/cli/architecture-conventions.js"
 import {
   blockerStep,
   UNMAPPED_BLOCKER_STEP_ID,
@@ -232,6 +233,7 @@ const CLOSURE_BLOCKER_IDS = [
   "profile-read-coverage-missing",
   "java-role-read-coverage-missing",
   "stack-alignment-mismatch",
+  CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID,
   "history-backlog-mismatch",
   "pending-ticket",
 ] as const
