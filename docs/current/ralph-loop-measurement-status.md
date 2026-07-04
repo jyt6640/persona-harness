@@ -325,6 +325,50 @@ three-condition measurement only after accepting this prep surface and fixture
 validity. The primary future metric should remain finish PASS rate, with
 token/elapsed snapshots treated as secondary telemetry only.
 
+## Stage 18 Preregistered Completion-Integrity Measurement
+
+Status: PARTIAL. The preregistered main n=10-15 measurement was not run because
+the pilot gate did not pass.
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage18-completion-integrity-3arm-20260704T093610Z`.
+
+Package source: local-current tarball from commit
+`d4d85bc9f36a6b345c0065aba9fb5fb0e4e5c876`, version `0.6.0-rc.2`,
+shasum `bd6b48368c24f6564ecb231c18ed0a06bac9281c`, pack entry count
+`594`.
+
+Preregistration: `measurement-plan.json` and `KILL_CRITERIA.md` were written
+before measured rows. The primary metric was final
+`ph workflow finish implement` PASS rate, and the main sample was allowed only
+after a three-condition pilot proved setup validity, strict finish parsing,
+the internal tool-output marker/state path, and the external loop state path.
+
+Fixture validity: PASS. The scripted gate-chain path reached
+`ph workflow finish implement` exit `0`, proving the generated fixture can be
+finish-reachable when the required procedure is followed. This is fixture
+validity only, not product efficacy evidence.
+
+Pilot result:
+
+- OFF: final finish PASS `0/1`, blockers `3 -> 3`, no marker.
+- Internal tool-output trigger: final finish PASS `0/1`, blockers `3 -> 3`,
+  no tool-output marker and no persisted ralph-loop attempt.
+- External `ph workflow loop`: final finish PASS `0/1`, blockers `3 -> 3`,
+  `workflow loop` ran three iterations and terminated by `iteration-cap`.
+
+Pilot judgment: NO-GO for the main Stage 18 sample. The accepted pilot exposed
+fixture/runner calibration problems: model sessions repeatedly treated the
+workspace as PH/package-root or followed mismatched fixture context, and the
+external loop still capped without finish PASS. Earlier invalid archive-local
+runner attempts are marked under `aborted/` and excluded from evidence.
+
+Decision: no completion-integrity conclusion and no default change are
+supported. Before any future n=10-15 completion-integrity run, the measurement
+fixture/runner should be repaired so model sessions operate unambiguously
+inside the generated Java fixture and both continuation arms pass their pilot
+readiness checks.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.
