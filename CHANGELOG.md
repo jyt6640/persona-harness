@@ -6,6 +6,12 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stage 16-d maintenance adds a package files policy regression test for the
+  package-visible `docs/current/README.md` surface. The test keeps direct
+  relative README links covered by `package.json` `files` entries so future
+  package prep does not ship current-doc pointers to missing packaged docs.
+  This is test protection only, not a runtime behavior change or measurement
+  claim.
 - Stage 15 post-analysis correction for the ralph-loop n=15 tool-output
   trigger archive
   `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-tool-output-trigger-ab-15-20260703T142344Z`:
