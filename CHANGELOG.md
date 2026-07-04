@@ -8,9 +8,23 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## [0.6.0-rc.2] - 2026-07-04
 
-Release-prep target for npm `next`; do not publish to `latest`. At prep time,
-the current registry state remains `latest=0.5.0`, `next=0.6.0-rc.1`, and
-`alpha=0.3.9-alpha.8` until QA approves publishing `0.6.0-rc.2`.
+Published `0.6.0-rc.2` to npm `next` after QA publish GO. Registry
+verification confirmed `persona-harness@next=0.6.0-rc.2`, gitHead
+`d3d5fdced355f0ac0fbed5e700d57b2aa1592263`, shasum
+`0eae3cc232e3f37de9390b0afc662a001aaa0b56`, and integrity
+`sha512-HmJplQNf896/4Sfz/FiTdJoaDU5EkMrDtxCVMU1x0LfLJzJYNDa0NGafUAgiU4zWc/IA9byDUv4+DryubMVZrg==`.
+Dist-tags are `latest=0.5.0`, `next=0.6.0-rc.2`, and
+`alpha=0.3.9-alpha.8`; `latest` did not move.
+
+The local and remote `v0.6.0-rc.2` tags point at
+`d3d5fdced355f0ac0fbed5e700d57b2aa1592263` after registry verification. The
+GitHub release exists as a prerelease, not draft:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.2`.
+
+External registry smoke PASS archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc2-registry-smoke-20260704T043901Z`.
+The smoke source was npm registry `persona-harness@next` only; no local
+tarball was used.
 
 Release highlights:
 
@@ -37,6 +51,13 @@ Release highlights:
   attribution caveat.
 - Adds the prompt regression fixture as test protection for accepted
   measurement-safe wording. This is not a product capability claim.
+- Records final rc2 registry package-runtime observations: packaged LICENSE
+  contains `Copyright 2026 jyt6640` with no placeholders; ralph-loop remains
+  default-off with `workflow-ralph-loop.4`, tool-output trigger marker/depth,
+  and no product `workflow loop` command; Role Checklist Relay compatibility
+  flag, AGENTS guidance, optional role subagent entries, role order/gates, and
+  checklist-first `promptBlocks` were package-observed without accepting
+  reliable automatic orchestration or production-ready delegation wording.
 
 Claim boundaries remain unchanged: no token/provider-token saving,
 product-efficacy/navigation benefit, app-quality/full-TDD/test-sufficiency,

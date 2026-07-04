@@ -1,9 +1,9 @@
 # Package Version Index
 
 This index is the human-readable package/version timeline for Persona Harness.
-It is based on repo-local evidence only: `CHANGELOG.md`, release-note files
-under `docs/current/release/`, existing versioned capsules, package metadata,
-and local git tags. This cleanup did not query npm registry state.
+It is based on repo-local evidence: `CHANGELOG.md`, release-note files under
+`docs/current/release/`, existing versioned capsules, package metadata, local
+git tags, and explicitly recorded registry smoke facts.
 
 Use this index to scan package history. Use the linked release notes,
 `CHANGELOG.md`, and version capsules for detailed evidence.
@@ -11,11 +11,10 @@ Use this index to scan package history. Use the linked release notes,
 ## Current Channel State
 
 - Current package metadata in this repo: `0.6.0-rc.2`.
-- Current prerelease channel: `persona-harness@next=0.6.0-rc.1` until
-  `0.6.0-rc.2` is published after QA approval.
+- Current prerelease channel: `persona-harness@next=0.6.0-rc.2`.
 - Current stable channel: `persona-harness@latest=0.5.0`.
 - Current alpha channel: `persona-harness@alpha=0.3.9-alpha.8`.
-- `v0.6.0-rc.2` prep capsule:
+- `v0.6.0-rc.2` capsule:
   [`docs/releases/v0.6.0-rc.2/`](v0.6.0-rc.2/README.md).
 - `v0.6.0-rc.1` capsule:
   [`docs/releases/v0.6.0-rc.1/`](v0.6.0-rc.1/README.md).
@@ -87,8 +86,8 @@ Use this index to scan package history. Use the linked release notes,
 | `0.5.0-rc.1` | 2026-07-02 | superseded wrong-channel RC; local tag exists | [`release notes`](../current/release/v0.5.0-rc.1-release-notes.md) | treated as wrong-channel/superseded in release docs, not accepted stable milestone |
 | `0.5.0-rc.2` | 2026-07-02 | historical `next` RC; local tag exists | [`release notes`](../current/release/v0.5.0-rc.2-release-notes.md) | release docs record rc2 registry smoke and gate-first/default-off package behavior |
 | `0.5.0` | 2026-07-03 | current stable `latest`; local tag exists | [`release notes`](../current/release/v0.5.0-release-notes.md) | release notes record `latest=0.5.0`, gitHead, shasum, Trusted Publisher/Release workflow runs, and External stable registry smoke archive |
-| `0.6.0-rc.1` | 2026-07-03 | current published `next` RC until rc2 publish; local tag exists | [`capsule`](v0.6.0-rc.1/README.md), [`release facts`](v0.6.0-rc.1/release-facts.md), [`measurements`](v0.6.0-rc.1/measurements.md), [`release notes`](../current/release/v0.6.0-rc.1-release-notes.md) | capsule records `next=0.6.0-rc.1`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead, shasum, tag, and Stage 14 registry smoke archive |
-| `0.6.0-rc.2` | 2026-07-04 | release-prep target for future `next`; not published/tagged in this prep | [`capsule`](v0.6.0-rc.2/README.md), [`release facts`](v0.6.0-rc.2/release-facts.md), [`measurements`](v0.6.0-rc.2/measurements.md), [`release notes`](../current/release/v0.6.0-rc.2-release-notes.md) | registry not checked as published in this cleanup; prep preserves `latest=0.5.0`, `next=0.6.0-rc.1`, and `alpha=0.3.9-alpha.8` until publish |
+| `0.6.0-rc.1` | 2026-07-03 | historical published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.1/README.md), [`release facts`](v0.6.0-rc.1/release-facts.md), [`measurements`](v0.6.0-rc.1/measurements.md), [`release notes`](../current/release/v0.6.0-rc.1-release-notes.md) | capsule records `next=0.6.0-rc.1`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead, shasum, tag, and Stage 14 registry smoke archive |
+| `0.6.0-rc.2` | 2026-07-04 | current published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.2/README.md), [`release facts`](v0.6.0-rc.2/release-facts.md), [`measurements`](v0.6.0-rc.2/measurements.md), [`release notes`](../current/release/v0.6.0-rc.2-release-notes.md) | registry smoke records `next=0.6.0-rc.2`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `d3d5fdced355f0ac0fbed5e700d57b2aa1592263`, shasum `0eae3cc232e3f37de9390b0afc662a001aaa0b56`, tag, and archive `rc060-rc2-registry-smoke-20260704T043901Z` |
 
 ## Future Migration Notes
 

@@ -23,7 +23,7 @@
 
 > [!IMPORTANT]
 > **프로젝트 상태: gate-first measured release.**
-> 안정 npm 채널은 `persona-harness@latest=0.5.0`입니다. prerelease 채널은 QA 승인 후 `0.6.0-rc.2`가 publish되기 전까지 현재 `next=0.6.0-rc.1`이고, alpha는 `0.3.9-alpha.8`입니다. `0.6.0-rc.2` prep은 `next` release-candidate target일 뿐, `latest` 이동이나 더 넓은 product-efficacy 주장이 아닙니다.
+> 안정 npm 채널은 `persona-harness@latest=0.5.0`입니다. prerelease 채널은 현재 `next=0.6.0-rc.2`이고, alpha는 `0.3.9-alpha.8`입니다. `0.6.0-rc.2` registry smoke는 release-candidate package-runtime evidence일 뿐, `latest` 이동이나 더 넓은 product-efficacy 주장이 아닙니다.
 > runtime injection 효과는 측정되었고 **승인된 10쌍 local-current OpenCode fixture에서는 부정적**이었습니다. 근거는 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)에 있습니다. 따라서 runtime guidance는 기본 꺼짐이며 명시적 opt-in preview입니다. 이 결과는 해당 fixture 범위의 측정이지 보편적 product-efficacy 주장이 아닙니다.
 > PH가 실제로 주장하는 것 — 그리고 증거를 가진 것 — 은 더 좁습니다: **명시적으로 정의된 evidence gate와 결정론적 위반에 대해, 검증되지 않은 완료를 차단한다.**
 

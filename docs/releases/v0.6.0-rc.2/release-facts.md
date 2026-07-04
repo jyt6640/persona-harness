@@ -1,15 +1,23 @@
 # v0.6.0-rc.2 Release Facts
 
-## Prep State
+## Registry State
 
-This is release prep only.
+`0.6.0-rc.2` is published to npm `next` after QA publish GO, registry
+gitHead/shasum verification, tag creation, and External registry smoke.
 
 - Package version: `0.6.0-rc.2`.
-- Target dist-tag after future QA publish GO: `next`.
+- Published dist-tag: `next`.
 - Stable channel remains `latest=0.5.0`.
-- Current prerelease channel remains `next=0.6.0-rc.1` until rc2 publish.
+- Current prerelease channel is `next=0.6.0-rc.2`.
 - Alpha channel remains `alpha=0.3.9-alpha.8`.
-- Do not publish, tag, or move dist-tags in this prep.
+- Registry gitHead:
+  `d3d5fdced355f0ac0fbed5e700d57b2aa1592263`.
+- Registry shasum: `0eae3cc232e3f37de9390b0afc662a001aaa0b56`.
+- Registry integrity:
+  `sha512-HmJplQNf896/4Sfz/FiTdJoaDU5EkMrDtxCVMU1x0LfLJzJYNDa0NGafUAgiU4zWc/IA9byDUv4+DryubMVZrg==`.
+- Local and remote `v0.6.0-rc.2` tags point to the registry gitHead.
+- GitHub release exists as prerelease, not draft:
+  `https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.2`.
 
 ## Included Since `0.6.0-rc.1`
 
@@ -35,7 +43,7 @@ The prep includes commits after the published `v0.6.0-rc.1` prep gitHead
 
 ## Package Runtime Scope
 
-The prep targets a package containing the rc1 package-runtime surfaces plus
+The registry-smoked package contains the rc1 package-runtime surfaces plus
 post-rc1 updates:
 
 - ralph-loop tool-output trigger and blocker-depth wording;
@@ -45,20 +53,33 @@ post-rc1 updates:
 - docs taxonomy/versioned release structure;
 - prompt regression tests for safe wording.
 
-The external loop remains archive-local prototype preparation. This prep does
+The external loop remains archive-local prototype preparation. This release does
 not introduce or claim a product `ph workflow loop` command.
 
-## Registry State
+## External Registry Smoke
 
-There is no accepted registry evidence for `0.6.0-rc.2` at prep time.
+Source: npm registry only, installed as `persona-harness@next`; local tarball
+was not used.
 
-Future publish sequence must verify:
+Accepted archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc2-registry-smoke-20260704T043901Z`.
+`RESULT.md` classified PASS.
 
-- `persona-harness@0.6.0-rc.2` version/gitHead/shasum;
-- `persona-harness@next=0.6.0-rc.2`;
-- `latest=0.5.0`;
-- `alpha=0.3.9-alpha.8`;
-- local and remote `v0.6.0-rc.2` tag after registry verification only.
+Accepted package/runtime observations:
+
+- packaged LICENSE contains `Copyright 2026 jyt6640` and no placeholder
+  copyright owner text;
+- ralph-loop remains default-off; `workflow ralph-loop --json` emits schema
+  `workflow-ralph-loop.4`; tool-output trigger marker/depth surfaces are
+  packaged; there is no product `workflow loop` command;
+- Role Checklist Relay compatibility flag, AGENTS guidance, optional role
+  subagent entries, role order/gates, and checklist-first `promptBlocks` were
+  package-observed;
+- no reliable automatic OpenCode role subagent orchestration or
+  production-ready delegation wording was accepted.
+
+Later local-current records remain registry NO-GO until a future publish
+includes them and passes registry smoke.
 
 ## Release-Line Caveats
 
@@ -80,7 +101,7 @@ Future publish sequence must verify:
 
 ## No-claim Boundary
 
-This is release-prep evidence only. It is not evidence for token/provider-token
+This is registry package-runtime smoke evidence only. It is not evidence for token/provider-token
 saving, product efficacy, navigation benefit, app quality, full-TDD/test
 sufficiency, broad reliability, closure guarantee, autonomous completion,
 generated-app certification, deterministic role enforcement,

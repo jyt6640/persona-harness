@@ -33,8 +33,8 @@ deleting evidence/status history.
 
 ## Current Facts To Preserve
 
-- `0.6.0-rc.2` is the current release-prep target for npm `next`.
-  Until publish, npm `next` remains `0.6.0-rc.1`; `latest` remains `0.5.0`;
+- `0.6.0-rc.2` is published to npm `next` after registry gitHead/shasum
+  verification and External registry smoke. `latest` remains `0.5.0`;
   `alpha` remains `0.3.9-alpha.8`.
 - `runtimeInjection` remains a parked opt-in preview.
 - Ralph-loop idle trigger delivery failed to prove model-facing continuation.

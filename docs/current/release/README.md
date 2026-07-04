@@ -35,39 +35,55 @@ Those items make the release decision ready; they do not authorize Docs Release 
 
 ## Current Version-Line Readiness
 
-Release prep target: `0.6.0-rc.2` for npm dist-tag `next`, not `latest`.
-Package metadata is prepared as `0.6.0-rc.2`, but no publish, tag, or dist-tag
-movement is authorized until QA marks publish-ready.
+Current prerelease package: official `0.6.0-rc.2` is published under npm
+dist-tag `next`, not `latest`. Registry verification confirmed
+`persona-harness@next=0.6.0-rc.2`, gitHead
+`d3d5fdced355f0ac0fbed5e700d57b2aa1592263`, shasum
+`0eae3cc232e3f37de9390b0afc662a001aaa0b56`, and integrity
+`sha512-HmJplQNf896/4Sfz/FiTdJoaDU5EkMrDtxCVMU1x0LfLJzJYNDa0NGafUAgiU4zWc/IA9byDUv4+DryubMVZrg==`.
+Current dist-tags are `latest=0.5.0`, `next=0.6.0-rc.2`, and
+`alpha=0.3.9-alpha.8`; `latest` did not move.
 
-Pre-publish channel state to preserve:
+The local and remote `v0.6.0-rc.2` tags point at
+`d3d5fdced355f0ac0fbed5e700d57b2aa1592263` after registry verification. The
+GitHub release exists as a prerelease, not draft:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.2`.
 
-- `latest=0.5.0`;
-- `next=0.6.0-rc.1` until `0.6.0-rc.2` is published;
-- `alpha=0.3.9-alpha.8`;
-- `persona-harness@0.6.0-rc.2` has no accepted registry smoke record yet;
-- no `v0.6.0-rc.2` tag should exist before registry verification.
+External registry smoke installed `persona-harness@next` as `0.6.0-rc.2` from
+the registry only and verified package-runtime surfaces. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc2-registry-smoke-20260704T043901Z`.
+`RESULT.md` classified PASS.
 
-`0.6.0-rc.2` prep carries post-rc1 records: final rc1 registry smoke and docs
+`0.6.0-rc.2` carries post-rc1 records: final rc1 registry smoke and docs
 taxonomy/package-index cleanup; the ralph-loop n=15 blocker-delta correction
 and fake-shim gate-gaming adversarial candidate; ralph-loop blocker-depth and
 finishable-fixture prep; external-loop archive-local prototype prep; OpenCode
 subagent capability probe; Role Checklist Relay naming and UX honesty; and a
-prompt regression fixture for measurement-safe wording. These records do not
+prompt regression fixture for measurement-safe wording. Packaged LICENSE
+contains `Copyright 2026 jyt6640` and no placeholder owner text.
+
+The rc2 registry smoke observed ralph-loop default-off behavior,
+`workflow-ralph-loop.4`, tool-output trigger marker/depth package surfaces, and
+no product `workflow loop` command. It also observed Role Checklist Relay
+compatibility flag handling, AGENTS guidance, optional role subagent entries,
+role order/gates, and checklist-first `promptBlocks`. These records do not
 prove ralph-loop completion integrity, default change, token savings, product
 efficacy, reliable automatic subagent orchestration, deterministic role
-enforcement, or broad reliability.
+enforcement, production-ready delegation, or broad reliability.
 
 `0.3.9-alpha.7` shipped the read-only workflow closure planner and produced one
 Windows SSH registry implementation-to-finish product usability PASS. That is a
 workflow rail product signal, not eval proof, PH superiority proof, generated
 app quality certification, or a general reliability guarantee.
 
-Current prerelease package: official `0.6.0-rc.1` is published under npm
-dist-tag `next`. Registry verification confirmed
+Previous prerelease package: official `0.6.0-rc.1` was published under npm
+dist-tag `next` before rc2 superseded it on that channel. Registry
+verification confirmed
 `persona-harness@next=0.6.0-rc.1`, gitHead
 `b673633533a314e1a64dd6dcb18c4097c5889a2c`, shasum
 `5c8bcd5c1bd4165dd129e39624408672f88091ce`, and dist-tags
-`latest=0.5.0`, `next=0.6.0-rc.1`, `alpha=0.3.9-alpha.8`. The local and
+`latest=0.5.0`, `next=0.6.0-rc.1`, `alpha=0.3.9-alpha.8` at rc1 publish
+time. The local and
 remote `v0.6.0-rc.1` tags point at that gitHead after registry verification.
 Trusted Publisher run `28653322434` succeeded; Release workflow run
 `28653429619` succeeded; the GitHub release exists as a prerelease:
@@ -112,7 +128,7 @@ Current stable package: official `0.5.0` is published under npm dist-tag
 `latest`. Registry verification confirmed `persona-harness@latest=0.5.0`,
 gitHead `c0f1085a5182cdd17411bd043173aabc9a76b30e`, shasum
 `3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`. Current dist-tags are
-`latest=0.5.0`, `next=0.6.0-rc.1`, `alpha=0.3.9-alpha.8`. The local and remote
+`latest=0.5.0`, `next=0.6.0-rc.2`, `alpha=0.3.9-alpha.8`. The local and remote
 `v0.5.0` tags point at the `0.5.0` gitHead. Trusted Publisher run
 `28611027369` succeeded; Release workflow run `28611144533` succeeded; the
 GitHub release exists as a non-prerelease:
