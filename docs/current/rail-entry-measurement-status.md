@@ -188,3 +188,29 @@ release GO relies on this gate, an operator or runner must execute the n>=5
 paired rows or explicitly accept the PARTIAL preflight caveat. This record does
 not modify Stage 3 or Stage 9 evidence and does not change runtimeInjection
 defaults.
+
+## HARDEN-1 H1-6a Precheck
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/harden-h1-6a-precheck-blocked-20260704T162141Z`
+
+Scenario: repeated `workflow finish/check` output compression prerequisite.
+
+Status: PARTIAL / blocked before implementation. The H1-6a prerequisite
+requires a real n>=5 paired rail-entry regression check and a small paired
+repeated finish/check behavior check before compression is applied.
+
+Observed repository state:
+
+- `opencode` is installed locally.
+- The packaged Stage 16-f rail-entry prompt regression gate remains an
+  operator-run `init`/`check` surface. It prepares and validates a plan and
+  summary, but it explicitly does not run OpenCode sessions.
+- No repo runner was found that executes the required real n>=5 paired
+  rail-entry rows or the repeated finish/check behavior comparison.
+
+Decision: H1-6a repeated-output compression is not implemented in this pass.
+H1-6b structured summary derivation is not started because the requested H1-6
+sequence requires H1-6a prerequisite success before implementation continues.
+Stable GO remains blocked by the H1-0 real n>=5 rail-entry regression caveat
+unless HQ explicitly waives it.
