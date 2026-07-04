@@ -289,6 +289,38 @@ describe("ph workflow loop", () => {
     }
   })
 
+  it("explains unmapped blockers as escalation in failed finish output", () => {
+    const projectDir = createWorkflowProject()
+    writeProfile(projectDir)
+    writePassingWorkflowReportsAndEvidence(projectDir)
+    writeCustomUnmappedConvention(projectDir)
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
+    try {
+      const result = runPersonaCli(["workflow", "finish", "implement"], {
+        cwd: projectDir,
+        env: {},
+        invocationName: "ph",
+      })
+      const unmappedSection = result.stderr.slice(result.stderr.indexOf("Closure blocker: architecture-custom-unmapped-loop"))
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain("- first blocker: architecture-custom-unmapped-loop")
+      expect(result.stderr).toContain("first next action: escalate to Persona Harness configuration/maintainer review")
+      expect(unmappedSection).toContain("blocker id has no closure step mapping")
+      expect(unmappedSection).toContain("PH bug or unregistered convention")
+      expect(unmappedSection).toContain("escalate to Persona Harness configuration/maintainer review")
+      expect(unmappedSection).toContain("Do not directly rerun `npx ph workflow finish implement` or `npx ph workflow check`")
+      expect(unmappedSection).not.toMatch(/Required next actions:\n- Re-run `npx ph workflow (?:finish implement|check)`/u)
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
+  })
+
   it("advertises the explicit loop command in workflow and root help", () => {
     const workflowHelp = runPersonaCli(["workflow", "--help"], { env: {}, invocationName: "ph" })
     const rootHelp = runPersonaCli(["--help"], { env: {}, invocationName: "ph" })

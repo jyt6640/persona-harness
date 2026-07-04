@@ -6,6 +6,12 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- HARDEN-1 H1-1 follow-up explains unmapped closure blockers in failed
+  `ph workflow finish implement` human output. When a blocker ID has no closure
+  step mapping, the finish summary and required fixes now point to Persona
+  Harness configuration/maintainer escalation and explicitly avoid direct
+  `workflow finish`/`workflow check` rerun loops for that blocker. JSON, loop
+  stop behavior, ralph-loop stop behavior, defaults, and schemas are unchanged.
 - HARDEN-1 H1-1 stops workflow continuation loops on unmapped closure
   blockers. Unknown blocker IDs now map to an `unmapped-blocker`
   diagnostic/escalation step instead of an immediate `workflow finish` or

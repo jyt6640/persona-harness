@@ -138,7 +138,20 @@ function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): stri
       ...pendingTicketDetailLines(blocker.tickets ?? []),
     ].join("\n")
   }
-  return [`Closure blocker: ${blocker.id}`, blocker.reason].join("\n")
+  return unmappedBlockerFinishReason(blocker)
+}
+
+function unmappedBlockerFinishReason(blocker: ClosureBlocker): string {
+  return [
+    `Closure blocker: ${blocker.id}`,
+    `Unmapped closure blocker: ${blocker.reason}`,
+    `The blocker id has no closure step mapping: ${blocker.id}.`,
+    "Treat this as a PH bug or unregistered convention.",
+    "Required next actions:",
+    "- escalate to Persona Harness configuration/maintainer review.",
+    "- Register a closure step mapping for this blocker id before retrying automated continuation.",
+    "- Do not directly rerun `npx ph workflow finish implement` or `npx ph workflow check` as the next action for this blocker.",
+  ].join("\n")
 }
 
 function pendingTicketIds(tickets: readonly ClosureTicket[], fallbackReason: string): string {
