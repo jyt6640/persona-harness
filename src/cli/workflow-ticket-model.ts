@@ -21,6 +21,10 @@ export type BacklogTicket = {
   readonly path: string
 }
 
+export type BacklogParseResult =
+  | { readonly kind: "ok"; readonly tickets: readonly BacklogTicket[] }
+  | { readonly kind: "malformed"; readonly reason: string }
+
 export const WORK_DIR = ".persona/workflow/work"
 export const HISTORY_DIR = ".persona/workflow/history"
 export const BACKLOG_PATH = ".persona/workflow/backlog.md"
@@ -156,6 +160,24 @@ export function parseBacklog(markdown: string): readonly BacklogTicket[] {
       path: cells[4] ?? "",
     }))
     .filter((ticket) => Number.isFinite(ticket.order) && ticket.ticket.length > 0)
+}
+
+export function parseBacklogState(markdown: string): BacklogParseResult {
+  const tickets = parseBacklog(markdown)
+  if (tickets.length > 0) {
+    return { kind: "ok", tickets }
+  }
+  const trimmed = markdown.trim()
+  if (trimmed.length === 0) {
+    return { kind: "ok", tickets }
+  }
+  if (/Persona Workflow Backlog|^\|.*\bOrder\b.*\bTicket\b/im.test(markdown)) {
+    return {
+      kind: "malformed",
+      reason: "workflow backlog exists but no valid ticket rows could be parsed",
+    }
+  }
+  return { kind: "ok", tickets }
 }
 
 export function replaceBacklogTicket(markdown: string, ticketId: string): string {

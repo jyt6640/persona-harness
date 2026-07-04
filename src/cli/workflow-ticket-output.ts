@@ -66,6 +66,22 @@ export function backlogNotFoundOutput(): CliRunResult {
   }
 }
 
+export function malformedBacklogOutput(path: string, reason: string): CliRunResult {
+  return {
+    status: 1,
+    stdout: "",
+    stderr: [
+      "Workflow backlog is malformed.",
+      "",
+      `Path: ${path}`,
+      `Reason: ${reason}`,
+      "",
+      "Repair or regenerate the workflow backlog before continuing ticket work.",
+      "Do not treat this as no pending tickets.",
+    ].join("\n") + "\n",
+  }
+}
+
 export function captureCompleteOutput(): CliRunResult {
   return {
     status: 0,

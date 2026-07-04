@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, renameSync } from "node:fs"
 import { join } from "node:path"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   BACKLOG_PATH,
@@ -13,11 +14,12 @@ import {
   REQUIREMENTS_DIR,
   TASK_CARD_NAME,
   WORK_DIR,
+  type BacklogTicket,
   type RequirementSource,
   formatBacklog,
   formatTaskCard,
   pendingTickets,
-  parseBacklog,
+  parseBacklogState,
   replaceBacklogTicket,
   taskCardPath,
 } from "./workflow-ticket-model.js"
@@ -33,6 +35,7 @@ import {
   draftRequirementsConflictOutput,
   missingDraftRequirementsOutput,
   missingRequirementSourceOutput,
+  malformedBacklogOutput,
   nextTicketOutput,
   noPendingTicketsOutput,
   splitCompleteOutput,
@@ -185,7 +188,7 @@ export function runWorkflowCapture(options: WorkflowTicketOptions): CliRunResult
 
   const projectDir = initialized.projectDir
   mkdirSync(join(projectDir, REQUIREMENTS_DIR), { recursive: true })
-  writeFileSync(join(projectDir, LATEST_REQUIREMENTS_PATH), input.endsWith("\n") ? input : `${input}\n`)
+  writeFileAtomic(join(projectDir, LATEST_REQUIREMENTS_PATH), input.endsWith("\n") ? input : `${input}\n`)
   return captureCompleteOutput()
 }
 
@@ -215,10 +218,10 @@ export function runWorkflowDraft(options: WorkflowTicketOptions): CliRunResult {
   }
 
   mkdirSync(join(projectDir, REQUIREMENTS_DIR), { recursive: true })
-  writeFileSync(join(projectDir, LATEST_REQUIREMENTS_PATH), input.endsWith("\n") ? input : `${input}\n`)
-  writeFileSync(join(projectDir, DRAFT_REQUIREMENTS_BACKLOG_PATH), formatDraftRequirementsBacklog(input))
-  writeFileSync(join(projectDir, DRAFT_REQUIREMENTS_QUESTIONS_PATH), formatDraftQuestions(input))
-  writeFileSync(join(projectDir, DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH), formatDraftAssumptions(input))
+  writeFileAtomic(join(projectDir, LATEST_REQUIREMENTS_PATH), input.endsWith("\n") ? input : `${input}\n`)
+  writeFileAtomic(join(projectDir, DRAFT_REQUIREMENTS_BACKLOG_PATH), formatDraftRequirementsBacklog(input))
+  writeFileAtomic(join(projectDir, DRAFT_REQUIREMENTS_QUESTIONS_PATH), formatDraftQuestions(input))
+  writeFileAtomic(join(projectDir, DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH), formatDraftAssumptions(input))
   return draftCompleteOutput()
 }
 
@@ -242,7 +245,7 @@ export function runWorkflowApproveRequirements(options: WorkflowTicketOptions): 
   for (const path of draftPaths) {
     const absolutePath = join(projectDir, path)
     if (existsSync(absolutePath)) {
-      writeFileSync(absolutePath, replaceDraftStatus(readFileSync(absolutePath, "utf8")))
+      writeFileAtomic(absolutePath, replaceDraftStatus(readFileSync(absolutePath, "utf8")))
     }
   }
   return approvalCompleteOutput()
@@ -281,20 +284,28 @@ export function runWorkflowSplit(sourceFile: string | undefined, options: Workfl
   mkdirSync(join(projectDir, WORK_DIR), { recursive: true })
   mkdirSync(join(projectDir, HISTORY_DIR), { recursive: true })
   mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
-  writeFileSync(join(projectDir, REQUIREMENTS_ANALYSIS_PATH), formatRequirementsAnalysis(source, analysis, sourceMarkdown))
+  writeFileAtomic(join(projectDir, REQUIREMENTS_ANALYSIS_PATH), formatRequirementsAnalysis(source, analysis, sourceMarkdown))
   for (const section of sections) {
     const ticket = section.kind === "step" ? `step-${section.number}` : `req-${section.number}`
     const ticketDir = join(projectDir, WORK_DIR, ticket)
     mkdirSync(ticketDir, { recursive: true })
-    writeFileSync(join(ticketDir, TASK_CARD_NAME), formatTaskCard(source, section))
+    writeFileAtomic(join(ticketDir, TASK_CARD_NAME), formatTaskCard(source, section))
   }
-  writeFileSync(backlogAbsolutePath, formatBacklog(source, sections))
+  writeFileAtomic(backlogAbsolutePath, formatBacklog(source, sections))
 
   return splitCompleteOutput(source, sections.length)
 }
 
 function backlogNotFound(): CliRunResult {
   return backlogNotFoundOutput()
+}
+
+function readBacklogState(backlogAbsolutePath: string): { readonly kind: "ok"; readonly tickets: readonly BacklogTicket[] } | CliRunResult {
+  const state = parseBacklogState(readFileSync(backlogAbsolutePath, "utf8"))
+  if (state.kind === "malformed") {
+    return malformedBacklogOutput(BACKLOG_PATH, state.reason)
+  }
+  return state
 }
 
 export function runWorkflowNext(options: WorkflowTicketOptions): CliRunResult {
@@ -307,8 +318,11 @@ export function runWorkflowNext(options: WorkflowTicketOptions): CliRunResult {
   if (!existsSync(backlogAbsolutePath)) {
     return backlogNotFound()
   }
-  const tickets = parseBacklog(readFileSync(backlogAbsolutePath, "utf8"))
-  const nextTicket = tickets.find((ticket) => ticket.status === "pending" || ticket.status === "active")
+  const backlog = readBacklogState(backlogAbsolutePath)
+  if ("status" in backlog) {
+    return backlog
+  }
+  const nextTicket = backlog.tickets.find((ticket) => ticket.status === "pending" || ticket.status === "active")
   if (nextTicket === undefined) {
     return noPendingTicketsOutput()
   }
@@ -321,7 +335,11 @@ export function pendingWorkflowTicketIds(projectDir: string): readonly string[] 
   if (!existsSync(backlogAbsolutePath)) {
     return []
   }
-  return pendingTickets(readFileSync(backlogAbsolutePath, "utf8")).map((ticket) => ticket.ticket)
+  const state = parseBacklogState(readFileSync(backlogAbsolutePath, "utf8"))
+  if (state.kind === "malformed") {
+    return ["malformed-backlog"]
+  }
+  return state.tickets.filter((ticket) => ticket.status === "pending" || ticket.status === "active").map((ticket) => ticket.ticket)
 }
 
 export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOptions): CliRunResult {
@@ -338,11 +356,15 @@ export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOpti
   if (!existsSync(backlogAbsolutePath)) {
     return backlogNotFound()
   }
+  const backlogState = readBacklogState(backlogAbsolutePath)
+  if ("status" in backlogState) {
+    return backlogState
+  }
   if (!existsSync(workDir)) {
     const backlog = readFileSync(backlogAbsolutePath, "utf8")
     const pendingTicket = pendingTickets(backlog).find((ticket) => ticket.ticket === ticketId)
     if (pendingTicket !== undefined && existsSync(join(historyDir, TASK_CARD_NAME))) {
-      writeFileSync(backlogAbsolutePath, replaceBacklogTicket(backlog, ticketId))
+      writeFileAtomic(backlogAbsolutePath, replaceBacklogTicket(backlog, ticketId))
       return archiveBacklogRepairOutput(ticketId, `${HISTORY_DIR}/${ticketId}`)
     }
     return { status: 1, stdout: "", stderr: `Workflow work ticket not found: ${WORK_DIR}/${ticketId}\n` }
@@ -368,7 +390,7 @@ export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOpti
   mkdirSync(join(projectDir, HISTORY_DIR), { recursive: true })
   renameSync(workDir, historyDir)
   const backlog = readFileSync(backlogAbsolutePath, "utf8")
-  writeFileSync(backlogAbsolutePath, replaceBacklogTicket(backlog, ticketId))
+  writeFileAtomic(backlogAbsolutePath, replaceBacklogTicket(backlog, ticketId))
 
   return archiveCompleteOutput(ticketId, `${WORK_DIR}/${ticketId}`, `${HISTORY_DIR}/${ticketId}`)
 }

@@ -264,6 +264,30 @@ describe("ph workflow ticket backlog", () => {
     expect(result.stdout).toContain("do not open later tickets")
   })
 
+  it("reports a malformed backlog instead of treating it as complete", () => {
+    const projectDir = createHarnessProject()
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "backlog.md"),
+      [
+        "# Persona Workflow Backlog",
+        "",
+        "| Order | Ticket |",
+        "| --- | --- |",
+        "| 1 |",
+      ].join("\n"),
+    )
+
+    const next = runPersonaCli(["workflow", "next"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(next.status).toBe(1)
+    expect(next.stderr).toContain("Workflow backlog is malformed")
+    expect(next.stderr).toContain("Do not treat this as no pending tickets")
+    expect(check.stdout).toContain("Ticket: malformed-backlog")
+    expect(check.stdout).toContain("Malformed workflow backlog")
+  })
+
   it("archives a work ticket into immutable history and advances next ticket", () => {
     const projectDir = createHarnessProject()
     writeStepReadme(projectDir)

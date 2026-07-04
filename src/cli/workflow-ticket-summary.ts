@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { BACKLOG_PATH, HISTORY_DIR, pendingTickets, TASK_CARD_NAME, type BacklogTicket, WORK_DIR } from "./workflow-ticket-model.js"
+import { BACKLOG_PATH, HISTORY_DIR, parseBacklogState, TASK_CARD_NAME, type BacklogTicket, WORK_DIR } from "./workflow-ticket-model.js"
 
 export type WorkflowPendingTicket = {
   readonly ticket: string
@@ -22,7 +22,20 @@ const PENDING_TICKET_COMPLETION_GUIDANCE = "Do not claim overall completion whil
 
 export function pendingWorkflowTickets(projectDir: string): readonly BacklogTicket[] {
   const backlogAbsolutePath = join(projectDir, BACKLOG_PATH)
-  return existsSync(backlogAbsolutePath) ? pendingTickets(readFileSync(backlogAbsolutePath, "utf8")) : []
+  if (!existsSync(backlogAbsolutePath)) {
+    return []
+  }
+  const state = parseBacklogState(readFileSync(backlogAbsolutePath, "utf8"))
+  if (state.kind === "malformed") {
+    return [{
+      order: 0,
+      path: BACKLOG_PATH,
+      status: "pending",
+      ticket: "malformed-backlog",
+      title: `Malformed workflow backlog: ${state.reason}`,
+    }]
+  }
+  return state.tickets.filter((ticket) => ticket.status === "pending" || ticket.status === "active")
 }
 
 function looksLikeTechnicalConstraints(ticket: Pick<BacklogTicket, "ticket" | "title" | "path">): boolean {
