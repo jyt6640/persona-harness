@@ -6,6 +6,29 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stage 15 post-analysis correction for the ralph-loop n=15 tool-output
+  trigger archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-tool-output-trigger-ab-15-20260703T142344Z`:
+  `blockerDelta -3.00` is resolution/exposure movement for initially named
+  blockers, not total blocker reduction. Actual ON post-finish blockers were
+  `6` in all 15 rows after hierarchical closure gates exposed deeper
+  `verification-unknown`, review-report, coverage-related, and stack-alignment
+  gates; final finish PASS stayed OFF `0/15` and ON `0/15`. The fixture is
+  reclassified as finish-unreachable and loop-unrotated: all ON sessions had
+  `attempts=1`, and `cooldownMs=30000` was greater than or near the short
+  roughly `25s` sessions, so time-based cooldown structurally disabled
+  multi-attempt rotation in this run.
+- Stage 15 fake-shim frequency audit scanned
+  `pairs/*/{OFF,ON}/post-finish.stderr.txt` in that archive for
+  `gradle-shim|Node shim` plus `stack-alignment-mismatch`; `21/30`
+  post-finish stderr files matched. Pair `pair-01/ON` is the named incident:
+  fake `gradle-shim.js` / Node shim behavior was caught by
+  `stack-alignment-mismatch`. This is only a release-decision candidate for a
+  future README Measured Behavior row (`Faked build shim to satisfy gates ->
+  caught by stack-alignment`) and is not a broad reliability, product-efficacy,
+  deterministic enforcement, generated-app certification, automatic
+  completion/downgrade/removal, or README-table change in Stage 15.
+
 ## [0.6.0-rc.2] - 2026-07-04
 
 Published `0.6.0-rc.2` to npm `next` after QA publish GO. Registry

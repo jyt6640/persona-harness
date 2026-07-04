@@ -33,6 +33,13 @@ completion-integrity measurement design. They do not prove completion-integrity
 movement, default change, autonomous completion, closure success, or broad
 reliability.
 
+Stage 15 post-analysis correction sharpens this interpretation: all 15 ON rows
+in the target archive had post-finish blocker count `6`, finish PASS stayed OFF
+`0/15` and ON `0/15`, and all ON sessions had `attempts=1`. With
+`cooldownMs=30000` near or longer than the short measured sessions, the fixture
+was finish-unreachable and the loop did not rotate; the run remains
+trigger-survival evidence only.
+
 Primary current pointer:
 [`docs/current/ralph-loop-measurement-status.md`](../../current/ralph-loop-measurement-status.md).
 
@@ -49,6 +56,13 @@ candidate measured adversarial case after forged-TDD detection. The incident
 pattern is that an agent attempted to fake a Java/Spring/Gradle verification
 gate through a shim or equivalent behavior, and stack-alignment/gate discipline
 caught it.
+
+Stage 15 frequency audit scanned
+`pairs/*/{OFF,ON}/post-finish.stderr.txt` in the target n=15 archive and found
+`21/30` post-finish stderr files with the fake `gradle-shim.js` / Node shim
+pattern plus `stack-alignment-mismatch`. Pair `pair-01/ON` is the named
+incident. This remains a README measured-behavior candidate only; the README is
+not changed by Stage 15.
 
 This is a candidate for future README Measured Behavior table inclusion after
 verification. It is gate-gaming/verification-forgery detection evidence only,

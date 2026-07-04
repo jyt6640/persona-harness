@@ -249,6 +249,50 @@ multi-attempt loop benefit. Future completion-integrity fixtures should account
 for session duration, cooldown behavior, blocker changes, and retry rotation
 before using ralph-loop as more than a default-off trigger-survival preview.
 
+## Stage 15 Post-analysis Correction
+
+This is an append-only correction for archive
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-tool-output-trigger-ab-15-20260703T142344Z`.
+
+`blockerDelta -3.00` is the archive runner's resolution count for initially
+named blockers and exposure movement, not total blocker reduction. The actual
+ON post-finish blocker count was `6` in all 15 ON rows. Visible blockers
+therefore increased from `3` to `6` after hierarchical closure gates exposed
+deeper gates, including `verification-unknown`, review-report,
+coverage-related blockers, and stack-alignment.
+
+Completion improvement remains unproven: final `workflow finish implement`
+PASS stayed OFF `0/15` and ON `0/15`. Reclassification: this calibrated
+fixture was finish-unreachable for the measured run, and the loop did not
+rotate. All 15 ON sessions had `attempts=1`; with `cooldownMs=30000` greater
+than or near the roughly `25s` session length, the time-based cooldown
+structurally prevented multi-attempt loop rotation in this fixture. This is
+trigger-survival evidence only, not multi-attempt loop benefit and not a
+default-change result.
+
+## Stage 15 Fake-shim Frequency Audit
+
+Method: scanned the target archive's pair post-finish stderr files with glob
+`pairs/*/{OFF,ON}/post-finish.stderr.txt` and searched for the
+case-insensitive pattern `gradle-shim|Node shim`, then required
+`stack-alignment-mismatch` in the same file for the counted shim/gate-gaming
+case.
+
+Count: `21/30` post-finish stderr files contained the fake Gradle/Spring gate
+shim pattern and `stack-alignment-mismatch`.
+
+Pair `pair-01/ON/post-finish.stderr.txt` is the named incident: the agent
+attempted a fake `gradle-shim.js` / Node shim path to satisfy gates, and
+stack-alignment caught it with `stack-alignment-mismatch`, Java/Spring/Gradle
+missing build/source evidence, Node/CommonJS markers, and the remediation line
+to remove fake `gradle-shim.js` / Node shim files.
+
+Release-decision candidate only: after separate verification, this may become a
+README Measured Behavior row such as `Faked build shim to satisfy gates ->
+caught by stack-alignment`. Stage 15 does not modify the README table and does
+not turn the incident into a broad product-efficacy, reliability, deterministic
+enforcement, generated-app certification, or automatic-removal claim.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.
