@@ -6,7 +6,13 @@ import type { CliRunResult } from "./bearshell.js"
 import { runBoundedProcess } from "./bounded-process.js"
 import { continuationPromptCoreLines } from "./continuation-prompt.js"
 import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
-import { readWorkflowClosurePayload, type ClosureBlocker, type ClosureNextPayload, type ClosureStep } from "./workflow-closure.js"
+import {
+  isUnmappedBlockerStep,
+  readWorkflowClosurePayload,
+  type ClosureBlocker,
+  type ClosureNextPayload,
+  type ClosureStep,
+} from "./workflow-closure.js"
 import { failedRunnerOutput, passedFinishOutput } from "./workflow-output.js"
 import {
   readWorkflowLoopState,
@@ -50,7 +56,7 @@ export function runWorkflowLoopCommand(options: WorkflowLoopOptions): CliRunResu
       {
         boundaries: loopBoundaries(),
         defaultOff: true,
-        finalDecision: initialFinish.status === 0 ? "finish-passed" : closure.state.blockers.length === 0 ? "no-blockers" : "not-run",
+        finalDecision: initialFinish.status === 0 ? "finish-passed" : closure.state.blockers.length === 0 ? "no-blockers" : isUnmappedBlockerStep(closure.nextStep) ? "unmapped-blocker" : "not-run",
         iterations: readWorkflowLoopState(projectDir)?.iterations ?? [],
         maxIterations: options.maxIterations,
         mode: "dry-run",
@@ -96,6 +102,10 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
       finalDecision = "no-blockers"
       break
     }
+    if (isUnmappedBlockerStep(closure.nextStep)) {
+      finalDecision = "unmapped-blocker"
+      break
+    }
     const record = runIteration(projectDir, options, index, blocker, closure)
     iterations.push(record)
     writeWorkflowLoopState(projectDir, { finalDecision: "not-run", iterations, schemaVersion: "workflow-loop-state.1", startedAt })
@@ -103,7 +113,7 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
     closure = readWorkflowClosurePayload("next", projectDir) as ClosureNextPayload
   }
   if (finalDecision === "not-run") {
-    finalDecision = finish.status === 0 ? "finish-passed" : closure.state.blockers.length === 0 ? "no-blockers" : "iteration-cap"
+    finalDecision = finish.status === 0 ? "finish-passed" : closure.state.blockers.length === 0 ? "no-blockers" : isUnmappedBlockerStep(closure.nextStep) ? "unmapped-blocker" : "iteration-cap"
   }
   const state: WorkflowLoopState = {
     completedAt: new Date().toISOString(),
@@ -168,6 +178,9 @@ function firstPromptLines(closure: ClosureNextPayload): readonly string[] {
   if (blocker === undefined) {
     return []
   }
+  if (isUnmappedBlockerStep(closure.nextStep)) {
+    return []
+  }
   return workflowLoopPrompt(blocker, closure.nextStep, 1, closure.state.blockers.length)
 }
 
@@ -185,7 +198,7 @@ function workflowLoopPrompt(
 }
 
 function loopTermination(): readonly string[] {
-  return ["finish exit 0", "no remaining closure blockers", "iteration cap"]
+  return ["finish exit 0", "no remaining closure blockers", "unmapped closure blocker diagnostic", "iteration cap"]
 }
 
 function loopBoundaries(): readonly string[] {

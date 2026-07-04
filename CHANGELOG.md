@@ -6,6 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- HARDEN-1 H1-1 stops workflow continuation loops on unmapped closure
+  blockers. Unknown blocker IDs now map to an `unmapped-blocker`
+  diagnostic/escalation step instead of an immediate `workflow finish` or
+  `workflow check` rerun, and `ph workflow loop` plus ralph-loop delivery paths
+  stop before consuming retry/iteration budget. This is workflow foundation
+  hardening only; it does not change defaults or make product-efficacy,
+  app-quality, broad reliability, closure-guarantee, autonomous completion, or
+  token-saving claims.
 - HARDEN-1 H1-0 stable preflight record added after the `0.6.0-rc.3` final
   registry smoke. The rc3 docs record remains current at commit
   `c285bfcd845914d103503c38bd9a76c6baefd380` with archive

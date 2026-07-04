@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import { isRecord } from "../config/jsonc.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
-export type RalphLoopStopReason = "finish-passed" | "max-attempts" | "no-blockers"
+export type RalphLoopStopReason = "finish-passed" | "max-attempts" | "no-blockers" | "unmapped-blocker"
 
 export type RalphLoopBlockerAttemptState = {
   readonly attempts: number
@@ -61,7 +61,9 @@ function readNullableString(value: unknown): string | null {
 }
 
 function readStopReason(value: unknown): RalphLoopStopReason | null {
-  return value === "finish-passed" || value === "max-attempts" || value === "no-blockers" ? value : null
+  return value === "finish-passed" || value === "max-attempts" || value === "no-blockers" || value === "unmapped-blocker"
+    ? value
+    : null
 }
 
 function readBlockerAttemptState(value: unknown): RalphLoopBlockerAttemptState {

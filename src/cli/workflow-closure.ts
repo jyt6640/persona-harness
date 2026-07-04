@@ -14,6 +14,7 @@ type ClosureFinish = "blocked" | "passed"
 type ClosureReportStatus = "filled" | "missing" | "template" | "unknown"
 type ClosureStepKind = "cli-command" | "human-or-model-content" | "terminal"
 type ClosureStepStatus = "blocked" | "complete" | "pending"
+export const UNMAPPED_BLOCKER_STEP_ID = "unmapped-blocker"
 export type ClosureTicket = {
   readonly id: string
   readonly title: string
@@ -249,7 +250,11 @@ function closureSteps(state: WorkflowClosureState): readonly ClosureStep[] {
   return state.blockers.map((blocker, index) => blockerStep(blocker, state, index === 0 ? "blocked" : "pending"))
 }
 
-function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, status: ClosureStepStatus): ClosureStep {
+export function isUnmappedBlockerStep(step: ClosureStep | null | undefined): boolean {
+  return step?.id === UNMAPPED_BLOCKER_STEP_ID
+}
+
+export function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, status: ClosureStepStatus): ClosureStep {
   if (blocker.id === "plan-not-accepted") {
     return { blockerId: blocker.id, command: state.plan === "missing" ? "npx ph plan" : "npx ph plan --accept", id: "accept-plan", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
   }
@@ -302,5 +307,12 @@ function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, statu
   if (blocker.id === "pending-ticket" && state.currentTicket !== null) {
     return { blockerId: blocker.id, commandAfterContent: `npx ph workflow archive ${state.currentTicket.id}`, id: "archive-current-ticket", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
-  return { blockerId: blocker.id, command: "npx ph workflow finish implement", id: "finish-implement", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
+  return {
+    blockerId: blocker.id,
+    id: UNMAPPED_BLOCKER_STEP_ID,
+    kind: "human-or-model-content",
+    reason: `${blocker.reason}; blocker id "${blocker.id}" has no closure step mapping. This is a PH bug or unregistered convention; escalate to Persona Harness configuration/maintainer review instead of rerunning finish/check.`,
+    source: blocker.source,
+    status,
+  }
 }

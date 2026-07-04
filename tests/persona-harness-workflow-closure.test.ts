@@ -5,6 +5,14 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import {
+  blockerStep,
+  UNMAPPED_BLOCKER_STEP_ID,
+  type ClosureBlocker,
+  type ClosureStep,
+  type WorkflowClosureState,
+} from "../src/cli/workflow-closure.js"
+import { CONVENTION_REGISTRY } from "../src/config/convention-registry.js"
 
 const tempProjects: string[] = []
 
@@ -118,6 +126,63 @@ const REQUIRED_STATE_KEYS = [
   "blockers",
 ] as const
 
+const CONTRACT_STATE: WorkflowClosureState = {
+  archive: "pending",
+  blockers: [],
+  currentTicket: {
+    id: "req-1",
+    path: ".persona/workflow/work/req-1/00-task-card.md",
+    reviewArchiveCandidate: false,
+    state: "active-work",
+    technicalSignals: [],
+    title: "Contract fixture",
+  },
+  evidence: "present",
+  finish: "blocked",
+  implementationReport: "filled",
+  pendingTickets: ["req-1"],
+  plan: "accepted",
+  reportCoverage: "sufficient",
+  reviewReport: "filled",
+  tdd: { kind: "disabled", reason: "TDD is not enforced" },
+  verification: "passed",
+}
+
+const CLOSURE_BLOCKER_IDS = [
+  "plan-not-accepted",
+  "verification-failed",
+  "verification-unknown",
+  "implementation-report-missing",
+  "review-report-missing",
+  "evidence-missing",
+  "tdd-red-evidence-missing",
+  "tdd-not-red-then-green",
+  "command-discipline-blocking",
+  "report-coverage-missing",
+  "read-coverage-missing",
+  "profile-read-coverage-missing",
+  "java-role-read-coverage-missing",
+  "stack-alignment-mismatch",
+  "history-backlog-mismatch",
+  "pending-ticket",
+] as const
+
+function contractBlocker(id: string): ClosureBlocker {
+  return {
+    evidenceRef: ".persona/evidence/phase0/verification.json",
+    id,
+    reason: `${id} contract fixture`,
+    source: ".persona/workflow/implementation-report.md",
+  }
+}
+
+function isImmediateCircularStep(step: ClosureStep): boolean {
+  return (
+    (step.command === "npx ph workflow finish implement" || step.command === "npx ph workflow check") &&
+    step.commandAfterContent === undefined
+  )
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -126,6 +191,32 @@ afterEach(() => {
 })
 
 describe("ph workflow closure read-only planner", () => {
+  it("maps unknown blocker ids to an unmapped-blocker diagnostic instead of rerunning finish", () => {
+    const step = blockerStep(contractBlocker("future-unregistered-blocker"), CONTRACT_STATE, "blocked")
+
+    expect(step).toMatchObject({
+      blockerId: "future-unregistered-blocker",
+      id: UNMAPPED_BLOCKER_STEP_ID,
+      kind: "human-or-model-content",
+      status: "blocked",
+    })
+    expect(step.command).toBeUndefined()
+    expect(step.commandAfterContent).toBeUndefined()
+    expect(step.reason).toContain("no closure step mapping")
+    expect(step.reason).toContain("PH bug or unregistered convention")
+  })
+
+  it("keeps generated closure and convention blocker steps non-circular", () => {
+    const blockerIds = [...CLOSURE_BLOCKER_IDS, ...CONVENTION_REGISTRY.map((definition) => definition.blockerId)]
+
+    for (const blockerId of blockerIds) {
+      const step = blockerStep(contractBlocker(blockerId), CONTRACT_STATE, "blocked")
+
+      expect(step.id, blockerId).not.toBe(UNMAPPED_BLOCKER_STEP_ID)
+      expect(isImmediateCircularStep(step), blockerId).toBe(false)
+    }
+  })
+
   it("reports plan as the first blocker when workflow plan is missing", () => {
     const projectDir = createTempProject()
     mkdirSync(join(projectDir, ".persona"), { recursive: true })

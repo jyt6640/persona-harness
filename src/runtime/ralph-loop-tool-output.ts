@@ -1,5 +1,5 @@
 import { createContinuationPromptText } from "../cli/continuation-prompt.js"
-import { readWorkflowClosurePayload } from "../cli/workflow-closure.js"
+import { isUnmappedBlockerStep, readWorkflowClosurePayload } from "../cli/workflow-closure.js"
 import type { HarnessRalphLoopConfig } from "../config/harness-config.js"
 import { ContinuationUtteranceGate } from "./continuation-utterance-gate.js"
 import {
@@ -95,6 +95,13 @@ function cappedSessionState(previous: RalphLoopSessionState): RalphLoopSessionSt
   }
 }
 
+function stoppedUnmappedBlockerState(previous: RalphLoopSessionState): RalphLoopSessionState {
+  return {
+    ...previous,
+    lastStopReason: "unmapped-blocker",
+  }
+}
+
 function capSummaryText(blockerId: string, reason: string, sessionAttemptsUsed: number, config: HarnessRalphLoopConfig): string {
   return [
     "[Persona Harness Ralph Loop]",
@@ -135,6 +142,14 @@ export class RalphLoopToolOutputContinuationTracker {
     const closure = readWorkflowClosurePayload("next", this.options.projectDir)
     const blocker = closure.state.blockers[0]
     if (blocker === undefined) {
+      return { kind: "skipped" }
+    }
+
+    if (isUnmappedBlockerStep(closure.action === "next" ? closure.nextStep : null)) {
+      writeRalphLoopState(
+        this.options.projectDir,
+        withRalphLoopSessionState(state, input.sessionID, stoppedUnmappedBlockerState(sessionState), now),
+      )
       return { kind: "skipped" }
     }
 

@@ -15,7 +15,7 @@ export type WorkflowLoopIterationRecord = {
 
 export type WorkflowLoopState = {
   readonly completedAt?: string
-  readonly finalDecision: "finish-passed" | "iteration-cap" | "no-blockers" | "not-run"
+  readonly finalDecision: "finish-passed" | "iteration-cap" | "no-blockers" | "not-run" | "unmapped-blocker"
   readonly iterations: readonly WorkflowLoopIterationRecord[]
   readonly schemaVersion: "workflow-loop-state.1"
   readonly startedAt: string
@@ -63,7 +63,13 @@ export function writeWorkflowLoopState(projectDir: string, state: WorkflowLoopSt
 }
 
 function readFinalDecision(value: unknown): WorkflowLoopState["finalDecision"] {
-  if (value === "finish-passed" || value === "iteration-cap" || value === "no-blockers" || value === "not-run") {
+  if (
+    value === "finish-passed" ||
+    value === "iteration-cap" ||
+    value === "no-blockers" ||
+    value === "not-run" ||
+    value === "unmapped-blocker"
+  ) {
     return value
   }
   return "not-run"

@@ -1,4 +1,4 @@
-import { readWorkflowClosurePayload } from "../cli/workflow-closure.js"
+import { isUnmappedBlockerStep, readWorkflowClosurePayload } from "../cli/workflow-closure.js"
 import { createContinuationPromptText } from "../cli/continuation-prompt.js"
 import type { HarnessRalphLoopConfig } from "../config/harness-config.js"
 import { ContinuationUtteranceGate } from "./continuation-utterance-gate.js"
@@ -21,6 +21,7 @@ export type RalphLoopContinuationStatus =
   | "no-client"
   | "prompt-sent"
   | "summary-sent"
+  | "unmapped-blocker"
 
 export type RalphLoopContinuationResult = {
   readonly status: RalphLoopContinuationStatus
@@ -151,6 +152,15 @@ export class RalphLoopContinuationTracker {
       )
       this.utteranceGate.reset(sessionID)
       return { status: "no-blockers" }
+    }
+
+    if (isUnmappedBlockerStep(closure.action === "next" ? closure.nextStep : null)) {
+      writeRalphLoopState(
+        this.options.projectDir,
+        withRalphLoopSessionState(state, sessionID, stoppedSessionState(sessionState, "unmapped-blocker"), now),
+      )
+      this.utteranceGate.reset(sessionID)
+      return { status: "unmapped-blocker" }
     }
 
     if (sessionState.capped) {

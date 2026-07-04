@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -56,6 +56,140 @@ function writePassableWorkflow(projectDir: string): void {
     "gradlew test\nBUILD SUCCESSFUL\ngradlew build\nBUILD SUCCESSFUL\nTomcat started on port 8080",
   )
   writeFilledReports(projectDir)
+}
+
+function writeProfile(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "project-profile.jsonc"),
+    `${JSON.stringify(
+      {
+        defaults: { buildTool: "gradle", framework: "spring", language: "java" },
+        questions: [
+          { answer: "simple-layered", id: "architecture-style" },
+          { answer: "h2 database", id: "storage" },
+          { answer: "jpa", id: "persistence-technology" },
+          { answer: "schema.sql", id: "migration-style" },
+        ],
+        schema: "persona.project-profile.v1",
+        scope: { mvp: "java-spring-clean-code", role: "backend" },
+      },
+      null,
+      2,
+    )}\n`,
+  )
+}
+
+function writeUnmappedConventionWorkflow(projectDir: string): void {
+  writeBlockedWorkflow(projectDir)
+  writeProfile(projectDir)
+  writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+  writeFileSync(
+    join(projectDir, "build.gradle"),
+    [
+      "plugins { id 'java'; id 'org.springframework.boot' version '3.5.0' }",
+      "dependencies {",
+      "  implementation 'org.springframework.boot:spring-boot-starter-web'",
+      "  implementation 'org.springframework.boot:spring-boot-starter-data-jpa'",
+      "  runtimeOnly 'com.h2database:h2'",
+      "}",
+    ].join("\n"),
+  )
+  mkdirSync(join(projectDir, "src", "main", "resources"), { recursive: true })
+  writeFileSync(join(projectDir, "src", "main", "resources", "schema.sql"), "create table sample (id bigint primary key);\n")
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "Stage18Application.java"),
+    "import org.springframework.boot.autoconfigure.SpringBootApplication;\n@SpringBootApplication\nclass Stage18Application {}\n",
+  )
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "CustomTrigger.java"),
+    "class CustomTrigger { String marker() { return \"UNMAPPED_TRIGGER\"; } }\n",
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- README ranges read: all",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- Manual QA reviewed the tiny fixture.",
+      "- `npx ph bearshell --shell './gradlew build'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+  mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "workflow.json"),
+    `${JSON.stringify(
+      {
+        command: "npx ph bearshell --shell './gradlew test'",
+        status: 0,
+        tool: "bearshell",
+        toolOutput: [
+          ".persona/project-profile.jsonc",
+          "src/main/java/com/example/Stage18Application.java",
+          "src/main/java/com/example/CustomTrigger.java",
+          "BUILD SUCCESSFUL",
+        ].join("\n"),
+      },
+      null,
+      2,
+    )}\n`,
+  )
+  mkdirSync(join(projectDir, ".persona", "conventions"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "conventions", "custom-unmapped.yml"),
+    [
+      "id: custom.unmapped-loop",
+      "language: Java",
+      "message: Custom unmapped convention matched.",
+      "# persona-harness-level: block",
+      "# persona-harness-scope: single-file",
+      "# persona-harness-profile-scope: java-spring-service-architecture",
+      "# persona-harness-high-precision: true",
+      "# persona-harness-block-allowed: true",
+      "# persona-harness-fix-path: register a closure step mapping for custom.unmapped-loop.",
+      "rule:",
+      "  pattern: UNMAPPED_TRIGGER",
+    ].join("\n"),
+  )
+}
+
+function writeFakeAstGrepBinary(projectDir: string): string {
+  const command = join(projectDir, "fake-sg.mjs")
+  writeFileSync(
+    command,
+    [
+      "#!/usr/bin/env node",
+      "import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'",
+      "import { join } from 'node:path'",
+      "const root = process.argv[process.argv.length - 1]",
+      "const findings = []",
+      "function visit(dir) {",
+      "  if (!existsSync(dir)) return",
+      "  for (const entry of readdirSync(dir)) {",
+      "    const path = join(dir, entry)",
+      "    const stat = statSync(path)",
+      "    if (stat.isDirectory()) visit(path)",
+      "    if (stat.isFile() && path.endsWith('.java') && readFileSync(path, 'utf8').includes('UNMAPPED_TRIGGER')) {",
+      "      findings.push({ file: path, message: 'Custom unmapped convention matched.', range: { start: { line: 1 } } })",
+      "    }",
+      "  }",
+      "}",
+      "visit(root)",
+      "process.stdout.write(JSON.stringify(findings))",
+    ].join("\n"),
+  )
+  chmodSync(command, 0o755)
+  return command
 }
 
 function fillImplementationReport(projectDir: string): void {
@@ -253,6 +387,51 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     expect(unknownOutput.output).not.toContain("[Persona Harness Ralph Loop Tool Continuation]")
     expect(readRalphLoopState(projectDir).sessions["session-subagent-tool"]).toBeUndefined()
     expect(readRalphLoopState(projectDir).sessions["session-unknown-tool"]).toBeUndefined()
+  })
+
+  it("stops ralph-loop delivery on unmapped blockers without consuming attempts", async () => {
+    const projectDir = createProject()
+    writeRalphLoopConfig(projectDir, {
+      enforce: {
+        ralphLoop: { cooldownMs: 0, enabled: true, maxAttempts: 3, maxSessionAttempts: 9, toolOutputTrigger: true },
+      },
+    })
+    writeUnmappedConventionWorkflow(projectDir)
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
+    try {
+      const calls: IdlePromptAsyncOptions[] = []
+      const hooks = createPhase0Hooks({ client: fakeClient(calls), projectDir })
+      const output = {
+        metadata: {},
+        output: "Workflow finish failed: implement\nClosure blocker: architecture-custom-unmapped-loop",
+        title: "finish",
+      }
+
+      await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-unmapped") })
+      await hooks.event?.({ event: { properties: { sessionID: "session-unmapped" }, type: "session.idle" } })
+      await hooks["tool.execute.after"]?.(
+        {
+          args: { command: "npx ph workflow finish implement" },
+          callID: "call-unmapped-tool",
+          sessionID: "session-unmapped",
+          tool: "bash",
+        },
+        output,
+      )
+
+      const sessionState = readRalphLoopState(projectDir).sessions["session-unmapped"]
+      expect(calls).toEqual([])
+      expect(output.output).not.toContain("[Persona Harness Ralph Loop Tool Continuation]")
+      expect(sessionState).toMatchObject({ attemptsUsed: 0, lastStopReason: "unmapped-blocker" })
+      expect(sessionState?.blockerAttempts).toEqual({})
+    } finally {
+      if (previousAstGrep === undefined) {
+        delete process.env.PH_AST_GREP_BIN
+      } else {
+        process.env.PH_AST_GREP_BIN = previousAstGrep
+      }
+    }
   })
 
   it("emits ralph-loop continuation only for classified main sessions when multi-agent is enabled", async () => {

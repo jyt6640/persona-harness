@@ -1,6 +1,6 @@
 import { findConventionByBlockerId, findConventionByStepId } from "../config/convention-registry.js"
 import { createContinuationPromptLines, type ContinuationPromptContext } from "./continuation-prompt.js"
-import type { ClosureBlocker, ClosurePayload, ClosureStep, ClosureTicket } from "./workflow-closure.js"
+import { UNMAPPED_BLOCKER_STEP_ID, type ClosureBlocker, type ClosurePayload, type ClosureStep, type ClosureTicket } from "./workflow-closure.js"
 
 export const POST_BUILD_CLOSURE_NEXT_ACTION = "if build/test/runtime already pass, fill implementation and review reports, archive the completed ticket after review, then run `npx ph workflow finish implement`"
 
@@ -127,6 +127,13 @@ function stepActionLines(step: ClosureStep, currentTicket: ClosureTicket | null)
     return [
       ...(step.reason === undefined ? [] : [`Project profile and generated stack mismatch: ${step.reason}`]),
       "Next action: re-read `.persona/project-profile.jsonc`, align the generated stack, then rerun `npx ph workflow check`.",
+    ]
+  }
+  if (step.id === UNMAPPED_BLOCKER_STEP_ID) {
+    return [
+      ...(step.reason === undefined ? [] : [`Unmapped closure blocker: ${step.reason}`]),
+      "Next action: stop the continuation loop and escalate the missing PH blocker-to-step mapping to configuration or maintainer review.",
+      "Do not rerun `npx ph workflow finish implement` or `npx ph workflow check` as the direct next action for this blocker.",
     ]
   }
   const stepConvention = findConventionByStepId(step.id)
