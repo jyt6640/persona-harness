@@ -369,6 +369,57 @@ fixture/runner should be repaired so model sessions operate unambiguously
 inside the generated Java fixture and both continuation arms pass their pilot
 readiness checks.
 
+## Stage 18 Repair/Calibration
+
+Status: PASS for calibration readiness only. The main n=10-15 measurement was
+not run in this task.
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage18-repair-calibration-20260704T101436Z`.
+
+Package source: local-current tarball from commit
+`84c81f54d6327e043388922e8338d54095300abe`, version `0.6.0-rc.2`,
+shasum `018911d54d04a3e1f28fe4213316f65deda54ea9`, pack entry count `594`.
+
+Diagnosis:
+
+- The accepted Stage 18 pilot-gated PARTIAL used an archive-local runner that
+  passed `cwd` but inherited `PWD` and did not pass OpenCode `--dir`, so
+  OpenCode operated from `/Users/yongtae/Desktop/persona-harness` rather than
+  the generated Java fixture.
+- The generated fixture also lacked a Spring Boot `main` method, so model
+  sessions spent time repairing app startup before gate-chain work.
+
+Calibration repairs were archive-local only:
+
+- set child process `PWD` to the per-run fixture root;
+- call `opencode run --dir <fixture-root>`;
+- make the fixture root explicit in the prompt;
+- generate `Stage18Application.main` up front;
+- add tiny readiness modes for the internal tool-output marker path and the
+  external `ph workflow loop` path.
+
+Calibration observations:
+
+- Fixture validity PASS: scripted `ph workflow finish implement` exit `0`.
+- Internal tool-output trigger readiness PASS: raw OpenCode stderr contained
+  `[Persona Harness Ralph Loop Tool Continuation]`, persisted ralph-loop state
+  recorded `4` attempts, and final finish passed in the tiny pilot.
+- External easy prompt finished before `ph workflow loop` could iterate, so it
+  was not loop-readiness evidence.
+- Targeted external-loop readiness PASS for state/iteration path: the initial
+  session stopped after the first finish blockers, then `ph workflow loop`
+  recorded `3` concrete iterations and persisted loop state. It still ended at
+  `iteration-cap` with final finish not passing, so completion improvement is
+  not proven.
+
+Decision: the fixture-root repair, internal marker/state path, and external
+loop state/iteration path are ready for a separately approved Stage 18 main
+rerun. Before that rerun, the external loop cap/prompt should be reviewed
+because the targeted external-loop probe still capped before finish PASS. No
+completion-integrity conclusion, default change, or product claim is supported
+by this calibration record.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.
