@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 8
+- current active pointer/status: 9
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 49
 - versioned durable: 8
 
-Total indexed files: 260
+Total indexed files: 261
 
 ## File Inventory
 
@@ -93,6 +93,7 @@ Total indexed files: 260
 | `docs/current/programming-shared-skill-actual-usage-review.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/rail-compliance-evidence-design.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/rail-entry-measurement-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
+| `docs/current/rail-entry-prompt-regression-gate.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/ralph-loop-measurement-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/release/README.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/release/github-actions-release-automation.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |

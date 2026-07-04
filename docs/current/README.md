@@ -24,6 +24,8 @@ deleting evidence/status history.
   [`multiagent-relay-trial-status.md`](multiagent-relay-trial-status.md).
 - Rail-entry and runtime-injection status:
   [`rail-entry-measurement-status.md`](rail-entry-measurement-status.md).
+- Rail-entry wording regression gate:
+  [`rail-entry-prompt-regression-gate.md`](rail-entry-prompt-regression-gate.md).
 - Measurement scorecard:
   [`measurement-scorecard.md`](measurement-scorecard.md).
 - Runtime-injection value status JSON:
@@ -37,6 +39,9 @@ deleting evidence/status history.
   verification and External registry smoke. `latest` remains `0.5.0`;
   `alpha` remains `0.3.9-alpha.8`.
 - `runtimeInjection` remains a parked opt-in preview.
+- The rail-entry prompt regression gate is an operator-run n>=5
+  non-inferiority check for rail/AGENTS/gate-output wording changes. It is not
+  product-efficacy or runtime-injection benefit evidence.
 - Ralph-loop idle trigger delivery failed to prove model-facing continuation.
   The later default-off hybrid tool-output trigger has accepted
   trigger-survival evidence, including n=15 PASS for marker/state/follow-up,
