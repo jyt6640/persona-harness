@@ -204,4 +204,16 @@ describe("role-boundary heuristic write observation", () => {
 
     expect(roleBoundaryEvidence(projectDir)).toEqual([])
   })
+
+  it("skips truncated heuristic evidence during report aggregation without crashing", () => {
+    const projectDir = createProject()
+    const evidenceDir = join(projectDir, ".persona", "evidence", "role-boundary")
+    mkdirSync(evidenceDir, { recursive: true })
+    writeFileSync(join(evidenceDir, "session-role-boundary.json"), "{ nope\n")
+
+    const report = roleBoundaryJson(projectDir)
+
+    expect(report.schemaVersion).toBe("workflow-role-boundary-report.2")
+    expect(report.findings).toEqual([])
+  })
 })

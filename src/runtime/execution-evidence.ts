@@ -1,7 +1,8 @@
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import { join, relative } from "node:path"
 
 import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
 export type ExecutionEvidenceEvent = {
@@ -37,7 +38,7 @@ export function writeBearshellExecutionEvidence(projectDir: string, event: Execu
 
   try {
     mkdirSync(evidenceDir, { recursive: true })
-    writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+    writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
     return relative(projectDir, outputPath).replace(/\\/g, "/")
   } catch (error) {
     warnRuntimeFailure("evidence-write", "bearshell-execution-evidence", outputPath, error instanceof Error ? error : new Error(String(error)))

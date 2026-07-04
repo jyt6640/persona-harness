@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import type { Message } from "@opencode-ai/sdk"
 
 import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
 export type TokenUsage = {
@@ -221,7 +222,7 @@ export class TokenTelemetryRecorder {
         timestamp,
       )
       mkdirSync(dirname(outputPath), { recursive: true })
-      writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+      writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
       return { kind: "written", path: outputPath, payload }
     } catch (error) {
       const runtimeError = error instanceof Error ? error : new Error(String(error))

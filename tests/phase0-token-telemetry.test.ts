@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import type { AssistantMessage, Model } from "@opencode-ai/sdk"
@@ -133,6 +133,20 @@ describe("Phase 0 token telemetry", () => {
       cacheWrite: 3,
       total: 46,
     })
+  })
+
+  it("recovers from truncated token usage evidence by writing a fresh safe payload", () => {
+    const projectDir = createProject()
+    mkdirSync(join(projectDir, ".persona", "evidence", "token-usage"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "token-usage", "session-token-usage.json"), "{ nope\n")
+    const recorder = new TokenTelemetryRecorder(projectDir)
+
+    const result = recorder.recordMessage(assistantMessage())
+
+    expect(result.kind).toBe("written")
+    const evidence = readEvidence(projectDir)
+    expect(evidence.schemaVersion).toBe("token-usage.1")
+    expect(evidence.messages).toEqual([expect.objectContaining({ messageID: "msg-assistant-1" })])
   })
 
   it("uses observed model context limit to compute input plus cache-read ratio", () => {

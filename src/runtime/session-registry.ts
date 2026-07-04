@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import type { Event } from "@opencode-ai/sdk"
 
 import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
 type SessionKind = "main" | "subagent" | "unknown"
@@ -206,7 +207,7 @@ export class RuntimeSessionRegistry {
     }
     try {
       mkdirSync(dirname(outputPath), { recursive: true })
-      writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+      writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
     } catch (error) {
       if (error instanceof Error) {
         warnRuntimeFailure("evidence-write", "session-injection-skip-write", outputPath, error)

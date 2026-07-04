@@ -1,7 +1,8 @@
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import { join } from "node:path"
 
 import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 import type { TopLevelIntent } from "./top-level-intent-router.js"
 import type { PendingInjection } from "./types.js"
@@ -93,7 +94,7 @@ function writeEvidenceJson(evidenceDir: string, runId: string, payload: unknown)
   const outputPath = join(evidenceDir, `${runId}.json`)
   try {
     mkdirSync(evidenceDir, { recursive: true })
-    writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+    writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
   } catch (error) {
     if (error instanceof Error) {
       warnRuntimeFailure("evidence-write", "evidence-write", outputPath, error)

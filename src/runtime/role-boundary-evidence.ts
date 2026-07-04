@@ -1,9 +1,10 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import type { MultiAgentRole } from "../config/harness-config.js"
 import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 import { HEURISTIC_LIMITATION, ROLE_BOUNDARY_LIMITATIONS } from "./role-boundary-policy.js"
 
@@ -182,7 +183,7 @@ export function appendRoleBoundaryObservation(projectDir: string, input: RoleBou
 
   try {
     mkdirSync(dirname(outputPath), { recursive: true })
-    writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+    writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
   } catch (error) {
     if (error instanceof Error) {
       warnRuntimeFailure("evidence-write", "role-boundary-heuristic-write", outputPath, error)

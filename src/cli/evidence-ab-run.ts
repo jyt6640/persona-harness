@@ -1,8 +1,9 @@
 import { spawnSync } from "node:child_process"
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   type AbRunConfig,
@@ -79,7 +80,7 @@ function writeRunEvidence(config: AbRunConfig, run: AbRunRecord, projectDir: str
       },
     ],
   }
-  writeFileSync(filePath, `${JSON.stringify(evidence, null, 2)}\n`)
+  writeFileAtomic(filePath, `${JSON.stringify(evidence, null, 2)}\n`)
   return filePath
 }
 

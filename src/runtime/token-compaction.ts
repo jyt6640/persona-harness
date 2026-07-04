@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import type { AssistantMessage, Message } from "@opencode-ai/sdk"
@@ -6,6 +6,7 @@ import type { AssistantMessage, Message } from "@opencode-ai/sdk"
 import type { HarnessCompactionConfig } from "../config/harness-config.js"
 import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 import type { TokenTelemetryRecordResult, TokenUsage, TokenUsageEvidence } from "./token-telemetry.js"
 import { safeSessionKey } from "./token-telemetry.js"
@@ -152,7 +153,7 @@ function writeAttempt(projectDir: string, sessionID: string, attempt: Compaction
     updatedAt: attempt.timestamp,
   }
   mkdirSync(dirname(outputPath), { recursive: true })
-  writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+  writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
   return outputPath
 }
 

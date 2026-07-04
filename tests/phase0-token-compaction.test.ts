@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import type { AssistantMessage, Model } from "@opencode-ai/sdk"
@@ -154,6 +154,21 @@ describe("Phase 0 token compaction", () => {
           reason: expect.stringContaining("no token-saving claim"),
         }),
         beforeMeasurement: expect.objectContaining({ measured: true, ratio: 0.8 }),
+        status: "triggered",
+      }),
+    ])
+  })
+
+  it("recovers from truncated compaction evidence before appending a fresh attempt", async () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { enforce: { compaction: { enabled: true, threshold: 0.78 } } })
+    mkdirSync(join(projectDir, ".persona", "evidence", "compaction"), { recursive: true })
+    writeFileSync(join(projectDir, ".persona", "evidence", "compaction", "session-token-compaction.json"), "{ nope\n")
+
+    await sendMessageUpdated(projectDir, highRatioMessage())
+
+    expect(evidenceAttempts(projectDir)).toEqual([
+      expect.objectContaining({
         status: "triggered",
       }),
     ])

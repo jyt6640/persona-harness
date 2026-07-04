@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { basename, dirname, join, resolve } from "node:path"
 import process from "node:process"
 
 import { isRecord } from "../config/jsonc.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import { evidenceAbRunUsage, runEvidenceAbRunCommand } from "./evidence-ab-run.js"
 import { formatEvidenceAbReport, readEvidenceAbReport } from "./evidence-ab-report.js"
@@ -513,7 +514,7 @@ export function writeEvidenceSummary(options: EvidenceOptions = {}): string {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const outputPath = join(projectDir, SUMMARY_PATH)
   mkdirSync(dirname(outputPath), { recursive: true })
-  writeFileSync(outputPath, formatEvidenceSummary(projectDir, readEvidenceSummary(projectDir)))
+  writeFileAtomic(outputPath, formatEvidenceSummary(projectDir, readEvidenceSummary(projectDir)))
   return outputPath
 }
 

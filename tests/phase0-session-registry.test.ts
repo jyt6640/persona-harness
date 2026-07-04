@@ -283,6 +283,28 @@ describe("runtime session classification for multi-agent hooks", () => {
     })
   })
 
+  it("recovers from truncated skip evidence by aggregating a fresh diagnostic record", async () => {
+    writeRuntimeMultiAgentConfig()
+    const evidenceDir = join(fixtureWorkspace, ".persona", "evidence", "session-injection-skips")
+    mkdirSync(evidenceDir, { recursive: true })
+    writeFileSync(join(evidenceDir, "session-unknown.json"), "{ nope\n")
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const targetFile = fixturePath("ReservationController.java")
+
+    await hooks["tool.execute.before"]?.(
+      { callID: "call-1", sessionID: "session-unknown", tool: "edit" },
+      { args: { filePath: targetFile } },
+    )
+
+    const payloads = skipEvidencePayloads()
+    expect(payloads).toHaveLength(1)
+    expect(payloads[0]).toMatchObject({
+      count: 1,
+      lastReason: "classification-unavailable",
+      sessionID: "session-unknown",
+    })
+  })
+
   it("treats sessions as main when multiAgent is off", async () => {
     writeRuntimeOnlyConfig()
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })

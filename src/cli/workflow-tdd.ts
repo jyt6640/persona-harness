@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { loadHarnessConfig } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import { runDirectTestVerification, type DirectTestVerificationResult, type JunitTestCase } from "./closure-verification-runner.js"
 import { BACKLOG_PATH, pendingTickets } from "./workflow-ticket-model.js"
@@ -315,7 +316,7 @@ function writeTddEvidence(
       junitRefCount: result.junitRefs.length,
     },
   }
-  writeFileSync(join(projectDir, ref), `${JSON.stringify(evidence, null, 2)}\n`)
+  writeFileAtomic(join(projectDir, ref), `${JSON.stringify(evidence, null, 2)}\n`)
   return ref
 }
 
