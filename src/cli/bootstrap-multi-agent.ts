@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import {
@@ -8,6 +8,7 @@ import {
   type MultiAgentRole,
 } from "../config/harness-config.js"
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 
 const HARNESS_CONFIG_PATH = ".persona/harness.jsonc"
@@ -122,7 +123,7 @@ function modelForRole(
 
 function writeJsonObject(path: string, value: JsonObject): void {
   mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8")
+  writeFileAtomic(path, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8" })
 }
 
 function enableHarnessMultiAgent(projectDir: string, multiAgent: HarnessMultiAgentConfig): CliRunResult | undefined {

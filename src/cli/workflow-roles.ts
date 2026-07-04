@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 
 export const ROLE_BOUNDARY_PATH = ".persona/workflow/roles.md"
@@ -61,7 +62,7 @@ export function runWorkflowRolesCommand(options: { readonly projectDir?: string 
   const workflowDir = join(projectDir, ".persona", "workflow")
   mkdirSync(workflowDir, { recursive: true })
   const content = createWorkflowRoleBoundaryTemplate()
-  writeFileSync(join(projectDir, ROLE_BOUNDARY_PATH), content)
+  writeFileAtomic(join(projectDir, ROLE_BOUNDARY_PATH), content)
 
   return {
     status: 0,

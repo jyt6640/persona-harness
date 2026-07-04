@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import { enableCodeNavMcpPreview } from "./bootstrap-code-nav.js"
 import { enableDeveloperMcpBundle } from "./bootstrap-codegraph.js"
@@ -336,13 +337,15 @@ function writeBackendAgentInstructions(
         skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} role checklist relay guidance already exists`)
         return undefined
       }
-      writeFileSync(targetPath, `${current.trimEnd()}\n\n${multiAgentRelayProcedureGuidance().join("\n")}`, "utf8")
+      writeFileAtomic(targetPath, `${current.trimEnd()}\n\n${multiAgentRelayProcedureGuidance().join("\n")}`, {
+        encoding: "utf8",
+      })
       return `updated ${ROOT_AGENT_INSTRUCTIONS_PATH} with role checklist relay procedure guidance`
     }
     skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} already exists`)
     return undefined
   }
-  writeFileSync(targetPath, backendAgentInstructions(includeMultiAgentRelayGuidance), "utf8")
+  writeFileAtomic(targetPath, backendAgentInstructions(includeMultiAgentRelayGuidance), { encoding: "utf8" })
   return `created ${ROOT_AGENT_INSTRUCTIONS_PATH} AI bootstrap instructions`
 }
 

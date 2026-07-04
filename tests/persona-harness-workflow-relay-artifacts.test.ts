@@ -170,6 +170,33 @@ describe("ph workflow relay role artifact gates", () => {
     ])
   })
 
+  it("treats truncated human-authored role artifacts as incomplete diagnostics", () => {
+    const projectDir = createTempProject()
+    writeHarnessConfig(projectDir)
+    writeWorkflowWithPendingTicket(projectDir)
+
+    writeRoleArtifact(projectDir, "test-writer", "Verification")
+
+    const output = relayJson(projectDir)
+
+    expect(output.roleArtifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ".persona/workflow/work/req-1/roles/test-writer.md",
+          readiness: "incomplete",
+          reason: "test-writer artifact must include failing/verification test evidence or a precise verification plan.",
+          status: "present",
+        }),
+      ]),
+    )
+    expect(output.blockers).toEqual([
+      expect.objectContaining({
+        id: "role-test-artifact-incomplete",
+        source: ".persona/workflow/work/req-1/roles/test-writer.md",
+      }),
+    ])
+  })
+
   it("blocks each role on role-boundary artifact content before advancing", () => {
     const projectDir = createTempProject()
     writeHarnessConfig(projectDir)
