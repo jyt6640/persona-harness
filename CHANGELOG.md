@@ -6,18 +6,52 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-No unreleased changes after the `0.6.0-rc.3` release-prep cut.
+No unreleased changes after the `0.6.0-rc.3` final registry smoke record.
 
 ## [0.6.0-rc.3] - 2026-07-04
 
-Release prep for `0.6.0-rc.3` on npm `next`. This prep does not publish,
-tag, or move dist-tags. Before a future publish, the registry remains
-`latest=0.5.0`, `next=0.6.0-rc.2`, and `alpha=0.3.9-alpha.8`; the published
-`0.6.0-rc.2` package came from gitHead
-`d3d5fdced355f0ac0fbed5e700d57b2aa1592263` with shasum
-`0eae3cc232e3f37de9390b0afc662a001aaa0b56`.
+Published `0.6.0-rc.3` to npm `next` after QA publish GO and final External
+registry smoke acceptance. Registry verification confirmed
+`persona-harness@next=0.6.0-rc.3`, gitHead
+`e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum
+`ef498adfac138d9d0843406cba53acf76b34c6f1`, and integrity
+`sha512-nXImwyxON5zoph8Y3LyXqJhW1NIcX+3JvsBSFAdQlersZ8zO1KmRuRJVKB1DF87fbYxDpVyxMqFU1C6sA8HJQQ==`.
+Explicit `persona-harness@0.6.0-rc.3` resolves to the same facts. Dist-tags are
+`latest=0.5.0`, `next=0.6.0-rc.3`, and `alpha=0.3.9-alpha.8`; `latest` did not
+move.
 
-Release-prep highlights:
+The local and remote `v0.6.0-rc.3` tags point at
+`e1af520cf000e805e7df6a1616906f3f9b0e4976` after registry verification. The
+GitHub release exists as a prerelease, not draft:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.3`.
+
+External registry smoke PASS archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc3-registry-smoke-20260704T133936Z`.
+The smoke source was npm registry `persona-harness@next` only; no local
+tarball was used.
+
+Registry-smoke observations:
+
+- Required package entries were present: LICENSE, localized READMEs,
+  `CHANGELOG.md`, rc3 current release notes, rc3 versioned capsule files,
+  `workflow-loop`, `workflow-loop-state`, `bounded-process`,
+  `workflow-output`, `workflow-ralph-loop`, `workflow-relay`, and
+  `workflow-relay-ui`.
+- Packaged LICENSE contained `Copyright 2026 jyt6640` and no template
+  placeholders.
+- Stage 17 `ph workflow loop` registry behavior: dry-run schema
+  `workflow-loop.1`, `defaultOff=true`, blocker-depth prompt, no state write;
+  execute with fake bounded OpenCode wrote workflow-loop-state plus
+  prompt/stdout/stderr artifacts and ended at iteration cap.
+- Stage 20 finish summary registry behavior: failed finish stderr has
+  `Summary:` before `Required fixes:`, detailed blockers remain, and closure
+  JSON parses.
+- Ralph-loop default-off reporting remains `workflow-ralph-loop.4`,
+  `defaultOff=true`, `mutates=false`.
+- Role Checklist Relay remains checklist-first with optional host-dependent
+  subagent/task invocation; role artifacts record used/unavailable status.
+
+Release highlights:
 
 - Carries Stage 15 append-only ralph-loop measurement correction and fake-shim
   gate-gaming frequency escalation.
@@ -25,8 +59,8 @@ Release-prep highlights:
   gate package visibility, package files policy regression, canonical docs
   index, and external review adoption/rejection status.
 - Adds Stage 17 explicit `ph workflow loop` package-runtime surface as a
-  capped fresh-session blocker loop command, accepted through local-current
-  package-runtime smoke only.
+  capped fresh-session blocker loop command, now observed in the rc3 registry
+  smoke after earlier local-current package-runtime acceptance.
 - Records Stage 18 fixture-scoped completion-integrity measurement: OFF
   `0/10`, internal tool-output trigger `10/10`, and external
   `ph workflow loop` `7/10` with cap-risk caveat.

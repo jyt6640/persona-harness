@@ -1,21 +1,23 @@
 # v0.6.0-rc.3 Release Capsule
 
-This capsule is the durable index for the `0.6.0-rc.3` release-prep line. It
+This capsule is the durable index for the `0.6.0-rc.3` prerelease line. It
 complements the release-operation notes in
 [`docs/current/release/v0.6.0-rc.3-release-notes.md`](../../current/release/v0.6.0-rc.3-release-notes.md).
 
 ## Channel State
 
-- Release-prep package version: `0.6.0-rc.3`.
-- Planned publish channel: npm `next`.
-- This prep is not published or tagged.
-- Current published prerelease remains `persona-harness@next=0.6.0-rc.2`.
+- Published prerelease package: `persona-harness@next=0.6.0-rc.3`.
+- Registry gitHead: `e1af520cf000e805e7df6a1616906f3f9b0e4976`.
+- Registry shasum: `ef498adfac138d9d0843406cba53acf76b34c6f1`.
+- Registry integrity:
+  `sha512-nXImwyxON5zoph8Y3LyXqJhW1NIcX+3JvsBSFAdQlersZ8zO1KmRuRJVKB1DF87fbYxDpVyxMqFU1C6sA8HJQQ==`.
 - Stable channel remains `persona-harness@latest=0.5.0`.
 - Alpha channel remains `persona-harness@alpha=0.3.9-alpha.8`.
-- Published `0.6.0-rc.2` registry gitHead:
-  `d3d5fdced355f0ac0fbed5e700d57b2aa1592263`.
-- Published `0.6.0-rc.2` registry shasum:
-  `0eae3cc232e3f37de9390b0afc662a001aaa0b56`.
+- Local and remote `v0.6.0-rc.3` tags point to
+  `e1af520cf000e805e7df6a1616906f3f9b0e4976`.
+- GitHub release:
+  `https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.3`;
+  draft false, prerelease true.
 
 ## Durable Records
 
@@ -26,7 +28,7 @@ complements the release-operation notes in
 
 ## Prep Summary
 
-`0.6.0-rc.3` prepares Stage 15-20 accepted work after the published rc2 line:
+`0.6.0-rc.3` publishes Stage 15-20 accepted work after the published rc2 line:
 
 - Stage 15 ralph-loop blocker-delta correction and fake-shim gate-gaming
   frequency escalation.
@@ -35,8 +37,15 @@ complements the release-operation notes in
 - Stage 18 fixture-scoped completion-integrity measurement.
 - Stage 20 failed-finish human summary UX.
 
-Stage 17 and Stage 20 package-runtime evidence remains local-current evidence
-until a future publish includes those commits and passes registry smoke.
+External registry smoke installed `persona-harness@next` from npm only and
+classified PASS. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc3-registry-smoke-20260704T133936Z`.
+
+The registry smoke accepted package-runtime behavior for Stage 17
+`workflow-loop.1` dry-run/default-off/no-write and execute-to-iteration-cap
+state artifacts, Stage 20 finish `Summary:` stderr before existing details,
+ralph-loop `workflow-ralph-loop.4` default-off reporting, and Role Checklist
+Relay checklist-first/optional host-dependent subagent wording.
 
 ## Boundaries
 
