@@ -160,3 +160,31 @@ runtimeInjection remains default OFF and must not be cited as token-saving,
 product-efficacy, navigation-benefit, app-quality, full-TDD, broad reliability,
 closure-guarantee, generated-app certification, or automatic completion
 evidence.
+
+## HARDEN-1 H1-0 Rail-Entry Regression Gate
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/harden-h1-0-stable-preflight-20260704T140126Z`
+
+Scenario: Stage 20 failed-finish `Summary:` header wording.
+
+Status: PARTIAL. The reusable Stage 16-f rail-entry prompt regression gate was
+initialized for the Stage 20 finish summary header change, but the available
+gate implementation is an operator-run `init`/`check` surface. It does not run
+real OpenCode n=5 paired rows by itself.
+
+Observed gate check:
+
+- `measurement-plan.json`, `KILL_CRITERIA.md`, and `summary.json` were created.
+- `node scripts/rail-entry-prompt-regression-gate.mjs check --archive <archive>`
+  exited non-zero because `finalAcceptedValidPairs` was `0`, below the required
+  minimum `5`.
+- No real paired OpenCode rows were executed in H1-0.
+- No rail-entry non-inferiority claim is made for the Stage 20 finish summary
+  header.
+
+Decision: Stage 20 is not marked rail-entry non-inferior by H1-0. Before stable
+release GO relies on this gate, an operator or runner must execute the n>=5
+paired rows or explicitly accept the PARTIAL preflight caveat. This record does
+not modify Stage 3 or Stage 9 evidence and does not change runtimeInjection
+defaults.

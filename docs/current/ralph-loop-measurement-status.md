@@ -474,6 +474,40 @@ Decision:
 - No default change is made by this measurement. Any release/default decision
   remains a separate product decision.
 
+## HARDEN-1 H1-0 Cost Per Verified Completion Telemetry
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/harden-h1-0-stable-preflight-20260704T140126Z`
+
+Source measurement archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage18-completion-integrity-main-rerun-20260704T105124Z`
+
+Source token files: `.persona/evidence/token-usage/*.json` under each Stage 18
+run root. All 30 main rows had provider token evidence with `aggregate.total`;
+no token rows were missing.
+
+Requested H1-0 formula: condition mean provider total tokens divided by finish
+PASS count. OFF has finish PASS `0/10`, so its value is `∞`.
+
+| Condition | Finish PASS | Mean provider total tokens | Requested formula result | Audit total tokens / PASS |
+| --- | ---: | ---: | ---: | ---: |
+| OFF | `0/10` | `19204` | `∞` | `∞` |
+| Internal tool-output trigger | `10/10` | `604853.5` | `60485.35` | `604853.5` |
+| External `ph workflow loop` | `7/10` | `592008.3` | `84572.61` | `845726.14` |
+
+Aggregate provider token fields across all rows:
+
+| Condition | Input | Output | Reasoning | Cache read | Cache write | Total |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| OFF | `65646` | `2339` | `2199` | `121856` | `0` | `192040` |
+| Internal tool-output trigger | `343133` | `63450` | `48864` | `5593088` | `0` | `6048535` |
+| External `ph workflow loop` | `603915` | `74463` | `64361` | `5177344` | `0` | `5920083` |
+
+Interpretation: this is cost-per-verified-completion telemetry only. It does
+not support token-saving, provider-token-saving, product-efficacy,
+navigation-benefit, app-quality, broad reliability, closure-guarantee,
+autonomous-completion, or default-change claims.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.

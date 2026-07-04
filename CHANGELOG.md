@@ -6,7 +6,24 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-No unreleased changes after the `0.6.0-rc.3` final registry smoke record.
+- HARDEN-1 H1-0 stable preflight record added after the `0.6.0-rc.3` final
+  registry smoke. The rc3 docs record remains current at commit
+  `c285bfcd845914d103503c38bd9a76c6baefd380` with archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc3-registry-smoke-20260704T133936Z`,
+  `next=0.6.0-rc.3`, and `latest=0.5.0`.
+- H1-0 rail-entry prompt regression gate for the Stage 20 finish summary header
+  is PARTIAL only. Archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/harden-h1-0-stable-preflight-20260704T140126Z`
+  was initialized with the reusable Stage 16-f gate, but the available gate
+  supports preregistration/checking rather than executing real OpenCode n=5
+  paired rows. No rail-entry non-inferiority claim is made.
+- H1-0 records Stage 18 provider-token cost-per-verified-completion telemetry
+  from `.persona/evidence/token-usage/*.json` in the accepted Stage 18 archive.
+  OFF has finish PASS `0/10`, so cost per verified completion is `∞`.
+  Internal uses mean provider total `604853.5` with PASS `10/10`; external
+  uses mean provider total `592008.3` with PASS `7/10`. This is telemetry only,
+  not token-saving/provider-token-saving, product-efficacy, app-quality, broad
+  reliability, closure-guarantee, or default-change evidence.
 
 ## [0.6.0-rc.3] - 2026-07-04
 
