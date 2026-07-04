@@ -6,6 +6,20 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stage 18 main rerun completion-integrity measurement completed on a
+  finish-reachable Java/Spring/Gradle fixture after the archive-local runner
+  repair. Archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage18-completion-integrity-main-rerun-20260704T105124Z`.
+  Preregistered n=10 paired/counterbalanced three-arm results: OFF final
+  finish PASS `0/10`; internal ralph-loop tool-output trigger PASS `10/10`
+  with marker observed `10/10` and exact one-sided sign `p=0.0009765625`;
+  external `ph workflow loop` PASS `7/10` with exact one-sided sign
+  `p=0.0078125`. External remains cap-risky: `3/10` rows hit iteration cap
+  and mean residual blockers were `1.2`. This is scoped completion-integrity
+  evidence for this fixture only; it is not a default change, product-efficacy,
+  token-saving, app-quality, broad reliability, closure-guarantee, autonomous
+  completion, generated-app certification, deterministic role enforcement, or
+  reliable subagent-orchestration claim.
 - Stage 17 adds explicit `ph workflow loop` as a capped fresh-session blocker
   loop command. The command reads deterministic PH finish/closure blockers,
   builds a minimal blocker-depth prompt, runs a fresh `opencode run` session

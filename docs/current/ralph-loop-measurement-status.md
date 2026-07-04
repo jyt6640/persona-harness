@@ -420,6 +420,60 @@ because the targeted external-loop probe still capped before finish PASS. No
 completion-integrity conclusion, default change, or product claim is supported
 by this calibration record.
 
+## Stage 18 Main Rerun
+
+Status: PASS for the preregistered completion-integrity measurement on this
+finish-reachable fixture. This is not a default-change or broad product claim.
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage18-completion-integrity-main-rerun-20260704T105124Z`.
+
+Package source: local-current tarball from commit
+`9328adb72c2c763a48c076ef49a9d972b510b081`, version `0.6.0-rc.2`,
+shasum `30ce7628f8e1835833529dfdb5d9433281973da8`, pack entry count `594`.
+
+Preregistration:
+
+- `measurement-plan.json` and `KILL_CRITERIA.md` were written before measured
+  rows.
+- Primary metric: deterministic final `ph workflow finish implement` PASS
+  rate.
+- Main sample: n=10 valid paired/counterbalanced 3-arm rows.
+- Completion proof: model text was never counted as completion.
+
+Preflight:
+
+- Fixture validity PASS: scripted gate-chain path made
+  `ph workflow finish implement` exit `0`.
+- Internal readiness PASS: tool-output marker observed, persisted ralph-loop
+  state present, finish PASS.
+- External readiness passed with caveat: workflow-loop state existed and
+  blocker progress was observed, but the external arm remained cap-risky.
+
+Main result:
+
+| Condition | Final finish PASS | Marker observed | Loop state | Cap hits | Mean blockers before -> after |
+| --- | ---: | ---: | ---: | ---: | --- |
+| OFF | `0/10` | `0/10` | `0/10` | `0` | `3 -> 2` |
+| Internal tool-output trigger | `10/10` | `10/10` | `0/10` | `0` | `3 -> 0` |
+| External `ph workflow loop` | `7/10` | `0/10` | `10/10` | `3` | `3 -> 1.2` |
+
+Paired exact sign comparisons:
+
+- Internal vs OFF: wins `10`, losses `0`, ties `0`, one-sided
+  `p=0.0009765625`.
+- External vs OFF: wins `7`, losses `0`, ties `3`, one-sided
+  `p=0.0078125`.
+
+Decision:
+
+- Internal met the preregistered positive completion-integrity criterion for
+  this fixture.
+- External also met the finish PASS comparison criterion, but with a material
+  cap-risk caveat: `3/10` external rows hit iteration cap and did not finish.
+- No default change is made by this measurement. Any release/default decision
+  remains a separate product decision.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.
