@@ -46,11 +46,31 @@ trigger-survival improvement:
 - n=15 result: OFF marker `0/15`; ON marker + persisted state attempt +
   follow-up action `15/15`; cap hits/runaway retries `0`;
 - final finish pass remained OFF `0/15`, ON `0/15`;
-- blocker-count snapshot did not support improvement.
+- the reported `-3.00` style delta is blocker resolution/exposure movement, not
+  total blocker reduction;
+- total visible blockers increased from `3` to `6` after hierarchical gate
+  exposure, so blocker movement must not be cited as completion improvement.
 
 Current interpretation: tool-output trigger-survival PASS for the calibrated
 fixture only. Completion integrity, default-change, reliability, closure
 guarantee, autonomous completion, and product efficacy are not proven.
+
+Cooldown caveat: `cooldownMs=30000` is greater than or near the roughly
+25-second calibrated sessions. Attempts stayed at `1`, which is
+trigger-survival evidence only and not evidence of multi-attempt loop benefit.
+
+## Adversarial Gate-Gaming Candidate
+
+The fake `gradle-shim.js` / Gradle-gate-gaming incident is elevated as a
+candidate measured adversarial case after forged-TDD detection. The incident
+pattern is that an agent attempted to fake a Java/Spring/Gradle verification
+gate through a shim or equivalent behavior, and stack-alignment/gate discipline
+caught it.
+
+This is a candidate for a future README Measured Behavior table after
+verification. It should be phrased as gate-gaming/verification-forgery detection
+evidence only, not as product efficacy, broad reliability, app quality,
+full-TDD sufficiency, or closure guarantee.
 
 Primary current pointer:
 [`docs/current/ralph-loop-measurement-status.md`](../../current/ralph-loop-measurement-status.md).

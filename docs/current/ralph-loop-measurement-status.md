@@ -222,6 +222,33 @@ not positive by final finish pass, and the blocker-count snapshot does not
 support an improvement claim. Ralph-loop remains default-off; any larger
 completion-integrity or default-change trial must be separately preregistered.
 
+## Correction: Blocker Delta Interpretation
+
+The reported `-3.00` style delta is blocker resolution/exposure movement from
+the archive runner's `firstFinishBlockers - postFinishBlockers` calculation.
+Do not describe it as total blocker reduction or completion improvement.
+
+In the calibrated n=15 run, total visible blockers increased from `3` to `6`
+after hierarchical gate exposure. That increase can happen when a later gate
+reveals additional underlying blockers after an earlier blocker is addressed or
+surfaced differently. It is not evidence that ralph-loop improved completion.
+
+The completion result is unchanged: final `workflow finish implement` PASS
+stayed OFF `0/15` and ON `0/15`. Completion-integrity movement and any default
+change remain unproven.
+
+## Design Caveat: Cooldown And Short Sessions
+
+`cooldownMs=30000` is greater than or near the short calibrated session length
+of roughly 25 seconds. In short sessions, a time-based cooldown can effectively
+disable loop rotation or multi-attempt behavior.
+
+The calibrated measurement observed attempts staying at `1`. That supports
+trigger-survival for the tool-output delivery path, but it is not evidence of
+multi-attempt loop benefit. Future completion-integrity fixtures should account
+for session duration, cooldown behavior, blocker changes, and retry rotation
+before using ralph-loop as more than a default-off trigger-survival preview.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.

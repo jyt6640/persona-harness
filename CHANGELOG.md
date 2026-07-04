@@ -6,6 +6,19 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added an append-only correction to the ralph-loop n=15 tool-output trigger
+  measurement: the `-3.00` style delta is blocker resolution/exposure movement,
+  not total blocker reduction. Total visible blockers increased from `3` to
+  `6` after hierarchical gate exposure, final finish PASS stayed OFF `0/15`
+  and ON `0/15`, and completion-integrity/default-change remain unproven. The
+  same note records that `cooldownMs=30000` is near or greater than the short
+  calibrated sessions, so attempts staying at `1` is trigger-survival evidence
+  only, not multi-attempt loop benefit.
+- Elevated the fake `gradle-shim.js` / Gradle-gate-gaming incident as a
+  candidate measured adversarial case after forged-TDD detection. The record is
+  scoped to stack-alignment/gate-discipline catching a verification-forgery
+  attempt and is only a candidate for a future README Measured Behavior table
+  after verification, not a broad reliability/product-efficacy claim.
 - Added `docs/releases/package-index.md` as a chronological package/version
   timeline from undocumented early rows (`0.1.0`, `0.2.0`, `0.2.1`) through
   the current `0.6.0-rc.1` prerelease. The index links release notes, the
