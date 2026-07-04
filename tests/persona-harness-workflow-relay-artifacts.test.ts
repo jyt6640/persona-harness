@@ -118,7 +118,7 @@ describe("ph workflow relay role artifact gates", () => {
     const rolesDir = join(projectDir, ".persona", "workflow", "work", "req-1", "roles")
     const output = relayValidateText(projectDir)
 
-    expect(output).toContain("Persona Harness relay validation")
+    expect(output).toContain("Persona Harness Role Checklist Relay validation")
     expect(output).toContain("Mode: read-only checklist rail; no guaranteed host subagent invocation, no artifact writes.")
     expect(output).toContain("Current ticket: req-1 - Task CRUD API")
     expect(output).toContain("Current role: test-writer")
@@ -127,7 +127,7 @@ describe("ph workflow relay role artifact gates", () => {
     expect(output).toContain("First blocker: role-test-artifact-missing")
     expect(output).toContain("Required artifact: .persona/workflow/work/req-1/roles/test-writer.md")
     expect(output).toContain("Gate command: npx ph workflow relay next --json")
-    expect(output).toContain("Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay'.")
+    expect(output).toContain("legacy section name for the Role Checklist Relay contract")
     expect(output).toContain("PH closure/check/archive/finish gates remain authoritative.")
     expect(output).toContain("complete the current role checklist in the main session")
     expect(existsSync(rolesDir)).toBe(false)

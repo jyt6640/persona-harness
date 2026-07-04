@@ -6,6 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Renamed the user-facing relay frame to `Role Checklist Relay` while keeping
+  `--multi-agent-preview` and `multiAgent` as compatibility flag/config names.
+  Bootstrap help, generated `AGENTS.md`, `workflow relay` help/prompt text, and
+  current relay docs now lead with the checklist rail behavior first. OpenCode
+  `task`/subagent invocation remains optional and host-dependent; PH still does
+  not guarantee or enforce reliable automatic subagent orchestration,
+  production-ready delegation, deterministic role enforcement, or default
+  changes.
 - Added an append-only correction to the ralph-loop n=15 tool-output trigger
   measurement: the `-3.00` style delta is blocker resolution/exposure movement,
   not total blocker reduction. Total visible blockers increased from `3` to

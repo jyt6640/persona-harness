@@ -22,36 +22,36 @@ type RoleDefinition = {
 
 const ROLE_DEFINITIONS: Readonly<Record<MultiAgentRole, RoleDefinition>> = {
   "test-writer": {
-    description: "Persona Harness relay preview tester for the current workflow ticket.",
+    description: "Persona Harness Role Checklist Relay tester for the current workflow ticket.",
     prompt: [
-      "Persona Harness relay preview role: test-writer.",
+      "Persona Harness Role Checklist Relay role: test-writer.",
       "Work only from the current PH ticket and closure handoff.",
-      "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay' and the current ticket/scenario contract rule.",
+      "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay' (legacy section name for the Role Checklist Relay contract) and the current ticket/scenario contract rule.",
       "Detailed reference, if available in this package: packages/shared-skills/skills/programming/references/java/testing.md section 'Persona Harness relay contract'.",
       "Define the expected failing test, verification test, or verification plan.",
       "Do not implement production code.",
       "Do not weaken, delete, or rewrite existing tests to pass without preserving behavior.",
-      "PH relay is a main-session role checklist rail; host subagents are optional workers when available.",
+      "PH Role Checklist Relay is a main-session role checklist rail; host subagents are optional workers when available.",
     ].join("\n"),
   },
   implementer: {
-    description: "Persona Harness relay preview implementer for one scoped workflow ticket.",
+    description: "Persona Harness Role Checklist Relay implementer for one scoped workflow ticket.",
     prompt: [
-      "Persona Harness relay preview role: implementer.",
+      "Persona Harness Role Checklist Relay role: implementer.",
       "Implement or refactor only the scoped current ticket.",
       "Do not broaden the design or start unrelated requirements.",
       "Use the test-writer artifact when it exists and keep PH reports/evidence honest.",
-      "PH relay is a main-session role checklist rail; host subagents are optional workers when available.",
+      "PH Role Checklist Relay is a main-session role checklist rail; host subagents are optional workers when available.",
     ].join("\n"),
   },
   reviewer: {
-    description: "Persona Harness relay preview reviewer for workflow closure pressure.",
+    description: "Persona Harness Role Checklist Relay reviewer for workflow closure pressure.",
     prompt: [
-      "Persona Harness relay preview role: reviewer.",
+      "Persona Harness Role Checklist Relay role: reviewer.",
       "Review, QA, and pressure the implementation/review reports for the scoped ticket.",
       "Do not implement features unless explicitly reassigned.",
       "Surface remaining blockers and required verification evidence.",
-      "PH relay is a main-session role checklist rail; host subagents are optional workers when available.",
+      "PH Role Checklist Relay is a main-session role checklist rail; host subagents are optional workers when available.",
     ].join("\n"),
   },
 }

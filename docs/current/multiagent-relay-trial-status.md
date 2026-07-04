@@ -1,9 +1,10 @@
-# Multi-Agent Relay Trial Status
+# Role Checklist Relay Trial Status
 
 Status: Stage 13 partial; relay static guidance reached the main-session relay
 command, but did not produce observed OpenCode subagent delegation. Current
 product direction is a main-session role checklist rail with optional
-host-dependent subagent use.
+host-dependent subagent use. `--multi-agent-preview` and `multiAgent` remain
+compatibility flag/config names for this preview.
 
 ## Stage 13 Reduced Proxy Trial
 
@@ -78,7 +79,7 @@ exactly one cheap retry, so no second run was performed.
 
 Status: accepted reframe.
 
-Multi-agent relay preview is now described as a main-session checklist rail that
+Role Checklist Relay preview is now described as a main-session checklist rail that
 steps through role lenses: `test-writer`, `implementer`, and `reviewer`.
 `workflow relay next --json` preserves the same role order, required artifact
 paths, and closure/check/archive/finish gates.
@@ -93,8 +94,8 @@ artifact.
 This reframe is based on the Stage 13 proxy trial and the promptBlock cheap
 retry, both of which observed relay command/prompt behavior but no reliable
 OpenCode task/subagent invocation. It does not remove the `--multi-agent-preview`
-surface or the OpenCode subagent config entries; it narrows their wording and
-decision status.
+surface, the `multiAgent` config key, or the OpenCode subagent config entries;
+it narrows their wording and decision status.
 
 ## P2 OpenCode Subagent Capability Probe
 

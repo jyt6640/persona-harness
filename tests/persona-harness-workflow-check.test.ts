@@ -1365,7 +1365,7 @@ describe("ph bootstrap backend", () => {
     expect(agents).toContain("npx ph workflow implement")
     expect(agents).toContain(".persona/project-profile.jsonc")
     expect(agents).toContain("Do not infer a Node/CommonJS project from package.json")
-    expect(agents).not.toContain("Persona Harness Multi-Agent Relay Preview")
+    expect(agents).not.toContain("Persona Harness Role Checklist Relay Preview")
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(false)
     expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(false)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
@@ -1477,7 +1477,7 @@ describe("ph bootstrap backend", () => {
     expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(false)
   })
 
-  it("enables the multi-agent relay preview only when explicitly requested", () => {
+  it("enables the role checklist relay preview only when explicitly requested through the compatibility flag", () => {
     const projectDir = createTempProject()
 
     const result = runPersonaCli(["bootstrap", "backend", "--multi-agent-preview"], {
@@ -1488,13 +1488,15 @@ describe("ph bootstrap backend", () => {
     })
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain("enabled multi-agent relay preview for test-writer, implementer, and reviewer")
-    expect(result.stdout).toContain("Multi-agent relay preview:")
+    expect(result.stdout).toContain("enabled Role Checklist Relay preview for test-writer, implementer, and reviewer")
+    expect(result.stdout).toContain("Role Checklist Relay preview:")
+    expect(result.stdout).toContain("flag/config name is kept as a compatibility alias")
     expect(result.stdout).toContain("role checklist guidance")
     expect(result.stdout).toContain("does not guarantee or enforce host subagent invocation")
     const agentsMd = readFileSync(join(projectDir, "AGENTS.md"), "utf8")
-    expect(agentsMd).toContain("Persona Harness Multi-Agent Relay Preview")
-    expect(agentsMd).toContain("main-session checklist rail through role lenses")
+    expect(agentsMd).toContain("Persona Harness Role Checklist Relay Preview")
+    expect(agentsMd).toContain("compatibility flag/config name for the Role Checklist Relay preview")
+    expect(agentsMd).toContain("main-session role checklist rail through role lenses")
     expect(agentsMd).toContain("does not guarantee or enforce host subagent invocation")
     expect(agentsMd).toContain("npx ph workflow relay next --json")
     expect(agentsMd).toContain("npx ph workflow closure next --json")
@@ -1517,10 +1519,10 @@ describe("ph bootstrap backend", () => {
     expect(agents.jaeki).toBeUndefined()
     expect(agents.roach).toBeUndefined()
     expect(JSON.stringify(agents["test-writer"])).toContain("Do not implement production code")
-    expect(JSON.stringify(agents["test-writer"])).toContain(".persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay'")
+    expect(JSON.stringify(agents["test-writer"])).toContain("legacy section name for the Role Checklist Relay contract")
     expect(JSON.stringify(agents["test-writer"])).toContain("Persona Harness relay contract")
     expect(JSON.stringify(agents["test-writer"])).toContain("Do not weaken, delete, or rewrite existing tests")
-    expect(JSON.stringify(agents.implementer)).toContain("main-session role checklist rail")
+    expect(JSON.stringify(agents.implementer)).toContain("PH Role Checklist Relay is a main-session role checklist rail")
     expect(JSON.stringify(agents.reviewer)).toContain("Do not implement features unless explicitly reassigned")
     expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))
   })
@@ -1575,9 +1577,9 @@ describe("ph bootstrap backend", () => {
     })
     expect(secondResult.status).toBe(0)
     const agentsMd = readFileSync(join(projectDir, "AGENTS.md"), "utf8")
-    const firstIndex = agentsMd.indexOf("Persona Harness Multi-Agent Relay Preview")
+    const firstIndex = agentsMd.indexOf("Persona Harness Role Checklist Relay Preview")
     expect(firstIndex).toBeGreaterThanOrEqual(0)
-    expect(agentsMd.indexOf("Persona Harness Multi-Agent Relay Preview", firstIndex + 1)).toBe(-1)
+    expect(agentsMd.indexOf("Persona Harness Role Checklist Relay Preview", firstIndex + 1)).toBe(-1)
     const secondConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     const secondAgents = isRecord(secondConfig.agent) ? secondConfig.agent : {}
     expect(secondAgents.implementer).toMatchObject({
@@ -1586,6 +1588,33 @@ describe("ph bootstrap backend", () => {
       mode: "subagent",
     })
     expect(secondAgents.jaeki).toBeUndefined()
+  })
+
+  it("keeps legacy multi-agent relay AGENTS guidance idempotent when using the role checklist relay flag", () => {
+    const projectDir = createTempProject()
+    writeFileSync(
+      join(projectDir, "AGENTS.md"),
+      [
+        "# Existing Instructions",
+        "",
+        "## Persona Harness Multi-Agent Relay Preview",
+        "",
+        "Legacy relay guidance.",
+      ].join("\n"),
+    )
+
+    const result = runPersonaCli(["bootstrap", "backend", "--multi-agent-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("AGENTS.md role checklist relay guidance already exists")
+    const agentsMd = readFileSync(join(projectDir, "AGENTS.md"), "utf8")
+    expect(agentsMd).toContain("Persona Harness Multi-Agent Relay Preview")
+    expect(agentsMd).not.toContain("Persona Harness Role Checklist Relay Preview")
   })
 
   it("enables the code-nav MCP preview only when explicitly requested", () => {

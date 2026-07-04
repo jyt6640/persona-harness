@@ -1,4 +1,4 @@
-# Multi-Agent Relay Design
+# Role Checklist Relay Design
 
 Status: R1 preview implemented; current accepted direction is main-session role
 checklist rail with optional host-dependent subagent use. The relay is
@@ -65,7 +65,7 @@ R0 conclusion:
 - PH cannot make `experimental.chat.system.transform` agent-specific from its typed input alone because that hook exposes `sessionID?` and `model`, not `agent`.
 - R1 should avoid agent-specific system constitution until PH either uses `chat.message` to record session/agent state or OpenCode exposes `agent` directly to system transform.
 
-## R1 Relay Preview
+## R1 Role Checklist Relay Preview
 
 Relay role checklist preview is opt-in. The implemented config surface is:
 
@@ -80,6 +80,11 @@ Relay role checklist preview is opt-in. The implemented config surface is:
 ```
 
 `ph bootstrap backend --multi-agent-preview` turns this on for the project and updates `.opencode/opencode.json` with top-level `agent` entries for exactly `test-writer`, `implementer`, and `reviewer`, each with `mode: "subagent"`. These entries are optional host capability: PH promptBlocks may ask the host to use them, but PH does not guarantee or enforce host subagent invocation. It preserves the existing OpenCode config and does not use `.opencode/agent/*.md`. Preview-era `jaeki` and `roach` agent keys are migrated to `implementer` and `reviewer` when no new key already exists.
+
+Naming decision: `Role Checklist Relay` is the primary user-facing name.
+`--multi-agent-preview` and `multiAgent` remain compatibility flag/config names
+for the current prerelease line; they should not be read as a claim that PH
+guarantees automatic multi-agent orchestration.
 
 First 3-role checklist order:
 

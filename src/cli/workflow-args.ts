@@ -39,7 +39,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow ralph-loop [--dry-run] [--json] previews default-off blocker-driven continuation eligibility",
     "- workflow role-boundary [--json] reports likely relay role-boundary issues without blocking writes",
     "- workflow closure status/next --json prints read-only closure state and next steps",
-    "- workflow relay status/next/validate --json prints the read-only multi-agent relay preview",
+    "- workflow relay status/next/validate --json prints the read-only Role Checklist Relay preview",
     "- workflow roles writes and prints non-autonomous role boundaries",
     "- workflow start/finish are AI-facing workflow rails",
     "- workflow draft/approve/capture/split/next/archive manage requirement-derived task tickets",

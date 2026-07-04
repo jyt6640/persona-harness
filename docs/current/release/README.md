@@ -64,8 +64,9 @@ retry-capped blocker continuation, and the canonical `scorecard.1` measurement
 scorecard definition. The release message must also preserve the accepted
 negative/partial results: Stage 12 did not exercise ralph-loop in the ON pilot,
 so ralph-loop remains parked/default-off preview with no default-ON evidence;
-Stage 13 observed a static relay guidance path but no reliable OpenCode role
-subagent invocation or orchestration.
+Stage 13 observed a static Role Checklist Relay guidance path but no reliable
+OpenCode role subagent invocation or orchestration. `--multi-agent-preview` and
+`multiAgent` remain compatibility names for that preview surface.
 
 The rc1 registry smoke observed localized READMEs, `CHANGELOG.md`,
 `docs/current/release/v0.6.0-rc.1-release-notes.md`, ralph-loop/state runtime,
@@ -80,10 +81,10 @@ returned `0.6.0-rc.1`; `workflow ralph-loop --json` emitted
 `workflow-ralph-loop.3` with default-off/dry-run/no-write and
 `maxAttempts=3` / `maxSessionAttempts=9`; `workflow role-boundary --json`
 emitted `workflow-role-boundary-report.2` with report-only/heuristic block mode
-unavailable/no deterministic enforcement and no file writes. Bootstrap relay
-guidance remained absent by default, present/idempotent with
-`--multi-agent-preview`, and relay status/next JSON used role order
-`test-writer`, `implementer`, `reviewer`.
+unavailable/no deterministic enforcement and no file writes. Bootstrap Role
+Checklist Relay guidance remained absent by default, present/idempotent with
+the compatibility flag `--multi-agent-preview`, and relay status/next JSON used
+role order `test-writer`, `implementer`, `reviewer`.
 
 Current stable package: official `0.5.0` is published under npm dist-tag
 `latest`. Registry verification confirmed `persona-harness@latest=0.5.0`,

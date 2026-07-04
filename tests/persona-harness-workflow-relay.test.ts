@@ -148,7 +148,7 @@ describe("ph workflow relay read-only preview", () => {
         "When the host exposes subagent/task invocation, invoke the `test-writer` subagent via the task tool for this role stage.",
         "If host subagent invocation is unavailable or not taken, complete this role checklist in the main session.",
         "Record whether subagent invocation was used or unavailable in the role artifact.",
-        "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay' and the current ticket/scenario contract rule.",
+        "Read canonical PH test guidance first: .persona/rules/backend/spring-test.md section 'PH Multi-Agent Relay' (legacy section name for the Role Checklist Relay contract) and the current ticket/scenario contract rule.",
         "Detailed reference, if available in this package: packages/shared-skills/skills/programming/references/java/testing.md section 'Persona Harness relay contract'.",
         "Do not implement production code.",
         "Do not weaken, delete, or rewrite existing tests to pass without preserving behavior.",
@@ -156,7 +156,7 @@ describe("ph workflow relay read-only preview", () => {
       ]),
     )
     expect(output.promptBlock).toContain("Role: test-writer.")
-    expect(output.promptBlock).toContain("main-session role checklist rail")
+    expect(output.promptBlock).toContain("PH Role Checklist Relay is a main-session role checklist rail")
     expect(output.promptBlock).toContain("When the host exposes subagent/task invocation")
     expect(output.promptBlock).toContain("invoke the `test-writer` subagent via the task tool")
     expect(output.promptBlock).toContain("complete this role checklist in the main session")

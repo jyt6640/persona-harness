@@ -48,7 +48,8 @@ const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
 const GITIGNORE_PATH = ".gitignore"
 const POLICY_OVERLAY_PATH = ".persona/policies/overlay.jsonc"
 const ROOT_AGENT_INSTRUCTIONS_PATH = "AGENTS.md"
-const MULTI_AGENT_RELAY_SECTION_TITLE = "## Persona Harness Multi-Agent Relay Preview"
+const ROLE_CHECKLIST_RELAY_SECTION_TITLE = "## Persona Harness Role Checklist Relay Preview"
+const LEGACY_MULTI_AGENT_RELAY_SECTION_TITLE = "## Persona Harness Multi-Agent Relay Preview"
 
 function strictModeSummaryLines(): readonly string[] {
   return [
@@ -73,8 +74,9 @@ function runtimeInjectionPreviewSummaryLines(): readonly string[] {
 
 function multiAgentPreviewSummaryLines(): readonly string[] {
   return [
-    "Multi-agent relay preview:",
-    "- opt-in only via --multi-agent-preview; default bootstrap stays single-agent",
+    "Role Checklist Relay preview:",
+    "- opt-in only via --multi-agent-preview; the flag/config name is kept as a compatibility alias",
+    "- default bootstrap stays single-session and does not add relay guidance",
     "- writes role checklist guidance for test-writer, implementer, and reviewer",
     "- writes OpenCode subagent config entries as optional host capability when OpenCode chooses to use them",
     "- does not guarantee or enforce host subagent invocation, auto-fill reports, auto-archive tickets, or weaken finish",
@@ -266,10 +268,11 @@ function runAndRecord(
 
 function multiAgentRelayProcedureGuidance(): readonly string[] {
   return [
-    MULTI_AGENT_RELAY_SECTION_TITLE,
+    ROLE_CHECKLIST_RELAY_SECTION_TITLE,
     "",
     "This section is present only when `ph bootstrap backend --multi-agent-preview` is used.",
-    "Relay is a main-session checklist rail through role lenses: `test-writer`, `implementer`, and `reviewer`.",
+    "`--multi-agent-preview` is the compatibility flag/config name for the Role Checklist Relay preview.",
+    "Relay is a main-session role checklist rail through role lenses: `test-writer`, `implementer`, and `reviewer`.",
     "Hosts may expose subagent/task invocation, but Persona Harness does not guarantee or enforce host subagent invocation.",
     "",
     "At the start of each active ticket:",
@@ -326,12 +329,15 @@ function writeBackendAgentInstructions(
   if (existsSync(targetPath) && !force) {
     if (includeMultiAgentRelayGuidance) {
       const current = readFileSync(targetPath, "utf8")
-      if (current.includes(MULTI_AGENT_RELAY_SECTION_TITLE)) {
-        skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} multi-agent relay guidance already exists`)
+      if (
+        current.includes(ROLE_CHECKLIST_RELAY_SECTION_TITLE) ||
+        current.includes(LEGACY_MULTI_AGENT_RELAY_SECTION_TITLE)
+      ) {
+        skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} role checklist relay guidance already exists`)
         return undefined
       }
       writeFileSync(targetPath, `${current.trimEnd()}\n\n${multiAgentRelayProcedureGuidance().join("\n")}`, "utf8")
-      return `updated ${ROOT_AGENT_INSTRUCTIONS_PATH} with multi-agent relay procedure guidance`
+      return `updated ${ROOT_AGENT_INSTRUCTIONS_PATH} with role checklist relay procedure guidance`
     }
     skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} already exists`)
     return undefined
@@ -376,7 +382,7 @@ function runBackendBootstrap(
     if (previewFailure !== undefined) {
       return previewFailure
     }
-    actions.push("enabled multi-agent relay preview for test-writer, implementer, and reviewer")
+    actions.push("enabled Role Checklist Relay preview for test-writer, implementer, and reviewer")
   }
 
   if (flags.codeNavPreview) {

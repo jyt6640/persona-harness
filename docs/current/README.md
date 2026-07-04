@@ -20,7 +20,7 @@ deleting evidence/status history.
   [`release/v0.6.0-rc.1-release-notes.md`](release/v0.6.0-rc.1-release-notes.md).
 - Ralph-loop measurement status:
   [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
-- Multi-agent relay status:
+- Role Checklist Relay status:
   [`multiagent-relay-trial-status.md`](multiagent-relay-trial-status.md).
 - Rail-entry and runtime-injection status:
   [`rail-entry-measurement-status.md`](rail-entry-measurement-status.md).
@@ -40,8 +40,9 @@ deleting evidence/status history.
   The later default-off hybrid tool-output trigger has accepted
   trigger-survival evidence, including n=15 PASS for marker/state/follow-up,
   but completion-integrity movement and default-change are not proven.
-- Relay is a Multi-Agent/role checklist rail with optional host-dependent
-  subagent invocation. There is no reliable automatic OpenCode role subagent
+- Relay is a Role Checklist Relay: a main-session checklist rail with optional
+  host-dependent subagent invocation. `--multi-agent-preview` and `multiAgent`
+  remain compatibility names, not a reliable automatic OpenCode role subagent
   orchestration claim.
 - `workflow role-boundary` remains report-only/heuristic. The wrong-actor
   attribution blind spot is documented.
