@@ -6,6 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stage 16-e adds `docs/current/external-review-adoption-status.md` as a
+  docs-only adoption/rejection/defer matrix for twelve external-review items.
+  The record explicitly rejects/defer schema expansion where current
+  evidence/reporting schemas already cover the concern, keeps measurement
+  interpretation measurement-owned rather than product-claim-owned, and rejects
+  reliable automatic OpenCode subagent orchestration wording because it
+  conflicts with Stage 13 relay-path evidence. No runtime behavior, evidence
+  schema, version, publish, tag, or dist-tag changed.
 - Stage 16-c adds `docs/current/canonical-docs-index.md` as a navigation map
   for canonical current records, archive/history areas, generated/check-
   maintained docs, measurement status files, and the desktop-run archive path

@@ -20,6 +20,8 @@ deleting evidence/status history.
   [`release/v0.6.0-rc.2-release-notes.md`](release/v0.6.0-rc.2-release-notes.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
+- External review adoption status:
+  [`external-review-adoption-status.md`](external-review-adoption-status.md).
 - Ralph-loop measurement status:
   [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
 - Role Checklist Relay status:

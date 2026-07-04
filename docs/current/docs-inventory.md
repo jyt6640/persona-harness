@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 10
+- current active pointer/status: 11
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 49
 - versioned durable: 8
 
-Total indexed files: 262
+Total indexed files: 263
 
 ## File Inventory
 
@@ -54,6 +54,7 @@ Total indexed files: 262
 | `docs/current/evaluation-fixtures/multi-step-backend-small.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/evaluation-fixtures/multi-step-backend.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/evaluation-methodology.md` | operational stable | - | Stable non-versioned guide or index. |
+| `docs/current/external-review-adoption-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/evidence-reviews/v0.3.8-alpha.0-clean-workflow-smoke.md` | legacy current evidence review | v0.3.8-alpha.0 | Compatibility location for older evidence review; keep linked rather than moving blindly. |
 | `docs/current/evidence-reviews/v0.3.8-alpha.1-clean-tarball-workflow-smoke.md` | legacy current evidence review | v0.3.8-alpha.1 | Compatibility location for older evidence review; keep linked rather than moving blindly. |
 | `docs/current/hq-orchestration/README.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |

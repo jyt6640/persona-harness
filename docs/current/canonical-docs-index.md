@@ -16,6 +16,7 @@ Use these files when making current product, measurement, or release decisions.
 | Release facts | `docs/releases/v0.6.0-rc.2/README.md` | Durable capsule for the latest accepted release candidate. |
 | Package/version timeline | `docs/releases/package-index.md` | Chronological package index from `0.1.0` through current prereleases. |
 | Release operations | `docs/current/release/README.md` | Release runbook and workflow-compatible release-note sources. |
+| External review adoption status | `docs/current/external-review-adoption-status.md` | Stage 16-e adoption/rejection/defer matrix for external review items; docs-only, no schema/product expansion. |
 | Ralph-loop status | `docs/current/ralph-loop-measurement-status.md` | Trigger, completion-integrity, cooldown, and default-off status. |
 | Role Checklist Relay status | `docs/current/multiagent-relay-trial-status.md` | Relay trial, subagent capability, and checklist-first status. |
 | Rail-entry/runtime-injection status | `docs/current/rail-entry-measurement-status.md` | Rail-entry measurement and runtimeInjection park status. |
