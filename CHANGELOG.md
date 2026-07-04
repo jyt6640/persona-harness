@@ -6,6 +6,12 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Added a prompt regression fixture for accepted measurement-safe wording:
+  Role Checklist Relay remains the primary relay framing, host subagent/task
+  invocation remains optional and host-dependent, ralph-loop tool-output
+  continuation keeps blocker-depth wording, and the pinned prompts avoid
+  token-saving, product-efficacy, app-quality, reliable orchestration, or
+  completion-guarantee claims.
 - Renamed the user-facing relay frame to `Role Checklist Relay` while keeping
   `--multi-agent-preview` and `multiAgent` as compatibility flag/config names.
   Bootstrap help, generated `AGENTS.md`, `workflow relay` help/prompt text, and
