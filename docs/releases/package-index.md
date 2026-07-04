@@ -10,10 +10,13 @@ Use this index to scan package history. Use the linked release notes,
 
 ## Current Channel State
 
-- Current package metadata in this repo: `0.6.0-rc.1`.
-- Current prerelease channel: `persona-harness@next=0.6.0-rc.1`.
+- Current package metadata in this repo: `0.6.0-rc.2`.
+- Current prerelease channel: `persona-harness@next=0.6.0-rc.1` until
+  `0.6.0-rc.2` is published after QA approval.
 - Current stable channel: `persona-harness@latest=0.5.0`.
 - Current alpha channel: `persona-harness@alpha=0.3.9-alpha.8`.
+- `v0.6.0-rc.2` prep capsule:
+  [`docs/releases/v0.6.0-rc.2/`](v0.6.0-rc.2/README.md).
 - `v0.6.0-rc.1` capsule:
   [`docs/releases/v0.6.0-rc.1/`](v0.6.0-rc.1/README.md).
 
@@ -84,7 +87,8 @@ Use this index to scan package history. Use the linked release notes,
 | `0.5.0-rc.1` | 2026-07-02 | superseded wrong-channel RC; local tag exists | [`release notes`](../current/release/v0.5.0-rc.1-release-notes.md) | treated as wrong-channel/superseded in release docs, not accepted stable milestone |
 | `0.5.0-rc.2` | 2026-07-02 | historical `next` RC; local tag exists | [`release notes`](../current/release/v0.5.0-rc.2-release-notes.md) | release docs record rc2 registry smoke and gate-first/default-off package behavior |
 | `0.5.0` | 2026-07-03 | current stable `latest`; local tag exists | [`release notes`](../current/release/v0.5.0-release-notes.md) | release notes record `latest=0.5.0`, gitHead, shasum, Trusted Publisher/Release workflow runs, and External stable registry smoke archive |
-| `0.6.0-rc.1` | 2026-07-03 | current `next` RC; local tag exists | [`capsule`](v0.6.0-rc.1/README.md), [`release facts`](v0.6.0-rc.1/release-facts.md), [`measurements`](v0.6.0-rc.1/measurements.md), [`release notes`](../current/release/v0.6.0-rc.1-release-notes.md) | capsule records `next=0.6.0-rc.1`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead, shasum, tag, and Stage 14 registry smoke archive |
+| `0.6.0-rc.1` | 2026-07-03 | current published `next` RC until rc2 publish; local tag exists | [`capsule`](v0.6.0-rc.1/README.md), [`release facts`](v0.6.0-rc.1/release-facts.md), [`measurements`](v0.6.0-rc.1/measurements.md), [`release notes`](../current/release/v0.6.0-rc.1-release-notes.md) | capsule records `next=0.6.0-rc.1`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead, shasum, tag, and Stage 14 registry smoke archive |
+| `0.6.0-rc.2` | 2026-07-04 | release-prep target for future `next`; not published/tagged in this prep | [`capsule`](v0.6.0-rc.2/README.md), [`release facts`](v0.6.0-rc.2/release-facts.md), [`measurements`](v0.6.0-rc.2/measurements.md), [`release notes`](../current/release/v0.6.0-rc.2-release-notes.md) | registry not checked as published in this cleanup; prep preserves `latest=0.5.0`, `next=0.6.0-rc.1`, and `alpha=0.3.9-alpha.8` until publish |
 
 ## Future Migration Notes
 

@@ -4,7 +4,7 @@ Use this package for repeatable release operations and release note drafting.
 
 Durable versioned summaries now live under `docs/releases/`. For the current
 prerelease line, start with
-[`docs/releases/v0.6.0-rc.1/README.md`](../../releases/v0.6.0-rc.1/README.md).
+[`docs/releases/v0.6.0-rc.2/README.md`](../../releases/v0.6.0-rc.2/README.md).
 The files in this directory remain the release-operation and release-note
 sources used by the existing workflow.
 
@@ -34,6 +34,28 @@ Do not start `0.4` eval immediately after the following are complete:
 Those items make the release decision ready; they do not authorize Docs Release to publish, push, tag, or start release prep without HQ/user approval.
 
 ## Current Version-Line Readiness
+
+Release prep target: `0.6.0-rc.2` for npm dist-tag `next`, not `latest`.
+Package metadata is prepared as `0.6.0-rc.2`, but no publish, tag, or dist-tag
+movement is authorized until QA marks publish-ready.
+
+Pre-publish channel state to preserve:
+
+- `latest=0.5.0`;
+- `next=0.6.0-rc.1` until `0.6.0-rc.2` is published;
+- `alpha=0.3.9-alpha.8`;
+- `persona-harness@0.6.0-rc.2` has no accepted registry smoke record yet;
+- no `v0.6.0-rc.2` tag should exist before registry verification.
+
+`0.6.0-rc.2` prep carries post-rc1 records: final rc1 registry smoke and docs
+taxonomy/package-index cleanup; the ralph-loop n=15 blocker-delta correction
+and fake-shim gate-gaming adversarial candidate; ralph-loop blocker-depth and
+finishable-fixture prep; external-loop archive-local prototype prep; OpenCode
+subagent capability probe; Role Checklist Relay naming and UX honesty; and a
+prompt regression fixture for measurement-safe wording. These records do not
+prove ralph-loop completion integrity, default change, token savings, product
+efficacy, reliable automatic subagent orchestration, deterministic role
+enforcement, or broad reliability.
 
 `0.3.9-alpha.7` shipped the read-only workflow closure planner and produced one
 Windows SSH registry implementation-to-finish product usability PASS. That is a
@@ -636,6 +658,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.5.0-rc.2 release notes](v0.5.0-rc.2-release-notes.md)
 - [v0.5.0 release notes](v0.5.0-release-notes.md)
 - [v0.6.0-rc.1 release notes](v0.6.0-rc.1-release-notes.md)
+- [v0.6.0-rc.2 release notes](v0.6.0-rc.2-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

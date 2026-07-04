@@ -12,12 +12,12 @@ deleting evidence/status history.
 ## Current Canonical Pointers
 
 - Versioned release capsule:
-  [`docs/releases/v0.6.0-rc.1/`](../releases/v0.6.0-rc.1/README.md).
+  [`docs/releases/v0.6.0-rc.2/`](../releases/v0.6.0-rc.2/README.md).
 - Chronological package/version index:
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.6.0-rc.1-release-notes.md`](release/v0.6.0-rc.1-release-notes.md).
+  [`release/v0.6.0-rc.2-release-notes.md`](release/v0.6.0-rc.2-release-notes.md).
 - Ralph-loop measurement status:
   [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
 - Role Checklist Relay status:
@@ -33,21 +33,27 @@ deleting evidence/status history.
 
 ## Current Facts To Preserve
 
-- `0.6.0-rc.1` is published to npm `next`; `latest` remains `0.5.0`; `alpha`
-  remains `0.3.9-alpha.8`.
+- `0.6.0-rc.2` is the current release-prep target for npm `next`.
+  Until publish, npm `next` remains `0.6.0-rc.1`; `latest` remains `0.5.0`;
+  `alpha` remains `0.3.9-alpha.8`.
 - `runtimeInjection` remains a parked opt-in preview.
 - Ralph-loop idle trigger delivery failed to prove model-facing continuation.
   The later default-off hybrid tool-output trigger has accepted
   trigger-survival evidence, including n=15 PASS for marker/state/follow-up,
-  but completion-integrity movement and default-change are not proven.
+  but blocker-delta correction, cooldown caveats, completion-integrity
+  movement, and default-change limits remain active.
 - Relay is a Role Checklist Relay: a main-session checklist rail with optional
-  host-dependent subagent invocation. `--multi-agent-preview` and `multiAgent`
-  remain compatibility names, not a reliable automatic OpenCode role subagent
-  orchestration claim.
+  host-dependent subagent invocation. A direct OpenCode task/subagent
+  capability probe was observed, but PH relay still does not prove reliable
+  automatic OpenCode role subagent orchestration. `--multi-agent-preview` and
+  `multiAgent` remain compatibility names.
 - `workflow role-boundary` remains report-only/heuristic. The wrong-actor
   attribution blind spot is documented.
 - `scorecard.1` is secondary archive observation only and does not override
   preregistered kill criteria.
+- Fake Gradle/Spring gate-gaming through a `gradle-shim.js`-style shim is a
+  candidate measured adversarial case after forged-TDD detection, not a broad
+  reliability or product-efficacy proof.
 
 ## Classification
 

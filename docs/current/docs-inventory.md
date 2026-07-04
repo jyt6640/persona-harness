@@ -24,10 +24,10 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - legacy current evidence review: 2
 - operational stable: 31
 - phase archive: 46
-- version-specific release note: 48
-- versioned durable: 5
+- version-specific release note: 49
+- versioned durable: 8
 
-Total indexed files: 256
+Total indexed files: 260
 
 ## File Inventory
 
@@ -149,6 +149,7 @@ Total indexed files: 256
 | `docs/current/release/v0.5.0-rc.2-release-notes.md` | version-specific release note | v0.5.0-rc.2 | Workflow-compatible release-note source for v0.5.0-rc.2; summarize durable facts in docs/releases/v<version>/ when current. |
 | `docs/current/release/v0.5.0-release-notes.md` | version-specific release note | v0.5.0 | Workflow-compatible release-note source for v0.5.0; summarize durable facts in docs/releases/v<version>/ when current. |
 | `docs/current/release/v0.6.0-rc.1-release-notes.md` | version-specific release note | v0.6.0-rc.1 | Workflow-compatible release-note source for v0.6.0-rc.1; summarize durable facts in docs/releases/v<version>/ when current. |
+| `docs/current/release/v0.6.0-rc.2-release-notes.md` | version-specific release note | v0.6.0-rc.2 | Workflow-compatible release-note source for v0.6.0-rc.2; summarize durable facts in docs/releases/v<version>/ when current. |
 | `docs/current/rule-curation.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/rule-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/shared-skill-reference-direction.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
@@ -289,3 +290,6 @@ Total indexed files: 256
 | `docs/releases/v0.6.0-rc.1/README.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule, package/version index, or release-capsule index. |
 | `docs/releases/v0.6.0-rc.1/measurements.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule, package/version index, or release-capsule index. |
 | `docs/releases/v0.6.0-rc.1/release-facts.md` | versioned durable | v0.6.0-rc.1 | Canonical versioned release capsule, package/version index, or release-capsule index. |
+| `docs/releases/v0.6.0-rc.2/README.md` | versioned durable | v0.6.0-rc.2 | Canonical versioned release capsule, package/version index, or release-capsule index. |
+| `docs/releases/v0.6.0-rc.2/measurements.md` | versioned durable | v0.6.0-rc.2 | Canonical versioned release capsule, package/version index, or release-capsule index. |
+| `docs/releases/v0.6.0-rc.2/release-facts.md` | versioned durable | v0.6.0-rc.2 | Canonical versioned release capsule, package/version index, or release-capsule index. |

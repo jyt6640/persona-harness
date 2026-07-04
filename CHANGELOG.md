@@ -6,6 +6,45 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+## [0.6.0-rc.2] - 2026-07-04
+
+Release-prep target for npm `next`; do not publish to `latest`. At prep time,
+the current registry state remains `latest=0.5.0`, `next=0.6.0-rc.1`, and
+`alpha=0.3.9-alpha.8` until QA approves publishing `0.6.0-rc.2`.
+
+Release highlights:
+
+- Carries the final `0.6.0-rc.1` registry smoke record plus the docs taxonomy,
+  versioned release capsule, and chronological package index cleanups.
+- Records the ralph-loop n=15 measurement correction: the `-3.00` style value
+  is blocker resolution/exposure movement, not total blocker reduction; total
+  visible blockers increased from `3` to `6`; final finish PASS stayed OFF
+  `0/15` and ON `0/15`; completion-integrity and default-change remain
+  unproven.
+- Preserves the fake `gradle-shim.js` / Gradle-gate-gaming incident as a
+  candidate measured adversarial case after forged-TDD detection, not as a
+  broad reliability or product-efficacy proof.
+- Adds ralph-loop blocker-depth and finishable-fixture prep for later
+  completion-integrity measurement. The hybrid tool-output trigger has
+  accepted trigger-survival evidence only; ralph-loop remains default-off.
+- Keeps external-loop work as archive-local prototype preparation. There is no
+  product `ph workflow loop` command in this prep.
+- Records the OpenCode subagent capability probe and Role Checklist Relay
+  wording/UX honesty: direct task-tool subagent capability was observed in the
+  probe, while PH relay remains a checklist rail with optional host-dependent
+  subagent use and no reliable automatic orchestration claim.
+- Keeps role-boundary report-only/heuristic wording and the wrong-actor
+  attribution caveat.
+- Adds the prompt regression fixture as test protection for accepted
+  measurement-safe wording. This is not a product capability claim.
+
+Claim boundaries remain unchanged: no token/provider-token saving,
+product-efficacy/navigation benefit, app-quality/full-TDD/test-sufficiency,
+broad reliability, closure guarantee, autonomous completion, generated-app
+certification, deterministic role enforcement, production-ready delegation,
+automatic completion/downgrade/removal, or CodeGraph/LSP default/effectiveness
+claim.
+
 - Added a prompt regression fixture for accepted measurement-safe wording:
   Role Checklist Relay remains the primary relay framing, host subagent/task
   invocation remains optional and host-dependent, ralph-loop tool-output
