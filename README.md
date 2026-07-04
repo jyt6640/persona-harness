@@ -203,6 +203,7 @@ npx ph workflow check
 npx ph workflow implement
 npx ph workflow finish implement
 npx ph workflow archive <ticket-id>
+npx ph workflow loop --dry-run --json  # explicit capped blocker-loop preview; no default hook
 
 # Bounded command execution
 npx ph bearshell --shell 'gradle test'

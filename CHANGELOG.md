@@ -6,6 +6,16 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stage 17 adds explicit `ph workflow loop` as a capped fresh-session blocker
+  loop command. The command reads deterministic PH finish/closure blockers,
+  builds a minimal blocker-depth prompt, runs a fresh `opencode run` session
+  per iteration, persists `.persona/workflow/workflow-loop-state.json`, and
+  terminates only on finish PASS, no blockers, or the iteration cap. It is
+  explicit user command behavior only: no hook, no default change, no evidence
+  schema expansion, no autonomous completion claim, and no token/product/app-
+  quality/reliability claim. Stage 17 fixture validity and the two-iteration
+  real OpenCode pilot are archived at
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage17-workflow-loop-fixture-20260704T090750Z`.
 - Stage 16-e adds `docs/current/external-review-adoption-status.md` as a
   docs-only adoption/rejection/defer matrix for twelve external-review items.
   The record explicitly rejects/defer schema expansion where current

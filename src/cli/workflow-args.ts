@@ -7,6 +7,15 @@ export type ParsedWorkflowArgs =
   | { readonly kind: "test" }
   | { readonly kind: "tdd" }
   | { readonly kind: "continue" }
+  | {
+      readonly dryRun: boolean
+      readonly graceMs: number
+      readonly json: boolean
+      readonly kind: "loop"
+      readonly maxIterations: number
+      readonly opencodeCommand: string
+      readonly timeoutMs: number
+    }
   | { readonly json: boolean; readonly kind: "ralph-loop" }
   | { readonly json: boolean; readonly kind: "role-boundary" }
   | { readonly closureAction: "next" | "status"; readonly kind: "closure" }
@@ -26,7 +35,7 @@ export type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|test|tdd|continue|ralph-loop|role-boundary|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|implement|test|tdd|continue|loop|ralph-loop|role-boundary|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
@@ -36,6 +45,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow test records opt-in TDD red evidence from PH-run strict Gradle/JUnit verification",
     "- workflow tdd prints read-only TDD red→green status and next action",
     "- workflow continue prints the accepted-plan continuation prompt",
+    "- workflow loop runs an explicit capped fresh-session blocker loop using PH finish/closure gates",
     "- workflow ralph-loop [--dry-run] [--json] previews default-off blocker-driven continuation eligibility",
     "- workflow role-boundary [--json] reports likely relay role-boundary issues without blocking writes",
     "- workflow closure status/next --json prints read-only closure state and next steps",
@@ -66,6 +76,9 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   }
   if (args[0] === "continue") {
     return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
+  }
+  if (args[0] === "loop") {
+    return parseWorkflowLoopArgs(args.slice(1))
   }
   if (args[0] === "ralph-loop") {
     const flags = args.slice(1)
@@ -157,4 +170,78 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
     return { kind: "help" }
   }
   return { kind: "invalid", message: `Unknown workflow command: ${args[0]}` }
+}
+
+function parseWorkflowLoopArgs(args: readonly string[]): ParsedWorkflowArgs {
+  let dryRun = false
+  let json = false
+  let maxIterations = 3
+  let timeoutMs = 600_000
+  let graceMs = 5_000
+  let opencodeCommand = "opencode"
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === "--dry-run") {
+      dryRun = true
+      continue
+    }
+    if (arg === "--json") {
+      json = true
+      continue
+    }
+    if (arg === "--max-iterations") {
+      const parsed = readPositiveIntegerArg(args[index + 1])
+      if (parsed === null) {
+        return { kind: "invalid", message: "--max-iterations requires a positive integer." }
+      }
+      maxIterations = parsed
+      index += 1
+      continue
+    }
+    if (arg === "--timeout-ms") {
+      const parsed = readPositiveIntegerArg(args[index + 1])
+      if (parsed === null) {
+        return { kind: "invalid", message: "--timeout-ms requires a positive integer." }
+      }
+      timeoutMs = parsed
+      index += 1
+      continue
+    }
+    if (arg === "--grace-ms") {
+      const parsed = readNonNegativeIntegerArg(args[index + 1])
+      if (parsed === null) {
+        return { kind: "invalid", message: "--grace-ms requires a non-negative integer." }
+      }
+      graceMs = parsed
+      index += 1
+      continue
+    }
+    if (arg === "--opencode-command") {
+      const value = args[index + 1]
+      if (value === undefined || value.trim().length === 0) {
+        return { kind: "invalid", message: "--opencode-command requires a command path." }
+      }
+      opencodeCommand = value
+      index += 1
+      continue
+    }
+    return { kind: "invalid", message: `Unknown workflow loop option: ${arg}` }
+  }
+  return { dryRun, graceMs, json, kind: "loop", maxIterations, opencodeCommand, timeoutMs }
+}
+
+function readPositiveIntegerArg(value: string | undefined): number | null {
+  if (value === undefined) {
+    return null
+  }
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function readNonNegativeIntegerArg(value: string | undefined): number | null {
+  if (value === undefined) {
+    return null
+  }
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
 }

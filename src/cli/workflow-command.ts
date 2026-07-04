@@ -19,6 +19,7 @@ import {
 } from "./workflow-output.js"
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRelayCommand } from "./workflow-relay.js"
+import { runWorkflowLoopCommand } from "./workflow-loop.js"
 import { runWorkflowRalphLoopCommand } from "./workflow-ralph-loop.js"
 import { runWorkflowRoleBoundaryCommand } from "./workflow-role-boundary.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
@@ -167,6 +168,17 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "continue") {
     return runResumeCommand(options)
+  }
+  if (parsed.kind === "loop") {
+    return runWorkflowLoopCommand({
+      dryRun: parsed.dryRun,
+      graceMs: parsed.graceMs,
+      json: parsed.json,
+      maxIterations: parsed.maxIterations,
+      opencodeCommand: parsed.opencodeCommand,
+      projectDir: options.projectDir,
+      timeoutMs: parsed.timeoutMs,
+    })
   }
   if (parsed.kind === "ralph-loop") {
     return runWorkflowRalphLoopCommand({ json: parsed.json, projectDir: options.projectDir })

@@ -51,6 +51,9 @@ deleting evidence/status history.
   trigger-survival evidence, including n=15 PASS for marker/state/follow-up,
   but blocker-delta correction, cooldown caveats, completion-integrity
   movement, and default-change limits remain active.
+- `ph workflow loop` is an explicit capped fresh-session blocker loop command
+  for future completion-integrity measurement prep. It is not a hook, not a
+  default, and not evidence of product efficacy or token savings.
 - Relay is a Role Checklist Relay: a main-session checklist rail with optional
   host-dependent subagent invocation. A direct OpenCode task/subagent
   capability probe was observed, but PH relay still does not prove reliable

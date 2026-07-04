@@ -293,6 +293,38 @@ caught by stack-alignment`. Stage 15 does not modify the README table and does
 not turn the incident into a broad product-efficacy, reliability, deterministic
 enforcement, generated-app certification, or automatic-removal claim.
 
+## Stage 17 Finish-Reachable Fixture And Workflow Loop Prep
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage17-workflow-loop-fixture-20260704T090750Z`.
+
+Fixture validity: PASS. The archive-local Spring/Gradle fixture starts from an
+implementation-complete state and completes the procedural PH gate chain:
+implementation report fill, `gradle test --no-daemon` warm verification,
+`npx ph bearshell gradle test --no-daemon`, review report fill, and
+`ph workflow finish implement` exit `0`. This proves fixture reachability only;
+it is not product efficacy, app-quality, or full-TDD evidence.
+
+Product prep: `ph workflow loop` now exists as an explicit capped
+fresh-session blocker loop command. It reads deterministic
+`workflow finish implement` / `workflow closure next --json` state, builds a
+minimal prompt containing the current blocker, next action, and blocker
+depth/total, runs a fresh `opencode run` session per iteration, and persists
+`.persona/workflow/workflow-loop-state.json`. Termination is deterministic:
+finish PASS, no blockers, or iteration cap. It is not a hook and does not
+change defaults.
+
+Pilot: PASS for command/host viability only. The controlled blocked fixture
+ran the product command through a real OpenCode wrapper for two iterations and
+terminated by `iteration-cap`; both iteration child exits were `0`, no timeout
+was recorded, and the persisted state contained two iteration records. The
+pilot did not prove completion improvement.
+
+Stage 18 recommendation: GO to design a separate preregistered
+three-condition measurement only after accepting this prep surface and fixture
+validity. The primary future metric should remain finish PASS rate, with
+token/elapsed snapshots treated as secondary telemetry only.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.
