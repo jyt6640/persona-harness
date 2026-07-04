@@ -1,4 +1,5 @@
 import { findConventionByBlockerId } from "../config/convention-registry.js"
+import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventions.js"
 import { personaHarnessSelfProfileGuidance } from "./self-profile-guidance.js"
 import type { ClosureBlocker, ClosurePayload, ClosureTicket } from "./workflow-closure.js"
 
@@ -112,6 +113,17 @@ function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): stri
       "- Change the generated project to Spring Boot/Gradle/JPA/database structure.",
       "- Remove fake `gradle-shim.js`/Node shim files.",
       "- Re-run `npx ph workflow check`.",
+    ].join("\n")
+  }
+  if (blocker.id === CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID) {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      `Convention toolchain missing: ${blocker.reason}`,
+      "A block-level toolchain-dependent convention check could not run because ast-grep is unavailable.",
+      "Required next actions:",
+      "- Install `sg`/ast-grep or set `PH_AST_GREP_BIN`.",
+      "- Or lower that convention level to `warn`/`report` if block fail-closed is not intended for this workspace.",
+      "- Re-run `npx ph workflow check` after the toolchain/configuration action.",
     ].join("\n")
   }
   const convention = findConventionByBlockerId(blocker.id)

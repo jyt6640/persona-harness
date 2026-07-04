@@ -876,7 +876,13 @@ describe("ph workflow check", () => {
       })
       expect(finish.status).toBe(1)
       expect(finish.stderr).toContain("convention-toolchain-missing")
+      expect(finish.stderr).toContain("required ast-grep toolchain unavailable")
+      expect(finish.stderr).toContain("install sg/ast-grep or set PH_AST_GREP_BIN")
       expect(finish.stderr).toContain("lower convention level to warn/report")
+      expect(finish.stderr).toContain("Re-run `npx ph workflow check`")
+      expect(finish.stderr).not.toContain("no closure step mapping")
+      expect(finish.stderr).not.toContain("PH bug or unregistered convention")
+      expect(finish.stderr).not.toContain("Do not directly rerun `npx ph workflow finish implement` or `npx ph workflow check`")
     } finally {
       if (previousAstGrep === undefined) {
         delete process.env.PH_AST_GREP_BIN
