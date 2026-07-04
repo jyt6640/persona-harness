@@ -26,6 +26,24 @@ function readJson(filePath: string): unknown {
   return JSON.parse(readFileSync(filePath, "utf8"))
 }
 
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function asRecord(value: unknown): Readonly<Record<string, unknown>> {
+  if (!isRecord(value)) {
+    throw new Error("Expected JSON object")
+  }
+  return value
+}
+
+function asStringArray(value: unknown): readonly string[] {
+  if (!Array.isArray(value) || !value.every((entry) => typeof entry === "string")) {
+    throw new Error("Expected string array")
+  }
+  return value
+}
+
 function writeSummary(projectDir: string, summary: Record<string, unknown>): void {
   writeFileSync(join(projectDir, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`)
 }
@@ -148,5 +166,23 @@ describe("rail-entry prompt regression gate", () => {
 
     expect(result.status).toBe(1)
     expect(result.stdout).toContain("invalid runs must be 0")
+  })
+
+  it("keeps the gate script and linked current docs package-visible", () => {
+    const packageJson = asRecord(readJson(resolve("package.json")))
+    const files = asStringArray(packageJson.files)
+
+    expect(files).toEqual(expect.arrayContaining([
+      "docs/current/README.md",
+      "docs/current/docs-inventory.md",
+      "docs/current/injection-value-status.json",
+      "docs/current/measurement-scorecard.md",
+      "docs/current/multiagent-relay-trial-status.md",
+      "docs/current/rail-entry-measurement-status.md",
+      "docs/current/rail-entry-prompt-regression-gate.md",
+      "docs/current/ralph-loop-measurement-status.md",
+      "docs/releases",
+      "scripts/rail-entry-prompt-regression-gate.mjs",
+    ]))
   })
 })
