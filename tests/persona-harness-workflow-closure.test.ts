@@ -13,6 +13,7 @@ import {
   type WorkflowClosureState,
 } from "../src/cli/workflow-closure.js"
 import { CONVENTION_REGISTRY } from "../src/config/convention-registry.js"
+import { loadHarnessConfig } from "../src/config/harness-config.js"
 
 const tempProjects: string[] = []
 
@@ -69,6 +70,74 @@ function writeFilledReports(projectDir: string): void {
     join(projectDir, ".persona", "workflow", "review-report.md"),
     ["Status: filled", "- `npx ph bearshell ./gradlew bootRun`", "Tomcat started on port 8080", "Started TaskApplication"].join("\n"),
   )
+}
+
+function writeProfile(projectDir: string): void {
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  writeFileSync(
+    join(projectDir, ".persona", "project-profile.jsonc"),
+    `${JSON.stringify(
+      {
+        defaults: { buildTool: "gradle", framework: "spring", language: "java" },
+        questions: [
+          { answer: "ko", id: "user-language" },
+          { answer: "solo", id: "project-context" },
+          { answer: "production-service", id: "project-goal" },
+          { answer: "small", id: "project-scale" },
+          { answer: "rest-api", id: "application-type" },
+          { answer: "simple-layered", id: "architecture-style" },
+          { answer: "h2 database", id: "storage" },
+          { answer: "jpa", id: "persistence-technology" },
+          { answer: "schema.sql", id: "migration-style" },
+          { answer: "domain-first", id: "package-style" },
+          { answer: "strict", id: "boundary-strictness" },
+        ],
+        schema: "persona.project-profile.v1",
+        scope: { mvp: "java-spring-clean-code", role: "backend" },
+        status: "ready",
+      },
+      null,
+      2,
+    )}\n`,
+  )
+}
+
+function writeSpringGradleStack(projectDir: string): void {
+  writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
+  writeFileSync(
+    join(projectDir, "build.gradle"),
+    [
+      "plugins { id 'java'; id 'org.springframework.boot' version '3.5.0' }",
+      "dependencies {",
+      "  implementation 'org.springframework.boot:spring-boot-starter-web'",
+      "  implementation 'org.springframework.boot:spring-boot-starter-data-jpa'",
+      "  runtimeOnly 'com.h2database:h2'",
+      "}",
+    ].join("\n"),
+  )
+  writeGradleWrapper(projectDir, "#!/bin/sh\nexit 0\n")
+  mkdirSync(join(projectDir, "src", "main", "resources"), { recursive: true })
+  writeFileSync(join(projectDir, "src", "main", "resources", "schema.sql"), "create table task (id bigint primary key);\n")
+  mkdirSync(join(projectDir, "src", "main", "java", "com", "example"), { recursive: true })
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "SampleApplication.java"),
+    "import org.springframework.boot.autoconfigure.SpringBootApplication;\n@SpringBootApplication\nclass SampleApplication {}\n",
+  )
+}
+
+function writeControllerRepositoryViolation(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "com", "example", "TaskController.java"),
+    [
+      "import org.springframework.web.bind.annotation.RestController;",
+      "@RestController",
+      "class TaskController {",
+      "  private final TaskRepository repository;",
+      "  TaskController(TaskRepository repository) { this.repository = repository; }",
+      "}",
+    ].join("\n"),
+  )
+  writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "TaskRepository.java"), "interface TaskRepository {}\n")
 }
 
 function writeActiveTicket(projectDir: string, ticketId = "req-1"): void {
@@ -167,6 +236,16 @@ const CLOSURE_BLOCKER_IDS = [
   "pending-ticket",
 ] as const
 
+const FINISH_REACHABLE_GATE_CHAIN_DEPTH = 6
+const FINISH_REACHABLE_GATE_CHAIN = [
+  "fix-verification",
+  "fill-implementation-report",
+  "fill-review-report",
+  "fill-report-coverage",
+  "record-profile-read-coverage",
+  "record-java-role-read-coverage",
+] as const
+
 function contractBlocker(id: string): ClosureBlocker {
   return {
     evidenceRef: ".persona/evidence/phase0/verification.json",
@@ -215,6 +294,57 @@ describe("ph workflow closure read-only planner", () => {
       expect(step.id, blockerId).not.toBe(UNMAPPED_BLOCKER_STEP_ID)
       expect(isImmediateCircularStep(step), blockerId).toBe(false)
     }
+  })
+
+  it("keeps blocker list order deterministic for the same multi-blocker disk state", () => {
+    const projectDir = createWorkflowProject()
+    writeProfile(projectDir)
+    writeSpringGradleStack(projectDir)
+    writeControllerRepositoryViolation(projectDir)
+    writeStructuredVerificationEvidence(
+      projectDir,
+      1,
+      [
+        "npx ph bearshell ./gradlew test",
+        "BUILD FAILED",
+        "src/main/java/com/example/TaskController.java",
+        "src/main/java/com/example/TaskRepository.java",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      ["Status: filled", "- README ranges read: all", "- `npx ph bearshell ./gradlew test`", "BUILD FAILED"].join("\n"),
+    )
+
+    const expectedOrder = [
+      "verification-failed",
+      "review-report-missing",
+      "report-coverage-missing",
+      "profile-read-coverage-missing",
+      "architecture-controller-repository-direct-dependency",
+    ]
+    const blockerIds = Array.from({ length: 5 }, () => closureJson(projectDir, "status").state.blockers.map((blocker: ClosureBlocker) => blocker.id))
+
+    expect(blockerIds).toEqual(Array.from({ length: 5 }, () => expectedOrder))
+  })
+
+  it("documents the current finish-reachable gate-chain depth behind ralph-loop session budget", () => {
+    const projectDir = createTempProject()
+    const config = loadHarnessConfig(projectDir)
+
+    expect(FINISH_REACHABLE_GATE_CHAIN).toEqual([
+      "fix-verification",
+      "fill-implementation-report",
+      "fill-review-report",
+      "fill-report-coverage",
+      "record-profile-read-coverage",
+      "record-java-role-read-coverage",
+    ])
+    expect(FINISH_REACHABLE_GATE_CHAIN).toHaveLength(FINISH_REACHABLE_GATE_CHAIN_DEPTH)
+    expect(FINISH_REACHABLE_GATE_CHAIN_DEPTH).toBe(6)
+    expect(config.enforce.ralphLoop.maxAttempts).toBe(3)
+    expect(config.enforce.ralphLoop.maxSessionAttempts).toBe(9)
+    expect(config.enforce.ralphLoop.maxSessionAttempts).toBeGreaterThanOrEqual(FINISH_REACHABLE_GATE_CHAIN_DEPTH)
   })
 
   it("reports plan as the first blocker when workflow plan is missing", () => {

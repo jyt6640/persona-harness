@@ -6,6 +6,11 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- HARDEN-1 H1-3 locks the workflow closure blocker order and the current
+  finish-reachable gate-chain depth contract in tests. The current depth is `6`,
+  and the ralph-loop default session cap remains documented as a retry budget
+  above that chain. This is deterministic workflow foundation hardening only;
+  no defaults, schemas, gate semantics, or stable-release status changed.
 - HARDEN-1 H1-1 follow-up explains unmapped closure blockers in failed
   `ph workflow finish implement` human output. When a blocker ID has no closure
   step mapping, the finish summary and required fixes now point to Persona

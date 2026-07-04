@@ -2,6 +2,17 @@
 
 Status: Stage 12 partial; real model-session measurement is blocked at the pilot gate.
 
+## HARDEN-1 H1-3 Chain-Depth Contract
+
+H1-3 records the current finish-reachable gate-chain depth as `6` and locks it
+with workflow closure tests. The chain-depth contract is used only to keep the
+default-off ralph-loop retry/session budget explainable: `maxAttempts=3` remains
+the per-blocker cap and `maxSessionAttempts=9` remains above the current chain.
+
+This is workflow foundation hardening, not a default-change, completion,
+reliability, product-efficacy, app-quality, or token-saving claim. The H1-0 real
+n>=5 rail-entry regression caveat remains open and stable GO is not claimed.
+
 ## Stage 12 Real Model-Session A/B
 
 - Archive: `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/ralph-loop-model-ab-15-20260703T090715Z`

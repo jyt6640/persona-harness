@@ -109,6 +109,9 @@ const DEFAULT_CONFIG: HarnessConfig = {
     ralphLoop: {
       cooldownMs: 30_000,
       enabled: false,
+      // H1-3 chain-depth contract: current finish-reachable gate chain depth is
+      // 6. Keep maxSessionAttempts above that chain while maxAttempts remains a
+      // per-blocker cap. Update the contract test before changing this ratio.
       maxAttempts: 3,
       maxSessionAttempts: 9,
       toolOutputTrigger: false,
