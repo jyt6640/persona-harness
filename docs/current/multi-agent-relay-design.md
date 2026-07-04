@@ -188,3 +188,24 @@ Recommended next slice: tighten deterministic relay role gates and artifacts ins
 2. Tighten deterministic role artifact gates and coordinator status so role progression is explicit and auditable.
 3. If dispatch is later added, keep it config-gated, bounded by role artifact checkpoints, and stopped by closure blockers.
 4. Keep finish/archive/check strict. Relay workers may help clear blockers; they do not bypass them.
+
+## P2 Direct Subagent Capability Probe
+
+Model-run capability probe result: OpenCode can expose and execute a
+model-visible `task` tool for configured subagents in this environment.
+
+The probe archive
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/opencode-subagent-capability-probe-20260704T033945Z`
+used a disposable workspace with only `.opencode/opencode.json` agent entries
+for `test-writer`, `implementer`, and `reviewer`. The raw JSONL recorded a
+`task` tool call with `subagent_type: "test-writer"`, and sanitized
+`opencode export` for the child session reported `parentID` pointing at the
+main session and `agent: "test-writer"`.
+
+This narrows the relay breakpoint: Stage 13 and the promptBlock retry did not
+fail because OpenCode entirely lacked a task/subagent surface. They failed to
+make the relay workflow reliably choose that surface. Current PH product
+wording should therefore remain: main-session role checklist rail first,
+optional host-dependent subagent use second. Any future stronger orchestration
+track must prove role-flow task invocation in the actual relay path, not only a
+direct capability prompt.

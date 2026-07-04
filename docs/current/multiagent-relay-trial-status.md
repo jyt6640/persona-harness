@@ -96,6 +96,40 @@ OpenCode task/subagent invocation. It does not remove the `--multi-agent-preview
 surface or the OpenCode subagent config entries; it narrows their wording and
 decision status.
 
+## P2 OpenCode Subagent Capability Probe
+
+Status: direct invocation capability observed; relay orchestration remains
+unproven.
+
+- Archive: `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/opencode-subagent-capability-probe-20260704T033945Z`
+- Probe type: n=1 direct capability probe, not A/B and not statistical evidence.
+- Setup: disposable workspace with `.opencode/opencode.json` defining
+  `test-writer`, `implementer`, and `reviewer` as `mode: "subagent"` agents.
+- OpenCode: `opencode@1.17.7`; run used `opencode run --pure --format json`
+  with `openai/gpt-5.4-mini-fast`.
+
+Observed items:
+
+- OpenCode exposed a model-visible tool named `task`.
+- The model called `task` with `subagent_type: "test-writer"`.
+- The task output returned child session `ses_0d4c9ecdeffeMNp0DgLauJCLAF`
+  with `SUBAGENT_PROBE_OK`.
+- Sanitized `opencode export` for the child session reported
+  `parentID: "ses_0d4ca02d5ffeNMEQK1IprlX2c1"` and `agent: "test-writer"`.
+
+Interpretation: the Stage 13 and promptBlock-retry failures are not explained
+by total host/tool absence. In this environment, OpenCode can expose and execute
+a configured subagent through the `task` tool when the prompt is a direct
+capability request. The unresolved product question is narrower: PH relay
+promptBlocks have not yet reliably caused role-stage subagent invocation during
+the checklist workflow. Until a later approved trial observes role-flow
+invocation across meaningful relay stages, the product direction remains a
+main-session role checklist rail with optional host-dependent subagent use.
+
+This probe does not support reliable automatic OpenCode subagent orchestration,
+production-ready delegation, default changes, product efficacy, app quality, or
+token/cost claims.
+
 ## Role-Boundary Caveat
 
 `workflow role-boundary` heuristic write observation is report-only. It uses
