@@ -131,6 +131,28 @@ This probe does not support reliable automatic OpenCode subagent orchestration,
 production-ready delegation, default changes, product efficacy, app quality, or
 token/cost claims.
 
+## Stage 19 Reconciliation
+
+Status: no additional probe needed for the direct capability question.
+
+Stage 19 asked whether OpenCode exposes a usable subagent/task invocation
+capability, and whether a direct n=1 invocation path must be retried. The
+accepted P2 archive above satisfies that direct-call requirement: the model saw
+and called a `task` tool with `subagent_type: "test-writer"`, OpenCode created a
+child session, and the child returned `SUBAGENT_PROBE_OK`.
+
+Decision: automatic orchestration is not blocked by total host absence, but PH
+relay-path orchestration remains unproven. Stage 13 and the promptBlock retry
+still did not observe task/subagent invocation through the Role Checklist Relay
+role-stage flow. Therefore the current product framing remains a main-session
+role checklist rail with optional host-dependent subagent use.
+
+Future automatic-orchestration work should require a separately approved
+relay-path trial that observes role-flow task invocation during meaningful
+`test-writer -> implementer -> reviewer` progression. A direct capability prompt
+alone is not enough to claim reliable automatic subagent orchestration or
+production-ready delegation.
+
 ## Role-Boundary Caveat
 
 `workflow role-boundary` heuristic write observation is report-only. It uses
