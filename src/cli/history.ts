@@ -1,7 +1,8 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 
 type HistoryOptions = {
@@ -165,7 +166,7 @@ export function archiveWorkflowHistory(options: HistoryOptions = {}, archiveIdIn
   }
 
   const result = { archiveDir, archiveId, archivedFiles, missingFiles }
-  writeFileSync(join(archiveDir, "summary.md"), createSummary(result))
+  writeFileAtomic(join(archiveDir, "summary.md"), createSummary(result))
   return result
 }
 

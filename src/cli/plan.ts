@@ -1,9 +1,10 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { loadBackendPolicyOverlay } from "../config/policy-overlay.js"
 import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from "../config/project-profile.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { createImplementationReportTemplate, createReviewReportTemplate } from "./workflow-templates.js"
 import { createWorkflowRoleBoundaryTemplate, ROLE_BOUNDARY_PATH } from "./workflow-roles.js"
 
@@ -242,10 +243,10 @@ export function initializeWorkflowPlan(options: PlanOptions = {}, force = false)
   }
 
   mkdirSync(workflowDir, { recursive: true })
-  writeFileSync(planPath, createPlanDraft(projectDir))
+  writeFileAtomic(planPath, createPlanDraft(projectDir))
   const inputLines = readmeLines(projectDir)
-  writeFileSync(implementationReportPath, createImplementationReportTemplate(inputLines))
-  writeFileSync(reviewReportPath, createReviewReportTemplate(inputLines))
-  writeFileSync(roleBoundaryPath, createWorkflowRoleBoundaryTemplate())
+  writeFileAtomic(implementationReportPath, createImplementationReportTemplate(inputLines))
+  writeFileAtomic(reviewReportPath, createReviewReportTemplate(inputLines))
+  writeFileAtomic(roleBoundaryPath, createWorkflowRoleBoundaryTemplate())
   return planPath
 }

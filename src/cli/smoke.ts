@@ -1,7 +1,8 @@
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readDoctorSummary } from "./doctor.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
@@ -88,6 +89,6 @@ export function runSmokeCommand(args: readonly string[], options: SmokeOptions =
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const reportPath = join(projectDir, SMOKE_REPORT_PATH)
   mkdirSync(dirname(reportPath), { recursive: true })
-  writeFileSync(reportPath, createSmokeReport(projectDir))
+  writeFileAtomic(reportPath, createSmokeReport(projectDir))
   return { status: 0, stdout: `Smoke report written: ${reportPath}\n`, stderr: "" }
 }

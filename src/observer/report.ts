@@ -1,6 +1,7 @@
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { ControllerRepositoryObservation } from "./controller-repository-observer.js"
 import type { ControllerSqlObservation } from "./controller-sql-observer.js"
 import type { ServiceStorageObservation } from "./service-storage-observer.js"
@@ -88,7 +89,7 @@ ${input.observation.limitations.map((limitation) => `- ${limitation}`).join("\n"
 
 export function writeObserverReport(input: WriteObserverReportInput): void {
   mkdirSync(dirname(input.outputPath), { recursive: true })
-  writeFileSync(input.outputPath, formatObserverReport(input))
+  writeFileAtomic(input.outputPath, formatObserverReport(input))
 }
 
 export function formatControllerSqlObserverReport(input: FormatControllerSqlObserverReportInput): string {
@@ -129,7 +130,7 @@ ${input.observation.limitations.map((limitation) => `- ${limitation}`).join("\n"
 
 export function writeControllerSqlObserverReport(input: WriteControllerSqlObserverReportInput): void {
   mkdirSync(dirname(input.outputPath), { recursive: true })
-  writeFileSync(input.outputPath, formatControllerSqlObserverReport(input))
+  writeFileAtomic(input.outputPath, formatControllerSqlObserverReport(input))
 }
 
 export function formatServiceStorageObserverReport(input: FormatServiceStorageObserverReportInput): string {
@@ -170,7 +171,7 @@ ${input.observation.limitations.map((limitation) => `- ${limitation}`).join("\n"
 
 export function writeServiceStorageObserverReport(input: WriteServiceStorageObserverReportInput): void {
   mkdirSync(dirname(input.outputPath), { recursive: true })
-  writeFileSync(input.outputPath, formatServiceStorageObserverReport(input))
+  writeFileAtomic(input.outputPath, formatServiceStorageObserverReport(input))
 }
 
 export function formatTestContractObserverReport(input: FormatTestContractObserverReportInput): string {
@@ -220,7 +221,7 @@ ${input.observation.limitations.map((limitation) => `- ${limitation}`).join("\n"
 
 export function writeTestContractObserverReport(input: WriteTestContractObserverReportInput): void {
   mkdirSync(dirname(input.outputPath), { recursive: true })
-  writeFileSync(input.outputPath, formatTestContractObserverReport(input))
+  writeFileAtomic(input.outputPath, formatTestContractObserverReport(input))
 }
 
 function formatEvidence(values: readonly string[]): string {

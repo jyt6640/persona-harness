@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -47,5 +47,21 @@ describe("ph plan report status errors", () => {
     expect(review.stderr).toContain("No review report found")
     expect(invalid.status).toBe(1)
     expect(invalid.stderr).toContain("Report kind must be implementation or review.")
+  })
+
+  it("reports malformed workflow report status files without crashing", () => {
+    const projectDir = createTempProject()
+    const workflowDir = join(projectDir, ".persona", "workflow")
+    mkdirSync(workflowDir, { recursive: true })
+    writeFileSync(join(workflowDir, "implementation-report.md"), "Status")
+
+    const result = runPersonaCli(["plan", "--report-filled", "implementation"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("No Status line found in .persona/workflow/implementation-report.md.")
   })
 })

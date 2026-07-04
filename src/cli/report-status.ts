@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH, type PlanOptions } from "./plan.js"
 
 export type WorkflowReportKind = "implementation" | "review"
@@ -54,6 +55,6 @@ export function updateWorkflowReportStatus(
     throw new WorkflowReportStatusError(`No Status line found in ${relativePath}.`)
   }
 
-  writeFileSync(reportPath, reportText.replace(/^Status:\s*.+?\s*$/m, `Status: ${status}`))
+  writeFileAtomic(reportPath, reportText.replace(/^Status:\s*.+?\s*$/m, `Status: ${status}`))
   return { reportPath, relativePath, status }
 }

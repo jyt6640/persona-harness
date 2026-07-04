@@ -1,8 +1,9 @@
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 
+import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 
 type BackendShapeOptions = {
@@ -429,6 +430,6 @@ export function runBackendShapeReview(options: BackendShapeOptions = {}): CliRun
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const reportPath = join(projectDir, BACKEND_SHAPE_REPORT_PATH)
   mkdirSync(dirname(reportPath), { recursive: true })
-  writeFileSync(reportPath, createReport(projectDir))
+  writeFileAtomic(reportPath, createReport(projectDir))
   return { status: 0, stdout: `Backend shape report written: ${reportPath}\n`, stderr: "" }
 }

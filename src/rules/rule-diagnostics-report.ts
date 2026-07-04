@@ -1,7 +1,8 @@
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { writeFileAtomic } from "../io/atomic-file.js"
 import { loadRuleCatalog } from "./rule-catalog.js"
 import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
 
@@ -84,6 +85,6 @@ export function renderRuleDiagnosticsReport(summary: RuleDiagnosticsSummary): st
 export function writeRuleDiagnosticsReport(projectDir: string, outputPath: string): RuleDiagnosticsSummary {
   const summary = summarizeRuleDiagnostics(projectDir)
   mkdirSync(dirname(outputPath), { recursive: true })
-  writeFileSync(outputPath, `${renderRuleDiagnosticsReport(summary)}\n`)
+  writeFileAtomic(outputPath, `${renderRuleDiagnosticsReport(summary)}\n`)
   return summary
 }
