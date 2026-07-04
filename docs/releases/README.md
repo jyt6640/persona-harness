@@ -22,10 +22,12 @@ changes during roadmap work.
 ## Releases
 
 - [Package version index](package-index.md): chronological package/version
-  timeline from undocumented early rows through the current `0.6.0-rc.2`
-  prerelease.
-- [`v0.6.0-rc.2`](v0.6.0-rc.2/README.md): current prerelease `next` registry
-  smoke capsule. `latest` remains `0.5.0` and `alpha` remains
+  timeline from undocumented early rows through the current `0.6.0-rc.3`
+  release-prep candidate.
+- [`v0.6.0-rc.3`](v0.6.0-rc.3/README.md): current release-prep capsule for
+  the next intended `next` prerelease. It is not published or tagged yet.
+- [`v0.6.0-rc.2`](v0.6.0-rc.2/README.md): current published prerelease `next`
+  registry smoke capsule. `latest` remains `0.5.0` and `alpha` remains
   `0.3.9-alpha.8`.
 - [`v0.6.0-rc.1`](v0.6.0-rc.1/README.md): prerelease `next` registry smoke,
   Stage 1-14 package-runtime facts, and current post-rc1 measurement pointers.

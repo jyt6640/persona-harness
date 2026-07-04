@@ -10,10 +10,13 @@ Use this index to scan package history. Use the linked release notes,
 
 ## Current Channel State
 
-- Current package metadata in this repo: `0.6.0-rc.2`.
-- Current prerelease channel: `persona-harness@next=0.6.0-rc.2`.
+- Current package metadata in this repo: `0.6.0-rc.3`.
+- Current release-prep target: `0.6.0-rc.3` for future npm `next`.
+- Current published prerelease channel: `persona-harness@next=0.6.0-rc.2`.
 - Current stable channel: `persona-harness@latest=0.5.0`.
 - Current alpha channel: `persona-harness@alpha=0.3.9-alpha.8`.
+- `v0.6.0-rc.3` capsule:
+  [`docs/releases/v0.6.0-rc.3/`](v0.6.0-rc.3/README.md).
 - `v0.6.0-rc.2` capsule:
   [`docs/releases/v0.6.0-rc.2/`](v0.6.0-rc.2/README.md).
 - `v0.6.0-rc.1` capsule:
@@ -88,6 +91,7 @@ Use this index to scan package history. Use the linked release notes,
 | `0.5.0` | 2026-07-03 | current stable `latest`; local tag exists | [`release notes`](../current/release/v0.5.0-release-notes.md) | release notes record `latest=0.5.0`, gitHead, shasum, Trusted Publisher/Release workflow runs, and External stable registry smoke archive |
 | `0.6.0-rc.1` | 2026-07-03 | historical published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.1/README.md), [`release facts`](v0.6.0-rc.1/release-facts.md), [`measurements`](v0.6.0-rc.1/measurements.md), [`release notes`](../current/release/v0.6.0-rc.1-release-notes.md) | capsule records `next=0.6.0-rc.1`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead, shasum, tag, and Stage 14 registry smoke archive |
 | `0.6.0-rc.2` | 2026-07-04 | current published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.2/README.md), [`release facts`](v0.6.0-rc.2/release-facts.md), [`measurements`](v0.6.0-rc.2/measurements.md), [`release notes`](../current/release/v0.6.0-rc.2-release-notes.md) | registry smoke records `next=0.6.0-rc.2`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `d3d5fdced355f0ac0fbed5e700d57b2aa1592263`, shasum `0eae3cc232e3f37de9390b0afc662a001aaa0b56`, tag, and archive `rc060-rc2-registry-smoke-20260704T043901Z` |
+| `0.6.0-rc.3` | 2026-07-04 | release prep only; not published or tagged | [`capsule`](v0.6.0-rc.3/README.md), [`release facts`](v0.6.0-rc.3/release-facts.md), [`measurements`](v0.6.0-rc.3/measurements.md), [`release notes`](../current/release/v0.6.0-rc.3-release-notes.md) | release prep records Stage 15-20 accepted work; registry evidence remains NO-GO until future publish and External registry smoke |
 
 ## Future Migration Notes
 

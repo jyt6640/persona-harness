@@ -3,8 +3,8 @@
 Use this package for repeatable release operations and release note drafting.
 
 Durable versioned summaries now live under `docs/releases/`. For the current
-prerelease line, start with
-[`docs/releases/v0.6.0-rc.2/README.md`](../../releases/v0.6.0-rc.2/README.md).
+release-prep line, start with
+[`docs/releases/v0.6.0-rc.3/README.md`](../../releases/v0.6.0-rc.3/README.md).
 The files in this directory remain the release-operation and release-note
 sources used by the existing workflow.
 
@@ -35,13 +35,15 @@ Those items make the release decision ready; they do not authorize Docs Release 
 
 ## Current Version-Line Readiness
 
-Current prerelease package: official `0.6.0-rc.2` is published under npm
+Current release-prep target: `0.6.0-rc.3` for a future npm `next` publish. It
+is not published, tagged, or assigned a dist-tag yet. Until that separate
+publish step succeeds, official `0.6.0-rc.2` remains published under npm
 dist-tag `next`, not `latest`. Registry verification confirmed
 `persona-harness@next=0.6.0-rc.2`, gitHead
 `d3d5fdced355f0ac0fbed5e700d57b2aa1592263`, shasum
 `0eae3cc232e3f37de9390b0afc662a001aaa0b56`, and integrity
 `sha512-HmJplQNf896/4Sfz/FiTdJoaDU5EkMrDtxCVMU1x0LfLJzJYNDa0NGafUAgiU4zWc/IA9byDUv4+DryubMVZrg==`.
-Current dist-tags are `latest=0.5.0`, `next=0.6.0-rc.2`, and
+Current dist-tags remain `latest=0.5.0`, `next=0.6.0-rc.2`, and
 `alpha=0.3.9-alpha.8`; `latest` did not move.
 
 The local and remote `v0.6.0-rc.2` tags point at
@@ -675,6 +677,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.5.0 release notes](v0.5.0-release-notes.md)
 - [v0.6.0-rc.1 release notes](v0.6.0-rc.1-release-notes.md)
 - [v0.6.0-rc.2 release notes](v0.6.0-rc.2-release-notes.md)
+- [v0.6.0-rc.3 release notes](v0.6.0-rc.3-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

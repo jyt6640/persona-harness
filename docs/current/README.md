@@ -12,12 +12,12 @@ deleting evidence/status history.
 ## Current Canonical Pointers
 
 - Versioned release capsule:
-  [`docs/releases/v0.6.0-rc.2/`](../releases/v0.6.0-rc.2/README.md).
+  [`docs/releases/v0.6.0-rc.3/`](../releases/v0.6.0-rc.3/README.md).
 - Chronological package/version index:
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.6.0-rc.2-release-notes.md`](release/v0.6.0-rc.2-release-notes.md).
+  [`release/v0.6.0-rc.3-release-notes.md`](release/v0.6.0-rc.3-release-notes.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -39,9 +39,10 @@ deleting evidence/status history.
 
 ## Current Facts To Preserve
 
-- `0.6.0-rc.2` is published to npm `next` after registry gitHead/shasum
-  verification and External registry smoke. `latest` remains `0.5.0`;
-  `alpha` remains `0.3.9-alpha.8`.
+- `0.6.0-rc.3` is the current release-prep target for a future npm `next`
+  publish. It is not published or tagged yet. Published `next` remains
+  `0.6.0-rc.2`, `latest` remains `0.5.0`, and `alpha` remains
+  `0.3.9-alpha.8`.
 - `runtimeInjection` remains a parked opt-in preview.
 - The rail-entry prompt regression gate is an operator-run n>=5
   non-inferiority check for rail/AGENTS/gate-output wording changes. It is not
@@ -52,8 +53,8 @@ deleting evidence/status history.
   but blocker-delta correction, cooldown caveats, completion-integrity
   movement, and default-change limits remain active.
 - `ph workflow loop` is an explicit capped fresh-session blocker loop command
-  for future completion-integrity measurement prep. It is not a hook, not a
-  default, and not evidence of product efficacy or token savings.
+  with fixture-scoped Stage 18 completion-integrity evidence. It is not a hook,
+  not a default, and not evidence of broad product efficacy or token savings.
 - Relay is a Role Checklist Relay: a main-session checklist rail with optional
   host-dependent subagent invocation. A direct OpenCode task/subagent
   capability probe was observed, but PH relay still does not prove reliable

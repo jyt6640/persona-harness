@@ -6,6 +6,40 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+No unreleased changes after the `0.6.0-rc.3` release-prep cut.
+
+## [0.6.0-rc.3] - 2026-07-04
+
+Release prep for `0.6.0-rc.3` on npm `next`. This prep does not publish,
+tag, or move dist-tags. Before a future publish, the registry remains
+`latest=0.5.0`, `next=0.6.0-rc.2`, and `alpha=0.3.9-alpha.8`; the published
+`0.6.0-rc.2` package came from gitHead
+`d3d5fdced355f0ac0fbed5e700d57b2aa1592263` with shasum
+`0eae3cc232e3f37de9390b0afc662a001aaa0b56`.
+
+Release-prep highlights:
+
+- Carries Stage 15 append-only ralph-loop measurement correction and fake-shim
+  gate-gaming frequency escalation.
+- Carries Stage 16 docs/package maintenance: rail-entry prompt regression
+  gate package visibility, package files policy regression, canonical docs
+  index, and external review adoption/rejection status.
+- Adds Stage 17 explicit `ph workflow loop` package-runtime surface as a
+  capped fresh-session blocker loop command, accepted through local-current
+  package-runtime smoke only.
+- Records Stage 18 fixture-scoped completion-integrity measurement: OFF
+  `0/10`, internal tool-output trigger `10/10`, and external
+  `ph workflow loop` `7/10` with cap-risk caveat.
+- Adds Stage 20 failed-finish human `Summary:` output before existing
+  `Required fixes:` details, with no gate/JSON semantics change.
+
+Claim boundaries remain unchanged: no token/provider-token saving,
+product-efficacy/navigation benefit, app-quality/full-TDD/test-sufficiency,
+broad reliability, closure guarantee, autonomous completion, generated-app
+certification, deterministic role enforcement, production-ready delegation,
+reliable subagent orchestration, automatic completion/downgrade/removal, or
+CodeGraph/LSP default/effectiveness claim.
+
 - Stage 20 adds a concise summary header to failed `ph workflow finish`
   human output. The summary reports closure blocker count, the first blocker,
   the first next action, and the machine-readable `workflow closure next --json`

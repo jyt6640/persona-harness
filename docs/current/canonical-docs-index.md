@@ -13,7 +13,7 @@ Use these files when making current product, measurement, or release decisions.
 | --- | --- | --- |
 | Current docs pointer | `docs/current/README.md` | Short entrypoint for active status and versioned records. |
 | Full docs inventory | `docs/current/docs-inventory.md` | Classification for every retained `docs/**` file. |
-| Release facts | `docs/releases/v0.6.0-rc.2/README.md` | Durable capsule for the latest accepted release candidate. |
+| Release facts | `docs/releases/v0.6.0-rc.3/README.md` | Durable capsule for the current release-prep candidate; registry `next` remains rc2 until publish. |
 | Package/version timeline | `docs/releases/package-index.md` | Chronological package index from `0.1.0` through current prereleases. |
 | Release operations | `docs/current/release/README.md` | Release runbook and workflow-compatible release-note sources. |
 | External review adoption status | `docs/current/external-review-adoption-status.md` | Stage 16-e adoption/rejection/defer matrix for external review items; docs-only, no schema/product expansion. |
