@@ -2,6 +2,25 @@
 
 Status: Stage 12 partial; real model-session measurement is blocked at the pilot gate.
 
+## HARDEN-1 H1-2 Mechanical Finish Regression
+
+H1-2 adds a permanent CI regression test for mechanical finish reachability. The
+test creates a finish-reachable Java/Spring-shaped fixture, follows
+`workflow closure next --json` steps through real PH closure/report/evidence and
+read-coverage gates, and verifies `ph workflow finish implement` reaches PASS
+within the current H1-3 chain-depth contract (`<= 6` steps).
+
+The observed mechanical chain is implementation report fill -> review report
+fill -> workflow evidence record -> report/read coverage record, finishing in
+four steps. The test fails on repeated, unmapped, or immediate finish/check loop
+steps, so H1-4/H1-5/H1-6 should run with this regression green.
+
+This is workflow foundation hardening only. It uses no OpenCode/model sessions
+and does not support a default change, completion-integrity measurement claim,
+reliability claim, product-efficacy claim, app-quality claim, or token-saving
+claim. The H1-0 real n>=5 rail-entry regression caveat remains open and stable
+GO is not claimed.
+
 ## HARDEN-1 H1-3 Chain-Depth Contract
 
 H1-3 records the current finish-reachable gate-chain depth as `6` and locks it

@@ -6,6 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- HARDEN-1 H1-2 adds a permanent mechanical finish regression test. A tiny
+  finish-reachable Java/Spring-shaped fixture now follows `workflow closure
+  next --json` steps through real PH closure/report/evidence/read-coverage gates
+  and proves `ph workflow finish implement` reaches PASS within the current
+  chain-depth contract (`<= 6` steps). This is CI foundation hardening only; it
+  uses no OpenCode/model sessions and does not change defaults, schemas, gate
+  semantics, stable-release status, or product/reliability claims.
 - HARDEN-1 H1-3 locks the workflow closure blocker order and the current
   finish-reachable gate-chain depth contract in tests. The current depth is `6`,
   and the ralph-loop default session cap remains documented as a retry budget
