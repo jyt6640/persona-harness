@@ -6,6 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stage 20 adds a concise summary header to failed `ph workflow finish`
+  human output. The summary reports closure blocker count, the first blocker,
+  the first next action, and the machine-readable `workflow closure next --json`
+  follow-up before the existing full blocker details. Gate semantics, exit
+  codes, closure blockers, and JSON/machine-readable detail remain unchanged.
+  This is UX/measurement-support only, not a completion, product-efficacy,
+  token-saving, app-quality, broad reliability, or closure-guarantee claim.
 - Stage 18 main rerun completion-integrity measurement completed on a
   finish-reachable Java/Spring/Gradle fixture after the archive-local runner
   repair. Archive:

@@ -9,6 +9,62 @@ export type WorkflowGuardKind = "implement" | "final"
 export type WorkflowRunnerKind = "implement"
 export type WorkflowRunnerAction = "implement" | "start" | "finish"
 
+const CLOSURE_BLOCKER_PATTERN = /^Closure blocker:\s*(\S+)/mu
+const NEXT_ACTION_PATTERN = /^Next action:\s*(.+)$/mu
+const REQUIRED_NEXT_ACTIONS_HEADING = "Required next actions:"
+
+function firstNonEmptyLine(text: string): string {
+  return text.split(/\r?\n/).map((line) => line.trim()).find((line) => line.length > 0) ?? "see required fix details below"
+}
+
+function closureBlockerId(reason: string): string | undefined {
+  return CLOSURE_BLOCKER_PATTERN.exec(reason)?.[1]
+}
+
+function requiredNextAction(reason: string): string | undefined {
+  const explicitNextAction = NEXT_ACTION_PATTERN.exec(reason)?.[1]
+  if (explicitNextAction !== undefined) {
+    return explicitNextAction.trim()
+  }
+
+  const lines = reason.split(/\r?\n/)
+  const headingIndex = lines.findIndex((line) => line.trim() === REQUIRED_NEXT_ACTIONS_HEADING)
+  if (headingIndex === -1) {
+    return undefined
+  }
+  for (const line of lines.slice(headingIndex + 1)) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith("- ")) {
+      return trimmed.slice(2).trim()
+    }
+    if (trimmed.length > 0) {
+      return undefined
+    }
+  }
+  return undefined
+}
+
+function failedRunnerSummaryLines(reasons: readonly string[]): readonly string[] {
+  if (reasons.length === 0) {
+    return []
+  }
+
+  const firstReason = reasons[0]
+  const blockerCount = reasons.filter((reason) => closureBlockerId(reason) !== undefined).length
+  const firstBlocker = closureBlockerId(firstReason)
+  const firstAction = requiredNextAction(firstReason)
+
+  return [
+    "Summary:",
+    blockerCount > 0 ? `- closure blockers: ${blockerCount}` : `- required fixes: ${reasons.length}`,
+    firstBlocker !== undefined ? `- first blocker: ${firstBlocker}` : `- first required fix: ${firstNonEmptyLine(firstReason)}`,
+    firstAction !== undefined ? `- first next action: ${firstAction}` : "- first next action: see first required fix below",
+    "- full blocker details follow for diagnostics and compatibility.",
+    "- machine-readable next step: `npx ph workflow closure next --json`.",
+    "",
+  ]
+}
+
 export function uninitializedHarnessOutput(): CliRunResult {
   return {
     status: 0,
@@ -59,6 +115,7 @@ export function failedRunnerOutput(
     stderr: [
       `Workflow ${action} failed: ${runnerKind}`,
       "",
+      ...failedRunnerSummaryLines(reasons),
       "Required fixes:",
       ...reasons.map((reason) => `- ${reason}`),
       "",
