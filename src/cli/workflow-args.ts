@@ -2,11 +2,11 @@ import type { WorkflowGuardKind, WorkflowRunnerKind } from "./workflow-output.js
 import { workflowTicketUsage } from "./workflow-tickets.js"
 
 export type ParsedWorkflowArgs =
-  | { readonly kind: "check" }
-  | { readonly kind: "implement" }
+  | { readonly full: boolean; readonly kind: "check" }
+  | { readonly full: boolean; readonly kind: "implement" }
   | { readonly kind: "test" }
   | { readonly kind: "tdd" }
-  | { readonly kind: "continue" }
+  | { readonly full: boolean; readonly kind: "continue" }
   | {
       readonly dryRun: boolean
       readonly graceMs: number
@@ -45,6 +45,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow test records opt-in TDD red evidence from PH-run strict Gradle/JUnit verification",
     "- workflow tdd prints read-only TDD red→green status and next action",
     "- workflow continue prints the accepted-plan continuation prompt",
+    "- workflow check/implement/continue accept --full to bypass same-workspace rail body cache",
     "- workflow loop runs an explicit capped fresh-session blocker loop using PH finish/closure gates",
     "- workflow ralph-loop [--dry-run] [--json] previews default-off blocker-driven continuation eligibility",
     "- workflow role-boundary [--json] reports likely relay role-boundary issues without blocking writes",
@@ -63,10 +64,10 @@ export function workflowUsage(invocation = "ph"): string {
 
 export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   if (args.length === 0 || args[0] === "check") {
-    return args.length <= 1 ? { kind: "check" } : { kind: "invalid", message: "workflow check does not accept extra arguments." }
+    return parseFullOnlyArgs(args.slice(args[0] === "check" ? 1 : 0), "check")
   }
   if (args[0] === "implement") {
-    return args.length === 1 ? { kind: "implement" } : { kind: "invalid", message: "workflow implement does not accept extra arguments." }
+    return parseFullOnlyArgs(args.slice(1), "implement")
   }
   if (args[0] === "test") {
     return args.length === 1 ? { kind: "test" } : { kind: "invalid", message: "workflow test does not accept extra arguments." }
@@ -75,7 +76,7 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
     return args.length === 1 ? { kind: "tdd" } : { kind: "invalid", message: "workflow tdd does not accept extra arguments." }
   }
   if (args[0] === "continue") {
-    return args.length === 1 ? { kind: "continue" } : { kind: "invalid", message: "workflow continue does not accept extra arguments." }
+    return parseFullOnlyArgs(args.slice(1), "continue")
   }
   if (args[0] === "loop") {
     return parseWorkflowLoopArgs(args.slice(1))
@@ -170,6 +171,16 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
     return { kind: "help" }
   }
   return { kind: "invalid", message: `Unknown workflow command: ${args[0]}` }
+}
+
+function parseFullOnlyArgs(args: readonly string[], kind: "check" | "continue" | "implement"): ParsedWorkflowArgs {
+  if (args.length === 0) {
+    return { full: false, kind }
+  }
+  if (args.length === 1 && args[0] === "--full") {
+    return { full: true, kind }
+  }
+  return { kind: "invalid", message: `workflow ${kind} accepts only --full.` }
 }
 
 function parseWorkflowLoopArgs(args: readonly string[]): ParsedWorkflowArgs {

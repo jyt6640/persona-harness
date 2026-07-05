@@ -6,6 +6,23 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- LEAN-1 L-2 adds session-local duplicate rail body suppression for
+  `ph workflow implement`, `ph workflow check`, and `ph workflow continue`.
+  The first full rail body in a workspace session writes
+  `.persona/workflow/rail-body-cache.json` with an atomic marker; later
+  unchanged rail surfaces print
+  ``rail unchanged (full text: `ph workflow implement --full`)`` plus the
+  command-specific status/output, while `--full` always prints the full text.
+  The L-2 archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l2-rail-body-cache-regate-20260705T162603Z`
+  records `gate-fixture.2` real OpenCode rail-entry non-inferiority: control
+  `9/10`, candidate `10/10`, invalid `0`, delta `+10pp`. Output-size snapshots
+  recorded stdout byte deltas of `0` for one call, `-5224` for a three-command
+  session, and `-15164` for a loop-like session. This is output-size and
+  rail-entry regression evidence only; it is not token-saving,
+  provider-token-saving, product-efficacy, app-quality, reliability, or
+  closure-guarantee evidence.
+
 - LEAN-1 L-1 removes runtime hot-path config reparsing from token telemetry,
   token compaction, injection, and hook evidence writes by resolving the harness
   config/evidence directory once at hook creation and threading that resolved

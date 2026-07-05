@@ -24,6 +24,7 @@ import { runWorkflowLoopCommand } from "./workflow-loop.js"
 import { runWorkflowRalphLoopCommand } from "./workflow-ralph-loop.js"
 import { runWorkflowRoleBoundaryCommand } from "./workflow-role-boundary.js"
 import { runWorkflowRolesCommand } from "./workflow-roles.js"
+import { cachedWorkflowRailOutput } from "./workflow-rail-cache.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import { stdinEncodingError } from "./stdin-text.js"
 import { runWorkflowTddStatus } from "./workflow-tdd-status.js"
@@ -39,6 +40,7 @@ import {
 } from "./workflow-tickets.js"
 
 type WorkflowOptions = WorkflowStateWriteOptions & {
+  readonly full?: boolean
   readonly projectDir?: string
   readonly stdin?: string
 }
@@ -129,7 +131,7 @@ function runWorkflowImplement(options: WorkflowOptions): CliRunResult {
   if (reasons.length > 0) {
     return failedRunnerOutput("implement", "implement", reasons)
   }
-  return passedImplementOutput(summary.projectDir)
+  return passedImplementOutput(summary.projectDir, { full: options.full })
 }
 
 function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOptions): CliRunResult {
@@ -149,7 +151,36 @@ function runWorkflowCheck(options: WorkflowOptions): CliRunResult {
   if (hasPersonaHarness(summary)) {
     recordTddGreenForCurrentTicket(summary.projectDir)
   }
-  return { status: 0, stdout: `${formatWorkflowStatus(readWorkflowStatus(options.projectDir))}\n`, stderr: "" }
+  const nextSummary = readWorkflowStatus(options.projectDir)
+  const fullText = `${formatWorkflowStatus(nextSummary)}\n`
+  if (!hasPersonaHarness(nextSummary)) {
+    return { status: 0, stdout: fullText, stderr: "" }
+  }
+  return { status: 0, stdout: cachedWorkflowCheckOutput(nextSummary, options.full ?? false), stderr: "" }
+}
+
+function cachedWorkflowCheckOutput(summary: WorkflowStatus, full: boolean): string {
+  const fullLines = formatWorkflowStatus(summary).split("\n")
+  const artifactsIndex = fullLines.findIndex((line) => line === "Artifacts:")
+  if (artifactsIndex === -1) {
+    return `${fullLines.join("\n")}\n`
+  }
+  const nextIndex = fullLines.findIndex((line) => line.startsWith("Next: "))
+  const scopeIndex = fullLines.findIndex((line) => line === "Scope:")
+  const detailEnd = nextIndex !== -1 ? Math.max(artifactsIndex, nextIndex - 1) : scopeIndex !== -1 ? Math.max(artifactsIndex, scopeIndex - 1) : fullLines.length
+  const uniqueLines = [
+    ...fullLines.slice(0, artifactsIndex),
+    ...(nextIndex === -1 ? [] : ["", fullLines[nextIndex] ?? ""]),
+    ...(scopeIndex === -1 ? [] : ["", ...fullLines.slice(scopeIndex)]),
+  ]
+  return cachedWorkflowRailOutput({
+    full,
+    fullLines,
+    projectDir: summary.projectDir,
+    railBodyLines: fullLines.slice(artifactsIndex, detailEnd),
+    surface: "workflow-check",
+    uniqueLines,
+  })
 }
 
 export function runWorkflowCommand(args: readonly string[], options: WorkflowOptions = {}, invocationName = "ph"): CliRunResult {
@@ -164,7 +195,7 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
     return runWorkflowGuard(parsed.guardKind, options)
   }
   if (parsed.kind === "implement") {
-    return runWorkflowImplement(options)
+    return runWorkflowImplement({ ...options, full: parsed.full })
   }
   if (parsed.kind === "test") {
     return runWorkflowTddTest(options)
@@ -173,7 +204,7 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
     return runWorkflowTddStatus(options)
   }
   if (parsed.kind === "continue") {
-    return runResumeCommand(options)
+    return runResumeCommand({ ...options, full: parsed.full })
   }
   if (parsed.kind === "loop") {
     return runWorkflowLoopCommand({
@@ -233,5 +264,5 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   if (parsed.kind === "finish") {
     return runWorkflowFinish(parsed.runnerKind, options)
   }
-  return runWorkflowCheck(options)
+  return runWorkflowCheck({ ...options, full: parsed.full })
 }

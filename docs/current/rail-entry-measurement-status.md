@@ -456,3 +456,34 @@ not product-efficacy, token/provider-token saving, app-quality, broad
 reliability, closure-guarantee, autonomous-completion, deterministic
 enforcement, generated-app certification, automatic completion, or reliable
 delegation evidence.
+
+## LEAN-1 L-2 Rail Body Cache Regate
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l2-rail-body-cache-regate-20260705T162603Z`
+
+Scenario: session-local duplicate rail body suppression for
+`ph workflow implement`, `ph workflow check`, and `ph workflow continue`.
+
+Decision: PASS/adopt. The accepted run used `gate-fixture.2` with n=10
+paired/counterbalanced real OpenCode rows, invalid `0`, and executable
+`bash`/`shell`/`terminal` tool inputs only for first-10-tool-call rail-entry
+scoring.
+
+Result:
+
+- control rail-entry: `9/10`;
+- candidate rail-entry: `10/10`;
+- paired counts: both `9`, candidate-only `1`, control-only `0`, neither `0`;
+- candidate-control delta: `+10pp`;
+- preregistered non-inferiority criterion: met.
+
+Output-size snapshot was recorded separately: one-call delta `0` stdout bytes,
+three-call delta `-5224`, and loop-like session delta `-15164`. These are
+output-size observations only and must not be cited as token-saving,
+provider-token-saving, product-efficacy, app-quality, broad reliability, or
+closure-guarantee evidence.
+
+Boundary: L-2 did not change workflow gates, defaults, evidence schemas, JSON
+schemas, runtime injection state, release channels, or any product efficacy or
+token-saving claim.

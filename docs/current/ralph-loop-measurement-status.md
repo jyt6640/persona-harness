@@ -699,6 +699,56 @@ Gate/measurement notes:
   provider-token-saving, product-efficacy, app-quality, reliability,
   closure-guarantee, or default-change evidence.
 
+## LEAN-1 L-2 Rail Body Session Cache
+
+Status: PASS/adopt for session-local duplicate rail body suppression.
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l2-rail-body-cache-regate-20260705T162603Z`.
+
+Behavior:
+
+- `ph workflow implement`, `ph workflow check`, and `ph workflow continue`
+  write/read `.persona/workflow/rail-body-cache.json` with an atomic marker.
+- The first full rail body for a workspace session prints normally and records
+  a content hash.
+- Later unchanged rail surfaces print:
+  ``rail unchanged (full text: `ph workflow implement --full`)``
+  plus that command's unique status/output.
+- `--full` on those commands always prints the full text and updates the marker.
+- If a surface rail body changes, that surface prints full text again and
+  updates the marker.
+
+Real OpenCode gate:
+
+- Fixture: `gate-fixture.2`, prompt type `b-no-explicit-rail`.
+- Valid pairs: `10/10`.
+- Invalid runs: `0`.
+- Control rail entry: `9/10`.
+- Candidate rail entry: `10/10`.
+- Candidate-control delta: `+10pp`.
+- Preregistered non-inferiority criterion: met.
+
+Output-size snapshot:
+
+| Scenario | Control stdout bytes | Candidate stdout bytes | Delta |
+| --- | ---: | ---: | ---: |
+| One call | `4845` | `4845` | `0` |
+| Three calls | `13032` | `7808` | `-5224` |
+| Loop-like session | `26068` | `10904` | `-15164` |
+
+The first runner attempt in the same archive was aborted and excluded because
+the archive-local control package was packed from a clean git archive without
+built `dist/` artifacts, causing invalid control setup. The runner was patched
+archive-locally to build the control source before packing; the accepted run
+has invalid count `0`.
+
+This is L-2 output-size and rail-entry regression evidence only. It does not
+change workflow gates, defaults, evidence schemas, runtime injection state, or
+release channels, and it is not token-saving, provider-token-saving,
+product-efficacy, app-quality, reliability, closure-guarantee, or
+default-change evidence.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.

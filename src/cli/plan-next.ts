@@ -12,6 +12,7 @@ import { readWorkflowClosurePayload, type ClosurePayload } from "./workflow-clos
 import { workflowClosureRailLines } from "./workflow-closure-rail.js"
 import { workflowRequiredActionLine } from "./workflow-context-guidance.js"
 import { planUncheckedItems } from "./workflow-plan-unchecked.js"
+import { cachedWorkflowRailOutput } from "./workflow-rail-cache.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets, TICKET_BY_TICKET_GUIDANCE, TIMEBOXED_SCOPE_GUIDANCE } from "./workflow-ticket-summary.js"
 
@@ -242,7 +243,23 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
   ].join("\n") + "\n"
 }
 
-export function runResumeCommand(options: PlanOptions = {}): CliRunResult {
+function cachedResumePrompt(snapshot: WorkflowSnapshot, reportText: string, full: boolean): string {
+  const fullLines = resumePrompt(snapshot, reportText).trimEnd().split("\n")
+  const fallbackIndex = fullLines.findIndex((line) => line === "Fallback implementation rail:")
+  if (fallbackIndex === -1) {
+    return `${fullLines.join("\n")}\n`
+  }
+  return cachedWorkflowRailOutput({
+    full,
+    fullLines,
+    projectDir: snapshot.projectDir,
+    railBodyLines: fullLines.slice(fallbackIndex),
+    surface: "workflow-continue",
+    uniqueLines: fullLines.slice(0, fallbackIndex),
+  })
+}
+
+export function runResumeCommand(options: PlanOptions & { readonly full?: boolean } = {}): CliRunResult {
   const snapshot = workflowSnapshot(options)
   if (snapshot.planStatus !== "accepted") {
     return {
@@ -257,5 +274,5 @@ export function runResumeCommand(options: PlanOptions = {}): CliRunResult {
   }
 
   const reportText = readImplementationReport(snapshot.projectDir)
-  return { status: 0, stdout: resumePrompt(snapshot, reportText), stderr: "" }
+  return { status: 0, stdout: cachedResumePrompt(snapshot, reportText, options.full ?? false), stderr: "" }
 }
