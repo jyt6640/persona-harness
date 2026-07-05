@@ -12,12 +12,12 @@ deleting evidence/status history.
 ## Current Canonical Pointers
 
 - Versioned release capsule:
-  [`docs/releases/v0.6.0-rc.4/`](../releases/v0.6.0-rc.4/README.md).
+  [`docs/releases/v0.6.0/`](../releases/v0.6.0/README.md).
 - Chronological package/version index:
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.6.0-rc.4-release-notes.md`](release/v0.6.0-rc.4-release-notes.md).
+  [`release/v0.6.0-release-notes.md`](release/v0.6.0-release-notes.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -39,10 +39,11 @@ deleting evidence/status history.
 
 ## Current Facts To Preserve
 
-- `0.6.0-rc.4` is published on npm `next` with accepted External registry
-  smoke. `latest` remains `0.5.0`, and `alpha` remains `0.3.9-alpha.8`.
-  Stable `0.6.0` remains deferred because the real rail-entry gate failed for
-  H1-6a compression and no waiver exists.
+- `0.6.0` is prepared as the stable release target for future npm `latest`
+  after QA publish GO. Current published channels remain `latest=0.5.0`,
+  `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8` until that publish step.
+  S-3 removed the failed-finish human `Summary:` header after S-2 regated it
+  as non-inferior=false.
 - `runtimeInjection` remains a parked opt-in preview.
 - The rail-entry prompt regression gate is an operator-run n>=5
   non-inferiority check for rail/AGENTS/gate-output wording changes. It is not

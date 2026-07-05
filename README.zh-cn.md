@@ -23,7 +23,7 @@
 
 > [!IMPORTANT]
 > **项目状态：gate-first measured release。**
-> 稳定 npm 通道为 `persona-harness@latest=0.5.0`。已发布的预发布通道仍为 `next=0.6.0-rc.2`；在单独 publish 之前，release prep target 为 `0.6.0-rc.3`；alpha 为 `0.3.9-alpha.8`。`0.6.0-rc.2` registry smoke 只是预发布 surface 的 package-runtime evidence，不是 `latest` 迁移或更广泛的 product-efficacy 主张。
+> 稳定发布准备目标是 QA/publish 之后发布到 npm `latest` 的 `persona-harness@0.6.0`。当前已发布的稳定通道仍是 `persona-harness@latest=0.5.0`，已发布的预发布通道是 `next=0.6.0-rc.4`，alpha 为 `0.3.9-alpha.8`。在实际 stable publish 之前，`latest` 不会移动。
 > runtime injection 效果已经测量，**在已接受的 10 组 local-current OpenCode fixture 中为负面**。依据见 [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json)。因此 runtime guidance 默认关闭，只能显式 opt-in preview；这是该 fixture 范围内的测量，不是通用 product-efficacy 主张。
 > PH 实际主张的 —— 也是有证据支撑的 —— 范围更窄：**对明确定义的 evidence gate 和确定性违规，阻止未经验证的完成。**
 

@@ -4,7 +4,7 @@ Use this package for repeatable release operations and release note drafting.
 
 Durable versioned summaries now live under `docs/releases/`. For the current
 release-prep line, start with
-[`docs/releases/v0.6.0-rc.4/README.md`](../../releases/v0.6.0-rc.4/README.md).
+[`docs/releases/v0.6.0/README.md`](../../releases/v0.6.0/README.md).
 The files in this directory remain the release-operation and release-note
 sources used by the existing workflow.
 
@@ -35,6 +35,39 @@ Those items make the release decision ready; they do not authorize Docs Release 
 
 ## Current Version-Line Readiness
 
+Current stable release prep: `0.6.0` is prepared as the stable package target
+for future npm `latest` publish after QA publish GO. This task does not publish,
+tag, or move dist-tags. Current pre-publish registry state remains
+`latest=0.5.0`, `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`;
+`persona-harness@0.6.0` is expected to remain unpublished and no `v0.6.0` tag
+should exist before the future publish/tag step.
+
+Stable basis: HARDEN-1 accepted hardening plus the stable decision cycle S-0
+through S-3. S-0 corrected the blocker: H1-6a compression NO-GO itself did not
+block stable; the shipped failed-finish human `Summary:` header's inferior
+real-session rail-entry evidence did. S-1 established `gate-fixture.2` with
+control rail-entry `10/10`. S-2 accepted FAIL decision input for the shipped
+Summary header (`10/10` control, `9/10` candidate, delta `-10pp`,
+non-inferiority false). S-3 removed the failed-finish human `Summary:` header
+at commit `c7affd7674fc949b373c414974b05010b8dd1f21`, with QA and External
+local-current package smoke accepted. Failed finish human output now renders
+`Required fixes:` and detailed blockers directly; `workflow closure next --json`
+remains the structured machine-readable next-step surface.
+
+Stable prep includes H1-1 unmapped blocker de-loop/human escalation, H1-2
+mechanical finish regression coverage, H1-3 deterministic blocker order/depth,
+H1-4 block-level toolchain fail-closed and mapped human guidance, and H1-5
+atomic writes/fail-safe reads by migrated family only. H1-6a compression
+remains NO-GO and unimplemented. H1-6b structured required-fix data remains
+implementation support, but the failed-finish human Summary header is not
+rendered.
+
+Post-stable external tester kickoff is planned from `PROJECT-PLAN.md` section
+4: 3-5 testers, focused on onboarding drop-off, time to first finish,
+doctor/feedback usage, whether users value or resent gate blocks, team
+convention demand, real fake-shim/gate-gaming incidents, and tester-driven UX
+complaints. HARDEN-2 remains post-stable and must yield to tester feedback.
+
 Current prerelease package: official `0.6.0-rc.4` is published under npm
 dist-tag `next`, not `latest`. Registry verification confirmed
 `persona-harness@next=0.6.0-rc.4`, gitHead
@@ -44,8 +77,8 @@ dist-tag `next`, not `latest`. Registry verification confirmed
 The explicit package selector `persona-harness@0.6.0-rc.4` resolves to the
 same version, gitHead, shasum, and integrity. Current dist-tags are
 `latest=0.5.0`, `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`; `latest` did
-not move. Stable `0.6.0` is not being prepared because the real rail-entry
-gate failed for H1-6a repeated-output compression and no waiver exists.
+not move. The later stable prep records above supersede the rc4-time stable
+deferral after S-3 removed the failed Summary header.
 
 The local and remote `v0.6.0-rc.4` tags point at
 `cf6835697f47da5a2a8372d00fc47e263ee781f8` after registry verification. The
@@ -749,6 +782,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.6.0-rc.2 release notes](v0.6.0-rc.2-release-notes.md)
 - [v0.6.0-rc.3 release notes](v0.6.0-rc.3-release-notes.md)
 - [v0.6.0-rc.4 release notes](v0.6.0-rc.4-release-notes.md)
+- [v0.6.0 release notes](v0.6.0-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

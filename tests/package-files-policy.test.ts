@@ -28,10 +28,10 @@ describe("package files policy", () => {
 
     expect(linkedFiles).toEqual([
       "docs/releases/README.md",
-      "docs/releases/v0.6.0-rc.4/README.md",
+      "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.6.0-rc.4-release-notes.md",
+      "docs/current/release/v0.6.0-release-notes.md",
       "docs/current/canonical-docs-index.md",
       "docs/current/external-review-adoption-status.md",
       "docs/current/ralph-loop-measurement-status.md",

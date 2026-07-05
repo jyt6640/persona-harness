@@ -6,6 +6,57 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+No unreleased changes after the `0.6.0` stable release-prep record.
+
+## [0.6.0] - 2026-07-05
+
+Prepared stable `0.6.0` release metadata and docs after accepted S-3
+Summary-header OFF. This is prep only: no npm publish, git tag, or dist-tag
+movement is included. The future stable publish target is npm `latest` after QA
+publish GO. Pre-publish registry state remains `latest=0.5.0`,
+`next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`; `persona-harness@0.6.0` is
+expected to remain unpublished until the future publish step.
+
+The stable basis is HARDEN-1 accepted hardening plus the stable decision cycle:
+S-0 corrected the blocker, S-1 established `gate-fixture.2` with control
+rail-entry `10/10`, S-2 accepted the Summary-header FAIL decision input
+(`10/10` control, `9/10` Summary-header candidate, delta `-10pp`,
+non-inferiority false), and S-3 removed the failed-finish human `Summary:`
+header at commit `c7affd7674fc949b373c414974b05010b8dd1f21`. Failed
+`ph workflow finish implement` human output now renders `Required fixes:` and
+detailed blockers directly; `workflow closure next --json` remains the
+machine-readable next-step surface.
+
+Stable `0.6.0` carries H1-1 unmapped blocker de-loop and human escalation,
+H1-2 mechanical finish regression coverage, H1-3 deterministic blocker
+order/depth, H1-4 explicit block-level toolchain fail-closed behavior and
+mapped human guidance, and H1-5 atomic writes/fail-safe reads by migrated file
+family only. H1-6a repeated-output compression remains NO-GO and
+unimplemented. H1-6b structured required-fix data remains implementation
+support, but the failed-finish human Summary header is not rendered.
+
+Stage 18 fixture-scoped completion-integrity evidence remains narrow: OFF
+finish PASS `0/10`, internal tool-output trigger finish PASS `10/10`, and
+external `ph workflow loop` finish PASS `7/10` with cap-risk caveat. This does
+not prove default change, product efficacy, broad reliability, token saving, or
+app quality.
+
+Post-stable external tester kickoff is recorded from `PROJECT-PLAN.md` section
+4: 3-5 testers, focusing on onboarding drop-off, time to first finish,
+doctor/feedback usage, user reaction to gate blocks, team-convention demand,
+real fake-shim/gate-gaming incidents, and tester-driven UX complaints. HARDEN-2
+remains post-stable and must yield to tester feedback during the observation
+period.
+
+This release prep does not claim product efficacy, token/provider-token saving,
+navigation benefit, app-quality/full-TDD/test-sufficiency, broad reliability,
+closure guarantee, autonomous completion, generated-app certification,
+deterministic enforcement, production-ready delegation, reliable automatic
+subagent orchestration, automatic completion/downgrade/removal, CodeGraph/LSP
+default/effectiveness, or broad product behavior.
+
+## Stable Cycle S-0/S-1/S-2/S-3 Records
+
 - Stable-cycle S-3 turns off the failed-finish human `Summary:` header after
   the accepted S-2 rail-entry regate failed non-inferiority. Failed
   `ph workflow finish implement` human stderr now renders `Required fixes:`

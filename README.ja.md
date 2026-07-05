@@ -23,7 +23,7 @@
 
 > [!IMPORTANT]
 > **プロジェクト状態: gate-first measured release。**
-> 安定 npm チャンネルは `persona-harness@latest=0.5.0` です。公開済み prerelease チャンネルは引き続き `next=0.6.0-rc.2`、release prep target は別途 publish されるまで `0.6.0-rc.3`、alpha は `0.3.9-alpha.8` です。`0.6.0-rc.2` registry smoke は prerelease surface の package-runtime evidence であり、`latest` の移動やより広い product-efficacy claim ではありません。
+> 安定リリース準備対象は、QA/publish 後に npm `latest` へ公開する `persona-harness@0.6.0` です。現在公開済みの安定チャンネルは引き続き `persona-harness@latest=0.5.0`、公開済み prerelease チャンネルは `next=0.6.0-rc.4`、alpha は `0.3.9-alpha.8` です。実際の stable publish まで `latest` は移動しません。
 > runtime injection 効果は測定済みで、**受理済みの 10 ペア local-current OpenCode fixture では negative** でした。根拠は [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json) を参照してください。そのため runtime guidance は default-off で、明示的な opt-in preview のみです。これは該当 fixture 範囲の測定であり、普遍的な product-efficacy claim ではありません。
 > PH が実際に主張すること — そして証拠を持つこと — はより狭い範囲です: **明示的に定義された evidence gate と決定論的違反に対して、未検証の完了をブロックする。**
 
