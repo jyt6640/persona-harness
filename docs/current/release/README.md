@@ -4,7 +4,7 @@ Use this package for repeatable release operations and release note drafting.
 
 Durable versioned summaries now live under `docs/releases/`. For the current
 release-prep line, start with
-[`docs/releases/v0.6.0-rc.3/README.md`](../../releases/v0.6.0-rc.3/README.md).
+[`docs/releases/v0.6.0-rc.4/README.md`](../../releases/v0.6.0-rc.4/README.md).
 The files in this directory remain the release-operation and release-note
 sources used by the existing workflow.
 
@@ -35,7 +35,9 @@ Those items make the release decision ready; they do not authorize Docs Release 
 
 ## Current Version-Line Readiness
 
-Current prerelease package: official `0.6.0-rc.3` is published under npm
+Current release-prep target: `0.6.0-rc.4` for a future npm `next` publish. It
+is not published, tagged, or assigned a dist-tag yet. Until that separate
+publish step succeeds, official `0.6.0-rc.3` remains published under npm
 dist-tag `next`, not `latest`. Registry verification confirmed
 `persona-harness@next=0.6.0-rc.3`, gitHead
 `e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum
@@ -44,7 +46,8 @@ dist-tag `next`, not `latest`. Registry verification confirmed
 The explicit package selector `persona-harness@0.6.0-rc.3` resolves to the
 same version, gitHead, shasum, and integrity. Current dist-tags are
 `latest=0.5.0`, `next=0.6.0-rc.3`, and `alpha=0.3.9-alpha.8`; `latest` did
-not move.
+not move. Stable `0.6.0` is not being prepared because the real rail-entry
+gate failed for H1-6a repeated-output compression and no waiver exists.
 
 The local and remote `v0.6.0-rc.3` tags point at
 `e1af520cf000e805e7df6a1616906f3f9b0e4976` after registry verification. The
@@ -81,6 +84,17 @@ subagent/task invocation. These records do not prove ralph-loop completion
 integrity beyond the scoped Stage 18 fixture, default change, token savings,
 product efficacy, reliable automatic subagent orchestration, deterministic
 role enforcement, production-ready delegation, or broad reliability.
+
+`0.6.0-rc.4` release prep carries accepted HARDEN-1 work after rc3: H1-0
+preflight PARTIAL, H1-1 unmapped blocker de-loop and human escalation wording,
+H1-3 deterministic blocker order and chain-depth contract, H1-2 mechanical
+finish regression coverage, H1-4 block-level toolchain fail-closed and human
+toolchain guidance, H1-5 atomic writes/fail-safe reads by file family, and
+H1-6b structured finish summary derivation. H1-6a repeated-output compression
+remains NO-GO and unimplemented after real n=5 rail-entry precheck failed
+(`3/5` control, `1/5` candidate, delta `-40pp`). This prep is not registry
+evidence until a future publish plus External registry smoke covers the rc4
+commit.
 
 Previous prerelease package: official `0.6.0-rc.2` was published under npm
 dist-tag `next` before rc3 superseded it on that channel. Registry verification
@@ -697,6 +711,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.6.0-rc.1 release notes](v0.6.0-rc.1-release-notes.md)
 - [v0.6.0-rc.2 release notes](v0.6.0-rc.2-release-notes.md)
 - [v0.6.0-rc.3 release notes](v0.6.0-rc.3-release-notes.md)
+- [v0.6.0-rc.4 release notes](v0.6.0-rc.4-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 

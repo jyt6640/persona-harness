@@ -245,7 +245,8 @@ Repeated finish/check result:
 
 Decision: H1-6a repeated-output compression remains NO-GO because the required
 rail-entry non-inferiority precheck failed. H1-6b structured summary derivation
-remains unstarted under the requested sequencing. Stable GO remains blocked by
+was still unstarted at the time of this H1-6a decision, but later proceeded as
+structured summary derivation without compression. Stable GO remains blocked by
 the rail-entry caveat unless HQ explicitly waives it or a future passing real
 precheck supersedes this record.
 
@@ -254,3 +255,27 @@ compression, alter Stage 20 evidence, change defaults or schemas, move version
 or dist-tags, or support token-saving, product-efficacy, app-quality, broad
 reliability, closure-guarantee, autonomous-completion, deterministic
 enforcement, or reliable subagent-orchestration claims.
+
+## HARDEN-1 H1-6b Structured Summary Follow-up
+
+Status: ACCEPTED for structured finish summary derivation only. H1-6b derives
+failed `workflow finish implement` human summaries from structured closure
+blocker/required-fix objects rather than reparsing rendered
+`Closure blocker:` text.
+
+Accepted scope:
+
+- preserves the Stage 20 human summary shape;
+- preserves H1-1 unmapped-blocker escalation wording;
+- preserves H1-4 `convention-toolchain-missing` mapped install/configuration
+  guidance;
+- keeps H1-6a repeated-output compression NO-GO and unimplemented.
+
+Boundary: H1-6b changes summary derivation only. It does not change
+JSON/machine output, schemas, exit codes, defaults, gate semantics, OpenCode
+hook signatures, `.persona/evidence` schemas, version, publish, tag, or
+dist-tags. It does not support product-efficacy, token/provider-token saving,
+app-quality, broad reliability, closure-guarantee, autonomous-completion,
+deterministic-enforcement, production-ready delegation, generated-app
+certification, automatic completion/downgrade/removal, or CodeGraph/LSP
+claims.

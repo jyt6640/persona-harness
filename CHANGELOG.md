@@ -6,6 +6,58 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+No unreleased changes after the `0.6.0-rc.4` release-prep cut.
+
+## [0.6.0-rc.4] - 2026-07-05
+
+Release prep for `0.6.0-rc.4` on npm `next`. This prep does not publish, tag,
+or move dist-tags. Current registry state remains `latest=0.5.0`,
+`next=0.6.0-rc.3`, and `alpha=0.3.9-alpha.8`; published `0.6.0-rc.3` came
+from gitHead `e1af520cf000e805e7df6a1616906f3f9b0e4976` with shasum
+`ef498adfac138d9d0843406cba53acf76b34c6f1`.
+
+Stable `0.6.0` remains deferred. The prerequisite real rail-entry gate did not
+pass for H1-6a repeated-output compression: control rail entry was `3/5`,
+candidate Summary-header rail entry was `1/5`, delta `-40pp`, and
+non-inferiority was not met. H1-6a compression remains NO-GO and
+unimplemented. `0.6.0-rc.4` is a prerelease `next` candidate pending QA
+publish-readiness, not a stable release.
+
+Release-prep highlights:
+
+- Carries HARDEN-1 H1-0 preflight as PARTIAL: the rc3 final docs record is
+  closed and Stage 18 tokens-per-verified-completion telemetry is recorded,
+  while the real n>=5 rail-entry regression gate remained unresolved until
+  H1-6a and then failed for compression.
+- Carries H1-1 blocker-step contract hardening: unmapped blockers stop
+  workflow continuation loops before consuming budget and failed-finish human
+  output explains maintainer/configuration escalation instead of looping on
+  immediate finish/check reruns.
+- Carries H1-3 deterministic blocker order and current chain-depth contract,
+  and H1-2 mechanical finish regression coverage for a tiny finish-reachable
+  Java/Spring-shaped fixture.
+- Carries H1-4 block-level toolchain fail-closed behavior and human mapped
+  toolchain guidance. Built-in `controller.persistence-import` remains default
+  `warn`; explicit block-level ast-grep/toolchain-dependent conventions add a
+  walkable `convention-toolchain-missing` closure blocker when the toolchain is
+  missing or fails.
+- Carries H1-5 atomic writes and fail-safe reads split by file family. This is
+  not a repo-wide all-writes atomicity claim.
+- Carries H1-6b structured finish summary derivation: failed
+  `workflow finish implement` human summaries are derived from structured
+  closure blocker/required-fix objects instead of reparsing rendered
+  `Closure blocker:` text. Stage 20 summary shape, H1-1 escalation wording,
+  and H1-4 mapped toolchain guidance are preserved.
+
+Claim boundaries remain unchanged: no product efficacy, token/provider-token
+saving, app-quality/full-TDD/test-sufficiency, broad reliability, closure
+guarantee, autonomous completion, generated-app certification, deterministic
+enforcement, production-ready delegation, reliable subagent orchestration,
+automatic completion/downgrade/removal, CodeGraph/LSP default/effectiveness, or
+broad product claim. No default change, evidence schema expansion, OpenCode
+hook signature change, gate exit-code change, or JSON schema field movement is
+claimed.
+
 - HARDEN-1 H1-6b derives failed `workflow finish implement` human summaries
   from structured closure blocker/required-fix objects instead of reparsing the
   rendered `Closure blocker:` text. The accepted Stage 20 summary shape,
@@ -19,9 +71,10 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   behavior rows. The repeated finish/check comparison was no-worse, but the
   Stage 20 Summary-header candidate was rail-entry inferior to control
   (`1/5` vs `3/5`, delta `-40pp`), so H1-6a repeated-output compression
-  remains prohibited and H1-6b remains unstarted. This is precheck evidence
-  only and does not change defaults, schemas, product behavior, stable status,
-  or make token/product/app-quality/reliability claims.
+  remains prohibited. H1-6b later proceeded separately as structured summary
+  derivation without compression. This is precheck evidence only and does not
+  change defaults, schemas, product behavior, stable status, or make
+  token/product/app-quality/reliability claims.
 - HARDEN-1 H1-4 makes block-level toolchain-dependent conventions fail closed
   when their required ast-grep toolchain is missing or fails. The built-in
   ast-grep convention `controller.persistence-import` still defaults to `warn`,
