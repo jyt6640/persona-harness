@@ -214,3 +214,43 @@ H1-6b structured summary derivation is not started because the requested H1-6
 sequence requires H1-6a prerequisite success before implementation continues.
 Stable GO remains blocked by the H1-0 real n>=5 rail-entry regression caveat
 unless HQ explicitly waives it.
+
+## HARDEN-1 H1-6a Real Precheck
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/harden-h1-6a-real-precheck-20260705T005240Z`
+
+Scenario: unblock the repeated `workflow finish/check` output compression
+precheck with real rows instead of the Stage 16-f summary-only validator.
+
+Status: FAIL for H1-6a compression readiness. The archive-local runner used the
+current local package source at commit `c81e1d9961fb02951f634945b5885edffca46245`
+and package version `0.6.0-rc.3`. It produced real OpenCode JSON event logs for
+n=5 paired rail-entry rows and n=5 paired repeated finish/check behavior rows.
+
+Rail-entry result:
+
+- Valid paired rows: `5/5`; invalid runs: `0`.
+- Current/control rail entry: `3/5`.
+- Candidate-current Stage 20 Summary-header rail entry: `1/5`.
+- Delta: `-40pp`.
+- Non-inferiority criterion: not met.
+
+Repeated finish/check result:
+
+- Valid paired rows: `5/5`; invalid rows: `0`.
+- Repeated `workflow finish implement` status and blocker counts stayed stable.
+- Repeated `workflow check` status and blocker counts stayed stable.
+- No-worse criterion: met for the repeated finish/check comparison only.
+
+Decision: H1-6a repeated-output compression remains NO-GO because the required
+rail-entry non-inferiority precheck failed. H1-6b structured summary derivation
+remains unstarted under the requested sequencing. Stable GO remains blocked by
+the rail-entry caveat unless HQ explicitly waives it or a future passing real
+precheck supersedes this record.
+
+Boundary: this is precheck evidence only. It does not implement output
+compression, alter Stage 20 evidence, change defaults or schemas, move version
+or dist-tags, or support token-saving, product-efficacy, app-quality, broad
+reliability, closure-guarantee, autonomous-completion, deterministic
+enforcement, or reliable subagent-orchestration claims.

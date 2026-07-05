@@ -6,6 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- HARDEN-1 H1-6a real precheck runner executed real OpenCode n=5 paired
+  rail-entry rows plus n=5 repeated `workflow finish`/`workflow check`
+  behavior rows. The repeated finish/check comparison was no-worse, but the
+  Stage 20 Summary-header candidate was rail-entry inferior to control
+  (`1/5` vs `3/5`, delta `-40pp`), so H1-6a repeated-output compression
+  remains prohibited and H1-6b remains unstarted. This is precheck evidence
+  only and does not change defaults, schemas, product behavior, stable status,
+  or make token/product/app-quality/reliability claims.
 - HARDEN-1 H1-4 makes block-level toolchain-dependent conventions fail closed
   when their required ast-grep toolchain is missing or fails. The built-in
   ast-grep convention `controller.persistence-import` still defaults to `warn`,
