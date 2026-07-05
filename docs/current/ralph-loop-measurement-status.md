@@ -585,6 +585,77 @@ This remains cost-per-verified-completion telemetry only, not token/provider
 token saving evidence, product-efficacy evidence, app-quality evidence, broad
 reliability evidence, closure-guarantee evidence, or default-change evidence.
 
+## LEAN-1 L-0 Baseline Token/Time Profile
+
+Status: PASS for baseline telemetry collection only. No optimization was
+implemented.
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l0-baseline-profile-20260705T152205Z`.
+
+Source/package facts:
+
+- Source commit: `0b33632bd814c74e95d4e47d4207b2cb91faa00d`.
+- Local-current package: `persona-harness-0.6.0.tgz`.
+- Package shasum: `6338a713855b4b46b9d5f04d9f8c1a06b960db3e`.
+- Package entry count: `665`.
+- OpenCode: `1.17.7`.
+
+Design:
+
+- n=5 current full-cycle rows using the Stage 18 finish-reachable fixture
+  lineage.
+- Archive-local instrumentation only: copied fixture package files logged
+  `loadHarnessConfig` calls and `tool.execute` events. No product/runtime
+  behavior change was committed.
+- Phase token attribution is mechanical: each assistant token message is
+  assigned to the latest preceding traced `tool.execute.after` command phase;
+  messages before any command are assigned to implementation.
+- The archive parse sweep validated `120` measurement JSON/JSONL artifacts and
+  skipped `1651` vendored `node_modules` JSON/JSONC files.
+
+Baseline result:
+
+| Metric | Value |
+| --- | ---: |
+| Valid rows | `5/5` |
+| Finish PASS | `5/5` |
+| Ralph-loop tool-output marker observed | `5/5` |
+| Mean total tokens/run | `798757.2` |
+| Mean input/cacheRead/output/run | `50861.4 / 735744 / 7060.2` |
+| Mean turns/run | `27.8` |
+| Mean elapsed/run | `264095.2ms` |
+| Mean tool calls/run | `47.8` |
+| Mean `loadHarnessConfig` calls/run | `189.2` |
+| Executable Gradle/bearshell invocations | `16` |
+| Mean executable Gradle/bearshell elapsed | `400.5ms` |
+
+Mean token totals by phase:
+
+| Phase | Mean total/run | Share | Mean input/cacheRead/output |
+| --- | ---: | ---: | --- |
+| implementation | `213094` | `26.7%` | `20772.8 / 188723.2 / 2044.2` |
+| reports | `141861.4` | `17.8%` | `7018.6 / 132608 / 1318.6` |
+| verification | `196965.2` | `24.7%` | `8861.6 / 183910.4 / 2345.2` |
+| finish | `246836.6` | `30.9%` | `14208.4 / 230502.4 / 1352.2` |
+| unassigned | `0` | `0%` | `0 / 0 / 0` |
+
+Rule delivery snapshot:
+
+| Delivery point | Mean rule count | Mean chars | Estimated token share |
+| --- | ---: | ---: | ---: |
+| relay | `0` | `305` | `0%` |
+| loop | `0` | `305` | `0%` |
+| ticket | `0` | `305` | `0%` |
+
+Decision input:
+
+- This is the L-1/L-2/L-3 baseline.
+- Rule delivery was already negligible by this fixture/profile (`0.00%` of
+  mean total tokens), so L-3 rule-delivery optimization should be lower
+  priority than host config parsing and prompt/output cache-friendliness unless
+  a later fixture shows a larger delivered-rule share.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.

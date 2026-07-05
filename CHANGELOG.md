@@ -6,6 +6,19 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- LEAN-1 L-0 records the baseline token/time profile for a single
+  finish-reachable work cycle before any LEAN optimization. Archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l0-baseline-profile-20260705T152205Z`
+  contains n=5 current full-cycle rows, package facts for local-current
+  `0.6.0` at commit `0b33632bd814c74e95d4e47d4207b2cb91faa00d`, phase token
+  attribution, `loadHarnessConfig` call counts, executable Gradle/bearshell
+  timing, rule-delivery snapshots, scorecard observation, and JSON/JSONL parse
+  sweep. The run is baseline telemetry only: no optimization, default change,
+  token-saving, product-efficacy, app-quality, reliability, or closure
+  guarantee claim is included. Rule delivery measured as negligible in this
+  fixture (`0.00%` estimated token share), so L-3 should be lower priority
+  unless a later fixture shows a larger rule-delivery share.
+
 - ROLE-RULES T10 records the dogfooding readiness exit for starting the next
   Woowacourse-style personal mission on PH. The new current status document
   `docs/current/role-rules-dogfooding-readiness.md` summarizes accepted
