@@ -15,8 +15,10 @@
   `sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`.
 - Explicit `persona-harness@0.6.0` resolves to the same version, gitHead,
   shasum, and integrity.
-- Dist-tags: `latest=0.6.0`, `next=0.6.0-rc.4`, and
-  `alpha=0.3.9-alpha.8`.
+- Stable smoke-time dist-tags were `latest=0.6.0`, `next=0.6.0-rc.4`, and
+  `alpha=0.3.9-alpha.8`. The later ROLE-RULES T0 cleanup retired the legacy
+  `alpha` dist-tag; live readback now shows `latest=0.6.0` and
+  `next=0.6.0-rc.4`.
 - Local and remote `v0.6.0` point to
   `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`.
 - GitHub release `v0.6.0` is stable: `isDraft=false`,

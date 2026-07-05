@@ -23,7 +23,7 @@
 
 > [!IMPORTANT]
 > **Project status: gate-first measured release.**
-> Stable package: `persona-harness@latest=0.6.0`. Published prerelease channel remains `next=0.6.0-rc.4`; alpha remains `0.3.9-alpha.8`.
+> Stable package: `persona-harness@latest=0.6.0`. Published prerelease channel remains `next=0.6.0-rc.4`; the legacy `alpha` dist-tag has been retired after stable. Explicit historical alpha versions such as `persona-harness@0.3.9-alpha.8` remain installable by version.
 > The runtime injection effect has been measured and is **negative in the accepted 10-pair local-current OpenCode fixture set**. See [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json). Runtime guidance is therefore default-off and opt-in only; this is a scoped measurement, not a universal product-efficacy claim.
 > What PH *does* claim — and has evidence for — is narrower: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
 

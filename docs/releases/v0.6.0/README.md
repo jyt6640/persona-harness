@@ -8,7 +8,8 @@ complements the release-operation notes in
 
 - Published stable package: `persona-harness@latest=0.6.0`.
 - Current published prerelease remains `persona-harness@next=0.6.0-rc.4`.
-- Alpha channel remains `persona-harness@alpha=0.3.9-alpha.8`.
+- Legacy `alpha` channel is retired after stable; explicit historical alpha
+  versions remain installable by exact version.
 - `persona-harness@0.6.0` resolves to gitHead
   `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
   `ffd77996263cffb858bd977edb73b03cf2820c75`, and integrity

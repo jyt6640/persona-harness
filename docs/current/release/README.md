@@ -37,7 +37,8 @@ Those items make the release decision ready; they do not authorize Docs Release 
 
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
-`next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`. Registry verification confirmed
+`next=0.6.0-rc.4`, with no `alpha` dist-tag after the post-stable T0
+retirement. Registry verification confirmed
 `persona-harness@latest=0.6.0`, gitHead
 `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
 `ffd77996263cffb858bd977edb73b03cf2820c75`, and integrity
@@ -175,6 +176,16 @@ prerelease publishes to `next` and stable publishes to `latest`, but does not
 authorize automatic alpha removal or realignment. No alpha/latest/next
 dist-tag mutation was made in S-0; changing `alpha` needs a separate explicit
 policy decision.
+
+ROLE-RULES T0 alpha retirement: after stable `0.6.0`, HQ explicitly chose to
+retire the legacy `alpha` shortcut rather than keep or realign it. Live npm
+readback now shows only `latest=0.6.0` and `next=0.6.0-rc.4`; `alpha` is absent.
+The explicit historical package `persona-harness@0.3.9-alpha.8` remains
+available by version with gitHead `3bb90aa50c8d1231189a5ca00665e8d5bfccade9`,
+shasum `cd26989425223b5145f190c2dfbfa5ad84e57cf9`, and integrity
+`sha512-YRZ/h/2cQQcA75pgtzt6eUMFKD4Zqxs+sE0tL+kMCOAhwIc7of0bXb96CtwQjZ3B8If2iczw5S1NvMcV/xb9FA==`.
+No package was unpublished and no `latest` or `next` movement was made by this
+retirement record.
 
 Previous prerelease package: official `0.6.0-rc.3` was published under npm
 dist-tag `next` before rc4 superseded it on that channel. Registry

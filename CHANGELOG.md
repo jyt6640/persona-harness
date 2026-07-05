@@ -2,11 +2,19 @@
 
 All notable Persona Harness changes are recorded here.
 
-This project uses npm prerelease versions for tester-facing alpha and release-candidate builds. Verify `latest`, `next`, and `alpha` before treating a default install as current. Stable support guarantees are still deferred.
+This project uses npm prerelease versions for tester-facing alpha and release-candidate builds. Verify `latest` and `next` before treating a default install as current; if a legacy `alpha` dist-tag appears, treat it as historical channel state until explicitly reauthorized. Stable support guarantees are still deferred.
 
 ## Unreleased
 
-No product/runtime changes after the `0.6.0` stable final registry-smoke record.
+- ROLE-RULES T0 retired the legacy npm `alpha` shortcut after stable `0.6.0`.
+  Live `npm dist-tag ls persona-harness` now reports `latest=0.6.0` and
+  `next=0.6.0-rc.4`, with no `alpha` dist-tag. Explicit
+  `persona-harness@0.3.9-alpha.8` remains available by version with gitHead
+  `3bb90aa50c8d1231189a5ca00665e8d5bfccade9`, shasum
+  `cd26989425223b5145f190c2dfbfa5ad84e57cf9`, and integrity
+  `sha512-YRZ/h/2cQQcA75pgtzt6eUMFKD4Zqxs+sE0tL+kMCOAhwIc7of0bXb96CtwQjZ3B8If2iczw5S1NvMcV/xb9FA==`.
+  No package was unpublished, and `latest`/`next` were not moved. This is
+  channel hygiene only, not a product/runtime change.
 
 ## [0.6.0] - 2026-07-05
 
