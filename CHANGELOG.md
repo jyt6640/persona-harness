@@ -6,16 +6,24 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-No unreleased changes after the `0.6.0` stable release-prep record.
+No product/runtime changes after the `0.6.0` stable final registry-smoke record.
 
 ## [0.6.0] - 2026-07-05
 
-Prepared stable `0.6.0` release metadata and docs after accepted S-3
-Summary-header OFF. This is prep only: no npm publish, git tag, or dist-tag
-movement is included. The future stable publish target is npm `latest` after QA
-publish GO. Pre-publish registry state remains `latest=0.5.0`,
-`next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`; `persona-harness@0.6.0` is
-expected to remain unpublished until the future publish step.
+Published stable `0.6.0` to npm `latest` and recorded QA-accepted final
+External registry smoke. The accepted archive is
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-060-registry-smoke-20260705T041031Z`.
+Registry source was npm only: External installed `persona-harness@latest` as
+`0.6.0`; no local tarball evidence was used. Registry verification confirmed
+`persona-harness@latest=0.6.0`, gitHead
+`13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
+`ffd77996263cffb858bd977edb73b03cf2820c75`, and integrity
+`sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`.
+The explicit selector `persona-harness@0.6.0` resolves to the same facts.
+Dist-tags are `latest=0.6.0`, `next=0.6.0-rc.4`, and
+`alpha=0.3.9-alpha.8`. Local and remote `v0.6.0` tags point at
+`13b1f1b79884e2214c0b41a735b87cdd6d65ee00`; the GitHub release is stable
+(`isDraft=false`, `isPrerelease=false`).
 
 The stable basis is HARDEN-1 accepted hardening plus the stable decision cycle:
 S-0 corrected the blocker, S-1 established `gate-fixture.2` with control
@@ -41,19 +49,39 @@ external `ph workflow loop` finish PASS `7/10` with cap-risk caveat. This does
 not prove default change, product efficacy, broad reliability, token saving, or
 app quality.
 
-Post-stable external tester kickoff is recorded from `PROJECT-PLAN.md` section
-4: 3-5 testers, focusing on onboarding drop-off, time to first finish,
-doctor/feedback usage, user reaction to gate blocks, team-convention demand,
-real fake-shim/gate-gaming incidents, and tester-driven UX complaints. HARDEN-2
-remains post-stable and must yield to tester feedback during the observation
-period.
+Final registry smoke observed required package entries including LICENSE,
+localized READMEs, CHANGELOG, stable docs, `dist/io/atomic-file.*`,
+`dist/cli/workflow-required-fix.*`, `dist/cli/workflow-output.js`, closure,
+workflow-loop/state, ralph-loop/state/tool-output, workflow relay/UI, and
+bootstrap multi-agent surfaces. Basic install/help/version/workflow
+help/bootstrap help passed. Stable S-3 failed-finish output had no `Summary:`
+header, retained `Required fixes:` and detailed blocker diagnostics, and had
+no `details unchanged since last check` or H1-6a compression wording. Generic
+closure JSON parsed with `action=next`, `nextStep.id=verify-app`, and first
+blocker `verification-unknown`. H1-4 mapped
+`convention-toolchain-missing` to `install-convention-toolchain` with
+`commandAfterContent="npx ph workflow check"`. H1-1 unmapped path kept
+escalation/no-step-mapping wording, mapped to `unmapped-blocker`, and loop /
+ralph-loop stop surfaces behaved as accepted. H1-5 coverage was representative
+helper/corrupt-state spot smoke, not repo-wide all-writes atomicity evidence.
+No real OpenCode/model/eval run was performed in stable registry smoke.
 
-This release prep does not claim product efficacy, token/provider-token saving,
-navigation benefit, app-quality/full-TDD/test-sufficiency, broad reliability,
-closure guarantee, autonomous completion, generated-app certification,
-deterministic enforcement, production-ready delegation, reliable automatic
-subagent orchestration, automatic completion/downgrade/removal, CodeGraph/LSP
-default/effectiveness, or broad product behavior.
+Stable final record is the handoff point for external tester recruitment.
+Recruitment is planned/ready to start; no concrete started-recruitment evidence
+is recorded in this docs update. `PROJECT-PLAN.md` section 4 plans 3-5 testers
+focused on onboarding drop-off, time to first finish, doctor/feedback usage,
+user reaction to gate blocks, team-convention demand, real fake-shim/gate-
+gaming incidents, and tester-driven UX complaints. HARDEN-2 may start only
+after this stable final record and tester kickoff status are recorded, and it
+remains subordinate to incoming tester feedback.
+
+This stable registry-smoke record does not claim product efficacy,
+token/provider-token saving, navigation benefit,
+app-quality/full-TDD/test-sufficiency, broad reliability, closure guarantee,
+autonomous completion, generated-app certification, deterministic enforcement,
+production-ready delegation, reliable automatic subagent orchestration,
+automatic completion/downgrade/removal, CodeGraph/LSP default/effectiveness, or
+broad product behavior.
 
 ## Stable Cycle S-0/S-1/S-2/S-3 Records
 

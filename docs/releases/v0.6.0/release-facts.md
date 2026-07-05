@@ -1,17 +1,26 @@
 # v0.6.0 Release Facts
 
-## Pre-Publish State
+## Registry State
 
-`0.6.0` is prepared as the next stable package after the published
-`0.6.0-rc.4` line. This is release prep only until QA publish GO.
+`0.6.0` is the current stable package published to npm `latest`.
 
-- Prepared package version: `0.6.0`.
-- Planned publish dist-tag after QA GO: `latest`.
-- Current published stable remains `latest=0.5.0`.
-- Current published prerelease remains `next=0.6.0-rc.4`.
-- Alpha remains `alpha=0.3.9-alpha.8`.
-- `persona-harness@0.6.0` should be unpublished before publish.
-- No local or remote `v0.6.0` tag should exist before registry verification.
+- Accepted archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-060-registry-smoke-20260705T041031Z`.
+- Source: npm registry only; installed `persona-harness@latest`; no local
+  tarball evidence.
+- Installed package: `persona-harness@0.6.0`.
+- `persona-harness@latest`: version `0.6.0`, gitHead
+  `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
+  `ffd77996263cffb858bd977edb73b03cf2820c75`, integrity
+  `sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`.
+- Explicit `persona-harness@0.6.0` resolves to the same version, gitHead,
+  shasum, and integrity.
+- Dist-tags: `latest=0.6.0`, `next=0.6.0-rc.4`, and
+  `alpha=0.3.9-alpha.8`.
+- Local and remote `v0.6.0` point to
+  `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`.
+- GitHub release `v0.6.0` is stable: `isDraft=false`,
+  `isPrerelease=false`.
 
 ## Stable Decision Basis
 
@@ -51,6 +60,36 @@ With the header off, failed `ph workflow finish implement` human stderr renders
 - H1-6b structured required-fix data remains implementation support, but the
   failed-finish human `Summary:` header is not rendered.
 
+## Final Registry Smoke
+
+The final stable registry smoke observed required package entries including
+LICENSE, localized READMEs, CHANGELOG, stable docs, `dist/io/atomic-file.*`,
+`dist/cli/workflow-required-fix.*`, `dist/cli/workflow-output.js`, closure,
+workflow-loop/state, ralph-loop/state/tool-output, workflow relay/UI, and
+bootstrap multi-agent surfaces.
+
+Basic install, help, version, workflow help, and bootstrap help succeeded.
+Stable S-3 failed-finish output had no `Summary:` header, retained
+`Required fixes:` and detailed blocker diagnostics, and had no
+`details unchanged since last check` or H1-6a compression wording. Generic
+closure JSON parsed with `action=next`, `nextStep.id=verify-app`, and first
+blocker `verification-unknown`.
+
+The smoke covered the H1-4 `convention-toolchain-missing` path and mapped it to
+`install-convention-toolchain` with
+`commandAfterContent="npx ph workflow check"`. It also covered the H1-1
+unmapped path with escalation/no-step-mapping wording, `unmapped-blocker`, and
+loop/ralph-loop stop surfaces; representative H1-5 `writeFileAtomic`
+success/failure cleanup and corrupt ralph-loop state no-crash; and retained
+default-off/schema-stable surfaces including `workflow-ralph-loop.4`,
+`workflow-loop.1`, and Role Checklist Relay checklist-first/host-dependent
+guidance.
+
+H1-1/H1-4 blocker fixtures reused prior accepted disposable fixture shapes to
+isolate target blockers. H1-5 coverage is representative helper/corrupt-state
+spot smoke, not repo-wide all-writes atomicity evidence. No real
+OpenCode/model/eval run was performed in the stable registry smoke.
+
 ## Release-Line Caveats
 
 - `runtimeInjection` remains a parked opt-in preview.
@@ -63,25 +102,27 @@ With the header off, failed `ph workflow finish implement` human stderr renders
 - No OpenCode hook signature change is included.
 - No gate exit-code or JSON schema field movement is included.
 - No publish, tag, latest, next, or alpha dist-tag movement is included in this
-  prep task.
+  docs-record task.
 
 ## Tester Plan
 
-`PROJECT-PLAN.md` section 4 makes stable the trigger for 3-5 external testers.
-Tester observation should focus on onboarding drop-off, time to first finish,
-doctor/feedback usage, user reaction to gate blocks, team-convention demand,
-real fake-shim or gate-gaming incidents, and tester-driven UX complaints.
+This final stable record is the handoff point for external tester recruitment.
+Recruitment is planned/ready to start; this release-facts file records no
+concrete started-recruitment evidence. `PROJECT-PLAN.md` section 4 makes
+stable the trigger for 3-5 external testers. Tester observation should focus
+on onboarding drop-off, time to first finish, doctor/feedback usage, user
+reaction to gate blocks, team-convention demand, real fake-shim or gate-gaming
+incidents, and tester-driven UX complaints.
 
-HARDEN-2 remains post-stable and can run during tester observation only while
-yielding to tester feedback.
+HARDEN-2 may start only after this stable final record and tester kickoff
+status are recorded. It remains subordinate to incoming tester feedback.
 
 ## No-claim Boundary
 
-This is release-prep evidence and local verification, not registry evidence for
-`0.6.0` until a future publish and External smoke cover the stable package. It
-is not evidence for product efficacy, token/provider-token saving, navigation
-benefit, app quality, full-TDD/test sufficiency, broad reliability, closure
-guarantee, autonomous completion, generated-app certification, deterministic
-enforcement, production-ready delegation, reliable automatic subagent
-orchestration, automatic completion/downgrade/removal, CodeGraph/LSP
-default/effectiveness, or broad product claims.
+This is registry package-runtime smoke evidence only. It is not evidence for
+product efficacy, token/provider-token saving, navigation benefit, app quality,
+full-TDD/test sufficiency, broad reliability, closure guarantee, autonomous
+completion, generated-app certification, deterministic enforcement,
+production-ready delegation, reliable automatic subagent orchestration,
+automatic completion/downgrade/removal, CodeGraph/LSP default/effectiveness,
+or broad product claims.

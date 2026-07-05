@@ -22,11 +22,10 @@ changes during roadmap work.
 ## Releases
 
 - [Package version index](package-index.md): chronological package/version
-  timeline from undocumented early rows through the current published
-  `0.6.0-rc.4` prerelease and prepared `0.6.0` stable target.
-- [`v0.6.0`](v0.6.0/README.md): prepared stable release capsule. Publish
-  target is `latest` after QA GO; current `latest` remains `0.5.0` until
-  publish.
+  timeline from undocumented early rows through the current stable
+  `0.6.0` registry-smoke record and retained `0.6.0-rc.4` prerelease channel.
+- [`v0.6.0`](v0.6.0/README.md): current stable `latest` registry-smoke
+  capsule. `next` remains `0.6.0-rc.4` and `alpha` remains `0.3.9-alpha.8`.
 - [`v0.6.0-rc.4`](v0.6.0-rc.4/README.md): current published prerelease `next`
   registry smoke capsule. `latest` remains `0.5.0` and `alpha` remains
   `0.3.9-alpha.8`.

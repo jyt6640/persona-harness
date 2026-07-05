@@ -18,7 +18,7 @@ The stable blocker changed during S-0 and was resolved by S-3:
   package smoke was accepted at commit
   `c7affd7674fc949b373c414974b05010b8dd1f21`.
 
-This supports stable prep by removing the accepted regression source. It is not
+This supports the stable release by removing the accepted regression source. It is not
 a product efficacy, token saving, app quality, broad reliability, closure
 guarantee, or default-change claim.
 
@@ -33,7 +33,7 @@ The compression candidate is not part of `0.6.0`.
 ## H1-6b Structured Required-Fix Data
 
 H1-6b is accepted as structured required-fix data and internal implementation
-support. The stable prep no longer renders the failed-finish human `Summary:`
+support. The stable package no longer renders the failed-finish human `Summary:`
 header; `Required fixes:` and detailed blockers remain visible, and
 `workflow closure next --json` remains the structured machine-readable path.
 

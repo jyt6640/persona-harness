@@ -1,32 +1,34 @@
 # v0.6.0 Release Capsule
 
-This capsule is the durable index for the prepared `0.6.0` stable release. It
+This capsule is the durable index for the published `0.6.0` stable release. It
 complements the release-operation notes in
 [`docs/current/release/v0.6.0-release-notes.md`](../../current/release/v0.6.0-release-notes.md).
 
 ## Channel State
 
-- Prepared package version: `0.6.0`.
-- Planned publish channel after QA GO: npm `latest`.
-- Current published stable remains `persona-harness@latest=0.5.0` until
-  publish.
+- Published stable package: `persona-harness@latest=0.6.0`.
 - Current published prerelease remains `persona-harness@next=0.6.0-rc.4`.
 - Alpha channel remains `persona-harness@alpha=0.3.9-alpha.8`.
-- `persona-harness@0.6.0` is expected to remain unpublished before the future
-  publish step.
-- No `v0.6.0` tag should exist before registry verification in the future
-  publish/tag step.
+- `persona-harness@0.6.0` resolves to gitHead
+  `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
+  `ffd77996263cffb858bd977edb73b03cf2820c75`, and integrity
+  `sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`.
+- Local and remote `v0.6.0` point to
+  `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`.
+- GitHub release `v0.6.0` is stable: `isDraft=false`,
+  `isPrerelease=false`.
 
 ## Durable Records
 
-- [`release-facts.md`](release-facts.md): stable prep facts, included work,
-  pre-publish channel state, and release boundaries.
+- [`release-facts.md`](release-facts.md): stable registry facts, included
+  work, final package-runtime smoke, tester kickoff status, and release
+  boundaries.
 - [`measurements.md`](measurements.md): scoped HARDEN-1 and stable-cycle
-  measurement summaries that govern this release prep.
+  measurement summaries that govern this stable release.
 
-## Prep Summary
+## Stable Summary
 
-`0.6.0` prepares the accepted HARDEN-1 line for stable after S-3 removed the
+`0.6.0` publishes the accepted HARDEN-1 line as stable after S-3 removed the
 failed-finish human `Summary:` header that S-2 found non-inferior=false.
 
 The stable release remains gate-first:
@@ -39,12 +41,16 @@ The stable release remains gate-first:
 
 ## Post-Stable Tester Plan
 
-`PROJECT-PLAN.md` section 4 records the planned post-stable external tester
-kickoff: 3-5 testers, with observation focused on onboarding drop-off, first
-finish, doctor/feedback usage, user reaction to gate blocks, team-convention
-demand, real gate-gaming incidents, and tester-driven UX complaints.
+This final stable record is the handoff point for external tester recruitment.
+Recruitment is planned/ready to start; this capsule records no concrete
+started-recruitment evidence. `PROJECT-PLAN.md` section 4 records the planned
+post-stable external tester kickoff: 3-5 testers, with observation focused on
+onboarding drop-off, first finish, doctor/feedback usage, user reaction to gate
+blocks, team-convention demand, real gate-gaming incidents, and tester-driven
+UX complaints.
 
-HARDEN-2 remains post-stable and should yield to tester feedback during that
+HARDEN-2 may start only after this stable final record and tester kickoff
+status are recorded, and it should yield to tester feedback during the
 observation period.
 
 ## Boundaries

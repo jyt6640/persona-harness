@@ -35,12 +35,16 @@ Those items make the release decision ready; they do not authorize Docs Release 
 
 ## Current Version-Line Readiness
 
-Current stable release prep: `0.6.0` is prepared as the stable package target
-for future npm `latest` publish after QA publish GO. This task does not publish,
-tag, or move dist-tags. Current pre-publish registry state remains
-`latest=0.5.0`, `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`;
-`persona-harness@0.6.0` is expected to remain unpublished and no `v0.6.0` tag
-should exist before the future publish/tag step.
+Current stable package: `0.6.0` is published to npm `latest` after QA accepted
+the final External registry smoke. Current registry state is `latest=0.6.0`,
+`next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`. Registry verification confirmed
+`persona-harness@latest=0.6.0`, gitHead
+`13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
+`ffd77996263cffb858bd977edb73b03cf2820c75`, and integrity
+`sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`.
+Explicit `persona-harness@0.6.0` resolves to the same package. Local and
+remote `v0.6.0` point at the same gitHead, and the GitHub release is stable
+(`isDraft=false`, `isPrerelease=false`).
 
 Stable basis: HARDEN-1 accepted hardening plus the stable decision cycle S-0
 through S-3. S-0 corrected the blocker: H1-6a compression NO-GO itself did not
@@ -62,11 +66,25 @@ remains NO-GO and unimplemented. H1-6b structured required-fix data remains
 implementation support, but the failed-finish human Summary header is not
 rendered.
 
-Post-stable external tester kickoff is planned from `PROJECT-PLAN.md` section
-4: 3-5 testers, focused on onboarding drop-off, time to first finish,
-doctor/feedback usage, whether users value or resent gate blocks, team
-convention demand, real fake-shim/gate-gaming incidents, and tester-driven UX
-complaints. HARDEN-2 remains post-stable and must yield to tester feedback.
+Final stable registry smoke archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-060-registry-smoke-20260705T041031Z`.
+The smoke used npm registry only and installed `persona-harness@latest`; no
+local tarball evidence was used. It observed stable S-3 failed-finish output
+with no `Summary:` header, retained `Required fixes:` and detailed blocker
+diagnostics, generic closure JSON parsing, H1-4 mapped toolchain guidance,
+H1-1 unmapped escalation and loop stop surfaces, representative H1-5
+atomic/corrupt-state spots, and retained default-off/schema-stable loop,
+ralph-loop, and Role Checklist Relay surfaces. No real OpenCode/model/eval run
+was performed in this stable registry smoke.
+
+Post-stable external tester kickoff is planned/ready to start from
+`PROJECT-PLAN.md` section 4. No concrete started-recruitment evidence is
+recorded here. Planned scope is 3-5 testers, focused on onboarding drop-off,
+time to first finish, doctor/feedback usage, whether users value or resent gate
+blocks, team convention demand, real fake-shim/gate-gaming incidents, and
+tester-driven UX complaints. HARDEN-2 may start only after this stable final
+record and tester kickoff status are recorded, and must yield to incoming
+tester feedback.
 
 Current prerelease package: official `0.6.0-rc.4` is published under npm
 dist-tag `next`, not `latest`. Registry verification confirmed
@@ -77,8 +95,8 @@ dist-tag `next`, not `latest`. Registry verification confirmed
 The explicit package selector `persona-harness@0.6.0-rc.4` resolves to the
 same version, gitHead, shasum, and integrity. Current dist-tags are
 `latest=0.5.0`, `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`; `latest` did
-not move. The later stable prep records above supersede the rc4-time stable
-deferral after S-3 removed the failed Summary header.
+not move at rc4 time. The later stable `0.6.0` records above supersede the
+rc4-time stable deferral after S-3 removed the failed Summary header.
 
 The local and remote `v0.6.0-rc.4` tags point at
 `cf6835697f47da5a2a8372d00fc47e263ee781f8` after registry verification. The
@@ -229,10 +247,11 @@ Checklist Relay guidance remained absent by default, present/idempotent with
 the compatibility flag `--multi-agent-preview`, and relay status/next JSON used
 role order `test-writer`, `implementer`, `reviewer`.
 
-Current stable package: official `0.5.0` is published under npm dist-tag
+Previous stable package: official `0.5.0` was published under npm dist-tag
 `latest`. Registry verification confirmed `persona-harness@latest=0.5.0`,
 gitHead `c0f1085a5182cdd17411bd043173aabc9a76b30e`, shasum
-`3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`. Current dist-tags are
+`3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`. At its stable-smoke time,
+dist-tags were
 `latest=0.5.0`, `next=0.6.0-rc.3`, `alpha=0.3.9-alpha.8`. The local and remote
 `v0.5.0` tags point at the `0.5.0` gitHead. Trusted Publisher run
 `28611027369` succeeded; Release workflow run `28611144533` succeeded; the

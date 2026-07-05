@@ -39,11 +39,11 @@ deleting evidence/status history.
 
 ## Current Facts To Preserve
 
-- `0.6.0` is prepared as the stable release target for future npm `latest`
-  after QA publish GO. Current published channels remain `latest=0.5.0`,
-  `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8` until that publish step.
-  S-3 removed the failed-finish human `Summary:` header after S-2 regated it
-  as non-inferior=false.
+- `0.6.0` is published as the stable npm `latest` package after QA accepted
+  the final External registry smoke. Current published channels are
+  `latest=0.6.0`, `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`. S-3 removed
+  the failed-finish human `Summary:` header after S-2 regated it as
+  non-inferior=false.
 - `runtimeInjection` remains a parked opt-in preview.
 - The rail-entry prompt regression gate is an operator-run n>=5
   non-inferiority check for rail/AGENTS/gate-output wording changes. It is not
