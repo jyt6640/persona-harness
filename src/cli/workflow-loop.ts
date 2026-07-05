@@ -6,6 +6,7 @@ import { AtomicWriteConflictError } from "../io/atomic-file.js"
 import {
   formatRuleDeliveryPromptLines,
   ruleDeliveryRoleForBlocker,
+  ruleDeliveryStageForBlocker,
   rulePackContentHash,
   selectRulesForDelivery,
 } from "../rules/rule-delivery.js"
@@ -217,7 +218,8 @@ function workflowLoopPrompt(
   blockerTotal: number,
 ): readonly string[] {
   const deliveryRole = ruleDeliveryRoleForBlocker(blocker.id)
-  const delivery = selectRulesForDelivery(projectDir, deliveryRole)
+  const deliveryStage = ruleDeliveryStageForBlocker(blocker.id)
+  const delivery = selectRulesForDelivery(projectDir, deliveryRole, { stage: deliveryStage })
   return [
     "[Persona Harness Workflow Loop]",
     ...continuationPromptCoreLines(blocker, step, { index: blockerIndex, total: blockerTotal }),

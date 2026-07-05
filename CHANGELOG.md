@@ -6,6 +6,19 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- LEAN-1 L-3 Filter 2 adds blocker-stage relevance filtering for scoped rule
+  delivery in explicit `ph workflow loop` prompts. Report/read-coverage,
+  verification/test, and review blockers now receive narrower deterministic
+  rule sets by blocker stage while implementation/architecture blockers keep
+  broad role-scoped rules; closure, check, finish, convention, report, and
+  verification gates remain broad/global. Measurement archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l3-filter2-stage-relevance-clean-20260705T182455Z`
+  records `gate-fixture.2` rail-entry non-inferiority control `10/10`,
+  candidate `10/10`, invalid `0`, delta `0pp`, and Stage 18 fixture finish
+  PASS no-worse control `3/5`, candidate `3/5`. This is scoped-delivery
+  regression evidence only, not token-saving, provider-token-saving,
+  product-efficacy, app-quality, reliability, or closure-guarantee evidence.
+
 - LEAN-1 L-2 adds session-local duplicate rail body suppression for
   `ph workflow implement`, `ph workflow check`, and `ph workflow continue`.
   The first full rail body in a workspace session writes

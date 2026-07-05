@@ -243,7 +243,7 @@ enforcement: inject_only
       schemaVersion: "workflow-loop.1",
     })
     expect(output.promptPreview.join("\n")).toContain("Blocker: verification-unknown (blocker 1/")
-    expect(output.promptPreview.join("\n")).toContain("Scoped PH rules (role: test-writer")
+    expect(output.promptPreview.join("\n")).toContain("Scoped PH rules (role: test-writer, stage: verification")
     expect(output.promptPreview.join("\n")).toContain("verification scoped policy")
     expect(output.promptPreview.join("\n")).not.toContain("implementation scoped policy")
     expect(output.promptPreview.join("\n")).not.toContain("read everything again")

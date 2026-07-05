@@ -64,6 +64,36 @@ did not regress the preregistered rail-entry and fixture-scoped finish checks.
 It is not product-efficacy, provider-token-saving, app-quality, broad
 reliability, or default-change evidence.
 
+## LEAN-1 L-3 Minimization Record
+
+Filter 2 (`stage relevance`) is adopted. `ph workflow loop` now derives a
+deterministic blocker stage before selecting scoped rules:
+
+- report/read-coverage blockers: workflow/report-oriented rules;
+- verification/test/TDD/command blockers: test, Gradle, and verification
+  rules;
+- review blockers: review/refactoring/object-responsibility rules;
+- implementation, architecture, stack-alignment, and convention blockers:
+  broad role-scoped implementation rules.
+
+The mapping lives in `RULE_DELIVERY_STAGE_RELEVANCE`; delivery bytes are sorted
+by rule path for cache-friendly stability. This narrows delivered prompt text
+only. Closure/check/finish gates and convention observers remain broad/global,
+so a missed delivered rule may affect prompt efficiency but must not make a
+gate easier to pass.
+
+Filter 2 archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l3-filter2-stage-relevance-clean-20260705T182455Z`.
+
+- `gate-fixture.2` real OpenCode rail-entry: control `10/10`, candidate
+  `10/10`, delta `0pp`, invalid pairs `0`, non-inferior `true`.
+- Stage 18 finish-reachable workflow-loop no-worse check: control finish PASS
+  `3/5`, candidate finish PASS `3/5`, invalid pairs `0`, no-worse `true`.
+
+This record is scoped-delivery regression evidence only. It is not
+token-saving, provider-token-saving, product-efficacy, app-quality, broad
+reliability, or default-change evidence.
+
 ## Boundaries
 
 - No runtime injection unpark.

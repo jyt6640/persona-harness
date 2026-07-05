@@ -6,9 +6,11 @@ import { describe, expect, it, afterEach } from "vitest"
 import {
   rederiveDeliveredRulePaths,
   ruleDeliveryRoleForBlocker,
+  ruleDeliveryStageForBlocker,
   ruleDeliveryRoleForWorkText,
   rulePackContentHash,
   selectRulesForDelivery,
+  RULE_DELIVERY_STAGE_RELEVANCE,
 } from "../src/rules/rule-delivery.js"
 import { summarizeConventionPackDiagnostics } from "../src/cli/convention-pack-diagnostics.js"
 import { loadRuleCatalog } from "../src/rules/rule-catalog.js"
@@ -169,9 +171,95 @@ enforcement: inject_only
     expect(ruleDeliveryRoleForBlocker("verification-failed")).toBe("test-writer")
     expect(ruleDeliveryRoleForBlocker("review-report-missing")).toBe("reviewer")
     expect(ruleDeliveryRoleForBlocker("implementation-report-missing")).toBe("implementer")
+    expect(ruleDeliveryStageForBlocker("verification-failed")).toBe("verification")
+    expect(ruleDeliveryStageForBlocker("review-report-missing")).toBe("report")
+    expect(ruleDeliveryStageForBlocker("implementation-report-missing")).toBe("report")
+    expect(ruleDeliveryStageForBlocker("stack-alignment-mismatch")).toBe("implementation")
     expect(ruleDeliveryRoleForWorkText("Add controller tests for the API")).toBe("test-writer")
     expect(ruleDeliveryRoleForWorkText("Review the completed slice")).toBe("reviewer")
     expect(ruleDeliveryRoleForWorkText("Implement task CRUD")).toBe("implementer")
+  })
+
+  it("filters workflow loop delivery by deterministic blocker stage relevance", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { maxRulesPerInjection: 10 })
+    writeRule(
+      projectDir,
+      "backend/implementer-report.md",
+      `
+id: backend.implementer-report
+source: backend-policy
+domain: common
+topic: feature-workflow
+roles:
+  - implementer
+globs:
+  - "**/*.md"
+severity: should
+enforcement: inject_only
+`,
+      ["report procedural policy"],
+    )
+    writeRule(
+      projectDir,
+      "backend/implementer-domain.md",
+      `
+id: backend.implementer-domain
+source: backend-policy
+domain: backend
+topic: domain-entity
+roles:
+  - implementer
+globs:
+  - "**/*.java"
+severity: must
+enforcement: inject_only
+`,
+      ["domain implementation policy"],
+    )
+    writeRule(
+      projectDir,
+      "backend/test-verification.md",
+      `
+id: backend.test-verification
+source: backend-policy
+domain: backend
+topic: test-policy
+roles:
+  - test-writer
+globs:
+  - "**/*.java"
+severity: must
+enforcement: inject_only
+`,
+      ["test verification policy"],
+    )
+
+    const reportDelivery = selectRulesForDelivery(projectDir, "implementer", { stage: "report" })
+    const implementationDelivery = selectRulesForDelivery(projectDir, "implementer", { stage: "implementation" })
+    const verificationDelivery = selectRulesForDelivery(projectDir, "test-writer", { stage: "verification" })
+    const rederived = rederiveDeliveredRulePaths(projectDir, "implementer", reportDelivery.rulePackHash, {
+      stage: "report",
+    })
+
+    expect(Object.keys(RULE_DELIVERY_STAGE_RELEVANCE).sort()).toEqual([
+      "implementation",
+      "report",
+      "review",
+      "verification",
+    ])
+    expect(reportDelivery.rules.map((rule) => rule.path)).toEqual(["backend/implementer-report.md"])
+    expect(implementationDelivery.rules.map((rule) => rule.path)).toEqual([
+      "backend/implementer-domain.md",
+      "backend/implementer-report.md",
+    ])
+    expect(verificationDelivery.rules.map((rule) => rule.path)).toEqual(["backend/test-verification.md"])
+    expect(rederived).toMatchObject({
+      kind: "matched",
+      role: "implementer",
+      rulePaths: ["backend/implementer-report.md"],
+      stage: "report",
+    })
   })
 
   it("keeps clean rule and convention diagnostics report-only", () => {

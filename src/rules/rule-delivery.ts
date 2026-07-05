@@ -9,8 +9,15 @@ import {
   type Phase0Scenario,
   type RuleCatalogEntry,
 } from "./rule-catalog.js"
+import {
+  isRuleRelevantForStage,
+  ruleDeliveryStageForBlocker,
+  type RuleDeliveryStage,
+} from "./rule-delivery-context.js"
 import type { RuleDeliveryRole } from "./rule-frontmatter.js"
 import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
+
+export { RULE_DELIVERY_STAGE_RELEVANCE, ruleDeliveryStageForBlocker } from "./rule-delivery-context.js"
 
 export type DeliveredRule = {
   readonly id: string
@@ -27,6 +34,7 @@ export type RuleDeliverySummary = {
   readonly ruleCount: number
   readonly rulePackHash: string
   readonly rules: readonly DeliveredRule[]
+  readonly stage?: RuleDeliveryStage
 }
 
 export type RederivedRuleDelivery =
@@ -35,12 +43,14 @@ export type RederivedRuleDelivery =
       readonly actualRulePackHash: string
       readonly expectedRulePackHash: string
       readonly role: RuleDeliveryRole
+      readonly stage?: RuleDeliveryStage
     }
   | {
       readonly kind: "matched"
       readonly role: RuleDeliveryRole
       readonly rulePackHash: string
       readonly rulePaths: readonly string[]
+      readonly stage?: RuleDeliveryStage
     }
 
 const STEP1_API_CONTRACT_RULE = "backend/step1-api-contract.md"
@@ -104,6 +114,7 @@ export function selectRulesForDelivery(
   role: RuleDeliveryRole,
   options: {
     readonly fileRole?: FileRole
+    readonly stage?: RuleDeliveryStage
     readonly targetFile?: string
   } = {},
 ): RuleDeliverySummary {
@@ -115,11 +126,13 @@ export function selectRulesForDelivery(
   const eligibleRules = catalog
     .filter((entry) => supportsRole(entry, role))
     .filter((entry) => matchesScenario(entry, config.scenario))
+    .filter((entry) => (options.stage === undefined ? true : isRuleRelevantForStage(entry, options.stage)))
     .filter((entry) =>
       options.fileRole === undefined || targetPath === undefined
         ? true
         : isRuleEligibleForTarget(entry, options.fileRole, config.scenario, targetPath),
     )
+    .sort((left, right) => left.path.localeCompare(right.path))
     .slice(0, config.maxRulesPerInjection)
     .map(deliveredRule)
   const lines = eligibleRules.flatMap((rule) => [rule.path, ...rule.policies])
@@ -132,12 +145,14 @@ export function selectRulesForDelivery(
     ruleCount: eligibleRules.length,
     rulePackHash: rulePackContentHash(projectDir),
     rules: eligibleRules,
+    ...(options.stage === undefined ? {} : { stage: options.stage }),
   }
 }
 
 export function formatRuleDeliveryPromptLines(delivery: RuleDeliverySummary): readonly string[] {
+  const stage = delivery.stage ?? "all"
   const lines = [
-    `Scoped PH rules (role: ${delivery.role}, budget: ${delivery.ruleCount}/${delivery.budget}, estimated tokens: ${delivery.estimatedTokens})`,
+    `Scoped PH rules (role: ${delivery.role}, stage: ${stage}, budget: ${delivery.ruleCount}/${delivery.budget}, estimated tokens: ${delivery.estimatedTokens})`,
     `Rule pack hash: ${delivery.rulePackHash}`,
     "Rule delivery is narrow by role scope; PH closure/check/finish gates remain broad and authoritative.",
   ]
@@ -157,14 +172,16 @@ export function rederiveDeliveredRulePaths(
   projectDir: string,
   role: RuleDeliveryRole,
   expectedRulePackHash: string,
+  options: { readonly stage?: RuleDeliveryStage } = {},
 ): RederivedRuleDelivery {
-  const delivery = selectRulesForDelivery(projectDir, role)
+  const delivery = selectRulesForDelivery(projectDir, role, options)
   if (delivery.rulePackHash !== expectedRulePackHash) {
     return {
       actualRulePackHash: delivery.rulePackHash,
       expectedRulePackHash,
       kind: "hash-mismatch",
       role,
+      ...(options.stage === undefined ? {} : { stage: options.stage }),
     }
   }
   return {
@@ -172,6 +189,7 @@ export function rederiveDeliveredRulePaths(
     role,
     rulePackHash: delivery.rulePackHash,
     rulePaths: delivery.rules.map((rule) => rule.path),
+    ...(options.stage === undefined ? {} : { stage: options.stage }),
   }
 }
 
