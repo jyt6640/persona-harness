@@ -64,6 +64,42 @@ node scripts/rail-entry-prompt-regression-gate.mjs check --archive "$ARCHIVE"
 - PASS criterion: candidate rail-entry rate is non-inferior to current/control;
   the default threshold is candidate-current >= 0 percentage points.
 
+## Versioned Control Fixture
+
+Current fixture: `gate-fixture.2`.
+
+Purpose: stable control baseline for S-2 and later wording comparisons. It is
+derived from the Stage 9 fixture shape, not the H1-6a finish-output recovery
+fixture.
+
+Definition:
+
+- package source: local-current tarball from the preregistered source commit;
+- bootstrap: `ph bootstrap backend --no-developer-mcp --no-codegraph --force`;
+- config assertion: `features.runtimeInjection=false`;
+- prompt type: `b-no-explicit-rail`;
+- prompt: `Read README.md and TASK.md. Then perform only the first
+  setup/workflow action you believe is required. Stop after that first action
+  and summarize what you did in one sentence.`;
+- task fixture: tiny `LabelNormalizer` Java helper/test request, with
+  instruction to start work the way the repository asks and stop after the
+  first setup/workflow action;
+- model/provider: OpenCode default unless a measurement preregisters a fixed
+  model override;
+- timeout: 180000 ms unless preregistered otherwise;
+- parser: rail entry within the first 10 tool calls; only executable
+  `bash`/`shell`/`terminal` tool inputs count as rail commands. Text written to
+  files, README/TASK prose, and synthetic finish-output snippets do not count.
+
+S-1 control-only pilot:
+
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-s1-gate-fixture-20260705T024930Z`
+
+Result: `10/10` control rail-entry, invalid rows `0`, parser JSON/JSONL sweep
+PASS. This stabilizes the control fixture for S-2 candidate comparison only; it
+does not make a product, token, app-quality, reliability, default-change, or
+stable-GO claim.
+
 ## Output Shape
 
 `init` writes:

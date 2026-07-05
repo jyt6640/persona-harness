@@ -300,3 +300,64 @@ after that S-2 result.
 No product/runtime behavior, defaults, schemas, evidence schemas, version,
 publish, tag, latest, next, alpha, hook signature, exit-code, or JSON schema
 field moves in this S-0 correction.
+
+## Stable Cycle S-1 Gate Fixture Stabilization
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-s1-gate-fixture-20260705T024930Z`
+
+Status: PASS for control-fixture stabilization. This is not an S-2 candidate
+comparison and does not resolve the shipped Summary-header question by itself.
+
+Comparison finding:
+
+- Stage 9 used `persona-harness@0.5.0`, OpenCode default model, a prompt-type
+  (b) fixture asking the model to read `README.md`/`TASK.md`, perform the first
+  setup/workflow action the repository asks for, and stop. OFF/control rail
+  entry was `10/10`; all observed OFF rails were real shell commands such as
+  `npx ph workflow implement` within the first 10 tool calls.
+- H1-6a used `persona-harness@0.6.0-rc.3`, OpenCode `1.17.7`, and a different
+  finish-output recovery fixture. The prompt asked the model to read
+  `FINISH_OUTPUT.md` and recover from failed finish output. Control rail entry
+  was recorded as `3/5`, but one counted row matched a rail command inside a
+  write payload rather than an executable shell command. The control baseline
+  drop was therefore driven by fixture/task drift plus an over-broad parser,
+  not by evidence that the Stage 9 stack condition itself became unstable.
+- The H1-6a recovery fixture encouraged report-file editing and `.persona`
+  inspection before running `workflow implement`; it is not the stable control
+  fixture for wording regression.
+
+Versioned fixture:
+
+- fixture id: `gate-fixture.2`;
+- package/source for S-1 pilot: local-current `persona-harness@0.6.0-rc.4` at
+  commit `ae630d513a4ed56f3445166474af22666910aec4`, tarball shasum
+  `d4053e6df5d71db92e1a9f8709464a09fa30a712`;
+- OpenCode: `/opt/homebrew/bin/opencode`, version `1.17.7`;
+- prompt type: `b-no-explicit-rail`;
+- prompt: read `README.md` and `TASK.md`, perform only the first
+  setup/workflow action believed required, then stop;
+- bootstrap: `ph bootstrap backend --no-developer-mcp --no-codegraph --force`;
+- runtime injection assertion: `false`;
+- parser: first 10 tool calls, executable `bash`/`shell`/`terminal` tool inputs
+  only. File-write payloads and prose are not rail-entry evidence.
+
+S-1 control-only pilot:
+
+- rows: `10/10` valid real OpenCode rows;
+- invalid rows: `0`;
+- control rail-entry: `10/10`;
+- accepted threshold: `>= 9/10`;
+- JSON/JSONL parse sweep: PASS.
+
+S-2 readiness decision: S-2 may use `gate-fixture.2` for the Summary-header
+candidate comparison, with the same parser and preregistered archive contract.
+S-2 still must run the candidate comparison before any stable decision relies
+on this gate.
+
+Boundary: S-1 is fixture stabilization only. It does not compare the shipped
+Summary header, change defaults or schemas, move version or dist-tags, prepare
+stable, or support product-efficacy, token/provider-token saving, app-quality,
+broad reliability, closure-guarantee, autonomous-completion, deterministic
+enforcement, generated-app certification, automatic completion, or reliable
+delegation claims.

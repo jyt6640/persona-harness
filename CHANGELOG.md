@@ -6,6 +6,17 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stable-cycle S-1 stabilizes the rail-entry gate fixture before S-2. Comparing
+  Stage 9 with H1-6a showed the H1-6a control baseline drop came from fixture
+  drift (`FINISH_OUTPUT.md` recovery instead of first setup/workflow action)
+  plus an over-broad parser that could count rail command text inside file-write
+  payloads. The new `gate-fixture.2` restores the Stage 9-style prompt/task and
+  counts only executable `bash`/`shell`/`terminal` tool inputs as rail commands.
+  Control-only pilot archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-s1-gate-fixture-20260705T024930Z`
+  passed with `10/10` rail entry and invalid rows `0`. This prepares S-2 only;
+  it does not compare the Summary-header candidate, change defaults/schemas, or
+  make stable/product/token/app-quality/reliability claims.
 - Stable-cycle S-0 documentation/policy hygiene records three append-only
   decisions before S-1/S-2/S-3. First, H1-6a compression NO-GO itself is not
   the stable blocker because the HARDEN-1 compression spec allowed rollback or
