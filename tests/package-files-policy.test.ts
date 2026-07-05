@@ -21,7 +21,7 @@ describe("package files policy", () => {
       toPackagePath(path.relative(packageRoot, filePath)),
     )
 
-    expect(ruleFiles).toHaveLength(20)
+    expect(ruleFiles).toHaveLength(48)
 
     for (const ruleFile of ruleFiles) {
       expect(isCoveredByPackageFiles(ruleFile, packageJson.files)).toBe(true)

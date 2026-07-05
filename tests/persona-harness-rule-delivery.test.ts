@@ -1,3 +1,6 @@
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+
 import { describe, expect, it, afterEach } from "vitest"
 
 import {
@@ -8,6 +11,7 @@ import {
   selectRulesForDelivery,
 } from "../src/rules/rule-delivery.js"
 import { summarizeConventionPackDiagnostics } from "../src/cli/convention-pack-diagnostics.js"
+import { loadRuleCatalog } from "../src/rules/rule-catalog.js"
 import {
   cleanupProjects,
   createProject,
@@ -16,6 +20,44 @@ import {
 } from "./helpers/rule-fixtures.js"
 
 afterEach(cleanupProjects)
+
+const DIFF_RULE_DELIVERY_ONLY_RULES = [
+  { path: "diff-rules/architecture/index.md", roles: ["main"] },
+  { path: "diff-rules/decisions/README.md", roles: ["main"] },
+  { path: "diff-rules/decisions/accepted/domain-validation-over-getter.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/accepted/exception-hierarchy.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/accepted/explicit-over-reuse.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/accepted/fake-over-mock-in-service-test.md", roles: ["test-writer"] },
+  { path: "diff-rules/decisions/accepted/policy-object-separation.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/accepted/service-orchestration-only.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/pending/aggregate-boundary.md", roles: ["main", "implementer"] },
+  { path: "diff-rules/decisions/pending/domain-entity-separation.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/pending/event-driven-boundary.md", roles: ["main"] },
+  { path: "diff-rules/decisions/pending/fake-package-location.md", roles: ["test-writer"] },
+  { path: "diff-rules/decisions/pending/security-auth-pattern.md", roles: ["main"] },
+  { path: "diff-rules/decisions/pending/validator-package-location.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/rejected/anemic-domain-model.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/rejected/overuse-of-builder-pattern.md", roles: ["implementer"] },
+  { path: "diff-rules/decisions/rejected/service-layer-business-logic.md", roles: ["implementer", "reviewer"] },
+  { path: "diff-rules/principles/architecture-evolution.md", roles: ["main"] },
+  { path: "diff-rules/principles/exceptions.md", roles: ["implementer"] },
+  { path: "diff-rules/principles/index.md", roles: ["main"] },
+  { path: "diff-rules/principles/naming.md", roles: ["implementer"] },
+  { path: "diff-rules/principles/oop.md", roles: ["implementer", "reviewer"] },
+  { path: "diff-rules/workflow/code-review.md", roles: ["reviewer"] },
+  { path: "diff-rules/workflow/git-convention.md", roles: ["main"] },
+  { path: "diff-rules/workflow/how-to-add-new-feature.md", roles: ["main", "test-writer", "implementer"] },
+  { path: "diff-rules/workflow/how-to-review-legacy-code.md", roles: ["reviewer"] },
+  { path: "diff-rules/workflow/index.md", roles: ["main"] },
+  { path: "diff-rules/workflow/refactoring.md", roles: ["implementer", "reviewer"] },
+] as const
+
+function copyProjectRule(projectDir: string, rulePath: string): void {
+  const sourcePath = join(process.cwd(), ".persona", "rules", rulePath)
+  const targetPath = join(projectDir, ".persona", "rules", rulePath)
+  mkdirSync(dirname(targetPath), { recursive: true })
+  writeFileSync(targetPath, readFileSync(sourcePath, "utf8"))
+}
 
 describe("role-scoped rule delivery", () => {
   it("selects only matching frontmatter roles within the maxRulesPerInjection budget", () => {
@@ -148,5 +190,48 @@ enforcement: inject_only
 
     expect(delivery.diagnostics).toEqual([])
     expect(conventions.finding).toBe("PASS")
+  })
+
+  it("loads delivery-only diff rules with clean diagnostics and scoped roles", () => {
+    const catalog = loadRuleCatalog(process.cwd())
+
+    for (const expectedRule of DIFF_RULE_DELIVERY_ONLY_RULES) {
+      const entry = catalog.find((candidate) => candidate.path === expectedRule.path)
+
+      expect(entry?.diagnostics).toEqual([])
+      expect(entry?.metadata.roles).toEqual(expectedRule.roles)
+      expect(entry?.metadata.enforcement).toBe("inject_only")
+    }
+  })
+
+  it("preserves rejected diff-rule patterns and reasons as negative examples", () => {
+    const markdown = readFileSync(
+      join(process.cwd(), ".persona", "rules", "diff-rules", "decisions", "rejected", "anemic-domain-model.md"),
+      "utf8",
+    )
+
+    expect(markdown).toContain("## 상태\n\nrejected")
+    expect(markdown).toContain("## 선택 이유")
+    expect(markdown).toContain("지양하는 예시")
+    expect(markdown).toContain("if (order.getStatus() == ...)")
+  })
+
+  it("delivers migrated diff rules through hash rederivation", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { maxRulesPerInjection: 20 })
+    copyProjectRule(projectDir, "diff-rules/decisions/rejected/anemic-domain-model.md")
+
+    const delivery = selectRulesForDelivery(projectDir, "implementer")
+    const result = rederiveDeliveredRulePaths(projectDir, "implementer", delivery.rulePackHash)
+
+    expect(delivery.rules.map((rule) => rule.path)).toEqual([
+      "diff-rules/decisions/rejected/anemic-domain-model.md",
+    ])
+    expect(result).toEqual({
+      kind: "matched",
+      role: "implementer",
+      rulePackHash: delivery.rulePackHash,
+      rulePaths: ["diff-rules/decisions/rejected/anemic-domain-model.md"],
+    })
   })
 })

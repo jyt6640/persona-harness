@@ -1,0 +1,81 @@
+---
+id: diff-rules.decisions.pending.fake-package-location
+source: backend-policy
+domain: backend
+topic: fake-package-location
+roles:
+  - test-writer
+globs:
+  - "**/*.java"
+severity: should
+enforcement: inject_only
+---
+# Fake Package Location
+
+## 상태
+
+pending
+
+---
+
+## 문제 상황
+
+Fake Repository와 같은 테스트 더블의 위치를 어디에 둘지 결정이 필요하다.
+
+현재는 테스트 대상 도메인 내부에 fake 패키지를 두고 있다.
+
+예시:
+
+    src/test/java/
+    └── project
+        └── order
+            └── fake
+
+하지만 아래 선택지도 가능하다.
+
+- infrastructure/fake
+- testFixtures
+- 별도 shared test module
+
+---
+
+## 현재 선택
+
+도메인 내부 fake 패키지를 유지한다.
+
+---
+
+## 선택 이유
+
+- 테스트 대상과 가까운 위치에서 관리 가능하다.
+- Fake 구현의 사용 범위를 빠르게 파악 가능하다.
+- 작은 규모 프로젝트에서는 구조가 단순하다.
+
+---
+
+## 고민 지점
+
+아래 상황에서는 구조 재검토 가능성이 있다.
+
+- Fake 클래스 수 증가
+- 여러 도메인에서 Fake 공유
+- 테스트 인프라 공통화 필요
+- testFixtures 도입 필요성 증가
+
+---
+
+## 보류 이유
+
+현재 프로젝트 규모에서는 명확한 문제 신호가 부족하다.
+
+구조를 미리 일반화하기보다,
+실제 사용 패턴이 충분히 나타난 뒤 다시 판단한다.
+
+---
+
+## 재검토 신호
+
+- fake 패키지가 과도하게 증가한다.
+- 같은 Fake 코드가 반복된다.
+- 테스트 의존 관계가 복잡해진다.
+- 도메인보다 테스트 인프라 구조가 먼저 보이기 시작한다.
