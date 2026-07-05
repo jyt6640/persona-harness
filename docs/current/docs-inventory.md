@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 13
+- current active pointer/status: 14
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 52
 - versioned durable: 17
 
-Total indexed files: 277
+Total indexed files: 278
 
 ## File Inventory
 
@@ -197,6 +197,7 @@ Total indexed files: 277
 | `docs/current/vendored-shared-skills-tarball-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/workflow-closure-state-machine-design.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/workflow-string-gate-parsing-audit.md` | current active pointer/status | - | T4 report-status parsing migration and retained string-gate audit record. |
+| `docs/current/workflow-state-concurrency.md` | current active pointer/status | - | T5 ownership and conflict-detection record for workflow state writers. |
 | `docs/current/workflow-transition-test-map.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/workflow.md` | operational stable | - | Stable non-versioned guide or index. |
 | `docs/evidence-reviews/README.md` | evidence review archive | - | Evidence/review record; durable but not the current status surface. |

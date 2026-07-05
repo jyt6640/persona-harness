@@ -6,6 +6,17 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- ROLE-RULES T5 documents workflow-state writer ownership and adds
+  mtime/size-token conflict detection to read-modify-write workflow state
+  paths. `ph plan --accept` / `--revise`, `ph plan --report-filled`,
+  `ph workflow approve requirements`, `ph workflow archive`, explicit
+  `ph workflow loop` state writes, and runtime ralph-loop hook state writes
+  now refuse stale overwrites when a file changes after it was read. CLI
+  conflicts abort with a diagnostic; ralph-loop hook conflicts fail closed
+  without emitting a stale continuation. Create-only artifacts and evidence
+  schemas are unchanged. The ownership model and boundaries are recorded in
+  `docs/current/workflow-state-concurrency.md`.
+
 - ROLE-RULES T4 moves workflow report status parsing to a shared
   frontmatter-first reader/updater. Implementation and review reports may now
   use leading markdown frontmatter `status: filled` / `status: template`; legacy

@@ -28,6 +28,7 @@ import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import { stdinEncodingError } from "./stdin-text.js"
 import { runWorkflowTddStatus } from "./workflow-tdd-status.js"
 import { recordTddGreenForCurrentTicket, runWorkflowTddTest } from "./workflow-tdd.js"
+import type { WorkflowStateWriteOptions } from "./workflow-state-conflict.js"
 import {
   runWorkflowArchive,
   runWorkflowApproveRequirements,
@@ -37,7 +38,7 @@ import {
   runWorkflowSplit,
 } from "./workflow-tickets.js"
 
-type WorkflowOptions = {
+type WorkflowOptions = WorkflowStateWriteOptions & {
   readonly projectDir?: string
   readonly stdin?: string
 }

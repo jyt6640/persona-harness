@@ -7,8 +7,9 @@ import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { createImplementationReportTemplate, createReviewReportTemplate } from "./workflow-templates.js"
 import { createWorkflowRoleBoundaryTemplate, ROLE_BOUNDARY_PATH } from "./workflow-roles.js"
+import type { WorkflowStateWriteOptions } from "./workflow-state-conflict.js"
 
-export type PlanOptions = { readonly projectDir?: string }
+export type PlanOptions = WorkflowStateWriteOptions & { readonly projectDir?: string }
 
 export class PlanDraftError extends Error {
   constructor(message: string) {

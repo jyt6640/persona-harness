@@ -1,10 +1,11 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
-import { writeFileAtomic } from "../io/atomic-file.js"
+import { AtomicWriteConflictError, readTextFileSnapshot, writeFileAtomicIfUnchanged } from "../io/atomic-file.js"
 import { replaceWorkflowReportStatusText } from "../runtime/workflow-report-status.js"
 import { IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH, type PlanOptions } from "./plan.js"
+import { beforeWorkflowStateWrite, toWorkflowStateConflict } from "./workflow-state-conflict.js"
 
 export type WorkflowReportKind = "implementation" | "review"
 export type WorkflowReportStatus = "filled"
@@ -51,12 +52,20 @@ export function updateWorkflowReportStatus(
     throw new WorkflowReportStatusError(`No ${kind} report found. Run npx ph plan first.`)
   }
 
-  const reportText = readFileSync(reportPath, "utf8")
-  const updatedReportText = replaceWorkflowReportStatusText(reportText, status)
+  const snapshot = readTextFileSnapshot(reportPath)
+  const updatedReportText = replaceWorkflowReportStatusText(snapshot.text, status)
   if (updatedReportText === undefined) {
     throw new WorkflowReportStatusError(`No Status line found in ${relativePath}.`)
   }
 
-  writeFileAtomic(reportPath, updatedReportText)
+  beforeWorkflowStateWrite(options, reportPath)
+  try {
+    writeFileAtomicIfUnchanged(snapshot, updatedReportText)
+  } catch (error) {
+    if (error instanceof AtomicWriteConflictError) {
+      throw toWorkflowStateConflict(error, projectDir)
+    }
+    throw error
+  }
   return { reportPath, relativePath, status }
 }

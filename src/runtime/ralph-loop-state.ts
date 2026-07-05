@@ -2,7 +2,12 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import { isRecord } from "../config/jsonc.js"
-import { writeFileAtomic } from "../io/atomic-file.js"
+import {
+  fileChangeToken,
+  writeFileAtomic,
+  writeFileAtomicIfTokenUnchanged,
+  type FileChangeToken,
+} from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
 export type RalphLoopStopReason = "finish-passed" | "max-attempts" | "no-blockers" | "unmapped-blocker"
@@ -27,6 +32,11 @@ export type RalphLoopStateFile = {
   readonly schemaVersion: "workflow-ralph-loop-state.1"
   readonly sessions: Readonly<Record<string, RalphLoopSessionState>>
   readonly updatedAt: string
+}
+
+export type RalphLoopStateSnapshot = {
+  readonly state: RalphLoopStateFile
+  readonly token: FileChangeToken | null
 }
 
 export const EMPTY_RALPH_LOOP_SESSION_STATE: RalphLoopSessionState = {
@@ -119,36 +129,51 @@ function readSessions(value: unknown): Record<string, RalphLoopSessionState> {
   return sessions
 }
 
-export function readRalphLoopState(projectDir: string, now = new Date().toISOString()): RalphLoopStateFile {
+export function readRalphLoopStateSnapshot(projectDir: string, now = new Date().toISOString()): RalphLoopStateSnapshot {
   const outputPath = ralphLoopStatePath(projectDir)
   if (!existsSync(outputPath)) {
-    return emptyRalphLoopState(now)
+    return { state: emptyRalphLoopState(now), token: null }
   }
   try {
     const parsed: unknown = JSON.parse(readFileSync(outputPath, "utf8"))
     if (!isRecord(parsed) || parsed.schemaVersion !== SCHEMA_VERSION) {
-      return emptyRalphLoopState(now)
+      return { state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
     }
     return {
-      schemaVersion: SCHEMA_VERSION,
-      sessions: readSessions(parsed.sessions),
-      updatedAt: readNullableString(parsed.updatedAt) ?? now,
+      state: {
+        schemaVersion: SCHEMA_VERSION,
+        sessions: readSessions(parsed.sessions),
+        updatedAt: readNullableString(parsed.updatedAt) ?? now,
+      },
+      token: fileChangeToken(outputPath),
     }
   } catch (error) {
     if (error instanceof Error) {
       warnRuntimeFailure("evidence-write", "ralph-loop-state-read", outputPath, error)
-      return emptyRalphLoopState(now)
+      return { state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
     }
     warnRuntimeFailure("evidence-write", "ralph-loop-state-read", outputPath, new Error(String(error)))
-    return emptyRalphLoopState(now)
+    return { state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
   }
 }
 
-export function writeRalphLoopState(projectDir: string, state: RalphLoopStateFile): boolean {
+export function readRalphLoopState(projectDir: string, now = new Date().toISOString()): RalphLoopStateFile {
+  return readRalphLoopStateSnapshot(projectDir, now).state
+}
+
+export function writeRalphLoopState(
+  projectDir: string,
+  state: RalphLoopStateFile,
+  expectedToken?: FileChangeToken | null,
+): boolean {
   const outputPath = ralphLoopStatePath(projectDir)
   try {
     mkdirSync(dirname(outputPath), { recursive: true })
-    writeFileAtomic(outputPath, `${JSON.stringify(state, null, 2)}\n`)
+    if (expectedToken === undefined) {
+      writeFileAtomic(outputPath, `${JSON.stringify(state, null, 2)}\n`)
+      return true
+    }
+    writeFileAtomicIfTokenUnchanged(outputPath, expectedToken, `${JSON.stringify(state, null, 2)}\n`)
     return true
   } catch (error) {
     if (error instanceof Error) {

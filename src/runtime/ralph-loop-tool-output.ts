@@ -3,7 +3,7 @@ import { isUnmappedBlockerStep, readWorkflowClosurePayload } from "../cli/workfl
 import type { HarnessRalphLoopConfig } from "../config/harness-config.js"
 import { ContinuationUtteranceGate } from "./continuation-utterance-gate.js"
 import {
-  readRalphLoopState,
+  readRalphLoopStateSnapshot,
   sessionRalphLoopState,
   withRalphLoopSessionState,
   writeRalphLoopState,
@@ -137,7 +137,8 @@ export class RalphLoopToolOutputContinuationTracker {
 
     const nowDate = this.options.now?.() ?? new Date()
     const now = nowDate.toISOString()
-    const state = readRalphLoopState(this.options.projectDir, now)
+    const stateSnapshot = readRalphLoopStateSnapshot(this.options.projectDir, now)
+    const state = stateSnapshot.state
     const sessionState = sessionRalphLoopState(state, input.sessionID)
     const closure = readWorkflowClosurePayload("next", this.options.projectDir)
     const blocker = closure.state.blockers[0]
@@ -149,6 +150,7 @@ export class RalphLoopToolOutputContinuationTracker {
       writeRalphLoopState(
         this.options.projectDir,
         withRalphLoopSessionState(state, input.sessionID, stoppedUnmappedBlockerState(sessionState), now),
+        stateSnapshot.token,
       )
       return { kind: "skipped" }
     }
@@ -162,7 +164,15 @@ export class RalphLoopToolOutputContinuationTracker {
         return { kind: "skipped" }
       }
       const capped = markCapSummaryNotified(cappedSessionState(sessionState))
-      writeRalphLoopState(this.options.projectDir, withRalphLoopSessionState(state, input.sessionID, capped, now))
+      if (
+        !writeRalphLoopState(
+          this.options.projectDir,
+          withRalphLoopSessionState(state, input.sessionID, capped, now),
+          stateSnapshot.token,
+        )
+      ) {
+        return { kind: "skipped" }
+      }
       return {
         kind: "appended",
         output: withToolContinuationMarker(
@@ -189,7 +199,15 @@ export class RalphLoopToolOutputContinuationTracker {
 
     try {
       const nextSessionState = attemptedSessionState(sessionState, blocker.id, this.options.config, now)
-      writeRalphLoopState(this.options.projectDir, withRalphLoopSessionState(state, input.sessionID, nextSessionState, now))
+      if (
+        !writeRalphLoopState(
+          this.options.projectDir,
+          withRalphLoopSessionState(state, input.sessionID, nextSessionState, now),
+          stateSnapshot.token,
+        )
+      ) {
+        return { kind: "skipped" }
+      }
       return {
         kind: "appended",
         output: withToolContinuationMarker(

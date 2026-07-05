@@ -26,6 +26,7 @@ import {
   updateWorkflowReportStatus,
   type WorkflowReportKind,
 } from "./report-status.js"
+import { WorkflowStateConflictError } from "./workflow-state-conflict.js"
 
 type ParsedPlanArgs =
   | { readonly kind: "run"; readonly force: boolean }
@@ -287,7 +288,12 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
       stderr: "",
     }
   } catch (error) {
-    if (error instanceof PlanDraftError || error instanceof PlanStatusError || error instanceof WorkflowReportStatusError) {
+    if (
+      error instanceof PlanDraftError ||
+      error instanceof PlanStatusError ||
+      error instanceof WorkflowReportStatusError ||
+      error instanceof WorkflowStateConflictError
+    ) {
       return { status: 1, stdout: "", stderr: `${error.message}\n` }
     }
     throw error

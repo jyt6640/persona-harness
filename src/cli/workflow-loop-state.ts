@@ -1,5 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
+
+import { fileChangeToken, writeFileAtomicIfTokenUnchanged, type FileChangeToken } from "../io/atomic-file.js"
 
 export type WorkflowLoopIterationRecord = {
   readonly blockerId: string
@@ -23,6 +25,11 @@ export type WorkflowLoopState = {
   readonly startedAt: string
 }
 
+export type WorkflowLoopStateSnapshot = {
+  readonly state: WorkflowLoopState | null
+  readonly token: FileChangeToken | null
+}
+
 export function workflowLoopDir(projectDir: string): string {
   return join(projectDir, ".persona", "workflow", "loop")
 }
@@ -31,13 +38,9 @@ export function workflowLoopStatePath(projectDir: string): string {
   return join(projectDir, ".persona", "workflow", "workflow-loop-state.json")
 }
 
-export function readWorkflowLoopState(projectDir: string): WorkflowLoopState | null {
-  const path = workflowLoopStatePath(projectDir)
-  if (!existsSync(path)) {
-    return null
-  }
+function parseWorkflowLoopState(source: string): WorkflowLoopState | null {
   try {
-    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"))
+    const parsed: unknown = JSON.parse(source)
     if (typeof parsed !== "object" || parsed === null) {
       return null
     }
@@ -60,11 +63,29 @@ export function readWorkflowLoopState(projectDir: string): WorkflowLoopState | n
   }
 }
 
-export function writeWorkflowLoopState(projectDir: string, state: WorkflowLoopState): string {
+export function readWorkflowLoopStateSnapshot(projectDir: string): WorkflowLoopStateSnapshot {
+  const path = workflowLoopStatePath(projectDir)
+  if (!existsSync(path)) {
+    return { state: null, token: null }
+  }
+  return {
+    state: parseWorkflowLoopState(readFileSync(path, "utf8")),
+    token: fileChangeToken(path),
+  }
+}
+
+export function readWorkflowLoopState(projectDir: string): WorkflowLoopState | null {
+  return readWorkflowLoopStateSnapshot(projectDir).state
+}
+
+export function writeWorkflowLoopState(
+  projectDir: string,
+  state: WorkflowLoopState,
+  expectedToken: FileChangeToken | null = fileChangeToken(workflowLoopStatePath(projectDir)),
+): FileChangeToken {
   const path = workflowLoopStatePath(projectDir)
   mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
-  writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`)
-  return path
+  return writeFileAtomicIfTokenUnchanged(path, expectedToken, `${JSON.stringify(state, null, 2)}\n`)
 }
 
 function readFinalDecision(value: unknown): WorkflowLoopState["finalDecision"] {

@@ -1,7 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, renameSync } from "node:fs"
 import { join } from "node:path"
 
-import { writeFileAtomic } from "../io/atomic-file.js"
+import {
+  AtomicWriteConflictError,
+  readTextFileSnapshot,
+  writeFileAtomic,
+  writeFileAtomicIfUnchanged,
+  type TextFileSnapshot,
+} from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   BACKLOG_PATH,
@@ -44,8 +50,13 @@ import {
   uninitializedTicketOutput,
 } from "./workflow-ticket-output.js"
 import { readWorkflowClosurePayload, type ClosureBlocker } from "./workflow-closure.js"
+import {
+  beforeWorkflowStateWrite,
+  toWorkflowStateConflict,
+  type WorkflowStateWriteOptions,
+} from "./workflow-state-conflict.js"
 
-type WorkflowTicketOptions = {
+type WorkflowTicketOptions = WorkflowStateWriteOptions & {
   readonly projectDir?: string
   readonly stdin?: string
 }
@@ -64,6 +75,29 @@ function initializedProjectDir(options: WorkflowTicketOptions): { readonly kind:
 
 function conflictMessage(path: string): CliRunResult {
   return splitConflictOutput(path)
+}
+
+function workflowStateConflictResult(error: AtomicWriteConflictError, projectDir: string): CliRunResult {
+  const conflict = toWorkflowStateConflict(error, projectDir)
+  return { status: 1, stdout: "", stderr: `${conflict.message}\n` }
+}
+
+function writeWorkflowStateSnapshot(
+  projectDir: string,
+  snapshot: TextFileSnapshot,
+  nextText: string,
+  options: WorkflowTicketOptions,
+): CliRunResult | undefined {
+  beforeWorkflowStateWrite(options, snapshot.path)
+  try {
+    writeFileAtomicIfUnchanged(snapshot, nextText)
+    return undefined
+  } catch (error) {
+    if (error instanceof AtomicWriteConflictError) {
+      return workflowStateConflictResult(error, projectDir)
+    }
+    throw error
+  }
 }
 
 function archiveBlockingBlockers(projectDir: string): readonly ClosureBlocker[] {
@@ -247,7 +281,11 @@ export function runWorkflowApproveRequirements(options: WorkflowTicketOptions): 
   for (const path of draftPaths) {
     const absolutePath = join(projectDir, path)
     if (existsSync(absolutePath)) {
-      writeFileAtomic(absolutePath, replaceDraftStatus(readFileSync(absolutePath, "utf8")))
+      const snapshot = readTextFileSnapshot(absolutePath)
+      const conflict = writeWorkflowStateSnapshot(projectDir, snapshot, replaceDraftStatus(snapshot.text), options)
+      if (conflict !== undefined) {
+        return conflict
+      }
     }
   }
   return approvalCompleteOutput()
@@ -363,10 +401,18 @@ export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOpti
     return backlogState
   }
   if (!existsSync(workDir)) {
-    const backlog = readFileSync(backlogAbsolutePath, "utf8")
-    const pendingTicket = pendingTickets(backlog).find((ticket) => ticket.ticket === ticketId)
+    const backlogSnapshot = readTextFileSnapshot(backlogAbsolutePath)
+    const pendingTicket = pendingTickets(backlogSnapshot.text).find((ticket) => ticket.ticket === ticketId)
     if (pendingTicket !== undefined && existsSync(join(historyDir, TASK_CARD_NAME))) {
-      writeFileAtomic(backlogAbsolutePath, replaceBacklogTicket(backlog, ticketId))
+      const conflict = writeWorkflowStateSnapshot(
+        projectDir,
+        backlogSnapshot,
+        replaceBacklogTicket(backlogSnapshot.text, ticketId),
+        options,
+      )
+      if (conflict !== undefined) {
+        return conflict
+      }
       return archiveBacklogRepairOutput(ticketId, `${HISTORY_DIR}/${ticketId}`)
     }
     return { status: 1, stdout: "", stderr: `Workflow work ticket not found: ${WORK_DIR}/${ticketId}\n` }
@@ -390,9 +436,17 @@ export function runWorkflowArchive(ticketId: string, options: WorkflowTicketOpti
   }
 
   mkdirSync(join(projectDir, HISTORY_DIR), { recursive: true })
+  const backlogSnapshot = readTextFileSnapshot(backlogAbsolutePath)
   renameSync(workDir, historyDir)
-  const backlog = readFileSync(backlogAbsolutePath, "utf8")
-  writeFileAtomic(backlogAbsolutePath, replaceBacklogTicket(backlog, ticketId))
+  const conflict = writeWorkflowStateSnapshot(
+    projectDir,
+    backlogSnapshot,
+    replaceBacklogTicket(backlogSnapshot.text, ticketId),
+    options,
+  )
+  if (conflict !== undefined) {
+    return conflict
+  }
 
   return archiveCompleteOutput(ticketId, `${WORK_DIR}/${ticketId}`, `${HISTORY_DIR}/${ticketId}`)
 }

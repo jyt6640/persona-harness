@@ -1,8 +1,10 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { AtomicWriteConflictError, readTextFileSnapshot, writeFileAtomicIfUnchanged } from "../io/atomic-file.js"
 import { PLAN_PATH, type PlanOptions } from "./plan.js"
+import { beforeWorkflowStateWrite, toWorkflowStateConflict } from "./workflow-state-conflict.js"
 
 export type PlanAcceptanceStatus = "draft" | "needs-revision" | "accepted"
 
@@ -49,10 +51,21 @@ export function updateWorkflowPlanStatus(
   options: PlanOptions = {},
 ): PlanStatusResult {
   const planPath = resolvePlanPath(options)
-  const planText = readPlanText(planPath)
-  extractStatus(planText)
+  if (!existsSync(planPath)) {
+    throw new PlanStatusError("No workflow plan found. Run npx ph plan first.")
+  }
+  const snapshot = readTextFileSnapshot(planPath)
+  extractStatus(snapshot.text)
 
-  const updatedPlan = planText.replace(/^Status:\s*.+?\s*$/m, `Status: ${status}`)
-  writeFileSync(planPath, updatedPlan)
+  const updatedPlan = snapshot.text.replace(/^Status:\s*.+?\s*$/m, `Status: ${status}`)
+  beforeWorkflowStateWrite(options, planPath)
+  try {
+    writeFileAtomicIfUnchanged(snapshot, updatedPlan)
+  } catch (error) {
+    if (error instanceof AtomicWriteConflictError) {
+      throw toWorkflowStateConflict(error, resolve(options.projectDir ?? process.cwd()))
+    }
+    throw error
+  }
   return { planPath, status }
 }

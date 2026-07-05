@@ -5,7 +5,7 @@ import { ContinuationUtteranceGate } from "./continuation-utterance-gate.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
 import {
   EMPTY_RALPH_LOOP_SESSION_STATE,
-  readRalphLoopState,
+  readRalphLoopStateSnapshot,
   sessionRalphLoopState,
   withRalphLoopSessionState,
   writeRalphLoopState,
@@ -140,7 +140,8 @@ export class RalphLoopContinuationTracker {
 
     const nowDate = this.options.now?.() ?? new Date()
     const now = nowDate.toISOString()
-    const state = readRalphLoopState(this.options.projectDir, now)
+    const stateSnapshot = readRalphLoopStateSnapshot(this.options.projectDir, now)
+    const state = stateSnapshot.state
     const sessionState = sessionRalphLoopState(state, sessionID)
     const closure = readWorkflowClosurePayload("next", this.options.projectDir)
     const blocker = closure.state.blockers[0]
@@ -149,6 +150,7 @@ export class RalphLoopContinuationTracker {
       writeRalphLoopState(
         this.options.projectDir,
         withRalphLoopSessionState(state, sessionID, stoppedSessionState(sessionState, "no-blockers"), now),
+        stateSnapshot.token,
       )
       this.utteranceGate.reset(sessionID)
       return { status: "no-blockers" }
@@ -158,6 +160,7 @@ export class RalphLoopContinuationTracker {
       writeRalphLoopState(
         this.options.projectDir,
         withRalphLoopSessionState(state, sessionID, stoppedSessionState(sessionState, "unmapped-blocker"), now),
+        stateSnapshot.token,
       )
       this.utteranceGate.reset(sessionID)
       return { status: "unmapped-blocker" }
@@ -166,6 +169,13 @@ export class RalphLoopContinuationTracker {
     if (sessionState.capped) {
       if (sessionState.capSummaryNotified) {
         return { status: "capped" }
+      }
+      if (!writeRalphLoopState(
+        this.options.projectDir,
+        withRalphLoopSessionState(state, sessionID, markCapSummaryNotified(sessionState), now),
+        stateSnapshot.token,
+      )) {
+        return { status: "gate-blocked" }
       }
       await this.sendPrompt(
         sessionID,
@@ -177,10 +187,6 @@ export class RalphLoopContinuationTracker {
           sessionAttemptsUsed: sessionState.attemptsUsed,
         }),
       )
-      writeRalphLoopState(
-        this.options.projectDir,
-        withRalphLoopSessionState(state, sessionID, markCapSummaryNotified(sessionState), now),
-      )
       return { status: "summary-sent" }
     }
 
@@ -188,6 +194,7 @@ export class RalphLoopContinuationTracker {
       writeRalphLoopState(
         this.options.projectDir,
         withRalphLoopSessionState(state, sessionID, cappedSessionState(sessionState), now),
+        stateSnapshot.token,
       )
       return { status: "capped" }
     }
@@ -196,6 +203,7 @@ export class RalphLoopContinuationTracker {
       writeRalphLoopState(
         this.options.projectDir,
         withRalphLoopSessionState(state, sessionID, cappedSessionState(sessionState), now),
+        stateSnapshot.token,
       )
       return { status: "capped" }
     }
@@ -223,7 +231,15 @@ export class RalphLoopContinuationTracker {
         now,
         previous: sessionState,
       })
-      writeRalphLoopState(this.options.projectDir, withRalphLoopSessionState(state, sessionID, nextSessionState, now))
+      if (
+        !writeRalphLoopState(
+          this.options.projectDir,
+          withRalphLoopSessionState(state, sessionID, nextSessionState, now),
+          stateSnapshot.token,
+        )
+      ) {
+        return { status: "gate-blocked" }
+      }
       await this.sendPrompt(
         sessionID,
         createContinuationPromptText({

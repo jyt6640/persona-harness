@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join, relative, resolve } from "node:path"
 import process from "node:process"
 
+import { AtomicWriteConflictError } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import { runBoundedProcess } from "./bounded-process.js"
 import { continuationPromptCoreLines } from "./continuation-prompt.js"
@@ -16,6 +17,7 @@ import {
 import { failedRunnerOutput, passedFinishOutput } from "./workflow-output.js"
 import {
   readWorkflowLoopState,
+  readWorkflowLoopStateSnapshot,
   WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
   workflowLoopDir,
   workflowLoopStatePath,
@@ -23,6 +25,7 @@ import {
   type WorkflowLoopIterationRecord,
   type WorkflowLoopState,
 } from "./workflow-loop-state.js"
+import { toWorkflowStateConflict } from "./workflow-state-conflict.js"
 
 export type WorkflowLoopOptions = {
   readonly dryRun: boolean
@@ -69,22 +72,30 @@ export function runWorkflowLoopCommand(options: WorkflowLoopOptions): CliRunResu
       options.json,
     )
   }
-  const state = executeLoop(projectDir, options, initialFinish, closure)
-  return formatPayload(
-    {
-      boundaries: loopBoundaries(),
-      defaultOff: true,
-      finalDecision: state.finalDecision,
-      iterations: state.iterations,
-      maxIterations: options.maxIterations,
-      mode: "execute",
-      promptPreview,
-      schemaVersion: "workflow-loop.1",
-      statePath: relative(projectDir, workflowLoopStatePath(projectDir)),
-      termination: loopTermination(),
-    },
-    options.json,
-  )
+  try {
+    const state = executeLoop(projectDir, options, initialFinish, closure)
+    return formatPayload(
+      {
+        boundaries: loopBoundaries(),
+        defaultOff: true,
+        finalDecision: state.finalDecision,
+        iterations: state.iterations,
+        maxIterations: options.maxIterations,
+        mode: "execute",
+        promptPreview,
+        schemaVersion: "workflow-loop.1",
+        statePath: relative(projectDir, workflowLoopStatePath(projectDir)),
+        termination: loopTermination(),
+      },
+      options.json,
+    )
+  } catch (error) {
+    if (error instanceof AtomicWriteConflictError) {
+      const conflict = toWorkflowStateConflict(error, projectDir)
+      return { status: 1, stdout: "", stderr: `${conflict.message}\n` }
+    }
+    throw error
+  }
 }
 
 function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFinish: CliRunResult, initialClosure: ClosureNextPayload): WorkflowLoopState {
@@ -92,6 +103,7 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
   let finish = initialFinish
   let closure = initialClosure
   const iterations: WorkflowLoopIterationRecord[] = []
+  let stateToken = readWorkflowLoopStateSnapshot(projectDir).token
   let finalDecision: WorkflowLoopState["finalDecision"] = "not-run"
   for (let index = 1; index <= options.maxIterations; index += 1) {
     if (finish.status === 0) {
@@ -109,7 +121,11 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
     }
     const record = runIteration(projectDir, options, index, blocker, closure)
     iterations.push(record)
-    writeWorkflowLoopState(projectDir, { finalDecision: "not-run", iterations, schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION, startedAt })
+    stateToken = writeWorkflowLoopState(
+      projectDir,
+      { finalDecision: "not-run", iterations, schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION, startedAt },
+      stateToken,
+    )
     finish = deterministicFinish(projectDir)
     closure = readWorkflowClosurePayload("next", projectDir) as ClosureNextPayload
   }
@@ -123,7 +139,7 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
     schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
     startedAt,
   }
-  writeWorkflowLoopState(projectDir, state)
+  writeWorkflowLoopState(projectDir, state, stateToken)
   return state
 }
 

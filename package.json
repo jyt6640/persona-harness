@@ -60,6 +60,7 @@
     "docs/current/rail-entry-prompt-regression-gate.md",
     "docs/current/ralph-loop-measurement-status.md",
     "docs/current/workflow-string-gate-parsing-audit.md",
+    "docs/current/workflow-state-concurrency.md",
     "docs/current/release",
     "docs/releases",
     "scripts/rail-entry-prompt-regression-gate.mjs",
