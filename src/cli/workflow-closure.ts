@@ -13,8 +13,8 @@ type ClosureArchive = "complete" | "history-only-repair" | "pending"
 type ClosureEvidence = "missing" | "present"
 type ClosureFinish = "blocked" | "passed"
 type ClosureReportStatus = "filled" | "missing" | "template" | "unknown"
-type ClosureStepKind = "cli-command" | "human-or-model-content" | "terminal"
-type ClosureStepStatus = "blocked" | "complete" | "pending"
+export type ClosureStepKind = "cli-command" | "human-or-model-content" | "terminal"
+export type ClosureStepStatus = "blocked" | "complete" | "pending"
 export const UNMAPPED_BLOCKER_STEP_ID = "unmapped-blocker"
 export type ClosureTicket = {
   readonly id: string

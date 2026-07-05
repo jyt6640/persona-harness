@@ -6,6 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- HARDEN-1 H1-6b derives failed `workflow finish implement` human summaries
+  from structured closure blocker/required-fix objects instead of reparsing the
+  rendered `Closure blocker:` text. The accepted Stage 20 summary shape,
+  H1-1 unmapped-blocker escalation wording, and H1-4
+  `convention-toolchain-missing` mapped install/configuration guidance are
+  preserved. H1-6a repeated-output compression remains NO-GO and unimplemented;
+  JSON/machine output, schemas, exit codes, defaults, and gate semantics are
+  unchanged.
 - HARDEN-1 H1-6a real precheck runner executed real OpenCode n=5 paired
   rail-entry rows plus n=5 repeated `workflow finish`/`workflow check`
   behavior rows. The repeated finish/check comparison was no-worse, but the

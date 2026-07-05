@@ -6,6 +6,7 @@ import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
 import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
 import { readWorkflowClosurePayload, runWorkflowClosureCommand } from "./workflow-closure.js"
+import { isStructuredWorkflowRequiredFix, type WorkflowRequiredFix } from "./workflow-required-fix.js"
 import {
   failedGuardOutput,
   failedRunnerOutput,
@@ -73,8 +74,12 @@ function implementationGuardReasons(summary: WorkflowStatus): readonly string[] 
   return reasons
 }
 
-function finalGuardReasons(projectDir: string): readonly string[] {
+function finalGuardReasons(projectDir: string): readonly WorkflowRequiredFix[] {
   return workflowClosureFinishReasons(readWorkflowClosurePayload("next", projectDir, { recordTddGreenEvidence: true }), projectDir)
+}
+
+function requiredFixDetails(fixes: readonly WorkflowRequiredFix[]): readonly string[] {
+  return fixes.map((fix) => isStructuredWorkflowRequiredFix(fix) ? fix.detail : fix)
 }
 
 function hasPersonaHarness(summary: WorkflowStatus): boolean {
@@ -95,7 +100,7 @@ function runWorkflowGuard(guardKind: WorkflowGuardKind, options: WorkflowOptions
   if (!hasPersonaHarness(summary)) {
     return uninitializedHarnessOutput()
   }
-  const reasons = guardKind === "implement" ? implementationGuardReasons(summary) : finalGuardReasons(summary.projectDir)
+  const reasons = guardKind === "implement" ? implementationGuardReasons(summary) : requiredFixDetails(finalGuardReasons(summary.projectDir))
   if (reasons.length > 0) {
     return failedGuardOutput(guardKind, reasons)
   }
