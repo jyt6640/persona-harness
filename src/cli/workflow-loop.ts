@@ -16,6 +16,7 @@ import {
 import { failedRunnerOutput, passedFinishOutput } from "./workflow-output.js"
 import {
   readWorkflowLoopState,
+  WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
   workflowLoopDir,
   workflowLoopStatePath,
   writeWorkflowLoopState,
@@ -108,7 +109,7 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
     }
     const record = runIteration(projectDir, options, index, blocker, closure)
     iterations.push(record)
-    writeWorkflowLoopState(projectDir, { finalDecision: "not-run", iterations, schemaVersion: "workflow-loop-state.1", startedAt })
+    writeWorkflowLoopState(projectDir, { finalDecision: "not-run", iterations, schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION, startedAt })
     finish = deterministicFinish(projectDir)
     closure = readWorkflowClosurePayload("next", projectDir) as ClosureNextPayload
   }
@@ -119,7 +120,7 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
     completedAt: new Date().toISOString(),
     finalDecision,
     iterations,
-    schemaVersion: "workflow-loop-state.1",
+    schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
     startedAt,
   }
   writeWorkflowLoopState(projectDir, state)

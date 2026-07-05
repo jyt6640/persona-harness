@@ -86,6 +86,7 @@ function taskCardContextLines(ticket: BacklogTicket, projectDir: string | undefi
     .filter((line) =>
       line.length > 0
       && !/^Status:/iu.test(line)
+      && !/^(?:schemaVersion|Schema version):/iu.test(line)
       && !/^Ticket:/iu.test(line)
       && !/^Source(?:\s|:)/iu.test(line)
     )

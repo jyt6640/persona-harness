@@ -35,6 +35,31 @@ export const DRAFT_REQUIREMENTS_BACKLOG_PATH = ".persona/workflow/requirements/b
 export const DRAFT_REQUIREMENTS_QUESTIONS_PATH = ".persona/workflow/requirements/questions.md"
 export const DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH = ".persona/workflow/requirements/assumptions.md"
 export const TASK_CARD_NAME = "00-task-card.md"
+export const WORKFLOW_BACKLOG_SCHEMA_VERSION = "workflow-backlog.1"
+export const WORKFLOW_REQUIREMENTS_BACKLOG_SCHEMA_VERSION = "workflow-requirements-backlog.1"
+export const WORKFLOW_TASK_CARD_SCHEMA_VERSION = "workflow-task-card.1"
+
+function schemaVersionLine(schemaVersion: string): string {
+  return `schemaVersion: ${schemaVersion}`
+}
+
+function ensureTrailingNewline(value: string): string {
+  return value.endsWith("\n") ? value : `${value}\n`
+}
+
+function insertOrReplaceSchemaVersion(markdown: string, schemaVersion: string): string {
+  const lines = markdown.replace(/\r\n/gu, "\n").split("\n")
+  const line = schemaVersionLine(schemaVersion)
+  const existingIndex = lines.findIndex((candidate) => /^(?:schemaVersion|Schema version):/iu.test(candidate.trim()))
+  if (existingIndex >= 0) {
+    lines[existingIndex] = line
+    return ensureTrailingNewline(lines.join("\n").replace(/\n+$/u, ""))
+  }
+  const statusIndex = lines.findIndex((candidate) => /^Status:/iu.test(candidate.trim()))
+  const insertIndex = statusIndex >= 0 ? statusIndex + 1 : Math.min(1, lines.length)
+  const nextLines = [...lines.slice(0, insertIndex), line, ...lines.slice(insertIndex)]
+  return ensureTrailingNewline(nextLines.join("\n").replace(/\n+$/u, ""))
+}
 
 function stepHeading(line: string): { readonly number: string; readonly title: string } | undefined {
   const match = /^#{2,4}\s*Step\s+([0-9]+)[.:]?\s*(.*)$/iu.exec(line.trim())
@@ -93,6 +118,7 @@ export function formatTaskCard(source: RequirementSource, section: StepSection):
     `# Task Card: ${heading}`,
     "",
     "Status: pending",
+    schemaVersionLine(WORKFLOW_TASK_CARD_SCHEMA_VERSION),
     `Ticket: ${ticket}`,
     `Source: ${source.label}`,
     `Source kind: ${source.kind}`,
@@ -139,6 +165,7 @@ export function formatBacklog(source: RequirementSource, sections: readonly Step
     `Source kind: ${source.kind}`,
     `Source path: ${source.path}`,
     "Status: active",
+    schemaVersionLine(WORKFLOW_BACKLOG_SCHEMA_VERSION),
     "",
     "| Order | Ticket | Title | Status | Path |",
     "| --- | --- | --- | --- | --- |",
@@ -181,7 +208,7 @@ export function parseBacklogState(markdown: string): BacklogParseResult {
 }
 
 export function replaceBacklogTicket(markdown: string, ticketId: string): string {
-  return markdown
+  const replaced = markdown
     .split(/\r?\n/u)
     .map((line) => {
       const cells = line.split("|").map((cell) => cell.trim())
@@ -193,6 +220,7 @@ export function replaceBacklogTicket(markdown: string, ticketId: string): string
       return `| ${order} | ${ticketId} | ${title} | archived | ${historyTaskCardPath(ticketId)} |`
     })
     .join("\n")
+  return insertOrReplaceSchemaVersion(replaced, WORKFLOW_BACKLOG_SCHEMA_VERSION)
 }
 
 export function pendingTickets(markdown: string): readonly BacklogTicket[] {

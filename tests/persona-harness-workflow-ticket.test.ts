@@ -101,6 +101,7 @@ describe("ph workflow ticket backlog", () => {
     const questions = readFileSync(join(projectDir, ".persona", "workflow", "requirements", "questions.md"), "utf8")
     const assumptions = readFileSync(join(projectDir, ".persona", "workflow", "requirements", "assumptions.md"), "utf8")
     expect(draftBacklog).toContain("Status: draft")
+    expect(draftBacklog).toContain("schemaVersion: workflow-requirements-backlog.1")
     expect(draftBacklog).toContain("## Step 1. Product scope and core use cases")
     expect(draftBacklog).toContain("TODO 웹 서비스 만들래")
     expect(questions).toContain("Status: draft")
@@ -166,10 +167,14 @@ describe("ph workflow ticket backlog", () => {
     expect(approve.stdout).toContain("Requirements draft approved")
     const approvedBacklog = readFileSync(join(projectDir, ".persona", "workflow", "requirements", "backlog.md"), "utf8")
     expect(approvedBacklog).toContain("Status: accepted")
+    expect(approvedBacklog).toContain("schemaVersion: workflow-requirements-backlog.1")
     expect(split.status).toBe(0)
     expect(split.stdout).toContain("Tickets created: 4")
+    const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
     const ticket = readFileSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"), "utf8")
+    expect(backlog).toContain("schemaVersion: workflow-backlog.1")
     expect(ticket).toContain("# Task Card: Step 1. Product scope and core use cases")
+    expect(ticket).toContain("schemaVersion: workflow-task-card.1")
     expect(ticket).toContain("Source path: .persona/workflow/requirements/backlog.md")
   })
 
@@ -186,9 +191,11 @@ describe("ph workflow ticket backlog", () => {
     expect(result.stdout).toContain("split a smaller requirements source")
     const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
     const card = readFileSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"), "utf8")
+    expect(backlog).toContain("schemaVersion: workflow-backlog.1")
     expect(backlog).toContain("| 1 | step-1 | 기본 일정 구현 | pending | .persona/workflow/work/step-1/00-task-card.md |")
     expect(backlog).toContain("| 2 | step-2 | iCal Import/Export | pending | .persona/workflow/work/step-2/00-task-card.md |")
     expect(card).toContain("# Task Card: Step 1. 기본 일정 구현")
+    expect(card).toContain("schemaVersion: workflow-task-card.1")
     expect(card).toContain("Source: README.md")
     expect(card).toContain("Source kind: file")
     expect(card).toContain("Source path: README.md")
@@ -243,8 +250,11 @@ describe("ph workflow ticket backlog", () => {
     expect(existsSync(join(projectDir, ".persona", "workflow", "requirements", "latest.md"))).toBe(true)
     expect(split.status).toBe(0)
     expect(split.stdout).toContain("Tickets created: 7")
+    const backlog = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
     const card = readFileSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"), "utf8")
+    expect(backlog).toContain("schemaVersion: workflow-backlog.1")
     expect(card).toContain("Source kind: prompt")
+    expect(card).toContain("schemaVersion: workflow-task-card.1")
     expect(card).toContain("Source path: .persona/workflow/requirements/latest.md")
     expect(card).toContain("- 프롬프트로 받은 일정을 등록한다.")
   })
@@ -387,6 +397,66 @@ describe("ph workflow ticket backlog", () => {
     expect(repair.status).toBe(0)
     expect(repair.stdout).toContain("Workflow ticket archive state repaired: req-2")
     expect(backlog).toContain("| 2 | req-2 | Ambiguities To Resolve | archived | .persona/workflow/history/req-2/00-task-card.md |")
+  })
+
+  it("preserves PH upgrade 후 진행 중 티켓 생존 for unversioned ticket state and lazily versions backlog writes", () => {
+    const projectDir = createHarnessProject()
+    writeArchiveReadyWorkflowState(projectDir)
+    mkdirSync(join(projectDir, ".persona", "workflow", "work", "step-1"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "backlog.md"),
+      [
+        "# Persona Workflow Backlog",
+        "",
+        "Source: README.md",
+        "Source kind: file",
+        "Source path: README.md",
+        "Status: active",
+        "",
+        "| Order | Ticket | Title | Status | Path |",
+        "| --- | --- | --- | --- | --- |",
+        "| 1 | step-1 | Legacy Ticket | pending | .persona/workflow/work/step-1/00-task-card.md |",
+        "",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"),
+      [
+        "# Task Card: Step 1. Legacy Ticket",
+        "",
+        "Status: pending",
+        "Ticket: step-1",
+        "Source: README.md",
+        "Source kind: file",
+        "Source path: README.md",
+        "",
+        "## Scope",
+        "",
+        "- Keep this old in-flight ticket actionable after upgrade.",
+        "",
+      ].join("\n"),
+    )
+
+    const next = runPersonaCli(["workflow", "next"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const backlogBeforeWrite = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
+
+    expect(next.status).toBe(0)
+    expect(next.stdout).toContain("Ticket: step-1")
+    expect(next.stdout).toContain("Legacy Ticket")
+    expect(next.stdout).not.toContain("schemaVersion:")
+    expect(check.stdout).toContain("pending tickets: present")
+    expect(check.stdout).toContain("Do not claim overall completion while pending tickets remain.")
+    expect(check.stdout).toContain("Ticket: step-1")
+    expect(backlogBeforeWrite).not.toContain("schemaVersion:")
+
+    const archive = runPersonaCli(["workflow", "archive", "step-1"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const backlogAfterWrite = readFileSync(join(projectDir, ".persona", "workflow", "backlog.md"), "utf8")
+
+    expect(archive.status).toBe(0)
+    expect(archive.stdout).toContain("Workflow ticket archived: step-1")
+    expect(backlogAfterWrite).toContain("schemaVersion: workflow-backlog.1")
+    expect(backlogAfterWrite).toContain("| 1 | step-1 | Legacy Ticket | archived | .persona/workflow/history/step-1/00-task-card.md |")
   })
 
   it("refuses to overwrite an existing history ticket", () => {

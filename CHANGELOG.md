@@ -6,6 +6,16 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- ROLE-RULES T3 adds `schemaVersion:` metadata to newly written workflow
+  ticket markdown state: requirements backlog `workflow-requirements-backlog.1`,
+  implementation backlog `workflow-backlog.1`, and task cards
+  `workflow-task-card.1`; existing workflow-loop state remains
+  `workflow-loop-state.1`. Legacy unversioned backlog, task-card, and
+  workflow-loop state files remain readable so pending tickets survive PH
+  upgrades; the next backlog write emits the versioned shape. This is
+  persisted-state metadata only and does not change workflow gates, output
+  schemas, defaults, or evidence schemas.
+
 - ROLE-RULES T2 adds report-only rule/convention pack load diagnostics to
   `ph doctor`. Rule diagnostics now include duplicate rule ids, invalid globs,
   and unknown `roles:` values; convention diagnostics include duplicate ids,

@@ -204,6 +204,41 @@ describe("ph workflow loop", () => {
     expect(existsSync(join(projectDir, ".persona", "workflow", "workflow-loop-state.json"))).toBe(false)
   })
 
+  it("reads legacy unversioned workflow loop state for upgrade compatibility", () => {
+    const projectDir = createWorkflowProject()
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+      `${JSON.stringify(
+        {
+          finalDecision: "iteration-cap",
+          iterations: [
+            {
+              blockerId: "verification-unknown",
+              blockerIndex: 1,
+              blockerTotal: 3,
+              exitStatus: 0,
+              iteration: 1,
+              promptPath: ".persona/workflow/loop/iteration-1-prompt.md",
+              stderrPath: ".persona/workflow/loop/iteration-1-stderr.log",
+              stdoutPath: ".persona/workflow/loop/iteration-1-stdout.log",
+              timedOut: false,
+            },
+          ],
+          startedAt: "2026-07-05T00:00:00.000Z",
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const result = runPersonaCli(["workflow", "loop", "--dry-run", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const output = JSON.parse(result.stdout)
+
+    expect(result.status).toBe(0)
+    expect(output.iterations).toHaveLength(1)
+    expect(output.iterations[0].blockerId).toBe("verification-unknown")
+  })
+
   it("runs capped fresh-session iterations and records prompt/log state", () => {
     const projectDir = createWorkflowProject()
     const fakeOpencode = writeFakeOpencode(projectDir)
@@ -231,6 +266,7 @@ describe("ph workflow loop", () => {
     expect(result.status).toBe(0)
     expect(output.finalDecision).toBe("iteration-cap")
     expect(output.iterations).toHaveLength(2)
+    expect(state.schemaVersion).toBe("workflow-loop-state.1")
     expect(state.finalDecision).toBe("iteration-cap")
     expect(state.iterations).toHaveLength(2)
     expect(firstPrompt).toContain("[Persona Harness Workflow Loop]")

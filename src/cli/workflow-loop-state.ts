@@ -13,11 +13,13 @@ export type WorkflowLoopIterationRecord = {
   readonly timedOut: boolean
 }
 
+export const WORKFLOW_LOOP_STATE_SCHEMA_VERSION = "workflow-loop-state.1"
+
 export type WorkflowLoopState = {
   readonly completedAt?: string
   readonly finalDecision: "finish-passed" | "iteration-cap" | "no-blockers" | "not-run" | "unmapped-blocker"
   readonly iterations: readonly WorkflowLoopIterationRecord[]
-  readonly schemaVersion: "workflow-loop-state.1"
+  readonly schemaVersion: typeof WORKFLOW_LOOP_STATE_SCHEMA_VERSION
   readonly startedAt: string
 }
 
@@ -40,14 +42,17 @@ export function readWorkflowLoopState(projectDir: string): WorkflowLoopState | n
       return null
     }
     const record = parsed as Record<string, unknown>
-    if (record.schemaVersion !== "workflow-loop-state.1" || !Array.isArray(record.iterations)) {
+    if (
+      (record.schemaVersion !== undefined && record.schemaVersion !== WORKFLOW_LOOP_STATE_SCHEMA_VERSION)
+      || !Array.isArray(record.iterations)
+    ) {
       return null
     }
     return {
       completedAt: typeof record.completedAt === "string" ? record.completedAt : undefined,
       finalDecision: readFinalDecision(record.finalDecision),
       iterations: record.iterations.filter(isIterationRecord),
-      schemaVersion: "workflow-loop-state.1",
+      schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
       startedAt: typeof record.startedAt === "string" ? record.startedAt : new Date(0).toISOString(),
     }
   } catch {
