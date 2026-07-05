@@ -15,12 +15,14 @@ export type WorkflowLoopIterationRecord = {
   readonly timedOut: boolean
 }
 
-export const WORKFLOW_LOOP_STATE_SCHEMA_VERSION = "workflow-loop-state.1"
+const LEGACY_WORKFLOW_LOOP_STATE_SCHEMA_VERSION = "workflow-loop-state.1"
+export const WORKFLOW_LOOP_STATE_SCHEMA_VERSION = "workflow-loop-state.2"
 
 export type WorkflowLoopState = {
   readonly completedAt?: string
   readonly finalDecision: "finish-passed" | "iteration-cap" | "no-blockers" | "not-run" | "unmapped-blocker"
   readonly iterations: readonly WorkflowLoopIterationRecord[]
+  readonly rulePackHash: string
   readonly schemaVersion: typeof WORKFLOW_LOOP_STATE_SCHEMA_VERSION
   readonly startedAt: string
 }
@@ -46,7 +48,9 @@ function parseWorkflowLoopState(source: string): WorkflowLoopState | null {
     }
     const record = parsed as Record<string, unknown>
     if (
-      (record.schemaVersion !== undefined && record.schemaVersion !== WORKFLOW_LOOP_STATE_SCHEMA_VERSION)
+      (record.schemaVersion !== undefined &&
+        record.schemaVersion !== WORKFLOW_LOOP_STATE_SCHEMA_VERSION &&
+        record.schemaVersion !== LEGACY_WORKFLOW_LOOP_STATE_SCHEMA_VERSION)
       || !Array.isArray(record.iterations)
     ) {
       return null
@@ -55,6 +59,7 @@ function parseWorkflowLoopState(source: string): WorkflowLoopState | null {
       completedAt: typeof record.completedAt === "string" ? record.completedAt : undefined,
       finalDecision: readFinalDecision(record.finalDecision),
       iterations: record.iterations.filter(isIterationRecord),
+      rulePackHash: typeof record.rulePackHash === "string" ? record.rulePackHash : "legacy-unrecorded",
       schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
       startedAt: typeof record.startedAt === "string" ? record.startedAt : new Date(0).toISOString(),
     }

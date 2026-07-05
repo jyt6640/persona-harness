@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -54,6 +54,20 @@ function writeProfile(projectDir: string): void {
       null,
       2,
     )}\n`,
+  )
+}
+
+function writeHarnessConfig(projectDir: string, config: Record<string, unknown>): void {
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  writeFileSync(join(projectDir, ".persona", "harness.jsonc"), `${JSON.stringify(config, null, 2)}\n`)
+}
+
+function writeRule(projectDir: string, relativePath: string, frontmatter: string, policies: readonly string[]): void {
+  const fullPath = join(projectDir, ".persona", "rules", relativePath)
+  mkdirSync(dirname(fullPath), { recursive: true })
+  writeFileSync(
+    fullPath,
+    `---\n${frontmatter.trim()}\n---\n\n# Test Rule\n\n${policies.map((policy) => `- ${policy}`).join("\n")}\n`,
   )
 }
 
@@ -181,6 +195,41 @@ afterEach(() => {
 describe("ph workflow loop", () => {
   it("previews a minimal blocker-depth prompt without writing loop state", () => {
     const projectDir = createWorkflowProject()
+    writeHarnessConfig(projectDir, { maxRulesPerInjection: 1 })
+    writeRule(
+      projectDir,
+      "backend/test-writer-rule.md",
+      `
+id: backend.test-writer-rule
+source: backend-policy
+domain: backend
+topic: verification
+roles:
+  - test-writer
+globs:
+  - "**/*.java"
+severity: must
+enforcement: inject_only
+`,
+      ["verification scoped policy"],
+    )
+    writeRule(
+      projectDir,
+      "backend/implementer-rule.md",
+      `
+id: backend.implementer-rule
+source: backend-policy
+domain: backend
+topic: implementation
+roles:
+  - implementer
+globs:
+  - "**/*.java"
+severity: must
+enforcement: inject_only
+`,
+      ["implementation scoped policy"],
+    )
 
     const result = runPersonaCli(["workflow", "loop", "--dry-run", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const output = JSON.parse(result.stdout)
@@ -194,6 +243,9 @@ describe("ph workflow loop", () => {
       schemaVersion: "workflow-loop.1",
     })
     expect(output.promptPreview.join("\n")).toContain("Blocker: verification-unknown (blocker 1/")
+    expect(output.promptPreview.join("\n")).toContain("Scoped PH rules (role: test-writer")
+    expect(output.promptPreview.join("\n")).toContain("verification scoped policy")
+    expect(output.promptPreview.join("\n")).not.toContain("implementation scoped policy")
     expect(output.promptPreview.join("\n")).not.toContain("read everything again")
     expect(output.termination).toEqual([
       "finish exit 0",
@@ -266,11 +318,13 @@ describe("ph workflow loop", () => {
     expect(result.status).toBe(0)
     expect(output.finalDecision).toBe("iteration-cap")
     expect(output.iterations).toHaveLength(2)
-    expect(state.schemaVersion).toBe("workflow-loop-state.1")
+    expect(state.schemaVersion).toBe("workflow-loop-state.2")
+    expect(state.rulePackHash).toMatch(/^sha256:[a-f0-9]{64}$/u)
     expect(state.finalDecision).toBe("iteration-cap")
     expect(state.iterations).toHaveLength(2)
     expect(firstPrompt).toContain("[Persona Harness Workflow Loop]")
     expect(firstPrompt).toContain("Blocker: verification-unknown (blocker 1/")
+    expect(firstPrompt).toContain("Scoped PH rules")
     expect(firstPrompt).toContain("Fix only this blocker")
     expect(readFileSync(join(projectDir, "fake-opencode.log"), "utf8").split("\n").filter(Boolean)).toHaveLength(2)
   })

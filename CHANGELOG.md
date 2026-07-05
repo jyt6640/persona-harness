@@ -6,6 +6,22 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- ROLE-RULES T7 adds deterministic role/stage scoped static rule delivery to
+  three prompt/card surfaces while keeping workflow gates broad/global.
+  `workflow relay next` prompt blocks, explicit `ph workflow loop` iteration
+  prompts, and `workflow split` task cards now include only matching
+  frontmatter `roles:` rules within the existing `maxRulesPerInjection`
+  budget. Relay JSON, workflow-loop state, and task cards record the rule-pack
+  content hash for post-hoc rederivation; no evidence schema, runtime injection
+  default, gate semantics, exit code, or publish/dist-tag state changes are
+  included. The T7 boundary record lives in
+  `docs/current/role-scoped-rule-delivery.md`. T7 measurement archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/t7-role-scoped-rule-delivery-20260705T112531Z`
+  recorded `gate-fixture.2` rail-entry control `10/10`, candidate `10/10`
+  (delta `0pp`, invalid `0`, non-inferior), and Stage 18 workflow-loop
+  finish PASS control `3/5`, candidate `5/5` (invalid `0`, no-worse). Token
+  snapshots are delivered-text estimates only, not token-saving evidence.
+
 - ROLE-RULES T5 documents workflow-state writer ownership and adds
   mtime/size-token conflict detection to read-modify-write workflow state
   paths. `ph plan --accept` / `--revise`, `ph plan --report-filled`,

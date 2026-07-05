@@ -49,6 +49,7 @@ export type WorkflowRelayPayload = {
   readonly promptLines: readonly string[]
   readonly requiredArtifact: string | null
   readonly requiredOutputArtifact: string | null
+  readonly rulePackHash: string
   readonly roleArtifacts: readonly RelayRoleArtifact[]
   readonly roleCompletionState: RelayRoleCompletionState
   readonly roleOrder: readonly MultiAgentRole[]

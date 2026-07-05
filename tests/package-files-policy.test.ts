@@ -50,6 +50,7 @@ describe("package files policy", () => {
       "docs/current/diff-rules-classification.md",
       "docs/current/workflow-string-gate-parsing-audit.md",
       "docs/current/workflow-state-concurrency.md",
+      "docs/current/role-scoped-rule-delivery.md",
       "docs/current/ralph-loop-measurement-status.md",
       "docs/current/multiagent-relay-trial-status.md",
       "docs/current/rail-entry-measurement-status.md",

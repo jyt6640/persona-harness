@@ -28,6 +28,8 @@ deleting evidence/status history.
   [`workflow-string-gate-parsing-audit.md`](workflow-string-gate-parsing-audit.md).
 - Workflow state concurrency model:
   [`workflow-state-concurrency.md`](workflow-state-concurrency.md).
+- Role-scoped static rule delivery:
+  [`role-scoped-rule-delivery.md`](role-scoped-rule-delivery.md).
 - Ralph-loop measurement status:
   [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
 - Role Checklist Relay status:
@@ -63,6 +65,9 @@ deleting evidence/status history.
 - `ph workflow loop` is an explicit capped fresh-session blocker loop command
   with fixture-scoped Stage 18 completion-integrity evidence. It is not a hook,
   not a default, and not evidence of broad product efficacy or token savings.
+- Static rule delivery is scoped narrowly by role/stage where T7 delivery
+  points include rules in prompt/card surfaces; closure, check, and finish
+  gates remain broad/global.
 - Relay is a Role Checklist Relay: a main-session checklist rail with optional
   host-dependent subagent invocation. A direct OpenCode task/subagent
   capability probe was observed, but PH relay still does not prove reliable

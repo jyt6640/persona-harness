@@ -3,6 +3,12 @@ import { join, relative, resolve } from "node:path"
 import process from "node:process"
 
 import { AtomicWriteConflictError } from "../io/atomic-file.js"
+import {
+  formatRuleDeliveryPromptLines,
+  ruleDeliveryRoleForBlocker,
+  rulePackContentHash,
+  selectRulesForDelivery,
+} from "../rules/rule-delivery.js"
 import type { CliRunResult } from "./bearshell.js"
 import { runBoundedProcess } from "./bounded-process.js"
 import { continuationPromptCoreLines } from "./continuation-prompt.js"
@@ -54,7 +60,7 @@ export function runWorkflowLoopCommand(options: WorkflowLoopOptions): CliRunResu
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const initialFinish = deterministicFinish(projectDir)
   const closure = readWorkflowClosurePayload("next", projectDir) as ClosureNextPayload
-  const promptPreview = firstPromptLines(closure)
+  const promptPreview = firstPromptLines(projectDir, closure)
   if (options.dryRun) {
     return formatPayload(
       {
@@ -100,6 +106,7 @@ export function runWorkflowLoopCommand(options: WorkflowLoopOptions): CliRunResu
 
 function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFinish: CliRunResult, initialClosure: ClosureNextPayload): WorkflowLoopState {
   const startedAt = new Date().toISOString()
+  const rulePackHash = rulePackContentHash(projectDir)
   let finish = initialFinish
   let closure = initialClosure
   const iterations: WorkflowLoopIterationRecord[] = []
@@ -123,7 +130,7 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
     iterations.push(record)
     stateToken = writeWorkflowLoopState(
       projectDir,
-      { finalDecision: "not-run", iterations, schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION, startedAt },
+      { finalDecision: "not-run", iterations, rulePackHash, schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION, startedAt },
       stateToken,
     )
     finish = deterministicFinish(projectDir)
@@ -136,6 +143,7 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
     completedAt: new Date().toISOString(),
     finalDecision,
     iterations,
+    rulePackHash,
     schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
     startedAt,
   }
@@ -156,7 +164,7 @@ function runIteration(
   const promptPath = join(dir, `iteration-${iteration}-prompt.md`)
   const stdoutPath = join(dir, `iteration-${iteration}-stdout.log`)
   const stderrPath = join(dir, `iteration-${iteration}-stderr.log`)
-  writeFileSync(promptPath, `${workflowLoopPrompt(blocker, closure.nextStep, 1, blockerTotal).join("\n")}\n`)
+  writeFileSync(promptPath, `${workflowLoopPrompt(projectDir, blocker, closure.nextStep, 1, blockerTotal).join("\n")}\n`)
   const result = runBoundedProcess({
     args: ["run", readFileSync(promptPath, "utf8")],
     command: options.opencodeCommand,
@@ -190,7 +198,7 @@ function deterministicFinish(projectDir: string): CliRunResult {
   return passedFinishOutput("implement")
 }
 
-function firstPromptLines(closure: ClosureNextPayload): readonly string[] {
+function firstPromptLines(projectDir: string, closure: ClosureNextPayload): readonly string[] {
   const blocker = closure.state.blockers[0]
   if (blocker === undefined) {
     return []
@@ -198,18 +206,22 @@ function firstPromptLines(closure: ClosureNextPayload): readonly string[] {
   if (isUnmappedBlockerStep(closure.nextStep)) {
     return []
   }
-  return workflowLoopPrompt(blocker, closure.nextStep, 1, closure.state.blockers.length)
+  return workflowLoopPrompt(projectDir, blocker, closure.nextStep, 1, closure.state.blockers.length)
 }
 
 function workflowLoopPrompt(
+  projectDir: string,
   blocker: ClosureBlocker,
   step: ClosureStep | null,
   blockerIndex: number,
   blockerTotal: number,
 ): readonly string[] {
+  const deliveryRole = ruleDeliveryRoleForBlocker(blocker.id)
+  const delivery = selectRulesForDelivery(projectDir, deliveryRole)
   return [
     "[Persona Harness Workflow Loop]",
     ...continuationPromptCoreLines(blocker, step, { index: blockerIndex, total: blockerTotal }),
+    ...formatRuleDeliveryPromptLines(delivery),
     "Run only the commands needed for this blocker and stop after the finish gate result is visible.",
   ]
 }

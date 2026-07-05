@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -64,6 +64,15 @@ function writeRoleArtifact(projectDir: string, ticketId: string, role: string, c
   )
 }
 
+function writeRule(projectDir: string, relativePath: string, frontmatter: string, policies: readonly string[]): void {
+  const fullPath = join(projectDir, ".persona", "rules", relativePath)
+  mkdirSync(dirname(fullPath), { recursive: true })
+  writeFileSync(
+    fullPath,
+    `---\n${frontmatter.trim()}\n---\n\n# Test Rule\n\n${policies.map((policy) => `- ${policy}`).join("\n")}\n`,
+  )
+}
+
 function relayJson(projectDir: string, action: "next" | "status" = "next"): Record<string, unknown> {
   const result = runPersonaCli(["workflow", "relay", action, "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
   expect(result.status).toBe(0)
@@ -112,6 +121,40 @@ describe("ph workflow relay read-only preview", () => {
     const projectDir = createTempProject()
     writeHarnessConfig(projectDir, true)
     writeWorkflowWithPendingTicket(projectDir)
+    writeRule(
+      projectDir,
+      "backend/test-writer-only.md",
+      `
+id: backend.test-writer-only
+source: backend-policy
+domain: backend
+topic: tests
+roles:
+  - test-writer
+globs:
+  - "**/*.java"
+severity: must
+enforcement: inject_only
+`,
+      ["test-writer scoped policy"],
+    )
+    writeRule(
+      projectDir,
+      "backend/reviewer-only.md",
+      `
+id: backend.reviewer-only
+source: backend-policy
+domain: backend
+topic: review
+roles:
+  - reviewer
+globs:
+  - "**/*.java"
+severity: must
+enforcement: inject_only
+`,
+      ["reviewer scoped policy"],
+    )
 
     const output = relayJson(projectDir)
 
@@ -120,6 +163,7 @@ describe("ph workflow relay read-only preview", () => {
     expect(output.nextRole).toBe("test-writer")
     expect(output.requiredArtifact).toBe(".persona/workflow/work/req-1/roles/test-writer.md")
     expect(output.requiredOutputArtifact).toBe(".persona/workflow/work/req-1/roles/test-writer.md")
+    expect(output.rulePackHash).toMatch(/^sha256:[a-f0-9]{64}$/u)
     expect(output.scopedInputFiles).toEqual(
       expect.arrayContaining([
         ".persona/workflow/plan.md",
@@ -163,6 +207,10 @@ describe("ph workflow relay read-only preview", () => {
     expect(output.promptBlock).toContain("Record whether subagent invocation was used or unavailable")
     expect(output.promptBlock).toContain("PH Multi-Agent Relay")
     expect(output.promptBlock).toContain("Persona Harness relay contract")
+    expect(output.promptBlock).toContain("Scoped PH rules (role: test-writer")
+    expect(output.promptBlock).toContain("Rule pack hash: sha256:")
+    expect(output.promptBlock).toContain("test-writer scoped policy")
+    expect(output.promptBlock).not.toContain("reviewer scoped policy")
   })
 
   it("progresses through implementer and reviewer artifacts before returning to closure gates", () => {

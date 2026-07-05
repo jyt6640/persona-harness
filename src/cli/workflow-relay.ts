@@ -2,6 +2,11 @@ import { resolve } from "node:path"
 import process from "node:process"
 
 import { loadHarnessConfig, type MultiAgentRole } from "../config/harness-config.js"
+import {
+  formatRuleDeliveryPromptLines,
+  rulePackContentHash,
+  selectRulesForDelivery,
+} from "../rules/rule-delivery.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readWorkflowClosurePayload, type ClosureBlocker, type ClosureTicket } from "./workflow-closure.js"
 import { readRelayRoleArtifact } from "./workflow-relay-artifacts.js"
@@ -110,6 +115,7 @@ function scopedInputs(ticket: ClosureTicket, closureBlocker: ClosureBlocker | nu
 
 export function readWorkflowRelayPayload(action: RelayAction, projectDir: string): WorkflowRelayPayload {
   const config = loadHarnessConfig(projectDir)
+  const rulePackHash = rulePackContentHash(projectDir)
   const roleOrder = config.multiAgent.roles
   const { closureBlocker, currentTicket } = closureCurrentTicket(projectDir)
   const gateCommand = "npx ph workflow relay next --json"
@@ -133,6 +139,7 @@ export function readWorkflowRelayPayload(action: RelayAction, projectDir: string
       promptLines: [],
       requiredArtifact: null,
       requiredOutputArtifact: null,
+      rulePackHash,
       roleArtifacts: [],
       roleCompletionState: roleCompletionState([], "disabled", null),
       roleOrder,
@@ -160,6 +167,7 @@ export function readWorkflowRelayPayload(action: RelayAction, projectDir: string
       promptLines: [],
       requiredArtifact: null,
       requiredOutputArtifact: null,
+      rulePackHash,
       roleArtifacts: [],
       roleCompletionState: roleCompletionState([], "no-current-ticket", null),
       roleOrder,
@@ -189,6 +197,7 @@ export function readWorkflowRelayPayload(action: RelayAction, projectDir: string
       ],
       requiredArtifact: null,
       requiredOutputArtifact: null,
+      rulePackHash,
       roleArtifacts,
       roleCompletionState: roleCompletionState(roleArtifacts, "complete", null),
       roleOrder,
@@ -196,7 +205,13 @@ export function readWorkflowRelayPayload(action: RelayAction, projectDir: string
       scopedInputs: scopedInputs(currentTicket, closureBlocker),
     }
   }
-  const promptLines = relayPromptLinesFor(blockedArtifact.role, currentTicket, blockedArtifact.path)
+  const ruleDelivery = selectRulesForDelivery(projectDir, blockedArtifact.role)
+  const promptLines = relayPromptLinesFor(
+    blockedArtifact.role,
+    currentTicket,
+    blockedArtifact.path,
+    formatRuleDeliveryPromptLines(ruleDelivery),
+  )
   const scopedInputFiles = scopedInputs(currentTicket, closureBlocker)
   return {
     action,
@@ -217,6 +232,7 @@ export function readWorkflowRelayPayload(action: RelayAction, projectDir: string
     promptLines,
     requiredArtifact: blockedArtifact.path,
     requiredOutputArtifact: blockedArtifact.path,
+    rulePackHash,
     roleArtifacts,
     roleCompletionState: roleCompletionState(roleArtifacts, "blocked", blockedArtifact.role),
     roleOrder,

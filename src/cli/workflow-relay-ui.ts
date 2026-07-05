@@ -93,6 +93,7 @@ export function relayPromptLinesFor(
   role: MultiAgentRole,
   ticket: ClosureTicket,
   artifactPath: string,
+  scopedRuleLines: readonly string[] = [],
 ): readonly string[] {
   const common = [
     "PH Role Checklist Relay is a main-session role checklist rail; host subagents are optional workers when available.",
@@ -109,6 +110,7 @@ export function relayPromptLinesFor(
       "Write the expected failing test, verification test, or verification plan for this ticket.",
       "Do not implement production code.",
       "Do not weaken, delete, or rewrite existing tests to pass without preserving behavior.",
+      ...scopedRuleLines,
       `Record the role artifact at ${artifactPath}.`,
       "Then rerun `npx ph workflow relay next --json`.",
     ]
@@ -120,6 +122,7 @@ export function relayPromptLinesFor(
       ...roleSubagentInvocationLines(role),
       "Implement or refactor only this scoped ticket; avoid broad redesign.",
       "Use the test-writer artifact if present and keep workflow reports/evidence honest.",
+      ...scopedRuleLines,
       `Record the role artifact at ${artifactPath}.`,
       "Then rerun `npx ph workflow relay next --json`.",
     ]
@@ -130,6 +133,7 @@ export function relayPromptLinesFor(
     ...roleSubagentInvocationLines(role),
     "Review/QA the scoped ticket and pressure implementation/review reports.",
     "Do not implement features unless explicitly reassigned.",
+    ...scopedRuleLines,
     `Record the role artifact at ${artifactPath}.`,
     "Then rerun `npx ph workflow relay next --json`.",
   ]

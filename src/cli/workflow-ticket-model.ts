@@ -37,7 +37,20 @@ export const DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH = ".persona/workflow/requiremen
 export const TASK_CARD_NAME = "00-task-card.md"
 export const WORKFLOW_BACKLOG_SCHEMA_VERSION = "workflow-backlog.1"
 export const WORKFLOW_REQUIREMENTS_BACKLOG_SCHEMA_VERSION = "workflow-requirements-backlog.1"
-export const WORKFLOW_TASK_CARD_SCHEMA_VERSION = "workflow-task-card.1"
+export const WORKFLOW_TASK_CARD_SCHEMA_VERSION = "workflow-task-card.2"
+
+export type TaskCardRuleDelivery = {
+  readonly budget: number
+  readonly estimatedTokens: number
+  readonly policyCount: number
+  readonly role: string
+  readonly ruleCount: number
+  readonly rulePackHash: string
+  readonly rules: readonly {
+    readonly path: string
+    readonly policies: readonly string[]
+  }[]
+}
 
 function schemaVersionLine(schemaVersion: string): string {
   return `schemaVersion: ${schemaVersion}`
@@ -110,7 +123,34 @@ export function historyTaskCardPath(ticket: string): string {
   return `${HISTORY_DIR}/${ticket}/${TASK_CARD_NAME}`
 }
 
-export function formatTaskCard(source: RequirementSource, section: StepSection): string {
+function formatTaskCardRuleDelivery(delivery: TaskCardRuleDelivery | undefined): readonly string[] {
+  if (delivery === undefined) {
+    return []
+  }
+  return [
+    "## Scoped Rule Delivery",
+    "",
+    `Rule delivery role: ${delivery.role}`,
+    `Rule pack hash: ${delivery.rulePackHash}`,
+    `Rule budget: ${delivery.ruleCount}/${delivery.budget}`,
+    `Rule policy bullets: ${delivery.policyCount}`,
+    `Estimated delivered tokens: ${delivery.estimatedTokens}`,
+    "Rule delivery is narrow by role scope; PH closure/check/finish gates remain broad and authoritative.",
+    "",
+    "### Matching Rules",
+    "",
+    ...(delivery.rules.length === 0
+      ? ["- No scoped PH rules matched this ticket work type."]
+      : delivery.rules.flatMap((rule) => [`- ${rule.path}`, ...rule.policies.map((policy) => `  - ${policy}`)])),
+    "",
+  ]
+}
+
+export function formatTaskCard(
+  source: RequirementSource,
+  section: StepSection,
+  ruleDelivery?: TaskCardRuleDelivery,
+): string {
   const ticket = ticketForSection(section)
   const heading = headingForSection(section)
   const body = section.body.length > 0 ? section.body : `(No body was captured under this ${section.kind} heading.)`
@@ -139,6 +179,7 @@ export function formatTaskCard(source: RequirementSource, section: StepSection):
     "- Keep existing project style when source code already exists.",
     "- Preserve Persona Harness workflow reports when they exist.",
     "",
+    ...formatTaskCardRuleDelivery(ruleDelivery),
     "## Non-Goals",
     "",
     "- No automatic code generation from split.",

@@ -1,6 +1,6 @@
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -40,6 +40,20 @@ function writeStepReadme(projectDir: string): void {
       "",
       "- 반복 일정을 등록한다.",
     ].join("\n"),
+  )
+}
+
+function writeHarnessConfig(projectDir: string, config: Record<string, unknown>): void {
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  writeFileSync(join(projectDir, ".persona", "harness.jsonc"), `${JSON.stringify(config, null, 2)}\n`)
+}
+
+function writeRule(projectDir: string, relativePath: string, frontmatter: string, policies: readonly string[]): void {
+  const fullPath = join(projectDir, ".persona", "rules", relativePath)
+  mkdirSync(dirname(fullPath), { recursive: true })
+  writeFileSync(
+    fullPath,
+    `---\n${frontmatter.trim()}\n---\n\n# Test Rule\n\n${policies.map((policy) => `- ${policy}`).join("\n")}\n`,
   )
 }
 
@@ -174,12 +188,47 @@ describe("ph workflow ticket backlog", () => {
     const ticket = readFileSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"), "utf8")
     expect(backlog).toContain("schemaVersion: workflow-backlog.1")
     expect(ticket).toContain("# Task Card: Step 1. Product scope and core use cases")
-    expect(ticket).toContain("schemaVersion: workflow-task-card.1")
+    expect(ticket).toContain("schemaVersion: workflow-task-card.2")
     expect(ticket).toContain("Source path: .persona/workflow/requirements/backlog.md")
   })
 
   it("splits README Step sections into backlog rows and task cards", () => {
     const projectDir = createHarnessProject()
+    writeHarnessConfig(projectDir, { maxRulesPerInjection: 1 })
+    writeRule(
+      projectDir,
+      "backend/implementer-ticket.md",
+      `
+id: backend.implementer-ticket
+source: backend-policy
+domain: backend
+topic: implementation
+roles:
+  - implementer
+globs:
+  - "**/*.java"
+severity: must
+enforcement: inject_only
+`,
+      ["implementer ticket policy"],
+    )
+    writeRule(
+      projectDir,
+      "backend/reviewer-ticket.md",
+      `
+id: backend.reviewer-ticket
+source: backend-policy
+domain: backend
+topic: review
+roles:
+  - reviewer
+globs:
+  - "**/*.java"
+severity: must
+enforcement: inject_only
+`,
+      ["reviewer ticket policy"],
+    )
     writeStepReadme(projectDir)
 
     const result = runPersonaCli(["workflow", "split", "README.md"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -195,11 +244,16 @@ describe("ph workflow ticket backlog", () => {
     expect(backlog).toContain("| 1 | step-1 | 기본 일정 구현 | pending | .persona/workflow/work/step-1/00-task-card.md |")
     expect(backlog).toContain("| 2 | step-2 | iCal Import/Export | pending | .persona/workflow/work/step-2/00-task-card.md |")
     expect(card).toContain("# Task Card: Step 1. 기본 일정 구현")
-    expect(card).toContain("schemaVersion: workflow-task-card.1")
+    expect(card).toContain("schemaVersion: workflow-task-card.2")
     expect(card).toContain("Source: README.md")
     expect(card).toContain("Source kind: file")
     expect(card).toContain("Source path: README.md")
     expect(card).toContain("- 일정을 등록한다.")
+    expect(card).toContain("## Scoped Rule Delivery")
+    expect(card).toContain("Rule delivery role: implementer")
+    expect(card).toContain("Rule pack hash: sha256:")
+    expect(card).toContain("implementer ticket policy")
+    expect(card).not.toContain("reviewer ticket policy")
     expect(card).toContain("No automatic code generation")
   })
 
@@ -254,7 +308,7 @@ describe("ph workflow ticket backlog", () => {
     const card = readFileSync(join(projectDir, ".persona", "workflow", "work", "step-1", "00-task-card.md"), "utf8")
     expect(backlog).toContain("schemaVersion: workflow-backlog.1")
     expect(card).toContain("Source kind: prompt")
-    expect(card).toContain("schemaVersion: workflow-task-card.1")
+    expect(card).toContain("schemaVersion: workflow-task-card.2")
     expect(card).toContain("Source path: .persona/workflow/requirements/latest.md")
     expect(card).toContain("- 프롬프트로 받은 일정을 등록한다.")
   })

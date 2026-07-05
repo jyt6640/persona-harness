@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 14
+- current active pointer/status: 15
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 52
 - versioned durable: 17
 
-Total indexed files: 278
+Total indexed files: 279
 
 ## File Inventory
 
@@ -98,6 +98,7 @@ Total indexed files: 278
 | `docs/current/rail-entry-measurement-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/rail-entry-prompt-regression-gate.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/ralph-loop-measurement-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
+| `docs/current/role-scoped-rule-delivery.md` | current active pointer/status | - | T7 role/stage scoped static rule delivery status and boundary record. |
 | `docs/current/release/README.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/release/github-actions-release-automation.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/release/next-version-blocked.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |

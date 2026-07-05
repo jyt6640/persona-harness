@@ -15,6 +15,7 @@ import {
   type RuleDeliveryRole,
   type RuleMetadata,
 } from "./rule-frontmatter.js"
+import { takePoliciesForDelivery } from "./rule-delivery.js"
 import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
 
 export type { Phase0Scenario } from "./rule-catalog.js"
@@ -91,29 +92,6 @@ function isRuleFileRole(fileRole: FileRole): fileRole is RuleFileRole {
     case "shared-skill":
       return false
   }
-}
-
-function takePoliciesForInjection(rulePath: string, policies: readonly string[], maxBullets?: number): string[] {
-  if (maxBullets !== undefined) {
-    return policies.slice(0, maxBullets)
-  }
-  if (rulePath === STEP1_API_CONTRACT_RULE || rulePath === STEP2_3_API_CONTRACT_RULE) {
-    return policies.slice(0, 3)
-  }
-  if (rulePath === "backend/layered-architecture.md") {
-    return policies.slice(0, 4)
-  }
-  if (rulePath === "backend/java-common.md") {
-    return policies.slice(0, 3)
-  }
-  if (rulePath === "backend/java-backend-bootstrap.md") {
-    return policies.slice(0, 8)
-  }
-  if (rulePath === "backend/gradle-bootstrap.md") {
-    return policies.slice(0, 4)
-  }
-  const limit = rulePath === "clean-code/method-design.md" ? 1 : 2
-  return policies.slice(0, limit)
 }
 
 function contractRuleForScenario(scenario: Phase0Scenario): string {
@@ -193,7 +171,7 @@ export function loadRulesForRole(
         path: rulePath,
         metadata: catalogEntry.metadata,
         diagnostics: catalogEntry.diagnostics,
-        policies: takePoliciesForInjection(rulePath, catalogEntry.policies, catalogEntry.metadata.maxBullets),
+        policies: takePoliciesForDelivery(rulePath, catalogEntry.policies, catalogEntry.metadata.maxBullets),
       }
     }
 
@@ -211,7 +189,7 @@ export function loadRulesForRole(
       path: rulePath,
       metadata,
       diagnostics: [],
-      policies: takePoliciesForInjection(rulePath, extractBulletPolicies(readFileSync(absolutePath, "utf8"))),
+      policies: takePoliciesForDelivery(rulePath, extractBulletPolicies(readFileSync(absolutePath, "utf8"))),
     }
   })
 }

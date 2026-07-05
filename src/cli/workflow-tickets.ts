@@ -8,6 +8,11 @@ import {
   writeFileAtomicIfUnchanged,
   type TextFileSnapshot,
 } from "../io/atomic-file.js"
+import {
+  ruleDeliveryRoleForWorkText,
+  selectRulesForDelivery,
+  type RuleDeliverySummary,
+} from "../rules/rule-delivery.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   BACKLOG_PATH,
@@ -23,6 +28,7 @@ import {
   WORK_DIR,
   type BacklogTicket,
   type RequirementSource,
+  type TaskCardRuleDelivery,
   formatBacklog,
   formatTaskCard,
   pendingTickets,
@@ -208,6 +214,26 @@ function resolveRequirementSource(projectDir: string, sourceFile: string | undef
   return { kind: "prompt", path: LATEST_REQUIREMENTS_PATH, label: LATEST_REQUIREMENTS_PATH }
 }
 
+function ticketRuleDelivery(projectDir: string, section: { readonly body: string; readonly title: string }): TaskCardRuleDelivery {
+  const delivery = selectRulesForDelivery(projectDir, ruleDeliveryRoleForWorkText(`${section.title}\n${section.body}`))
+  return taskCardRuleDelivery(delivery)
+}
+
+function taskCardRuleDelivery(delivery: RuleDeliverySummary): TaskCardRuleDelivery {
+  return {
+    budget: delivery.budget,
+    estimatedTokens: delivery.estimatedTokens,
+    policyCount: delivery.policyCount,
+    role: delivery.role,
+    ruleCount: delivery.ruleCount,
+    rulePackHash: delivery.rulePackHash,
+    rules: delivery.rules.map((rule) => ({
+      path: rule.path,
+      policies: rule.policies,
+    })),
+  }
+}
+
 export function runWorkflowCapture(options: WorkflowTicketOptions): CliRunResult {
   const initialized = initializedProjectDir(options)
   if ("status" in initialized) {
@@ -329,7 +355,7 @@ export function runWorkflowSplit(sourceFile: string | undefined, options: Workfl
     const ticket = section.kind === "step" ? `step-${section.number}` : `req-${section.number}`
     const ticketDir = join(projectDir, WORK_DIR, ticket)
     mkdirSync(ticketDir, { recursive: true })
-    writeFileAtomic(join(ticketDir, TASK_CARD_NAME), formatTaskCard(source, section))
+    writeFileAtomic(join(ticketDir, TASK_CARD_NAME), formatTaskCard(source, section, ticketRuleDelivery(projectDir, section)))
   }
   writeFileAtomic(backlogAbsolutePath, formatBacklog(source, sections))
 
