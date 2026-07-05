@@ -1,0 +1,16 @@
+id: validation.no-util-based-validation
+language: Java
+message: Avoid util-based validation calls; move validation into Domain, Policy, or Application Validator.
+# persona-harness-level: report
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: false
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: move the validation behind a named Domain method, Policy, or Application Validator.
+# persona-harness-step-id: fix-util-based-validation
+# persona-harness-roles: implementer, reviewer
+rule:
+  pattern: $UTIL.validate($$$ARGS)
+constraints:
+  UTIL:
+    regex: ".*(Util|Utils)$"

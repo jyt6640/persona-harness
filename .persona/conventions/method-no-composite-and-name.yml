@@ -1,0 +1,16 @@
+id: method.no-composite-and-name
+language: Java
+message: Avoid composite method names containing And; split responsibilities or name the single domain outcome.
+# persona-harness-level: report
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: false
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: split the method into one responsibility or rename it to the single domain outcome it provides.
+# persona-harness-step-id: fix-composite-and-method-name
+# persona-harness-roles: implementer, reviewer
+rule:
+  pattern: $RET $METHOD($$$ARGS) { $$$BODY }
+constraints:
+  METHOD:
+    regex: "[A-Za-z0-9_]+And[A-Za-z0-9_]+"

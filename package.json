@@ -24,7 +24,7 @@
     "CHANGELOG.md",
     "img",
     ".persona/harness.jsonc",
-    ".persona/conventions/controller-persistence-import.yml",
+    ".persona/conventions",
     ".persona/rules/clean-code",
     ".persona/rules/diff-rules",
     ".persona/rules/backend/gradle-bootstrap.md",

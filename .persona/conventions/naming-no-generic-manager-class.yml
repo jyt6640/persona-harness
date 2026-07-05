@@ -1,0 +1,17 @@
+id: naming.no-generic-manager-class
+language: Java
+message: Avoid generic Manager classes; use a domain role name such as Service, Policy, Validator, or Repository adapter.
+# persona-harness-level: report
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-target-suffix: Manager.java
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: true
+# persona-harness-fix-path: rename or split the Manager class into the concrete domain role it owns.
+# persona-harness-step-id: fix-generic-manager-class
+# persona-harness-roles: implementer, reviewer
+rule:
+  pattern: class $CLASS { $$$BODY }
+constraints:
+  CLASS:
+    regex: ".*Manager$"

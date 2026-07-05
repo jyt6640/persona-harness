@@ -1,0 +1,16 @@
+id: architecture.no-common-util-package
+language: Java
+message: Avoid broad common/util packages; place shared code by domain responsibility or a named infrastructure boundary.
+# persona-harness-level: report
+# persona-harness-scope: tree
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: true
+# persona-harness-fix-path: move the common/util code into the owning domain package or a specifically named boundary.
+# persona-harness-step-id: fix-common-util-package
+# persona-harness-roles: implementer, reviewer
+rule:
+  pattern: package $PKG.$BAD;
+constraints:
+  BAD:
+    regex: "^(common|util|utils)$"

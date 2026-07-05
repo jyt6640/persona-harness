@@ -4,9 +4,17 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
+import { loadAstGrepConventionDefinitions } from "../src/cli/ast-grep-convention-runner.js"
 import { summarizeConventionPackDiagnostics } from "../src/cli/convention-pack-diagnostics.js"
 
 const tempProjects: string[] = []
+
+const DIFF_RULE_CONVENTION_IDS = [
+  "architecture.no-common-util-package",
+  "method.no-composite-and-name",
+  "naming.no-generic-manager-class",
+  "validation.no-util-based-validation",
+] as const
 
 function createTempProject(): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-convention-pack-test-"))
@@ -110,5 +118,22 @@ describe("convention pack diagnostics", () => {
         { code: "missing_required_field", field: "persona-harness-step-id", path: ".persona/conventions/missing.yml" },
       ]),
     )
+  })
+
+  it("loads migrated diff-rule conventions as report-level candidates with remediation metadata", () => {
+    const summary = summarizeConventionPackDiagnostics(process.cwd())
+    const definitions = loadAstGrepConventionDefinitions(process.cwd()).filter((definition) =>
+      DIFF_RULE_CONVENTION_IDS.some((id) => id === definition.id),
+    )
+
+    expect(summary.finding).toBe("PASS")
+    expect(summary.diagnostics).toEqual([])
+    expect(definitions.map((definition) => definition.id).sort()).toEqual([...DIFF_RULE_CONVENTION_IDS].sort())
+    for (const definition of definitions) {
+      expect(definition.defaultLevel).toBe("report")
+      expect(definition.stepId).toMatch(/^fix-/u)
+      expect(definition.fixPath).not.toBe("")
+      expect(definition.check.kind).toBe("ast-grep")
+    }
   })
 })

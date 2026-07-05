@@ -6,6 +6,18 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- ROLE-RULES T8 migrates the canonical diff-rules reference corpus into PH
+  package surfaces without changing the preserved `references/diff-rules/**`
+  originals. Delivery-only rows are converted to `.persona/rules/diff-rules/**`
+  markdown with `roles:` frontmatter, duplicate rows are merged into existing PH
+  rule surfaces, and four top gate-capable candidates are added as report-level
+  ast-grep conventions with walkable remediation metadata:
+  `architecture.no-common-util-package`, `naming.no-generic-manager-class`,
+  `method.no-composite-and-name`, and
+  `validation.no-util-based-validation`. Runtime injection remains parked; no
+  evidence schema, default, exit-code, JSON schema, version, publish, tag, or
+  dist-tag movement is included.
+
 - ROLE-RULES T7 adds deterministic role/stage scoped static rule delivery to
   three prompt/card surfaces while keeping workflow gates broad/global.
   `workflow relay next` prompt blocks, explicit `ph workflow loop` iteration

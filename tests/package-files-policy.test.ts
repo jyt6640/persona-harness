@@ -28,6 +28,19 @@ describe("package files policy", () => {
     }
   })
 
+  it("keeps all source convention yaml files covered by packaged files", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const conventionFiles = listConventionFiles(path.join(packageRoot, ".persona/conventions")).map((filePath) =>
+      toPackagePath(path.relative(packageRoot, filePath)),
+    )
+
+    expect(conventionFiles).toHaveLength(5)
+
+    for (const conventionFile of conventionFiles) {
+      expect(isCoveredByPackageFiles(conventionFile, packageJson.files)).toBe(true)
+    }
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
@@ -75,6 +88,18 @@ function listRuleMarkdownFiles(directory: string): readonly string[] {
         return listRuleMarkdownFiles(entryPath)
       }
       return entry.isFile() && entry.name.endsWith(".md") ? [entryPath] : []
+    })
+    .sort()
+}
+
+function listConventionFiles(directory: string): readonly string[] {
+  return readdirSync(directory, { withFileTypes: true })
+    .flatMap((entry) => {
+      const entryPath = path.join(directory, entry.name)
+      if (entry.isDirectory()) {
+        return listConventionFiles(entryPath)
+      }
+      return entry.isFile() && /\.(ya?ml)$/iu.test(entry.name) ? [entryPath] : []
     })
     .sort()
 }

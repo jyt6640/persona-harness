@@ -81,3 +81,30 @@ runtime behavior, or claim product effectiveness.
 This table fixes T6 scope for future T8 work only. It is not a convention
 migration, not a new gate, not evidence-schema movement, not a default change,
 and not a product-effectiveness claim.
+
+## T8 Migration Record
+
+T8 applies this classification append-only while preserving the original
+`references/diff-rules/**` files unchanged.
+
+- `[전달 전용]` rows are converted into `.persona/rules/diff-rules/**`
+  markdown with explicit `roles:` frontmatter. Rejected decision files remain
+  rejected-pattern guidance with the original rationale and negative examples
+  intact.
+- `[PH 기존 rule과 중복]` rows are merged into existing PH rule surfaces rather
+  than copied as separate rules. No semantic contradiction was observed in the
+  merged duplicate set.
+- T8 creates these report-level, ast-grep-dependent convention candidates:
+
+| Convention id | Source row | Default level | Toolchain dependency | H1-4 fail-closed applicability |
+| --- | --- | --- | --- | --- |
+| `architecture.no-common-util-package` | Row 30, `decisions/rejected/common-util-package.md` | `report` | ast-grep | Only if explicitly configured to `block`; default `report` remains warning/report-only. |
+| `naming.no-generic-manager-class` | Row 32, `decisions/rejected/generic-manager-class.md` | `report` | ast-grep | Only if explicitly configured to `block`; default `report` remains warning/report-only. |
+| `method.no-composite-and-name` | Row 40, `principles/method-design.md` derived candidate | `report` | ast-grep | Not block-allowed because the syntax-only signal is intentionally low precision. |
+| `validation.no-util-based-validation` | Row 36, `decisions/rejected/util-based-validation.md` | `report` | ast-grep | Not block-allowed because util validation calls need review context. |
+
+The report-level candidates are decision-support signals only. They do not
+change closure gates unless a future configuration explicitly raises a
+block-allowed convention to `block`, at which point the existing H1-4
+`convention-toolchain-missing` fail-closed behavior applies if ast-grep is
+unavailable.
