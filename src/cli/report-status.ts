@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { writeFileAtomic } from "../io/atomic-file.js"
+import { replaceWorkflowReportStatusText } from "../runtime/workflow-report-status.js"
 import { IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH, type PlanOptions } from "./plan.js"
 
 export type WorkflowReportKind = "implementation" | "review"
@@ -51,10 +52,11 @@ export function updateWorkflowReportStatus(
   }
 
   const reportText = readFileSync(reportPath, "utf8")
-  if (!/^Status:\s*.+?\s*$/m.test(reportText)) {
+  const updatedReportText = replaceWorkflowReportStatusText(reportText, status)
+  if (updatedReportText === undefined) {
     throw new WorkflowReportStatusError(`No Status line found in ${relativePath}.`)
   }
 
-  writeFileAtomic(reportPath, reportText.replace(/^Status:\s*.+?\s*$/m, `Status: ${status}`))
+  writeFileAtomic(reportPath, updatedReportText)
   return { reportPath, relativePath, status }
 }

@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
+import { readWorkflowReportStatus, type WorkflowReportStatus } from "../runtime/workflow-report-status.js"
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH, type PlanOptions } from "./plan.js"
 import { PlanStatusError, readWorkflowPlanStatus } from "./plan-status.js"
 import { createImplementationPrompt } from "./plan-prompts.js"
@@ -14,13 +15,11 @@ import { planUncheckedItems } from "./workflow-plan-unchecked.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets, TICKET_BY_TICKET_GUIDANCE, TIMEBOXED_SCOPE_GUIDANCE } from "./workflow-ticket-summary.js"
 
-type ReportStatus = "missing" | "template" | "filled" | "unknown"
-
 type WorkflowSnapshot = {
   readonly projectDir: string
   readonly planStatus: string | undefined
-  readonly implementationStatus: ReportStatus
-  readonly reviewStatus: ReportStatus
+  readonly implementationStatus: WorkflowReportStatus
+  readonly reviewStatus: WorkflowReportStatus
   readonly implementationReportText: string | undefined
   readonly closurePayload: ClosurePayload
   readonly workflowStatus: WorkflowStatusSummary
@@ -62,23 +61,6 @@ function projectDirFor(options: PlanOptions): string {
   return resolve(options.projectDir ?? process.cwd())
 }
 
-function reportStatus(projectDir: string, relativePath: string): ReportStatus {
-  const reportPath = join(projectDir, relativePath)
-  if (!existsSync(reportPath)) {
-    return "missing"
-  }
-
-  const reportText = readFileSync(reportPath, "utf8")
-  const match = reportText.match(/^Status:\s*(.+?)\s*$/m)
-  if (match?.[1] === "template") {
-    return "template"
-  }
-  if (match?.[1] === "filled") {
-    return "filled"
-  }
-  return "unknown"
-}
-
 function reportText(projectDir: string, relativePath: string): string | undefined {
   const reportPath = join(projectDir, relativePath)
   return existsSync(reportPath) ? readFileSync(reportPath, "utf8") : undefined
@@ -94,8 +76,8 @@ function workflowSnapshot(options: PlanOptions): WorkflowSnapshot {
       throw error
     }
   }
-  const implementationStatus = reportStatus(projectDir, IMPLEMENTATION_REPORT_PATH)
-  const reviewStatus = reportStatus(projectDir, REVIEW_REPORT_PATH)
+  const implementationStatus = readWorkflowReportStatus(projectDir, IMPLEMENTATION_REPORT_PATH)
+  const reviewStatus = readWorkflowReportStatus(projectDir, REVIEW_REPORT_PATH)
 
   return {
     projectDir,

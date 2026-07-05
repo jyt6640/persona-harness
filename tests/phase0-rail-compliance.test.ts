@@ -259,4 +259,24 @@ describe("rail compliance evidence", () => {
       "raw-final-verification-without-bearshell",
     )
   })
+
+  it("accepts report status frontmatter when checking missing workflow reports", async () => {
+    const workflowDir = join(fixtureWorkspace, ".persona", "workflow")
+    mkdirSync(workflowDir, { recursive: true })
+    writeFileSync(
+      join(workflowDir, "implementation-report.md"),
+      ["---", "status: filled", "---", "# Implementation Report", ""].join("\n"),
+    )
+    writeFileSync(join(workflowDir, "review-report.md"), ["---", "status: filled", "---", "# Review Report", ""].join("\n"))
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-finish-frontmatter-reports"
+    await injectRail(sessionID, "CouponService 만들어줘")
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "shell", sessionID, callID: "call-finish", args: { cmd: "npx ph workflow finish implement" } },
+      toolOutput("finish"),
+    )
+
+    expect(compliancePayloads().map((payload) => payload.code)).not.toContain("workflow-report-missing")
+  })
 })

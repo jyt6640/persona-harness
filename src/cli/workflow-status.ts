@@ -4,6 +4,7 @@ import process from "node:process"
 
 import { findConventionByBlockerId } from "../config/convention-registry.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
+import { readWorkflowReportStatus } from "../runtime/workflow-report-status.js"
 import { readArchitectureConventions, type ArchitectureConventionBlocker, type ArchitectureConventionSummary } from "./architecture-conventions.js"
 import { backendShapeReportStatus } from "./backend-shape-report-status.js"
 import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./java-role-read-coverage.js"
@@ -413,8 +414,8 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
   const summary = {
     projectDir,
     plan: readStatusLine(join(projectDir, PLAN_PATH)),
-    implementation: readStatusLine(join(projectDir, IMPLEMENTATION_REPORT_PATH)),
-    review: readStatusLine(join(projectDir, REVIEW_REPORT_PATH)),
+    implementation: readWorkflowReportStatus(projectDir, IMPLEMENTATION_REPORT_PATH),
+    review: readWorkflowReportStatus(projectDir, REVIEW_REPORT_PATH),
     evidence: hasFilesDeep(join(projectDir, EVIDENCE_DIR)) ? "present" : "missing",
   } as const
   const coverage = readCoverage(projectDir, summary.implementation)

@@ -1,8 +1,6 @@
-import { existsSync, readFileSync } from "node:fs"
-import { join } from "node:path"
-
 import { writeRailComplianceEvidence, type RailComplianceFindingCode } from "./evidence.js"
 import type { TopLevelIntent } from "./top-level-intent-router.js"
+import { readWorkflowReportStatus } from "./workflow-report-status.js"
 
 type RailComplianceState = {
   readonly sessionID: string
@@ -77,19 +75,10 @@ function isFileMutation(observation: ToolObservation): boolean {
   return /(?:^|\s)(?:apply_patch|tee\s+|cat\s+>|printf\b[\s\S]*>)/iu.test(command)
 }
 
-function readStatus(projectDir: string, relativePath: string): string {
-  const path = join(projectDir, relativePath)
-  if (!existsSync(path)) {
-    return "missing"
-  }
-  const text = readFileSync(path, "utf8")
-  return /^Status:\s*filled\s*$/imu.test(text) ? "filled" : "not-filled"
-}
-
 function missingWorkflowReports(projectDir: string): readonly string[] {
   return [
-    ...(readStatus(projectDir, IMPLEMENTATION_REPORT_PATH) === "filled" ? [] : [IMPLEMENTATION_REPORT_PATH]),
-    ...(readStatus(projectDir, REVIEW_REPORT_PATH) === "filled" ? [] : [REVIEW_REPORT_PATH]),
+    ...(readWorkflowReportStatus(projectDir, IMPLEMENTATION_REPORT_PATH) === "filled" ? [] : [IMPLEMENTATION_REPORT_PATH]),
+    ...(readWorkflowReportStatus(projectDir, REVIEW_REPORT_PATH) === "filled" ? [] : [REVIEW_REPORT_PATH]),
   ]
 }
 

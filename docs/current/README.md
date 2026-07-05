@@ -24,6 +24,8 @@ deleting evidence/status history.
   [`external-review-adoption-status.md`](external-review-adoption-status.md).
 - Diff-rules classification:
   [`diff-rules-classification.md`](diff-rules-classification.md).
+- Workflow string-gate parsing audit:
+  [`workflow-string-gate-parsing-audit.md`](workflow-string-gate-parsing-audit.md).
 - Ralph-loop measurement status:
   [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
 - Role Checklist Relay status:

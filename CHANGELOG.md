@@ -6,6 +6,19 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- ROLE-RULES T4 moves workflow report status parsing to a shared
+  frontmatter-first reader/updater. Implementation and review reports may now
+  use leading markdown frontmatter `status: filled` / `status: template`; legacy
+  `Status:` text forms remain supported, and conflicting frontmatter/text
+  reports keep the legacy text result so finish/check behavior is not made
+  stricter for existing reports. `ph plan --report-filled`, `ph workflow
+  check`, `ph workflow finish implement`, `ph plan --next` / `--resume`, and
+  rail-compliance missing-report checks now share that parser. The retained
+  string-based gate inventory is recorded in
+  `docs/current/workflow-string-gate-parsing-audit.md`; no gate exit code, JSON
+  schema, default, evidence schema, version, publish, or dist-tag changes are
+  included.
+
 - ROLE-RULES T3 adds `schemaVersion:` metadata to newly written workflow
   ticket markdown state: requirements backlog `workflow-requirements-backlog.1`,
   implementation backlog `workflow-backlog.1`, and task cards

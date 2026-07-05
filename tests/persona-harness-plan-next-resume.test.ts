@@ -146,6 +146,30 @@ describe("ph plan --next", () => {
     expect(result.stdout).toContain("Review report status: filled")
     expect(result.stdout).toContain("npx ph history --id")
   })
+
+  it("reads report status frontmatter when recommending the next action", () => {
+    const projectDir = createProfiledTempProject()
+    expect(runPlan(projectDir, []).status).toBe(0)
+    expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    const implementationReport = readFileSync(implementationReportPath(projectDir), "utf8")
+    const reviewReportPath = join(projectDir, ".persona", "workflow", "review-report.md")
+    const reviewReport = readFileSync(reviewReportPath, "utf8")
+    writeFileSync(
+      implementationReportPath(projectDir),
+      ["---", "status: filled", "---", implementationReport.replace(/^Status:\s*template\s*$/m, "")].join("\n"),
+    )
+    writeFileSync(
+      reviewReportPath,
+      ["---", "status: filled", "---", reviewReport.replace(/^Status:\s*template\s*$/m, "")].join("\n"),
+    )
+
+    const result = runPlan(projectDir, ["--next"])
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Implementation report status: filled")
+    expect(result.stdout).toContain("Review report status: filled")
+    expect(result.stdout).toContain("npx ph history --id")
+  })
 })
 
 describe("ph plan --resume", () => {

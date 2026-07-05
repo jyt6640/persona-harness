@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -63,5 +63,24 @@ describe("ph plan report status errors", () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("No Status line found in .persona/workflow/implementation-report.md.")
+  })
+
+  it("updates workflow report status frontmatter without requiring a legacy Status line", () => {
+    const projectDir = createTempProject()
+    const workflowDir = join(projectDir, ".persona", "workflow")
+    const reportPath = join(workflowDir, "implementation-report.md")
+    mkdirSync(workflowDir, { recursive: true })
+    writeFileSync(reportPath, ["---", "status: template", "---", "# Implementation Report", ""].join("\n"))
+
+    const result = runPersonaCli(["plan", "--report-filled", "implementation"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    const updatedReport = readFileSync(reportPath, "utf8")
+    expect(updatedReport).toContain("status: filled")
+    expect(updatedReport).not.toContain("Status: filled")
   })
 })

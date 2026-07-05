@@ -94,6 +94,62 @@ function writeReports(projectDir: string, markdownCase: ReportMarkdownCase): voi
   )
 }
 
+function writeFrontmatterReports(projectDir: string, implementationStatus: string, reviewStatus: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "---",
+      `status: ${implementationStatus}`,
+      "---",
+      "# Implementation Report",
+      "",
+      "- README ranges read: 1-220",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "---",
+      `status: ${reviewStatus}`,
+      "---",
+      "# Review Report",
+      "",
+      "- `npx ph bearshell --shell './gradlew bootRun'`",
+    ].join("\n"),
+  )
+}
+
+function writeConflictingReports(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "---",
+      "status: template",
+      "---",
+      "# Implementation Report",
+      "",
+      "Status: filled",
+      "- README ranges read: 1-220",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "---",
+      "status: template",
+      "---",
+      "# Review Report",
+      "",
+      "Status: filled",
+      "- `npx ph bearshell --shell './gradlew bootRun'`",
+    ].join("\n"),
+  )
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -156,6 +212,35 @@ describe("workflow report status parser", () => {
     expect(check.stdout).toContain(".persona/workflow/implementation-report.md: filled")
     expect(check.stdout).toContain(".persona/workflow/review-report.md: filled")
     expect(check.stdout).toContain("Workflow status: PASS")
+    expect(finish.status).toBe(0)
+    expect(finish.stdout).toContain("Finish status: PASS")
+  })
+
+  it("accepts report status frontmatter without legacy Status lines", () => {
+    const projectDir = createPlannedBackendProject()
+    writeFrontmatterReports(projectDir, "filled", "filled")
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain(".persona/workflow/implementation-report.md: filled")
+    expect(check.stdout).toContain(".persona/workflow/review-report.md: filled")
+    expect(check.stdout).toContain("Workflow status: PASS")
+    expect(finish.status).toBe(0)
+    expect(finish.stdout).toContain("Finish status: PASS")
+  })
+
+  it("keeps legacy Status-line fallback when frontmatter would make finish stricter", () => {
+    const projectDir = createPlannedBackendProject()
+    writeConflictingReports(projectDir)
+
+    const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(check.status).toBe(0)
+    expect(check.stdout).toContain(".persona/workflow/implementation-report.md: filled")
+    expect(check.stdout).toContain(".persona/workflow/review-report.md: filled")
     expect(finish.status).toBe(0)
     expect(finish.stdout).toContain("Finish status: PASS")
   })
