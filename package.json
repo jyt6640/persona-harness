@@ -37,6 +37,8 @@
     ".persona/rules/backend/spring-repository.md",
     ".persona/rules/backend/spring-service.md",
     ".persona/rules/backend/spring-test.md",
+    ".persona/rules/backend/step1-api-contract.md",
+    ".persona/rules/backend/step2-3-api-contract.md",
     ".persona/rules/backend/validation-exception.md",
     "docs/current/java-backend-mvp-install-guide.md",
     "docs/current/v0.3.0-gradle-spring-build-guidance.md",

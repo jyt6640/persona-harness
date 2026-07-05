@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
 
 import { describe, expect, it } from "vitest"
@@ -15,6 +15,19 @@ type MarkdownLink = {
 const packageRoot = process.cwd()
 
 describe("package files policy", () => {
+  it("keeps all source rule markdown files covered by packaged files", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const ruleFiles = listRuleMarkdownFiles(path.join(packageRoot, ".persona/rules")).map((filePath) =>
+      toPackagePath(path.relative(packageRoot, filePath)),
+    )
+
+    expect(ruleFiles).toHaveLength(20)
+
+    for (const ruleFile of ruleFiles) {
+      expect(isCoveredByPackageFiles(ruleFile, packageJson.files)).toBe(true)
+    }
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
@@ -50,6 +63,18 @@ describe("package files policy", () => {
     }
   })
 })
+
+function listRuleMarkdownFiles(directory: string): readonly string[] {
+  return readdirSync(directory, { withFileTypes: true })
+    .flatMap((entry) => {
+      const entryPath = path.join(directory, entry.name)
+      if (entry.isDirectory()) {
+        return listRuleMarkdownFiles(entryPath)
+      }
+      return entry.isFile() && entry.name.endsWith(".md") ? [entryPath] : []
+    })
+    .sort()
+}
 
 function readPackageJson(filePath: string): PackageJson {
   const parsed: unknown = JSON.parse(readFileSync(filePath, "utf8"))
