@@ -6,22 +6,53 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-No unreleased changes after the `0.6.0-rc.4` release-prep cut.
+No unreleased changes after the `0.6.0-rc.4` final registry-smoke record.
 
 ## [0.6.0-rc.4] - 2026-07-05
 
-Release prep for `0.6.0-rc.4` on npm `next`. This prep does not publish, tag,
-or move dist-tags. Current registry state remains `latest=0.5.0`,
-`next=0.6.0-rc.3`, and `alpha=0.3.9-alpha.8`; published `0.6.0-rc.3` came
-from gitHead `e1af520cf000e805e7df6a1616906f3f9b0e4976` with shasum
-`ef498adfac138d9d0843406cba53acf76b34c6f1`.
+Published `0.6.0-rc.4` to npm `next` after QA publish GO and final External
+registry smoke. The accepted registry-smoke archive is
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc4-registry-smoke-20260705T110131Z`.
+Registry source was npm only: `persona-harness@next` installed as
+`0.6.0-rc.4`; no local tarball evidence was used. Registry verification
+confirmed `persona-harness@next=0.6.0-rc.4`, gitHead
+`cf6835697f47da5a2a8372d00fc47e263ee781f8`, shasum
+`76565f6e7d244595fa338bb646ea7888d8d5255a`, and integrity
+`sha512-8oBVX1vmudoNZCJEVXNdx/lJnPITKD0cW2OGk6Bv963oibNwyo+itxYquRNr8JlDQR7RKDmcQ5XTCVlIP9weaw==`.
+The explicit selector `persona-harness@0.6.0-rc.4` resolves to the same facts.
+`persona-harness@latest` remains `0.5.0`, gitHead
+`c0f1085a5182cdd17411bd043173aabc9a76b30e`, shasum
+`3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`. Dist-tags are
+`alpha=0.3.9-alpha.8`, `latest=0.5.0`, and `next=0.6.0-rc.4`; `latest` did
+not move. Local and remote `v0.6.0-rc.4` tags point at
+`cf6835697f47da5a2a8372d00fc47e263ee781f8`. The GitHub release exists and is
+prerelease/not draft.
 
 Stable `0.6.0` remains deferred. The prerequisite real rail-entry gate did not
 pass for H1-6a repeated-output compression: control rail entry was `3/5`,
 candidate Summary-header rail entry was `1/5`, delta `-40pp`, and
 non-inferiority was not met. H1-6a compression remains NO-GO and
-unimplemented. `0.6.0-rc.4` is a prerelease `next` candidate pending QA
-publish-readiness, not a stable release.
+unimplemented. `0.6.0-rc.4` is a prerelease `next` package, not a stable
+release.
+
+Final registry smoke observed required package entries including rc4 release
+docs, `dist/io/atomic-file.*`, `dist/cli/workflow-required-fix.*`,
+`dist/cli/workflow-output.js`, closure, loop, ralph-loop, and Role Checklist
+Relay surfaces. Registry install/version/help passed. Failed finish plus
+repeated finish, closure JSON, H1-4 toolchain path, H1-1 unmapped path,
+representative H1-5 atomic/corrupt-state behavior, and retained rc3
+workflow-loop/ralph-loop/relay surfaces were smoke-tested. H1-6b finish
+`Summary:` appeared before `Required fixes:`, detailed blockers remained, and
+closure JSON parsed. No H1-6a compression wording appeared.
+
+H1-4 `convention-toolchain-missing` uses mapped install/configure/lower-level
+guidance plus rerun `npx ph workflow check`; JSON maps to
+`install-convention-toolchain`. H1-1 unmapped custom blocker retains
+escalation wording, JSON has `unmapped-blocker` with no direct command,
+`workflow loop` dry-run stops at zero iterations, and ralph-loop reports the
+unmapped next step. Initial H1-4/H1-1 fixtures had prerequisite blockers ahead,
+so isolated populated reruns were used to put target blockers first. H1-5
+coverage is representative, not a full repeat of every H1-5 family.
 
 Release-prep highlights:
 

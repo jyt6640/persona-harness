@@ -11,8 +11,7 @@ Use this index to scan package history. Use the linked release notes,
 ## Current Channel State
 
 - Current package metadata in this repo: `0.6.0-rc.4`.
-- Current release-prep target: `0.6.0-rc.4` for future npm `next`.
-- Current published prerelease channel: `persona-harness@next=0.6.0-rc.3`.
+- Current published prerelease channel: `persona-harness@next=0.6.0-rc.4`.
 - Current stable channel: `persona-harness@latest=0.5.0`.
 - Current alpha channel: `persona-harness@alpha=0.3.9-alpha.8`.
 - `v0.6.0-rc.4` capsule:
@@ -93,8 +92,8 @@ Use this index to scan package history. Use the linked release notes,
 | `0.5.0` | 2026-07-03 | current stable `latest`; local tag exists | [`release notes`](../current/release/v0.5.0-release-notes.md) | release notes record `latest=0.5.0`, gitHead, shasum, Trusted Publisher/Release workflow runs, and External stable registry smoke archive |
 | `0.6.0-rc.1` | 2026-07-03 | historical published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.1/README.md), [`release facts`](v0.6.0-rc.1/release-facts.md), [`measurements`](v0.6.0-rc.1/measurements.md), [`release notes`](../current/release/v0.6.0-rc.1-release-notes.md) | capsule records `next=0.6.0-rc.1`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead, shasum, tag, and Stage 14 registry smoke archive |
 | `0.6.0-rc.2` | 2026-07-04 | previous published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.2/README.md), [`release facts`](v0.6.0-rc.2/release-facts.md), [`measurements`](v0.6.0-rc.2/measurements.md), [`release notes`](../current/release/v0.6.0-rc.2-release-notes.md) | registry smoke records `next=0.6.0-rc.2`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `d3d5fdced355f0ac0fbed5e700d57b2aa1592263`, shasum `0eae3cc232e3f37de9390b0afc662a001aaa0b56`, tag, and archive `rc060-rc2-registry-smoke-20260704T043901Z` |
-| `0.6.0-rc.3` | 2026-07-04 | current published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.3/README.md), [`release facts`](v0.6.0-rc.3/release-facts.md), [`measurements`](v0.6.0-rc.3/measurements.md), [`release notes`](../current/release/v0.6.0-rc.3-release-notes.md) | registry smoke records `next=0.6.0-rc.3`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum `ef498adfac138d9d0843406cba53acf76b34c6f1`, tag, prerelease GitHub release, and archive `rc060-rc3-registry-smoke-20260704T133936Z` |
-| `0.6.0-rc.4` | 2026-07-05 | release prep only; not published or tagged | [`capsule`](v0.6.0-rc.4/README.md), [`release facts`](v0.6.0-rc.4/release-facts.md), [`measurements`](v0.6.0-rc.4/measurements.md), [`release notes`](../current/release/v0.6.0-rc.4-release-notes.md) | release prep records accepted HARDEN-1 work and stable deferral; registry evidence remains NO-GO until future publish and External registry smoke |
+| `0.6.0-rc.3` | 2026-07-04 | previous published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.3/README.md), [`release facts`](v0.6.0-rc.3/release-facts.md), [`measurements`](v0.6.0-rc.3/measurements.md), [`release notes`](../current/release/v0.6.0-rc.3-release-notes.md) | registry smoke records `next=0.6.0-rc.3`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum `ef498adfac138d9d0843406cba53acf76b34c6f1`, tag, prerelease GitHub release, and archive `rc060-rc3-registry-smoke-20260704T133936Z` |
+| `0.6.0-rc.4` | 2026-07-05 | current published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.4/README.md), [`release facts`](v0.6.0-rc.4/release-facts.md), [`measurements`](v0.6.0-rc.4/measurements.md), [`release notes`](../current/release/v0.6.0-rc.4-release-notes.md) | registry smoke records `next=0.6.0-rc.4`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `cf6835697f47da5a2a8372d00fc47e263ee781f8`, shasum `76565f6e7d244595fa338bb646ea7888d8d5255a`, integrity `sha512-8oBVX1vmudoNZCJEVXNdx/lJnPITKD0cW2OGk6Bv963oibNwyo+itxYquRNr8JlDQR7RKDmcQ5XTCVlIP9weaw==`, tag, prerelease GitHub release, and archive `rc060-rc4-registry-smoke-20260705T110131Z` |
 
 ## Future Migration Notes
 

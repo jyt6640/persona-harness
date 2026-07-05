@@ -35,28 +35,26 @@ Those items make the release decision ready; they do not authorize Docs Release 
 
 ## Current Version-Line Readiness
 
-Current release-prep target: `0.6.0-rc.4` for a future npm `next` publish. It
-is not published, tagged, or assigned a dist-tag yet. Until that separate
-publish step succeeds, official `0.6.0-rc.3` remains published under npm
+Current prerelease package: official `0.6.0-rc.4` is published under npm
 dist-tag `next`, not `latest`. Registry verification confirmed
-`persona-harness@next=0.6.0-rc.3`, gitHead
-`e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum
-`ef498adfac138d9d0843406cba53acf76b34c6f1`, and integrity
-`sha512-nXImwyxON5zoph8Y3LyXqJhW1NIcX+3JvsBSFAdQlersZ8zO1KmRuRJVKB1DF87fbYxDpVyxMqFU1C6sA8HJQQ==`.
-The explicit package selector `persona-harness@0.6.0-rc.3` resolves to the
+`persona-harness@next=0.6.0-rc.4`, gitHead
+`cf6835697f47da5a2a8372d00fc47e263ee781f8`, shasum
+`76565f6e7d244595fa338bb646ea7888d8d5255a`, and integrity
+`sha512-8oBVX1vmudoNZCJEVXNdx/lJnPITKD0cW2OGk6Bv963oibNwyo+itxYquRNr8JlDQR7RKDmcQ5XTCVlIP9weaw==`.
+The explicit package selector `persona-harness@0.6.0-rc.4` resolves to the
 same version, gitHead, shasum, and integrity. Current dist-tags are
-`latest=0.5.0`, `next=0.6.0-rc.3`, and `alpha=0.3.9-alpha.8`; `latest` did
+`latest=0.5.0`, `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`; `latest` did
 not move. Stable `0.6.0` is not being prepared because the real rail-entry
 gate failed for H1-6a repeated-output compression and no waiver exists.
 
-The local and remote `v0.6.0-rc.3` tags point at
-`e1af520cf000e805e7df6a1616906f3f9b0e4976` after registry verification. The
+The local and remote `v0.6.0-rc.4` tags point at
+`cf6835697f47da5a2a8372d00fc47e263ee781f8` after registry verification. The
 GitHub release exists as a prerelease, not draft:
-`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.3`.
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.4`.
 
-External registry smoke installed `persona-harness@next` as `0.6.0-rc.3` from
+External registry smoke installed `persona-harness@next` as `0.6.0-rc.4` from
 the registry only and verified package-runtime surfaces. Archive:
-`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc3-registry-smoke-20260704T133936Z`.
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc4-registry-smoke-20260705T110131Z`.
 `RESULT.md` classified PASS.
 
 `0.6.0-rc.3` carries post-rc2 records: Stage 15 ralph-loop measurement
@@ -85,16 +83,31 @@ integrity beyond the scoped Stage 18 fixture, default change, token savings,
 product efficacy, reliable automatic subagent orchestration, deterministic
 role enforcement, production-ready delegation, or broad reliability.
 
-`0.6.0-rc.4` release prep carries accepted HARDEN-1 work after rc3: H1-0
+`0.6.0-rc.4` carries accepted HARDEN-1 work after rc3: H1-0
 preflight PARTIAL, H1-1 unmapped blocker de-loop and human escalation wording,
 H1-3 deterministic blocker order and chain-depth contract, H1-2 mechanical
 finish regression coverage, H1-4 block-level toolchain fail-closed and human
 toolchain guidance, H1-5 atomic writes/fail-safe reads by file family, and
 H1-6b structured finish summary derivation. H1-6a repeated-output compression
 remains NO-GO and unimplemented after real n=5 rail-entry precheck failed
-(`3/5` control, `1/5` candidate, delta `-40pp`). This prep is not registry
-evidence until a future publish plus External registry smoke covers the rc4
-commit.
+(`3/5` control, `1/5` candidate, delta `-40pp`).
+
+The rc4 registry smoke observed failed finish plus repeated finish, closure
+JSON, H1-4 toolchain path, H1-1 unmapped path, representative H1-5
+atomic/corrupt-state behavior, and retained rc3 workflow-loop/ralph-loop/relay
+surfaces. H1-6b finish `Summary:` appeared before `Required fixes:`, detailed
+blockers remained, and closure JSON parsed. No H1-6a compression wording
+appeared. Initial H1-4/H1-1 fixtures had prerequisite blockers ahead, so
+isolated populated reruns were used to put target blockers first. H1-5 coverage
+is representative, not a full repeat of every H1-5 family.
+
+Previous prerelease package: official `0.6.0-rc.3` was published under npm
+dist-tag `next` before rc4 superseded it on that channel. Registry
+verification confirmed `persona-harness@next=0.6.0-rc.3`, gitHead
+`e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum
+`ef498adfac138d9d0843406cba53acf76b34c6f1`, and integrity
+`sha512-nXImwyxON5zoph8Y3LyXqJhW1NIcX+3JvsBSFAdQlersZ8zO1KmRuRJVKB1DF87fbYxDpVyxMqFU1C6sA8HJQQ==`.
+The local and remote `v0.6.0-rc.3` tags point at that gitHead.
 
 Previous prerelease package: official `0.6.0-rc.2` was published under npm
 dist-tag `next` before rc3 superseded it on that channel. Registry verification

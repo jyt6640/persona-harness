@@ -39,11 +39,10 @@ deleting evidence/status history.
 
 ## Current Facts To Preserve
 
-- `0.6.0-rc.4` is the current release-prep target for a future npm `next`
-  publish. It is not published or tagged yet. Published `next` remains
-  `0.6.0-rc.3`, `latest` remains `0.5.0`, and `alpha` remains
-  `0.3.9-alpha.8`. Stable `0.6.0` remains deferred because the real rail-entry
-  gate failed for H1-6a compression and no waiver exists.
+- `0.6.0-rc.4` is published on npm `next` with accepted External registry
+  smoke. `latest` remains `0.5.0`, and `alpha` remains `0.3.9-alpha.8`.
+  Stable `0.6.0` remains deferred because the real rail-entry gate failed for
+  H1-6a compression and no waiver exists.
 - `runtimeInjection` remains a parked opt-in preview.
 - The rail-entry prompt regression gate is an operator-run n>=5
   non-inferiority check for rail/AGENTS/gate-output wording changes. It is not

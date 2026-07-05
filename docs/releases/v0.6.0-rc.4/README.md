@@ -1,21 +1,22 @@
 # v0.6.0-rc.4 Release Capsule
 
-This capsule is the durable index for the `0.6.0-rc.4` release-prep line. It
+This capsule is the durable index for the published `0.6.0-rc.4` prerelease. It
 complements the release-operation notes in
 [`docs/current/release/v0.6.0-rc.4-release-notes.md`](../../current/release/v0.6.0-rc.4-release-notes.md).
 
 ## Channel State
 
-- Release-prep package version: `0.6.0-rc.4`.
-- Planned publish channel: npm `next`.
-- This prep is not published or tagged.
-- Current published prerelease remains `persona-harness@next=0.6.0-rc.3`.
+- Published package version: `0.6.0-rc.4`.
+- Published channel: npm `next`.
+- Current published prerelease is `persona-harness@next=0.6.0-rc.4`.
 - Stable channel remains `persona-harness@latest=0.5.0`.
 - Alpha channel remains `persona-harness@alpha=0.3.9-alpha.8`.
-- Published `0.6.0-rc.3` registry gitHead:
-  `e1af520cf000e805e7df6a1616906f3f9b0e4976`.
-- Published `0.6.0-rc.3` registry shasum:
-  `ef498adfac138d9d0843406cba53acf76b34c6f1`.
+- Published `0.6.0-rc.4` registry gitHead:
+  `cf6835697f47da5a2a8372d00fc47e263ee781f8`.
+- Published `0.6.0-rc.4` registry shasum:
+  `76565f6e7d244595fa338bb646ea7888d8d5255a`.
+- Published `0.6.0-rc.4` registry integrity:
+  `sha512-8oBVX1vmudoNZCJEVXNdx/lJnPITKD0cW2OGk6Bv963oibNwyo+itxYquRNr8JlDQR7RKDmcQ5XTCVlIP9weaw==`.
 
 ## Durable Records
 
@@ -26,7 +27,7 @@ complements the release-operation notes in
 
 ## Prep Summary
 
-`0.6.0-rc.4` prepares accepted HARDEN-1 work after the published rc3 line:
+`0.6.0-rc.4` publishes accepted HARDEN-1 work after the published rc3 line:
 
 - H1-0 preflight PARTIAL and Stage 18 tokens-per-verified-completion telemetry.
 - H1-1 blocker-step contract and unmapped-blocker human escalation.
@@ -38,12 +39,27 @@ complements the release-operation notes in
 - H1-6b structured finish summary derivation.
 
 Stable `0.6.0` remains deferred because H1-6a failed the real rail-entry gate
-and no waiver exists. This capsule is prerelease-prep documentation, not
-registry evidence.
+and no waiver exists.
+
+## Registry Smoke
+
+Accepted archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc4-registry-smoke-20260705T110131Z`.
+
+The smoke installed `persona-harness@next` from npm registry only; no local
+tarball evidence was used. It verified registry install/version/help, failed
+finish and repeated finish, closure JSON, H1-4 mapped toolchain path, H1-1
+unmapped path, representative H1-5 atomic/corrupt-state behavior, H1-6b
+structured finish summary ordering, and retained rc3 workflow-loop,
+ralph-loop, and Role Checklist Relay surfaces.
+
+The smoke did not make H1-5 a full repeat of every atomic-write family.
+Initial H1-4/H1-1 fixtures had prerequisite blockers ahead, so isolated
+populated reruns were used to put target blockers first.
 
 ## Boundaries
 
-Do not use this release-prep capsule to claim product efficacy,
+Do not use this release capsule to claim product efficacy,
 token/provider-token saving, navigation benefit, app quality, full-TDD/test
 sufficiency, broad reliability, closure guarantee, autonomous completion,
 generated-app certification, deterministic enforcement, production-ready

@@ -1,7 +1,7 @@
 # v0.6.0-rc.4 Measurement Summary
 
 This summary points to accepted measurement/status records that shape the
-`0.6.0-rc.4` release prep. It does not replace append-only status files under
+published `0.6.0-rc.4` prerelease. It does not replace append-only status files under
 `docs/current/`.
 
 ## H1-0 Preflight
@@ -56,9 +56,9 @@ token-saving, broad reliability, closure-guarantee, or app-quality claim.
 
 ## Stable Deferral
 
-`0.6.0` stable remains deferred. `0.6.0-rc.4` is a prerelease `next` candidate
-only. HARDEN-2 should not proceed until stable prerequisites are separately met
-or waived.
+`0.6.0` stable remains deferred. `0.6.0-rc.4` is a prerelease `next` package,
+not stable. HARDEN-2 should not proceed until stable prerequisites are
+separately met or waived.
 
 ## Claim Boundary
 
