@@ -3,6 +3,11 @@ id: clean-code.abstraction
 source: clean-code
 domain: common
 topic: abstraction
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: should

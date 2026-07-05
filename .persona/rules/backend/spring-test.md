@@ -3,6 +3,11 @@ id: backend.spring.test
 source: backend-policy
 domain: backend
 topic: test-policy
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*Test.java"
 severity: must

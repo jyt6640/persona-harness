@@ -3,6 +3,11 @@ id: backend.spring.controller
 source: backend-policy
 domain: backend
 topic: controller-responsibility
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*Controller.java"
 severity: must

@@ -3,6 +3,11 @@ id: backend.java.common
 source: backend-policy
 domain: backend
 topic: backend-boundary
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: must

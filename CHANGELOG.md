@@ -6,6 +6,15 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- ROLE-RULES T1 moved PersonaHarnessRule delivery-role metadata into rule
+  frontmatter. Existing packaged rule files now declare `roles:` for
+  `main`, `test-writer`, `implementer`, and `reviewer`; current known
+  rule selection remains equivalent to the previous file-role mapping.
+  Rule files missing `roles:` default to `main` only: this preserves
+  current main-session behavior while avoiding silent opt-in to
+  role-specific delivery. This is a behavior-preserving static rule loading
+  refactor only; runtime injection remains parked/default-off as before.
+
 - ROLE-RULES T0 retired the legacy npm `alpha` shortcut after stable `0.6.0`.
   Live `npm dist-tag ls persona-harness` now reports `latest=0.6.0` and
   `next=0.6.0-rc.4`, with no `alpha` dist-tag. Explicit

@@ -3,6 +3,11 @@ id: backend.spring.repository
 source: backend-policy
 domain: backend
 topic: repository-boundary
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*Repository.java"
 severity: should

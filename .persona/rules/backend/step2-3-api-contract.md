@@ -3,6 +3,11 @@ id: backend.step2-3.api-contract
 source: backend-policy
 domain: backend
 topic: external-contract
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/roomescape/**/*Controller.java"
   - "**/roomescape/**/*Request.java"

@@ -3,6 +3,11 @@ id: backend.package-structure
 source: backend-policy
 domain: backend
 topic: package-structure
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: should

@@ -3,6 +3,11 @@ id: clean-code.oop
 source: clean-code
 domain: common
 topic: object-responsibility
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: should

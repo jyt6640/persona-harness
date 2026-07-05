@@ -14,6 +14,7 @@ export type RuleFrontmatterValidationInput = {
   readonly source?: string
   readonly domain?: string
   readonly topic?: string
+  readonly roles: readonly string[]
   readonly globs: readonly string[]
   readonly scenario?: string
   readonly severity?: string
@@ -26,6 +27,7 @@ const DOMAIN_VALUES = ["common", "backend"]
 const SCENARIO_VALUES = ["step1", "step2-3", "all"]
 const SEVERITY_VALUES = ["must", "should", "prefer"]
 const ENFORCEMENT_VALUES = ["inject_only"]
+const ROLE_VALUES = ["test-writer", "implementer", "reviewer", "main"]
 
 export function malformedFrontmatter(message: string): RuleFrontmatterDiagnostic {
   return {
@@ -85,6 +87,11 @@ export function validateRuleFrontmatter(
   }
   if (hasValue(input.enforcement) && !isKnownValue(input.enforcement, ENFORCEMENT_VALUES)) {
     diagnostics.push(invalidEnumValue("enforcement", input.enforcement))
+  }
+  for (const role of input.roles) {
+    if (!isKnownValue(role, ROLE_VALUES)) {
+      diagnostics.push(invalidEnumValue("roles", role))
+    }
   }
 
   return diagnostics

@@ -3,6 +3,11 @@ id: clean-code.method-design
 source: clean-code
 domain: common
 topic: method-design
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: must

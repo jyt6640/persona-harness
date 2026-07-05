@@ -1,8 +1,13 @@
+import { cpSync } from "node:fs"
+import { join } from "node:path"
+
 import { afterEach, describe, expect, it } from "vitest"
 
 import { loadRuleCatalog, targetPathForMatching } from "../src/rules/rule-catalog.js"
 import { createInjectionBlock } from "../src/runtime/injection.js"
 import { loadRulesForRole } from "../src/rules/rule-loader.js"
+import type { RuleDeliveryRole } from "../src/rules/rule-frontmatter.js"
+import type { FileRole } from "../src/runtime/types.js"
 import {
   cleanupProjects,
   createProject,
@@ -14,8 +19,143 @@ import {
 
 afterEach(cleanupProjects)
 
+const SUPPORTED_DELIVERY_ROLES = ["main", "test-writer", "implementer", "reviewer"] as const satisfies readonly RuleDeliveryRole[]
+
+const RULE_FILE_ROLES = [
+  "controller",
+  "service",
+  "repository",
+  "entity",
+  "domain",
+  "request-dto",
+  "response-dto",
+  "exception",
+  "test",
+  "java-common",
+  "project-bootstrap",
+  "requirements-bootstrap",
+  "gradle-bootstrap",
+] as const satisfies readonly FileRole[]
+
+type TestedRuleFileRole = (typeof RULE_FILE_ROLES)[number]
+
+const EXPECTED_SELECTED_RULES_BY_FILE_ROLE: Record<TestedRuleFileRole, readonly string[]> = {
+  controller: [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "backend/spring-controller.md",
+    "backend/spring-dto.md",
+  ],
+  service: [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "backend/spring-service.md",
+    "backend/validation-exception.md",
+  ],
+  repository: [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "backend/spring-repository.md",
+  ],
+  entity: [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "clean-code/oop.md",
+    "backend/spring-entity.md",
+  ],
+  domain: [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "clean-code/oop.md",
+    "backend/layered-architecture.md",
+  ],
+  "request-dto": [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "backend/spring-dto.md",
+  ],
+  "response-dto": [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "backend/spring-dto.md",
+  ],
+  exception: [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "backend/validation-exception.md",
+  ],
+  test: [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "clean-code/testability.md",
+    "backend/spring-test.md",
+  ],
+  "java-common": [
+    "clean-code/common.md",
+    "clean-code/method-design.md",
+    "backend/java-common.md",
+    "clean-code/abstraction.md",
+    "backend/layered-architecture.md",
+  ],
+  "project-bootstrap": ["backend/java-backend-bootstrap.md"],
+  "requirements-bootstrap": ["backend/java-backend-bootstrap.md"],
+  "gradle-bootstrap": ["backend/gradle-bootstrap.md"],
+}
+
+const TARGET_FILE_BY_ROLE: Partial<Record<TestedRuleFileRole, string>> = {
+  "project-bootstrap": "README.md",
+  "requirements-bootstrap": "requirements.md",
+  "gradle-bootstrap": "build.gradle",
+}
+
+function copyPackagedRules(projectDir: string): void {
+  cpSync(join(process.cwd(), ".persona", "rules"), join(projectDir, ".persona", "rules"), { recursive: true })
+}
+
 describe("Phase 1.1 rule frontmatter behavior", () => {
   it("parses the canonical rule metadata fields used by .persona/rules", () => {
+    const projectDir = createProject()
+    writeRule(
+      projectDir,
+      "backend/spring-controller.md",
+      `
+id: backend.spring.controller
+source: backend-policy
+domain: backend
+topic: controller-responsibility
+roles:
+  - main
+  - implementer
+globs:
+  - "**/*Controller.java"
+severity: must
+enforcement: inject_only
+`,
+      ["controller policy"],
+    )
+
+    const controllerRule = findEntry(loadRuleCatalog(projectDir), "backend/spring-controller.md")
+
+    expect(controllerRule.diagnostics).toEqual([])
+    expect(controllerRule.metadata.id).toBe("backend.spring.controller")
+    expect(controllerRule.metadata.source).toBe("backend-policy")
+    expect(controllerRule.metadata.domain).toBe("backend")
+    expect(controllerRule.metadata.topic).toBe("controller-responsibility")
+    expect(controllerRule.metadata.roles).toEqual(["main", "implementer"])
+    expect(controllerRule.metadata.severity).toBe("must")
+    expect(controllerRule.metadata.enforcement).toBe("inject_only")
+  })
+
+  it("defaults missing roles frontmatter to main-only delivery", () => {
     const projectDir = createProject()
     writeRule(
       projectDir,
@@ -34,14 +174,28 @@ enforcement: inject_only
     )
 
     const controllerRule = findEntry(loadRuleCatalog(projectDir), "backend/spring-controller.md")
+    const targetFile = "src/main/java/com/example/ReservationController.java"
 
-    expect(controllerRule.diagnostics).toEqual([])
-    expect(controllerRule.metadata.id).toBe("backend.spring.controller")
-    expect(controllerRule.metadata.source).toBe("backend-policy")
-    expect(controllerRule.metadata.domain).toBe("backend")
-    expect(controllerRule.metadata.topic).toBe("controller-responsibility")
-    expect(controllerRule.metadata.severity).toBe("must")
-    expect(controllerRule.metadata.enforcement).toBe("inject_only")
+    expect(controllerRule.metadata.roles).toEqual(["main"])
+    expect(loadRulesForRole(projectDir, "controller", targetFile).map((rule) => rule.path)).toContain(
+      "backend/spring-controller.md",
+    )
+    expect(loadRulesForRole(projectDir, "controller", targetFile, "implementer").map((rule) => rule.path)).not.toContain(
+      "backend/spring-controller.md",
+    )
+  })
+
+  it("keeps known packaged rule selection equivalent for every supported delivery role", () => {
+    const projectDir = createProject()
+    copyPackagedRules(projectDir)
+
+    for (const deliveryRole of SUPPORTED_DELIVERY_ROLES) {
+      for (const fileRole of RULE_FILE_ROLES) {
+        expect(
+          loadRulesForRole(projectDir, fileRole, TARGET_FILE_BY_ROLE[fileRole], deliveryRole).map((rule) => rule.path),
+        ).toEqual(EXPECTED_SELECTED_RULES_BY_FILE_ROLE[fileRole])
+      }
+    }
   })
 
   it("limits injected policy bullets when max_bullets is present", () => {
@@ -152,6 +306,9 @@ globs:
 scenario: tomorrow
 severity: critical
 enforcement: block
+roles:
+  - main
+  - robot
 `,
       ["invalid enum policy"],
     )
@@ -184,6 +341,11 @@ enforcement: block
         code: "invalid_enum_value",
         field: "enforcement",
         message: "Unsupported frontmatter value for 'enforcement': block.",
+      },
+      {
+        code: "invalid_enum_value",
+        field: "roles",
+        message: "Unsupported frontmatter value for 'roles': robot.",
       },
     ])
   })

@@ -3,6 +3,11 @@ id: backend.validation-exception
 source: backend-policy
 domain: backend
 topic: validation-exception
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: should

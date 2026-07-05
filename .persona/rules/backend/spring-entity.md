@@ -3,6 +3,11 @@ id: backend.spring.entity
 source: backend-policy
 domain: backend
 topic: domain-entity
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*Entity.java"
   - "**/domain/**/*.java"

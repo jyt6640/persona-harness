@@ -9,7 +9,12 @@ import {
   targetPathForMatching,
   type Phase0Scenario,
 } from "./rule-catalog.js"
-import { extractBulletPolicies, fallbackRuleMetadata, type RuleMetadata } from "./rule-frontmatter.js"
+import {
+  extractBulletPolicies,
+  fallbackRuleMetadata,
+  type RuleDeliveryRole,
+  type RuleMetadata,
+} from "./rule-frontmatter.js"
 import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
 
 export type { Phase0Scenario } from "./rule-catalog.js"
@@ -48,7 +53,7 @@ const COMMON_RULES = [
   "backend/java-common.md",
 ] as const
 
-const ROLE_RULES: Record<RuleFileRole, readonly string[]> = {
+const RULE_PATHS_BY_FILE_ROLE: Record<RuleFileRole, readonly string[]> = {
   controller: ["backend/spring-controller.md", "backend/spring-dto.md", STEP1_API_CONTRACT_RULE],
   service: ["backend/spring-service.md", "backend/validation-exception.md"],
   repository: ["backend/spring-repository.md"],
@@ -134,7 +139,7 @@ function scenarioAwareRoleRules(fileRole: FileRole, scenario: Phase0Scenario): r
     return []
   }
 
-  const roleRules = ROLE_RULES[fileRole]
+  const roleRules = RULE_PATHS_BY_FILE_ROLE[fileRole]
   if (!CONTRACT_RULE_ROLES.has(fileRole)) {
     return roleRules
   }
@@ -151,7 +156,16 @@ export function selectRulePaths(fileRole: FileRole, scenario: Phase0Scenario = D
   return Array.from(new Set([...COMMON_RULES, ...scenarioAwareRoleRules(fileRole, scenario)]))
 }
 
-export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetFile?: string): LoadedRule[] {
+function supportsDeliveryRole(metadata: RuleMetadata, deliveryRole: RuleDeliveryRole): boolean {
+  return metadata.roles.includes(deliveryRole)
+}
+
+export function loadRulesForRole(
+  projectDir: string,
+  fileRole: FileRole,
+  targetFile?: string,
+  deliveryRole: RuleDeliveryRole = "main",
+): LoadedRule[] {
   const config = loadHarnessConfig(projectDir)
   const scenario = config.scenario
   const catalog = new Map(loadRuleCatalog(projectDir).map((entry) => [entry.path, entry]))
@@ -165,6 +179,10 @@ export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetF
 
     const catalogEntry = catalog.get(rulePath)
     if (catalogEntry !== undefined) {
+      if (!supportsDeliveryRole(catalogEntry.metadata, deliveryRole)) {
+        return []
+      }
+
       if (
         !isRuleEligibleForTarget(catalogEntry, fileRole, scenario, targetPath)
       ) {
@@ -177,6 +195,10 @@ export function loadRulesForRole(projectDir: string, fileRole: FileRole, targetF
         diagnostics: catalogEntry.diagnostics,
         policies: takePoliciesForInjection(rulePath, catalogEntry.policies, catalogEntry.metadata.maxBullets),
       }
+    }
+
+    if (deliveryRole !== "main") {
+      return []
     }
 
     const absolutePath = join(rulesDir, rulePath)

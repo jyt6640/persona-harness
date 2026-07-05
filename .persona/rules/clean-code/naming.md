@@ -3,6 +3,11 @@ id: clean-code.naming
 source: clean-code
 domain: common
 topic: naming
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: should

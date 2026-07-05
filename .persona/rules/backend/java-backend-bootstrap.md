@@ -3,6 +3,11 @@ id: backend.java-backend-bootstrap
 source: backend-policy
 domain: backend
 topic: backend-bootstrap
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "README.md"
   - "**/README.md"

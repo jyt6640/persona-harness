@@ -13,6 +13,7 @@ type SupportedFrontmatterField =
   | "source"
   | "domain"
   | "topic"
+  | "roles"
   | "globs"
   | "scenario"
   | "severity"
@@ -21,11 +22,14 @@ type SupportedFrontmatterField =
 
 export type RuleSeverity = "must" | "should" | "prefer"
 
+export type RuleDeliveryRole = "test-writer" | "implementer" | "reviewer" | "main"
+
 export type RuleMetadata = {
   readonly id: string
   readonly source?: string
   readonly domain?: string
   readonly topic?: string
+  readonly roles: readonly RuleDeliveryRole[]
   readonly globs: readonly string[]
   readonly scenario: RuleScenario
   readonly severity?: RuleSeverity
@@ -40,6 +44,7 @@ export type RuleFrontmatterParseResult = {
 
 const STEP1_API_CONTRACT_RULE = "backend/step1-api-contract.md"
 const STEP2_3_API_CONTRACT_RULE = "backend/step2-3-api-contract.md"
+const DEFAULT_RULE_ROLES: readonly RuleDeliveryRole[] = ["main"]
 
 export function extractBulletPolicies(markdown: string): string[] {
   const body = markdown.startsWith("---") ? markdown.split("---").slice(2).join("---") : markdown
@@ -66,6 +71,7 @@ function parseSupportedField(rawKey: string): SupportedFrontmatterField | undefi
   if (rawKey === "source") return "source"
   if (rawKey === "domain") return "domain"
   if (rawKey === "topic") return "topic"
+  if (rawKey === "roles") return "roles"
   if (rawKey === "globs") return "globs"
   if (rawKey === "scenario") return "scenario"
   if (rawKey === "severity") return "severity"
@@ -110,14 +116,37 @@ function parseSeverity(value: string | undefined): RuleSeverity | undefined {
   return undefined
 }
 
-function addListValue(field: SupportedFrontmatterField, value: string, globs: string[]): void {
+function parseRuleDeliveryRole(value: string): RuleDeliveryRole | undefined {
+  if (value === "test-writer" || value === "implementer" || value === "reviewer" || value === "main") {
+    return value
+  }
+  return undefined
+}
+
+function parseRoles(values: readonly string[]): readonly RuleDeliveryRole[] {
+  const roles = values.flatMap((value) => {
+    const role = parseRuleDeliveryRole(value)
+    return role === undefined ? [] : [role]
+  })
+  return roles.length === 0 ? DEFAULT_RULE_ROLES : Array.from(new Set(roles))
+}
+
+function addListValue(
+  field: SupportedFrontmatterField,
+  value: string,
+  globs: string[],
+  roles: string[],
+): void {
   if (field === "globs") {
     globs.push(value)
+  }
+  if (field === "roles") {
+    roles.push(value)
   }
 }
 
 export function fallbackRuleMetadata(rulePath: string): RuleMetadata {
-  return { id: rulePath, globs: [], scenario: scenarioForRulePath(rulePath) }
+  return { id: rulePath, roles: DEFAULT_RULE_ROLES, globs: [], scenario: scenarioForRulePath(rulePath) }
 }
 
 export function parseRuleFrontmatter(rulePath: string, markdown: string): RuleFrontmatterParseResult {
@@ -126,6 +155,7 @@ export function parseRuleFrontmatter(rulePath: string, markdown: string): RuleFr
   let source: string | undefined
   let domain: string | undefined
   let topic: string | undefined
+  const roleValues: string[] = []
   const globs: string[] = []
   let scenarioValue: string | undefined
   let severityValue: string | undefined
@@ -153,7 +183,7 @@ export function parseRuleFrontmatter(rulePath: string, markdown: string): RuleFr
 
     const listMatch = line.match(/^\s*-\s+(.*)$/)
     if (listMatch?.[1] !== undefined && listField !== undefined) {
-      addListValue(listField, cleanScalar(listMatch[1]), globs)
+      addListValue(listField, cleanScalar(listMatch[1]), globs, roleValues)
       continue
     }
 
@@ -171,6 +201,9 @@ export function parseRuleFrontmatter(rulePath: string, markdown: string): RuleFr
     if (field === "source" && value !== "") source = value
     if (field === "domain" && value !== "") domain = value
     if (field === "topic" && value !== "") topic = value
+    if (field === "roles" && value !== "") {
+      addListValue(field, value, globs, roleValues)
+    }
     if (field === "scenario" && value !== "") scenarioValue = value
     if (field === "severity" && value !== "") {
       severityValue = value
@@ -179,7 +212,7 @@ export function parseRuleFrontmatter(rulePath: string, markdown: string): RuleFr
     if (field === "max_bullets") maxBullets = parsePositiveInteger(value)
     if (field === "enforcement" && value !== "") enforcement = value
     if (field === "globs" && value !== "") {
-      addListValue(field, value, globs)
+      addListValue(field, value, globs, roleValues)
     }
   }
 
@@ -188,6 +221,7 @@ export function parseRuleFrontmatter(rulePath: string, markdown: string): RuleFr
     source,
     domain,
     topic,
+    roles: roleValues,
     globs,
     scenario: scenarioValue,
     severity: severityValue,
@@ -201,6 +235,7 @@ export function parseRuleFrontmatter(rulePath: string, markdown: string): RuleFr
       source,
       domain,
       topic,
+      roles: parseRoles(roleValues),
       globs,
       scenario: parseScenario(scenarioValue, scenarioForRulePath(rulePath)),
       severity,

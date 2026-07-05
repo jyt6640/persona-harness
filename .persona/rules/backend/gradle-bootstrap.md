@@ -3,6 +3,11 @@ id: backend.gradle-bootstrap
 source: backend-policy
 domain: backend
 topic: gradle-bootstrap
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "build.gradle"
   - "settings.gradle"

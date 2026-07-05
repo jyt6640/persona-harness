@@ -3,6 +3,11 @@ id: clean-code.common
 source: clean-code
 domain: common
 topic: readability
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: must

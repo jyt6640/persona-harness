@@ -3,6 +3,11 @@ id: backend.spring.dto
 source: backend-policy
 domain: backend
 topic: dto-boundary
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*Request.java"
   - "**/*Response.java"

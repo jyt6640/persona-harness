@@ -3,6 +3,11 @@ id: clean-code.testability
 source: clean-code
 domain: common
 topic: testability
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: should

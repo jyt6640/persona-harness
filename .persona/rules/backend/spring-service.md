@@ -3,6 +3,11 @@ id: backend.spring.service
 source: backend-policy
 domain: backend
 topic: service-transaction
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*Service.java"
 severity: must

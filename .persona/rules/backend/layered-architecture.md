@@ -3,6 +3,11 @@ id: backend.layered-architecture
 source: backend-policy
 domain: backend
 topic: layered-architecture
+roles:
+  - main
+  - test-writer
+  - implementer
+  - reviewer
 globs:
   - "**/*.java"
 severity: must
