@@ -52,6 +52,15 @@ const DIFF_RULE_DELIVERY_ONLY_RULES = [
   { path: "diff-rules/workflow/refactoring.md", roles: ["implementer", "reviewer"] },
 ] as const
 
+const DIFF_RULE_DUPLICATE_PATHS = [
+  "diff-rules/architecture/layered-architecture.md",
+  "diff-rules/decisions/accepted/domain-first-testing.md",
+  "diff-rules/decisions/accepted/public-behavior-based-tdd.md",
+  "diff-rules/principles/method-design.md",
+  "diff-rules/principles/testing.md",
+  "diff-rules/workflow/tdd.md",
+] as const
+
 function copyProjectRule(projectDir: string, rulePath: string): void {
   const sourcePath = join(process.cwd(), ".persona", "rules", rulePath)
   const targetPath = join(projectDir, ".persona", "rules", rulePath)
@@ -233,5 +242,31 @@ enforcement: inject_only
       rulePackHash: delivery.rulePackHash,
       rulePaths: ["diff-rules/decisions/rejected/anemic-domain-model.md"],
     })
+  })
+
+  it("deduplicates overlapping diff rules into existing PH rule surfaces", () => {
+    const catalog = loadRuleCatalog(process.cwd())
+    const catalogPaths = catalog.map((entry) => entry.path)
+
+    for (const duplicatePath of DIFF_RULE_DUPLICATE_PATHS) {
+      expect(catalogPaths).not.toContain(duplicatePath)
+    }
+
+    const layeredArchitecture = readFileSync(
+      join(process.cwd(), ".persona", "rules", "backend", "layered-architecture.md"),
+      "utf8",
+    )
+    const springTest = readFileSync(join(process.cwd(), ".persona", "rules", "backend", "spring-test.md"), "utf8")
+    const methodDesign = readFileSync(
+      join(process.cwd(), ".persona", "rules", "clean-code", "method-design.md"),
+      "utf8",
+    )
+
+    expect(layeredArchitecture).toContain("Request DTO를 Application Command/Query로 변환한다")
+    expect(layeredArchitecture).toContain("Infrastructure는 Repository 인터페이스를 구현한다")
+    expect(springTest).toContain("Domain public behavior 테스트부터")
+    expect(springTest).toContain("Acceptance Test는 마지막 전체 시나리오 검증으로만 사용한다")
+    expect(methodDesign).toContain("validateAndCancel")
+    expect(methodDesign).toContain("boolean 파라미터")
   })
 })

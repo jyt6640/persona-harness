@@ -31,6 +31,12 @@ enforcement: inject_only
 
 ## HTTP Contract Test
 
+- 핵심 비즈니스 규칙은 Domain public behavior 테스트부터 작성하고, 기능은 안쪽 레이어에서 바깥 방향으로 검증한다.
+- Service 테스트는 흐름 조율을 검증하며, 정책 자체는 Domain, Policy, Validator 테스트에서 직접 검증한다.
+- 모든 production class는 직접 테스트하는 것을 기본으로 하고, 단순 DTO, 설정, 부트스트랩, 상수처럼 제외 가능한 경우에는 이유가 명확해야 한다.
+- Acceptance Test는 마지막 전체 시나리오 검증으로만 사용한다.
+- Acceptance Test는 Domain, Validator, Service, Repository, Controller 검증을 대체하지 않는다.
+- Repository Fake는 테스트 클래스 내부가 아니라 해당 도메인의 test package 아래 fake 패키지에 둔다.
 - 테스트는 요구사항의 HTTP method, path, status, response body를 직접 검증한다.
 - 테스트는 구현이 선택한 REST 관습을 따라가지 말고, 요구사항에 적힌 status/body 계약을 고정한다.
 - 1단계 Controller 테스트는 첫 생성 응답의 `id`가 1인지, 생성 후 목록 크기가 1인지, 삭제 후 목록 크기가 0인지 검증한다.
