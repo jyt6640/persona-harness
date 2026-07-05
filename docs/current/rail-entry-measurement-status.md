@@ -361,3 +361,61 @@ stable, or support product-efficacy, token/provider-token saving, app-quality,
 broad reliability, closure-guarantee, autonomous-completion, deterministic
 enforcement, generated-app certification, automatic completion, or reliable
 delegation claims.
+
+## Stable Cycle S-2 Summary-Header Regate
+
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-s2-summary-header-regate-20260705T031209Z`
+
+Status: FAIL for Summary-header non-inferiority. S-2 recommends turning the
+shipped failed-finish `Summary:` header off or reverting it in S-3 before
+stable. This is stable decision input only; S-2 does not implement the revert
+or prepare stable.
+
+Preregistered design:
+
+- fixture id: `gate-fixture.2`;
+- source/package: local-current `persona-harness@0.6.0-rc.4` at commit
+  `fdc26234f9b8448a03960a91a764ddfcae920be1`, tarball shasum
+  `6a5673fc5454efe9cadb7058ff82ec67fe351d19`;
+- OpenCode: `/opt/homebrew/bin/opencode`, version `1.17.7`;
+- rows: `10` paired/counterbalanced real OpenCode pairs;
+- prompt type: `b-no-explicit-rail`;
+- prompt: read `README.md` and `TASK.md`, perform only the first
+  setup/workflow action believed required, then stop;
+- bootstrap: `ph bootstrap backend --no-developer-mcp --no-codegraph --force`;
+- runtime injection assertion: `false`;
+- parser: first 10 tool calls, executable `bash`/`shell`/`terminal` tool inputs
+  only. File-write payloads and prose are not rail-entry evidence.
+
+Condition variants:
+
+- control/current used the same gate fixture without the failed-finish
+  `Summary:` header in the embedded `TASK.md` reference output;
+- candidate-current used the shipped failed-finish `Summary:` header before the
+  same `Required fixes:` details;
+- `README.md`, bootstrap shape, package source, parser, prompt, and fixture
+  skeleton were matched inside each pair. `TASK.md` and start commit hashes
+  differ by design because the header variant is the isolated condition.
+
+Result:
+
+- valid pairs: `10/10`;
+- invalid runs: `0`;
+- control/current rail-entry: `10/10`;
+- candidate Summary-header rail-entry: `9/10`;
+- paired counts: both `9`, control-only `1`, candidate-only `0`, neither `0`;
+- candidate-control delta: `-10pp`;
+- preregistered non-inferiority criterion: not met.
+
+S-2 decision: the shipped Summary header remains a stable blocker. S-3 should
+remove or disable that human-output header before stable unless HQ explicitly
+chooses a different mitigation and regates it.
+
+Boundary: S-2 is Summary-header rail-entry regression evidence only. It does
+not change product/runtime behavior, defaults, schemas, evidence schemas,
+version, publish, tag, latest, next, alpha, hook signatures, exit codes, or
+JSON schema fields, and it does not support product-efficacy,
+token/provider-token saving, app-quality, broad reliability, closure-guarantee,
+autonomous-completion, deterministic enforcement, generated-app certification,
+automatic completion, or reliable delegation claims.

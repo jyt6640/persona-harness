@@ -6,6 +6,17 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stable-cycle S-2 regated the shipped failed-finish `Summary:` header against
+  the stabilized `gate-fixture.2` rail-entry fixture. The real n=10 paired
+  archive
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-s2-summary-header-regate-20260705T031209Z`
+  completed with valid pairs `10/10`, invalid runs `0`, control/current
+  rail-entry `10/10`, candidate Summary-header rail-entry `9/10`, and
+  candidate-control delta `-10pp`. The preregistered non-inferiority criterion
+  was not met, so S-2 resolves the stable decision input by recommending the
+  shipped Summary header be turned off or reverted in S-3 before stable. This
+  is rail-entry regression evidence only; it does not change defaults/schemas,
+  prepare stable, or make product/token/app-quality/reliability claims.
 - Stable-cycle S-1 stabilizes the rail-entry gate fixture before S-2. Comparing
   Stage 9 with H1-6a showed the H1-6a control baseline drop came from fixture
   drift (`FINISH_OUTPUT.md` recovery instead of first setup/workflow action)
