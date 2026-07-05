@@ -568,6 +568,23 @@ not support token-saving, provider-token-saving, product-efficacy,
 navigation-benefit, app-quality, broad reliability, closure-guarantee,
 autonomous-completion, or default-change claims.
 
+## Stable Cycle S-0 H1-0c Confirmation
+
+S-0 confirmed that H1-0c tokens-per-verified-completion telemetry was already
+calculated and recorded above using the requested formula: condition mean total
+provider tokens divided by finish PASS count. The recorded values are:
+
+- OFF: finish PASS `0/10`, mean total `19204`, cost per verified completion
+  `∞`.
+- Internal tool-output trigger: finish PASS `10/10`, mean total `604853.5`,
+  cost per verified completion `60485.35`.
+- External `ph workflow loop`: finish PASS `7/10`, mean total `592008.3`,
+  cost per verified completion `84572.61`.
+
+This remains cost-per-verified-completion telemetry only, not token/provider
+token saving evidence, product-efficacy evidence, app-quality evidence, broad
+reliability evidence, closure-guarantee evidence, or default-change evidence.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.

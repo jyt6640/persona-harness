@@ -101,6 +101,30 @@ appeared. Initial H1-4/H1-1 fixtures had prerequisite blockers ahead, so
 isolated populated reruns were used to put target blockers first. H1-5 coverage
 is representative, not a full repeat of every H1-5 family.
 
+Stable-cycle S-0 correction: H1-6a compression NO-GO itself does not block
+stable, because the HARDEN-1 compression spec allowed a worse candidate to be
+rolled back or recorded. The unresolved stable-decision issue is the shipped
+rc3/rc4 `Summary:` header: it has only one real-session rail-entry evidence set
+so far (`n=5`, candidate `1/5` vs current/control `3/5`) and that evidence
+points inferior. S-2 must regate whether the shipped header is harmful or noisy;
+stable `0.6.0` should be re-evaluated after that result.
+
+S-0 criterion consistency record: earlier wording said only observed behavior
+regression justifies rc4. rc4 actually carried gate-behavior-changing hardening
+and validation distribution. The improved future criterion is that
+gate-behavior-changing hardening before stable also requires a prerelease
+validation distribution. This is a criteria improvement for future release
+decisions, not a retroactive excuse or broad stability claim.
+
+S-0 alpha dist-tag decision: live npm state observed `alpha=0.3.9-alpha.8`,
+`latest=0.5.0`, and `next=0.6.0-rc.4`; `alpha` resolved to gitHead
+`3bb90aa50c8d1231189a5ca00665e8d5bfccade9` with shasum
+`cd26989425223b5145f190c2dfbfa5ad84e57cf9`. Current publish policy authorizes
+prerelease publishes to `next` and stable publishes to `latest`, but does not
+authorize automatic alpha removal or realignment. No alpha/latest/next
+dist-tag mutation was made in S-0; changing `alpha` needs a separate explicit
+policy decision.
+
 Previous prerelease package: official `0.6.0-rc.3` was published under npm
 dist-tag `next` before rc4 superseded it on that channel. Registry
 verification confirmed `persona-harness@next=0.6.0-rc.3`, gitHead

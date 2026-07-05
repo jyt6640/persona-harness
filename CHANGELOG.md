@@ -6,7 +6,31 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
-No unreleased changes after the `0.6.0-rc.4` final registry-smoke record.
+- Stable-cycle S-0 documentation/policy hygiene records three append-only
+  decisions before S-1/S-2/S-3. First, H1-6a compression NO-GO itself is not
+  the stable blocker because the HARDEN-1 compression spec allowed rollback or
+  record when worse; the unresolved stable-decision issue is that the shipped
+  rc3/rc4 `Summary:` header has only one real-session rail-entry evidence set
+  so far (`n=5`, candidate `1/5` vs current/control `3/5`) and that evidence
+  points inferior. S-2 must regate whether the shipped header is harmful or
+  noisy, then stable is re-evaluated.
+- S-0 records a future criterion improvement: gate-behavior-changing hardening
+  before stable also requires a prerelease validation distribution. This is an
+  improved criterion for future decisions, not a retroactive claim that the
+  earlier "only observed behavior regression justifies rc.4" rule was always
+  satisfied.
+- S-0 confirmed H1-0c tokens-per-verified-completion telemetry is already
+  recorded in `docs/current/ralph-loop-measurement-status.md`: OFF `0/10` and
+  `∞`, internal `10/10` and `60485.35`, external `7/10` and `84572.61`. This
+  is telemetry only, not token/provider-token saving evidence.
+- S-0 inspected dist-tag policy and live npm channel state. Live tags were
+  `alpha=0.3.9-alpha.8`, `latest=0.5.0`, and `next=0.6.0-rc.4`; `alpha`
+  resolved to gitHead `3bb90aa50c8d1231189a5ca00665e8d5bfccade9` with shasum
+  `cd26989425223b5145f190c2dfbfa5ad84e57cf9`. Existing current release policy
+  only authorizes prerelease publish to `next` and stable publish to `latest`;
+  it does not authorize automatic alpha removal or realignment. S-0 therefore
+  made no npm dist-tag mutation and records that a separate explicit alpha
+  policy decision is required before changing or removing `alpha`.
 
 ## [0.6.0-rc.4] - 2026-07-05
 

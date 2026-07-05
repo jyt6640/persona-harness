@@ -60,6 +60,27 @@ token-saving, broad reliability, closure-guarantee, or app-quality claim.
 not stable. HARDEN-2 should not proceed until stable prerequisites are
 separately met or waived.
 
+## Stable Cycle S-0 Correction
+
+H1-6a compression NO-GO itself does not block stable, because the HARDEN-1
+compression spec allowed rollback or record when a compression candidate was
+worse. The unresolved stable-decision issue is the shipped rc3/rc4 `Summary:`
+header. Its only real-session rail-entry evidence set so far is the H1-6a real
+precheck (`n=5`, candidate `1/5` vs current/control `3/5`), and that evidence
+points inferior. S-2 must regate whether the shipped header is harmful or noisy;
+stable should be re-evaluated after that result.
+
+The prior rc4 criterion also needs a future-facing correction. A release
+candidate that carries gate-behavior-changing hardening before stable should
+have a prerelease validation distribution. This is a criteria improvement for
+future decisions, not a retroactive claim that earlier criterion wording was
+already satisfied.
+
+S-0 also confirmed H1-0c telemetry was already recorded in
+`docs/current/ralph-loop-measurement-status.md`: OFF cost per verified
+completion is `∞`, internal is `60485.35`, and external is `84572.61`. This is
+telemetry only, not token/provider-token saving evidence.
+
 ## Claim Boundary
 
 None of the measurements above support product efficacy, token/provider-token

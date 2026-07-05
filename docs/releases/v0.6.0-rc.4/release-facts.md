@@ -32,9 +32,20 @@
 
 Stable `0.6.0` is not being prepared. HARDEN-2 remains blocked because stable
 is not published and external tester recruitment for stable has not started.
-The immediate stable gate also failed: H1-6a repeated-output compression did
-not satisfy the real n=5 rail-entry non-inferiority precheck (`3/5` control,
-`1/5` candidate, delta `-40pp`). Compression remains NO-GO and unimplemented.
+
+S-0 correction: H1-6a repeated-output compression did not satisfy the real n=5
+rail-entry non-inferiority precheck (`3/5` control, `1/5` candidate, delta
+`-40pp`), but compression NO-GO itself is not the stable blocker because the
+HARDEN-1 compression spec allowed rollback or record when worse. The unresolved
+stable-decision issue is the shipped rc3/rc4 `Summary:` header having only that
+one real-session rail-entry evidence set so far, in the inferior direction.
+S-2 must regate whether the shipped header is harmful or noisy; stable should
+be re-evaluated after S-2.
+
+S-0 criterion consistency: gate-behavior-changing hardening before stable also
+requires a prerelease validation distribution. This is an improved future
+criterion, not a retroactive claim that earlier rc4 justification wording was
+already satisfied.
 
 ## Included Since `0.6.0-rc.3`
 
@@ -107,6 +118,11 @@ is representative, not a full repeat of every H1-5 family.
 - No `.persona/evidence` schema expansion is included.
 - No OpenCode hook signature change is included.
 - No gate exit-code or JSON schema field movement is included.
+- S-0 made no `alpha`, `latest`, or `next` dist-tag mutation. Live alpha state
+  remains `alpha=0.3.9-alpha.8`, gitHead
+  `3bb90aa50c8d1231189a5ca00665e8d5bfccade9`, shasum
+  `cd26989425223b5145f190c2dfbfa5ad84e57cf9`; changing or removing `alpha`
+  requires a separate explicit policy decision.
 
 ## No-claim Boundary
 

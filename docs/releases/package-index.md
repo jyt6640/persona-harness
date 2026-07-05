@@ -14,6 +14,11 @@ Use this index to scan package history. Use the linked release notes,
 - Current published prerelease channel: `persona-harness@next=0.6.0-rc.4`.
 - Current stable channel: `persona-harness@latest=0.5.0`.
 - Current alpha channel: `persona-harness@alpha=0.3.9-alpha.8`.
+- S-0 live alpha check: `alpha` still resolves to `0.3.9-alpha.8`, gitHead
+  `3bb90aa50c8d1231189a5ca00665e8d5bfccade9`, shasum
+  `cd26989425223b5145f190c2dfbfa5ad84e57cf9`. Current release policy does not
+  authorize automatic alpha removal or realignment, so S-0 made no alpha
+  dist-tag mutation.
 - `v0.6.0-rc.4` capsule:
   [`docs/releases/v0.6.0-rc.4/`](v0.6.0-rc.4/README.md).
 - `v0.6.0-rc.3` capsule:

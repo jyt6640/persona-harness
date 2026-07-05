@@ -279,3 +279,24 @@ app-quality, broad reliability, closure-guarantee, autonomous-completion,
 deterministic-enforcement, production-ready delegation, generated-app
 certification, automatic completion/downgrade/removal, or CodeGraph/LSP
 claims.
+
+## Stable Cycle S-0 Correction
+
+Status: append-only correction for stable-decision wording.
+
+The earlier H1-6a record must not be read as saying compression NO-GO itself
+blocks stable. The HARDEN-1 compression spec allowed a worse candidate to be
+rolled back or recorded. H1-6a repeated-output compression remains NO-GO and
+unimplemented, but that rollback/record outcome is not by itself the stable
+blocker.
+
+The unresolved stable-decision issue is narrower: the `Summary:` header shipped
+in rc3/rc4 has only one real-session rail-entry evidence set so far, the H1-6a
+real precheck (`n=5`, candidate `1/5` vs current/control `3/5`), and that
+evidence points in the inferior direction. S-2 must regate whether the shipped
+Summary header is harmful or noisy. Stable `0.6.0` should be re-evaluated
+after that S-2 result.
+
+No product/runtime behavior, defaults, schemas, evidence schemas, version,
+publish, tag, latest, next, alpha, hook signature, exit-code, or JSON schema
+field moves in this S-0 correction.
