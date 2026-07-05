@@ -14,6 +14,10 @@ type ContinuationSummary = {
   readonly nextPromptHint?: string
 }
 
+type ContinuationTrackerOptions = {
+  readonly evidenceDir?: string
+}
+
 const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const BACKLOG_PATH = ".persona/workflow/backlog.md"
 const WORKFLOW_OPT_IN_PATH = ".persona"
@@ -127,6 +131,8 @@ function continuationBlock(summary: ContinuationSummary): string {
 export class ContinuationTracker {
   private readonly reportedSessions = new Set<string>()
 
+  constructor(private readonly options: ContinuationTrackerOptions = {}) {}
+
   completeText(projectDir: string, sessionID: string, outputText: string): string | undefined {
     if (this.reportedSessions.has(sessionID)) {
       return undefined
@@ -149,6 +155,8 @@ export class ContinuationTracker {
       remainingReadRange: summary.remainingReadRange,
       remainingScope: summary.remainingScope,
       nextPromptHint: summary.nextPromptHint,
+    }, {
+      evidenceDir: this.options.evidenceDir,
     })
     return continuationBlock(summary)
   }

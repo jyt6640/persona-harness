@@ -56,6 +56,10 @@ export type TokenTelemetryRecordResult =
   | { readonly kind: "ignored"; readonly reason: string }
   | { readonly kind: "written"; readonly path: string; readonly payload: TokenUsageEvidence }
 
+type TokenTelemetryRecorderOptions = {
+  readonly evidenceDir?: string
+}
+
 const LIMIT_UNAVAILABLE_REASON = "model context limit not observed for this session; ratio not computed"
 
 export function safeSessionKey(sessionID: string): string {
@@ -96,9 +100,13 @@ function aggregateUsage(messages: readonly TokenMessageEntry[]): TokenUsage {
   )
 }
 
-function tokenUsageEvidencePath(projectDir: string, sessionID: string): string {
+function defaultEvidenceDir(projectDir: string): string {
   const config = loadHarnessConfig(projectDir)
-  return join(resolveConfiguredPath(projectDir, config.evidenceDir), "token-usage", `${safeSessionKey(sessionID)}.json`)
+  return resolveConfiguredPath(projectDir, config.evidenceDir)
+}
+
+function tokenUsageEvidencePath(evidenceDir: string, sessionID: string): string {
+  return join(evidenceDir, "token-usage", `${safeSessionKey(sessionID)}.json`)
 }
 
 function readExistingMessages(path: string): readonly TokenMessageEntry[] {
@@ -186,8 +194,11 @@ function createdAtFrom(path: string, fallback: string): string {
 
 export class TokenTelemetryRecorder {
   private readonly modelLimits = new Map<string, ModelLimit>()
+  private readonly evidenceDir: string
 
-  constructor(private readonly projectDir: string) {}
+  constructor(projectDir: string, options: TokenTelemetryRecorderOptions = {}) {
+    this.evidenceDir = options.evidenceDir ?? defaultEvidenceDir(projectDir)
+  }
 
   rememberModelLimit(sessionID: string | undefined, model: ModelWithContextLimit): void {
     if (sessionID === undefined || typeof model.limit?.context !== "number") {
@@ -203,7 +214,7 @@ export class TokenTelemetryRecorder {
     if (message.role !== "assistant") {
       return { kind: "ignored", reason: "message is not assistant role" }
     }
-    const outputPath = tokenUsageEvidencePath(this.projectDir, message.sessionID)
+    const outputPath = tokenUsageEvidencePath(this.evidenceDir, message.sessionID)
     try {
       const timestamp = now.toISOString()
       const previousMessages = readExistingMessages(outputPath)

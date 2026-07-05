@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs"
-import { basename, dirname, join, resolve } from "node:path"
+import { basename, dirname, join, relative, resolve } from "node:path"
 import process from "node:process"
 
 import { isRecord } from "../config/jsonc.js"
@@ -24,7 +24,28 @@ type EvidenceRecord = {
 
 type EvidenceSummary = {
   readonly records: readonly EvidenceRecord[]
+  readonly retention: EvidenceRetentionSummary
   readonly unreadableFiles: readonly string[]
+}
+
+type EvidenceRetentionCategory = {
+  readonly bytes: number
+  readonly category: string
+  readonly files: number
+}
+
+type EvidenceRetentionPolicy = {
+  readonly categoryFileCountCap: number
+  readonly totalBytesWarningThreshold: number
+  readonly warningOnly: true
+}
+
+type EvidenceRetentionSummary = {
+  readonly categories: readonly EvidenceRetentionCategory[]
+  readonly policy: EvidenceRetentionPolicy
+  readonly totalBytes: number
+  readonly totalFiles: number
+  readonly warnings: readonly string[]
 }
 
 type TokenAggregate = {
@@ -84,6 +105,10 @@ type EvidenceMetrics = {
 
 const SUMMARY_PATH = ".persona/evidence/summary.md"
 const EVIDENCE_DIR = ".persona/evidence"
+const DEFAULT_EVIDENCE_CATEGORY_FILE_COUNT_CAP = 1000
+const DEFAULT_EVIDENCE_TOTAL_BYTES_WARNING_THRESHOLD = 50 * 1024 * 1024
+const EVIDENCE_CATEGORY_FILE_COUNT_CAP_ENV = "PH_EVIDENCE_SUMMARY_WARN_FILE_COUNT"
+const EVIDENCE_TOTAL_BYTES_WARNING_THRESHOLD_ENV = "PH_EVIDENCE_SUMMARY_WARN_TOTAL_BYTES"
 const TOKEN_ZERO: TokenAggregate = {
   cacheRead: 0,
   cacheWrite: 0,
@@ -137,6 +162,93 @@ function listEvidenceFiles(dirPath: string): readonly string[] {
     }
   }
   return files.sort()
+}
+
+function listAllFiles(dirPath: string): readonly string[] {
+  if (!existsSync(dirPath)) {
+    return []
+  }
+  const files: string[] = []
+  for (const entry of readdirSync(dirPath)) {
+    const entryPath = join(dirPath, entry)
+    const stat = statSync(entryPath)
+    if (stat.isDirectory()) {
+      files.push(...listAllFiles(entryPath))
+    } else if (stat.isFile()) {
+      files.push(entryPath)
+    }
+  }
+  return files.sort()
+}
+
+function positiveIntegerFromEnv(
+  env: Readonly<Record<string, string | undefined>>,
+  key: string,
+  fallback: number,
+): number {
+  const value = env[key]
+  if (value === undefined) {
+    return fallback
+  }
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function categoryForEvidenceFile(evidenceDir: string, filePath: string): string {
+  const pathParts = relative(evidenceDir, filePath).split(/[\\/]/u).filter((part) => part.length > 0)
+  return pathParts[0] ?? "(root)"
+}
+
+function readEvidenceRetention(projectDir: string, env: Readonly<Record<string, string | undefined>>): EvidenceRetentionSummary {
+  const evidenceDir = join(projectDir, EVIDENCE_DIR)
+  const policy: EvidenceRetentionPolicy = {
+    categoryFileCountCap: positiveIntegerFromEnv(
+      env,
+      EVIDENCE_CATEGORY_FILE_COUNT_CAP_ENV,
+      DEFAULT_EVIDENCE_CATEGORY_FILE_COUNT_CAP,
+    ),
+    totalBytesWarningThreshold: positiveIntegerFromEnv(
+      env,
+      EVIDENCE_TOTAL_BYTES_WARNING_THRESHOLD_ENV,
+      DEFAULT_EVIDENCE_TOTAL_BYTES_WARNING_THRESHOLD,
+    ),
+    warningOnly: true,
+  }
+  const categoryCounts = new Map<string, { bytes: number; files: number }>()
+  let totalBytes = 0
+
+  for (const filePath of listAllFiles(evidenceDir)) {
+    const bytes = statSync(filePath).size
+    const category = categoryForEvidenceFile(evidenceDir, filePath)
+    const previous = categoryCounts.get(category) ?? { bytes: 0, files: 0 }
+    categoryCounts.set(category, { bytes: previous.bytes + bytes, files: previous.files + 1 })
+    totalBytes += bytes
+  }
+
+  const categories = Array.from(categoryCounts.entries())
+    .map(([category, value]) => ({ category, ...value }))
+    .sort((left, right) => left.category.localeCompare(right.category))
+  const categoryWarnings = categories
+    .filter((category) => category.files > policy.categoryFileCountCap)
+    .map((category) =>
+      `category ${category.category} has ${category.files} files; warning-only cap is ${policy.categoryFileCountCap}.`,
+    )
+  const warnings = [
+    ...categoryWarnings,
+    ...(totalBytes > policy.totalBytesWarningThreshold
+      ? [
+          `total evidence size ${totalBytes} bytes exceeds warning threshold ${policy.totalBytesWarningThreshold} bytes.`,
+        ]
+      : []),
+  ]
+
+  return {
+    categories,
+    policy,
+    totalBytes,
+    totalFiles: categories.reduce((total, category) => total + category.files, 0),
+    warnings,
+  }
 }
 
 function increment(counts: Map<string, number>, key: string): void {
@@ -304,7 +416,7 @@ function objectsFromEvidenceFile(filePath: string): readonly unknown[] {
   return [JSON.parse(source) as unknown]
 }
 
-function readEvidenceSummary(projectDir: string): EvidenceSummary {
+function readEvidenceSummary(projectDir: string, env: Readonly<Record<string, string | undefined>>): EvidenceSummary {
   const evidenceDir = join(projectDir, ".persona", "evidence")
   const records: EvidenceRecord[] = []
   const unreadableFiles: string[] = []
@@ -320,7 +432,7 @@ function readEvidenceSummary(projectDir: string): EvidenceSummary {
       unreadableFiles.push(filePath)
     }
   }
-  return { records, unreadableFiles }
+  return { records, retention: readEvidenceRetention(projectDir, env), unreadableFiles }
 }
 
 export function readEvidenceMetrics(options: EvidenceOptions = {}): EvidenceMetrics {
@@ -454,6 +566,26 @@ function formatEvidenceSummary(projectDir: string, summary: EvidenceSummary): st
     "",
     ...(summary.unreadableFiles.length === 0 ? ["- none"] : summary.unreadableFiles.map((filePath) => `- ${basename(filePath)}`)),
     "",
+    "## Evidence Retention",
+    "",
+    "Policy: warning-only; `ph evidence summary` does not delete evidence files.",
+    `Category file-count warning cap: ${summary.retention.policy.categoryFileCountCap}`,
+    `Total size warning threshold bytes: ${summary.retention.policy.totalBytesWarningThreshold}`,
+    `Total raw evidence files: ${summary.retention.totalFiles}`,
+    `Total raw evidence bytes: ${summary.retention.totalBytes}`,
+    "",
+    "Category counts:",
+    ...(summary.retention.categories.length === 0
+      ? ["- none"]
+      : summary.retention.categories.map(
+          (category) => `- ${category.category}: ${category.files} files, ${category.bytes} bytes`,
+        )),
+    "",
+    "Warnings:",
+    ...(summary.retention.warnings.length === 0 ? ["- none"] : summary.retention.warnings.map((warning) => `- ${warning}`)),
+    "",
+    "No evidence files were deleted or rewritten.",
+    "",
     "## Limitations",
     "",
     "- Summary-only evidence view.",
@@ -510,11 +642,20 @@ function formatEvidenceMetrics(metrics: EvidenceMetrics): string {
   ].join("\n")
 }
 
-export function writeEvidenceSummary(options: EvidenceOptions = {}): string {
+function writeEvidenceSummaryWithResult(options: EvidenceOptions = {}): {
+  readonly outputPath: string
+  readonly summary: EvidenceSummary
+} {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const outputPath = join(projectDir, SUMMARY_PATH)
+  const summary = readEvidenceSummary(projectDir, options.env ?? process.env)
   mkdirSync(dirname(outputPath), { recursive: true })
-  writeFileAtomic(outputPath, formatEvidenceSummary(projectDir, readEvidenceSummary(projectDir)))
+  writeFileAtomic(outputPath, formatEvidenceSummary(projectDir, summary))
+  return { outputPath, summary }
+}
+
+export function writeEvidenceSummary(options: EvidenceOptions = {}): string {
+  const { outputPath } = writeEvidenceSummaryWithResult(options)
   return outputPath
 }
 
@@ -526,13 +667,18 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
     return runEvidenceAbRunCommand(args.slice(1), options)
   }
   if (args.length === 1 && args[0] === "summary") {
-    const outputPath = writeEvidenceSummary(options)
+    const { outputPath, summary } = writeEvidenceSummaryWithResult(options)
     const projectDir = resolve(options.projectDir ?? process.cwd())
+    const warningLines =
+      summary.retention.warnings.length === 0
+        ? []
+        : ["Evidence retention warning:", ...summary.retention.warnings.map((warning) => `- ${warning}`)]
     return {
       status: 0,
       stdout: [
         `Evidence summary written: ${outputPath}`,
         `Evidence directory: ${join(projectDir, EVIDENCE_DIR)}`,
+        ...warningLines,
       ].join("\n") + "\n",
       stderr: "",
     }

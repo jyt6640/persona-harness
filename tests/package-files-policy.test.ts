@@ -61,6 +61,7 @@ describe("package files policy", () => {
       "docs/current/canonical-docs-index.md",
       "docs/current/external-review-adoption-status.md",
       "docs/current/diff-rules-classification.md",
+      "docs/current/role-rules-dogfooding-readiness.md",
       "docs/current/workflow-string-gate-parsing-audit.md",
       "docs/current/workflow-state-concurrency.md",
       "docs/current/role-scoped-rule-delivery.md",

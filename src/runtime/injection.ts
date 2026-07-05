@@ -1,5 +1,5 @@
 import { isBackendBootstrapTargetFile, resolveBootstrapFileRole, resolveFileRole } from "./file-role.js"
-import { loadHarnessConfigResult } from "../config/harness-config.js"
+import { loadHarnessConfigResult, type HarnessConfigLoadResult } from "../config/harness-config.js"
 import { loadBackendPolicyOverlay } from "../config/policy-overlay.js"
 import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from "../config/project-profile.js"
 import { loadRulesForRole } from "../rules/rule-loader.js"
@@ -11,6 +11,10 @@ const inactivePolicyOverlay: PendingInjection["selectedPolicyOverlay"] = {
   enabled: false,
   sources: [],
   diagnostics: [],
+}
+
+type InjectionBlockOptions = {
+  readonly configResult?: HarnessConfigLoadResult
 }
 
 function dedupePolicies(policies: string[]): string[] {
@@ -50,8 +54,12 @@ function tier3ClosureLines(): readonly string[] {
   ]
 }
 
-export function createInjectionBlock(targetFile: string, projectDir = process.cwd()): PendingInjection {
-  const configResult = loadHarnessConfigResult(projectDir)
+export function createInjectionBlock(
+  targetFile: string,
+  projectDir = process.cwd(),
+  options: InjectionBlockOptions = {},
+): PendingInjection {
+  const configResult = options.configResult ?? loadHarnessConfigResult(projectDir)
   const config = configResult.config
   const selectedSharedSkills = selectSharedSkillsForTarget(targetFile)
   const isJavaTarget = isJavaTargetFile(targetFile)

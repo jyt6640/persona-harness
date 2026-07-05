@@ -82,6 +82,7 @@ export type TokenCompactionResult =
 type TokenCompactionTrackerOptions = {
   readonly client?: TokenCompactionClient
   readonly config: HarnessCompactionConfig
+  readonly evidenceDir?: string
   readonly projectDir: string
 }
 
@@ -92,9 +93,13 @@ function isAssistantMessage(message: Message): message is AssistantMessage {
   return message.role === "assistant"
 }
 
-function compactionEvidencePath(projectDir: string, sessionID: string): string {
+function defaultEvidenceDir(projectDir: string): string {
   const config = loadHarnessConfig(projectDir)
-  return join(resolveConfiguredPath(projectDir, config.evidenceDir), "compaction", `${safeSessionKey(sessionID)}.json`)
+  return resolveConfiguredPath(projectDir, config.evidenceDir)
+}
+
+function compactionEvidencePath(evidenceDir: string, sessionID: string): string {
+  return join(evidenceDir, "compaction", `${safeSessionKey(sessionID)}.json`)
 }
 
 function isCompactionAttempt(value: unknown): value is CompactionAttempt {
@@ -141,8 +146,8 @@ function readExistingEvidence(path: string): CompactionEvidence | undefined {
   }
 }
 
-function writeAttempt(projectDir: string, sessionID: string, attempt: CompactionAttempt): string {
-  const outputPath = compactionEvidencePath(projectDir, sessionID)
+function writeAttempt(evidenceDir: string, sessionID: string, attempt: CompactionAttempt): string {
+  const outputPath = compactionEvidencePath(evidenceDir, sessionID)
   const previous = readExistingEvidence(outputPath)
   const payload: CompactionEvidence = {
     attempts: [...(previous?.attempts ?? []), attempt],
@@ -157,8 +162,8 @@ function writeAttempt(projectDir: string, sessionID: string, attempt: Compaction
   return outputPath
 }
 
-function evidenceCooldownUntil(projectDir: string, sessionID: string, cooldownMs: number): number {
-  const previous = readExistingEvidence(compactionEvidencePath(projectDir, sessionID))
+function evidenceCooldownUntil(evidenceDir: string, sessionID: string, cooldownMs: number): number {
+  const previous = readExistingEvidence(compactionEvidencePath(evidenceDir, sessionID))
   const latestAttemptMs = previous?.attempts.reduce((latest, attempt) => {
     if (attempt.status !== "failed" && attempt.status !== "triggered") {
       return latest
@@ -200,8 +205,11 @@ function attemptWith(input: CompactionAttemptInput): CompactionAttempt {
 
 export class TokenCompactionTracker {
   private readonly cooldownUntilBySession = new Map<string, number>()
+  private readonly evidenceDir: string
 
-  constructor(private readonly options: TokenCompactionTrackerOptions) {}
+  constructor(private readonly options: TokenCompactionTrackerOptions) {
+    this.evidenceDir = options.evidenceDir ?? defaultEvidenceDir(options.projectDir)
+  }
 
   async maybeSummarize(
     message: Message,
@@ -219,7 +227,7 @@ export class TokenCompactionTracker {
     const skipped = (reason: string): TokenCompactionResult => {
       try {
         const path = writeAttempt(
-          this.options.projectDir,
+          this.evidenceDir,
           message.sessionID,
           attemptWith({
             measurement,
@@ -245,7 +253,7 @@ export class TokenCompactionTracker {
 
     const cooldownUntil = this.cooldownUntilBySession.get(message.sessionID) ?? 0
     const persistedCooldownUntil = evidenceCooldownUntil(
-      this.options.projectDir,
+      this.evidenceDir,
       message.sessionID,
       this.options.config.cooldownMs,
     )
@@ -271,7 +279,7 @@ export class TokenCompactionTracker {
       await session.summarize(request)
       this.cooldownUntilBySession.set(message.sessionID, now.getTime() + this.options.config.cooldownMs)
       const path = writeAttempt(
-        this.options.projectDir,
+        this.evidenceDir,
         message.sessionID,
         attemptWith({ measurement, request, status: "triggered", timestamp: now.toISOString() }),
       )
@@ -280,7 +288,7 @@ export class TokenCompactionTracker {
       this.cooldownUntilBySession.set(message.sessionID, now.getTime() + this.options.config.cooldownMs)
       const runtimeError = error instanceof Error ? error : new Error(String(error))
       const path = writeAttempt(
-        this.options.projectDir,
+        this.evidenceDir,
         message.sessionID,
         attemptWith({
           measurement,

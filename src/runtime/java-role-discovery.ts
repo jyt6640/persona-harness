@@ -2,6 +2,7 @@ import { isJavaTargetFile } from "./file-role.js"
 import { createInjectionBlock } from "./injection.js"
 import { isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import type { FileRole, PendingInjection } from "./types.js"
+import type { HarnessConfigLoadResult } from "../config/harness-config.js"
 
 const JAVA_PATH_PATTERN = /(?:[A-Za-z]:)?(?:\/|\.{1,2}\/)?[^\s"'`<>|]*src\/(?:main|test)\/java\/[^\s"'`<>|]+?\.java\b/g
 const DISCOVERY_TOOL_NAMES = new Set(["glob", "ls", "list", "find", "bash", "shell", "bearshell"])
@@ -42,12 +43,15 @@ export function discoverJavaRoleInjections(
   toolName: string,
   toolOutput: string,
   projectDir: string,
+  configResult?: HarnessConfigLoadResult,
 ): readonly PendingInjection[] {
   if (!isJavaRoleDiscoveryTool(toolName)) {
     return []
   }
 
-  return extractJavaTargetFilesFromText(toolOutput).map((targetFile) => createInjectionBlock(targetFile, projectDir))
+  return extractJavaTargetFilesFromText(toolOutput).map((targetFile) =>
+    createInjectionBlock(targetFile, projectDir, { configResult }),
+  )
 }
 
 function uniqueValues(values: readonly string[]): string[] {

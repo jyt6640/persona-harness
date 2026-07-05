@@ -6,6 +6,20 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- LEAN-1 L-1 removes runtime hot-path config reparsing from token telemetry,
+  token compaction, injection, and hook evidence writes by resolving the harness
+  config/evidence directory once at hook creation and threading that resolved
+  state through runtime writers. `message.updated` token telemetry now has a
+  regression test that stays on the initially resolved evidence directory rather
+  than reparsing `.persona/harness.jsonc` per message. `ph evidence summary`
+  also adds warning-only retention hygiene: category file-count and total-size
+  warnings are reported in the summary and stdout, with no deletion or evidence
+  schema change. Metadata duplication investigation found no PH-owned
+  `metadata.output` duplication path in source/tests or the L-0 trace; PH
+  recorded `outputChars` only, so no product metadata removal was made. This is
+  host/evidence hygiene only, not token-saving, provider-token-saving,
+  product-efficacy, app-quality, reliability, or closure-guarantee evidence.
+
 - LEAN-1 L-0 records the baseline token/time profile for a single
   finish-reachable work cycle before any LEAN optimization. Archive
   `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l0-baseline-profile-20260705T152205Z`

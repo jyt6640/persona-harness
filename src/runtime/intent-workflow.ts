@@ -15,6 +15,10 @@ import { formatReviewWorkflowBlock } from "./review-workflow-skill.js"
 import { detectTopLevelIntent, type TopLevelIntent } from "./top-level-intent-router.js"
 import type { TransformMessagesOutput } from "./types.js"
 
+type IntentWorkflowOptions = {
+  readonly evidenceDir?: string
+}
+
 const IMPLEMENTATION_PROFILE_GUARD_LINES = [
   "- Before implementation, if `.persona/project-profile.jsonc` exists, read it and do not create a stack that conflicts with its language/framework/build tool/profile constraints.",
   "- If the profile exists but has not been read yet, do not implement; read the profile plus README/requirements/current task card first.",
@@ -102,6 +106,7 @@ function injectIntentWorkflowRail(
   block: string,
   railMarker: string,
   compliance: RailComplianceTracker,
+  options: IntentWorkflowOptions,
 ): boolean {
   const injected = injectTextIntoLatestUserMessage(output, appendRuntimeReliabilityGuard(block, intent), railMarker)
   if (injected) {
@@ -113,6 +118,8 @@ function injectIntentWorkflowRail(
       userPrompt,
       intent,
       railMarker,
+    }, {
+      evidenceDir: options.evidenceDir,
     })
   }
   return injected
@@ -124,6 +131,7 @@ export function maybeInjectIntentWorkflow(
   sessionID: string,
   config: ReturnType<typeof loadHarnessConfig>,
   compliance: RailComplianceTracker,
+  options: IntentWorkflowOptions = {},
 ): boolean {
   if (!config.enabled || !config.enabledDomains.includes("workflow") || !hasPersonaWorkflowOptIn(projectDir)) {
     return false
@@ -144,6 +152,7 @@ export function maybeInjectIntentWorkflow(
       formatDebugWorkflowBlock(intent),
       "[Persona Harness Debug Workflow]",
       compliance,
+      options,
     )
   }
 
@@ -157,6 +166,7 @@ export function maybeInjectIntentWorkflow(
       formatReviewWorkflowBlock(intent),
       "[Persona Harness Review Workflow]",
       compliance,
+      options,
     )
   }
 
@@ -170,6 +180,7 @@ export function maybeInjectIntentWorkflow(
       formatRefactorWorkflowBlock(intent),
       "[Persona Harness Refactor Workflow]",
       compliance,
+      options,
     )
   }
 
@@ -183,6 +194,7 @@ export function maybeInjectIntentWorkflow(
       formatGitWorkflowBlock(intent),
       "[Persona Harness Git Workflow]",
       compliance,
+      options,
     )
   }
 
@@ -196,6 +208,7 @@ export function maybeInjectIntentWorkflow(
       formatProgrammingWorkflowBlock(intent),
       "[Persona Harness Programming Workflow]",
       compliance,
+      options,
     )
   }
 
@@ -215,5 +228,6 @@ export function maybeInjectIntentWorkflow(
     formatRequirementsWorkflowBlock(intent.requirementsIntent),
     "[Persona Harness Requirements Workflow]",
     compliance,
+    options,
   )
 }

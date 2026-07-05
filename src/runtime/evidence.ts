@@ -7,6 +7,10 @@ import { warnRuntimeFailure } from "./error-boundary.js"
 import type { TopLevelIntent } from "./top-level-intent-router.js"
 import type { PendingInjection } from "./types.js"
 
+type EvidenceWriteOptions = {
+  readonly evidenceDir?: string
+}
+
 export type RailComplianceFindingCode =
   | "review-rail-file-modification"
   | "requirements-rail-direct-implementation"
@@ -104,10 +108,17 @@ function writeEvidenceJson(evidenceDir: string, runId: string, payload: unknown)
   }
 }
 
-export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): void {
-  const now = new Date()
+function evidenceDirFor(projectDir: string, options: EvidenceWriteOptions): string {
+  if (options.evidenceDir !== undefined) {
+    return options.evidenceDir
+  }
   const config = loadHarnessConfig(projectDir)
-  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  return resolveConfiguredPath(projectDir, config.evidenceDir)
+}
+
+export function writePhase0Evidence(projectDir: string, event: EvidenceEvent, options: EvidenceWriteOptions = {}): void {
+  const now = new Date()
+  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-${safeSlug(event.injection.targetFile)}`
   const payload = {
     schemaVersion: "phase0.1",
@@ -131,10 +142,13 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent): v
   writeEvidenceJson(evidenceDir, runId, payload)
 }
 
-export function writeIntentEvidence(projectDir: string, event: IntentEvidenceEvent): void {
+export function writeIntentEvidence(
+  projectDir: string,
+  event: IntentEvidenceEvent,
+  options: EvidenceWriteOptions = {},
+): void {
   const now = new Date()
-  const config = loadHarnessConfig(projectDir)
-  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-intent-${safeSlug(event.intent.primary)}`
   const payload = {
     schemaVersion: "phase0.intent.1",
@@ -154,10 +168,13 @@ export function writeIntentEvidence(projectDir: string, event: IntentEvidenceEve
   writeEvidenceJson(evidenceDir, runId, payload)
 }
 
-export function writeRailComplianceEvidence(projectDir: string, event: RailComplianceEvidenceEvent): void {
+export function writeRailComplianceEvidence(
+  projectDir: string,
+  event: RailComplianceEvidenceEvent,
+  options: EvidenceWriteOptions = {},
+): void {
   const now = new Date()
-  const config = loadHarnessConfig(projectDir)
-  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-rail-compliance-${safeSlug(event.code)}`
   const payload = {
     schemaVersion: "phase0.rail-compliance.1",
@@ -183,10 +200,13 @@ export function writeRailComplianceEvidence(projectDir: string, event: RailCompl
   writeEvidenceJson(evidenceDir, runId, payload)
 }
 
-export function writeContinuationEvidence(projectDir: string, event: ContinuationEvidenceEvent): void {
+export function writeContinuationEvidence(
+  projectDir: string,
+  event: ContinuationEvidenceEvent,
+  options: EvidenceWriteOptions = {},
+): void {
   const now = new Date()
-  const config = loadHarnessConfig(projectDir)
-  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-continuation-${safeSlug(event.sessionID)}`
   const payload = {
     schemaVersion: "phase0.continuation.1",
@@ -209,10 +229,13 @@ export function writeContinuationEvidence(projectDir: string, event: Continuatio
   writeEvidenceJson(evidenceDir, runId, payload)
 }
 
-export function writeObserverReportOnlyEvidence(projectDir: string, event: ObserverReportOnlyEvidenceEvent): void {
+export function writeObserverReportOnlyEvidence(
+  projectDir: string,
+  event: ObserverReportOnlyEvidenceEvent,
+  options: EvidenceWriteOptions = {},
+): void {
   const now = new Date()
-  const config = loadHarnessConfig(projectDir)
-  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-observer-report-only-${safeSlug(event.targetFile)}`
   const payload = {
     schemaVersion: "phase0.observer-report-only.1",

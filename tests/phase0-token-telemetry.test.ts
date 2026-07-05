@@ -184,6 +184,24 @@ describe("Phase 0 token telemetry", () => {
     expect(evidence.ratio).toBe(0.15)
   })
 
+  it("does not reparse harness config while handling message.updated token telemetry", async () => {
+    const projectDir = createProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    writeHarnessConfig(projectDir, { evidenceDir: ".persona/changed-evidence" })
+
+    await hooks.event?.({
+      event: {
+        type: "message.updated",
+        properties: { info: assistantMessage() },
+      },
+    })
+
+    expect(existsSync(join(projectDir, ".persona", "evidence", "token-usage", "session-token-usage.json"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "changed-evidence", "token-usage", "session-token-usage.json"))).toBe(
+      false,
+    )
+  })
+
   it("skips token telemetry when the harness config disables it", async () => {
     const projectDir = createProject()
     writeHarnessConfig(projectDir, { telemetry: { tokenUsage: false } })

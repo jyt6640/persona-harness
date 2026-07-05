@@ -20,6 +20,7 @@ import { writeObserverReportOnlyEvidence } from "./evidence.js"
 import { isJavaTargetFile } from "./file-role.js"
 
 type ObserveJavaWriteInput = {
+  readonly evidenceDir?: string
   readonly projectDir: string
   readonly tool: string
   readonly sessionID: string
@@ -58,6 +59,8 @@ export function observeJavaWriteReportOnly(input: ObserveJavaWriteInput): void {
       inspectedFile,
       findings: observeJavaFile(input.projectDir, absoluteTargetPath, source),
       limitations: OBSERVER_LIMITATIONS,
+    }, {
+      evidenceDir: input.evidenceDir,
     })
   } catch (error) {
     const detail = input.targetFile

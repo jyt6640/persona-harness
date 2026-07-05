@@ -23,6 +23,10 @@ type ToolObservation = {
   readonly args: Record<string, unknown>
 }
 
+type RailComplianceTrackerOptions = {
+  readonly evidenceDir?: string
+}
+
 type ComplianceWarning = {
   readonly code: RailComplianceFindingCode
   readonly confidence: "HIGH" | "MEDIUM" | "LOW"
@@ -84,6 +88,8 @@ function missingWorkflowReports(projectDir: string): readonly string[] {
 
 export class RailComplianceTracker {
   private readonly states = new Map<string, RailComplianceState>()
+
+  constructor(private readonly options: RailComplianceTrackerOptions = {}) {}
 
   startRail(sessionID: string, userPrompt: string, intent: TopLevelIntent, railMarker: string): void {
     this.states.set(sessionID, {
@@ -235,6 +241,8 @@ export class RailComplianceTracker {
       message: warning.message,
       observedAction: warning.observedAction,
       expectedAction: warning.expectedAction,
+    }, {
+      evidenceDir: this.options.evidenceDir,
     })
   }
 }

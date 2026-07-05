@@ -656,6 +656,49 @@ Decision input:
   priority than host config parsing and prompt/output cache-friendliness unless
   a later fixture shows a larger delivered-rule share.
 
+## LEAN-1 L-1 Host Config Caching and Evidence Hygiene
+
+Status: source hygiene implemented; no L-1 delta measurement was run in this
+source phase.
+
+Behavior:
+
+- Runtime hooks now resolve `.persona/harness.jsonc` and the configured
+  evidence directory once at hook creation and pass the resolved state through
+  token telemetry, token compaction, injection creation, rail-compliance
+  evidence, intent evidence, observer evidence, and phase0 evidence writes.
+- A focused regression test verifies `message.updated` token telemetry does not
+  reparse `harness.jsonc` per message after hook creation.
+- `ph evidence summary` now reports warning-only retention hygiene: category
+  file-count and total-size warnings are included in stdout and
+  `.persona/evidence/summary.md`. Defaults are warning-only
+  (`1000` files/category, `52428800` total bytes) and can be adjusted for
+  operator/test runs with `PH_EVIDENCE_SUMMARY_WARN_FILE_COUNT` and
+  `PH_EVIDENCE_SUMMARY_WARN_TOTAL_BYTES`.
+- The retention policy is non-destructive. `ph evidence summary` does not
+  delete, rewrite, or migrate evidence files.
+
+Metadata duplication investigation:
+
+- Source and tests contain no PH-owned `metadata.output` writer or reader path.
+- The accepted L-0 trace records `tool.execute.after` output as `outputChars`
+  only; it does not duplicate full tool output in `metadata.output`.
+- Therefore no PH-owned metadata removal was made. If future raw host event
+  payloads contain `metadata.output`, that should be treated as host-owned or
+  runner-owned until a PH write path is identified.
+
+Gate/measurement notes:
+
+- The new `ph evidence summary` warning text is an operator evidence command
+  surface, not a model-facing rail, AGENTS, gate-output, or workflow prompt
+  surface; no `gate-fixture.2` wording regate was run for this additive warning.
+- Stage 18 finish PASS no-worse was not rerun in L-1 because this source phase
+  changed runtime config/evidence path caching and `ph evidence summary`
+  warnings, not finish/check gate semantics or model-facing loop prompts.
+- L-1 provides implementation hygiene only. It is not token-saving,
+  provider-token-saving, product-efficacy, app-quality, reliability,
+  closure-guarantee, or default-change evidence.
+
 ## Boundaries
 
 - This is measurement/probe evidence only.

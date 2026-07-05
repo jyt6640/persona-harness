@@ -3,7 +3,7 @@ import type { Hooks } from "@opencode-ai/plugin"
 import { writePhase0Evidence } from "./evidence.js"
 import { ContinuationTracker } from "./continuation.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
-import { isRuntimeInjectionEnabled, loadHarnessConfig } from "../config/harness-config.js"
+import { isRuntimeInjectionEnabled, loadHarnessConfigResult, resolveConfiguredPath } from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
 import { IdleContinuationTracker } from "./idle-continuation.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
@@ -105,10 +105,12 @@ async function runHostHookAsync(hookName: string, operation: () => Promise<void>
 
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const store = options.store ?? new PendingInjectionStore()
-  const compliance = new RailComplianceTracker()
-  const continuation = new ContinuationTracker()
   const projectDir = options.projectDir ?? process.cwd()
-  const config = loadHarnessConfig(projectDir)
+  const configResult = loadHarnessConfigResult(projectDir)
+  const config = configResult.config
+  const evidenceDir = resolveConfiguredPath(projectDir, config.evidenceDir)
+  const compliance = new RailComplianceTracker({ evidenceDir })
+  const continuation = new ContinuationTracker({ evidenceDir })
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
   const ralphLoop = new RalphLoopContinuationTracker({
@@ -120,10 +122,11 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     config: config.enforce.ralphLoop,
     projectDir,
   })
-  const tokenTelemetry = new TokenTelemetryRecorder(projectDir)
+  const tokenTelemetry = new TokenTelemetryRecorder(projectDir, { evidenceDir })
   const tokenCompaction = new TokenCompactionTracker({
     client: options.client,
     config: config.enforce.compaction,
+    evidenceDir,
     projectDir,
   })
   const sessionRegistry = new RuntimeSessionRegistry({
@@ -174,7 +177,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       return undefined
     }
 
-    const injection = createInjectionBlock(targetFile, projectDir)
+    const injection = createInjectionBlock(targetFile, projectDir, { configResult })
     store.set(sessionID, injection)
     writePhase0Evidence(projectDir, {
       hook,
@@ -182,6 +185,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       callID,
       injectedInto: "pending-store",
       injection,
+    }, {
+      evidenceDir,
     })
     return injection
   }
@@ -194,7 +199,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       return
     }
 
-    const injections = discoverJavaRoleInjections(input.tool, output.output, projectDir)
+    const injections = discoverJavaRoleInjections(input.tool, output.output, projectDir, configResult)
     if (injections.length === 0) {
       return
     }
@@ -209,6 +214,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         callID: input.callID,
         injectedInto: "pending-store",
         injection: followUp,
+      }, {
+        evidenceDir,
       })
     }
 
@@ -219,6 +226,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         callID: input.callID,
         injectedInto: "role-discovery",
         injection,
+      }, {
+        evidenceDir,
       })
     }
   }
@@ -329,8 +338,11 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           callID: input.callID,
           injectedInto: "tool-output",
           injection,
+        }, {
+          evidenceDir,
         })
         observeJavaWriteReportOnly({
+          evidenceDir,
           projectDir,
           tool: input.tool,
           sessionID: input.sessionID,
@@ -352,7 +364,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         }
 
         if (runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "intent-workflow")) {
-          maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance)
+          maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, { evidenceDir })
         }
 
         const injection =
@@ -367,6 +379,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
             sessionID: sessionId,
             injectedInto: "model-input",
             injection,
+          }, {
+            evidenceDir,
           })
         }
       })

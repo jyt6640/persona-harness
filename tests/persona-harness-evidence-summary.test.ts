@@ -74,6 +74,47 @@ describe("ph evidence summary", () => {
     expect(summary).toContain("bad.json")
   })
 
+  it("warns when warning-only evidence retention caps are exceeded", () => {
+    const projectDir = createTempProject()
+    writeEvidence(projectDir, "controller.json", {
+      targetFile: "/demo/src/main/java/com/example/book/presentation/BookController.java",
+      fileRole: "controller",
+      selectedRules: [],
+      selectedSharedSkills: [],
+    })
+    writeEvidence(projectDir, "service.json", {
+      targetFile: "/demo/src/main/java/com/example/book/application/BookService.java",
+      fileRole: "service",
+      selectedRules: [],
+      selectedSharedSkills: [],
+    })
+    writeEvidence(projectDir, "repository.json", {
+      targetFile: "/demo/src/main/java/com/example/book/infrastructure/BookRepository.java",
+      fileRole: "repository",
+      selectedRules: [],
+      selectedSharedSkills: [],
+    })
+
+    const result = runPersonaCli(["evidence", "summary"], {
+      cwd: projectDir,
+      env: {
+        PH_EVIDENCE_SUMMARY_WARN_FILE_COUNT: "2",
+        PH_EVIDENCE_SUMMARY_WARN_TOTAL_BYTES: "1",
+      },
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Evidence retention warning:")
+    expect(result.stdout).toContain("phase0 has 3 files")
+    expect(result.stdout).toContain("total evidence size")
+    const summary = readFileSync(join(projectDir, ".persona", "evidence", "summary.md"), "utf8")
+    expect(summary).toContain("## Evidence Retention")
+    expect(summary).toContain("Policy: warning-only")
+    expect(summary).toContain("phase0 has 3 files")
+    expect(summary).toContain("No evidence files were deleted or rewritten.")
+  })
+
   it("prints read-only evidence metrics as JSON from structured token, tool, MCP, and finish evidence", () => {
     const projectDir = createTempProject()
     mkdirSync(join(projectDir, ".persona", "evidence", "token-usage"), { recursive: true })
