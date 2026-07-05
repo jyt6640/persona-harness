@@ -24,6 +24,8 @@ deleting evidence/status history.
   [`external-review-adoption-status.md`](external-review-adoption-status.md).
 - Diff-rules classification:
   [`diff-rules-classification.md`](diff-rules-classification.md).
+- ROLE-RULES dogfooding readiness:
+  [`role-rules-dogfooding-readiness.md`](role-rules-dogfooding-readiness.md).
 - Workflow string-gate parsing audit:
   [`workflow-string-gate-parsing-audit.md`](workflow-string-gate-parsing-audit.md).
 - Workflow state concurrency model:

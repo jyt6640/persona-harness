@@ -18,6 +18,7 @@ Use these files when making current product, measurement, or release decisions.
 | Release operations | `docs/current/release/README.md` | Release runbook and workflow-compatible release-note sources. |
 | External review adoption status | `docs/current/external-review-adoption-status.md` | Stage 16-e adoption/rejection/defer matrix for external review items; docs-only, no schema/product expansion. |
 | Diff-rules classification | `docs/current/diff-rules-classification.md` | T6 classification of all 50 `references/diff-rules` files for future role delivery or T8 gate-candidate work. |
+| ROLE-RULES dogfooding readiness | `docs/current/role-rules-dogfooding-readiness.md` | T10 exit checklist, violation-log template, and next queue for starting Woowacourse mission dogfooding. |
 | Workflow string-gate parsing audit | `docs/current/workflow-string-gate-parsing-audit.md` | T4 audit of report-status parsing migration and retained string-based gate contracts. |
 | Ralph-loop status | `docs/current/ralph-loop-measurement-status.md` | Trigger, completion-integrity, cooldown, and default-off status. |
 | Role Checklist Relay status | `docs/current/multiagent-relay-trial-status.md` | Relay trial, subagent capability, and checklist-first status. |

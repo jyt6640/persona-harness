@@ -6,6 +6,19 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- ROLE-RULES T10 records the dogfooding readiness exit for starting the next
+  Woowacourse-style personal mission on PH. The new current status document
+  `docs/current/role-rules-dogfooding-readiness.md` summarizes accepted
+  T0-T8 gates, keeps T9 rail body de-dup as a separate non-blocking
+  measurement cycle, adds the install/init/bootstrap/requirements/split/ticket/
+  implementation/bearshell/reports/finish path checklist, and provides a
+  violation log template for HARDEN-3 prioritization of delivered-but-violated
+  rules. The audit update is bounded to readiness (`④=9`, `⑤=8`, overall about
+  `8.2`) and is not product-quality, effectiveness, token-saving, reliability,
+  or enforcement evidence. Runtime injection remains parked/default-off; no
+  code, rule, convention, schema, default, version, publish, tag, latest, or
+  next behavior changes are included.
+
 - ROLE-RULES T8 migrates the canonical diff-rules reference corpus into PH
   package surfaces without changing the preserved `references/diff-rules/**`
   originals. Delivery-only rows are converted to `.persona/rules/diff-rules/**`
