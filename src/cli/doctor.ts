@@ -4,6 +4,7 @@ import process from "node:process"
 import { fileURLToPath } from "node:url"
 
 import { isRecord } from "../config/jsonc.js"
+import { summarizeConventionPackDiagnostics } from "./convention-pack-diagnostics.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   detectCommandOutput,
@@ -11,6 +12,9 @@ import {
   type DoctorCommandFinder,
   type DoctorCommandRunner,
 } from "./doctor-command-detection.js"
+import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
+import type { RuleDiagnosticReportItem } from "../rules/rule-diagnostics-report.js"
+import type { ConventionPackDiagnostic } from "./convention-pack-diagnostics.js"
 
 type DoctorOptions = {
   readonly projectDir?: string
@@ -42,6 +46,12 @@ export type DoctorSummary = {
   readonly workflowPlan: "present" | "missing"
   readonly evidence: "present" | "missing"
   readonly rulesFileCount: number
+  readonly rulePackDiagnostics: "PASS" | "WARN"
+  readonly rulePackDiagnosticCount: number
+  readonly rulePackDiagnosticDetails: readonly RuleDiagnosticReportItem[]
+  readonly conventionPackDiagnostics: "PASS" | "WARN"
+  readonly conventionPackDiagnosticCount: number
+  readonly conventionPackDiagnosticDetails: readonly ConventionPackDiagnostic[]
   readonly staleFixtureFindings: readonly StaleFixtureFinding[]
 }
 
@@ -171,6 +181,8 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const env = options.env ?? process.env
   const rulesScan = scanStaleFixtureRules(projectDir)
+  const rulePackDiagnostics = summarizeRuleDiagnostics(projectDir)
+  const conventionPackDiagnostics = summarizeConventionPackDiagnostics(projectDir)
   const opencode = opencodeVersion(options)
   const runtimeFindings = opencode === "missing"
     ? ["OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified."]
@@ -191,8 +203,24 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     rules: pathStatus(projectDir, ".persona/rules"),
     workflowPlan: pathStatus(projectDir, ".persona/workflow/plan.md"),
     evidence: pathStatus(projectDir, ".persona/evidence"),
+    rulePackDiagnostics: rulePackDiagnostics.finding,
+    rulePackDiagnosticCount: rulePackDiagnostics.diagnosticCount,
+    rulePackDiagnosticDetails: rulePackDiagnostics.diagnostics,
+    conventionPackDiagnostics: conventionPackDiagnostics.finding,
+    conventionPackDiagnosticCount: conventionPackDiagnostics.diagnosticCount,
+    conventionPackDiagnosticDetails: conventionPackDiagnostics.diagnostics,
     ...rulesScan,
   }
+}
+
+function formatRulePackDiagnostic(item: RuleDiagnosticReportItem): string {
+  const field = item.diagnostic.field === undefined ? "-" : item.diagnostic.field
+  return `- ${item.path} [${item.diagnostic.code}/${field}]: ${item.diagnostic.message}`
+}
+
+function formatConventionPackDiagnostic(item: ConventionPackDiagnostic): string {
+  const field = item.field === undefined ? "-" : item.field
+  return `- ${item.path} [${item.code}/${field}]: ${item.message}`
 }
 
 export function formatDoctorSummary(summary: DoctorSummary): string {
@@ -206,6 +234,22 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
           ...summary.staleFixtureFindings.map(
             (finding) => `- ${finding.relativePath}: ${finding.matches.join(", ")}`,
           ),
+        ]
+  const rulePackDetails =
+    summary.rulePackDiagnosticDetails.length === 0
+      ? []
+      : [
+          "",
+          "Rule pack diagnostic details:",
+          ...summary.rulePackDiagnosticDetails.map(formatRulePackDiagnostic),
+        ]
+  const conventionPackDetails =
+    summary.conventionPackDiagnosticDetails.length === 0
+      ? []
+      : [
+          "",
+          "Convention pack diagnostic details:",
+          ...summary.conventionPackDiagnosticDetails.map(formatConventionPackDiagnostic),
         ]
   return [
     "Persona Harness Doctor",
@@ -228,6 +272,13 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `.persona/workflow/plan.md: ${summary.workflowPlan}`,
     `.persona/evidence: ${summary.evidence}`,
     `Rules surface: ${summary.rulesFileCount} files`,
+    "",
+    "Rule pack diagnostics:",
+    `Rules: ${summary.rulePackDiagnostics} (${summary.rulePackDiagnosticCount} diagnostics)`,
+    `Conventions: ${summary.conventionPackDiagnostics} (${summary.conventionPackDiagnosticCount} diagnostics)`,
+    "Pack diagnostics are report-only; they do not block existing workflow gates.",
+    ...rulePackDetails,
+    ...conventionPackDetails,
     `Stale fixture scan: ${staleStatus}`,
     ...staleDetails,
     "",

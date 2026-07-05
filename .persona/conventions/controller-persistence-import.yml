@@ -8,5 +8,6 @@ message: Controllers should not import Jakarta persistence types; keep entities 
 # persona-harness-high-precision: true
 # persona-harness-block-allowed: true
 # persona-harness-fix-path: move persistence/entity access behind a Service and expose DTOs at the Controller boundary.
+# persona-harness-step-id: fix-controller-persistence-import
 rule:
   pattern: import jakarta.persistence.$ENTITY;

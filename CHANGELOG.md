@@ -6,6 +6,13 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- ROLE-RULES T2 adds report-only rule/convention pack load diagnostics to
+  `ph doctor`. Rule diagnostics now include duplicate rule ids, invalid globs,
+  and unknown `roles:` values; convention diagnostics include duplicate ids,
+  invalid target globs or ast-grep patterns, unknown role metadata, and missing
+  remediation/step metadata. Diagnostics are surfaced for operator inspection
+  and do not block existing workflow gates or change rule/convention delivery.
+
 - ROLE-RULES T1 moved PersonaHarnessRule delivery-role metadata into rule
   frontmatter. Existing packaged rule files now declare `roles:` for
   `main`, `test-writer`, `implementer`, and `reviewer`; current known

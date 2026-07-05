@@ -129,6 +129,84 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain("Rules surface: 1 files")
     expect(result.stdout).toContain("Stale fixture scan: PASS")
   })
+
+  it("surfaces rule and convention pack diagnostics instead of silently skipping them", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".opencode"), { recursive: true })
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
+    writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
+    writeFile(
+      projectDir,
+      ".persona/rules/backend/one.md",
+      [
+        "---",
+        "id: duplicate.rule",
+        "source: backend-policy",
+        "domain: backend",
+        "topic: one",
+        "roles:",
+        "  - main",
+        "globs:",
+        "  - \"src/[broken.java\"",
+        "severity: should",
+        "enforcement: inject_only",
+        "---",
+        "",
+        "# One",
+        "",
+        "- one policy",
+        "",
+      ].join("\n"),
+    )
+    writeFile(
+      projectDir,
+      ".persona/rules/backend/two.md",
+      [
+        "---",
+        "id: duplicate.rule",
+        "source: backend-policy",
+        "domain: backend",
+        "topic: two",
+        "roles:",
+        "  - robot",
+        "globs:",
+        "  - \"**/*.java\"",
+        "severity: should",
+        "enforcement: inject_only",
+        "---",
+        "",
+        "# Two",
+        "",
+        "- two policy",
+        "",
+      ].join("\n"),
+    )
+    writeFile(
+      projectDir,
+      ".persona/conventions/custom.yml",
+      ["id: custom.missing", "language: Java", "message: Missing remediation.", "rule:", "  pattern:", ""].join("\n"),
+    )
+
+    const result = runPersonaCli(["doctor"], {
+      cwd: projectDir,
+      env: {
+        PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ latest: "0.6.0" }),
+      },
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Rule pack diagnostics:")
+    expect(result.stdout).toContain("Rules: WARN")
+    expect(result.stdout).toContain("Conventions: WARN")
+    expect(result.stdout).toContain("duplicate_rule_id")
+    expect(result.stdout).toContain("invalid_glob")
+    expect(result.stdout).toContain("invalid_enum_value")
+    expect(result.stdout).toContain("missing_required_field")
+    expect(result.stdout).toContain("invalid_pattern")
+    expect(result.stdout).toContain("Pack diagnostics are report-only; they do not block existing workflow gates.")
+  })
 })
 
 describe("ph review backend-shape", () => {

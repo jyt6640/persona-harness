@@ -291,6 +291,95 @@ enforcement: inject_only
     expect(controllerRule.diagnostics).toEqual([])
   })
 
+  it("records duplicate rule id diagnostics without blocking catalog loading", () => {
+    const projectDir = createProject()
+    const sharedFrontmatter = `
+id: duplicate.rule
+source: backend-policy
+domain: backend
+topic: duplicate-rule
+roles:
+  - main
+globs:
+  - "**/*.java"
+severity: should
+enforcement: inject_only
+`
+    writeRule(projectDir, "backend/first.md", sharedFrontmatter, ["first policy"])
+    writeRule(projectDir, "backend/second.md", sharedFrontmatter, ["second policy"])
+
+    const catalog = loadRuleCatalog(projectDir)
+
+    expect(findEntry(catalog, "backend/first.md").diagnostics).toContainEqual({
+      code: "duplicate_rule_id",
+      field: "id",
+      message: "Duplicate rule id 'duplicate.rule' also appears in backend/second.md.",
+    })
+    expect(findEntry(catalog, "backend/second.md").diagnostics).toContainEqual({
+      code: "duplicate_rule_id",
+      field: "id",
+      message: "Duplicate rule id 'duplicate.rule' also appears in backend/first.md.",
+    })
+  })
+
+  it("records invalid glob diagnostics without blocking catalog loading", () => {
+    const projectDir = createProject()
+    writeRule(
+      projectDir,
+      "backend/invalid-glob.md",
+      `
+id: backend.invalid-glob
+source: backend-policy
+domain: backend
+topic: invalid-glob
+roles:
+  - main
+globs:
+  - "src/[broken.java"
+severity: should
+enforcement: inject_only
+`,
+      ["invalid glob policy"],
+    )
+
+    const invalidRule = findEntry(loadRuleCatalog(projectDir), "backend/invalid-glob.md")
+
+    expect(invalidRule.diagnostics).toContainEqual({
+      code: "invalid_glob",
+      field: "globs",
+      message: "Invalid glob 'src/[broken.java': unsupported glob token '['.",
+    })
+  })
+
+  it("records unknown rule role references as diagnostics", () => {
+    const projectDir = createProject()
+    writeRule(
+      projectDir,
+      "backend/unknown-role.md",
+      `
+id: backend.unknown-role
+source: backend-policy
+domain: backend
+topic: unknown-role
+roles:
+  - robot
+globs:
+  - "**/*.java"
+severity: should
+enforcement: inject_only
+`,
+      ["unknown role policy"],
+    )
+
+    const invalidRule = findEntry(loadRuleCatalog(projectDir), "backend/unknown-role.md")
+
+    expect(invalidRule.diagnostics).toContainEqual({
+      code: "invalid_enum_value",
+      field: "roles",
+      message: "Unsupported frontmatter value for 'roles': robot.",
+    })
+  })
+
   it("records diagnostics for unsupported enum values without blocking rule loading", () => {
     const projectDir = createProject()
     writeRule(

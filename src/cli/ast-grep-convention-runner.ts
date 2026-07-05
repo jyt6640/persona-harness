@@ -1,9 +1,17 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { delimiter, join, relative, resolve } from "node:path"
 import { spawnSync } from "node:child_process"
 
-import type { ConventionDefinition, ConventionLevel } from "../config/convention-registry.js"
+import type { ConventionDefinition } from "../config/convention-registry.js"
 import { isRecord } from "../config/jsonc.js"
+import {
+  collectConventionFiles,
+  readBooleanMeta,
+  readLevel,
+  readPersonaMeta,
+  readYamlScalar,
+  slugFor,
+} from "./convention-pack.js"
 
 export type AstGrepConventionFinding = {
   readonly line: number
@@ -150,46 +158,6 @@ export function runAstGrepConvention(projectDir: string, definition: ConventionD
   return { findings, status: "checked" }
 }
 
-function collectConventionFiles(projectDir: string): readonly string[] {
-  const conventionsDir = join(projectDir, ".persona", "conventions")
-  if (!existsSync(conventionsDir)) {
-    return []
-  }
-  const files: string[] = []
-  for (const entry of readdirSync(conventionsDir)) {
-    const entryPath = join(conventionsDir, entry)
-    const stat = statSync(entryPath)
-    if (stat.isFile() && /\.(ya?ml)$/iu.test(entry)) {
-      files.push(entryPath)
-    }
-  }
-  return files.sort()
-}
-
-function readYamlScalar(source: string, key: string): string | undefined {
-  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
-  const match = new RegExp(`^${escapedKey}:\\s*['"]?([^'"\\r\\n#]+)`, "imu").exec(source)
-  return match?.[1]?.trim()
-}
-
-function readPersonaMeta(source: string, key: string): string | undefined {
-  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
-  const match = new RegExp(`^\\s*#\\s*persona-harness-${escapedKey}:\\s*(.+)$`, "imu").exec(source)
-  return match?.[1]?.trim()
-}
-
-function readLevel(value: string | undefined): ConventionLevel {
-  return value === "block" || value === "warn" || value === "report" ? value : "report"
-}
-
-function readBooleanMeta(value: string | undefined): boolean {
-  return value?.toLowerCase() === "true"
-}
-
-function slugFor(id: string): string {
-  return id.toLowerCase().replace(/[^a-z0-9]+/gu, "-").replace(/^-|-$/gu, "")
-}
-
 export function loadAstGrepConventionDefinitions(projectDir: string): readonly ConventionDefinition[] {
   return collectConventionFiles(projectDir).flatMap((filePath) => {
     const source = readFileSync(filePath, "utf8")
@@ -214,7 +182,7 @@ export function loadAstGrepConventionDefinitions(projectDir: string): readonly C
         ? "java-spring-service-architecture"
         : undefined,
       scope: readPersonaMeta(source, "scope") === "tree" ? "tree" : "single-file",
-      stepId: `fix-${slug}`,
+      stepId: readPersonaMeta(source, "step-id") ?? `fix-${slug}`,
       targetFileSuffixes: targetSuffix === undefined ? undefined : [targetSuffix],
       writeGuard: false,
     }]

@@ -1,7 +1,11 @@
+import { invalidGlobReason } from "./rule-glob.js"
+
 export type RuleFrontmatterDiagnosticCode =
   | "missing_required_field"
   | "invalid_enum_value"
   | "malformed_frontmatter"
+  | "duplicate_rule_id"
+  | "invalid_glob"
 
 export type RuleFrontmatterDiagnostic = {
   readonly code: RuleFrontmatterDiagnosticCode
@@ -52,6 +56,22 @@ function invalidEnumValue(field: string, value: string): RuleFrontmatterDiagnost
   }
 }
 
+export function duplicateRuleId(ruleId: string, duplicatePath: string): RuleFrontmatterDiagnostic {
+  return {
+    code: "duplicate_rule_id",
+    field: "id",
+    message: `Duplicate rule id '${ruleId}' also appears in ${duplicatePath}.`,
+  }
+}
+
+function invalidGlobValue(value: string, reason: string): RuleFrontmatterDiagnostic {
+  return {
+    code: "invalid_glob",
+    field: "globs",
+    message: `Invalid glob '${value}': ${reason}.`,
+  }
+}
+
 function hasValue(value: string | undefined): value is string {
   return value !== undefined && value !== ""
 }
@@ -91,6 +111,12 @@ export function validateRuleFrontmatter(
   for (const role of input.roles) {
     if (!isKnownValue(role, ROLE_VALUES)) {
       diagnostics.push(invalidEnumValue("roles", role))
+    }
+  }
+  for (const glob of input.globs) {
+    const reason = invalidGlobReason(glob)
+    if (reason !== undefined) {
+      diagnostics.push(invalidGlobValue(glob, reason))
     }
   }
 

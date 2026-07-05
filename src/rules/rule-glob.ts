@@ -2,6 +2,23 @@ export function normalizePath(path: string): string {
   return path.replace(/\\/g, "/")
 }
 
+const UNSUPPORTED_GLOB_META = new Set(["[", "]", "{", "}"])
+
+export function invalidGlobReason(glob: string): string | undefined {
+  if (glob.trim() === "") {
+    return "glob must not be empty"
+  }
+  if (/[\r\n]/u.test(glob)) {
+    return "glob must stay on one line"
+  }
+  for (const char of glob) {
+    if (UNSUPPORTED_GLOB_META.has(char)) {
+      return `unsupported glob token '${char}'`
+    }
+  }
+  return undefined
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.+^${}()|[\]\\]/g, "\\$&")
 }

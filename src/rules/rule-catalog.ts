@@ -10,7 +10,7 @@ import {
   type Phase0Scenario,
   type RuleMetadata,
 } from "./rule-frontmatter.js"
-import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
+import { duplicateRuleId, type RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
 
 export type { Phase0Scenario } from "./rule-frontmatter.js"
 
@@ -20,6 +20,29 @@ export type RuleCatalogEntry = {
   readonly metadata: RuleMetadata
   readonly diagnostics: readonly RuleFrontmatterDiagnostic[]
   readonly policies: readonly string[]
+}
+
+function addDuplicateRuleIdDiagnostics(entries: readonly RuleCatalogEntry[]): RuleCatalogEntry[] {
+  const pathsById = new Map<string, string[]>()
+  for (const entry of entries) {
+    const paths = pathsById.get(entry.metadata.id) ?? []
+    paths.push(entry.path)
+    pathsById.set(entry.metadata.id, paths)
+  }
+
+  return entries.map((entry) => {
+    const duplicatePaths = (pathsById.get(entry.metadata.id) ?? []).filter((path) => path !== entry.path)
+    if (duplicatePaths.length === 0) {
+      return entry
+    }
+    return {
+      ...entry,
+      diagnostics: [
+        ...entry.diagnostics,
+        ...duplicatePaths.map((duplicatePath) => duplicateRuleId(entry.metadata.id, duplicatePath)),
+      ],
+    }
+  })
 }
 
 function listMarkdownFiles(directory: string): string[] {
@@ -39,7 +62,7 @@ export function loadRuleCatalog(projectDir: string): RuleCatalogEntry[] {
     return []
   }
 
-  return listMarkdownFiles(rulesDir)
+  const entries = listMarkdownFiles(rulesDir)
     .sort()
     .map((absolutePath) => {
       const rulePath = normalizePath(relative(rulesDir, absolutePath).split(sep).join("/"))
@@ -53,6 +76,7 @@ export function loadRuleCatalog(projectDir: string): RuleCatalogEntry[] {
         policies: extractBulletPolicies(markdown),
       }
     })
+  return addDuplicateRuleIdDiagnostics(entries)
 }
 
 function syntheticTargetForRole(fileRole: FileRole): string {
