@@ -26,21 +26,24 @@ function structuredFix(overrides: Partial<StructuredWorkflowRequiredFix> = {}): 
   }
 }
 
-describe("workflow failed finish summary", () => {
-  it("derives blocker summary from structured fix fields instead of rendered detail text", () => {
+describe("workflow failed finish output", () => {
+  it("renders required fixes without the failed-finish Summary header", () => {
     const result = failedRunnerOutput("finish", "implement", [structuredFix()])
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain("Summary:")
-    expect(result.stderr).toContain("- closure blockers: 1")
-    expect(result.stderr).toContain("- first blocker: review-report-missing")
-    expect(result.stderr).toContain("- first next action: fill .persona/workflow/review-report.md after review/manual QA")
+    expect(result.stderr).toContain("Workflow finish failed: implement")
+    expect(result.stderr).not.toContain("Summary:")
+    expect(result.stderr).not.toContain("- closure blockers: 1")
+    expect(result.stderr).not.toContain("- first blocker: review-report-missing")
+    expect(result.stderr).not.toContain("- first next action: fill .persona/workflow/review-report.md after review/manual QA")
     expect(result.stderr).not.toContain("- first blocker: rendered-text-should-not-drive-summary")
     expect(result.stderr).toContain("Required fixes:")
+    expect(result.stderr).toContain("- Closure blocker: rendered-text-should-not-drive-summary")
     expect(result.stderr).toContain("Closure blocker: rendered-text-should-not-drive-summary")
+    expect(result.stderr).toContain("Implementation report is filled but review report is template.")
   })
 
-  it("does not parse plain string fixes as closure blockers", () => {
+  it("renders plain string fixes without parsing them as closure summaries", () => {
     const result = failedRunnerOutput("finish", "implement", [
       [
         "Closure blocker: fake-rendered-blocker",
@@ -50,10 +53,13 @@ describe("workflow failed finish summary", () => {
     ])
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain("- required fixes: 1")
-    expect(result.stderr).toContain("- first required fix: Closure blocker: fake-rendered-blocker")
-    expect(result.stderr).toContain("- first next action: see first required fix below")
+    expect(result.stderr).not.toContain("Summary:")
+    expect(result.stderr).not.toContain("- required fixes: 1")
+    expect(result.stderr).not.toContain("- first required fix: Closure blocker: fake-rendered-blocker")
+    expect(result.stderr).not.toContain("- first next action: see first required fix below")
     expect(result.stderr).not.toContain("- closure blockers: 1")
     expect(result.stderr).not.toContain("- first blocker: fake-rendered-blocker")
+    expect(result.stderr).toContain("Required fixes:")
+    expect(result.stderr).toContain("- Closure blocker: fake-rendered-blocker")
   })
 })

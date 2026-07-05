@@ -305,8 +305,10 @@ describe("ph workflow loop", () => {
       const unmappedSection = result.stderr.slice(result.stderr.indexOf("Closure blocker: architecture-custom-unmapped-loop"))
 
       expect(result.status).toBe(1)
-      expect(result.stderr).toContain("- first blocker: architecture-custom-unmapped-loop")
-      expect(result.stderr).toContain("first next action: escalate to Persona Harness configuration/maintainer review")
+      expect(result.stderr).not.toContain("Summary:")
+      expect(result.stderr).not.toContain("- first blocker: architecture-custom-unmapped-loop")
+      expect(result.stderr).not.toContain("first next action: escalate to Persona Harness configuration/maintainer review")
+      expect(result.stderr).toContain("Required fixes:")
       expect(unmappedSection).toContain("blocker id has no closure step mapping")
       expect(unmappedSection).toContain("PH bug or unregistered convention")
       expect(unmappedSection).toContain("escalate to Persona Harness configuration/maintainer review")

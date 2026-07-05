@@ -6,6 +6,14 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Stable-cycle S-3 turns off the failed-finish human `Summary:` header after
+  the accepted S-2 rail-entry regate failed non-inferiority. Failed
+  `ph workflow finish implement` human stderr now renders `Required fixes:`
+  with detailed blockers directly, while the machine-readable
+  `workflow closure next --json` path remains the supported structured next-step
+  surface. This is measurement-driven removal of a shipped UX affordance before
+  stable decision, not product-efficacy, token, app-quality, reliability, or
+  stable-prep evidence.
 - Stable-cycle S-2 regated the shipped failed-finish `Summary:` header against
   the stabilized `gate-fixture.2` rail-entry fixture. The real n=10 paired
   archive

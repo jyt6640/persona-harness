@@ -419,3 +419,40 @@ JSON schema fields, and it does not support product-efficacy,
 token/provider-token saving, app-quality, broad reliability, closure-guarantee,
 autonomous-completion, deterministic enforcement, generated-app certification,
 automatic completion, or reliable delegation claims.
+
+## Stable Cycle S-3 Summary-Header OFF/Revert
+
+Status: implemented product blocker resolution before stable decision. S-3
+turns off the failed-finish human `Summary:` header that S-2 found
+non-inferior=false.
+
+Basis:
+
+- accepted S-2 result: control/current rail-entry `10/10`;
+- accepted S-2 result: candidate Summary-header rail-entry `9/10`;
+- paired delta: `-10pp`;
+- preregistered non-inferiority criterion: false;
+- accepted S-2 decision input: `FAIL_RECOMMEND_HEADER_OFF_FOR_S3`.
+
+S-3 behavior:
+
+- failed `ph workflow finish implement` human stderr no longer emits the
+  `Summary:` header before `Required fixes:`;
+- detailed `Required fixes:` blocker diagnostics remain visible;
+- `workflow closure next --json` remains the supported machine-readable
+  next-step path and is not replaced by human-output parsing;
+- H1-1 unmapped blocker behavior, H1-4
+  `convention-toolchain-missing` behavior, H1-2 mechanical finish reachability,
+  H1-3 blocker order/depth contract, and H1-5 persistence safety surfaces remain
+  in the verification set.
+
+Stable decision input: with the Summary header turned off, local-current smoke
+and publish-readiness QA should decide whether stable `0.6.0` can proceed or
+whether another prerelease is needed because of an observed behavior regression.
+S-3 itself does not prepare, publish, tag, or move a stable release.
+
+Boundary: S-3 is measurement-driven removal of a shipped UX affordance. It is
+not product-efficacy, token/provider-token saving, app-quality, broad
+reliability, closure-guarantee, autonomous-completion, deterministic
+enforcement, generated-app certification, automatic completion, or reliable
+delegation evidence.

@@ -10,44 +10,8 @@ export type WorkflowGuardKind = "implement" | "final"
 export type WorkflowRunnerKind = "implement"
 export type WorkflowRunnerAction = "implement" | "start" | "finish"
 
-function firstNonEmptyLine(text: string): string {
-  return text.split(/\r?\n/).map((line) => line.trim()).find((line) => line.length > 0) ?? "see required fix details below"
-}
-
 function requiredFixDetail(fix: WorkflowRequiredFix): string {
   return isStructuredWorkflowRequiredFix(fix) ? fix.detail : fix
-}
-
-function firstRequiredFixLine(fix: WorkflowRequiredFix): string {
-  return isStructuredWorkflowRequiredFix(fix) ? `Closure blocker: ${fix.blockerId}` : firstNonEmptyLine(fix)
-}
-
-function firstNextAction(fix: WorkflowRequiredFix | undefined): string | null {
-  return fix !== undefined && isStructuredWorkflowRequiredFix(fix) ? fix.nextAction : null
-}
-
-function failedRunnerSummaryLines(reasons: readonly WorkflowRequiredFix[]): readonly string[] {
-  if (reasons.length === 0) {
-    return []
-  }
-
-  const firstReason = reasons[0]
-  if (firstReason === undefined) {
-    return []
-  }
-  const closureBlockers = reasons.filter(isStructuredWorkflowRequiredFix).map((fix) => fix.blockerId)
-  const firstBlocker = isStructuredWorkflowRequiredFix(firstReason) ? firstReason.blockerId : closureBlockers[0]
-  const firstAction = firstNextAction(firstReason)
-
-  return [
-    "Summary:",
-    closureBlockers.length > 0 ? `- closure blockers: ${closureBlockers.length}` : `- required fixes: ${reasons.length}`,
-    firstBlocker !== undefined ? `- first blocker: ${firstBlocker}` : `- first required fix: ${firstRequiredFixLine(firstReason)}`,
-    firstAction !== null ? `- first next action: ${firstAction}` : "- first next action: see first required fix below",
-    "- full blocker details follow for diagnostics and compatibility.",
-    "- machine-readable next step: `npx ph workflow closure next --json`.",
-    "",
-  ]
 }
 
 export function uninitializedHarnessOutput(): CliRunResult {
@@ -100,7 +64,6 @@ export function failedRunnerOutput(
     stderr: [
       `Workflow ${action} failed: ${runnerKind}`,
       "",
-      ...failedRunnerSummaryLines(reasons),
       "Required fixes:",
       ...reasons.map((reason) => `- ${requiredFixDetail(reason)}`),
       "",
