@@ -1,5 +1,11 @@
 # Persona Harness 인수 테스트 평가표 (0.5.0-rc.2 registry 기준)
 
+> **Historical (0.5.0-rc.2).** This checklist is retained as a historical
+> 0.5.0-rc.2 registry acceptance checklist and is not updated in place. For the
+> current stable release capsule, see [`../releases/v0.6.0/`](../releases/v0.6.0/README.md).
+> For current user entry points, see [`../START-HERE.md`](../START-HERE.md) and
+> [`../QUICK-DEMO.md`](../QUICK-DEMO.md).
+
 작성일: 2026-07-02. 기본 registry 대상: `persona-harness@next`
 (`0.5.0-rc.2`, gitHead `64696dce6daf5e4501609648f3ceb9acb830db87`).
 `0.5.0-rc.2` 이후 아직 publish되지 않은 surface는 local-current tarball

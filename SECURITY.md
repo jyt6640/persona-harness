@@ -8,6 +8,18 @@ and output size, but commands still execute with your permissions. Treat any
 project profile, policy, or rule file you install as code you are choosing to
 run.
 
+## Trust boundaries
+
+- PH runs locally and may read and write `.persona/` files.
+- PH runs verification commands only when you invoke them.
+- `ph bearshell` runs commands with **your** permissions. It is **not a
+  sandbox** — it bounds runtime and output size only.
+- Run PH in projects you trust, do not run `ph bearshell` on untrusted
+  commands, and keep secrets out of evidence files.
+
+PH does not claim sandboxing, remote isolation, safety on malicious projects, or
+any secret-protection guarantee.
+
 ## Supported versions
 
 Only the current published `latest` and `next` npm channels receive security

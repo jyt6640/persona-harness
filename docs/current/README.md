@@ -1,5 +1,11 @@
 # Current Docs Pointer Index
 
+> **New to Persona Harness? Do not start here.** Start with
+> [`../../README.md`](../../README.md), [`../START-HERE.md`](../START-HERE.md),
+> [`../QUICK-DEMO.md`](../QUICK-DEMO.md), and
+> [`../MEASURED-CLAIMS.md`](../MEASURED-CLAIMS.md). Not every file under
+> `current/` is a current product claim.
+
 `docs/current/` is the working area for active decisions, status files, release
 operations, and maintenance-check inputs. Durable release facts should now be
 recorded first under [`docs/releases/`](../releases/README.md).

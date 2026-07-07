@@ -27,18 +27,17 @@
 > The runtime injection effect has been measured and is **negative in the accepted 10-pair local-current OpenCode fixture set**. See [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json). Runtime guidance is therefore default-off and opt-in only; this is a scoped measurement, not a universal product-efficacy claim.
 > What PH *does* claim — and has evidence for — is narrower: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
 
+**New here?** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
+
 ## Measured Behavior
 
-Unlike most agent-harness projects, PH publishes what it has actually measured — including negatives.
+Unlike most agent-harness projects, PH publishes what it has actually measured — including negatives. A few highlights:
 
-| Scenario | Result | Evidence |
-| :--- | :--- | :--- |
-| **Forged TDD evidence** — a hand-written `red-forged.json` planted before `workflow finish` | `finish` exits **1**; forged file ignored | P0 real-Gradle run archive |
-| **Green-only completion** (tests + implementation together, no red-first) — 5 repetitions each | TDD OFF: allowed **5/5** · TDD ON: blocked **5/5** | P1 completion-integrity A/B |
-| **Compile error passed off as "red"** | `workflow test` exits **1**, no evidence written | P0 real-Gradle run archive |
-| Runtime injection PH OFF/ON app-generation — 10 paired OpenCode runs | PH ON succeeded **10/10**, PH OFF succeeded **10/10**, but PH ON increased provider-token total, read chars, tool calls, and elapsed time in all 10 pairs | accepted local-current A/B archive |
+- **Forged TDD evidence** planted before `workflow finish` → `finish` exits **1**, the forged file is ignored.
+- **Green-only completion** with the TDD rail on → blocked **5/5** (vs allowed 5/5 with it off).
+- **Runtime injection**, 10 paired OpenCode runs → equal success (10/10 both), but PH ON cost more on every pair → kept **default-off**.
 
-These are completion-integrity measurements on bounded local fixtures. They are *not* token-saving, app-quality, or product-efficacy claims.
+These are completion-integrity measurements on bounded local fixtures — *not* token-saving, app-quality, or product-efficacy claims. Full boundary, evidence, and forbidden claims: **[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)**.
 
 ## TL;DR
 
@@ -294,10 +293,29 @@ If finish fails, do not claim completion. Fix the reported blocker first.
 
 ## Docs
 
-- [Changelog](CHANGELOG.md)
-- [Release notes](docs/current/release/README.md)
-- [Acceptance test checklist](docs/current/acceptance-test-checklist.md)
+**Start here:**
+
+- [Start Here](docs/START-HERE.md) — a reading map by goal.
+- [Quick Demo](docs/QUICK-DEMO.md) — see the gate block a completion in minutes.
+- [Measured Claims](docs/MEASURED-CLAIMS.md) — what PH can and cannot claim.
+
+**For users:**
+
+- [Quick Start](#quick-start--javaspring-backend) (above)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
+- [SECURITY](SECURITY.md)
+
+**For contributors:**
+
+- [CONTRIBUTING](CONTRIBUTING.md)
+- [ROADMAP](ROADMAP.md)
+
+**For release and measurement review:**
+
+- [Release capsule (v0.6.0)](docs/releases/v0.6.0/README.md)
+- [Package/version index](docs/releases/package-index.md)
+- [docs/current working area](docs/current/README.md)
+- [Changelog](CHANGELOG.md)
 
 ## Contributing
 

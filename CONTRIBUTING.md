@@ -4,6 +4,19 @@ Thanks for looking at Persona Harness (PH). This is a small, evidence-first
 project. Before you write code, please read this — the contribution rules here
 are unusual on purpose, and they are the fastest way to get a PR merged.
 
+## Good first contributions
+
+You do not need to understand the whole project to help. Low-risk, welcome:
+
+- Fix confusing docs or add real terminal-output examples.
+- Improve the [Quick Demo](docs/QUICK-DEMO.md) or troubleshooting notes.
+- Reproduce and report an install issue or a confusing blocker message.
+- Translate a short doc.
+- Send external-tester feedback as an issue.
+
+Anything that changes runtime, gates, TDD evidence, role relay, or a product
+claim needs measurement — see below.
+
 ## The one rule that makes this project different
 
 **Every claim must be earned by measurement. Broader claims are rejected until
@@ -35,12 +48,11 @@ forever" — it becomes a removal or opt-in-downgrade candidate.
 
 ### Words you may not use without proof
 
-| Don't write | Write instead | Proof required |
-| --- | --- | --- |
-| "saves tokens" | "in fixture X over N runs, ON reduced provider tokens by Y% at equal pass rate" | repeated OFF/ON A/B with provider token breakdown, variance, p95 |
-| "guarantees quality" | "blocks this defined violation deterministically" | fixture + adversarial test + closure blocker + external smoke |
-| "full TDD" | "opt-in red→green evidence gate" | PH-run Gradle/JUnit red + green, same ticket/test id, forged rejected |
-| "improves reliability" | "smoke/QA PASS on this matrix" | named OS/Node/npm matrix, known limits |
+The canonical list of forbidden claims and their required proof lives in
+[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md#forbidden-claims). Do not
+restate it here — link to it. In short: no token-saving, app-quality, full-TDD,
+broad-reliability, or orchestration claims without the measurement that earns
+them.
 
 When in doubt, prefer a narrower true statement over a broader attractive one.
 
