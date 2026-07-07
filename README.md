@@ -15,37 +15,30 @@
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
+**[Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)**
+
 </div>
 
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-> AI agents love to say "Done!" — Persona Harness makes them prove it. It is a local CLI completion gate that blocks completion claims until required reports, PH-generated evidence, and real test results exist on disk. OpenCode runtime guidance is optional preview behavior, not the product center.
+> AI agents love to say "Done!" — Persona Harness makes them prove it. It is a local CLI completion gate that blocks completion claims until required reports, PH-generated evidence, and real test results exist on disk.
 
 > [!IMPORTANT]
-> **Project status: gate-first measured release.**
-> Stable package: `persona-harness@latest=0.6.0`. Published prerelease channel remains `next=0.6.0-rc.4`; the legacy `alpha` dist-tag has been retired after stable. Explicit historical alpha versions such as `persona-harness@0.3.9-alpha.8` remain installable by version.
-> The runtime injection effect has been measured and is **negative in the accepted 10-pair local-current OpenCode fixture set**. See [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json). Runtime guidance is therefore default-off and opt-in only; this is a scoped measurement, not a universal product-efficacy claim.
-> What PH *does* claim — and has evidence for — is narrower: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
-
-**New here?** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
+> **Alpha, gate-first, measured.** Stable: `persona-harness@latest=0.6.0` (`next=0.6.0-rc.4`). Runtime injection was measured **negative** in the accepted 10-pair fixture set, so runtime guidance is **default-off / opt-in** — not the product center. See [`injection-value-status.json`](docs/current/injection-value-status.json). What PH claims is narrow: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
 
 ## Measured Behavior
 
-Unlike most agent-harness projects, PH publishes what it has actually measured — including negatives. A few highlights:
+Unlike most agent-harness projects, PH publishes what it has actually measured — including negatives.
 
-- **Forged TDD evidence** planted before `workflow finish` → `finish` exits **1**, the forged file is ignored.
-- **Green-only completion** with the TDD rail on → blocked **5/5** (vs allowed 5/5 with it off).
+- **Forged TDD evidence** planted before `workflow finish` → `finish` exits **1**, forged file ignored.
+- **Green-only completion** with the TDD rail on → blocked **5/5** (vs allowed 5/5 off).
 - **Runtime injection**, 10 paired OpenCode runs → equal success (10/10 both), but PH ON cost more on every pair → kept **default-off**.
 
-These are completion-integrity measurements on bounded local fixtures — *not* token-saving, app-quality, or product-efficacy claims. Full boundary, evidence, and forbidden claims: **[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)**.
+Completion-integrity measurements on bounded local fixtures — *not* token-saving, app-quality, or product-efficacy claims. Full boundary and evidence: **[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)**.
 
-## TL;DR
+## What it is
 
-> Q. What is it?
-
-A workflow/evidence CLI + completion guard for Java/Spring backend work done by AI agents. It ships as a local CLI (`ph`) with an OpenCode plugin for optional runtime guidance and measurement hooks.
-
-> Q. What does it actually do?
+A workflow + evidence CLI (`ph`) with an optional OpenCode plugin, for Java/Spring backend work done by AI agents. It:
 
 - turns a project idea or README into implementation tickets;
 - keeps the agent on a repeatable backend workflow;
@@ -53,17 +46,11 @@ A workflow/evidence CLI + completion guard for Java/Spring backend work done by 
 - records local evidence of what was read, run, and finished;
 - **blocks completion when required reports or evidence are missing.**
 
-> Q. Does it guarantee code quality, save tokens, or replace a linter?
-
-No. It is not a code-quality guarantee, token-saving product, broad linter, or proof that generated apps are production-ready. Every claim broader than the completion gate must be earned by measurement first — that rule is part of the project.
+It is **not** a code-quality guarantee, a token-saving product, a broad linter, or proof that generated apps are production-ready. Every claim broader than the completion gate must be earned by measurement first — see [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 
 ## Install
 
-Requirements:
-
-- Node.js 20+, npm
-- Java 21+, Gradle
-- OpenCode CLI with a configured model/provider
+Requires Node.js 20+, Java 21+ / Gradle, and the OpenCode CLI with a configured provider.
 
 ```bash
 # OpenCode
@@ -72,257 +59,79 @@ opencode auth login
 
 # Persona Harness
 npm install -D persona-harness
-npx ph --help
-npx ph init
-npx ph doctor
+npx ph --help && npx ph doctor
 ```
 
-## Quick Start — Java/Spring Backend
+## Quick Start
 
-Use a clean project directory (not the Persona Harness repository itself).
+Use a clean project directory (not the Persona Harness repo itself).
 
 ```bash
-mkdir -p /tmp/persona-harness-demo && cd /tmp/persona-harness-demo
-npm init -y
+mkdir -p /tmp/ph-demo && cd /tmp/ph-demo && npm init -y
 npm install -D persona-harness
-```
 
-Create a short `README.md` describing the app and constraints:
-
-```bash
-cat > README.md <<'EOF'
-# Todo API
-
-Build a Java 21 Spring Boot REST API with Gradle.
-
-## Requirements
-- Users can create todos.
-- Users can list todos.
-- Users can mark a todo completed.
-- Missing todos return an appropriate error response.
-
-## Technical Constraints
-- Java 21, Spring Boot 3, Gradle only, REST API only
-- Start with in-memory persistence if needed.
-- Controllers delegate to application services.
-- Repository interfaces live in domain; implementations in infrastructure.
-- Application services must not own storage state or id sequences.
-EOF
-```
-
-Initialize:
-
-```bash
-npx ph init
-npx ph bootstrap backend
+npx ph init                 # minimal integration files only
+npx ph bootstrap backend    # AGENTS.md, profile, plan, report templates
 npx ph workflow check
 ```
 
-`ph init` creates only minimal integration files (`.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore` entries). `ph bootstrap backend` prepares the full backend workflow: `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlays, an accepted plan, report templates, and OpenCode configuration. Fresh setup is gate-first: model-facing runtime guidance is off unless explicitly enabled.
-
-Then ask the agent, in OpenCode, with a short prompt:
-
-```text
-Read README.md and implement it.
-```
-
-The agent should run the rail itself:
-
-```text
-npx ph workflow implement
-npx ph bearshell ...
-npx ph plan --report-filled implementation
-npx ph plan --report-filled review
-npx ph workflow finish implement
-```
+Then, in OpenCode, ask the agent to implement your `README.md`. It should drive the rail itself and end with `npx ph workflow finish implement`.
 
 > [!NOTE]
-> If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. That failure is the product working, not a bug.
+> If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. **That failure is the product working, not a bug.**
 
-## Start From An Idea Instead Of A README
-
-Tell the agent the idea:
-
-```text
-I want to build a todo web service.
-```
-
-The agent should draft requirements first, not start coding:
-
-```text
-npx ph workflow draft --stdin
-```
-
-Review `.persona/workflow/requirements/` (`backlog.md`, `questions.md`, `assumptions.md`), then say `Proceed.` The agent runs:
-
-```text
-npx ph workflow approve requirements
-npx ph workflow split .persona/workflow/requirements/backlog.md
-npx ph workflow next
-npx ph workflow implement
-```
-
-## Work With Multiple Tickets
-
-```bash
-npx ph workflow split README.md
-npx ph workflow next
-# ... implement & review ...
-npx ph workflow archive <ticket-id>
-npx ph workflow next
-```
-
-The workflow ledger lives under `.persona/workflow/`: active work in `work/`, completed history in `history/`, requirement sources in `requirements/`.
+Full walkthrough with a sample Todo API and the idea-first flow: **[Quick Demo](docs/QUICK-DEMO.md)**.
 
 ## TDD Rail (opt-in)
 
-Enable both settings:
+Enable both settings in `.persona/harness.jsonc`:
 
 ```json
-{
-  "enforce": {
-    "executeVerification": true,
-    "tdd": true
-  }
-}
+{ "enforce": { "executeVerification": true, "tdd": true } }
 ```
 
-When enabled, `ph workflow test` records red evidence **only from PH-run Gradle/JUnit failures** — agent-reported evidence is never accepted. Later `workflow check` / `archive` / `finish` record green evidence for the same ticket/test id.
+`ph workflow test` then records red evidence **only from PH-run Gradle/JUnit failures** — agent-reported evidence is never accepted. `workflow check` / `archive` / `finish` record green evidence for the same ticket/test id. It is a red-first completion gate; it does not scaffold tests, prove test sufficiency, run coverage/mutation, or certify app quality.
 
-This is a red-first completion gate. It does not scaffold tests, prove test sufficiency, run coverage or mutation testing, or certify application quality.
-
-## Useful Commands
+## Commands
 
 ```bash
-# Setup
-npx ph init && npx ph bootstrap backend && npx ph doctor
-
-# Workflow
-npx ph workflow check
-npx ph workflow implement
-npx ph workflow finish implement
-npx ph workflow archive <ticket-id>
-npx ph workflow loop --dry-run --json  # explicit capped blocker-loop preview; no default hook
-
-# Bounded command execution
-npx ph bearshell --shell 'gradle test'
-
-# Evidence and reports
-npx ph evidence summary
-npx ph evidence metrics --json
-npx ph evidence ab-report --json
-npx ph evidence pminus-report --json
+npx ph workflow check | implement | finish implement | archive <ticket-id>
+npx ph workflow split README.md && npx ph workflow next   # multi-ticket
+npx ph bearshell --shell 'gradle test'                    # bounded execution
+npx ph evidence summary | metrics --json | ab-report --json | pminus-report --json
 npx ph review backend-shape
-
-# Explicit local A/B evidence recording
-npx ph evidence ab-run --scenario demo --condition baseline -- ./gradlew test
 ```
 
-Stable builds also include `npx ph evidence pminus-status --json` for read-only surface decision summaries.
+Run `npx ph --help` for the full list. The workflow ledger lives under `.persona/workflow/` (`work/`, `history/`, `requirements/`).
 
-## Optional Integrations
-
-The default backend bootstrap registers the remote developer MCP tools `grep_app` and `context7`.
+## Optional integrations (opt-in previews)
 
 ```bash
-npx ph bootstrap backend --codegraph-preview   # CodeGraph, opt-in
-npx ph bootstrap backend --lsp-preview         # LSP, opt-in
-npx ph bootstrap backend --runtime-injection-preview  # parked opt-in model-facing PH guidance
-npx ph bootstrap backend --no-developer-mcp    # disable developer MCP
+npx ph bootstrap backend --codegraph-preview          # CodeGraph
+npx ph bootstrap backend --lsp-preview                # Java LSP
+npx ph bootstrap backend --runtime-injection-preview  # parked model-facing guidance
+npx ph bootstrap backend --no-developer-mcp           # disable default developer MCP
 ```
 
-> [!NOTE]
-> Both wrappers are preview surfaces. If required external tools are missing, they report an **unavailable** status instead of faking successful results.
-> Runtime injection remains an explicit preview. It is parked after the Stage 9 banner-only H1 measurement and should not be treated as the recommended/default path.
+Preview wrappers report an **unavailable** status when their external tools are missing, instead of faking success. Runtime injection is parked (measured negative) and is not the recommended path.
 
-## What Evidence Means
+## Boundaries & safety
 
-`.persona/evidence` stores local traces: file reads, optional injected workflow context, command activity, TDD records, and A/B measurements.
-
-Evidence answers one question: **"Did the agent see and follow the expected rail?"**
-
-Evidence does **not** prove: generated app quality, token savings, product efficacy, full TDD coverage, broad reliability, or successful closure in all cases.
-
-## Recommended Backend Shape
-
-Persona Harness steers Java/Spring projects toward:
-
-- Gradle-first Java/Spring backend;
-- `presentation` / `application` / `domain` / `infrastructure` / `global` package boundaries;
-- controllers delegating to application services;
-- application services orchestrating use cases without owning storage state or id sequences;
-- repository interfaces in `domain`, implementations in `infrastructure`;
-- domain objects with behavior;
-- explicit request/response DTO boundaries.
-
-These are steering targets and review cues, not quality guarantees.
-
-## Troubleshooting
-
-```bash
-npm view persona-harness dist-tags --json
-opencode --version
-```
-
-If `ph workflow check` reports warnings, inspect the listed blockers. Before implementation, template-report warnings are normal. After implementation, common blockers are missing evidence, unfilled reports, or verification that bypassed the rail.
-
-If the agent ignores the workflow, paste a stricter prompt:
-
-```text
-Read README.md, .persona/project-profile.jsonc, .persona/policies, and .persona/workflow/plan.md.
-Before implementing, run `npx ph workflow implement`.
-Use `npx ph bearshell` for verification commands where possible.
-After implementation, fill `.persona/workflow/implementation-report.md` and `.persona/workflow/review-report.md`.
-Run `npx ph plan --report-filled implementation`, `npx ph plan --report-filled review`, and `npx ph workflow finish implement`.
-If finish fails, do not claim completion. Fix the reported blocker first.
-```
-
-## What Persona Harness Does Not Promise
-
-- generated application quality certification;
-- token savings;
-- product-efficacy or navigation-benefit proof;
-- Clean Code guarantees;
-- broad AST/linter enforcement;
-- full TDD framework, test scaffolding, coverage, or mutation testing;
-- frontend, infrastructure, or desktop workflow productization;
-- a complete workflow without OpenCode.
+Evidence answers one question — *"Did the agent see and follow the expected rail?"* — and nothing more. PH does **not** promise app-quality certification, token savings, Clean Code guarantees, broad AST/linter enforcement, a full TDD framework, closure guarantees, or a complete workflow without OpenCode. The canonical list is in [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 
 > [!WARNING]
-> `ph bearshell` is not a sandbox. It limits runtime and output size, but commands still run on your machine.
+> `ph bearshell` is **not a sandbox**. It limits runtime and output size, but commands still run on your machine with your permissions. See [SECURITY](SECURITY.md).
 
 ## Docs
 
-**Start here:**
-
-- [Start Here](docs/START-HERE.md) — a reading map by goal.
-- [Quick Demo](docs/QUICK-DEMO.md) — see the gate block a completion in minutes.
-- [Measured Claims](docs/MEASURED-CLAIMS.md) — what PH can and cannot claim.
-
-**For users:**
-
-- [Quick Start](#quick-start--javaspring-backend) (above)
-- [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
-- [SECURITY](SECURITY.md)
-
-**For contributors:**
-
-- [CONTRIBUTING](CONTRIBUTING.md)
-- [ROADMAP](ROADMAP.md)
-
-**For release and measurement review:**
-
-- [Release capsule (v0.6.0)](docs/releases/v0.6.0/README.md)
-- [Package/version index](docs/releases/package-index.md)
-- [docs/current working area](docs/current/README.md)
-- [Changelog](CHANGELOG.md)
+- **New users** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
+- **Install & backend shape** → [MVP install guide](docs/current/java-backend-mvp-install-guide.md)
+- **Contributors** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
+- **Release & measurement** → [v0.6.0 capsule](docs/releases/v0.6.0/README.md) · [package index](docs/releases/package-index.md) · [docs/current](docs/current/README.md) · [Changelog](CHANGELOG.md)
 
 ## Contributing
 
-Contributions are welcome — including negative measurement results. Read
-[CONTRIBUTING.md](CONTRIBUTING.md) first: PH only asserts what its evidence
-supports, and PRs that expand a claim must bring the measurement. See also
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [SECURITY.md](SECURITY.md).
+Contributions are welcome — including negative measurement results. PH only asserts what its evidence supports, and PRs that expand a claim must bring the measurement. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

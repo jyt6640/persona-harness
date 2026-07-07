@@ -15,56 +15,42 @@
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
 
+**[Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)**
+
 </div>
 
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-> AI エージェントは「完了しました！」と言いたがります — Persona Harness はそれを証明させます。必要な report、PH が生成した evidence、実際のテスト結果がディスク上に存在するまで完了主張をブロックするローカル CLI completion gate です。OpenCode runtime guidance は任意の preview であり、プロダクトの中心ではありません。
+> AI エージェントは「完了しました！」と言いたがります — Persona Harness はそれを証明させます。必要な report、PH が生成した evidence、実際のテスト結果がディスク上に存在するまで完了主張をブロックするローカル CLI 完了ゲートです。
 
 > [!IMPORTANT]
-> **プロジェクト状態: gate-first measured release。**
-> 安定リリース準備対象は、QA/publish 後に npm `latest` へ公開する `persona-harness@0.6.0` です。現在公開済みの安定チャンネルは引き続き `persona-harness@latest=0.5.0`、公開済み prerelease チャンネルは `next=0.6.0-rc.4`、alpha は `0.3.9-alpha.8` です。実際の stable publish まで `latest` は移動しません。
-> runtime injection 効果は測定済みで、**受理済みの 10 ペア local-current OpenCode fixture では negative** でした。根拠は [`docs/current/injection-value-status.json`](docs/current/injection-value-status.json) を参照してください。そのため runtime guidance は default-off で、明示的な opt-in preview のみです。これは該当 fixture 範囲の測定であり、普遍的な product-efficacy claim ではありません。
-> PH が実際に主張すること — そして証拠を持つこと — はより狭い範囲です: **明示的に定義された evidence gate と決定論的違反に対して、未検証の完了をブロックする。**
+> **Alpha, gate-first, 測定ベース。** Stable: `persona-harness@latest=0.6.0`（`next=0.6.0-rc.4`）。runtime injection は accepted 10-pair fixture で **negative** と測定されたため、runtime guidance は **default-off / opt-in** であり、プロダクトの中心ではありません。[`injection-value-status.json`](docs/current/injection-value-status.json) を参照。PH の主張は狭い範囲です: **明示的に定義された evidence gate と決定論的違反に対して、未検証の完了をブロックする。**
 
-## 測定された動作
+## 測定された動作 (Measured Behavior)
 
 多くのエージェントハーネスプロジェクトと異なり、PH は実際に測定したものを — ネガティブな結果も含めて — 公開します。
 
-| シナリオ | 結果 | 根拠 |
-| :--- | :--- | :--- |
-| **偽造された TDD evidence** — 手書きの `red-forged.json` を `workflow finish` の前に仕込む | `finish` が **exit 1** — 偽造ファイルは無視 | P0 実 Gradle run アーカイブ |
-| **Green-only 完了**（テスト+実装を同時、red-first なし）— 各 5 回反復 | TDD OFF: 許可 **5/5** · TDD ON: ブロック **5/5** | P1 completion-integrity A/B |
-| **コンパイルエラーを「red」と偽る** | `workflow test` が **exit 1**、evidence 未生成 | P0 実 Gradle run アーカイブ |
-| Runtime injection PH OFF/ON app-generation — 10 paired OpenCode runs | PH ON **10/10**、PH OFF **10/10** 成功。ただし PH ON は provider-token total、read chars、tool calls、elapsed time を全 10 ペアで増加させた | accepted local-current A/B archive |
+- **偽造された TDD evidence** を `workflow finish` の前に仕込む → `finish` が **exit 1**、偽造ファイルは無視。
+- **Green-only 完了**（TDD rail on）→ ブロック **5/5**（off では許可 5/5）。
+- **runtime injection**、10 ペアの OpenCode run → 成功率は同じ（両方 10/10）だが PH ON は全 10 ペアでコスト増 → **default-off** を維持。
 
-これは限定されたローカル fixture での completion-integrity 測定です。トークン節約、アプリ品質、プロダクト効能の主張では*ありません*。
+限定されたローカル fixture での completion-integrity 測定です — トークン節約・アプリ品質・プロダクト効能の主張では*ありません*。完全な境界と根拠: **[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)**。
 
-## TL;DR
+## これは何か
 
-> Q. これは何？
-
-AI エージェントが行う Java/Spring バックエンド作業のための workflow/evidence CLI + completion guard です。ローカル CLI（`ph`）と、任意の runtime guidance/measurement hook 用 OpenCode プラグインとして提供されます。
-
-> Q. 実際に何をする？
+AI エージェントが行う Java/Spring バックエンド作業のための workflow + evidence CLI（`ph`）と、任意の OpenCode プラグインです。行うこと:
 
 - プロジェクトのアイデアや README を実装 ticket に分割
 - エージェントを反復可能なバックエンド workflow に乗せ続ける
-- 制限されたコマンド実行で検証を行う
+- 制限されたコマンド実行で検証
 - 何を読み、実行し、完了したかをローカル evidence として記録
 - **必要な report/evidence がなければ完了をブロック**
 
-> Q. コード品質保証、トークン節約、linter の代替になる？
-
-いいえ。コード品質保証、トークン節約プロダクト、broad linter、生成アプリが production-ready である証明ではありません。完了ゲートより広いすべての主張は、先に測定によって獲得しなければならない — このルール自体がプロジェクトの一部です。
+コード品質保証、トークン節約プロダクト、broad linter、生成アプリが production-ready である証明では**ありません**。完了ゲートより広いすべての主張は、先に測定によって獲得しなければなりません — [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md) を参照。
 
 ## インストール
 
-必要なもの:
-
-- Node.js 20+, npm
-- Java 21+, Gradle
-- モデル/プロバイダーが設定済みの OpenCode CLI
+Node.js 20+、Java 21+ / Gradle、そしてプロバイダーが設定済みの OpenCode CLI が必要です。
 
 ```bash
 # OpenCode
@@ -73,236 +59,79 @@ opencode auth login
 
 # Persona Harness
 npm install -D persona-harness
-npx ph --help
-npx ph init
-npx ph doctor
+npx ph --help && npx ph doctor
 ```
 
-## クイックスタート — Java/Spring バックエンド
+## クイックスタート
 
-クリーンなプロジェクトディレクトリを使ってください。Persona Harness リポジトリ自体で最初のスモークテストをしないでください。
+クリーンなプロジェクトディレクトリを使ってください（Persona Harness repo 自体は不可）。
 
 ```bash
-mkdir -p /tmp/persona-harness-demo && cd /tmp/persona-harness-demo
-npm init -y
+mkdir -p /tmp/ph-demo && cd /tmp/ph-demo && npm init -y
 npm install -D persona-harness
-```
 
-アプリと制約を記述した短い `README.md` を作成します:
-
-```bash
-cat > README.md <<'EOF'
-# Todo API
-
-Build a Java 21 Spring Boot REST API with Gradle.
-
-## Requirements
-- Users can create todos.
-- Users can list todos.
-- Users can mark a todo completed.
-- Missing todos return an appropriate error response.
-
-## Technical Constraints
-- Java 21, Spring Boot 3, Gradle only, REST API only
-- Start with in-memory persistence if needed.
-- Controllers delegate to application services.
-- Repository interfaces live in domain; implementations in infrastructure.
-- Application services must not own storage state or id sequences.
-EOF
-```
-
-初期化:
-
-```bash
-npx ph init
-npx ph bootstrap backend
+npx ph init                 # 最小限の統合ファイルのみ
+npx ph bootstrap backend    # AGENTS.md, profile, plan, report テンプレート
 npx ph workflow check
 ```
 
-`ph init` は最小限の統合ファイルのみを作成します（`.persona/harness.jsonc`、`.persona/conventions/`、`.persona/rules/`、`.opencode/opencode.json`、`.gitignore` エントリ）。`ph bootstrap backend` はバックエンド workflow 全体を準備します: `AGENTS.md`、`.persona/project-profile.jsonc`、policy overlay、承認済み plan、report テンプレート、OpenCode 設定。新しい setup は gate-first です: model-facing runtime guidance は明示的に有効化するまで off です。
-
-その後、OpenCode でエージェントに短く依頼します:
-
-```text
-Read README.md and implement it.
-```
-
-エージェントは自分で rail を実行するはずです:
-
-```text
-npx ph workflow implement
-npx ph bearshell ...
-npx ph plan --report-filled implementation
-npx ph plan --report-filled review
-npx ph workflow finish implement
-```
+その後、OpenCode でエージェントにあなたの `README.md` を実装するよう依頼します。エージェントは自分で rail を回し、`npx ph workflow finish implement` で終えるはずです。
 
 > [!NOTE]
-> `workflow finish` が失敗した場合、エージェントは完了を主張する前に報告された blocker を修正しなければなりません。その失敗はバグではなく、プロダクトが機能している証拠です。
+> `workflow finish` が失敗した場合、エージェントは完了を主張する前に報告された blocker を修正しなければなりません。**その失敗はバグではなく、プロダクトが機能している証拠です。**
 
-## README の代わりにアイデアから始める
-
-エージェントにアイデアを伝えます:
-
-```text
-todo ウェブサービスを作りたい。
-```
-
-エージェントはコーディングを始めず、まず要件のドラフトを作るはずです:
-
-```text
-npx ph workflow draft --stdin
-```
-
-`.persona/workflow/requirements/` の成果物（`backlog.md`、`questions.md`、`assumptions.md`）をレビューし、`進めて。`と伝えると、エージェントが実行します:
-
-```text
-npx ph workflow approve requirements
-npx ph workflow split .persona/workflow/requirements/backlog.md
-npx ph workflow next
-npx ph workflow implement
-```
-
-## 複数の Ticket で作業する
-
-```bash
-npx ph workflow split README.md
-npx ph workflow next
-# ... 実装 & レビュー ...
-npx ph workflow archive <ticket-id>
-npx ph workflow next
-```
-
-workflow 台帳は `.persona/workflow/` にあります: 進行中の作業は `work/`、完了履歴は `history/`、要件ソースは `requirements/`。
+サンプル Todo API とアイデア優先フローを含む完全なガイド: **[Quick Demo](docs/QUICK-DEMO.md)**。
 
 ## TDD Rail (opt-in)
 
-両方の設定を有効にすると動作します:
+`.persona/harness.jsonc` で両方の設定を有効にします:
 
 ```json
-{
-  "enforce": {
-    "executeVerification": true,
-    "tdd": true
-  }
-}
+{ "enforce": { "executeVerification": true, "tdd": true } }
 ```
 
-有効時、`ph workflow test` は **PH が直接実行した Gradle/JUnit の失敗からのみ** red evidence を記録します — エージェントが報告した evidence は決して受け付けません。その後 `workflow check` / `archive` / `finish` が同じ ticket/test id に対する green evidence を記録します。
+すると `ph workflow test` は **PH が直接実行した Gradle/JUnit の失敗からのみ** red evidence を記録します — エージェントが報告した evidence は決して受け付けません。その後 `workflow check` / `archive` / `finish` が同じ ticket/test id の green evidence を記録します。red-first 完了ゲートであり、テスト scaffolding・十分性の証明・coverage/mutation・アプリ品質の認証は行いません。
 
-これは red-first 完了ゲートです。テスト scaffolding、テスト十分性の証明、coverage、mutation testing、アプリ品質の認証は行いません。
-
-## 便利なコマンド
+## コマンド
 
 ```bash
-# セットアップ
-npx ph init && npx ph bootstrap backend && npx ph doctor
-
-# Workflow
-npx ph workflow check
-npx ph workflow implement
-npx ph workflow finish implement
-npx ph workflow archive <ticket-id>
-
-# 制限されたコマンド実行
-npx ph bearshell --shell 'gradle test'
-
-# Evidence と report
-npx ph evidence summary
-npx ph evidence metrics --json
-npx ph evidence ab-report --json
-npx ph evidence pminus-report --json
+npx ph workflow check | implement | finish implement | archive <ticket-id>
+npx ph workflow split README.md && npx ph workflow next   # マルチ ticket
+npx ph bearshell --shell 'gradle test'                    # 制限された実行
+npx ph evidence summary | metrics --json | ab-report --json | pminus-report --json
 npx ph review backend-shape
-
-# 明示的なローカル A/B evidence 記録
-npx ph evidence ab-run --scenario demo --condition baseline -- ./gradlew test
 ```
 
-Stable builds also include `npx ph evidence pminus-status --json` for read-only surface decision summaries.
+全リストは `npx ph --help`。workflow 台帳は `.persona/workflow/`（`work/`, `history/`, `requirements/`）にあります。
 
-## オプション統合
-
-デフォルトの backend bootstrap はリモート developer MCP ツール `grep_app` と `context7` を登録します。
+## オプション統合 (opt-in preview)
 
 ```bash
-npx ph bootstrap backend --codegraph-preview   # CodeGraph, opt-in
-npx ph bootstrap backend --lsp-preview         # LSP, opt-in
-npx ph bootstrap backend --no-developer-mcp    # developer MCP を無効化
+npx ph bootstrap backend --codegraph-preview          # CodeGraph
+npx ph bootstrap backend --lsp-preview                # Java LSP
+npx ph bootstrap backend --runtime-injection-preview  # parked model-facing guidance
+npx ph bootstrap backend --no-developer-mcp           # 既定の developer MCP を無効化
 ```
 
-> [!NOTE]
-> 両方の wrapper は preview 表面です。必要な外部ツールがない場合、成功を偽装せず **unavailable** 状態を報告します。
+preview wrapper は外部ツールがない場合、成功を偽装せず **unavailable** 状態を報告します。runtime injection は parked（negative 測定）であり、推奨パスではありません。
 
-## Evidence の意味
+## 境界と安全
 
-`.persona/evidence` はローカルの痕跡を保存します: ファイル読み取り、注入された workflow コンテキスト、コマンド活動、TDD 記録、A/B 測定。
-
-Evidence は一つの質問に答えます: **「エージェントは期待された rail を見て従ったか？」**
-
-Evidence が証明**しない**もの: 生成アプリの品質、トークン節約、プロダクト効能、full TDD coverage、broad reliability、すべてのケースでの成功的な closure。
-
-## 推奨バックエンド形状
-
-Persona Harness は Java/Spring プロジェクトを次の方向に導きます:
-
-- Gradle-first の Java/Spring バックエンド
-- `presentation` / `application` / `domain` / `infrastructure` / `global` パッケージ境界
-- Controller は application service に委譲
-- Application service は storage 状態や id sequence を直接所有せずユースケースを調整
-- Repository インターフェースは `domain` に、実装は `infrastructure` に
-- 振る舞いを持つドメインオブジェクト
-- 明示的な request/response DTO 境界
-
-これらは誘導目標とレビューの手がかりであり、品質保証ではありません。
-
-## トラブルシューティング
-
-```bash
-npm view persona-harness dist-tags --json
-opencode --version
-```
-
-`ph workflow check` が警告を報告したら、列挙された blocker を確認してください。実装前は template report の警告が正常です。実装後によくある blocker は、evidence の欠落、未記入の report、rail を迂回した検証です。
-
-エージェントが workflow を無視する場合、より厳格なプロンプトを貼り付けてください:
-
-```text
-Read README.md, .persona/project-profile.jsonc, .persona/policies, and .persona/workflow/plan.md.
-Before implementing, run `npx ph workflow implement`.
-Use `npx ph bearshell` for verification commands where possible.
-After implementation, fill `.persona/workflow/implementation-report.md` and `.persona/workflow/review-report.md`.
-Run `npx ph plan --report-filled implementation`, `npx ph plan --report-filled review`, and `npx ph workflow finish implement`.
-If finish fails, do not claim completion. Fix the reported blocker first.
-```
-
-## Persona Harness が約束しないもの
-
-- 生成アプリケーションの品質認証
-- トークン節約
-- プロダクト効能や navigation-benefit の証明
-- Clean Code の保証
-- broad AST/linter の強制
-- full TDD フレームワーク、テスト scaffolding、coverage、mutation testing
-- frontend、infrastructure、desktop workflow のプロダクト化
-- OpenCode なしの完全な workflow
+Evidence は一つの質問にのみ答えます — *「エージェントは期待された rail を見て従ったか？」* — それ以上ではありません。PH はアプリ品質認証、トークン節約、Clean Code 保証、broad AST/linter 強制、full TDD フレームワーク、closure 保証、OpenCode なしの完全な workflow を**約束しません**。正規のリストは [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md) にあります。
 
 > [!WARNING]
-> `ph bearshell` はサンドボックスではありません。実行時間と出力サイズを制限しますが、コマンドはあなたのマシン上で実行されます。
+> `ph bearshell` は**サンドボックスではありません**。実行時間と出力サイズを制限しますが、コマンドはあなたのマシン上であなたの権限で実行されます。[SECURITY](SECURITY.md) を参照。
 
 ## ドキュメント
 
-- [Changelog](CHANGELOG.md)
-- [Release notes](docs/current/release/README.md)
-- [受け入れテストチェックリスト](docs/current/acceptance-test-checklist.md)
-- [Java backend MVP インストールガイド](docs/current/java-backend-mvp-install-guide.md)
+- **新規ユーザー** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
+- **インストール & バックエンド形状** → [MVP インストールガイド](docs/current/java-backend-mvp-install-guide.md)
+- **コントリビューター** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
+- **リリース & 測定** → [v0.6.0 カプセル](docs/releases/v0.6.0/README.md) · [パッケージインデックス](docs/releases/package-index.md) · [docs/current](docs/current/README.md) · [Changelog](CHANGELOG.md)
 
 ## コントリビュート
 
-コントリビュートを歓迎します — ネガティブな測定結果も含めて。まず
-[CONTRIBUTING.md](CONTRIBUTING.md) を読んでください: PH は証拠が裏付けるものだけ
-を主張し、主張を広げる PR はその測定を伴わなければなりません。
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) と [SECURITY.md](SECURITY.md) も参照して
-ください。
+コントリビュートを歓迎します — ネガティブな測定結果も含めて。PH は証拠が裏付けるものだけを主張し、主張を広げる PR はその測定を伴わなければなりません。[CONTRIBUTING.md](CONTRIBUTING.md) から読んでください。
 
 ## ライセンス
 
