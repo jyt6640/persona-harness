@@ -299,6 +299,13 @@ If finish fails, do not claim completion. Fix the reported blocker first.
 - [Acceptance test checklist](docs/current/acceptance-test-checklist.md)
 - [Java backend MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 
+## Contributing
+
+Contributions are welcome — including negative measurement results. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) first: PH only asserts what its evidence
+supports, and PRs that expand a claim must bring the measurement. See also
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [SECURITY.md](SECURITY.md).
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).

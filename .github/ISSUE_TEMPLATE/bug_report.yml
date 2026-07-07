@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in the ph CLI, workflow rail, gate, or OpenCode plugin behaves incorrectly.
+title: "[bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Persona Harness judges behavior by **exit codes and
+        files on disk**, so please give commands and outputs, not impressions.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `npx ph --version` (and how installed — npm tag or tarball).
+      placeholder: "0.5.0 (persona-harness@latest)"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Exact commands, in order.
+      placeholder: |
+        npx ph init
+        npx ph workflow finish implement
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: What exit code / file / blocker did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node version, Java/Gradle version, OpenCode version if relevant.
+    validations:
+      required: false

@@ -296,6 +296,13 @@ If finish fails, do not claim completion. Fix the reported blocker first.
 - [验收测试清单](docs/current/acceptance-test-checklist.md)
 - [Java backend MVP 安装指南](docs/current/java-backend-mvp-install-guide.md)
 
+## 贡献
+
+欢迎贡献 —— 包括负面的测量结果。请先阅读
+[CONTRIBUTING.md](CONTRIBUTING.md)：PH 只主张有证据支撑的东西，扩大主张的 PR
+必须附带相应的测量。另见 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) 和
+[SECURITY.md](SECURITY.md)。
+
 ## 许可证
 
 Apache-2.0。见 [LICENSE](LICENSE)。

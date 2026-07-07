@@ -1,0 +1,44 @@
+name: Feature / change proposal
+description: Propose a new gate, convention, or capability.
+title: "[proposal]: "
+labels:
+  - proposal
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Persona Harness stays deliberately narrow. A proposal that would expand
+        what PH **claims** (quality, token savings, reliability) must say how it
+        would be measured — that measurement is the first step of the work, not a
+        formality. See [CONTRIBUTING](../blob/main/CONTRIBUTING.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What real, concrete situation is not handled today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should PH do? If it's a conformance blocker, describe the violating case AND the safe near-miss that must NOT fire.
+    validations:
+      required: true
+  - type: dropdown
+    id: claim
+    attributes:
+      label: Does this expand a claim?
+      options:
+        - "No — it's a deterministic gate/fix, no efficacy claim"
+        - "Yes — and I can describe an A/B to prove it"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: measurement
+    attributes:
+      label: Measurement plan (required if it expands a claim)
+      description: Named fixture, OFF/ON conditions, metrics, and what result would make you drop the idea.
+    validations:
+      required: false

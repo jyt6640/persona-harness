@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Persona Harness scope notes
-    url: https://github.com/jyt6640/persona-harness/blob/main/README.md
-    about: Read the current MVP and Phase scope boundaries before filing broad feature requests.
+  - name: Scope and contribution rules
+    url: https://github.com/jyt6640/persona-harness/blob/main/CONTRIBUTING.md
+    about: Read what fits, what doesn't, and the Claim Ladder before filing a proposal.
+  - name: What is measured / not proven
+    url: https://github.com/jyt6640/persona-harness/blob/main/docs/current/injection-value-status.json
+    about: The frozen injection-value measurement, so proposals start from evidence.

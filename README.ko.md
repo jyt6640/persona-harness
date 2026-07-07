@@ -298,6 +298,13 @@ If finish fails, do not claim completion. Fix the reported blocker first.
 - [인수 테스트 체크리스트](docs/current/acceptance-test-checklist.md)
 - [Java backend MVP 설치 가이드](docs/current/java-backend-mvp-install-guide.md)
 
+## 기여
+
+기여를 환영합니다 — 부정적 측정 결과도 포함해서요. 먼저
+[CONTRIBUTING.md](CONTRIBUTING.md)를 읽어주세요: PH는 증거가 뒷받침하는 것만
+주장하며, 주장을 넓히는 PR은 그 측정을 함께 가져와야 합니다.
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)와 [SECURITY.md](SECURITY.md)도 참고하세요.
+
 ## 라이선스
 
 Apache-2.0. [LICENSE](LICENSE)를 보세요.

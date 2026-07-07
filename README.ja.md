@@ -296,6 +296,14 @@ If finish fails, do not claim completion. Fix the reported blocker first.
 - [受け入れテストチェックリスト](docs/current/acceptance-test-checklist.md)
 - [Java backend MVP インストールガイド](docs/current/java-backend-mvp-install-guide.md)
 
+## コントリビュート
+
+コントリビュートを歓迎します — ネガティブな測定結果も含めて。まず
+[CONTRIBUTING.md](CONTRIBUTING.md) を読んでください: PH は証拠が裏付けるものだけ
+を主張し、主張を広げる PR はその測定を伴わなければなりません。
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) と [SECURITY.md](SECURITY.md) も参照して
+ください。
+
 ## ライセンス
 
 Apache-2.0。[LICENSE](LICENSE) を参照してください。
