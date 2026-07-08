@@ -14,7 +14,8 @@ A reading map for people seeing Persona Harness (PH) for the first time.
 1. [QUICK-DEMO](QUICK-DEMO.md) — the fastest hands-on path.
 2. [README → Quick Start](../README.md#quick-start--javaspring-backend) — the
    full workflow.
-3. Troubleshooting is in the README.
+3. [Troubleshooting](troubleshooting/README.md) — if the agent implements
+   directly, ignores the rail, or skips tickets on an existing project.
 
 ## I want to contribute
 

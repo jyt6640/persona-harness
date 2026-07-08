@@ -125,6 +125,7 @@ Evidence answers one question — *"Did the agent see and follow the expected ra
 ## Docs
 
 - **New users** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
+- **Agent not following the rail?** → [Troubleshooting](docs/troubleshooting/README.md)
 - **Install & backend shape** → [MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 - **Contributors** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
 - **Release & measurement** → [v0.6.0 capsule](docs/releases/v0.6.0/README.md) · [package index](docs/releases/package-index.md) · [docs/current](docs/current/README.md) · [Changelog](CHANGELOG.md)

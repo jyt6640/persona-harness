@@ -10,7 +10,7 @@ const ROOT_ALLOWED_FILES = new Set([
   "QUICK-DEMO.md",
   "MEASURED-CLAIMS.md",
 ])
-const ROOT_ALLOWED_DIRS = new Set(["archive", "current", "evidence-reviews", "phases", "releases"])
+const ROOT_ALLOWED_DIRS = new Set(["archive", "current", "evidence-reviews", "phases", "releases", "troubleshooting"])
 
 function suggestedDirectory(fileName) {
   if (fileName.endsWith(".json")) {
