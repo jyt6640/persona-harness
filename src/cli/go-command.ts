@@ -2,13 +2,19 @@ import { resolve } from "node:path"
 
 import type { CliRunResult } from "./bearshell.js"
 import { GoWorkflowConflictError } from "./go-conflict.js"
-import { acquireGoCommandLock, releaseGoCommandLock } from "./go-lock.js"
+import {
+  acquireGoCommandLock,
+  assertGoCommandLock,
+  GoCommandLockLostError,
+  releaseGoCommandLock,
+} from "./go-lock.js"
 import {
   goBlockedOutput,
   goExistingStateBlocker,
   goSetupBlocker,
   goWorkflowBoundaryBlocker,
 } from "./go-preflight.js"
+import { goLockBlocker, runGoRecovery } from "./go-recovery.js"
 import {
   beginGoWorkflowTransaction,
   closeGoWorkflowTransaction,
@@ -29,6 +35,8 @@ type GoCommandOptions = {
   readonly onAfterGoCommitFile?: (relativePath: string) => void
   readonly onAfterGoTransactionCopy?: () => void
   readonly onBeforeGoStep?: (step: GoStep) => void
+  readonly onBeforeGoRecoveryClear?: () => void
+  readonly onBeforeGoTransactionStart?: () => void
   readonly projectDir?: string
   readonly stdin?: string
 }
@@ -38,16 +46,18 @@ type ParsedGoArgs =
   | { readonly kind: "goal"; readonly source: "stdin"; readonly text: string }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
+  | { readonly kind: "recover" }
 
 export function goUsage(invocationName = "ph"): string {
   return [
     `Usage: ${invocationName} go "<concrete implementation goal>"`,
     `       ${invocationName} go --stdin`,
+    `       ${invocationName} go --recover`,
     "",
     "Capture one concrete implementation requirement, create workflow tickets, select the current ticket, and print the existing implementation rail.",
     "",
     "This command requires an initialized harness, a ready project profile, and an accepted plan.",
-    "It does not bootstrap, enable runtime hooks, or route vague product ideas; use workflow draft for idea-first requirements.",
+    "Use --recover only to clear a stale or malformed go lock in a prepared project. It does not bootstrap, enable runtime hooks, or route vague product ideas.",
   ].join("\n")
 }
 
@@ -57,6 +67,12 @@ function parseGoArgs(args: readonly string[], stdin: string | undefined): Parsed
   }
   if (args.includes("--stdin") && args.length !== 1) {
     return { kind: "invalid", message: "ph go accepts either one positional goal or --stdin, not both." }
+  }
+  if (args.includes("--recover") && args.length !== 1) {
+    return { kind: "invalid", message: "ph go --recover does not accept a goal or other options." }
+  }
+  if (args.length === 1 && args[0] === "--recover") {
+    return { kind: "recover" }
   }
   if (args.length === 1 && args[0] === "--stdin") {
     const text = stdin ?? ""
@@ -129,6 +145,11 @@ export function runGoCommand(
   if (parsed.kind === "invalid") {
     return { status: 1, stdout: "", stderr: `${parsed.message}\n\n${goUsage(invocationName)}\n` }
   }
+  const projectDir = resolve(options.projectDir ?? process.cwd())
+  if (parsed.kind === "recover") {
+    const blocker = goSetupBlocker(projectDir) ?? goWorkflowBoundaryBlocker(projectDir)
+    return blocker ?? runGoRecovery(projectDir, options.onBeforeGoRecoveryClear)
+  }
   if (parsed.source === "stdin") {
     const encodingError = stdinEncodingError(parsed.text)
     if (encodingError !== undefined) {
@@ -136,20 +157,29 @@ export function runGoCommand(
     }
   }
 
-  const projectDir = resolve(options.projectDir ?? process.cwd())
   const blocker = goSetupBlocker(projectDir) ?? goWorkflowBoundaryBlocker(projectDir)
   if (blocker !== undefined) {
     return blocker
   }
 
-  const lock = acquireGoCommandLock(projectDir)
-  if (lock === undefined) {
-    return goBlockedOutput("another ph go command is already running.", "npx ph workflow check")
+  const acquired = acquireGoCommandLock(projectDir)
+  if (acquired.kind !== "acquired") {
+    return goLockBlocker(acquired.kind)
   }
+  const lock = acquired.lock
   try {
     const stateBlocker = goExistingStateBlocker(projectDir)
     if (stateBlocker !== undefined) {
       return stateBlocker
+    }
+    try {
+      options.onBeforeGoTransactionStart?.()
+      assertGoCommandLock(lock)
+    } catch (error) {
+      if (!(error instanceof GoCommandLockLostError)) {
+        throw error
+      }
+      return goBlockedOutput("the go lock generation changed before transaction start.", "npx ph go --recover")
     }
     let transaction: GoWorkflowTransaction
     try {
@@ -188,6 +218,7 @@ export function runGoCommand(
       if (implement.status !== 0) {
         return rollbackFailure("implement", implement)
       }
+      assertGoCommandLock(lock)
       commitGoWorkflowTransaction(transaction, {
         onAfterCreateFile: options.onAfterGoCommitFile,
       })
@@ -195,6 +226,9 @@ export function runGoCommand(
     } catch (error) {
       if (!(error instanceof Error)) {
         throw error
+      }
+      if (error instanceof GoCommandLockLostError) {
+        return goBlockedOutput("the go lock generation changed before workflow commit.", "npx ph go --recover")
       }
       if (error instanceof GoWorkflowConflictError) {
         return goBlockedOutput("workflow state changed while ph go was running.", "npx ph workflow check")

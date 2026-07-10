@@ -115,6 +115,7 @@ describe("ph go", () => {
     expect(commandHelp.status).toBe(0)
     expect(commandHelp.stdout).toContain('Usage: ph go "<concrete implementation goal>"')
     expect(commandHelp.stdout).toContain("ph go --stdin")
+    expect(commandHelp.stdout).toContain("ph go --recover")
     expect(topHelp.stdout).toContain("go")
     expect(topHelp.stdout).toContain("single entry")
     expect(result.status).toBe(0)

@@ -1,15 +1,33 @@
 import { randomUUID } from "node:crypto"
-import { closeSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { existsSync, unlinkSync } from "node:fs"
 
-export type GoCommandLock = {
-  readonly path: string
-  readonly token: string
-}
+import {
+  GoCommandLockLostError,
+  type GoCommandLock,
+  type GoLockRecord,
+  lockPath,
+  processIsRunning,
+  readGoLockSnapshot,
+  recoveryClaimPath,
+  snapshotMatches,
+  writeLockRecord,
+} from "./go-lock-state.js"
+import { createGoRecoveryClaim, releaseGoRecoveryClaim } from "./go-recovery-claim.js"
 
-type LockOwner = {
-  readonly pid: number
-  readonly token: string
+export type { GoCommandLock }
+export { GoCommandLockLostError }
+
+export type GoLockAcquireResult =
+  | { readonly kind: "acquired"; readonly lock: GoCommandLock }
+  | { readonly kind: "active" | "recoverable" | "recovery-claim" | "unsafe" }
+
+export type GoLockRecoveryResult =
+  | { readonly kind: "active" | "changed" | "claim-contended" | "missing" | "recovered" | "unsafe" }
+
+export type GoLockRecoveryOptions = {
+  readonly onAfterClaim?: () => void
+  readonly onBeforeClear?: () => void
+  readonly onBeforeDiscardRecoveryClaim?: () => void
 }
 
 function errorCode(error: unknown): string | undefined {
@@ -18,83 +36,104 @@ function errorCode(error: unknown): string | undefined {
     : undefined
 }
 
-function readLockOwner(path: string): LockOwner | undefined {
-  const value: unknown = JSON.parse(readFileSync(path, "utf8"))
-  if (
-    typeof value !== "object"
-    || value === null
-    || !("pid" in value)
-    || typeof value.pid !== "number"
-    || !("token" in value)
-    || typeof value.token !== "string"
-  ) {
-    return undefined
-  }
-  return { pid: value.pid, token: value.token }
-}
-
-function processIsRunning(pid: number): boolean {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (error) {
-    if (!(error instanceof Error)) {
-      throw error
-    }
-    return errorCode(error) !== "ESRCH"
-  }
-}
-
-function removeStaleLock(path: string): boolean {
-  try {
-    const owner = readLockOwner(path)
-    if (owner === undefined || processIsRunning(owner.pid)) {
-      return false
-    }
-    unlinkSync(path)
-    return true
-  } catch (error) {
-    if (error instanceof Error) {
-      return false
-    }
-    throw error
-  }
-}
-
-export function acquireGoCommandLock(projectDir: string): GoCommandLock | undefined {
-  const path = join(projectDir, ".persona", "go.lock")
+export function acquireGoCommandLock(projectDir: string): GoLockAcquireResult {
+  const path = lockPath(projectDir)
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const token = randomUUID()
-    try {
-      const descriptor = openSync(path, "wx")
-      try {
-        writeFileSync(descriptor, `${JSON.stringify({ pid: process.pid, token })}\n`)
-      } finally {
-        closeSync(descriptor)
+    const snapshot = readGoLockSnapshot(path)
+    if (snapshot.kind === "unsafe") {
+      return { kind: "unsafe" }
+    }
+    if (snapshot.kind === "regular") {
+      if (existsSync(recoveryClaimPath(projectDir, snapshot.generation))) {
+        return { kind: "recovery-claim" }
       }
-      return { path, token }
+      return snapshot.record !== undefined && processIsRunning(snapshot.record.owner.pid)
+        ? { kind: "active" }
+        : { kind: "recoverable" }
+    }
+    const owner = { pid: process.pid, token: randomUUID() }
+    const record: GoLockRecord = { generation: randomUUID(), owner, schemaVersion: "ph-go-lock.2" }
+    try {
+      return { kind: "acquired", lock: writeLockRecord(path, record) }
     } catch (error) {
       if (!(error instanceof Error)) {
         throw error
       }
-      if (errorCode(error) !== "EEXIST" || !removeStaleLock(path)) {
-        return undefined
+      if (errorCode(error) !== "EEXIST") {
+        throw error
       }
     }
   }
-  return undefined
+  return { kind: "active" }
+}
+
+export function assertGoCommandLock(lock: GoCommandLock): void {
+  const snapshot = readGoLockSnapshot(lock.path)
+  if (
+    snapshot.kind !== "regular"
+    || snapshot.record === undefined
+    || !("generation" in snapshot.record)
+    || snapshot.device !== lock.device
+    || snapshot.inode !== lock.inode
+    || snapshot.record.generation !== lock.generation
+    || snapshot.record.owner.pid !== lock.owner.pid
+    || snapshot.record.owner.token !== lock.owner.token
+  ) {
+    throw new GoCommandLockLostError()
+  }
+}
+
+export function recoverGoCommandLock(
+  projectDir: string,
+  options: GoLockRecoveryOptions = {},
+): GoLockRecoveryResult {
+  const path = lockPath(projectDir)
+  const observed = readGoLockSnapshot(path)
+  if (observed.kind === "missing" || observed.kind === "unsafe") {
+    return { kind: observed.kind }
+  }
+  const claimPath = recoveryClaimPath(projectDir, observed.generation)
+  const claim = createGoRecoveryClaim(claimPath, observed.generation, {
+    onBeforeDiscard: options.onBeforeDiscardRecoveryClaim,
+  })
+  if (claim === undefined) {
+    return { kind: "claim-contended" }
+  }
+  try {
+    options.onAfterClaim?.()
+    const current = readGoLockSnapshot(path)
+    if (!snapshotMatches(observed, current)) {
+      return { kind: "changed" }
+    }
+    if (current.kind === "regular" && current.record !== undefined && processIsRunning(current.record.owner.pid)) {
+      return { kind: "active" }
+    }
+    options.onBeforeClear?.()
+    if (!snapshotMatches(observed, readGoLockSnapshot(path))) {
+      return { kind: "changed" }
+    }
+    unlinkSync(path)
+    return { kind: "recovered" }
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      throw error
+    }
+    if (errorCode(error) === "ENOENT") {
+      return { kind: "changed" }
+    }
+    throw error
+  } finally {
+    releaseGoRecoveryClaim(claim)
+  }
 }
 
 export function releaseGoCommandLock(lock: GoCommandLock): void {
   try {
-    const owner = readLockOwner(lock.path)
-    if (owner?.token === lock.token) {
-      unlinkSync(lock.path)
-    }
+    assertGoCommandLock(lock)
+    unlinkSync(lock.path)
   } catch (error) {
-    if (error instanceof Error) {
-      return
+    if (!(error instanceof GoCommandLockLostError) && !(error instanceof Error && errorCode(error) === "ENOENT")) {
+      throw error
     }
-    throw error
   }
 }

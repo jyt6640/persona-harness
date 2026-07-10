@@ -32,6 +32,8 @@ type PersonaCliOptions = {
   readonly onAfterGoCommitFile?: (relativePath: string) => void
   readonly onAfterGoTransactionCopy?: () => void
   readonly onBeforeGoStep?: (step: GoStep) => void
+  readonly onBeforeGoRecoveryClear?: () => void
+  readonly onBeforeGoTransactionStart?: () => void
   readonly packageRoot?: string
   readonly stdin?: string
 }
@@ -58,6 +60,8 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
         onAfterGoCommitFile: options.onAfterGoCommitFile,
         onAfterGoTransactionCopy: options.onAfterGoTransactionCopy,
         onBeforeGoStep: options.onBeforeGoStep,
+        onBeforeGoRecoveryClear: options.onBeforeGoRecoveryClear,
+        onBeforeGoTransactionStart: options.onBeforeGoTransactionStart,
         projectDir: options.cwd,
         stdin: options.stdin,
       },

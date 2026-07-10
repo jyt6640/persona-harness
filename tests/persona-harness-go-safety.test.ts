@@ -157,6 +157,7 @@ describe("ph go safety", () => {
     { args: ["go", ""], expected: "requires one quoted concrete implementation goal", stdin: undefined },
     { args: ["go", "--stdin"], expected: "requires a non-empty concrete implementation goal", stdin: "   " },
     { args: ["go", "goal", "--stdin"], expected: "not both", stdin: "other goal" },
+    { args: ["go", "--recover", "goal"], expected: "does not accept a goal", stdin: undefined },
     { args: ["go", "--unknown"], expected: "Unknown ph go option: --unknown", stdin: undefined },
     { args: ["go", "goal one", "goal two"], expected: "requires one quoted concrete implementation goal", stdin: undefined },
   ])("rejects invalid input without workflow writes: $args", ({ args, expected, stdin }) => {
