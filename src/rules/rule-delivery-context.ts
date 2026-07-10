@@ -39,11 +39,11 @@ function metadataText(entry: RuleCatalogEntry): string {
 }
 
 export function ruleDeliveryStageForBlocker(blockerId: string): RuleDeliveryStage {
-  if (/\b(?:implementation-report|review-report|report-read|role-read|profile-read)\b|report-/iu.test(blockerId)) {
-    return "report"
-  }
   if (/\breview|review-/iu.test(blockerId)) {
     return "review"
+  }
+  if (/\b(?:implementation-report|report-read|role-read|profile-read)\b|report-/iu.test(blockerId)) {
+    return "report"
   }
   if (/\b(?:test|verification|tdd|command-discipline|bearshell)\b|verification-|test-/iu.test(blockerId)) {
     return "verification"

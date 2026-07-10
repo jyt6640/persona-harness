@@ -172,7 +172,7 @@ enforcement: inject_only
     expect(ruleDeliveryRoleForBlocker("review-report-missing")).toBe("reviewer")
     expect(ruleDeliveryRoleForBlocker("implementation-report-missing")).toBe("implementer")
     expect(ruleDeliveryStageForBlocker("verification-failed")).toBe("verification")
-    expect(ruleDeliveryStageForBlocker("review-report-missing")).toBe("report")
+    expect(ruleDeliveryStageForBlocker("review-report-missing")).toBe("review")
     expect(ruleDeliveryStageForBlocker("implementation-report-missing")).toBe("report")
     expect(ruleDeliveryStageForBlocker("stack-alignment-mismatch")).toBe("implementation")
     expect(ruleDeliveryRoleForWorkText("Add controller tests for the API")).toBe("test-writer")

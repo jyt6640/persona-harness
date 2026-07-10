@@ -69,13 +69,16 @@ reliability, or default-change evidence.
 Filter 2 (`stage relevance`) is adopted. `ph workflow loop` now derives a
 deterministic blocker stage before selecting scoped rules:
 
-- report/read-coverage blockers: workflow/report-oriented rules;
+- non-review report/read-coverage blockers: workflow/report-oriented rules;
 - verification/test/TDD/command blockers: test, Gradle, and verification
   rules;
-- review blockers: review/refactoring/object-responsibility rules;
+- review blockers, including `review-report-*`: review/refactoring/
+  object-responsibility rules;
 - implementation, architecture, stack-alignment, and convention blockers:
   broad role-scoped implementation rules.
 
+Review matching has precedence over generic report matching so the normal
+`review-report-missing` closure path receives reviewer-stage guidance.
 The mapping lives in `RULE_DELIVERY_STAGE_RELEVANCE`; delivery bytes are sorted
 by rule path for cache-friendly stability. This narrows delivered prompt text
 only. Closure/check/finish gates and convention observers remain broad/global,

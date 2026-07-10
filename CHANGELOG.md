@@ -10,8 +10,11 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   delivery in explicit `ph workflow loop` prompts. Report/read-coverage,
   verification/test, and review blockers now receive narrower deterministic
   rule sets by blocker stage while implementation/architecture blockers keep
-  broad role-scoped rules; closure, check, finish, convention, report, and
-  verification gates remain broad/global. Measurement archive
+  broad role-scoped rules. Review matching takes precedence for
+  `review-report-*`, so the normal review-report closure path receives
+  review/refactoring guidance rather than report-only guidance; closure, check,
+  finish, convention, report, and verification gates remain broad/global.
+  Measurement archive
   `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/lean-l3-filter2-stage-relevance-clean-20260705T182455Z`
   records `gate-fixture.2` rail-entry non-inferiority control `10/10`,
   candidate `10/10`, invalid `0`, delta `0pp`, and Stage 18 fixture finish
