@@ -18,6 +18,7 @@ import { runPolicyCommand } from "./policy.js"
 import { runDoctorCommand } from "./doctor.js"
 import { runEvidenceCommand } from "./evidence-summary.js"
 import { runFeedbackCommand } from "./feedback.js"
+import { runGoCommand, type GoStep } from "./go-command.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
 import { decodeCliStdinText } from "./stdin-text.js"
@@ -28,6 +29,9 @@ type PersonaCliOptions = {
   readonly cwd?: string
   readonly env?: Readonly<Record<string, string | undefined>>
   readonly invocationName?: string
+  readonly onAfterGoCommitFile?: (relativePath: string) => void
+  readonly onAfterGoTransactionCopy?: () => void
+  readonly onBeforeGoStep?: (step: GoStep) => void
   readonly packageRoot?: string
   readonly stdin?: string
 }
@@ -45,6 +49,20 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
       return { status: 0, stdout: `${initUsage(invocationName)}\n`, stderr: "" }
     }
     return runInitCommand({ projectDir: options.cwd, packageRoot: options.packageRoot })
+  }
+
+  if (command === "go") {
+    return runGoCommand(
+      args.slice(1),
+      {
+        onAfterGoCommitFile: options.onAfterGoCommitFile,
+        onAfterGoTransactionCopy: options.onAfterGoTransactionCopy,
+        onBeforeGoStep: options.onBeforeGoStep,
+        projectDir: options.cwd,
+        stdin: options.stdin,
+      },
+      invocationName,
+    )
   }
 
   if (command === "bootstrap") {
@@ -168,13 +186,18 @@ async function runCliEntrypoint(): Promise<void> {
       cwd: process.cwd(),
       env: process.env,
       invocationName,
-      stdin: workflowStdin(args),
+      stdin: cliStdin(args),
     }),
   )
 }
 
-function workflowStdin(args: readonly string[]): string | undefined {
-  if (args[0] !== "workflow" || (args[1] !== "capture" && args[1] !== "draft") || args[2] !== "--stdin") {
+function cliStdin(args: readonly string[]): string | undefined {
+  const goStdin = args.length === 2 && args[0] === "go" && args[1] === "--stdin"
+  const workflowStdin =
+    args[0] === "workflow"
+    && (args[1] === "capture" || args[1] === "draft")
+    && args[2] === "--stdin"
+  if (!goStdin && !workflowStdin) {
     return undefined
   }
   if (process.stdin.isTTY === true) {

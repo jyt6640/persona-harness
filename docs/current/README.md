@@ -17,6 +17,10 @@ deleting evidence/status history.
 
 ## Current Canonical Pointers
 
+- Prepared-project CLI entry: `npx ph go "<concrete implementation goal>"`
+  composes capture, split, next, and the existing implementation rail without
+  a runtime hook. Existing draft/approval commands remain the route for vague
+  product ideas.
 - Versioned release capsule:
   [`docs/releases/v0.6.0/`](../releases/v0.6.0/README.md).
 - Chronological package/version index:

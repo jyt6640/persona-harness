@@ -6,6 +6,15 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Adds `ph go "<goal>"` and `ph go --stdin` as a host-neutral deterministic
+  single entry for concrete implementation requirements in an already prepared
+  project. The command composes existing capture, split, next, and implement
+  APIs in-process, refuses setup or existing-ticket conflicts without writes,
+  runs composition against staged workflow state, and commits only after every
+  step succeeds and the original state is unchanged. Runtime injection remains
+  default-off; this does not add hooks, vague-intent routing, schema changes, or
+  release-channel movement.
+
 - LEAN-1 L-3 Filter 2 adds blocker-stage relevance filtering for scoped rule
   delivery in explicit `ph workflow loop` prompts. Report/read-coverage,
   verification/test, and review blockers now receive narrower deterministic
