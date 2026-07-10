@@ -72,10 +72,16 @@ npm install -D persona-harness
 
 npx ph init                 # minimal integration files only
 npx ph bootstrap backend    # AGENTS.md, profile, plan, report templates
-npx ph workflow check
+npx ph go "Add a task creation endpoint."
 ```
 
-Then, in OpenCode, ask the agent to implement your `README.md`. It should drive the rail itself and end with `npx ph workflow finish implement`.
+`ph go` is the host-neutral single entry for one concrete implementation
+requirement after bootstrap and plan acceptance. It captures the requirement,
+creates and selects the ticket, and prints the existing implementation rail;
+it does not require a runtime hook or enable runtime injection. The agent should
+follow that rail and end with `npx ph workflow finish implement`. Its workflow
+conflict preservation applies to cooperative local PH/user writers and does not
+address hostile same-user filesystem path replacement.
 
 > [!NOTE]
 > If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. **That failure is the product working, not a bug.**
@@ -95,6 +101,7 @@ Enable both settings in `.persona/harness.jsonc`:
 ## Commands
 
 ```bash
+npx ph go "Add a task creation endpoint."                 # concrete single entry
 npx ph workflow check | implement | finish implement | archive <ticket-id>
 npx ph workflow split README.md && npx ph workflow next   # multi-ticket
 npx ph bearshell --shell 'gradle test'                    # bounded execution
