@@ -6,6 +6,7 @@ import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { runResumeCommand } from "./plan-next.js"
 import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
 import { readWorkflowClosurePayload, runWorkflowClosureCommand } from "./workflow-closure.js"
+import { runWorkflowFinishResult } from "./workflow-finish-runner.js"
 import { isStructuredWorkflowRequiredFix, type WorkflowRequiredFix } from "./workflow-required-fix.js"
 import {
   failedGuardOutput,
@@ -139,11 +140,7 @@ function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOpti
   if (!hasPersonaHarness(summary)) {
     return uninitializedHarnessOutput()
   }
-  const reasons = finalGuardReasons(summary.projectDir)
-  if (reasons.length > 0) {
-    return failedRunnerOutput("finish", runnerKind, reasons)
-  }
-  return passedFinishOutput(runnerKind)
+  return runWorkflowFinishResult(runnerKind, summary.projectDir)
 }
 
 function runWorkflowCheck(options: WorkflowOptions): CliRunResult {

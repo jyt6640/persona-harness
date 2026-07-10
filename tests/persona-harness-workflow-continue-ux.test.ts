@@ -98,8 +98,10 @@ describe("ph workflow continue UX", () => {
     const closureJson = JSON.parse(closure.stdout)
 
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("Closure blocker: command-discipline-blocking")
-    expect(finish.stderr).toContain("Rerun final verification through `npx ph bearshell`.")
+    expect(finish.stderr).toContain("Blocker: verification-unknown")
+    expect(finish.stderr).toContain("Next command: npx ph workflow check")
+    expect(finish.stderr).toContain("Other blockers:")
+    expect(finish.stderr).toContain("- command-discipline-blocking")
     expect(resume.status).toBe(0)
     expect(closureJson.state.blockers.map((blocker: { id: string }) => blocker.id)).toContain("command-discipline-blocking")
     expect(resume.stdout).toContain("Final verification needs bearshell rerun.")

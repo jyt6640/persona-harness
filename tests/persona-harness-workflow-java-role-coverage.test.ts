@@ -156,10 +156,9 @@ describe("ph workflow Java role read coverage", () => {
     expect(check.stdout).toContain("repository/domain port: src/main/java/com/example/domain/BookRepository.java")
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("Workflow finish failed: implement")
-    expect(finish.stderr).toContain("workflow evidence/read coverage missing")
-    expect(finish.stderr).toContain("Read generated Controller/Service/Repository/Domain/DTO files")
-    expect(finish.stderr).toContain("Run role read follow-up if needed.")
-    expect(finish.stderr).toContain("Re-run `npx ph workflow check`.")
+    expect(finish.stderr).toContain("Blocker: report-coverage-missing")
+    expect(finish.stderr).toContain("Next command: npx ph workflow check")
+    expect(finish.stderr).toContain("Other blockers:\n- java-role-read-coverage-missing")
   })
 
   it("keeps check and finish passing when Java role read evidence is sufficient", () => {

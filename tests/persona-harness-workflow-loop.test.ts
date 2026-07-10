@@ -392,18 +392,15 @@ enforcement: inject_only
         env: {},
         invocationName: "ph",
       })
-      const unmappedSection = result.stderr.slice(result.stderr.indexOf("Closure blocker: architecture-custom-unmapped-loop"))
-
       expect(result.status).toBe(1)
       expect(result.stderr).not.toContain("Summary:")
       expect(result.stderr).not.toContain("- first blocker: architecture-custom-unmapped-loop")
       expect(result.stderr).not.toContain("first next action: escalate to Persona Harness configuration/maintainer review")
-      expect(result.stderr).toContain("Required fixes:")
-      expect(unmappedSection).toContain("blocker id has no closure step mapping")
-      expect(unmappedSection).toContain("PH bug or unregistered convention")
-      expect(unmappedSection).toContain("escalate to Persona Harness configuration/maintainer review")
-      expect(unmappedSection).toContain("Do not directly rerun `npx ph workflow finish implement` or `npx ph workflow check`")
-      expect(unmappedSection).not.toMatch(/Required next actions:\n- Re-run `npx ph workflow (?:finish implement|check)`/u)
+      expect(result.stderr).toContain("Blocker: architecture-custom-unmapped-loop")
+      expect(result.stderr).toContain("Next action: Escalate the missing Persona Harness blocker mapping for maintainer review.")
+      expect(result.stderr).toContain("Next command: npx ph workflow closure next --json")
+      expect(result.stderr).not.toContain("npx ph workflow finish implement")
+      expect(result.stderr).not.toContain("npx ph workflow check")
     } finally {
       if (previousAstGrep === undefined) {
         delete process.env.PH_AST_GREP_BIN

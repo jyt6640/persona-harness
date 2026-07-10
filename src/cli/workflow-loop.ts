@@ -13,7 +13,6 @@ import {
 import type { CliRunResult } from "./bearshell.js"
 import { runBoundedProcess } from "./bounded-process.js"
 import { continuationPromptCoreLines } from "./continuation-prompt.js"
-import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
 import {
   isUnmappedBlockerStep,
   readWorkflowClosurePayload,
@@ -21,7 +20,7 @@ import {
   type ClosureNextPayload,
   type ClosureStep,
 } from "./workflow-closure.js"
-import { failedRunnerOutput, passedFinishOutput } from "./workflow-output.js"
+import { runWorkflowFinishResult } from "./workflow-finish-runner.js"
 import {
   readWorkflowLoopState,
   readWorkflowLoopStateSnapshot,
@@ -192,11 +191,7 @@ function deterministicFinish(projectDir: string): CliRunResult {
   if (!existsSync(join(projectDir, ".persona"))) {
     return { status: 1, stdout: "", stderr: "Persona Harness is not initialized in this project.\n" }
   }
-  const reasons = workflowClosureFinishReasons(readWorkflowClosurePayload("next", projectDir, { recordTddGreenEvidence: true }), projectDir)
-  if (reasons.length > 0) {
-    return failedRunnerOutput("finish", "implement", reasons)
-  }
-  return passedFinishOutput("implement")
+  return runWorkflowFinishResult("implement", projectDir)
 }
 
 function firstPromptLines(projectDir: string, closure: ClosureNextPayload): readonly string[] {

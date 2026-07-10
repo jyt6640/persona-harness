@@ -237,7 +237,11 @@ try {
   assertNotIncludes(blockedCheck.stdout, "Workflow status: PASS", "blocked check completion claim", blockedCheck)
   const blockedFinish = assertCommand(runCli(blockedDir, ["workflow", "finish", "implement"]), 1, "workflow blocked finish")
   assertIncludes(blockedFinish.stderr, "Workflow finish failed: implement", "blocked finish failure", blockedFinish)
-  assertIncludes(blockedFinish.stderr, "Required fixes:", "blocked finish next action", blockedFinish)
+  assertIncludes(blockedFinish.stderr, "Next action: Run supported test/build/runtime verification and record the outcome.", "blocked finish next action", blockedFinish)
+  assertIncludes(blockedFinish.stderr, "Next command: npx ph workflow check", "blocked finish next command", blockedFinish)
+  if ((blockedFinish.stderr.match(/^Next action:/gmu) ?? []).length !== 1 || (blockedFinish.stderr.match(/^Next command:/gmu) ?? []).length !== 1) {
+    throw new SmokeAssertionError("blocked finish must render exactly one next action and next command", blockedFinish)
+  }
   assertNotIncludes(blockedFinish.stdout, "Finish status: PASS", "blocked finish completion claim", blockedFinish)
 
   const ticketDir = projectDir("workflow-next-ticket")

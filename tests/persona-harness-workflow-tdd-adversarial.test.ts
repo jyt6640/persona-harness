@@ -116,7 +116,9 @@ describe("TDD rail adversarial evidence checks", () => {
     const finish = runWorkflow(projectDir, ["finish", "implement"])
 
     expect(finish.status).toBe(1)
-    expect(`${finish.stdout}\n${finish.stderr}`).toContain("req-1 has no PH-run red evidence")
+    expect(finish.stderr).toContain("Blocker: tdd-red-evidence-missing")
+    expect(finish.stderr).toContain("Next command: npx ph workflow test")
+    expect(finish.stderr).toContain("Other blockers:\n- pending-ticket")
   })
 
   it("does not let another ticket's red evidence satisfy the current ticket", () => {
@@ -133,6 +135,8 @@ describe("TDD rail adversarial evidence checks", () => {
     const finish = runWorkflow(projectDir, ["finish", "implement"])
 
     expect(finish.status).toBe(1)
-    expect(`${finish.stdout}\n${finish.stderr}`).toContain("req-1 has no PH-run red evidence")
+    expect(finish.stderr).toContain("Blocker: tdd-red-evidence-missing")
+    expect(finish.stderr).toContain("Next command: npx ph workflow test")
+    expect(finish.stderr).toContain("Other blockers:\n- pending-ticket")
   })
 })

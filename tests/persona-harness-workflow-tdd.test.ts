@@ -216,7 +216,9 @@ describe("ph workflow test TDD rail", () => {
     expect(test.status).toBe(1)
     expect(test.stdout).toContain("already green")
     expect(finish.status).toBe(1)
-    expect(`${finish.stdout}\n${finish.stderr}`).toContain("req-1 has no PH-run red evidence")
+    expect(finish.stderr).toContain("Blocker: evidence-missing")
+    expect(finish.stderr).toContain("Next command: npx ph workflow check")
+    expect(finish.stderr).toContain("Other blockers:\n- tdd-red-evidence-missing\n- pending-ticket")
     expect(closure(projectDir).state.blockers.map((blocker) => blocker.id)).toContain("tdd-red-evidence-missing")
   })
 
@@ -247,7 +249,9 @@ describe("ph workflow test TDD rail", () => {
     const finish = runWorkflow(projectDir, ["finish", "implement"])
 
     expect(finish.status).toBe(1)
-    expect(`${finish.stdout}\n${finish.stderr}`).toContain("req-1 has no PH-run red evidence")
+    expect(finish.stderr).toContain("Blocker: tdd-red-evidence-missing")
+    expect(finish.stderr).toContain("Next command: npx ph workflow test")
+    expect(finish.stderr).toContain("Other blockers:\n- pending-ticket")
   })
 
   it("requires the same red testId to pass later before archive and finish can pass", () => {
