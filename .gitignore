@@ -33,6 +33,7 @@ fixtures/
 tmp/
 
 # Local secrets and eval pilot environment. Keep credentials out of git.
+.claude
 .env
 .env.*
 *.env
