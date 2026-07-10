@@ -55,6 +55,19 @@ function writeStructuredVerificationSuccessEvidence(projectDir: string): void {
   )
 }
 
+function writeSubstantiveImplementationReport(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: template",
+      "- README ranges read: 1-220",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+}
+
 function writePassingWorkflowEvidence(projectDir: string): void {
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
   writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
@@ -439,6 +452,7 @@ describe("ph workflow check", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeStructuredVerificationSuccessEvidence(projectDir)
@@ -458,6 +472,7 @@ describe("ph workflow check", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     writePendingReqBacklog(projectDir)
 
@@ -1359,6 +1374,7 @@ describe("ph workflow guard", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const result = runPersonaCli(["workflow", "guard", "final"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -2139,6 +2155,7 @@ describe("ph workflow start and finish", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -2153,6 +2170,7 @@ describe("ph workflow start and finish", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     writePendingReqBacklog(projectDir)
 

@@ -274,6 +274,37 @@ enforcement: inject_only
     expect(output.promptPreview.join("\n")).not.toContain("Next action: npx ph workflow check")
   })
 
+  it("requires substantive implementation report content before the report follow-up command", () => {
+    const projectDir = createWorkflowProject()
+    mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
+      `${JSON.stringify(
+        {
+          command: "npx ph bearshell --shell './gradlew test'",
+          status: 0,
+          tool: "bearshell",
+          toolOutput: "BUILD SUCCESSFUL",
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const json = runPersonaCli(["workflow", "loop", "--dry-run", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const plaintext = runPersonaCli(["workflow", "loop", "--dry-run"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const output = JSON.parse(json.stdout)
+    const actionLine = "Next action: Complete the required substantive content in .persona/workflow/implementation-report.md, including verification evidence, before marking it filled."
+    const commandLine = "Next command: after completing the action, run npx ph plan --report-filled implementation"
+
+    expect(json.status).toBe(0)
+    expect(plaintext.status).toBe(0)
+    expect(output.promptPreview).toContain(actionLine)
+    expect(output.promptPreview).toContain(commandLine)
+    expect(plaintext.stdout).toContain(actionLine)
+    expect(plaintext.stdout).toContain(commandLine)
+  })
+
   it("reads legacy unversioned workflow loop state for upgrade compatibility", () => {
     const projectDir = createWorkflowProject()
     writeFileSync(

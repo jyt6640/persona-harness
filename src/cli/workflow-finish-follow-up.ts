@@ -41,14 +41,14 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
   }
   if (step.id === "fill-implementation-report") {
     return {
-      action: "Fill .persona/workflow/implementation-report.md with actual verification evidence.",
+      action: "Complete the required substantive content in .persona/workflow/implementation-report.md, including verification evidence, before marking it filled.",
       blockerId,
       command: commandForStep(step),
     }
   }
   if (step.id === "fill-review-report") {
     return {
-      action: "Fill .persona/workflow/review-report.md after review/manual QA.",
+      action: "Complete the required substantive content in .persona/workflow/review-report.md after review/manual QA before marking it filled.",
       blockerId,
       command: commandForStep(step),
     }

@@ -29,6 +29,31 @@ function implementationReportPath(projectDir: string): string {
   return join(projectDir, ".persona", "workflow", "implementation-report.md")
 }
 
+function writeSubstantiveImplementationReport(projectDir: string): void {
+  writeFileSync(
+    implementationReportPath(projectDir),
+    [
+      "Status: template",
+      "- README ranges read: 1-220",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+}
+
+function writeSubstantiveReviewReport(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: template",
+      "- Requirements reviewed against the accepted plan.",
+      "- Manual QA completed.",
+      "- `npx ph bearshell --shell './gradlew bootRun'`",
+    ].join("\n"),
+  )
+}
+
 function writePendingReqBacklog(projectDir: string): void {
   mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-1"), { recursive: true })
   writeFileSync(
@@ -96,6 +121,7 @@ describe("ph plan --next", () => {
     const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
     expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPlan(projectDir, ["--report-filled", "implementation"]).status).toBe(0)
 
     const result = runPlan(projectDir, ["--next"])
@@ -136,6 +162,8 @@ describe("ph plan --next", () => {
     const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
     expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
+    writeSubstantiveReviewReport(projectDir)
     expect(runPlan(projectDir, ["--report-filled", "implementation"]).status).toBe(0)
     expect(runPlan(projectDir, ["--report-filled", "review"]).status).toBe(0)
 
@@ -303,6 +331,7 @@ describe("ph workflow continue", () => {
     const projectDir = createProfiledTempProject()
     expect(runPlan(projectDir, []).status).toBe(0)
     expect(runPlan(projectDir, ["--accept"]).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPlan(projectDir, ["--report-filled", "implementation"]).status).toBe(0)
     writePendingReqBacklog(projectDir)
 

@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -71,14 +71,14 @@ const FINISH_BLOCKER_MATRIX: readonly FinishMatrixRow[] = [
     stepId: "fix-verification",
   },
   {
-    action: "Fill .persona/workflow/implementation-report.md with actual verification evidence.",
+    action: "Complete the required substantive content in .persona/workflow/implementation-report.md, including verification evidence, before marking it filled.",
     blockerId: "implementation-report-missing",
     command: { phase: "after-action", value: "npx ph plan --report-filled implementation" },
     priority: 1,
     stepId: "fill-implementation-report",
   },
   {
-    action: "Fill .persona/workflow/review-report.md after review/manual QA.",
+    action: "Complete the required substantive content in .persona/workflow/review-report.md after review/manual QA before marking it filled.",
     blockerId: "review-report-missing",
     command: { phase: "after-action", value: "npx ph plan --report-filled review" },
     priority: 1,
@@ -182,11 +182,24 @@ function writeFilledImplementationReport(projectDir: string): void {
   writeFileSync(
     join(projectDir, ".persona", "workflow", "implementation-report.md"),
     [
-      "Status: filled",
+      "Status: template",
       "- README ranges read: all",
       "- Project profile ranges read: all",
       "- `npx ph bearshell --shell './gradlew test'`",
       "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+}
+
+function writeFilledReviewReport(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: template",
+      "- Requirements reviewed against the accepted plan.",
+      "- Boundary review completed.",
+      "- `npx ph bearshell --shell './gradlew bootRun'`",
+      "- Manual QA completed.",
     ].join("\n"),
   )
 }
@@ -258,7 +271,7 @@ describe("ph workflow finish next action matrix", () => {
     })
 
     expect(followUp).toEqual({
-      action: "Fill .persona/workflow/implementation-report.md with actual verification evidence.",
+      action: "Complete the required substantive content in .persona/workflow/implementation-report.md, including verification evidence, before marking it filled.",
       blockerId: "implementation-report-missing",
       command: { phase: "after-action", value: "npx ph plan --report-filled implementation" },
     })
@@ -268,7 +281,7 @@ describe("ph workflow finish next action matrix", () => {
       "review-report-missing",
     ])
     expect(reasons[1]).toMatchObject({
-      nextAction: "Fill .persona/workflow/review-report.md after review/manual QA.",
+      nextAction: "Complete the required substantive content in .persona/workflow/review-report.md after review/manual QA before marking it filled.",
       step: {
         commandAfterContent: "npx ph plan --report-filled review",
         id: "fill-review-report",
@@ -310,7 +323,7 @@ describe("ph workflow finish next action matrix", () => {
     expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "implementation-report-missing" })
   })
 
-  it("uses report-filled only after report content advances the content-first blocker", () => {
+  it("rejects an untouched implementation template without writes, then advances after substantive content", () => {
     const projectDir = createWorkflowProject()
     writeVerificationSuccessEvidence(projectDir)
     const beforeAction = runPersonaCli(["workflow", "finish", "implement"], {
@@ -323,10 +336,21 @@ describe("ph workflow finish next action matrix", () => {
       env: {},
       invocationName: "ph",
     })
+    const implementationPath = join(projectDir, ".persona", "workflow", "implementation-report.md")
+    const templateBytes = readFileSync(implementationPath, "utf8")
+    const untouchedTemplate = runPersonaCli(["plan", "--report-filled", "implementation"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
 
-    expect(beforeAction.stderr).toContain("Next action: Fill .persona/workflow/implementation-report.md with actual verification evidence.")
+    expect(beforeAction.stderr).toContain("Next action: Complete the required substantive content in .persona/workflow/implementation-report.md")
     expect(beforeAction.stderr).toContain("Next command: after completing the action, run npx ph plan --report-filled implementation")
     expect(prematureCheck.status).toBe(0)
+    expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "implementation-report-missing" })
+    expect(untouchedTemplate.status).toBe(1)
+    expect(untouchedTemplate.stderr).toContain("required substantive implementation report content")
+    expect(readFileSync(implementationPath, "utf8")).toBe(templateBytes)
     expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "implementation-report-missing" })
 
     writeFilledImplementationReport(projectDir)
@@ -338,6 +362,61 @@ describe("ph workflow finish next action matrix", () => {
 
     expect(afterAction.status).toBe(0)
     expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "review-report-missing" })
+  })
+
+  it("rejects an untouched review template without writes, then resolves after substantive content", () => {
+    const projectDir = createWorkflowProject()
+    writeVerificationSuccessEvidence(projectDir)
+    writeFilledImplementationReport(projectDir)
+    expect(
+      runPersonaCli(["plan", "--report-filled", "implementation"], {
+        cwd: projectDir,
+        env: {},
+        invocationName: "ph",
+      }).status,
+    ).toBe(0)
+
+    const beforeAction = runPersonaCli(["workflow", "finish", "implement"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const prematureCheck = runPersonaCli(["workflow", "check"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const reviewPath = join(projectDir, ".persona", "workflow", "review-report.md")
+    const templateBytes = readFileSync(reviewPath, "utf8")
+    const untouchedTemplate = runPersonaCli(["plan", "--report-filled", "review"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(beforeAction.stderr).toContain("Next action: Complete the required substantive content in .persona/workflow/review-report.md")
+    expect(beforeAction.stderr).toContain("Next command: after completing the action, run npx ph plan --report-filled review")
+    expect(prematureCheck.status).toBe(0)
+    expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "review-report-missing" })
+    expect(untouchedTemplate.status).toBe(1)
+    expect(untouchedTemplate.stderr).toContain("required substantive review report content")
+    expect(readFileSync(reviewPath, "utf8")).toBe(templateBytes)
+    expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "review-report-missing" })
+
+    writeFilledReviewReport(projectDir)
+    const afterAction = runPersonaCli(["plan", "--report-filled", "review"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const finish = runPersonaCli(["workflow", "finish", "implement"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(afterAction.status).toBe(0)
+    expect(finish.status).toBe(0)
   })
 
   it("renders one plaintext follow-up while closure JSON retains every blocker and step", () => {

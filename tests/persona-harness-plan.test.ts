@@ -280,6 +280,25 @@ describe("ph plan", () => {
   it("marks filled workflow reports without changing the plan status", () => {
     const projectDir = createProfiledTempProject()
     const draft = runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "Status: template",
+        "- README ranges read: 1-220",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell --shell './gradlew test'`",
+        "- BUILD SUCCESSFUL",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      [
+        "Status: template",
+        "- Requirements reviewed against the accepted plan.",
+        "- Manual QA completed.",
+        "- `npx ph bearshell --shell './gradlew bootRun'`",
+      ].join("\n"),
+    )
 
     const implementationFilled = runPersonaCli(["plan", "--report-filled", "implementation"], {
       cwd: projectDir,

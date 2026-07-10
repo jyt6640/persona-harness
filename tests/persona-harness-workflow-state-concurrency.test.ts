@@ -33,6 +33,19 @@ function writeHarnessWorkflow(projectDir: string): void {
   writeFileSync(join(projectDir, ".persona", "workflow", "review-report.md"), "Status: template\n")
 }
 
+function writeSubstantiveImplementationReport(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: template",
+      "- README ranges read: 1-220",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+}
+
 function writeFakeOpencodeThatTouchesLoopState(projectDir: string): string {
   const command = join(projectDir, "fake-opencode-touch-loop-state.mjs")
   const statePath = join(projectDir, ".persona", "workflow", "workflow-loop-state.json")
@@ -75,6 +88,7 @@ describe("workflow state concurrent write protection", () => {
   it("aborts report-filled when a workflow report changes after read", () => {
     const projectDir = createTempProject()
     writeHarnessWorkflow(projectDir)
+    writeSubstantiveImplementationReport(projectDir)
     const reportPath = join(projectDir, ".persona", "workflow", "implementation-report.md")
 
     const result = runPlanCommand(
