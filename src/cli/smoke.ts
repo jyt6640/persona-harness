@@ -83,8 +83,11 @@ function createSmokeReport(projectDir: string): string {
 }
 
 export function runSmokeCommand(args: readonly string[], options: SmokeOptions = {}, invocationName = "ph"): CliRunResult {
-  if (args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
+  if (args.length === 1 && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     return { status: 0, stdout: `${smokeUsage(invocationName)}\n`, stderr: "" }
+  }
+  if (args.length > 0) {
+    return { status: 1, stdout: "", stderr: `smoke does not accept arguments.\n\n${smokeUsage(invocationName)}\n` }
   }
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const reportPath = join(projectDir, SMOKE_REPORT_PATH)

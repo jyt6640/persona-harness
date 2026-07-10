@@ -72,8 +72,11 @@ function createFeedbackTemplate(projectDir: string): string {
 }
 
 export function runFeedbackCommand(args: readonly string[], options: FeedbackOptions = {}, invocationName = "ph"): CliRunResult {
-  if (args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
+  if (args.length === 1 && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     return { status: 0, stdout: `${feedbackUsage(invocationName)}\n`, stderr: "" }
+  }
+  if (args.length > 0) {
+    return { status: 1, stdout: "", stderr: `feedback does not accept arguments.\n\n${feedbackUsage(invocationName)}\n` }
   }
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const reportPath = join(projectDir, FEEDBACK_REPORT_PATH)

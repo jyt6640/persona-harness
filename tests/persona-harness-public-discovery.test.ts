@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -106,5 +106,45 @@ describe("public CLI discovery", () => {
     expect(dev.status).toBe(1)
     expect(dev.stderr).toContain("Unknown dev command: unknown")
     expect(dev.stderr).toContain("Usage: ph dev")
+  })
+
+  it("rejects smoke and feedback arguments before either direct or dev paths can write reports", () => {
+    const projectDir = createTempProject()
+    const smokePath = join(projectDir, ".persona", "workflow", "smoke-report.md")
+    const feedbackPath = join(projectDir, ".persona", "workflow", "feedback-report.md")
+    const invalidCommands = [
+      { args: ["smoke", "unexpected"], message: "smoke does not accept arguments." },
+      { args: ["feedback", "unexpected"], message: "feedback does not accept arguments." },
+      { args: ["dev", "smoke", "unexpected"], message: "smoke does not accept arguments." },
+      { args: ["dev", "feedback", "unexpected"], message: "feedback does not accept arguments." },
+    ]
+
+    for (const invalid of invalidCommands) {
+      const result = runPersonaCli(invalid.args, { cwd: projectDir, env: {}, invocationName: "ph" })
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain(invalid.message)
+      expect(result.stderr).toContain("Usage: ph")
+      expect(existsSync(join(projectDir, ".persona"))).toBe(false)
+      expect(existsSync(smokePath)).toBe(false)
+      expect(existsSync(feedbackPath)).toBe(false)
+    }
+  })
+
+  it("keeps zero-argument smoke and feedback writers available through direct and dev paths", () => {
+    const projectDir = createTempProject()
+    const commands = [
+      ["smoke"],
+      ["dev", "smoke"],
+      ["feedback"],
+      ["dev", "feedback"],
+    ]
+
+    for (const args of commands) {
+      expect(runPersonaCli(args, { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    }
+
+    expect(existsSync(join(projectDir, ".persona", "workflow", "smoke-report.md"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "feedback-report.md"))).toBe(true)
   })
 })
