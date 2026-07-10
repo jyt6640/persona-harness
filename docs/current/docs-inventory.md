@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 52
 - versioned durable: 17
 
-Total indexed files: 282
+Total indexed files: 283
 
 ## File Inventory
 
@@ -46,6 +46,7 @@ Total indexed files: 282
 | `docs/current/backend-clean-code-uniformity-rubric.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/backend-product-code-style-direction.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/canonical-docs-index.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
+| `docs/current/ci-evidence-reverification-design.md` | current active pointer/status | - | Item 19 design for explicit CI evidence revalidation; not a shipped command, schema, or default. |
 | `docs/current/ci-finish-contract.md` | current active pointer/status | - | Exact CI finish exit/stream and closure JSON artifact contract; documents the absence of `finish --json`. |
 | `docs/current/clean-opencode-ph-bearshell-smoke.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/desktop-test-artifacts-index.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
