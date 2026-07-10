@@ -72,16 +72,16 @@ export function bearshellUsage(invocation = "ph"): string {
   ].join("\n")
 }
 
-export function runBearshell(args: readonly string[], options: BearshellOptions = {}): CliRunResult {
+export function runBearshell(args: readonly string[], options: BearshellOptions = {}, invocationName = "ph"): CliRunResult {
   const env = options.env ?? {}
   const parsed = parseBearshellArgs(args, env)
 
   if (parsed.kind === "help") {
-    return formatResult({ status: 0, stdout: `${bearshellUsage()}\n`, stderr: "" }, parsed.json)
+    return formatResult({ status: 0, stdout: `${bearshellUsage(invocationName)}\n`, stderr: "" }, parsed.json)
   }
 
   if (parsed.kind === "invalid") {
-    return formatResult({ status: 1, stdout: "", stderr: `${parsed.message}\n\n${bearshellUsage()}\n` }, parsed.json)
+    return formatResult({ status: 1, stdout: "", stderr: `${parsed.message}\n\n${bearshellUsage(invocationName)}\n` }, parsed.json)
   }
 
   const childEnv = { ...process.env, ...env }

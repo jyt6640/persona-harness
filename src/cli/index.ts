@@ -16,6 +16,7 @@ import { runObserveCommand } from "./observe.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
 import { runDoctorCommand } from "./doctor.js"
+import { runDevCommand } from "./dev-command.js"
 import { runEvidenceCommand } from "./evidence-summary.js"
 import { runFeedbackCommand } from "./feedback.js"
 import { runGoCommand, type GoStep } from "./go-command.js"
@@ -115,6 +116,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
 
   if (command === "doctor") {
     return runDoctorCommand(args.slice(1), { projectDir: options.cwd, env: options.env })
+  }
+
+  if (command === "dev") {
+    return runDevCommand(args.slice(1), { env: options.env, projectDir: options.cwd }, invocationName)
   }
 
   if (command === "evidence") {

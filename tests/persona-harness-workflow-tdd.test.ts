@@ -192,7 +192,7 @@ describe("ph workflow test TDD rail", () => {
     expect(passed.stdout).toContain("Next: continue normal closure/archive/finish flow")
   })
 
-  it("lists the read-only TDD helper in workflow and root help", () => {
+  it("lists the read-only TDD helper in workflow help without exposing it at the public front door", () => {
     const projectDir = createWorkflowProject()
 
     const workflowHelp = runWorkflow(projectDir, ["--help"])
@@ -202,8 +202,7 @@ describe("ph workflow test TDD rail", () => {
     expect(workflowHelp.stdout).toContain("workflow <check|implement|test|tdd|continue")
     expect(workflowHelp.stdout).toContain("workflow tdd prints read-only TDD red→green status")
     expect(rootHelp.status).toBe(0)
-    expect(rootHelp.stdout).toContain("workflow tdd")
-    expect(rootHelp.stdout).toContain("Print read-only TDD red→green status")
+    expect(rootHelp.stdout).not.toContain("  workflow")
   })
 
   it("blocks green-only test and implementation work because no red evidence exists", () => {

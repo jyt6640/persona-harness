@@ -90,13 +90,13 @@ describe("ph workflow ralph-loop", () => {
     expect(result.stdout).toContain("not a success, reliability, generated-app quality, or closure guarantee")
   })
 
-  it("advertises the ralph-loop preview in workflow and root help", () => {
+  it("advertises the ralph-loop preview in workflow help without exposing it at the public front door", () => {
     const workflowHelp = runPersonaCli(["workflow", "--help"], { env: {}, invocationName: "ph" })
     const rootHelp = runPersonaCli(["--help"], { env: {}, invocationName: "ph" })
 
     expect(workflowHelp.status).toBe(0)
     expect(workflowHelp.stdout).toContain("workflow ralph-loop [--dry-run] [--json]")
     expect(rootHelp.status).toBe(0)
-    expect(rootHelp.stdout).toContain("workflow ralph-loop")
+    expect(rootHelp.stdout).not.toContain("  workflow")
   })
 })

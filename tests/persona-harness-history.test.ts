@@ -118,7 +118,7 @@ describe("ph history", () => {
     expect(duplicate.stderr).toContain("already exists")
   })
 
-  it("shows usage, rejects invalid archive ids, and advertises history in shared usage", () => {
+  it("shows usage and rejects invalid archive ids without advertising history at the public front door", () => {
     const projectDir = createTempProject()
 
     const help = runPersonaCli(["history", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -129,7 +129,6 @@ describe("ph history", () => {
     expect(help.stdout).toContain("Usage: ph history")
     expect(invalid.status).toBe(1)
     expect(invalid.stderr).toContain("Archive id may contain")
-    expect(rootHelp.stdout).toContain("history")
-    expect(rootHelp.stdout).toContain("Archive completed workflow artifacts")
+    expect(rootHelp.stdout).not.toContain("  history")
   })
 })

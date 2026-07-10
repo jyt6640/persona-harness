@@ -125,7 +125,7 @@ describe("ph plan prompt and usage output", () => {
     expect(prompt.stdout).toContain("명령 실행이 필요하면 `npx ph bearshell`을 우선 사용")
   })
 
-  it("shows usage, rejects unknown options, and advertises plan in shared usage", () => {
+  it("shows usage and rejects unknown options without advertising plan at the public front door", () => {
     const projectDir = createTempProject()
 
     const help = runPersonaCli(["plan", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -148,7 +148,6 @@ describe("ph plan prompt and usage output", () => {
     expect(help.stdout).toContain(".persona/workflow/review-report.md")
     expect(invalid.status).toBe(1)
     expect(invalid.stderr).toContain("Unknown option: --unknown")
-    expect(rootHelp.stdout).toContain("plan")
-    expect(rootHelp.stdout).toContain("Create a blackbear architecture plan draft")
+    expect(rootHelp.stdout).not.toContain("  plan")
   })
 })

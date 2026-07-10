@@ -459,14 +459,14 @@ enforcement: inject_only
     }
   })
 
-  it("advertises the explicit loop command in workflow and root help", () => {
+  it("advertises the explicit loop command in workflow help without exposing it at the public front door", () => {
     const workflowHelp = runPersonaCli(["workflow", "--help"], { env: {}, invocationName: "ph" })
     const rootHelp = runPersonaCli(["--help"], { env: {}, invocationName: "ph" })
 
     expect(workflowHelp.status).toBe(0)
     expect(workflowHelp.stdout).toContain("workflow loop")
     expect(rootHelp.status).toBe(0)
-    expect(rootHelp.stdout).toContain("workflow loop")
+    expect(rootHelp.stdout).not.toContain("  workflow")
   })
 
   it("escalates a timed-out child that ignores SIGTERM", () => {

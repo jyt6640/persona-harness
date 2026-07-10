@@ -22,14 +22,14 @@ afterEach(() => {
 })
 
 describe("ph help and language", () => {
-  it("shows shared usage from ph help", () => {
+  it("shows public usage from ph help without exposing language discovery", () => {
     const result = runPersonaCli(["help"], { cwd: createTempProject(), env: {}, invocationName: "ph" })
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe("")
     expect(result.stdout).toContain("Usage: ph <command> [args...]")
-    expect(result.stdout).toContain("language")
-    expect(result.stdout).toContain("Show supported user languages")
+    expect(result.stdout).toContain("Public commands:")
+    expect(result.stdout).not.toContain("  language")
   })
 
   it("prints supported user languages for intake and agent output", () => {

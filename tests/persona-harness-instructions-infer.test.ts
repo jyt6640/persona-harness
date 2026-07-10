@@ -123,7 +123,7 @@ describe("ph instructions infer backend", () => {
     expect(help.stdout).toContain("instructions check [--json]")
     expect(bad.status).toBe(1)
     expect(bad.stderr).toContain("Unknown instructions command")
-    expect(rootHelp.stdout).toContain("instructions infer backend")
+    expect(rootHelp.stdout).not.toContain("  instructions")
   })
 })
 

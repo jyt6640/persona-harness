@@ -202,7 +202,7 @@ describe("ph intake", () => {
     expect(invalid.stderr).toContain("Unknown option: --unknown")
   })
 
-  it("advertises intake in the shared CLI usage", () => {
+  it("keeps intake out of public CLI usage", () => {
     const result = runPersonaCli(["--help"], {
       cwd: createTempProject(),
       env: {},
@@ -210,7 +210,6 @@ describe("ph intake", () => {
     })
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain("intake")
-    expect(result.stdout).toContain("Create a draft backend project profile")
+    expect(result.stdout).not.toContain("  intake")
   })
 })
