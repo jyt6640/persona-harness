@@ -79,7 +79,7 @@ describe("ph go recovery", () => {
     expect(workflowSnapshot(projectDir)).toEqual(before)
   })
 
-  it("reclaims an abandoned recovery claim before clearing its stale generation", () => {
+  it("preserves an abandoned recovery claim while clearing its stale generation", () => {
     const projectDir = readyProject()
     const path = lockPath(projectDir)
     const generation = "stale-generation"
@@ -103,30 +103,22 @@ describe("ph go recovery", () => {
 
     expect(result.status).toBe(0)
     expect(existsSync(path)).toBe(false)
-    expect(existsSync(claimPath)).toBe(false)
+    expect(existsSync(claimPath)).toBe(true)
     expect(workflowSnapshot(projectDir)).toEqual(before)
   })
 
-  it("propagates a filesystem error while reclaiming an abandoned claim", () => {
+  it("does not delete a malformed abandoned recovery claim", () => {
     const projectDir = readyProject()
     const generation = "stale-generation"
+    const claimPath = recoveryClaimPath(projectDir, generation)
+    const claimContent = "malformed abandoned recovery claim\n"
     writeFileSync(lockPath(projectDir), lockText(generation, 99999999, "stale-owner"))
-    writeFileSync(
-      recoveryClaimPath(projectDir, generation),
-      `${JSON.stringify({
-        generation,
-        owner: { pid: 99999999, token: "abandoned-recoverer" },
-        schemaVersion: "ph-go-recovery-claim.1",
-      })}\n`,
-    )
+    writeFileSync(claimPath, claimContent)
 
-    expect(() => recoverGoCommandLock(projectDir, {
-      onBeforeDiscardRecoveryClaim: () => {
-        const error = new Error("EACCES")
-        Object.defineProperty(error, "code", { value: "EACCES" })
-        throw error
-      },
-    })).toThrow(/EACCES/u)
+    const result = recoverGoCommandLock(projectDir)
+
+    expect(result.kind).toBe("recovered")
+    expect(readFileSync(claimPath, "utf8")).toBe(claimContent)
   })
 
   it("keeps recovery claims inside the persona directory for crafted generations", () => {
@@ -195,15 +187,18 @@ describe("ph go recovery", () => {
     expect(lstatSync(path).ino).not.toBe(before.ino)
   })
 
-  it("allows at most one stale recoverer to claim a generation", () => {
+  it("allows at most one stale recoverer to own a generation", () => {
     const projectDir = readyProject()
     const path = lockPath(projectDir)
     writeFileSync(path, lockText("stale-generation", 99999999, "stale-owner"))
     let secondKind = ""
 
     const first = recoverGoCommandLock(projectDir, {
+      recoveryOwner: { pid: process.pid, token: "a-first-recoverer" },
       onAfterClaim: () => {
-        secondKind = recoverGoCommandLock(projectDir).kind
+        secondKind = recoverGoCommandLock(projectDir, {
+          recoveryOwner: { pid: process.pid, token: "z-second-recoverer" },
+        }).kind
       },
     })
 

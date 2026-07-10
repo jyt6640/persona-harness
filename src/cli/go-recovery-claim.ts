@@ -4,21 +4,32 @@ import {
   linkSync,
   lstatSync,
   openSync,
+  readdirSync,
   readFileSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs"
+import { basename, dirname, join } from "node:path"
 
-import { type GoLockOwner, isGoLockOwner, processIsRunning } from "./go-lock-state.js"
+import {
+  type GoLockOwner,
+  isGoLockOwner,
+  processIsRunning,
+  recoveryClaimPath,
+} from "./go-lock-state.js"
 
 export type GoRecoveryClaim = {
+  readonly device: number
   readonly generation: string
+  readonly inode: number
   readonly owner: GoLockOwner
   readonly path: string
+  readonly raw: string
 }
 
 export type GoRecoveryClaimOptions = {
-  readonly onBeforeDiscard?: () => void
+  readonly onBeforePublish?: () => void
+  readonly owner?: GoLockOwner
 }
 
 type GoRecoveryClaimRecord = {
@@ -93,42 +104,72 @@ function readRecoveryClaim(path: string): GoRecoveryClaimSnapshot {
   }
 }
 
+function claimFromSnapshot(
+  path: string,
+  snapshot: Extract<GoRecoveryClaimSnapshot, { readonly kind: "regular" }>,
+): GoRecoveryClaim | undefined {
+  if (snapshot.record === undefined) {
+    return undefined
+  }
+  return {
+    device: snapshot.device,
+    generation: snapshot.record.generation,
+    inode: snapshot.inode,
+    owner: snapshot.record.owner,
+    path,
+    raw: snapshot.raw,
+  }
+}
+
 function recoveryClaimMatches(
-  left: Extract<GoRecoveryClaimSnapshot, { readonly kind: "regular" }>,
-  right: Extract<GoRecoveryClaimSnapshot, { readonly kind: "regular" }>,
+  claim: GoRecoveryClaim,
+  snapshot: Extract<GoRecoveryClaimSnapshot, { readonly kind: "regular" }>,
 ): boolean {
   return (
-    left.device === right.device
-    && left.inode === right.inode
-    && left.raw === right.raw
+    claim.device === snapshot.device
+    && claim.inode === snapshot.inode
+    && claim.raw === snapshot.raw
+    && snapshot.record !== undefined
+    && claim.generation === snapshot.record.generation
+    && claim.owner.pid === snapshot.record.owner.pid
+    && claim.owner.token === snapshot.record.owner.token
   )
 }
 
-function discardAbandonedRecoveryClaim(
-  path: string,
-  observed: Extract<GoRecoveryClaimSnapshot, { readonly kind: "regular" }>,
-  options: GoRecoveryClaimOptions,
-): boolean {
-  const current = readRecoveryClaim(path)
-  if (current.kind !== "regular" || !recoveryClaimMatches(observed, current)) {
-    return false
-  }
-  if (current.record !== undefined && processIsRunning(current.record.owner.pid)) {
-    return false
-  }
-  try {
-    options.onBeforeDiscard?.()
-    unlinkSync(path)
-    return true
-  } catch (error) {
-    if (!(error instanceof Error)) {
-      throw error
+function activeRecoveryClaims(projectDir: string, generation: string): readonly GoRecoveryClaim[] {
+  const canonicalPath = recoveryClaimPath(projectDir, generation)
+  const canonicalName = basename(canonicalPath)
+  const claimPaths = readdirSync(dirname(canonicalPath))
+    .filter((entry) => (
+      entry === canonicalName
+      || (entry.startsWith(`${canonicalName}.`) && !entry.includes(".pending-"))
+    ))
+    .sort()
+    .map((entry) => join(dirname(canonicalPath), entry))
+  const claims: GoRecoveryClaim[] = []
+  for (const path of claimPaths) {
+    const snapshot = readRecoveryClaim(path)
+    const claim = snapshot.kind === "regular" ? claimFromSnapshot(path, snapshot) : undefined
+    if (
+      claim !== undefined
+      && claim.generation === generation
+      && processIsRunning(claim.owner.pid)
+    ) {
+      claims.push(claim)
     }
-    if (errorCode(error) === "ENOENT") {
-      return false
-    }
-    throw error
   }
+  return claims
+}
+
+function claimOrder(left: GoRecoveryClaim, right: GoRecoveryClaim): number {
+  const tokenOrder = left.owner.token.localeCompare(right.owner.token)
+  if (tokenOrder !== 0) {
+    return tokenOrder
+  }
+  if (left.owner.pid !== right.owner.pid) {
+    return left.owner.pid < right.owner.pid ? -1 : 1
+  }
+  return left.path.localeCompare(right.path)
 }
 
 function removePendingRecoveryClaim(path: string): void {
@@ -142,54 +183,72 @@ function removePendingRecoveryClaim(path: string): void {
 }
 
 export function createGoRecoveryClaim(
-  path: string,
+  projectDir: string,
   generation: string,
   options: GoRecoveryClaimOptions = {},
 ): GoRecoveryClaim | undefined {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const owner = { pid: process.pid, token: randomUUID() }
-    const record: GoRecoveryClaimRecord = {
-      generation,
-      owner,
-      schemaVersion: "ph-go-recovery-claim.1",
-    }
-    const pendingPath = `${path}.pending-${owner.token}`
-    try {
-      const descriptor = openSync(pendingPath, "wx")
-      try {
-        writeFileSync(descriptor, `${JSON.stringify(record)}\n`)
-      } finally {
-        closeSync(descriptor)
-      }
-      linkSync(pendingPath, path)
-      return { generation, owner, path }
-    } catch (error) {
-      if (!(error instanceof Error)) {
-        throw error
-      }
-      if (errorCode(error) !== "EEXIST") {
-        throw error
-      }
-    } finally {
-      removePendingRecoveryClaim(pendingPath)
-    }
-    const existing = readRecoveryClaim(path)
-    if (existing.kind !== "regular" || !discardAbandonedRecoveryClaim(path, existing, options)) {
-      return undefined
-    }
+  const owner = options.owner ?? { pid: process.pid, token: randomUUID() }
+  const path = recoveryClaimPath(projectDir, generation, owner)
+  const record: GoRecoveryClaimRecord = {
+    generation,
+    owner,
+    schemaVersion: "ph-go-recovery-claim.1",
   }
-  return undefined
+  const pendingPath = `${path}.pending-${randomUUID()}`
+  try {
+    const descriptor = openSync(pendingPath, "wx")
+    try {
+      writeFileSync(descriptor, `${JSON.stringify(record)}\n`)
+    } finally {
+      closeSync(descriptor)
+    }
+    options.onBeforePublish?.()
+    linkSync(pendingPath, path)
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      throw error
+    }
+    if (errorCode(error) !== "EEXIST") {
+      throw error
+    }
+  } finally {
+    removePendingRecoveryClaim(pendingPath)
+  }
+  const snapshot = readRecoveryClaim(path)
+  if (snapshot.kind !== "regular") {
+    return undefined
+  }
+  const claim = claimFromSnapshot(path, snapshot)
+  return (
+    claim !== undefined
+    && claim.generation === generation
+    && claim.owner.pid === owner.pid
+    && claim.owner.token === owner.token
+  ) ? claim : undefined
+}
+
+export function hasActiveGoRecoveryClaim(projectDir: string, generation: string): boolean {
+  return activeRecoveryClaims(projectDir, generation).length > 0
+}
+
+export function ownsGoRecoveryClaim(projectDir: string, claim: GoRecoveryClaim): boolean {
+  const snapshot = readRecoveryClaim(claim.path)
+  if (snapshot.kind !== "regular" || !recoveryClaimMatches(claim, snapshot)) {
+    return false
+  }
+  const elected = [...activeRecoveryClaims(projectDir, claim.generation)].sort(claimOrder)[0]
+  return (
+    elected !== undefined
+    && elected.path === claim.path
+    && elected.device === claim.device
+    && elected.inode === claim.inode
+    && elected.raw === claim.raw
+  )
 }
 
 export function releaseGoRecoveryClaim(claim: GoRecoveryClaim): void {
   const snapshot = readRecoveryClaim(claim.path)
-  if (
-    snapshot.kind !== "regular"
-    || snapshot.record === undefined
-    || snapshot.record.generation !== claim.generation
-    || snapshot.record.owner.pid !== claim.owner.pid
-    || snapshot.record.owner.token !== claim.owner.token
-  ) {
+  if (snapshot.kind !== "regular" || !recoveryClaimMatches(claim, snapshot)) {
     return
   }
   try {

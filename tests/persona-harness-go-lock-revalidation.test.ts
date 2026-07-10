@@ -27,7 +27,7 @@ function lockText(generation: string): string {
 }
 
 function expectSingleNextCommand(stderr: string): void {
-  expect(stderr).toContain("Next command: npx ph go --recover")
+  expect(stderr).toContain("Next command: npx ph workflow check")
   expect(stderr.match(/npx ph/gu)).toHaveLength(1)
 }
 

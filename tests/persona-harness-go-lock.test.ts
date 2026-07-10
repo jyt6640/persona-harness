@@ -72,6 +72,27 @@ describe("ph go generation lock", () => {
     expect(workflowSnapshot(projectDir)).toEqual(before)
   })
 
+  it("keeps the recovery command out of normal help and emits it once for a stale blocker", () => {
+    const projectDir = readyProject()
+    const path = lockPath(projectDir)
+    writeFileSync(path, lockText("stale-generation", 99999999, "stale-owner"))
+
+    const help = runPersonaCli(["go", "--help"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const blocked = runPersonaCli(["go", "Add task creation."], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(help.status).toBe(0)
+    expect(help.stdout).not.toContain("recover")
+    expectSingleNextCommand(blocked.stderr, "npx ph go --recover")
+  })
+
   it("blocks normal go while a live generation is held", () => {
     const projectDir = readyProject()
     const acquired = acquireGoCommandLock(projectDir)
@@ -181,7 +202,7 @@ describe("ph go generation lock", () => {
 
     expect(recovered.kind).toBe("recovered")
     expect(nestedStatus).toBe(1)
-    expectSingleNextCommand(nestedStderr, "npx ph go --recover")
+    expectSingleNextCommand(nestedStderr, "npx ph workflow check")
   })
 
 })

@@ -101,7 +101,7 @@ describe("ph go", () => {
     expect(existsSync(join(projectDir, ".persona", "workflow", "work", "step-2", "00-task-card.md"))).toBe(true)
   })
 
-  it("promotes go in top-level and command help without enabling runtime injection", () => {
+  it("promotes go without exposing recovery in normal help or enabling runtime injection", () => {
     const projectDir = readyProject()
 
     const commandHelp = runPersonaCli(["go", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -115,9 +115,10 @@ describe("ph go", () => {
     expect(commandHelp.status).toBe(0)
     expect(commandHelp.stdout).toContain('Usage: ph go "<concrete implementation goal>"')
     expect(commandHelp.stdout).toContain("ph go --stdin")
-    expect(commandHelp.stdout).toContain("ph go --recover")
+    expect(commandHelp.stdout).not.toContain("recover")
     expect(topHelp.stdout).toContain("go")
     expect(topHelp.stdout).toContain("single entry")
+    expect(topHelp.stdout).not.toContain("recover")
     expect(result.status).toBe(0)
     expect(readFileSync(join(projectDir, ".persona", "harness.jsonc"), "utf8")).toContain('"runtimeInjection": false')
     expect(existsSync(join(projectDir, ".opencode"))).toBe(false)

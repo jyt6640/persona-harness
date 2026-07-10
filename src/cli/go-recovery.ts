@@ -9,10 +9,9 @@ export function goLockBlocker(kind: "active" | "recoverable" | "recovery-claim" 
   if (kind === "unsafe") {
     return goBlockedOutput("the go lock path is not a regular file.", "npx ph workflow check")
   }
-  return goBlockedOutput(
-    kind === "recoverable" ? "a stale or malformed go lock requires recovery." : "a go lock recovery is already in progress.",
-    "npx ph go --recover",
-  )
+  return kind === "recoverable"
+    ? goBlockedOutput("a stale or malformed go lock requires recovery.", "npx ph go --recover")
+    : goBlockedOutput("a go lock recovery is already in progress.", "npx ph workflow check")
 }
 
 export function runGoRecovery(projectDir: string, onBeforeClear: (() => void) | undefined): CliRunResult {
@@ -31,6 +30,6 @@ export function runGoRecovery(projectDir: string, onBeforeClear: (() => void) | 
   }
   return goBlockedOutput(
     result.kind === "changed" ? "the go lock changed during recovery." : "another go lock recovery is in progress.",
-    "npx ph go --recover",
+    "npx ph workflow check",
   )
 }

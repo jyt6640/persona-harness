@@ -115,9 +115,18 @@ export function lockPath(projectDir: string): string {
   return join(projectDir, ".persona", "go.lock")
 }
 
-export function recoveryClaimPath(projectDir: string, generation: string): string {
+export function recoveryClaimPath(
+  projectDir: string,
+  generation: string,
+  owner?: GoLockOwner,
+): string {
   const key = createHash("sha256").update(generation).digest("hex")
-  return join(projectDir, ".persona", `go.lock.recovery-${key}.claim`)
+  const base = `go.lock.recovery-${key}.claim`
+  if (owner === undefined) {
+    return join(projectDir, ".persona", base)
+  }
+  const ownerKey = createHash("sha256").update(`${owner.pid}:${owner.token}`).digest("hex")
+  return join(projectDir, ".persona", `${base}.${ownerKey}`)
 }
 
 export function readGoLockSnapshot(path: string): GoLockSnapshot {

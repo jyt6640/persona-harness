@@ -1,18 +1,23 @@
 import { randomUUID } from "node:crypto"
-import { existsSync, unlinkSync } from "node:fs"
+import { unlinkSync } from "node:fs"
 
 import {
   GoCommandLockLostError,
   type GoCommandLock,
+  type GoLockOwner,
   type GoLockRecord,
   lockPath,
   processIsRunning,
   readGoLockSnapshot,
-  recoveryClaimPath,
   snapshotMatches,
   writeLockRecord,
 } from "./go-lock-state.js"
-import { createGoRecoveryClaim, releaseGoRecoveryClaim } from "./go-recovery-claim.js"
+import {
+  createGoRecoveryClaim,
+  hasActiveGoRecoveryClaim,
+  ownsGoRecoveryClaim,
+  releaseGoRecoveryClaim,
+} from "./go-recovery-claim.js"
 
 export type { GoCommandLock }
 export { GoCommandLockLostError }
@@ -27,7 +32,7 @@ export type GoLockRecoveryResult =
 export type GoLockRecoveryOptions = {
   readonly onAfterClaim?: () => void
   readonly onBeforeClear?: () => void
-  readonly onBeforeDiscardRecoveryClaim?: () => void
+  readonly recoveryOwner?: GoLockOwner
 }
 
 function errorCode(error: unknown): string | undefined {
@@ -44,7 +49,7 @@ export function acquireGoCommandLock(projectDir: string): GoLockAcquireResult {
       return { kind: "unsafe" }
     }
     if (snapshot.kind === "regular") {
-      if (existsSync(recoveryClaimPath(projectDir, snapshot.generation))) {
+      if (hasActiveGoRecoveryClaim(projectDir, snapshot.generation)) {
         return { kind: "recovery-claim" }
       }
       return snapshot.record !== undefined && processIsRunning(snapshot.record.owner.pid)
@@ -92,15 +97,17 @@ export function recoverGoCommandLock(
   if (observed.kind === "missing" || observed.kind === "unsafe") {
     return { kind: observed.kind }
   }
-  const claimPath = recoveryClaimPath(projectDir, observed.generation)
-  const claim = createGoRecoveryClaim(claimPath, observed.generation, {
-    onBeforeDiscard: options.onBeforeDiscardRecoveryClaim,
+  const claim = createGoRecoveryClaim(projectDir, observed.generation, {
+    owner: options.recoveryOwner,
   })
   if (claim === undefined) {
     return { kind: "claim-contended" }
   }
   try {
     options.onAfterClaim?.()
+    if (!ownsGoRecoveryClaim(projectDir, claim)) {
+      return { kind: "claim-contended" }
+    }
     const current = readGoLockSnapshot(path)
     if (!snapshotMatches(observed, current)) {
       return { kind: "changed" }
@@ -109,6 +116,9 @@ export function recoverGoCommandLock(
       return { kind: "active" }
     }
     options.onBeforeClear?.()
+    if (!ownsGoRecoveryClaim(projectDir, claim)) {
+      return { kind: "claim-contended" }
+    }
     if (!snapshotMatches(observed, readGoLockSnapshot(path))) {
       return { kind: "changed" }
     }

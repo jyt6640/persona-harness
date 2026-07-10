@@ -10,9 +10,9 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   single entry for concrete implementation requirements in an already prepared
   project. The command composes existing capture, split, next, and implement
   APIs in-process, refuses setup or existing-ticket conflicts without writes,
-  and runs composition against staged workflow state. `ph go --recover`
-  explicitly clears only a claimed stale or malformed lock generation; normal
-  `go` never deletes such locks. Lock/conflict preservation is for cooperative
+  and runs composition against staged workflow state. An explicit recovery mode
+  clears only a claimed stale or malformed lock generation; normal `go` never
+  deletes such locks. Lock/conflict preservation is for cooperative
   local writers and does not address hostile same-user filesystem path
   replacement.
   Runtime injection remains default-off; this does not add hooks, vague-intent

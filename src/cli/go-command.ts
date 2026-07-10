@@ -52,12 +52,10 @@ export function goUsage(invocationName = "ph"): string {
   return [
     `Usage: ${invocationName} go "<concrete implementation goal>"`,
     `       ${invocationName} go --stdin`,
-    `       ${invocationName} go --recover`,
     "",
     "Capture one concrete implementation requirement, create workflow tickets, select the current ticket, and print the existing implementation rail.",
     "",
     "This command requires an initialized harness, a ready project profile, and an accepted plan.",
-    "Use --recover only to clear a stale or malformed go lock in a prepared project. It does not bootstrap, enable runtime hooks, or route vague product ideas.",
   ].join("\n")
 }
 
@@ -69,7 +67,7 @@ function parseGoArgs(args: readonly string[], stdin: string | undefined): Parsed
     return { kind: "invalid", message: "ph go accepts either one positional goal or --stdin, not both." }
   }
   if (args.includes("--recover") && args.length !== 1) {
-    return { kind: "invalid", message: "ph go --recover does not accept a goal or other options." }
+    return { kind: "invalid", message: "The recovery option does not accept a goal or other options." }
   }
   if (args.length === 1 && args[0] === "--recover") {
     return { kind: "recover" }
@@ -179,7 +177,7 @@ export function runGoCommand(
       if (!(error instanceof GoCommandLockLostError)) {
         throw error
       }
-      return goBlockedOutput("the go lock generation changed before transaction start.", "npx ph go --recover")
+      return goBlockedOutput("the go lock generation changed before transaction start.", "npx ph workflow check")
     }
     let transaction: GoWorkflowTransaction
     try {
@@ -228,7 +226,7 @@ export function runGoCommand(
         throw error
       }
       if (error instanceof GoCommandLockLostError) {
-        return goBlockedOutput("the go lock generation changed before workflow commit.", "npx ph go --recover")
+        return goBlockedOutput("the go lock generation changed before workflow commit.", "npx ph workflow check")
       }
       if (error instanceof GoWorkflowConflictError) {
         return goBlockedOutput("workflow state changed while ph go was running.", "npx ph workflow check")
