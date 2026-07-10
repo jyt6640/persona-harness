@@ -3,8 +3,9 @@
 **Status:** Item 19 design only. No runtime, schema, default, package version,
 publish, tag, or CI workflow behavior changes are included here.
 
-**Source snapshot:** `3d5534c0e886b8a747616654a77f4096e8e6857a`
-(`docs(ci): record finish gate contract`, 2026-07-10T22:34:04+09:00).
+**Source snapshot:** `68e869a5dec0b1c6df926135718118f5423feb48`
+(`docs(ci): resolve reverification mutation policy`,
+2026-07-10T22:58:44+09:00).
 All line references below are snapshots from that commit.
 
 ## Decision
@@ -13,11 +14,14 @@ For CI that needs independent verification of a prepared PH project, the
 proposed entry surface is:
 
 ```sh
-ph workflow finish implement --reverify
+ph workflow finish implement --reverify --ci
 ```
 
-This is a proposed future flag, not a command supported at the source snapshot.
-It is intentionally a finish-gate extension rather than `finish --json`:
+These are proposed future flags, not commands supported at the source snapshot.
+`--ci` is the explicit authority selector for the CI policy; an environment
+variable alone never selects CI mode. `--ci` requires `--reverify`. The
+proposed surface is intentionally a finish-gate extension rather than
+`finish --json`:
 
 - current `ph workflow finish implement` remains plaintext and unchanged;
 - current `ph workflow closure next --json` remains the separate, unversioned
@@ -29,8 +33,9 @@ It is intentionally a finish-gate extension rather than `finish --json`:
 `--reverify` means PH itself must select and execute the verification command
 catalog from the ready project profile, create a fresh PH-owned revalidation
 record, and make that record authoritative for that invocation's finish
-decision. Agent-authored `.persona` ledger content remains useful context but
-is not independent proof for this path.
+decision. `--reverify` without `--ci` is local mode. Agent-authored `.persona`
+ledger content remains useful context but is not independent proof for either
+mode.
 
 ## Trust Boundary
 
@@ -73,8 +78,9 @@ text instead.
 | `src/cli/workflow-closure.ts:runWorkflowClosureCommand` lines 83-103 | `closure next --json` writes the existing JSON companion with exit 0. |
 | `src/cli/workflow-closure.ts:readWorkflowClosureState` lines 105-127; `closureBlockers` lines 171-184 | Closure derives verification state and maps non-passed verification to a blocker. |
 | `src/cli/workflow-closure-verification.ts:readClosureVerification` lines 24-52 | Strict mode uses direct verification; non-strict mode can read reports and execution evidence. |
-| `src/cli/closure-verification-runner.ts:runDirectTestVerification` lines 71-160 | The current direct runner selects Gradle, runs one test command with a 120 s timeout, and returns an in-memory summary. |
+| `src/cli/closure-verification-runner.ts:runDirectTestVerification` lines 71-160 | The current direct runner selects Gradle across platform branches, runs one test command with a 120 s timeout, and returns an in-memory summary. P19 deliberately narrows its first catalog to POSIX. |
 | `src/cli/closure-verification-runner.ts:junitVerificationFromFiles` lines 173-218 | Current direct verification filters JUnit XML by post-start modification time. |
+| `src/cli/bounded-process.ts:runBoundedProcess` lines 24-105 | The current bounded helper uses direct argv and supervisor process-group handling; P19 adopts that no-shell shape only for POSIX CI. |
 | `src/cli/bearshell.ts:runBearshell` lines 75-125; `parseBearshellArgs` lines 131-186 | Bearshell supports fixed argv by default, explicit shell opt-in, timeout, and evidence emission. |
 | `src/runtime/execution-evidence.ts:writeBearshellExecutionEvidence` lines 19-46 | Existing bearshell evidence is `phase0.execution.1` and includes command, exit status, bounded output, and timestamps. |
 | `src/cli/stack-alignment-profile.ts:readProfileIntent` lines 23-48 | The current profile parser accepts `persona.project-profile.v1` and exposes build tool, framework, and language intent. |
@@ -90,7 +96,7 @@ The future CI path is explicit:
 
 ```sh
 mkdir -p .persona-artifacts
-ph workflow finish implement --reverify > .persona-artifacts/finish.stdout 2> .persona-artifacts/finish.stderr
+ph workflow finish implement --reverify --ci > .persona-artifacts/finish.stdout 2> .persona-artifacts/finish.stderr
 finish_status=$?
 ph workflow closure next --json > .persona-artifacts/workflow-closure-next.json
 exit "$finish_status"
@@ -103,41 +109,50 @@ only; it does not become a JSON finish protocol.
 
 The plain current finish command keeps its current behavior. The future
 `--reverify` path is opt-in until a separately accepted release/default
-decision says otherwise.
+decision says otherwise. The recipe, rather than ambient CI environment
+variables, supplies `--ci`.
 
 ## Command Selection And Execution
 
-### Catalog
+### Platform And Catalog
 
-The first implementation scope is only a ready
-`persona.project-profile.v1` Java/Spring/Gradle project:
+P19 first implementation supports POSIX runners only, including GitHub Actions
+Ubuntu/macOS-class CI runners that can use direct spawn argv and the matching
+local POSIX path. Windows is explicitly unsupported and unavailable in P19. A
+future cross-platform ticket must define and audit a separate Windows execution
+contract before Windows support can be claimed.
 
-| Condition | Fixed command plan |
+The first command catalog is exactly a ready
+`persona.project-profile.v1` Java/Spring/Gradle wrapper project:
+
+| Safe preflight condition | Catalog result |
 | --- | --- |
-| Windows with `gradlew.bat` | `cmd.exe /d /s /c gradlew.bat test`, then `cmd.exe /d /s /c gradlew.bat build` |
-| Non-Windows with `gradlew` | `./gradlew test`, then `./gradlew build` |
-| Wrapper absent, Gradle profile/project detected | `gradle test`, then `gradle build` |
-| Any other profile, unsupported profile, or no catalog match | command unavailable |
+| POSIX runner, ready Java/Spring/Gradle profile, workspace-contained executable `./gradlew` | `java-spring-gradle-wrapper.1`: `./gradlew test`, then `./gradlew build` |
+| Windows runner | unavailable before command start |
+| Maven, non-Gradle, multi-tool, unsupported, malformed, or unready profile | unavailable before command start |
+| Missing/non-executable wrapper, missing safe artifact parent, or CI Git/HEAD preflight failure | unavailable before command start |
 
-`bootRun`, HTTP smoke, arbitrary profile command strings, shell snippets, and
-tool discovery beyond the table are excluded. The catalog uses fixed command
-and argument arrays; profile text selects a catalog row but never supplies an
-executable path, argument, shell fragment, or environment value.
+The catalog IDs are `gradle-wrapper-test.1` and `gradle-wrapper-build.1`.
+`bootRun`, HTTP smoke, system-Gradle fallback, arbitrary profile command
+strings, shell snippets, and tool discovery beyond the table are excluded.
+Profile text selects a catalog row but never supplies an executable path,
+argument, shell fragment, or environment value.
 
 ### Execution
 
 - Run each command once, serially, in the prepared project root.
-- Use no shell. The implementation should use a bounded child-process helper
-  with process-group termination semantics rather than raw `spawnSync`.
+- Use direct POSIX spawn argv and no shell. The implementation should use a
+  bounded child-process helper with process-group termination semantics rather
+  than raw `spawnSync`.
 - Set a 120 s timeout per command to match the current direct verifier. Apply
   a 300 s total attempt budget; a later command is not started after a prior
   failure or timeout.
 - Start a new attempt for every `--reverify` invocation. PH result caching is
   prohibited; Gradle's own local cache may exist but cannot substitute for a
   PH-run attempt.
-- Capture exit code, timeout flag, bounded/redacted stdout and stderr, command
-  order, and post-start JUnit XML references. Do not accept pre-existing JUnit
-  XML as the fresh result.
+- Capture command outcome, exit code, timeout flag, byte counts, SHA-256
+  digests, order, and post-start JUnit XML references. Do not accept
+  pre-existing JUnit XML as the fresh result.
 
 ## Result And Artifact Contract
 
@@ -148,32 +163,37 @@ The implementation must introduce a new schema rather than mutate
 ```text
 schemaVersion: "ph-ci-reverification.1"
 attemptId
-startedAt, endedAt
-phVersion, sourceCommit (when available)
-profilePath, profileSha256
-workspaceIdentity
-commandPlanId, commandPlanSha256
-commands[]: ordinal, argv, exitCode, timedOut, durationMs,
-            stdoutSha256, stderrSha256, junitRefs[]
-result: passed | failed | unavailable | timeout | malformed-profile | partial
-legacyLedger: observedCount, authoritative: false
-redaction: policyVersion, redactedFieldCount
-workspaceMutation: mode, allowlistId, preState, postState,
-                   newlyObservedPaths[], decision
+mode: local | ci
+profileSha256
+commandCatalogId
+commands[]: ordinal, fixedArgvId, exitCode, durationMs, outcome,
+            stdoutBytes, stderrBytes, stdoutSha256, stderrSha256, junitRefs[]
+finalStatus: passed | failed | unavailable | timeout | artifact-invalid | partial
+diagnosticCodes[]
+mutationSnapshot
 ```
 
-The artifact records only relative paths. It does not record environment
-values, tokens, credentials, home directories, raw Git remotes, or unbounded
-output. Output is redacted before persistence and is bounded with a digest of
-the redacted representation. The artifact is provenance for a narrow finish
-decision, not a new general evidence schema claim until an implementation and
-release decision accept it.
+The maximum serialized artifact size is 256 KiB. PH persists no raw child
+stdout/stderr and no environment values. It persists only the catalog ID,
+fixed argv identifier, outcome/exit/duration, byte counts, SHA-256 digests,
+mutation snapshot, and fixed diagnostic codes described above. This is
+structural redaction, not a best-effort output regex.
+
+If policy-critical mutation data would exceed the bound, PH must not truncate
+the disallowed tracked mutations. It emits the smallest valid
+`artifact-invalid` summary with digest/count information instead. Raw output is
+never emitted, retained, or cleaned up.
+
+Safe artifact-parent creation failure before every command starts is
+`unavailable`. Durable artifact write failure, strict reread failure, or schema
+validation failure after any command has started is `artifact-invalid`, unless
+a timeout occurred, which takes precedence.
 
 Freshness binding requires all of the following:
 
 1. the finish invocation creates the attempt;
-2. the profile digest and command-plan digest match the same invocation;
-3. the result is complete and `passed`;
+2. the profile digest and fixed command catalog match the same invocation;
+3. the final result is `passed`;
 4. any newly observed workspace mutation has passed the accepted P19-1 policy;
    and
 5. the artifact passes its own strict parser.
@@ -181,57 +201,100 @@ Freshness binding requires all of the following:
 Any failure of that binding becomes a blocked/unknown revalidation result, not
 a fallback to the ledger.
 
-## Exit And Block Behavior
+## Final Status Precedence
 
-| Revalidation result | Proposed finish behavior | Artifact behavior |
-| --- | --- | --- |
-| All commands pass | Continue normal finish closure; exit 0 only if all other gates pass. | Complete fresh artifact. |
-| Command exits nonzero | Exit 1 with `verification-failed` details. | Complete failed artifact with the exit and redacted output. |
-| Command unavailable | Exit 1 with `verification-unknown` and an explicit unavailable reason. | Complete unavailable artifact; no fallback to ledger. |
-| Timeout | Exit 1 with `verification-unknown` and the timeout detail. | Complete timeout artifact; later commands not started. |
-| Malformed/unsupported profile | Exit 1 with `verification-unknown` and profile diagnostic. | Complete malformed-profile artifact if an artifact directory is usable. |
-| Partial execution | Exit 1 with `verification-unknown`; do not treat earlier command success as a pass. | Complete partial artifact naming the command not run. |
-| New tracked source/config mutation outside the P19-1 allowlist in CI | Exit 1 with `partial`; finish authority is blocked. | Complete partial artifact with the newly observed paths and allowlist identifier. |
-| Same mutation outside CI | Report-only by default; continue ordinary finish evaluation. | Complete artifact records the observation without cleanup. |
-| Fresh artifact missing or malformed | Exit 1 with `verification-unknown`. | Preserve files; do not repair or delete them. |
+The implementation must calculate exactly one final status with this exhaustive,
+mutually exclusive algorithm. Command observations are retained in
+`commands[]` even when a higher-precedence final status applies.
+
+1. Return `unavailable` only when safe preflight prevents every command from
+   starting: unsupported platform/profile/catalog, missing safe wrapper,
+   missing safe artifact parent, or, in explicit CI mode, unusable Git worktree
+   or HEAD. Local snapshot-unavailable is report-only and is not this result.
+2. Otherwise, if any started command timed out, return `timeout`.
+3. Otherwise, if durable artifact write, strict reread, or schema validation
+   failed after any command started, return `artifact-invalid`.
+4. Otherwise, if explicit CI mode observed a P19-1 disallowed tracked
+   source/config mutation, return `partial`.
+5. Otherwise, if a command failed before any prior command succeeded, return
+   `failed`.
+6. Otherwise, if one or more commands succeeded and a later command failed or
+   became unavailable, return `partial`.
+7. Otherwise, if all selected commands succeeded and the valid artifact passed
+   the P19-1 policy, return `passed`.
+
+An attempted command launch that fails after safe preflight is recorded as a
+command failure, not `unavailable`. A timeout remains `timeout` even if the
+subsequent artifact write/reread also fails. A non-passing final status makes
+the plaintext finish exit nonzero; `passed` continues ordinary finish closure
+and exits 0 only when every other existing gate also passes.
 
 The existing human finish renderer remains plaintext. The existing closure JSON
 may report the resulting blocker, but the implementation must not add a
 `finish --json` flag or reinterpret the closure JSON as a finish result.
 
-## Local/CI Parity And Workspace Policy
+## Mutation Snapshot And P19-1 Policy
 
 `--reverify` uses the same catalog, fixed argv, timeout, artifact shape, and
-freshness checks locally and in CI. CI differs in artifact retention and the
-accepted P19-1 workspace-mutation result. There is no host hook, runtime
-injection, or CI-environment-only command selection.
+freshness checks locally and in CI. The explicit `--ci` flag changes only the
+accepted P19-1 final-status policy and CI artifact retention. There is no host
+hook, runtime injection, or ambient-environment authority.
 
 The runner may create its new PH-owned artifact directory and normal
 build-tool outputs. It must never edit source, reports, profiles, plans,
 backlog, or legacy evidence to make a gate pass. It must not automatically
 delete stale, malformed, or unexpected files.
 
-### Accepted P19-1 Workspace Mutation Policy
+`mutationSnapshot` is a proposed new `mutationSnapshot.1` object. It must
+contain enough data to test Git availability and the pre/post/observed/allowed/
+disallowed/untracked classification without changing an existing schema:
 
-- In CI mode, any newly observed mutation to tracked source or configuration
-  outside an explicit allowlist of build/generated output roots produces
-  `partial`, exits nonzero, and blocks finish authority.
-- In local non-CI mode, the same observation is report-only by default. It is
-  written to the artifact but does not unexpectedly block otherwise valid local
-  verification.
-- PH never deletes, reverts, cleans, or overwrites the observed mutation in
-  either mode.
-- The implementation must derive the allowlist from explicit
-  project-profile/build-tool contracts and include its identifier in the
-  artifact. Unknown output roots are not silently trusted; in CI they remain
-  outside the allowlist and therefore block as `partial`.
+```text
+schemaVersion: "mutationSnapshot.1"
+git: available, head, diagnosticCode
+pre: normalizedPorcelainNameStatusNulSha256, entryCount
+post: normalizedPorcelainNameStatusNulSha256, entryCount
+observed:
+  trackedModified[], added[], deleted[], renamed[{oldPath,newPath}],
+  typeChanged[], untracked[]
+allowlist: id, roots["build/**",".gradle/**"], allowedTracked[]
+disallowedTracked[]
+untracked[]
+decision: allowed | partial | report-only | snapshot-unavailable
+```
+
+The snapshot reader consumes `git status --porcelain=v1 -z` and the associated
+normalized name-status classification before and after execution. It
+canonicalizes workspace-contained paths, rename old/new paths, categories, and
+sort order into a NUL-delimited representation before calculating digests. The
+exact categories are tracked modified, added, deleted, renamed (old/new),
+type-changed, and untracked.
+
+In explicit CI mode, Git worktree and HEAD must be usable before execution.
+Their absence or parse failure prevents every command from starting and is
+`unavailable`. In local mode, snapshot-unavailable is recorded as
+`report-only`; it does not select CI policy.
+
+P19-1 blocks only newly observed tracked source/config changes outside the
+allowlist. For the first Java/Spring/Gradle catalog, the exact
+workspace-relative allowlist roots are `build/**` and `.gradle/**`, derived
+from `java-spring-gradle-wrapper.1`. Maven, non-Gradle, and multi-tool roots
+are unavailable until separately catalogued. Unknown roots are outside the CI
+allowlist. For deterministic first-tranche handling, every newly observed
+tracked path outside those roots is classified as disallowed source/config
+change; no wider implicit source/config exception exists. Untracked files
+remain artifact-visible/report-only in this tranche; they do not silently
+become tracked-mutation blockers.
+
+PH never deletes, reverts, cleans, or overwrites any observed mutation in
+either mode.
 
 ## Ledger Handling
 
 Existing `.persona/evidence`, report prose, and JUnit files are non-authority
-inputs for `--reverify`. The runner may count them for diagnostic provenance,
-but it must not parse a claimed success as an authoritative substitute for a
-fresh execution.
+inputs for `--reverify`. The runner may observe their presence for control
+flow, but it must not serialize their contents or counts, or parse a claimed
+success as an authoritative substitute for a fresh execution.
 
 Stale, forged, missing, and malformed ledger entries all preserve the same
 safety rule: no deletion, no mutation, no silent recovery, and no finish pass
@@ -242,54 +305,75 @@ result or blocks.
 
 The implementation acceptance suite must include:
 
-1. Fresh test/build pass reaches the ordinary plaintext finish PASS only when
-   all existing closure gates also pass.
-2. A forged or stale ledger claiming success cannot override a newly failing
+1. `--ci` without `--reverify` is rejected; environment variables alone cannot
+   select CI mode.
+2. POSIX direct-argv Java/Spring/Gradle wrapper CI reaches plaintext finish
+   PASS only when all selected commands and existing closure gates pass.
+3. Windows, Maven, non-Gradle, multi-tool, malformed profile, missing wrapper,
+   unsafe artifact parent, and CI Git/HEAD preflight failures are
+   `unavailable` before any command starts.
+4. A forged or stale ledger claiming success cannot override a newly failing
    PH-run command.
-3. Existing JUnit XML from before attempt start cannot satisfy freshness.
-4. Missing wrapper/system Gradle yields command-unavailable and exit 1.
-5. A hanging fixture hits the per-command timeout, records timeout, and does
-   not execute the next command.
-6. A malformed or unsupported profile blocks without command execution.
-7. Test pass plus build failure records `partial` and blocks.
-8. Profile text containing shell metacharacters cannot alter the fixed argv.
-9. Secrets in simulated output are redacted from the artifact and digest
-   calculation uses the redacted form.
-10. In CI, a newly observed tracked source/config mutation outside the explicit
-    profile/build-tool allowlist produces `partial`, exit 1, and no cleanup.
-11. In local mode, the same mutation is artifact-visible but report-only by
-    default.
-12. Unknown generated-output roots are not silently allowlisted in CI.
-13. The current plain finish and `closure next --json` contracts remain
+5. Existing JUnit XML from before attempt start cannot satisfy freshness.
+6. A hanging fixture yields `timeout`, skips later commands, and still wins over
+   a subsequent artifact write/reread failure.
+7. A first command failure before success is `failed`; test success followed by
+   build failure or later unavailability is `partial`.
+8. A post-command artifact write, strict reread, or schema-validation failure
+   is `artifact-invalid` unless a timeout has precedence.
+9. A CI tracked source/config mutation outside `build/**` and `.gradle/**`
+   yields `partial`, exit 1, and no cleanup.
+10. In local mode, the same tracked mutation is artifact-visible/report-only;
+    untracked files are report-only in both modes.
+11. Added, deleted, renamed old/new, type-changed, modified, and untracked
+    paths have deterministic normalized NUL-delimited pre/post snapshots.
+12. Unknown generated-output roots are outside the CI allowlist and cannot be
+    silently trusted.
+13. Profile text containing shell metacharacters cannot alter the fixed argv.
+14. Artifact size is capped at 256 KiB; oversized policy-critical mutation data
+    yields `artifact-invalid` with digest/count summary and no raw output.
+15. Simulated output and environment values never appear in the artifact; only
+    byte counts, SHA-256 digests, fixed diagnostic codes, and allowed metadata
+    persist.
+16. The current plain finish and `closure next --json` contracts remain
     unchanged when `--reverify` is absent.
-14. Runtime injection stays default-off and no hook is required to run the
+17. Runtime injection stays default-off and no hook is required to run the
     revalidation path.
 
 ## Proposed Implementation Tickets
 
-1. **I19-1: Contract parser and result model.** Add the explicit
-   `finish implement --reverify` parser branch, result types, block mapping,
-   and plaintext renderer tests. Do not change defaults.
-2. **I19-2: Profile-derived command catalog and bounded runner.** Implement
-   fixed argv selection, profile validation, serial execution, timeout, JUnit
-   freshness collection, and the explicit build/generated output allowlist.
-3. **I19-3: Fresh artifact writer and strict reader.** Add redaction,
-   provenance/freshness binding, CI/local P19-1 mutation recording,
-   legacy-ledger non-authority handling, and no-delete behavior.
-4. **I19-4: Closure integration and CI fixture coverage.** Make the reverify
-   result authoritative only for the explicit finish path; retain the current
-   closure JSON surface and test all result mappings, including CI partial and
-   local report-only mutation cases.
-5. **I19-5: Package/docs and external acceptance.** Add the CI recipe update,
+1. **I19-1: Flag parser and final-status model.** Add explicit
+   `finish implement --reverify [--ci]` parsing, reject bare `--ci`, implement
+   the exhaustive precedence algorithm, and keep plaintext output. Do not
+   change defaults.
+2. **I19-2: POSIX Java/Spring/Gradle wrapper catalog.** Implement only
+   `java-spring-gradle-wrapper.1`, fixed direct argv, safe preflight,
+   timeouts, serial execution, and JUnit freshness. Return unavailable for
+   Windows and non-catalog profiles before any command starts.
+3. **I19-3: Git mutationSnapshot.1 and allowlist.** Implement explicit CI
+   Git/HEAD preflight, normalized NUL-delimited snapshots, exact
+   `build/**`/`.gradle/**` allowlist, CI partial mapping, local report-only
+   mapping, and no-cleanup behavior.
+4. **I19-4: Bounded digest-only artifact and strict reader.** Implement
+   `ph-ci-reverification.1`, 256 KiB bound, structural no-raw-output/no-env
+   persistence, artifact-invalid precedence, and digest/count overflow
+   summary.
+5. **I19-5: Closure integration and acceptance fixtures.** Make the explicit
+   path authoritative, retain the existing closure JSON surface, and cover all
+   status, snapshot, artifact, and ledger-non-authority cases.
+6. **I19-6: Package/docs and external acceptance.** Add the CI recipe update,
    package policy coverage, local/current package smoke, and a separate
-   release/default decision. No default promotion is bundled into I19-1..4.
+   release/default decision. No default promotion is bundled into I19-1..5.
+7. **I19-7: Future Windows contract.** Separately design and audit Windows
+   process creation, timeout, mutation snapshot, and artifact semantics before
+   any Windows support is proposed.
 
 ## Deferred Decisions And Out Of Scope
 
 - Whether the `--reverify` flag is later promoted to a default is a separate
   release decision requiring acceptance evidence.
-- Whether the catalog expands beyond Java/Spring/Gradle is a separate profile
-  and security review.
+- Windows and any catalog beyond the POSIX Java/Spring/Gradle wrapper path are
+  unavailable until their separately audited tickets are accepted.
 - Artifact retention duration, CI provider-specific encryption, and a
   registry release are not decided here.
 
