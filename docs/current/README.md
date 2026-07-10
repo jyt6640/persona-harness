@@ -45,8 +45,10 @@ deleting evidence/status history.
   [`role-scoped-rule-delivery.md`](role-scoped-rule-delivery.md).
 - Ralph-loop measurement status:
   [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
-- Role Checklist Relay status:
+- Role Checklist Relay preview/advanced status:
   [`multiagent-relay-trial-status.md`](multiagent-relay-trial-status.md).
+- Advanced/dormant source and preview-surface index:
+  `advanced-surface-index.md`.
 - Rail-entry and runtime-injection status:
   [`rail-entry-measurement-status.md`](rail-entry-measurement-status.md).
 - Rail-entry wording regression gate:
@@ -85,11 +87,11 @@ deleting evidence/status history.
 - Static rule delivery is scoped narrowly by role/stage where T7 delivery
   points include rules in prompt/card surfaces; closure, check, and finish
   gates remain broad/global.
-- Relay is a Role Checklist Relay: a main-session checklist rail with optional
-  host-dependent subagent invocation. A direct OpenCode task/subagent
-  capability probe was observed, but PH relay still does not prove reliable
-  automatic OpenCode role subagent orchestration. `--multi-agent-preview` and
-  `multiAgent` remain compatibility names.
+- Relay is an advanced preview Role Checklist Relay: a main-session checklist
+  rail with optional host-dependent subagent invocation. A direct OpenCode
+  task/subagent capability probe was observed, but PH relay still does not
+  prove reliable automatic OpenCode role subagent orchestration.
+  `--multi-agent-preview` and `multiAgent` remain compatibility names.
 - `workflow role-boundary` remains report-only/heuristic. The wrong-actor
   attribution blind spot is documented.
 - `scorecard.1` is secondary archive observation only and does not override

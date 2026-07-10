@@ -21,6 +21,8 @@ A reading map for people seeing Persona Harness (PH) for the first time.
 
 1. [CONTRIBUTING](../CONTRIBUTING.md) — the rules, including the Claim Ladder.
 2. [MEASURED-CLAIMS](MEASURED-CLAIMS.md) — the boundary your change must respect.
+3. Advanced/preview repository material lives in
+   `docs/current/advanced-surface-index.md`; it is outside the first-run path.
 
 ## I want to review release facts
 

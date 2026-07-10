@@ -111,16 +111,12 @@ npx ph review backend-shape
 
 Run `npx ph --help` for the full list. The workflow ledger lives under `.persona/workflow/` (`work/`, `history/`, `requirements/`).
 
-## Optional integrations (opt-in previews)
+## Advanced surfaces
 
-```bash
-npx ph bootstrap backend --codegraph-preview          # CodeGraph
-npx ph bootstrap backend --lsp-preview                # Java LSP
-npx ph bootstrap backend --runtime-injection-preview  # parked model-facing guidance
-npx ph bootstrap backend --no-developer-mcp           # disable default developer MCP
-```
-
-Preview wrappers report an **unavailable** status when their external tools are missing, instead of faking success. Runtime injection is parked (measured negative) and is not the recommended path.
+Preview integrations, shared-skill source material, Role Checklist Relay, and
+developer MCP details are intentionally outside the Quick Start. Repository
+contributors can use `docs/current/advanced-surface-index.md`; these surfaces
+do not change the P0-3 root CLI discovery contract.
 
 ## Boundaries & safety
 
@@ -136,6 +132,7 @@ Evidence answers one question — *"Did the agent see and follow the expected ra
 - **Install & backend shape** → [MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 - **Contributors** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
 - **Release & measurement** → [v0.6.0 capsule](docs/releases/v0.6.0/README.md) · [package index](docs/releases/package-index.md) · [docs/current](docs/current/README.md) · [Changelog](CHANGELOG.md)
+- **Advanced repository surfaces** → `docs/current/advanced-surface-index.md`
 
 ## Contributing
 
