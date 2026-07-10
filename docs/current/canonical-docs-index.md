@@ -12,6 +12,7 @@ Use these files when making current product, measurement, or release decisions.
 | Topic | Canonical file | Notes |
 | --- | --- | --- |
 | Current docs pointer | `docs/current/README.md` | Short entrypoint for active status and versioned records. |
+| P0-1 `ph go` acceptance | `docs/current/p0-go-acceptance-record.md` | Exact-main acceptance, provenance, cooperative recovery boundary, and item-7 package evidence. |
 | Full docs inventory | `docs/current/docs-inventory.md` | Classification for every retained `docs/**` file. |
 | Release facts | `docs/releases/v0.6.0-rc.3/README.md` | Durable capsule for the current release-prep candidate; registry `next` remains rc2 until publish. |
 | Package/version timeline | `docs/releases/package-index.md` | Chronological package index from `0.1.0` through current prereleases. |

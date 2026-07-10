@@ -6,6 +6,23 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+- Records P0-1 final canonical acceptance of host-neutral `ph go` on exact
+  main `c097428d3327f599e47ce20069ce768e5d4f3b66`. The accepted provenance is
+  `24d4fa0` -> `d807196` -> `d4f1c2a` -> `c097428`: the first candidate
+  predates the P0-C recovery contract, and the second was rejected for normal
+  help exposure plus a cooperative recovery-claim race. Exact-main QA and the
+  independent local-current package smoke accepted the final merge. Archive:
+  `/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/p0-go-main-integration-package-smoke-c097428-20260710T121023Z`;
+  tarball SHA-1 `89582d3e956aa5c20c6b65481cae86a9720b7f6e`, SHA-256
+  `0e1518082d8d4cbad635dcbb8e7e8cf517d2f11afe1d9a64ed48b03b8e3aa036`,
+  `705` entries. The contract is limited to cooperative local writers and
+  ordinary cooperative workspace edits; hostile same-user path/symlink races
+  and broad atomic/security claims remain excluded. No runtimeInjection,
+  default, schema, version, publish, tag, `latest`, or `next` movement is
+  included. This is not token-saving, efficacy, app-quality, broad reliability,
+  enforcement, delegation, or hostile-race evidence. See
+  `docs/current/p0-go-acceptance-record.md`.
+
 - Adds `ph go "<goal>"` and `ph go --stdin` as a host-neutral deterministic
   single entry for concrete implementation requirements in an already prepared
   project. The command composes existing capture, split, next, and implement

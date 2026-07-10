@@ -67,6 +67,10 @@ deleting evidence/status history.
   exact version. S-3 removed the failed-finish human `Summary:` header after
   S-2 regated it as non-inferior=false.
 - `runtimeInjection` remains a parked opt-in preview.
+- P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
+  writer/workspace-edit contract. Recovery remains hidden from normal help,
+  requires a claimed generation, and revalidates before clearing; hostile
+  same-user path replacement remains outside scope.
 - The rail-entry prompt regression gate is an operator-run n>=5
   non-inferiority check for rail/AGENTS/gate-output wording changes. It is not
   product-efficacy or runtime-injection benefit evidence.
