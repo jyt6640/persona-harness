@@ -158,7 +158,8 @@ commands[]: ordinal, argv, exitCode, timedOut, durationMs,
 result: passed | failed | unavailable | timeout | malformed-profile | partial
 legacyLedger: observedCount, authoritative: false
 redaction: policyVersion, redactedFieldCount
-workspaceMutation: preState, postState, decision
+workspaceMutation: mode, allowlistId, preState, postState,
+                   newlyObservedPaths[], decision
 ```
 
 The artifact records only relative paths. It does not record environment
@@ -173,8 +174,8 @@ Freshness binding requires all of the following:
 1. the finish invocation creates the attempt;
 2. the profile digest and command-plan digest match the same invocation;
 3. the result is complete and `passed`;
-4. the workspace identity has not changed between attempt start and finish
-   evaluation; and
+4. any newly observed workspace mutation has passed the accepted P19-1 policy;
+   and
 5. the artifact passes its own strict parser.
 
 Any failure of that binding becomes a blocked/unknown revalidation result, not
@@ -190,6 +191,8 @@ a fallback to the ledger.
 | Timeout | Exit 1 with `verification-unknown` and the timeout detail. | Complete timeout artifact; later commands not started. |
 | Malformed/unsupported profile | Exit 1 with `verification-unknown` and profile diagnostic. | Complete malformed-profile artifact if an artifact directory is usable. |
 | Partial execution | Exit 1 with `verification-unknown`; do not treat earlier command success as a pass. | Complete partial artifact naming the command not run. |
+| New tracked source/config mutation outside the P19-1 allowlist in CI | Exit 1 with `partial`; finish authority is blocked. | Complete partial artifact with the newly observed paths and allowlist identifier. |
+| Same mutation outside CI | Report-only by default; continue ordinary finish evaluation. | Complete artifact records the observation without cleanup. |
 | Fresh artifact missing or malformed | Exit 1 with `verification-unknown`. | Preserve files; do not repair or delete them. |
 
 The existing human finish renderer remains plaintext. The existing closure JSON
@@ -199,21 +202,29 @@ may report the resulting blocker, but the implementation must not add a
 ## Local/CI Parity And Workspace Policy
 
 `--reverify` uses the same catalog, fixed argv, timeout, artifact shape, and
-exit mapping locally and in CI. CI differs only in how it retains artifacts.
-There is no host hook, runtime injection, or CI-environment-only command
-selection.
+freshness checks locally and in CI. CI differs in artifact retention and the
+accepted P19-1 workspace-mutation result. There is no host hook, runtime
+injection, or CI-environment-only command selection.
 
 The runner may create its new PH-owned artifact directory and normal
 build-tool outputs. It must never edit source, reports, profiles, plans,
 backlog, or legacy evidence to make a gate pass. It must not automatically
 delete stale, malformed, or unexpected files.
 
-Before implementation, the following policy fork must be resolved:
+### Accepted P19-1 Workspace Mutation Policy
 
-- **P19-1 workspace mutation policy:** whether a newly observed tracked-source
-  change outside declared build outputs blocks as `partial`, or is recorded
-  only for review. The recommended first implementation is to block in CI and
-  report locally, without cleanup, because the CI trust boundary is narrower.
+- In CI mode, any newly observed mutation to tracked source or configuration
+  outside an explicit allowlist of build/generated output roots produces
+  `partial`, exits nonzero, and blocks finish authority.
+- In local non-CI mode, the same observation is report-only by default. It is
+  written to the artifact but does not unexpectedly block otherwise valid local
+  verification.
+- PH never deletes, reverts, cleans, or overwrites the observed mutation in
+  either mode.
+- The implementation must derive the allowlist from explicit
+  project-profile/build-tool contracts and include its identifier in the
+  artifact. Unknown output roots are not silently trusted; in CI they remain
+  outside the allowlist and therefore block as `partial`.
 
 ## Ledger Handling
 
@@ -244,11 +255,14 @@ The implementation acceptance suite must include:
 8. Profile text containing shell metacharacters cannot alter the fixed argv.
 9. Secrets in simulated output are redacted from the artifact and digest
    calculation uses the redacted form.
-10. Local and CI-mode fixtures produce identical result classification for the
-    same workspace state.
-11. The current plain finish and `closure next --json` contracts remain
+10. In CI, a newly observed tracked source/config mutation outside the explicit
+    profile/build-tool allowlist produces `partial`, exit 1, and no cleanup.
+11. In local mode, the same mutation is artifact-visible but report-only by
+    default.
+12. Unknown generated-output roots are not silently allowlisted in CI.
+13. The current plain finish and `closure next --json` contracts remain
     unchanged when `--reverify` is absent.
-12. Runtime injection stays default-off and no hook is required to run the
+14. Runtime injection stays default-off and no hook is required to run the
     revalidation path.
 
 ## Proposed Implementation Tickets
@@ -257,21 +271,21 @@ The implementation acceptance suite must include:
    `finish implement --reverify` parser branch, result types, block mapping,
    and plaintext renderer tests. Do not change defaults.
 2. **I19-2: Profile-derived command catalog and bounded runner.** Implement
-   fixed argv selection, profile validation, serial execution, timeout, and
-   JUnit freshness collection.
+   fixed argv selection, profile validation, serial execution, timeout, JUnit
+   freshness collection, and the explicit build/generated output allowlist.
 3. **I19-3: Fresh artifact writer and strict reader.** Add redaction,
-   provenance/freshness binding, legacy-ledger non-authority handling, and
-   no-delete behavior.
+   provenance/freshness binding, CI/local P19-1 mutation recording,
+   legacy-ledger non-authority handling, and no-delete behavior.
 4. **I19-4: Closure integration and CI fixture coverage.** Make the reverify
    result authoritative only for the explicit finish path; retain the current
-   closure JSON surface and test all result mappings.
+   closure JSON surface and test all result mappings, including CI partial and
+   local report-only mutation cases.
 5. **I19-5: Package/docs and external acceptance.** Add the CI recipe update,
    package policy coverage, local/current package smoke, and a separate
    release/default decision. No default promotion is bundled into I19-1..4.
 
 ## Deferred Decisions And Out Of Scope
 
-- P19-1 workspace mutation policy is unresolved as described above.
 - Whether the `--reverify` flag is later promoted to a default is a separate
   release decision requiring acceptance evidence.
 - Whether the catalog expands beyond Java/Spring/Gradle is a separate profile
