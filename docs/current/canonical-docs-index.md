@@ -15,6 +15,7 @@ Use these files when making current product, measurement, or release decisions.
 | P0-1 `ph go` acceptance | `docs/current/p0-go-acceptance-record.md` | Exact-main acceptance, provenance, cooperative recovery boundary, and item-7 package evidence. |
 | P0-2 finish next-action acceptance | `docs/current/p0-finish-next-action-acceptance-record.md` | Exact-main finish follow-up and report-transition acceptance with local-tarball package evidence. |
 | P0-3 public discovery acceptance | `docs/current/p0-public-discovery-acceptance-record.md` | Exact-main root/dev discovery and writer-safety acceptance with local-tarball package evidence. |
+| Item 12 diff-rules distribution retirement | `docs/current/diff-rules-distribution-retirement-acceptance-record.md` | Exact-main package/init retirement record; repository corpus remains. |
 | CI finish gate and closure JSON | `docs/current/ci-finish-contract.md` | Exact `finish` exit/stream contract, supported unversioned closure JSON artifact, and CI recipe; no `finish --json` surface exists. |
 | CI evidence reverification design | `docs/current/ci-evidence-reverification-design.md` | Item 19 proposed explicit finish revalidation, provenance, and acceptance plan; design only, not a shipped contract. |
 | Full docs inventory | `docs/current/docs-inventory.md` | Classification for every retained `docs/**` file. |
