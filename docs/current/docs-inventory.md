@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 18
+- current active pointer/status: 19
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 52
 - versioned durable: 17
 
-Total indexed files: 284
+Total indexed files: 285
 
 ## File Inventory
 
@@ -93,6 +93,7 @@ Total indexed files: 284
 | `docs/current/persona-workflow-roles-v0.3.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/p0-finish-next-action-acceptance-record.md` | current active pointer/status | - | P0-2 exact-main finish follow-up, report-transition, package evidence, and claim boundary record. |
 | `docs/current/p0-go-acceptance-record.md` | current active pointer/status | - | P0-1 exact-main acceptance, provenance, package evidence, and claim boundary record. |
+| `docs/current/p0-public-discovery-acceptance-record.md` | current active pointer/status | - | P0-3 exact-main public discovery, writer safety, package evidence, and claim boundary record. |
 | `docs/current/ph-bearshell-mvp.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/phase-artifact-retention-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/phase2-scope-settlement.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
