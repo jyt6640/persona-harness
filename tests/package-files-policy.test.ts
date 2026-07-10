@@ -15,16 +15,24 @@ type MarkdownLink = {
 const packageRoot = process.cwd()
 
 describe("package files policy", () => {
-  it("keeps all source rule markdown files covered by packaged files", () => {
+  it("packages public rules while retaining diff-rules only as repository source material", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const ruleFiles = listRuleMarkdownFiles(path.join(packageRoot, ".persona/rules")).map((filePath) =>
       toPackagePath(path.relative(packageRoot, filePath)),
     )
+    const diffRuleFiles = ruleFiles.filter((filePath) => filePath.startsWith(".persona/rules/diff-rules/"))
+    const packagedRuleFiles = ruleFiles.filter((filePath) => !filePath.startsWith(".persona/rules/diff-rules/"))
 
     expect(ruleFiles).toHaveLength(48)
+    expect(diffRuleFiles).toHaveLength(28)
+    expect(packagedRuleFiles).toHaveLength(20)
+    expect(packageJson.files).not.toContain(".persona/rules/diff-rules")
 
-    for (const ruleFile of ruleFiles) {
+    for (const ruleFile of packagedRuleFiles) {
       expect(isCoveredByPackageFiles(ruleFile, packageJson.files)).toBe(true)
+    }
+    for (const ruleFile of diffRuleFiles) {
+      expect(isCoveredByPackageFiles(ruleFile, packageJson.files)).toBe(false)
     }
   })
 

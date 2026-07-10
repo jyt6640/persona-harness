@@ -53,6 +53,7 @@ export type DoctorSummary = {
   readonly conventionPackDiagnosticCount: number
   readonly conventionPackDiagnosticDetails: readonly ConventionPackDiagnostic[]
   readonly staleFixtureFindings: readonly StaleFixtureFinding[]
+  readonly legacyDiffRulesPresent: boolean
 }
 
 const STALE_FIXTURE_TOKENS = [
@@ -203,6 +204,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     rules: pathStatus(projectDir, ".persona/rules"),
     workflowPlan: pathStatus(projectDir, ".persona/workflow/plan.md"),
     evidence: pathStatus(projectDir, ".persona/evidence"),
+    legacyDiffRulesPresent: existsSync(join(projectDir, ".persona", "rules", "diff-rules")),
     rulePackDiagnostics: rulePackDiagnostics.finding,
     rulePackDiagnosticCount: rulePackDiagnostics.diagnosticCount,
     rulePackDiagnosticDetails: rulePackDiagnostics.diagnostics,
@@ -251,6 +253,14 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
           "Convention pack diagnostic details:",
           ...summary.conventionPackDiagnosticDetails.map(formatConventionPackDiagnostic),
         ]
+  const legacyDiffRulesDetails =
+    summary.legacyDiffRulesPresent
+      ? [
+          "",
+          "Legacy package material:",
+          "- .persona/rules/diff-rules/: legacy/unneeded package material from an older Persona Harness install; it is no longer shipped or required. Persona Harness leaves user files untouched; remove it manually only after review.",
+        ]
+      : []
   return [
     "Persona Harness Doctor",
     "",
@@ -281,6 +291,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     ...conventionPackDetails,
     `Stale fixture scan: ${staleStatus}`,
     ...staleDetails,
+    ...legacyDiffRulesDetails,
     "",
     "Scope:",
     "- local install / tarball install diagnostics",

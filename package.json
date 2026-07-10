@@ -26,7 +26,6 @@
     ".persona/harness.jsonc",
     ".persona/conventions",
     ".persona/rules/clean-code",
-    ".persona/rules/diff-rules",
     ".persona/rules/backend/gradle-bootstrap.md",
     ".persona/rules/backend/java-backend-bootstrap.md",
     ".persona/rules/backend/java-common.md",

@@ -54,7 +54,30 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain(".persona/rules: present")
     expect(result.stdout).toContain("Rules surface: 0 files")
     expect(result.stdout).toContain("Stale fixture scan: PASS")
+    expect(result.stdout).not.toContain("Legacy package material:")
     expect(result.stdout).toContain("npm registry: alpha=0.3.0-alpha.3, latest=0.3.0-alpha.3")
+  })
+
+  it("advises without deleting legacy diff-rules from existing projects", () => {
+    const projectDir = createTempProject()
+    const legacyPath = ".persona/rules/diff-rules/workflow/code-review.md"
+    const legacyContent = "# Legacy code review guidance\n\n- preserve this user file\n"
+    writeFile(projectDir, legacyPath, legacyContent)
+
+    const result = runPersonaCli(["doctor"], {
+      cwd: projectDir,
+      env: {
+        PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ latest: "0.6.0" }),
+      },
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Legacy package material:")
+    expect(result.stdout).toContain(".persona/rules/diff-rules/: legacy/unneeded package material")
+    expect(result.stdout).toContain("Persona Harness leaves user files untouched")
+    expect(result.stdout.split(".persona/rules/diff-rules/")).toHaveLength(2)
+    expect(readFileSync(join(projectDir, legacyPath), "utf8")).toBe(legacyContent)
   })
 
   it("warns clearly when OpenCode is missing from the runtime path", () => {

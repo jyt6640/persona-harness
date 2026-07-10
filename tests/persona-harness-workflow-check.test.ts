@@ -1446,6 +1446,7 @@ describe("ph bootstrap backend", () => {
     expect(result.stdout).toContain("npx ph workflow implement")
     expect(existsSync(join(projectDir, ".persona", "harness.jsonc"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "rules", "backend", "java-common.md"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "rules", "diff-rules"))).toBe(false)
     expect(existsSync(join(projectDir, ".opencode", "opencode.json"))).toBe(true)
     expect(existsSync(join(projectDir, ".gitignore"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "project-profile.jsonc"))).toBe(true)

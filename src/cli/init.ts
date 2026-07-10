@@ -66,6 +66,7 @@ const PUBLIC_INIT_EXCLUDED_RULES = new Set([
   "backend/step1-api-contract.md",
   "backend/step2-3-api-contract.md",
 ])
+const LEGACY_DIFF_RULES_DIR = "diff-rules"
 
 function defaultPackageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -158,7 +159,8 @@ function normalizeTemplateRelativePath(sourcePath: string, sourceRoot: string): 
 
 function shouldCopyPublicRuleTemplate(sourcePath: string, sourceRulesDir: string): boolean {
   const relative = normalizeTemplateRelativePath(sourcePath, sourceRulesDir)
-  return relative === "" || !PUBLIC_INIT_EXCLUDED_RULES.has(relative)
+  const isLegacyDiffRule = relative === LEGACY_DIFF_RULES_DIR || relative.startsWith(`${LEGACY_DIFF_RULES_DIR}/`)
+  return relative === "" || (!isLegacyDiffRule && !PUBLIC_INIT_EXCLUDED_RULES.has(relative))
 }
 
 export function initializePersonaHarness(options: InitOptions = {}): InitResult {
