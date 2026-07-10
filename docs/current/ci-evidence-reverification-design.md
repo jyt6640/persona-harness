@@ -3,9 +3,9 @@
 **Status:** Item 19 design only. No runtime, schema, default, package version,
 publish, tag, or CI workflow behavior changes are included here.
 
-**Source snapshot:** `68e869a5dec0b1c6df926135718118f5423feb48`
-(`docs(ci): resolve reverification mutation policy`,
-2026-07-10T22:58:44+09:00).
+**Source snapshot:** `f51abd1b74fdb4aed2433ea135a3ffcc54c28e99`
+(`docs(ci): specify reverification contracts`,
+2026-07-10T23:14:45+09:00).
 All line references below are snapshots from that commit.
 
 ## Decision
@@ -48,19 +48,21 @@ mode.
   ledgers, copied JSON files, stale JUnit XML, or an artifact written by an
   agent or another process before the revalidation invocation.
 - A pass requires a current attempt whose profile digest, command-plan digest,
-  and workspace identity match the invocation. A missing, malformed, stale, or
-  mismatched attempt cannot pass finish.
+  Git HEAD, workspace-root identity, and evidence-parent identity match the
+  invocation. A missing, malformed, stale, or mismatched attempt cannot pass
+  finish.
 - PH must not delete, repair, overwrite, or relabel stale or malformed legacy
   ledger files. It records their non-authoritative presence only.
 
 ### Non-Goals
 
 This does not prove a generated application's quality, security, efficacy,
-test sufficiency, broad reliability, or token savings. It does not protect
-against a hostile same-user process that can replace executables or paths
-between checks and execution. It does not certify remote services, perform
-deployment checks, require an OpenCode hook, or make CI a substitute for PH's
-own exit authority.
+test sufficiency, broad reliability, or token savings. The proposed identity
+checks cover cooperative local PH writers and ordinary cooperative workspace
+edits; they are not a hostile same-user path or symlink micro-race, or a
+switch-away-and-back security guarantee. This does not certify remote services,
+perform deployment checks, require an OpenCode hook, or make CI a substitute
+for PH's own exit authority.
 
 ## Existing Observations
 
@@ -130,7 +132,7 @@ The first command catalog is exactly a ready
 | POSIX runner, ready Java/Spring/Gradle profile, workspace-contained executable `./gradlew` | `java-spring-gradle-wrapper.1`: `./gradlew test`, then `./gradlew build` |
 | Windows runner | unavailable before command start |
 | Maven, non-Gradle, multi-tool, unsupported, malformed, or unready profile | unavailable before command start |
-| Missing/non-executable wrapper, missing safe artifact parent, or CI Git/HEAD preflight failure | unavailable before command start |
+| Missing/non-executable wrapper, invalid `.persona/evidence` parent, or CI Git/HEAD/workspace-root preflight failure | unavailable before command start |
 
 The catalog IDs are `gradle-wrapper-test.1` and `gradle-wrapper-build.1`.
 `bootRun`, HTTP smoke, system-Gradle fallback, arbitrary profile command
@@ -153,6 +155,14 @@ argument, shell fragment, or environment value.
 - Capture command outcome, exit code, timeout flag, byte counts, SHA-256
   digests, order, and post-start JUnit XML references. Do not accept
   pre-existing JUnit XML as the fresh result.
+- At attempt start and end, execute the fixed direct argv
+  `["git", "rev-parse", "--verify", "HEAD^{commit}"]`. Store the verified
+  commit object IDs as `preHead` and `postHead`; CI requires both values and
+  their equality. No shell or profile-provided Git argument is involved.
+- At the same boundaries, record the workspace root's normalized realpath and
+  POSIX `dev` and `ino`. CI requires the start and end identities to be equal.
+  This is a cooperative-workspace identity check, not a hostile replacement
+  defense.
 
 ## Result And Artifact Contract
 
@@ -184,10 +194,15 @@ the disallowed tracked mutations. It emits the smallest valid
 `artifact-invalid` summary with digest/count information instead. Raw output is
 never emitted, retained, or cleaned up.
 
-Safe artifact-parent creation failure before every command starts is
-`unavailable`. Durable artifact write failure, strict reread failure, or schema
-validation failure after any command has started is `artifact-invalid`, unless
-a timeout occurred, which takes precedence.
+The artifact parent is exactly workspace-relative `.persona/evidence`. Before
+any command starts, PH resolves that path within the recorded workspace root,
+requires both `.persona` and `.persona/evidence` to be directories and not
+symlinks, verifies their normalized containment, and records the evidence
+parent's realpath plus POSIX `dev` and `ino`. Failure of that preflight is
+`unavailable`. Immediately before the durable write, PH repeats the same
+containment, non-symlink, and parent-identity check. A post-command parent
+mismatch, write failure, strict reread failure, or schema validation failure is
+`artifact-invalid`, unless a timeout occurred, which takes precedence.
 
 Freshness binding requires all of the following:
 
@@ -195,8 +210,11 @@ Freshness binding requires all of the following:
 2. the profile digest and fixed command catalog match the same invocation;
 3. the final result is `passed`;
 4. any newly observed workspace mutation has passed the accepted P19-1 policy;
+5. CI `preHead` and `postHead` are verified commit object IDs and are equal;
+6. CI start/end workspace-root identities are equal;
+7. the evidence parent retains the preflight identity immediately before write;
    and
-5. the artifact passes its own strict parser.
+8. the artifact passes its own strict parser.
 
 Any failure of that binding becomes a blocked/unknown revalidation result, not
 a fallback to the ledger.
@@ -209,13 +227,16 @@ mutually exclusive algorithm. Command observations are retained in
 
 1. Return `unavailable` only when safe preflight prevents every command from
    starting: unsupported platform/profile/catalog, missing safe wrapper,
-   missing safe artifact parent, or, in explicit CI mode, unusable Git worktree
-   or HEAD. Local snapshot-unavailable is report-only and is not this result.
+   invalid `.persona/evidence` parent, or, in explicit CI mode, unusable Git
+   worktree, verified `preHead`, or workspace-root identity. Local
+   snapshot-unavailable is report-only and is not this result.
 2. Otherwise, if any started command timed out, return `timeout`.
-3. Otherwise, if durable artifact write, strict reread, or schema validation
-   failed after any command started, return `artifact-invalid`.
+3. Otherwise, if post-command evidence-parent identity/containment validation,
+   durable artifact write, strict reread, or schema validation failed, return
+   `artifact-invalid`.
 4. Otherwise, if explicit CI mode observed a P19-1 disallowed tracked
-   source/config mutation, return `partial`.
+   source/config mutation, unequal verified `preHead`/`postHead`, or unequal
+   workspace-root identity, return `partial`.
 5. Otherwise, if a command failed before any prior command succeeded, return
    `failed`.
 6. Otherwise, if one or more commands succeeded and a later command failed or
@@ -225,9 +246,11 @@ mutually exclusive algorithm. Command observations are retained in
 
 An attempted command launch that fails after safe preflight is recorded as a
 command failure, not `unavailable`. A timeout remains `timeout` even if the
-subsequent artifact write/reread also fails. A non-passing final status makes
-the plaintext finish exit nonzero; `passed` continues ordinary finish closure
-and exits 0 only when every other existing gate also passes.
+subsequent parent recheck, artifact write, or reread also fails. A post-command
+HEAD or workspace-root mismatch is `partial` only after the higher timeout and
+artifact-invalid checks. A non-passing final status makes the plaintext finish
+exit nonzero; `passed` continues ordinary finish closure and exits 0 only when
+every other existing gate also passes.
 
 The existing human finish renderer remains plaintext. The existing closure JSON
 may report the resulting blocker, but the implementation must not add a
@@ -251,7 +274,18 @@ disallowed/untracked classification without changing an existing schema:
 
 ```text
 schemaVersion: "mutationSnapshot.1"
-git: available, head, diagnosticCode
+git:
+  available, diagnosticCode
+  preHead, postHead, headEqual
+workspaceRoot:
+  pre: realpath, dev, ino
+  post: realpath, dev, ino
+  equal
+artifactParent:
+  relativePath: ".persona/evidence"
+  pre: realpath, dev, ino
+  post: realpath, dev, ino
+  equal
 pre: normalizedPorcelainNameStatusNulSha256, entryCount
 post: normalizedPorcelainNameStatusNulSha256, entryCount
 observed:
@@ -268,12 +302,27 @@ normalized name-status classification before and after execution. It
 canonicalizes workspace-contained paths, rename old/new paths, categories, and
 sort order into a NUL-delimited representation before calculating digests. The
 exact categories are tracked modified, added, deleted, renamed (old/new),
-type-changed, and untracked.
+type-changed, and untracked. `preHead` and `postHead` are each obtained with
+the fixed direct Git argv `["git", "rev-parse", "--verify", "HEAD^{commit}"]`;
+they are verified commit object IDs, not an unverified symbolic ref.
 
-In explicit CI mode, Git worktree and HEAD must be usable before execution.
-Their absence or parse failure prevents every command from starting and is
-`unavailable`. In local mode, snapshot-unavailable is recorded as
-`report-only`; it does not select CI policy.
+In explicit CI mode, the Git worktree, verified `preHead`, and initial
+workspace-root realpath/`dev`/`ino` must be usable before execution. Their
+absence or parse failure prevents every command from starting and is
+`unavailable`. After a command begins, an unequal verified `preHead`/`postHead`
+or workspace-root identity is `partial`, subject to timeout and
+artifact-invalid precedence. In local mode, snapshot-unavailable is recorded
+as `report-only`; it does not select CI policy.
+
+The preflight evidence parent is constructed only as
+`workspaceRoot/.persona/evidence`. PH resolves it within the recorded
+workspace root, rejects a `.persona` or `.persona/evidence` directory that is
+missing, non-directory, or a symlink, verifies normalized containment, and
+records the parent's realpath/`dev`/`ino`. Immediately before writing, it
+repeats that exact check and compares the resulting parent identity to the
+preflight record. A pre-command failure is `unavailable`; a post-command
+mismatch is `artifact-invalid` unless a timeout takes precedence. PH never
+deletes, reverts, cleans, or overwrites anything while handling either case.
 
 P19-1 blocks only newly observed tracked source/config changes outside the
 allowlist. For the first Java/Spring/Gradle catalog, the exact
@@ -310,8 +359,9 @@ The implementation acceptance suite must include:
 2. POSIX direct-argv Java/Spring/Gradle wrapper CI reaches plaintext finish
    PASS only when all selected commands and existing closure gates pass.
 3. Windows, Maven, non-Gradle, multi-tool, malformed profile, missing wrapper,
-   unsafe artifact parent, and CI Git/HEAD preflight failures are
-   `unavailable` before any command starts.
+   invalid/symlinked/out-of-root `.persona/evidence`, and CI Git/`preHead`/
+   workspace-root preflight failures are `unavailable` before any command
+   starts.
 4. A forged or stale ledger claiming success cannot override a newly failing
    PH-run command.
 5. Existing JUnit XML from before attempt start cannot satisfy freshness.
@@ -319,25 +369,32 @@ The implementation acceptance suite must include:
    a subsequent artifact write/reread failure.
 7. A first command failure before success is `failed`; test success followed by
    build failure or later unavailability is `partial`.
-8. A post-command artifact write, strict reread, or schema-validation failure
-   is `artifact-invalid` unless a timeout has precedence.
-9. A CI tracked source/config mutation outside `build/**` and `.gradle/**`
-   yields `partial`, exit 1, and no cleanup.
-10. In local mode, the same tracked mutation is artifact-visible/report-only;
+8. A post-command evidence-parent containment/identity mismatch, artifact
+   write, strict reread, or schema-validation failure is `artifact-invalid`
+   unless a timeout has precedence.
+9. A deterministic fixture that changes checkout/verified HEAD after a command
+   begins records unequal `preHead`/`postHead` and ends `partial`, exit 1, with
+   every command observation retained.
+10. A deterministic fixture that changes the workspace-root realpath or
+    POSIX `dev`/`ino` after a command begins ends `partial` in CI. This
+    cooperative identity test makes no hostile switch-away-and-back claim.
+11. A CI tracked source/config mutation outside `build/**` and `.gradle/**`
+    yields `partial`, exit 1, and no cleanup.
+12. In local mode, the same tracked mutation is artifact-visible/report-only;
     untracked files are report-only in both modes.
-11. Added, deleted, renamed old/new, type-changed, modified, and untracked
+13. Added, deleted, renamed old/new, type-changed, modified, and untracked
     paths have deterministic normalized NUL-delimited pre/post snapshots.
-12. Unknown generated-output roots are outside the CI allowlist and cannot be
+14. Unknown generated-output roots are outside the CI allowlist and cannot be
     silently trusted.
-13. Profile text containing shell metacharacters cannot alter the fixed argv.
-14. Artifact size is capped at 256 KiB; oversized policy-critical mutation data
+15. Profile text containing shell metacharacters cannot alter the fixed argv.
+16. Artifact size is capped at 256 KiB; oversized policy-critical mutation data
     yields `artifact-invalid` with digest/count summary and no raw output.
-15. Simulated output and environment values never appear in the artifact; only
+17. Simulated output and environment values never appear in the artifact; only
     byte counts, SHA-256 digests, fixed diagnostic codes, and allowed metadata
     persist.
-16. The current plain finish and `closure next --json` contracts remain
+18. The current plain finish and `closure next --json` contracts remain
     unchanged when `--reverify` is absent.
-17. Runtime injection stays default-off and no hook is required to run the
+19. Runtime injection stays default-off and no hook is required to run the
     revalidation path.
 
 ## Proposed Implementation Tickets
@@ -350,17 +407,21 @@ The implementation acceptance suite must include:
    `java-spring-gradle-wrapper.1`, fixed direct argv, safe preflight,
    timeouts, serial execution, and JUnit freshness. Return unavailable for
    Windows and non-catalog profiles before any command starts.
-3. **I19-3: Git mutationSnapshot.1 and allowlist.** Implement explicit CI
-   Git/HEAD preflight, normalized NUL-delimited snapshots, exact
-   `build/**`/`.gradle/**` allowlist, CI partial mapping, local report-only
-   mapping, and no-cleanup behavior.
+3. **I19-3: Git/workspace mutationSnapshot.1 and allowlist.** Implement fixed
+   direct-argv verified `preHead`/`postHead`, workspace-root realpath/`dev`/
+   `ino` snapshots, CI preflight and post-command equality rules, normalized
+   NUL-delimited snapshots, exact `build/**`/`.gradle/**` allowlist, CI
+   partial mapping, local report-only mapping, and no-cleanup behavior.
 4. **I19-4: Bounded digest-only artifact and strict reader.** Implement
    `ph-ci-reverification.1`, 256 KiB bound, structural no-raw-output/no-env
-   persistence, artifact-invalid precedence, and digest/count overflow
-   summary.
+   persistence, exact `.persona/evidence` preflight and pre-write
+   containment/non-symlink/identity checks, artifact-invalid precedence, and
+   digest/count overflow summary.
 5. **I19-5: Closure integration and acceptance fixtures.** Make the explicit
    path authoritative, retain the existing closure JSON surface, and cover all
-   status, snapshot, artifact, and ledger-non-authority cases.
+   status, snapshot, HEAD/workspace identity, artifact-parent, and
+   ledger-non-authority cases, including a deterministic checkout/HEAD-change
+   fixture that proves CI `partial`.
 6. **I19-6: Package/docs and external acceptance.** Add the CI recipe update,
    package policy coverage, local/current package smoke, and a separate
    release/default decision. No default promotion is bundled into I19-1..5.
