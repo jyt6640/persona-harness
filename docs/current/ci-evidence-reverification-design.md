@@ -210,8 +210,10 @@ Freshness binding requires all of the following:
 2. the profile digest and fixed command catalog match the same invocation;
 3. the final result is `passed`;
 4. any newly observed workspace mutation has passed the accepted P19-1 policy;
-5. CI `preHead` and `postHead` are verified commit object IDs and are equal;
-6. CI start/end workspace-root identities are equal;
+5. when an identity snapshot was established, its `preHead` and `postHead` are
+   verified commit object IDs and are equal;
+6. when an identity snapshot was established, its start/end workspace-root
+   identities are equal;
 7. the evidence parent retains the preflight identity immediately before write;
    and
 8. the artifact passes its own strict parser.
@@ -235,8 +237,9 @@ mutually exclusive algorithm. Command observations are retained in
    durable artifact write, strict reread, or schema validation failed, return
    `artifact-invalid`.
 4. Otherwise, if explicit CI mode observed a P19-1 disallowed tracked
-   source/config mutation, unequal verified `preHead`/`postHead`, or unequal
-   workspace-root identity, return `partial`.
+   source/config mutation, or if a command started and either mode observed
+   unequal verified `preHead`/`postHead`, unequal workspace-root identity, or
+   inability to capture either post-command identity, return `partial`.
 5. Otherwise, if a command failed before any prior command succeeded, return
    `failed`.
 6. Otherwise, if one or more commands succeeded and a later command failed or
@@ -246,11 +249,13 @@ mutually exclusive algorithm. Command observations are retained in
 
 An attempted command launch that fails after safe preflight is recorded as a
 command failure, not `unavailable`. A timeout remains `timeout` even if the
-subsequent parent recheck, artifact write, or reread also fails. A post-command
-HEAD or workspace-root mismatch is `partial` only after the higher timeout and
-artifact-invalid checks. A non-passing final status makes the plaintext finish
-exit nonzero; `passed` continues ordinary finish closure and exits 0 only when
-every other existing gate also passes.
+subsequent parent recheck, artifact write, or reread also fails. After any
+command starts, an inability to capture either `postHead` or the post
+workspace-root realpath/`stat` identity is `partial` in both explicit CI and
+local `--reverify` modes, as are unequal captured identities; this is evaluated
+only after the higher timeout and artifact-invalid checks. A non-passing final
+status makes the plaintext finish exit nonzero; `passed` continues ordinary
+finish closure and exits 0 only when every other existing gate also passes.
 
 The existing human finish renderer remains plaintext. The existing closure JSON
 may report the resulting blocker, but the implementation must not add a
@@ -309,10 +314,14 @@ they are verified commit object IDs, not an unverified symbolic ref.
 In explicit CI mode, the Git worktree, verified `preHead`, and initial
 workspace-root realpath/`dev`/`ino` must be usable before execution. Their
 absence or parse failure prevents every command from starting and is
-`unavailable`. After a command begins, an unequal verified `preHead`/`postHead`
-or workspace-root identity is `partial`, subject to timeout and
-artifact-invalid precedence. In local mode, snapshot-unavailable is recorded
-as `report-only`; it does not select CI policy.
+`unavailable`. In local mode, an identity snapshot unavailable before any
+command starts is `report-only`; it does not select CI policy or prevent the
+attempt from running. In either mode, once a command starts, an unequal
+captured `preHead`/`postHead` or workspace-root identity, or an inability to
+capture either post-command identity, is `partial`, subject to timeout and
+artifact-invalid precedence. Thus a local pass may omit an unavailable
+pre-command identity snapshot, but may not ignore a post-command identity
+capture failure after an identity check has begun.
 
 The preflight evidence parent is constructed only as
 `workspaceRoot/.persona/evidence`. PH resolves it within the recorded
@@ -378,23 +387,27 @@ The implementation acceptance suite must include:
 10. A deterministic fixture that changes the workspace-root realpath or
     POSIX `dev`/`ino` after a command begins ends `partial` in CI. This
     cooperative identity test makes no hostile switch-away-and-back claim.
-11. A CI tracked source/config mutation outside `build/**` and `.gradle/**`
+11. A deterministic fixture that makes Git `postHead` or workspace-root
+    realpath/`stat` identity unreadable after a command begins ends `partial`,
+    exit 1, retains command observations and fixed diagnostic codes, and makes
+    no cleanup in either CI or local `--reverify` mode.
+12. A CI tracked source/config mutation outside `build/**` and `.gradle/**`
     yields `partial`, exit 1, and no cleanup.
-12. In local mode, the same tracked mutation is artifact-visible/report-only;
+13. In local mode, the same tracked mutation is artifact-visible/report-only;
     untracked files are report-only in both modes.
-13. Added, deleted, renamed old/new, type-changed, modified, and untracked
+14. Added, deleted, renamed old/new, type-changed, modified, and untracked
     paths have deterministic normalized NUL-delimited pre/post snapshots.
-14. Unknown generated-output roots are outside the CI allowlist and cannot be
+15. Unknown generated-output roots are outside the CI allowlist and cannot be
     silently trusted.
-15. Profile text containing shell metacharacters cannot alter the fixed argv.
-16. Artifact size is capped at 256 KiB; oversized policy-critical mutation data
+16. Profile text containing shell metacharacters cannot alter the fixed argv.
+17. Artifact size is capped at 256 KiB; oversized policy-critical mutation data
     yields `artifact-invalid` with digest/count summary and no raw output.
-17. Simulated output and environment values never appear in the artifact; only
+18. Simulated output and environment values never appear in the artifact; only
     byte counts, SHA-256 digests, fixed diagnostic codes, and allowed metadata
     persist.
-18. The current plain finish and `closure next --json` contracts remain
+19. The current plain finish and `closure next --json` contracts remain
     unchanged when `--reverify` is absent.
-19. Runtime injection stays default-off and no hook is required to run the
+20. Runtime injection stays default-off and no hook is required to run the
     revalidation path.
 
 ## Proposed Implementation Tickets
@@ -409,9 +422,10 @@ The implementation acceptance suite must include:
    Windows and non-catalog profiles before any command starts.
 3. **I19-3: Git/workspace mutationSnapshot.1 and allowlist.** Implement fixed
    direct-argv verified `preHead`/`postHead`, workspace-root realpath/`dev`/
-   `ino` snapshots, CI preflight and post-command equality rules, normalized
-   NUL-delimited snapshots, exact `build/**`/`.gradle/**` allowlist, CI
-   partial mapping, local report-only mapping, and no-cleanup behavior.
+   `ino` snapshots, CI preflight and post-command equality rules, post-command
+   capture-failure `partial` mapping in both modes, local pre-command
+   snapshot-unavailable report-only handling, normalized NUL-delimited
+   snapshots, exact `build/**`/`.gradle/**` allowlist, and no-cleanup behavior.
 4. **I19-4: Bounded digest-only artifact and strict reader.** Implement
    `ph-ci-reverification.1`, 256 KiB bound, structural no-raw-output/no-env
    persistence, exact `.persona/evidence` preflight and pre-write
