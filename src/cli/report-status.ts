@@ -5,6 +5,7 @@ import process from "node:process"
 import { AtomicWriteConflictError, readTextFileSnapshot, writeFileAtomicIfUnchanged } from "../io/atomic-file.js"
 import { replaceWorkflowReportStatusText } from "../runtime/workflow-report-status.js"
 import { IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH, type PlanOptions } from "./plan.js"
+import { hasSubstantiveWorkflowReportContent } from "./workflow-report-coverage.js"
 import { beforeWorkflowStateWrite, toWorkflowStateConflict } from "./workflow-state-conflict.js"
 
 export type WorkflowReportKind = "implementation" | "review"
@@ -57,6 +58,7 @@ export function updateWorkflowReportStatus(
   if (updatedReportText === undefined) {
     throw new WorkflowReportStatusError(`No Status line found in ${relativePath}.`)
   }
+  validateWorkflowReportContent(kind, relativePath, snapshot.text)
 
   beforeWorkflowStateWrite(options, reportPath)
   try {
@@ -68,4 +70,20 @@ export function updateWorkflowReportStatus(
     throw error
   }
   return { reportPath, relativePath, status }
+}
+
+function validateWorkflowReportContent(
+  kind: WorkflowReportKind,
+  relativePath: string,
+  reportText: string,
+): void {
+  if (hasSubstantiveWorkflowReportContent(kind, reportText)) {
+    return
+  }
+  throw new WorkflowReportStatusError(
+    [
+      `Cannot mark ${relativePath} filled because required substantive ${kind} report content is still template-like or incomplete.`,
+      `Next action: complete the required ${kind} report content, then run npx ph plan --report-filled ${kind}.`,
+    ].join("\n"),
+  )
 }

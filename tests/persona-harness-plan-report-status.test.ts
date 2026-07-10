@@ -70,7 +70,19 @@ describe("ph plan report status errors", () => {
     const workflowDir = join(projectDir, ".persona", "workflow")
     const reportPath = join(workflowDir, "implementation-report.md")
     mkdirSync(workflowDir, { recursive: true })
-    writeFileSync(reportPath, ["---", "status: template", "---", "# Implementation Report", ""].join("\n"))
+    writeFileSync(
+      reportPath,
+      [
+        "---",
+        "status: template",
+        "---",
+        "# Implementation Report",
+        "",
+        "- README ranges read: 1-220",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell --shell './gradlew test'`",
+      ].join("\n"),
+    )
 
     const result = runPersonaCli(["plan", "--report-filled", "implementation"], {
       cwd: projectDir,

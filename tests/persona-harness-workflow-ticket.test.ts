@@ -445,9 +445,8 @@ enforcement: inject_only
     expect(check.stdout).toContain("Repair backlog state: `npx ph workflow archive req-2`")
     expect(check.stdout).toContain("Next: repair archived ticket backlog state with `npx ph workflow archive req-2`")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("Pending workflow tickets remain")
-    expect(finish.stderr).toContain("State: history exists but backlog still marks this ticket pending.")
-    expect(finish.stderr).toContain("Repair backlog state: `npx ph workflow archive req-2`")
+    expect(finish.stderr).toContain("Blocker: history-backlog-mismatch")
+    expect(finish.stderr).toContain("Next command: npx ph workflow archive req-2")
     expect(repair.status).toBe(0)
     expect(repair.stdout).toContain("Workflow ticket archive state repaired: req-2")
     expect(backlog).toContain("| 2 | req-2 | Ambiguities To Resolve | archived | .persona/workflow/history/req-2/00-task-card.md |")
@@ -627,13 +626,9 @@ enforcement: inject_only
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain("Pending workflow tickets remain: step-2, step-3")
-    expect(result.stderr).toContain("Ticket: step-2")
-    expect(result.stderr).toContain("Title: iCal Import/Export")
-    expect(result.stderr).toContain("Path: .persona/workflow/work/step-2/00-task-card.md")
-    expect(result.stderr).toContain("Run `npx ph workflow next`")
-    expect(result.stderr).toContain("If this ticket is complete: `npx ph workflow archive step-2`")
-    expect(result.stderr).toContain("Do not claim overall completion while pending tickets remain.")
+    expect(result.stderr).toContain("Blocker: pending-ticket")
+    expect(result.stderr).toContain("Next action: Review the current ticket and confirm it is complete before archiving it.")
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph workflow archive step-2")
   })
 
   it("suggests reviewing and archiving a satisfied technical constraints ticket instead of auto-completing it", () => {
@@ -679,10 +674,8 @@ enforcement: inject_only
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain("Ticket: step-2")
-    expect(result.stderr).toContain("Title: Technical Constraints")
-    expect(result.stderr).toContain("may already be satisfied")
-    expect(result.stderr).toContain("Archive only after review: `npx ph workflow archive step-2`")
+    expect(result.stderr).toContain("Blocker: pending-ticket")
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph workflow archive step-2")
   })
 
   it("keeps workflow ticket commands inactive before Persona Harness opt-in", () => {

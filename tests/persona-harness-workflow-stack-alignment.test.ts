@@ -117,14 +117,10 @@ describe("ph workflow check stack alignment", () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Workflow finish failed: implement")
-    expect(result.stderr).toContain("Project profile and generated stack mismatch")
-    expect(result.stderr).toContain("STACK_MISMATCH")
-    expect(result.stderr).toContain("This is a workflow/profile alignment gate, not generated app product-quality certification.")
-    expect(result.stderr).toContain("Re-read `.persona/project-profile.jsonc`.")
+    expect(result.stderr).toContain("Blocker: stack-alignment-mismatch")
+    expect(result.stderr).toContain("Next action: Re-read .persona/project-profile.jsonc and align the generated Spring Boot/Gradle/JPA/database stack.")
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
     expect(result.stderr).not.toContain("Persona Harness package repository detected")
-    expect(result.stderr).toContain("Change the generated project to Spring Boot/Gradle/JPA/database structure.")
-    expect(result.stderr).toContain("Remove fake `gradle-shim.js`/Node shim files.")
-    expect(result.stderr).toContain("Re-run `npx ph workflow check`.")
   })
 
   it("adds self-profile guidance for stack mismatch inside the Persona Harness package repo", () => {
@@ -146,8 +142,8 @@ describe("ph workflow check stack alignment", () => {
     expect(check.stdout).toContain("Persona Harness package repository detected")
     expect(check.stdout).toContain("use a separate Java/Spring fixture workspace")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("Persona Harness package repository detected")
-    expect(finish.stderr).toContain("Do not force generated Java/Spring app files into the PH package repo")
+    expect(finish.stderr).toContain("Blocker: stack-alignment-mismatch")
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
   })
 
   it("keeps pending ticket guidance when stack mismatch and pending tickets both remain", () => {
@@ -175,9 +171,9 @@ describe("ph workflow check stack alignment", () => {
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain("Project profile and generated stack mismatch")
-    expect(result.stderr).toContain("Pending workflow tickets remain: req-1")
-    expect(result.stderr).toContain("Run `npx ph workflow next`")
+    expect(result.stderr).toContain("Blocker: stack-alignment-mismatch")
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
+    expect(result.stderr).toContain("Other blockers:\n- pending-ticket")
   })
 
   it("passes stack alignment for a minimal Spring Boot Gradle JPA database project", () => {

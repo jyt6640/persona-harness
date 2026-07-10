@@ -55,6 +55,19 @@ function writeStructuredVerificationSuccessEvidence(projectDir: string): void {
   )
 }
 
+function writeSubstantiveImplementationReport(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: template",
+      "- README ranges read: 1-220",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+}
+
 function writePassingWorkflowEvidence(projectDir: string): void {
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'sample'\n")
   writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'org.springframework.boot' version '3.5.0' }\n")
@@ -439,6 +452,7 @@ describe("ph workflow check", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
     writeStructuredVerificationSuccessEvidence(projectDir)
@@ -458,6 +472,7 @@ describe("ph workflow check", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     writePendingReqBacklog(projectDir)
 
@@ -523,10 +538,11 @@ describe("ph workflow check", () => {
     expect(resume.stdout).toContain("update implementation/review reports")
     expect(resume.stdout).toContain("Do not archive req tickets until review confirms requirements are satisfied.")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("Report coverage missing")
-    expect(finish.stderr).toContain("read README/profile/generated Java role files")
-    expect(finish.stderr).toContain("Re-run `npx ph workflow check`.")
-    expect(finish.stderr).toContain("Pending workflow tickets remain: req-1")
+    expect(finish.stderr).toContain("Blocker: verification-unknown")
+    expect(finish.stderr).toContain("Next action: Run the project's supported test/build/runtime verification and record the outcome in workflow evidence.")
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
+    expect(finish.stderr).toContain("- report-coverage-missing")
+    expect(finish.stderr).toContain("- pending-ticket")
   })
 
   it("reports completed workflow as PASS when bearshell command discipline is observed", () => {
@@ -584,8 +600,9 @@ describe("ph workflow check", () => {
     expect(resume.stdout).toContain(`Blocker: ${CONTROLLER_REPOSITORY_CONVENTION.blockerId}`)
     expect(resume.stdout).toContain("TaskController directly depends on TaskRepository")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain(`Closure blocker: ${CONTROLLER_REPOSITORY_CONVENTION.blockerId}`)
-    expect(finish.stderr).toContain(CONTROLLER_REPOSITORY_CONVENTION.fixPath)
+    expect(finish.stderr).toContain(`Blocker: ${CONTROLLER_REPOSITORY_CONVENTION.blockerId}`)
+    expect(finish.stderr).toContain(`Next action: ${CONTROLLER_REPOSITORY_CONVENTION.fixPath.charAt(0).toUpperCase()}${CONTROLLER_REPOSITORY_CONVENTION.fixPath.slice(1)}`)
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
     expect(archive.status).toBe(1)
     expect(archive.stderr).toContain(CONTROLLER_REPOSITORY_CONVENTION.blockerId)
   })
@@ -769,8 +786,9 @@ describe("ph workflow check", () => {
         reason: expect.stringContaining(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id),
       }))
       expect(finish.status).toBe(1)
-      expect(finish.stderr).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId)
-      expect(finish.stderr).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.fixPath)
+      expect(finish.stderr).toContain(`Blocker: ${CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId}`)
+      expect(finish.stderr).toContain(`Next action: ${CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.fixPath.charAt(0).toUpperCase()}${CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.fixPath.slice(1)}`)
+      expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
       expect(archive.status).toBe(1)
       expect(archive.stderr).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId)
     } finally {
@@ -875,14 +893,10 @@ describe("ph workflow check", () => {
         id: "install-convention-toolchain",
       })
       expect(finish.status).toBe(1)
-      expect(finish.stderr).toContain("convention-toolchain-missing")
-      expect(finish.stderr).toContain("required ast-grep toolchain unavailable")
-      expect(finish.stderr).toContain("install sg/ast-grep or set PH_AST_GREP_BIN")
-      expect(finish.stderr).toContain("lower convention level to warn/report")
-      expect(finish.stderr).toContain("Re-run `npx ph workflow check`")
-      expect(finish.stderr).not.toContain("no closure step mapping")
-      expect(finish.stderr).not.toContain("PH bug or unregistered convention")
-      expect(finish.stderr).not.toContain("Do not directly rerun `npx ph workflow finish implement` or `npx ph workflow check`")
+      expect(finish.stderr).toContain("Blocker: convention-toolchain-missing")
+      expect(finish.stderr).toContain("Next action: Install sg/ast-grep or lower the affected convention from block level.")
+      expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
+      expect(finish.stderr).not.toContain("unmapped-blocker")
     } finally {
       if (previousAstGrep === undefined) {
         delete process.env.PH_AST_GREP_BIN
@@ -1052,7 +1066,10 @@ describe("ph workflow check", () => {
     expect(check.stdout).toContain("stack alignment: STACK_MISMATCH")
     expect(check.stdout).toContain("profile expects Java/Spring/Gradle")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("STACK_MISMATCH")
+    expect(finish.stderr).toContain("Blocker: report-coverage-missing")
+    expect(finish.stderr).toContain("Next action: Read README, project-profile, and generated role context, then update workflow reports with actual coverage evidence.")
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
+    expect(finish.stderr).toContain("- stack-alignment-mismatch")
   })
 
   it("blocks finish when the backend profile was not read before implementation", () => {
@@ -1081,7 +1098,9 @@ describe("ph workflow check", () => {
     expect(check.stdout).toContain("profile read coverage: project profile exists but profile read coverage is empty")
     expect(check.stdout).toContain("Workflow status: WARN")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("project profile read coverage must be recorded")
+    expect(finish.stderr).toContain("Blocker: report-coverage-missing")
+    expect(finish.stderr).toContain("Next action: Read README, project-profile, and generated role context, then update workflow reports with actual coverage evidence.")
+    expect(finish.stderr).toContain("- profile-read-coverage-missing")
   })
 
   it("passes profile read coverage when implementation report records project profile read evidence", () => {
@@ -1159,11 +1178,9 @@ describe("ph workflow check", () => {
     expect(check.stdout).toContain("Next: fix compile/test failure")
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("Workflow finish failed: implement")
-    expect(finish.stderr).toContain("Closure blocker: verification-failed")
-    expect(finish.stderr).toContain("Verification failed: compile/test verification failed")
-    expect(finish.stderr).toContain("cannot find symbol")
-    expect(finish.stderr).toContain("Do not claim overall completion while verification failed.")
-    expect(finish.stderr).toContain("Fix the compile/test failure")
+    expect(finish.stderr).toContain("Blocker: verification-failed")
+    expect(finish.stderr).toContain("Next action: Fix the compile/test failure, rerun supported verification, and record the new outcome.")
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
   })
 
   it("does not block finish when verification notes say the earlier failure was recovered", () => {
@@ -1357,6 +1374,7 @@ describe("ph workflow guard", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const result = runPersonaCli(["workflow", "guard", "final"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -2137,19 +2155,22 @@ describe("ph workflow start and finish", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
 
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Workflow finish failed: implement")
-    expect(result.stderr).toContain(".persona/workflow/review-report.md must be filled")
+    expect(result.stderr).toContain("Blocker: verification-unknown")
+    expect(result.stderr).toContain("- review-report-missing")
   })
 
   it("blocks finish with review-report guidance while preserving pending req ticket guidance", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
+    writeSubstantiveImplementationReport(projectDir)
     expect(runPersonaCli(["plan", "--report-filled", "implementation"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     writePendingReqBacklog(projectDir)
 
@@ -2161,17 +2182,12 @@ describe("ph workflow start and finish", () => {
     expect(result.stderr).not.toContain("- closure blockers: 6")
     expect(result.stderr).not.toContain("- first blocker: verification-unknown")
     expect(result.stderr).not.toContain("- first next action: Run test/build/runtime verification through `npx ph bearshell`.")
-    expect(result.stderr).toContain("Required fixes:")
-    expect(result.stderr).toContain("Closure blocker: verification-unknown")
-    expect(result.stderr).toContain("Closure blocker: review-report-missing")
-    expect(result.stderr).toContain("Implementation report is filled but review report is template")
-    expect(result.stderr).toContain(".persona/workflow/review-report.md must be filled")
-    expect(result.stderr).toContain("Next action: fill .persona/workflow/review-report.md")
-    expect(result.stderr).toContain("Pending workflow tickets remain: req-1")
-    expect(result.stderr).toContain("Closure blocker: pending-ticket")
-    expect(result.stderr).toContain("Do not claim overall completion while pending tickets remain.")
-    expect(result.stderr).toContain("If this req ticket is actually complete after review: `npx ph workflow archive req-1`")
-    expect(result.stderr).toContain("Archive is a candidate action only; do not auto-archive.")
+    expect(result.stderr).toContain("Blocker: verification-unknown")
+    expect(result.stderr).toContain("Next action: Run the project's supported test/build/runtime verification and record the outcome in workflow evidence.")
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
+    expect(result.stderr).toContain("Other blockers:")
+    expect(result.stderr).toContain("- review-report-missing")
+    expect(result.stderr).toContain("- pending-ticket")
   })
 
   it("allows implementation finish after final guard evidence passes", () => {
@@ -2231,7 +2247,9 @@ describe("ph workflow start and finish", () => {
     expect(check.stdout).toContain("Workflow status: WARN")
     expect(check.stdout).toContain("README.md exists but README ranges read is empty")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("README ranges read must be recorded")
+    expect(finish.stderr).toContain("Blocker: report-coverage-missing")
+    expect(finish.stderr).toContain("Next action: Read README, project-profile, and generated role context, then update workflow reports with actual coverage evidence.")
+    expect(finish.stderr).toContain("- read-coverage-missing")
   })
 
   it("allows implementation finish when README range coverage is recorded", () => {

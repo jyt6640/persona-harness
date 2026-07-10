@@ -1,8 +1,11 @@
 import { findConventionByBlockerId } from "../config/convention-registry.js"
 import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventions.js"
+import { workflowFinishFollowUpForStep } from "./workflow-finish-follow-up.js"
 import { personaHarnessSelfProfileGuidance } from "./self-profile-guidance.js"
 import { UNMAPPED_BLOCKER_STEP_ID, type ClosureBlocker, type ClosurePayload, type ClosureStep, type ClosureTicket } from "./workflow-closure.js"
 import type { StructuredWorkflowRequiredFix } from "./workflow-required-fix.js"
+
+export { workflowFinishFollowUp } from "./workflow-finish-follow-up.js"
 
 export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir?: string): readonly StructuredWorkflowRequiredFix[] {
   if (payload.state.finish === "passed" && payload.state.blockers.length === 0) {
@@ -13,7 +16,7 @@ export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir
     return {
       blockerId: blocker.id,
       detail: blockerFinishReason(blocker, projectDir),
-      nextAction: nextActionForBlocker(blocker, step),
+      nextAction: step === null ? null : workflowFinishFollowUpForStep(step).action,
       reason: blocker.reason,
       source: blocker.source,
       step: step === null ? null : {
@@ -26,65 +29,6 @@ export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir
       type: "closure-blocker",
     }
   })
-}
-
-function nextActionForBlocker(blocker: ClosureBlocker, step: ClosureStep | null): string | null {
-  if (step?.id === UNMAPPED_BLOCKER_STEP_ID) {
-    return "escalate to Persona Harness configuration/maintainer review"
-  }
-  if (blocker.id === "verification-failed") {
-    return "Fix the compile/test failure."
-  }
-  if (blocker.id === "verification-unknown") {
-    return "Run test/build/runtime verification through `npx ph bearshell`."
-  }
-  if (blocker.id === "implementation-report-missing") {
-    return "fill .persona/workflow/implementation-report.md"
-  }
-  if (blocker.id === "review-report-missing") {
-    return "fill .persona/workflow/review-report.md after review/manual QA, then run `npx ph plan --report-filled review`"
-  }
-  if (blocker.id === "evidence-missing") {
-    return "add workflow evidence under .persona/evidence"
-  }
-  if (blocker.id === "command-discipline-blocking") {
-    return "Rerun final verification through `npx ph bearshell`."
-  }
-  if (blocker.id === "report-coverage-missing") {
-    return "read required context and update workflow reports with coverage evidence"
-  }
-  if (blocker.id === "read-coverage-missing") {
-    return "record README ranges in .persona/workflow/implementation-report.md"
-  }
-  if (blocker.id === "profile-read-coverage-missing") {
-    return "record project profile read method/ranges before finish"
-  }
-  if (blocker.id === "java-role-read-coverage-missing") {
-    return "record generated Java role read coverage before finish"
-  }
-  if (blocker.id === "stack-alignment-mismatch") {
-    return "Fix stack alignment, then run `npx ph workflow check`."
-  }
-  if (blocker.id === CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID) {
-    return "Install `sg`/ast-grep or set `PH_AST_GREP_BIN`, or lower that convention level to `warn`/`report`."
-  }
-  const convention = findConventionByBlockerId(blocker.id)
-  if (convention !== undefined) {
-    return convention.fixPath
-  }
-  if (blocker.id === "history-backlog-mismatch" && step?.command !== undefined) {
-    return step.command
-  }
-  if (blocker.id === "pending-ticket") {
-    return "Run `npx ph workflow next` to resume the next ticket."
-  }
-  if (step?.command !== undefined) {
-    return step.command
-  }
-  if (step?.commandAfterContent !== undefined) {
-    return `Complete the blocker action, then run \`${step.commandAfterContent}\`.`
-  }
-  return null
 }
 
 function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): string {

@@ -5,11 +5,17 @@ import {
   workflowRequiredContextLines,
 } from "./workflow-context-guidance.js"
 import { cachedWorkflowRailOutput } from "./workflow-rail-cache.js"
+import { workflowFinishFollowUpLines, type WorkflowFinishFollowUp } from "./workflow-finish-follow-up.js"
 import { isStructuredWorkflowRequiredFix, type WorkflowRequiredFix } from "./workflow-required-fix.js"
 
 export type WorkflowGuardKind = "implement" | "final"
 export type WorkflowRunnerKind = "implement"
 export type WorkflowRunnerAction = "implement" | "start" | "finish"
+
+export type WorkflowFinishFailureOutputOptions = {
+  readonly blockerIds: readonly string[]
+  readonly followUp: WorkflowFinishFollowUp
+}
 
 function requiredFixDetail(fix: WorkflowRequiredFix): string {
   return isStructuredWorkflowRequiredFix(fix) ? fix.detail : fix
@@ -58,7 +64,11 @@ export function failedRunnerOutput(
   action: WorkflowRunnerAction,
   runnerKind: WorkflowRunnerKind,
   reasons: readonly WorkflowRequiredFix[],
+  finishOptions?: WorkflowFinishFailureOutputOptions,
 ): CliRunResult {
+  if (action === "finish" && finishOptions !== undefined) {
+    return failedFinishRunnerOutput(runnerKind, finishOptions)
+  }
   return {
     status: 1,
     stdout: "",
@@ -67,6 +77,26 @@ export function failedRunnerOutput(
       "",
       "Required fixes:",
       ...reasons.map((reason) => `- ${requiredFixDetail(reason)}`),
+      "",
+      "This is an AI-facing workflow rail only. It does not certify generated app product quality.",
+    ].join("\n") + "\n",
+  }
+}
+
+function failedFinishRunnerOutput(
+  runnerKind: WorkflowRunnerKind,
+  options: WorkflowFinishFailureOutputOptions,
+): CliRunResult {
+  const otherBlockers = options.blockerIds.filter((blockerId) => blockerId !== options.followUp.blockerId)
+  return {
+    status: 1,
+    stdout: "",
+    stderr: [
+      `Workflow finish failed: ${runnerKind}`,
+      "",
+      `Blocker: ${options.followUp.blockerId}`,
+      ...workflowFinishFollowUpLines(options.followUp),
+      ...(otherBlockers.length === 0 ? [] : ["", "Other blockers:", ...otherBlockers.map((blockerId) => `- ${blockerId}`)]),
       "",
       "This is an AI-facing workflow rail only. It does not certify generated app product quality.",
     ].join("\n") + "\n",

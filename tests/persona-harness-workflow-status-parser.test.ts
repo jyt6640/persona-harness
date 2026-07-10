@@ -190,7 +190,14 @@ describe("workflow report status parser", () => {
     )
     writeFileSync(
       join(projectDir, ".persona", "workflow", "review-report.md"),
-      ["# Review Report", "", "Status: template", "- `npx ph bearshell --shell './gradlew bootRun'`"].join("\n"),
+      [
+        "# Review Report",
+        "",
+        "Status: template",
+        "- Requirements reviewed against the accepted plan.",
+        "- Manual QA completed.",
+        "- `npx ph bearshell --shell './gradlew bootRun'`",
+      ].join("\n"),
     )
 
     const implementation = runPersonaCli(["plan", "--report-filled", "implementation"], {
