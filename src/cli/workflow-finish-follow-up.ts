@@ -1,155 +1,210 @@
 import { findConventionByStepId } from "../config/convention-registry.js"
-import { UNMAPPED_BLOCKER_STEP_ID, type ClosurePayload, type ClosureStep, type ClosureTicket } from "./workflow-closure.js"
+import { UNMAPPED_BLOCKER_STEP_ID, type ClosurePayload, type ClosureStep } from "./workflow-closure.js"
+
+export type WorkflowFollowUpCommand = {
+  readonly phase: "after-action" | "now"
+  readonly value: string
+}
 
 export type WorkflowFinishFollowUp = {
   readonly action: string
   readonly blockerId: string
-  readonly command: string
+  readonly command?: WorkflowFollowUpCommand
 }
 
 export function workflowFinishFollowUp(payload: ClosurePayload): WorkflowFinishFollowUp | null {
   const step = payload.action === "next" ? payload.nextStep : payload.steps[0] ?? null
   return step === null || step.id === "terminal" || step.blockerId === undefined
     ? null
-    : workflowFinishFollowUpForStep(step, payload.state.currentTicket)
+    : workflowFinishFollowUpForStep(step)
 }
 
-export function workflowFinishFollowUpForStep(
-  step: ClosureStep,
-  currentTicket: ClosureTicket | null,
-): WorkflowFinishFollowUp {
+export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinishFollowUp {
   const blockerId = step.blockerId ?? "unmapped-blocker"
   if (step.id === "verify-app") {
     return {
-      action: "Run supported test/build/runtime verification and record the outcome.",
+      action: isDirectVerificationReason(step.reason)
+        ? "Ensure the project has a supported verification command, then record the result through Persona Harness."
+        : "Run the project's supported test/build/runtime verification and record the outcome in workflow evidence.",
       blockerId,
-      command: verificationFollowUpCommand(step),
+      command: isDirectVerificationReason(step.reason) ? undefined : afterActionCommand("npx ph workflow check"),
     }
   }
   if (step.id === "fix-verification") {
     return {
-      action: "Fix the compile/test failure and record the new verification outcome.",
+      action: isDirectVerificationReason(step.reason)
+        ? "Fix the compile/test failure reported by Persona Harness verification."
+        : "Fix the compile/test failure, rerun supported verification, and record the new outcome.",
       blockerId,
-      command: verificationFollowUpCommand(step),
+      command: isDirectVerificationReason(step.reason) ? undefined : afterActionCommand("npx ph workflow check"),
     }
   }
   if (step.id === "fill-implementation-report") {
     return {
-      action: "Fill the implementation report with verification evidence.",
+      action: "Fill .persona/workflow/implementation-report.md with actual verification evidence.",
       blockerId,
-      command: step.commandAfterContent ?? "npx ph plan --report-filled implementation",
+      command: commandForStep(step),
     }
   }
   if (step.id === "fill-review-report") {
     return {
-      action: "Fill the review report after review/manual QA.",
+      action: "Fill .persona/workflow/review-report.md after review/manual QA.",
       blockerId,
-      command: step.commandAfterContent ?? "npx ph plan --report-filled review",
+      command: commandForStep(step),
     }
   }
   if (step.id === "record-workflow-evidence") {
     return {
       action: "Record workflow verification evidence.",
       blockerId,
-      command: "npx ph workflow check",
+      command: commandForStep(step),
+    }
+  }
+  if (step.id === "record-tdd-red") {
+    return {
+      action: "Run the Persona Harness TDD test to record required failing-test evidence.",
+      blockerId,
+      command: commandForStep(step),
+    }
+  }
+  if (step.id === "record-tdd-green") {
+    return {
+      action: "Run the targeted test after preserving required red evidence.",
+      blockerId,
+      command: commandForStep(step),
     }
   }
   if (step.id === "rerun-bearshell-verification") {
     return {
-      action: "Rerun final verification through bearshell.",
+      action: "Rerun final test/build/runtime verification through Persona Harness bearshell and update the workflow reports.",
       blockerId,
-      command: step.command ?? "npx ph bearshell <verification command>",
+      command: commandForStep(step),
     }
   }
   if (step.id === "fill-report-coverage") {
     return {
-      action: "Read the required context and update workflow report coverage evidence.",
+      action: "Read README, project-profile, and generated role context, then update workflow reports with actual coverage evidence.",
       blockerId,
-      command: step.commandAfterContent ?? "npx ph workflow check",
+      command: commandForStep(step),
     }
   }
   if (step.id === "record-read-coverage") {
     return {
       action: "Record README read coverage in the implementation report.",
       blockerId,
-      command: step.commandAfterContent ?? "npx ph workflow check",
+      command: commandForStep(step),
     }
   }
   if (step.id === "record-profile-read-coverage") {
     return {
       action: "Record project profile read coverage in the implementation report.",
       blockerId,
-      command: step.commandAfterContent ?? "npx ph workflow check",
+      command: commandForStep(step),
     }
   }
   if (step.id === "record-java-role-read-coverage") {
     return {
       action: "Record generated Java role read coverage in the implementation report.",
       blockerId,
-      command: step.commandAfterContent ?? "npx ph workflow check",
+      command: commandForStep(step),
     }
   }
   if (step.id === "archive-current-ticket") {
     return {
-      action: "Review the current ticket and archive it only after review confirms completion.",
+      action: "Review the current ticket and confirm it is complete before archiving it.",
       blockerId,
-      command: step.commandAfterContent ?? ticketArchiveCommand(currentTicket),
+      command: commandForStep(step),
     }
   }
   if (step.id === "install-convention-toolchain") {
     return {
-      action: "Restore the required convention toolchain or lower that convention level.",
+      action: "Install sg/ast-grep or lower the affected convention from block level.",
       blockerId,
-      command: step.commandAfterContent ?? "npx ph workflow check",
+      command: commandForStep(step),
     }
   }
   if (step.id === "fix-stack-alignment") {
     return {
-      action: "Align the generated project with the accepted profile.",
+      action: "Re-read .persona/project-profile.jsonc and align the generated Spring Boot/Gradle/JPA/database stack.",
       blockerId,
-      command: step.commandAfterContent ?? "npx ph workflow check",
+      command: commandForStep(step),
     }
   }
   if (step.id === UNMAPPED_BLOCKER_STEP_ID) {
     return {
-      action: "Escalate the missing Persona Harness blocker mapping for maintainer review.",
+      action: "Escalate the missing Persona Harness blocker mapping for maintainer review before retrying automation.",
       blockerId,
-      command: "npx ph workflow closure next --json",
     }
   }
   const convention = findConventionByStepId(step.id)
   if (convention !== undefined) {
     return {
-      action: "Fix the architecture convention violation.",
+      action: convention.fixPath.charAt(0).toUpperCase() + convention.fixPath.slice(1),
       blockerId,
-      command: step.commandAfterContent ?? "npx ph workflow check",
+      command: commandForStep(step),
+    }
+  }
+  if (step.id === "accept-plan") {
+    return {
+      action: "Create or accept the workflow plan before implementation.",
+      blockerId,
+      command: commandForStep(step),
+    }
+  }
+  if (step.id === "repair-archive-state") {
+    return {
+      action: "Repair the archived ticket backlog state.",
+      blockerId,
+      command: commandForStep(step),
     }
   }
   if (step.command !== undefined) {
-    return { action: "Run the prioritized closure command.", blockerId, command: step.command }
+    return {
+      action: `Resolve ${blockerId}: ${step.reason ?? "run the prioritized closure command"}`,
+      blockerId,
+      command: commandForStep(step),
+    }
   }
   if (step.commandAfterContent !== undefined) {
     return {
-      action: "Complete the prioritized closure action.",
+      action: `Resolve ${blockerId}: ${step.reason ?? "complete the required workflow content"}`,
       blockerId,
-      command: step.commandAfterContent,
+      command: commandForStep(step),
     }
   }
   return {
-    action: "Inspect the prioritized closure diagnostic before changing workflow state.",
+    action: `Resolve ${blockerId}: ${step.reason ?? "inspect the closure diagnostic"}`,
     blockerId,
-    command: "npx ph workflow closure next --json",
   }
 }
 
-function verificationFollowUpCommand(step: ClosureStep): string {
-  return step.reason?.includes("PH direct verification") === true
-    ? "npx ph workflow closure next --json"
-    : "npx ph workflow check"
+export function workflowFinishFollowUpLines(followUp: WorkflowFinishFollowUp): readonly string[] {
+  return [
+    `Next action: ${followUp.action}`,
+    ...(followUp.command === undefined ? [] : [`Next command: ${formatFollowUpCommand(followUp.command)}`]),
+  ]
 }
 
-function ticketArchiveCommand(currentTicket: ClosureTicket | null): string {
-  return currentTicket === null
-    ? "npx ph workflow closure next --json"
-    : `npx ph workflow archive ${currentTicket.id}`
+function commandForStep(step: ClosureStep): WorkflowFollowUpCommand | undefined {
+  if (step.command !== undefined) {
+    return { phase: "now", value: step.command }
+  }
+  if (step.commandAfterContent !== undefined) {
+    return { phase: "after-action", value: step.commandAfterContent }
+  }
+  return undefined
+}
+
+function afterActionCommand(value: string): WorkflowFollowUpCommand {
+  return { phase: "after-action", value }
+}
+
+function formatFollowUpCommand(command: WorkflowFollowUpCommand): string {
+  return command.phase === "now"
+    ? command.value
+    : `after completing the action, run ${command.value}`
+}
+
+function isDirectVerificationReason(reason: string | undefined): boolean {
+  return reason?.includes("PH direct verification") === true
 }

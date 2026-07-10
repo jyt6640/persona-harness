@@ -16,7 +16,7 @@ export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir
     return {
       blockerId: blocker.id,
       detail: blockerFinishReason(blocker, projectDir),
-      nextAction: step === null ? null : workflowFinishFollowUpForStep(step, payload.state.currentTicket).action,
+      nextAction: step === null ? null : workflowFinishFollowUpForStep(step).action,
       reason: blocker.reason,
       source: blocker.source,
       step: step === null ? null : {

@@ -157,7 +157,7 @@ describe("ph workflow Java role read coverage", () => {
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("Workflow finish failed: implement")
     expect(finish.stderr).toContain("Blocker: report-coverage-missing")
-    expect(finish.stderr).toContain("Next command: npx ph workflow check")
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
     expect(finish.stderr).toContain("Other blockers:\n- java-role-read-coverage-missing")
   })
 

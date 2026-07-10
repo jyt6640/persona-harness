@@ -98,7 +98,7 @@ describe("prompt-only requirements workflow transitions", () => {
     expect(next.stdout).toContain(".persona/workflow/work/step-1/00-task-card.md")
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("Blocker: verification-unknown")
-    expect(finish.stderr).toContain("Next command: npx ph workflow check")
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
     expect(finish.stderr).toContain("Other blockers:\n- pending-ticket")
   })
 })

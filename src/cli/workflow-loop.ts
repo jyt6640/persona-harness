@@ -12,13 +12,12 @@ import {
 } from "../rules/rule-delivery.js"
 import type { CliRunResult } from "./bearshell.js"
 import { runBoundedProcess } from "./bounded-process.js"
-import { continuationPromptCoreLines } from "./continuation-prompt.js"
+import { workflowFinishFollowUp, workflowFinishFollowUpLines, type WorkflowFinishFollowUp } from "./workflow-finish-follow-up.js"
 import {
   isUnmappedBlockerStep,
   readWorkflowClosurePayload,
   type ClosureBlocker,
   type ClosureNextPayload,
-  type ClosureStep,
 } from "./workflow-closure.js"
 import { runWorkflowFinishResult } from "./workflow-finish-runner.js"
 import {
@@ -158,13 +157,17 @@ function runIteration(
   blocker: ClosureBlocker,
   closure: ClosureNextPayload,
 ): WorkflowLoopIterationRecord {
+  const followUp = workflowFinishFollowUp(closure)
+  if (followUp === null) {
+    throw new TypeError("workflow loop iteration requires a closure follow-up")
+  }
   const dir = workflowLoopDir(projectDir)
   mkdirSync(dir, { recursive: true })
   const blockerTotal = closure.state.blockers.length
   const promptPath = join(dir, `iteration-${iteration}-prompt.md`)
   const stdoutPath = join(dir, `iteration-${iteration}-stdout.log`)
   const stderrPath = join(dir, `iteration-${iteration}-stderr.log`)
-  writeFileSync(promptPath, `${workflowLoopPrompt(projectDir, blocker, closure.nextStep, 1, blockerTotal).join("\n")}\n`)
+  writeFileSync(promptPath, `${workflowLoopPrompt(projectDir, blocker, followUp, 1, blockerTotal).join("\n")}\n`)
   const result = runBoundedProcess({
     args: ["run", readFileSync(promptPath, "utf8")],
     command: options.opencodeCommand,
@@ -199,16 +202,17 @@ function firstPromptLines(projectDir: string, closure: ClosureNextPayload): read
   if (blocker === undefined) {
     return []
   }
-  if (isUnmappedBlockerStep(closure.nextStep)) {
+  const followUp = workflowFinishFollowUp(closure)
+  if (followUp === null) {
     return []
   }
-  return workflowLoopPrompt(projectDir, blocker, closure.nextStep, 1, closure.state.blockers.length)
+  return workflowLoopPrompt(projectDir, blocker, followUp, 1, closure.state.blockers.length)
 }
 
 function workflowLoopPrompt(
   projectDir: string,
   blocker: ClosureBlocker,
-  step: ClosureStep | null,
+  followUp: WorkflowFinishFollowUp,
   blockerIndex: number,
   blockerTotal: number,
 ): readonly string[] {
@@ -217,9 +221,13 @@ function workflowLoopPrompt(
   const delivery = selectRulesForDelivery(projectDir, deliveryRole, { stage: deliveryStage })
   return [
     "[Persona Harness Workflow Loop]",
-    ...continuationPromptCoreLines(blocker, step, { index: blockerIndex, total: blockerTotal }),
+    "Closure blockers remain; do not claim completion.",
+    `Blocker: ${blocker.id} (blocker ${blockerIndex}/${blockerTotal})`,
+    `Reason: ${blocker.reason}`,
+    `Source: ${blocker.source}`,
+    ...workflowFinishFollowUpLines(followUp),
     ...formatRuleDeliveryPromptLines(delivery),
-    "Run only the commands needed for this blocker and stop after the finish gate result is visible.",
+    "Complete only the prioritized action and stop after the finish gate result is visible.",
   ]
 }
 
@@ -250,6 +258,7 @@ function formatPayload(payload: LoopPayload, json: boolean): CliRunResult {
       "",
       "Termination:",
       ...payload.termination.map((line) => `- ${line}`),
+      ...(payload.promptPreview.length === 0 ? [] : ["", "Prompt preview:", ...payload.promptPreview.map((line) => `  ${line}`)]),
       "",
       "Boundaries:",
       ...payload.boundaries.map((line) => `- ${line}`),

@@ -256,6 +256,24 @@ enforcement: inject_only
     expect(existsSync(join(projectDir, ".persona", "workflow", "workflow-loop-state.json"))).toBe(false)
   })
 
+  it("uses the same action and after-action command in dry-run plaintext and JSON prompt preview", () => {
+    const projectDir = createWorkflowProject()
+    const json = runPersonaCli(["workflow", "loop", "--dry-run", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const plaintext = runPersonaCli(["workflow", "loop", "--dry-run"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const output = JSON.parse(json.stdout)
+    const actionLine = output.promptPreview.find((line: string) => line.startsWith("Next action:"))
+    const commandLine = output.promptPreview.find((line: string) => line.startsWith("Next command:"))
+
+    expect(json.status).toBe(0)
+    expect(plaintext.status).toBe(0)
+    expect(actionLine).toBe("Next action: Run the project's supported test/build/runtime verification and record the outcome in workflow evidence.")
+    expect(commandLine).toBe("Next command: after completing the action, run npx ph workflow check")
+    expect(plaintext.stdout).toContain("Prompt preview:")
+    expect(plaintext.stdout).toContain(actionLine)
+    expect(plaintext.stdout).toContain(commandLine)
+    expect(output.promptPreview.join("\n")).not.toContain("Next action: npx ph workflow check")
+  })
+
   it("reads legacy unversioned workflow loop state for upgrade compatibility", () => {
     const projectDir = createWorkflowProject()
     writeFileSync(
@@ -325,7 +343,7 @@ enforcement: inject_only
     expect(firstPrompt).toContain("[Persona Harness Workflow Loop]")
     expect(firstPrompt).toContain("Blocker: verification-unknown (blocker 1/")
     expect(firstPrompt).toContain("Scoped PH rules")
-    expect(firstPrompt).toContain("Fix only this blocker")
+    expect(firstPrompt).toContain("Complete only the prioritized action")
     expect(readFileSync(join(projectDir, "fake-opencode.log"), "utf8").split("\n").filter(Boolean)).toHaveLength(2)
   })
 
@@ -397,8 +415,8 @@ enforcement: inject_only
       expect(result.stderr).not.toContain("- first blocker: architecture-custom-unmapped-loop")
       expect(result.stderr).not.toContain("first next action: escalate to Persona Harness configuration/maintainer review")
       expect(result.stderr).toContain("Blocker: architecture-custom-unmapped-loop")
-      expect(result.stderr).toContain("Next action: Escalate the missing Persona Harness blocker mapping for maintainer review.")
-      expect(result.stderr).toContain("Next command: npx ph workflow closure next --json")
+      expect(result.stderr).toContain("Next action: Escalate the missing Persona Harness blocker mapping for maintainer review before retrying automation.")
+      expect(result.stderr).not.toContain("Next command:")
       expect(result.stderr).not.toContain("npx ph workflow finish implement")
       expect(result.stderr).not.toContain("npx ph workflow check")
     } finally {

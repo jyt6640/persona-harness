@@ -469,7 +469,8 @@ describe("ph workflow closure read-only planner", () => {
     expect(output.steps[0].reason).toContain("PH direct verification failed")
     expect(finish.status).toBe(1)
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Blocker: verification-failed")
-    expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next command: npx ph workflow closure next --json")
+    expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next action: Fix the compile/test failure reported by Persona Harness verification.")
+    expect(`${finish.stdout}\n${finish.stderr}`).not.toContain("Next command:")
   })
 
   it("passes verification from PH-run direct execution when enforcement is enabled", () => {
@@ -499,7 +500,8 @@ describe("ph workflow closure read-only planner", () => {
     })
     expect(output.steps[0].reason).toContain("PH direct verification is enabled")
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Blocker: verification-unknown")
-    expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next command: npx ph workflow closure next --json")
+    expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next action: Ensure the project has a supported verification command")
+    expect(`${finish.stdout}\n${finish.stderr}`).not.toContain("Next command:")
   })
 
   it("orders explicit verification failure before report closure", () => {

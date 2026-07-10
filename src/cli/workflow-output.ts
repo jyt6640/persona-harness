@@ -5,7 +5,7 @@ import {
   workflowRequiredContextLines,
 } from "./workflow-context-guidance.js"
 import { cachedWorkflowRailOutput } from "./workflow-rail-cache.js"
-import type { WorkflowFinishFollowUp } from "./workflow-finish-follow-up.js"
+import { workflowFinishFollowUpLines, type WorkflowFinishFollowUp } from "./workflow-finish-follow-up.js"
 import { isStructuredWorkflowRequiredFix, type WorkflowRequiredFix } from "./workflow-required-fix.js"
 
 export type WorkflowGuardKind = "implement" | "final"
@@ -95,8 +95,7 @@ function failedFinishRunnerOutput(
       `Workflow finish failed: ${runnerKind}`,
       "",
       `Blocker: ${options.followUp.blockerId}`,
-      `Next action: ${options.followUp.action}`,
-      `Next command: ${options.followUp.command}`,
+      ...workflowFinishFollowUpLines(options.followUp),
       ...(otherBlockers.length === 0 ? [] : ["", "Other blockers:", ...otherBlockers.map((blockerId) => `- ${blockerId}`)]),
       "",
       "This is an AI-facing workflow rail only. It does not certify generated app product quality.",

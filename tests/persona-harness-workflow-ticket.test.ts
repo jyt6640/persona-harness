@@ -627,8 +627,8 @@ enforcement: inject_only
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Blocker: pending-ticket")
-    expect(result.stderr).toContain("Next action: Review the current ticket and archive it only after review confirms completion.")
-    expect(result.stderr).toContain("Next command: npx ph workflow archive step-2")
+    expect(result.stderr).toContain("Next action: Review the current ticket and confirm it is complete before archiving it.")
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph workflow archive step-2")
   })
 
   it("suggests reviewing and archiving a satisfied technical constraints ticket instead of auto-completing it", () => {
@@ -675,7 +675,7 @@ enforcement: inject_only
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Blocker: pending-ticket")
-    expect(result.stderr).toContain("Next command: npx ph workflow archive step-2")
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph workflow archive step-2")
   })
 
   it("keeps workflow ticket commands inactive before Persona Harness opt-in", () => {

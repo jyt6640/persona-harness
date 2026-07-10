@@ -99,7 +99,7 @@ describe("ph workflow continue UX", () => {
 
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("Blocker: verification-unknown")
-    expect(finish.stderr).toContain("Next command: npx ph workflow check")
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
     expect(finish.stderr).toContain("Other blockers:")
     expect(finish.stderr).toContain("- command-discipline-blocking")
     expect(resume.status).toBe(0)

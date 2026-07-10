@@ -217,7 +217,7 @@ describe("ph workflow test TDD rail", () => {
     expect(test.stdout).toContain("already green")
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("Blocker: evidence-missing")
-    expect(finish.stderr).toContain("Next command: npx ph workflow check")
+    expect(finish.stderr).not.toContain("Next command:")
     expect(finish.stderr).toContain("Other blockers:\n- tdd-red-evidence-missing\n- pending-ticket")
     expect(closure(projectDir).state.blockers.map((blocker) => blocker.id)).toContain("tdd-red-evidence-missing")
   })

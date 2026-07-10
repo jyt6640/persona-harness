@@ -21,7 +21,10 @@ import { runPersonaCli } from "../src/cli/index.js"
 type FinishMatrixRow = {
   readonly action: string
   readonly blockerId: string
-  readonly command: string
+  readonly command?: {
+    readonly phase: "after-action" | "now"
+    readonly value: string
+  }
   readonly priority: 1
   readonly stepId: string
 }
@@ -54,65 +57,64 @@ const tempProjects: string[] = []
 
 const FINISH_BLOCKER_MATRIX: readonly FinishMatrixRow[] = [
   {
-    action: "Run supported test/build/runtime verification and record the outcome.",
+    action: "Run the project's supported test/build/runtime verification and record the outcome in workflow evidence.",
     blockerId: "verification-unknown",
-    command: "npx ph workflow check",
+    command: { phase: "after-action", value: "npx ph workflow check" },
     priority: 1,
     stepId: "verify-app",
   },
   {
-    action: "Fix the compile/test failure and record the new verification outcome.",
+    action: "Fix the compile/test failure, rerun supported verification, and record the new outcome.",
     blockerId: "verification-failed",
-    command: "npx ph workflow check",
+    command: { phase: "after-action", value: "npx ph workflow check" },
     priority: 1,
     stepId: "fix-verification",
   },
   {
-    action: "Fill the implementation report with verification evidence.",
+    action: "Fill .persona/workflow/implementation-report.md with actual verification evidence.",
     blockerId: "implementation-report-missing",
-    command: "npx ph plan --report-filled implementation",
+    command: { phase: "after-action", value: "npx ph plan --report-filled implementation" },
     priority: 1,
     stepId: "fill-implementation-report",
   },
   {
-    action: "Fill the review report after review/manual QA.",
+    action: "Fill .persona/workflow/review-report.md after review/manual QA.",
     blockerId: "review-report-missing",
-    command: "npx ph plan --report-filled review",
+    command: { phase: "after-action", value: "npx ph plan --report-filled review" },
     priority: 1,
     stepId: "fill-review-report",
   },
   {
-    action: "Review the current ticket and archive it only after review confirms completion.",
+    action: "Review the current ticket and confirm it is complete before archiving it.",
     blockerId: "pending-ticket",
-    command: "npx ph workflow archive req-1",
+    command: { phase: "after-action", value: "npx ph workflow archive req-1" },
     priority: 1,
     stepId: "archive-current-ticket",
   },
   {
-    action: "Fix the architecture convention violation.",
+    action: "Route the Controller through a Service layer instead of depending on Repository directly.",
     blockerId: "architecture-controller-repository-direct-dependency",
-    command: "npx ph workflow check",
+    command: { phase: "after-action", value: "npx ph workflow check" },
     priority: 1,
     stepId: "fix-controller-repository-dependency",
   },
   {
-    action: "Restore the required convention toolchain or lower that convention level.",
+    action: "Install sg/ast-grep or lower the affected convention from block level.",
     blockerId: CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID,
-    command: "npx ph workflow check",
+    command: { phase: "after-action", value: "npx ph workflow check" },
     priority: 1,
     stepId: "install-convention-toolchain",
   },
   {
-    action: "Align the generated project with the accepted profile.",
+    action: "Re-read .persona/project-profile.jsonc and align the generated Spring Boot/Gradle/JPA/database stack.",
     blockerId: "stack-alignment-mismatch",
-    command: "npx ph workflow check",
+    command: { phase: "after-action", value: "npx ph workflow check" },
     priority: 1,
     stepId: "fix-stack-alignment",
   },
   {
-    action: "Escalate the missing Persona Harness blocker mapping for maintainer review.",
+    action: "Escalate the missing Persona Harness blocker mapping for maintainer review before retrying automation.",
     blockerId: "future-unregistered-blocker",
-    command: "npx ph workflow closure next --json",
     priority: 1,
     stepId: "unmapped-blocker",
   },
@@ -160,6 +162,45 @@ function createWorkflowProject(): string {
   return projectDir
 }
 
+function writeVerificationSuccessEvidence(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
+    `${JSON.stringify(
+      {
+        command: "npx ph bearshell --shell './gradlew test'",
+        status: 0,
+        tool: "bearshell",
+        toolOutput: "BUILD SUCCESSFUL",
+      },
+      null,
+      2,
+    )}\n`,
+  )
+}
+
+function writeFilledImplementationReport(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- README ranges read: all",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- BUILD SUCCESSFUL",
+    ].join("\n"),
+  )
+}
+
+function closurePayload(projectDir: string): ClosureNextPayload {
+  const closure = runPersonaCli(["workflow", "closure", "next", "--json"], {
+    cwd: projectDir,
+    env: {},
+    invocationName: "ph",
+  })
+  expect(closure.status).toBe(0)
+  return JSON.parse(closure.stdout) as ClosureNextPayload
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { force: true, recursive: true })
@@ -199,6 +240,7 @@ describe("ph workflow finish next action matrix", () => {
     expect(result.status).toBe(1)
     expect(result.stderr.match(/^Next action:/gmu)).toHaveLength(1)
     expect(result.stderr.match(/^Next command:/gmu)).toHaveLength(1)
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
     expect(result.stderr).toContain("Other blockers:")
     expect(result.stderr).toContain("- review-report-missing")
     expect(result.stderr).toContain("- pending-ticket")
@@ -216,9 +258,9 @@ describe("ph workflow finish next action matrix", () => {
     })
 
     expect(followUp).toEqual({
-      action: "Fill the implementation report with verification evidence.",
+      action: "Fill .persona/workflow/implementation-report.md with actual verification evidence.",
       blockerId: "implementation-report-missing",
-      command: "npx ph plan --report-filled implementation",
+      command: { phase: "after-action", value: "npx ph plan --report-filled implementation" },
     })
     expect(reasons).toHaveLength(2)
     expect(reasons.map((reason) => reason.blockerId)).toEqual([
@@ -226,7 +268,7 @@ describe("ph workflow finish next action matrix", () => {
       "review-report-missing",
     ])
     expect(reasons[1]).toMatchObject({
-      nextAction: "Fill the review report after review/manual QA.",
+      nextAction: "Fill .persona/workflow/review-report.md after review/manual QA.",
       step: {
         commandAfterContent: "npx ph plan --report-filled review",
         id: "fill-review-report",
@@ -235,7 +277,67 @@ describe("ph workflow finish next action matrix", () => {
     })
     expect(result.stderr.match(/^Next action:/gmu)).toHaveLength(1)
     expect(result.stderr.match(/^Next command:/gmu)).toHaveLength(1)
+    expect(result.stderr).toContain("Next command: after completing the action, run npx ph plan --report-filled implementation")
     expect(result.stderr).not.toContain("npx ph plan --report-filled review")
+  })
+
+  it("treats verification check as an after-action transition instead of an immediate fix", () => {
+    const projectDir = createWorkflowProject()
+    const beforeAction = runPersonaCli(["workflow", "finish", "implement"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const prematureCheck = runPersonaCli(["workflow", "check"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(beforeAction.stderr).toContain("Next action: Run the project's supported test/build/runtime verification")
+    expect(beforeAction.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
+    expect(prematureCheck.status).toBe(0)
+    expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "verification-unknown" })
+
+    writeVerificationSuccessEvidence(projectDir)
+    const afterActionCheck = runPersonaCli(["workflow", "check"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(afterActionCheck.status).toBe(0)
+    expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "implementation-report-missing" })
+  })
+
+  it("uses report-filled only after report content advances the content-first blocker", () => {
+    const projectDir = createWorkflowProject()
+    writeVerificationSuccessEvidence(projectDir)
+    const beforeAction = runPersonaCli(["workflow", "finish", "implement"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const prematureCheck = runPersonaCli(["workflow", "check"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(beforeAction.stderr).toContain("Next action: Fill .persona/workflow/implementation-report.md with actual verification evidence.")
+    expect(beforeAction.stderr).toContain("Next command: after completing the action, run npx ph plan --report-filled implementation")
+    expect(prematureCheck.status).toBe(0)
+    expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "implementation-report-missing" })
+
+    writeFilledImplementationReport(projectDir)
+    const afterAction = runPersonaCli(["plan", "--report-filled", "implementation"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(afterAction.status).toBe(0)
+    expect(closurePayload(projectDir).nextStep).toMatchObject({ blockerId: "review-report-missing" })
   })
 
   it("renders one plaintext follow-up while closure JSON retains every blocker and step", () => {
@@ -256,6 +358,7 @@ describe("ph workflow finish next action matrix", () => {
     expect(finish.stderr).toContain("Blocker: verification-unknown")
     expect(finish.stderr.match(/^Next action:/gmu)).toHaveLength(1)
     expect(finish.stderr.match(/^Next command:/gmu)).toHaveLength(1)
+    expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
     expect(finish.stderr).toContain("Other blockers:")
     expect(finish.stderr).not.toContain("npx ph plan --report-filled implementation")
     expect(closure.status).toBe(0)
