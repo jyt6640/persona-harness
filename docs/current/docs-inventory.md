@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 22
+- current active pointer/status: 23
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 52
 - versioned durable: 17
 
-Total indexed files: 288
+Total indexed files: 289
 
 ## File Inventory
 
@@ -81,6 +81,7 @@ Total indexed files: 288
 | `docs/current/java-backend-mvp-install-guide.md` | operational stable | - | Stable non-versioned guide or index. |
 | `docs/current/java-backend-mvp-packaging-readiness.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/java-ironlist-gate-matrix.md` | current active pointer/status | - | Item 11 source/fixture/convention-state matrix; docs-only inventory, not an enforcement decision. |
+| `docs/current/java-precision-warnings-acceptance-record.md` | current active pointer/status | - | Item 21 exact-main three-rule warn-only acceptance record; not full Iron List enforcement. |
 | `docs/current/loop-engineering.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/measurement-scorecard.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/multi-agent-relay-design.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
