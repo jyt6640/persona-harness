@@ -61,6 +61,10 @@ describe("package files policy", () => {
     })
 
     expect(linkedFiles).toEqual([
+      "README.md",
+      "docs/START-HERE.md",
+      "docs/QUICK-DEMO.md",
+      "docs/MEASURED-CLAIMS.md",
       "docs/releases/README.md",
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
