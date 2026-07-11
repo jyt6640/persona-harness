@@ -12,6 +12,10 @@ import {
   type DoctorCommandFinder,
   type DoctorCommandRunner,
 } from "./doctor-command-detection.js"
+import {
+  readDoctorReachability,
+  type DoctorReachabilitySummary,
+} from "./doctor-reachability.js"
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
 import type { RuleDiagnosticReportItem } from "../rules/rule-diagnostics-report.js"
 import type { ConventionPackDiagnostic } from "./convention-pack-diagnostics.js"
@@ -37,6 +41,7 @@ export type DoctorSummary = {
   readonly opencode: string
   readonly runtimeReadiness: "PASS" | "WARN"
   readonly runtimeFindings: readonly string[]
+  readonly reachability: DoctorReachabilitySummary
   readonly packageVersion: string
   readonly registry: string
   readonly opencodeConfig: "present" | "missing"
@@ -185,6 +190,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const rulePackDiagnostics = summarizeRuleDiagnostics(projectDir)
   const conventionPackDiagnostics = summarizeConventionPackDiagnostics(projectDir)
   const opencode = opencodeVersion(options)
+  const reachability = readDoctorReachability(projectDir)
   const runtimeFindings = opencode === "missing"
     ? ["OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified."]
     : []
@@ -196,6 +202,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     opencode,
     runtimeReadiness: runtimeFindings.length === 0 ? "PASS" : "WARN",
     runtimeFindings,
+    reachability,
     packageVersion: packageVersion(),
     registry: registryStatus(options),
     opencodeConfig: pathStatus(projectDir, ".opencode/opencode.json"),
@@ -271,6 +278,12 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `OpenCode: ${summary.opencode}`,
     `Runtime readiness: ${summary.runtimeReadiness}`,
     ...summary.runtimeFindings.map((finding) => `- ${finding}`),
+    `Session reachability: ${summary.reachability.level}`,
+    `AGENTS.md steering: ${summary.reachability.agentsState}`,
+    `Project-local OpenCode plugin registration: ${summary.reachability.projectPluginState}`,
+    `PH-run verification: ${summary.reachability.executeVerification ? "ON" : "OFF"}`,
+    ...summary.reachability.findings.map((finding) => `- [${finding.level}] ${finding.message}`),
+    ...summary.reachability.followUpLines,
     `Persona package version: ${summary.packageVersion}`,
     `npm registry: ${summary.registry}`,
     "",
@@ -300,5 +313,10 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
 }
 
 export function runDoctorCommand(_args: readonly string[], options: DoctorOptions = {}): CliRunResult {
-  return { status: 0, stdout: `${formatDoctorSummary(readDoctorSummary(options))}\n`, stderr: "" }
+  const summary = readDoctorSummary(options)
+  return {
+    status: summary.reachability.level === "BLOCK" ? 1 : 0,
+    stdout: `${formatDoctorSummary(summary)}\n`,
+    stderr: "",
+  }
 }

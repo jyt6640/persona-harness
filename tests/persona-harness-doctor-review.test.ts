@@ -20,6 +20,23 @@ function writeFile(projectDir: string, relativePath: string, content: string): v
   writeFileSync(fullPath, content)
 }
 
+function writeLegacyAgents(projectDir: string): void {
+  writeFile(
+    projectDir,
+    "AGENTS.md",
+    [
+      "# Persona Harness Agent Instructions",
+      "",
+      "Before implementation:",
+      "- Run `npx ph workflow implement` and follow the single AI-facing rail.",
+      "",
+      "After implementation:",
+      "- Run `npx ph workflow finish implement` before claiming completion.",
+      "",
+    ].join("\n"),
+  )
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -30,6 +47,7 @@ afterEach(() => {
 describe("ph doctor", () => {
   it("reports local Persona Harness integration state", () => {
     const projectDir = createTempProject()
+    writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona", "rules"), { recursive: true })
     writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
@@ -82,6 +100,7 @@ describe("ph doctor", () => {
 
   it("warns clearly when OpenCode is missing from the runtime path", () => {
     const projectDir = createTempProject()
+    writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona", "rules"), { recursive: true })
     writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["node_modules/persona-harness/dist/index.js"] }, null, 2))
@@ -103,6 +122,7 @@ describe("ph doctor", () => {
 
   it("warns when public rules contain old step fixture files", () => {
     const projectDir = createTempProject()
+    writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona"), { recursive: true })
     writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
@@ -130,6 +150,7 @@ describe("ph doctor", () => {
 
   it("does not treat reservation domain examples as stale step fixture residue", () => {
     const projectDir = createTempProject()
+    writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona"), { recursive: true })
     writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
@@ -155,6 +176,7 @@ describe("ph doctor", () => {
 
   it("surfaces rule and convention pack diagnostics instead of silently skipping them", () => {
     const projectDir = createTempProject()
+    writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona"), { recursive: true })
     writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))

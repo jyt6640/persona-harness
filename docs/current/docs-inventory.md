@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 29
+- current active pointer/status: 30
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 53
 - versioned durable: 20
 
-Total indexed files: 307
+Total indexed files: 308
 
 ## File Inventory
 
@@ -41,6 +41,7 @@ Total indexed files: 307
 | `docs/archive/docs-taxonomy-archive-plan.md` | archived historical | - | Historical/superseded record; leave in place and link from indexes when relevant. |
 | `docs/archive/project-progress-board-2026-06-19-pre-taxonomy.md` | archived historical | - | Historical/superseded record; leave in place and link from indexes when relevant. |
 | `docs/current/README.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
+| `docs/current/agents-managed-block-contract.md` | current active pointer/status | - | P1 STEP 2 versioned AGENTS steering observation and preservation contract; no writer/default change. |
 | `docs/current/acceptance-results/README.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/acceptance-results/TEMPLATE.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/acceptance-results/results/2026-07-02-local-current-acceptance-ab.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |

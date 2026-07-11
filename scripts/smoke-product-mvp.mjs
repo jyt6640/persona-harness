@@ -205,8 +205,18 @@ try {
   const initDir = projectDir("init-doctor-observe")
   writeSpringishProject(initDir)
   assertCommand(runCli(initDir, ["init"]), 0, "clean workspace ph init")
+  const inertDoctor = assertCommand(runCli(initDir, ["doctor"]), 1, "ph doctor attached-but-inert block")
+  assertIncludes(inertDoctor.stdout, "Session reachability: BLOCK", "doctor inert reachability", inertDoctor)
+  assertIncludes(inertDoctor.stdout, "Next command: npx ph bootstrap backend", "doctor inert remediation", inertDoctor)
+  assertCommand(
+    runCli(initDir, ["bootstrap", "backend", "--no-developer-mcp"]),
+    0,
+    "ph bootstrap backend reachability",
+  )
   const doctor = assertCommand(runCli(initDir, ["doctor"]), 0, "ph doctor readiness")
   assertDoctorRuntimeReadiness(doctor.stdout, doctor)
+  assertIncludes(doctor.stdout, "Session reachability: WARN", "doctor reachable warning", doctor)
+  assertIncludes(doctor.stdout, "AGENTS.md steering: legacy observed", "doctor legacy steering", doctor)
   const observe = assertCommand(runCli(initDir, ["observe", "--json", "src/main/java"]), 0, "ph observe --json schema")
   assertObserveReport(observe.stdout, observe)
 
