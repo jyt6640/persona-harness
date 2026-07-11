@@ -23,12 +23,13 @@ changes during roadmap work.
 
 - [Package version index](package-index.md): chronological package/version
   timeline from undocumented early rows through the current stable
-  `0.6.0` registry-smoke record and retained `0.6.0-rc.4` prerelease channel.
+  `0.6.0` registry-smoke record and the prepared `0.7.0-rc.1` candidate.
+- [`v0.7.0-rc.1`](v0.7.0-rc.1/README.md): prepared next-channel candidate
+  based on `18c62da`; not published, tagged, or registry-verified.
 - [`v0.6.0`](v0.6.0/README.md): current stable `latest` registry-smoke
-  capsule. `next` remains `0.6.0-rc.4` and `alpha` remains `0.3.9-alpha.8`.
-- [`v0.6.0-rc.4`](v0.6.0-rc.4/README.md): current published prerelease `next`
-  registry smoke capsule. `latest` remains `0.5.0` and `alpha` remains
-  `0.3.9-alpha.8`.
+  capsule. `next` remains `0.6.0-rc.4`; the legacy `alpha` dist-tag is retired.
+- [`v0.6.0-rc.4`](v0.6.0-rc.4/README.md): historical published prerelease
+  `next` registry-smoke capsule before stable `0.6.0`.
 - [`v0.6.0-rc.3`](v0.6.0-rc.3/README.md): previous published prerelease `next`
   registry smoke capsule.
 - [`v0.6.0-rc.2`](v0.6.0-rc.2/README.md): previous published prerelease

@@ -6,6 +6,8 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+## [0.7.0-rc.1] - 2026-07-11
+
 - Records P0-1 final canonical acceptance of host-neutral `ph go` on exact
   main `c097428d3327f599e47ce20069ce768e5d4f3b66`. The accepted provenance is
   `24d4fa0` -> `d807196` -> `d4f1c2a` -> `c097428`: the first candidate

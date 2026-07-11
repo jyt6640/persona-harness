@@ -10,7 +10,9 @@ Use this index to scan package history. Use the linked release notes,
 
 ## Current Channel State
 
-- Current package metadata in this repo: `0.6.0`.
+- Current package metadata in this release-prep branch: `0.7.0-rc.1`.
+- `0.7.0-rc.1` is prepared only; it is not published, tagged, or a registry
+  dist-tag update.
 - Current stable channel: `persona-harness@latest=0.6.0`.
 - Current published prerelease channel: `persona-harness@next=0.6.0-rc.4`.
 - Current alpha channel: retired; no `alpha` dist-tag is present after stable
@@ -29,6 +31,8 @@ Use this index to scan package history. Use the linked release notes,
   No unpublish occurred and `latest`/`next` were not moved by the cleanup.
 - `v0.6.0` capsule:
   [`docs/releases/v0.6.0/`](v0.6.0/README.md).
+- `v0.7.0-rc.1` release-prep capsule:
+  [`docs/releases/v0.7.0-rc.1/`](v0.7.0-rc.1/README.md).
 - `v0.6.0-rc.4` capsule:
   [`docs/releases/v0.6.0-rc.4/`](v0.6.0-rc.4/README.md).
 - `v0.6.0-rc.3` capsule:
@@ -110,6 +114,7 @@ Use this index to scan package history. Use the linked release notes,
 | `0.6.0-rc.3` | 2026-07-04 | previous published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.3/README.md), [`release facts`](v0.6.0-rc.3/release-facts.md), [`measurements`](v0.6.0-rc.3/measurements.md), [`release notes`](../current/release/v0.6.0-rc.3-release-notes.md) | registry smoke records `next=0.6.0-rc.3`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum `ef498adfac138d9d0843406cba53acf76b34c6f1`, tag, prerelease GitHub release, and archive `rc060-rc3-registry-smoke-20260704T133936Z` |
 | `0.6.0-rc.4` | 2026-07-05 | current published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.4/README.md), [`release facts`](v0.6.0-rc.4/release-facts.md), [`measurements`](v0.6.0-rc.4/measurements.md), [`release notes`](../current/release/v0.6.0-rc.4-release-notes.md) | registry smoke records `next=0.6.0-rc.4`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `cf6835697f47da5a2a8372d00fc47e263ee781f8`, shasum `76565f6e7d244595fa338bb646ea7888d8d5255a`, integrity `sha512-8oBVX1vmudoNZCJEVXNdx/lJnPITKD0cW2OGk6Bv963oibNwyo+itxYquRNr8JlDQR7RKDmcQ5XTCVlIP9weaw==`, tag, prerelease GitHub release, and archive `rc060-rc4-registry-smoke-20260705T110131Z` |
 | `0.6.0` | 2026-07-05 | current stable `latest`; local tag exists | [`capsule`](v0.6.0/README.md), [`release facts`](v0.6.0/release-facts.md), [`measurements`](v0.6.0/measurements.md), [`release notes`](../current/release/v0.6.0-release-notes.md) | registry smoke records `latest=0.6.0`, `next=0.6.0-rc.4`, `alpha=0.3.9-alpha.8` at smoke time, gitHead `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum `ffd77996263cffb858bd977edb73b03cf2820c75`, integrity `sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`, stable GitHub release, and archive `stable-060-registry-smoke-20260705T041031Z`; later T0 cleanup removed the `alpha` dist-tag |
+| `0.7.0-rc.1` | 2026-07-11 | prepared next-channel candidate; no tag or publish | [`capsule`](v0.7.0-rc.1/README.md), [`release facts`](v0.7.0-rc.1/release-facts.md), [`measurements`](v0.7.0-rc.1/measurements.md), [`release notes`](../current/release/v0.7.0-rc.1-release-notes.md) | pre-publish only: exact base `18c62da`; registry remains `latest=0.6.0`, `next=0.6.0-rc.4` until an approved publish |
 
 ## Future Migration Notes
 

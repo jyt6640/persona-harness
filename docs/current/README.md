@@ -22,13 +22,16 @@ deleting evidence/status history.
   a runtime hook. Its lock/conflict behavior is for cooperative local writers,
   and does not address hostile same-user filesystem path replacement. Existing
   draft/approval commands remain the route for vague product ideas.
-- Versioned release capsule:
+- Release-prep candidate capsule:
+  [`docs/releases/v0.7.0-rc.1/`](../releases/v0.7.0-rc.1/README.md). It is
+  not published, tagged, or a registry-state update.
+- Current published stable capsule:
   [`docs/releases/v0.6.0/`](../releases/v0.6.0/README.md).
 - Chronological package/version index:
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.6.0-release-notes.md`](release/v0.6.0-release-notes.md).
+  [`release/v0.7.0-rc.1-release-notes.md`](release/v0.7.0-rc.1-release-notes.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -68,6 +71,8 @@ deleting evidence/status history.
   retired after stable. Explicit historical alpha versions remain available by
   exact version. S-3 removed the failed-finish human `Summary:` header after
   S-2 regated it as non-inferior=false.
+- `0.7.0-rc.1` is a prepared next-channel candidate on release-prep base
+  `18c62da`, not a published package, tag, GitHub Release, or dist-tag update.
 - `runtimeInjection` remains a parked opt-in preview.
 - P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
   writer/workspace-edit contract. Recovery remains hidden from normal help,
