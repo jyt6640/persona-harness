@@ -1,0 +1,18 @@
+id: java.optional-get
+language: Java
+message: Optional.empty()/ofNullable() followed by get() can throw; use an explicit fallback or exception.
+# persona-harness-level: warn
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: replace the unsafe Optional.get() chain with orElse, orElseThrow, map, or ifPresent.
+# persona-harness-step-id: fix-java-optional-get
+# persona-harness-roles: implementer, reviewer
+rule:
+  any:
+    - pattern: $OPTIONAL.empty().get()
+    - pattern: $OPTIONAL.ofNullable($VALUE).get()
+constraints:
+  OPTIONAL:
+    regex: "^(java\\.util\\.)?Optional$"
