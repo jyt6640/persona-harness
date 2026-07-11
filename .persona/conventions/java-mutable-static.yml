@@ -1,0 +1,23 @@
+id: java.mutable-static
+language: Java
+message: Non-final static field has shared mutable lifecycle; introduce an owner or make the field final.
+# persona-harness-level: warn
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: move shared mutable state behind an explicit owner/lifecycle or make the field static final.
+# persona-harness-step-id: fix-java-mutable-static
+# persona-harness-roles: implementer, reviewer
+rule:
+  all:
+    - kind: field_declaration
+    - has:
+        kind: modifiers
+        has:
+          pattern: static
+    - not:
+        has:
+          kind: modifiers
+          has:
+            pattern: final

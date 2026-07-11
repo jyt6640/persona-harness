@@ -1,0 +1,26 @@
+id: java.raw-type
+language: Java
+message: Raw common generic type; add explicit type parameters.
+# persona-harness-level: warn
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: add explicit type parameters to the raw generic declaration.
+# persona-harness-step-id: fix-java-raw-type
+# persona-harness-roles: implementer, reviewer
+rule:
+  all:
+    - kind: type_identifier
+    - regex: "^(List|Map|Set|Collection|Iterable|Iterator|Optional|Class|Comparable|Comparator|Supplier|Function|Predicate|Consumer)$"
+    - inside:
+        any:
+          - kind: field_declaration
+          - kind: local_variable_declaration
+          - kind: formal_parameter
+          - kind: method_declaration
+        stopBy: end
+    - not:
+        inside:
+          kind: generic_type
+          stopBy: end
