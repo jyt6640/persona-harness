@@ -18,7 +18,8 @@ Use these files when making current product, measurement, or release decisions.
 | Item 12 diff-rules distribution retirement | `docs/current/diff-rules-distribution-retirement-acceptance-record.md` | Exact-main package/init retirement record; repository corpus remains. |
 | Advanced surface index | `docs/current/advanced-surface-index.md` | Repository-only dormant-source and preview-surface index; not an npm package support contract. |
 | CI finish gate and closure JSON | `docs/current/ci-finish-contract.md` | Exact `finish` exit/stream contract, supported unversioned closure JSON artifact, and CI recipe; no `finish --json` surface exists. |
-| CI evidence reverification design | `docs/current/ci-evidence-reverification-design.md` | Item 19 proposed explicit finish revalidation, provenance, and acceptance plan; design only, not a shipped contract. |
+| CI evidence reverification acceptance | `docs/current/ci-evidence-reverification-acceptance-record.md` | Item 19 exact-main opt-in `--reverify` and explicit CI-mode acceptance with bounded artifact and package evidence. |
+| CI evidence reverification design | `docs/current/ci-evidence-reverification-design.md` | Item 19 pre-implementation design lineage; the accepted current contract is recorded separately. |
 | Full docs inventory | `docs/current/docs-inventory.md` | Classification for every retained `docs/**` file. |
 | Release facts | `docs/releases/v0.6.0-rc.3/README.md` | Durable capsule for the current release-prep candidate; registry `next` remains rc2 until publish. |
 | Package/version timeline | `docs/releases/package-index.md` | Chronological package index from `0.1.0` through current prereleases. |
