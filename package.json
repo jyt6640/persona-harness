@@ -41,6 +41,7 @@
     ".persona/rules/backend/step2-3-api-contract.md",
     ".persona/rules/backend/validation-exception.md",
     "docs/current/java-backend-mvp-install-guide.md",
+    "docs/current/java-precision-warnings-acceptance-record.md",
     "docs/current/v0.3.0-gradle-spring-build-guidance.md",
     "docs/current/v0.3.0-external-tester-guide.md",
     "docs/current/v0.3.0-external-tester-feedback-template.md",
