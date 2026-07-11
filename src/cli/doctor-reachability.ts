@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
@@ -14,6 +15,14 @@ const AGENTS_END_MARKER = "<!-- persona-harness:agents:end -->"
 const LEGACY_AGENTS_TITLE = "# Persona Harness Agent Instructions"
 const LEGACY_IMPLEMENT_COMMAND = "npx ph workflow implement"
 const LEGACY_FINISH_COMMAND = "npx ph workflow finish implement"
+const CURRENT_PLUGIN_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "dist",
+  "index.js",
+).replace(/\\/gu, "/")
+const PERSONA_HARNESS_DIST_PATH = "persona-harness/dist/index.js"
 
 export type DoctorReachabilityLevel = "BLOCK" | "NOT ATTACHED" | "PASS" | "WARN"
 export type DoctorAgentsState =
@@ -97,6 +106,16 @@ function pluginEntries(parsed: unknown): readonly string[] {
   return plugin.filter((entry): entry is string => typeof entry === "string")
 }
 
+function isPersonaHarnessPluginEntry(entry: string): boolean {
+  const normalized = entry.trim().replace(/\\/gu, "/")
+  return (
+    normalized === CURRENT_PLUGIN_PATH
+    || normalized === "persona-harness"
+    || normalized === PERSONA_HARNESS_DIST_PATH
+    || normalized.endsWith(`/${PERSONA_HARNESS_DIST_PATH}`)
+  )
+}
+
 function inspectProjectPlugin(projectDir: string): DoctorProjectPluginState {
   const configPath = join(projectDir, ".opencode", "opencode.json")
   if (!existsSync(configPath)) {
@@ -104,7 +123,7 @@ function inspectProjectPlugin(projectDir: string): DoctorProjectPluginState {
   }
   try {
     const parsed: unknown = JSON.parse(stripJsonComments(readFileSync(configPath, "utf8")))
-    return pluginEntries(parsed).some((entry) => entry.includes("persona-harness"))
+    return pluginEntries(parsed).some(isPersonaHarnessPluginEntry)
       ? "configured"
       : "not observed"
   } catch {

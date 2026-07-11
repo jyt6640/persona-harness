@@ -223,4 +223,20 @@ describe("ph doctor session reachability", () => {
     expect(result.stdout).toContain("Project-local OpenCode plugin registration: not observed")
     expect(result.stdout).toContain("Persona plugin path: missing")
   })
+
+  it("recognizes the project plugin path emitted by backend bootstrap", () => {
+    const projectDir = createTempProject()
+    const bootstrap = runPersonaCli(["bootstrap", "backend", "--no-developer-mcp"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(bootstrap.status).toBe(0)
+    const result = doctor(projectDir)
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Session reachability: WARN")
+    expect(result.stdout).toContain("Project-local OpenCode plugin registration: configured")
+    expect(result.stdout).toContain("Persona plugin path: configured")
+  })
 })
