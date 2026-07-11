@@ -83,9 +83,17 @@ function readEvidenceEntries(dirPath: string, refPath: string): readonly Evidenc
         return []
       }
       const text = readFileSync(entryPath, "utf8")
-      return [{ parsed: parseJson(text), ref: entryRef, text }]
+      const parsed = parseJson(text)
+      if (isCiReverificationArtifact(parsed)) {
+        return []
+      }
+      return [{ parsed, ref: entryRef, text }]
     })
     .filter((entry) => entry.text.length > 0)
+}
+
+function isCiReverificationArtifact(value: unknown): boolean {
+  return isRecord(value) && value["schemaVersion"] === "ph-ci-reverification.1"
 }
 
 function parseJson(text: string): unknown | undefined {

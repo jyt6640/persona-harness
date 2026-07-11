@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process"
 import { chmodSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -50,6 +51,10 @@ function writeReadyProfile(projectDir: string): void {
       {
         defaults: { buildTool: "gradle", framework: "spring", language: "java" },
         questions: [
+          { answer: "ko", id: "user-language" },
+          { answer: "team", id: "project-context" },
+          { answer: "production-service", id: "project-goal" },
+          { answer: "long-lived", id: "project-scale" },
           { answer: "rest-api", id: "application-type" },
           { answer: "clean-architecture-light", id: "architecture-style" },
           { answer: "database", id: "storage" },
@@ -263,6 +268,16 @@ describe("mechanical workflow finish reachability", () => {
     const finish = runPh(projectDir, ["workflow", "finish", "implement"])
     expect(finish.status).toBe(0)
     expect(finish.stdout).toContain("Finish status: PASS")
+
+    execFileSync("git", ["init", "-q"], { cwd: projectDir })
+    execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
+    execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
+    execFileSync("git", ["add", "."], { cwd: projectDir })
+    execFileSync("git", ["commit", "-qm", "finish-ready fixture"], { cwd: projectDir })
+    const reverifiedFinish = runPh(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
+    expect(reverifiedFinish.status, reverifiedFinish.stderr).toBe(0)
+    expect(reverifiedFinish.stdout).toContain("Finish status: PASS")
+
     expect(visitedSteps).toEqual(["fill-implementation-report", "fill-review-report", "record-workflow-evidence", "fill-report-coverage"])
     expect(visitedSteps.length).toBeLessThanOrEqual(FINISH_REACHABLE_CHAIN_DEPTH)
   })

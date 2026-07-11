@@ -22,7 +22,7 @@ export type ParsedWorkflowArgs =
   | { readonly kind: "relay"; readonly relayArgs: readonly string[] }
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
   | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
-  | { readonly kind: "finish"; readonly runnerKind: WorkflowRunnerKind }
+  | { readonly ci: boolean; readonly kind: "finish"; readonly reverify: boolean; readonly runnerKind: WorkflowRunnerKind }
   | { readonly kind: "draft" }
   | { readonly kind: "approve-requirements" }
   | { readonly kind: "capture" }
@@ -53,6 +53,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow relay status/next/validate --json prints the read-only Role Checklist Relay preview",
     "- workflow roles writes and prints non-autonomous role boundaries",
     "- workflow start/finish are AI-facing workflow rails",
+    "- workflow finish implement --reverify [--ci] runs fresh POSIX Java/Spring/Gradle-wrapper verification before the existing finish gate",
     "- workflow draft/approve/capture/split/next/archive manage requirement-derived task tickets",
     "- workflow guard uses strict exit codes for AI-facing workflow discipline",
     "- no generated app quality certification",
@@ -159,18 +160,33 @@ export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
     return { kind: "invalid", message: `Unknown workflow start: ${args[1]}` }
   }
   if (args[0] === "finish") {
-    if (args.length !== 2) {
-      return { kind: "invalid", message: "workflow finish requires implement." }
-    }
-    if (args[1] === "implement") {
-      return { kind: "finish", runnerKind: args[1] }
-    }
-    return { kind: "invalid", message: `Unknown workflow finish: ${args[1]}` }
+    return parseWorkflowFinishArgs(args.slice(1))
   }
   if (args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
     return { kind: "help" }
   }
   return { kind: "invalid", message: `Unknown workflow command: ${args[0]}` }
+}
+
+function parseWorkflowFinishArgs(args: readonly string[]): ParsedWorkflowArgs {
+  if (args[0] !== "implement") {
+    return args.length === 0
+      ? { kind: "invalid", message: "workflow finish requires implement." }
+      : { kind: "invalid", message: `Unknown workflow finish: ${args[0]}` }
+  }
+  const flags = args.slice(1)
+  if (!flags.every((flag) => flag === "--reverify" || flag === "--ci")) {
+    return { kind: "invalid", message: "workflow finish implement accepts only --reverify and --ci." }
+  }
+  if (new Set(flags).size !== flags.length) {
+    return { kind: "invalid", message: "workflow finish implement does not accept duplicate flags." }
+  }
+  const reverify = flags.includes("--reverify")
+  const ci = flags.includes("--ci")
+  if (ci && !reverify) {
+    return { kind: "invalid", message: "workflow finish --ci requires --reverify." }
+  }
+  return { ci, kind: "finish", reverify, runnerKind: "implement" }
 }
 
 function parseFullOnlyArgs(args: readonly string[], kind: "check" | "continue" | "implement"): ParsedWorkflowArgs {

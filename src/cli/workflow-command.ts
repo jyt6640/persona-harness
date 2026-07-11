@@ -3,6 +3,7 @@ import { join } from "node:path"
 
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
+import { runCiReverification } from "./ci-reverification-runner.js"
 import { runResumeCommand } from "./plan-next.js"
 import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
 import { readWorkflowClosurePayload, runWorkflowClosureCommand } from "./workflow-closure.js"
@@ -135,10 +136,24 @@ function runWorkflowImplement(options: WorkflowOptions): CliRunResult {
   return passedImplementOutput(summary.projectDir, { full: options.full })
 }
 
-function runWorkflowFinish(runnerKind: WorkflowRunnerKind, options: WorkflowOptions): CliRunResult {
+function runWorkflowFinish(
+  runnerKind: WorkflowRunnerKind,
+  reverify: boolean,
+  ci: boolean,
+  options: WorkflowOptions,
+): CliRunResult {
   const summary = readWorkflowStatus(options.projectDir)
   if (!hasPersonaHarness(summary)) {
     return uninitializedHarnessOutput()
+  }
+  if (reverify) {
+    const result = runCiReverification(summary.projectDir, ci ? "ci" : "local")
+    if (result.finalStatus !== "passed") {
+      const evidence = result.artifactPath === undefined ? "artifact unavailable" : `artifact: ${result.artifactPath}`
+      return failedRunnerOutput("finish", runnerKind, [
+        `Evidence reverification ${result.finalStatus}; ${evidence}; diagnostics: ${result.diagnosticCodes.join(", ") || "none"}.`,
+      ])
+    }
   }
   return runWorkflowFinishResult(runnerKind, summary.projectDir)
 }
@@ -259,7 +274,7 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
     return runWorkflowStart(parsed.runnerKind, options)
   }
   if (parsed.kind === "finish") {
-    return runWorkflowFinish(parsed.runnerKind, options)
+    return runWorkflowFinish(parsed.runnerKind, parsed.reverify, parsed.ci, options)
   }
   return runWorkflowCheck({ ...options, full: parsed.full })
 }
