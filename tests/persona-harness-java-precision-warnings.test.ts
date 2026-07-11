@@ -33,6 +33,33 @@ function createTempProject(): string {
   return projectDir
 }
 
+function writeFakeJavaPrecisionAstGrep(projectDir: string): string {
+  const binary = join(projectDir, "fake-ast-grep")
+  writeFileSync(
+    binary,
+    [
+      "#!/bin/sh",
+      "if [ \"$1\" = \"--version\" ]; then printf 'ast-grep 0.0.0-test\\n'; exit 0; fi",
+      "rule=''",
+      "root=''",
+      "while [ \"$#\" -gt 0 ]; do",
+      "  if [ \"$1\" = \"--rule\" ]; then shift; rule=\"$1\"; fi",
+      "  root=\"$1\"",
+      "  shift",
+      "done",
+      "case \"$rule\" in",
+      "  *java-raw-type.yml) file='RawGenericTypeCase.java' ;;",
+      "  *java-optional-get.yml) file='UnsafeOptionalGetCase.java' ;;",
+      "  *java-mutable-static.yml) file='MutableStaticFieldCase.java' ;;",
+      "  *) printf '[]\\n'; exit 0 ;;",
+      "esac",
+      "printf '[{\"file\":\"%s/sample/%s\",\"message\":\"test ast-grep match\",\"range\":{\"start\":{\"line\":1}}}]\\n' \"$root\" \"$file\"",
+    ].join("\n"),
+  )
+  chmodSync(binary, 0o755)
+  return binary
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { force: true, recursive: true })
@@ -141,23 +168,30 @@ describe("Java precision warning conventions", () => {
       copyFileSync(join(FIXTURE_ROOT, "fail", candidate.positive), join(sourceDir, candidate.positive))
     }
 
-    const summary = readArchitectureConventions(projectDir, "filled")
-    expect(summary.architectureConventionsFinding).toBe("WARN")
-    for (const candidate of RULES) {
-      expect(summary.architectureConventions).toContain(`${candidate.id} warn`)
-    }
-    expect(summary.architectureConventionBlockers).toEqual([])
-    expect(summary.architectureConventionsBlocking).toBe(false)
+    const previousAstGrep = process.env.PH_AST_GREP_BIN
+    process.env.PH_AST_GREP_BIN = writeFakeJavaPrecisionAstGrep(projectDir)
+    try {
+      const summary = readArchitectureConventions(projectDir, "filled")
+      expect(summary.architectureConventionsFinding).toBe("WARN")
+      for (const candidate of RULES) {
+        expect(summary.architectureConventions).toContain(`${candidate.id} warn`)
+      }
+      expect(summary.architectureConventionBlockers).toEqual([])
+      expect(summary.architectureConventionsBlocking).toBe(false)
 
-    writeFileSync(
-      join(projectDir, ".persona", "harness.jsonc"),
-      `${JSON.stringify({ conventions: Object.fromEntries(RULES.map((candidate) => [candidate.id, "block"])) }, null, 2)}\n`,
-    )
-    const attemptedPromotion = readArchitectureConventions(projectDir, "filled")
-    expect(attemptedPromotion.architectureConventionBlockers).toEqual([])
-    expect(attemptedPromotion.architectureConventionsBlocking).toBe(false)
-    for (const candidate of RULES) {
-      expect(attemptedPromotion.architectureConventions).toContain(`${candidate.id} warn`)
+      writeFileSync(
+        join(projectDir, ".persona", "harness.jsonc"),
+        `${JSON.stringify({ conventions: Object.fromEntries(RULES.map((candidate) => [candidate.id, "block"])) }, null, 2)}\n`,
+      )
+      const attemptedPromotion = readArchitectureConventions(projectDir, "filled")
+      expect(attemptedPromotion.architectureConventionBlockers).toEqual([])
+      expect(attemptedPromotion.architectureConventionsBlocking).toBe(false)
+      for (const candidate of RULES) {
+        expect(attemptedPromotion.architectureConventions).toContain(`${candidate.id} warn`)
+      }
+    } finally {
+      if (previousAstGrep === undefined) delete process.env.PH_AST_GREP_BIN
+      else process.env.PH_AST_GREP_BIN = previousAstGrep
     }
   })
 })
