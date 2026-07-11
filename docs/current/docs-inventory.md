@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 23
+- current active pointer/status: 24
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 52
 - versioned durable: 17
 
-Total indexed files: 289
+Total indexed files: 290
 
 ## File Inventory
 
@@ -103,6 +103,7 @@ Total indexed files: 289
 | `docs/current/phase2-scope-settlement.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/productization-path-decision.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/programming-shared-skill-actual-usage-review.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
+| `docs/current/quick-demo-acceptance-record.md` | current active pointer/status | - | Item 24 exact-main public three-beat QUICK-DEMO acceptance record. |
 | `docs/current/rail-compliance-evidence-design.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/rail-entry-measurement-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/rail-entry-prompt-regression-gate.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |

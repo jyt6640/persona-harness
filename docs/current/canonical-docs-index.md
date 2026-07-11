@@ -27,6 +27,7 @@ Use these files when making current product, measurement, or release decisions.
 | Diff-rules classification | `docs/current/diff-rules-classification.md` | T6 classification of all 50 `references/diff-rules` files for future role delivery or T8 gate-candidate work. |
 | Java Iron List gate matrix | `docs/current/java-ironlist-gate-matrix.md` | Item 11 source/fixture/convention-state inventory; it does not add Java enforcement. |
 | Item 21 Java precision warnings | `docs/current/java-precision-warnings-acceptance-record.md` | Exact-main, three-rule high-precision warn-only acceptance; not full Iron List enforcement. |
+| Item 24 QUICK-DEMO gate flow | `docs/current/quick-demo-acceptance-record.md` | Exact-main public three-beat setup, plaintext finish gate, and goal-entry acceptance record. |
 | ROLE-RULES dogfooding readiness | `docs/current/role-rules-dogfooding-readiness.md` | T10 exit checklist, violation-log template, and next queue for starting Woowacourse mission dogfooding. |
 | Workflow string-gate parsing audit | `docs/current/workflow-string-gate-parsing-audit.md` | T4 audit of report-status parsing migration and retained string-based gate contracts. |
 | Ralph-loop status | `docs/current/ralph-loop-measurement-status.md` | Trigger, completion-integrity, cooldown, and default-off status. |
