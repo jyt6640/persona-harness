@@ -81,6 +81,19 @@ For evidence history and detailed caveats, use:
 - `docs/current/ci-evidence-reverification-design.md`
 - `docs/current/canonical-docs-index.md`
 
+## Source-Only Agent Driver
+
+`packages/shared-skills/skills/advanced/superpowers-driver/SKILL.md` is a
+repository-only manual driver for compatible coding agents. In a prepared
+project it directs an agent to `npx ph go "<concrete implementation goal>"`,
+the emitted rail, plaintext `npx ph workflow finish implement`, and
+`npx ph workflow closure next --json` only as structured guidance.
+
+The driver is not selected by the runtime router, is not packaged, and does not
+create a hook, default, auto-spawn path, or host-specific enforcement. It cannot
+verify reports, weaken PH closure/check/finish gates, auto-finish work, or
+certify generated applications.
+
 ## Boundaries
 
 This is a discoverability and documentation classification change only. It does
