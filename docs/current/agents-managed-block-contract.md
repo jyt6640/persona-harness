@@ -35,7 +35,13 @@ Future migration must:
 4. refuse duplicate, partial, reversed, or unsupported markers without writing;
 5. publish the resulting file only after the surrounding attach transaction revalidates its owned-path snapshot.
 
-No current command is authorized to rewrite an existing unrecognized or corrupt `AGENTS.md`.
+P1 STEP 2 `ph doctor` is inspection-only and never rewrites `AGENTS.md`,
+including unrecognized or corrupt files. This is not a universal guarantee for
+older commands: the existing `ph bootstrap backend --multi-agent-preview` path
+may append Relay guidance to an existing file without managed-block
+classification. That legacy append behavior is outside this inspection
+contract and must be reconciled before a future managed-block migration claims
+whole-file preservation.
 
 ## Doctor Finding Model
 
