@@ -50,12 +50,29 @@ function lookupExecutable(candidate: string): string | undefined {
   return undefined
 }
 
+function verifiedAstGrepExecutable(candidate: string): string | undefined {
+  const executable = lookupExecutable(candidate)
+  if (executable === undefined) {
+    return undefined
+  }
+  const version = spawnSync(executable, ["--version"], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024,
+    timeout: 5_000,
+  })
+  if (version.error !== undefined || version.status !== 0) {
+    return undefined
+  }
+  const identity = `${version.stdout}\n${version.stderr}`.trim()
+  return /^ast-grep(?:\s+|$)/u.test(identity) ? executable : undefined
+}
+
 export function findAstGrepBinary(): string | undefined {
   const override = process.env.PH_AST_GREP_BIN
   if (override !== undefined && override.trim() !== "") {
-    return lookupExecutable(override)
+    return verifiedAstGrepExecutable(override)
   }
-  return lookupExecutable("sg") ?? lookupExecutable("ast-grep")
+  return verifiedAstGrepExecutable("ast-grep") ?? verifiedAstGrepExecutable("sg")
 }
 
 function stringValue(record: Record<string, unknown>, key: string): string | undefined {

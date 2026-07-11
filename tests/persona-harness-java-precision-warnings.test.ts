@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process"
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -42,6 +42,52 @@ afterEach(() => {
 
 describe("Java precision warning conventions", () => {
   const astGrepIt = findAstGrepBinary() === undefined ? it.skip : it
+
+  it("prefers a verified ast-grep binary over an incompatible sg executable", () => {
+    const binDir = createTempProject()
+    const sgPath = join(binDir, "sg")
+    const astGrepPath = join(binDir, "ast-grep")
+    writeFileSync(sgPath, "#!/bin/sh\nprintf \"sg: group 'scan' does not exist\\n\" >&2\nexit 1\n")
+    writeFileSync(astGrepPath, "#!/bin/sh\nprintf 'ast-grep 0.40.0\\n'\n")
+    chmodSync(sgPath, 0o755)
+    chmodSync(astGrepPath, 0o755)
+    const previousPath = process.env.PATH
+    const previousOverride = process.env.PH_AST_GREP_BIN
+    try {
+      process.env.PATH = binDir
+      delete process.env.PH_AST_GREP_BIN
+
+      expect(findAstGrepBinary()).toBe(astGrepPath)
+    } finally {
+      if (previousPath === undefined) delete process.env.PATH
+      else process.env.PATH = previousPath
+      if (previousOverride === undefined) delete process.env.PH_AST_GREP_BIN
+      else process.env.PH_AST_GREP_BIN = previousOverride
+    }
+  })
+
+  it("does not fall back when an explicit ast-grep override has incompatible identity", () => {
+    const binDir = createTempProject()
+    const incompatiblePath = join(binDir, "not-ast-grep")
+    const astGrepPath = join(binDir, "ast-grep")
+    writeFileSync(incompatiblePath, "#!/bin/sh\nprintf 'different utility 1.0\\n'\n")
+    writeFileSync(astGrepPath, "#!/bin/sh\nprintf 'ast-grep 0.40.0\\n'\n")
+    chmodSync(incompatiblePath, 0o755)
+    chmodSync(astGrepPath, 0o755)
+    const previousPath = process.env.PATH
+    const previousOverride = process.env.PH_AST_GREP_BIN
+    try {
+      process.env.PATH = binDir
+      process.env.PH_AST_GREP_BIN = incompatiblePath
+
+      expect(findAstGrepBinary()).toBeUndefined()
+    } finally {
+      if (previousPath === undefined) delete process.env.PATH
+      else process.env.PATH = previousPath
+      if (previousOverride === undefined) delete process.env.PH_AST_GREP_BIN
+      else process.env.PH_AST_GREP_BIN = previousOverride
+    }
+  })
 
   astGrepIt.each(RULES)("matches only the authorized positive fixture for $id", ({ file, positive }) => {
     const result = scan(file, join(FIXTURE_ROOT, "fail"))

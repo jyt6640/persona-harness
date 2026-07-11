@@ -171,6 +171,7 @@ function writeFakeAstGrepBinary(projectDir: string): string {
       "#!/usr/bin/env node",
       "import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'",
       "import { join } from 'node:path'",
+      "if (process.argv[2] === '--version') { process.stdout.write('ast-grep 0.0.0-test\\n'); process.exit(0) }",
       "const root = process.argv[process.argv.length - 1]",
       "const findings = []",
       "function visit(dir) {",

@@ -15,7 +15,7 @@ import {
   recoverGoCommandLock,
   releaseGoCommandLock,
 } from "../src/cli/go-lock.js"
-import { recoveryClaimPath } from "../src/cli/go-lock-state.js"
+import { readGoLockSnapshot, recoveryClaimPath } from "../src/cli/go-lock-state.js"
 import { runPersonaCli } from "../src/cli/index.js"
 import {
   createReadyGoProject,
@@ -173,7 +173,10 @@ describe("ph go recovery", () => {
     const path = lockPath(projectDir)
     const replacement = lockText("live-generation", process.pid, "live-owner")
     writeFileSync(path, lockText("stale-generation", 99999999, "stale-owner"))
-    const before = lstatSync(path)
+    const before = readGoLockSnapshot(path)
+    if (before.kind !== "regular") {
+      throw new TypeError(`expected regular lock snapshot, received ${before.kind}`)
+    }
 
     const result = recoverGoCommandLock(projectDir, {
       onBeforeClear: () => {
@@ -183,8 +186,17 @@ describe("ph go recovery", () => {
     })
 
     expect(result.kind).toBe("changed")
-    expect(readFileSync(path, "utf8")).toBe(replacement)
-    expect(lstatSync(path).ino).not.toBe(before.ino)
+    const after = readGoLockSnapshot(path)
+    expect(after.kind).toBe("regular")
+    if (after.kind !== "regular") {
+      throw new TypeError(`expected replacement lock snapshot, received ${after.kind}`)
+    }
+    expect(after.raw).toBe(replacement)
+    expect(after.generation).toBe("live-generation")
+    expect({ generation: after.generation, raw: after.raw }).not.toEqual({
+      generation: before.generation,
+      raw: before.raw,
+    })
   })
 
   it("allows at most one stale recoverer to own a generation", () => {
