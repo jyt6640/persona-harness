@@ -86,7 +86,7 @@ address hostile same-user filesystem path replacement.
 > [!NOTE]
 > If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. **That failure is the product working, not a bug.**
 
-Full walkthrough with a sample Todo API and the idea-first flow: **[Quick Demo](docs/QUICK-DEMO.md)**.
+Three-beat setup, gate, and goal-entry walkthrough: **[Quick Demo](docs/QUICK-DEMO.md)**.
 
 ## TDD Rail (opt-in)
 

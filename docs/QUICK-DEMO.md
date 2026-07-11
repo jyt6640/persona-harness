@@ -1,93 +1,71 @@
 # Quick Demo
 
-Goal: in a few minutes, watch Persona Harness **block an unverified completion
-claim** — and understand why that block is the product working.
+This is a three-beat walkthrough of the public, gate-first path:
+prepare a backend workspace, observe a truthful blocked finish, then enter one
+concrete implementation goal. Use a throwaway directory, not this repository.
 
-## What this demo proves / does not prove
+## 1. Install and prepare
 
-**Proves:**
-
-- PH can initialize a local workflow rail.
-- PH can create backend workflow artifacts.
-- PH can block completion when required reports/evidence are missing.
-
-**Does not prove:**
-
-- generated app quality
-- token saving
-- broad AI productivity
-- production readiness
-- full TDD sufficiency
-
-## Requirements
-
-- Node.js 20+, npm
-- Java 21+ and Gradle (only if you run backend verification)
-- OpenCode (only for the optional agent workflow)
-
-## 1. Create a clean project
-
-Do **not** run this inside the Persona Harness repository. Use a clean temp dir.
+Node.js 20+ and npm are required.
 
 ```bash
-mkdir -p /tmp/persona-harness-demo
-cd /tmp/persona-harness-demo
+mkdir -p /tmp/persona-harness-quick-demo
+cd /tmp/persona-harness-quick-demo
 npm init -y
-npm install -D persona-harness
-```
-
-## 2. Add a small README
-
-```bash
-cat > README.md <<'EOF'
-# Todo API
-
-Build a Java 21 Spring Boot REST API with Gradle.
-
-## Requirements
-- Users can create, list, and complete todos.
-- Missing todos return an appropriate error response.
-
-## Technical Constraints
-- Java 21, Spring Boot 3, Gradle only, REST API only.
-- Controllers delegate to application services.
-- Repository interfaces live in domain; implementations in infrastructure.
-- Application services must not own storage state or id sequences.
-EOF
-```
-
-## 3. Initialize Persona Harness
-
-```bash
+npm install -D persona-harness@0.6.0
 npx ph init
 npx ph bootstrap backend
-npx ph doctor
-npx ph workflow check
 ```
 
-## 4. Try to finish too early
+`init` is the human front door. `bootstrap backend` adds the backend profile,
+accepted plan, and workflow report templates that `ph go` requires. Default
+setup keeps `runtimeInjection` off; this demo does not need a host hook.
+
+## 2. Observe a legitimate block
+
+Run the existing plaintext finish gate before implementing anything:
 
 ```bash
 npx ph workflow finish implement
 ```
 
-Expected: **finish is blocked.**
+It exits `1` in this prepared project and prints exactly one prioritized
+`Next action` plus, when applicable, one phased `Next command`. For example,
+the initial blocker asks for real test/build/runtime verification first, then
+names `npx ph workflow check` as the command to run after that work is
+recorded. Do not treat the command as a shortcut around the action.
 
-This is expected, and it is the whole point. You have not yet provided the
-required reports, PH-generated evidence, or a real verification result — so PH
-refuses to let a "done" claim through. A blocked finish here means the gate is
-working, not that something is broken.
+Do not use an uninitialized directory for this beat: there, finish exits `0`
+with advisory setup guidance rather than demonstrating a gate block.
 
-## 5. What to do next
+## 3. Enter a real goal and follow the rail
 
-The agent (or you) should now:
+```bash
+npx ph go "Add a task creation endpoint."
+```
 
-- run the workflow implement step;
-- run verification through the PH rail or a bounded command;
-- fill the implementation report;
-- fill the review report;
-- run `npx ph workflow finish implement` again.
+`ph go` captures the concrete goal, selects the current ticket, and prints the
+implementation rail. Follow that rail in your actual project. Its final gate
+remains the same plaintext command:
 
-When the required evidence exists on disk, finish stops blocking. This demo does
-not claim anything about the quality of the code produced — only that
-completion was gated on evidence. See [MEASURED-CLAIMS](MEASURED-CLAIMS.md).
+```bash
+npx ph workflow finish implement
+```
+
+When a script needs the current structured closure state, use the companion
+command:
+
+```bash
+npx ph workflow closure next --json
+```
+
+`workflow closure next --json` is diagnostic state, not a `finish --json`
+result. `workflow finish` has no `--json` option.
+
+## Boundaries
+
+This walkthrough demonstrates only the observed setup, blocked-finish, and
+goal-entry surfaces. It does not promise automatic implementation or
+completion, generated-app certification, app quality, efficacy, or broad
+reliability. See [MEASURED-CLAIMS](MEASURED-CLAIMS.md) for measured-claim
+boundaries.
