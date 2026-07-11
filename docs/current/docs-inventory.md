@@ -22,18 +22,21 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - evidence review archive: 47
 - historical version-specific current doc: 27
 - legacy current evidence review: 2
-- operational stable: 31
+- operational stable: 41
 - phase archive: 46
 - version-specific release note: 53
 - versioned durable: 20
 
-Total indexed files: 297
+Total indexed files: 307
 
 ## File Inventory
 
 | File | Classification | Version | Disposition |
 | --- | --- | --- | --- |
+| `docs/MEASURED-CLAIMS.md` | operational stable | - | Stable non-versioned public claim-boundary document. |
+| `docs/QUICK-DEMO.md` | operational stable | - | Stable non-versioned public setup and gate walkthrough. |
 | `docs/README.md` | operational stable | - | Stable non-versioned guide or index. |
+| `docs/START-HERE.md` | operational stable | - | Stable non-versioned public first-run reading map. |
 | `docs/archive/README.md` | archived historical | - | Historical/superseded record; leave in place and link from indexes when relevant. |
 | `docs/archive/docs-taxonomy-archive-plan.md` | archived historical | - | Historical/superseded record; leave in place and link from indexes when relevant. |
 | `docs/archive/project-progress-board-2026-06-19-pre-taxonomy.md` | archived historical | - | Historical/superseded record; leave in place and link from indexes when relevant. |
@@ -330,3 +333,10 @@ Total indexed files: 297
 | `docs/releases/v0.7.0-rc.1/README.md` | versioned durable | v0.7.0-rc.1 | Canonical pre-publish release-candidate capsule; registry facts require later publish verification. |
 | `docs/releases/v0.7.0-rc.1/measurements.md` | versioned durable | v0.7.0-rc.1 | Scoped accepted measurement and observation pointers for the pre-publish release candidate. |
 | `docs/releases/v0.7.0-rc.1/release-facts.md` | versioned durable | v0.7.0-rc.1 | Pre-publish release facts and channel boundaries for the next-channel candidate. |
+| `docs/troubleshooting/README.md` | operational stable | - | Stable troubleshooting index. |
+| `docs/troubleshooting/check-rail-active.md` | operational stable | - | Stable troubleshooting guide for checking whether the PH rail is active. |
+| `docs/troubleshooting/enforce-the-gate.md` | operational stable | - | Stable troubleshooting guide for gate enforcement. |
+| `docs/troubleshooting/existing-project-profile.md` | operational stable | - | Stable troubleshooting guide for existing-project profile setup. |
+| `docs/troubleshooting/no-tickets.md` | operational stable | - | Stable troubleshooting guide for missing workflow tickets. |
+| `docs/troubleshooting/rail-ignored.md` | operational stable | - | Stable troubleshooting guide for ignored rail instructions. |
+| `docs/troubleshooting/split-recovery.md` | operational stable | - | Stable troubleshooting guide for split recovery. |
