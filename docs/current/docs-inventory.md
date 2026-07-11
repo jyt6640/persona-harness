@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 27
+- current active pointer/status: 29
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
