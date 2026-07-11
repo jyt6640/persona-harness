@@ -110,4 +110,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
-        run: gh release create "$TAG_NAME" --notes-file github-release-notes.md --title "$TAG_NAME"
+        run: |
+          prerelease_args=()
+          if [[ "$TAG_NAME" == *"-"* ]]; then
+            prerelease_args+=(--prerelease)
+          fi
+          gh release create "$TAG_NAME" \
+            --notes-file github-release-notes.md \
+            --title "$TAG_NAME" \
+            "${prerelease_args[@]}"
