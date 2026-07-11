@@ -42,10 +42,6 @@ export type DoctorReachabilitySummary = {
   readonly projectPluginState: DoctorProjectPluginState
 }
 
-function occurrences(content: string, token: string): number {
-  return content.split(token).length - 1
-}
-
 function inspectAgents(projectDir: string): DoctorAgentsState {
   const agentsPath = join(projectDir, "AGENTS.md")
   if (!existsSync(agentsPath)) {
@@ -59,22 +55,22 @@ function inspectAgents(projectDir: string): DoctorAgentsState {
     return "corrupt"
   }
 
-  const startCount = occurrences(content, AGENTS_START_MARKER)
-  const endCount = occurrences(content, AGENTS_END_MARKER)
-  const startIndex = content.indexOf(AGENTS_START_MARKER)
-  const endIndex = content.indexOf(AGENTS_END_MARKER)
-  const managedMarkerCount = occurrences(content, "persona-harness:agents:")
-  const hasManagedMarker = content.includes("persona-harness:agents:")
+  const lines = content.split(/\r?\n/)
+  const startIndex = lines.indexOf(AGENTS_START_MARKER)
+  const endIndex = lines.indexOf(AGENTS_END_MARKER)
+  const managedMarkerLines = lines.filter((line) =>
+    line.includes("persona-harness:agents:"),
+  )
 
   if (
-    startCount === 1 &&
-    endCount === 1 &&
-    managedMarkerCount === 2 &&
+    managedMarkerLines.length === 2 &&
+    lines.filter((line) => line === AGENTS_START_MARKER).length === 1 &&
+    lines.filter((line) => line === AGENTS_END_MARKER).length === 1 &&
     startIndex < endIndex
   ) {
     return "current"
   }
-  if (hasManagedMarker) {
+  if (managedMarkerLines.length > 0) {
     return "corrupt"
   }
   if (
@@ -108,9 +104,7 @@ function inspectProjectPlugin(projectDir: string): DoctorProjectPluginState {
   }
   try {
     const parsed: unknown = JSON.parse(stripJsonComments(readFileSync(configPath, "utf8")))
-    return pluginEntries(parsed).some(
-      (entry) => entry.includes("persona-harness") || entry.includes("dist/index.js"),
-    )
+    return pluginEntries(parsed).some((entry) => entry.includes("persona-harness"))
       ? "configured"
       : "not observed"
   } catch {

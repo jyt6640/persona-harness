@@ -50,7 +50,7 @@ describe("ph doctor", () => {
     writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona", "rules"), { recursive: true })
-    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona-harness/dist/index.js"] }, null, 2))
     writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
 
     const result = runPersonaCli(["doctor"], {
@@ -125,7 +125,7 @@ describe("ph doctor", () => {
     writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona"), { recursive: true })
-    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona-harness/dist/index.js"] }, null, 2))
     writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
     writeFile(
       projectDir,
@@ -153,7 +153,7 @@ describe("ph doctor", () => {
     writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona"), { recursive: true })
-    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona-harness/dist/index.js"] }, null, 2))
     writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
     writeFile(
       projectDir,
@@ -179,7 +179,7 @@ describe("ph doctor", () => {
     writeLegacyAgents(projectDir)
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })
     mkdirSync(join(projectDir, ".persona"), { recursive: true })
-    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona/dist/index.js"] }, null, 2))
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), JSON.stringify({ plugin: ["/tmp/persona-harness/dist/index.js"] }, null, 2))
     writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
     writeFile(
       projectDir,

@@ -185,4 +185,42 @@ describe("ph doctor session reachability", () => {
     expect(lineCount(result.stdout, "Next action:")).toBe(1)
     expect(lineCount(result.stdout, "Next command:")).toBe(1)
   })
+
+  it("rejects managed markers that are embedded inside other lines", () => {
+    const projectDir = createTempProject()
+    writePluginConfig(projectDir)
+    writeHarnessConfig(projectDir, true)
+    writeProjectFile(
+      projectDir,
+      "AGENTS.md",
+      [
+        `prefix <!-- persona-harness:agents:start schema=persona-harness.agents.v1 -->`,
+        "# Persona Harness Agent Instructions",
+        `<!-- persona-harness:agents:end --> suffix`,
+        "",
+      ].join("\n"),
+    )
+
+    const result = doctor(projectDir)
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain("AGENTS.md steering: corrupt")
+  })
+
+  it("does not treat an unrelated dist entry as Persona Harness registration", () => {
+    const projectDir = createTempProject()
+    writeManagedAgents(projectDir)
+    writeHarnessConfig(projectDir, true)
+    writeProjectFile(
+      projectDir,
+      ".opencode/opencode.json",
+      `${JSON.stringify({ plugin: ["/tmp/unrelated-tool/dist/index.js"] }, null, 2)}\n`,
+    )
+
+    const result = doctor(projectDir)
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain("Project-local OpenCode plugin registration: not observed")
+    expect(result.stdout).toContain("Persona plugin path: missing")
+  })
 })

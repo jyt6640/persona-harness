@@ -93,19 +93,6 @@ function pathStatus(projectDir: string, relativePath: string): "present" | "miss
   return existsSync(join(projectDir, relativePath)) ? "present" : "missing"
 }
 
-function pluginStatus(projectDir: string): "configured" | "missing" | "unreadable" {
-  const configPath = join(projectDir, ".opencode", "opencode.json")
-  if (!existsSync(configPath)) {
-    return "missing"
-  }
-  try {
-    const content = readFileSync(configPath, "utf8")
-    return content.includes("dist/index.js") || content.includes("persona-harness") ? "configured" : "missing"
-  } catch {
-    return "unreadable"
-  }
-}
-
 function packageVersion(): string {
   const packagePath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json")
   try {
@@ -206,7 +193,12 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     packageVersion: packageVersion(),
     registry: registryStatus(options),
     opencodeConfig: pathStatus(projectDir, ".opencode/opencode.json"),
-    pluginPath: pluginStatus(projectDir),
+    pluginPath:
+      reachability.projectPluginState === "configured"
+        ? "configured"
+        : reachability.projectPluginState === "unreadable"
+          ? "unreadable"
+          : "missing",
     harnessConfig: pathStatus(projectDir, ".persona/harness.jsonc"),
     rules: pathStatus(projectDir, ".persona/rules"),
     workflowPlan: pathStatus(projectDir, ".persona/workflow/plan.md"),
