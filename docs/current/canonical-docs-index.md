@@ -21,6 +21,7 @@ Use these files when making current product, measurement, or release decisions.
 | CI evidence reverification acceptance | `docs/current/ci-evidence-reverification-acceptance-record.md` | Item 19 exact-main opt-in `--reverify` and explicit CI-mode acceptance with bounded artifact and package evidence. |
 | CI evidence reverification design | `docs/current/ci-evidence-reverification-design.md` | Item 19 pre-implementation design lineage; the accepted current contract is recorded separately. |
 | Full docs inventory | `docs/current/docs-inventory.md` | Classification for every retained `docs/**` file. |
+| Harness default audit | `docs/current/harness-default-audit.md` | P1 STEP 1 full config-field/default/path audit, dead-flag inventory, and doctor semantic dictionary; no default change. |
 | 0.7.0-rc.1 release-prep capsule | `docs/releases/v0.7.0-rc.1/README.md` | Next-channel candidate facts and boundaries; not published, tagged, or registry-verified. |
 | Stable release facts | `docs/releases/v0.6.0/README.md` | Durable stable `latest` registry-smoke capsule. |
 | Package/version timeline | `docs/releases/package-index.md` | Chronological package index from `0.1.0` through current prereleases. |

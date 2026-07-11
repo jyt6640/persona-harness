@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 26
+- current active pointer/status: 27
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 53
 - versioned durable: 20
 
-Total indexed files: 296
+Total indexed files: 297
 
 ## File Inventory
 
@@ -74,6 +74,7 @@ Total indexed files: 296
 | `docs/current/hq-orchestration/templates/dispatch-skills-prompting.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/hq-orchestration/templates/result-report-format.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/hq-orchestration/thread-index.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
+| `docs/current/harness-default-audit.md` | current active pointer/status | - | P1 STEP 1 config default/path audit and dead-flag report; no default or runtime behavior change. |
 | `docs/current/injection-value-status.json` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/injection-value-stopping-rule.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/java-backend-actual-quality-shape-review.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
