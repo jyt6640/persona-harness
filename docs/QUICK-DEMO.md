@@ -21,6 +21,13 @@ npx ph bootstrap backend
 accepted plan, and workflow report templates that `ph go` requires. Default
 setup keeps `runtimeInjection` off; this demo does not need a host hook.
 
+This clean-project walkthrough does not use `attach`. For an existing
+Java/Spring/Gradle project, first inspect the inferred draft with `npx ph
+attach`, then run `npx ph attach --yes` to accept it. Use `npx ph attach
+--repair --yes` only for a recognized weak Persona Harness installation;
+ready attachments are not repair targets, and unrecognized or corrupt files
+are refused rather than overwritten.
+
 ## 2. Observe a legitimate block
 
 Run the existing plaintext finish gate before implementing anything:

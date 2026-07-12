@@ -14,7 +14,12 @@ A reading map for people seeing Persona Harness (PH) for the first time.
 1. [QUICK-DEMO](QUICK-DEMO.md) — the fastest hands-on path.
 2. [README → Quick Start](../README.md#quick-start--javaspring-backend) — the
    full workflow.
-3. [Troubleshooting](troubleshooting/README.md) — if the agent implements
+3. For an existing Java/Spring/Gradle project, run `npx ph attach` to inspect
+   the inferred draft, then `npx ph attach --yes` to accept it. Use
+   `npx ph attach --repair --yes` only for a recognized weak Persona Harness
+   installation, never a ready attachment; unrecognized or corrupt files are
+   not overwritten.
+4. [Troubleshooting](troubleshooting/README.md) — if the agent implements
    directly, ignores the rail, or skips tickets on an existing project.
 
 ## I want to contribute

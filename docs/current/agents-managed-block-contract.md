@@ -1,6 +1,8 @@
 # AGENTS Managed Block Contract
 
-Status: P1 STEP 2 inspection contract. This page defines how `ph doctor` observes Persona Harness steering in `AGENTS.md`. It does not change bootstrap output or migrate user files.
+Status: P1 STEP 2 doctor observation and P1 STEP 3 explicit attach contract.
+`ph doctor` only observes Persona Harness steering in `AGENTS.md`; `ph attach`
+is the separate project-local writer surface.
 
 ## Managed Block V1
 
@@ -23,17 +25,24 @@ The start marker carries the schema identifier. Content outside the markers belo
 | `unrecognized` | `AGENTS.md` exists but neither a complete V1 block nor the legacy body is observed. | BLOCK |
 | `corrupt` | A marker is partial, duplicated, reversed, or carries an unsupported schema. | BLOCK |
 
-The current markerless bootstrap body is retroactively treated as the legacy V1 steering body. P1 STEP 2 only inspects it. Marker insertion, migration, and managed-block writing belong to the later transactional attach acceptance unit.
+The current markerless bootstrap body is retroactively treated as the legacy V1
+steering body. `ph attach --yes` creates the managed V1 block only for an
+eligible existing Java/Spring/Gradle project. `ph attach --repair --yes` is
+limited to a recognized weak Persona Harness installation.
 
-## Migration And Preservation
+## Explicit Attach Scope
 
-Future migration must:
+The current explicit attach path:
 
-1. parse and validate the complete document before writing;
-2. preserve all user-authored bytes outside the managed block;
-3. replace one older complete managed block atomically;
-4. refuse duplicate, partial, reversed, or unsupported markers without writing;
-5. publish the resulting file only after the surrounding attach transaction revalidates its owned-path snapshot.
+1. writes the managed V1 block for an eligible fresh project;
+2. permits `--repair --yes` only when the existing installation is recognized
+   as weak; a ready attachment is reported unchanged and is not repairable;
+3. blocks corrupt or unrecognized `AGENTS.md` content instead of overwriting it;
+4. stages and revalidates only project-local `.gitignore`,
+   `.opencode/opencode.json`, `.persona`, and `AGENTS.md` paths before writing;
+5. enables `enforce.executeVerification=true` while keeping
+   `features.runtimeInjection=false`, `enforce.systemConstitution=false`,
+   `enforce.idleContinuation=false`, and `enforce.ralphLoop.enabled=false`.
 
 P1 STEP 2 `ph doctor` is inspection-only and never rewrites `AGENTS.md`,
 including unrecognized or corrupt files. This is not a universal guarantee for
@@ -61,7 +70,10 @@ When `enforce.executeVerification=false`, doctor reports:
 PH-run verification OFF — evidence-only mode, TDD rail advisory
 ```
 
-This is a WARN with no remediation command until the later attach/remediation acceptance units provide a path that enables only `executeVerification`.
+This is a WARN with no inline doctor remediation command. The explicit attach
+surface may enable only `executeVerification` for an eligible project; it is
+not a `--strict` recommendation and does not repair corrupt or unrecognized
+files.
 
 ## Source Boundary
 
@@ -70,10 +82,14 @@ This is a WARN with no remediation command until the later attach/remediation ac
 - Current doctor project-local config inspection: `src/cli/doctor.ts:87-102 @ b6cdd84cdfb8c56459b320b38e8da931b640f6ef`.
 - Existing single follow-up renderer shape: `src/cli/workflow-finish-follow-up.ts:181-205 @ b6cdd84cdfb8c56459b320b38e8da931b640f6ef`.
 - Enforcement config reader: `src/config/harness-config.ts:318-380 @ b6cdd84cdfb8c56459b320b38e8da931b640f6ef`.
+- Managed V1 writer: `src/cli/agents-contract.ts:1-59 @ b7da6b40173ec8257fda352004d40ffea6c69fb0`.
+- Existing attachment state and explicit weak-only repair: `src/cli/attach-installation-state.ts:10-42`; `src/cli/attach.ts:41-230 @ b7da6b40173ec8257fda352004d40ffea6c69fb0`.
+- Project-local staging and enforcement values: `src/cli/attach-staging.ts:6-52`; `src/cli/attach-transaction.ts:104-146 @ b7da6b40173ec8257fda352004d40ffea6c69fb0`.
 
 ## Boundaries
 
-- No default, bootstrap, AGENTS writer, runtime injection, system constitution, idle continuation, or Ralph loop behavior changes here.
-- No global host configuration claim.
-- No automatic repair of user-authored files.
+- Attach is explicit; it does not change the package defaults or ordinary
+  bootstrap behavior.
+- No global host configuration claim or hostile-race security guarantee.
+- No automatic repair of corrupt or unrecognized user-authored files.
 - No `--strict` remediation.

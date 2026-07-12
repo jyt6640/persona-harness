@@ -64,7 +64,7 @@ npx ph --help && npx ph doctor
 
 ## 빠른 시작
 
-깨끗한 프로젝트 디렉터리를 사용하세요 (Persona Harness repo 자체 금지).
+깨끗한 프로젝트 디렉터리에서는 다음 경로를 사용하세요 (Persona Harness repo 자체 금지).
 
 ```bash
 mkdir -p /tmp/ph-demo && cd /tmp/ph-demo && npm init -y
@@ -74,6 +74,22 @@ npx ph init                 # 최소 통합 파일만 생성
 npx ph bootstrap backend    # AGENTS.md, profile, plan, report 템플릿
 npx ph workflow check
 ```
+
+기존 Java/Spring/Gradle 프로젝트에서는 먼저 추론된 draft를 확인한 뒤 명시적으로
+승인하세요.
+
+```bash
+npx ph attach
+npx ph attach --yes
+
+# 인식된 약한 Persona Harness 설치에만 사용하며, ready 설치에는 사용하지 않음:
+npx ph attach --repair --yes
+```
+
+`attach`는 인식되지 않았거나 손상된 기존 Persona Harness 파일을 덮어쓰지 않고
+거부하며, 이미 ready인 설치의 repair도 거부합니다. 성공한 attach는 PH-run
+verification을 켜되 `runtimeInjection`, `systemConstitution`,
+`idleContinuation`, Ralph loop는 끈 상태로 유지합니다.
 
 그다음 OpenCode에서 에이전트에게 당신의 `README.md`를 구현하도록 요청하세요. 에이전트는 스스로 rail을 돌리고 `npx ph workflow finish implement`로 끝내야 합니다.
 
@@ -95,6 +111,7 @@ npx ph workflow check
 ## 명령
 
 ```bash
+npx ph attach [--yes]                                  # 기존 Java/Spring/Gradle 프로젝트
 npx ph workflow check | implement | finish implement | archive <ticket-id>
 npx ph workflow split README.md && npx ph workflow next   # 멀티 ticket
 npx ph bearshell --shell 'gradle test'                    # 제한된 실행

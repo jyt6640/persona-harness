@@ -64,7 +64,7 @@ npx ph --help && npx ph doctor
 
 ## Quick Start
 
-Use a clean project directory (not the Persona Harness repo itself).
+For a clean project directory (not the Persona Harness repo itself):
 
 ```bash
 mkdir -p /tmp/ph-demo && cd /tmp/ph-demo && npm init -y
@@ -74,6 +74,23 @@ npx ph init                 # minimal integration files only
 npx ph bootstrap backend    # AGENTS.md, profile, plan, report templates
 npx ph go "Add a task creation endpoint."
 ```
+
+For an existing Java/Spring/Gradle project, inspect the inferred draft first,
+then accept it explicitly:
+
+```bash
+npx ph attach
+npx ph attach --yes
+
+# Only for a recognized weak Persona Harness installation, never a ready one:
+npx ph attach --repair --yes
+```
+
+`attach` refuses unrecognized or corrupt existing Persona Harness files rather
+than overwriting them, and it rejects repair for an already-ready attachment.
+A successful attach enables PH-run verification while keeping
+`runtimeInjection`, `systemConstitution`, `idleContinuation`, and the Ralph
+loop off.
 
 `ph go` is the host-neutral single entry for one concrete implementation
 requirement after bootstrap and plan acceptance. It captures the requirement,
@@ -101,6 +118,7 @@ Enable both settings in `.persona/harness.jsonc`:
 ## Commands
 
 ```bash
+npx ph attach [--yes]                                  # existing Java/Spring/Gradle project
 npx ph go "Add a task creation endpoint."                 # concrete single entry
 npx ph workflow check | implement | finish implement | archive <ticket-id>
 npx ph workflow split README.md && npx ph workflow next   # multi-ticket
