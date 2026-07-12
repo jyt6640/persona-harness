@@ -11,13 +11,13 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
-import { loadHarnessConfigResult } from "../config/harness-config.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   managedBackendAgentInstructions,
   repairManagedBackendAgentInstructions,
 } from "./agents-contract.js"
 import { inferAttachProfile } from "./attach-profile.js"
+import { existingAttachmentState } from "./attach-installation-state.js"
 import { copyAttachContext, enableAttachEnforcement } from "./attach-staging.js"
 import { commitAttachTree } from "./attach-transaction.js"
 import {
@@ -26,7 +26,6 @@ import {
   parseAttachArgs,
 } from "./attach-command-contract.js"
 import { runBootstrapCommand } from "./bootstrap.js"
-import { readDoctorReachability } from "./doctor-reachability.js"
 import { runInstructionsCommand } from "./instructions-infer.js"
 
 type AttachOptions = {
@@ -39,23 +38,23 @@ function writeManagedAgents(stagingDir: string): void {
   writeFileSync(join(stagingDir, "AGENTS.md"), managedBackendAgentInstructions())
 }
 
-function recognizedWeakInstallation(projectDir: string): boolean {
-  const reachability = readDoctorReachability(projectDir)
-  return (
-    existsSync(join(projectDir, ".persona", "harness.jsonc"))
-    && loadHarnessConfigResult(projectDir).diagnostics.length === 0
-    && reachability.projectPluginState === "configured"
-    && (
-      reachability.agentsState === "missing"
-      || reachability.agentsState === "legacy observed"
-      || reachability.agentsState === "current"
-    )
-  )
-}
-
 function runFreshAttach(projectDir: string, options: AttachOptions): CliRunResult {
   if (existsSync(join(projectDir, ".persona")) || existsSync(join(projectDir, "AGENTS.md"))) {
-    if (recognizedWeakInstallation(projectDir)) {
+    const state = existingAttachmentState(projectDir)
+    if (state === "ready") {
+      return {
+        status: 0,
+        stdout: [
+          "Persona Harness is already prepared and ready.",
+          "No attachment files were changed.",
+          "Next action: Submit one concrete implementation goal.",
+          "Next command: npx ph go \"<goal>\"",
+          "",
+        ].join("\n"),
+        stderr: "",
+      }
+    }
+    if (state === "weak") {
       return attachBlocked(
         "a recognized Persona Harness installation already exists.",
         "Use the explicit repair path to strengthen the recognized installation.",
@@ -137,7 +136,15 @@ function runFreshAttach(projectDir: string, options: AttachOptions): CliRunResul
 }
 
 function runRepair(projectDir: string, options: AttachOptions): CliRunResult {
-  if (!recognizedWeakInstallation(projectDir)) {
+  const state = existingAttachmentState(projectDir)
+  if (state === "ready") {
+    return attachBlocked(
+      "the installation is already prepared with strong enforcement.",
+      "Continue with the prepared workflow; repair is not applicable.",
+      "npx ph doctor",
+    )
+  }
+  if (state === "unrecognized") {
     return attachBlocked(
       "the existing files are corrupt, unrecognized, or not a complete weak Persona Harness installation.",
       "Review the existing installation without overwriting user-authored files.",
