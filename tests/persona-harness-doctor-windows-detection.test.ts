@@ -65,7 +65,10 @@ describe("ph doctor Windows command detection", () => {
     expect(summary.opencode).toBe("1.17.9")
     expect(summary.opencodeConfig).toBe("present")
     expect(summary.pluginPath).toBe("configured")
-    expect(summary.runtimeReadiness).toBe("PASS")
-    expect(summary.runtimeFindings).toEqual([])
+    expect(summary.runtimeReadiness).toBe("WARN")
+    expect(summary.runtimeFindings).toEqual([
+      "Unverified platform: Windows has not been measured or verified for Persona Harness.",
+      "Lock identity device/inode behavior is not measured or verified on Windows; stale-lock and concurrency conclusions are limited.",
+    ])
   })
 })

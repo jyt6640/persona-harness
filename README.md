@@ -136,6 +136,18 @@ developer MCP details are intentionally outside the Quick Start. Repository
 contributors can use `docs/current/advanced-surface-index.md`; these surfaces
 do not change the P0-3 root CLI discovery contract.
 
+## Platform And Host Support
+
+| Surface | Status | Evidence boundary |
+| --- | --- | --- |
+| macOS / Linux + OpenCode | Verified | Current Persona Harness host-adapter and product evidence is limited to OpenCode on macOS/Linux. |
+| Windows | Unverified | No Windows support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
+| Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
+
+The localized README files are unchanged in this narrow acceptance unit because
+the support wording is being canonicalized first in `README.md` and
+`docs/START-HERE.md`; Docs review should decide synchronized translations.
+
 ## Boundaries & safety
 
 Evidence answers one question — *"Did the agent see and follow the expected rail?"* — and nothing more. PH does **not** promise app-quality certification, token savings, Clean Code guarantees, broad AST/linter enforcement, a full TDD framework, closure guarantees, or a complete workflow without OpenCode. The canonical list is in [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).

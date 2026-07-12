@@ -100,6 +100,15 @@ function pathStatus(projectDir: string, relativePath: string): "present" | "miss
   return existsSync(join(projectDir, relativePath)) ? "present" : "missing"
 }
 
+function platformFindings(platform: NodeJS.Platform): readonly string[] {
+  return platform === "win32"
+    ? [
+        "Unverified platform: Windows has not been measured or verified for Persona Harness.",
+        "Lock identity device/inode behavior is not measured or verified on Windows; stale-lock and concurrency conclusions are limited.",
+      ]
+    : []
+}
+
 function packageVersion(): string {
   const packagePath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json")
   try {
@@ -186,9 +195,12 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const opencode = opencodeVersion(options)
   const reachability = readDoctorReachability(projectDir)
   const harnessConfig = loadHarnessConfig(projectDir)
-  const runtimeFindings = opencode === "missing"
-    ? ["OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified."]
-    : []
+  const runtimeFindings = [
+    ...platformFindings(options.platform ?? process.platform),
+    ...(opencode === "missing"
+      ? ["OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified."]
+      : []),
+  ]
   return {
     projectDir,
     node: process.version,
