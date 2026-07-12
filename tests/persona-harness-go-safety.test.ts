@@ -43,7 +43,7 @@ describe("ph go safety", () => {
     })
 
     expect(result.status).toBe(1)
-    expectSingleNextCommand(result.stderr, "npx ph bootstrap backend")
+    expectSingleNextCommand(result.stderr, "npx ph attach --yes")
     expect(existsSync(join(projectDir, ".persona"))).toBe(false)
   })
 
@@ -59,7 +59,7 @@ describe("ph go safety", () => {
     })
 
     expect(result.status).toBe(1)
-    expectSingleNextCommand(result.stderr, "npx ph intake --default backend --force")
+    expectSingleNextCommand(result.stderr, "npx ph attach --yes")
     expect(workflowSnapshot(projectDir)).toEqual(before)
   })
 

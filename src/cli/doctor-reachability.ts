@@ -8,13 +8,14 @@ import {
   workflowFinishFollowUpLines,
   type WorkflowFinishFollowUp,
 } from "./workflow-finish-follow-up.js"
+import {
+  AGENTS_END_MARKER,
+  AGENTS_START_MARKER,
+  LEGACY_AGENTS_TITLE,
+  LEGACY_FINISH_COMMAND,
+  LEGACY_IMPLEMENT_COMMAND,
+} from "./agents-contract.js"
 
-const AGENTS_START_MARKER =
-  "<!-- persona-harness:agents:start schema=persona-harness.agents.v1 -->"
-const AGENTS_END_MARKER = "<!-- persona-harness:agents:end -->"
-const LEGACY_AGENTS_TITLE = "# Persona Harness Agent Instructions"
-const LEGACY_IMPLEMENT_COMMAND = "npx ph workflow implement"
-const LEGACY_FINISH_COMMAND = "npx ph workflow finish implement"
 const CURRENT_PLUGIN_PATH = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "..",

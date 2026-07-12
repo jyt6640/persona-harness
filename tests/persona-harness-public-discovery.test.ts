@@ -29,6 +29,7 @@ describe("public CLI discovery", () => {
     expect(result.stdout).toContain("Public commands:")
     expect(result.stdout).toContain("  version")
     expect(result.stdout).toContain("  init")
+    expect(result.stdout).toContain("  attach")
     expect(result.stdout).toContain("  go <goal> | --stdin")
     expect(result.stdout).toContain("  doctor")
     expect(result.stdout).not.toContain("  workflow")
@@ -36,6 +37,19 @@ describe("public CLI discovery", () => {
     expect(result.stdout).not.toContain("  bootstrap")
     expect(result.stdout).not.toContain("  evidence")
     expect(result.stdout).not.toContain("recover")
+  })
+
+  it("exposes attach help without exposing repair as the ordinary path", () => {
+    const result = runPersonaCli(["attach", "--help"], {
+      cwd: createTempProject(),
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Usage: ph attach [--yes]")
+    expect(result.stdout).toContain("ph attach --repair --yes")
+    expect(result.stdout).toContain("never overwrites unrecognized user files")
   })
 
   it("uses workflow help for workflow discovery and dev help for developer aliases", () => {

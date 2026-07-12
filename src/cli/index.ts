@@ -5,6 +5,7 @@ import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
 
 import { runBootstrapCommand } from "./bootstrap.js"
+import { runAttachCommand } from "./attach.js"
 import { personaCliUsage } from "./cli-usage.js"
 import { initUsage, runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
@@ -30,6 +31,7 @@ type PersonaCliOptions = {
   readonly cwd?: string
   readonly env?: Readonly<Record<string, string | undefined>>
   readonly invocationName?: string
+  readonly onAfterAttachCommitFile?: (relativePath: string) => void
   readonly onAfterGoCommitFile?: (relativePath: string) => void
   readonly onAfterGoTransactionCopy?: () => void
   readonly onBeforeGoStep?: (step: GoStep) => void
@@ -65,6 +67,18 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
         onBeforeGoTransactionStart: options.onBeforeGoTransactionStart,
         projectDir: options.cwd,
         stdin: options.stdin,
+      },
+      invocationName,
+    )
+  }
+
+  if (command === "attach") {
+    return runAttachCommand(
+      args.slice(1),
+      {
+        onAfterCommitFile: options.onAfterAttachCommitFile,
+        packageRoot: options.packageRoot,
+        projectDir: options.cwd,
       },
       invocationName,
     )

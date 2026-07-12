@@ -33,10 +33,10 @@ export function goBlockedOutput(reason: string, nextCommand: string): CliRunResu
 
 export function goSetupBlocker(projectDir: string): CliRunResult | undefined {
   if (!existsSync(join(projectDir, ".persona", "harness.jsonc"))) {
-    return goBlockedOutput("Persona Harness is not initialized.", "npx ph bootstrap backend")
+    return goBlockedOutput("Persona Harness is not initialized.", "npx ph attach --yes")
   }
   if (readBackendProjectProfileState(projectDir).status !== "ready") {
-    return goBlockedOutput("the backend project profile is not ready.", "npx ph intake --default backend --force")
+    return goBlockedOutput("the backend project profile is not ready.", "npx ph attach --yes")
   }
   try {
     const plan = readWorkflowPlanStatus({ projectDir })
