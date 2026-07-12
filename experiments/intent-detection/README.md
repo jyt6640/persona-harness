@@ -40,7 +40,13 @@ The existence of this corpus is measurement material only. It is not:
 
 Any measurement result requires a separately defined detector, evaluator, and
 recorded run. New cases must be added through a new preregistration rather
-than relabeling existing cases after an evaluation.
+than relabeling existing cases after an evaluation. This corpus is independent
+of `../entry-intent-corpus/`: its case IDs, record shape, evaluator, and
+decision boundary must not be merged with that 32-record corpus.
+
+The `mutationPolicy` in `corpus.json` governs future additions to this
+48-record corpus only. It does not establish the historical provenance or
+causal origin of the entry-intent corpus or any runtime behavior.
 
 ## Package Boundary
 

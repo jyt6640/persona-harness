@@ -36,6 +36,14 @@ Source-only corpus:
 - real-use positive #1 equivalent: `그냥 해줘`
 - excluded from the npm package together with its measurement script
 
+The 32-record entry-intent corpus is separate from the 48-record
+`experiments/intent-detection/corpus.json` preregistration. The latter is
+future evaluator material, not an alternate entry-steering result set. Their
+records, labels, evaluator, and decision boundaries must not be combined or
+relabelled after evaluation. The `mutationPolicy` field in the 48-record corpus
+is a local future-addition rule; this snapshot contains no contemporaneous
+evidence that it caused or historically governed the 32-record corpus.
+
 Preregistered thresholds:
 
 | Metric | Boundary |

@@ -27,6 +27,12 @@ The current corpus result is 16 true positives, 16 true negatives, zero false
 positives, and zero false negatives. That result is limited to this corpus and
 does not authorize a default-on setting or claim product efficacy.
 
+This corpus is independent of `../intent-detection/`: the two corpora have
+different IDs, record shapes, labels, evaluators, and decision boundaries.
+Reported results must name the corpus used and must not merge or relabel
+records from the other corpus after evaluation. Any changed records or
+evaluator require a new preregistration and run.
+
 ## Package Boundary
 
 The root package allowlist excludes `experiments/**`. The corpus and

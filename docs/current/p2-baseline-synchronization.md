@@ -90,7 +90,7 @@ surface.
 | --- | --- | --- | --- |
 | R2-A | First define a consent-safe scenario manifest. | Support matrix and named release owner; no stable-version premise. | Source-only planning. |
 | R2-B | Create a dated local-current baseline from the manifest; RC2 remains pilot/package evidence, not stable evidence. | R2-A; preregistered limitations and evidence review. | No release recommendation follows automatically. |
-| R3 | Audit compatibility between repository corpus/reference material, current docs, and package inclusion. It is not a causal-history claim. | Exact inventory, package list, and direct-link policy. | Classification has no default/schema/release effect. |
+| R3 | Audit compatibility and provenance between the separate `experiments/intent-detection` and `experiments/entry-intent-corpus` preregistrations, repository references, current docs, and package inclusion. It is not a causal-history claim. | Exact corpus identity/label/evaluator boundary, no post-evaluation relabeling, exact inventory, package list, and direct-link policy. | Classification has no default/schema/release effect; the newer corpus's `mutationPolicy` does not establish historical causation without contemporaneous evidence. |
 | R1 | Last: a move-only `src/cli` decomposition investigation. | Completion of earlier contracts; import/call graph; help/package comparison; no-behavior fixtures. | No version change unless a released surface actually changes. |
 
 ## Required Ordering
