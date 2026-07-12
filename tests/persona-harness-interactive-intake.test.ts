@@ -4,6 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
+import { runPersonaCli } from "../src/cli/index.js"
 import { runInteractiveIntakeCommand } from "../src/cli/intake.js"
 
 const tempProjects: string[] = []
@@ -115,6 +116,36 @@ describe("ph intake --interactive", () => {
     expect(answers.get("architecture-style")).toBe("clean-architecture-light")
     expect(answers.get("boundary-strictness")).toBe("strict")
     expect(profile.notes).toEqual({ project: "관리자 기능은 이번 범위에서 제외한다." })
+  })
+
+  it("uses the Korean user-language persisted by interactive intake for later help output", async () => {
+    const projectDir = createTempProject()
+
+    const result = await runInteractiveInputs(projectDir, ["", "", "", "", "", "", "", "", "", "", "", ""])
+
+    expect(result.status).toBe(0)
+    expect(questionsById(readProfile(projectDir)).get("user-language")).toBe("ko")
+
+    const rootHelp = runPersonaCli(["help"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const language = runPersonaCli(["language"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const languageHelp = runPersonaCli(["language", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(rootHelp.status).toBe(0)
+    expect(rootHelp.stdout).toContain("사용법: ph <command> [args...]")
+    expect(rootHelp.stdout).toContain("공개 명령:")
+    expect(rootHelp.stdout).toContain("언어 표시:")
+    expect(rootHelp.stdout).toContain("  version")
+    expect(rootHelp.stdout).toContain("  init")
+    expect(rootHelp.stdout).toContain("  attach")
+    expect(rootHelp.stdout).toContain("  go <goal> | --stdin")
+    expect(rootHelp.stdout).toContain("  doctor")
+    expect(rootHelp.stdout).not.toContain("  language")
+    expect(language.status).toBe(0)
+    expect(language.stdout).toContain("Persona Harness 지원 언어")
+    expect(language.stdout).toContain("로케일 선택 규칙:")
+    expect(language.stdout).toContain("정확히 `ko`")
+    expect(languageHelp.status).toBe(0)
+    expect(languageHelp.stdout).toContain("사용법: ph language")
   })
 
   it("stores undecided from Korean undecided input and re-prompts invalid choices", async () => {

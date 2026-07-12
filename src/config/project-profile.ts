@@ -7,6 +7,8 @@ const PROFILE_PATH = ".persona/project-profile.jsonc"
 const SUPPORTED_SCHEMA = "persona.project-profile.v1"
 const SUPPORTED_ROLE = "backend"
 const SUPPORTED_MVP = "java-spring-clean-code"
+const DEFAULT_HUMAN_OUTPUT_LOCALE = "en"
+const DEFAULT_BACKEND_PROFILE_NOTE = "Default backend profile created by Persona Harness."
 
 const SUMMARY_ORDER = [
   "user-language",
@@ -27,6 +29,8 @@ export type BackendProjectProfileState = {
   readonly missingAnswers: readonly string[]
   readonly message: string
 }
+
+export type HumanOutputLocale = "en" | "ko"
 
 type ProfileQuestion = {
   readonly id: string
@@ -121,6 +125,28 @@ export function loadBackendProjectProfileSummary(projectDir: string): readonly s
   }
 
   return formatSummaryLines(answeredQuestionMap(readQuestions(parsed.questions)), readProjectNote(parsed))
+}
+
+export function readHumanOutputLocale(projectDir: string): HumanOutputLocale {
+  const profilePath = join(projectDir, PROFILE_PATH)
+  if (!existsSync(profilePath)) {
+    return DEFAULT_HUMAN_OUTPUT_LOCALE
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(stripJsonComments(readFileSync(profilePath, "utf8")))
+    if (!isSupportedBackendProfile(parsed)) {
+      return DEFAULT_HUMAN_OUTPUT_LOCALE
+    }
+    if (readProjectNote(parsed) === DEFAULT_BACKEND_PROFILE_NOTE) {
+      return DEFAULT_HUMAN_OUTPUT_LOCALE
+    }
+    return answeredQuestionMap(readQuestions(parsed.questions)).get("user-language") === "ko"
+      ? "ko"
+      : DEFAULT_HUMAN_OUTPUT_LOCALE
+  } catch {
+    return DEFAULT_HUMAN_OUTPUT_LOCALE
+  }
 }
 
 export function readBackendProjectProfileState(projectDir: string): BackendProjectProfileState {

@@ -4,6 +4,7 @@ import process from "node:process"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
 
+import { readHumanOutputLocale } from "../config/project-profile.js"
 import { runBootstrapCommand } from "./bootstrap.js"
 import { runAttachCommand } from "./attach.js"
 import { personaCliUsage } from "./cli-usage.js"
@@ -113,7 +114,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "language") {
-    return runLanguageCommand(args.slice(1), invocationName)
+    return runLanguageCommand(args.slice(1), invocationName, options.cwd ?? process.cwd())
   }
 
   if (command === "observe") {
@@ -153,13 +154,17 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === undefined || command === "help" || command === "--help" || command === "-h") {
-    return { status: 0, stdout: `${personaCliUsage(invocationName)}\n`, stderr: "" }
+    return {
+      status: 0,
+      stdout: `${personaCliUsage(invocationName, readHumanOutputLocale(options.cwd ?? process.cwd()))}\n`,
+      stderr: "",
+    }
   }
 
   return {
     status: 1,
     stdout: "",
-    stderr: `Unknown command: ${command}\n\n${personaCliUsage(invocationName)}\n`,
+    stderr: `Unknown command: ${command}\n\n${personaCliUsage(invocationName, readHumanOutputLocale(options.cwd ?? process.cwd()))}\n`,
   }
 }
 
