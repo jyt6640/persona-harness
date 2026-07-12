@@ -22,16 +22,18 @@ deleting evidence/status history.
   a runtime hook. Its lock/conflict behavior is for cooperative local writers,
   and does not address hostile same-user filesystem path replacement. Existing
   draft/approval commands remain the route for vague product ideas.
-- Release-prep candidate capsule:
-  [`docs/releases/v0.7.0-rc.1/`](../releases/v0.7.0-rc.1/README.md). It is
+- Current release-prep candidate capsule:
+  [`docs/releases/v0.7.0-rc.2/`](../releases/v0.7.0-rc.2/README.md). It is
   not published, tagged, or a registry-state update.
+- Published next-channel capsule:
+  [`docs/releases/v0.7.0-rc.1/`](../releases/v0.7.0-rc.1/README.md).
 - Current published stable capsule:
   [`docs/releases/v0.6.0/`](../releases/v0.6.0/README.md).
 - Chronological package/version index:
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.7.0-rc.1-release-notes.md`](release/v0.7.0-rc.1-release-notes.md).
+  [`release/v0.7.0-rc.2-release-notes.md`](release/v0.7.0-rc.2-release-notes.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -69,12 +71,16 @@ deleting evidence/status history.
 
 - `0.6.0` is published as the stable npm `latest` package after QA accepted
   the final External registry smoke. Current published channels are
-  `latest=0.6.0` and `next=0.6.0-rc.4`; the legacy `alpha` dist-tag has been
+  `latest=0.6.0` and `next=0.7.0-rc.1`; the legacy `alpha` dist-tag has been
   retired after stable. Explicit historical alpha versions remain available by
   exact version. S-3 removed the failed-finish human `Summary:` header after
   S-2 regated it as non-inferior=false.
-- `0.7.0-rc.1` is a prepared next-channel candidate on release-prep base
-  `18c62da`, not a published package, tag, GitHub Release, or dist-tag update.
+- `0.7.0-rc.1` was published to npm `next` on 2026-07-11 with registry
+  gitHead/tag/release-branch commit `d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`.
+- `0.7.0-rc.2` is the current pre-publish next-channel candidate from exact
+  release-prep base `4ed9653b1d9c02a673b340d72d6d42ae3b674e2b`. Its publish,
+  tag, GitHub prerelease, registry gitHead, and package hashes are deferred
+  until the required post-publish verification.
 - `runtimeInjection` remains a parked opt-in preview.
 - P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
   writer/workspace-edit contract. Recovery remains hidden from normal help,

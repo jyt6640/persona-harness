@@ -4,7 +4,7 @@ Use this package for repeatable release operations and release note drafting.
 
 Durable versioned summaries now live under `docs/releases/`. For the current
 release-prep line, start with
-[`docs/releases/v0.7.0-rc.1/README.md`](../../releases/v0.7.0-rc.1/README.md).
+[`docs/releases/v0.7.0-rc.2/README.md`](../../releases/v0.7.0-rc.2/README.md).
 The files in this directory remain the release-operation and release-note
 sources used by the existing workflow.
 
@@ -35,21 +35,28 @@ Those items make the release decision ready; they do not authorize Docs Release 
 
 ## Current Version-Line Readiness
 
-`0.7.0-rc.1` is a prepared next-channel release candidate from exact base
-`18c62da74d56518e2356711a38bb0a27406d9b10`. It is not yet published, tagged,
-or a GitHub Release. Its release-prep record is
-[`v0.7.0-rc.1-release-notes.md`](v0.7.0-rc.1-release-notes.md); the durable
+`0.7.0-rc.1` was published to npm `next` on 2026-07-11. Its registry
+gitHead, matching tag, and release-branch commit are
+`d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`; `latest` remains `0.6.0`.
+Its published release note is
+[`v0.7.0-rc.1-release-notes.md`](v0.7.0-rc.1-release-notes.md), and its durable
 capsule is [`docs/releases/v0.7.0-rc.1/`](../../releases/v0.7.0-rc.1/README.md).
 
-Pre-publish registry baseline only: `latest=0.6.0` and `next=0.6.0-rc.4`.
-Those facts describe the existing registry, not `0.7.0-rc.1`. This candidate
+`0.7.0-rc.2` is the current prepared next-channel release candidate from exact
+base `4ed9653b1d9c02a673b340d72d6d42ae3b674e2b`. Its release-prep record is
+[`v0.7.0-rc.2-release-notes.md`](v0.7.0-rc.2-release-notes.md), and its durable
+capsule is [`docs/releases/v0.7.0-rc.2/`](../../releases/v0.7.0-rc.2/README.md).
+It is not published, tagged, or a GitHub Release.
+
+The pre-publish registry baseline is `latest=0.6.0` and `next=0.7.0-rc.1`.
+Those facts describe the existing registry, not `0.7.0-rc.2`. This candidate
 must receive QA release GO, publish through `.github/workflows/publish.yml`
 with `dist_tag=next`, registry gitHead/dist-tag verification, and only then
 the matching tag and GitHub Release steps.
 
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
-`next=0.6.0-rc.4`, with no `alpha` dist-tag after the post-stable T0
+`next=0.7.0-rc.1`, with no `alpha` dist-tag after the post-stable T0
 retirement. Registry verification confirmed
 `persona-harness@latest=0.6.0`, gitHead
 `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
@@ -99,7 +106,7 @@ tester-driven UX complaints. HARDEN-2 may start only after this stable final
 record and tester kickoff status are recorded, and must yield to incoming
 tester feedback.
 
-Current prerelease package: official `0.6.0-rc.4` is published under npm
+Historical prerelease package: official `0.6.0-rc.4` was published under npm
 dist-tag `next`, not `latest`. Registry verification confirmed
 `persona-harness@next=0.6.0-rc.4`, gitHead
 `cf6835697f47da5a2a8372d00fc47e263ee781f8`, shasum
@@ -825,6 +832,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.6.0-rc.3 release notes](v0.6.0-rc.3-release-notes.md)
 - [v0.6.0-rc.4 release notes](v0.6.0-rc.4-release-notes.md)
 - [v0.6.0 release notes](v0.6.0-release-notes.md)
+- [v0.7.0-rc.2 release notes](v0.7.0-rc.2-release-notes.md)
 - [v0.7.0-rc.1 release notes](v0.7.0-rc.1-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)

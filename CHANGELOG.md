@@ -6,6 +6,32 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+## [0.7.0-rc.2] - 2026-07-12
+
+- Prepares the next-channel candidate after the published `0.7.0-rc.1`
+  baseline. P1 default-path work adds a complete HarnessConfig/default audit,
+  a project-local `ph doctor` reachability observation, and bounded
+  transactional `ph attach` for existing Java/Spring/Gradle projects. Attach
+  enables PH-run verification only after explicit confirmation; it preserves
+  unrecognized or corrupt material, does not repair a ready installation, and
+  leaves `runtimeInjection`, `systemConstitution`, `idleContinuation`, and the
+  Ralph loop off.
+- Adds the default-off `features.entrySteering` OpenCode advisory surface. The
+  transform selects the latest user-message session, evaluates only that
+  session's first user message, writes a bounded status record, and does
+  nothing when session identity is absent. Its 32-record bilingual source-only
+  corpus has deterministic corpus results only; it is not product efficacy,
+  default-on, or broad reliability evidence.
+- Adds public support honesty: current host-adapter/product evidence is limited
+  to macOS/Linux with OpenCode; Windows is unverified with no support claim;
+  a Codex adapter is planned with no current product evidence. Localized public
+  READMEs carry the same bounded matrix.
+- This is `0.7.0-rc.2` release preparation only. It is not published, tagged,
+  or a `next`/`latest` movement. The pre-publish registry baseline is
+  `latest=0.6.0`, `next=0.7.0-rc.1`. No runtime/default/schema/evidence-schema
+  movement, token-saving, certification, app-quality, security, broad
+  reliability, or enforcement claim is added.
+
 ## [0.7.0-rc.1] - 2026-07-11
 
 - Records P0-1 final canonical acceptance of host-neutral `ph go` on exact
