@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 31
+- current active pointer/status: 32
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 54
 - versioned durable: 23
 
-Total indexed files: 313
+Total indexed files: 314
 
 ## File Inventory
 
@@ -105,6 +105,7 @@ Total indexed files: 313
 | `docs/current/p0-finish-next-action-acceptance-record.md` | current active pointer/status | - | P0-2 exact-main finish follow-up, report-transition, package evidence, and claim boundary record. |
 | `docs/current/p0-go-acceptance-record.md` | current active pointer/status | - | P0-1 exact-main acceptance, provenance, package evidence, and claim boundary record. |
 | `docs/current/p0-public-discovery-acceptance-record.md` | current active pointer/status | - | P0-3 exact-main public discovery, writer safety, package evidence, and claim boundary record. |
+| `docs/current/p2-baseline-synchronization.md` | current active pointer/status | - | Current P2 E/U/T/R investigation baseline with acceptance, dependency, version, and no-automatic-activation rules. |
 | `docs/current/ph-bearshell-mvp.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/ph-core-adapter-boundary-design.md` | current active pointer/status | - | Item 25 design-only PH-core/language-pack/adapter ownership and dependency boundary. |
 | `docs/current/phase-artifact-retention-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |

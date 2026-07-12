@@ -57,6 +57,8 @@ deleting evidence/status history.
   [`rail-entry-measurement-status.md`](rail-entry-measurement-status.md).
 - Default-off OpenCode entry-steering corpus and status:
   [`entry-steering-status.md`](entry-steering-status.md).
+- P2 investigation baseline and dependency record:
+  [`p2-baseline-synchronization.md`](p2-baseline-synchronization.md).
 - Rail-entry wording regression gate:
   [`rail-entry-prompt-regression-gate.md`](rail-entry-prompt-regression-gate.md).
 - Measurement scorecard:
