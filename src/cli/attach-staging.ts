@@ -37,7 +37,7 @@ export function enableAttachEnforcement(stagingDir: string): void {
     path,
     `${JSON.stringify({
       ...parsed,
-      features: { ...features, runtimeInjection: false },
+      features: { ...features, entrySteering: false, runtimeInjection: false },
       enforce: {
         ...enforce,
         executeVerification: true,

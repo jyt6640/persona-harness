@@ -24,6 +24,7 @@ export type HarnessConfig = {
 }
 
 export type HarnessFeaturesConfig = {
+  readonly entrySteering: boolean
   readonly runtimeInjection: boolean
 }
 
@@ -96,6 +97,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",
   features: {
+    entrySteering: false,
     runtimeInjection: false,
   },
   enforce: {
@@ -190,6 +192,7 @@ function readFeaturesConfig(value: unknown): HarnessFeaturesConfig {
     return DEFAULT_CONFIG.features
   }
   return {
+    entrySteering: readBoolean(value.entrySteering, DEFAULT_CONFIG.features.entrySteering),
     runtimeInjection: readBoolean(value.runtimeInjection, DEFAULT_CONFIG.features.runtimeInjection),
   }
 }

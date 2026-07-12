@@ -19,6 +19,11 @@ import {
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
 import type { RuleDiagnosticReportItem } from "../rules/rule-diagnostics-report.js"
 import type { ConventionPackDiagnostic } from "./convention-pack-diagnostics.js"
+import { loadHarnessConfig } from "../config/harness-config.js"
+import {
+  readEntrySteeringStatusSummary,
+  type EntrySteeringStatusSummary,
+} from "../runtime/entry-steering-status.js"
 
 type DoctorOptions = {
   readonly projectDir?: string
@@ -59,6 +64,8 @@ export type DoctorSummary = {
   readonly conventionPackDiagnosticDetails: readonly ConventionPackDiagnostic[]
   readonly staleFixtureFindings: readonly StaleFixtureFinding[]
   readonly legacyDiffRulesPresent: boolean
+  readonly entrySteeringEnabled: boolean
+  readonly entrySteeringStatus: EntrySteeringStatusSummary
 }
 
 const STALE_FIXTURE_TOKENS = [
@@ -178,6 +185,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const conventionPackDiagnostics = summarizeConventionPackDiagnostics(projectDir)
   const opencode = opencodeVersion(options)
   const reachability = readDoctorReachability(projectDir)
+  const harnessConfig = loadHarnessConfig(projectDir)
   const runtimeFindings = opencode === "missing"
     ? ["OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified."]
     : []
@@ -203,6 +211,8 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     rules: pathStatus(projectDir, ".persona/rules"),
     workflowPlan: pathStatus(projectDir, ".persona/workflow/plan.md"),
     evidence: pathStatus(projectDir, ".persona/evidence"),
+    entrySteeringEnabled: harnessConfig.features.entrySteering,
+    entrySteeringStatus: readEntrySteeringStatusSummary(projectDir, harnessConfig),
     legacyDiffRulesPresent: existsSync(join(projectDir, ".persona", "rules", "diff-rules")),
     rulePackDiagnostics: rulePackDiagnostics.finding,
     rulePackDiagnosticCount: rulePackDiagnostics.diagnosticCount,
@@ -274,6 +284,10 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `AGENTS.md steering: ${summary.reachability.agentsState}`,
     `Project-local OpenCode plugin registration: ${summary.reachability.projectPluginState}`,
     `PH-run verification: ${summary.reachability.executeVerification ? "ON" : "OFF"}`,
+    `Entry steering: ${summary.entrySteeringEnabled ? "ON (default-off opt-in)" : "OFF"}`,
+    `Entry steering decisions: ${summary.entrySteeringStatus.decisions}`,
+    `Entry steering fired: ${summary.entrySteeringStatus.fired}`,
+    `Entry steering invalid records: ${summary.entrySteeringStatus.invalidRecords}`,
     ...summary.reachability.findings.map((finding) => `- [${finding.level}] ${finding.message}`),
     ...summary.reachability.followUpLines,
     `Persona package version: ${summary.packageVersion}`,

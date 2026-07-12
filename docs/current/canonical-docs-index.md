@@ -22,6 +22,7 @@ Use these files when making current product, measurement, or release decisions.
 | CI evidence reverification design | `docs/current/ci-evidence-reverification-design.md` | Item 19 pre-implementation design lineage; the accepted current contract is recorded separately. |
 | Full docs inventory | `docs/current/docs-inventory.md` | Classification for every retained `docs/**` file. |
 | Harness default audit | `docs/current/harness-default-audit.md` | P1 STEP 1 full config-field/default/path audit, dead-flag inventory, and doctor semantic dictionary; no default change. |
+| Entry steering status | `docs/current/entry-steering-status.md` | Default-off OpenCode first-message advisory, source-only bilingual corpus measurement, bounded status record, and no-claim boundary. |
 | AGENTS managed block contract | `docs/current/agents-managed-block-contract.md` | P1 STEP 2 doctor inspection plus P1 STEP 3 bounded managed-V1/project-local attach writer; no default, configuration/evidence-schema, measured-negative, version, or release-state change. |
 | 0.7.0-rc.1 release-prep capsule | `docs/releases/v0.7.0-rc.1/README.md` | Next-channel candidate facts and boundaries; not published, tagged, or registry-verified. |
 | Stable release facts | `docs/releases/v0.6.0/README.md` | Durable stable `latest` registry-smoke capsule. |

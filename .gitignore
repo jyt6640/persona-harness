@@ -10,7 +10,9 @@ analysis/
 references/
 !packages/shared-skills/**/references/
 !packages/shared-skills/**/references/**
-experiments/
+experiments/*
+!experiments/entry-intent-corpus/
+!experiments/entry-intent-corpus/**
 example/
 
 # OpenCode / Persona local runtime artifacts.

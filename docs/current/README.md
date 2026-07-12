@@ -54,6 +54,8 @@ deleting evidence/status history.
   `advanced-surface-index.md`.
 - Rail-entry and runtime-injection status:
   [`rail-entry-measurement-status.md`](rail-entry-measurement-status.md).
+- Default-off OpenCode entry-steering corpus and status:
+  [`entry-steering-status.md`](entry-steering-status.md).
 - Rail-entry wording regression gate:
   [`rail-entry-prompt-regression-gate.md`](rail-entry-prompt-regression-gate.md).
 - Measurement scorecard:

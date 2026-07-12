@@ -50,6 +50,7 @@ describe("Phase 0 harness config", () => {
     expect(config.enabledDomains).toEqual(["backend", "programming", "workflow"])
     expect(config.enforce.executeVerification).toBe(false)
     expect(config.features.runtimeInjection).toBe(false)
+    expect(config.features.entrySteering).toBe(false)
     expect(config.enforce.compaction).toEqual({
       cooldownMs: 600_000,
       enabled: false,
@@ -156,6 +157,16 @@ describe("Phase 0 harness config", () => {
     const config = loadHarnessConfig(projectDir)
 
     expect(config.features.runtimeInjection).toBe(true)
+  })
+
+  it("uses entry steering opt-in without enabling runtime injection", () => {
+    const projectDir = createProject()
+    writeHarnessConfig(projectDir, { features: { entrySteering: true } })
+
+    const config = loadHarnessConfig(projectDir)
+
+    expect(config.features.entrySteering).toBe(true)
+    expect(config.features.runtimeInjection).toBe(false)
   })
 
   it("uses multi-agent relay opt-in from harness.jsonc", () => {

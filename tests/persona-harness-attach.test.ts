@@ -68,6 +68,7 @@ describe("ph attach", () => {
     const config = loadHarnessConfig(projectDir)
     expect(config.enforce.executeVerification).toBe(true)
     expect(config.features.runtimeInjection).toBe(false)
+    expect(config.features.entrySteering).toBe(false)
     expect(config.enforce.systemConstitution).toBe(false)
     expect(config.enforce.idleContinuation).toBe(false)
     expect(config.enforce.ralphLoop.enabled).toBe(false)

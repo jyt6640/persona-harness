@@ -59,6 +59,7 @@ Total indexed files: 308
 | `docs/current/diff-rules-classification.md` | current active pointer/status | - | T6 classification table for all `references/diff-rules` files; docs-only scope fixture for future T8/T7 decisions. |
 | `docs/current/diff-rules-distribution-retirement-acceptance-record.md` | current active pointer/status | - | Item 12 exact-main package/init diff-rules retirement, legacy advisory, and claim boundary record. |
 | `docs/current/docs-inventory.md` | current index | - | Inventory for all docs files; active pointer/index file. |
+| `docs/current/entry-steering-status.md` | current active pointer/status | - | Default-off OpenCode first-message advisory, source-only corpus measurement, bounded decision status, and no default-on or efficacy claim. |
 | `docs/current/evaluation-fixtures/ambiguous-idea-first.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/evaluation-fixtures/backend-api-no-stack.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/evaluation-fixtures/multi-step-backend-small.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |

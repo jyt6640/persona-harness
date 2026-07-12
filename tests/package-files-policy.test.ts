@@ -49,6 +49,15 @@ describe("package files policy", () => {
     }
   })
 
+  it("keeps the entry intent corpus and measurement scripts source-only", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    expect(existsSync(path.join(packageRoot, "experiments/entry-intent-corpus/corpus.json"))).toBe(true)
+    expect(packageJson.files).not.toContain("experiments")
+    expect(isCoveredByPackageFiles("experiments/entry-intent-corpus/corpus.json", packageJson.files)).toBe(false)
+    expect(isCoveredByPackageFiles("experiments/entry-intent-corpus/measure.mjs", packageJson.files)).toBe(false)
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
@@ -81,6 +90,7 @@ describe("package files policy", () => {
       "docs/current/ralph-loop-measurement-status.md",
       "docs/current/multiagent-relay-trial-status.md",
       "docs/current/rail-entry-measurement-status.md",
+      "docs/current/entry-steering-status.md",
       "docs/current/rail-entry-prompt-regression-gate.md",
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",

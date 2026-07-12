@@ -30,6 +30,7 @@ import { PendingInjectionStore } from "./store.js"
 import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./target-file.js"
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import { createWriteGuardWarning } from "./write-guard.js"
+import { EntrySteeringTracker } from "./entry-steering-status.js"
 import type {
   ToolAfterInput,
   ToolAfterOutput,
@@ -111,6 +112,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const evidenceDir = resolveConfiguredPath(projectDir, config.evidenceDir)
   const compliance = new RailComplianceTracker({ evidenceDir })
   const continuation = new ContinuationTracker({ evidenceDir })
+  const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
   const ralphLoop = new RalphLoopContinuationTracker({
@@ -362,6 +364,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         if (!sessionId) {
           return
         }
+
+        entrySteering.apply(sessionId, output)
 
         if (runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "intent-workflow")) {
           maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, { evidenceDir })
