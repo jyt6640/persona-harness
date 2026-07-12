@@ -59,6 +59,8 @@ deleting evidence/status history.
   [`entry-steering-status.md`](entry-steering-status.md).
 - P2 investigation baseline and dependency record:
   [`p2-baseline-synchronization.md`](p2-baseline-synchronization.md).
+- P2 U4-A Korean output coverage audit:
+  [`p2-u4-a-korean-output-coverage-audit.md`](p2-u4-a-korean-output-coverage-audit.md).
 - Rail-entry wording regression gate:
   [`rail-entry-prompt-regression-gate.md`](rail-entry-prompt-regression-gate.md).
 - Measurement scorecard:

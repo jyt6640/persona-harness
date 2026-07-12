@@ -93,6 +93,7 @@ describe("package files policy", () => {
       "docs/current/rail-entry-measurement-status.md",
       "docs/current/entry-steering-status.md",
       "docs/current/p2-baseline-synchronization.md",
+      "docs/current/p2-u4-a-korean-output-coverage-audit.md",
       "docs/current/rail-entry-prompt-regression-gate.md",
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
