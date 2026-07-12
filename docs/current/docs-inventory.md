@@ -41,7 +41,7 @@ Total indexed files: 308
 | `docs/archive/docs-taxonomy-archive-plan.md` | archived historical | - | Historical/superseded record; leave in place and link from indexes when relevant. |
 | `docs/archive/project-progress-board-2026-06-19-pre-taxonomy.md` | archived historical | - | Historical/superseded record; leave in place and link from indexes when relevant. |
 | `docs/current/README.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
-| `docs/current/agents-managed-block-contract.md` | current active pointer/status | - | P1 STEP 2 versioned AGENTS steering observation and preservation contract; no writer/default change. |
+| `docs/current/agents-managed-block-contract.md` | current active pointer/status | - | P1 STEP 2 doctor observation plus P1 STEP 3 bounded managed-V1/project-local attach writer; doctor remains inspection-only, with no default, configuration/evidence-schema, measured-negative, version, or release-state change. |
 | `docs/current/acceptance-results/README.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/acceptance-results/TEMPLATE.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/acceptance-results/results/2026-07-02-local-current-acceptance-ab.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
