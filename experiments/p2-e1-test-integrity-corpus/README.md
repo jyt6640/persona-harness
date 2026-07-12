@@ -36,6 +36,29 @@ Each rule requires 100% coverage, precision `1.00`, recall `1.00`, zero false
 positives, and zero false negatives. This strict threshold protects the
 preregistered false-positive corpus; it is not a product target.
 
+## Report-Only Structural Candidate
+
+```bash
+node experiments/p2-e1-test-integrity-corpus/report.mjs
+```
+
+The command tokenizes the frozen Java fixtures, resolves explicit JUnit imports
+and fully qualified annotations, maps every corpus anchor to a parsed method,
+and emits a candidate plus its deterministic corpus evaluation. It recognizes
+only the two preregistered tracks:
+
+- `E1-A1`: exact JUnit 4/Jupiter `@Test` methods without an assertion,
+  expected-exception contract, helper assertion, or interaction verification.
+  Parameterized and lifecycle annotations are excluded structurally.
+- `E1-A2`: exact JUnit `@Disabled` or `@Ignore` test methods with no reason or
+  a blank string reason.
+
+The machine-readable report always includes `reportOnly: true`,
+`sourceOnly: true`, `enforcement: false`, and
+`productRuntimeInvocation: { "permitted": false }`. It reads only this corpus
+and its fixtures. It does not import or invoke product code, register a
+warning/block rule, change CLI behavior, or alter defaults.
+
 ## Mutation And Boundary
 
 [`corpus.json`](corpus.json) freezes each record id, rule id, expected label,

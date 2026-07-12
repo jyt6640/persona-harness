@@ -63,8 +63,11 @@ describe("package files policy", () => {
     const sourceOnlyFiles = [
       "experiments/p2-e1-test-integrity-corpus/README.md",
       "experiments/p2-e1-test-integrity-corpus/corpus.json",
+      "experiments/p2-e1-test-integrity-corpus/detector.mjs",
+      "experiments/p2-e1-test-integrity-corpus/java-structure.mjs",
       "experiments/p2-e1-test-integrity-corpus/measure.mjs",
       "experiments/p2-e1-test-integrity-corpus/reference-evaluation.json",
+      "experiments/p2-e1-test-integrity-corpus/report.mjs",
       "experiments/p2-e1-test-integrity-corpus/fixtures/A1PositiveCases.java",
       "experiments/p2-e1-test-integrity-corpus/fixtures/A2NegativeCases.java",
     ]

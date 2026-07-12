@@ -7,7 +7,9 @@ const directory = dirname(fileURLToPath(import.meta.url))
 const ruleIds = ["E1-A1", "E1-A2"]
 const frozenFields = ["id", "ruleId", "expectedWarning", "category", "fixture", "anchor"]
 
-main()
+if (isDirectExecution()) {
+  main()
+}
 
 function main() {
   try {
@@ -95,7 +97,7 @@ function readJson(filePath) {
   }
 }
 
-function validateCorpus(corpus, corpusDirectory) {
+export function validateCorpus(corpus, corpusDirectory) {
   const value = objectValue(corpus, "corpus")
   const records = arrayValue(value.records, "corpus.records")
   const coverage = objectValue(value.coverage, "corpus.coverage")
@@ -222,7 +224,7 @@ function validateCorpus(corpus, corpusDirectory) {
   }
 }
 
-function measureCandidate(corpus, candidate, validation) {
+export function measureCandidate(corpus, candidate, validation) {
   const candidateValue = objectValue(candidate, "candidate")
   if (candidateValue.schemaVersion !== corpus.evaluationContract.candidateSchemaVersion) {
     throw new Error("candidate schemaVersion does not match the preregistration")
@@ -384,4 +386,9 @@ function writeOutput(value) {
 
 function errorMessage(error) {
   return error instanceof Error ? error.message : String(error)
+}
+
+function isDirectExecution() {
+  const invokedPath = process.argv[1]
+  return typeof invokedPath === "string" && resolve(invokedPath) === fileURLToPath(import.meta.url)
 }
