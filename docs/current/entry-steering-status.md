@@ -2,8 +2,9 @@
 
 ## Decision
 
-`features.entrySteering` is a default-off OpenCode adapter opt-in. It evaluates
-only the first user message observed for a session and may prepend one advisory:
+`features.entrySteering` is a default-off OpenCode adapter opt-in. The host
+transform selects the latest user-message session in its output, then evaluates
+only that selected session's first user message and may prepend one advisory:
 
 > Implementation intent detected - enter the rail with `npx ph go "<goal>"`.
 
@@ -11,6 +12,15 @@ It does not execute `go`, force a workflow transition, auto-finish, or change
 closure authority. It is separate from `features.runtimeInjection`,
 `enforce.systemConstitution`, `enforce.idleContinuation`, and
 `enforce.ralphLoop`; enabling one does not enable another.
+
+If the host output has no user-message session identity, this surface returns
+without an advisory or status record. It does not evaluate or annotate another
+session's messages in an interleaved history. This is a bounded host-output
+selection rule, not a broad session-identity guarantee.
+
+This surface adds the `features.entrySteering` opt-in configuration field and
+source-only corpus/measurement formats for its bounded detector. It does not
+migrate any existing evidence schema.
 
 ## Detector And Corpus
 
@@ -60,6 +70,20 @@ state, valid decision count, fired count, and invalid/corrupt record count.
 
 - default remains `false` in parser, shipped template, bootstrap, and attach
 - OpenCode `experimental.chat.messages.transform` is the only host surface
-- one evaluation and at most one advisory per session
-- no LLM classifier, additional hook point, schema/version/release movement,
-  enforcement claim, token-saving claim, or generated-app certification
+- one evaluation and at most one advisory per selected session
+- no LLM classifier, additional hook point, package-version or release-state
+  movement, migration of existing evidence schemas, enforcement claim,
+  token-saving claim, or generated-app certification
+
+## Source Snapshot
+
+- Default and parser: `src/config/harness-config.ts:26-29,94-102,190-198`
+- Selected-session first-message tracker and bounded status records:
+  `src/runtime/entry-steering-status.ts:12-20,29-38,41-73,83-111,114-144`
+- Existing OpenCode hook selection and integration:
+  `src/runtime/hooks.ts:357-371`
+- Doctor status summary:
+  `src/cli/doctor.ts:180-225,273-294`
+
+All snapshots above are at
+`e3009b8c9183e1123c6a18efc8e7dfb9702f8b36`.

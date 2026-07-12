@@ -7,6 +7,9 @@ not part of the published npm package.
 
 - [Intent-detection corpus](intent-detection/README.md): preregistered Korean
   and English prompts for a future measurement run.
+- [Entry-intent corpus](entry-intent-corpus/README.md): 32-record bilingual
+  preregistration for the default-off OpenCode advisory detector; false negatives
+  cost 2 and false positives cost 1. Its deterministic result is corpus-only.
 
-Experiment material is not product-quality evidence, runtime activation
-authorization, or a default-setting decision.
+Experiment material is package-excluded and is not product-quality evidence,
+runtime activation authorization, or a default-on decision.
