@@ -131,6 +131,14 @@ npx ph bootstrap backend --no-developer-mcp           # 禁用默认 developer M
 
 preview wrapper 在外部工具缺失时报告 **unavailable** 状态，而不是伪造成功。runtime injection 处于 parked（测为负面），不是推荐路径。
 
+## 平台与主机支持
+
+| 适用面 | 状态 | 证据边界 |
+| --- | --- | --- |
+| macOS / Linux + OpenCode | 已验证 | 当前 Persona Harness 的主机适配器和产品证据仅限于 macOS/Linux 上的 OpenCode。 |
+| Windows | 未验证 | 不主张 Windows 支持。锁 identity 的 device/inode 行为以及 stale-lock/concurrency 结论尚未测量或验证。 |
+| Codex 适配器 | 计划中 | 当前没有 Codex 适配器或 Codex 产品证据；它仅是计划中的适配器。 |
+
 ## 边界与安全
 
 Evidence 只回答一个问题 —— *"智能体是否看到并遵循了预期的 rail？"* —— 仅此而已。PH **不**承诺应用质量认证、token 节省、Clean Code 保证、broad AST/linter 强制、full TDD 框架、closure 保证，或没有 OpenCode 的完整 workflow。规范列表见 [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md)。

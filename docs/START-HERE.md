@@ -42,10 +42,6 @@ A reading map for people seeing Persona Harness (PH) for the first time.
 | Windows | Unverified | No Windows support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
 | Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
 
-The localized README files are intentionally unchanged in this acceptance unit.
-Docs review should decide synchronized translations after the canonical English
-support wording is accepted.
-
 ## I am confused by docs/current
 
 - `docs/current/` is a **working area**: active decisions, status files,

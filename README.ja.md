@@ -132,6 +132,14 @@ npx ph bootstrap backend --no-developer-mcp           # 既定の developer MCP 
 
 preview wrapper は外部ツールがない場合、成功を偽装せず **unavailable** 状態を報告します。runtime injection は parked（negative 測定）であり、推奨パスではありません。
 
+## プラットフォームとホストのサポート
+
+| サーフェス | 状態 | 根拠の範囲 |
+| --- | --- | --- |
+| macOS / Linux + OpenCode | 検証済み | 現在の Persona Harness のホストアダプターとプロダクトの根拠は、macOS/Linux 上の OpenCode に限定されます。 |
+| Windows | 未検証 | Windows のサポートを主張しません。ロック identity の device/inode 動作と stale-lock/concurrency に関する結論は、測定も検証もされていません。 |
+| Codex adapter | 計画中 | 現在の Codex adapter または Codex プロダクトの根拠はありません。計画中の adapter にすぎません。 |
+
 ## 境界と安全
 
 Evidence は一つの質問にのみ答えます — *「エージェントは期待された rail を見て従ったか？」* — それ以上ではありません。PH はアプリ品質認証、トークン節約、Clean Code 保証、broad AST/linter 強制、full TDD フレームワーク、closure 保証、OpenCode なしの完全な workflow を**約束しません**。正規のリストは [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md) にあります。
