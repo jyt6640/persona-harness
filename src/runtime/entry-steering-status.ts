@@ -38,14 +38,18 @@ function statusPath(projectDir: string, config: HarnessConfig, sessionID: string
   return join(statusDirectory(projectDir, config), `${sessionKey(sessionID)}.json`)
 }
 
-function firstUserText(output: TransformMessagesOutput): string | undefined {
-  const message = output.messages.find((candidate) => candidate.info.role === "user")
+function firstUserText(output: TransformMessagesOutput, sessionID: string): string | undefined {
+  const message = output.messages.find(
+    (candidate) => candidate.info.role === "user" && candidate.info.sessionID === sessionID,
+  )
   const part = message?.parts.find((candidate) => candidate.type === "text")
   return part?.type === "text" ? part.text : undefined
 }
 
-function injectFirstUserMessage(output: TransformMessagesOutput): boolean {
-  const message = output.messages.find((candidate) => candidate.info.role === "user")
+function injectFirstUserMessage(output: TransformMessagesOutput, sessionID: string): boolean {
+  const message = output.messages.find(
+    (candidate) => candidate.info.role === "user" && candidate.info.sessionID === sessionID,
+  )
   if (message === undefined) {
     return false
   }
@@ -93,9 +97,9 @@ export class EntrySteeringTracker {
     if (existsSync(path)) {
       return
     }
-    const prompt = firstUserText(output) ?? ""
+    const prompt = firstUserText(output, sessionID) ?? ""
     const result = detectEntryIntent(prompt, { projectAttached: existsSync(join(this.projectDir, ".persona")) })
-    const fired = result.detected && injectFirstUserMessage(output)
+    const fired = result.detected && injectFirstUserMessage(output, sessionID)
     const payload: EntrySteeringStatusPayload = {
       decision: result.detected ? "detected" : "not-detected",
       fired,

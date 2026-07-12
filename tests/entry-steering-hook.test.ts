@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
@@ -48,6 +49,15 @@ function statusPayloads(): readonly Record<string, unknown>[] {
   )
 }
 
+function statusFiles(): readonly string[] {
+  const directory = join(projectDir, ".persona", "evidence", "entry-steering")
+  return existsSync(directory) ? readdirSync(directory).sort() : []
+}
+
+function statusFileFor(sessionID: string): string {
+  return `${createHash("sha256").update(sessionID).digest("hex").slice(0, 16)}.json`
+}
+
 beforeEach(() => {
   rmSync(projectDir, { force: true, recursive: true })
 })
@@ -95,6 +105,61 @@ describe("entry steering OpenCode hook", () => {
     const laterPart = history.messages[1]?.parts[0]
     expect(firstPart?.type === "text" ? firstPart.text : "").toContain("Implementation intent detected")
     expect(laterPart?.type === "text" ? laterPart.text : "").toBe("고마워")
+  })
+
+  it("partitions mixed history and records only the latest selected session", async () => {
+    configure({ entrySteering: true, runtimeInjection: false })
+    const earlier = output("session-a", "회원 API 구현해줘")
+    const active = output("session-b", "코드 설명해줘")
+    const mixed: TransformMessagesOutput = { messages: [...earlier.messages, ...active.messages] }
+
+    await createPhase0Hooks({ projectDir })["experimental.chat.messages.transform"]?.({}, mixed)
+
+    expect(text(earlier)).toBe("회원 API 구현해줘")
+    expect(text(active)).toBe("코드 설명해줘")
+    expect(statusFiles()).toEqual([statusFileFor("session-b")])
+    expect(statusPayloads()[0]).toEqual(expect.objectContaining({ decision: "not-detected", fired: false }))
+  })
+
+  it("annotates the selected session first message without crossing interleaved sessions", async () => {
+    configure({ entrySteering: true, runtimeInjection: false })
+    const sessionAFirst = output("session-a", "회원 API 구현해줘")
+    const sessionBFirst = output("session-b", "결제 서비스 만들어줘")
+    const sessionALater = output("session-a", "고마워")
+    const sessionBLatest = output("session-b", "진행 상태 알려줘")
+    const mixed: TransformMessagesOutput = {
+      messages: [
+        ...sessionAFirst.messages,
+        ...sessionBFirst.messages,
+        ...sessionALater.messages,
+        ...sessionBLatest.messages,
+      ],
+    }
+
+    await createPhase0Hooks({ projectDir })["experimental.chat.messages.transform"]?.({}, mixed)
+
+    expect(text(sessionAFirst)).toBe("회원 API 구현해줘")
+    expect(text(sessionBFirst)).toContain("Implementation intent detected")
+    expect(text(sessionALater)).toBe("고마워")
+    expect(text(sessionBLatest)).toBe("진행 상태 알려줘")
+    expect(statusFiles()).toEqual([statusFileFor("session-b")])
+  })
+
+  it("emits one advisory and one status for simultaneous same-session calls", async () => {
+    configure({ entrySteering: true, runtimeInjection: false })
+    const hooks = createPhase0Hooks({ projectDir })
+    const left = output("parallel-session", "회원 API 구현해줘")
+    const right = output("parallel-session", "결제 서비스 만들어줘")
+
+    await Promise.all([
+      hooks["experimental.chat.messages.transform"]?.({}, left),
+      hooks["experimental.chat.messages.transform"]?.({}, right),
+    ])
+
+    const firedCount = [text(left), text(right)].filter((value) => value.includes("Entry Steering")).length
+    expect(firedCount).toBe(1)
+    expect(statusFiles()).toEqual([statusFileFor("parallel-session")])
+    expect(JSON.stringify(statusPayloads())).not.toContain("parallel-session")
   })
 
   it("records a bounded not-fired decision without raw prompt or session id", async () => {
