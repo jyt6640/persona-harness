@@ -1,0 +1,283 @@
+{
+  "schemaVersion": "p2-e1-test-integrity-corpus.1",
+  "corpusId": "p2-e1-test-integrity",
+  "languagePolicy": "bilingual-free-java-structural",
+  "purpose": "Preregistered false-positive corpus for future Java warning candidates only.",
+  "signals": [
+    {
+      "id": "E1-A1",
+      "name": "assertionless-or-empty-junit-test",
+      "positiveDefinition": "A JUnit 4 or JUnit Jupiter @Test method that is empty or exercises behavior without an assertion, expected exception contract, helper assertion, or interaction verification.",
+      "negativeDefinition": "A structurally similar method that is not a warning candidate for this signal."
+    },
+    {
+      "id": "E1-A2",
+      "name": "undocumented-junit-disabled-or-ignore",
+      "positiveDefinition": "A JUnit Jupiter @Disabled or JUnit 4 @Ignore test with no reason or a blank reason.",
+      "negativeDefinition": "A disabled or ignored method with a specific intentional reason, or a similarly named annotation outside the JUnit target set."
+    }
+  ],
+  "evaluationContract": {
+    "candidateSchemaVersion": "p2-e1-test-integrity-evaluation.1",
+    "candidateRequiredFields": [
+      "schemaVersion",
+      "corpusId",
+      "frozenLabelSetSha256",
+      "evaluatedCaseIds",
+      "findings"
+    ],
+    "findingShape": {
+      "caseId": "stable corpus record id",
+      "ruleId": "E1-A1 or E1-A2"
+    },
+    "outputSchemaVersion": "p2-e1-test-integrity-measurement.1",
+    "thresholds": {
+      "minimumCoverage": 1,
+      "perRule": {
+        "E1-A1": {
+          "minimumPrecision": 1,
+          "minimumRecall": 1,
+          "maximumFalsePositives": 0,
+          "maximumFalseNegatives": 0
+        },
+        "E1-A2": {
+          "minimumPrecision": 1,
+          "minimumRecall": 1,
+          "maximumFalsePositives": 0,
+          "maximumFalseNegatives": 0
+        }
+      }
+    }
+  },
+  "coverage": {
+    "expectedCaseCount": 21,
+    "expectedByRule": {
+      "E1-A1": {
+        "positive": 3,
+        "negative": 9
+      },
+      "E1-A2": {
+        "positive": 4,
+        "negative": 5
+      }
+    },
+    "requiredCategories": [
+      "assertionless-test",
+      "comments-and-strings",
+      "disabled-intentional-reason",
+      "disabled-missing-reason",
+      "empty-lifecycle",
+      "empty-test",
+      "expected-exception",
+      "framework-annotation",
+      "inherited-helper-assertion",
+      "interaction-only",
+      "non-test-annotation",
+      "parameterized-test"
+    ]
+  },
+  "mutationPolicy": {
+    "evaluationState": "preregistered-unmeasured",
+    "noRelabelAfterEvaluation": true,
+    "frozenFields": [
+      "id",
+      "ruleId",
+      "expectedWarning",
+      "category",
+      "fixture",
+      "anchor"
+    ],
+    "requiredForNewCase": [
+      "new stable id",
+      "append-only record",
+      "new corpus schema version when frozen labels change",
+      "new frozen label fingerprint",
+      "separate evaluation result artifact"
+    ],
+    "forbiddenAfterEvaluation": [
+      "changing expectedWarning for an existing id",
+      "reusing an existing id",
+      "overwriting a candidate evaluation"
+    ],
+    "frozenLabelSetSha256": "sha256:acdce2950dfc231ffb8de65af4c31229dd0f2ed09a063bdf929bfcc7d39b7020",
+    "fixtureSha256": {
+      "fixtures/A1LexicalDecoys.java": "sha256:ebd5c8efe236a18df6ef1af656c0912ce07f5c3b32ddc1e692391370ac4de6f4",
+      "fixtures/A1NegativeCases.java": "sha256:de4d1dedcd41ecdfc4efc34669483d218c2c7804b33a8d9c03d5851024972148",
+      "fixtures/A1PositiveCases.java": "sha256:3fcabce59d76cef15fc5ddb6a18ba7b94db3f8ae6206b986408398b379fca6a9",
+      "fixtures/A2LexicalDecoys.java": "sha256:a3090e993230e050d0be32e19907495006a62d71f7894a5f9c1e3c227689e123",
+      "fixtures/A2NegativeCases.java": "sha256:ca00ef3ec757561a99d9d9e2e01e2d53615765c00d523a488507d5cf35ec146a",
+      "fixtures/A2PositiveCases.java": "sha256:a28e8e5493ffe1f9f0c027b52347e69a2919ef95a4ab795ada9f9fc04dfe3741"
+    }
+  },
+  "records": [
+    {
+      "id": "e1-a1-pos-empty-jupiter-001",
+      "ruleId": "E1-A1",
+      "expectedWarning": true,
+      "category": "empty-test",
+      "fixture": "fixtures/A1PositiveCases.java",
+      "anchor": "P2E1_CASE:e1-a1-pos-empty-jupiter-001"
+    },
+    {
+      "id": "e1-a1-pos-effect-only-jupiter-002",
+      "ruleId": "E1-A1",
+      "expectedWarning": true,
+      "category": "assertionless-test",
+      "fixture": "fixtures/A1PositiveCases.java",
+      "anchor": "P2E1_CASE:e1-a1-pos-effect-only-jupiter-002"
+    },
+    {
+      "id": "e1-a1-pos-empty-vintage-003",
+      "ruleId": "E1-A1",
+      "expectedWarning": true,
+      "category": "empty-test",
+      "fixture": "fixtures/A1PositiveCases.java",
+      "anchor": "P2E1_CASE:e1-a1-pos-empty-vintage-003"
+    },
+    {
+      "id": "e1-a1-neg-jupiter-expected-exception-001",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "expected-exception",
+      "fixture": "fixtures/A1NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-jupiter-expected-exception-001"
+    },
+    {
+      "id": "e1-a1-neg-vintage-expected-exception-002",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "expected-exception",
+      "fixture": "fixtures/A1NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-vintage-expected-exception-002"
+    },
+    {
+      "id": "e1-a1-neg-parameterized-003",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "parameterized-test",
+      "fixture": "fixtures/A1NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-parameterized-003"
+    },
+    {
+      "id": "e1-a1-neg-inherited-helper-assertion-004",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "inherited-helper-assertion",
+      "fixture": "fixtures/A1NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-inherited-helper-assertion-004"
+    },
+    {
+      "id": "e1-a1-neg-interaction-only-005",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "interaction-only",
+      "fixture": "fixtures/A1NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-interaction-only-005"
+    },
+    {
+      "id": "e1-a1-neg-framework-annotation-006",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "framework-annotation",
+      "fixture": "fixtures/A1NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-framework-annotation-006"
+    },
+    {
+      "id": "e1-a1-neg-empty-lifecycle-007",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "empty-lifecycle",
+      "fixture": "fixtures/A1NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-empty-lifecycle-007"
+    },
+    {
+      "id": "e1-a1-neg-non-test-annotation-008",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "non-test-annotation",
+      "fixture": "fixtures/A1LexicalDecoys.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-non-test-annotation-008"
+    },
+    {
+      "id": "e1-a1-neg-comments-and-strings-009",
+      "ruleId": "E1-A1",
+      "expectedWarning": false,
+      "category": "comments-and-strings",
+      "fixture": "fixtures/A1LexicalDecoys.java",
+      "anchor": "P2E1_CASE:e1-a1-neg-comments-and-strings-009"
+    },
+    {
+      "id": "e1-a2-pos-disabled-bare-jupiter-001",
+      "ruleId": "E1-A2",
+      "expectedWarning": true,
+      "category": "disabled-missing-reason",
+      "fixture": "fixtures/A2PositiveCases.java",
+      "anchor": "P2E1_CASE:e1-a2-pos-disabled-bare-jupiter-001"
+    },
+    {
+      "id": "e1-a2-pos-disabled-blank-jupiter-002",
+      "ruleId": "E1-A2",
+      "expectedWarning": true,
+      "category": "disabled-missing-reason",
+      "fixture": "fixtures/A2PositiveCases.java",
+      "anchor": "P2E1_CASE:e1-a2-pos-disabled-blank-jupiter-002"
+    },
+    {
+      "id": "e1-a2-pos-ignore-bare-vintage-003",
+      "ruleId": "E1-A2",
+      "expectedWarning": true,
+      "category": "disabled-missing-reason",
+      "fixture": "fixtures/A2PositiveCases.java",
+      "anchor": "P2E1_CASE:e1-a2-pos-ignore-bare-vintage-003"
+    },
+    {
+      "id": "e1-a2-pos-ignore-blank-vintage-004",
+      "ruleId": "E1-A2",
+      "expectedWarning": true,
+      "category": "disabled-missing-reason",
+      "fixture": "fixtures/A2PositiveCases.java",
+      "anchor": "P2E1_CASE:e1-a2-pos-ignore-blank-vintage-004"
+    },
+    {
+      "id": "e1-a2-neg-disabled-intentional-reason-001",
+      "ruleId": "E1-A2",
+      "expectedWarning": false,
+      "category": "disabled-intentional-reason",
+      "fixture": "fixtures/A2NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a2-neg-disabled-intentional-reason-001"
+    },
+    {
+      "id": "e1-a2-neg-ignore-intentional-reason-002",
+      "ruleId": "E1-A2",
+      "expectedWarning": false,
+      "category": "disabled-intentional-reason",
+      "fixture": "fixtures/A2NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a2-neg-ignore-intentional-reason-002"
+    },
+    {
+      "id": "e1-a2-neg-framework-annotation-003",
+      "ruleId": "E1-A2",
+      "expectedWarning": false,
+      "category": "framework-annotation",
+      "fixture": "fixtures/A2NegativeCases.java",
+      "anchor": "P2E1_CASE:e1-a2-neg-framework-annotation-003"
+    },
+    {
+      "id": "e1-a2-neg-non-test-annotation-004",
+      "ruleId": "E1-A2",
+      "expectedWarning": false,
+      "category": "non-test-annotation",
+      "fixture": "fixtures/A2LexicalDecoys.java",
+      "anchor": "P2E1_CASE:e1-a2-neg-non-test-annotation-004"
+    },
+    {
+      "id": "e1-a2-neg-comments-and-strings-005",
+      "ruleId": "E1-A2",
+      "expectedWarning": false,
+      "category": "comments-and-strings",
+      "fixture": "fixtures/A2LexicalDecoys.java",
+      "anchor": "P2E1_CASE:e1-a2-neg-comments-and-strings-005"
+    }
+  ],
+  "boundary": "Results are corpus-only. They are not product-quality evidence and do not authorize warnings to force, block, promote, or change defaults."
+}

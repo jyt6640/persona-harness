@@ -13,6 +13,8 @@ references/
 experiments/*
 !experiments/entry-intent-corpus/
 !experiments/entry-intent-corpus/**
+!experiments/p2-e1-test-integrity-corpus/
+!experiments/p2-e1-test-integrity-corpus/**
 example/
 
 # OpenCode / Persona local runtime artifacts.
@@ -30,8 +32,10 @@ AGENTS.md
 .persona-continuation-test-fixtures/
 .playwright-cli/
 fixtures/
+!experiments/p2-e1-test-integrity-corpus/fixtures/
+!experiments/p2-e1-test-integrity-corpus/fixtures/**
 !packages/shared-skills/**/fixtures/
-!packages/shared-skills/**/fixtures/**  
+!packages/shared-skills/**/fixtures/**
 tmp/
 
 # Local secrets and eval pilot environment. Keep credentials out of git.

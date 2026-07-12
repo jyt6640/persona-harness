@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "p2-e1-test-integrity-evaluation.1",
+  "candidateId": "corpus-oracle-self-check",
+  "candidateKind": "corpus-oracle-self-check",
+  "corpusId": "p2-e1-test-integrity",
+  "frozenLabelSetSha256": "sha256:acdce2950dfc231ffb8de65af4c31229dd0f2ed09a063bdf929bfcc7d39b7020",
+  "evaluatedCaseIds": [
+    "e1-a1-pos-empty-jupiter-001",
+    "e1-a1-pos-effect-only-jupiter-002",
+    "e1-a1-pos-empty-vintage-003",
+    "e1-a1-neg-jupiter-expected-exception-001",
+    "e1-a1-neg-vintage-expected-exception-002",
+    "e1-a1-neg-parameterized-003",
+    "e1-a1-neg-inherited-helper-assertion-004",
+    "e1-a1-neg-interaction-only-005",
+    "e1-a1-neg-framework-annotation-006",
+    "e1-a1-neg-empty-lifecycle-007",
+    "e1-a1-neg-non-test-annotation-008",
+    "e1-a1-neg-comments-and-strings-009",
+    "e1-a2-pos-disabled-bare-jupiter-001",
+    "e1-a2-pos-disabled-blank-jupiter-002",
+    "e1-a2-pos-ignore-bare-vintage-003",
+    "e1-a2-pos-ignore-blank-vintage-004",
+    "e1-a2-neg-disabled-intentional-reason-001",
+    "e1-a2-neg-ignore-intentional-reason-002",
+    "e1-a2-neg-framework-annotation-003",
+    "e1-a2-neg-non-test-annotation-004",
+    "e1-a2-neg-comments-and-strings-005"
+  ],
+  "findings": [
+    {
+      "caseId": "e1-a1-pos-empty-jupiter-001",
+      "ruleId": "E1-A1"
+    },
+    {
+      "caseId": "e1-a1-pos-effect-only-jupiter-002",
+      "ruleId": "E1-A1"
+    },
+    {
+      "caseId": "e1-a1-pos-empty-vintage-003",
+      "ruleId": "E1-A1"
+    },
+    {
+      "caseId": "e1-a2-pos-disabled-bare-jupiter-001",
+      "ruleId": "E1-A2"
+    },
+    {
+      "caseId": "e1-a2-pos-disabled-blank-jupiter-002",
+      "ruleId": "E1-A2"
+    },
+    {
+      "caseId": "e1-a2-pos-ignore-bare-vintage-003",
+      "ruleId": "E1-A2"
+    },
+    {
+      "caseId": "e1-a2-pos-ignore-blank-vintage-004",
+      "ruleId": "E1-A2"
+    }
+  ]
+}
