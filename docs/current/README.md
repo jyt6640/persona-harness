@@ -22,10 +22,9 @@ deleting evidence/status history.
   a runtime hook. Its lock/conflict behavior is for cooperative local writers,
   and does not address hostile same-user filesystem path replacement. Existing
   draft/approval commands remain the route for vague product ideas.
-- Current release-prep candidate capsule:
-  [`docs/releases/v0.7.0-rc.2/`](../releases/v0.7.0-rc.2/README.md). It is
-  not published, tagged, or a registry-state update.
-- Published next-channel capsule:
+- Current published next-channel capsule:
+  [`docs/releases/v0.7.0-rc.2/`](../releases/v0.7.0-rc.2/README.md).
+- Previous published next-channel capsule:
   [`docs/releases/v0.7.0-rc.1/`](../releases/v0.7.0-rc.1/README.md).
 - Current published stable capsule:
   [`docs/releases/v0.6.0/`](../releases/v0.6.0/README.md).
@@ -71,16 +70,16 @@ deleting evidence/status history.
 
 - `0.6.0` is published as the stable npm `latest` package after QA accepted
   the final External registry smoke. Current published channels are
-  `latest=0.6.0` and `next=0.7.0-rc.1`; the legacy `alpha` dist-tag has been
+  `latest=0.6.0` and `next=0.7.0-rc.2`; the legacy `alpha` dist-tag has been
   retired after stable. Explicit historical alpha versions remain available by
   exact version. S-3 removed the failed-finish human `Summary:` header after
   S-2 regated it as non-inferior=false.
 - `0.7.0-rc.1` was published to npm `next` on 2026-07-11 with registry
   gitHead/tag/release-branch commit `d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`.
-- `0.7.0-rc.2` is the current pre-publish next-channel candidate from exact
-  release-prep base `4ed9653b1d9c02a673b340d72d6d42ae3b674e2b`. Its publish,
-  tag, GitHub prerelease, registry gitHead, and package hashes are deferred
-  until the required post-publish verification.
+- `0.7.0-rc.2` was published to npm `next` from exact main
+  `185885b7918459ef12bbea120a4261962cd57059`. Registry gitHead and matching
+  tag/GitHub prerelease `v0.7.0-rc.2` target that commit; package hashes and
+  workflow provenance are recorded in its durable release facts.
 - `runtimeInjection` remains a parked opt-in preview.
 - P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
   writer/workspace-edit contract. Recovery remains hidden from normal help,

@@ -1,6 +1,6 @@
 # v0.7.0-rc.2 Measurement And Observation Summary
 
-This summary records scoped P1 observations relevant to the prepared candidate.
+This summary records scoped P1 observations carried by the published candidate.
 It does not turn them into release-wide quality, reliability, or support
 claims.
 
@@ -32,7 +32,7 @@ support-boundary statements, not platform certification results.
 
 ## Claim Boundary
 
-No new LEAN, rail-entry, ralph-loop, or generated-application measurement is
-claimed by this preparation. All observations remain tied to their original
+Publication does not add a new LEAN, rail-entry, ralph-loop, or
+generated-application measurement. All observations remain tied to their original
 accepted scopes and do not certify application quality, security, broad
 enforcement, or multi-platform support.

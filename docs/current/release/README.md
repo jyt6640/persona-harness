@@ -3,7 +3,7 @@
 Use this package for repeatable release operations and release note drafting.
 
 Durable versioned summaries now live under `docs/releases/`. For the current
-release-prep line, start with
+published next-channel line, start with
 [`docs/releases/v0.7.0-rc.2/README.md`](../../releases/v0.7.0-rc.2/README.md).
 The files in this directory remain the release-operation and release-note
 sources used by the existing workflow.
@@ -42,21 +42,22 @@ Its published release note is
 [`v0.7.0-rc.1-release-notes.md`](v0.7.0-rc.1-release-notes.md), and its durable
 capsule is [`docs/releases/v0.7.0-rc.1/`](../../releases/v0.7.0-rc.1/README.md).
 
-`0.7.0-rc.2` is the current prepared next-channel release candidate from exact
-base `4ed9653b1d9c02a673b340d72d6d42ae3b674e2b`. Its release-prep record is
+`0.7.0-rc.2` was published to npm `next` from exact main
+`185885b7918459ef12bbea120a4261962cd57059` by trusted workflow run
+`29184360718`. Registry gitHead matches that commit; npm SHA-1 is
+`0d5595b697694c54ece6adfd8c5e8e77f3c2f3e3`, and npm integrity is
+`sha512-LJhFcJq/Hp5HcriXfz6ziLYGESbHK7slPDXbnAAHwRExys6ywMPyaU/2KO/8h0tk5KjYCMlCsVE/Q4fG+Ah5Cg==`.
+The matching Git tag and GitHub prerelease `v0.7.0-rc.2` target the same
+commit. Its release record is
 [`v0.7.0-rc.2-release-notes.md`](v0.7.0-rc.2-release-notes.md), and its durable
 capsule is [`docs/releases/v0.7.0-rc.2/`](../../releases/v0.7.0-rc.2/README.md).
-It is not published, tagged, or a GitHub Release.
 
-The pre-publish registry baseline is `latest=0.6.0` and `next=0.7.0-rc.1`.
-Those facts describe the existing registry, not `0.7.0-rc.2`. This candidate
-must receive QA release GO, publish through `.github/workflows/publish.yml`
-with `dist_tag=next`, registry gitHead/dist-tag verification, and only then
-the matching tag and GitHub Release steps.
+Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.2`.
+The completed publish does not move `latest` or broaden any product claim.
 
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
-`next=0.7.0-rc.1`, with no `alpha` dist-tag after the post-stable T0
+`next=0.7.0-rc.2`, with no `alpha` dist-tag after the post-stable T0
 retirement. Registry verification confirmed
 `persona-harness@latest=0.6.0`, gitHead
 `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum

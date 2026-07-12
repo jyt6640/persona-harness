@@ -1,22 +1,21 @@
 # v0.7.0-rc.2 Release Facts
 
-## Pre-Publish State
+## Published State
 
-`0.7.0-rc.2` is prepared for next-channel review only.
+`0.7.0-rc.2` is published on the npm `next` channel and recorded as a GitHub
+prerelease.
 
-- Intended package metadata: `0.7.0-rc.2`.
+- Package metadata: `0.7.0-rc.2`.
 - Exact release-prep base: `4ed9653b1d9c02a673b340d72d6d42ae3b674e2b`.
-- Existing published `next`: `0.7.0-rc.1`.
-- Existing stable `latest`: `0.6.0`.
-- Existing rc1 registry gitHead/tag/release-branch commit:
-  `d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`.
-- No rc2 registry gitHead, shasum, integrity, package entry count, dist-tag,
-  Git tag, GitHub prerelease, or registry-install smoke exists yet.
-
-After QA release GO, the trusted publish workflow must publish rc2 with
-`dist_tag=next`, then verify the registry version/gitHead/shasum and dist-tag
-before a matching tag or GitHub prerelease is created. This file must be
-updated with those post-publish facts only after that verification.
+- Published main/registry gitHead and tag target:
+  `185885b7918459ef12bbea120a4261962cd57059`.
+- npm SHA-1: `0d5595b697694c54ece6adfd8c5e8e77f3c2f3e3`.
+- npm integrity:
+  `sha512-LJhFcJq/Hp5HcriXfz6ziLYGESbHK7slPDXbnAAHwRExys6ywMPyaU/2KO/8h0tk5KjYCMlCsVE/Q4fG+Ah5Cg==`.
+- Dist-tags after publication: `latest=0.6.0`, `next=0.7.0-rc.2`.
+- Git tag and GitHub prerelease: `v0.7.0-rc.2`.
+- Trusted publish workflow: GitHub Actions run `29184360718`.
+- No fresh registry-install smoke fact is recorded in this post-publish unit.
 
 ## Included P1 Scope
 
@@ -39,6 +38,6 @@ non-Java/reference material under the established policy.
 
 ## Claim Boundary
 
-This pre-publish record does not prove publication, registry behavior, platform
-certification, product efficacy, token saving, app quality, security, broad
-reliability, or enforcement.
+This record establishes only the listed publication and registry facts. It does
+not prove platform certification, product efficacy, token saving, app quality,
+security, broad reliability, or enforcement.

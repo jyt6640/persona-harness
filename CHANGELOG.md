@@ -26,11 +26,12 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
   to macOS/Linux with OpenCode; Windows is unverified with no support claim;
   a Codex adapter is planned with no current product evidence. Localized public
   READMEs carry the same bounded matrix.
-- This is `0.7.0-rc.2` release preparation only. It is not published, tagged,
-  or a `next`/`latest` movement. The pre-publish registry baseline is
-  `latest=0.6.0`, `next=0.7.0-rc.1`. No runtime/default/schema/evidence-schema
-  movement, token-saving, certification, app-quality, security, broad
-  reliability, or enforcement claim is added.
+- `0.7.0-rc.2` was published to npm `next` from exact main
+  `185885b7918459ef12bbea120a4261962cd57059`; `latest` remains `0.6.0`.
+  Registry gitHead matches that commit, and Git tag/GitHub prerelease
+  `v0.7.0-rc.2` target it. No runtime/default/schema/evidence-schema movement,
+  token-saving, certification, app-quality, security, broad reliability, or
+  enforcement claim is added.
 
 ## [0.7.0-rc.1] - 2026-07-11
 

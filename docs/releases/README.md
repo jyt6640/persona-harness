@@ -23,14 +23,13 @@ changes during roadmap work.
 
 - [Package version index](package-index.md): chronological package/version
   timeline from undocumented early rows through the current stable
-  `0.6.0` registry-smoke record, published `0.7.0-rc.1`, and prepared
-  `0.7.0-rc.2` candidate.
-- [`v0.7.0-rc.2`](v0.7.0-rc.2/README.md): prepared next-channel candidate
-  based on `4ed9653`; not published, tagged, or registry-verified.
-- [`v0.7.0-rc.1`](v0.7.0-rc.1/README.md): published npm `next` candidate on
-  2026-07-11 with matching gitHead/tag provenance.
+  `0.6.0` registry-smoke record and published `0.7.0` release candidates.
+- [`v0.7.0-rc.2`](v0.7.0-rc.2/README.md): current published npm `next`
+  candidate, with matching registry gitHead/tag/GitHub prerelease provenance.
+- [`v0.7.0-rc.1`](v0.7.0-rc.1/README.md): previous published npm `next`
+  candidate on 2026-07-11 with matching gitHead/tag provenance.
 - [`v0.6.0`](v0.6.0/README.md): current stable `latest` registry-smoke
-  capsule. `next` is `0.7.0-rc.1`; the legacy `alpha` dist-tag is retired.
+  capsule. `next` is `0.7.0-rc.2`; the legacy `alpha` dist-tag is retired.
 - [`v0.6.0-rc.4`](v0.6.0-rc.4/README.md): historical published prerelease
   `next` registry-smoke capsule before stable `0.6.0`.
 - [`v0.6.0-rc.3`](v0.6.0-rc.3/README.md): previous published prerelease `next`
