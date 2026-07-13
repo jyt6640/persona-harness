@@ -32,7 +32,9 @@ type PersonaCliOptions = {
   readonly env?: Readonly<Record<string, string | undefined>>
   readonly invocationName?: string
   readonly onAfterAttachCommitFile?: (relativePath: string) => void
+  readonly onAfterInitCommitFile?: (relativePath: string) => void
   readonly onAfterGoCommitFile?: (relativePath: string) => void
+  readonly onBeforeInitCommit?: () => void
   readonly onAfterGoTransactionCopy?: () => void
   readonly onBeforeGoStep?: (step: GoStep) => void
   readonly onBeforeGoRecoveryClear?: () => void
@@ -53,7 +55,12 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     if (args[1] === "--help" || args[1] === "-h" || args[1] === "help") {
       return { status: 0, stdout: `${initUsage(invocationName)}\n`, stderr: "" }
     }
-    return runInitCommand({ projectDir: options.cwd, packageRoot: options.packageRoot })
+    return runInitCommand(args.slice(1), {
+      onAfterCommitFile: options.onAfterInitCommitFile,
+      onBeforeCommit: options.onBeforeInitCommit,
+      projectDir: options.cwd,
+      packageRoot: options.packageRoot,
+    })
   }
 
   if (command === "go") {
