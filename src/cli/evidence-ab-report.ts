@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { basename, join, resolve } from "node:path"
 import process from "node:process"
 
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 
 type EvidenceAbOptions = {
@@ -121,7 +122,6 @@ export type EvidenceAbReport = {
   readonly unreadableFiles: readonly string[]
 }
 
-const EVIDENCE_DIR = ".persona/evidence"
 const AB_SCHEMA_VERSION = "persona-ab-measurement.1"
 const EMPTY_TOKENS: TokenAggregate = {
   cacheRead: null,
@@ -382,7 +382,12 @@ function mergeScenario(left: AbScenarioReport, right: AbScenarioReport): AbScena
 
 export function readEvidenceAbReport(options: EvidenceAbOptions = {}): EvidenceAbReport {
   const projectDir = resolve(options.projectDir ?? process.cwd())
-  const evidenceDir = join(projectDir, EVIDENCE_DIR)
+  const evidencePath = resolveSafeEvidenceRootResult(projectDir)
+  const evidenceDir = evidencePath.ok ? evidencePath.path : ""
+  const displayEvidenceDir = evidencePath.ok ? evidencePath.relativePath : "unavailable"
+  const pathLimitations = evidencePath.ok
+    ? []
+    : ["Configured evidence root unavailable; read-only recovery is required."]
   const unreadableFiles: string[] = []
   const scenarios = new Map<string, AbScenarioReport>()
   let filesScanned = 0
@@ -404,9 +409,10 @@ export function readEvidenceAbReport(options: EvidenceAbOptions = {}): EvidenceA
   }
 
   return {
-    evidenceDir,
+    evidenceDir: displayEvidenceDir,
     filesScanned,
     limitations: [
+      ...pathLimitations,
       "A/B reports aggregate local structured evidence only; missing telemetry remains unavailable.",
       "Provider-token, read-char, tool-call, and outcome deltas are not token-saving or product-efficacy claims.",
       "Use repeated matched scenarios before interpreting a condition as better or worse.",

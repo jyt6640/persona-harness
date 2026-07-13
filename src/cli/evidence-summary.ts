@@ -104,7 +104,6 @@ type EvidenceMetrics = {
   readonly unreadableFiles: readonly string[]
 }
 
-const EVIDENCE_DIR = ".persona/evidence"
 const DEFAULT_EVIDENCE_CATEGORY_FILE_COUNT_CAP = 1000
 const DEFAULT_EVIDENCE_TOTAL_BYTES_WARNING_THRESHOLD = 50 * 1024 * 1024
 const EVIDENCE_CATEGORY_FILE_COUNT_CAP_ENV = "PH_EVIDENCE_SUMMARY_WARN_FILE_COUNT"
@@ -443,7 +442,12 @@ function readEvidenceSummary(
 
 export function readEvidenceMetrics(options: EvidenceOptions = {}): EvidenceMetrics {
   const projectDir = resolve(options.projectDir ?? process.cwd())
-  const evidenceDir = join(projectDir, ".persona", "evidence")
+  const evidencePath = resolveSafeEvidenceRootResult(projectDir)
+  const evidenceDir = evidencePath.ok ? evidencePath.path : ""
+  const displayEvidenceDir = evidencePath.ok ? evidencePath.relativePath : "unavailable"
+  const pathLimitations = evidencePath.ok
+    ? []
+    : ["Configured evidence root unavailable; read-only recovery is required."]
   const unreadableFiles: string[] = []
   const tokenSessions: TokenSessionMetrics[] = []
   const toolCounts = new Map<string, number>()
@@ -494,7 +498,7 @@ export function readEvidenceMetrics(options: EvidenceOptions = {}): EvidenceMetr
   const finishUnknown = finishRecords.filter((record) => record.status === "unknown").length
 
   return {
-    evidenceDir,
+    evidenceDir: displayEvidenceDir,
     filesScanned,
     finish: {
       fail: finishFail,
@@ -503,6 +507,7 @@ export function readEvidenceMetrics(options: EvidenceOptions = {}): EvidenceMetr
       unknown: finishUnknown,
     },
     limitations: [
+      ...pathLimitations,
       "Metrics aggregate local evidence only; missing evidence is reported as unavailable.",
       "Provider-token and tool-call totals are not an effectiveness or token-saving claim.",
       "Tool-call counts come from structured JSON/JSONL tool-name fields, not prose-only mentions.",
@@ -687,6 +692,13 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
     const { outputPath, summary } = written
     const projectDir = resolve(options.projectDir ?? process.cwd())
     const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
+    if (!evidenceRoot.ok) {
+      return {
+        status: 1,
+        stdout: "",
+        stderr: "Evidence summary unavailable: configured evidence root is unsafe; read-only recovery is required.\n",
+      }
+    }
     const warningLines =
       summary.retention.warnings.length === 0
         ? []
@@ -695,7 +707,7 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
       status: 0,
       stdout: [
         `Evidence summary written: ${outputPath}`,
-        `Evidence directory: ${evidenceRoot.ok ? evidenceRoot.path : join(projectDir, EVIDENCE_DIR)}`,
+        `Evidence directory: ${evidenceRoot.path}`,
         ...warningLines,
       ].join("\n") + "\n",
       stderr: "",

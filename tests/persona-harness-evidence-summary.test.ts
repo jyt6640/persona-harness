@@ -20,6 +20,12 @@ function writeEvidence(projectDir: string, filename: string, content: unknown): 
   writeFileSync(join(evidenceDir, filename), `${JSON.stringify(content, null, 2)}\n`)
 }
 
+function writeConfiguredEvidence(projectDir: string, relativePath: string, content: unknown): void {
+  const filePath = join(projectDir, ".persona", "custom-evidence", relativePath)
+  mkdirSync(join(filePath, ".."), { recursive: true })
+  writeFileSync(filePath, `${JSON.stringify(content, null, 2)}\n`)
+}
+
 afterEach(() => {
   for (const projectDir of tempProjects) {
     rmSync(projectDir, { recursive: true, force: true })
@@ -193,9 +199,122 @@ describe("ph evidence summary", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("# Persona Evidence Metrics")
-    expect(result.stdout).toContain(`Evidence directory: \`${join(projectDir, ".persona", "evidence")}\``)
+    expect(result.stdout).toContain("Evidence directory: `.persona/evidence`")
     expect(result.stdout).toContain("Structured read chars unavailable")
     expect(existsSync(join(projectDir, ".persona", "evidence", "metrics.md"))).toBe(false)
+  })
+
+  it("reads metrics, A/B, and P-minus reports only from the configured evidence root", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "harness.jsonc"),
+      `${JSON.stringify({ evidenceDir: ".persona/custom-evidence" }, null, 2)}\n`,
+    )
+    writeConfiguredEvidence(projectDir, "token-usage/session-custom.json", {
+      schemaVersion: "token-usage.1",
+      sessionID: "session-custom",
+      providerID: "openai",
+      modelID: "gpt-test",
+      modelLimit: 1000,
+      ratio: 0.1,
+      aggregate: { cacheRead: 1, cacheWrite: 0, input: 2, output: 3, reasoning: 0, total: 6 },
+    })
+    writeConfiguredEvidence(projectDir, "ab/custom.json", {
+      schemaVersion: "persona-ab-measurement.1",
+      scenarioId: "custom-root-scenario",
+      scenarioLabel: "Custom root scenario",
+      source: "local-fixture",
+      conditions: [
+        {
+          id: "off",
+          label: "OFF",
+          runs: [{ id: "off-1", outcome: "blocked", finishStatus: "blocked", blockedInvalidCompletion: true }],
+        },
+        {
+          id: "on",
+          label: "ON",
+          runs: [{ id: "on-1", outcome: "blocked", finishStatus: "blocked", blockedInvalidCompletion: true }],
+        },
+      ],
+    })
+
+    const metricsResult = runPersonaCli(["evidence", "metrics", "--json"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const metrics = JSON.parse(metricsResult.stdout)
+    const abResult = runPersonaCli(["evidence", "ab-report", "--json"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const abReport = JSON.parse(abResult.stdout)
+    const pminusResult = runPersonaCli(["evidence", "pminus-report", "--json"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const pminusReport = JSON.parse(pminusResult.stdout)
+    const metricsText = runPersonaCli(["evidence", "metrics"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const abText = runPersonaCli(["evidence", "ab-report"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const pminusText = runPersonaCli(["evidence", "pminus-report"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(metricsResult.status).toBe(0)
+    expect(metrics.evidenceDir).toBe(".persona/custom-evidence")
+    expect(metrics.filesScanned).toBe(2)
+    expect(metrics.tokenUsage.sessions).toHaveLength(1)
+    expect(abResult.status).toBe(0)
+    expect(abReport.evidenceDir).toBe(".persona/custom-evidence")
+    expect(abReport.filesScanned).toBe(2)
+    expect(abReport.scenarios).toHaveLength(1)
+    expect(pminusResult.status).toBe(0)
+    expect(pminusReport.evidenceDir).toBe(".persona/custom-evidence")
+    expect(pminusReport.filesScanned).toBe(2)
+    expect(pminusReport.scenarios).toHaveLength(1)
+    expect(metricsText.stdout).toContain("Evidence directory: `.persona/custom-evidence`")
+    expect(abText.stdout).toContain("Evidence directory: `.persona/custom-evidence`")
+    expect(pminusText.stdout).toContain("Evidence directory: `.persona/custom-evidence`")
+    expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
+  })
+
+  it("returns bounded unavailable reader diagnostics for malformed config without reading or creating a root", () => {
+    const projectDir = createTempProject()
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+    const configPath = join(projectDir, ".persona", "harness.jsonc")
+    writeFileSync(configPath, "{ broken")
+    const before = readFileSync(configPath, "utf8")
+
+    const outputs = [
+      runPersonaCli(["evidence", "metrics", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+      runPersonaCli(["evidence", "ab-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+      runPersonaCli(["evidence", "pminus-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+    ]
+
+    for (const output of outputs) {
+      const report = JSON.parse(output.stdout)
+      expect(output.status).toBe(0)
+      expect(report.evidenceDir).toBe("unavailable")
+      expect(report.filesScanned).toBe(0)
+      expect(report.limitations.join("\n")).toContain("read-only recovery")
+      expect(output.stdout).not.toContain("broken")
+      expect(output.stdout).not.toContain("SyntaxError")
+    }
+    expect(readFileSync(configPath, "utf8")).toBe(before)
+    expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
   })
 
   it("prints read-only A/B reports as JSON from structured matched-scenario evidence", () => {

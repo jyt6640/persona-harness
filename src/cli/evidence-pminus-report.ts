@@ -463,6 +463,7 @@ export function readEvidencePminusReport(options: EvidencePminusOptions = {}): E
     evidenceDir: abReport.evidenceDir,
     filesScanned: abReport.filesScanned,
     limitations: [
+      ...abReport.limitations,
       "P-minus reports are read-only decision support; this command writes no files and does not delete, downgrade, or mutate configuration.",
       "Outcomes are local evidence classifications, not token-saving, product-efficacy, navigation-benefit, or quality claims.",
       "Aggregate mean deltas and paired consistency can diverge; paired inconsistency lowers decision hints to keep-gathering/no-claim style review.",
