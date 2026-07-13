@@ -38,12 +38,15 @@ describe("fixture qualification authorization", () => {
       commandsExecuted: 0,
       enforcement: false,
       executionAllowed: false,
+      finishAuthority: "trusted-authority-required",
+      mirrorCreated: false,
       networkAccess: false,
       productCliInvocations: 0,
       qualificationAllowed: false,
       qualificationOperationAllowed: false,
       realProjectAccess: false,
       reportOnly: true,
+      sourceInspectionExecuted: false,
       telemetryEvents: 0,
       writeOperations: 0,
       ok: true,
@@ -59,12 +62,30 @@ describe("fixture qualification authorization", () => {
     expect(output).toMatchObject({
       decision: "authorization-only-not-executed",
       executionAllowed: false,
+      finishAuthority: "trusted-authority-required",
       qualificationAllowed: false,
       qualificationOperationAllowed: false,
+      mirrorCreated: false,
       sourceInspectionExecuted: false,
       artifactsCreated: 0,
       telemetryEvents: 0,
     })
+  })
+
+  it("retains the authority and no-execution bound on invalid CLI selection", () => {
+    const validator = parse(run(["--bad"], experimentRoot))
+    const evaluator = parse(runEvaluator(["--bad"], experimentRoot))
+
+    for (const output of [validator, evaluator]) {
+      expect(output).toMatchObject({
+        executionAllowed: false,
+        finishAuthority: "trusted-authority-required",
+        mirrorCreated: false,
+        qualificationAllowed: false,
+        qualificationOperationAllowed: false,
+        sourceInspectionExecuted: false,
+      })
+    }
   })
 
   it.each([

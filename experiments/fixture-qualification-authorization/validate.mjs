@@ -25,6 +25,9 @@ function safelyValidate(rootPath, args) {
         qualificationOperationAllowed: false,
         qualificationAllowed: false,
         executionAllowed: false,
+        finishAuthority: "trusted-authority-required",
+        sourceInspectionExecuted: false,
+        mirrorCreated: false,
         errors: [{ code: "SELECTION_INVALID", path: "argv", message: "only --validate is supported" }],
         ok: false,
       }
@@ -37,6 +40,9 @@ function safelyValidate(rootPath, args) {
       qualificationOperationAllowed: false,
       qualificationAllowed: false,
       executionAllowed: false,
+      finishAuthority: "trusted-authority-required",
+      sourceInspectionExecuted: false,
+      mirrorCreated: false,
       errors: [{ code: "INTERNAL_VALIDATION_ERROR", path: "validator", message: "validation failed without exposing filesystem details" }],
       ok: false,
     }
