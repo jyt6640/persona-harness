@@ -1,18 +1,23 @@
 #!/usr/bin/env node
-import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs"
-import { dirname, isAbsolute, join, resolve, sep } from "node:path"
-import process from "node:process"
+import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
-import { isRecord, stripJsonComments } from "../config/jsonc.js"
 import { formatInitResult } from "./init-output.js"
+import { INIT_MANIFEST_RELATIVE_PATH, InitManifestError } from "./init-manifest.js"
+import { prepareInit } from "./init-plan.js"
+import { commitInitPlan, type InitTransactionOptions } from "./init-transaction.js"
 
 export { formatInitNonInteractiveInterviewMessage, formatInitResult } from "./init-output.js"
 
-type InitOptions = {
-  readonly projectDir?: string
+export type InitOptions = {
+  readonly dryRun?: boolean
+  readonly onAfterCommitFile?: (relativePath: string) => void
+  readonly onBeforeCommit?: () => void
   readonly packageRoot?: string
+  readonly projectDir?: string
 }
+
+export type InitDecision = "apply" | "no-op" | "dry-run"
 
 export type InitResult = {
   readonly projectDir: string
@@ -21,25 +26,32 @@ export type InitResult = {
   readonly installed: readonly string[]
   readonly backups: readonly string[]
   readonly evidenceCopied: false
+  readonly decision: InitDecision
+  readonly changed: readonly string[]
+  readonly conflicts: readonly string[]
 }
 
 export function initUsage(invocationName: string): string {
   return [
-    `Usage: ${invocationName} init`,
+    `Usage: ${invocationName} init [--dry-run]`,
     "",
-    "Install Persona Harness config/rules and OpenCode plugin config.",
+    "Install or safely re-run Persona Harness config/rules and OpenCode plugin config.",
     "",
-    "Creates:",
+    "Creates or owns:",
     "- .persona/harness.jsonc",
     "- .persona/conventions/",
     "- .persona/rules/",
+    "- .persona/.ph-init-manifest.json",
     "- .opencode/opencode.json",
     "- .gitignore entries for generated/vendor context noise",
     "",
-    "Does not create:",
+    "Does not create or overwrite:",
     "- AGENTS.md",
     "- .persona/project-profile.jsonc",
     "- .persona/workflow plan/report templates",
+    "",
+    "Unchanged owned files are safe to re-run; modified or ambiguous files fail closed.",
+    "Use --dry-run for a deterministic zero-write preview.",
     "",
     "Next for backend projects: npx ph bootstrap backend",
   ].join("\n")
@@ -52,173 +64,83 @@ class PersonaInitError extends Error {
   }
 }
 
-const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
-const PROJECT_NOISE_IGNORE_ENTRIES = [
-  "node_modules/",
-  ".opencode/node_modules/",
-  ".persona/rules/",
-  ".persona/evidence/",
-  ".gradle/",
-  "build/",
-] as const
-
-const PUBLIC_INIT_EXCLUDED_RULES = new Set([
-  "backend/step1-api-contract.md",
-  "backend/step2-3-api-contract.md",
-])
-const LEGACY_DIFF_RULES_DIR = "diff-rules"
-
 function defaultPackageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 }
 
-function readOpencodeConfig(configPath: string): Record<string, unknown> {
-  if (!existsSync(configPath)) {
-    return {}
-  }
-
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(stripJsonComments(readFileSync(configPath, "utf8")))
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      throw new PersonaInitError(`Failed to parse ${OPENCODE_CONFIG_PATH}. Fix the JSON/JSONC syntax and run init again.`)
-    }
-    throw error
-  }
-
-  if (!isRecord(parsed)) {
-    throw new PersonaInitError(`${OPENCODE_CONFIG_PATH} must contain a JSON object.`)
-  }
-
-  return { ...parsed }
-}
-
-function mergePluginPath(config: Record<string, unknown>, pluginPath: string): Record<string, unknown> {
-  const plugin = config.plugin
-  const existingPlugins =
-    typeof plugin === "string"
-      ? [plugin]
-      : Array.isArray(plugin)
-        ? plugin.filter((entry): entry is string => typeof entry === "string")
-        : []
-
-  return {
-    ...config,
-    plugin: existingPlugins.includes(pluginPath) ? existingPlugins : [...existingPlugins, pluginPath],
-  }
-}
-
-function backupAmbiguousOpencodeConfig(configPath: string, config: Record<string, unknown>): string | undefined {
-  const plugin = config.plugin
-  if (plugin === undefined || typeof plugin === "string" || Array.isArray(plugin)) {
-    return undefined
-  }
-
-  const backupPath = `${configPath}.bak`
-  renameSync(configPath, backupPath)
-  return backupPath
-}
-
-function relativePath(projectDir: string, filePath: string): string {
-  const normalized = filePath.startsWith(projectDir) ? filePath.slice(projectDir.length + 1) : filePath
-  return normalized.replace(/\\/g, "/")
-}
-
-function writeOpencodeConfig(projectDir: string, pluginPath: string): readonly string[] {
-  const opencodeDir = join(projectDir, ".opencode")
-  const configPath = join(opencodeDir, "opencode.json")
-  mkdirSync(opencodeDir, { recursive: true })
-
-  const config = readOpencodeConfig(configPath)
-  const backupPath = existsSync(configPath) ? backupAmbiguousOpencodeConfig(configPath, config) : undefined
-  const merged = mergePluginPath(backupPath === undefined ? config : {}, pluginPath)
-  writeFileSync(configPath, `${JSON.stringify(merged, null, 2)}\n`)
-
-  return backupPath === undefined ? [] : [relativePath(projectDir, backupPath)]
-}
-
-function writeProjectNoiseIgnore(projectDir: string): void {
-  const gitignorePath = join(projectDir, ".gitignore")
-  const existing = existsSync(gitignorePath) ? readFileSync(gitignorePath, "utf8") : ""
-  const existingLines = new Set(existing.split(/\r?\n/).map((line) => line.trim()))
-  const missingEntries = PROJECT_NOISE_IGNORE_ENTRIES.filter((entry) => !existingLines.has(entry))
-  if (missingEntries.length === 0) {
-    return
-  }
-
-  const prefix = existing.length > 0 && !existing.endsWith("\n") ? "\n" : ""
-  const sectionHeader = existingLines.has("# Persona Harness generated context noise") ? [] : ["# Persona Harness generated context noise"]
-  const nextContent = `${existing}${prefix}${[...sectionHeader, ...missingEntries].join("\n")}\n`
-  writeFileSync(gitignorePath, nextContent)
-}
-
-function normalizeTemplateRelativePath(sourcePath: string, sourceRoot: string): string {
-  return sourcePath === sourceRoot ? "" : sourcePath.slice(sourceRoot.length + sep.length).replace(/\\/g, "/")
-}
-
-function shouldCopyPublicRuleTemplate(sourcePath: string, sourceRulesDir: string): boolean {
-  const relative = normalizeTemplateRelativePath(sourcePath, sourceRulesDir)
-  const isLegacyDiffRule = relative === LEGACY_DIFF_RULES_DIR || relative.startsWith(`${LEGACY_DIFF_RULES_DIR}/`)
-  return relative === "" || (!isLegacyDiffRule && !PUBLIC_INIT_EXCLUDED_RULES.has(relative))
-}
-
 export function initializePersonaHarness(options: InitOptions = {}): InitResult {
-  const projectDir = resolve(options.projectDir ?? process.cwd())
-  const packageRoot = resolve(options.packageRoot ?? defaultPackageRoot())
-  const personaDir = join(projectDir, ".persona")
-  const sourceHarnessConfig = join(packageRoot, ".persona", "harness.jsonc")
-  const sourceConventionsDir = join(packageRoot, ".persona", "conventions")
-  const sourceRulesDir = join(packageRoot, ".persona", "rules")
-  const targetHarnessConfig = join(personaDir, "harness.jsonc")
-  const targetConventionsDir = join(personaDir, "conventions")
-  const targetRulesDir = join(personaDir, "rules")
-  const pluginPath = join(packageRoot, "dist", "index.js")
-
-  if (!existsSync(sourceHarnessConfig)) {
-    throw new PersonaInitError(`Missing template: ${sourceHarnessConfig}`)
+  const prepared = prepareInit(options, defaultPackageRoot())
+  const transactionOptions: InitTransactionOptions = {
+    dryRun: options.dryRun,
+    onAfterCommitFile: options.onAfterCommitFile,
+    onBeforeCommit: options.onBeforeCommit,
   }
-  if (!existsSync(sourceRulesDir)) {
-    throw new PersonaInitError(`Missing template: ${sourceRulesDir}`)
+  let transaction: ReturnType<typeof commitInitPlan>
+  try {
+    transaction = commitInitPlan(
+      prepared.projectDir,
+      prepared.targets,
+      prepared.manifest,
+      prepared.currentManifest,
+      transactionOptions,
+    )
+  } catch (error) {
+    if (error instanceof InitManifestError) {
+      throw error
+    }
+    throw new PersonaInitError(`Init transaction failed: ${error instanceof Error ? error.message : "unknown error"}`)
   }
-
-  mkdirSync(personaDir, { recursive: true })
-  cpSync(sourceHarnessConfig, targetHarnessConfig)
-  if (existsSync(sourceConventionsDir)) {
-    cpSync(sourceConventionsDir, targetConventionsDir, { recursive: true })
-  }
-  cpSync(sourceRulesDir, targetRulesDir, {
-    recursive: true,
-    filter: (sourcePath) => shouldCopyPublicRuleTemplate(sourcePath, sourceRulesDir),
-  })
-  const backups = writeOpencodeConfig(projectDir, pluginPath)
-  writeProjectNoiseIgnore(projectDir)
-
   return {
-    projectDir,
-    packageRoot,
-    pluginPath: isAbsolute(pluginPath) ? pluginPath : resolve(pluginPath),
+    projectDir: prepared.projectDir,
+    packageRoot: prepared.packageRoot,
+    pluginPath: prepared.pluginPath,
     installed: [
       ".persona/harness.jsonc",
       ".persona/conventions/",
       ".persona/rules/",
+      INIT_MANIFEST_RELATIVE_PATH,
       ".opencode/opencode.json",
       ".gitignore",
     ],
-    backups,
+    backups: transaction.backups,
     evidenceCopied: false,
+    decision: transaction.decision,
+    changed: transaction.changed,
+    conflicts: [],
   }
 }
 
-export function runInitCommand(options: InitOptions = {}): { readonly status: number; readonly stdout: string; readonly stderr: string } {
+function parseInitArgs(args: readonly string[]): { readonly kind: "run"; readonly dryRun: boolean } | { readonly kind: "invalid"; readonly message: string } {
+  let dryRun = false
+  for (const arg of args) {
+    if (arg === "--dry-run") {
+      if (dryRun) {
+        return { kind: "invalid", message: "Duplicate init option: --dry-run" }
+      }
+      dryRun = true
+      continue
+    }
+    return { kind: "invalid", message: `Unknown init option: ${arg}` }
+  }
+  return { kind: "run", dryRun }
+}
+
+export function runInitCommand(
+  args: readonly string[] = [],
+  options: InitOptions = {},
+): { readonly status: number; readonly stdout: string; readonly stderr: string } {
+  const parsed = parseInitArgs(args)
+  if (parsed.kind === "invalid") {
+    return { status: 1, stdout: "", stderr: `${parsed.message}\n\n${initUsage("ph")}\n` }
+  }
   try {
     return {
       status: 0,
-      stdout: `${formatInitResult(initializePersonaHarness(options))}\n`,
+      stdout: `${formatInitResult(initializePersonaHarness({ ...options, dryRun: parsed.dryRun }))}\n`,
       stderr: "",
     }
   } catch (error) {
-    if (error instanceof PersonaInitError) {
+    if (error instanceof PersonaInitError || error instanceof InitManifestError) {
       return {
         status: 1,
         stdout: "",

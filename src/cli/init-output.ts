@@ -2,9 +2,27 @@ import type { InitResult } from "./init.js"
 
 export function formatInitResult(result: InitResult): string {
   const backupLines = result.backups.length > 0 ? ["", "Backups:", ...result.backups.map((backup) => `- ${backup}`)] : []
+  const decisionLines =
+    result.decision === "dry-run"
+      ? [
+          "Dry run:",
+          `- planned changes: ${result.changed.length}`,
+          "- zero writes were performed.",
+        ]
+      : result.decision === "no-op"
+        ? [
+            "No changes required.",
+            "- All owned generated files were unchanged.",
+          ]
+        : [
+            "Init transaction committed.",
+            `- changed files: ${result.changed.length}`,
+          ]
 
   return [
-    "Persona Harness initialized.",
+    result.decision === "dry-run" ? "Persona Harness init dry-run." : "Persona Harness initialized.",
+    "",
+    ...decisionLines,
     "",
     "Installed:",
     ...result.installed.map((item) => `- ${item}`),
