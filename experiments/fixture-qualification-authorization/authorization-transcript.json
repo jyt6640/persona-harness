@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "fixture-qualification-transcript.1",
+  "commandsExecuted": false,
+  "childProcessInvocations": 0,
+  "productCliInvocations": 0,
+  "networkAccess": false,
+  "realProjectAccess": false,
+  "artifactsCreated": 0,
+  "telemetryEvents": 0,
+  "steps": [
+    {
+      "id": "candidate-identity-read",
+      "kind": "synthetic-read-only",
+      "fixturePath": "fixtures/authorization-input.json",
+      "executed": false,
+      "argv": []
+    },
+    {
+      "id": "policy-read",
+      "kind": "synthetic-read-only",
+      "fixturePath": "fixtures/qualification-policy.json",
+      "executed": false,
+      "argv": []
+    },
+    {
+      "id": "negative-state-read",
+      "kind": "synthetic-read-only",
+      "fixturePath": "fixtures/negative-states.json",
+      "executed": false,
+      "argv": []
+    }
+  ],
+  "payloadFiles": [
+    {
+      "path": "fixtures/authorization-input.json",
+      "sha256": "sha256:a9be183049b61b8ef731202b5d4a57601f597efe75db9029ccc6149820371dfb"
+    },
+    {
+      "path": "fixtures/qualification-policy.json",
+      "sha256": "sha256:b5ae48bccf03ab10dae1529613bc65aa0abb512ef5a19ee9423b549b90a3153a"
+    },
+    {
+      "path": "fixtures/negative-states.json",
+      "sha256": "sha256:c32c3a836c31a5ad53b26e3312d32ae109edfa3e0ae1e37fbf744fbb12dca6b2"
+    }
+  ],
+  "negativePaths": [
+    "source-before-absent",
+    "source-after-absent",
+    "foreign-journal",
+    "corrupt-mirror",
+    "preexisting-result-root",
+    "path-escape",
+    "symlink-path",
+    "missing-journal-root",
+    "missing-mirror-root",
+    "missing-result-root"
+  ]
+}

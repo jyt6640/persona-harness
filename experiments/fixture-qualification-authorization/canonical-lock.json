@@ -1,0 +1,206 @@
+{
+  "schemaVersion": "fixture-qualification-canonical-lock.1",
+  "corpusId": "fixture-qualification-authorization",
+  "authorizationSemanticSha256": "sha256:1979e5498326d0696f8254708a5008e2454db27fc951469c3b78083181d2d7e1",
+  "authorization": {
+    "schemaVersion": "fixture-qualification-authorization.1",
+    "authorizationId": "synthetic-fixture-qualification-authorization-001",
+    "operationId": "synthetic-read-only-qualification-operation-001",
+    "attemptId": "synthetic-future-attempt-001",
+    "authorizationStatus": "authorization-only-not-executed",
+    "qualificationOperationAllowed": false,
+    "qualificationAllowed": false,
+    "executionAllowed": false,
+    "commandsExecuted": 0,
+    "childProcessInvocations": 0,
+    "productCliInvocations": 0,
+    "networkAccess": false,
+    "realProjectAccess": false,
+    "artifactsCreated": 0,
+    "telemetryEvents": 0,
+    "writeOperations": 0,
+    "sourceInspectionExecuted": false,
+    "mirrorCreated": false,
+    "ticketOperations": 0,
+    "workflowOperations": 0,
+    "verificationOperations": 0,
+    "authorityEligible": false,
+    "finishAuthority": "trusted-authority-required",
+    "candidate": {
+      "fixturePath": "fixtures/authorization-input.json",
+      "candidateState": "unattached",
+      "attachmentState": "unattached",
+      "sourceHead": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "sourceFingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "clean": true,
+      "symlinkCount": 0
+    },
+    "policyFixturePath": "fixtures/qualification-policy.json",
+    "negativeStatesPath": "fixtures/negative-states.json",
+    "transcriptPath": "authorization-transcript.json",
+    "sourceEvidenceBefore": {
+      "status": "deferred",
+      "observed": false,
+      "value": null,
+      "reason": "qualification operation not executed"
+    },
+    "sourceEvidenceAfter": {
+      "status": "deferred",
+      "observed": false,
+      "value": null,
+      "reason": "qualification operation not executed"
+    },
+    "preconditions": {
+      "attachmentState": "unattached",
+      "pendingTicket": "unknown",
+      "closureState": "unknown",
+      "finishPrecondition": "unknown",
+      "qualificationChain": "not-present"
+    },
+    "futureSuccessChain": {
+      "ticketEvidence": "required-not-present",
+      "implementationEvidence": "required-not-present",
+      "verificationEvidence": "required-not-present",
+      "finishEvidence": "required-not-present"
+    },
+    "roots": {
+      "journalRoot": "future-output/journal",
+      "mirrorRoot": "future-output/mirror",
+      "resultRoot": "future-output/result",
+      "ownership": "invocation-owned-absent",
+      "pathPolicy": "relative-no-follow"
+    },
+    "plannedSequence": [
+      "candidate-identity-clean-symlink-stack-confirmation",
+      "source-preservation-before-after-read-only-snapshots",
+      "deferred-readiness-checks"
+    ],
+    "negativeCaseIds": [
+      "source-before-absent",
+      "source-after-absent",
+      "foreign-journal",
+      "corrupt-mirror",
+      "preexisting-result-root",
+      "path-escape",
+      "symlink-path"
+    ],
+    "executionBoundary": "This artifact does not authorize candidate inspection, attach, mirror creation, project writes, ticket/go/implementation/verification/finish, or telemetry."
+  },
+  "payloadFiles": [
+    {
+      "path": "fixtures/authorization-input.json",
+      "sha256": "sha256:a9be183049b61b8ef731202b5d4a57601f597efe75db9029ccc6149820371dfb"
+    },
+    {
+      "path": "fixtures/qualification-policy.json",
+      "sha256": "sha256:b5ae48bccf03ab10dae1529613bc65aa0abb512ef5a19ee9423b549b90a3153a"
+    },
+    {
+      "path": "fixtures/negative-states.json",
+      "sha256": "sha256:c32c3a836c31a5ad53b26e3312d32ae109edfa3e0ae1e37fbf744fbb12dca6b2"
+    },
+    {
+      "path": "authorization-transcript.json",
+      "sha256": "sha256:f8f097115c256ab21f3dc803aa90d7990a8d384368064d7a41352cfbbf06f221"
+    }
+  ],
+  "transcript": {
+    "schemaVersion": "fixture-qualification-transcript.1",
+    "commandsExecuted": false,
+    "childProcessInvocations": 0,
+    "productCliInvocations": 0,
+    "networkAccess": false,
+    "realProjectAccess": false,
+    "artifactsCreated": 0,
+    "telemetryEvents": 0,
+    "orderedStepIds": [
+      "candidate-identity-read",
+      "policy-read",
+      "negative-state-read"
+    ],
+    "payloadPaths": [
+      "fixtures/authorization-input.json",
+      "fixtures/qualification-policy.json",
+      "fixtures/negative-states.json"
+    ],
+    "negativePaths": [
+      "source-before-absent",
+      "source-after-absent",
+      "foreign-journal",
+      "corrupt-mirror",
+      "preexisting-result-root",
+      "path-escape",
+      "symlink-path",
+      "missing-journal-root",
+      "missing-mirror-root",
+      "missing-result-root"
+    ]
+  },
+  "negativeCases": [
+    {
+      "id": "source-before-absent",
+      "kind": "source-before",
+      "state": "absent",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "source-after-absent",
+      "kind": "source-after",
+      "state": "absent",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "foreign-journal",
+      "kind": "journal-root",
+      "state": "foreign",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "corrupt-mirror",
+      "kind": "mirror-root",
+      "state": "corrupt",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "preexisting-result-root",
+      "kind": "result-root",
+      "state": "pre-existing",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "path-escape",
+      "kind": "path",
+      "state": "../outside",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "symlink-path",
+      "kind": "path",
+      "state": "symlink",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    }
+  ],
+  "negativePolicy": [
+    "source-before-absent",
+    "source-after-absent",
+    "foreign-journal",
+    "corrupt-mirror",
+    "preexisting-result-root",
+    "path-escape",
+    "symlink-path",
+    "missing-journal-root",
+    "missing-mirror-root",
+    "missing-result-root",
+    "inferred-source-facts",
+    "duplicate-or-replayed-id",
+    "malformed-payload",
+    "unsafe-path"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "fixture-qualification-source-snapshot.1",
+  "fixtureId": "synthetic-candidate-source",
+  "candidatePath": "synthetic/candidate/bus-be",
+  "candidateState": "unattached",
+  "sourceHead": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "sourceFingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "clean": true,
+  "symlinkCount": 0,
+  "stackSignals": [
+    "gradle",
+    "spring",
+    "java"
+  ],
+  "attachmentState": "unattached",
+  "metadataAuthority": "synthetic-only-record"
+}
