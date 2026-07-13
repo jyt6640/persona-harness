@@ -80,6 +80,18 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles("tests/p3-7-ph-init-safe-upgrade-contract.test.ts", packageJson.files)).toBe(false)
   })
 
+  it("keeps report-only test-integrity detector evidence source-only", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const experimentRoot = path.join(packageRoot, "experiments/report-only-test-integrity-detector")
+    const files = listFiles(experimentRoot).map((filePath) => toPackagePath(path.relative(packageRoot, filePath)))
+
+    expect(files).toHaveLength(9)
+    expect(packageJson.files).not.toContain("experiments")
+    for (const file of files) {
+      expect(isCoveredByPackageFiles(file, packageJson.files)).toBe(false)
+    }
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
