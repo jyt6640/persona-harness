@@ -16,6 +16,22 @@ These payloads are intentionally adversarial. Their bytes are fixture data, not
 authority. Passing this corpus validator does not mean the product is fixed, and
 it does not accept the vulnerable behavior.
 
+## Canonical Lock
+
+`canonical-lock.json` is a separately pinned semantic reference for this
+schema. It records case order and IDs, titles, audit inputs, threat and
+precondition text, future owners, desired and future acceptance boundaries,
+payload roots, every payload/transcript path and hash, and every transcript
+command ID, argv, exit code, stdout, and stderr. `validate.mjs` also pins the
+lock file's own SHA-256 and returns structured error objects when the working
+copy drifts.
+
+This detects working-copy and corpus drift, including coordinated payload or
+transcript edits that also update mutable manifest hashes. It is not a claim to
+withstand an attacker who rewrites the validator, canonical lock, or source
+history itself. New cases require an intentionally versioned canonical lock
+schema and result directory; existing cases cannot be relabeled or extended.
+
 ## Validator
 
 Run:
@@ -24,10 +40,10 @@ Run:
 node experiments/p3-adversarial-closure-fixtures/validate.mjs
 ```
 
-The validator only reads this experiment directory, checks immutable file
-fingerprints and typed contract fields, and exits nonzero on drift. It must not
-call `ph`, shell out to the product CLI, use the network, inspect real project
-state, or execute any baseline reproduction.
+The validator only reads this experiment directory, checks the canonical lock,
+immutable file fingerprints, and typed contract fields, and exits nonzero on
+drift. It must not call `ph`, shell out to the product CLI, use the network,
+inspect real project state, or execute any baseline reproduction.
 
 ## Future Acceptance Boundary
 

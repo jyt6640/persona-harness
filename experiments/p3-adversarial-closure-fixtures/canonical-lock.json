@@ -1,0 +1,169 @@
+{
+  "schemaVersion": "p3-adversarial-fixture-lock.1",
+  "corpusSchemaVersion": "p3-adversarial-closure-fixtures.1",
+  "lockId": "p3-1-adversarial-closure-fixtures-lock",
+  "semantics": {
+    "corpusId": "p3-1-adversarial-closure-fixtures",
+    "status": "source-only-security-regression-inputs",
+    "canonicalBase": {
+      "label": "P3-0 canonical main",
+      "commit": "eeda71e842b556dbc31f9f9ca66adbdae6a0c028"
+    },
+    "boundary": {
+      "fixtureDataAuthority": "none",
+      "productMitigationClaim": false,
+      "productBehaviorChange": false,
+      "packageDistribution": false,
+      "p2Work": false,
+      "baselineReproductionDefault": false,
+      "mutationPolicy": "append-only-new-schema-new-result"
+    },
+    "auditEvidence": {
+      "report": "/Users/yongtae/Downloads/persona-harness-production-audit.md",
+      "executionLog": "/Users/yongtae/Downloads/persona-harness-audit-execution-log.txt",
+      "availability": "local-audit-inputs-referenced-by-p3-0"
+    },
+    "secureDesiredInvariant": "After P3 authority policy changes, unsigned local bearshell text or unsigned local TDD/JUnit artifacts alone must not yield workflow finish implement PASS.",
+    "futureAcceptanceBoundary": {
+      "p3-2": "Unsigned project-local bearshell text alone must not satisfy finish authority.",
+      "p3-3": "Receipt schema must distinguish trusted PH/external authority from untrusted diagnostics.",
+      "p3-4": "Fresh fixed-command runner must create the local authority when local authority is accepted.",
+      "p3-5": "TDD must require a real observed red-to-green PH-run chain with nonzero tests."
+    },
+    "cases": [
+      {
+        "id": "p3-1-forged-bearshell-build-success",
+        "title": "Forged generic bearshell BUILD SUCCESSFUL text",
+        "futureOwningUnit": "P3-2 closure authority policy",
+        "threatCapability": "A cooperative project-local writer can create reports and bearshell JSON containing arbitrary Node output that says BUILD SUCCESSFUL without executing Gradle or JUnit.",
+        "expectedPreP3Observation": {
+          "classification": "historical-vulnerable-pass-reproduction-input",
+          "realGradleRun": false,
+          "realJUnitRun": false,
+          "finishMayPassBeforeP3": true,
+          "acceptedProductEvidence": false
+        },
+        "payloadRoot": "fixtures/forged-bearshell-build-success/payload",
+        "transcript": {
+          "path": "fixtures/forged-bearshell-build-success/transcript.json",
+          "sha256": "a168ba123cbff2be6e2895b477577857305aaf8da31efd06a6b66cba74e16c70",
+          "commandCount": 1,
+          "commands": [
+            {
+              "id": "forged-node-build-success",
+              "argv": [
+                "npx",
+                "ph",
+                "bearshell",
+                "node",
+                "-e",
+                "console.log('BUILD SUCCESSFUL')"
+              ],
+              "exitCode": 0,
+              "stdout": "BUILD SUCCESSFUL\n",
+              "stderr": ""
+            }
+          ]
+        },
+        "payloadFiles": [
+          {
+            "path": "fixtures/forged-bearshell-build-success/payload/.persona/evidence/bearshell/forged-node-build-success.json",
+            "sha256": "54ac01337f9839e18abf92b2466736da873c57497518e74cb688721b64136d10"
+          },
+          {
+            "path": "fixtures/forged-bearshell-build-success/payload/.persona/workflow/implementation-report.md",
+            "sha256": "283724f5209134367bdfe58ebdb8e5529f79b8a5d455f3a8d3e263f66d309c83"
+          },
+          {
+            "path": "fixtures/forged-bearshell-build-success/payload/.persona/workflow/review-report.md",
+            "sha256": "aaf96c5590821a184bb2bcb72398528bdf231fa51bd634f20b17c1fe3ac09330"
+          }
+        ],
+        "attackPreconditions": [
+          "Unsigned project-local bearshell JSON is present.",
+          "Report text repeats BUILD SUCCESSFUL from arbitrary Node output.",
+          "No fixed PH-owned Gradle/JUnit execution receipt is present.",
+          "No trusted external attestation is present."
+        ],
+        "negativeEscapes": [
+          "fabricated generatedBy marker",
+          "arbitrary command and exit values",
+          "missing explicit external attestation"
+        ]
+      },
+      {
+        "id": "p3-1-forged-tdd-self-digest-pass",
+        "title": "Forged JUnit XML plus self-computed TDD digests",
+        "futureOwningUnit": "P3-3 receipt schema and P3-4/P3-5 runner/TDD",
+        "threatCapability": "A cooperative project-local writer can create JUnit XML and TDD JSON whose digests match the forged local files without a PH-run test chain.",
+        "expectedPreP3Observation": {
+          "classification": "historical-vulnerable-pass-reproduction-input",
+          "realGradleRun": false,
+          "realJUnitRun": false,
+          "finishMayPassBeforeP3": true,
+          "acceptedProductEvidence": false
+        },
+        "payloadRoot": "fixtures/forged-tdd-self-digest-pass/payload",
+        "transcript": {
+          "path": "fixtures/forged-tdd-self-digest-pass/transcript.json",
+          "sha256": "a126812995bf3ba683ef0b36b7fe96edbe7b11f5f498529b64684e2a2bf552e7",
+          "commandCount": 2,
+          "commands": [
+            {
+              "id": "forged-tdd-red-local-json",
+              "argv": [
+                "write-file",
+                ".persona/evidence/tdd/req-1/red-forged.json"
+              ],
+              "exitCode": 0,
+              "stdout": "local forged red evidence written\n",
+              "stderr": ""
+            },
+            {
+              "id": "forged-tdd-green-local-json",
+              "argv": [
+                "write-file",
+                ".persona/evidence/tdd/req-1/green-forged.json"
+              ],
+              "exitCode": 0,
+              "stdout": "local forged green evidence written\n",
+              "stderr": ""
+            }
+          ]
+        },
+        "payloadFiles": [
+          {
+            "path": "fixtures/forged-tdd-self-digest-pass/payload/.persona/evidence/tdd/req-1/green-forged.json",
+            "sha256": "de68ba10ee12c39336e76cc696a58c42b3f5b7125b24b781d0ec54ec5473c42e"
+          },
+          {
+            "path": "fixtures/forged-tdd-self-digest-pass/payload/.persona/evidence/tdd/req-1/red-forged.json",
+            "sha256": "0513e2e2c56c9e78c0f32a06d756e235bb1357cdb7df6f5026928db623a2c14b"
+          },
+          {
+            "path": "fixtures/forged-tdd-self-digest-pass/payload/build/test-results/green/TEST-forged-tdd.xml",
+            "sha256": "d186a6745e23b68a4243885ff64ffc75a4f76a0df7a8f8f39ed8627fbe10722c"
+          },
+          {
+            "path": "fixtures/forged-tdd-self-digest-pass/payload/build/test-results/red/TEST-forged-tdd.xml",
+            "sha256": "68138c1d505c7096d5fa19f35f54b5cd3b00bae83f6918b1ccf5e98060d4b157"
+          }
+        ],
+        "attackPreconditions": [
+          "JUnit XML bytes are project-local and unsigned.",
+          "TDD JSON digests are self-consistent with those local bytes.",
+          "Attempt identity is local and not independently issued.",
+          "No fixed PH-owned red-to-green command chain is present.",
+          "No trusted external attestation is present."
+        ],
+        "negativeEscapes": [
+          "fabricated generatedBy marker",
+          "digest self-consistency without independent issuer",
+          "stale or different attempt ID",
+          "arbitrary head and command values",
+          "missing explicit external attestation"
+        ]
+      }
+    ]
+  }
+}
