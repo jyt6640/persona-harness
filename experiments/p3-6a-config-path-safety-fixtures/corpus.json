@@ -1,0 +1,154 @@
+{
+  "corpusId": "p3-6a-config-path-safety",
+  "schemaVersion": "p3-6a-config-path-safety.1",
+  "preregistration": {
+    "status": "source_only_preregistered",
+    "futureOwner": "P3-6 config/path/walker safety",
+    "scope": "synthetic fixture contract only",
+    "reportOnly": true,
+    "sourceOnly": true,
+    "enforcement": false,
+    "corpusFingerprint": "d6428e61e1e9b3e0560e3a9963af286e58b4fa6317312afb2d6998326365639b",
+    "coverageCategories": [
+      "config-malformed",
+      "config-corrupt",
+      "paths-canonical-mismatch",
+      "walker-symlink-cycle",
+      "walker-path-escape",
+      "walker-depth",
+      "walker-entry-count",
+      "walker-bytes",
+      "walker-unreadable",
+      "walker-binary",
+      "diagnostic-stack-leak",
+      "diagnostic-unbounded",
+      "control-safe"
+    ],
+    "oracle": {
+      "mode": "deterministic_synthetic_contract",
+      "falsePositiveThreshold": 0,
+      "falseNegativeThreshold": 0
+    },
+    "mutationPolicy": {
+      "mode": "append_only_new_schema",
+      "baseSchemaVersion": null,
+      "baseCorpusFingerprint": null,
+      "baseLockFingerprint": null,
+      "existingRecordsImmutable": true,
+      "existingFixturesImmutable": true,
+      "newRecordsRequireFreshIdsAndFixtures": true,
+      "successorRequiresNewPreregistration": true
+    },
+    "extension": null,
+    "scopeExclusions": [
+      "hostile coordinated rewrite of validator and source history",
+      "future P3-6 product implementation and runtime behavior"
+    ]
+  },
+  "records": [
+    {
+      "id": "p3-6a-r01-config-malformed-jsonc",
+      "label": "Malformed harness.jsonc is fail-closed",
+      "category": "config-malformed",
+      "fixture": "fixtures/f01-config-malformed.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "config.malformed"
+    },
+    {
+      "id": "p3-6a-r02-config-corrupt-shape",
+      "label": "Corrupt harness.jsonc shape is fail-closed",
+      "category": "config-corrupt",
+      "fixture": "fixtures/f02-config-corrupt.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "config.corrupt"
+    },
+    {
+      "id": "p3-6a-r03-paths-canonical-mismatch",
+      "label": "Closure and doctor share one canonical path model",
+      "category": "paths-canonical-mismatch",
+      "fixture": "fixtures/f03-paths-canonical-mismatch.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "paths.canonical_mismatch"
+    },
+    {
+      "id": "p3-6a-r04-walker-symlink-cycle",
+      "label": "Symlink cycle and ELOOP are bounded no-follow failures",
+      "category": "walker-symlink-cycle",
+      "fixture": "fixtures/f04-walker-symlink-cycle.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "walker.symlink_cycle"
+    },
+    {
+      "id": "p3-6a-r05-walker-path-escape",
+      "label": "Evidence path escape is fail-closed",
+      "category": "walker-path-escape",
+      "fixture": "fixtures/f05-walker-path-escape.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "walker.path_escape"
+    },
+    {
+      "id": "p3-6a-r06-walker-depth",
+      "label": "Traversal depth is bounded",
+      "category": "walker-depth",
+      "fixture": "fixtures/f06-walker-depth.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "walker.depth_exceeded"
+    },
+    {
+      "id": "p3-6a-r07-walker-entry-count",
+      "label": "Traversal entry count is bounded",
+      "category": "walker-entry-count",
+      "fixture": "fixtures/f07-walker-entry-count.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "walker.entry_limit"
+    },
+    {
+      "id": "p3-6a-r08-walker-bytes",
+      "label": "Traversal bytes are bounded",
+      "category": "walker-bytes",
+      "fixture": "fixtures/f08-walker-bytes.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "walker.byte_limit"
+    },
+    {
+      "id": "p3-6a-r09-walker-unreadable",
+      "label": "Unreadable evidence is an explicit failure",
+      "category": "walker-unreadable",
+      "fixture": "fixtures/f09-walker-unreadable.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "walker.unreadable"
+    },
+    {
+      "id": "p3-6a-r10-walker-binary",
+      "label": "Binary evidence is an explicit failure",
+      "category": "walker-binary",
+      "fixture": "fixtures/f10-walker-binary.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "walker.binary"
+    },
+    {
+      "id": "p3-6a-r11-diagnostic-stack-leak",
+      "label": "Stack text is never emitted in diagnostics",
+      "category": "diagnostic-stack-leak",
+      "fixture": "fixtures/f11-diagnostic-stack-leak.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "diagnostic.stack_leak"
+    },
+    {
+      "id": "p3-6a-r12-diagnostic-unbounded",
+      "label": "Unbounded diagnostic or walk is fail-closed",
+      "category": "diagnostic-unbounded",
+      "fixture": "fixtures/f12-diagnostic-unbounded.json",
+      "expectedOutcome": "reject_fail_closed",
+      "expectedFailureCode": "diagnostic.unbounded"
+    },
+    {
+      "id": "p3-6a-r13-control-safe",
+      "label": "Bounded canonical control remains eligible for future review",
+      "category": "control-safe",
+      "fixture": "fixtures/f13-control-safe.json",
+      "expectedOutcome": "accept_synthetic_control",
+      "expectedFailureCode": null
+    }
+  ]
+}

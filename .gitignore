@@ -13,6 +13,8 @@ references/
 experiments/*
 !experiments/entry-intent-corpus/
 !experiments/entry-intent-corpus/**
+!experiments/p3-6a-config-path-safety-fixtures/
+!experiments/p3-6a-config-path-safety-fixtures/**
 example/
 
 # OpenCode / Persona local runtime artifacts.
@@ -32,6 +34,8 @@ AGENTS.md
 fixtures/
 !packages/shared-skills/**/fixtures/
 !packages/shared-skills/**/fixtures/**  
+!experiments/p3-6a-config-path-safety-fixtures/fixtures/
+!experiments/p3-6a-config-path-safety-fixtures/fixtures/**
 tmp/
 
 # Local secrets and eval pilot environment. Keep credentials out of git.

@@ -1,0 +1,68 @@
+{
+  "fixtureId": "p3-6a-r03-paths-canonical-mismatch",
+  "metadata": {
+    "category": "paths-canonical-mismatch",
+    "label": "Closure and doctor share one canonical path model",
+    "owner": "P3-6",
+    "synthetic": true
+  },
+  "payload": {
+    "config": {
+      "state": "valid",
+      "rawBytes": "{\"evidenceDir\":\".persona/evidence-custom\",\"rulesDir\":\".persona/rules-custom\"}"
+    },
+    "pathModel": {
+      "projectRoot": "/synthetic/project",
+      "configured": {
+        "evidenceDir": ".persona/evidence-custom",
+        "rulesDir": ".persona/rules-custom"
+      },
+      "canonical": {
+        "evidenceDir": "/synthetic/project/.persona/evidence-custom",
+        "rulesDir": "/synthetic/project/.persona/rules-custom"
+      },
+      "closure": {
+        "evidenceDir": "/synthetic/project/.persona/evidence",
+        "rulesDir": "/synthetic/project/.persona/rules-custom"
+      },
+      "doctor": {
+        "evidenceDir": "/synthetic/project/.persona/evidence-custom",
+        "rulesDir": "/synthetic/project/.persona/rules-custom"
+      }
+    },
+    "walker": {
+      "policy": {
+        "lstat": true,
+        "followSymlinks": false,
+        "maxDepth": 4,
+        "maxEntries": 8,
+        "maxBytes": 1024,
+        "maxFileBytes": 256
+      },
+      "observed": {
+        "symlink": "none",
+        "escaped": false,
+        "depth": 0,
+        "entries": 1,
+        "bytes": 12,
+        "fileBytes": 12,
+        "unreadable": false,
+        "binary": false
+      }
+    },
+    "diagnostic": {
+      "path": ".persona/evidence-custom",
+      "reportedBounded": true,
+      "stackLeaked": false
+    }
+  },
+  "oracle": {
+    "outcome": "reject_fail_closed",
+    "failureCode": "paths.canonical_mismatch",
+    "completionAuthority": "fail_closed",
+    "diagnosticMode": "read_only_diagnostic",
+    "normalClosure": "blocked",
+    "bounded": true,
+    "stackLeaked": false
+  }
+}

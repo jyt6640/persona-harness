@@ -1,0 +1,122 @@
+{
+  "lockSchemaVersion": "p3-6a-config-path-safety.lock.1",
+  "corpusId": "p3-6a-config-path-safety",
+  "schemaVersion": "p3-6a-config-path-safety.2",
+  "corpusFingerprint": "e69ca8a4a7b8d2ec97b1a683c930c60bca8bb306974ffa3430bc886af9c6b4c5",
+  "corpusBytesSha256": "f421944badb690e82e5f93eaafba6c70d1e579788a96f8474e684158b5d6a99f",
+  "lockFingerprint": "c8f48846c510a3b632a3cdd37fdbe892f16569e45f8c66204a99c8a5b5d81432",
+  "records": [
+    {
+      "id": "p3-6a-r01-config-malformed-jsonc",
+      "fixture": "fixtures/f01-config-malformed.json",
+      "recordCanonicalBytesSha256": "8665c5517274c6ffa3b956745ebad0b8992736a5dc8f12aa54a3350642a2dce4",
+      "fixtureBytesSha256": "b5d96885400ead8a354ff8f22922ca9669868f83ae34258923d4ed1459089c3d",
+      "payloadSha256": "75f61cc5c76c9757a36fe63ca5a649258e9d2aa781866b1fd5628e86cbb080dc",
+      "metadataSha256": "9b511576ce88c9ca581039ec966f7af40800eba5592655a203c7c60164cf07c2"
+    },
+    {
+      "id": "p3-6a-r02-config-corrupt-shape",
+      "fixture": "fixtures/f02-config-corrupt.json",
+      "recordCanonicalBytesSha256": "95616421d5e3b88d008b4e7046b17a47a6131f9c03c949bd25136e735e2ea449",
+      "fixtureBytesSha256": "62c6d844765adf5bcf401e3c0dd48d081a4049de78559dfca36eeffccbed0159",
+      "payloadSha256": "8bffd9fc6687246ae16e31532caf1bc3fa7f90a36b84f42d88452116d8fc1ad3",
+      "metadataSha256": "4bfaed629ef47a5613c0d6308b7fcddce34ecd06c0d7cae7ff7b98cf41d8ebee"
+    },
+    {
+      "id": "p3-6a-r03-paths-canonical-mismatch",
+      "fixture": "fixtures/f03-paths-canonical-mismatch.json",
+      "recordCanonicalBytesSha256": "30905ee42b7cf99269e25ccbfe46505d6f8520fd2dc46932ca4a3661902d06f5",
+      "fixtureBytesSha256": "a4ba60a4620b71351356a35c3c9955da6b68a76b706b842b2b068383f5e611cc",
+      "payloadSha256": "c5878c9b8d9f9f081bc1931e9f756310bd5a61146029676c2d51beb5ccdc2ddc",
+      "metadataSha256": "a7826d9241866ce6aac2045fe3ebdb083840f028c12eab9232a33f2e7171ea6e"
+    },
+    {
+      "id": "p3-6a-r04-walker-symlink-cycle",
+      "fixture": "fixtures/f04-walker-symlink-cycle.json",
+      "recordCanonicalBytesSha256": "0d65a669a52fbda4c9e00408e942b2e48b6df05dca29b826c2b1388447a82a09",
+      "fixtureBytesSha256": "048142781e1eb7b912ce65af2b2e3587dd2b60981eb42ece015a6228803a0e16",
+      "payloadSha256": "21d4cb443c5fa5060b59e2b2caafd95fa9a1e8f5eb550124254bf55d36aade56",
+      "metadataSha256": "d3a897bb71483098cc6020795a239fbfbd76d4fc1ad5de558d5b5f7f15ee181c"
+    },
+    {
+      "id": "p3-6a-r05-walker-path-escape",
+      "fixture": "fixtures/f05-walker-path-escape.json",
+      "recordCanonicalBytesSha256": "eba38d25ee7d2715c53973c894a1d3742a85418b5a48e4857bf02392418fc0bf",
+      "fixtureBytesSha256": "aec8864f579ef99b440ae3e313f144c1df29dd06964e11cf3299f9609befdd0d",
+      "payloadSha256": "857f4494c4fd739561332f80bb849adf129587ff8f96bf86f176c135e341bab8",
+      "metadataSha256": "139f5ff91da562eba1203c582eef935bd485425791998d254bac3dd351739401"
+    },
+    {
+      "id": "p3-6a-r06-walker-depth",
+      "fixture": "fixtures/f06-walker-depth.json",
+      "recordCanonicalBytesSha256": "0191bcdffa5cfc80aec95ae3895f6ef496577c370c7eb94549e07fddb1da1e04",
+      "fixtureBytesSha256": "cefac8238a66e1c52fd73523e37480505b260ddab06270b5a725fa56cdf2ba08",
+      "payloadSha256": "b5cee231433149e3fa1d2a6a8b0e442e5f1f4683db0ac5438661a92da8ea25f1",
+      "metadataSha256": "a4eda3e52189962503e3144a0669eedcfc23de8a2535e0a3869044ec990fbfb6"
+    },
+    {
+      "id": "p3-6a-r07-walker-entry-count",
+      "fixture": "fixtures/f07-walker-entry-count.json",
+      "recordCanonicalBytesSha256": "e5ac7775aa34854ac2771f90ecd710d24fc4bdaf16f63065d3d4774695e0d797",
+      "fixtureBytesSha256": "eeada1466878d88e50ba02c8bf950a49d8c67273e65940116d0ed72a528ace37",
+      "payloadSha256": "438903f24a18b1b560bd249e01c1e24b427b93b2ffa0a7ea839e2be78a3d36e4",
+      "metadataSha256": "5ef17460fad59070fee5ad54968d766942b1541a242d2dc6a8ec619e2d952fdd"
+    },
+    {
+      "id": "p3-6a-r08-walker-bytes",
+      "fixture": "fixtures/f08-walker-bytes.json",
+      "recordCanonicalBytesSha256": "44521086ab43851745eb62aebbaae94689b029152188d16a1975135075346758",
+      "fixtureBytesSha256": "9605a29e82282235b9c13c54b029a7e383a15eb99f6be367a780895dbc9ce48c",
+      "payloadSha256": "5b79b362b6f092f6655155a7e9b0aadf390cb174a60587ca3b1cdcfbbbee8cd9",
+      "metadataSha256": "27cfa61bead0590352a63e14818e1bb9fd5f0048e18990f60ee622f9f3142b28"
+    },
+    {
+      "id": "p3-6a-r09-walker-unreadable",
+      "fixture": "fixtures/f09-walker-unreadable.json",
+      "recordCanonicalBytesSha256": "f857eaf23cf1071a7c9586edc20fc7a7b7851647d9c1ccbbde3f5fab43b009de",
+      "fixtureBytesSha256": "1078e7b2fec5976016c4809efccdecfe9137b854f16b90deb3e55e03a9f13e7c",
+      "payloadSha256": "149f9c229654bf7c275b345b8ddbe703fd9027e6a52a5efb2f5b12efe4978649",
+      "metadataSha256": "17c5c927bc3f0187b49f3335c85dcee5ab6a37ec7dd3bef77c0b438106eccca5"
+    },
+    {
+      "id": "p3-6a-r10-walker-binary",
+      "fixture": "fixtures/f10-walker-binary.json",
+      "recordCanonicalBytesSha256": "2e7b6893fa1302f6a46a0e3571e8dc4d5062f3a7e7e87fbc6d40b456e0cca155",
+      "fixtureBytesSha256": "c2ae6c95a630747c2fa28f73573b5ca5a0e64f705154f4987f2c45cfb1e26ff1",
+      "payloadSha256": "c9d7ac5462bb60958bcf76435e923009ace472ed0afd4c1ff6b058203bfbd726",
+      "metadataSha256": "2bd9bac0dd6abec5f91a3fd9f86fef317bf3e1536fe9c436cd5ed5d726e158b2"
+    },
+    {
+      "id": "p3-6a-r11-diagnostic-stack-leak",
+      "fixture": "fixtures/f11-diagnostic-stack-leak.json",
+      "recordCanonicalBytesSha256": "cc6fbb93550cb5c9cc8593bc2b1f6eb5214d79445518445e8af963e94aebe529",
+      "fixtureBytesSha256": "53204a437f6a49ee1678aecac5b500ecc5c7dfde93056be4586c47f77b0f41c6",
+      "payloadSha256": "8c9bbc0d6f97bf654117202486144a5af842ea087f63a86716262eee9731ef60",
+      "metadataSha256": "085e0ad21886dc9074abb5a63ad558097dab78e82351bf2b043e030793c15278"
+    },
+    {
+      "id": "p3-6a-r12-diagnostic-unbounded",
+      "fixture": "fixtures/f12-diagnostic-unbounded.json",
+      "recordCanonicalBytesSha256": "1d9541c0d90f9da4997f7d7ea9b1443272f281641630d8ddefb7c46c97b905cc",
+      "fixtureBytesSha256": "7aae409aecff6dc9c8ceff13a7d3c71e441d94ae7df3d3c450de5f3e0cc5929d",
+      "payloadSha256": "846a73b223859944ccd0f2ba84d1dbe6d5bb188ca242d0a589fb269503c66e7f",
+      "metadataSha256": "4886fca36c7ade4e918962541b813155f3c976bbae99554e01df631bafe17c1e"
+    },
+    {
+      "id": "p3-6a-r13-control-safe",
+      "fixture": "fixtures/f13-control-safe.json",
+      "recordCanonicalBytesSha256": "01a1ab1e4109cc25395334d0edc98262eea1aae7494949e47f3145edb6128853",
+      "fixtureBytesSha256": "bd680d99ba90c3cc830924ad70d5d5fcac01c88cda97d92ab5ae71d4d48c5d04",
+      "payloadSha256": "7be04c0844f61f2e940104e96f6eaeec567b5383a1bcfff261c108053058fb83",
+      "metadataSha256": "6541160ff766ddc9be5f2105f95f21b8b95e39dd8596caa00ede382ef55cf32d"
+    },
+    {
+      "id": "p3-6a-r14-config-new-schema",
+      "fixture": "fixtures/f14-config-new-schema.json",
+      "recordCanonicalBytesSha256": "70d07ed192ce2ee7d8b05d4c802bbbdb93df2a5bac654c05d30db66dd6e46700",
+      "fixtureBytesSha256": "534a45d021db9789a20661c68f726897fac47227827aba6a1493466936e15f4e",
+      "payloadSha256": "4100315989a2a2ff18683d784e16ccd255956b4a63ced9a0de584ec2d1181467",
+      "metadataSha256": "954c05728ae9672ec72f951bac93f0f05e8e4e55f19d5942898b8ad09716e4bf"
+    }
+  ]
+}

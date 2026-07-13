@@ -56,6 +56,17 @@ describe("package files policy", () => {
     expect(packageJson.files).not.toContain("experiments")
     expect(isCoveredByPackageFiles("experiments/entry-intent-corpus/corpus.json", packageJson.files)).toBe(false)
     expect(isCoveredByPackageFiles("experiments/entry-intent-corpus/measure.mjs", packageJson.files)).toBe(false)
+    expect(existsSync(path.join(packageRoot, "experiments/p3-6a-config-path-safety-fixtures/corpus.json"))).toBe(true)
+    expect(isCoveredByPackageFiles("experiments/p3-6a-config-path-safety-fixtures/corpus.json", packageJson.files)).toBe(false)
+    expect(isCoveredByPackageFiles("experiments/p3-6a-config-path-safety-fixtures/evaluator/measure.mjs", packageJson.files)).toBe(false)
+    expect(isCoveredByPackageFiles("experiments/p3-6a-config-path-safety-fixtures/fixtures/f01-config-malformed.json", packageJson.files)).toBe(false)
+
+    const p3FixtureFiles = listAllFiles(path.join(packageRoot, "experiments/p3-6a-config-path-safety-fixtures"))
+      .map((filePath) => toPackagePath(path.relative(packageRoot, filePath)))
+    expect(p3FixtureFiles.length).toBeGreaterThan(0)
+    for (const filePath of p3FixtureFiles) {
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
+    }
   })
 
   it("keeps direct current README links covered by packaged files", () => {
@@ -128,6 +139,13 @@ function listConventionFiles(directory: string): readonly string[] {
       return entry.isFile() && /\.(ya?ml)$/iu.test(entry.name) ? [entryPath] : []
     })
     .sort()
+}
+
+function listAllFiles(directory: string): readonly string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name)
+    return entry.isDirectory() ? listAllFiles(entryPath) : entry.isFile() ? [entryPath] : []
+  })
 }
 
 function readPackageJson(filePath: string): PackageJson {
