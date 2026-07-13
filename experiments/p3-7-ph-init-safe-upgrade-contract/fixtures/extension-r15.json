@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "p3-7-ph-init-fixture-extension.2",
+  "binding": {
+    "packageName": "persona-harness",
+    "packageSourceCommit": "37bc06726970f170edac3a887447ae1182302be7",
+    "profileId": "p3-7-synthetic-profile-kotlin",
+    "profileFingerprint": "profile-fingerprint-p3-7-kotlin-v1",
+    "projectId": "p3-7-synthetic-project-alpha",
+    "projectFingerprint": "project-fingerprint-p3-7-alpha-v1"
+  },
+  "fixture": {
+    "id": "p3-7-r15-new-profile-binding",
+    "state": {
+      "entries": [
+        {
+          "path": ".persona/harness.jsonc",
+          "kind": "file",
+          "owner": "persona-harness",
+          "marker": "ph-init-owned-v1",
+          "currentContent": null,
+          "ownedBaselineContent": null,
+          "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-kotlin\"}\n",
+          "nextContentSha256": "be6f55e0f45159a8f54306f704c838fd83024d74f8029ec89debcb4b288a304c"
+        }
+      ],
+      "partialMarker": null,
+      "stateDigest": "429179e3657d782707c29b99b0780a289db80cb48d0bbb56650130bea046fd84"
+    },
+    "operation": {
+      "mode": "init",
+      "dryRun": false,
+      "writeFailureAt": null,
+      "race": "none",
+      "backupPaths": [],
+      "backup": {
+        "location": "synthetic://p3-7/backups/p3-7-r15-new-profile-binding",
+        "manifest": [],
+        "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    "oracle": {
+      "decision": "apply",
+      "writes": [
+        ".persona/harness.jsonc"
+      ],
+      "preservedPaths": [],
+      "conflicts": [],
+      "rollbackRequired": false,
+      "stateUnchanged": false,
+      "noDataLoss": true,
+      "overwriteForeignFiles": false,
+      "noFollow": true,
+      "deterministic": true,
+      "productBehaviorChange": false,
+      "resultDigest": "e533f7471ac0dffc68c7ca5f4d26cf5b9d5ccd1b372b86b6eb5d810f317239d7"
+    },
+    "fingerprint": "807c95f3656d261b55a83e9303e307b11f7e6fa931f67bf22f430a556de5bceb"
+  }
+}

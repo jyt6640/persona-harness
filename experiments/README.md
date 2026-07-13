@@ -13,6 +13,10 @@ not part of the published npm package.
 - [P3 adversarial closure fixtures](p3-adversarial-closure-fixtures/README.md):
   source-only P0 audit reproduction fixtures for future integrity regressions.
   The payloads are not authoritative product evidence and do not claim a fix.
+- [P3-7 ph init safe upgrade contract](p3-7-ph-init-safe-upgrade-contract/README.md):
+  source-only synthetic ownership, conflict, backup, rollback, and rerun
+  fixtures for a future safe `ph init` implementation. It does not implement
+  `ph init` or claim product behavior.
 
 Experiment material is package-excluded and is not product-quality evidence,
 runtime activation authorization, or a default-on decision.

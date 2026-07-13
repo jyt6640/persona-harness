@@ -1,0 +1,853 @@
+{
+  "schemaVersion": "p3-7-ph-init-fixture-registry.1",
+  "binding": {
+    "packageName": "persona-harness",
+    "packageSourceCommit": "37bc06726970f170edac3a887447ae1182302be7",
+    "profileId": "p3-7-synthetic-profile-java-spring",
+    "profileFingerprint": "profile-fingerprint-p3-7-java-spring-v1",
+    "projectId": "p3-7-synthetic-project-alpha",
+    "projectFingerprint": "project-fingerprint-p3-7-alpha-v1"
+  },
+  "fixtures": [
+    {
+      "id": "p3-7-r01-ownership-marker",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/harness.jsonc",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": null,
+            "ownedBaselineContent": null,
+            "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "nextContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+          },
+          {
+            "path": ".persona/rules/clean-code.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": null,
+            "ownedBaselineContent": null,
+            "nextContent": "# Synthetic clean-code rule\n",
+            "nextContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+          },
+          {
+            "path": "AGENTS.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": null,
+            "ownedBaselineContent": null,
+            "nextContent": "# Synthetic Persona Harness ownership\n",
+            "nextContentSha256": "e31423cb5e40a861d72a7d474d5461d603d01b4288951835d79e1c9fb2a6afaf"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "58b8477182264d4fa72fb6bb6d6fab97d27d63d9559f7d5cc2421cd19732f99f"
+      },
+      "operation": {
+        "mode": "init",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r01-ownership-marker",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "apply",
+        "writes": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md",
+          "AGENTS.md"
+        ],
+        "preservedPaths": [],
+        "conflicts": [],
+        "rollbackRequired": false,
+        "stateUnchanged": false,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "64394075ffdea5200c88601a3cb072b2e02de446c2bf8ed0579ce829e7a57af6"
+      },
+      "fingerprint": "0f0b1454c6ed8daa6900647d4c52675945ef6ce105ea62f7a18293e39e592b69"
+    },
+    {
+      "id": "p3-7-r02-idempotent-owned-rerun",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/harness.jsonc",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "ownedBaselineContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "currentContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c",
+            "nextContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c",
+            "ownedBaselineContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+          },
+          {
+            "path": ".persona/rules/clean-code.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "# Synthetic clean-code rule\n",
+            "ownedBaselineContent": "# Synthetic clean-code rule\n",
+            "nextContent": "# Synthetic clean-code rule\n",
+            "currentContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82",
+            "nextContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82",
+            "ownedBaselineContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "0b79fba964fdad2c3e23af7c0f7ef38bb10ca00f1fe10bcfd0235e77d3ff19c6"
+      },
+      "operation": {
+        "mode": "rerun",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r02-idempotent-owned-rerun",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "no-op",
+        "writes": [],
+        "preservedPaths": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md"
+        ],
+        "conflicts": [],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "1b67a56e120f9980f7160d8bfd676b1c425e5272f899e5a1fae45a824bcbfc94"
+      },
+      "fingerprint": "c3ec16cd182443657ed16cd2782dc8de815b5ece67927e044da1b9efd9aeb0ae"
+    },
+    {
+      "id": "p3-7-r03-safe-owned-upgrade",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/harness.jsonc",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "ownedBaselineContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\",\"schema\":2}\n",
+            "currentContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c",
+            "nextContentSha256": "e1d11a721220f8764f39a4ea9a524356a9449c5d89e093a6b1bc1348ac3aa8a2",
+            "ownedBaselineContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+          },
+          {
+            "path": ".persona/rules/clean-code.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "# Synthetic clean-code rule\n",
+            "ownedBaselineContent": "# Synthetic clean-code rule\n",
+            "nextContent": "# Synthetic clean-code rule v2\n",
+            "currentContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82",
+            "nextContentSha256": "86abe3f65da55c86289b82a39534f8a0d4b260b10c21405c96e0bf8c61a674b5",
+            "ownedBaselineContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+          },
+          {
+            "path": "AGENTS.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "# Synthetic Persona Harness ownership\n",
+            "ownedBaselineContent": "# Synthetic Persona Harness ownership\n",
+            "nextContent": "# Synthetic Persona Harness ownership v2\n",
+            "currentContentSha256": "e31423cb5e40a861d72a7d474d5461d603d01b4288951835d79e1c9fb2a6afaf",
+            "nextContentSha256": "a859d327bc91436b5e00d48f78f0bf1828d8a2dc5c39880a53470f3a6e29c44d",
+            "ownedBaselineContentSha256": "e31423cb5e40a861d72a7d474d5461d603d01b4288951835d79e1c9fb2a6afaf"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "ae2c275fe86a6f681250b161d6043d0d78b7040e94317e73a4c5d90119939832"
+      },
+      "operation": {
+        "mode": "upgrade",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md",
+          "AGENTS.md"
+        ],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r03-safe-owned-upgrade",
+          "manifest": [
+            {
+              "path": ".persona/harness.jsonc",
+              "digest": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+            },
+            {
+              "path": ".persona/rules/clean-code.md",
+              "digest": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+            },
+            {
+              "path": "AGENTS.md",
+              "digest": "e31423cb5e40a861d72a7d474d5461d603d01b4288951835d79e1c9fb2a6afaf"
+            }
+          ],
+          "manifestDigest": "04cf02a76f9c682399e6e3598594a21660995879068481f756e010a54d1488d2"
+        }
+      },
+      "oracle": {
+        "decision": "apply",
+        "writes": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md",
+          "AGENTS.md"
+        ],
+        "preservedPaths": [],
+        "conflicts": [],
+        "rollbackRequired": false,
+        "stateUnchanged": false,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "64394075ffdea5200c88601a3cb072b2e02de446c2bf8ed0579ce829e7a57af6"
+      },
+      "fingerprint": "732ad832ff2921f9827794ab6509d0a085af1256a427a3b9fc5d44a3889395e6"
+    },
+    {
+      "id": "p3-7-r04-modified-config-conflict",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/harness.jsonc",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "{\"profileId\":\"user-edited\"}\n",
+            "ownedBaselineContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\",\"schema\":2}\n",
+            "currentContentSha256": "fec3876c779d1d2ad940daea3291cc0a8b9d2684e473270dd81c55f094b83f96",
+            "nextContentSha256": "e1d11a721220f8764f39a4ea9a524356a9449c5d89e093a6b1bc1348ac3aa8a2",
+            "ownedBaselineContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "013c5dbb3eab21c75603a188b633930a2a8fee9795ea6468aba9076656cf7a10"
+      },
+      "operation": {
+        "mode": "upgrade",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r04-modified-config-conflict",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [
+          ".persona/harness.jsonc"
+        ],
+        "conflicts": [
+          ".persona/harness.jsonc"
+        ],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "93846f002b678232494c24f24dcec9e67b173238bd555a0f6dd06a7e1b8501e3"
+      },
+      "fingerprint": "0b36c40678e053248507ccf45e4c33dfe84f6933f9ce5a72b3f60293f0da4f8c"
+    },
+    {
+      "id": "p3-7-r05-modified-rules-conflict",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/rules/clean-code.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "# User edited rule\n",
+            "ownedBaselineContent": "# Synthetic clean-code rule\n",
+            "nextContent": "# Synthetic clean-code rule v2\n",
+            "currentContentSha256": "8d797aeedd96f6eec0881953452b194665e10f4356aa17835cc22789ed92a5e7",
+            "nextContentSha256": "86abe3f65da55c86289b82a39534f8a0d4b260b10c21405c96e0bf8c61a674b5",
+            "ownedBaselineContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "df35b47f4009fb26a27913e3fb57f3ad45dda1f642700974eb8d17c856382830"
+      },
+      "operation": {
+        "mode": "upgrade",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r05-modified-rules-conflict",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [
+          ".persona/rules/clean-code.md"
+        ],
+        "conflicts": [
+          ".persona/rules/clean-code.md"
+        ],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "88b27c99bec66de1da5064d7802b4b49e7d59e8ac5458e23c313063c6af0ac80"
+      },
+      "fingerprint": "0872ad2839136e8d6a3a47a2912c2a07252975244c0ca12c905ad8a3a8f86e22"
+    },
+    {
+      "id": "p3-7-r06-modified-agents-conflict",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": "AGENTS.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "# User instructions\n",
+            "ownedBaselineContent": "# Synthetic Persona Harness ownership\n",
+            "nextContent": "# Synthetic Persona Harness ownership v2\n",
+            "currentContentSha256": "6c80838b54a540dd3b9a33f21978e244bceaa41aabf363b8346453de91fc2638",
+            "nextContentSha256": "a859d327bc91436b5e00d48f78f0bf1828d8a2dc5c39880a53470f3a6e29c44d",
+            "ownedBaselineContentSha256": "e31423cb5e40a861d72a7d474d5461d603d01b4288951835d79e1c9fb2a6afaf"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "dadead67e176439122630ffff590f0a7a2f448db1416b3fb40a4d074c5b79e88"
+      },
+      "operation": {
+        "mode": "upgrade",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r06-modified-agents-conflict",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [
+          "AGENTS.md"
+        ],
+        "conflicts": [
+          "AGENTS.md"
+        ],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "1bb1a88130e74a520150c401c6023e47fc0241b29d3d77a76fb2162543f24250"
+      },
+      "fingerprint": "e06c9e55e46d242de2792d589eb82480059df783124fb877014a8b362112b136"
+    },
+    {
+      "id": "p3-7-r07-foreign-file-preservation",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": "README.md",
+            "kind": "file",
+            "owner": "foreign",
+            "marker": null,
+            "currentContent": "# User README\n",
+            "ownedBaselineContent": null,
+            "nextContent": null,
+            "currentContentSha256": "bedf7c9264687cb5aacf96d0c310846ae03735b7f9a28eaf36d286bf5c8a4671"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "f8a0e6ad0a8ccf6960402d84dbe8002875a9f14948373d1e63192440f44c2b1e"
+      },
+      "operation": {
+        "mode": "init",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r07-foreign-file-preservation",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "apply",
+        "writes": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md"
+        ],
+        "preservedPaths": [
+          "README.md"
+        ],
+        "conflicts": [],
+        "rollbackRequired": false,
+        "stateUnchanged": false,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "c0138440ea951b29ce5d116d03d5df41dce5fd11f68adab2fcda78d97e5584f4"
+      },
+      "fingerprint": "670bb085199e7873726b24e7282efa8d37249d189c15a2ef617918fcaaa88cd2"
+    },
+    {
+      "id": "p3-7-r08-rollback-write-failure",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/harness.jsonc",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "ownedBaselineContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\",\"schema\":2}\n",
+            "currentContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c",
+            "nextContentSha256": "e1d11a721220f8764f39a4ea9a524356a9449c5d89e093a6b1bc1348ac3aa8a2",
+            "ownedBaselineContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+          },
+          {
+            "path": ".persona/rules/clean-code.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "# Synthetic clean-code rule\n",
+            "ownedBaselineContent": "# Synthetic clean-code rule\n",
+            "nextContent": "# Synthetic clean-code rule v2\n",
+            "currentContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82",
+            "nextContentSha256": "86abe3f65da55c86289b82a39534f8a0d4b260b10c21405c96e0bf8c61a674b5",
+            "ownedBaselineContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "972140fed76ccc6e8f3921b16ea496d7837c0f2d1a80cceafe1cff82aea089a3"
+      },
+      "operation": {
+        "mode": "upgrade",
+        "dryRun": false,
+        "writeFailureAt": ".persona/rules/clean-code.md",
+        "race": "none",
+        "backupPaths": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md"
+        ],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r08-rollback-write-failure",
+          "manifest": [
+            {
+              "path": ".persona/harness.jsonc",
+              "digest": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+            },
+            {
+              "path": ".persona/rules/clean-code.md",
+              "digest": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+            }
+          ],
+          "manifestDigest": "b762e3459bdc64c2d19e6f376bd830280c5cad49db5b9045593e78f27e09505f"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md"
+        ],
+        "conflicts": [],
+        "rollbackRequired": true,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "c1a26f6d0fd09f0d4150ae771ddc8faf729780ab92b74c551271d909b57671a9"
+      },
+      "fingerprint": "0d1618993798db01dc2127e3914a8c463e63685c66c2f5fc0c81cb929047edd0"
+    },
+    {
+      "id": "p3-7-r09-symlink-escape",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/rules",
+            "kind": "symlink",
+            "owner": "foreign",
+            "marker": null,
+            "linkTarget": "../outside-rules",
+            "currentContent": null,
+            "ownedBaselineContent": null,
+            "nextContent": null
+          },
+          {
+            "path": "../outside/AGENTS.md",
+            "kind": "escape",
+            "owner": "foreign",
+            "marker": null,
+            "linkTarget": null,
+            "currentContent": null,
+            "ownedBaselineContent": null,
+            "nextContent": null
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "ebc4025a14bbbb56601e34b4d2be6b3db81e7ae00fe5fd54578dff300edec2bd"
+      },
+      "operation": {
+        "mode": "init",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r09-symlink-escape",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [
+          ".persona/rules",
+          "../outside/AGENTS.md"
+        ],
+        "conflicts": [
+          ".persona/rules",
+          "../outside/AGENTS.md"
+        ],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "bd7b95b929fe36133b268fe30557ffb6ddaf31a29d0466f48c7cf6bb414acc93"
+      },
+      "fingerprint": "030fffc037390aec7964150bf7ff914471519c6fab67930059ce474e6c28c647"
+    },
+    {
+      "id": "p3-7-r10-partial-initialization",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/harness.jsonc",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "ownedBaselineContent": null,
+            "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\",\"schema\":2}\n",
+            "currentContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c",
+            "nextContentSha256": "e1d11a721220f8764f39a4ea9a524356a9449c5d89e093a6b1bc1348ac3aa8a2"
+          }
+        ],
+        "partialMarker": "ph-init-partial-v1",
+        "stateDigest": "e972da38aa68330cf33cecb73ebe1f6771ac4373a6791689d915dd47358c7d06"
+      },
+      "operation": {
+        "mode": "recover",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "resolution": "explicit-nondestructive-recovery-required",
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r10-partial-initialization",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [
+          ".persona/harness.jsonc"
+        ],
+        "conflicts": [
+          ".persona/harness.jsonc"
+        ],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "93846f002b678232494c24f24dcec9e67b173238bd555a0f6dd06a7e1b8501e3"
+      },
+      "fingerprint": "2d34099afa1798d9e38e27be76e2dec01aa616e0b9e0cd909057101c5cbf1ae3"
+    },
+    {
+      "id": "p3-7-r11-concurrent-race",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [],
+        "partialMarker": null,
+        "stateDigest": "4140a5dd9a140d1beecc2520498af385181d91f66b91819a6fa1d2fe0731d3a0"
+      },
+      "operation": {
+        "mode": "init",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "target-created-after-scan",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r11-concurrent-race",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [],
+        "conflicts": [
+          "synthetic-target-root"
+        ],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "6874e5aff4fa39d4d24747402705daa04c6eff63efe7719db81b02219267899f"
+      },
+      "fingerprint": "165e627711f716f4ea21dcfc0e922911d1b714ce827bab933d06f025a66c49d6"
+    },
+    {
+      "id": "p3-7-r12-deterministic-dry-run",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/harness.jsonc",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "ownedBaselineContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\",\"schema\":2}\n",
+            "currentContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c",
+            "nextContentSha256": "e1d11a721220f8764f39a4ea9a524356a9449c5d89e093a6b1bc1348ac3aa8a2",
+            "ownedBaselineContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+          },
+          {
+            "path": ".persona/rules/clean-code.md",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": "ph-init-owned-v1",
+            "currentContent": "# Synthetic clean-code rule\n",
+            "ownedBaselineContent": "# Synthetic clean-code rule\n",
+            "nextContent": "# Synthetic clean-code rule v2\n",
+            "currentContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82",
+            "nextContentSha256": "86abe3f65da55c86289b82a39534f8a0d4b260b10c21405c96e0bf8c61a674b5",
+            "ownedBaselineContentSha256": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "972140fed76ccc6e8f3921b16ea496d7837c0f2d1a80cceafe1cff82aea089a3"
+      },
+      "operation": {
+        "mode": "upgrade",
+        "dryRun": true,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md"
+        ],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r12-deterministic-dry-run",
+          "manifest": [
+            {
+              "path": ".persona/harness.jsonc",
+              "digest": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+            },
+            {
+              "path": ".persona/rules/clean-code.md",
+              "digest": "8cfbbee4380b71150abc6059512ab65e3959b371e511ca5cb81fdbeec68d0b82"
+            }
+          ],
+          "manifestDigest": "b762e3459bdc64c2d19e6f376bd830280c5cad49db5b9045593e78f27e09505f"
+        }
+      },
+      "oracle": {
+        "decision": "dry-run",
+        "writes": [],
+        "preservedPaths": [
+          ".persona/harness.jsonc",
+          ".persona/rules/clean-code.md"
+        ],
+        "conflicts": [],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "3d8dfa5f1b7f0f213b30db690cfd80c6e03e80ff2603bde1b552bdf3451942a2"
+      },
+      "fingerprint": "9db92dbc2a70df1c1377d59ac3e75939971b8093f1c0630611f162f8297a1704"
+    },
+    {
+      "id": "p3-7-r13-binding-mismatch",
+      "bindingRef": "registry",
+      "bindingOverride": {
+        "projectId": "p3-7-foreign-project"
+      },
+      "state": {
+        "entries": [],
+        "partialMarker": null,
+        "stateDigest": "4140a5dd9a140d1beecc2520498af385181d91f66b91819a6fa1d2fe0731d3a0"
+      },
+      "operation": {
+        "mode": "init",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r13-binding-mismatch",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [],
+        "conflicts": [
+          "binding.projectId"
+        ],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "037a82cb8ab3c4824bad9a844ff9b2d3a7e1102bae6d709243b7a888a501e256"
+      },
+      "fingerprint": "94f7b01d9f6c0c9262a0d63896d52a644beaac1d65360e73a1087158ffec6fd9"
+    },
+    {
+      "id": "p3-7-r14-missing-ownership-marker",
+      "bindingRef": "registry",
+      "state": {
+        "entries": [
+          {
+            "path": ".persona/harness.jsonc",
+            "kind": "file",
+            "owner": "persona-harness",
+            "marker": null,
+            "currentContent": "{\"profileId\":\"unknown\"}\n",
+            "ownedBaselineContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\"}\n",
+            "nextContent": "{\"profileId\":\"p3-7-synthetic-profile-java-spring\",\"schema\":2}\n",
+            "currentContentSha256": "79100abaeb5cd196ced0b4e67f6682ac7234004fe5d9e8c3ee5752cb1ed80dda",
+            "nextContentSha256": "e1d11a721220f8764f39a4ea9a524356a9449c5d89e093a6b1bc1348ac3aa8a2",
+            "ownedBaselineContentSha256": "6b36695a6bb954437f8e7a221c865ef60d338091d0246cfe68b5c913fb07658c"
+          }
+        ],
+        "partialMarker": null,
+        "stateDigest": "b041ee6533dbb3ceae1fb2ecba32dffe96911c3dafbd7d4715665cd7cbdc8a6b"
+      },
+      "operation": {
+        "mode": "upgrade",
+        "dryRun": false,
+        "writeFailureAt": null,
+        "race": "none",
+        "backupPaths": [],
+        "backup": {
+          "location": "synthetic://p3-7/backups/p3-7-r14-missing-ownership-marker",
+          "manifest": [],
+          "manifestDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "oracle": {
+        "decision": "fail-closed",
+        "writes": [],
+        "preservedPaths": [
+          ".persona/harness.jsonc"
+        ],
+        "conflicts": [
+          ".persona/harness.jsonc"
+        ],
+        "rollbackRequired": false,
+        "stateUnchanged": true,
+        "noDataLoss": true,
+        "overwriteForeignFiles": false,
+        "noFollow": true,
+        "deterministic": true,
+        "productBehaviorChange": false,
+        "resultDigest": "93846f002b678232494c24f24dcec9e67b173238bd555a0f6dd06a7e1b8501e3"
+      },
+      "fingerprint": "b624fea534ed55a94e078bd8b9e81052cd0c982b7d1d0c84ae9554951060022b"
+    }
+  ]
+}
