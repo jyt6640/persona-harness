@@ -6,6 +6,31 @@ const workflowPaths = [
   ".github/workflows/release.yml",
 ]
 
+const immutableActionPins = {
+  checkout: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5",
+  setupNode: "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+}
+
+const expectedActionCounts = {
+  ".github/workflows/ci.yml": { checkout: 1, setupNode: 1 },
+  ".github/workflows/publish.yml": { checkout: 1, setupNode: 1 },
+  ".github/workflows/release.yml": { checkout: 2, setupNode: 2 },
+}
+
+function countOccurrences(text, value) {
+  return text.split(value).length - 1
+}
+
+function hasImmutableActionPins(path, text) {
+  const expected = expectedActionCounts[path]
+  if (expected === undefined) return false
+  return (
+    countOccurrences(text, immutableActionPins.checkout) === expected.checkout &&
+    countOccurrences(text, immutableActionPins.setupNode) === expected.setupNode &&
+    !/actions\/(?:checkout|setup-node)@v\d+\b/.test(text)
+  )
+}
+
 const requirements = [
   ["ci trigger", ".github/workflows/ci.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("- main")],
   ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm test", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
@@ -25,6 +50,11 @@ async function main() {
     const text = contents.get(path)
     if (text === undefined || !predicate(text)) {
       failures.push(`${name} (${path})`)
+    }
+  }
+  for (const path of workflowPaths) {
+    if (!hasImmutableActionPins(path, contents.get(path) ?? "")) {
+      failures.push(`immutable action pin (${path})`)
     }
   }
   for (const [path, text] of contents) {

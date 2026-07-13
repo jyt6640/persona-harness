@@ -33,9 +33,12 @@ Status: candidate branch only; QA and External re-gate required.
 
 ## Action Pins And Admin Boundaries
 
-Exact immutable action commit SHAs were not resolved reliably in this
-environment. Existing major action references remain unchanged; no fake pins
-were added. Exact action pinning is a remaining supply-chain/admin gate.
+The workflow action references are pinned to the exact immutable commits verified
+for the official `v4` tags: `actions/checkout` uses
+`34e114876b0b11c390a56381ad16ebd13914f8d5`, and `actions/setup-node` uses
+`49933ea5288caeca8642d1e84afbd3f7d6820020`. The static workflow policy rejects
+floating major-tag references and requires the expected pin count in each
+workflow.
 
 GitHub branch protection, rulesets, required checks, trusted publishing
 environment approval, and npm/GitHub trusted-publisher configuration are not
