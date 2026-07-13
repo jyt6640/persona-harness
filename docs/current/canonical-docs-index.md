@@ -35,6 +35,7 @@ Use these files when making current product, measurement, or release decisions.
 | Item 21 Java precision warnings | `docs/current/java-precision-warnings-acceptance-record.md` | Exact-main, three-rule high-precision warn-only acceptance; not full Iron List enforcement. |
 | Item 24 QUICK-DEMO gate flow | `docs/current/quick-demo-acceptance-record.md` | Exact-main public three-beat setup, plaintext finish gate, and goal-entry acceptance record. |
 | Item 25 PH-core / adapter boundary | `docs/current/ph-core-adapter-boundary-design.md` | Design-only ownership and dependency direction; no module move or adapter implementation. |
+| P3 integrity roadmap | `docs/current/p3-integrity-roadmap.md` | Accepted P3-first release hold, assurance model, integrity gates, and P2 hold; docs-only, no implementation. |
 | ROLE-RULES dogfooding readiness | `docs/current/role-rules-dogfooding-readiness.md` | T10 exit checklist, violation-log template, and next queue for starting Woowacourse mission dogfooding. |
 | Workflow string-gate parsing audit | `docs/current/workflow-string-gate-parsing-audit.md` | T4 audit of report-status parsing migration and retained string-based gate contracts. |
 | Ralph-loop status | `docs/current/ralph-loop-measurement-status.md` | Trigger, completion-integrity, cooldown, and default-off status. |

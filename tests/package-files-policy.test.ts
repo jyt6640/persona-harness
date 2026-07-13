@@ -81,6 +81,7 @@ describe("package files policy", () => {
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
       "docs/current/release/v0.7.0-rc.2-release-notes.md",
+      "docs/current/p3-integrity-roadmap.md",
       "docs/current/canonical-docs-index.md",
       "docs/current/external-review-adoption-status.md",
       "docs/current/diff-rules-classification.md",

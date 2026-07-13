@@ -22,22 +22,27 @@ Full detail and the reject rule live in
 
 ## Supported claims
 
-Each is scoped to bounded local fixtures and is a **completion-integrity**
-claim, not an app-quality claim.
+Each supported claim is scoped to bounded local fixtures and is a
+**completion-integrity** claim, not an app-quality claim. P3 now holds Stable/GA
+and npm `latest` movement because the 2026-07-12 local production audit found
+stronger completion-integrity bypasses outside these bounded fixtures.
 
 ### 1. PH blocks missing completion evidence
 
-> PH can block completion when required reports, PH-generated evidence, or real
-> test results are missing for explicitly defined workflow gates.
+> PH can block completion when required reports, evidence, or test results are
+> missing for explicitly defined workflow gates.
 
-Boundary: this does not prove generated app quality.
+Boundary: this does not prove generated app quality or strong anti-forgery
+integrity.
 
 ### 2. Forged TDD evidence is rejected
 
-> PH ignores a hand-written/forged TDD evidence file in the measured
+> PH ignores a simple hand-written/forged TDD evidence file in the measured
 > completion-integrity fixture; `workflow finish` still exits non-zero.
 
-Boundary: this does not prove full TDD sufficiency.
+Boundary: this does not prove full TDD sufficiency or rejection of every
+internally consistent forged evidence chain. P3 is the accepted remediation
+program for that gap.
 
 ### 3. Green-only completion is blocked when the TDD rail is enabled
 
@@ -55,6 +60,28 @@ Boundary: PH does not write tests for you and does not prove test quality.
 Boundary: this is an evidence-integrity claim, not a testing-framework claim.
 
 ## Negative / parked
+
+### P3 completion-integrity hold
+
+A local production audit dated 2026-07-12 against
+`persona-harness@0.7.0-rc.2` recorded bypasses and safety gaps that block
+Stable/GA and npm `latest` movement until P3 closes. Local evidence paths:
+
+- `/Users/yongtae/Downloads/persona-harness-production-audit.md`
+- `/Users/yongtae/Downloads/persona-harness-audit-execution-log.txt`
+
+Accepted boundary:
+
+- Unsigned project-local JSON can remain diagnostics/audit material, but must
+  not be finish authority after P3.
+- Local fresh fixed-command verification is cooperative-project integrity only.
+- Strong integrity/GA claims require trusted external signed CI/verifier
+  attestation.
+- Current RC evidence is not generated-app certification, product efficacy,
+  broad reliability, security certification, token-saving evidence, or a strong
+  anti-forgery guarantee.
+
+See [`current/p3-integrity-roadmap.md`](current/p3-integrity-roadmap.md).
 
 ### Runtime injection
 

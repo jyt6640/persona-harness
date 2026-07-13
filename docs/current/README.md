@@ -33,6 +33,8 @@ deleting evidence/status history.
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
   [`release/v0.7.0-rc.2-release-notes.md`](release/v0.7.0-rc.2-release-notes.md).
+- P3 integrity roadmap and release hold:
+  [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -80,6 +82,12 @@ deleting evidence/status history.
   `185885b7918459ef12bbea120a4261962cd57059`. Registry gitHead and matching
   tag/GitHub prerelease `v0.7.0-rc.2` target that commit; package hashes and
   workflow provenance are recorded in its durable release facts.
+- P3 is accepted as the next blocking program before P2 product/release use:
+  Stable/GA and npm `latest` movement are NO-GO until P3 closes. The
+  2026-07-12 local production audit inputs are recorded in
+  `p3-integrity-roadmap.md`; they are release-planning evidence, not a
+  published third-party certification. Completed P2 source-only evidence and
+  bundles remain held, not discarded.
 - `runtimeInjection` remains a parked opt-in preview.
 - P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
   writer/workspace-edit contract. Recovery remains hidden from normal help,
@@ -133,4 +141,5 @@ benefit, app quality, full-TDD/test sufficiency, broad reliability, closure
 guarantee, autonomous completion, generated-app certification, deterministic
 role enforcement, production-ready delegation, automatic
 completion/downgrade/removal, CodeGraph/LSP default/effectiveness, or broad
-product guarantees.
+product guarantees. Do not claim strong completion-integrity, anti-forgery,
+Stable/GA, or npm `latest` readiness until P3 closes.

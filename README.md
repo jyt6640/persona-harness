@@ -6,7 +6,7 @@
 
 # Persona Harness
 
-**A completion gate for AI coding agents building Java/Spring backends.**
+**A gate-first workflow CLI for AI coding agents building Java/Spring backends.**
 
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
@@ -21,20 +21,24 @@
 
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-> AI agents love to say "Done!" — Persona Harness makes them prove it. It is a local CLI completion gate that blocks completion claims until required reports, PH-generated evidence, and real test results exist on disk.
+> AI agents love to say "Done!" — Persona Harness makes them show their work. It is a local workflow gate that records and checks reports, evidence, and verification results for explicitly defined gates.
 
 > [!IMPORTANT]
-> **Alpha, gate-first, measured.** Stable: `persona-harness@latest=0.6.0` (`next=0.6.0-rc.4`). Runtime injection was measured **negative** in the accepted 10-pair fixture set, so runtime guidance is **default-off / opt-in** — not the product center. See [`injection-value-status.json`](docs/current/injection-value-status.json). What PH claims is narrow: **it blocks unverified completion for explicitly defined evidence gates and deterministic violations.**
+> **Alpha, gate-first, measured.** Stable: `persona-harness@latest=0.6.0`; current next-channel RC: `0.7.0-rc.2`. A 2026-07-12 local production audit found completion-integrity bypasses in the current RC line, so Stable/GA and npm `latest` movement are **NO-GO pending P3**. Runtime injection remains **default-off / opt-in**. See [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md), [`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md), and [`injection-value-status.json`](docs/current/injection-value-status.json).
 
 ## Measured Behavior
 
 Unlike most agent-harness projects, PH publishes what it has actually measured — including negatives.
 
-- **Forged TDD evidence** planted before `workflow finish` → `finish` exits **1**, forged file ignored.
+- **Simple forged TDD evidence fixture** planted before `workflow finish` → `finish` exits **1**, forged file ignored.
 - **Green-only completion** with the TDD rail on → blocked **5/5** (vs allowed 5/5 off).
 - **Runtime injection**, 10 paired OpenCode runs → equal success (10/10 both), but PH ON cost more on every pair → kept **default-off**.
 
-Completion-integrity measurements on bounded local fixtures — *not* token-saving, app-quality, or product-efficacy claims. Full boundary and evidence: **[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)**.
+Completion-integrity measurements are bounded local fixtures. They are *not*
+token-saving, app-quality, product-efficacy, security, GA, or broad
+anti-forgery claims. Full boundary and P3 hold:
+**[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)** and
+**[docs/current/p3-integrity-roadmap.md](docs/current/p3-integrity-roadmap.md)**.
 
 ## What it is
 
@@ -44,9 +48,13 @@ A workflow + evidence CLI (`ph`) with an optional OpenCode plugin, for Java/Spri
 - keeps the agent on a repeatable backend workflow;
 - runs verification through bounded commands;
 - records local evidence of what was read, run, and finished;
-- **blocks completion when required reports or evidence are missing.**
+- can block completion when required reports or evidence for defined gates are
+  missing.
 
-It is **not** a code-quality guarantee, a token-saving product, a broad linter, or proof that generated apps are production-ready. Every claim broader than the completion gate must be earned by measurement first — see [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
+It is **not** a code-quality guarantee, a token-saving product, a broad linter,
+proof that generated apps are production-ready, or a strong completion-integrity
+guarantee before P3 closes. Every claim broader than the measured gates must be
+earned by measurement first — see [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 
 ## Install
 
@@ -113,7 +121,12 @@ Enable both settings in `.persona/harness.jsonc`:
 { "enforce": { "executeVerification": true, "tdd": true } }
 ```
 
-`ph workflow test` then records red evidence **only from PH-run Gradle/JUnit failures** — agent-reported evidence is never accepted. `workflow check` / `archive` / `finish` record green evidence for the same ticket/test id. It is a red-first completion gate; it does not scaffold tests, prove test sufficiency, run coverage/mutation, or certify app quality.
+`ph workflow test` is intended to record red evidence from PH-run Gradle/JUnit
+failures, and `workflow check` / `archive` / `finish` record green evidence for
+the same ticket/test id. Current P3 work is strengthening the authority model so
+unsigned project-local artifacts cannot satisfy finish authority by themselves.
+It is a red-first completion gate; it does not scaffold tests, prove test
+sufficiency, run coverage/mutation, or certify app quality.
 
 ## Commands
 
@@ -146,7 +159,12 @@ do not change the P0-3 root CLI discovery contract.
 
 ## Boundaries & safety
 
-Evidence answers one question — *"Did the agent see and follow the expected rail?"* — and nothing more. PH does **not** promise app-quality certification, token savings, Clean Code guarantees, broad AST/linter enforcement, a full TDD framework, closure guarantees, or a complete workflow without OpenCode. The canonical list is in [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
+Evidence answers one bounded question — *"What did this PH workflow observe for
+this defined gate?"* — and nothing more. PH does **not** promise app-quality
+certification, token savings, Clean Code guarantees, broad AST/linter
+enforcement, a full TDD framework, closure guarantees, strong anti-forgery
+integrity before P3, or a complete workflow without OpenCode. The canonical list
+is in [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 
 > [!WARNING]
 > `ph bearshell` is **not a sandbox**. It limits runtime and output size, but commands still run on your machine with your permissions. See [SECURITY](SECURITY.md).
