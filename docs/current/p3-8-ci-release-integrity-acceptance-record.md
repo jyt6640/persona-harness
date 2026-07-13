@@ -7,7 +7,7 @@ Status: candidate branch only; QA and External re-gate required.
 - Base: `41bdf99e2523749df19208bcf8740b61db80c933`.
 - Branch: `ci/release-integrity-hardening`.
 - Source bundle used for the isolated clone:
-  `/tmp/persona-p3-receipt-provenance-binding-41bdf99.bundle`.
+  `/tmp/persona-p3-8-release-integrity-hardening-bf16616.bundle`.
 - This record is not a publish, tag, release, or stable/GA approval.
 
 ## Candidate Scope
