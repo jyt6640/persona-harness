@@ -1,37 +1,41 @@
-## Summary
+<!-- Title guide: name the behavior or user-visible outcome. Use conventional
+prefixes such as feat, fix, docs, ci, or refactor when useful. -->
 
-<!-- What does this change do, in one or two sentences? -->
+## What changes
+
+<!-- Explain the concrete behavior in one or two sentences. -->
 
 - 
 
-## Claim level
+## Why
 
-This project only asserts what its evidence supports. Check the highest level
-this PR reaches (see [CONTRIBUTING](../CONTRIBUTING.md#the-claim-ladder)):
+<!-- Link the issue or explain the concrete problem this resolves. -->
 
-- [ ] 1–2: surface exists / gate is invoked in a fixture
-- [ ] 3–4: PH-generated evidence + adversarial cases fail honestly
-- [ ] 5: external smoke reproduces it from a fresh tarball/npm
-- [ ] 6: repeated A/B shows improvement for a named scenario
-- [ ] This PR makes no new claim (pure fix/refactor/docs)
+Closes #
 
-If this could be read as a broader claim (token savings, quality, reliability),
-link the measurement or state which level it stops at:
+## User-visible behavior
+
+- [ ] I described the expected happy path and a meaningful failure or boundary path.
+- [ ] The behavior is covered by a focused test, manual observation, or both.
 
 ## Verification
 
-- [ ] `npm test`
+- [ ] `npm test` or scoped equivalent
 - [ ] `npm run typecheck`
 - [ ] `npm run build`
 - [ ] `npm run check:docs`
+- [ ] Manual QA through the affected CLI, package, workflow, or UI surface
 
-Evidence / run ids (if applicable):
+Evidence, run IDs, or screenshots when applicable:
 
 - 
 
-## Scope check
+## Scope and release impact
 
-- [ ] Narrow: one behavior in this PR.
-- [ ] New behavior has a test (prefer red-first).
-- [ ] No new always-on injection / broad linter / unproven surface added without an issue discussion.
-- [ ] No claim in docs/README beyond what the evidence above supports.
+- [ ] This PR is focused on one coherent behavior or repository workflow.
+- [ ] Defaults, schemas, package version, and release behavior are unchanged, or changes are called out below.
+- [ ] Claims in docs and release notes stop at the evidence collected here.
+
+Release or migration notes:
+
+- None.
