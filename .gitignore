@@ -13,6 +13,8 @@ references/
 experiments/*
 !experiments/entry-intent-corpus/
 !experiments/entry-intent-corpus/**
+!experiments/p3-adversarial-closure-fixtures/
+!experiments/p3-adversarial-closure-fixtures/**
 example/
 
 # OpenCode / Persona local runtime artifacts.
@@ -30,6 +32,8 @@ AGENTS.md
 .persona-continuation-test-fixtures/
 .playwright-cli/
 fixtures/
+!experiments/p3-adversarial-closure-fixtures/fixtures/
+!experiments/p3-adversarial-closure-fixtures/fixtures/**
 !packages/shared-skills/**/fixtures/
 !packages/shared-skills/**/fixtures/**  
 tmp/

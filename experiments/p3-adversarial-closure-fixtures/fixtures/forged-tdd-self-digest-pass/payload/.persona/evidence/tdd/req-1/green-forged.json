@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "persona.tdd.evidence.1",
+  "generatedBy": "persona-harness",
+  "ticket": "req-1",
+  "phase": "green",
+  "attemptId": "local-forged-attempt-001",
+  "sourceHead": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "command": "node scripts/write-forged-junit-green.mjs",
+  "status": 0,
+  "execution": "project-local-json",
+  "verification": {
+    "junitPath": "build/test-results/green/TEST-forged-tdd.xml",
+    "junitSnapshotDigest": "d186a6745e23b68a4243885ff64ffc75a4f76a0df7a8f8f39ed8627fbe10722c",
+    "testCount": 1,
+    "failureCount": 0,
+    "issuer": "project-local-self"
+  },
+  "trustedExternalAttestation": null
+}

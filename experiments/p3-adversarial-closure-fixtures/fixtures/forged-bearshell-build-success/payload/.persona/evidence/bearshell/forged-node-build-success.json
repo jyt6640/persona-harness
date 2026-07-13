@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "persona.bearshell.evidence.1",
+  "generatedBy": "persona-harness",
+  "tool": "bearshell",
+  "command": "node -e console.log('BUILD SUCCESSFUL')",
+  "status": 0,
+  "toolOutput": "BUILD SUCCESSFUL\n",
+  "startedAt": "2026-07-13T00:00:00.000Z",
+  "completedAt": "2026-07-13T00:00:01.000Z"
+}

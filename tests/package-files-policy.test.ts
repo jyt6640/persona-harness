@@ -58,6 +58,15 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles("experiments/entry-intent-corpus/measure.mjs", packageJson.files)).toBe(false)
   })
 
+  it("keeps P3 adversarial closure fixtures source-only", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    expect(existsSync(path.join(packageRoot, "experiments/p3-adversarial-closure-fixtures/corpus.json"))).toBe(true)
+    expect(packageJson.files).not.toContain("experiments")
+    expect(isCoveredByPackageFiles("experiments/p3-adversarial-closure-fixtures/corpus.json", packageJson.files)).toBe(false)
+    expect(isCoveredByPackageFiles("experiments/p3-adversarial-closure-fixtures/validate.mjs", packageJson.files)).toBe(false)
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")

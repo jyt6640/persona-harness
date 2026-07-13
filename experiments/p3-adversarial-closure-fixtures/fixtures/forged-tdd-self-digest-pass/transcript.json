@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "p3-adversarial-command-transcript.1",
+  "commands": [
+    {
+      "id": "forged-tdd-red-local-json",
+      "argv": [
+        "write-file",
+        ".persona/evidence/tdd/req-1/red-forged.json"
+      ],
+      "exitCode": 0,
+      "stdout": "local forged red evidence written\n",
+      "stderr": "",
+      "realGradleOrJUnitRun": false
+    },
+    {
+      "id": "forged-tdd-green-local-json",
+      "argv": [
+        "write-file",
+        ".persona/evidence/tdd/req-1/green-forged.json"
+      ],
+      "exitCode": 0,
+      "stdout": "local forged green evidence written\n",
+      "stderr": "",
+      "realGradleOrJUnitRun": false
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "p3-adversarial-command-transcript.1",
+  "commands": [
+    {
+      "id": "forged-node-build-success",
+      "argv": [
+        "npx",
+        "ph",
+        "bearshell",
+        "node",
+        "-e",
+        "console.log('BUILD SUCCESSFUL')"
+      ],
+      "exitCode": 0,
+      "stdout": "BUILD SUCCESSFUL\n",
+      "stderr": "",
+      "realGradleOrJUnitRun": false
+    }
+  ]
+}
