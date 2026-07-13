@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "report-only-test-integrity-transcript.1",
+  "commands": [
+    {
+      "id": "read-synthetic-fixture",
+      "argv": [
+        "read-fixture",
+        "fixtures/junit-cases.java"
+      ],
+      "exitCode": 0,
+      "stdout": "synthetic fixture read",
+      "stderr": "",
+      "commandsExecuted": false,
+      "productCliInvocation": false,
+      "networkAccess": false,
+      "realProjectAccess": false
+    },
+    {
+      "id": "emit-report-only-findings",
+      "argv": [
+        "report-only-detector",
+        "--fixture",
+        "fixtures/junit-cases.java"
+      ],
+      "exitCode": 0,
+      "stdout": "synthetic findings emitted",
+      "stderr": "",
+      "commandsExecuted": false,
+      "productCliInvocation": false,
+      "networkAccess": false,
+      "realProjectAccess": false
+    }
+  ]
+}
