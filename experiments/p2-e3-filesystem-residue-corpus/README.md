@@ -9,6 +9,7 @@ implementation, product efficacy claim, or default-on authorization.
 - `reportOnly: true`
 - `sourceOnly: true`
 - `enforcement: false`
+- `mutationPolicy.kind: "frozen"` for this `.1` corpus
 - zero false positives and zero false negatives are the only accepted corpus
   thresholds
 
@@ -23,3 +24,7 @@ implementation, product efficacy claim, or default-on authorization.
 
 The corpus uses only simulated git-status and path fixtures. It never inspects
 or mutates real projects.
+
+Append-only growth must happen in a new schema-versioned successor corpus that
+declares the `.1` base corpus fingerprint and preserves the existing records
+and fixtures byte-for-byte before appending any fresh records.

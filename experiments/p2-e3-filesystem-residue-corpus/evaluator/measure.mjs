@@ -4,10 +4,11 @@ import path from "node:path"
 
 const corpusPath = resolveCorpusPath(process.argv.slice(2))
 const corpusRoot = path.dirname(corpusPath)
-const corpus = parseJson(corpusPath)
-assertCorpus(corpus)
+const corpusText = readFileSync(corpusPath, "utf8")
+const corpus = parseJsonString(corpusText, corpusPath)
+assertCorpusShape(corpus)
 
-const measurement = measureCorpus(corpus, corpusRoot)
+const measurement = measureCorpus(corpusPath, corpusRoot, corpus, corpusText)
 process.stdout.write(`${JSON.stringify(measurement, null, 2)}\n`)
 
 function resolveCorpusPath(args) {
@@ -23,172 +24,187 @@ function resolveCorpusPath(args) {
   return path.resolve(process.cwd(), value)
 }
 
-function measureCorpus(corpus, corpusRoot) {
-  const coverage = {
-    "difficult-legitimate-untracked": 0,
-    "likely-residue": 0,
+function measureCorpus(corpusPath, corpusRoot, corpus, corpusText) {
+  switch (corpus.schemaVersion) {
+    case "filesystem-residue-corpus.1":
+      return measureFrozenCorpus(corpusText, corpus, corpusRoot)
+    case "filesystem-residue-corpus.2":
+      return measureAppendOnlySuccessor(corpusPath, corpusRoot, corpusText, corpus)
+    default:
+      throw new TypeError(`Unsupported corpus schema: ${corpus.schemaVersion}`)
   }
-  const ids = []
-  const labels = []
-  const fingerprints = []
-  const seenIds = new Set()
+}
 
-  for (const record of corpus.records) {
-    assertRecord(record)
-
-    if (seenIds.has(record.id)) {
-      throw new TypeError(`Duplicate record id: ${record.id}`)
-    }
-    seenIds.add(record.id)
-
-    const fixturePath = path.join(corpusRoot, record.fixturePath)
-    const fixtureBytes = readFileSync(fixturePath, "utf8")
-    const fixture = parseJsonString(fixtureBytes, fixturePath)
-    assertFixture(fixture)
-
-    if (fixture.fixtureId !== record.id) {
-      throw new TypeError(`Fixture id mismatch: ${record.id}`)
-    }
-    if (fixture.category !== record.category) {
-      throw new TypeError(`Fixture category mismatch: ${record.id}`)
-    }
-    if (fixture.label !== record.label) {
-      throw new TypeError(`Fixture label mismatch: ${record.id}`)
-    }
-    if (fixture.expectedResidue !== record.expectedResidue) {
-      throw new TypeError(`Fixture expectedResidue mismatch: ${record.id}`)
-    }
-    if (record.fixtureFingerprint !== fingerprint(fixtureBytes)) {
-      throw new TypeError(`Fixture fingerprint mismatch: ${record.id}`)
-    }
-
-    ensureStatusAndPathParity(fixture)
-
-    coverage[record.category] += 1
-    ids.push(record.id)
-    labels.push(record.label)
-    fingerprints.push(record.fixtureFingerprint)
-  }
-
-  expectCategoryCoverage(coverage)
+function measureFrozenCorpus(corpusText, corpus, corpusRoot) {
+  assertFrozenCorpus(corpus)
+  verifyRecords(corpus.records, corpusRoot)
 
   return {
     schemaVersion: "filesystem-residue-measurement.1",
     corpusSchemaVersion: "filesystem-residue-corpus.1",
+    corpusFingerprint: fingerprint(corpusText),
     reportOnly: true,
     sourceOnly: true,
     enforcement: false,
-    thresholds: {
-      falsePositives: 0,
-      falseNegatives: 0,
-    },
-    metrics: {
-      falsePositives: 0,
-      falseNegatives: 0,
-      precision: 1,
-      recall: 1,
-      decision: "pass",
-    },
-    coverage,
-    frozen: {
-      ids,
-      labels,
-      fixtureFingerprints: fingerprints,
-    },
   }
 }
 
-function expectCategoryCoverage(coverage) {
-  if (coverage["likely-residue"] !== 5) {
-    throw new TypeError("Corpus must include five likely-residue fixtures")
+function measureAppendOnlySuccessor(corpusPath, corpusRoot, corpusText, corpus) {
+  assertSuccessorCorpus(corpus)
+  const basePath = path.join(corpusRoot, "corpus.json")
+  const baseText = readFileSync(basePath, "utf8")
+  const base = parseJsonString(baseText, basePath)
+  assertFrozenCorpus(base)
+  verifyRecords(base.records, corpusRoot)
+  verifyAppendOnlySuccessor(base, corpus, corpusRoot)
+
+  return {
+    schemaVersion: "filesystem-residue-measurement.2",
+    corpusSchemaVersion: "filesystem-residue-corpus.2",
+    corpusFingerprint: fingerprint(corpusText),
+    baseCorpusFingerprint: fingerprint(baseText),
+    reportOnly: true,
+    sourceOnly: true,
+    enforcement: false,
   }
-  if (coverage["difficult-legitimate-untracked"] !== 5) {
-    throw new TypeError("Corpus must include five difficult-legitimate-untracked fixtures")
+}
+
+function verifyRecords(records, corpusRoot) {
+  const coverage = {
+    "difficult-legitimate-untracked": 0,
+    "likely-residue": 0,
+  }
+  const seenIds = new Set()
+
+  for (const record of records) {
+    assertRecord(record)
+    if (seenIds.has(record.id)) {
+      throw new TypeError(`Duplicate record id: ${record.id}`)
+    }
+    seenIds.add(record.id)
+    coverage[record.category] += 1
+
+    const fixturePath = path.join(corpusRoot, record.fixturePath)
+    const fixtureText = readFileSync(fixturePath, "utf8")
+    const fixture = parseJsonString(fixtureText, fixturePath)
+    assertFixture(fixture)
+
+    if (!sameRecord(record, fixture)) {
+      throw new TypeError(`Fixture mismatch: ${record.id}`)
+    }
+    if (record.fixtureFingerprint !== fingerprint(fixtureText)) {
+      throw new TypeError(`Fixture fingerprint mismatch: ${record.id}`)
+    }
+    ensureStatusAndPathParity(fixture)
+  }
+
+  if (coverage["likely-residue"] !== 5 || coverage["difficult-legitimate-untracked"] !== 5) {
+    throw new TypeError("Unexpected category coverage")
+  }
+}
+
+function verifyAppendOnlySuccessor(base, successor, corpusRoot) {
+  if (successor.mutationPolicy.baseSchemaVersion !== base.schemaVersion) {
+    throw new TypeError("Successor base schema binding mismatch")
+  }
+  if (successor.mutationPolicy.baseCorpusFingerprint !== fingerprint(readFileSync(path.join(corpusRoot, "corpus.json"), "utf8"))) {
+    throw new TypeError("Successor base fingerprint mismatch")
+  }
+  if (successor.records.length !== base.records.length + 1) {
+    throw new TypeError("Unexpected successor record count")
+  }
+
+  for (let index = 0; index < base.records.length; index += 1) {
+    if (JSON.stringify(base.records[index]) !== JSON.stringify(successor.records[index])) {
+      throw new TypeError(`Successor base prefix mismatch: ${index}`)
+    }
+  }
+
+  const appended = successor.records[base.records.length]
+  if (appended === undefined) {
+    throw new TypeError("Missing successor appended record")
+  }
+  assertRecord(appended)
+  if (appended.category !== "likely-residue" || appended.expectedResidue !== true) {
+    throw new TypeError("Unexpected successor appended record")
+  }
+  if (base.records.some((record) => record.id === appended.id || record.fixturePath === appended.fixturePath)) {
+    throw new TypeError("Successor appended record must use fresh ID and fixture")
+  }
+
+  const fixturePath = path.join(corpusRoot, appended.fixturePath)
+  const fixtureText = readFileSync(fixturePath, "utf8")
+  const fixture = parseJsonString(fixtureText, fixturePath)
+  assertFixture(fixture)
+  if (!sameRecord(appended, fixture) || appended.fixtureFingerprint !== fingerprint(fixtureText)) {
+    throw new TypeError("Successor appended fixture mismatch")
+  }
+  ensureStatusAndPathParity(fixture)
+}
+
+function assertCorpusShape(value) {
+  if (!isRecord(value) || typeof value.schemaVersion !== "string" || !Array.isArray(value.records)) {
+    throw new TypeError("Invalid corpus shape")
+  }
+}
+
+function assertFrozenCorpus(value) {
+  if (!isRecord(value) || value.schemaVersion !== "filesystem-residue-corpus.1" || value.reportOnly !== true || value.sourceOnly !== true || value.enforcement !== false) {
+    throw new TypeError("Invalid frozen corpus")
+  }
+  if (!isRecord(value.mutationPolicy) || value.mutationPolicy.kind !== "frozen" || value.mutationPolicy.successorSchemaVersion !== "filesystem-residue-corpus.2") {
+    throw new TypeError("Invalid frozen mutation policy")
+  }
+  if (!isRecord(value.preregistration) || !isRecord(value.categoryLabels) || !Array.isArray(value.categories)) {
+    throw new TypeError("Invalid frozen corpus payload")
+  }
+  if (value.records.length !== 10) {
+    throw new TypeError("Unexpected frozen record count")
+  }
+}
+
+function assertSuccessorCorpus(value) {
+  if (!isRecord(value) || value.schemaVersion !== "filesystem-residue-corpus.2" || value.reportOnly !== true || value.sourceOnly !== true || value.enforcement !== false) {
+    throw new TypeError("Invalid successor corpus")
+  }
+  if (!isRecord(value.mutationPolicy) || value.mutationPolicy.kind !== "append-only-successor" || value.mutationPolicy.baseSchemaVersion !== "filesystem-residue-corpus.1" || typeof value.mutationPolicy.baseCorpusFingerprint !== "string") {
+    throw new TypeError("Invalid successor mutation policy")
+  }
+  if (!isRecord(value.preregistration) || !isRecord(value.categoryLabels) || !Array.isArray(value.categories)) {
+    throw new TypeError("Invalid successor corpus payload")
+  }
+  if (value.records.length !== 11) {
+    throw new TypeError("Unexpected successor record count")
+  }
+}
+
+function assertRecord(value) {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.label !== "string" || typeof value.fixturePath !== "string" || typeof value.fixtureFingerprint !== "string" || !value.fixtureFingerprint.startsWith("sha256:") || typeof value.expectedResidue !== "boolean" || (value.category !== "likely-residue" && value.category !== "difficult-legitimate-untracked")) {
+    throw new TypeError("Invalid record")
+  }
+}
+
+function assertFixture(value) {
+  if (!isRecord(value) || typeof value.fixtureId !== "string" || typeof value.label !== "string" || typeof value.expectedResidue !== "boolean" || (value.category !== "likely-residue" && value.category !== "difficult-legitimate-untracked") || !isRecord(value.gitStatus) || !Array.isArray(value.gitStatus.porcelainV1) || !Array.isArray(value.paths)) {
+    throw new TypeError("Invalid fixture")
   }
 }
 
 function ensureStatusAndPathParity(fixture) {
-  if (!Array.isArray(fixture.gitStatus.porcelainV1) || !Array.isArray(fixture.paths)) {
-    throw new TypeError(`Fixture arrays missing: ${fixture.fixtureId}`)
-  }
   if (fixture.gitStatus.porcelainV1.length !== fixture.paths.length) {
     throw new TypeError(`Fixture path count mismatch: ${fixture.fixtureId}`)
   }
-
   for (let index = 0; index < fixture.paths.length; index += 1) {
     const statusEntry = fixture.gitStatus.porcelainV1[index]
     const pathEntry = fixture.paths[index]
-    if (typeof statusEntry !== "string" || typeof pathEntry !== "string") {
-      throw new TypeError(`Fixture entry must be a string: ${fixture.fixtureId}`)
-    }
-    if (!statusEntry.startsWith("?? ")) {
-      throw new TypeError(`Fixture status must be an untracked path: ${fixture.fixtureId}`)
-    }
-    if (statusEntry.slice(3) !== pathEntry) {
+    if (!statusEntry.startsWith("?? ") || statusEntry.slice(3) !== pathEntry) {
       throw new TypeError(`Fixture status/path mismatch: ${fixture.fixtureId}`)
     }
   }
 }
 
-function assertCorpus(value) {
-  if (!isRecord(value)) {
-    throw new TypeError("Corpus must be a JSON object")
-  }
-  if (value.schemaVersion !== "filesystem-residue-corpus.1") {
-    throw new TypeError("Unexpected corpus schema version")
-  }
-  if (value.reportOnly !== true || value.sourceOnly !== true || value.enforcement !== false) {
-    throw new TypeError("Unexpected corpus flags")
-  }
-  if (!Array.isArray(value.categories) || value.categories.length !== 2) {
-    throw new TypeError("Unexpected corpus categories")
-  }
-  if (!isRecord(value.categoryLabels)) {
-    throw new TypeError("Missing category labels")
-  }
-  if (!Array.isArray(value.records) || value.records.length !== 10) {
-    throw new TypeError("Unexpected corpus record count")
-  }
-}
-
-function assertRecord(value) {
-  if (!isRecord(value)) {
-    throw new TypeError("Corpus record must be a JSON object")
-  }
-  if (typeof value.id !== "string" || typeof value.label !== "string" || typeof value.fixturePath !== "string") {
-    throw new TypeError("Corpus record identity fields must be strings")
-  }
-  if (value.category !== "likely-residue" && value.category !== "difficult-legitimate-untracked") {
-    throw new TypeError(`Unexpected record category: ${value.id}`)
-  }
-  if (typeof value.expectedResidue !== "boolean") {
-    throw new TypeError(`Missing expectedResidue: ${value.id}`)
-  }
-  if (typeof value.fixtureFingerprint !== "string" || !value.fixtureFingerprint.startsWith("sha256:")) {
-    throw new TypeError(`Invalid fixture fingerprint: ${value.id}`)
-  }
-}
-
-function assertFixture(value) {
-  if (!isRecord(value)) {
-    throw new TypeError("Fixture must be a JSON object")
-  }
-  if (typeof value.fixtureId !== "string" || typeof value.label !== "string") {
-    throw new TypeError("Fixture identity fields must be strings")
-  }
-  if (value.category !== "likely-residue" && value.category !== "difficult-legitimate-untracked") {
-    throw new TypeError(`Unexpected fixture category: ${value.fixtureId}`)
-  }
-  if (typeof value.expectedResidue !== "boolean") {
-    throw new TypeError(`Fixture expectedResidue must be a boolean: ${value.fixtureId}`)
-  }
-  if (!isRecord(value.gitStatus) || !Array.isArray(value.gitStatus.porcelainV1) || !Array.isArray(value.paths)) {
-    throw new TypeError(`Fixture arrays missing: ${value.fixtureId}`)
-  }
-}
-
-function parseJson(filePath) {
-  return parseJsonString(readFileSync(filePath, "utf8"), filePath)
+function sameRecord(left, right) {
+  return left.id === right.fixtureId && left.category === right.category && left.label === right.label && left.expectedResidue === right.expectedResidue
 }
 
 function parseJsonString(text, filePath) {

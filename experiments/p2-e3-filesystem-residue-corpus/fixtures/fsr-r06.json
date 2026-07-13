@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-r06",
+  "category": "likely-residue",
+  "label": "append-only successor residue",
+  "expectedResidue": true,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? dist/p2-e3-filesystem-residue-corpus/successor-summary.json",
+      "?? dist/p2-e3-filesystem-residue-corpus/successor-summary.txt"
+    ]
+  },
+  "paths": [
+    "dist/p2-e3-filesystem-residue-corpus/successor-summary.json",
+    "dist/p2-e3-filesystem-residue-corpus/successor-summary.txt"
+  ]
+}

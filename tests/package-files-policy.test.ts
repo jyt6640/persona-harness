@@ -62,9 +62,13 @@ describe("package files policy", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
 
     expect(existsSync(path.join(packageRoot, "experiments/p2-e3-filesystem-residue-corpus/corpus.json"))).toBe(true)
+    expect(existsSync(path.join(packageRoot, "experiments/p2-e3-filesystem-residue-corpus/corpus.v2.json"))).toBe(true)
     expect(packageJson.files).not.toContain("experiments")
     expect(
       isCoveredByPackageFiles("experiments/p2-e3-filesystem-residue-corpus/corpus.json", packageJson.files),
+    ).toBe(false)
+    expect(
+      isCoveredByPackageFiles("experiments/p2-e3-filesystem-residue-corpus/corpus.v2.json", packageJson.files),
     ).toBe(false)
     expect(
       isCoveredByPackageFiles("experiments/p2-e3-filesystem-residue-corpus/evaluator/measure.mjs", packageJson.files),
