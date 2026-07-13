@@ -1,0 +1,14 @@
+{
+  "fixtureId": "legitimate-experiment-input",
+  "kind": "filesystem-residue",
+  "category": "legitimate-untracked",
+  "label": "experiment input",
+  "expectedResidue": false,
+  "syntheticStatus": [
+    "?? experiment-input.json"
+  ],
+  "paths": [
+    "experiment-input.json"
+  ],
+  "pathSafety": "relative-no-follow"
+}

@@ -1,0 +1,14 @@
+{
+  "fixtureId": "legitimate-review-note",
+  "kind": "filesystem-residue",
+  "category": "legitimate-untracked",
+  "label": "review note",
+  "expectedResidue": false,
+  "syntheticStatus": [
+    "?? notes/review.md"
+  ],
+  "paths": [
+    "notes/review.md"
+  ],
+  "pathSafety": "relative-no-follow"
+}
