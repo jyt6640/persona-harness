@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs"
 import { join } from "node:path"
 
-import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 import type { TopLevelIntent } from "./top-level-intent-router.js"
@@ -108,17 +108,18 @@ function writeEvidenceJson(evidenceDir: string, runId: string, payload: unknown)
   }
 }
 
-function evidenceDirFor(projectDir: string, options: EvidenceWriteOptions): string {
-  if (options.evidenceDir !== undefined) {
-    return options.evidenceDir
-  }
-  const config = loadHarnessConfig(projectDir)
-  return resolveConfiguredPath(projectDir, config.evidenceDir)
+function evidenceDirFor(projectDir: string, options: EvidenceWriteOptions): string | undefined {
+  const result = resolveSafeEvidenceRootResult(projectDir, options.evidenceDir)
+  return result.ok ? result.path : undefined
 }
 
 export function writePhase0Evidence(projectDir: string, event: EvidenceEvent, options: EvidenceWriteOptions = {}): void {
+  const evidenceRoot = evidenceDirFor(projectDir, options)
+  if (evidenceRoot === undefined) {
+    return
+  }
   const now = new Date()
-  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
+  const evidenceDir = join(evidenceRoot, "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-${safeSlug(event.injection.targetFile)}`
   const payload = {
     schemaVersion: "phase0.1",
@@ -147,8 +148,12 @@ export function writeIntentEvidence(
   event: IntentEvidenceEvent,
   options: EvidenceWriteOptions = {},
 ): void {
+  const evidenceRoot = evidenceDirFor(projectDir, options)
+  if (evidenceRoot === undefined) {
+    return
+  }
   const now = new Date()
-  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
+  const evidenceDir = join(evidenceRoot, "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-intent-${safeSlug(event.intent.primary)}`
   const payload = {
     schemaVersion: "phase0.intent.1",
@@ -173,8 +178,12 @@ export function writeRailComplianceEvidence(
   event: RailComplianceEvidenceEvent,
   options: EvidenceWriteOptions = {},
 ): void {
+  const evidenceRoot = evidenceDirFor(projectDir, options)
+  if (evidenceRoot === undefined) {
+    return
+  }
   const now = new Date()
-  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
+  const evidenceDir = join(evidenceRoot, "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-rail-compliance-${safeSlug(event.code)}`
   const payload = {
     schemaVersion: "phase0.rail-compliance.1",
@@ -205,8 +214,12 @@ export function writeContinuationEvidence(
   event: ContinuationEvidenceEvent,
   options: EvidenceWriteOptions = {},
 ): void {
+  const evidenceRoot = evidenceDirFor(projectDir, options)
+  if (evidenceRoot === undefined) {
+    return
+  }
   const now = new Date()
-  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
+  const evidenceDir = join(evidenceRoot, "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-continuation-${safeSlug(event.sessionID)}`
   const payload = {
     schemaVersion: "phase0.continuation.1",
@@ -234,8 +247,12 @@ export function writeObserverReportOnlyEvidence(
   event: ObserverReportOnlyEvidenceEvent,
   options: EvidenceWriteOptions = {},
 ): void {
+  const evidenceRoot = evidenceDirFor(projectDir, options)
+  if (evidenceRoot === undefined) {
+    return
+  }
   const now = new Date()
-  const evidenceDir = join(evidenceDirFor(projectDir, options), "phase0")
+  const evidenceDir = join(evidenceRoot, "phase0")
   const runId = `${now.toISOString().replace(/[:.]/g, "-")}-observer-report-only-${safeSlug(event.targetFile)}`
   const payload = {
     schemaVersion: "phase0.observer-report-only.1",

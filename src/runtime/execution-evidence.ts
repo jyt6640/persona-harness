@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs"
 import { join, relative } from "node:path"
 
-import { loadHarnessConfigResult, resolveConfiguredPath } from "../config/harness-config.js"
+import { loadHarnessConfigResult, resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
@@ -21,8 +21,11 @@ export function writeBearshellExecutionEvidence(projectDir: string, event: Execu
   if (!configResult.safe) {
     return null
   }
-  const config = configResult.config
-  const evidenceDir = join(resolveConfiguredPath(projectDir, config.evidenceDir), "phase0")
+  const evidencePath = resolveSafeEvidenceRootResult(projectDir)
+  if (!evidencePath.ok) {
+    return null
+  }
+  const evidenceDir = join(evidencePath.path, "phase0")
   const runId = `${event.endedAt.replace(/[:.]/g, "-")}-bearshell-${safeSlug(event.command)}`
   const outputPath = join(evidenceDir, `${runId}.json`)
   const payload = {

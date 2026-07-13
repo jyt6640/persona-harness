@@ -140,6 +140,28 @@ describe("ph workflow test TDD rail", () => {
     expect(evidence.testIds).toEqual(["com.example.todo.TodoControllerTest#createsTodoThroughService"])
   })
 
+  it("writes TDD evidence and displays refs beneath the configured evidence root", () => {
+    const projectDir = createWorkflowProject()
+    const customRoot = join(projectDir, ".persona", "custom-evidence")
+    writeFileSync(
+      join(projectDir, ".persona", "harness.jsonc"),
+      `${JSON.stringify({
+        evidenceDir: ".persona/custom-evidence",
+        enforce: { executeVerification: true, tdd: true },
+      }, null, 2)}\n`,
+    )
+    mkdirSync(customRoot, { recursive: true })
+    writeState(projectDir, "red")
+
+    const result = runWorkflow(projectDir, ["test"])
+    const status = runWorkflow(projectDir, ["tdd"])
+
+    expect(result.status).toBe(0)
+    expect(status.stdout).toContain("Source: .persona/custom-evidence/tdd/req-1")
+    expect(existsSync(join(customRoot, "tdd", "req-1"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "evidence", "tdd"))).toBe(false)
+  })
+
   it("treats strict-off TDD as advisory and writes no fake evidence", () => {
     const projectDir = createWorkflowProject()
     writeFileSync(join(projectDir, ".persona", "harness.jsonc"), `${JSON.stringify({ enforce: { tdd: true } }, null, 2)}\n`)

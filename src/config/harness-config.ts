@@ -467,6 +467,24 @@ export function resolveConfiguredPathResult(projectDir: string, configuredPath: 
   return resolveContainedPath(projectDir, configuredPath)
 }
 
+export function resolveSafeEvidenceRootResult(
+  projectDir: string,
+  configuredPath?: string,
+): ConfiguredPathResolution {
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return {
+      diagnostic: {
+        code: "config.path_invalid",
+        message: "Configured evidence root is unavailable; read-only recovery is required.",
+        path: ".persona/harness.jsonc",
+      },
+      ok: false,
+    }
+  }
+  return resolveConfiguredPathResult(projectDir, configuredPath ?? configResult.config.evidenceDir)
+}
+
 export function resolveConfiguredPath(projectDir: string, configuredPath: string): string {
   const result = resolveConfiguredPathResult(projectDir, configuredPath)
   return result.ok ? result.path : join(projectDir, INVALID_CONFIG_PATH)

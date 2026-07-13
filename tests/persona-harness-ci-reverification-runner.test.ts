@@ -90,6 +90,32 @@ describe("CI reverification runner", () => {
     expect(artifact.commands.every((command: { readonly stdoutSha256: string }) => /^[a-f0-9]{64}$/u.test(command.stdoutSha256))).toBe(true)
   })
 
+  it("binds mutation snapshot artifact-parent paths to the configured evidence root", () => {
+    const projectDir = createProject(successScript())
+    const customRoot = join(projectDir, ".persona", "custom-evidence")
+    mkdirSync(customRoot, { recursive: true })
+    writeFileSync(
+      join(projectDir, ".persona", "harness.jsonc"),
+      `${JSON.stringify({ evidenceDir: ".persona/custom-evidence" }, null, 2)}\n`,
+    )
+
+    const result = runCiReverification(projectDir, "ci")
+    const artifact = JSON.parse(readFileSync(result.artifactPath ?? "", "utf8")) as {
+      readonly mutationSnapshot: {
+        readonly artifactParent: {
+          readonly pre: { readonly relativePath: string }
+          readonly post: { readonly relativePath: string }
+          readonly relativePath: string
+        }
+      }
+    }
+
+    expect(result.artifactPath).toContain(".persona/custom-evidence/ci-reverification/")
+    expect(artifact.mutationSnapshot.artifactParent.relativePath).toBe(".persona/custom-evidence")
+    expect(artifact.mutationSnapshot.artifactParent.pre.relativePath).toBe(".persona/custom-evidence")
+    expect(artifact.mutationSnapshot.artifactParent.post.relativePath).toBe(".persona/custom-evidence")
+  })
+
   it("rejects duplicate artifact IDs without replacing the original bytes", () => {
     const projectDir = createProject(successScript())
     const artifactId = "duplicate-artifact"

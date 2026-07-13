@@ -1,4 +1,5 @@
 import type { ClosureBlocker } from "./workflow-closure.js"
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import {
   assessVerificationAuthority,
   type VerificationAuthorityAssessment,
@@ -20,6 +21,10 @@ export type WorkflowFinishAuthority = {
 export function readWorkflowFinishAuthority(projectDir: string): WorkflowFinishAuthority {
   const assessment = assessVerificationAuthority(projectDir)
   const semanticTdd = assessSemanticTddChain(projectDir)
+  const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
+  const source = evidenceRoot.ok
+    ? `${evidenceRoot.relativePath} (diagnostic only)`
+    : ".persona/harness.jsonc (diagnostic only)"
   return {
     assessment,
     blocker: {
@@ -31,7 +36,7 @@ export function readWorkflowFinishAuthority(projectDir: string): WorkflowFinishA
         `Semantic TDD assessment: ${semanticTdd.summary}.`,
         "P3-3 defines the receipt and attempt boundary; P3-4 or a future external attestation path must provide trusted authority before finish can pass.",
       ].join(" "),
-      source: ".persona/evidence (diagnostic only)",
+      source,
     },
     semanticTdd,
     status: "blocked",

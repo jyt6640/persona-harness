@@ -82,7 +82,7 @@ export type ClosurePayload = ClosureNextPayload | ClosureStatusPayload
 const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const PLAN_PATH = ".persona/workflow/plan.md"
-const EVIDENCE_DIR = ".persona/evidence"
+const DEFAULT_EVIDENCE_DIR = ".persona/evidence"
 
 export function runWorkflowClosureCommand(action: ClosureAction, options: { readonly projectDir?: string }): CliRunResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
@@ -125,8 +125,14 @@ function readWorkflowClosureState(projectDir: string, options: { readonly record
     tdd,
     verification: verification.verification,
   }
-  const legacyBlockers = closureBlockers(partialState, verification, summary)
   const configResult = loadHarnessConfigResult(projectDir)
+  const configuredEvidencePath = configResult.safe
+    ? resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+    : undefined
+  const displayEvidenceRoot = configuredEvidencePath?.ok === true
+    ? configuredEvidencePath.relativePath || configResult.config.evidenceDir
+    : DEFAULT_EVIDENCE_DIR
+  const legacyBlockers = closureBlockers(partialState, verification, summary, displayEvidenceRoot)
   const configBlockers: readonly ClosureBlocker[] = configResult.safe
     ? []
     : [{
@@ -135,9 +141,7 @@ function readWorkflowClosureState(projectDir: string, options: { readonly record
         source: ".persona/harness.jsonc",
       }]
   const rulesPathSafety = configResult.safe ? inspectRuleCatalogPaths(projectDir) : undefined
-  const evidencePathSafety = configResult.safe
-    ? resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
-    : undefined
+  const evidencePathSafety = configuredEvidencePath
   const evidenceTraversal = evidencePathSafety?.ok === true
     ? walkBoundedFiles(evidencePathSafety.path, projectDir, {
         displayRoot: evidencePathSafety.relativePath || configResult.config.evidenceDir,
@@ -209,24 +213,25 @@ function closureBlockers(
   state: Omit<WorkflowClosureState, "blockers">,
   verification: ReturnType<typeof readClosureVerification>,
   summary: WorkflowStatusSummary,
+  evidenceRoot: string,
 ): readonly ClosureBlocker[] {
   if (state.plan !== "accepted") {
     return [{ id: "plan-not-accepted", reason: `workflow plan is ${state.plan}`, source: PLAN_PATH }]
   }
   const blockers: ClosureBlocker[] = []
   if (verification.verification === "failed") {
-    blockers.push({ evidenceRef: verification.evidenceRef, id: "verification-failed", reason: verification.reason, source: verification.evidenceRef ?? EVIDENCE_DIR })
+    blockers.push({ evidenceRef: verification.evidenceRef, id: "verification-failed", reason: verification.reason, source: verification.evidenceRef ?? evidenceRoot })
   } else if (verification.verification !== "passed") {
-    blockers.push({ evidenceRef: verification.evidenceRef, id: "verification-unknown", reason: verification.reason, source: verification.evidenceRef ?? EVIDENCE_DIR })
+    blockers.push({ evidenceRef: verification.evidenceRef, id: "verification-unknown", reason: verification.reason, source: verification.evidenceRef ?? evidenceRoot })
   }
   if (state.implementationReport !== "filled") {
-    blockers.push({ evidenceRef: state.evidence === "present" ? EVIDENCE_DIR : undefined, id: "implementation-report-missing", reason: `implementation report is ${state.implementationReport}`, source: IMPLEMENTATION_REPORT_PATH })
+    blockers.push({ evidenceRef: state.evidence === "present" ? evidenceRoot : undefined, id: "implementation-report-missing", reason: `implementation report is ${state.implementationReport}`, source: IMPLEMENTATION_REPORT_PATH })
   }
   if (state.reviewReport !== "filled") {
     blockers.push({ id: "review-report-missing", reason: `review report is ${state.reviewReport}`, source: REVIEW_REPORT_PATH })
   }
   if (state.evidence !== "present") {
-    blockers.push({ id: "evidence-missing", reason: ".persona/evidence must contain at least one evidence file", source: EVIDENCE_DIR })
+    blockers.push({ id: "evidence-missing", reason: `${evidenceRoot} must contain at least one evidence file`, source: evidenceRoot })
   }
   if (summary.commandDisciplineBlocking) {
     blockers.push({ id: "command-discipline-blocking", reason: summary.commandDiscipline, source: "workflow reports" })

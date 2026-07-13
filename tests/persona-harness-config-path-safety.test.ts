@@ -4,6 +4,7 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -19,10 +20,19 @@ import {
   resolveConfiguredPathResult,
 } from "../src/config/harness-config.js"
 import { runPersonaCli } from "../src/cli/index.js"
-import { readDoctorSummary } from "../src/cli/doctor.js"
+import { formatDoctorSummary, readDoctorSummary } from "../src/cli/doctor.js"
+import { runEvidenceAbRunCommand } from "../src/cli/evidence-ab-run.js"
+import { writeEvidenceSummary } from "../src/cli/evidence-summary.js"
+import { assessVerificationAuthority } from "../src/cli/workflow-verification-receipt.js"
 import { readExecutionEvidenceVerification } from "../src/cli/workflow-execution-evidence.js"
+import { formatWorkflowStatus, readWorkflowStatus } from "../src/cli/workflow-status.js"
 import { loadRuleCatalog } from "../src/rules/rule-catalog.js"
 import { walkBoundedFiles } from "../src/io/bounded-path-walker.js"
+import { writeIntentEvidence } from "../src/runtime/evidence.js"
+import { EntrySteeringTracker } from "../src/runtime/entry-steering-status.js"
+import { appendRoleBoundaryObservation } from "../src/runtime/role-boundary-evidence.js"
+import { RuntimeSessionRegistry } from "../src/runtime/session-registry.js"
+import { TokenTelemetryRecorder } from "../src/runtime/token-telemetry.js"
 
 const projects: string[] = []
 
@@ -107,6 +117,103 @@ describe("P3-6 config/path safety", () => {
     })
 
     expect(readExecutionEvidenceVerification(projectDir).verification).toBe("passed")
+  })
+
+  it("reports the configured evidence root across status, doctor, closure, and receipt diagnostics", () => {
+    const projectDir = createProject()
+    const customRoot = join(projectDir, ".persona", "custom-evidence")
+    mkdirSync(join(customRoot, "phase0"), { recursive: true })
+    writeJson(projectDir, ".persona/harness.jsonc", { evidenceDir: ".persona/custom-evidence" })
+    writeJson(projectDir, ".persona/custom-evidence/phase0/legacy.json", {
+      generatedBy: "persona-harness",
+      status: 0,
+    })
+    writeWorkflow(projectDir)
+
+    const status = formatWorkflowStatus(readWorkflowStatus(projectDir))
+    const doctor = formatDoctorSummary(readDoctorSummary({ projectDir, env: {} }))
+    const closure = runPersonaCli(["workflow", "closure", "next", "--json"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const authority = assessVerificationAuthority(projectDir)
+
+    expect(status).toContain(".persona/custom-evidence: present")
+    expect(status).not.toContain(".persona/evidence: present")
+    expect(doctor).toContain("Evidence root: .persona/custom-evidence")
+    expect(doctor).not.toContain("Evidence root: .persona/evidence")
+    expect(closure.stdout).toContain(".persona/custom-evidence")
+    expect(closure.stdout).not.toContain(".persona/evidence")
+    expect(authority.legacyEvidence.files).toEqual([".persona/custom-evidence/phase0/legacy.json"])
+    expect(authority.diagnostics.every((diagnostic) => diagnostic.path.startsWith(".persona/custom-evidence"))).toBe(true)
+  })
+
+  it("keeps every runtime evidence writer read-only when config parsing fails", () => {
+    const projectDir = createProject()
+    mkdirSync(join(projectDir, ".persona"), { recursive: true })
+    const configPath = join(projectDir, ".persona", "harness.jsonc")
+    writeFileSync(configPath, "{ broken")
+    writeFileSync(join(projectDir, ".persona", "keep.txt"), "preserve\n")
+    const beforePaths = readdirSync(join(projectDir, ".persona"), { recursive: true }).sort()
+    const beforeConfig = readFileSync(configPath, "utf8")
+    const config = loadHarnessConfigResult(projectDir).config
+
+    writeIntentEvidence(projectDir, {
+      hook: "experimental.chat.messages.transform",
+      injectedInto: "intent-workflow",
+      intent: {
+        primary: "programming",
+        reason: "test",
+        secondary: [],
+      },
+      railMarker: "test",
+      sessionID: "session-invalid-config",
+      userPrompt: "implement",
+    })
+    appendRoleBoundaryObservation(projectDir, {
+      currentTicketId: "req-1",
+      path: "src/main/java/App.java",
+      policy: "test",
+      role: "implementer",
+      sessionID: "session-invalid-config",
+    })
+    new EntrySteeringTracker(projectDir, config).apply("session-invalid-config", {
+      messages: [],
+    })
+    new TokenTelemetryRecorder(projectDir).recordMessage({
+      id: "message-invalid-config",
+      sessionID: "session-invalid-config",
+      role: "assistant",
+      time: { created: 1, completed: 2 },
+      parentID: "parent",
+      modelID: "test-model",
+      providerID: "test-provider",
+      mode: "primary",
+      path: { cwd: projectDir, root: projectDir },
+      cost: 0,
+      tokens: {
+        input: 1,
+        output: 1,
+        reasoning: 0,
+        cache: { read: 0, write: 0 },
+      },
+    })
+    new RuntimeSessionRegistry({
+      multiAgentEnabled: true,
+      projectDir,
+      runtimeInjectionEnabled: true,
+    }).allowsMainSession("session-invalid-config", "model-input")
+    const abRun = runEvidenceAbRunCommand(
+      ["--scenario", "invalid-config", "--condition", "off", "--", process.execPath, "-e", "process.exit(0)"],
+      { projectDir, env: {} },
+    )
+
+    expect(readdirSync(join(projectDir, ".persona"), { recursive: true }).sort()).toEqual(beforePaths)
+    expect(readFileSync(configPath, "utf8")).toBe(beforeConfig)
+    expect(existsSync(join(projectDir, ".persona", ".invalid-config-path"))).toBe(false)
+    expect(abRun.status).toBe(1)
+    expect(writeEvidenceSummary({ projectDir, env: {} })).toBeUndefined()
   })
 
   it("uses the configured rules root for catalog and doctor", () => {

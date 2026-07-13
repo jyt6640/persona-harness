@@ -3,6 +3,7 @@ import { mkdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
@@ -14,7 +15,7 @@ import {
   safeEvidenceSlug,
 } from "./evidence-ab-run-options.js"
 
-const EVIDENCE_DIR = ".persona/evidence/ab"
+const AB_DIRECTORY = "ab"
 
 function runCommand(config: AbRunConfig, options: EvidenceAbRunOptions): AbRunRecord {
   const started = Date.now()
@@ -53,8 +54,12 @@ function runCommand(config: AbRunConfig, options: EvidenceAbRunOptions): AbRunRe
   }
 }
 
-function writeRunEvidence(config: AbRunConfig, run: AbRunRecord, projectDir: string): string {
-  const scenarioDir = join(projectDir, EVIDENCE_DIR, safeEvidenceSlug(config.scenario))
+function writeRunEvidence(
+  config: AbRunConfig,
+  run: AbRunRecord,
+  evidenceRoot: string,
+): string {
+  const scenarioDir = join(evidenceRoot, AB_DIRECTORY, safeEvidenceSlug(config.scenario))
   mkdirSync(scenarioDir, { recursive: true })
   const filePath = join(scenarioDir, `${safeEvidenceSlug(config.condition)}-${safeEvidenceSlug(run.id)}.json`)
   const evidence = {
@@ -90,8 +95,16 @@ export function runEvidenceAbRunCommand(args: readonly string[], options: Eviden
     return { status: 1, stdout: "", stderr: EVIDENCE_AB_RUN_USAGE }
   }
   const projectDir = resolve(options.projectDir ?? process.cwd())
+  const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
+  if (!evidenceRoot.ok) {
+    return {
+      status: 1,
+      stdout: "",
+      stderr: "A/B evidence unavailable: configured evidence root is unsafe; read-only recovery is required.\n",
+    }
+  }
   const run = runCommand(config, options)
-  const filePath = writeRunEvidence(config, run, projectDir)
+  const filePath = writeRunEvidence(config, run, evidenceRoot.path)
   return {
     status: 0,
     stdout: [

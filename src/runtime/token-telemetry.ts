@@ -3,7 +3,7 @@ import { dirname, join } from "node:path"
 
 import type { Message } from "@opencode-ai/sdk"
 
-import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
@@ -100,9 +100,9 @@ function aggregateUsage(messages: readonly TokenMessageEntry[]): TokenUsage {
   )
 }
 
-function defaultEvidenceDir(projectDir: string): string {
-  const config = loadHarnessConfig(projectDir)
-  return resolveConfiguredPath(projectDir, config.evidenceDir)
+function defaultEvidenceDir(projectDir: string): string | undefined {
+  const result = resolveSafeEvidenceRootResult(projectDir)
+  return result.ok ? result.path : undefined
 }
 
 function tokenUsageEvidencePath(evidenceDir: string, sessionID: string): string {
@@ -194,10 +194,11 @@ function createdAtFrom(path: string, fallback: string): string {
 
 export class TokenTelemetryRecorder {
   private readonly modelLimits = new Map<string, ModelLimit>()
-  private readonly evidenceDir: string
+  private readonly evidenceDir: string | undefined
 
   constructor(projectDir: string, options: TokenTelemetryRecorderOptions = {}) {
-    this.evidenceDir = options.evidenceDir ?? defaultEvidenceDir(projectDir)
+    const result = resolveSafeEvidenceRootResult(projectDir, options.evidenceDir)
+    this.evidenceDir = result.ok ? result.path : undefined
   }
 
   rememberModelLimit(sessionID: string | undefined, model: ModelWithContextLimit): void {
@@ -213,6 +214,9 @@ export class TokenTelemetryRecorder {
   recordMessage(message: Message, now = new Date()): TokenTelemetryRecordResult {
     if (message.role !== "assistant") {
       return { kind: "ignored", reason: "message is not assistant role" }
+    }
+    if (this.evidenceDir === undefined) {
+      return { kind: "ignored", reason: "configured evidence root is unavailable" }
     }
     const outputPath = tokenUsageEvidencePath(this.evidenceDir, message.sessionID)
     try {

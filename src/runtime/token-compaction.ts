@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import type { AssistantMessage, Message } from "@opencode-ai/sdk"
 
 import type { HarnessCompactionConfig } from "../config/harness-config.js"
-import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
@@ -91,11 +91,6 @@ const AFTER_MEASUREMENT_REASON =
 
 function isAssistantMessage(message: Message): message is AssistantMessage {
   return message.role === "assistant"
-}
-
-function defaultEvidenceDir(projectDir: string): string {
-  const config = loadHarnessConfig(projectDir)
-  return resolveConfiguredPath(projectDir, config.evidenceDir)
 }
 
 function compactionEvidencePath(evidenceDir: string, sessionID: string): string {
@@ -205,10 +200,11 @@ function attemptWith(input: CompactionAttemptInput): CompactionAttempt {
 
 export class TokenCompactionTracker {
   private readonly cooldownUntilBySession = new Map<string, number>()
-  private readonly evidenceDir: string
+  private readonly evidenceDir: string | undefined
 
   constructor(private readonly options: TokenCompactionTrackerOptions) {
-    this.evidenceDir = options.evidenceDir ?? defaultEvidenceDir(options.projectDir)
+    const result = resolveSafeEvidenceRootResult(options.projectDir, options.evidenceDir)
+    this.evidenceDir = result.ok ? result.path : undefined
   }
 
   async maybeSummarize(
@@ -216,6 +212,10 @@ export class TokenCompactionTracker {
     telemetryResult: TokenTelemetryRecordResult,
     now = new Date(),
   ): Promise<TokenCompactionResult> {
+    const evidenceDir = this.evidenceDir
+    if (evidenceDir === undefined) {
+      return { kind: "disabled" }
+    }
     if (!this.options.config.enabled) {
       return { kind: "disabled" }
     }
@@ -227,7 +227,7 @@ export class TokenCompactionTracker {
     const skipped = (reason: string): TokenCompactionResult => {
       try {
         const path = writeAttempt(
-          this.evidenceDir,
+          evidenceDir,
           message.sessionID,
           attemptWith({
             measurement,
@@ -253,7 +253,7 @@ export class TokenCompactionTracker {
 
     const cooldownUntil = this.cooldownUntilBySession.get(message.sessionID) ?? 0
     const persistedCooldownUntil = evidenceCooldownUntil(
-      this.evidenceDir,
+      evidenceDir,
       message.sessionID,
       this.options.config.cooldownMs,
     )
@@ -279,7 +279,7 @@ export class TokenCompactionTracker {
       await session.summarize(request)
       this.cooldownUntilBySession.set(message.sessionID, now.getTime() + this.options.config.cooldownMs)
       const path = writeAttempt(
-        this.evidenceDir,
+        evidenceDir,
         message.sessionID,
         attemptWith({ measurement, request, status: "triggered", timestamp: now.toISOString() }),
       )
@@ -288,7 +288,7 @@ export class TokenCompactionTracker {
       this.cooldownUntilBySession.set(message.sessionID, now.getTime() + this.options.config.cooldownMs)
       const runtimeError = error instanceof Error ? error : new Error(String(error))
       const path = writeAttempt(
-        this.evidenceDir,
+        evidenceDir,
         message.sessionID,
         attemptWith({
           measurement,

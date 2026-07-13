@@ -108,12 +108,12 @@ export function readLegacyEvidence(
   }
 }
 
-export function legacyDiagnostic(legacyEvidence: LegacyEvidenceSummary): ReceiptDiagnostic {
+export function legacyDiagnostic(legacyEvidence: LegacyEvidenceSummary, displayRoot = ".persona/evidence"): ReceiptDiagnostic {
   return {
     code: "legacy-evidence-only",
     message: legacyEvidence.files.length === 0
       ? "No legacy evidence is present."
       : "Legacy evidence remains diagnostic-only and cannot migrate into authority.",
-    path: ".persona/evidence",
+    path: displayRoot,
   }
 }

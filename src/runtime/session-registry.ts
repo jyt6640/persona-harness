@@ -3,7 +3,7 @@ import { dirname, join } from "node:path"
 
 import type { Event } from "@opencode-ai/sdk"
 
-import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
@@ -65,13 +65,11 @@ function safeSessionKey(sessionID: string): string {
   return sessionID.replace(/[^a-zA-Z0-9._-]+/g, "-").toLowerCase() || "session"
 }
 
-function skipEvidencePath(projectDir: string, sessionID: string): string {
-  const config = loadHarnessConfig(projectDir)
-  return join(
-    resolveConfiguredPath(projectDir, config.evidenceDir),
-    "session-injection-skips",
-    `${safeSessionKey(sessionID)}.json`,
-  )
+function skipEvidencePath(projectDir: string, sessionID: string): string | undefined {
+  const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
+  return evidenceRoot.ok
+    ? join(evidenceRoot.path, "session-injection-skips", `${safeSessionKey(sessionID)}.json`)
+    : undefined
 }
 
 function surfaceCounts(value: unknown): Partial<Record<RuntimeInjectionSurface, number>> {
@@ -189,6 +187,9 @@ export class RuntimeSessionRegistry {
 
   private recordSkip(input: SkipRecordInput): void {
     const outputPath = skipEvidencePath(this.options.projectDir, input.sessionID)
+    if (outputPath === undefined) {
+      return
+    }
     const now = new Date().toISOString()
     const previous = readSkipEvidence(outputPath)
     const skippedSurfaces = {

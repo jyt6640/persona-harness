@@ -3,7 +3,7 @@ import { createHash } from "node:crypto"
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { loadHarnessConfig } from "../config/harness-config.js"
+import { loadHarnessConfigResult, resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
@@ -36,11 +36,33 @@ type TddEvidence = {
   }
 }
 
-const TDD_EVIDENCE_DIR = ".persona/evidence/tdd"
+type TddEvidenceRoot = {
+  readonly absolutePath: string
+  readonly relativePath: string
+}
+
+function tddEvidenceRoot(projectDir: string): TddEvidenceRoot | undefined {
+  const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
+  if (!evidenceRoot.ok) {
+    return undefined
+  }
+  return {
+    absolutePath: join(evidenceRoot.path, "tdd"),
+    relativePath: `${evidenceRoot.relativePath}/tdd`,
+  }
+}
 
 export function runWorkflowTddTest(options: { readonly projectDir?: string }): CliRunResult {
   const projectDir = options.projectDir ?? process.cwd()
-  const config = loadHarnessConfig(projectDir)
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return {
+      status: 1,
+      stdout: "",
+      stderr: "TDD evidence unavailable: harness configuration is invalid; read-only recovery is required.\n",
+    }
+  }
+  const config = configResult.config
   if (!config.enforce.executeVerification) {
     return {
       status: 0,
@@ -63,6 +85,13 @@ export function runWorkflowTddTest(options: { readonly projectDir?: string }): C
   }
 
   const evidence = writeTddEvidence(projectDir, ticket, "red", failedCases, result)
+  if (evidence === undefined) {
+    return {
+      status: 1,
+      stdout: "",
+      stderr: "TDD evidence unavailable: configured evidence root is unsafe; read-only recovery is required.\n",
+    }
+  }
   return {
     status: 0,
     stdout: [
@@ -86,7 +115,14 @@ export function readTddClosureFinding(
   ticketId: string | null,
   options: { readonly recordGreenEvidence?: boolean } = {},
 ): TddClosureFinding {
-  const config = loadHarnessConfig(projectDir)
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return {
+      kind: "unavailable",
+      reason: "harness configuration is invalid; read-only recovery is required before TDD evidence can be read",
+    }
+  }
+  const config = configResult.config
   if (!config.enforce.tdd) {
     return { kind: "disabled", reason: "enforce.tdd is disabled" }
   }
@@ -99,13 +135,20 @@ export function readTddClosureFinding(
   if (ticketId === null) {
     return { kind: "no-ticket", reason: "no active workflow ticket requires TDD evidence" }
   }
+  const evidenceRoot = tddEvidenceRoot(projectDir)
+  if (evidenceRoot === undefined) {
+    return {
+      kind: "unavailable",
+      reason: "configured evidence root is unsafe; read-only recovery is required before TDD evidence can be read",
+    }
+  }
 
   const redEvidence = readValidTddEvidence(projectDir, ticketId, "red")
   if (redEvidence.length === 0) {
     return {
       kind: "red-missing",
       reason: `${ticketId} has no PH-run red evidence from \`ph workflow test\``,
-      source: evidenceDirRef(ticketId),
+      source: `${evidenceRoot.relativePath}/${safeSegment(ticketId)}`,
     }
   }
 
@@ -118,7 +161,7 @@ export function readTddClosureFinding(
       evidenceRef: redEvidence[0]?.ref,
       kind: "red-without-green",
       reason: `${ticketId} red tests have not gone green after red evidence: ${missingGreen.join(", ")}`,
-      source: evidenceDirRef(ticketId),
+      source: `${evidenceRoot.relativePath}/${safeSegment(ticketId)}`,
     }
   }
   return {
@@ -186,7 +229,11 @@ type TddEvidenceWithRef = TddEvidence & {
 }
 
 function readValidTddEvidence(projectDir: string, ticket: string, status: TddEvidenceStatus): readonly TddEvidenceWithRef[] {
-  const dir = join(projectDir, evidenceDirRef(ticket))
+  const root = tddEvidenceRoot(projectDir)
+  if (root === undefined) {
+    return []
+  }
+  const dir = join(root.absolutePath, safeSegment(ticket))
   if (!existsSync(dir)) {
     return []
   }
@@ -194,7 +241,7 @@ function readValidTddEvidence(projectDir: string, ticket: string, status: TddEvi
     .filter((entry) => entry.endsWith(".json"))
     .sort()
     .flatMap((entry) => {
-      const ref = `${evidenceDirRef(ticket)}/${entry}`
+      const ref = `${root.relativePath}/${safeSegment(ticket)}/${entry}`
       const evidence = parseTddEvidence(projectDir, readFileSync(join(dir, entry), "utf8"), ref)
       if (evidence === undefined || evidence.ticket !== ticket || evidence.status !== status) {
         return []
@@ -287,16 +334,20 @@ function writeTddEvidence(
   status: TddEvidenceStatus,
   cases: readonly JunitTestCase[],
   result: DirectTestVerificationResult,
-): string {
+): string | undefined {
+  const root = tddEvidenceRoot(projectDir)
+  if (root === undefined) {
+    return undefined
+  }
   const safeTicket = safeSegment(ticket)
-  const dir = join(projectDir, TDD_EVIDENCE_DIR, safeTicket)
+  const dir = join(root.absolutePath, safeTicket)
   mkdirSync(dir, { recursive: true })
   const timestamp = new Date().toISOString()
   const filename = `${status}-${timestamp.replaceAll(/[:.]/g, "-")}.json`
-  const ref = `${TDD_EVIDENCE_DIR}/${safeTicket}/${filename}`
+  const ref = `${root.relativePath}/${safeTicket}/${filename}`
   const commandDisplay = result.command?.display ?? "unknown verification command"
   const sequence = nextEvidenceSequence(dir)
-  const junitSnapshots = writeJunitSnapshots(projectDir, safeTicket, status, timestamp, result.junitRefs)
+  const junitSnapshots = writeJunitSnapshots(projectDir, root, safeTicket, status, timestamp, result.junitRefs)
   const evidence: TddEvidence = {
     execution: "ph-direct-gradle-junit",
     generatedBy: "persona-harness",
@@ -322,13 +373,14 @@ function writeTddEvidence(
 
 function writeJunitSnapshots(
   projectDir: string,
+  root: TddEvidenceRoot,
   safeTicket: string,
   status: TddEvidenceStatus,
   timestamp: string,
   refs: readonly string[],
 ): readonly string[] {
-  const snapshotDirRef = `${TDD_EVIDENCE_DIR}/${safeTicket}/junit`
-  const snapshotDir = join(projectDir, snapshotDirRef)
+  const snapshotDirRef = `${root.relativePath}/${safeTicket}/junit`
+  const snapshotDir = join(root.absolutePath, safeTicket, "junit")
   mkdirSync(snapshotDir, { recursive: true })
   return refs.flatMap((ref, index) => {
     const source = join(projectDir, ref)
@@ -374,8 +426,4 @@ function gitHead(projectDir: string): string | null {
 function safeSegment(value: string): string {
   const safe = value.toLowerCase().replaceAll(/[^a-z0-9._-]+/g, "-").replaceAll(/^-+|-+$/g, "")
   return safe.length > 0 ? safe : "ticket"
-}
-
-function evidenceDirRef(ticket: string): string {
-  return `${TDD_EVIDENCE_DIR}/${safeSegment(ticket)}`
 }

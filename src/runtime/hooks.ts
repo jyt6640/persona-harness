@@ -3,7 +3,11 @@ import type { Hooks } from "@opencode-ai/plugin"
 import { writePhase0Evidence } from "./evidence.js"
 import { ContinuationTracker } from "./continuation.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
-import { isRuntimeInjectionEnabled, loadHarnessConfigResult, resolveConfiguredPath } from "../config/harness-config.js"
+import {
+  isRuntimeInjectionEnabled,
+  loadHarnessConfigResult,
+  resolveSafeEvidenceRootResult,
+} from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
 import { IdleContinuationTracker } from "./idle-continuation.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
@@ -108,8 +112,29 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const store = options.store ?? new PendingInjectionStore()
   const projectDir = options.projectDir ?? process.cwd()
   const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return {
+      event: async () => {},
+      "tool.execute.before": async () => {},
+      "tool.execute.after": async () => {},
+      "experimental.chat.messages.transform": async () => {},
+      "experimental.chat.system.transform": async () => {},
+      "experimental.text.complete": async () => {},
+    }
+  }
   const config = configResult.config
-  const evidenceDir = resolveConfiguredPath(projectDir, config.evidenceDir)
+  const evidencePath = resolveSafeEvidenceRootResult(projectDir, config.evidenceDir)
+  if (!evidencePath.ok) {
+    return {
+      event: async () => {},
+      "tool.execute.before": async () => {},
+      "tool.execute.after": async () => {},
+      "experimental.chat.messages.transform": async () => {},
+      "experimental.chat.system.transform": async () => {},
+      "experimental.text.complete": async () => {},
+    }
+  }
+  const evidenceDir = evidencePath.path
   const compliance = new RailComplianceTracker({ evidenceDir })
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)

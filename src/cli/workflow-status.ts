@@ -3,7 +3,7 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { findConventionByBlockerId } from "../config/convention-registry.js"
-import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import { loadHarnessConfigResult, resolveConfiguredPathResult, resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { walkBoundedFiles, type BoundedWalkResult } from "../io/bounded-path-walker.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { readWorkflowReportStatus } from "../runtime/workflow-report-status.js"
@@ -439,6 +439,8 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
   const selfProfileGuidance = summary.stackAlignmentFinding === "WARN" ? personaHarnessSelfProfileGuidance(summary.projectDir) : []
+  const evidenceRoot = resolveSafeEvidenceRootResult(summary.projectDir)
+  const displayEvidenceRoot = evidenceRoot.ok ? evidenceRoot.relativePath : "unavailable"
   return [
     "Persona Harness Workflow Check",
     "",
@@ -449,7 +451,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- .persona/workflow/plan.md: ${summary.plan}`,
     `- .persona/workflow/implementation-report.md: ${summary.implementation}`,
     `- .persona/workflow/review-report.md: ${summary.review}`,
-    `- .persona/evidence: ${summary.evidence}`,
+    `- ${displayEvidenceRoot}: ${summary.evidence}`,
     `- read coverage: ${summary.readCoverage}`,
     `- profile read coverage: ${summary.profileReadCoverage}`,
     `- java role read coverage: ${summary.javaRoleReadCoverage}`,

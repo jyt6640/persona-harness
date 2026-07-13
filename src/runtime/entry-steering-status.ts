@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node
 import { dirname, join } from "node:path"
 
 import type { HarnessConfig } from "../config/harness-config.js"
-import { resolveConfiguredPath } from "../config/harness-config.js"
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { detectEntryIntent, type EntryIntentRationale } from "./entry-intent-detector.js"
@@ -30,12 +30,14 @@ function sessionKey(sessionID: string): string {
   return createHash("sha256").update(sessionID).digest("hex").slice(0, 16)
 }
 
-function statusDirectory(projectDir: string, config: HarnessConfig): string {
-  return join(resolveConfiguredPath(projectDir, config.evidenceDir), STATUS_DIRECTORY)
+function statusDirectory(projectDir: string, config: HarnessConfig): string | undefined {
+  const evidenceRoot = resolveSafeEvidenceRootResult(projectDir, config.evidenceDir)
+  return evidenceRoot.ok ? join(evidenceRoot.path, STATUS_DIRECTORY) : undefined
 }
 
-function statusPath(projectDir: string, config: HarnessConfig, sessionID: string): string {
-  return join(statusDirectory(projectDir, config), `${sessionKey(sessionID)}.json`)
+function statusPath(projectDir: string, config: HarnessConfig, sessionID: string): string | undefined {
+  const directory = statusDirectory(projectDir, config)
+  return directory === undefined ? undefined : join(directory, `${sessionKey(sessionID)}.json`)
 }
 
 function firstUserText(output: TransformMessagesOutput, sessionID: string): string | undefined {
@@ -93,6 +95,9 @@ export class EntrySteeringTracker {
       return
     }
     const path = statusPath(this.projectDir, this.config, sessionID)
+    if (path === undefined) {
+      return
+    }
     this.decidedSessions.add(sessionID)
     if (existsSync(path)) {
       return
@@ -113,7 +118,7 @@ export class EntrySteeringTracker {
 
 export function readEntrySteeringStatusSummary(projectDir: string, config: HarnessConfig): EntrySteeringStatusSummary {
   const directory = statusDirectory(projectDir, config)
-  if (!existsSync(directory)) {
+  if (directory === undefined || !existsSync(directory)) {
     return { decisions: 0, fired: 0, invalidRecords: 0 }
   }
   let decisions = 0

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 import type { MultiAgentRole } from "../config/harness-config.js"
-import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
@@ -61,13 +61,14 @@ function safeSessionKey(sessionID: string): string {
   return sessionID.replace(/[^a-zA-Z0-9._-]+/g, "-").toLowerCase() || "session"
 }
 
-function roleBoundaryEvidenceDir(projectDir: string): string {
-  const config = loadHarnessConfig(projectDir)
-  return join(resolveConfiguredPath(projectDir, config.evidenceDir), "role-boundary")
+function roleBoundaryEvidenceDir(projectDir: string): string | undefined {
+  const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
+  return evidenceRoot.ok ? join(evidenceRoot.path, "role-boundary") : undefined
 }
 
-function roleBoundaryEvidencePath(projectDir: string, sessionID: string): string {
-  return join(roleBoundaryEvidenceDir(projectDir), `${safeSessionKey(sessionID)}.json`)
+function roleBoundaryEvidencePath(projectDir: string, sessionID: string): string | undefined {
+  const evidenceDir = roleBoundaryEvidenceDir(projectDir)
+  return evidenceDir === undefined ? undefined : join(evidenceDir, `${safeSessionKey(sessionID)}.json`)
 }
 
 function observationKey(observation: Pick<RoleBoundaryObservation, "currentTicketId" | "path" | "role">): string {
@@ -153,6 +154,9 @@ function updateObservation(
 
 export function appendRoleBoundaryObservation(projectDir: string, input: RoleBoundaryObservationInput): void {
   const outputPath = roleBoundaryEvidencePath(projectDir, input.sessionID)
+  if (outputPath === undefined) {
+    return
+  }
   const now = new Date().toISOString()
   const previous = readEvidence(outputPath)
   const observation: RoleBoundaryObservation = {
@@ -195,7 +199,7 @@ export function appendRoleBoundaryObservation(projectDir: string, input: RoleBou
 
 export function readRoleBoundaryHeuristicFindings(projectDir: string): readonly RoleBoundaryHeuristicFinding[] {
   const evidenceDir = roleBoundaryEvidenceDir(projectDir)
-  if (!existsSync(evidenceDir)) {
+  if (evidenceDir === undefined || !existsSync(evidenceDir)) {
     return []
   }
   const findings: RoleBoundaryHeuristicFinding[] = []

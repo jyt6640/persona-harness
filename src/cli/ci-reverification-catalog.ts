@@ -115,7 +115,12 @@ export function mutationSnapshotData(
   const classified = classifyObservedMutations(preStatus, postStatus, mode)
   return {
     allowlist: { allowedTracked: classified.allowedTracked, id: REVERIFICATION_COMMAND_CATALOG_ID, roots: ["build/**", ".gradle/**"] },
-    artifactParent: { equal: postParent !== undefined && samePathIdentity(preParent, postParent), post: postParent, pre: preParent, relativePath: ".persona/evidence" },
+    artifactParent: {
+      equal: postParent !== undefined && samePathIdentity(preParent, postParent),
+      post: postParent,
+      pre: preParent,
+      relativePath: preParent.relativePath,
+    },
     decision: preGit.available ? classified.decision : "snapshot-unavailable",
     disallowedTracked: classified.disallowedTracked,
     git: {

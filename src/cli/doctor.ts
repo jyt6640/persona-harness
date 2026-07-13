@@ -283,7 +283,18 @@ function formatConventionPackDiagnostic(item: ConventionPackDiagnostic): string 
   return `- ${item.path} [${item.code}/${field}]: ${item.message}`
 }
 
+function configuredRootDisplay(projectDir: string, configuredPath: string): string {
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return "unavailable"
+  }
+  const result = resolveConfiguredPathResult(projectDir, configuredPath)
+  return result.ok ? result.relativePath : "unavailable"
+}
+
 export function formatDoctorSummary(summary: DoctorSummary): string {
+  const rulesRoot = configuredRootDisplay(summary.projectDir, loadHarnessConfigResult(summary.projectDir).config.rulesDir)
+  const evidenceRoot = configuredRootDisplay(summary.projectDir, loadHarnessConfigResult(summary.projectDir).config.evidenceDir)
   const staleStatus = summary.staleFixtureFindings.length === 0 ? "PASS" : `WARN (${summary.staleFixtureFindings.length} findings)`
   const staleDetails =
     summary.staleFixtureFindings.length === 0
@@ -359,9 +370,9 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Persona plugin path: ${summary.pluginPath}`,
     `.persona/harness.jsonc: ${summary.harnessConfig}`,
     `.persona/rules: ${summary.rules}`,
-    `Configured rules/evidence roots: ${summary.rules} / ${summary.evidence}`,
+    `Rules root: ${rulesRoot}`,
+    `Evidence root: ${evidenceRoot}`,
     `.persona/workflow/plan.md: ${summary.workflowPlan}`,
-    `.persona/evidence: ${summary.evidence}`,
     `Rules surface: ${summary.rulesFileCount} files`,
     "",
     "Rule pack diagnostics:",

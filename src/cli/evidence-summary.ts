@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node
 import { basename, dirname, join, relative, resolve } from "node:path"
 import process from "node:process"
 
+import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
@@ -103,7 +104,6 @@ type EvidenceMetrics = {
   readonly unreadableFiles: readonly string[]
 }
 
-const SUMMARY_PATH = ".persona/evidence/summary.md"
 const EVIDENCE_DIR = ".persona/evidence"
 const DEFAULT_EVIDENCE_CATEGORY_FILE_COUNT_CAP = 1000
 const DEFAULT_EVIDENCE_TOTAL_BYTES_WARNING_THRESHOLD = 50 * 1024 * 1024
@@ -199,8 +199,11 @@ function categoryForEvidenceFile(evidenceDir: string, filePath: string): string 
   return pathParts[0] ?? "(root)"
 }
 
-function readEvidenceRetention(projectDir: string, env: Readonly<Record<string, string | undefined>>): EvidenceRetentionSummary {
-  const evidenceDir = join(projectDir, EVIDENCE_DIR)
+function readEvidenceRetention(
+  projectDir: string,
+  env: Readonly<Record<string, string | undefined>>,
+  evidenceDir: string,
+): EvidenceRetentionSummary {
   const policy: EvidenceRetentionPolicy = {
     categoryFileCountCap: positiveIntegerFromEnv(
       env,
@@ -416,8 +419,11 @@ function objectsFromEvidenceFile(filePath: string): readonly unknown[] {
   return [JSON.parse(source) as unknown]
 }
 
-function readEvidenceSummary(projectDir: string, env: Readonly<Record<string, string | undefined>>): EvidenceSummary {
-  const evidenceDir = join(projectDir, ".persona", "evidence")
+function readEvidenceSummary(
+  projectDir: string,
+  env: Readonly<Record<string, string | undefined>>,
+  evidenceDir: string,
+): EvidenceSummary {
   const records: EvidenceRecord[] = []
   const unreadableFiles: string[] = []
   for (const filePath of listJsonFiles(evidenceDir)) {
@@ -432,7 +438,7 @@ function readEvidenceSummary(projectDir: string, env: Readonly<Record<string, st
       unreadableFiles.push(filePath)
     }
   }
-  return { records, retention: readEvidenceRetention(projectDir, env), unreadableFiles }
+  return { records, retention: readEvidenceRetention(projectDir, env, evidenceDir), unreadableFiles }
 }
 
 export function readEvidenceMetrics(options: EvidenceOptions = {}): EvidenceMetrics {
@@ -645,18 +651,21 @@ function formatEvidenceMetrics(metrics: EvidenceMetrics): string {
 function writeEvidenceSummaryWithResult(options: EvidenceOptions = {}): {
   readonly outputPath: string
   readonly summary: EvidenceSummary
-} {
+} | undefined {
   const projectDir = resolve(options.projectDir ?? process.cwd())
-  const outputPath = join(projectDir, SUMMARY_PATH)
-  const summary = readEvidenceSummary(projectDir, options.env ?? process.env)
+  const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
+  if (!evidenceRoot.ok) {
+    return undefined
+  }
+  const outputPath = join(evidenceRoot.path, "summary.md")
+  const summary = readEvidenceSummary(projectDir, options.env ?? process.env, evidenceRoot.path)
   mkdirSync(dirname(outputPath), { recursive: true })
   writeFileAtomic(outputPath, formatEvidenceSummary(projectDir, summary))
   return { outputPath, summary }
 }
 
-export function writeEvidenceSummary(options: EvidenceOptions = {}): string {
-  const { outputPath } = writeEvidenceSummaryWithResult(options)
-  return outputPath
+export function writeEvidenceSummary(options: EvidenceOptions = {}): string | undefined {
+  return writeEvidenceSummaryWithResult(options)?.outputPath
 }
 
 export function runEvidenceCommand(args: readonly string[], options: EvidenceOptions = {}, invocationName = "ph"): CliRunResult {
@@ -667,8 +676,17 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
     return runEvidenceAbRunCommand(args.slice(1), options)
   }
   if (args.length === 1 && args[0] === "summary") {
-    const { outputPath, summary } = writeEvidenceSummaryWithResult(options)
+    const written = writeEvidenceSummaryWithResult(options)
+    if (written === undefined) {
+      return {
+        status: 1,
+        stdout: "",
+        stderr: "Evidence summary unavailable: configured evidence root is unsafe; read-only recovery is required.\n",
+      }
+    }
+    const { outputPath, summary } = written
     const projectDir = resolve(options.projectDir ?? process.cwd())
+    const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
     const warningLines =
       summary.retention.warnings.length === 0
         ? []
@@ -677,7 +695,7 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
       status: 0,
       stdout: [
         `Evidence summary written: ${outputPath}`,
-        `Evidence directory: ${join(projectDir, EVIDENCE_DIR)}`,
+        `Evidence directory: ${evidenceRoot.ok ? evidenceRoot.path : join(projectDir, EVIDENCE_DIR)}`,
         ...warningLines,
       ].join("\n") + "\n",
       stderr: "",
