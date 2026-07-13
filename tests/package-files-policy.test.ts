@@ -67,6 +67,19 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles("experiments/p3-adversarial-closure-fixtures/validate.mjs", packageJson.files)).toBe(false)
   })
 
+  it("keeps every P3-7 init contract file source-only", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const experimentRoot = path.join(packageRoot, "experiments/p3-7-ph-init-safe-upgrade-contract")
+    const files = listFiles(experimentRoot).map((filePath) => toPackagePath(path.relative(packageRoot, filePath)))
+
+    expect(files.length).toBeGreaterThan(8)
+    expect(packageJson.files).not.toContain("experiments")
+    for (const file of files) {
+      expect(isCoveredByPackageFiles(file, packageJson.files)).toBe(false)
+    }
+    expect(isCoveredByPackageFiles("tests/p3-7-ph-init-safe-upgrade-contract.test.ts", packageJson.files)).toBe(false)
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
@@ -140,6 +153,15 @@ function listConventionFiles(directory: string): readonly string[] {
         return listConventionFiles(entryPath)
       }
       return entry.isFile() && /\.(ya?ml)$/iu.test(entry.name) ? [entryPath] : []
+    })
+    .sort()
+}
+
+function listFiles(directory: string): readonly string[] {
+  return readdirSync(directory, { withFileTypes: true })
+    .flatMap((entry) => {
+      const entryPath = path.join(directory, entry.name)
+      return entry.isDirectory() ? listFiles(entryPath) : entry.isFile() ? [entryPath] : []
     })
     .sort()
 }

@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "p3-7-ph-init-lock.1",
+  "lockId": "p3-7-ph-init-safe-upgrade-lock",
+  "corpusSchemaVersion": "p3-7-ph-init-safe-upgrade.1",
+  "canonicalBase": {
+    "label": "P3-7 canonical main",
+    "commit": "37bc06726970f170edac3a887447ae1182302be7",
+    "parent": "c03b81db09e31d36f1873459891886ae13771409"
+  },
+  "corpusSha256": "dc52b9ffa4def89c0ffea510d8ef09a028b643552c07c1014c3d5e8984bed920",
+  "fixtureRegistrySha256": "a1d03979d86d420a43c8a03b2647fe340e99ccbced1cccfda9082fa064fe8058",
+  "recordOrder": [
+    "p3-7-r01-ownership-marker",
+    "p3-7-r02-idempotent-owned-rerun",
+    "p3-7-r03-safe-owned-upgrade",
+    "p3-7-r04-modified-config-conflict",
+    "p3-7-r05-modified-rules-conflict",
+    "p3-7-r06-modified-agents-conflict",
+    "p3-7-r07-foreign-file-preservation",
+    "p3-7-r08-rollback-write-failure",
+    "p3-7-r09-symlink-escape",
+    "p3-7-r10-partial-initialization",
+    "p3-7-r11-concurrent-race",
+    "p3-7-r12-deterministic-dry-run",
+    "p3-7-r13-binding-mismatch",
+    "p3-7-r14-missing-ownership-marker"
+  ],
+  "fixtureFingerprints": [
+    {
+      "id": "p3-7-r01-ownership-marker",
+      "sha256": "0f0b1454c6ed8daa6900647d4c52675945ef6ce105ea62f7a18293e39e592b69"
+    },
+    {
+      "id": "p3-7-r02-idempotent-owned-rerun",
+      "sha256": "c3ec16cd182443657ed16cd2782dc8de815b5ece67927e044da1b9efd9aeb0ae"
+    },
+    {
+      "id": "p3-7-r03-safe-owned-upgrade",
+      "sha256": "732ad832ff2921f9827794ab6509d0a085af1256a427a3b9fc5d44a3889395e6"
+    },
+    {
+      "id": "p3-7-r04-modified-config-conflict",
+      "sha256": "0b36c40678e053248507ccf45e4c33dfe84f6933f9ce5a72b3f60293f0da4f8c"
+    },
+    {
+      "id": "p3-7-r05-modified-rules-conflict",
+      "sha256": "0872ad2839136e8d6a3a47a2912c2a07252975244c0ca12c905ad8a3a8f86e22"
+    },
+    {
+      "id": "p3-7-r06-modified-agents-conflict",
+      "sha256": "e06c9e55e46d242de2792d589eb82480059df783124fb877014a8b362112b136"
+    },
+    {
+      "id": "p3-7-r07-foreign-file-preservation",
+      "sha256": "670bb085199e7873726b24e7282efa8d37249d189c15a2ef617918fcaaa88cd2"
+    },
+    {
+      "id": "p3-7-r08-rollback-write-failure",
+      "sha256": "0d1618993798db01dc2127e3914a8c463e63685c66c2f5fc0c81cb929047edd0"
+    },
+    {
+      "id": "p3-7-r09-symlink-escape",
+      "sha256": "030fffc037390aec7964150bf7ff914471519c6fab67930059ce474e6c28c647"
+    },
+    {
+      "id": "p3-7-r10-partial-initialization",
+      "sha256": "2d34099afa1798d9e38e27be76e2dec01aa616e0b9e0cd909057101c5cbf1ae3"
+    },
+    {
+      "id": "p3-7-r11-concurrent-race",
+      "sha256": "165e627711f716f4ea21dcfc0e922911d1b714ce827bab933d06f025a66c49d6"
+    },
+    {
+      "id": "p3-7-r12-deterministic-dry-run",
+      "sha256": "9db92dbc2a70df1c1377d59ac3e75939971b8093f1c0630611f162f8297a1704"
+    },
+    {
+      "id": "p3-7-r13-binding-mismatch",
+      "sha256": "94f7b01d9f6c0c9262a0d63896d52a644beaac1d65360e73a1087158ffec6fd9"
+    },
+    {
+      "id": "p3-7-r14-missing-ownership-marker",
+      "sha256": "b624fea534ed55a94e078bd8b9e81052cd0c982b7d1d0c84ae9554951060022b"
+    }
+  ],
+  "boundary": {
+    "reportOnly": true,
+    "sourceOnly": true,
+    "enforcement": false,
+    "fixtureDataAuthority": "none",
+    "productMitigationClaim": false,
+    "productBehaviorChange": false,
+    "packageDistribution": false,
+    "actualPhInit": false,
+    "realProjectAccess": false,
+    "childProcess": false,
+    "networkAccess": false,
+    "p2Work": false,
+    "mutationPolicy": "append-only-new-schema-new-result"
+  },
+  "dependencies": {
+    "configRecoveryAndPathSafety": "P3-6-owned",
+    "reimplementationHere": false
+  }
+}

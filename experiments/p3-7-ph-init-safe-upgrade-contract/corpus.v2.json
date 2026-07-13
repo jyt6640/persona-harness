@@ -1,0 +1,182 @@
+{
+  "schemaVersion": "p3-7-ph-init-safe-upgrade.2",
+  "corpusId": "p3-7-ph-init-safe-upgrade",
+  "status": "source-only-safe-init-contract",
+  "canonicalBase": {
+    "label": "P3-7 canonical main",
+    "commit": "37bc06726970f170edac3a887447ae1182302be7",
+    "parent": "c03b81db09e31d36f1873459891886ae13771409"
+  },
+  "binding": {
+    "packageName": "persona-harness",
+    "packageSourceCommit": "37bc06726970f170edac3a887447ae1182302be7",
+    "profileId": "p3-7-synthetic-profile-java-spring",
+    "profileFingerprint": "profile-fingerprint-p3-7-java-spring-v1",
+    "projectId": "p3-7-synthetic-project-alpha",
+    "projectFingerprint": "project-fingerprint-p3-7-alpha-v1"
+  },
+  "boundary": {
+    "reportOnly": true,
+    "sourceOnly": true,
+    "enforcement": false,
+    "fixtureDataAuthority": "none",
+    "productMitigationClaim": false,
+    "productBehaviorChange": false,
+    "packageDistribution": false,
+    "actualPhInit": false,
+    "realProjectAccess": false,
+    "childProcess": false,
+    "networkAccess": false,
+    "p2Work": false,
+    "mutationPolicy": "append-only-new-schema-new-result"
+  },
+  "dependencies": {
+    "configRecoveryAndPathSafety": "P3-6-owned",
+    "reimplementationHere": false
+  },
+  "fixtureRegistry": "fixtures/registry.json",
+  "fixtureRegistrySha256": "a1d03979d86d420a43c8a03b2647fe340e99ccbced1cccfda9082fa064fe8058",
+  "canonicalLock": "canonical-lock.v2.json",
+  "records": [
+    {
+      "id": "p3-7-r01-ownership-marker",
+      "category": "ownership-marker",
+      "title": "Fresh generated files carry explicit ownership markers",
+      "fixtureId": "p3-7-r01-ownership-marker",
+      "expectedDecision": "apply",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r02-idempotent-owned-rerun",
+      "category": "idempotent-rerun",
+      "title": "Unchanged owned rerun is a deterministic no-op",
+      "fixtureId": "p3-7-r02-idempotent-owned-rerun",
+      "expectedDecision": "no-op",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r03-safe-owned-upgrade",
+      "category": "safe-owned-upgrade",
+      "title": "Upgrade writes only owned unchanged files and records a backup",
+      "fixtureId": "p3-7-r03-safe-owned-upgrade",
+      "expectedDecision": "apply",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r04-modified-config-conflict",
+      "category": "modified-config-conflict",
+      "title": "User-modified config fails closed",
+      "fixtureId": "p3-7-r04-modified-config-conflict",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r05-modified-rules-conflict",
+      "category": "modified-rules-conflict",
+      "title": "User-modified rules fail closed",
+      "fixtureId": "p3-7-r05-modified-rules-conflict",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r06-modified-agents-conflict",
+      "category": "modified-agents-conflict",
+      "title": "User-modified AGENTS.md fails closed",
+      "fixtureId": "p3-7-r06-modified-agents-conflict",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r07-foreign-file-preservation",
+      "category": "foreign-file-preservation",
+      "title": "Pre-existing foreign files are preserved and never overwritten",
+      "fixtureId": "p3-7-r07-foreign-file-preservation",
+      "expectedDecision": "apply",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r08-rollback-write-failure",
+      "category": "rollback-on-write-failure",
+      "title": "Any write failure restores the complete pre-state",
+      "fixtureId": "p3-7-r08-rollback-write-failure",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r09-symlink-escape",
+      "category": "symlink-escape",
+      "title": "Symlink and escape targets are rejected without following",
+      "fixtureId": "p3-7-r09-symlink-escape",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-6 path safety dependency and P3-7 owner"
+    },
+    {
+      "id": "p3-7-r10-partial-initialization",
+      "category": "partial-initialization",
+      "title": "Partial initialization requires explicit non-destructive recovery",
+      "fixtureId": "p3-7-r10-partial-initialization",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r11-concurrent-race",
+      "category": "concurrent-race",
+      "title": "A racing target creation fails closed without overwrite",
+      "fixtureId": "p3-7-r11-concurrent-race",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r12-deterministic-dry-run",
+      "category": "deterministic-dry-run",
+      "title": "Dry-run is deterministic and performs zero writes",
+      "fixtureId": "p3-7-r12-deterministic-dry-run",
+      "expectedDecision": "dry-run",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r13-binding-mismatch",
+      "category": "binding-mismatch",
+      "title": "Package, profile, and project binding mismatch fails closed",
+      "fixtureId": "p3-7-r13-binding-mismatch",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r14-missing-ownership-marker",
+      "category": "missing-ownership-marker",
+      "title": "Unmarked existing files are not treated as owned",
+      "fixtureId": "p3-7-r14-missing-ownership-marker",
+      "expectedDecision": "fail-closed",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    },
+    {
+      "id": "p3-7-r15-new-profile-binding",
+      "category": "new-binding-extension",
+      "title": "Versioned successor registers a fresh profile binding",
+      "fixtureId": "p3-7-r15-new-profile-binding",
+      "expectedDecision": "apply",
+      "futureOwningUnit": "P3-7 safe ph init implementation"
+    }
+  ],
+  "fixtureExtension": "fixtures/extension-r15.json",
+  "fixtureExtensionSha256": "17f92b060ca23c682970dba7ca4aa1b91e8112df7ac2d706aabe6efdc8d13027",
+  "extensionBinding": {
+    "packageName": "persona-harness",
+    "packageSourceCommit": "37bc06726970f170edac3a887447ae1182302be7",
+    "profileId": "p3-7-synthetic-profile-kotlin",
+    "profileFingerprint": "profile-fingerprint-p3-7-kotlin-v1",
+    "projectId": "p3-7-synthetic-project-alpha",
+    "projectFingerprint": "project-fingerprint-p3-7-alpha-v1"
+  },
+  "appendOnly": {
+    "baseCorpusSchemaVersion": "p3-7-ph-init-safe-upgrade.1",
+    "baseCorpusSha256": "dc52b9ffa4def89c0ffea510d8ef09a028b643552c07c1014c3d5e8984bed920",
+    "baseLockSha256": "6c0e411eec338a620376145e40bc441baaba7b4899a4b6f8c88ac0cc6b279fb3",
+    "addedRecordIds": [
+      "p3-7-r15-new-profile-binding"
+    ],
+    "extensionFixtureId": "p3-7-r15-new-profile-binding",
+    "extensionFixtureSha256": "17f92b060ca23c682970dba7ca4aa1b91e8112df7ac2d706aabe6efdc8d13027"
+  }
+}
