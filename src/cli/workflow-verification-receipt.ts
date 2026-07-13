@@ -160,6 +160,7 @@ function compareBindings(receipt: VerificationReceipt, attempt: VerificationAtte
     ["finishId", receipt.finishId === attempt.finishId],
     ["sourceHead", receipt.sourceHead === attempt.sourceHead],
     ["dirtyWorktreeDigest", receipt.dirtyWorktreeDigest === attempt.dirtyWorktreeDigest],
+    ["provenanceDigest", receipt.provenanceDigest === attempt.provenanceDigest],
     ["phVersion", receipt.phVersion === attempt.phVersion],
     ["command.catalogId", receipt.command.catalogId === attempt.command.catalogId],
     ["command.argvDigest", receipt.command.argvDigest === attempt.command.argvDigest],

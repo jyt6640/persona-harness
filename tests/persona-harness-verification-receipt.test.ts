@@ -99,6 +99,24 @@ describe("verification receipt and attempt contract", () => {
     expect(assessment.diagnostics.map((diagnostic) => diagnostic.code)).toContain("binding-mismatch")
   })
 
+  it("rejects a receipt provenance mismatch without changing the attempt", () => {
+    const receipt = validReceipt({ provenanceDigest: `sha256:${"b".repeat(64)}` })
+    const attempt = validAttempt()
+    const projectDir = createProject()
+    writeReceiptSet(projectDir, receipt, attempt)
+
+    const assessment = assessVerificationAuthority(projectDir, new Date(NOW))
+
+    expect(assessment.authorityEligible).toBe(false)
+    expect(assessment.state).toBe("mismatch")
+    expect(assessment.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "binding-mismatch",
+        message: "Receipt and attempt provenanceDigest values differ.",
+      }),
+    ]))
+  })
+
   it("rejects duplicate receipt and attempt identities", () => {
     const receipt = validReceipt()
     const attempt = validAttempt()
@@ -166,9 +184,12 @@ describe("verification receipt and attempt contract", () => {
     externalReceipt.provenanceDigest = `sha256:${"e".repeat(64)}`
 
     const localProject = createProject()
-    writeReceiptSet(localProject, localReceipt, validAttempt())
+    writeReceiptSet(localProject, localReceipt, validAttempt({ provenanceDigest: localReceipt.provenanceDigest }))
     const externalProject = createProject()
-    writeReceiptSet(externalProject, externalReceipt, validAttempt({ receiptId: "external-receipt" }))
+    writeReceiptSet(externalProject, externalReceipt, validAttempt({
+      provenanceDigest: externalReceipt.provenanceDigest,
+      receiptId: "external-receipt",
+    }))
 
     expect(assessVerificationAuthority(localProject, new Date(NOW))).toMatchObject({
       authorityEligible: false,
