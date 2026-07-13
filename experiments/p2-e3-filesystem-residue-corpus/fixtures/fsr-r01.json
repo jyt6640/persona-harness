@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-r01",
+  "category": "likely-residue",
+  "label": "build artifact spill",
+  "expectedResidue": true,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? dist/p2-e3-filesystem-residue-corpus/summary.json",
+      "?? dist/p2-e3-filesystem-residue-corpus/summary.log"
+    ]
+  },
+  "paths": [
+    "dist/p2-e3-filesystem-residue-corpus/summary.json",
+    "dist/p2-e3-filesystem-residue-corpus/summary.log"
+  ]
+}

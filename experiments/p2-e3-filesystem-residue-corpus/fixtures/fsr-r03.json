@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-r03",
+  "category": "likely-residue",
+  "label": "log spill residue",
+  "expectedResidue": true,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? logs/p2-e3-filesystem-residue-debug.log",
+      "?? logs/p2-e3-filesystem-residue-debug.log.1"
+    ]
+  },
+  "paths": [
+    "logs/p2-e3-filesystem-residue-debug.log",
+    "logs/p2-e3-filesystem-residue-debug.log.1"
+  ]
+}

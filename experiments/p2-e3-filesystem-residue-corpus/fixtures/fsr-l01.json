@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-l01",
+  "category": "difficult-legitimate-untracked",
+  "label": "experiment corpus fixture",
+  "expectedResidue": false,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? experiments/p2-e3-filesystem-residue-corpus/fixtures/fsr-l01.json",
+      "?? experiments/p2-e3-filesystem-residue-corpus/notes/fsr-l01.md"
+    ]
+  },
+  "paths": [
+    "experiments/p2-e3-filesystem-residue-corpus/fixtures/fsr-l01.json",
+    "experiments/p2-e3-filesystem-residue-corpus/notes/fsr-l01.md"
+  ]
+}

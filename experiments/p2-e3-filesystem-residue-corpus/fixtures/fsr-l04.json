@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-l04",
+  "category": "difficult-legitimate-untracked",
+  "label": "note bundle",
+  "expectedResidue": false,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? notes/p2-e3-filesystem-residue-observation.md",
+      "?? notes/p2-e3-filesystem-residue-observation.json"
+    ]
+  },
+  "paths": [
+    "notes/p2-e3-filesystem-residue-observation.md",
+    "notes/p2-e3-filesystem-residue-observation.json"
+  ]
+}

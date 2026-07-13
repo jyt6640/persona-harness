@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-r04",
+  "category": "likely-residue",
+  "label": "editor backup residue",
+  "expectedResidue": true,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? src/runtime/measure.ts~",
+      "?? src/runtime/measure.ts.swp"
+    ]
+  },
+  "paths": [
+    "src/runtime/measure.ts~",
+    "src/runtime/measure.ts.swp"
+  ]
+}

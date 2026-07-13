@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-l03",
+  "category": "difficult-legitimate-untracked",
+  "label": "scratch path fixture",
+  "expectedResidue": false,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? experiments/p2-e3-filesystem-residue-corpus/fixtures/path-fixture.json",
+      "?? experiments/p2-e3-filesystem-residue-corpus/fixtures/path-fixture.txt"
+    ]
+  },
+  "paths": [
+    "experiments/p2-e3-filesystem-residue-corpus/fixtures/path-fixture.json",
+    "experiments/p2-e3-filesystem-residue-corpus/fixtures/path-fixture.txt"
+  ]
+}

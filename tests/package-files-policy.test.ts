@@ -58,6 +58,22 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles("experiments/entry-intent-corpus/measure.mjs", packageJson.files)).toBe(false)
   })
 
+  it("keeps the filesystem-residue corpus and evaluator source-only", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    expect(existsSync(path.join(packageRoot, "experiments/p2-e3-filesystem-residue-corpus/corpus.json"))).toBe(true)
+    expect(packageJson.files).not.toContain("experiments")
+    expect(
+      isCoveredByPackageFiles("experiments/p2-e3-filesystem-residue-corpus/corpus.json", packageJson.files),
+    ).toBe(false)
+    expect(
+      isCoveredByPackageFiles("experiments/p2-e3-filesystem-residue-corpus/evaluator/measure.mjs", packageJson.files),
+    ).toBe(false)
+    expect(
+      isCoveredByPackageFiles("experiments/p2-e3-filesystem-residue-corpus/README.md", packageJson.files),
+    ).toBe(false)
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")

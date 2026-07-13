@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-r02",
+  "category": "likely-residue",
+  "label": "cache lockfile residue",
+  "expectedResidue": true,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? .turbo/cache/fsr.lock",
+      "?? .turbo/cache/fsr.meta"
+    ]
+  },
+  "paths": [
+    ".turbo/cache/fsr.lock",
+    ".turbo/cache/fsr.meta"
+  ]
+}

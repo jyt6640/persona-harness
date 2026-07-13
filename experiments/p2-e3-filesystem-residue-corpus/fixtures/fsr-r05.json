@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-r05",
+  "category": "likely-residue",
+  "label": "temp staging residue",
+  "expectedResidue": true,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? tmp/p2-e3-filesystem-residue-corpus/stage.json",
+      "?? tmp/p2-e3-filesystem-residue-corpus/stage.json.bak"
+    ]
+  },
+  "paths": [
+    "tmp/p2-e3-filesystem-residue-corpus/stage.json",
+    "tmp/p2-e3-filesystem-residue-corpus/stage.json.bak"
+  ]
+}

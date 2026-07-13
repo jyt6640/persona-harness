@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-l05",
+  "category": "difficult-legitimate-untracked",
+  "label": "review appendix",
+  "expectedResidue": false,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? docs/current/p2-e3-filesystem-residue-corpus-appendix.md",
+      "?? docs/current/p2-e3-filesystem-residue-corpus-appendix.json"
+    ]
+  },
+  "paths": [
+    "docs/current/p2-e3-filesystem-residue-corpus-appendix.md",
+    "docs/current/p2-e3-filesystem-residue-corpus-appendix.json"
+  ]
+}

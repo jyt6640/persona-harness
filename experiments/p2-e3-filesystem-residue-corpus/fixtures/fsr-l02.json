@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsr-l02",
+  "category": "difficult-legitimate-untracked",
+  "label": "preregistration draft",
+  "expectedResidue": false,
+  "gitStatus": {
+    "porcelainV1": [
+      "?? experiments/p2-e3-filesystem-residue-corpus/evaluator/draft-output.json",
+      "?? experiments/p2-e3-filesystem-residue-corpus/evaluator/draft-output.txt"
+    ]
+  },
+  "paths": [
+    "experiments/p2-e3-filesystem-residue-corpus/evaluator/draft-output.json",
+    "experiments/p2-e3-filesystem-residue-corpus/evaluator/draft-output.txt"
+  ]
+}

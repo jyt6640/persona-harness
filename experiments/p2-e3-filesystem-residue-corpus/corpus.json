@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "filesystem-residue-corpus.1",
+  "reportOnly": true,
+  "sourceOnly": true,
+  "enforcement": false,
+  "categories": [
+    "likely-residue",
+    "difficult-legitimate-untracked"
+  ],
+  "categoryLabels": {
+    "likely-residue": "likely residue",
+    "difficult-legitimate-untracked": "difficult legitimate untracked work"
+  },
+  "preregistration": {
+    "decision": "eligible-for-report-only-preregistration",
+    "falseNegativeThreshold": 0,
+    "falsePositiveThreshold": 0,
+    "maximumWeightedErrorRate": 0,
+    "minimumPrecision": 1,
+    "minimumRecall": 1,
+    "oracle": "corpus-manifest-verified"
+  },
+  "records": [
+    {
+      "id": "fsr-r01",
+      "category": "likely-residue",
+      "label": "build artifact spill",
+      "expectedResidue": true,
+      "fixturePath": "fixtures/fsr-r01.json",
+      "fixtureFingerprint": "sha256:1f5cce516edec32ad20890ce828da078b5ccc343604b70fc144b0fd0e51eb398"
+    },
+    {
+      "id": "fsr-r02",
+      "category": "likely-residue",
+      "label": "cache lockfile residue",
+      "expectedResidue": true,
+      "fixturePath": "fixtures/fsr-r02.json",
+      "fixtureFingerprint": "sha256:4300c7a9b2097b622d66c10ff6f561278b514f6821043af6c6bf61973ca6696c"
+    },
+    {
+      "id": "fsr-r03",
+      "category": "likely-residue",
+      "label": "log spill residue",
+      "expectedResidue": true,
+      "fixturePath": "fixtures/fsr-r03.json",
+      "fixtureFingerprint": "sha256:4689266d1497a870bec31e2d15093c64b5d2235b4d370c29245464a141b0872f"
+    },
+    {
+      "id": "fsr-r04",
+      "category": "likely-residue",
+      "label": "editor backup residue",
+      "expectedResidue": true,
+      "fixturePath": "fixtures/fsr-r04.json",
+      "fixtureFingerprint": "sha256:60ace27de6ffeabb2ee9ca4d0c6fcc2f4af41616de7421b480e0a50d54cf326a"
+    },
+    {
+      "id": "fsr-r05",
+      "category": "likely-residue",
+      "label": "temp staging residue",
+      "expectedResidue": true,
+      "fixturePath": "fixtures/fsr-r05.json",
+      "fixtureFingerprint": "sha256:65fcd1664001daf291ee5172a9653602f74b7a00ff406777065580470898fa1c"
+    },
+    {
+      "id": "fsr-l01",
+      "category": "difficult-legitimate-untracked",
+      "label": "experiment corpus fixture",
+      "expectedResidue": false,
+      "fixturePath": "fixtures/fsr-l01.json",
+      "fixtureFingerprint": "sha256:9adba36dd923314c5300639f1900b0fc6ac9a87a36cb38609969269e69a89fef"
+    },
+    {
+      "id": "fsr-l02",
+      "category": "difficult-legitimate-untracked",
+      "label": "preregistration draft",
+      "expectedResidue": false,
+      "fixturePath": "fixtures/fsr-l02.json",
+      "fixtureFingerprint": "sha256:2353542de3083273f11d4a2c1936bb9bfe6d8d03b7e37260ae94f1953f979118"
+    },
+    {
+      "id": "fsr-l03",
+      "category": "difficult-legitimate-untracked",
+      "label": "scratch path fixture",
+      "expectedResidue": false,
+      "fixturePath": "fixtures/fsr-l03.json",
+      "fixtureFingerprint": "sha256:39ac4d643180053342f9f5b750b9e463139847837f702690ecf77f2a027a54ae"
+    },
+    {
+      "id": "fsr-l04",
+      "category": "difficult-legitimate-untracked",
+      "label": "note bundle",
+      "expectedResidue": false,
+      "fixturePath": "fixtures/fsr-l04.json",
+      "fixtureFingerprint": "sha256:ef926b3fed7066ae2b8792a6ac7256c4aad9161f3d39bf87f4ac73cf2bcfd1c8"
+    },
+    {
+      "id": "fsr-l05",
+      "category": "difficult-legitimate-untracked",
+      "label": "review appendix",
+      "expectedResidue": false,
+      "fixturePath": "fixtures/fsr-l05.json",
+      "fixtureFingerprint": "sha256:96d8d7a53d6122702c2765c6d8d5ff612b9973d7289cf9d1e5135d8c05cd8f97"
+    }
+  ]
+}
