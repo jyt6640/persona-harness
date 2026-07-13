@@ -107,6 +107,7 @@ describe("package files policy", () => {
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
       "docs/current/p3-8-ci-release-integrity-acceptance-record.md",
+      "docs/current/p3-9-rc3-integrity-governance-decision.md",
       "docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md",
       "docs/current/p3-5-semantic-tdd-acceptance-record.md",
       "docs/current/canonical-docs-index.md",
