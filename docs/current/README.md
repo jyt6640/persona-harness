@@ -105,10 +105,12 @@ deleting evidence/status history.
 - P3-3 defines receipt/attempt parsing and read-only lifecycle diagnostics only.
   It does not issue, verify, migrate, or accept any receipt as finish authority;
   P3-2 remains blocked until a later trusted path exists.
-- P3-8 is a candidate-only CI/publish/release workflow hardening unit. It adds
-  PR/main CI, canonical-main/tag ancestry checks, registry integrity readback,
-  and fail-closed GitHub release idempotency. It does not mutate GitHub
-  settings, publish npm, create tags/releases, or claim release readiness.
+- P3-8 source workflow controls add PR/main CI, canonical-main/tag ancestry
+  checks, registry integrity readback, and fail-closed GitHub release
+  idempotency. On 2026-07-13, the recorded GitHub repository controls added
+  strict main protection, immutable-action enforcement, and protected
+  `npm-publish` environment settings. npm trusted-publisher binding remains
+  unverified, so RC3, publish, `latest`, stable, and GA claims remain NO-GO.
 - P3-4 adds fresh fixed-command execution and nonzero JUnit testcase
   enforcement. Local cooperative receipts remain untrusted under P3-2; no
   finish authority or strong integrity claim is enabled.
