@@ -87,7 +87,16 @@ function writeSpringFixture(projectDir: string): readonly string[] {
     ].join("\n"),
   )
   const gradlewPath = join(projectDir, "gradlew")
-  writeFileSync(gradlewPath, "#!/bin/sh\necho 'BUILD SUCCESSFUL'\nexit 0\n")
+  writeFileSync(
+    gradlewPath,
+    [
+      "#!/bin/sh",
+      "mkdir -p build/test-results/test",
+      "printf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\"><testcase classname=\"MechanicalTest\" name=\"works\"/></testsuite>' > build/test-results/test/TEST-mechanical.xml",
+      "echo 'BUILD SUCCESSFUL'",
+      "exit 0",
+    ].join("\n") + "\n",
+  )
   chmodSync(gradlewPath, 0o755)
 
   const javaRoot = join(projectDir, "src", "main", "java", "com", "example")

@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
-import { runCiReverification } from "./ci-reverification-runner.js"
+import { runFreshFixedVerification } from "./fresh-verification-runner.js"
 import { runResumeCommand } from "./plan-next.js"
 import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
 import { readWorkflowClosurePayload, runWorkflowClosureCommand } from "./workflow-closure.js"
@@ -147,7 +147,7 @@ function runWorkflowFinish(
     return uninitializedHarnessOutput()
   }
   if (reverify) {
-    const result = runCiReverification(summary.projectDir, ci ? "ci" : "local")
+    const result = runFreshFixedVerification(summary.projectDir, ci ? "ci" : "local")
     if (result.finalStatus !== "passed") {
       const evidence = result.artifactPath === undefined ? "artifact unavailable" : `artifact: ${result.artifactPath}`
       return failedRunnerOutput("finish", runnerKind, [

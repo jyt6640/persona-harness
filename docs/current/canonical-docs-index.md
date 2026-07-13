@@ -39,6 +39,7 @@ Use these files when making current product, measurement, or release decisions.
 | P3-2 closure authority candidate | `docs/current/p3-2-closure-authority-acceptance-record.md` | Candidate finish boundary: unsigned project-local evidence is diagnostic-only and no trusted authority path exists yet. |
 | P3-3 verification receipt candidate | `docs/current/p3-3-verification-receipt-acceptance-record.md` | Strict receipt/attempt parser and read-only lifecycle diagnostics; no receipt issuance or finish-authority acceptance. |
 | P3-8 CI/release integrity candidate | `docs/current/p3-8-ci-release-integrity-acceptance-record.md` | Candidate PR/main CI and canonical-main/registry/release idempotency checks; no GitHub settings or publish/tag/release mutation. |
+| P3-4 fresh fixed-command verifier candidate | `docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md` | Fresh POSIX Java/Spring/Gradle execution, receipt/attempt issuance, and nonzero testcase enforcement; P3-2 remains blocking. |
 | ROLE-RULES dogfooding readiness | `docs/current/role-rules-dogfooding-readiness.md` | T10 exit checklist, violation-log template, and next queue for starting Woowacourse mission dogfooding. |
 | Workflow string-gate parsing audit | `docs/current/workflow-string-gate-parsing-audit.md` | T4 audit of report-status parsing migration and retained string-based gate contracts. |
 | Ralph-loop status | `docs/current/ralph-loop-measurement-status.md` | Trigger, completion-integrity, cooldown, and default-off status. |

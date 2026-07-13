@@ -41,6 +41,8 @@ deleting evidence/status history.
   [`p3-3-verification-receipt-acceptance-record.md`](p3-3-verification-receipt-acceptance-record.md).
 - P3-8 CI/release integrity candidate:
   [`p3-8-ci-release-integrity-acceptance-record.md`](p3-8-ci-release-integrity-acceptance-record.md).
+- P3-4 fresh fixed-command verifier candidate:
+  [`p3-4-fresh-fixed-command-verifier-acceptance-record.md`](p3-4-fresh-fixed-command-verifier-acceptance-record.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -105,6 +107,9 @@ deleting evidence/status history.
   PR/main CI, canonical-main/tag ancestry checks, registry integrity readback,
   and fail-closed GitHub release idempotency. It does not mutate GitHub
   settings, publish npm, create tags/releases, or claim release readiness.
+- P3-4 adds fresh fixed-command execution and nonzero JUnit testcase
+  enforcement. Local cooperative receipts remain untrusted under P3-2; no
+  finish authority or strong integrity claim is enabled.
 - `runtimeInjection` remains a parked opt-in preview.
 - P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
   writer/workspace-edit contract. Recovery remains hidden from normal help,

@@ -23,8 +23,39 @@ function createBootstrappedProject(): string {
   })
   expect(bootstrap.status).toBe(0)
   mkdirSync(join(projectDir, ".persona", "evidence"), { recursive: true })
+  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  writeFileSync(join(projectDir, ".persona", "harness.jsonc"), `${JSON.stringify({
+    enforce: { executeVerification: true, tdd: false },
+  }, null, 2)}\n`)
+  writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- README ranges read: 1-20",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- Direct verification observed passing JUnit output.",
+    ].join("\n") + "\n",
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- Manual QA reviewed the fixed-command verification surface.",
+      "- No source mutation was observed.",
+    ].join("\n") + "\n",
+  )
   writeFileSync(join(projectDir, ".persona", "evidence", ".gitkeep"), "")
-  writeFileSync(join(projectDir, "gradlew"), "#!/bin/sh\nexit 0\n")
+  writeFileSync(
+    join(projectDir, "gradlew"),
+    [
+      "#!/bin/sh",
+      "mkdir -p build/test-results/test",
+      "printf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\"><testcase classname=\"SurfaceTest\" name=\"works\"/></testsuite>' > build/test-results/test/TEST-surface.xml",
+      "exit 0",
+    ].join("\n") + "\n",
+  )
   chmodSync(join(projectDir, "gradlew"), 0o755)
   git(projectDir, ["init", "-q"])
   git(projectDir, ["config", "user.email", "ph@example.invalid"])
