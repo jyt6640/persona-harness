@@ -20,6 +20,10 @@ not part of the published npm package.
 - [Report-only test-integrity detector evidence](report-only-test-integrity-detector/README.md):
   source-only immutable corpus and diagnostic evaluator for synthetic test-integrity
   findings. It does not execute product commands or grant workflow authority.
+- [Filesystem residue corpus](filesystem-residue-corpus/README.md):
+  source-only frozen base and append-only successor corpus for synthetic
+  filesystem-residue conditions. It does not scan projects or grant workflow
+  authority.
 
 Experiment material is package-excluded and is not product-quality evidence,
 runtime activation authorization, or a default-on decision.

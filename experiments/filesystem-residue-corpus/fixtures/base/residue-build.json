@@ -1,0 +1,14 @@
+{
+  "fixtureId": "residue-build-output",
+  "kind": "filesystem-residue",
+  "category": "likely-residue",
+  "label": "build output directory",
+  "expectedResidue": true,
+  "syntheticStatus": [
+    "?? build/"
+  ],
+  "paths": [
+    "build/"
+  ],
+  "pathSafety": "relative-no-follow"
+}

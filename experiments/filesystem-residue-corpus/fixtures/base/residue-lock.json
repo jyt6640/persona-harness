@@ -1,0 +1,14 @@
+{
+  "fixtureId": "residue-cache-lock",
+  "kind": "filesystem-residue",
+  "category": "likely-residue",
+  "label": "cache lockfile",
+  "expectedResidue": true,
+  "syntheticStatus": [
+    "?? .gradle/cache.lock"
+  ],
+  "paths": [
+    ".gradle/cache.lock"
+  ],
+  "pathSafety": "relative-no-follow"
+}

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "filesystem-residue-corpus.1",
+  "corpusId": "filesystem-residue-report",
+  "reportOnly": true,
+  "sourceOnly": true,
+  "enforcement": false,
+  "authorityEligible": false,
+  "childProcessInvocations": 0,
+  "productCliInvocations": 0,
+  "networkAccess": false,
+  "realProjectAccess": false,
+  "writeOperations": 0,
+  "payloadRoot": "fixtures",
+  "mutationPolicy": {
+    "kind": "frozen-base",
+    "successorSchemaVersion": "filesystem-residue-corpus.2",
+    "summary": "Base records, metadata, and fixture bytes are immutable; additions require the declared successor schema."
+  },
+  "preregistration": {
+    "decision": "diagnostic-only-report-only",
+    "oracle": "synthetic-fixture-manifest",
+    "thresholds": {
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0
+    },
+    "note": "Thresholds are preregistered gates, not observed efficacy results."
+  },
+  "categories": [
+    "likely-residue",
+    "legitimate-untracked"
+  ],
+  "categoryLabels": {
+    "likely-residue": "likely residue",
+    "legitimate-untracked": "legitimate untracked material"
+  },
+  "records": [
+    {
+      "id": "residue-build-output",
+      "category": "likely-residue",
+      "label": "build output directory",
+      "expectedResidue": true,
+      "fixturePath": "fixtures/base/residue-build.json",
+      "fixtureSha256": "sha256:4f4a6bc7f93917241f7a85a23befdf318be0eeb946b788f34806cdecdbb1f1c9"
+    },
+    {
+      "id": "residue-cache-lock",
+      "category": "likely-residue",
+      "label": "cache lockfile",
+      "expectedResidue": true,
+      "fixturePath": "fixtures/base/residue-lock.json",
+      "fixtureSha256": "sha256:a1e9bedd5617e92c0afa3aa0b487d6bde1db4032574c6d429a6e4d5f346eeb79"
+    },
+    {
+      "id": "legitimate-review-note",
+      "category": "legitimate-untracked",
+      "label": "review note",
+      "expectedResidue": false,
+      "fixturePath": "fixtures/base/legitimate-review-note.json",
+      "fixtureSha256": "sha256:f4c88a62ad83083dfd7f7224b5d03c226f6540f0c64fcb09b3c8cd5d9157a084"
+    },
+    {
+      "id": "legitimate-experiment-input",
+      "category": "legitimate-untracked",
+      "label": "experiment input",
+      "expectedResidue": false,
+      "fixturePath": "fixtures/base/legitimate-experiment-input.json",
+      "fixtureSha256": "sha256:0d2937b8cd92f96434bb64a79327fff9ccded5f9de109fa7044862cb2aaa8674"
+    }
+  ],
+  "canonicalLockSha256": "sha256:d9afb29665fb32cb93c813a939a5e1b172d4674f9dcf2205e16bee9fdaddfe22"
+}

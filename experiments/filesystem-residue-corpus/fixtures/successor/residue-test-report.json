@@ -1,0 +1,14 @@
+{
+  "fixtureId": "residue-test-report",
+  "kind": "filesystem-residue",
+  "category": "likely-residue",
+  "label": "test report output",
+  "expectedResidue": true,
+  "syntheticStatus": [
+    "?? build/test-results/"
+  ],
+  "paths": [
+    "build/test-results/"
+  ],
+  "pathSafety": "relative-no-follow"
+}
