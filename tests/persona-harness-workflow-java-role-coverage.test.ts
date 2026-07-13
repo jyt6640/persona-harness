@@ -161,7 +161,7 @@ describe("ph workflow Java role read coverage", () => {
     expect(finish.stderr).toContain("Other blockers:\n- java-role-read-coverage-missing")
   })
 
-  it("keeps check and finish passing when Java role read evidence is sufficient", () => {
+  it("keeps Java role read diagnostics passing while finish requires trusted authority", () => {
     const projectDir = createTempProject()
     writeReadyJpaProfile(projectDir)
     writeWorkflowEvidence(projectDir)
@@ -174,7 +174,7 @@ describe("ph workflow Java role read coverage", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("Workflow status: PASS")
     expect(check.stdout).toContain("java role read coverage: generated Java role files have role read evidence")
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 })

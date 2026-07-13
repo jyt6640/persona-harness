@@ -585,18 +585,19 @@ describe("ph workflow closure read-only planner", () => {
     })
   })
 
-  it("returns a terminal step when finish state is passable", () => {
+  it("blocks an otherwise passable state until trusted authority exists", () => {
     const projectDir = createWorkflowProject()
     writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nTomcat started on port 8080")
     writeFilledReports(projectDir)
 
     const output = closureJson(projectDir)
 
-    expect(output.state.finish).toBe("passed")
+    expect(output.state.finish).toBe("blocked")
     expect(output.steps[0]).toMatchObject({
-      id: "terminal",
-      kind: "terminal",
-      status: "complete",
+      id: "trusted-authority-required",
+      blockerId: "trusted-authority-required",
+      kind: "human-or-model-content",
+      status: "blocked",
     })
   })
 })

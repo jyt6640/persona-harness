@@ -158,7 +158,7 @@ afterEach(() => {
 })
 
 describe("workflow report status parser", () => {
-  it.each(REPORT_MARKDOWN_CASES)("$name reaches check and finish as filled", (markdownCase) => {
+  it.each(REPORT_MARKDOWN_CASES)("$name reaches check as filled while finish requires trusted authority", (markdownCase) => {
     const projectDir = createPlannedBackendProject()
     writeReports(projectDir, markdownCase)
 
@@ -171,11 +171,11 @@ describe("workflow report status parser", () => {
     expect(check.stdout).toContain("read coverage: README ranges observed")
     expect(check.stdout).toContain("profile read coverage: project profile ranges observed")
     expect(check.stdout).toContain("Workflow status: PASS")
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("connects report-filled status updates to workflow check and finish", () => {
+  it("connects report-filled status updates to workflow check while finish requires trusted authority", () => {
     const projectDir = createPlannedBackendProject()
     writeFileSync(
       join(projectDir, ".persona", "workflow", "implementation-report.md"),
@@ -219,8 +219,8 @@ describe("workflow report status parser", () => {
     expect(check.stdout).toContain(".persona/workflow/implementation-report.md: filled")
     expect(check.stdout).toContain(".persona/workflow/review-report.md: filled")
     expect(check.stdout).toContain("Workflow status: PASS")
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("accepts report status frontmatter without legacy Status lines", () => {
@@ -234,8 +234,8 @@ describe("workflow report status parser", () => {
     expect(check.stdout).toContain(".persona/workflow/implementation-report.md: filled")
     expect(check.stdout).toContain(".persona/workflow/review-report.md: filled")
     expect(check.stdout).toContain("Workflow status: PASS")
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("keeps legacy Status-line fallback when frontmatter would make finish stricter", () => {
@@ -248,7 +248,7 @@ describe("workflow report status parser", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain(".persona/workflow/implementation-report.md: filled")
     expect(check.stdout).toContain(".persona/workflow/review-report.md: filled")
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 })

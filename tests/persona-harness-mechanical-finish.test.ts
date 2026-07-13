@@ -230,7 +230,7 @@ afterEach(() => {
 })
 
 describe("mechanical workflow finish reachability", () => {
-  it("walks closure next steps to finish PASS within the chain-depth contract", () => {
+  it("walks closure next steps to the trusted-authority boundary within the chain-depth contract", () => {
     const projectDir = createTempProject()
     writeBaseWorkflow(projectDir)
     writeHarnessConfig(projectDir)
@@ -259,6 +259,8 @@ describe("mechanical workflow finish reachability", () => {
         writeReadEvidence(projectDir, javaRoleFiles)
       } else if (step.id === "record-workflow-evidence") {
         writeVerificationEvidence(projectDir)
+      } else if (step.id === "trusted-authority-required") {
+        break
       } else {
         throw new Error(`mechanical finish fixture does not know how to walk ${step.id}`)
       }
@@ -266,8 +268,9 @@ describe("mechanical workflow finish reachability", () => {
     }
 
     const finish = runPh(projectDir, ["workflow", "finish", "implement"])
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
+    expect(finish.stderr).not.toContain("Finish status: PASS")
 
     execFileSync("git", ["init", "-q"], { cwd: projectDir })
     execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
@@ -275,10 +278,11 @@ describe("mechanical workflow finish reachability", () => {
     execFileSync("git", ["add", "."], { cwd: projectDir })
     execFileSync("git", ["commit", "-qm", "finish-ready fixture"], { cwd: projectDir })
     const reverifiedFinish = runPh(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
-    expect(reverifiedFinish.status, reverifiedFinish.stderr).toBe(0)
-    expect(reverifiedFinish.stdout).toContain("Finish status: PASS")
+    expect(reverifiedFinish.status, reverifiedFinish.stderr).toBe(1)
+    expect(reverifiedFinish.stderr).toContain("Blocker: trusted-authority-required")
+    expect(reverifiedFinish.stdout).not.toContain("Finish status: PASS")
 
-    expect(visitedSteps).toEqual(["fill-implementation-report", "fill-review-report", "record-workflow-evidence", "fill-report-coverage"])
+    expect(visitedSteps).toEqual(["fill-implementation-report", "fill-review-report", "record-workflow-evidence", "fill-report-coverage", "trusted-authority-required"])
     expect(visitedSteps.length).toBeLessThanOrEqual(FINISH_REACHABLE_CHAIN_DEPTH)
   })
 })

@@ -229,8 +229,9 @@ try {
   assertCommand(runCli(passDir, ["workflow", "continue"]), 0, "workflow pass continue")
   const passCheck = assertCommand(runCli(passDir, ["workflow", "check"]), 0, "workflow pass check")
   assertIncludes(passCheck.stdout, "Workflow status: PASS", "workflow check PASS", passCheck)
-  const passFinish = assertCommand(runCli(passDir, ["workflow", "finish", "implement"]), 0, "workflow pass finish")
-  assertIncludes(passFinish.stdout, "Finish status: PASS", "workflow finish PASS", passFinish)
+  const passFinish = assertCommand(runCli(passDir, ["workflow", "finish", "implement"]), 1, "workflow authority-required finish")
+  assertIncludes(passFinish.stderr, "Blocker: trusted-authority-required", "workflow authority blocker", passFinish)
+  assertNotIncludes(passFinish.stdout, "Finish status: PASS", "workflow finish completion claim", passFinish)
 
   const blockedDir = projectDir("workflow-blocked")
   writeSpringishProject(blockedDir)

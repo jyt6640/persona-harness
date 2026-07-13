@@ -505,7 +505,7 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     })
   })
 
-  it("does not cap prematurely across three resolved blockers", async () => {
+  it("continues once more for trusted authority after three legacy blockers resolve", async () => {
     const projectDir = createProject()
     writeRalphLoopConfig(projectDir)
     writeBlockedWorkflow(projectDir)
@@ -522,13 +522,15 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     await hooks.event?.({ event: { properties: { sessionID: "session-blocker-change" }, type: "session.idle" } })
 
     const sessionState = readRalphLoopState(projectDir).sessions["session-blocker-change"]
-    expect(calls).toHaveLength(3)
-    expect(sessionState?.attemptsUsed).toBe(3)
+    expect(calls).toHaveLength(4)
+    expect(calls[3]?.body.parts[0]?.text).toContain("Blocker: trusted-authority-required")
+    expect(sessionState?.attemptsUsed).toBe(4)
     expect(sessionState?.blockerAttempts["verification-unknown"]?.attempts).toBe(1)
     expect(sessionState?.blockerAttempts["implementation-report-missing"]?.attempts).toBe(1)
     expect(sessionState?.blockerAttempts["review-report-missing"]?.attempts).toBe(1)
+    expect(sessionState?.blockerAttempts["trusted-authority-required"]?.attempts).toBe(1)
     expect(sessionState?.capped).toBe(false)
-    expect(sessionState?.lastStopReason).toBe("no-blockers")
+    expect(sessionState?.lastStopReason).toBeNull()
   })
 
   it("caps a same-blocker session after the per-blocker retry budget and sends one summary", async () => {
@@ -576,7 +578,7 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     expect(sessionState).toMatchObject({ attemptsUsed: 3, capped: true, capSummaryNotified: true })
   })
 
-  it("stops when closure blockers are exhausted", async () => {
+  it("continues when legacy closure blockers are exhausted but trusted authority is absent", async () => {
     const projectDir = createProject()
     writeRalphLoopConfig(projectDir)
     writePassableWorkflow(projectDir)
@@ -586,8 +588,9 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     await hooks.event?.({ event: sessionEvent(projectDir, "session.created", "session-pass") })
     await hooks.event?.({ event: { properties: { sessionID: "session-pass" }, type: "session.idle" } })
 
-    expect(calls).toEqual([])
-    expect(readRalphLoopState(projectDir).sessions["session-pass"]?.lastStopReason).toBe("no-blockers")
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.body.parts[0]?.text).toContain("Blocker: trusted-authority-required")
+    expect(readRalphLoopState(projectDir).sessions["session-pass"]?.lastStopReason).toBeNull()
   })
 
   it("takes priority over ordinary idle continuation when enabled", async () => {

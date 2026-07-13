@@ -608,7 +608,7 @@ describe("ph workflow check", () => {
     expect(archive.stderr).toContain(CONTROLLER_REPOSITORY_CONVENTION.blockerId)
   })
 
-  it("warns without closure blocking when Controller Repository convention level is warn", () => {
+  it("warns without convention blocking while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     writeConventionLevel(projectDir, "warn")
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -628,10 +628,11 @@ describe("ph workflow check", () => {
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
       CONTROLLER_REPOSITORY_CONVENTION.blockerId,
     )
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("reports without closure blocking when Controller Repository convention level is report", () => {
+  it("reports without convention blocking while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     writeConventionLevel(projectDir, "report")
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -651,10 +652,11 @@ describe("ph workflow check", () => {
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
       CONTROLLER_REPOSITORY_CONVENTION.blockerId,
     )
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("does not add an architecture blocker when a Controller depends on Service and Service depends on Repository", () => {
+  it("does not add an architecture blocker while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -673,7 +675,8 @@ describe("ph workflow check", () => {
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
       CONTROLLER_REPOSITORY_CONVENTION.blockerId,
     )
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("keeps a registry with observer and ast-grep conventions", () => {
@@ -713,7 +716,7 @@ describe("ph workflow check", () => {
     expect(archive.stderr).toContain(SERVICE_STATE_OWNERSHIP_CONVENTION.blockerId)
   })
 
-  it("warns without closure blocking when Service state ownership level is warn", () => {
+  it("warns without convention blocking while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     writeConventionLevels(projectDir, { [SERVICE_STATE_OWNERSHIP_CONVENTION.id]: "warn" })
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -733,10 +736,11 @@ describe("ph workflow check", () => {
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
       SERVICE_STATE_OWNERSHIP_CONVENTION.blockerId,
     )
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("does not block on Service local variables, comments, or string lookalikes", () => {
+  it("does not add a Service blocker while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -755,7 +759,8 @@ describe("ph workflow check", () => {
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
       SERVICE_STATE_OWNERSHIP_CONVENTION.blockerId,
     )
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("blocks closure from an ast-grep convention when the configured level is block", () => {
@@ -801,7 +806,7 @@ describe("ph workflow check", () => {
     }
   })
 
-  it("does not hard block an ast-grep convention at warn level", () => {
+  it("does not hard block an ast-grep convention at warn level while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     const previousAstGrep = process.env.PH_AST_GREP_BIN
     process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
@@ -824,7 +829,8 @@ describe("ph workflow check", () => {
       expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
         CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId,
       )
-      expect(finish.status).toBe(0)
+      expect(finish.status).toBe(1)
+      expect(finish.stderr).toContain("Blocker: trusted-authority-required")
     } finally {
       if (previousAstGrep === undefined) {
         delete process.env.PH_AST_GREP_BIN
@@ -834,7 +840,7 @@ describe("ph workflow check", () => {
     }
   })
 
-  it("does not add an ast-grep blocker when the convention does not match", () => {
+  it("does not add an ast-grep blocker when the convention does not match while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     const previousAstGrep = process.env.PH_AST_GREP_BIN
     process.env.PH_AST_GREP_BIN = writeFakeAstGrepBinary(projectDir)
@@ -854,7 +860,8 @@ describe("ph workflow check", () => {
       expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
         CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId,
       )
-      expect(finish.status).toBe(0)
+      expect(finish.status).toBe(1)
+      expect(finish.stderr).toContain("Blocker: trusted-authority-required")
     } finally {
       if (previousAstGrep === undefined) {
         delete process.env.PH_AST_GREP_BIN
@@ -907,7 +914,7 @@ describe("ph workflow check", () => {
     }
   })
 
-  it("keeps report-level ast-grep toolchain misses warning-only", () => {
+  it("keeps report-level ast-grep toolchain misses warning-only while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     const previousAstGrep = process.env.PH_AST_GREP_BIN
     process.env.PH_AST_GREP_BIN = join(projectDir, "missing-sg")
@@ -929,7 +936,8 @@ describe("ph workflow check", () => {
       expect(check.stdout).toContain("ast-grep binary not found")
       expect(check.stdout).toContain("Workflow status: WARN")
       expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain("convention-toolchain-missing")
-      expect(finish.status).toBe(0)
+      expect(finish.status).toBe(1)
+      expect(finish.stderr).toContain("Blocker: trusted-authority-required")
     } finally {
       if (previousAstGrep === undefined) {
         delete process.env.PH_AST_GREP_BIN
@@ -939,7 +947,7 @@ describe("ph workflow check", () => {
     }
   })
 
-  it("keeps default warn-level ast-grep toolchain misses warning-only", () => {
+  it("keeps default warn-level ast-grep toolchain misses warning-only while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     const previousAstGrep = process.env.PH_AST_GREP_BIN
     process.env.PH_AST_GREP_BIN = join(projectDir, "missing-sg")
@@ -960,7 +968,8 @@ describe("ph workflow check", () => {
       expect(check.stdout).toContain("ast-grep binary not found")
       expect(check.stdout).toContain("Workflow status: WARN")
       expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain("convention-toolchain-missing")
-      expect(finish.status).toBe(0)
+      expect(finish.status).toBe(1)
+      expect(finish.stderr).toContain("Blocker: trusted-authority-required")
     } finally {
       if (previousAstGrep === undefined) {
         delete process.env.PH_AST_GREP_BIN
@@ -1104,7 +1113,7 @@ describe("ph workflow check", () => {
     expect(finish.stderr).toContain("- profile-read-coverage-missing")
   })
 
-  it("passes profile read coverage when implementation report records project profile read evidence", () => {
+  it("passes profile read coverage while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -1136,7 +1145,8 @@ describe("ph workflow check", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("profile read coverage: project profile ranges observed")
     expect(check.stdout).toContain("Workflow status: PASS")
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("warns and blocks finish when final verification recorded a compile failure", () => {
@@ -1184,7 +1194,7 @@ describe("ph workflow check", () => {
     expect(finish.stderr).toContain("Next command: after completing the action, run npx ph workflow check")
   })
 
-  it("does not block finish when verification notes say the earlier failure was recovered", () => {
+  it("does not add a verification blocker after recovery notes while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -1217,7 +1227,8 @@ describe("ph workflow check", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("verification failure: no failed verification recorded")
     expect(check.stdout).toContain("Workflow status: PASS")
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("infers profile read coverage from Persona evidence", () => {
@@ -1385,7 +1396,7 @@ describe("ph workflow guard", () => {
     expect(result.stderr).toContain(".persona/workflow/review-report.md must be filled")
   })
 
-  it("allows final answer after workflow reports are filled and bearshell discipline is observed", () => {
+  it("blocks final answer until trusted authority exists even when reports are filled", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -1403,10 +1414,8 @@ describe("ph workflow guard", () => {
 
     const result = runPersonaCli(["workflow", "guard", "final"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain("Persona Harness Workflow Guard: final")
-    expect(result.stdout).toContain("Guard status: PASS")
-    expect(result.stdout).toContain("final answer may be reported")
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("trusted-authority-required")
   })
 
   it("keeps workflow check report-only even when final guard fails", () => {
@@ -2192,7 +2201,7 @@ describe("ph workflow start and finish", () => {
     expect(result.stderr).toContain("- pending-ticket")
   })
 
-  it("allows implementation finish after final guard evidence passes", () => {
+  it("blocks implementation finish after final guard evidence passes without trusted authority", () => {
     const projectDir = createProfiledTempProject()
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
     expect(runPersonaCli(["plan", "--accept"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -2210,11 +2219,8 @@ describe("ph workflow start and finish", () => {
 
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain("Persona Harness Workflow Finish: implement")
-    expect(result.stdout).toContain("Finish status: PASS")
-    expect(result.stdout).toContain("final answer may be reported")
-    expect(result.stdout).toContain("npx ph history --id <run-id>")
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("blocks implementation finish when README exists but README range coverage is empty", () => {
@@ -2254,7 +2260,7 @@ describe("ph workflow start and finish", () => {
     expect(finish.stderr).toContain("- read-coverage-missing")
   })
 
-  it("allows implementation finish when README range coverage is recorded", () => {
+  it("keeps README range coverage passing while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Tool Rental API\n\n- 장비 등록\n")
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -2286,11 +2292,11 @@ describe("ph workflow start and finish", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("Workflow status: PASS")
     expect(check.stdout).toContain("read coverage: README ranges observed")
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("allows implementation finish when README range coverage is recorded under a heading", () => {
+  it("keeps heading-based README range coverage passing while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     writeFileSync(join(projectDir, "README.md"), "# Tool Rental API\n\n- 장비 등록\n")
     expect(runPersonaCli(["plan"], { cwd: projectDir, env: {}, invocationName: "ph" }).status).toBe(0)
@@ -2325,11 +2331,11 @@ describe("ph workflow start and finish", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("Workflow status: PASS")
     expect(check.stdout).toContain("read coverage: README ranges observed")
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("infers README read coverage from Persona evidence when report ranges are missing", () => {
+  it("infers README read coverage while finish requires trusted authority", () => {
     const projectDir = createProfiledTempProject()
     const readmePath = join(projectDir, "README.md")
     writeFileSync(readmePath, "# Tool Rental API\n\n- 장비 등록\n")
@@ -2365,7 +2371,7 @@ describe("ph workflow start and finish", () => {
     expect(check.status).toBe(0)
     expect(check.stdout).toContain("Workflow status: PASS")
     expect(check.stdout).toContain("read coverage: README read evidence observed")
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 })

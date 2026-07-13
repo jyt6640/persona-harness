@@ -1,6 +1,7 @@
 import { findConventionByBlockerId } from "../config/convention-registry.js"
 import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventions.js"
 import { workflowFinishFollowUpForStep } from "./workflow-finish-follow-up.js"
+import { TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID } from "./workflow-finish-authority.js"
 import { personaHarnessSelfProfileGuidance } from "./self-profile-guidance.js"
 import { UNMAPPED_BLOCKER_STEP_ID, type ClosureBlocker, type ClosurePayload, type ClosureStep, type ClosureTicket } from "./workflow-closure.js"
 import type { StructuredWorkflowRequiredFix } from "./workflow-required-fix.js"
@@ -32,6 +33,13 @@ export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir
 }
 
 function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): string {
+  if (blocker.id === TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID) {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      blocker.reason,
+      "Unsigned project-local evidence remains diagnostic-only until a trusted P3 authority path exists.",
+    ].join("\n")
+  }
   if (blocker.id === "verification-failed") {
     if (isDirectVerificationReason(blocker.reason)) {
       return [

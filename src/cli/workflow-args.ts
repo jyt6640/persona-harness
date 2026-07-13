@@ -54,6 +54,7 @@ export function workflowUsage(invocation = "ph"): string {
     "- workflow roles writes and prints non-autonomous role boundaries",
     "- workflow start/finish are AI-facing workflow rails",
     "- workflow finish implement --reverify [--ci] runs fresh POSIX Java/Spring/Gradle-wrapper verification before the existing finish gate",
+    "- workflow finish implement requires a trusted Persona Harness or external authority receipt; unsigned project-local evidence is diagnostic-only",
     "- workflow draft/approve/capture/split/next/archive manage requirement-derived task tickets",
     "- workflow guard uses strict exit codes for AI-facing workflow discipline",
     "- no generated app quality certification",

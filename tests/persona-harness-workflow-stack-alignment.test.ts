@@ -176,7 +176,7 @@ describe("ph workflow check stack alignment", () => {
     expect(result.stderr).toContain("Other blockers:\n- pending-ticket")
   })
 
-  it("passes stack alignment for a minimal Spring Boot Gradle JPA database project", () => {
+  it("keeps stack alignment diagnostics passing while finish requires trusted authority", () => {
     const projectDir = createTempProject()
     writeReadyJpaProfile(projectDir)
     writeWorkflowEvidence(projectDir)
@@ -211,7 +211,7 @@ describe("ph workflow check stack alignment", () => {
     expect(result.stdout).toContain("stack alignment: profile expects Java/Spring/Gradle/JPA/database and generated project has Spring Boot + Gradle + JPA/database evidence")
 
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 })

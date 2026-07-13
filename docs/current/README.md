@@ -35,6 +35,8 @@ deleting evidence/status history.
   [`release/v0.7.0-rc.2-release-notes.md`](release/v0.7.0-rc.2-release-notes.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
+- P3-2 closure authority candidate:
+  [`p3-2-closure-authority-acceptance-record.md`](p3-2-closure-authority-acceptance-record.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -88,6 +90,10 @@ deleting evidence/status history.
   `p3-integrity-roadmap.md`; they are release-planning evidence, not a
   published third-party certification. Completed P2 source-only evidence and
   bundles remain held, not discarded.
+- The P3-2 candidate branch blocks finish PASS when no trusted Persona Harness
+  or external authority receipt exists. Unsigned local reports, bearshell
+  output, JUnit XML, TDD JSON, markers, and self-computed digests remain
+  diagnostic-only; this candidate is not yet accepted into canonical main.
 - `runtimeInjection` remains a parked opt-in preview.
 - P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
   writer/workspace-edit contract. Recovery remains hidden from normal help,

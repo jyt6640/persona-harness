@@ -270,7 +270,8 @@ describe("ph workflow test TDD rail", () => {
       throw new Error(`archive failed\nstdout:\n${archive.stdout}\nstderr:\n${archive.stderr}`)
     }
     expect(archive.status).toBe(0)
-    expect(finish.status).toBe(0)
-    expect(finish.stdout).toContain("Finish status: PASS")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
+    expect(finish.stderr).not.toContain("Finish status: PASS")
   })
 })

@@ -416,7 +416,9 @@ describe("ph workflow finish next action matrix", () => {
     })
 
     expect(afterAction.status).toBe(0)
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
+    expect(finish.stderr).not.toContain("Finish status: PASS")
   })
 
   it("renders one plaintext follow-up while closure JSON retains every blocker and step", () => {

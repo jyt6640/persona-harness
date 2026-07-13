@@ -1,5 +1,6 @@
 import { findConventionByStepId } from "../config/convention-registry.js"
 import { UNMAPPED_BLOCKER_STEP_ID, type ClosurePayload, type ClosureStep } from "./workflow-closure.js"
+import { TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID } from "./workflow-finish-authority.js"
 
 export type WorkflowFollowUpCommand = {
   readonly phase: "after-action" | "now"
@@ -21,6 +22,12 @@ export function workflowFinishFollowUp(payload: ClosurePayload): WorkflowFinishF
 
 export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinishFollowUp {
   const blockerId = step.blockerId ?? "unmapped-blocker"
+  if (step.id === TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID) {
+    return {
+      action: "No trusted Persona Harness or external authority receipt is available. Obtain one through the future P3 authority path; keep unsigned project-local evidence diagnostic-only.",
+      blockerId,
+    }
+  }
   if (step.id === "verify-app") {
     return {
       action: isDirectVerificationReason(step.reason)

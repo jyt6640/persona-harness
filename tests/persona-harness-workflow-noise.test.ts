@@ -89,7 +89,7 @@ describe("ph workflow noise classification", () => {
     expect(result.stdout).toContain("Next: archive completed workflow")
   })
 
-  it("allows implementation finish when only non-blocking workflow noise remains", () => {
+  it("blocks implementation finish when only non-blocking workflow noise remains", () => {
     const projectDir = createTempProject()
     prepareAcceptedWorkflow(projectDir)
     writeWorkflowReports(
@@ -106,8 +106,8 @@ describe("ph workflow noise classification", () => {
 
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain("Finish status: PASS")
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("keeps workflow check WARN when direct rules reads are paired with raw shell noise", () => {
@@ -133,7 +133,7 @@ describe("ph workflow noise classification", () => {
     expect(result.stdout).toContain("note: direct `.persona/rules` read observed")
   })
 
-  it("allows implementation finish when raw final verification was rerun through bearshell", () => {
+  it("blocks implementation finish when raw final verification was rerun through bearshell", () => {
     const projectDir = createTempProject()
     prepareAcceptedWorkflow(projectDir)
     writeWorkflowReports(
@@ -149,11 +149,11 @@ describe("ph workflow noise classification", () => {
 
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain("Finish status: PASS")
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("allows implementation finish when template raw-shell checklist remains but final verification was rerun through bearshell", () => {
+  it("blocks implementation finish when template raw-shell checklist remains but final verification was rerun through bearshell", () => {
     const projectDir = createTempProject()
     prepareAcceptedWorkflow(projectDir)
     writeWorkflowReports(
@@ -177,8 +177,8 @@ describe("ph workflow noise classification", () => {
 
     const result = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain("Finish status: PASS")
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("blocks implementation finish when final verification used raw shell", () => {

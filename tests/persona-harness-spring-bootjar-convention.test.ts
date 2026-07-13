@@ -132,7 +132,7 @@ describe("Spring bootJar convention", () => {
     expect(archive.status).toBe(1)
   })
 
-  it("warns without closure blocking when configured as warn", () => {
+  it("warns without convention blocking while finish requires trusted authority", () => {
     const projectDir = createProfiledProject()
     writeConventionLevel(projectDir, "warn")
     writeExecutableSpringSource(projectDir)
@@ -149,7 +149,8 @@ describe("Spring bootJar convention", () => {
     expect(closureJson.state.blockers.map((blocker: { readonly id: string }) => blocker.id)).not.toContain(
       SPRING_BOOTJAR_ENABLED_CONVENTION.blockerId,
     )
-    expect(finish.status).toBe(0)
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
   it("does not block on comments, strings, other tasks, or non-executable profiles", () => {

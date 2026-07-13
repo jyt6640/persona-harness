@@ -5,6 +5,7 @@ import { findConventionByBlockerId } from "../config/convention-registry.js"
 import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventions.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
+import { readWorkflowFinishAuthority, TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID } from "./workflow-finish-authority.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import { readTddClosureFinding, type TddClosureFinding } from "./workflow-tdd.js"
 
@@ -121,7 +122,11 @@ function readWorkflowClosureState(projectDir: string, options: { readonly record
     tdd,
     verification: verification.verification,
   }
-  const blockers = closureBlockers(partialState, verification, summary)
+  const legacyBlockers = closureBlockers(partialState, verification, summary)
+  const authority = readWorkflowFinishAuthority(projectDir)
+  const blockers = legacyBlockers.length === 0 && authority.status === "blocked"
+    ? [authority.blocker]
+    : legacyBlockers
   const finish: ClosureFinish = blockers.length === 0 ? "passed" : "blocked"
   const state = { ...partialState, finish }
   return { ...state, blockers }
@@ -258,6 +263,9 @@ export function isUnmappedBlockerStep(step: ClosureStep | null | undefined): boo
 export function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, status: ClosureStepStatus): ClosureStep {
   if (blocker.id === "plan-not-accepted") {
     return { blockerId: blocker.id, command: state.plan === "missing" ? "npx ph plan" : "npx ph plan --accept", id: "accept-plan", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID) {
+    return { blockerId: blocker.id, id: blocker.id, kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "verification-failed") {
     return { blockerId: blocker.id, evidenceRef: blocker.evidenceRef, id: "fix-verification", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
