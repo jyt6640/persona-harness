@@ -1,4 +1,4 @@
-import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs"
+import { closeSync, fsyncSync, linkSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { isRecord } from "../config/jsonc.js"
@@ -138,7 +138,8 @@ export function writeAndRereadCiReverificationArtifact(
     fsyncSync(descriptor)
     closeSync(descriptor)
     descriptor = undefined
-    renameSync(temporaryPath, path)
+    linkSync(temporaryPath, path)
+    removeTemporaryArtifact(temporaryPath)
     return { path, valid: parseCiReverificationArtifact(readFileSync(path, "utf8")) !== undefined }
   } catch {
     if (descriptor !== undefined) closeSync(descriptor)

@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process"
 import {
   chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -14,6 +15,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { captureGitIdentity, captureWorkspaceIdentity } from "../src/cli/ci-reverification-identity.js"
+import { writeAndRereadCiReverificationArtifact } from "../src/cli/ci-reverification-artifact.js"
 import { runCiReverification } from "../src/cli/ci-reverification-runner.js"
 
 const projects: string[] = []
@@ -86,6 +88,32 @@ describe("CI reverification runner", () => {
       "gradle-wrapper-build.1",
     ])
     expect(artifact.commands.every((command: { readonly stdoutSha256: string }) => /^[a-f0-9]{64}$/u.test(command.stdoutSha256))).toBe(true)
+  })
+
+  it("rejects duplicate artifact IDs without replacing the original bytes", () => {
+    const projectDir = createProject(successScript())
+    const artifactId = "duplicate-artifact"
+    const first = runCiReverification(projectDir, "ci", {
+      writeArtifact: (evidenceParent, _attemptId, source) =>
+        writeAndRereadCiReverificationArtifact(evidenceParent, artifactId, source),
+    })
+    const artifactPath = join(projectDir, ".persona", "evidence", "ci-reverification", `${artifactId}.json`)
+    const before = readFileSync(artifactPath, "utf8")
+    const second = runCiReverification(projectDir, "ci", {
+      writeArtifact: (evidenceParent, _attemptId, source) =>
+        writeAndRereadCiReverificationArtifact(
+          evidenceParent,
+          artifactId,
+          source.replace('"diagnosticCodes": [],', '"diagnosticCodes": ["second-write-sentinel"],'),
+        ),
+    })
+
+    expect(first.finalStatus).toBe("passed")
+    expect(second.finalStatus).toBe("artifact-invalid")
+    expect(second.diagnosticCodes).toContain("artifact-write-reread-invalid")
+    expect(readFileSync(artifactPath, "utf8")).toBe(before)
+    expect(readFileSync(artifactPath, "utf8")).not.toContain("second-write-sentinel")
+    expect(existsSync(join(projectDir, ".persona", "evidence", "ci-reverification", `.${artifactId}.tmp`))).toBe(false)
   })
 
   it("distinguishes first failure, later partial, and timeout precedence", () => {
