@@ -32,6 +32,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify canonical main source
+        env:
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          canonical_main_sha="$(git rev-parse refs/remotes/origin/main)"
+          if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            is_ancestor=true
+          else
+            is_ancestor=false
+          fi
+          node scripts/release-workflow-policy.mjs canonical-main \
+            --ref "$GITHUB_REF" \
+            --sha "$GITHUB_SHA" \
+            --canonical-main-sha "$canonical_main_sha" \
+            --is-ancestor "$is_ancestor"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -73,16 +92,9 @@ jobs:
           version="$(node -p "require('./package.json').version")"
           echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
           echo "EXPECTED_GIT_HEAD=${GITHUB_SHA}" >> "$GITHUB_ENV"
-
-          if [[ "$DIST_TAG" == "latest" && "$version" == *-* ]]; then
-            echo "Refusing to publish prerelease version $version with dist-tag latest"
-            exit 1
-          fi
-
-          if [[ "$DIST_TAG" == "next" && "$version" != *-* ]]; then
-            echo "Refusing to publish stable version $version with dist-tag next"
-            exit 1
-          fi
+          node scripts/release-workflow-policy.mjs dist-tag \
+            --version "$version" \
+            --dist-tag "$DIST_TAG"
 
           echo "Publishing persona-harness@$version with dist-tag $DIST_TAG"
 
@@ -101,32 +113,20 @@ jobs:
           set -euo pipefail
 
           for attempt in {1..30}; do
-            if npm view "persona-harness@${PACKAGE_VERSION}" version gitHead dist.shasum --json > registry-package.json 2>/dev/null; then
+            if npm view "persona-harness@${PACKAGE_VERSION}" version gitHead dist.shasum dist.integrity --json > registry-package.json 2>/dev/null; then
               break
             fi
             echo "Waiting for npm registry package metadata, attempt $attempt..."
             sleep 10
           done
 
-          node <<'NODE'
-          const fs = require("node:fs");
-          const actual = JSON.parse(fs.readFileSync("registry-package.json", "utf8"));
-          const expectedVersion = process.env.PACKAGE_VERSION;
-          const expectedHead = process.env.EXPECTED_GIT_HEAD;
-          if (actual.version !== expectedVersion) {
-            throw new Error(`Expected version ${expectedVersion}, got ${actual.version}`);
-          }
-          if (actual.gitHead !== expectedHead) {
-            throw new Error(`Expected gitHead ${expectedHead}, got ${actual.gitHead}`);
-          }
-          if (!actual["dist.shasum"]) {
-            throw new Error("Missing dist.shasum in npm registry metadata");
-          }
-          console.log(`Verified ${actual.version} ${actual.gitHead} ${actual["dist.shasum"]}`);
-          NODE
-
           npm dist-tag ls persona-harness > dist-tags.txt
-          grep -F "${DIST_TAG}: ${PACKAGE_VERSION}" dist-tags.txt
+          node scripts/release-workflow-policy.mjs registry \
+            --metadata registry-package.json \
+            --dist-tags dist-tags.txt \
+            --expected-version "$PACKAGE_VERSION" \
+            --expected-head "$EXPECTED_GIT_HEAD" \
+            --dist-tag "$DIST_TAG"
 
       - name: Publish summary
         run: |

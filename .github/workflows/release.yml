@@ -21,6 +21,45 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify release source
+        env:
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_SHA: ${{ github.sha }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          package_version="$(node -p "require('./package.json').version")"
+          canonical_main_sha="$(git rev-parse refs/remotes/origin/main)"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            tag_commit="$(git rev-parse "${GITHUB_REF}^{commit}")"
+            if git merge-base --is-ancestor "$tag_commit" refs/remotes/origin/main; then
+              is_ancestor=true
+            else
+              is_ancestor=false
+            fi
+            node scripts/release-workflow-policy.mjs tag-source \
+              --tag "$TAG_NAME" \
+              --version "$package_version" \
+              --sha "$GITHUB_SHA" \
+              --tag-commit "$tag_commit" \
+              --canonical-main-sha "$canonical_main_sha" \
+              --is-ancestor "$is_ancestor"
+          else
+            if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+              is_ancestor=true
+            else
+              is_ancestor=false
+            fi
+            node scripts/release-workflow-policy.mjs canonical-main \
+              --ref "$GITHUB_REF" \
+              --sha "$GITHUB_SHA" \
+              --canonical-main-sha "$canonical_main_sha" \
+              --is-ancestor "$is_ancestor"
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -39,18 +78,6 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Check tag matches package version
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          TAG_NAME: ${{ github.ref_name }}
-        run: |
-          package_version=$(node -p "require('./package.json').version")
-          expected_tag="v$package_version"
-          if [[ "$TAG_NAME" != "$expected_tag" ]]; then
-            echo "Tag $TAG_NAME does not match package.json version $package_version"
-            exit 1
-          fi
 
       - name: Rule diagnostics
         run: npm run report:rules
@@ -95,6 +122,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -106,16 +135,42 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: node scripts/generate-github-release-notes.mjs --tag "$TAG_NAME" --out github-release-notes.md
 
-      - name: Create release
+      - name: Create or verify GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
+          set -euo pipefail
           prerelease_args=()
+          expected_prerelease=false
           if [[ "$TAG_NAME" == *"-"* ]]; then
             prerelease_args+=(--prerelease)
+            expected_prerelease=true
           fi
-          gh release create "$TAG_NAME" \
-            --notes-file github-release-notes.md \
-            --title "$TAG_NAME" \
-            "${prerelease_args[@]}"
+          if gh release view "$TAG_NAME" \
+            --json tagName,name,isPrerelease,targetCommitish \
+            > existing-release.json 2> release-view-error.txt; then
+            :
+          else
+            if ! grep -Eiq "404|not found" release-view-error.txt; then
+              cat release-view-error.txt
+              exit 1
+            fi
+            gh release create "$TAG_NAME" \
+              --target "$GITHUB_SHA" \
+              --notes-file github-release-notes.md \
+              --title "$TAG_NAME" \
+              "${prerelease_args[@]}"
+            gh release view "$TAG_NAME" \
+              --json tagName,name,isPrerelease,targetCommitish \
+              > existing-release.json
+          fi
+          tag_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG_NAME}" --jq '.sha')"
+          node scripts/release-workflow-policy.mjs release-state \
+            --release existing-release.json \
+            --tag "$TAG_NAME" \
+            --tag-commit "$tag_commit" \
+            --expected-commit "$GITHUB_SHA" \
+            --expected-prerelease "$expected_prerelease"

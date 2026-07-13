@@ -39,6 +39,8 @@ deleting evidence/status history.
   [`p3-2-closure-authority-acceptance-record.md`](p3-2-closure-authority-acceptance-record.md).
 - P3-3 verification receipt candidate:
   [`p3-3-verification-receipt-acceptance-record.md`](p3-3-verification-receipt-acceptance-record.md).
+- P3-8 CI/release integrity candidate:
+  [`p3-8-ci-release-integrity-acceptance-record.md`](p3-8-ci-release-integrity-acceptance-record.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -99,6 +101,10 @@ deleting evidence/status history.
 - P3-3 defines receipt/attempt parsing and read-only lifecycle diagnostics only.
   It does not issue, verify, migrate, or accept any receipt as finish authority;
   P3-2 remains blocked until a later trusted path exists.
+- P3-8 is a candidate-only CI/publish/release workflow hardening unit. It adds
+  PR/main CI, canonical-main/tag ancestry checks, registry integrity readback,
+  and fail-closed GitHub release idempotency. It does not mutate GitHub
+  settings, publish npm, create tags/releases, or claim release readiness.
 - `runtimeInjection` remains a parked opt-in preview.
 - P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
   writer/workspace-edit contract. Recovery remains hidden from normal help,
