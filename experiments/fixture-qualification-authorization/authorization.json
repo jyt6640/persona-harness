@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "fixture-qualification-authorization.1",
+  "authorizationId": "synthetic-fixture-qualification-authorization-001",
+  "operationId": "synthetic-read-only-qualification-operation-001",
+  "attemptId": "synthetic-future-attempt-001",
+  "authorizationStatus": "authorization-only-not-executed",
+  "qualificationOperationAllowed": false,
+  "qualificationAllowed": false,
+  "executionAllowed": false,
+  "commandsExecuted": 0,
+  "childProcessInvocations": 0,
+  "productCliInvocations": 0,
+  "networkAccess": false,
+  "realProjectAccess": false,
+  "artifactsCreated": 0,
+  "telemetryEvents": 0,
+  "writeOperations": 0,
+  "sourceInspectionExecuted": false,
+  "mirrorCreated": false,
+  "ticketOperations": 0,
+  "workflowOperations": 0,
+  "verificationOperations": 0,
+  "authorityEligible": false,
+  "finishAuthority": "trusted-authority-required",
+  "candidate": {
+    "fixturePath": "fixtures/authorization-input.json",
+    "candidateState": "unattached",
+    "attachmentState": "unattached",
+    "sourceHead": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "sourceFingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "clean": true,
+    "symlinkCount": 0
+  },
+  "policyFixturePath": "fixtures/qualification-policy.json",
+  "negativeStatesPath": "fixtures/negative-states.json",
+  "transcriptPath": "authorization-transcript.json",
+  "sourceEvidenceBefore": {
+    "status": "deferred",
+    "observed": false,
+    "value": null,
+    "reason": "qualification operation not executed"
+  },
+  "sourceEvidenceAfter": {
+    "status": "deferred",
+    "observed": false,
+    "value": null,
+    "reason": "qualification operation not executed"
+  },
+  "preconditions": {
+    "attachmentState": "unattached",
+    "pendingTicket": "unknown",
+    "closureState": "unknown",
+    "finishPrecondition": "unknown",
+    "qualificationChain": "not-present"
+  },
+  "futureSuccessChain": {
+    "ticketEvidence": "required-not-present",
+    "implementationEvidence": "required-not-present",
+    "verificationEvidence": "required-not-present",
+    "finishEvidence": "required-not-present"
+  },
+  "roots": {
+    "journalRoot": "future-output/journal",
+    "mirrorRoot": "future-output/mirror",
+    "resultRoot": "future-output/result",
+    "ownership": "invocation-owned-absent",
+    "pathPolicy": "relative-no-follow"
+  },
+  "plannedSequence": [
+    "candidate-identity-clean-symlink-stack-confirmation",
+    "source-preservation-before-after-read-only-snapshots",
+    "deferred-readiness-checks"
+  ],
+  "negativeCaseIds": [
+    "source-before-absent",
+    "source-after-absent",
+    "foreign-journal",
+    "corrupt-mirror",
+    "preexisting-result-root",
+    "path-escape",
+    "symlink-path"
+  ],
+  "executionBoundary": "This artifact does not authorize candidate inspection, attach, mirror creation, project writes, ticket/go/implementation/verification/finish, or telemetry."
+}

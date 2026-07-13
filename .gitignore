@@ -21,6 +21,8 @@ experiments/*
 !experiments/report-only-test-integrity-detector/**
 !experiments/filesystem-residue-corpus/
 !experiments/filesystem-residue-corpus/**
+!experiments/fixture-qualification-authorization/
+!experiments/fixture-qualification-authorization/**
 example/
 
 # OpenCode / Persona local runtime artifacts.
@@ -46,6 +48,8 @@ fixtures/
 !experiments/report-only-test-integrity-detector/fixtures/**
 !experiments/filesystem-residue-corpus/fixtures/
 !experiments/filesystem-residue-corpus/fixtures/**
+!experiments/fixture-qualification-authorization/fixtures/
+!experiments/fixture-qualification-authorization/fixtures/**
 !packages/shared-skills/**/fixtures/
 !packages/shared-skills/**/fixtures/**  
 tmp/

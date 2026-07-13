@@ -24,6 +24,10 @@ not part of the published npm package.
   source-only frozen base and append-only successor corpus for synthetic
   filesystem-residue conditions. It does not scan projects or grant workflow
   authority.
+- [Fixture qualification authorization](fixture-qualification-authorization/README.md):
+  source-only non-executing authorization design with synthetic negative
+  states. It does not inspect candidates, create mirrors, or grant workflow
+  authority.
 
 Experiment material is package-excluded and is not product-quality evidence,
 runtime activation authorization, or a default-on decision.

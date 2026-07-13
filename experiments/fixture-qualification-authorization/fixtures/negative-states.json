@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "fixture-qualification-negative-states.1",
+  "fixtureId": "synthetic-negative-state-matrix",
+  "cases": [
+    {
+      "id": "source-before-absent",
+      "kind": "source-before",
+      "state": "absent",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "source-after-absent",
+      "kind": "source-after",
+      "state": "absent",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "foreign-journal",
+      "kind": "journal-root",
+      "state": "foreign",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "corrupt-mirror",
+      "kind": "mirror-root",
+      "state": "corrupt",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "preexisting-result-root",
+      "kind": "result-root",
+      "state": "pre-existing",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "path-escape",
+      "kind": "path",
+      "state": "../outside",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    },
+    {
+      "id": "symlink-path",
+      "kind": "path",
+      "state": "symlink",
+      "expectedDecision": "reject",
+      "authorityEffect": "none"
+    }
+  ],
+  "negativePaths": [
+    "source-before-absent",
+    "source-after-absent",
+    "foreign-journal",
+    "corrupt-mirror",
+    "preexisting-result-root",
+    "path-escape",
+    "symlink-path"
+  ]
+}

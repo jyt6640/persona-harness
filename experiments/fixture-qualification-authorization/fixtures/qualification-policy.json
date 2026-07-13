@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "fixture-qualification-policy.1",
+  "fixtureId": "synthetic-qualification-policy",
+  "sourcePreservation": "read-only-byte-snapshot",
+  "sourceCwdPolicy": "neutral-control-cwd",
+  "isolatedHomeRequired": true,
+  "disposableMirrorRequired": true,
+  "ownedRoots": [
+    "journalRoot",
+    "mirrorRoot",
+    "resultRoot"
+  ],
+  "commandsAllowed": [],
+  "projectWritesAllowed": false,
+  "ticketOperationsAllowed": false,
+  "workflowOperationsAllowed": false,
+  "telemetryAllowed": false,
+  "finishAuthority": "trusted-authority-required",
+  "futureQualificationRequires": [
+    "candidate identity and clean/symlink/stack confirmation",
+    "explicit source before and after read-only facts",
+    "absent invocation-owned journal, mirror, and result roots",
+    "append-only evidence and source preservation"
+  ]
+}

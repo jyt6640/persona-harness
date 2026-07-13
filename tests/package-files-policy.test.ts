@@ -104,6 +104,18 @@ describe("package files policy", () => {
     }
   })
 
+  it("keeps fixture qualification authorization source-only", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const experimentRoot = path.join(packageRoot, "experiments/fixture-qualification-authorization")
+    const files = listFiles(experimentRoot).map((filePath) => toPackagePath(path.relative(packageRoot, filePath)))
+
+    expect(files.length).toBeGreaterThan(8)
+    expect(packageJson.files).not.toContain("experiments")
+    for (const file of files) {
+      expect(isCoveredByPackageFiles(file, packageJson.files)).toBe(false)
+    }
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
