@@ -24,6 +24,10 @@ import {
   readEntrySteeringStatusSummary,
   type EntrySteeringStatusSummary,
 } from "../runtime/entry-steering-status.js"
+import {
+  assessVerificationAuthority,
+  type VerificationAuthorityAssessment,
+} from "./workflow-verification-receipt.js"
 
 type DoctorOptions = {
   readonly projectDir?: string
@@ -66,6 +70,7 @@ export type DoctorSummary = {
   readonly legacyDiffRulesPresent: boolean
   readonly entrySteeringEnabled: boolean
   readonly entrySteeringStatus: EntrySteeringStatusSummary
+  readonly verificationAuthority: VerificationAuthorityAssessment
 }
 
 const STALE_FIXTURE_TOKENS = [
@@ -195,6 +200,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const opencode = opencodeVersion(options)
   const reachability = readDoctorReachability(projectDir)
   const harnessConfig = loadHarnessConfig(projectDir)
+  const verificationAuthority = assessVerificationAuthority(projectDir)
   const runtimeFindings = [
     ...platformFindings(options.platform ?? process.platform),
     ...(opencode === "missing"
@@ -225,6 +231,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     evidence: pathStatus(projectDir, ".persona/evidence"),
     entrySteeringEnabled: harnessConfig.features.entrySteering,
     entrySteeringStatus: readEntrySteeringStatusSummary(projectDir, harnessConfig),
+    verificationAuthority,
     legacyDiffRulesPresent: existsSync(join(projectDir, ".persona", "rules", "diff-rules")),
     rulePackDiagnostics: rulePackDiagnostics.finding,
     rulePackDiagnosticCount: rulePackDiagnostics.diagnosticCount,
@@ -300,6 +307,9 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Entry steering decisions: ${summary.entrySteeringStatus.decisions}`,
     `Entry steering fired: ${summary.entrySteeringStatus.fired}`,
     `Entry steering invalid records: ${summary.entrySteeringStatus.invalidRecords}`,
+    `Verification receipt authority: ${summary.verificationAuthority.state} (read-only; no receipt grants finish authority)`,
+    `Verification receipt diagnostics: ${summary.verificationAuthority.summary}`,
+    `Legacy evidence records: ${summary.verificationAuthority.legacyEvidence.files.length} (diagnostic-only; no automatic migration)`,
     ...summary.reachability.findings.map((finding) => `- [${finding.level}] ${finding.message}`),
     ...summary.reachability.followUpLines,
     `Persona package version: ${summary.packageVersion}`,

@@ -37,6 +37,8 @@ deleting evidence/status history.
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
   [`p3-2-closure-authority-acceptance-record.md`](p3-2-closure-authority-acceptance-record.md).
+- P3-3 verification receipt candidate:
+  [`p3-3-verification-receipt-acceptance-record.md`](p3-3-verification-receipt-acceptance-record.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:
@@ -94,6 +96,9 @@ deleting evidence/status history.
   or external authority receipt exists. Unsigned local reports, bearshell
   output, JUnit XML, TDD JSON, markers, and self-computed digests remain
   diagnostic-only; this candidate is not yet accepted into canonical main.
+- P3-3 defines receipt/attempt parsing and read-only lifecycle diagnostics only.
+  It does not issue, verify, migrate, or accept any receipt as finish authority;
+  P3-2 remains blocked until a later trusted path exists.
 - `runtimeInjection` remains a parked opt-in preview.
 - P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
   writer/workspace-edit contract. Recovery remains hidden from normal help,
