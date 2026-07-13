@@ -68,9 +68,10 @@ pins and policy checks in the repository workflow source.
 
 ## Remaining Admin And Release Gates
 
-- npm trusted-publisher binding has not been verified through an authenticated
-  npm administrator surface. It is tracked as issue `#5`,
-  `Maintenance: verify npm trusted publisher release binding`.
+- The npm trusted-publisher binding was authenticated and recorded under closed
+  issue `#5`: GitHub provider, `jyt6640/persona-harness`, `publish.yml`,
+  `npm-publish`, `createPackage`, and `createStagedPackage`. Open issue `#10`
+  separately tracks whether staged-publish permission is least-privilege.
 - This record does not infer organization or enterprise inherited controls.
 - The default OIDC subject configuration is recorded as observed state only; it
   is neither accepted as hardened nor classified as broken here.

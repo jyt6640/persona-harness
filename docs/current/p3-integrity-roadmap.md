@@ -1,7 +1,8 @@
 # P3 Integrity Roadmap
 
-Status: accepted roadmap and decision record for P3-0; implementation remains
-pending. P3 runs before further P2 product/release use.
+Status: accepted P3-0 roadmap with a later P3-9 exact-main governance decision.
+P2 source-only investigation may resume only under the P3-9 boundary; P2
+product/release use and strong release claims remain held.
 
 Baseline for this record: `633b4bca4bc7b7292f37ac109c8028df1385a9ae`.
 
@@ -29,14 +30,18 @@ closure paths, malformed config can fail open, path interpretation can split,
 zero-test verification can pass, and traversal can fail with an unhandled
 symlink cycle. These findings block strong integrity claims until remediated.
 
-## P2 Hold
+## P2 Resumption Boundary
 
 Completed P2 source-only evidence, branches, and bundles are retained. They are
-held, not discarded.
+retained, not discarded.
 
-Until P3 gates permit resumption, do not start, integrate, publish, release, or
-use further P2 work as product or release evidence. Orthogonal completed P2
-candidates remain parked for later re-review under the P3 gate model.
+The P3-9 decision permits only separately authorized P2 source, measurement, or
+report-only investigation with isolated provenance and independent QA and
+External gates. Do not integrate, publish, release, enable by default, or use
+P2 work as product, adoption, stable, GA, or npm `latest` evidence.
+
+See [`p3-9-rc3-integrity-governance-decision.md`](p3-9-rc3-integrity-governance-decision.md)
+for the exact-main decision and its release boundary.
 
 ## Assurance Model
 
@@ -189,10 +194,12 @@ P3 is split into narrow units:
 
 ## Remaining Gates
 
-- P3-1 must make the audit reproductions executable as regression fixtures.
-- P3-2 through P3-8 must close the local and supply-chain authority gaps.
-- P3-9 must validate RC3 before any stable/GA or npm `latest` decision.
-- P2 resumes only after the P3-9 decision explicitly allows it.
+- P3-1 through P3-8 and the P3-9 exact-main validation are recorded in their
+  accepted current decision records.
+- P2 resumes only inside the constrained P3-9 source-only boundary.
+- Stable, GA, and npm `latest` require a separate actual RC3 release cycle,
+  exact tag/version/main ancestry, registry readback, and the Level 2 trusted
+  external attestation boundary.
 
 ## Boundaries
 
