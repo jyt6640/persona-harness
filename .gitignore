@@ -17,6 +17,8 @@ experiments/*
 !experiments/p3-adversarial-closure-fixtures/**
 !experiments/p3-7-ph-init-safe-upgrade-contract/
 !experiments/p3-7-ph-init-safe-upgrade-contract/**
+!experiments/report-only-test-integrity-detector/
+!experiments/report-only-test-integrity-detector/**
 example/
 
 # OpenCode / Persona local runtime artifacts.
@@ -38,6 +40,8 @@ fixtures/
 !experiments/p3-adversarial-closure-fixtures/fixtures/**
 !experiments/p3-7-ph-init-safe-upgrade-contract/fixtures/
 !experiments/p3-7-ph-init-safe-upgrade-contract/fixtures/**
+!experiments/report-only-test-integrity-detector/fixtures/
+!experiments/report-only-test-integrity-detector/fixtures/**
 !packages/shared-skills/**/fixtures/
 !packages/shared-skills/**/fixtures/**  
 tmp/

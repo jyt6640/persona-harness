@@ -1,0 +1,212 @@
+{
+  "schemaVersion": "report-only-test-integrity-lock.1",
+  "lockId": "report-only-test-integrity-canonical-lock",
+  "corpusSchemaVersion": "report-only-test-integrity-corpus.1",
+  "corpusId": "report-only-test-integrity",
+  "semantics": {
+    "corpusId": "report-only-test-integrity",
+    "status": "source-only-research-input",
+    "purpose": "Preregistered synthetic evidence for report-only Java test-integrity detector research.",
+    "payloadRoot": "fixtures",
+    "boundary": {
+      "reportOnly": true,
+      "enforcement": false,
+      "authorityEligible": false,
+      "commandsExecuted": 0,
+      "productCliInvocations": 0,
+      "networkAccess": false,
+      "realProjectAccess": false,
+      "packageDistribution": false,
+      "mutationPolicy": "append-only-new-schema-new-result"
+    },
+    "signals": [
+      {
+        "id": "TEST-EMPTY-JUNIT",
+        "name": "empty-or-assertionless-junit-test",
+        "definition": "A JUnit-shaped test method without assertion or interaction verification.",
+        "scope": "report-only synthetic research"
+      },
+      {
+        "id": "TEST-DISABLED-REASON",
+        "name": "disabled-junit-test-without-reason",
+        "definition": "A JUnit-shaped disabled test without a usable reason.",
+        "scope": "report-only synthetic research"
+      }
+    ],
+    "evaluationContract": {
+      "candidateSchemaVersion": "report-only-test-integrity-candidate.1",
+      "outputSchemaVersion": "report-only-test-integrity-evaluation.1",
+      "minimumCoverage": 1,
+      "minimumPrecision": 1,
+      "minimumRecall": 1,
+      "maximumFalsePositives": 0,
+      "maximumFalseNegatives": 0
+    },
+    "records": [
+      {
+        "id": "test-integrity-empty-junit-positive-001",
+        "title": "Empty JUnit-shaped test",
+        "ruleId": "TEST-EMPTY-JUNIT",
+        "expectedWarning": true,
+        "category": "empty-test",
+        "fixture": "fixtures/junit-cases.java",
+        "anchor": "emptyTest",
+        "auditEvidence": "synthetic source-only positive for an assertionless test method",
+        "threatCapability": "A local detector consumer can overstate a structural finding as product evidence.",
+        "attackPreconditions": [
+          "The detector input is a synthetic local fixture.",
+          "No PH command or external issuer is involved."
+        ],
+        "desiredInvariant": "A report-only finding remains diagnostic and cannot authorize workflow finish.",
+        "futureOwningUnit": "future detector precision review",
+        "futureAcceptanceBoundary": "Candidate output must remain untrusted until an independently authorized path exists.",
+        "negativeEscapes": [
+          "generatedBy marker",
+          "self-computed digest",
+          "arbitrary command or exit",
+          "missing external attestation"
+        ]
+      },
+      {
+        "id": "test-integrity-asserting-junit-negative-001",
+        "title": "JUnit-shaped test with assertion",
+        "ruleId": "TEST-EMPTY-JUNIT",
+        "expectedWarning": false,
+        "category": "assertion-present",
+        "fixture": "fixtures/junit-cases.java",
+        "anchor": "assertingTest",
+        "auditEvidence": "synthetic source-only negative with explicit assertion call",
+        "threatCapability": "A lexical detector can misclassify assertion-bearing tests.",
+        "attackPreconditions": [
+          "The assertion is present in the synthetic fixture.",
+          "No runtime test execution is performed."
+        ],
+        "desiredInvariant": "The evaluator preserves the preregistered negative label.",
+        "futureOwningUnit": "future detector precision review",
+        "futureAcceptanceBoundary": "Negative labels cannot be changed after evaluation.",
+        "negativeEscapes": [
+          "record relabeling",
+          "duplicate finding",
+          "self-consistent local digest"
+        ]
+      },
+      {
+        "id": "test-integrity-disabled-without-reason-positive-001",
+        "title": "Disabled JUnit-shaped test without reason",
+        "ruleId": "TEST-DISABLED-REASON",
+        "expectedWarning": true,
+        "category": "disabled-missing-reason",
+        "fixture": "fixtures/junit-cases.java",
+        "anchor": "disabledWithoutReason",
+        "auditEvidence": "synthetic source-only positive for a disabled test without reason",
+        "threatCapability": "A report-only finding can be mistaken for an enforcement decision.",
+        "attackPreconditions": [
+          "The disabled annotation has no reason in the synthetic fixture.",
+          "No product workflow state is read."
+        ],
+        "desiredInvariant": "The result is diagnostic-only and cannot block, force, or promote a workflow.",
+        "futureOwningUnit": "future detector precision review",
+        "futureAcceptanceBoundary": "A future policy must separately authorize any enforcement behavior.",
+        "negativeEscapes": [
+          "fabricated generatedBy",
+          "arbitrary head or command",
+          "missing external attestation"
+        ]
+      },
+      {
+        "id": "test-integrity-disabled-with-reason-negative-001",
+        "title": "Disabled JUnit-shaped test with reason",
+        "ruleId": "TEST-DISABLED-REASON",
+        "expectedWarning": false,
+        "category": "disabled-intentional-reason",
+        "fixture": "fixtures/junit-cases.java",
+        "anchor": "disabledWithReason",
+        "auditEvidence": "synthetic source-only negative with an intentional disabled reason",
+        "threatCapability": "A detector can mistake any disabled annotation for an integrity warning.",
+        "attackPreconditions": [
+          "The annotation includes a non-empty reason.",
+          "No runtime test execution is performed."
+        ],
+        "desiredInvariant": "The preregistered negative remains immutable and diagnostic.",
+        "futureOwningUnit": "future detector precision review",
+        "futureAcceptanceBoundary": "Any later change requires a new corpus version and result.",
+        "negativeEscapes": [
+          "ordered-ID drift",
+          "record extension",
+          "self-computed digest"
+        ]
+      }
+    ],
+    "payloadFiles": [
+      {
+        "path": "fixtures/junit-cases.java",
+        "sha256": "sha256:891f70d51b2b5f09e2ffca81f9eeb1c1ba453f2cee32ee3498ca1849822083c3"
+      },
+      {
+        "path": "fixtures/detector-transcript.json",
+        "sha256": "sha256:bc6cca6f3c01f433cb987304469aa042f40989ec37404adbd55f982ec34dba7e"
+      }
+    ],
+    "transcript": {
+      "path": "fixtures/detector-transcript.json",
+      "commandCount": 2,
+      "commands": [
+        {
+          "id": "read-synthetic-fixture",
+          "argv": [
+            "read-fixture",
+            "fixtures/junit-cases.java"
+          ],
+          "exitCode": 0,
+          "stdout": "synthetic fixture read",
+          "stderr": "",
+          "commandsExecuted": false,
+          "productCliInvocation": false,
+          "networkAccess": false,
+          "realProjectAccess": false
+        },
+        {
+          "id": "emit-report-only-findings",
+          "argv": [
+            "report-only-detector",
+            "--fixture",
+            "fixtures/junit-cases.java"
+          ],
+          "exitCode": 0,
+          "stdout": "synthetic findings emitted",
+          "stderr": "",
+          "commandsExecuted": false,
+          "productCliInvocation": false,
+          "networkAccess": false,
+          "realProjectAccess": false
+        }
+      ]
+    },
+    "mutationPolicy": {
+      "frozenFields": [
+        "id",
+        "title",
+        "ruleId",
+        "expectedWarning",
+        "category",
+        "fixture",
+        "anchor",
+        "auditEvidence",
+        "threatCapability",
+        "attackPreconditions",
+        "desiredInvariant",
+        "futureOwningUnit",
+        "futureAcceptanceBoundary",
+        "negativeEscapes"
+      ],
+      "noRelabelAfterEvaluation": true,
+      "noReplayOrDuplicateRows": true,
+      "newCaseRequires": [
+        "new stable record ID",
+        "append-only corpus record",
+        "new canonical lock version",
+        "separate result artifact"
+      ]
+    }
+  }
+}

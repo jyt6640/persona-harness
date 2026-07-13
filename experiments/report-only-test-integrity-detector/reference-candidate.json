@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "report-only-test-integrity-candidate.1",
+  "candidateId": "synthetic-reference-detector",
+  "corpusId": "report-only-test-integrity",
+  "canonicalSemanticsSha256": "sha256:e63321127eb86ec97161c8ae811f5020ab130629d7daffed01175a331cf3d1a7",
+  "evaluatedRecordIds": [
+    "test-integrity-empty-junit-positive-001",
+    "test-integrity-asserting-junit-negative-001",
+    "test-integrity-disabled-without-reason-positive-001",
+    "test-integrity-disabled-with-reason-negative-001"
+  ],
+  "findings": [
+    {
+      "caseId": "test-integrity-empty-junit-positive-001",
+      "ruleId": "TEST-EMPTY-JUNIT"
+    },
+    {
+      "caseId": "test-integrity-disabled-without-reason-positive-001",
+      "ruleId": "TEST-DISABLED-REASON"
+    }
+  ],
+  "provenance": {
+    "issuer": "project-local-self",
+    "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "externalAttestation": null
+  }
+}

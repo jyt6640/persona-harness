@@ -17,6 +17,9 @@ not part of the published npm package.
   source-only synthetic ownership, conflict, backup, rollback, and rerun
   fixtures for a future safe `ph init` implementation. It does not implement
   `ph init` or claim product behavior.
+- [Report-only test-integrity detector evidence](report-only-test-integrity-detector/README.md):
+  source-only immutable corpus and diagnostic evaluator for synthetic test-integrity
+  findings. It does not execute product commands or grant workflow authority.
 
 Experiment material is package-excluded and is not product-quality evidence,
 runtime activation authorization, or a default-on decision.
