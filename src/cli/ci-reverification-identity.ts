@@ -1,4 +1,4 @@
-import { realpathSync, statSync } from "node:fs"
+import { lstatSync, realpathSync, statSync } from "node:fs"
 import { spawnSync } from "node:child_process"
 import { isAbsolute, join, relative } from "node:path"
 
@@ -11,7 +11,7 @@ export type PosixPathIdentity = {
 }
 
 export type EvidenceParentIdentity = PosixPathIdentity & {
-  readonly relativePath: ".persona/evidence"
+  readonly relativePath: string
 }
 
 export type GitIdentity = {
@@ -57,14 +57,18 @@ export function captureWorkspaceIdentity(projectDir: string): IdentityResult<Pos
 
 export function captureEvidenceParentIdentity(
   workspaceRoot: PosixPathIdentity,
+  relativePath = ".persona/evidence",
 ): IdentityResult<EvidenceParentIdentity> {
   try {
+    const evidence = join(workspaceRoot.realpath, relativePath)
     const persona = join(workspaceRoot.realpath, ".persona")
-    const evidence = join(persona, "evidence")
-    const personaStat = statSync(persona, { bigint: true })
-    const evidenceStat = statSync(evidence, { bigint: true })
+    const personaStat = lstatSync(persona, { bigint: true })
+    const evidenceStat = lstatSync(evidence, { bigint: true })
     if (!personaStat.isDirectory() || !evidenceStat.isDirectory()) {
       return { diagnosticCode: "evidence-parent-not-directory", status: "unavailable" }
+    }
+    if (personaStat.isSymbolicLink() || evidenceStat.isSymbolicLink()) {
+      return { diagnosticCode: "evidence-parent-symlink", status: "unavailable" }
     }
     const personaRealpath = realpathSync(persona)
     const evidenceRealpath = realpathSync(evidence)
@@ -80,7 +84,7 @@ export function captureEvidenceParentIdentity(
         dev: evidenceStat.dev.toString(),
         ino: evidenceStat.ino.toString(),
         realpath: evidenceRealpath,
-        relativePath: ".persona/evidence",
+        relativePath,
       },
     }
   } catch {

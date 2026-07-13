@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto"
-import { readFileSync } from "node:fs"
 import { join } from "node:path"
 
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import { readBoundedTextFile } from "../io/bounded-path-walker.js"
 import {
   REVERIFICATION_COMMAND_CATALOG_ID,
   REVERIFICATION_COMMANDS,
@@ -22,7 +23,7 @@ import type {
 } from "./workflow-semantic-tdd-types.js"
 import type { VerificationAttempt, VerificationReceipt } from "./workflow-verification-receipt-types.js"
 
-const CI_ARTIFACT_DIR = ".persona/evidence/ci-reverification"
+const CI_ARTIFACT_DIR = "ci-reverification"
 
 export type SemanticTddPhaseRead =
   | {
@@ -47,8 +48,12 @@ export function readSemanticTddPhase(
   phase: "green" | "red",
   expectedTestcaseId?: string,
 ): SemanticTddPhaseRead {
-  const artifactPath = join(projectDir, CI_ARTIFACT_DIR, `${attempt.attemptId}.json`)
-  const source = readText(artifactPath)
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) return invalidPhase("semantic-artifact-invalid")
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) return invalidPhase("semantic-artifact-invalid")
+  const artifactPath = join(evidencePath.path, CI_ARTIFACT_DIR, `${attempt.attemptId}.json`)
+  const source = readText(projectDir, artifactPath)
   const artifact = source === undefined ? undefined : parseCiReverificationArtifact(source)
   if (artifact === undefined) return invalidPhase("semantic-artifact-invalid")
   if (artifact.commandCatalogId !== REVERIFICATION_COMMAND_CATALOG_ID
@@ -201,12 +206,9 @@ function invalidPhase(code: SemanticTddDiagnosticCode): SemanticTddPhaseRead {
   return { diagnosticCodes: [code], ok: false }
 }
 
-function readText(path: string): string | undefined {
-  try {
-    return readFileSync(path, "utf8")
-  } catch {
-    return undefined
-  }
+function readText(projectDir: string, path: string): string | undefined {
+  const result = readBoundedTextFile(path, projectDir, "configured evidence artifact")
+  return result.ok ? result.text : undefined
 }
 
 function hasExpectedCommands(artifact: CiReverificationArtifact, phase: "green" | "red"): boolean {

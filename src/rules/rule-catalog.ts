@@ -1,8 +1,11 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs"
-import { isAbsolute, join, relative, sep } from "node:path"
+import { isAbsolute, relative } from "node:path"
 
 import type { FileRole } from "../runtime/types.js"
-import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { loadHarnessConfigResult, resolveConfiguredPath } from "../config/harness-config.js"
+import {
+  walkBoundedFiles,
+  type BoundedWalkResult,
+} from "../io/bounded-path-walker.js"
 import { matchesAnyGlob, normalizePath } from "./rule-glob.js"
 import {
   extractBulletPolicies,
@@ -45,37 +48,62 @@ function addDuplicateRuleIdDiagnostics(entries: readonly RuleCatalogEntry[]): Ru
   })
 }
 
-function listMarkdownFiles(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name)
-    if (entry.isDirectory()) {
-      return listMarkdownFiles(path)
-    }
-    return entry.isFile() && entry.name.endsWith(".md") ? [path] : []
+function unsafeRuleCatalogResult(): BoundedWalkResult {
+  return {
+    diagnostics: [{
+      code: "config.path_invalid",
+      message: "Harness configuration is invalid; rule traversal is blocked until read-only recovery.",
+      path: ".persona/harness.jsonc",
+    }],
+    files: [],
+    present: false,
+    safe: false,
+  }
+}
+
+export function inspectRuleCatalogPaths(projectDir: string): BoundedWalkResult {
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return unsafeRuleCatalogResult()
+  }
+  const rulesDir = resolveConfiguredPath(projectDir, configResult.config.rulesDir)
+  return walkBoundedFiles(rulesDir, projectDir, {
+    displayRoot: configResult.config.rulesDir,
+    extensions: [".md"],
+    includeText: true,
   })
 }
 
 export function loadRuleCatalog(projectDir: string): RuleCatalogEntry[] {
-  const config = loadHarnessConfig(projectDir)
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return []
+  }
+  const config = configResult.config
   const rulesDir = resolveConfiguredPath(projectDir, config.rulesDir)
-  if (!existsSync(rulesDir)) {
+  const walked = inspectRuleCatalogPaths(projectDir)
+  if (!walked.safe) {
     return []
   }
 
-  const entries = listMarkdownFiles(rulesDir)
-    .sort()
-    .map((absolutePath) => {
-      const rulePath = normalizePath(relative(rulesDir, absolutePath).split(sep).join("/"))
-      const markdown = readFileSync(absolutePath, "utf8")
+  const entries = walked.files
+    .map((file): RuleCatalogEntry | undefined => {
+      if (file.text === undefined) {
+        return undefined
+      }
+      const rulePath = normalizePath(relative(rulesDir, file.absolutePath))
+      const markdown = file.text
       const frontmatter = parseRuleFrontmatter(rulePath, markdown)
       return {
         path: rulePath,
-        absolutePath,
+        absolutePath: file.absolutePath,
         metadata: frontmatter.metadata,
         diagnostics: frontmatter.diagnostics,
         policies: extractBulletPolicies(markdown),
       }
     })
+    .filter((entry): entry is RuleCatalogEntry => entry !== undefined)
+    .sort((left, right) => left.path.localeCompare(right.path))
   return addDuplicateRuleIdDiagnostics(entries)
 }
 

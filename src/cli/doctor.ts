@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
@@ -19,7 +19,12 @@ import {
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
 import type { RuleDiagnosticReportItem } from "../rules/rule-diagnostics-report.js"
 import type { ConventionPackDiagnostic } from "./convention-pack-diagnostics.js"
-import { loadHarnessConfig } from "../config/harness-config.js"
+import {
+  loadHarnessConfigResult,
+  resolveConfiguredPathResult,
+  type HarnessConfigDiagnostic,
+} from "../config/harness-config.js"
+import { walkBoundedFiles } from "../io/bounded-path-walker.js"
 import {
   readEntrySteeringStatusSummary,
   type EntrySteeringStatusSummary,
@@ -55,10 +60,12 @@ export type DoctorSummary = {
   readonly registry: string
   readonly opencodeConfig: "present" | "missing"
   readonly pluginPath: "configured" | "missing" | "unreadable"
-  readonly harnessConfig: "present" | "missing"
-  readonly rules: "present" | "missing"
+  readonly harnessConfig: "present" | "missing" | "invalid"
+  readonly rules: "present" | "missing" | "invalid"
   readonly workflowPlan: "present" | "missing"
-  readonly evidence: "present" | "missing"
+  readonly evidence: "present" | "missing" | "invalid"
+  readonly configDiagnostics: readonly HarnessConfigDiagnostic[]
+  readonly pathSafetyDiagnostics: readonly string[]
   readonly rulesFileCount: number
   readonly rulePackDiagnostics: "PASS" | "WARN"
   readonly rulePackDiagnosticCount: number
@@ -101,8 +108,8 @@ function commandOutput(command: string, args: readonly string[], options: Doctor
   })
 }
 
-function pathStatus(projectDir: string, relativePath: string): "present" | "missing" {
-  return existsSync(join(projectDir, relativePath)) ? "present" : "missing"
+function pathStatus(absolutePath: string): "present" | "missing" {
+  return existsSync(absolutePath) ? "present" : "missing"
 }
 
 function platformFindings(platform: NodeJS.Platform): readonly string[] {
@@ -147,64 +154,74 @@ function normalizeRelativePath(filePath: string, rootDir: string): string {
   return filePath === rootDir ? "" : filePath.slice(rootDir.length + 1).replace(/\\/g, "/")
 }
 
-function listRuleFiles(rulesDir: string): readonly string[] {
-  if (!existsSync(rulesDir)) {
-    return []
-  }
-  const files: string[] = []
-  const visit = (currentDir: string): void => {
-    for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
-      const entryPath = join(currentDir, entry.name)
-      if (entry.isDirectory()) {
-        visit(entryPath)
-      } else if (entry.isFile()) {
-        files.push(entryPath)
-      }
-    }
-  }
-  if (statSync(rulesDir).isDirectory()) {
-    visit(rulesDir)
-  }
-  return files.sort()
-}
-
 function staleMatches(relativePath: string, content: string): readonly string[] {
   const haystack = `${relativePath}\n${content}`
   return STALE_FIXTURE_TOKENS.filter((token) => haystack.includes(token))
 }
 
-function scanStaleFixtureRules(projectDir: string): {
+function scanStaleFixtureRules(projectDir: string, rulesDir: string, displayRoot: string): {
+  readonly pathSafetyDiagnostics: readonly string[]
   readonly rulesFileCount: number
   readonly staleFixtureFindings: readonly StaleFixtureFinding[]
 } {
-  const rulesDir = join(projectDir, ".persona", "rules")
-  const ruleFiles = listRuleFiles(rulesDir)
-  const findings = ruleFiles.flatMap((filePath): readonly StaleFixtureFinding[] => {
-    const relativePath = normalizeRelativePath(filePath, rulesDir)
-    try {
-      const matches = staleMatches(relativePath, readFileSync(filePath, "utf8"))
-      return matches.length > 0 ? [{ relativePath, matches }] : []
-    } catch {
-      return [{ relativePath, matches: ["unreadable"] }]
-    }
+  const walked = walkBoundedFiles(rulesDir, projectDir, {
+    displayRoot,
+    extensions: [".md"],
+    includeText: true,
   })
-  return { rulesFileCount: ruleFiles.length, staleFixtureFindings: findings }
+  const findings = walked.files.flatMap((file): readonly StaleFixtureFinding[] => {
+    const relativePath = normalizeRelativePath(file.absolutePath, rulesDir)
+    const matches = staleMatches(relativePath, file.text ?? "")
+    return matches.length > 0 ? [{ relativePath, matches }] : []
+  })
+  return {
+    pathSafetyDiagnostics: walked.diagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`),
+    rulesFileCount: walked.files.length,
+    staleFixtureFindings: findings,
+  }
 }
 
 export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const projectDir = resolve(options.projectDir ?? process.cwd())
-  const env = options.env ?? process.env
-  const rulesScan = scanStaleFixtureRules(projectDir)
+  const configResult = loadHarnessConfigResult(projectDir)
+  const harnessConfig = configResult.config
+  const rulesPath = configResult.safe
+    ? resolveConfiguredPathResult(projectDir, harnessConfig.rulesDir)
+    : undefined
+  const evidencePath = configResult.safe
+    ? resolveConfiguredPathResult(projectDir, harnessConfig.evidenceDir)
+    : undefined
+  const rulesScan = rulesPath?.ok === true
+    ? scanStaleFixtureRules(projectDir, rulesPath.path, rulesPath.relativePath || harnessConfig.rulesDir)
+    : {
+        pathSafetyDiagnostics: [],
+        rulesFileCount: 0,
+        staleFixtureFindings: [],
+      }
+  const evidenceScan = evidencePath?.ok === true
+    ? walkBoundedFiles(evidencePath.path, projectDir, {
+        displayRoot: evidencePath.relativePath || harnessConfig.evidenceDir,
+        includeText: false,
+      })
+    : undefined
+  const configPathDiagnostics = configResult.diagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`)
+  const pathSafetyDiagnostics = [
+    ...configPathDiagnostics,
+    ...rulesScan.pathSafetyDiagnostics,
+    ...(evidenceScan?.diagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`) ?? []),
+  ]
   const rulePackDiagnostics = summarizeRuleDiagnostics(projectDir)
   const conventionPackDiagnostics = summarizeConventionPackDiagnostics(projectDir)
   const opencode = opencodeVersion(options)
   const reachability = readDoctorReachability(projectDir)
-  const harnessConfig = loadHarnessConfig(projectDir)
   const verificationAuthority = assessVerificationAuthority(projectDir)
   const runtimeFindings = [
     ...platformFindings(options.platform ?? process.platform),
     ...(opencode === "missing"
       ? ["OpenCode CLI is missing; Persona Harness plugin runtime attachment cannot be verified."]
+      : []),
+    ...(pathSafetyDiagnostics.length > 0
+      ? ["Harness configuration/path safety is blocked; read-only recovery is required."]
       : []),
   ]
   return {
@@ -218,28 +235,41 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     reachability,
     packageVersion: packageVersion(),
     registry: registryStatus(options),
-    opencodeConfig: pathStatus(projectDir, ".opencode/opencode.json"),
+    opencodeConfig: pathStatus(join(projectDir, ".opencode/opencode.json")),
     pluginPath:
       reachability.projectPluginState === "configured"
         ? "configured"
         : reachability.projectPluginState === "unreadable"
           ? "unreadable"
           : "missing",
-    harnessConfig: pathStatus(projectDir, ".persona/harness.jsonc"),
-    rules: pathStatus(projectDir, ".persona/rules"),
-    workflowPlan: pathStatus(projectDir, ".persona/workflow/plan.md"),
-    evidence: pathStatus(projectDir, ".persona/evidence"),
+    harnessConfig: configResult.diagnostics.length > 0
+      ? "invalid"
+      : pathStatus(join(projectDir, ".persona", "harness.jsonc")),
+    rules: rulesScan.pathSafetyDiagnostics.length > 0
+      ? "invalid"
+      : rulesPath?.ok === true
+        ? pathStatus(rulesPath.path)
+        : "invalid",
+    workflowPlan: pathStatus(join(projectDir, ".persona", "workflow", "plan.md")),
+    evidence: evidenceScan?.safe === false
+      ? "invalid"
+      : evidencePath?.ok === true
+        ? pathStatus(evidencePath.path)
+        : "invalid",
+    configDiagnostics: configResult.diagnostics,
+    pathSafetyDiagnostics,
     entrySteeringEnabled: harnessConfig.features.entrySteering,
     entrySteeringStatus: readEntrySteeringStatusSummary(projectDir, harnessConfig),
     verificationAuthority,
-    legacyDiffRulesPresent: existsSync(join(projectDir, ".persona", "rules", "diff-rules")),
+    legacyDiffRulesPresent: rulesPath?.ok === true && existsSync(join(rulesPath.path, "diff-rules")),
     rulePackDiagnostics: rulePackDiagnostics.finding,
     rulePackDiagnosticCount: rulePackDiagnostics.diagnosticCount,
     rulePackDiagnosticDetails: rulePackDiagnostics.diagnostics,
     conventionPackDiagnostics: conventionPackDiagnostics.finding,
     conventionPackDiagnosticCount: conventionPackDiagnostics.diagnosticCount,
     conventionPackDiagnosticDetails: conventionPackDiagnostics.diagnostics,
-    ...rulesScan,
+    rulesFileCount: rulesScan.rulesFileCount,
+    staleFixtureFindings: rulesScan.staleFixtureFindings,
   }
 }
 
@@ -289,6 +319,15 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
           "- .persona/rules/diff-rules/: legacy/unneeded package material from an older Persona Harness install; it is no longer shipped or required. Persona Harness leaves user files untouched; remove it manually only after review.",
         ]
       : []
+  const pathSafetyDetails =
+    summary.pathSafetyDiagnostics.length === 0
+      ? []
+      : [
+          "",
+          "Config/path safety:",
+          "- BLOCK: configured paths are read-only inspected with no-follow traversal and bounded limits.",
+          ...summary.pathSafetyDiagnostics.map((diagnostic) => `- ${diagnostic}`),
+        ]
   return [
     "Persona Harness Doctor",
     "",
@@ -320,6 +359,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Persona plugin path: ${summary.pluginPath}`,
     `.persona/harness.jsonc: ${summary.harnessConfig}`,
     `.persona/rules: ${summary.rules}`,
+    `Configured rules/evidence roots: ${summary.rules} / ${summary.evidence}`,
     `.persona/workflow/plan.md: ${summary.workflowPlan}`,
     `.persona/evidence: ${summary.evidence}`,
     `Rules surface: ${summary.rulesFileCount} files`,
@@ -332,6 +372,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     ...conventionPackDetails,
     `Stale fixture scan: ${staleStatus}`,
     ...staleDetails,
+    ...pathSafetyDetails,
     ...legacyDiffRulesDetails,
     "",
     "Scope:",
@@ -343,7 +384,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
 export function runDoctorCommand(_args: readonly string[], options: DoctorOptions = {}): CliRunResult {
   const summary = readDoctorSummary(options)
   return {
-    status: summary.reachability.level === "BLOCK" ? 1 : 0,
+    status: summary.reachability.level === "BLOCK" || summary.pathSafetyDiagnostics.length > 0 ? 1 : 0,
     stdout: `${formatDoctorSummary(summary)}\n`,
     stderr: "",
   }

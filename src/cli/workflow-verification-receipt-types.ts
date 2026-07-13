@@ -169,6 +169,7 @@ export type VerificationAuthorityState =
 
 export type LegacyEvidenceSummary = {
   readonly diagnosticOnly: true
+  readonly diagnostics?: readonly ReceiptDiagnostic[]
   readonly files: readonly string[]
 }
 

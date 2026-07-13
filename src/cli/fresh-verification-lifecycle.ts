@@ -2,12 +2,11 @@ import { createHash } from "node:crypto"
 import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { personaHarnessVersion } from "./version.js"
 import { sha256 } from "./ci-reverification-catalog.js"
 import type { CiReverificationArtifact } from "./ci-reverification-artifact.js"
 import {
-  VERIFICATION_ATTEMPT_DIR,
-  VERIFICATION_RECEIPT_DIR,
   parseVerificationAttempt,
   parseVerificationReceipt,
 } from "./workflow-verification-receipt.js"
@@ -90,6 +89,10 @@ export function writeFreshLifecycleRecords(
   status: VerificationResultStatus,
   testCount: number,
 ): FreshLifecycleWriteResult {
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) return { diagnosticCode: "harness-config-invalid" }
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) return { diagnosticCode: "evidence-path-unsafe" }
   const receiptId = `receipt-${binding.attemptId}`
   const provenanceDigest = digest({
     artifactDigest: binding.artifactDigest,
@@ -100,12 +103,12 @@ export function writeFreshLifecycleRecords(
     testCount,
   })
   const attempt = buildAttempt(binding, finishId, provenanceDigest, sessionId, status, receiptId)
-  const attemptPath = writeAttempt(projectDir, attempt)
+  const attemptPath = writeAttempt(evidencePath.path, attempt)
   if (attemptPath === undefined) return { diagnosticCode: "fresh-attempt-write-invalid" }
   if (status === "fail") return { attemptPath }
 
   const receipt = buildReceipt(binding, finishId, provenanceDigest, sessionId, receiptId, testCount)
-  const receiptPath = writeReceipt(projectDir, receipt)
+  const receiptPath = writeReceipt(evidencePath.path, receipt)
   if (receiptPath === undefined) return { attemptPath, diagnosticCode: "fresh-receipt-write-invalid" }
   return { attemptPath, receiptPath }
 }
@@ -166,23 +169,23 @@ function buildReceipt(
   }
 }
 
-function writeAttempt(projectDir: string, attempt: VerificationAttempt): string | undefined {
-  const result = writeRecord(projectDir, VERIFICATION_ATTEMPT_DIR, `${attempt.attemptId}.json`, attempt)
+function writeAttempt(evidenceRoot: string, attempt: VerificationAttempt): string | undefined {
+  const result = writeRecord(evidenceRoot, "verification-attempts", `${attempt.attemptId}.json`, attempt)
   return result?.valid === true ? result.path : undefined
 }
 
-function writeReceipt(projectDir: string, receipt: VerificationReceipt): string | undefined {
-  const result = writeRecord(projectDir, VERIFICATION_RECEIPT_DIR, `${receipt.receiptId}.json`, receipt)
+function writeReceipt(evidenceRoot: string, receipt: VerificationReceipt): string | undefined {
+  const result = writeRecord(evidenceRoot, "verification-receipts", `${receipt.receiptId}.json`, receipt)
   return result?.valid === true ? result.path : undefined
 }
 
 function writeRecord(
-  projectDir: string,
+  evidenceRoot: string,
   relativeDirectory: string,
   filename: string,
   value: VerificationAttempt | VerificationReceipt,
 ): { readonly path: string; readonly valid: boolean } | undefined {
-  const directory = join(projectDir, relativeDirectory)
+  const directory = join(evidenceRoot, relativeDirectory)
   mkdirSync(directory, { recursive: true })
   try {
     const directoryStat = lstatSync(directory)

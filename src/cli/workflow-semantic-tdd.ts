@@ -1,10 +1,11 @@
 import { assessVerificationAuthority } from "./workflow-verification-receipt.js"
+import { resolveConfiguredPathResult, loadHarnessConfigResult } from "../config/harness-config.js"
 import {
   VERIFICATION_ATTEMPT_DIR,
   VERIFICATION_RECEIPT_DIR,
 } from "./workflow-verification-receipt-types.js"
 import { parseVerificationAttempt, parseVerificationReceipt } from "./workflow-verification-receipt-model.js"
-import { readJsonDirectory, readLegacyEvidence } from "./workflow-verification-receipt-storage.js"
+import { readJsonDirectoryAt, readLegacyEvidence } from "./workflow-verification-receipt-storage.js"
 import {
   compareSemanticTddLineage,
   readSemanticTddPhase,
@@ -26,9 +27,29 @@ export type {
 } from "./workflow-semantic-tdd-types.js"
 
 export function assessSemanticTddChain(projectDir: string, now = new Date()): SemanticTddAssessment {
-  const legacy = readLegacyEvidence(projectDir)
-  const attempts = readJsonDirectory(projectDir, VERIFICATION_ATTEMPT_DIR, parseVerificationAttempt)
-  const receipts = readJsonDirectory(projectDir, VERIFICATION_RECEIPT_DIR, parseVerificationReceipt)
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return result("malformed", ["semantic-artifact-invalid"], "harness configuration is invalid; semantic verification is blocked")
+  }
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) {
+    return result("malformed", ["semantic-artifact-invalid"], "configured evidence path is unsafe; semantic verification is blocked")
+  }
+  const evidenceRoot = evidencePath.path
+  const displayEvidenceRoot = evidencePath.relativePath || configResult.config.evidenceDir
+  const legacy = readLegacyEvidence(projectDir, evidenceRoot, displayEvidenceRoot)
+  const attempts = readJsonDirectoryAt(
+    projectDir,
+    `${evidenceRoot}/${VERIFICATION_ATTEMPT_DIR.split("/").at(-1)}`,
+    `${displayEvidenceRoot}/${VERIFICATION_ATTEMPT_DIR.split("/").at(-1)}`,
+    parseVerificationAttempt,
+  )
+  const receipts = readJsonDirectoryAt(
+    projectDir,
+    `${evidenceRoot}/${VERIFICATION_RECEIPT_DIR.split("/").at(-1)}`,
+    `${displayEvidenceRoot}/${VERIFICATION_RECEIPT_DIR.split("/").at(-1)}`,
+    parseVerificationReceipt,
+  )
   const directoryDiagnostics = [...attempts.diagnostics, ...receipts.diagnostics]
   if (directoryDiagnostics.length > 0) {
     return result("malformed", ["semantic-artifact-invalid"], "semantic receipt or attempt input is malformed")

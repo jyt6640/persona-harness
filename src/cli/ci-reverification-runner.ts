@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { runBoundedProcess, type BoundedProcessOptions, type BoundedProcessResult } from "./bounded-process.js"
 import {
   serializeCiReverificationArtifact,
@@ -57,7 +58,16 @@ export function runCiReverification(
   const platform = options.platform ?? process.platform
   const runProcess = options.runProcess ?? runBoundedProcess
   const captureWorkspace = options.captureWorkspace ?? captureWorkspaceIdentity
-  const captureEvidenceParent = options.captureEvidenceParent ?? captureEvidenceParentIdentity
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return { diagnosticCodes: ["harness-config-invalid"], finalStatus: "unavailable" }
+  }
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) {
+    return { diagnosticCodes: ["evidence-path-unsafe"], finalStatus: "unavailable" }
+  }
+  const captureEvidenceParent = options.captureEvidenceParent
+    ?? ((workspaceRoot) => captureEvidenceParentIdentity(workspaceRoot, evidencePath.relativePath))
   const captureGit = options.captureGit ?? captureGitIdentity
   const writeArtifact = options.writeArtifact ?? writeAndRereadCiReverificationArtifact
   const commandTimeoutMs = options.commandTimeoutMs ?? 120_000

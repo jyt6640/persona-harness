@@ -1,6 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import { walkBoundedFiles } from "../io/bounded-path-walker.js"
 export type JavaRoleReadCoverageFinding = "PASS" | "WARN"
 
 export type JavaRoleReadCoverageSummary = {
@@ -24,7 +26,6 @@ type JavaRoleFile = {
   readonly role: JavaGeneratedRole
 }
 
-const EVIDENCE_DIR = ".persona/evidence"
 const JAVA_MAIN_DIR = join("src", "main", "java")
 const ACTIONABLE_INJECTION_PATTERN = /"injectedInto"\s*:\s*"(?:tool-output|model-input)"/
 const ANY_INJECTION_PATTERN = /"injectedInto"\s*:/
@@ -87,29 +88,24 @@ function collectJavaRoleFiles(projectDir: string): readonly JavaRoleFile[] {
   return files
 }
 
-function collectEvidenceTexts(projectDir: string): readonly string[] {
-  const evidenceDir = join(projectDir, EVIDENCE_DIR)
-  const texts: string[] = []
-
-  function visit(dirPath: string): void {
-    if (!existsSync(dirPath)) {
-      return
-    }
-    for (const entry of readdirSync(dirPath)) {
-      const entryPath = join(dirPath, entry)
-      const stat = statSync(entryPath)
-      if (stat.isDirectory()) {
-        visit(entryPath)
-        continue
-      }
-      if (stat.isFile() && entry.toLowerCase().endsWith(".json")) {
-        texts.push(normalizePath(readFileSync(entryPath, "utf8")))
-      }
-    }
+function collectEvidenceTexts(projectDir: string): { readonly safe: boolean; readonly texts: readonly string[] } {
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return { safe: false, texts: [] }
   }
-
-  visit(evidenceDir)
-  return texts
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) {
+    return { safe: false, texts: [] }
+  }
+  const walked = walkBoundedFiles(evidencePath.path, projectDir, {
+    displayRoot: evidencePath.relativePath || configResult.config.evidenceDir,
+    extensions: [".json"],
+    includeText: true,
+  })
+  return {
+    safe: walked.safe,
+    texts: walked.files.flatMap((file) => file.text === undefined ? [] : [normalizePath(file.text)]),
+  }
 }
 
 function evidenceRolesFor(role: JavaGeneratedRole): readonly string[] {
@@ -162,7 +158,15 @@ export function readJavaRoleReadCoverage(projectDir: string, implementationStatu
     }
   }
 
-  const evidenceTexts = collectEvidenceTexts(projectDir)
+  const evidenceTextsResult = collectEvidenceTexts(projectDir)
+  if (!evidenceTextsResult.safe) {
+    return {
+      javaRoleReadCoverage: "configured evidence traversal is unsafe; read-only recovery is required",
+      javaRoleReadCoverageBlocking: true,
+      javaRoleReadCoverageFinding: "WARN",
+    }
+  }
+  const evidenceTexts = evidenceTextsResult.texts
   const missingFiles = javaFiles.filter((file) => !hasRoleReadEvidence(file, evidenceTexts))
   if (missingFiles.length === 0) {
     return {

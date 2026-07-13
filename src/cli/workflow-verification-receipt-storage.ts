@@ -1,10 +1,13 @@
-import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs"
-import { join, relative } from "node:path"
+import { join } from "node:path"
 
 import {
   type ReceiptDiagnostic,
   type LegacyEvidenceSummary,
 } from "./workflow-verification-receipt-types.js"
+import {
+  walkBoundedFiles,
+  type PathSafetyDiagnostic,
+} from "../io/bounded-path-walker.js"
 
 export type ParsedFile<T> = {
   readonly path: string
@@ -22,90 +25,86 @@ export function readJsonDirectory<T>(
   relativeDir: string,
   parser: (text: string, path: string) => { readonly ok: true; readonly value: T } | { readonly ok: false; readonly diagnostics: readonly ReceiptDiagnostic[] },
 ): DirectoryRead<T> {
-  const directory = join(projectDir, relativeDir)
-  if (!existsSync(directory)) {
+  return readJsonDirectoryAt(projectDir, join(projectDir, relativeDir), relativeDir, parser)
+}
+
+export function readJsonDirectoryAt<T>(
+  projectDir: string,
+  directory: string,
+  displayDirectory: string,
+  parser: (text: string, path: string) => { readonly ok: true; readonly value: T } | { readonly ok: false; readonly diagnostics: readonly ReceiptDiagnostic[] },
+): DirectoryRead<T> {
+  const walked = walkBoundedFiles(directory, projectDir, {
+    displayRoot: displayDirectory,
+    includeText: true,
+    maxDepth: 1,
+  })
+  if (!walked.present) {
     return { diagnostics: [], files: [], present: false }
   }
-  try {
-    const rootStat = lstatSync(directory)
-    if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) {
-      return {
-        diagnostics: [{
-          code: "receipt-directory-invalid",
-          message: "Receipt and attempt directories must be real directories.",
-          path: relativeDir,
-        }],
-        files: [],
-        present: true,
-      }
+  const diagnostics = walked.diagnostics.map(receiptDiagnosticForPathSafety)
+  const files: ParsedFile<T>[] = []
+  for (const file of walked.files) {
+    const entryRef = `${displayDirectory}/${file.relativePath}`
+    if (file.relativePath.includes("/") || !file.relativePath.endsWith(".json")) {
+      diagnostics.push({
+        code: "receipt-entry-invalid",
+        message: "Receipt and attempt directories may contain only regular JSON files.",
+        path: entryRef,
+      })
+      continue
     }
-    const diagnostics: ReceiptDiagnostic[] = []
-    const files: ParsedFile<T>[] = []
-    for (const entry of readdirSync(directory).sort()) {
-      const entryPath = join(directory, entry)
-      const entryRef = `${relativeDir}/${entry}`
-      let entryStat: ReturnType<typeof lstatSync>
-      try {
-        entryStat = lstatSync(entryPath)
-      } catch (error) {
-        diagnostics.push({
-          code: "receipt-read-failed",
-          message: error instanceof Error ? error.message : "Receipt or attempt entry could not be inspected.",
-          path: entryRef,
-        })
-        continue
-      }
-      if (!entry.endsWith(".json") || !entryStat.isFile() || entryStat.isSymbolicLink()) {
-        diagnostics.push({
-          code: "receipt-entry-invalid",
-          message: "Receipt and attempt directories may contain only regular JSON files.",
-          path: entryRef,
-        })
-        continue
-      }
-      try {
-        const result = parser(readFileSync(entryPath, "utf8"), entryRef)
-        files.push({ path: entryRef, result })
-        if (!result.ok) diagnostics.push(...result.diagnostics)
-      } catch (error) {
-        diagnostics.push({
-          code: "receipt-read-failed",
-          message: error instanceof Error ? error.message : "Receipt or attempt could not be read.",
-          path: entryRef,
-        })
-      }
-    }
-    return { diagnostics, files, present: true }
-  } catch (error) {
-    return {
-      diagnostics: [{
+    if (file.text === undefined) {
+      diagnostics.push({
         code: "receipt-read-failed",
-        message: error instanceof Error ? error.message : "Receipt or attempt directory could not be read.",
-        path: relativeDir,
-      }],
-      files: [],
-      present: true,
+        message: "Receipt or attempt entry could not be read as bounded text.",
+        path: entryRef,
+      })
+      continue
     }
+    try {
+      const result = parser(file.text, entryRef)
+      files.push({ path: entryRef, result })
+      if (!result.ok) diagnostics.push(...result.diagnostics)
+    } catch {
+      diagnostics.push({
+        code: "receipt-read-failed",
+        message: "Receipt or attempt entry could not be parsed safely.",
+        path: entryRef,
+      })
+    }
+  }
+  return { diagnostics, files, present: true }
+}
+
+function receiptDiagnosticForPathSafety(diagnostic: PathSafetyDiagnostic): ReceiptDiagnostic {
+  return {
+    code: diagnostic.code === "walker.root_invalid" ? "receipt-directory-invalid" : "receipt-read-failed",
+    message: diagnostic.message,
+    path: diagnostic.path,
   }
 }
 
-export function readLegacyEvidence(projectDir: string): LegacyEvidenceSummary {
-  const root = join(projectDir, ".persona/evidence")
-  if (!existsSync(root)) {
+export function readLegacyEvidence(
+  projectDir: string,
+  root = join(projectDir, ".persona/evidence"),
+  displayRoot = ".persona/evidence",
+): LegacyEvidenceSummary {
+  const walked = walkBoundedFiles(root, projectDir, {
+    displayRoot,
+    includeText: false,
+    skipDirectoryNames: ["verification-receipts", "verification-attempts"],
+  })
+  if (!walked.present) {
     return { diagnosticOnly: true, files: [] }
   }
-  try {
-    const files = listLegacyFiles(root)
-    return {
-      diagnosticOnly: true,
-      files: files.map((file) => relative(projectDir, file).replace(/\\/g, "/")).sort(),
-    }
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : "unknown read error"
-    return {
-      diagnosticOnly: true,
-      files: [`.persona/evidence (unreadable: ${detail}; retained as diagnostic-only)`],
-    }
+  return {
+    diagnosticOnly: true,
+    diagnostics: walked.diagnostics.map(receiptDiagnosticForPathSafety),
+    files: walked.files
+      .map((file) => `${displayRoot}/${file.relativePath}`)
+      .concat(walked.safe ? [] : [`${displayRoot} (unsafe traversal; retained as diagnostic-only)`])
+      .sort(),
   }
 }
 
@@ -117,23 +116,4 @@ export function legacyDiagnostic(legacyEvidence: LegacyEvidenceSummary): Receipt
       : "Legacy evidence remains diagnostic-only and cannot migrate into authority.",
     path: ".persona/evidence",
   }
-}
-
-function listLegacyFiles(directory: string): readonly string[] {
-  const files: string[] = []
-  for (const entry of readdirSync(directory).sort()) {
-    if (entry === "verification-receipts" || entry === "verification-attempts") {
-      continue
-    }
-    const entryPath = join(directory, entry)
-    const stat = lstatSync(entryPath)
-    if (stat.isSymbolicLink()) {
-      files.push(entryPath)
-    } else if (stat.isDirectory()) {
-      files.push(...listLegacyFiles(entryPath))
-    } else if (stat.isFile()) {
-      files.push(entryPath)
-    }
-  }
-  return files
 }

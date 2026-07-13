@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { loadHarnessConfig } from "../config/harness-config.js"
+import { loadHarnessConfig, loadHarnessConfigResult } from "../config/harness-config.js"
 import { runDirectClosureVerification } from "./closure-verification-runner.js"
 import {
   hasVerificationCommandMention,
@@ -22,6 +22,14 @@ const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 
 export function readClosureVerification(projectDir: string, summary: WorkflowStatusSummary): ClosureVerificationSummary {
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return {
+      evidenceRef: ".persona/harness.jsonc",
+      reason: "harness configuration is invalid; read-only recovery is required",
+      verification: "unknown",
+    }
+  }
   const config = loadHarnessConfig(projectDir)
   if (config.enforce.executeVerification) {
     return runDirectClosureVerification(projectDir)

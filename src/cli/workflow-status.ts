@@ -1,8 +1,10 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { findConventionByBlockerId } from "../config/convention-registry.js"
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import { walkBoundedFiles, type BoundedWalkResult } from "../io/bounded-path-walker.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { readWorkflowReportStatus } from "../runtime/workflow-report-status.js"
 import { readArchitectureConventions, type ArchitectureConventionBlocker, type ArchitectureConventionSummary } from "./architecture-conventions.js"
@@ -59,7 +61,6 @@ export type WorkflowStatusSummary = {
 const PLAN_PATH = ".persona/workflow/plan.md"
 const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
-const EVIDENCE_DIR = ".persona/evidence"
 const README_PATH = "README.md"
 const PROFILE_PATH = ".persona/project-profile.jsonc"
 
@@ -82,23 +83,6 @@ function readStatusLine(filePath: string): string {
   return value?.replace(/\*\*/g, "").trim() ?? "unknown"
 }
 
-function hasFileDeep(dirPath: string, predicate: (filePath: string) => boolean): boolean {
-  if (!existsSync(dirPath)) {
-    return false
-  }
-  for (const entry of readdirSync(dirPath)) {
-    const entryPath = join(dirPath, entry)
-    const stat = statSync(entryPath)
-    if (stat.isFile() && predicate(entryPath)) {
-      return true
-    }
-    if (stat.isDirectory() && hasFileDeep(entryPath, predicate)) {
-      return true
-    }
-  }
-  return false
-}
-
 function stackAlignment(projectDir: string, implementationStatus: string): StackAlignmentSummary {
   const profileState = readBackendProjectProfileState(projectDir)
   if (profileState.status !== "ready") {
@@ -111,56 +95,18 @@ function stackAlignment(projectDir: string, implementationStatus: string): Stack
   return readStackAlignment(projectDir, implementationStatus)
 }
 
-function hasFilesDeep(dirPath: string): boolean {
-  if (!existsSync(dirPath)) {
-    return false
-  }
-  for (const entry of readdirSync(dirPath)) {
-    const entryPath = join(dirPath, entry)
-    const stat = statSync(entryPath)
-    if (stat.isFile()) {
-      return true
-    }
-    if (stat.isDirectory() && hasFilesDeep(entryPath)) {
-      return true
-    }
-  }
-  return false
-}
-
 function readExistingFiles(filePaths: readonly string[]): string {
   return filePaths.filter((filePath) => existsSync(filePath)).map((filePath) => readFileSync(filePath, "utf8")).join("\n")
 }
 
-function hasEvidenceTargetDeep(dirPath: string, targetPattern: RegExp): boolean {
-  if (!existsSync(dirPath)) {
-    return false
-  }
-  for (const entry of readdirSync(dirPath)) {
-    const entryPath = join(dirPath, entry)
-    const stat = statSync(entryPath)
-    if (stat.isDirectory()) {
-      if (hasEvidenceTargetDeep(entryPath, targetPattern)) {
-        return true
-      }
-      continue
-    }
-    if (!stat.isFile()) {
-      continue
-    }
-    const lowerEntry = entry.toLowerCase()
-    if (targetPattern.test(lowerEntry)) {
-      return true
-    }
-    if (!lowerEntry.endsWith(".json")) {
-      continue
-    }
-    const evidenceText = readFileSync(entryPath, "utf8")
-    if (targetPattern.test(evidenceText)) {
-      return true
-    }
-  }
-  return false
+function hasEvidenceTarget(
+  evidence: BoundedWalkResult,
+  targetPattern: RegExp,
+): boolean {
+  return evidence.files.some((file) =>
+    targetPattern.test(file.relativePath.toLowerCase())
+    || (file.text !== undefined && targetPattern.test(file.text)),
+  )
 }
 
 const RAW_SHELL_PATTERN = /raw shell|직접\s*썼|직접\s*사용|raw\s+command/i
@@ -226,12 +172,23 @@ function hasProjectProfileRangeCoverage(reportText: string): boolean {
   return hasRangeCoverage(reportText, PROFILE_RANGES_FIELD_PATTERN, PROFILE_RANGES_HEADING_PATTERN, PROFILE_COVERAGE_STOP_PATTERN)
 }
 
-function readCoverage(projectDir: string, implementationStatus: string): ReadCoverageSummary {
+function readCoverage(
+  projectDir: string,
+  implementationStatus: string,
+  evidence: BoundedWalkResult,
+): ReadCoverageSummary {
   if (implementationStatus !== "filled") {
     return {
       readCoverage: "not checked until implementation report is filled",
       readCoverageBlocking: false,
       readCoverageFinding: "PASS",
+    }
+  }
+  if (!evidence.safe) {
+    return {
+      readCoverage: "configured evidence traversal is unsafe; read-only recovery is required",
+      readCoverageBlocking: true,
+      readCoverageFinding: "WARN",
     }
   }
   if (!existsSync(join(projectDir, README_PATH))) {
@@ -251,7 +208,7 @@ function readCoverage(projectDir: string, implementationStatus: string): ReadCov
       readCoverageFinding: "PASS",
     }
   }
-  if (hasEvidenceTargetDeep(join(projectDir, EVIDENCE_DIR), /["/\\]README\.md["/\\]?|README\.md/i)) {
+  if (hasEvidenceTarget(evidence, /["/\\]README\.md["/\\]?|README\.md/i)) {
     return {
       readCoverage: "README read evidence observed",
       readCoverageBlocking: false,
@@ -265,12 +222,23 @@ function readCoverage(projectDir: string, implementationStatus: string): ReadCov
   }
 }
 
-function profileReadCoverage(projectDir: string, implementationStatus: string): ProfileReadCoverageSummary {
+function profileReadCoverage(
+  projectDir: string,
+  implementationStatus: string,
+  evidence: BoundedWalkResult,
+): ProfileReadCoverageSummary {
   if (implementationStatus !== "filled") {
     return {
       profileReadCoverage: "not checked until implementation report is filled",
       profileReadCoverageBlocking: false,
       profileReadCoverageFinding: "PASS",
+    }
+  }
+  if (!evidence.safe) {
+    return {
+      profileReadCoverage: "configured evidence traversal is unsafe; read-only recovery is required",
+      profileReadCoverageBlocking: true,
+      profileReadCoverageFinding: "WARN",
     }
   }
   const profileState = readBackendProjectProfileState(projectDir)
@@ -291,7 +259,7 @@ function profileReadCoverage(projectDir: string, implementationStatus: string): 
       profileReadCoverageFinding: "PASS",
     }
   }
-  if (hasEvidenceTargetDeep(join(projectDir, EVIDENCE_DIR), /["/\\]project-profile\.jsonc["/\\]?|project-profile\.jsonc/i)) {
+  if (hasEvidenceTarget(evidence, /["/\\]project-profile\.jsonc["/\\]?|project-profile\.jsonc/i)) {
     return {
       profileReadCoverage: "project profile read evidence observed",
       profileReadCoverageBlocking: false,
@@ -411,15 +379,30 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
 
 export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSummary {
   const projectDir = resolve(projectDirInput ?? process.cwd())
+  const configResult = loadHarnessConfigResult(projectDir)
+  const evidencePath = configResult.safe
+    ? resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+    : undefined
+  const evidence = evidencePath?.ok === true
+    ? walkBoundedFiles(evidencePath.path, projectDir, {
+        displayRoot: evidencePath.relativePath || configResult.config.evidenceDir,
+        includeText: true,
+      })
+    : {
+        diagnostics: [],
+        files: [],
+        present: false,
+        safe: false,
+      }
   const summary = {
     projectDir,
     plan: readStatusLine(join(projectDir, PLAN_PATH)),
     implementation: readWorkflowReportStatus(projectDir, IMPLEMENTATION_REPORT_PATH),
     review: readWorkflowReportStatus(projectDir, REVIEW_REPORT_PATH),
-    evidence: hasFilesDeep(join(projectDir, EVIDENCE_DIR)) ? "present" : "missing",
+    evidence: evidence.files.length > 0 ? "present" : "missing",
   } as const
-  const coverage = readCoverage(projectDir, summary.implementation)
-  const profileCoverage = profileReadCoverage(projectDir, summary.implementation)
+  const coverage = readCoverage(projectDir, summary.implementation, evidence)
+  const profileCoverage = profileReadCoverage(projectDir, summary.implementation, evidence)
   const javaRoleCoverage: JavaRoleReadCoverageSummary = readJavaRoleReadCoverage(projectDir, summary.implementation)
   const reportCoverageSummary: WorkflowReportCoverageSummary = readWorkflowReportCoverage({
     projectDir,

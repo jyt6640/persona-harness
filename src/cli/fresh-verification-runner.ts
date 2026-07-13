@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { isAbsolute, join, relative } from "node:path"
 
+import { readBoundedTextFile } from "../io/bounded-path-walker.js"
 import { parseCiReverificationArtifact, type CiReverificationArtifact } from "./ci-reverification-artifact.js"
 import {
   runCiReverification,
@@ -129,12 +130,12 @@ function countFreshTests(projectDir: string, artifact: CiReverificationArtifact)
       diagnosticCodes.push("junit-ref-outside-workspace")
       continue
     }
-    try {
-      const source = readFileSync(target, "utf8")
-      testCount += [...source.matchAll(/<testcase\b/gu)].length
-    } catch (error) {
-      diagnosticCodes.push(error instanceof Error ? "junit-read-failed" : "junit-read-unknown")
+    const read = readBoundedTextFile(target, projectDir, ref)
+    if (!read.ok) {
+      diagnosticCodes.push("junit-read-failed")
+      continue
     }
+    testCount += [...read.text.matchAll(/<testcase\b/gu)].length
   }
   if (testCount === 0) diagnosticCodes.push("zero-test-count")
   return { diagnosticCodes: [...new Set(diagnosticCodes)].sort(), testCount }

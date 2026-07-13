@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from "node:fs"
-import { isAbsolute, join } from "node:path"
+import { join } from "node:path"
 
 import type { Phase0Scenario } from "../rules/rule-frontmatter.js"
+import {
+  resolveContainedPath,
+  type ConfiguredPathResolution,
+} from "../io/bounded-path-walker.js"
 import { DEFAULT_CONVENTION_LEVELS } from "./convention-registry.js"
 import type { ConventionLevel } from "./convention-registry.js"
 import { isRecord, stripJsonComments } from "./jsonc.js"
@@ -81,7 +85,7 @@ export type HarnessMultiAgentConfig = {
 }
 
 export type HarnessConfigDiagnostic = {
-  readonly code: "malformed_config" | "invalid_config"
+  readonly code: "malformed_config" | "invalid_config" | "unsafe_config_path" | "config_read_failed"
   readonly message: string
   readonly path: string
 }
@@ -89,6 +93,7 @@ export type HarnessConfigDiagnostic = {
 export type HarnessConfigLoadResult = {
   readonly config: HarnessConfig
   readonly diagnostics: readonly HarnessConfigDiagnostic[]
+  readonly safe: boolean
 }
 
 const DEFAULT_CONFIG: HarnessConfig = {
@@ -134,6 +139,150 @@ const DEFAULT_CONFIG: HarnessConfig = {
   evidenceMode: "metadata_only",
   enabledDomains: ["backend", "programming", "workflow"],
   scenario: "step1",
+}
+
+const INVALID_CONFIG_PATH = ".persona/.invalid-config-path"
+const FAIL_CLOSED_CONFIG: HarnessConfig = {
+  ...DEFAULT_CONFIG,
+  enabled: false,
+  rulesDir: INVALID_CONFIG_PATH,
+  evidenceDir: INVALID_CONFIG_PATH,
+  features: {
+    entrySteering: false,
+    runtimeInjection: false,
+  },
+  enforce: {
+    ...DEFAULT_CONFIG.enforce,
+    compaction: {
+      ...DEFAULT_CONFIG.enforce.compaction,
+      enabled: false,
+    },
+    executeVerification: false,
+    idleContinuation: false,
+    ralphLoop: {
+      ...DEFAULT_CONFIG.enforce.ralphLoop,
+      enabled: false,
+      toolOutputTrigger: false,
+    },
+    systemConstitution: false,
+    tdd: false,
+    writeDeny: false,
+  },
+  multiAgent: {
+    enabled: false,
+    roles: DEFAULT_MULTI_AGENT_ROLES,
+    models: {},
+  },
+  telemetry: {
+    tokenUsage: false,
+  },
+}
+
+function configDiagnostic(
+  code: HarnessConfigDiagnostic["code"],
+  message: string,
+): HarnessConfigDiagnostic {
+  return {
+    code,
+    message,
+    path: ".persona/harness.jsonc",
+  }
+}
+
+function isBooleanIfPresent(value: Record<string, unknown>, key: string): boolean {
+  return value[key] === undefined || typeof value[key] === "boolean"
+}
+
+function isNumberIfPresent(value: Record<string, unknown>, key: string): boolean {
+  return value[key] === undefined || (typeof value[key] === "number" && Number.isFinite(value[key]))
+}
+
+function isStringIfPresent(value: Record<string, unknown>, key: string): boolean {
+  return value[key] === undefined || (typeof value[key] === "string" && value[key].trim() !== "")
+}
+
+function isRecordIfPresent(value: Record<string, unknown>, key: string): boolean {
+  return value[key] === undefined || isRecord(value[key])
+}
+
+function validConfigShape(value: Record<string, unknown>): boolean {
+  if (
+    !isBooleanIfPresent(value, "enabled")
+    || !isStringIfPresent(value, "rulesDir")
+    || !isStringIfPresent(value, "evidenceDir")
+    || !isRecordIfPresent(value, "features")
+    || !isRecordIfPresent(value, "enforce")
+    || !isRecordIfPresent(value, "telemetry")
+    || !isRecordIfPresent(value, "multiAgent")
+    || !isRecordIfPresent(value, "conventions")
+    || (value.enabledDomains !== undefined
+      && (!Array.isArray(value.enabledDomains)
+        || value.enabledDomains.some((item) => typeof item !== "string" || item.trim() === "")))
+    || !isNumberIfPresent(value, "maxRulesPerInjection")
+    || (typeof value.maxRulesPerInjection === "number" && (!Number.isInteger(value.maxRulesPerInjection) || value.maxRulesPerInjection <= 0))
+    || (value.evidenceMode !== undefined && value.evidenceMode !== "metadata_only")
+    || (value.scenario !== undefined && value.scenario !== "step1" && value.scenario !== "step2-3")
+  ) {
+    return false
+  }
+
+  if (isRecord(value.conventions)
+    && Object.values(value.conventions).some((level) => level !== "block" && level !== "report" && level !== "warn")) {
+    return false
+  }
+
+  if (isRecord(value.features)) {
+    if (!isBooleanIfPresent(value.features, "entrySteering") || !isBooleanIfPresent(value.features, "runtimeInjection")) {
+      return false
+    }
+  }
+
+  if (isRecord(value.telemetry) && !isBooleanIfPresent(value.telemetry, "tokenUsage")) {
+    return false
+  }
+
+  if (isRecord(value.multiAgent)) {
+    if (!isBooleanIfPresent(value.multiAgent, "enabled")
+      || (value.multiAgent.roles !== undefined
+        && (!Array.isArray(value.multiAgent.roles)
+          || value.multiAgent.roles.some((role) => typeof role !== "string")))
+      || (value.multiAgent.models !== undefined && !isRecord(value.multiAgent.models))
+      || (isRecord(value.multiAgent.models)
+        && Object.values(value.multiAgent.models).some((model) => typeof model !== "string" || model.trim() === ""))) {
+      return false
+    }
+  }
+
+  if (!isRecord(value.enforce)) {
+    return true
+  }
+  const enforce = value.enforce
+  if (
+    !isBooleanIfPresent(enforce, "executeVerification")
+    || !isBooleanIfPresent(enforce, "idleContinuation")
+    || !isBooleanIfPresent(enforce, "systemConstitution")
+    || !isBooleanIfPresent(enforce, "tdd")
+    || !isBooleanIfPresent(enforce, "writeDeny")
+    || !isRecordIfPresent(enforce, "compaction")
+    || !isRecordIfPresent(enforce, "ralphLoop")
+  ) {
+    return false
+  }
+  if (isRecord(enforce.compaction)
+    && (!isBooleanIfPresent(enforce.compaction, "enabled")
+      || !isNumberIfPresent(enforce.compaction, "cooldownMs")
+      || !isNumberIfPresent(enforce.compaction, "threshold"))) {
+    return false
+  }
+  if (isRecord(enforce.ralphLoop)
+    && (!isBooleanIfPresent(enforce.ralphLoop, "enabled")
+      || !isBooleanIfPresent(enforce.ralphLoop, "toolOutputTrigger")
+      || !isNumberIfPresent(enforce.ralphLoop, "cooldownMs")
+      || !isNumberIfPresent(enforce.ralphLoop, "maxAttempts")
+      || !isNumberIfPresent(enforce.ralphLoop, "maxSessionAttempts"))) {
+    return false
+  }
+  return true
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {
@@ -314,8 +463,13 @@ function readConventionLevels(value: unknown): Readonly<Record<string, Conventio
   return levels
 }
 
+export function resolveConfiguredPathResult(projectDir: string, configuredPath: string): ConfiguredPathResolution {
+  return resolveContainedPath(projectDir, configuredPath)
+}
+
 export function resolveConfiguredPath(projectDir: string, configuredPath: string): string {
-  return isAbsolute(configuredPath) ? configuredPath : join(projectDir, configuredPath)
+  const result = resolveConfiguredPathResult(projectDir, configuredPath)
+  return result.ok ? result.path : join(projectDir, INVALID_CONFIG_PATH)
 }
 
 export function loadHarnessConfig(projectDir: string): HarnessConfig {
@@ -329,56 +483,78 @@ export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
 export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadResult {
   const harnessPath = join(projectDir, ".persona", "harness.jsonc")
   if (!existsSync(harnessPath)) {
-    return { config: DEFAULT_CONFIG, diagnostics: [] }
+    return { config: DEFAULT_CONFIG, diagnostics: [], safe: true }
   }
 
   let parsed: unknown
   try {
     parsed = JSON.parse(stripJsonComments(readFileSync(harnessPath, "utf8")))
   } catch (error) {
-    if (error instanceof SyntaxError) {
-      return {
-        config: DEFAULT_CONFIG,
-        diagnostics: [
-          {
-            code: "malformed_config",
-            message: `Failed to parse .persona/harness.jsonc: ${error.message}`,
-            path: harnessPath,
-          },
-        ],
-      }
+    return {
+      config: FAIL_CLOSED_CONFIG,
+      diagnostics: [
+        configDiagnostic(
+          error instanceof SyntaxError ? "malformed_config" : "config_read_failed",
+          error instanceof SyntaxError
+            ? "Failed to parse .persona/harness.jsonc; read-only recovery is required."
+            : "Persona Harness configuration could not be read safely; read-only recovery is required.",
+        ),
+      ],
+      safe: false,
     }
-    throw error
   }
 
   if (!isRecord(parsed)) {
     return {
-      config: DEFAULT_CONFIG,
+      config: FAIL_CLOSED_CONFIG,
       diagnostics: [
-        {
-          code: "invalid_config",
-          message: ".persona/harness.jsonc must contain a JSON object.",
-          path: harnessPath,
-        },
+        configDiagnostic("invalid_config", ".persona/harness.jsonc must contain a JSON object; read-only recovery is required."),
       ],
+      safe: false,
     }
   }
 
-  return {
-    config: {
-      conventions: readConventionLevels(parsed.conventions),
-      enabled: readBoolean(parsed.enabled, DEFAULT_CONFIG.enabled),
-      rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
-      evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
-      features: readFeaturesConfig(parsed.features),
-      enforce: readEnforceConfig(parsed.enforce),
-      telemetry: readTelemetryConfig(parsed.telemetry),
-      multiAgent: readMultiAgentConfig(parsed.multiAgent),
-      maxRulesPerInjection: readPositiveInteger(parsed.maxRulesPerInjection, DEFAULT_CONFIG.maxRulesPerInjection),
-      evidenceMode: readEvidenceMode(parsed.evidenceMode),
-      enabledDomains: readStringArray(parsed.enabledDomains, DEFAULT_CONFIG.enabledDomains),
-      scenario: readScenario(parsed.scenario, DEFAULT_CONFIG.scenario),
-    },
-    diagnostics: [],
+  if (!validConfigShape(parsed)) {
+    return {
+      config: FAIL_CLOSED_CONFIG,
+      diagnostics: [
+        configDiagnostic("invalid_config", ".persona/harness.jsonc has an invalid field shape; read-only recovery is required."),
+      ],
+      safe: false,
+    }
   }
+
+  const config: HarnessConfig = {
+    conventions: readConventionLevels(parsed.conventions),
+    enabled: readBoolean(parsed.enabled, DEFAULT_CONFIG.enabled),
+    rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
+    evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
+    features: readFeaturesConfig(parsed.features),
+    enforce: readEnforceConfig(parsed.enforce),
+    telemetry: readTelemetryConfig(parsed.telemetry),
+    multiAgent: readMultiAgentConfig(parsed.multiAgent),
+    maxRulesPerInjection: readPositiveInteger(parsed.maxRulesPerInjection, DEFAULT_CONFIG.maxRulesPerInjection),
+    evidenceMode: readEvidenceMode(parsed.evidenceMode),
+    enabledDomains: readStringArray(parsed.enabledDomains, DEFAULT_CONFIG.enabledDomains),
+    scenario: readScenario(parsed.scenario, DEFAULT_CONFIG.scenario),
+  }
+  const pathDiagnostics = [
+    ["rulesDir", config.rulesDir],
+    ["evidenceDir", config.evidenceDir],
+  ].flatMap(([name, configuredPath]) => {
+    const resolution = resolveConfiguredPathResult(projectDir, configuredPath)
+    return resolution.ok
+      ? []
+      : [
+          configDiagnostic(
+            "unsafe_config_path",
+            `${name} is outside the project root or traverses a symlink; read-only recovery is required.`,
+          ),
+        ]
+  })
+  if (pathDiagnostics.length > 0) {
+    return { config: FAIL_CLOSED_CONFIG, diagnostics: pathDiagnostics, safe: false }
+  }
+
+  return { config, diagnostics: [], safe: true }
 }

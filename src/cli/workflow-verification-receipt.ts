@@ -16,7 +16,8 @@ import {
   parseVerificationAttempt,
   parseVerificationReceipt,
 } from "./workflow-verification-receipt-model.js"
-import { legacyDiagnostic, readJsonDirectory, readLegacyEvidence } from "./workflow-verification-receipt-storage.js"
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import { legacyDiagnostic, readJsonDirectoryAt, readLegacyEvidence } from "./workflow-verification-receipt-storage.js"
 
 export {
   VERIFICATION_ATTEMPT_DIR,
@@ -46,10 +47,54 @@ export type {
 const CLOCK_SKEW_MS = 5 * 60 * 1000
 
 export function assessVerificationAuthority(projectDir: string, now = new Date()): VerificationAuthorityAssessment {
-  const legacyEvidence = readLegacyEvidence(projectDir)
-  const receipts = readJsonDirectory(projectDir, VERIFICATION_RECEIPT_DIR, parseVerificationReceipt)
-  const attempts = readJsonDirectory(projectDir, VERIFICATION_ATTEMPT_DIR, parseVerificationAttempt)
-  const diagnostics = [...receipts.diagnostics, ...attempts.diagnostics]
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    const diagnostics: ReceiptDiagnostic[] = configResult.diagnostics.map((configDiagnostic) => ({
+      code: "receipt-read-failed",
+      message: "Harness configuration is invalid; read-only recovery is required.",
+      path: configDiagnostic.path,
+    }))
+    return assessment(
+      "malformed",
+      diagnostics,
+      { diagnosticOnly: true, diagnostics, files: [] },
+      "harness configuration is invalid; verification authority is blocked",
+    )
+  }
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) {
+    const diagnostics: ReceiptDiagnostic[] = [{
+      code: "receipt-read-failed",
+      message: "Configured evidence path is unsafe; read-only recovery is required.",
+      path: ".persona/harness.jsonc",
+    }]
+    return assessment(
+      "malformed",
+      diagnostics,
+      { diagnosticOnly: true, diagnostics, files: [] },
+      "configured evidence path is unsafe; verification authority is blocked",
+    )
+  }
+  const evidenceRoot = evidencePath.path
+  const displayEvidenceRoot = evidencePath.relativePath || configResult.config.evidenceDir
+  const legacyEvidence = readLegacyEvidence(projectDir, evidenceRoot, displayEvidenceRoot)
+  const receipts = readJsonDirectoryAt(
+    projectDir,
+    `${evidenceRoot}/${VERIFICATION_RECEIPT_DIR.split("/").at(-1)}`,
+    `${displayEvidenceRoot}/${VERIFICATION_RECEIPT_DIR.split("/").at(-1)}`,
+    parseVerificationReceipt,
+  )
+  const attempts = readJsonDirectoryAt(
+    projectDir,
+    `${evidenceRoot}/${VERIFICATION_ATTEMPT_DIR.split("/").at(-1)}`,
+    `${displayEvidenceRoot}/${VERIFICATION_ATTEMPT_DIR.split("/").at(-1)}`,
+    parseVerificationAttempt,
+  )
+  const diagnostics = [
+    ...(legacyEvidence.diagnostics ?? []),
+    ...receipts.diagnostics,
+    ...attempts.diagnostics,
+  ]
   const parsedReceipts = receipts.files.flatMap((file) => (file.result.ok ? [file.result.value] : []))
   const parsedAttempts = attempts.files.flatMap((file) => (file.result.ok ? [file.result.value] : []))
 

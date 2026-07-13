@@ -2,6 +2,9 @@ import { resolve } from "node:path"
 import process from "node:process"
 
 import { findConventionByBlockerId } from "../config/convention-registry.js"
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import { inspectRuleCatalogPaths } from "../rules/rule-catalog.js"
 import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventions.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
@@ -123,10 +126,48 @@ function readWorkflowClosureState(projectDir: string, options: { readonly record
     verification: verification.verification,
   }
   const legacyBlockers = closureBlockers(partialState, verification, summary)
+  const configResult = loadHarnessConfigResult(projectDir)
+  const configBlockers: readonly ClosureBlocker[] = configResult.safe
+    ? []
+    : [{
+        id: "harness-config-invalid",
+        reason: "harness.jsonc is malformed, corrupt, or unsafe; read-only recovery is required before continuing.",
+        source: ".persona/harness.jsonc",
+      }]
+  const rulesPathSafety = configResult.safe ? inspectRuleCatalogPaths(projectDir) : undefined
+  const evidencePathSafety = configResult.safe
+    ? resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+    : undefined
+  const evidenceTraversal = evidencePathSafety?.ok === true
+    ? walkBoundedFiles(evidencePathSafety.path, projectDir, {
+        displayRoot: evidencePathSafety.relativePath || configResult.config.evidenceDir,
+        includeText: false,
+      })
+    : undefined
+  const pathBlockers: readonly ClosureBlocker[] =
+    configBlockers.length > 0
+      ? []
+      : rulesPathSafety !== undefined && !rulesPathSafety.safe
+        ? [{
+            id: "rules-path-unsafe",
+            reason: "configured rules traversal is unsafe or exceeds bounded no-follow limits; read-only recovery is required before continuing.",
+            source: configResult.config.rulesDir,
+          }]
+        : evidenceTraversal !== undefined && !evidenceTraversal.safe
+          ? [{
+              id: "evidence-path-unsafe",
+              reason: "configured evidence traversal is unsafe or exceeds bounded no-follow limits; read-only recovery is required before continuing.",
+              source: configResult.config.evidenceDir,
+            }]
+          : []
   const authority = readWorkflowFinishAuthority(projectDir)
-  const blockers = legacyBlockers.length === 0 && authority.status === "blocked"
-    ? [authority.blocker]
-    : legacyBlockers
+  const blockers = configBlockers.length > 0
+    ? configBlockers
+    : pathBlockers.length > 0
+      ? pathBlockers
+      : legacyBlockers.length === 0 && authority.status === "blocked"
+        ? [authority.blocker]
+        : legacyBlockers
   const finish: ClosureFinish = blockers.length === 0 ? "passed" : "blocked"
   const state = { ...partialState, finish }
   return { ...state, blockers }
@@ -261,6 +302,36 @@ export function isUnmappedBlockerStep(step: ClosureStep | null | undefined): boo
 }
 
 export function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState, status: ClosureStepStatus): ClosureStep {
+  if (blocker.id === "harness-config-invalid") {
+    return {
+      blockerId: blocker.id,
+      id: "repair-harness-config",
+      kind: "human-or-model-content",
+      reason: blocker.reason,
+      source: blocker.source,
+      status,
+    }
+  }
+  if (blocker.id === "rules-path-unsafe") {
+    return {
+      blockerId: blocker.id,
+      id: "repair-rules-path",
+      kind: "human-or-model-content",
+      reason: blocker.reason,
+      source: blocker.source,
+      status,
+    }
+  }
+  if (blocker.id === "evidence-path-unsafe") {
+    return {
+      blockerId: blocker.id,
+      id: "repair-evidence-path",
+      kind: "human-or-model-content",
+      reason: blocker.reason,
+      source: blocker.source,
+      status,
+    }
+  }
   if (blocker.id === "plan-not-accepted") {
     return { blockerId: blocker.id, command: state.plan === "missing" ? "npx ph plan" : "npx ph plan --accept", id: "accept-plan", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
   }

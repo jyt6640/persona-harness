@@ -1,7 +1,8 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 import { isRecord } from "../config/jsonc.js"
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import { walkBoundedFiles } from "../io/bounded-path-walker.js"
 import type { ClosureVerification } from "./workflow-closure-verification.js"
 
 export type ExecutionEvidenceVerification = {
@@ -11,7 +12,6 @@ export type ExecutionEvidenceVerification = {
   readonly verification: Exclude<ClosureVerification, "not-run">
 }
 
-const EVIDENCE_DIR = ".persona/evidence"
 const JUNIT_RESULT_DIRS = ["build/test-results/test", "target/surefire-reports"] as const
 const SUCCESS_PATTERNS = [
   /BUILD SUCCESSFUL/i,
@@ -38,14 +38,43 @@ export function hasVerificationSuccessText(text: string): boolean {
 }
 
 export function readExecutionEvidenceVerification(projectDir: string): ExecutionEvidenceVerification {
-  const entries = readEvidenceEntries(join(projectDir, EVIDENCE_DIR), EVIDENCE_DIR)
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return {
+      evidenceRef: ".persona/harness.jsonc",
+      observed: true,
+      reason: "harness configuration is invalid; read-only recovery is required",
+      verification: "unknown",
+    }
+  }
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) {
+    return {
+      evidenceRef: ".persona/harness.jsonc",
+      observed: true,
+      reason: "configured evidence path is unsafe; read-only recovery is required",
+      verification: "unknown",
+    }
+  }
+  const evidenceRoot = evidencePath.path
+  const evidenceRef = evidencePath.relativePath || configResult.config.evidenceDir
+  const evidenceRead = readEvidenceEntries(evidenceRoot, evidenceRef, projectDir)
+  if (!evidenceRead.safe) {
+    return {
+      evidenceRef,
+      observed: true,
+      reason: "configured evidence traversal is unsafe or exceeds bounded limits; read-only recovery is required",
+      verification: "unknown",
+    }
+  }
+  const entries = evidenceRead.entries
   const evidenceText = entries.map((entry) => entry.text).join("\n")
   const junit = junitVerification(projectDir)
   if (junit.verification !== "unknown") {
     return junit
   }
   if (FAILURE_PATTERNS.some((pattern) => pattern.test(evidenceText))) {
-    return { evidenceRef: entries[0]?.ref ?? EVIDENCE_DIR, observed: true, reason: "explicit verification failure evidence observed", verification: "failed" }
+    return { evidenceRef: entries[0]?.ref ?? evidenceRef, observed: true, reason: "explicit verification failure evidence observed", verification: "failed" }
   }
   const structured = structuredExecutionVerification(entries)
   if (structured.verification !== "unknown") {
@@ -55,9 +84,9 @@ export function readExecutionEvidenceVerification(projectDir: string): Execution
     return { observed: false, reason: "no structured execution evidence observed", verification: "unknown" }
   }
   if (COMMAND_MENTION_PATTERN.test(evidenceText)) {
-    return { evidenceRef: EVIDENCE_DIR, observed: true, reason: "verification commands mentioned without structured success/failure evidence", verification: "unknown" }
+    return { evidenceRef, observed: true, reason: "verification commands mentioned without structured success/failure evidence", verification: "unknown" }
   }
-  return { evidenceRef: EVIDENCE_DIR, observed: true, reason: "verification evidence is present but inconclusive", verification: "unknown" }
+  return { evidenceRef, observed: true, reason: "verification evidence is present but inconclusive", verification: "unknown" }
 }
 
 type EvidenceEntry = {
@@ -66,30 +95,26 @@ type EvidenceEntry = {
   readonly text: string
 }
 
-function readEvidenceEntries(dirPath: string, refPath: string): readonly EvidenceEntry[] {
-  if (!existsSync(dirPath)) {
-    return []
-  }
-  return readdirSync(dirPath)
-    .sort()
-    .flatMap((entry) => {
-      const entryPath = join(dirPath, entry)
-      const entryRef = `${refPath}/${entry}`
-      const stat = statSync(entryPath)
-      if (stat.isDirectory()) {
-        return readEvidenceEntries(entryPath, entryRef)
-      }
-      if (!stat.isFile()) {
-        return []
-      }
-      const text = readFileSync(entryPath, "utf8")
-      const parsed = parseJson(text)
-      if (isCiReverificationArtifact(parsed)) {
-        return []
-      }
-      return [{ parsed, ref: entryRef, text }]
-    })
-    .filter((entry) => entry.text.length > 0)
+function readEvidenceEntries(
+  dirPath: string,
+  refPath: string,
+  projectDir: string,
+): { readonly entries: readonly EvidenceEntry[]; readonly safe: boolean } {
+  const walked = walkBoundedFiles(dirPath, projectDir, {
+    displayRoot: refPath,
+    includeText: true,
+  })
+  const entries = walked.files.flatMap((file) => {
+    if (file.text === undefined || file.text.length === 0) {
+      return []
+    }
+    const parsed = parseJson(file.text)
+    if (isCiReverificationArtifact(parsed)) {
+      return []
+    }
+    return [{ parsed, ref: `${refPath}/${file.relativePath}`, text: file.text }]
+  })
+  return { entries, safe: walked.safe }
 }
 
 function isCiReverificationArtifact(value: unknown): boolean {
@@ -183,12 +208,35 @@ function valueText(value: unknown): string {
 }
 
 function junitVerification(projectDir: string): ExecutionEvidenceVerification {
-  const files = JUNIT_RESULT_DIRS.flatMap((dir) => junitFiles(join(projectDir, dir), dir))
+  const walked = JUNIT_RESULT_DIRS.map((dir) =>
+    walkBoundedFiles(join(projectDir, dir), projectDir, {
+      displayRoot: dir,
+      extensions: [".xml"],
+      includeText: true,
+    }),
+  )
+  if (walked.some((result) => !result.safe)) {
+    return {
+      evidenceRef: JUNIT_RESULT_DIRS[0],
+      observed: true,
+      reason: "JUnit verification traversal is unsafe or exceeds bounded limits; read-only recovery is required",
+      verification: "unknown",
+    }
+  }
+  const files = walked.flatMap((result, index) => {
+    const root = JUNIT_RESULT_DIRS[index]
+    if (root === undefined) {
+      return []
+    }
+    return result.files.flatMap((file) => file.text === undefined
+      ? []
+      : [{ ref: `${root}/${file.relativePath}`, text: file.text }])
+  })
   if (files.length === 0) {
     return { observed: false, reason: "no JUnit XML verification evidence observed", verification: "unknown" }
   }
   const totals = files
-    .map((file) => parseJUnitXml(readFileSync(join(projectDir, file), "utf8")))
+    .map((file) => parseJUnitXml(file.text))
     .reduce(
       (total, next) => ({
         errors: total.errors + next.errors,
@@ -197,7 +245,7 @@ function junitVerification(projectDir: string): ExecutionEvidenceVerification {
       }),
       { errors: 0, failures: 0, tests: 0 },
     )
-  const evidenceRef = files[0]
+  const evidenceRef = files[0]?.ref
   if (totals.errors > 0 || totals.failures > 0) {
     return { evidenceRef, observed: true, reason: `JUnit XML verification failures observed (${totals.failures} failures, ${totals.errors} errors)`, verification: "failed" }
   }
@@ -205,23 +253,6 @@ function junitVerification(projectDir: string): ExecutionEvidenceVerification {
     return { evidenceRef, observed: true, reason: `JUnit XML verification success evidence observed (${totals.tests} tests)`, verification: "passed" }
   }
   return { evidenceRef, observed: true, reason: "JUnit XML verification evidence is present but contains no tests", verification: "unknown" }
-}
-
-function junitFiles(dirPath: string, refPath: string): readonly string[] {
-  if (!existsSync(dirPath)) {
-    return []
-  }
-  return readdirSync(dirPath)
-    .sort()
-    .flatMap((entry) => {
-      const entryPath = join(dirPath, entry)
-      const entryRef = `${refPath}/${entry}`
-      const stat = statSync(entryPath)
-      if (stat.isDirectory()) {
-        return junitFiles(entryPath, entryRef)
-      }
-      return stat.isFile() && entry.endsWith(".xml") ? [entryRef] : []
-    })
 }
 
 type JunitTotals = {

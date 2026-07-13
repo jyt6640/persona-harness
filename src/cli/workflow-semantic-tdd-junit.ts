@@ -1,5 +1,6 @@
-import { lstatSync, readFileSync } from "node:fs"
 import { isAbsolute, relative, resolve } from "node:path"
+
+import { readBoundedTextFile } from "../io/bounded-path-walker.js"
 
 export type SemanticJUnitTestcase = {
   readonly evidence: string
@@ -35,19 +36,15 @@ export function readSemanticJUnitEvidence(projectDir: string, refs: readonly str
       failures.push(`junit-path-invalid:${ref}`)
       continue
     }
-    try {
-      const stat = lstatSync(target)
-      if (!stat.isFile() || stat.isSymbolicLink()) {
-        failures.push(`junit-path-invalid:${ref}`)
-        continue
-      }
-      const parsed = parseJUnitXml(readFileSync(target, "utf8"))
-      testCount += parsed.testCount
-      failureCases.push(...parsed.failureCases)
-      passingCases.push(...parsed.passingCases)
-    } catch (error) {
-      failures.push(`junit-read-failed:${ref}:${error instanceof Error ? error.message : "unknown"}`)
+    const read = readBoundedTextFile(target, projectDir, ref)
+    if (!read.ok) {
+      failures.push(`junit-read-failed:${ref}`)
+      continue
     }
+    const parsed = parseJUnitXml(read.text)
+    testCount += parsed.testCount
+    failureCases.push(...parsed.failureCases)
+    passingCases.push(...parsed.passingCases)
   }
 
   const identities = [...failureCases, ...passingCases].map((testcase) => testcase.identity)

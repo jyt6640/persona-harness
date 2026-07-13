@@ -2,9 +2,10 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import type { FileRole } from "../runtime/types.js"
-import { loadHarnessConfig, resolveConfiguredPath } from "../config/harness-config.js"
+import { loadHarnessConfigResult, resolveConfiguredPath } from "../config/harness-config.js"
 import {
   isRuleEligibleForTarget,
+  inspectRuleCatalogPaths,
   loadRuleCatalog,
   targetPathForMatching,
   type Phase0Scenario,
@@ -144,7 +145,14 @@ export function loadRulesForRole(
   targetFile?: string,
   deliveryRole: RuleDeliveryRole = "main",
 ): LoadedRule[] {
-  const config = loadHarnessConfig(projectDir)
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) {
+    return []
+  }
+  const config = configResult.config
+  if (!inspectRuleCatalogPaths(projectDir).safe) {
+    return []
+  }
   const scenario = config.scenario
   const catalog = new Map(loadRuleCatalog(projectDir).map((entry) => [entry.path, entry]))
   const rulesDir = resolveConfiguredPath(projectDir, config.rulesDir)
