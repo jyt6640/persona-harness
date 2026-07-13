@@ -1,14 +1,23 @@
 name: Bug report
 description: Something in the ph CLI, workflow rail, gate, or OpenCode plugin behaves incorrectly.
-title: "[bug]: "
+title: "Bug: <affected command or behavior>"
 labels:
   - bug
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the report. Persona Harness judges behavior by **exit codes and
-        files on disk**, so please give commands and outputs, not impressions.
+        Report the concrete behavior that failed. Persona Harness is evaluated by
+        commands, exit codes, and files on disk, so redact secrets and include
+        the smallest reproducible evidence.
+  - type: input
+    id: surface
+    attributes:
+      label: Affected surface
+      description: Command, workflow, package path, or OpenCode integration that failed.
+      placeholder: "ph workflow finish implement"
+    validations:
+      required: true
   - type: input
     id: version
     attributes:
@@ -31,8 +40,8 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: Expected vs actual
-      description: What exit code / file / blocker did you expect, and what happened instead?
+      label: Expected and actual behavior
+      description: Include the expected and actual exit code, file state, blocker, or output.
     validations:
       required: true
   - type: textarea

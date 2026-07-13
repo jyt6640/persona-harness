@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "p3-7-ph-init-lock.2",
+  "lockId": "p3-7-ph-init-safe-upgrade-lock.v2",
+  "corpusSchemaVersion": "p3-7-ph-init-safe-upgrade.2",
+  "canonicalBase": {
+    "label": "P3-7 canonical main",
+    "commit": "37bc06726970f170edac3a887447ae1182302be7",
+    "parent": "c03b81db09e31d36f1873459891886ae13771409"
+  },
+  "baseCorpusSha256": "dc52b9ffa4def89c0ffea510d8ef09a028b643552c07c1014c3d5e8984bed920",
+  "baseLockSha256": "6c0e411eec338a620376145e40bc441baaba7b4899a4b6f8c88ac0cc6b279fb3",
+  "corpusSha256": "c25b76585526c9c9c976945a3fb20e45c29c62eec4aaec6b194c5f8f903b318d",
+  "fixtureRegistrySha256": "a1d03979d86d420a43c8a03b2647fe340e99ccbced1cccfda9082fa064fe8058",
+  "fixtureExtensionSha256": "17f92b060ca23c682970dba7ca4aa1b91e8112df7ac2d706aabe6efdc8d13027",
+  "recordOrder": [
+    "p3-7-r01-ownership-marker",
+    "p3-7-r02-idempotent-owned-rerun",
+    "p3-7-r03-safe-owned-upgrade",
+    "p3-7-r04-modified-config-conflict",
+    "p3-7-r05-modified-rules-conflict",
+    "p3-7-r06-modified-agents-conflict",
+    "p3-7-r07-foreign-file-preservation",
+    "p3-7-r08-rollback-write-failure",
+    "p3-7-r09-symlink-escape",
+    "p3-7-r10-partial-initialization",
+    "p3-7-r11-concurrent-race",
+    "p3-7-r12-deterministic-dry-run",
+    "p3-7-r13-binding-mismatch",
+    "p3-7-r14-missing-ownership-marker",
+    "p3-7-r15-new-profile-binding"
+  ],
+  "baseRecordOrder": [
+    "p3-7-r01-ownership-marker",
+    "p3-7-r02-idempotent-owned-rerun",
+    "p3-7-r03-safe-owned-upgrade",
+    "p3-7-r04-modified-config-conflict",
+    "p3-7-r05-modified-rules-conflict",
+    "p3-7-r06-modified-agents-conflict",
+    "p3-7-r07-foreign-file-preservation",
+    "p3-7-r08-rollback-write-failure",
+    "p3-7-r09-symlink-escape",
+    "p3-7-r10-partial-initialization",
+    "p3-7-r11-concurrent-race",
+    "p3-7-r12-deterministic-dry-run",
+    "p3-7-r13-binding-mismatch",
+    "p3-7-r14-missing-ownership-marker"
+  ],
+  "addedRecordIds": [
+    "p3-7-r15-new-profile-binding"
+  ],
+  "extensionFixture": {
+    "id": "p3-7-r15-new-profile-binding",
+    "sha256": "807c95f3656d261b55a83e9303e307b11f7e6fa931f67bf22f430a556de5bceb"
+  },
+  "boundary": {
+    "reportOnly": true,
+    "sourceOnly": true,
+    "enforcement": false,
+    "fixtureDataAuthority": "none",
+    "productMitigationClaim": false,
+    "productBehaviorChange": false,
+    "packageDistribution": false,
+    "actualPhInit": false,
+    "realProjectAccess": false,
+    "childProcess": false,
+    "networkAccess": false,
+    "p2Work": false,
+    "mutationPolicy": "append-only-new-schema-new-result"
+  },
+  "dependencies": {
+    "configRecoveryAndPathSafety": "P3-6-owned",
+    "reimplementationHere": false
+  }
+}

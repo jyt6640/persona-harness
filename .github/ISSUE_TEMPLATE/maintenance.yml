@@ -1,0 +1,39 @@
+name: Maintenance / workflow improvement
+description: Propose a bounded improvement to tooling, CI, documentation, or repository operations.
+title: "Maintenance: <concrete repository change>"
+labels:
+  - maintenance
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for a specific repository improvement. Name the behavior or
+        workflow being improved rather than a phase number or broad cleanup.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What repository workflow or maintenance problem should improve?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope
+      description: Name the files, surfaces, or automation expected to change.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      description: What commands, CI checks, or manual observations will prove the work is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risks and non-goals
+      description: Note release, migration, compatibility, or security boundaries. Write "None known" when appropriate.
+    validations:
+      required: true
