@@ -26,6 +26,7 @@ import {
   samePathIdentity,
 } from "./ci-reverification-identity.js"
 import { determineCiReverificationFinalStatus, type CiReverificationFinalStatus } from "./ci-reverification-model.js"
+import { discoverJUnitResults } from "./junit-result-discovery.js"
 
 export type CiReverificationMode = "ci" | "local"
 
@@ -124,7 +125,19 @@ export function runCiReverification(
         if (result.outcome === "signal") diagnostics.push("verification-signal")
         if (result.outcome === "spawn-failure") diagnostics.push("verification-spawn-failure")
         if (result.outcome === "timeout") diagnostics.push("verification-timeout")
-        const record = createCommandRecord(projectDir, index + 1, command.fixedArgvId, startedAt, now(), result)
+        const junitDiscovery = discoverJUnitResults(projectDir, {
+          minimumMtimeMs: startedAt,
+        })
+        diagnostics.push(...junitDiscovery.diagnostics)
+        const record = createCommandRecord(
+          projectDir,
+          index + 1,
+          command.fixedArgvId,
+          startedAt,
+          now(),
+          result,
+          junitDiscovery,
+        )
         commandRecords.push(record)
         if (record.outcome !== "passed") break
       }

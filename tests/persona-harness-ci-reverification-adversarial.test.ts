@@ -136,6 +136,30 @@ describe("CI reverification adversarial boundaries", () => {
     expect(record.junitRefs).toEqual([])
   })
 
+  it("fails closed and records a bounded diagnostic for malformed recent JUnit XML", () => {
+    const projectDir = createProject()
+    const result = runCiReverification(projectDir, "ci", {
+      runProcess: () => {
+        const resultDir = join(projectDir, "build", "test-results", "test")
+        mkdirSync(resultDir, { recursive: true })
+        writeFileSync(join(resultDir, "malformed.xml"), "<testsuite><testcase></testsuite>\n")
+        return {
+          killed: false,
+          outcome: "passed",
+          outputLimited: false,
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "",
+          timedOut: false,
+        }
+      },
+    })
+
+    expect(result.finalStatus).toBe("failed")
+    expect(result.diagnosticCodes).toContain("junit-malformed-xml")
+  })
+
   it("stops after the 300s attempt budget and records a later unavailable command", () => {
     const projectDir = createProject()
     const times = [0, 0, 0, 0, 0, 300_001, 300_001]
