@@ -13,7 +13,7 @@ const workflow = ".github/workflows/clean-ci-finish-attestation.yml"
 const outputDir = join(process.cwd(), ".ci", "finish-attestation")
 const testReportPath = join(outputDir, "test-results.json")
 const command = [
-  process.execPath,
+  "node",
   "node_modules/vitest/vitest.mjs",
   "run",
   "--reporter=json",
@@ -25,7 +25,7 @@ const cleanStatus = execFileSync("git", ["status", "--porcelain=v1", "-z", "--un
 if (cleanStatus.byteLength !== 0) fail("clean-CI source status is not empty")
 
 mkdirSync(outputDir, { recursive: true })
-const result = spawnSync(command[0], command.slice(1), {
+const result = spawnSync(process.execPath, command.slice(1), {
   cwd: process.cwd(),
   encoding: "utf8",
   shell: false,

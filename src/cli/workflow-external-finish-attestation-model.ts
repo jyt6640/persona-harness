@@ -3,6 +3,11 @@ import { createHash } from "node:crypto"
 import { isRecord } from "../config/jsonc.js"
 import {
   FINISH_ATTESTATION_SCHEMA,
+  CLEAN_CI_ARGV,
+  CLEAN_CI_CATALOG_ID,
+  CLEAN_CI_REF,
+  CLEAN_CI_REPOSITORY,
+  CLEAN_CI_WORKFLOW,
   type FinishAttestation,
   type FinishAttestationDiagnostic,
   type FinishAttestationParseResult,
@@ -56,6 +61,17 @@ export function parseFinishAttestation(text: string, path: string): FinishAttest
   const result = parseResult(raw.result, path, diagnostics)
   if (values.schemaVersion !== FINISH_ATTESTATION_SCHEMA) diagnostics.push(diagnostic("unsupported-schema", "Unsupported attestation schema.", path))
   if (values.sourceMode !== "clean-ci") diagnostics.push(diagnostic("invalid-source-mode", "Only clean-CI attestations are authority candidates.", path))
+  if (
+    values.repository !== CLEAN_CI_REPOSITORY
+    || values.ref !== CLEAN_CI_REF
+    || values.workflow !== CLEAN_CI_WORKFLOW
+    || values.workflowRef !== `${CLEAN_CI_REPOSITORY}/${CLEAN_CI_WORKFLOW}@${CLEAN_CI_REF}`
+  ) {
+    diagnostics.push(diagnostic("untrusted-builder", "Attestation builder identity is not the product-owned clean-CI workflow.", path))
+  }
+  if (command !== undefined && (command.catalogId !== CLEAN_CI_CATALOG_ID || JSON.stringify(command.argv) !== JSON.stringify(CLEAN_CI_ARGV))) {
+    diagnostics.push(diagnostic("fixed-command-mismatch", "Attestation command does not match the product-owned clean-CI catalog.", path))
+  }
   if (values.dirtyWorktreeDigest !== EMPTY_DIRTY_DIGEST) diagnostics.push(diagnostic("dirty-worktree", "Attestation does not bind an explicitly clean worktree.", path))
   if (values.replayState !== "unconsumed") diagnostics.push(diagnostic("replay-state", "Attestation replay state is not fresh.", path))
   if (test !== undefined && result !== undefined && (test.count < 1 || !test.passed || result.testCount < 1 || result.testCount !== test.count)) {

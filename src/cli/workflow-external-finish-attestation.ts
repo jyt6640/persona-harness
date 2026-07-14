@@ -21,6 +21,11 @@ import {
 } from "./workflow-external-finish-attestation-types.js"
 
 export {
+  CLEAN_CI_ARGV,
+  CLEAN_CI_CATALOG_ID,
+  CLEAN_CI_REF,
+  CLEAN_CI_REPOSITORY,
+  CLEAN_CI_WORKFLOW,
   FINISH_ATTESTATION_PREDICATE_TYPE,
   FINISH_ATTESTATION_SCHEMA,
 } from "./workflow-external-finish-attestation-types.js"
@@ -88,10 +93,18 @@ function readPredicate(bundle: BundleLatest): unknown {
 
 function validatePredicate(predicate: unknown, receipt: FinishAttestation, receiptBytes: Buffer): void {
   if (!isRecord(predicate) || predicate.schemaVersion !== FINISH_ATTESTATION_SCHEMA || !isRecord(predicate.receipt)) throw new Error("invalid predicate")
-  if (JSON.stringify(predicate.receipt) !== JSON.stringify(receipt)) throw new Error("receipt predicate mismatch")
+  if (canonicalJson(predicate.receipt) !== canonicalJson(receipt)) throw new Error("receipt predicate mismatch")
   if (predicate.receiptDigest !== `sha256:${sha256(receiptBytes)}` || predicate.replayNonce !== receipt.nonce || predicate.replayState !== "unconsumed") {
     throw new Error("predicate binding mismatch")
   }
+}
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item)).join(",")}]`
+  if (isRecord(value)) {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`
+  }
+  return JSON.stringify(value)
 }
 
 function sha256(value: Buffer): string {

@@ -1,6 +1,17 @@
 export const FINISH_ATTESTATION_SCHEMA = "finish-attestation.1" as const
 export const FINISH_ATTESTATION_PREDICATE_TYPE =
   "https://github.com/jyt6640/persona-harness/attestations/finish-attestation.1" as const
+export const CLEAN_CI_REPOSITORY = "jyt6640/persona-harness" as const
+export const CLEAN_CI_REF = "refs/heads/feat/verify-clean-ci-finish-attestations" as const
+export const CLEAN_CI_WORKFLOW = ".github/workflows/clean-ci-finish-attestation.yml" as const
+export const CLEAN_CI_CATALOG_ID = "persona-harness-clean-ci.1" as const
+export const CLEAN_CI_ARGV = [
+  "node",
+  "node_modules/vitest/vitest.mjs",
+  "run",
+  "--reporter=json",
+  "--outputFile=.ci/finish-attestation/test-results.json",
+] as const
 
 export type FinishAttestation = {
   readonly schemaVersion: typeof FINISH_ATTESTATION_SCHEMA

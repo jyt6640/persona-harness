@@ -7,6 +7,11 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { readWorkflowFinishAuthority } from "../src/cli/workflow-finish-authority.js"
 import {
+  CLEAN_CI_ARGV,
+  CLEAN_CI_CATALOG_ID,
+  CLEAN_CI_REF,
+  CLEAN_CI_REPOSITORY,
+  CLEAN_CI_WORKFLOW,
   FINISH_ATTESTATION_PREDICATE_TYPE,
   FINISH_ATTESTATION_SCHEMA,
   assessExternalFinishAttestation,
@@ -40,6 +45,10 @@ describe("clean-CI external finish attestation", () => {
       value.result = { status: "pass", testCount: 0 }
     }],
     ["wrong mode", (value: Record<string, unknown>) => { value.sourceMode = "local" }],
+    ["wrong fixed command", (value: Record<string, unknown>) => {
+      value.command = { catalogId: "caller-selected", argv: ["node", "other-script"], argvDigest: DIGEST }
+    }],
+    ["wrong builder ref", (value: Record<string, unknown>) => { value.ref = "refs/heads/other" }],
     ["unknown field", (value: Record<string, unknown>) => { value.untrusted = true }],
   ])("rejects %s with structured diagnostics", (_name, mutate) => {
     const value = validReceipt()
@@ -84,10 +93,10 @@ function validReceipt(): Record<string, unknown> {
   return {
     schemaVersion: FINISH_ATTESTATION_SCHEMA,
     sourceMode: "clean-ci",
-    repository: "jyt6640/persona-harness",
-    ref: "refs/heads/main",
-    workflow: ".github/workflows/clean-ci-finish-attestation.yml",
-    workflowRef: "jyt6640/persona-harness/.github/workflows/clean-ci-finish-attestation.yml@refs/heads/main",
+    repository: CLEAN_CI_REPOSITORY,
+    ref: CLEAN_CI_REF,
+    workflow: CLEAN_CI_WORKFLOW,
+    workflowRef: `${CLEAN_CI_REPOSITORY}/${CLEAN_CI_WORKFLOW}@${CLEAN_CI_REF}`,
     workflowSha: SOURCE_HEAD,
     runId: "100",
     runAttempt: 1,
@@ -99,8 +108,8 @@ function validReceipt(): Record<string, unknown> {
       identity: "run-100",
     },
     command: {
-      catalogId: "java-spring-gradle-wrapper.1",
-      argv: ["./gradlew", "test"],
+      catalogId: CLEAN_CI_CATALOG_ID,
+      argv: CLEAN_CI_ARGV,
       argvDigest: DIGEST,
     },
     phVersion: "0.7.0-rc.3",
