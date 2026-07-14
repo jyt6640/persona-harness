@@ -94,13 +94,15 @@ deleting evidence/status history.
   `185885b7918459ef12bbea120a4261962cd57059`. Registry gitHead and matching
   tag/GitHub prerelease `v0.7.0-rc.2` target that commit; package hashes and
   workflow provenance are recorded in its durable release facts.
-- P3-9 permits only separately dispatched P2 source, measurement, or
-  report-only investigation. P2 product, default, adoption, publish, release,
-  stable, GA, and npm `latest` use remain held. The 2026-07-12 local production
-  audit inputs are recorded in `p3-integrity-roadmap.md`; they are
-  release-planning evidence, not a published third-party certification.
-  Completed P2 source-only evidence and bundles remain retained, not converted
-  into product or release evidence.
+- P3-9 permits separately dispatched P2 source, measurement, or report-only
+  investigation. The sole product-scope exception is
+  [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)
+  for issue #19 Korean CLI help locale selection. It does not authorize a
+  default change, other P2 product work, adoption, publish, release, stable,
+  GA, or npm `latest` use. The 2026-07-12 local production audit inputs are
+  recorded in `p3-integrity-roadmap.md`; they are release-planning evidence,
+  not a published third-party certification. Completed P2 source-only evidence
+  and bundles remain retained, not converted into product or release evidence.
 - The P3-2 candidate branch blocks finish PASS when no trusted Persona Harness
   or external authority receipt exists. Unsigned local reports, bearshell
   output, JUnit XML, TDD JSON, markers, and self-computed digests remain

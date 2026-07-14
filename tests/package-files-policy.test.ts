@@ -161,6 +161,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
+      "docs/current/korean-cli-help-scope-authorization.md",
     ])
 
     for (const linkedFile of linkedFiles) {

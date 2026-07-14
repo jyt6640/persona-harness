@@ -37,11 +37,18 @@ retained, not discarded.
 
 The P3-9 decision permits only separately authorized P2 source, measurement, or
 report-only investigation with isolated provenance and independent QA and
-External gates. Do not integrate, publish, release, enable by default, or use
-P2 work as product, adoption, stable, GA, or npm `latest` evidence.
+External gates. Except for the narrow #19 exception below, do not integrate,
+publish, release, enable by default, or use P2 work as product, adoption,
+stable, GA, or npm `latest` evidence.
 
 See [`p3-9-rc3-integrity-governance-decision.md`](p3-9-rc3-integrity-governance-decision.md)
 for the exact-main decision and its release boundary.
+
+The sole user-authorized product-scope exception is issue #19 Korean CLI help
+locale selection, recorded in
+[`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md).
+It does not authorize a default change, other P2 product work, or any release
+claim.
 
 ## Assurance Model
 
