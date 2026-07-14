@@ -69,7 +69,10 @@ export function assessExternalFinishAttestation(
     const entity = toSignedEntity(bundle, receiptBytes)
     const verifier = new Verifier(toTrustMaterial(root))
     const expectedSan = `https://github.com/${parsedReceipt.value.repository}/${parsedReceipt.value.workflow}@${parsedReceipt.value.ref}`
-    verifier.verify(entity, { subjectAlternativeName: expectedSan })
+    const signer = verifier.verify(entity, { subjectAlternativeName: expectedSan })
+    if (signer.identity?.extensions?.issuer !== "https://token.actions.githubusercontent.com") {
+      return blocked("external attestation issuer is not GitHub Actions OIDC", [])
+    }
     const predicate = readPredicate(bundle)
     validatePredicate(predicate, parsedReceipt.value, receiptBytes)
     const workspace = captureWorkspaceIdentity(projectDir)
