@@ -22,7 +22,7 @@ const expectedActionCounts = {
     attest: 1,
     checkout: 1,
     setupNode: 1,
-    uploadArtifact: 1,
+    uploadArtifact: 2,
   },
 }
 
@@ -53,6 +53,7 @@ const requirements = [
   ["builder no caller inputs", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => !text.includes("inputs:")],
   ["builder attestation predicate", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("clean-ci-builder.1") && text.includes("bundle-path")],
   ["builder least privilege", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
+  ["builder failure artifact", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("if: always()") && text.includes("failure-diagnostic.json") && text.includes("canonical-clean-ci-attestation-builder-failure") && text.includes("if-no-files-found: ignore")],
 ]
 
 async function main() {

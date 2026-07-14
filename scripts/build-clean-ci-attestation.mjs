@@ -1,17 +1,18 @@
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 export const BUILDER_SCHEMA = "clean-ci-builder.1"
 export const BUILDER_PREDICATE_TYPE = "https://github.com/jyt6640/persona-harness/attestations/clean-ci-builder.1"
 export const COMMAND_CATALOG_ID = "persona-harness-clean-ci-builder.1"
+export const FAILURE_DIAGNOSTIC_SCHEMA = "clean-ci-builder-failure.1"
 const COMMAND_TIMEOUT_MS = 300_000
 const OUTPUT_DIRECTORY = ".ci/canonical-clean-ci-attestation-builder"
 const TEST_REPORT_PATH = `${OUTPUT_DIRECTORY}/test-results.json`
 
-const FIXED_COMMANDS = [
+export const FIXED_COMMANDS = [
   { id: "scope", executable: "npm", args: ["run", "check:scope:strict"] },
   { id: "docs", executable: "npm", args: ["run", "check:docs"] },
   { id: "release-workflow", executable: "npm", args: ["run", "check:release-workflows"] },
@@ -20,36 +21,53 @@ const FIXED_COMMANDS = [
   {
     id: "tests",
     executable: "node",
-    args: ["node_modules/vitest/vitest.mjs", "run", "--reporter=json", `--outputFile=${TEST_REPORT_PATH}`],
+    args: ["node_modules/vitest/vitest.mjs", "run", "--reporter=json", `--outputFile=${TEST_REPORT_PATH}`, "--testTimeout=15000"],
   },
   { id: "build", executable: "npm", args: ["run", "build"] },
   { id: "pack", executable: "npm", args: ["pack", "--dry-run", "--json"] },
 ]
 
 function main() {
-  const context = readGitHubContext()
-  const outputDir = join(context.workspaceRoot, OUTPUT_DIRECTORY)
-  mkdirSync(join(context.workspaceRoot, ".ci"), { recursive: true })
-  mkdirSync(outputDir, { recursive: false })
+  let context
+  let outputDir
+  try {
+    context = readGitHubContext()
+    outputDir = join(context.workspaceRoot, OUTPUT_DIRECTORY)
+    mkdirSync(join(context.workspaceRoot, ".ci"), { recursive: true })
+    mkdirSync(outputDir, { recursive: false })
 
-  const commandResults = FIXED_COMMANDS.map((command) => runCommand(command, context.workspaceRoot))
-  const testReport = readJson(join(context.workspaceRoot, TEST_REPORT_PATH))
-  const testFacts = readTestFacts(testReport, join(context.workspaceRoot, TEST_REPORT_PATH))
-  const packFacts = readPackFacts(commandResults.find((result) => result.id === "pack")?.stdout ?? "")
-  const packageJson = readJson(join(context.workspaceRoot, "package.json"))
-  const receipt = createReceipt(context, commandResults, testFacts, packFacts, packageJson.version)
-  const receiptBytes = Buffer.from(`${canonicalJson(receipt)}\n`)
-  const predicate = {
-    authorityEligible: false,
-    authorityBoundary: "builder-output-is-non-authoritative",
-    predicateType: BUILDER_PREDICATE_TYPE,
-    receiptDigest: `sha256:${sha256(receiptBytes)}`,
-    receipt,
+    const commandResults = FIXED_COMMANDS.map((command) => runCommand(command, context.workspaceRoot))
+    const testReportPath = join(context.workspaceRoot, TEST_REPORT_PATH)
+    const testReport = readJson(testReportPath)
+    const testFacts = readTestFacts(testReport, testReportPath)
+    const packFacts = readPackFacts(commandResults.find((result) => result.id === "pack")?.stdout ?? "")
+    const packageJson = readJson(join(context.workspaceRoot, "package.json"))
+    const receipt = createReceipt(context, commandResults, testFacts, packFacts, packageJson.version)
+    const receiptBytes = Buffer.from(`${canonicalJson(receipt)}\n`)
+    const predicate = {
+      authorityEligible: false,
+      authorityBoundary: "builder-output-is-non-authoritative",
+      predicateType: BUILDER_PREDICATE_TYPE,
+      receiptDigest: `sha256:${sha256(receiptBytes)}`,
+      receipt,
+    }
+
+    writeFileSync(join(outputDir, "receipt.json"), receiptBytes, { flag: "wx" })
+    writeFileSync(join(outputDir, "predicate.json"), `${canonicalJson(predicate)}\n`, { flag: "wx" })
+    process.stdout.write(`Clean CI builder receipt written to ${OUTPUT_DIRECTORY}\n`)
+  } catch (error) {
+    if (context !== undefined && outputDir !== undefined && error instanceof BuilderCommandFailure) {
+      try {
+        writeFailureDiagnostic(outputDir, error.details, join(context.workspaceRoot, TEST_REPORT_PATH))
+      } catch {
+        process.stderr.write("failed to persist builder failure diagnostic\n")
+      }
+    }
+
+    const message = error instanceof Error ? error.message : "clean-CI builder failed"
+    process.stderr.write(`${message}\n`)
+    process.exitCode = 1
   }
-
-  writeFileSync(join(outputDir, "receipt.json"), receiptBytes, { flag: "wx" })
-  writeFileSync(join(outputDir, "predicate.json"), `${canonicalJson(predicate)}\n`, { flag: "wx" })
-  process.stdout.write(`Clean CI builder receipt written to ${OUTPUT_DIRECTORY}\n`)
 }
 
 function readGitHubContext() {
@@ -95,7 +113,11 @@ function runCommand(command, workspaceRoot) {
   })
 
   if (result.error !== undefined || result.status !== 0) {
-    fail(`fixed command failed: ${command.id}`)
+    throw new BuilderCommandFailure({
+      commandId: command.id,
+      exitCode: typeof result.status === "number" ? result.status : null,
+      exitState: commandExitState(result),
+    })
   }
 
   return {
@@ -170,7 +192,11 @@ function readTestFacts(value, reportPath) {
   const failed = numberField(value, "numFailedTests")
   const skipped = numberField(value, "numPendingTests") + numberField(value, "numTodoTests") + numberField(value, "numSkippedTests")
   if (total < 1 || passed < 1 || failed !== 0) {
-    fail(`fixed test command did not produce a nonzero passing test count: total=${total}, passed=${passed}, failed=${failed}, skipped=${skipped}`)
+    throw new BuilderCommandFailure({
+      commandId: "tests",
+      exitCode: 0,
+      exitState: "invalid-test-report",
+    })
   }
 
   return {
@@ -204,7 +230,7 @@ function readJson(path) {
   try {
     return JSON.parse(readFileSync(path, "utf8"))
   } catch {
-    fail(`required JSON output is unavailable: ${path}`)
+    fail("required JSON output is unavailable")
   }
 }
 
@@ -231,13 +257,80 @@ function requiredEnv(name) {
   return value
 }
 
+function commandExitState(result) {
+  if (result.error?.code === "ETIMEDOUT") return "timeout"
+  if (result.signal !== null) return "signal"
+  if (result.error !== undefined) return "spawn-failure"
+  return "exit-nonzero"
+}
+
+function createFailureDiagnostic(failure, reportPath) {
+  const report = readFailureReportSummary(reportPath)
+  return {
+    authorityBoundary: "builder-output-is-non-authoritative",
+    authorityEligible: false,
+    commandId: failure.commandId,
+    diagnosticCodes: ["fixed-command-failed"],
+    exitCode: failure.exitCode,
+    exitState: failure.exitState,
+    rawOutputIncluded: false,
+    report,
+    schemaVersion: FAILURE_DIAGNOSTIC_SCHEMA,
+  }
+}
+
+export { createFailureDiagnostic }
+
+function readFailureReportSummary(reportPath) {
+  const report = {
+    available: existsSync(reportPath),
+    digest: null,
+    path: TEST_REPORT_PATH,
+    summary: null,
+  }
+  if (!report.available) return report
+
+  let bytes
+  try {
+    bytes = readFileSync(reportPath)
+  } catch {
+    return report
+  }
+
+  report.digest = `sha256:${sha256(bytes)}`
+  try {
+    const parsed = JSON.parse(bytes.toString("utf8"))
+    report.summary = {
+      failed: numberField(parsed, "numFailedTests"),
+      passed: numberField(parsed, "numPassedTests"),
+      skipped: numberField(parsed, "numPendingTests") + numberField(parsed, "numTodoTests") + numberField(parsed, "numSkippedTests"),
+      total: numberField(parsed, "numTotalTests"),
+    }
+  } catch {
+    return report
+  }
+  return report
+}
+
+function writeFailureDiagnostic(outputDir, failure, reportPath) {
+  const diagnostic = createFailureDiagnostic(failure, reportPath)
+  writeFileSync(join(outputDir, "failure-diagnostic.json"), `${canonicalJson(diagnostic)}\n`, { flag: "wx" })
+}
+
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex")
 }
 
+class BuilderCommandFailure extends Error {
+  constructor(details) {
+    super(`fixed command failed: ${details.commandId}`)
+    this.name = "BuilderCommandFailure"
+    this.details = details
+  }
+}
+
 function fail(message) {
-  process.stderr.write(`${message}\n`)
-  process.exit(1)
+  throw new Error(message)
 }
 
 if (fileURLToPath(import.meta.url) === process.argv[1]) main()
