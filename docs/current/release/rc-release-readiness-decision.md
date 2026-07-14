@@ -1,8 +1,9 @@
 # RC Release Readiness Decision
 
-Status: current-main release-planning decision as of 2026-07-14. This record
-does not authorize a tag, GitHub release, npm publication, dist-tag change,
-Stable/GA claim, or npm `latest` movement.
+Status: historical pre-RC3 current-main release-planning decision as of
+2026-07-14. At the time of decision, this record did not authorize a tag,
+GitHub release, npm publication, dist-tag change, Stable/GA claim, or npm
+`latest` movement.
 
 ## Exact Assessment
 
@@ -85,3 +86,18 @@ setting, npm trusted-publisher setting, version, tag, GitHub release, npm
 package, or dist-tag. It preserves the P3 authority boundary and makes no
 product-efficacy, reliability, security-certification, Stable/GA, or `latest`
 claim.
+
+## Outcome
+
+The separately scoped RC3 gate completed after this decision:
+
+- protected PR #32 merged the `0.7.0-rc.3` candidate to exact main
+  `728e9c339463ea521fa4388a37d1c76f76c9d726`;
+- tag `v0.7.0-rc.3`, Release workflow `29310860355`, and trusted Publish
+  workflow `29310969744` all target that commit;
+- npm now records `next=0.7.0-rc.3` while `latest=0.6.0` remains unchanged.
+
+The durable publication facts are in
+[`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md). This
+outcome does not authorize Stable, GA, npm `latest`, or a trusted external
+finish-attestation claim.

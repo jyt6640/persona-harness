@@ -17,14 +17,15 @@ audit independently verifies a fixed product state.
 
 ## Accepted Decision
 
-Stable/GA and npm `latest` movement are NO-GO until P3 closes. The current
-`0.7.0-rc.2` next-channel evidence remains a pilot/release-candidate record,
+Stable/GA and npm `latest` movement are NO-GO until P3 closes. The published
+`0.7.0-rc.3` next-channel evidence remains a pilot/release-candidate record,
 not a basis for strong completion-integrity, security, certification, broad
 reliability, app-quality, token-saving, or enforcement claims.
 
 The current completion authority can block defined missing-report and bounded
 fixture violations, but it must not be described as blocking all forged or fake
-evidence. The audit records bypasses in the published `0.7.0-rc.2` package:
+evidence. The historical audit records bypasses in the published
+`0.7.0-rc.2` package:
 project-local evidence can be fabricated consistently enough for current
 closure paths, malformed config can fail open, path interpretation can split,
 zero-test verification can pass, and traversal can fail with an unhandled
@@ -43,11 +44,11 @@ stable, GA, or npm `latest` evidence.
 
 See [`p3-9-rc3-integrity-governance-decision.md`](p3-9-rc3-integrity-governance-decision.md)
 for the exact-main decision and its release boundary.
-The current-main follow-up is
-[`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md):
-the already-published `0.7.0-rc.2` version has a different registry gitHead,
-so only next-RC planning may begin and no current-main publication, Stable/GA,
-or npm `latest` action is authorized.
+The pre-RC3 current-main follow-up is
+[`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md).
+Its new-RC gate completed with the published `0.7.0-rc.3` capsule at
+[`docs/releases/v0.7.0-rc.3/`](../releases/v0.7.0-rc.3/README.md). That outcome
+does not authorize Stable/GA or npm `latest` movement.
 
 The sole user-authorized product-scope exception is issue #19 Korean CLI help
 locale selection, recorded in

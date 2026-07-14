@@ -25,9 +25,9 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - operational stable: 41
 - phase archive: 46
 - version-specific release note: 55
-- versioned durable: 23
+- versioned durable: 26
 
-Total indexed files: 323
+Total indexed files: 326
 
 ## File Inventory
 
@@ -188,7 +188,7 @@ Total indexed files: 323
 | `docs/current/release/v0.6.0-release-notes.md` | version-specific release note | v0.6.0 | Workflow-compatible release-note source for v0.6.0; summarize durable facts in docs/releases/v<version>/ when current. |
 | `docs/current/release/v0.7.0-rc.1-release-notes.md` | version-specific release note | v0.7.0-rc.1 | Workflow-compatible published release-note source with npm `next`/tag provenance for v0.7.0-rc.1. |
 | `docs/current/release/v0.7.0-rc.2-release-notes.md` | version-specific release note | v0.7.0-rc.2 | Workflow-compatible published release-note source with npm `next`/tag/workflow provenance for v0.7.0-rc.2. |
-| `docs/current/release/v0.7.0-rc.3-release-notes.md` | version-specific release note | v0.7.0-rc.3 | Workflow-compatible next-channel candidate source; it records preparation only, not a published tag, package, or registry fact. |
+| `docs/current/release/v0.7.0-rc.3-release-notes.md` | version-specific release note | v0.7.0-rc.3 | Workflow-compatible published release-note source with npm `next`, tag, GitHub prerelease, and workflow provenance. |
 | `docs/current/rule-curation.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/rule-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/shared-skill-reference-direction.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
@@ -349,6 +349,9 @@ Total indexed files: 323
 | `docs/releases/v0.7.0-rc.2/README.md` | versioned durable | v0.7.0-rc.2 | Canonical published npm `next` release-candidate capsule with registry/tag/workflow provenance. |
 | `docs/releases/v0.7.0-rc.2/measurements.md` | versioned durable | v0.7.0-rc.2 | Scoped accepted P1 observations and measurement boundaries carried by the published release candidate. |
 | `docs/releases/v0.7.0-rc.2/release-facts.md` | versioned durable | v0.7.0-rc.2 | Published registry/tag/workflow facts and claim boundaries for the next-channel candidate. |
+| `docs/releases/v0.7.0-rc.3/README.md` | versioned durable | v0.7.0-rc.3 | Canonical published npm `next` release-candidate capsule with registry/tag/workflow provenance. |
+| `docs/releases/v0.7.0-rc.3/measurements.md` | versioned durable | v0.7.0-rc.3 | Scoped package-surface observations and claim boundaries carried by the published release candidate. |
+| `docs/releases/v0.7.0-rc.3/release-facts.md` | versioned durable | v0.7.0-rc.3 | Published registry/tag/workflow facts and claim boundaries for the next-channel candidate. |
 | `docs/troubleshooting/README.md` | operational stable | - | Stable troubleshooting index. |
 | `docs/troubleshooting/check-rail-active.md` | operational stable | - | Stable troubleshooting guide for checking whether the PH rail is active. |
 | `docs/troubleshooting/enforce-the-gate.md` | operational stable | - | Stable troubleshooting guide for gate enforcement. |
