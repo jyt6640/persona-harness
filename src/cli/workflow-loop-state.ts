@@ -15,12 +15,25 @@ export type WorkflowLoopIterationRecord = {
   readonly timedOut: boolean
 }
 
+export type WorkflowLoopFinalDecision =
+  | "child-failure"
+  | "finish-passed"
+  | "iteration-cap"
+  | "no-blockers"
+  | "not-run"
+  | "output-limit"
+  | "signal"
+  | "spawn-failure"
+  | "state-conflict"
+  | "timeout"
+  | "unmapped-blocker"
+
 const LEGACY_WORKFLOW_LOOP_STATE_SCHEMA_VERSION = "workflow-loop-state.1"
 export const WORKFLOW_LOOP_STATE_SCHEMA_VERSION = "workflow-loop-state.2"
 
 export type WorkflowLoopState = {
   readonly completedAt?: string
-  readonly finalDecision: "finish-passed" | "iteration-cap" | "no-blockers" | "not-run" | "unmapped-blocker"
+  readonly finalDecision: WorkflowLoopFinalDecision
   readonly iterations: readonly WorkflowLoopIterationRecord[]
   readonly rulePackHash: string
   readonly schemaVersion: typeof WORKFLOW_LOOP_STATE_SCHEMA_VERSION
@@ -95,10 +108,16 @@ export function writeWorkflowLoopState(
 
 function readFinalDecision(value: unknown): WorkflowLoopState["finalDecision"] {
   if (
+    value === "child-failure" ||
     value === "finish-passed" ||
     value === "iteration-cap" ||
     value === "no-blockers" ||
     value === "not-run" ||
+    value === "output-limit" ||
+    value === "signal" ||
+    value === "spawn-failure" ||
+    value === "state-conflict" ||
+    value === "timeout" ||
     value === "unmapped-blocker"
   ) {
     return value

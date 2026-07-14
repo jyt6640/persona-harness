@@ -11,7 +11,7 @@ import {
   selectRulesForDelivery,
 } from "../rules/rule-delivery.js"
 import type { CliRunResult } from "./bearshell.js"
-import { runBoundedProcess } from "./bounded-process.js"
+import { runBoundedProcess, type BoundedProcessOutcome } from "./bounded-process.js"
 import { workflowFinishFollowUp, workflowFinishFollowUpLines, type WorkflowFinishFollowUp } from "./workflow-finish-follow-up.js"
 import {
   isUnmappedBlockerStep,
@@ -27,10 +27,12 @@ import {
   workflowLoopDir,
   workflowLoopStatePath,
   writeWorkflowLoopState,
+  type WorkflowLoopFinalDecision,
   type WorkflowLoopIterationRecord,
   type WorkflowLoopState,
 } from "./workflow-loop-state.js"
-import { toWorkflowStateConflict } from "./workflow-state-conflict.js"
+
+export type { WorkflowLoopFinalDecision } from "./workflow-loop-state.js"
 
 export type WorkflowLoopOptions = {
   readonly dryRun: boolean
@@ -42,10 +44,16 @@ export type WorkflowLoopOptions = {
   readonly timeoutMs: number
 }
 
-type LoopPayload = {
+export type WorkflowLoopResult = {
+  readonly diagnosticCodes: readonly string[]
+  readonly exitCode: 0 | 1
+  readonly finalDecision: WorkflowLoopFinalDecision
+  readonly success: boolean
+}
+
+type LoopPayload = WorkflowLoopResult & {
   readonly boundaries: readonly string[]
   readonly defaultOff: true
-  readonly finalDecision: WorkflowLoopState["finalDecision"]
   readonly iterations: readonly WorkflowLoopIterationRecord[]
   readonly maxIterations: number
   readonly mode: "dry-run" | "execute"
@@ -55,17 +63,47 @@ type LoopPayload = {
   readonly termination: readonly string[]
 }
 
+export function workflowLoopResultForDecision(finalDecision: WorkflowLoopFinalDecision): WorkflowLoopResult {
+  switch (finalDecision) {
+    case "finish-passed":
+      return { diagnosticCodes: [], exitCode: 0, finalDecision, success: true }
+    case "child-failure":
+      return { diagnosticCodes: ["child-failure"], exitCode: 1, finalDecision, success: false }
+    case "iteration-cap":
+      return { diagnosticCodes: ["iteration-cap"], exitCode: 1, finalDecision, success: false }
+    case "no-blockers":
+      return { diagnosticCodes: ["no-blockers-without-finish"], exitCode: 1, finalDecision, success: false }
+    case "not-run":
+      return { diagnosticCodes: ["dry-run-blocked"], exitCode: 1, finalDecision, success: false }
+    case "output-limit":
+      return { diagnosticCodes: ["child-output-limit"], exitCode: 1, finalDecision, success: false }
+    case "signal":
+      return { diagnosticCodes: ["child-signal"], exitCode: 1, finalDecision, success: false }
+    case "spawn-failure":
+      return { diagnosticCodes: ["child-spawn-failure"], exitCode: 1, finalDecision, success: false }
+    case "state-conflict":
+      return { diagnosticCodes: ["workflow-state-conflict"], exitCode: 1, finalDecision, success: false }
+    case "timeout":
+      return { diagnosticCodes: ["child-timeout"], exitCode: 1, finalDecision, success: false }
+    case "unmapped-blocker":
+      return { diagnosticCodes: ["unmapped-blocker"], exitCode: 1, finalDecision, success: false }
+    default:
+      return assertNever(finalDecision)
+  }
+}
+
 export function runWorkflowLoopCommand(options: WorkflowLoopOptions): CliRunResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const initialFinish = deterministicFinish(projectDir)
   const closure = readWorkflowClosurePayload("next", projectDir) as ClosureNextPayload
   const promptPreview = firstPromptLines(projectDir, closure)
   if (options.dryRun) {
+    const finalDecision = initialLoopDecision(initialFinish.status, closure)
     return formatPayload(
       {
         boundaries: loopBoundaries(),
         defaultOff: true,
-        finalDecision: initialFinish.status === 0 ? "finish-passed" : closure.state.blockers.length === 0 ? "no-blockers" : isUnmappedBlockerStep(closure.nextStep) ? "unmapped-blocker" : "not-run",
+        ...workflowLoopResultForDecision(finalDecision),
         iterations: readWorkflowLoopState(projectDir)?.iterations ?? [],
         maxIterations: options.maxIterations,
         mode: "dry-run",
@@ -83,7 +121,7 @@ export function runWorkflowLoopCommand(options: WorkflowLoopOptions): CliRunResu
       {
         boundaries: loopBoundaries(),
         defaultOff: true,
-        finalDecision: state.finalDecision,
+        ...workflowLoopResultForDecision(state.finalDecision),
         iterations: state.iterations,
         maxIterations: options.maxIterations,
         mode: "execute",
@@ -96,11 +134,37 @@ export function runWorkflowLoopCommand(options: WorkflowLoopOptions): CliRunResu
     )
   } catch (error) {
     if (error instanceof AtomicWriteConflictError) {
-      const conflict = toWorkflowStateConflict(error, projectDir)
-      return { status: 1, stdout: "", stderr: `${conflict.message}\n` }
+      return formatPayload(
+        {
+          boundaries: loopBoundaries(),
+          defaultOff: true,
+          ...workflowLoopResultForDecision("state-conflict"),
+          iterations: readWorkflowLoopState(projectDir)?.iterations ?? [],
+          maxIterations: options.maxIterations,
+          mode: "execute",
+          promptPreview,
+          schemaVersion: "workflow-loop.1",
+          statePath: relative(projectDir, workflowLoopStatePath(projectDir)),
+          termination: loopTermination(),
+        },
+        options.json,
+      )
     }
     throw error
   }
+}
+
+function initialLoopDecision(finishStatus: number, closure: ClosureNextPayload): WorkflowLoopFinalDecision {
+  if (finishStatus === 0) {
+    return "finish-passed"
+  }
+  if (closure.state.blockers.length === 0) {
+    return "no-blockers"
+  }
+  if (isUnmappedBlockerStep(closure.nextStep)) {
+    return "unmapped-blocker"
+  }
+  return "not-run"
 }
 
 function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFinish: CliRunResult, initialClosure: ClosureNextPayload): WorkflowLoopState {
@@ -125,13 +189,18 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
       finalDecision = "unmapped-blocker"
       break
     }
-    const record = runIteration(projectDir, options, index, blocker, closure)
-    iterations.push(record)
+    const iteration = runIteration(projectDir, options, index, blocker, closure)
+    iterations.push(iteration.record)
     stateToken = writeWorkflowLoopState(
       projectDir,
       { finalDecision: "not-run", iterations, rulePackHash, schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION, startedAt },
       stateToken,
     )
+    const childDecision = loopDecisionForChildOutcome(iteration.outcome)
+    if (childDecision !== undefined) {
+      finalDecision = childDecision
+      break
+    }
     finish = deterministicFinish(projectDir)
     closure = readWorkflowClosurePayload("next", projectDir) as ClosureNextPayload
   }
@@ -150,13 +219,18 @@ function executeLoop(projectDir: string, options: WorkflowLoopOptions, initialFi
   return state
 }
 
+type LoopIterationExecution = {
+  readonly outcome: BoundedProcessOutcome
+  readonly record: WorkflowLoopIterationRecord
+}
+
 function runIteration(
   projectDir: string,
   options: WorkflowLoopOptions,
   iteration: number,
   blocker: ClosureBlocker,
   closure: ClosureNextPayload,
-): WorkflowLoopIterationRecord {
+): LoopIterationExecution {
   const followUp = workflowFinishFollowUp(closure)
   if (followUp === null) {
     throw new TypeError("workflow loop iteration requires a closure follow-up")
@@ -178,15 +252,37 @@ function runIteration(
   writeFileSync(stdoutPath, result.stdout)
   writeFileSync(stderrPath, result.stderr)
   return {
-    blockerId: blocker.id,
-    blockerIndex: 1,
-    blockerTotal,
-    exitStatus: result.status,
-    iteration,
-    promptPath: relative(projectDir, promptPath),
-    stderrPath: relative(projectDir, stderrPath),
-    stdoutPath: relative(projectDir, stdoutPath),
-    timedOut: result.timedOut || result.killed,
+    outcome: result.outcome,
+    record: {
+      blockerId: blocker.id,
+      blockerIndex: 1,
+      blockerTotal,
+      exitStatus: result.status,
+      iteration,
+      promptPath: relative(projectDir, promptPath),
+      stderrPath: relative(projectDir, stderrPath),
+      stdoutPath: relative(projectDir, stdoutPath),
+      timedOut: result.timedOut || result.killed,
+    },
+  }
+}
+
+function loopDecisionForChildOutcome(outcome: BoundedProcessOutcome): WorkflowLoopFinalDecision | undefined {
+  switch (outcome) {
+    case "failed":
+      return "child-failure"
+    case "output-limit":
+      return "output-limit"
+    case "passed":
+      return undefined
+    case "signal":
+      return "signal"
+    case "spawn-failure":
+      return "spawn-failure"
+    case "timeout":
+      return "timeout"
+    default:
+      return assertNever(outcome)
   }
 }
 
@@ -244,15 +340,19 @@ function loopBoundaries(): readonly string[] {
 }
 
 function formatPayload(payload: LoopPayload, json: boolean): CliRunResult {
+  const diagnosticCodes = payload.diagnosticCodes.slice(0, 8).map((code) => code.slice(0, 64))
   if (json) {
-    return { status: 0, stdout: `${JSON.stringify(payload, null, 2)}\n`, stderr: "" }
+    return { status: payload.exitCode, stdout: `${JSON.stringify({ ...payload, diagnosticCodes }, null, 2)}\n`, stderr: "" }
   }
   return {
-    status: 0,
+    status: payload.exitCode,
     stdout: [
       "Persona Harness workflow loop",
       `Mode: ${payload.mode}`,
+      `Success: ${payload.success}`,
       `Final decision: ${payload.finalDecision}`,
+      `Exit code: ${payload.exitCode}`,
+      `Diagnostic codes: ${diagnosticCodes.length === 0 ? "none" : diagnosticCodes.join(", ")}`,
       `Iterations: ${payload.iterations.length}/${payload.maxIterations}`,
       `State: ${payload.statePath}`,
       "",
@@ -266,4 +366,8 @@ function formatPayload(payload: LoopPayload, json: boolean): CliRunResult {
     ].join("\n"),
     stderr: "",
   }
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unknown workflow loop value: ${String(value)}`)
 }
