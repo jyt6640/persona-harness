@@ -1,4 +1,9 @@
 import type { ClosureBlocker, ClosureStep } from "./workflow-closure.js"
+import {
+  workflowFinishFollowUpForStep,
+  workflowFinishFollowUpLines,
+} from "./workflow-finish-follow-up.js"
+import { workflowDiagnosticReference } from "./workflow-safe-rendering.js"
 
 export type ContinuationPromptContext = "cli-continue" | "closure-next" | "idle" | "ralph-loop"
 
@@ -15,10 +20,13 @@ type ContinuationPromptDepth = {
 }
 
 export function closureStepNextAction(step: ClosureStep | null): string {
-  return step?.command ?? step?.commandAfterContent ?? "npx ph workflow continue"
+  if (step === null) {
+    return "npx ph workflow continue"
+  }
+  return workflowFinishFollowUpForStep(step).command?.value ?? "npx ph workflow continue"
 }
 
-function blockerLabel(blocker: ClosureBlocker, depth?: ContinuationPromptDepth): string {
+function blockerLabel(blockerId: string, depth?: ContinuationPromptDepth): string {
   if (
     depth === undefined ||
     !Number.isInteger(depth.index) ||
@@ -26,9 +34,9 @@ function blockerLabel(blocker: ClosureBlocker, depth?: ContinuationPromptDepth):
     depth.index < 1 ||
     depth.total < depth.index
   ) {
-    return `Blocker: ${blocker.id}`
+    return `Blocker: ${blockerId}`
   }
-  return `Blocker: ${blocker.id} (blocker ${depth.index}/${depth.total})`
+  return `Blocker: ${blockerId} (blocker ${depth.index}/${depth.total})`
 }
 
 export function continuationPromptCoreLines(
@@ -36,12 +44,17 @@ export function continuationPromptCoreLines(
   step: ClosureStep | null,
   depth?: ContinuationPromptDepth,
 ): readonly string[] {
+  const reference = workflowDiagnosticReference(blocker, step)
+  const followUp = step === null ? null : workflowFinishFollowUpForStep(step)
   return [
     "Closure blockers remain; do not claim completion.",
-    blockerLabel(blocker, depth),
-    `Reason: ${blocker.reason}`,
-    `Source: ${blocker.source}`,
-    `Next action: ${closureStepNextAction(step)}`,
+    blockerLabel(reference.blockerId, depth),
+    ...(reference.stepId === undefined ? [] : [`Step: ${reference.stepId}`]),
+    ...(reference.status === undefined ? [] : [`Status: ${reference.status}`]),
+    ...reference.artifactRefs.map((ref) => `Artifact: ${ref}`),
+    ...(followUp === null
+      ? [`Next command: ${closureStepNextAction(step)}`]
+      : workflowFinishFollowUpLines(followUp)),
     "Fix only this blocker, then rerun `npx ph workflow finish implement`.",
   ]
 }

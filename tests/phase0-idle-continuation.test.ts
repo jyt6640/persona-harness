@@ -111,7 +111,7 @@ describe("Phase 0 idle continuation hook", () => {
     })
     expect(calls[0]?.body.parts[0]?.text).toContain("[Persona Harness Idle Continuation]")
     expect(calls[0]?.body.parts[0]?.text).toContain("Blocker: verification-unknown")
-    expect(calls[0]?.body.parts[0]?.text).toContain("npx ph workflow continue")
+    expect(calls[0]?.body.parts[0]?.text).toContain("Next command: after completing the action, run npx ph workflow check")
     expect(calls[0]?.body.parts[0]?.text).toContain("not a hard stop")
   })
 

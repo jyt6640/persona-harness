@@ -534,10 +534,10 @@ describe("ph workflow check", () => {
     expect(rows.get("pending tickets")).toBe("present")
     expect(check.stdout).toContain("Next: fill report coverage")
     expect(resume.status).toBe(0)
-    expect(resume.stdout).toContain("Reports say filled but required coverage is missing")
-    expect(resume.stdout).toContain("read README/profile/generated Java role files")
-    expect(resume.stdout).toContain("update implementation/review reports")
-    expect(resume.stdout).toContain("Do not archive req tickets until review confirms requirements are satisfied.")
+    expect(resume.stdout).toContain("Step: fill-report-coverage")
+    expect(resume.stdout).toContain("Blocker: report-coverage-missing")
+    expect(resume.stdout).toContain("Status: pending")
+    expect(resume.stdout).toContain("Artifact: .persona/workflow/implementation-report.md")
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("Blocker: verification-unknown")
     expect(finish.stderr).toContain("Next action: Run the project's supported test/build/runtime verification and record the outcome in workflow evidence.")
@@ -596,10 +596,10 @@ describe("ph workflow check", () => {
     })
     expect(closureJson.state.blockers).toContainEqual(expect.objectContaining({
       id: CONTROLLER_REPOSITORY_CONVENTION.blockerId,
-      reason: expect.stringContaining(CONTROLLER_REPOSITORY_CONVENTION.id),
+      source: "src/main/java",
     }))
     expect(resume.stdout).toContain(`Blocker: ${CONTROLLER_REPOSITORY_CONVENTION.blockerId}`)
-    expect(resume.stdout).toContain("TaskController directly depends on TaskRepository")
+    expect(resume.stdout).not.toContain("TaskController directly depends on TaskRepository")
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain(`Blocker: ${CONTROLLER_REPOSITORY_CONVENTION.blockerId}`)
     expect(finish.stderr).toContain(`Next action: ${CONTROLLER_REPOSITORY_CONVENTION.fixPath.charAt(0).toUpperCase()}${CONTROLLER_REPOSITORY_CONVENTION.fixPath.slice(1)}`)
@@ -789,7 +789,7 @@ describe("ph workflow check", () => {
       expect(check.stdout).toContain(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.fixPath)
       expect(closureJson.state.blockers).toContainEqual(expect.objectContaining({
         id: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId,
-        reason: expect.stringContaining(CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id),
+        source: "src/main/java",
       }))
       expect(finish.status).toBe(1)
       expect(finish.stderr).toContain(`Blocker: ${CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.blockerId}`)
@@ -894,7 +894,7 @@ describe("ph workflow check", () => {
       expect(check.stdout).toContain("Workflow status: WARN")
       expect(closureJson.state.blockers).toContainEqual(expect.objectContaining({
         id: "convention-toolchain-missing",
-        reason: expect.stringContaining("install sg/ast-grep or set PH_AST_GREP_BIN"),
+        source: ".persona/conventions",
       }))
       expect(closureJson.nextStep).toMatchObject({
         commandAfterContent: "npx ph workflow check",
