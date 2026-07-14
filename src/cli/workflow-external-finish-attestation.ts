@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import { fileURLToPath } from "node:url"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { bundleFromJSON, assertBundleLatest, type BundleLatest } from "@sigstore/bundle"
@@ -55,6 +55,9 @@ export function assessExternalFinishAttestation(
     receiptBytes = readFileSync(receiptPath)
     const parsedReceipt = parseFinishAttestation(receiptBytes.toString("utf8"), "external-finish-attestation/receipt.json")
     if (!parsedReceipt.ok) return blocked("attestation receipt is invalid", parsedReceipt.diagnostics)
+    const consumed = readConsumedState(directory)
+    if (consumed === "invalid") return blocked("external attestation replay state is invalid", [])
+    if (consumed === "consumed") return blocked("external attestation has already been consumed", [])
     const rootPath = fileURLToPath(PRODUCT_TRUST_ROOT_URL)
     if (!existsSync(rootPath)) return blocked("product-owned Sigstore trust root is unavailable", [])
     const rootLine = readFileSync(rootPath, "utf8").split(/\r?\n/gu).find((line) => line.trim().length > 0)
@@ -83,6 +86,30 @@ export function assessExternalFinishAttestation(
   }
 }
 
+export function consumeExternalFinishAttestation(projectDir: string): ExternalFinishAttestationAssessment {
+  const assessment = assessExternalFinishAttestation(projectDir)
+  if (assessment.status !== "trusted" || assessment.receipt === undefined) return assessment
+  const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
+  if (!evidenceRoot.ok) return blocked("configured evidence root is unsafe", [])
+  const directory = join(evidenceRoot.path, ATTESTATION_DIR)
+  const receiptPath = join(directory, "receipt.json")
+  const consumedPath = join(directory, "consumed.json")
+  try {
+    writeFileSync(
+      consumedPath,
+      `${JSON.stringify({
+        schemaVersion: "finish-attestation-replay.1",
+        receiptDigest: `sha256:${sha256(readFileSync(receiptPath))}`,
+        nonce: assessment.receipt.nonce,
+      }, null, 2)}\n`,
+      { encoding: "utf8", flag: "wx" },
+    )
+    return assessment
+  } catch {
+    return blocked("external attestation replay claim could not be acquired", [])
+  }
+}
+
 function readPredicate(bundle: BundleLatest): unknown {
   if (bundle.content.$case !== "dsseEnvelope") throw new Error("unsupported attestation content")
   const payload = Buffer.from(bundle.content.dsseEnvelope.payload).toString("utf8")
@@ -105,6 +132,20 @@ function canonicalJson(value: unknown): string {
     return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`
   }
   return JSON.stringify(value)
+}
+
+function readConsumedState(directory: string): "absent" | "consumed" | "invalid" {
+  const path = join(directory, "consumed.json")
+  if (!existsSync(path)) return "absent"
+  try {
+    const value: unknown = JSON.parse(readFileSync(path, "utf8"))
+    if (!isRecord(value) || value.schemaVersion !== "finish-attestation-replay.1" || typeof value.receiptDigest !== "string" || typeof value.nonce !== "string") {
+      return "invalid"
+    }
+    return "consumed"
+  } catch {
+    return "invalid"
+  }
 }
 
 function sha256(value: Buffer): string {

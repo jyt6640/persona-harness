@@ -15,6 +15,7 @@ import {
   FINISH_ATTESTATION_PREDICATE_TYPE,
   FINISH_ATTESTATION_SCHEMA,
   assessExternalFinishAttestation,
+  consumeExternalFinishAttestation,
   parseFinishAttestation,
 } from "../src/cli/workflow-external-finish-attestation.js"
 
@@ -85,6 +86,17 @@ describe("clean-CI external finish attestation", () => {
     expect(external.status).toBe("blocked")
     expect(external.authorityEligible).toBe(false)
     expect(external.reason).toContain("cryptographic")
+    expect(readTree(projectDir)).toBe(before)
+  })
+
+  it("keeps replay consumption explicit and exclusive when no trusted bundle exists", () => {
+    const projectDir = createProject()
+    const before = readTree(projectDir)
+
+    const result = consumeExternalFinishAttestation(projectDir)
+
+    expect(result.status).toBe("blocked")
+    expect(result.authorityEligible).toBe(false)
     expect(readTree(projectDir)).toBe(before)
   })
 })

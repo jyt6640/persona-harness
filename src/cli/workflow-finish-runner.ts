@@ -3,6 +3,7 @@ import { workflowClosureFinishReasons, workflowFinishFollowUp } from "./workflow
 import { workflowFinishFollowUpForStep } from "./workflow-finish-follow-up.js"
 import { readWorkflowClosurePayload } from "./workflow-closure.js"
 import { failedRunnerOutput, passedFinishOutput, type WorkflowRunnerKind } from "./workflow-output.js"
+import { consumeExternalFinishAttestation } from "./workflow-external-finish-attestation.js"
 import { readWorkflowFinishAuthority } from "./workflow-finish-authority.js"
 
 export function runWorkflowFinishResult(runnerKind: WorkflowRunnerKind, projectDir: string): CliRunResult {
@@ -23,6 +24,20 @@ export function runWorkflowFinishResult(runnerKind: WorkflowRunnerKind, projectD
       return failedRunnerOutput("finish", runnerKind, [], {
         blockerIds: [blocker.id],
         followUp,
+      })
+    }
+    const consumed = consumeExternalFinishAttestation(projectDir)
+    if (consumed.status === "blocked") {
+      return failedRunnerOutput("finish", runnerKind, [], {
+        blockerIds: ["trusted-authority-required"],
+        followUp: workflowFinishFollowUpForStep({
+          blockerId: "trusted-authority-required",
+          id: "trusted-authority-required",
+          kind: "human-or-model-content",
+          reason: consumed.reason,
+          source: ".persona/evidence",
+          status: "blocked",
+        }),
       })
     }
     return passedFinishOutput(runnerKind)
