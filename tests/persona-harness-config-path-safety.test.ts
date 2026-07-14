@@ -87,11 +87,17 @@ describe("P3-6 config/path safety", () => {
       env: {},
       invocationName: "ph",
     })
+    const closurePayload = JSON.parse(closure.stdout)
 
     expect(result.diagnostics[0]?.code).toBe("malformed_config")
     expect(closure.status).toBe(0)
-    expect(closure.stdout).toContain("harness-config-invalid")
-    expect(closure.stdout).toContain("read-only recovery")
+    expect(closurePayload.nextStep).toMatchObject({
+      blockerId: "harness-config-invalid",
+      id: "repair-harness-config",
+      source: ".persona/harness.jsonc",
+      status: "blocked",
+    })
+    expect(closurePayload.nextStep).not.toHaveProperty("reason")
     expect(closure.stdout).not.toContain("SyntaxError")
     expect(closure.stdout).not.toContain("broken")
     expect(readFileSync(configPath, "utf8")).toBe(before)
