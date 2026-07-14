@@ -96,10 +96,12 @@ describe("continuation hook", () => {
         pendingTicketPath: ".persona/workflow/work/step-2/00-task-card.md",
         remainingReadRange: "README.md 120-260",
         remainingScope: "Step 2-7",
-        nextPromptHint: "Step 2부터 이어서 구현",
+        privacyClass: "metadata-safe",
         reportOnly: true,
       }),
     )
+    expect(continuationPayloads()[0]?.["nextPromptHint"]).toBeUndefined()
+    expect(continuationPayloads()[0]?.["nextPromptDiagnostic"]).toBeUndefined()
   })
 
   it("appends continuation guidance when output claims completion while backlog still has a pending ticket", async () => {
