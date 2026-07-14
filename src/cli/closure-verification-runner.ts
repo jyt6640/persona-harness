@@ -1,8 +1,7 @@
-import { spawnSync } from "node:child_process"
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 
-import { signalExitCode } from "./bearshell-exit-code.js"
+import { runBoundedProcess } from "./bounded-process.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
 import type { ClosureVerificationSummary } from "./workflow-closure-verification.js"
 
@@ -81,15 +80,15 @@ export function runDirectTestVerification(projectDir: string): DirectTestVerific
   }
 
   const startedAtMs = Date.now()
-  const result = spawnSync(verificationCommand.command, [...verificationCommand.args], {
+  const result = runBoundedProcess({
+    args: verificationCommand.args,
+    command: verificationCommand.command,
     cwd: projectDir,
-    encoding: "utf8",
-    killSignal: "SIGTERM",
-    timeout: DIRECT_VERIFICATION_TIMEOUT_MS,
-    windowsHide: true,
+    graceMs: 5_000,
+    timeoutMs: DIRECT_VERIFICATION_TIMEOUT_MS,
   })
-  const status = result.status ?? signalExitCode(result.signal)
-  const output = [toOutputText(result.stdout), toOutputText(result.stderr)].filter((text) => text.length > 0).join("\n")
+  const status = result.status
+  const output = [result.stdout, result.stderr].filter((text) => text.length > 0).join("\n")
   const evidenceRef = `PH direct verification: ${verificationCommand.display}`
   const junitFiles = recentJunitFiles(projectDir, startedAtMs)
   const junitCases = junitFiles.flatMap((file) => parseJUnitTestCases(readFileSync(join(projectDir, file), "utf8"), file))
@@ -114,7 +113,7 @@ export function runDirectTestVerification(projectDir: string): DirectTestVerific
       junitCases,
       junitRefs: junitFiles,
       output,
-      reason: `PH direct verification failed (${verificationCommand.display}, exit ${status})${outputReason(output)}`,
+      reason: `PH direct verification failed (${verificationCommand.display}, exit ${status})${processOutcomeReason(result.outcome, DIRECT_VERIFICATION_TIMEOUT_MS)}${outputReason(output)}`,
       verification: "failed",
     }
   }
@@ -286,14 +285,38 @@ function decodeXmlAttribute(value: string): string {
     .replaceAll("&amp;", "&")
 }
 
-function toOutputText(value: string | Buffer | null): string {
-  if (value === null) {
-    return ""
-  }
-  return Buffer.isBuffer(value) ? value.toString("utf8") : value
-}
-
 function outputReason(output: string): string {
   const firstLine = output.split(/\r?\n/u).find((line) => line.trim().length > 0)
-  return firstLine === undefined ? "" : `: ${firstLine.trim()}`
+  if (firstLine === undefined) {
+    return ""
+  }
+  const trimmed = firstLine.trim()
+  return trimmed.length <= 256
+    ? `: ${trimmed}`
+    : `: ${trimmed.slice(0, 160)}...[truncated]...${trimmed.slice(-64)}`
+}
+
+function processOutcomeReason(
+  outcome: ReturnType<typeof runBoundedProcess>["outcome"],
+  timeoutMs: number,
+): string {
+  switch (outcome) {
+    case "output-limit":
+      return ": bounded output limit reached"
+    case "signal":
+      return ": process terminated by signal"
+    case "spawn-failure":
+      return ": process spawn failed"
+    case "timeout":
+      return `: process timed out after ${timeoutMs}ms`
+    case "failed":
+    case "passed":
+      return ""
+    default:
+      return assertNever(outcome)
+  }
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unknown bounded process outcome: ${String(value)}`)
 }

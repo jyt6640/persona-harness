@@ -120,6 +120,10 @@ export function runCiReverification(
           graceMs: 5_000,
           timeoutMs: Math.min(commandTimeoutMs, remaining),
         })
+        if (result.outcome === "output-limit") diagnostics.push("verification-output-limit")
+        if (result.outcome === "signal") diagnostics.push("verification-signal")
+        if (result.outcome === "spawn-failure") diagnostics.push("verification-spawn-failure")
+        if (result.outcome === "timeout") diagnostics.push("verification-timeout")
         const record = createCommandRecord(projectDir, index + 1, command.fixedArgvId, startedAt, now(), result)
         commandRecords.push(record)
         if (record.outcome !== "passed") break

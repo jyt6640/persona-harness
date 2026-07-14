@@ -201,6 +201,23 @@ describe("ph bearshell", () => {
     expect(after.state.verification).toBe("passed")
   })
 
+  it("does not place command text in execution evidence filenames", () => {
+    const projectDir = createClosureProject()
+    const commandText = "command-name-should-not-be-a-filename"
+
+    const result = runPersonaCli(["bearshell", "node", "-e", `console.log(${JSON.stringify(commandText)})`], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    const evidenceDir = join(projectDir, ".persona", "evidence", "phase0")
+    const filenames = readdirSync(evidenceDir)
+    expect(filenames).toHaveLength(1)
+    expect(filenames[0]).not.toContain(commandText)
+  })
+
   it("writes failed execution evidence that keeps closure verification blocked", () => {
     const projectDir = createClosureProject()
 
