@@ -7,6 +7,7 @@ export type BuilderFailure = {
 export type FailureReportSummary = {
   readonly available: boolean
   readonly digest: string | null
+  readonly failedTestFiles: readonly string[]
   readonly path: string
   readonly summary: {
     readonly failed: number
@@ -36,4 +37,4 @@ export const FIXED_COMMANDS: readonly {
 
 export const FAILURE_DIAGNOSTIC_SCHEMA: "clean-ci-builder-failure.1"
 
-export function createFailureDiagnostic(failure: BuilderFailure, reportPath: string): FailureDiagnostic
+export function createFailureDiagnostic(failure: BuilderFailure, reportPath: string, workspaceRoot: string): FailureDiagnostic
