@@ -473,16 +473,27 @@ enforcement: inject_only
   it("escalates a timed-out child that ignores SIGTERM", () => {
     const projectDir = createWorkflowProject()
     const command = join(projectDir, "ignore-term.mjs")
-    writeFileSync(command, "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)\n")
+    const readinessPath = join(projectDir, "ignore-term.ready")
+    writeFileSync(
+      command,
+      [
+        "import { writeFileSync } from 'node:fs'",
+        "process.on('SIGTERM', () => {})",
+        `writeFileSync(${JSON.stringify(readinessPath)}, "ready\\n")`,
+        "setInterval(() => {}, 1000)",
+      ].join("\n"),
+    )
 
     const result = runBoundedProcess({
       args: [command],
       command: process.execPath,
       cwd: projectDir,
       graceMs: 50,
-      timeoutMs: 50,
+      timeoutMs: 1000,
     })
 
+    expect(existsSync(readinessPath)).toBe(true)
+    expect(readFileSync(readinessPath, "utf8")).toBe("ready\n")
     expect(result.timedOut).toBe(true)
     expect(result.killed).toBe(true)
   })
