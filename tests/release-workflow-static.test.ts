@@ -26,11 +26,13 @@ describe("CI and release workflow policy surface", () => {
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
       )
 
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml"]) {
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml"]) {
         const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
         const floatingText = readFileSync(sourcePath, "utf8")
           .replaceAll("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5", "actions/checkout@v4")
           .replaceAll("actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020", "actions/setup-node@v4")
+          .replaceAll("actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc", "actions/attest@v2")
+          .replaceAll("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", "actions/upload-artifact@v4")
         writeFileSync(join(fixtureDir, ".github", "workflows", workflowName), floatingText)
       }
 
