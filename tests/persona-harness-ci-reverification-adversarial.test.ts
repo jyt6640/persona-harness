@@ -81,7 +81,7 @@ describe("CI reverification adversarial boundaries", () => {
       now: () => times.shift() ?? 0,
       runProcess: (options) => {
         calls.push({ args: options.args, command: options.command, timeoutMs: options.timeoutMs })
-        return { killed: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false }
+        return { killed: false, outcome: "passed", outputLimited: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false }
       },
     })
 
@@ -108,7 +108,7 @@ describe("CI reverification adversarial boundaries", () => {
       const result = runCiReverification(projectDir, "ci", {
         runProcess: () => {
           commandStarts += 1
-          return { killed: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false }
+          return { killed: false, outcome: "passed", outputLimited: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false }
         },
       })
       expect(result.finalStatus).toBe("unavailable")
@@ -130,7 +130,7 @@ describe("CI reverification adversarial boundaries", () => {
       "gradle-wrapper-test.1",
       2_000,
       2_100,
-      { killed: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false },
+      { killed: false, outcome: "passed", outputLimited: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false },
     )
 
     expect(record.junitRefs).toEqual([])
@@ -141,7 +141,7 @@ describe("CI reverification adversarial boundaries", () => {
     const times = [0, 0, 0, 0, 0, 300_001, 300_001]
     const result = runCiReverification(projectDir, "ci", {
       now: () => times.shift() ?? 300_001,
-      runProcess: () => ({ killed: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false }),
+      runProcess: () => ({ killed: false, outcome: "passed", outputLimited: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false }),
     })
 
     expect(result.finalStatus).toBe("partial")

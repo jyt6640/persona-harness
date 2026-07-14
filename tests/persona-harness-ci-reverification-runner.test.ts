@@ -14,6 +14,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
+import type { BoundedProcessResult } from "../src/cli/bounded-process.js"
 import { captureGitIdentity, captureWorkspaceIdentity } from "../src/cli/ci-reverification-identity.js"
 import { writeAndRereadCiReverificationArtifact } from "../src/cli/ci-reverification-artifact.js"
 import { runCiReverification } from "../src/cli/ci-reverification-runner.js"
@@ -157,6 +158,8 @@ describe("CI reverification runner", () => {
       },
       runProcess: () => ({
         killed: true,
+        outcome: "timeout",
+        outputLimited: false,
         signal: "SIGKILL",
         status: 137,
         stderr: "timeout secret",
@@ -168,12 +171,12 @@ describe("CI reverification runner", () => {
   })
 
   it("blocks new tracked source mutation only in CI and preserves the file", () => {
-    function mutate(projectDir: string) {
+    function mutate(projectDir: string): () => BoundedProcessResult {
       let calls = 0
-      return () => {
+      return (): BoundedProcessResult => {
         calls += 1
         if (calls === 1) writeFileSync(join(projectDir, "src", "main", "java", "App.java"), "class App { int changed; }\n")
-        return { killed: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false }
+        return { killed: false, outcome: "passed" as const, outputLimited: false, signal: null, status: 0, stderr: "", stdout: "", timedOut: false }
       }
     }
     const ciProject = createProject(successScript())

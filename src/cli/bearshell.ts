@@ -1,8 +1,7 @@
-import { spawnSync } from "node:child_process"
 import process from "node:process"
 
 import { writeBearshellExecutionEvidence } from "../runtime/execution-evidence.js"
-import { signalExitCode } from "./bearshell-exit-code.js"
+import { runBoundedProcess, type BoundedProcessResult } from "./bounded-process.js"
 
 export type CliRunResult = {
   readonly status: number
@@ -84,31 +83,25 @@ export function runBearshell(args: readonly string[], options: BearshellOptions 
     return formatResult({ status: 1, stdout: "", stderr: `${parsed.message}\n\n${bearshellUsage(invocationName)}\n` }, parsed.json)
   }
 
-  const childEnv = { ...process.env, ...env }
+  const childEnv = env
   const startedMs = Date.now()
-  const spawned = parsed.shell
-    ? spawnSync(parsed.command, {
-        cwd: options.cwd,
-        encoding: "utf8",
-        env: childEnv,
-        shell: true,
-        timeout: parsed.timeoutMs,
-        killSignal: "SIGTERM",
-      })
-    : spawnSync(parsed.command, [...parsed.args], {
-        cwd: options.cwd,
-        encoding: "utf8",
-        env: childEnv,
-        shell: false,
-        timeout: parsed.timeoutMs,
-        killSignal: "SIGTERM",
-      })
+  const invocation = parsed.shell
+    ? shellInvocation(parsed.command)
+    : { args: parsed.args, command: parsed.command }
+  const spawned = runBoundedProcess({
+    args: invocation.args,
+    command: invocation.command,
+    cwd: options.cwd,
+    env: childEnv,
+    graceMs: 5_000,
+    timeoutMs: parsed.timeoutMs,
+  })
 
-  const status = spawned.status ?? signalExitCode(spawned.signal)
+  const status = spawned.status
   const endedMs = Date.now()
   const stdout = maybeCondense(toOutputString(spawned.stdout), parsed.budget, env)
   const stderr = maybeCondense(
-    spawnErrorMessage(parsed.command, spawned.error, parsed.timeoutMs) ?? toOutputString(spawned.stderr),
+    processErrorMessage(parsed.command, spawned, parsed.timeoutMs) ?? toOutputString(spawned.stderr),
     parsed.budget,
     env,
   )
@@ -125,7 +118,21 @@ export function runBearshell(args: readonly string[], options: BearshellOptions 
 }
 
 function commandText(parsed: Extract<ParsedBearshellArgs, { readonly kind: "exec" }>): string {
-  return parsed.shell ? parsed.command : [parsed.command, ...parsed.args].join(" ")
+  const command = parsed.shell ? parsed.command : [parsed.command, ...parsed.args].join(" ")
+  return boundedDiagnosticText(command)
+}
+
+function shellInvocation(command: string): { readonly args: readonly string[]; readonly command: string } {
+  if (process.platform === "win32") {
+    return {
+      args: ["/d", "/s", "/c", command],
+      command: process.env.ComSpec ?? "cmd.exe",
+    }
+  }
+  return {
+    args: ["-c", command],
+    command: process.env.SHELL ?? "/bin/sh",
+  }
 }
 
 function parseBearshellArgs(args: readonly string[], env: Readonly<Record<string, string | undefined>>): ParsedBearshellArgs {
@@ -247,19 +254,35 @@ function toOutputString(value: unknown): string {
   return typeof value === "string" ? value : ""
 }
 
-function spawnErrorMessage(command: string, error: Error | undefined, timeoutMs: number): string | undefined {
-  if (error === undefined) {
-    return undefined
+function processErrorMessage(command: string, result: BoundedProcessResult, timeoutMs: number): string | undefined {
+  const displayCommand = boundedDiagnosticText(command)
+  switch (result.outcome) {
+    case "output-limit":
+      return `[bearshell] command output exceeded the bounded capture limit\n`
+    case "signal":
+      return `[bearshell] command terminated by ${result.signal ?? "signal"}: ${displayCommand}\n`
+    case "spawn-failure":
+      return `[bearshell] failed to launch ${displayCommand}: ${boundedDiagnosticText(result.stderr)}\n`
+    case "timeout":
+      return `[bearshell] command timed out after ${timeoutMs}ms: ${displayCommand}\n`
+    case "failed":
+    case "passed":
+      return undefined
+    default:
+      return assertNever(result.outcome)
   }
-  if (errorCode(error) === "ETIMEDOUT") {
-    return `[bearshell] command timed out after ${timeoutMs}ms: ${command}\n`
-  }
-  return `[bearshell] failed to launch ${command}: ${error.message}\n`
 }
 
-function errorCode(error: Error): string | undefined {
-  if (!("code" in error)) {
-    return undefined
+function boundedDiagnosticText(value: string): string {
+  const maxChars = 512
+  if (value.length <= maxChars) {
+    return value
   }
-  return typeof error.code === "string" ? error.code : undefined
+  const headChars = Math.floor(maxChars * 0.6)
+  const tailChars = maxChars - headChars
+  return `${value.slice(0, headChars)}...[truncated]...${value.slice(-tailChars)}`
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unknown bounded process outcome: ${String(value)}`)
 }

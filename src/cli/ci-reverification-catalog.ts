@@ -72,7 +72,7 @@ export function createCommandRecord(
     fixedArgvId,
     junitRefs: collectJUnitRefs(projectDir, startedAt),
     ordinal,
-    outcome: result.timedOut ? "timeout" : result.status === 0 ? "passed" : "failed",
+    outcome: result.outcome === "timeout" || result.timedOut ? "timeout" : result.status === 0 ? "passed" : "failed",
     stderrBytes: stderr.byteLength,
     stderrSha256: sha256(stderr),
     stdoutBytes: stdout.byteLength,

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { mkdirSync } from "node:fs"
 import { join, relative } from "node:path"
 
@@ -26,7 +27,7 @@ export function writeBearshellExecutionEvidence(projectDir: string, event: Execu
     return null
   }
   const evidenceDir = join(evidencePath.path, "phase0")
-  const runId = `${event.endedAt.replace(/[:.]/g, "-")}-bearshell-${safeSlug(event.command)}`
+  const runId = `${event.endedAt.replace(/[:.]/g, "-")}-bearshell-${randomUUID()}`
   const outputPath = join(evidenceDir, `${runId}.json`)
   const payload = {
     schemaVersion: "phase0.execution.1",
@@ -62,13 +63,4 @@ function boundOutput(text: string): string {
   const head = text.slice(0, headLength).trimEnd()
   const tail = text.slice(text.length - tailLength).trimStart()
   return `${head}\n[bearshell evidence truncated] original chars: ${text.length}; omitted: ${text.length - head.length - tail.length}\n${tail}`
-}
-
-function safeSlug(value: string): string {
-  return value
-    .replace(/\\/g, "/")
-    .split("/")
-    .at(-1)
-    ?.replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .toLowerCase() || "command"
 }

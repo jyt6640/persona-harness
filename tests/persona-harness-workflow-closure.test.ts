@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { runDirectTestVerification } from "../src/cli/closure-verification-runner.js"
 import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "../src/cli/architecture-conventions.js"
 import {
   blockerStep,
@@ -471,6 +472,18 @@ describe("ph workflow closure read-only planner", () => {
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Blocker: verification-failed")
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next action: Fix the compile/test failure reported by Persona Harness verification.")
     expect(`${finish.stdout}\n${finish.stderr}`).not.toContain("Next command:")
+  })
+
+  it("bounds PH-run direct verification output before closure consumes it", () => {
+    const projectDir = createWorkflowProject()
+    writeDirectVerificationConfig(projectDir)
+    writeGradleWrapper(projectDir, "#!/bin/sh\nnode -e 'process.stdout.write(\"HEAD\" + \"x\".repeat(3000000) + \"TAIL\")'\nexit 0\n")
+
+    const result = runDirectTestVerification(projectDir)
+
+    expect(result.verification).toBe("failed")
+    expect(result.output.length).toBeLessThanOrEqual(2_100_000)
+    expect(result.output).toContain("HEAD")
   })
 
   it("passes verification from PH-run direct execution when enforcement is enabled", () => {
