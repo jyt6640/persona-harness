@@ -1,12 +1,13 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
 
 import type { Message } from "@opencode-ai/sdk"
 
+import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
-import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
+import { writePrivateEvidenceJson } from "./evidence-file.js"
 
 export type TokenUsage = {
   readonly cacheRead: number
@@ -44,6 +45,7 @@ export type TokenUsageEvidence = {
   readonly modelLimit: number | null
   readonly modelLimitSource: ModelLimit["source"] | null
   readonly modelLimitUnavailableReason: string | null
+  readonly privacyClass: "metadata-safe"
   readonly providerID: string
   readonly ratio: number | null
   readonly schemaVersion: "token-usage.1"
@@ -172,6 +174,7 @@ function payloadFor(
     modelLimit: contextLimit,
     modelLimitSource: modelLimit?.source ?? null,
     modelLimitUnavailableReason: contextLimit === null ? LIMIT_UNAVAILABLE_REASON : null,
+    privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
     providerID: latest?.providerID ?? "unknown",
     ratio: contextLimit === null ? null : (aggregate.input + aggregate.cacheRead) / contextLimit,
     schemaVersion: "token-usage.1",
@@ -236,8 +239,7 @@ export class TokenTelemetryRecorder {
         createdAtFrom(outputPath, timestamp),
         timestamp,
       )
-      mkdirSync(dirname(outputPath), { recursive: true })
-      writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+      writePrivateEvidenceJson(this.evidenceDir, outputPath, payload)
       return { kind: "written", path: outputPath, payload }
     } catch (error) {
       const runtimeError = error instanceof Error ? error : new Error(String(error))

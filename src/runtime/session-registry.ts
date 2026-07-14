@@ -1,12 +1,13 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
 
 import type { Event } from "@opencode-ai/sdk"
 
+import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
-import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
+import { writePrivateEvidenceJson } from "./evidence-file.js"
 
 type SessionKind = "main" | "subagent" | "unknown"
 
@@ -32,6 +33,7 @@ type SkipEvidencePayload = {
   readonly firstSeen: string
   readonly lastReason: string
   readonly lastSeen: string
+  readonly privacyClass: "metadata-safe"
   readonly schemaVersion: "session-injection-skip.1"
   readonly sessionID: string
   readonly skippedSurfaces: Readonly<Partial<Record<RuntimeInjectionSurface, number>>>
@@ -65,10 +67,16 @@ function safeSessionKey(sessionID: string): string {
   return sessionID.replace(/[^a-zA-Z0-9._-]+/g, "-").toLowerCase() || "session"
 }
 
-function skipEvidencePath(projectDir: string, sessionID: string): string | undefined {
+function skipEvidenceLocation(
+  projectDir: string,
+  sessionID: string,
+): { readonly evidenceRoot: string; readonly path: string } | undefined {
   const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
   return evidenceRoot.ok
-    ? join(evidenceRoot.path, "session-injection-skips", `${safeSessionKey(sessionID)}.json`)
+    ? {
+        evidenceRoot: evidenceRoot.path,
+        path: join(evidenceRoot.path, "session-injection-skips", `${safeSessionKey(sessionID)}.json`),
+      }
     : undefined
 }
 
@@ -102,6 +110,7 @@ function readSkipEvidence(path: string): SkipEvidencePayload | undefined {
       firstSeen: typeof parsed.firstSeen === "string" ? parsed.firstSeen : new Date().toISOString(),
       lastReason: typeof parsed.lastReason === "string" ? parsed.lastReason : "unknown",
       lastSeen: typeof parsed.lastSeen === "string" ? parsed.lastSeen : new Date().toISOString(),
+      privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
       schemaVersion: "session-injection-skip.1",
       sessionID: typeof parsed.sessionID === "string" ? parsed.sessionID : "unknown",
       skippedSurfaces: surfaceCounts(parsed.skippedSurfaces),
@@ -186,10 +195,11 @@ export class RuntimeSessionRegistry {
   }
 
   private recordSkip(input: SkipRecordInput): void {
-    const outputPath = skipEvidencePath(this.options.projectDir, input.sessionID)
-    if (outputPath === undefined) {
+    const location = skipEvidenceLocation(this.options.projectDir, input.sessionID)
+    if (location === undefined) {
       return
     }
+    const outputPath = location.path
     const now = new Date().toISOString()
     const previous = readSkipEvidence(outputPath)
     const skippedSurfaces = {
@@ -202,13 +212,13 @@ export class RuntimeSessionRegistry {
       firstSeen: previous?.firstSeen ?? now,
       lastReason: input.reason,
       lastSeen: now,
+      privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
       schemaVersion: "session-injection-skip.1",
       sessionID: input.sessionID,
       skippedSurfaces,
     }
     try {
-      mkdirSync(dirname(outputPath), { recursive: true })
-      writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+      writePrivateEvidenceJson(location.evidenceRoot, outputPath, payload)
     } catch (error) {
       if (error instanceof Error) {
         warnRuntimeFailure("evidence-write", "session-injection-skip-write", outputPath, error)
