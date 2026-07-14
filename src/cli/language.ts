@@ -16,6 +16,7 @@ export function languageUsage(invocation = "ph"): string {
     "Shows supported user languages for intake, planning, and agent-facing workflow prompts.",
     "",
     "This command does not change files. Select the language in `ph intake --interactive` or edit `.persona/project-profile.jsonc` question `user-language`.",
+    "For CLI help, select Korean explicitly with `ph --help --lang ko`.",
   ].join("\n")
 }
 

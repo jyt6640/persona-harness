@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url"
 import { runBootstrapCommand } from "./bootstrap.js"
 import { runAttachCommand } from "./attach.js"
 import { personaCliUsage } from "./cli-usage.js"
+import { parseRootHelpSelection } from "./help-locale.js"
 import { initUsage, runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
 import { runHistoryCommand } from "./history.js"
@@ -160,7 +161,11 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === undefined || command === "help" || command === "--help" || command === "-h") {
-    return { status: 0, stdout: `${personaCliUsage(invocationName)}\n`, stderr: "" }
+    const helpSelection = parseRootHelpSelection(args)
+    if (helpSelection.kind === "invalid") {
+      return { status: 1, stdout: "", stderr: `${helpSelection.message}\n\n${personaCliUsage(invocationName)}\n` }
+    }
+    return { status: 0, stdout: `${personaCliUsage(invocationName, helpSelection.locale)}\n`, stderr: "" }
   }
 
   return {
