@@ -43,6 +43,11 @@ stable, GA, or npm `latest` evidence.
 
 See [`p3-9-rc3-integrity-governance-decision.md`](p3-9-rc3-integrity-governance-decision.md)
 for the exact-main decision and its release boundary.
+The current-main follow-up is
+[`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md):
+the already-published `0.7.0-rc.2` version has a different registry gitHead,
+so only next-RC planning may begin and no current-main publication, Stable/GA,
+or npm `latest` action is authorized.
 
 The sole user-authorized product-scope exception is issue #19 Korean CLI help
 locale selection, recorded in

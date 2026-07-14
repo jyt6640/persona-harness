@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 39
+- current active pointer/status: 40
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 54
 - versioned durable: 23
 
-Total indexed files: 321
+Total indexed files: 322
 
 ## File Inventory
 
@@ -127,6 +127,7 @@ Total indexed files: 321
 | `docs/current/role-scoped-rule-delivery.md` | current active pointer/status | - | T7 role/stage scoped static rule delivery status and boundary record. |
 | `docs/current/role-rules-dogfooding-readiness.md` | current active pointer/status | - | T10 ROLE-RULES dogfooding readiness checklist, violation-log template, and next queue. |
 | `docs/current/release/README.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
+| `docs/current/release/rc-release-readiness-decision.md` | current active pointer/status | - | Exact current-main release decision: next-RC planning may begin, while publication, Stable/GA, and npm latest remain held. |
 | `docs/current/release/github-actions-release-automation.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/release/next-version-blocked.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/release/next-version-readiness.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |

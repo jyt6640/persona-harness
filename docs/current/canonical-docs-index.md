@@ -29,6 +29,7 @@ Use these files when making current product, measurement, or release decisions.
 | Stable release facts | `docs/releases/v0.6.0/README.md` | Durable stable `latest` registry-smoke capsule. |
 | Package/version timeline | `docs/releases/package-index.md` | Chronological package index from `0.1.0` through current prereleases. |
 | Release operations | `docs/current/release/README.md` | Release runbook and workflow-compatible release-note sources. |
+| RC release readiness decision | `docs/current/release/rc-release-readiness-decision.md` | Exact current-main decision: next-RC planning may start, while publication, Stable/GA, and `latest` remain blocked. |
 | External review adoption status | `docs/current/external-review-adoption-status.md` | Stage 16-e adoption/rejection/defer matrix for external review items; docs-only, no schema/product expansion. |
 | Diff-rules classification | `docs/current/diff-rules-classification.md` | T6 classification of all 50 `references/diff-rules` files for future role delivery or T8 gate-candidate work. |
 | Java Iron List gate matrix | `docs/current/java-ironlist-gate-matrix.md` | Item 11 source/fixture/convention-state inventory; it does not add Java enforcement. |
@@ -38,7 +39,7 @@ Use these files when making current product, measurement, or release decisions.
 | P3 integrity roadmap | `docs/current/p3-integrity-roadmap.md` | Accepted P3 assurance model, release hold, and constrained P2 source-only resumption boundary. |
 | P3-2 closure authority candidate | `docs/current/p3-2-closure-authority-acceptance-record.md` | Candidate finish boundary: unsigned project-local evidence is diagnostic-only and no trusted authority path exists yet. |
 | P3-3 verification receipt candidate | `docs/current/p3-3-verification-receipt-acceptance-record.md` | Strict receipt/attempt parser and read-only lifecycle diagnostics; no receipt issuance or finish-authority acceptance. |
-| P3-8 CI/release integrity controls | `docs/current/p3-8-ci-release-integrity-acceptance-record.md` | PR/main CI and canonical-main/registry/release idempotency checks plus repository-admin readback; staged-publish least privilege and release approval remain separate gates. |
+| P3-8 CI/release integrity controls | `docs/current/p3-8-ci-release-integrity-acceptance-record.md` | PR/main CI and canonical-main/registry/release idempotency checks plus repository-admin readback; trusted publishing is publish-only and release approval remains a separate gate. |
 | P3-9 RC3 integrity governance decision | `docs/current/p3-9-rc3-integrity-governance-decision.md` | Exact-main source/package/governance decision: constrained P2 source-only resumption GO; Stable/GA/latest/publish remain NO-GO. |
 | Korean CLI help scope authorization | `docs/current/korean-cli-help-scope-authorization.md` | Sole user-authorized #19 product-scope exception for Korean CLI help locale selection; all other P2 product work and release boundaries remain held. |
 | P3-4 fresh fixed-command verifier candidate | `docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md` | Fresh POSIX Java/Spring/Gradle execution, receipt/attempt issuance, and nonzero testcase enforcement; P3-2 remains blocking. |
