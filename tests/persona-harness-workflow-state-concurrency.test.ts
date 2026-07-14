@@ -168,8 +168,14 @@ describe("workflow state concurrent write protection", () => {
     )
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain("Workflow state changed while Persona Harness was updating")
-    expect(result.stderr).toContain(".persona/workflow/workflow-loop-state.json")
+    const output = JSON.parse(result.stdout)
+    expect(output).toMatchObject({
+      diagnosticCodes: ["workflow-state-conflict"],
+      exitCode: 1,
+      finalDecision: "state-conflict",
+      success: false,
+    })
+    expect(result.stderr).toBe("")
     expect(readFileSync(join(projectDir, ".persona", "workflow", "workflow-loop-state.json"), "utf8")).toContain(
       "workflow-loop-state.1",
     )

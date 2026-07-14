@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { runBoundedProcess } from "../src/cli/bounded-process.js"
 import { runPersonaCli } from "../src/cli/index.js"
+import { runWorkflowLoopCommand, workflowLoopResultForDecision, type WorkflowLoopFinalDecision } from "../src/cli/workflow-loop.js"
 
 const tempProjects: string[] = []
 
@@ -31,6 +32,13 @@ function writeFakeOpencode(projectDir: string): string {
       "process.stdout.write('fake opencode completed\\n')",
     ].join("\n"),
   )
+  chmodSync(command, 0o755)
+  return command
+}
+
+function writeProcessOpencode(projectDir: string, name: string, source: string): string {
+  const command = join(projectDir, name)
+  writeFileSync(command, `#!/usr/bin/env node\n${source}\n`)
   chmodSync(command, 0o755)
   return command
 }
@@ -235,13 +243,16 @@ enforcement: inject_only
     const result = runPersonaCli(["workflow", "loop", "--dry-run", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const output = JSON.parse(result.stdout)
 
-    expect(result.status).toBe(0)
+    expect(result.status).toBe(1)
     expect(output).toMatchObject({
       defaultOff: true,
+      diagnosticCodes: ["dry-run-blocked"],
+      exitCode: 1,
       finalDecision: "not-run",
       maxIterations: 3,
       mode: "dry-run",
       schemaVersion: "workflow-loop.1",
+      success: false,
     })
     expect(output.promptPreview.join("\n")).toContain("Blocker: verification-unknown (blocker 1/")
     expect(output.promptPreview.join("\n")).toContain("Scoped PH rules (role: test-writer, stage: verification")
@@ -265,11 +276,21 @@ enforcement: inject_only
     const actionLine = output.promptPreview.find((line: string) => line.startsWith("Next action:"))
     const commandLine = output.promptPreview.find((line: string) => line.startsWith("Next command:"))
 
-    expect(json.status).toBe(0)
-    expect(plaintext.status).toBe(0)
+    expect(json.status).toBe(1)
+    expect(plaintext.status).toBe(1)
+    expect(output).toMatchObject({
+      diagnosticCodes: ["dry-run-blocked"],
+      exitCode: 1,
+      finalDecision: "not-run",
+      success: false,
+    })
     expect(actionLine).toBe("Next action: Run the project's supported test/build/runtime verification and record the outcome in workflow evidence.")
     expect(commandLine).toBe("Next command: after completing the action, run npx ph workflow check")
     expect(plaintext.stdout).toContain("Prompt preview:")
+    expect(plaintext.stdout).toContain("Success: false")
+    expect(plaintext.stdout).toContain("Final decision: not-run")
+    expect(plaintext.stdout).toContain("Exit code: 1")
+    expect(plaintext.stdout).toContain("Diagnostic codes: dry-run-blocked")
     expect(plaintext.stdout).toContain(actionLine)
     expect(plaintext.stdout).toContain(commandLine)
     expect(output.promptPreview.join("\n")).not.toContain("Next action: npx ph workflow check")
@@ -298,8 +319,8 @@ enforcement: inject_only
     const actionLine = "Next action: Complete the required substantive content in .persona/workflow/implementation-report.md, including verification evidence, before marking it filled."
     const commandLine = "Next command: after completing the action, run npx ph plan --report-filled implementation"
 
-    expect(json.status).toBe(0)
-    expect(plaintext.status).toBe(0)
+    expect(json.status).toBe(1)
+    expect(plaintext.status).toBe(1)
     expect(output.promptPreview).toContain(actionLine)
     expect(output.promptPreview).toContain(commandLine)
     expect(plaintext.stdout).toContain(actionLine)
@@ -336,7 +357,13 @@ enforcement: inject_only
     const result = runPersonaCli(["workflow", "loop", "--dry-run", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const output = JSON.parse(result.stdout)
 
-    expect(result.status).toBe(0)
+    expect(result.status).toBe(1)
+    expect(output).toMatchObject({
+      diagnosticCodes: ["dry-run-blocked"],
+      exitCode: 1,
+      finalDecision: "not-run",
+      success: false,
+    })
     expect(output.iterations).toHaveLength(1)
     expect(output.iterations[0].blockerId).toBe("verification-unknown")
   })
@@ -365,7 +392,13 @@ enforcement: inject_only
     const state = JSON.parse(readFileSync(join(projectDir, ".persona", "workflow", "workflow-loop-state.json"), "utf8"))
     const firstPrompt = readFileSync(join(projectDir, ".persona", "workflow", "loop", "iteration-1-prompt.md"), "utf8")
 
-    expect(result.status).toBe(0)
+    expect(result.status).toBe(1)
+    expect(output).toMatchObject({
+      diagnosticCodes: ["iteration-cap"],
+      exitCode: 1,
+      finalDecision: "iteration-cap",
+      success: false,
+    })
     expect(output.finalDecision).toBe("iteration-cap")
     expect(output.iterations).toHaveLength(2)
     expect(state.schemaVersion).toBe("workflow-loop-state.2")
@@ -413,7 +446,13 @@ enforcement: inject_only
         blockerId: "architecture-custom-unmapped-loop",
         id: "unmapped-blocker",
       })
-      expect(result.status).toBe(0)
+      expect(result.status).toBe(1)
+      expect(output).toMatchObject({
+        diagnosticCodes: ["unmapped-blocker"],
+        exitCode: 1,
+        finalDecision: "unmapped-blocker",
+        success: false,
+      })
       expect(output.finalDecision).toBe("unmapped-blocker")
       expect(output.iterations).toHaveLength(0)
       expect(state.finalDecision).toBe("unmapped-blocker")
@@ -458,6 +497,110 @@ enforcement: inject_only
         process.env.PH_AST_GREP_BIN = previousAstGrep
       }
     }
+  })
+
+  it.each([
+    {
+      diagnosticCodes: ["child-failure"],
+      finalDecision: "child-failure",
+      label: "child failure",
+      source: "process.stderr.write('child failed secret payload\\n'); process.exit(7)",
+    },
+    {
+      diagnosticCodes: ["child-timeout"],
+      finalDecision: "timeout",
+      label: "timeout",
+      source: "setInterval(() => {}, 1000)",
+      timeoutMs: "100",
+    },
+    {
+      diagnosticCodes: ["child-signal"],
+      finalDecision: "signal",
+      label: "signal",
+      source: "process.kill(process.pid, 'SIGTERM')",
+    },
+    {
+      diagnosticCodes: ["child-output-limit"],
+      finalDecision: "output-limit",
+      label: "output limit",
+      source: "process.stdout.write('x'.repeat(3_000_000))",
+    },
+  ])("returns a nonzero structured result for $label", ({ diagnosticCodes, finalDecision, source, timeoutMs }) => {
+    const projectDir = createWorkflowProject()
+    const opencodeCommand = writeProcessOpencode(projectDir, `fake-opencode-${finalDecision}.mjs`, source)
+    const args = [
+      "workflow",
+      "loop",
+      "--json",
+      "--max-iterations",
+      "1",
+      "--timeout-ms",
+      timeoutMs ?? "5000",
+      "--grace-ms",
+      "20",
+      "--opencode-command",
+      opencodeCommand,
+    ]
+
+    const result = runPersonaCli(args, { cwd: projectDir, env: {}, invocationName: "ph" })
+    const output = JSON.parse(result.stdout)
+
+    expect(result.status).toBe(1)
+    expect(output).toMatchObject({
+      diagnosticCodes,
+      exitCode: 1,
+      finalDecision,
+      success: false,
+    })
+    expect(result.stdout).not.toContain("child failed secret payload")
+  })
+
+  it("reports a missing child command as a structured spawn failure", () => {
+    const projectDir = createWorkflowProject()
+    const result = runPersonaCli(
+      [
+        "workflow",
+        "loop",
+        "--json",
+        "--max-iterations",
+        "1",
+        "--opencode-command",
+        join(projectDir, "missing-opencode"),
+      ],
+      { cwd: projectDir, env: {}, invocationName: "ph" },
+    )
+    const output = JSON.parse(result.stdout)
+
+    expect(result.status).toBe(1)
+    expect(output).toMatchObject({
+      diagnosticCodes: ["child-spawn-failure"],
+      exitCode: 1,
+      finalDecision: "spawn-failure",
+      success: false,
+    })
+  })
+
+  it.each([
+    "finish-passed",
+    "iteration-cap",
+    "no-blockers",
+    "not-run",
+    "unmapped-blocker",
+    "child-failure",
+    "timeout",
+    "signal",
+    "output-limit",
+    "spawn-failure",
+    "state-conflict",
+  ] as readonly WorkflowLoopFinalDecision[])("uses one exit model for %s", (finalDecision) => {
+    const result = workflowLoopResultForDecision(finalDecision)
+
+    expect(result).toEqual({
+      diagnosticCodes: finalDecision === "finish-passed" ? [] : [expect.any(String)],
+      exitCode: finalDecision === "finish-passed" ? 0 : 1,
+      finalDecision,
+      success: finalDecision === "finish-passed",
+    })
   })
 
   it("advertises the explicit loop command in workflow help without exposing it at the public front door", () => {
