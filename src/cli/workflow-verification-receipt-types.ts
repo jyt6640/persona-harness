@@ -1,3 +1,5 @@
+import type { VerificationDecision } from "./workflow-verification-decision.js"
+
 export const VERIFICATION_RECEIPT_SCHEMA = "verification-receipt.1" as const
 export const VERIFICATION_ATTEMPT_SCHEMA = "verification-attempt.1" as const
 
@@ -176,6 +178,7 @@ export type LegacyEvidenceSummary = {
 export type VerificationAuthorityAssessment = {
   readonly attempt?: VerificationAttempt
   readonly authorityEligible: false
+  readonly decision: VerificationDecision
   readonly diagnostics: readonly ReceiptDiagnostic[]
   readonly legacyEvidence: LegacyEvidenceSummary
   readonly receipt?: VerificationReceipt

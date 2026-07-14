@@ -18,6 +18,7 @@ import {
 } from "./workflow-verification-receipt-model.js"
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { legacyDiagnostic, readJsonDirectoryAt, readLegacyEvidence } from "./workflow-verification-receipt-storage.js"
+import { diagnosticVerificationDecision } from "./workflow-verification-decision.js"
 
 export {
   VERIFICATION_ATTEMPT_DIR,
@@ -267,6 +268,7 @@ function assessment(
   return {
     ...(attempt === undefined ? {} : { attempt }),
     authorityEligible: false,
+    decision: diagnosticVerificationDecision(`receipt-${state}`, summary),
     diagnostics,
     legacyEvidence,
     ...(receipt === undefined ? {} : { receipt }),

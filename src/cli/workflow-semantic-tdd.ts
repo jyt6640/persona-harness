@@ -1,5 +1,6 @@
 import { assessVerificationAuthority } from "./workflow-verification-receipt.js"
 import { resolveConfiguredPathResult, loadHarnessConfigResult } from "../config/harness-config.js"
+import { diagnosticVerificationDecision } from "./workflow-verification-decision.js"
 import {
   VERIFICATION_ATTEMPT_DIR,
   VERIFICATION_RECEIPT_DIR,
@@ -134,6 +135,10 @@ export function assessSemanticTddChain(projectDir: string, now = new Date()): Se
   }
   return {
     authorityEligible: false,
+    decision: diagnosticVerificationDecision(
+      "semantic-valid-untrusted",
+      "fresh semantic TDD evidence is diagnostic-only without trusted authority",
+    ),
     diagnosticCodes: [],
     diagnostics: [],
     green: green.phase.public,
@@ -153,6 +158,7 @@ function result(
 ): SemanticTddAssessment {
   return {
     authorityEligible: false,
+    decision: diagnosticVerificationDecision(`semantic-${state}`, summary),
     diagnosticCodes: codes,
     diagnostics: codes.map((code) => ({ code, message: summary, path: diagnosticPath })),
     ...(green === undefined ? {} : { green }),

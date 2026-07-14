@@ -13,10 +13,12 @@ import {
   buildFreshArtifactBinding,
   writeFreshLifecycleRecords,
 } from "./fresh-verification-lifecycle.js"
+import { diagnosticVerificationDecision, type VerificationDecision } from "./workflow-verification-decision.js"
 
 export type FreshVerificationResult = {
   readonly artifactPath?: string
   readonly attemptPath?: string
+  readonly decision: VerificationDecision
   readonly diagnosticCodes: readonly string[]
   readonly finalStatus: CiReverificationFinalStatus
   readonly receiptPath?: string
@@ -43,15 +45,23 @@ export function runFreshFixedVerification(
     now,
   })
   if (result.artifactPath === undefined) {
-    return { diagnosticCodes: [...result.diagnosticCodes, "fresh-receipt-unavailable"], finalStatus: result.finalStatus, testCount: 0 }
+    const diagnosticCodes = [...result.diagnosticCodes, "fresh-receipt-unavailable"]
+    return {
+      decision: freshDiagnosticDecision(result.finalStatus, diagnosticCodes),
+      diagnosticCodes,
+      finalStatus: result.finalStatus,
+      testCount: 0,
+    }
   }
 
   const source = readFileSync(result.artifactPath, "utf8")
   const artifact = parseCiReverificationArtifact(source)
   if (artifact === undefined) {
+    const diagnosticCodes = [...result.diagnosticCodes, "fresh-artifact-invalid"]
     return {
       artifactPath: result.artifactPath,
-      diagnosticCodes: [...result.diagnosticCodes, "fresh-artifact-invalid"],
+      decision: freshDiagnosticDecision("artifact-invalid", diagnosticCodes),
+      diagnosticCodes,
       finalStatus: "artifact-invalid",
       testCount: 0,
     }
@@ -63,10 +73,13 @@ export function runFreshFixedVerification(
     : result.finalStatus
   const binding = buildFreshArtifactBinding(artifact, result.artifactPath, now)
   if (binding === undefined) {
+    const nextFinalStatus = finalStatus === "passed" ? "artifact-invalid" : finalStatus
+    const nextDiagnosticCodes = [...diagnosticCodes, "fresh-receipt-binding-unavailable"]
     return {
       artifactPath: result.artifactPath,
-      diagnosticCodes: [...diagnosticCodes, "fresh-receipt-binding-unavailable"],
-      finalStatus: finalStatus === "passed" ? "artifact-invalid" : finalStatus,
+      decision: freshDiagnosticDecision(nextFinalStatus, nextDiagnosticCodes),
+      diagnosticCodes: nextDiagnosticCodes,
+      finalStatus: nextFinalStatus,
       testCount: testCountResult.testCount,
     }
   }
@@ -84,27 +97,43 @@ export function runFreshFixedVerification(
     testCountResult.testCount,
   )
   if (lifecycle.attemptPath === undefined) {
+    const nextFinalStatus = finalStatus === "passed" ? "artifact-invalid" : finalStatus
+    const nextDiagnosticCodes = [
+      ...diagnosticCodes,
+      lifecycle.diagnosticCode ?? "fresh-attempt-write-invalid",
+    ]
     return {
       artifactPath: result.artifactPath,
-      diagnosticCodes: [...diagnosticCodes, lifecycle.diagnosticCode ?? "fresh-attempt-write-invalid"],
-      finalStatus: finalStatus === "passed" ? "artifact-invalid" : finalStatus,
+      decision: freshDiagnosticDecision(nextFinalStatus, nextDiagnosticCodes),
+      diagnosticCodes: nextDiagnosticCodes,
+      finalStatus: nextFinalStatus,
       testCount: testCountResult.testCount,
     }
   }
   if (status === "fail") {
+    const nextDiagnosticCodes = [
+      ...diagnosticCodes,
+      ...(lifecycle.diagnosticCode === undefined ? [] : [lifecycle.diagnosticCode]),
+    ]
     return {
       artifactPath: result.artifactPath,
       attemptPath: lifecycle.attemptPath,
-      diagnosticCodes: [...diagnosticCodes, ...(lifecycle.diagnosticCode === undefined ? [] : [lifecycle.diagnosticCode])],
+      decision: freshDiagnosticDecision(finalStatus, nextDiagnosticCodes),
+      diagnosticCodes: nextDiagnosticCodes,
       finalStatus,
       testCount: testCountResult.testCount,
     }
   }
   if (lifecycle.receiptPath === undefined) {
+    const nextDiagnosticCodes = [
+      ...diagnosticCodes,
+      lifecycle.diagnosticCode ?? "fresh-receipt-write-invalid",
+    ]
     return {
       artifactPath: result.artifactPath,
       attemptPath: lifecycle.attemptPath,
-      diagnosticCodes: [...diagnosticCodes, lifecycle.diagnosticCode ?? "fresh-receipt-write-invalid"],
+      decision: freshDiagnosticDecision("artifact-invalid", nextDiagnosticCodes),
+      diagnosticCodes: nextDiagnosticCodes,
       finalStatus: "artifact-invalid",
       testCount: testCountResult.testCount,
     }
@@ -112,6 +141,7 @@ export function runFreshFixedVerification(
   return {
     artifactPath: result.artifactPath,
     attemptPath: lifecycle.attemptPath,
+    decision: freshDiagnosticDecision(finalStatus, diagnosticCodes),
     diagnosticCodes,
     finalStatus,
     receiptPath: lifecycle.receiptPath,
@@ -139,4 +169,15 @@ function countFreshTests(projectDir: string, artifact: CiReverificationArtifact)
   }
   if (testCount === 0) diagnosticCodes.push("zero-test-count")
   return { diagnosticCodes: [...new Set(diagnosticCodes)].sort(), testCount }
+}
+
+function freshDiagnosticDecision(
+  finalStatus: CiReverificationFinalStatus,
+  diagnosticCodes: readonly string[],
+): VerificationDecision {
+  const code = diagnosticCodes[0] ?? `fresh-${finalStatus}`
+  return diagnosticVerificationDecision(
+    code,
+    `Fresh verification result ${finalStatus} is diagnostic-only until a trusted authority path consumes it.`,
+  )
 }

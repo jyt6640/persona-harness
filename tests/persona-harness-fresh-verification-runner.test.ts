@@ -32,6 +32,9 @@ describe("fresh fixed-command verification runner", () => {
     })
 
     expect(result.finalStatus).toBe("passed")
+    expect(result.decision).toMatchObject({
+      status: "diagnostic-only",
+    })
     expect(result.testCount).toBe(1)
     expect(result.attemptPath).toContain(".persona/evidence/verification-attempts/")
     expect(result.receiptPath).toContain(".persona/evidence/verification-receipts/")
@@ -61,6 +64,9 @@ describe("fresh fixed-command verification runner", () => {
     })
 
     expect(result.finalStatus).toBe("failed")
+    expect(result.decision).toMatchObject({
+      status: "diagnostic-only",
+    })
     expect(result.testCount).toBe(0)
     expect(result.diagnosticCodes).toContain("zero-test-count")
     expect(result.receiptPath).toBeUndefined()
