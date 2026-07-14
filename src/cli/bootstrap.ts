@@ -57,7 +57,7 @@ function strictModeSummaryLines(): readonly string[] {
   return [
     "Strict mode:",
     "- sets enforce.executeVerification: true, so PH runs the project verification command during closure/finish; expect toolchain command cost",
-    "- sets features.runtimeInjection: true and enforce.systemConstitution: true, so optional PH finish/intent guard prose is injected where supported",
+    "- does not enable features.runtimeInjection or enforce.systemConstitution; each remains independently opt-in",
     "- does not enable enforce.writeDeny, enforce.idleContinuation, or enforce.ralphLoop; those stay explicit opt-ins",
     "- still no generated app product-quality certification or closure guarantee",
   ]
@@ -66,7 +66,7 @@ function strictModeSummaryLines(): readonly string[] {
 function runtimeInjectionPreviewSummaryLines(): readonly string[] {
   return [
     "Runtime injection preview:",
-    "- opt-in only via --runtime-injection-preview or --strict; default init/bootstrap keeps PH as gate-first CLI/evidence tooling",
+    "- opt-in only via --runtime-injection-preview; default init/bootstrap keeps PH as gate-first CLI/evidence tooling",
     "- enables model-facing PH guidance such as target-file injection, workflow prompt rails, continuation text, and system constitution where supported",
     "- parked after the Stage 9 banner-only H1 measurement; resume only with an approved long-session post-compaction rail-retention measurement",
     "- measured 10-pair OpenCode A/B was worse for runtime injection on the bounded fixture set; keep this as guidance preview, not a token-saving or product-efficacy claim",
@@ -348,7 +348,7 @@ function runBackendBootstrap(
     actions.push("enabled strict closure verification")
   }
 
-  if (flags.runtimeInjectionPreview && !flags.strict) {
+  if (flags.runtimeInjectionPreview) {
     const injectionFailure = enableRuntimeInjectionPreview(projectDir)
     if (injectionFailure !== undefined) {
       return injectionFailure
@@ -444,7 +444,7 @@ function runBackendBootstrap(
       ...(skipped.length > 0 ? skipped.map((item) => `- ${item}`) : ["- none"]),
       "",
       ...(flags.strict ? [...strictModeSummaryLines(), ""] : []),
-      ...(flags.runtimeInjectionPreview && !flags.strict ? [...runtimeInjectionPreviewSummaryLines(), ""] : []),
+      ...(flags.runtimeInjectionPreview ? [...runtimeInjectionPreviewSummaryLines(), ""] : []),
       ...(flags.multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
       ...(flags.codeNavPreview ? [...codeNavPreviewSummaryLines(), ""] : []),
       ...(flags.lspPreview ? [...lspPreviewSummaryLines(), ""] : []),
