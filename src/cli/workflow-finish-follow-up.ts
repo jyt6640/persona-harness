@@ -1,6 +1,7 @@
 import { findConventionByStepId } from "../config/convention-registry.js"
 import { UNMAPPED_BLOCKER_STEP_ID, type ClosurePayload, type ClosureStep } from "./workflow-closure.js"
 import { TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID } from "./workflow-finish-authority.js"
+import { safeWorkflowCommand } from "./workflow-safe-rendering.js"
 
 export type WorkflowFollowUpCommand = {
   readonly phase: "after-action" | "now"
@@ -167,20 +168,20 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
   }
   if (step.command !== undefined) {
     return {
-      action: `Resolve ${blockerId}: ${step.reason ?? "run the prioritized closure command"}`,
+      action: "Run the registered closure command for this blocker.",
       blockerId,
       command: commandForStep(step),
     }
   }
   if (step.commandAfterContent !== undefined) {
     return {
-      action: `Resolve ${blockerId}: ${step.reason ?? "complete the required workflow content"}`,
+      action: "Complete the registered workflow content for this blocker.",
       blockerId,
       command: commandForStep(step),
     }
   }
   return {
-    action: `Resolve ${blockerId}: ${step.reason ?? "inspect the closure diagnostic"}`,
+    action: "Inspect the registered closure diagnostic artifact for this blocker.",
     blockerId,
   }
 }
@@ -193,11 +194,13 @@ export function workflowFinishFollowUpLines(followUp: WorkflowFinishFollowUp): r
 }
 
 function commandForStep(step: ClosureStep): WorkflowFollowUpCommand | undefined {
-  if (step.command !== undefined) {
-    return { phase: "now", value: step.command }
+  const command = safeWorkflowCommand(step.command)
+  if (command !== undefined) {
+    return { phase: "now", value: command }
   }
-  if (step.commandAfterContent !== undefined) {
-    return { phase: "after-action", value: step.commandAfterContent }
+  const commandAfterContent = safeWorkflowCommand(step.commandAfterContent)
+  if (commandAfterContent !== undefined) {
+    return { phase: "after-action", value: commandAfterContent }
   }
   return undefined
 }

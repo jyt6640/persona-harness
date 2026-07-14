@@ -95,7 +95,7 @@ describe("prompt regression fixture", () => {
     expect(prompt).toContain("[Persona Harness Ralph Loop]")
     expect(prompt).toContain("Closure blockers remain; do not claim completion.")
     expect(prompt).toContain("Blocker: verification-unknown (blocker 1/6)")
-    expect(prompt).toContain("Next action: npx ph workflow check")
+    expect(prompt).toContain("Next command: npx ph workflow check")
     expect(prompt).toContain("default-off, retry-capped continuation preview")
     expect(prompt).toContain("not a success guarantee or autonomous loop")
     expect(prompt).not.toContain("app quality")

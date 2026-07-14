@@ -1,5 +1,10 @@
 import { createContinuationPromptText } from "../cli/continuation-prompt.js"
-import { isUnmappedBlockerStep, readWorkflowClosurePayload } from "../cli/workflow-closure.js"
+import {
+  isUnmappedBlockerStep,
+  readWorkflowClosurePayload,
+  type ClosureBlocker,
+} from "../cli/workflow-closure.js"
+import { workflowDiagnosticReference } from "../cli/workflow-safe-rendering.js"
 import type { HarnessRalphLoopConfig } from "../config/harness-config.js"
 import { ContinuationUtteranceGate } from "./continuation-utterance-gate.js"
 import {
@@ -30,6 +35,12 @@ type RalphLoopToolOutputInput = {
   readonly output: string
   readonly sessionID: string
   readonly tool: string
+}
+
+type CapSummaryInput = {
+  readonly blocker: ClosureBlocker
+  readonly config: HarnessRalphLoopConfig
+  readonly sessionAttemptsUsed: number
 }
 
 function commandFromArgs(args: Readonly<Record<string, unknown>>): string | undefined {
@@ -102,14 +113,15 @@ function stoppedUnmappedBlockerState(previous: RalphLoopSessionState): RalphLoop
   }
 }
 
-function capSummaryText(blockerId: string, reason: string, sessionAttemptsUsed: number, config: HarnessRalphLoopConfig): string {
+function capSummaryText(input: CapSummaryInput): string {
+  const reference = workflowDiagnosticReference(input.blocker, null)
   return [
     "[Persona Harness Ralph Loop]",
     "Retry cap reached; no further blocker continuation prompt will be sent for this session.",
-    `Blocker: ${blockerId}`,
-    `Reason: ${reason}`,
-    `Attempts used: ${sessionAttemptsUsed}/${config.maxSessionAttempts}`,
-    `Per-blocker cap: ${config.maxAttempts}`,
+    `Blocker: ${reference.blockerId}`,
+    ...reference.artifactRefs.map((ref) => `Artifact: ${ref}`),
+    `Attempts used: ${input.sessionAttemptsUsed}/${input.config.maxSessionAttempts}`,
+    `Per-blocker cap: ${input.config.maxAttempts}`,
     "PH finish/closure gates remain authoritative. Fix blockers directly, then rerun `npx ph workflow finish implement`.",
   ].join("\n")
 }
@@ -177,7 +189,11 @@ export class RalphLoopToolOutputContinuationTracker {
         kind: "appended",
         output: withToolContinuationMarker(
           input.output,
-          capSummaryText(blocker.id, blocker.reason, sessionState.attemptsUsed, this.options.config),
+          capSummaryText({
+            blocker,
+            config: this.options.config,
+            sessionAttemptsUsed: sessionState.attemptsUsed,
+          }),
         ),
       }
     }

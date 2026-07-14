@@ -439,7 +439,7 @@ describe("ph workflow closure read-only planner", () => {
       blockerId: "verification-unknown",
       status: "blocked",
     })
-    expect(output.steps[0].reason).toContain("no structured execution evidence")
+    expect(output.steps[0]).not.toHaveProperty("reason")
   })
 
   it("accepts structured bearshell execution success evidence", () => {
@@ -467,7 +467,7 @@ describe("ph workflow closure read-only planner", () => {
       id: "fix-verification",
       status: "blocked",
     })
-    expect(output.steps[0].reason).toContain("PH direct verification failed")
+    expect(output.steps[0]).not.toHaveProperty("reason")
     expect(finish.status).toBe(1)
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Blocker: verification-failed")
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next action: Fix the compile/test failure reported by Persona Harness verification.")
@@ -511,7 +511,7 @@ describe("ph workflow closure read-only planner", () => {
       id: "verify-app",
       status: "blocked",
     })
-    expect(output.steps[0].reason).toContain("PH direct verification is enabled")
+    expect(output.steps[0]).not.toHaveProperty("reason")
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Blocker: verification-unknown")
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next action: Ensure the project has a supported verification command")
     expect(`${finish.stdout}\n${finish.stderr}`).not.toContain("Next command:")
@@ -544,7 +544,10 @@ describe("ph workflow closure read-only planner", () => {
       blockerId: "verification-failed",
       status: "blocked",
     })
-    expect(output.steps[0].reason).toContain("JUnit XML")
+    expect(output.steps[0]).toMatchObject({
+      evidenceRef: "build/test-results/test/TEST-sample.xml",
+    })
+    expect(output.steps[0]).not.toHaveProperty("reason")
   })
 
   it("moves from implementation report to review report after implementation is filled", () => {

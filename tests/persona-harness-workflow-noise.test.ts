@@ -200,6 +200,6 @@ describe("ph workflow noise classification", () => {
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Blocker: command-discipline-blocking")
     expect(result.stderr).toContain("Next action: Rerun final test/build/runtime verification through Persona Harness bearshell and update the workflow reports.")
-    expect(result.stderr).toContain("Next command: npx ph bearshell <verification command>")
+    expect(result.stderr).not.toContain("Next command:")
   })
 })

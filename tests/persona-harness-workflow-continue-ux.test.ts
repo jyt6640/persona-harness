@@ -72,7 +72,7 @@ describe("ph workflow continue UX", () => {
     }
   })
 
-  it("carries raw final verification blockers into the continuation prompt", () => {
+  it("renders final verification blockers as deterministic codes and statuses", () => {
     const projectDir = createProfiledProject()
     writeFileSync(join(projectDir, "README.md"), "# Task API\n\n- Build a backend API.\n")
     writeFileSync(
@@ -104,13 +104,13 @@ describe("ph workflow continue UX", () => {
     expect(finish.stderr).toContain("- command-discipline-blocking")
     expect(resume.status).toBe(0)
     expect(closureJson.state.blockers.map((blocker: { id: string }) => blocker.id)).toContain("command-discipline-blocking")
-    expect(resume.stdout).toContain("Final verification needs bearshell rerun.")
-    expect(resume.stdout.match(/Final verification needs bearshell rerun\./g)?.length).toBe(1)
-    expect(resume.stdout).toContain("Next action: rerun final verification through `npx ph bearshell`")
-    expect(resume.stdout).toContain("Do not claim overall completion until final verification is recorded through bearshell.")
+    expect(resume.stdout).toContain("Additional closure blockers:")
+    expect(resume.stdout).toContain("Step: rerun-bearshell-verification")
+    expect(resume.stdout).toContain("Blocker: command-discipline-blocking")
+    expect(resume.stdout).toContain("Status: pending")
   })
 
-  it("includes the pending ticket card context in the continuation prompt", () => {
+  it("includes only the pending ticket code, status, and bounded artifact reference", () => {
     const projectDir = createProfiledProject()
     writeStructuredVerificationSuccessEvidence(projectDir, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nruntime smoke PASS")
     mkdirSync(join(projectDir, ".persona", "workflow", "work", "req-2"), { recursive: true })
@@ -154,22 +154,20 @@ describe("ph workflow continue UX", () => {
     expect(closureJson.nextStep).toMatchObject({ id: "fill-implementation-report", blockerId: "implementation-report-missing" })
     expect(result.stdout).toContain("Pending workflow ticket:")
     expect(result.stdout).toContain("Ticket: req-2")
-    expect(result.stdout).toContain("Title: Return API")
-    expect(result.stdout).toContain("Task card context:")
-    expect(result.stdout).toContain("- # Task Card: Requirement 2. Return API")
-    expect(result.stdout).toContain("- Implement Return API from the source requirements.")
-    expect(result.stdout).toContain("- Add POST /lendings/{id}/return.")
+    expect(result.stdout).toContain("Status: pending")
+    expect(result.stdout).toContain("Artifact: .persona/workflow/work/req-2/00-task-card.md")
+    expect(result.stdout).not.toContain("Title: Return API")
+    expect(result.stdout).not.toContain("Task card context:")
+    expect(result.stdout).not.toContain("Add POST /lendings/{id}/return.")
     expect(result.stdout).toContain("Next command: npx ph workflow next")
     expect(result.stdout).toContain("Closure planner next step:")
     expect(result.stdout).toContain("Step: fill-implementation-report")
     expect(result.stdout).toContain("Blocker: implementation-report-missing")
-    expect(result.stdout).toContain("Post-build closure checklist:")
-    expect(result.stdout).toContain("If build/test/runtime already pass, do not start new app generation.")
-    expect(result.stdout).toContain("Fill .persona/workflow/implementation-report.md with verification evidence, then run npx ph plan --report-filled implementation.")
-    expect(result.stdout).toContain("Fill .persona/workflow/review-report.md after review/manual QA, then run npx ph plan --report-filled review.")
-    expect(result.stdout).toContain("Review the current req ticket; if it is satisfied, run npx ph workflow archive req-2.")
-    expect(result.stdout).toContain("Run npx ph workflow finish implement before claiming completion.")
-    expect(result.stdout).toContain("Do not claim overall completion while this ticket remains pending.")
+    expect(result.stdout).toContain("Status: blocked")
+    expect(result.stdout).toContain("Artifact: .persona/workflow/implementation-report.md")
+    expect(result.stdout).toContain("Next command: after completing the action, run npx ph plan --report-filled implementation")
+    expect(result.stdout).toContain("Step: archive-current-ticket")
+    expect(result.stdout).toContain("After review: npx ph workflow archive req-2")
   })
 
   it("uses closure blocker ordering in the continuation prompt", () => {
@@ -185,6 +183,7 @@ describe("ph workflow continue UX", () => {
     expect(result.stdout).toContain("Closure planner next step:")
     expect(result.stdout).toContain("Step: verify-app")
     expect(result.stdout).toContain("Blocker: verification-unknown")
-    expect(result.stdout).not.toContain("Step: fill-implementation-report")
+    expect(result.stdout.indexOf("Step: verify-app")).toBeLessThan(result.stdout.indexOf("Additional closure blockers:"))
+    expect(result.stdout.indexOf("Additional closure blockers:")).toBeLessThan(result.stdout.indexOf("Step: fill-implementation-report"))
   })
 })
