@@ -17,6 +17,7 @@ Use these files when making current product, measurement, or release decisions.
 | P0-3 public discovery acceptance | `docs/current/p0-public-discovery-acceptance-record.md` | Exact-main root/dev discovery and writer-safety acceptance with local-tarball package evidence. |
 | Item 12 diff-rules distribution retirement | `docs/current/diff-rules-distribution-retirement-acceptance-record.md` | Exact-main package/init retirement record; repository corpus remains. |
 | Advanced surface index | `docs/current/advanced-surface-index.md` | Repository-only dormant-source and preview-surface index; not an npm package support contract. |
+| Candidate branch retention audit | `docs/current/branch-retention-audit.md` | Repository-only append-only remote branch/PR retention ledger; no ref deletion authorization. |
 | CI finish gate and closure JSON | `docs/current/ci-finish-contract.md` | Exact `finish` exit/stream contract, supported unversioned closure JSON artifact, and CI recipe; no `finish --json` surface exists. |
 | CI evidence reverification acceptance | `docs/current/ci-evidence-reverification-acceptance-record.md` | Item 19 exact-main opt-in `--reverify` and explicit CI-mode acceptance with bounded artifact and package evidence. |
 | CI evidence reverification design | `docs/current/ci-evidence-reverification-design.md` | Item 19 pre-implementation design lineage; the accepted current contract is recorded separately. |

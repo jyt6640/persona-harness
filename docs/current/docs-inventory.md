@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 40
+- current active pointer/status: 41
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 55
 - versioned durable: 26
 
-Total indexed files: 326
+Total indexed files: 327
 
 ## File Inventory
 
@@ -47,6 +47,7 @@ Total indexed files: 326
 | `docs/current/acceptance-results/results/2026-07-02-local-current-acceptance-ab.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/acceptance-test-checklist.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/advanced-surface-index.md` | current active pointer/status | - | Repository-only index for dormant source references and preview/advanced surfaces; not an npm support contract. |
+| `docs/current/branch-retention-audit.md` | current active pointer/status | - | Repository-only append-only remote branch/PR retention ledger; no ref deletion authorization. |
 | `docs/current/ast-enforcement-rfc.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/backend-clean-code-uniformity-rubric.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/backend-product-code-style-direction.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
