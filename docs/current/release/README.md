@@ -55,6 +55,14 @@ capsule is [`docs/releases/v0.7.0-rc.2/`](../../releases/v0.7.0-rc.2/README.md).
 Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.2`.
 The completed publish does not move `latest` or broaden any product claim.
 
+## Prepared Next-Channel Candidate
+
+[`v0.7.0-rc.3-release-notes.md`](v0.7.0-rc.3-release-notes.md) prepares the
+next prerelease identity. It is not published: no `v0.7.0-rc.3` tag, GitHub
+release, npm package, registry gitHead, integrity value, or `next` dist-tag
+movement exists yet. The current registry state remains `latest=0.6.0` and
+`next=0.7.0-rc.2`.
+
 Current `main` now differs from the registry gitHead while retaining the
 already-published `0.7.0-rc.2` version. The current decision is
 [`rc-release-readiness-decision.md`](rc-release-readiness-decision.md):

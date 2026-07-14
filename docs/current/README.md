@@ -33,6 +33,8 @@ deleting evidence/status history.
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
   [`release/v0.7.0-rc.2-release-notes.md`](release/v0.7.0-rc.2-release-notes.md).
+- Prepared next-channel candidate release notes:
+  [`release/v0.7.0-rc.3-release-notes.md`](release/v0.7.0-rc.3-release-notes.md).
 - Current RC release readiness decision:
   [`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md).
 - P3 integrity roadmap and release hold:
@@ -96,6 +98,9 @@ deleting evidence/status history.
   `185885b7918459ef12bbea120a4261962cd57059`. Registry gitHead and matching
   tag/GitHub prerelease `v0.7.0-rc.2` target that commit; package hashes and
   workflow provenance are recorded in its durable release facts.
+- `0.7.0-rc.3` is prepared as the next prerelease candidate only. Its release
+  note records no tag, package, registry, or dist-tag fact; current published
+  channels remain `latest=0.6.0` and `next=0.7.0-rc.2`.
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)

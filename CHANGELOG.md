@@ -6,6 +6,24 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+## [0.7.0-rc.3] - 2026-07-14
+
+- Prepares a new next-channel release candidate after the published
+  `0.7.0-rc.2` identity. This entry is candidate documentation only: no
+  `v0.7.0-rc.3` tag, GitHub prerelease, npm package, registry gitHead, or
+  dist-tag movement has occurred.
+- Carries the post-rc2 integrity boundaries: unsigned project-local evidence
+  remains diagnostic-only; strict receipt parsing, fresh fixed-command
+  verification, semantic TDD assessment, configured evidence-root/path safety,
+  and safe `ph init` upgrades remain bounded and fail closed at their documented
+  limits.
+- Carries immutable CI/release workflow controls and explicit Korean root-help
+  locale selection through `--lang ko`, while default English help remains
+  unchanged.
+- The candidate remains a prerelease-only preparation. `latest`, Stable, GA,
+  token-saving, product-efficacy, broad reliability, security certification,
+  and trusted external finish-attestation claims remain out of scope.
+
 ## [0.7.0-rc.2] - 2026-07-12
 
 - Prepares the next-channel candidate after the published `0.7.0-rc.1`

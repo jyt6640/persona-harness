@@ -22,6 +22,7 @@ import { runPersonaCli } from "../src/cli/index.js"
 
 const tempProjects: string[] = []
 const tempPackageRoots: string[] = []
+const UPGRADE_PACKAGE_VERSION = "0.0.0-init-upgrade"
 
 function createTempProject(): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-init-test-"))
@@ -184,7 +185,7 @@ describe("persona-harness init", () => {
     expect(snapshotTree(projectDir)).toEqual(before)
   })
 
-  it("updates unchanged owned files and records a digest-bound backup", () => {
+  it("updates unchanged owned files across a package version upgrade and records a digest-bound backup", () => {
     const projectDir = createTempProject()
     const firstPackage = createPackageRoot()
     initializePersonaHarness({ projectDir, packageRoot: firstPackage })
@@ -194,7 +195,7 @@ describe("persona-harness init", () => {
     writeFileSync(upgradedRule, `${readFileSync(upgradedRule, "utf8")}\n# Safe upgrade fixture\n`)
     writeFileSync(
       join(nextPackage, "package.json"),
-      `${JSON.stringify({ name: "persona-harness", version: "0.7.0-rc.3" }, null, 2)}\n`,
+      `${JSON.stringify({ name: "persona-harness", version: UPGRADE_PACKAGE_VERSION }, null, 2)}\n`,
     )
 
     const result = initializePersonaHarness({ projectDir, packageRoot: nextPackage })
@@ -256,7 +257,7 @@ describe("persona-harness init", () => {
     expect(snapshotTree(projectDir)).toEqual(before)
   })
 
-  it("does not overwrite a foreign file at a newly introduced generated path", () => {
+  it("does not overwrite a foreign file at a newly introduced generated path during a package version upgrade", () => {
     const projectDir = createTempProject()
     initializePersonaHarness({ projectDir, packageRoot: process.cwd() })
     const foreignPath = join(projectDir, ".persona", "rules", "backend", "new-rule.md")
@@ -265,7 +266,7 @@ describe("persona-harness init", () => {
     writeFileSync(join(packageRoot, ".persona", "rules", "backend", "new-rule.md"), "# generated rule\n")
     writeFileSync(
       join(packageRoot, "package.json"),
-      `${JSON.stringify({ name: "persona-harness", version: "0.7.0-rc.3" }, null, 2)}\n`,
+      `${JSON.stringify({ name: "persona-harness", version: UPGRADE_PACKAGE_VERSION }, null, 2)}\n`,
     )
     const before = snapshotTree(projectDir)
 
