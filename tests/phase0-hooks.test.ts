@@ -349,10 +349,12 @@ describe("Phase 0 OpenCode hook feasibility", () => {
       hook: "experimental.chat.messages.transform",
       sessionID,
       injectedInto: "intent-workflow",
-      userPrompt: "CouponService 만들어줘",
+      privacyClass: "metadata-safe",
       primaryIntent: "programming",
       railMarker: "[Persona Harness Programming Workflow]",
     })
+    expect(intentEvidence?.["userPrompt"]).toBeUndefined()
+    expect(intentEvidence?.["promptDiagnostic"]).toBeUndefined()
     expect(intentEvidence?.secondaryIntents).toEqual([])
   })
 
@@ -380,10 +382,12 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     )
     expect(intentEvidence).toMatchObject({
       injectedInto: "intent-workflow",
-      userPrompt: "이 요구사항대로 장비 대여 API 만들어줘",
+      privacyClass: "metadata-safe",
       primaryIntent: "requirements",
       railMarker: "[Persona Harness Requirements Workflow]",
     })
+    expect(intentEvidence?.["userPrompt"]).toBeUndefined()
+    expect(intentEvidence?.["promptDiagnostic"]).toBeUndefined()
   })
 
   it("injects requirements draft guidance for vague product ideas without implementation", async () => {

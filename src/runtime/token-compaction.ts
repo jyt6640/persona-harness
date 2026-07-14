@@ -1,28 +1,18 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
-
 import type { AssistantMessage, Message } from "@opencode-ai/sdk"
 
 import type { HarnessCompactionConfig } from "../config/harness-config.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
-import { isRecord } from "../config/jsonc.js"
-import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
-import type { TokenTelemetryRecordResult, TokenUsage, TokenUsageEvidence } from "./token-telemetry.js"
-import { safeSessionKey } from "./token-telemetry.js"
+import {
+  compactionEvidenceCooldownUntil,
+  writeCompactionAttempt,
+  type CompactionAttempt,
+  type CompactionMeasurement,
+  type TokenCompactionSummarizeOptions,
+} from "./token-compaction-evidence.js"
+import type { TokenTelemetryRecordResult, TokenUsageEvidence } from "./token-telemetry.js"
 
-export type TokenCompactionSummarizeOptions = {
-  readonly body: {
-    readonly modelID: string
-    readonly providerID: string
-  }
-  readonly path: {
-    readonly id: string
-  }
-  readonly query: {
-    readonly directory: string
-  }
-}
+export type { TokenCompactionSummarizeOptions } from "./token-compaction-evidence.js"
 
 export type TokenCompactionClient = {
   readonly session: {
@@ -30,47 +20,12 @@ export type TokenCompactionClient = {
   }
 }
 
-type CompactionMeasurement =
-  | {
-      readonly aggregate: TokenUsage
-      readonly measured: true
-      readonly ratio: number
-    }
-  | {
-      readonly aggregate: TokenUsage
-      readonly measured: false
-      readonly reason: string
-    }
-
-type CompactionAttemptStatus = "failed" | "skipped" | "triggered"
-
-type CompactionAttempt = {
-  readonly afterMeasurement: {
-    readonly measured: false
-    readonly reason: string
-  }
-  readonly beforeMeasurement: CompactionMeasurement
-  readonly request?: TokenCompactionSummarizeOptions
-  readonly reason?: string
-  readonly status: CompactionAttemptStatus
-  readonly timestamp: string
-}
-
 type CompactionAttemptInput = {
   readonly measurement: CompactionMeasurement
   readonly reason?: string
   readonly request?: TokenCompactionSummarizeOptions
-  readonly status: CompactionAttemptStatus
+  readonly status: CompactionAttempt["status"]
   readonly timestamp: string
-}
-
-type CompactionEvidence = {
-  readonly attempts: readonly CompactionAttempt[]
-  readonly createdAt: string
-  readonly schemaVersion: "token-compaction.1"
-  readonly sessionID: string
-  readonly source: "opencode-plugin-event:message.updated"
-  readonly updatedAt: string
 }
 
 export type TokenCompactionResult =
@@ -91,82 +46,6 @@ const AFTER_MEASUREMENT_REASON =
 
 function isAssistantMessage(message: Message): message is AssistantMessage {
   return message.role === "assistant"
-}
-
-function compactionEvidencePath(evidenceDir: string, sessionID: string): string {
-  return join(evidenceDir, "compaction", `${safeSessionKey(sessionID)}.json`)
-}
-
-function isCompactionAttempt(value: unknown): value is CompactionAttempt {
-  return (
-    isRecord(value) &&
-    typeof value.timestamp === "string" &&
-    (value.status === "failed" || value.status === "skipped" || value.status === "triggered") &&
-    isRecord(value.beforeMeasurement) &&
-    typeof value.beforeMeasurement.measured === "boolean" &&
-    isRecord(value.afterMeasurement) &&
-    value.afterMeasurement.measured === false &&
-    typeof value.afterMeasurement.reason === "string"
-  )
-}
-
-function readExistingEvidence(path: string): CompactionEvidence | undefined {
-  if (!existsSync(path)) {
-    return undefined
-  }
-  try {
-    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"))
-    if (
-      !isRecord(parsed) ||
-      parsed.schemaVersion !== "token-compaction.1" ||
-      typeof parsed.sessionID !== "string" ||
-      typeof parsed.createdAt !== "string" ||
-      !Array.isArray(parsed.attempts)
-    ) {
-      return undefined
-    }
-    return {
-      attempts: parsed.attempts.filter(isCompactionAttempt),
-      createdAt: parsed.createdAt,
-      schemaVersion: "token-compaction.1",
-      sessionID: parsed.sessionID,
-      source: "opencode-plugin-event:message.updated",
-      updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : parsed.createdAt,
-    }
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return undefined
-    }
-    throw error
-  }
-}
-
-function writeAttempt(evidenceDir: string, sessionID: string, attempt: CompactionAttempt): string {
-  const outputPath = compactionEvidencePath(evidenceDir, sessionID)
-  const previous = readExistingEvidence(outputPath)
-  const payload: CompactionEvidence = {
-    attempts: [...(previous?.attempts ?? []), attempt],
-    createdAt: previous?.createdAt ?? attempt.timestamp,
-    schemaVersion: "token-compaction.1",
-    sessionID,
-    source: "opencode-plugin-event:message.updated",
-    updatedAt: attempt.timestamp,
-  }
-  mkdirSync(dirname(outputPath), { recursive: true })
-  writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
-  return outputPath
-}
-
-function evidenceCooldownUntil(evidenceDir: string, sessionID: string, cooldownMs: number): number {
-  const previous = readExistingEvidence(compactionEvidencePath(evidenceDir, sessionID))
-  const latestAttemptMs = previous?.attempts.reduce((latest, attempt) => {
-    if (attempt.status !== "failed" && attempt.status !== "triggered") {
-      return latest
-    }
-    const attemptMs = Date.parse(attempt.timestamp)
-    return Number.isFinite(attemptMs) && attemptMs > latest ? attemptMs : latest
-  }, 0)
-  return latestAttemptMs === undefined ? 0 : latestAttemptMs + cooldownMs
 }
 
 function beforeMeasurement(payload: TokenUsageEvidence): CompactionMeasurement {
@@ -226,7 +105,7 @@ export class TokenCompactionTracker {
     const measurement = beforeMeasurement(telemetryResult.payload)
     const skipped = (reason: string): TokenCompactionResult => {
       try {
-        const path = writeAttempt(
+        const path = writeCompactionAttempt(
           evidenceDir,
           message.sessionID,
           attemptWith({
@@ -252,7 +131,7 @@ export class TokenCompactionTracker {
     }
 
     const cooldownUntil = this.cooldownUntilBySession.get(message.sessionID) ?? 0
-    const persistedCooldownUntil = evidenceCooldownUntil(
+    const persistedCooldownUntil = compactionEvidenceCooldownUntil(
       evidenceDir,
       message.sessionID,
       this.options.config.cooldownMs,
@@ -278,7 +157,7 @@ export class TokenCompactionTracker {
     try {
       await session.summarize(request)
       this.cooldownUntilBySession.set(message.sessionID, now.getTime() + this.options.config.cooldownMs)
-      const path = writeAttempt(
+      const path = writeCompactionAttempt(
         evidenceDir,
         message.sessionID,
         attemptWith({ measurement, request, status: "triggered", timestamp: now.toISOString() }),
@@ -287,7 +166,7 @@ export class TokenCompactionTracker {
     } catch (error) {
       this.cooldownUntilBySession.set(message.sessionID, now.getTime() + this.options.config.cooldownMs)
       const runtimeError = error instanceof Error ? error : new Error(String(error))
-      const path = writeAttempt(
+      const path = writeCompactionAttempt(
         evidenceDir,
         message.sessionID,
         attemptWith({
