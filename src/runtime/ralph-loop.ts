@@ -1,4 +1,9 @@
-import { isUnmappedBlockerStep, readWorkflowClosurePayload } from "../cli/workflow-closure.js"
+import {
+  isUnmappedBlockerStep,
+  readWorkflowClosurePayload,
+  type ClosureBlocker,
+} from "../cli/workflow-closure.js"
+import { workflowDiagnosticReference } from "../cli/workflow-safe-rendering.js"
 import { createContinuationPromptText } from "../cli/continuation-prompt.js"
 import type { HarnessRalphLoopConfig } from "../config/harness-config.js"
 import { ContinuationUtteranceGate } from "./continuation-utterance-gate.js"
@@ -43,10 +48,9 @@ type AttemptedSessionStateInput = {
 }
 
 type CapSummaryInput = {
-  readonly blockerId: string
+  readonly blocker: ClosureBlocker
   readonly maxAttempts: number
   readonly maxSessionAttempts: number
-  readonly reason: string
   readonly sessionAttemptsUsed: number
 }
 
@@ -113,11 +117,12 @@ function attemptedSessionState(input: AttemptedSessionStateInput): RalphLoopSess
 }
 
 function capSummaryText(input: CapSummaryInput): string {
+  const reference = workflowDiagnosticReference(input.blocker, null)
   return [
     "[Persona Harness Ralph Loop]",
     "Retry cap reached; no further blocker continuation prompt will be sent for this session.",
-    `Blocker: ${input.blockerId}`,
-    `Reason: ${input.reason}`,
+    `Blocker: ${reference.blockerId}`,
+    ...reference.artifactRefs.map((ref) => `Artifact: ${ref}`),
     `Attempts used: ${input.sessionAttemptsUsed}/${input.maxSessionAttempts}`,
     `Per-blocker cap: ${input.maxAttempts}`,
     "PH finish/closure gates remain authoritative. Fix blockers directly, then rerun `npx ph workflow finish implement`.",
@@ -180,10 +185,9 @@ export class RalphLoopContinuationTracker {
       await this.sendPrompt(
         sessionID,
         capSummaryText({
-          blockerId: blocker.id,
+          blocker,
           maxAttempts: this.options.config.maxAttempts,
           maxSessionAttempts: this.options.config.maxSessionAttempts,
-          reason: blocker.reason,
           sessionAttemptsUsed: sessionState.attemptsUsed,
         }),
       )
