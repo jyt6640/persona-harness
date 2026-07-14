@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { isAbsolute, join, normalize, relative, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
 export const BUILDER_SCHEMA = "clean-ci-builder.1"
@@ -58,7 +58,7 @@ function main() {
   } catch (error) {
     if (context !== undefined && outputDir !== undefined && error instanceof BuilderCommandFailure) {
       try {
-        writeFailureDiagnostic(outputDir, error.details, join(context.workspaceRoot, TEST_REPORT_PATH))
+        writeFailureDiagnostic(outputDir, error.details, join(context.workspaceRoot, TEST_REPORT_PATH), context.workspaceRoot)
       } catch {
         process.stderr.write("failed to persist builder failure diagnostic\n")
       }
@@ -264,8 +264,8 @@ function commandExitState(result) {
   return "exit-nonzero"
 }
 
-function createFailureDiagnostic(failure, reportPath) {
-  const report = readFailureReportSummary(reportPath)
+function createFailureDiagnostic(failure, reportPath, workspaceRoot) {
+  const report = readFailureReportSummary(reportPath, workspaceRoot)
   return {
     authorityBoundary: "builder-output-is-non-authoritative",
     authorityEligible: false,
@@ -281,10 +281,11 @@ function createFailureDiagnostic(failure, reportPath) {
 
 export { createFailureDiagnostic }
 
-function readFailureReportSummary(reportPath) {
+function readFailureReportSummary(reportPath, workspaceRoot) {
   const report = {
     available: existsSync(reportPath),
     digest: null,
+    failedTestFiles: [],
     path: TEST_REPORT_PATH,
     summary: null,
   }
@@ -306,15 +307,55 @@ function readFailureReportSummary(reportPath) {
       skipped: numberField(parsed, "numPendingTests") + numberField(parsed, "numTodoTests") + numberField(parsed, "numSkippedTests"),
       total: numberField(parsed, "numTotalTests"),
     }
+    report.failedTestFiles = safeFailedTestFiles(parsed, workspaceRoot)
   } catch {
     return report
   }
   return report
 }
 
-function writeFailureDiagnostic(outputDir, failure, reportPath) {
-  const diagnostic = createFailureDiagnostic(failure, reportPath)
+function writeFailureDiagnostic(outputDir, failure, reportPath, workspaceRoot) {
+  const diagnostic = createFailureDiagnostic(failure, reportPath, workspaceRoot)
   writeFileSync(join(outputDir, "failure-diagnostic.json"), `${canonicalJson(diagnostic)}\n`, { flag: "wx" })
+}
+
+function safeFailedTestFiles(report, workspaceRoot) {
+  const testResults = Array.isArray(report?.testResults) ? report.testResults : []
+  return [...new Set(testResults.flatMap((entry) => {
+    if (!isRecord(entry) || !failedTestFile(entry)) return []
+    const candidate = typeof entry.name === "string" ? entry.name : undefined
+    const safePath = candidate === undefined ? undefined : safeTestFilePath(candidate, workspaceRoot)
+    return safePath === undefined ? [] : [safePath]
+  }))].sort()
+}
+
+function failedTestFile(entry) {
+  if (entry.status === "failed" || numberField(entry, "numFailingTests") > 0) return true
+  const assertions = Array.isArray(entry.assertionResults) ? entry.assertionResults : []
+  return assertions.some((assertion) => isRecord(assertion) && assertion.status === "failed")
+}
+
+function safeTestFilePath(candidate, workspaceRoot) {
+  if (candidate.length === 0 || candidate.includes("\u0000") || candidate.includes("\\")) return undefined
+  if (candidate.split("/").some((segment) => segment === "..")) return undefined
+
+  let repoRelative = candidate
+  if (isAbsolute(candidate)) {
+    repoRelative = relative(workspaceRoot, candidate)
+    if (repoRelative.length === 0 || isAbsolute(repoRelative) || repoRelative === ".." || repoRelative.startsWith(`..${sep}`)) {
+      return undefined
+    }
+  }
+
+  const normalized = normalize(repoRelative)
+  const displayPath = normalized.split(sep).join("/")
+  if (displayPath === "tests" || !displayPath.startsWith("tests/")) return undefined
+  if (!/^tests(?:\/[A-Za-z0-9._-]+)*\.(?:js|ts|mjs|mts|tsx)$/u.test(displayPath)) return undefined
+  return displayPath
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === "object"
 }
 
 function sha256(value) {
