@@ -1,12 +1,15 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { join } from "node:path"
 
 import { runBoundedProcess } from "./bounded-process.js"
+import {
+  discoverJUnitResults,
+  type JunitResultFile,
+} from "./junit-result-discovery.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
 import type { ClosureVerificationSummary } from "./workflow-closure-verification.js"
 
 const DIRECT_VERIFICATION_TIMEOUT_MS = 120_000
-const JUNIT_RESULT_DIRS = ["build/test-results/test", "target/surefire-reports"] as const
 
 export type VerificationCommand = {
   readonly args: readonly string[]
@@ -32,6 +35,7 @@ type JunitTotals = {
 
 export type DirectTestVerificationResult = {
   readonly command?: VerificationCommand
+  readonly diagnosticCodes: readonly string[]
   readonly evidenceRef?: string
   readonly exitCode?: number
   readonly junitCases: readonly JunitTestCase[]
@@ -71,6 +75,7 @@ export function runDirectTestVerification(projectDir: string): DirectTestVerific
   const verificationCommand = resolveVerificationCommand(projectDir)
   if (verificationCommand === undefined) {
     return {
+      diagnosticCodes: [],
       junitCases: [],
       junitRefs: [],
       output: "",
@@ -90,56 +95,81 @@ export function runDirectTestVerification(projectDir: string): DirectTestVerific
   const status = result.status
   const output = [result.stdout, result.stderr].filter((text) => text.length > 0).join("\n")
   const evidenceRef = `PH direct verification: ${verificationCommand.display}`
-  const junitFiles = recentJunitFiles(projectDir, startedAtMs)
-  const junitCases = junitFiles.flatMap((file) => parseJUnitTestCases(readFileSync(join(projectDir, file), "utf8"), file))
+  const junit = discoverJUnitResults(projectDir, {
+    minimumMtimeMs: startedAtMs,
+    minimumMtimeToleranceMs: 1_000,
+  })
+  const junitFiles = junit.files
+  const junitRefs = junitFiles.map((file) => file.ref)
+  const junitCases = junitFiles.flatMap((file) => parseJUnitTestCases(file.text, file.ref))
+  if (!junit.safe) {
+    const discoveryReason = `JUnit result discovery failed closed (${junit.diagnostics.join(", ")})`
+    return {
+      command: verificationCommand,
+      diagnosticCodes: junit.diagnostics,
+      evidenceRef,
+      exitCode: status,
+      junitCases: [],
+      junitRefs: [],
+      output,
+      reason: status !== 0
+        ? `PH direct verification failed: ${discoveryReason}${processOutcomeReason(result.outcome, DIRECT_VERIFICATION_TIMEOUT_MS)}${outputReason(output)}`
+        : `PH direct verification could not be verified: ${discoveryReason}`,
+      verification: status !== 0 ? "failed" : "unknown",
+    }
+  }
   if (status !== 0) {
-    const junit = junitVerificationFromFiles(projectDir, junitFiles)
-    if (junit.verification === "failed") {
+    const verification = junitVerificationFromFiles(junitFiles)
+    if (verification.verification === "failed") {
       return {
         command: verificationCommand,
-        evidenceRef: junit.evidenceRef,
+        diagnosticCodes: [],
+        evidenceRef: verification.evidenceRef,
         exitCode: status,
         junitCases,
-        junitRefs: junitFiles,
+        junitRefs,
         output,
-        reason: `PH direct verification failed: ${junit.reason}`,
+        reason: `PH direct verification failed: ${verification.reason}`,
         verification: "failed",
       }
     }
     return {
       command: verificationCommand,
+      diagnosticCodes: [],
       evidenceRef,
       exitCode: status,
       junitCases,
-      junitRefs: junitFiles,
+      junitRefs,
       output,
       reason: `PH direct verification failed (${verificationCommand.display}, exit ${status})${processOutcomeReason(result.outcome, DIRECT_VERIFICATION_TIMEOUT_MS)}${outputReason(output)}`,
       verification: "failed",
     }
   }
 
-  const junit = junitVerificationFromFiles(projectDir, junitFiles)
-  if (junit.verification === "failed") {
+  const verification = junitVerificationFromFiles(junitFiles)
+  if (verification.verification === "failed") {
     return {
       command: verificationCommand,
-      evidenceRef: junit.evidenceRef,
+      diagnosticCodes: [],
+      evidenceRef: verification.evidenceRef,
       exitCode: status,
       junitCases,
-      junitRefs: junitFiles,
+      junitRefs,
       output,
-      reason: `PH direct verification failed: ${junit.reason}`,
+      reason: `PH direct verification failed: ${verification.reason}`,
       verification: "failed",
     }
   }
   return {
     command: verificationCommand,
-    evidenceRef: junit.evidenceRef ?? evidenceRef,
+    diagnosticCodes: [],
+    evidenceRef: verification.evidenceRef ?? evidenceRef,
     exitCode: status,
     junitCases,
-    junitRefs: junitFiles,
+    junitRefs,
     output,
-    reason: junit.verification === "passed"
-      ? `PH direct verification passed (${verificationCommand.display}); ${junit.reason}`
+    reason: verification.verification === "passed"
+      ? `PH direct verification passed (${verificationCommand.display}); ${verification.reason}`
       : `PH direct verification passed (${verificationCommand.display}, exit 0)`,
     verification: "passed",
   }
@@ -169,12 +199,12 @@ function looksLikeGradleProject(projectDir: string): boolean {
     || existsSync(join(projectDir, "gradlew.bat"))
 }
 
-function junitVerificationFromFiles(projectDir: string, files: readonly string[]): ClosureVerificationSummary {
+function junitVerificationFromFiles(files: readonly JunitResultFile[]): ClosureVerificationSummary {
   if (files.length === 0) {
     return { reason: "no JUnit XML verification evidence observed", verification: "unknown" }
   }
   const totals = files
-    .map((file) => parseJUnitXml(readFileSync(join(projectDir, file), "utf8")))
+    .map((file) => parseJUnitXml(file.text))
     .reduce(
       (total, next) => ({
         errors: total.errors + next.errors,
@@ -183,7 +213,7 @@ function junitVerificationFromFiles(projectDir: string, files: readonly string[]
       }),
       { errors: 0, failures: 0, tests: 0 },
     )
-  const evidenceRef = files[0]
+  const evidenceRef = files[0]?.ref
   if (totals.errors > 0 || totals.failures > 0) {
     return { evidenceRef, reason: `JUnit XML verification failures observed (${totals.failures} failures, ${totals.errors} errors)`, verification: "failed" }
   }
@@ -191,30 +221,6 @@ function junitVerificationFromFiles(projectDir: string, files: readonly string[]
     return { evidenceRef, reason: `JUnit XML verification success evidence observed (${totals.tests} tests)`, verification: "passed" }
   }
   return { evidenceRef, reason: "JUnit XML verification evidence is present but contains no tests", verification: "unknown" }
-}
-
-function recentJunitFiles(projectDir: string, startedAtMs: number): readonly string[] {
-  return JUNIT_RESULT_DIRS.flatMap((dir) => junitFiles(join(projectDir, dir), dir, startedAtMs))
-}
-
-function junitFiles(dirPath: string, refPath: string, minMtimeMs?: number): readonly string[] {
-  if (!existsSync(dirPath)) {
-    return []
-  }
-  return readdirSync(dirPath)
-    .sort()
-    .flatMap((entry) => {
-      const entryPath = join(dirPath, entry)
-      const entryRef = `${refPath}/${entry}`
-      const stat = statSync(entryPath)
-      if (stat.isDirectory()) {
-        return junitFiles(entryPath, entryRef, minMtimeMs)
-      }
-      if (!stat.isFile() || !entry.endsWith(".xml")) {
-        return []
-      }
-      return minMtimeMs === undefined || stat.mtimeMs >= minMtimeMs - 1_000 ? [entryRef] : []
-    })
 }
 
 function parseJUnitXml(xmlText: string): JunitTotals {

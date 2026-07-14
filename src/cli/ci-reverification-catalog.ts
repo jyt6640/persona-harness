@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto"
-import { accessSync, constants, existsSync, lstatSync, readFileSync, realpathSync, readdirSync, statSync } from "node:fs"
-import { join, relative } from "node:path"
+import { accessSync, constants, existsSync, lstatSync, readFileSync, realpathSync, statSync } from "node:fs"
+import { join } from "node:path"
 
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { isRecord } from "../config/jsonc.js"
 import type { BoundedProcessResult } from "./bounded-process.js"
 import type { CiReverificationArtifact, CiReverificationCommandRecord } from "./ci-reverification-artifact.js"
 import { samePathIdentity, type EvidenceParentIdentity, type GitIdentity, type PosixPathIdentity } from "./ci-reverification-identity.js"
+import { discoverJUnitResults, type JunitResultDiscovery } from "./junit-result-discovery.js"
 import { classifyObservedMutations, parseGitStatusPorcelain } from "./ci-reverification-mutation.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
 
@@ -39,23 +40,6 @@ export function safeGradleWrapper(projectDir: string): string | undefined {
   }
 }
 
-function collectJUnitRefs(projectDir: string, startedAt: number): readonly string[] {
-  const root = join(projectDir, "build", "test-results")
-  const refs: string[] = []
-  function visit(path: string): void {
-    if (!existsSync(path)) return
-    for (const entry of readdirSync(path, { withFileTypes: true })) {
-      const child = join(path, entry.name)
-      if (entry.isDirectory()) visit(child)
-      else if (entry.isFile() && entry.name.endsWith(".xml") && statSync(child).mtimeMs >= startedAt) {
-        refs.push(relative(projectDir, child).replace(/\\/gu, "/"))
-      }
-    }
-  }
-  visit(root)
-  return refs.sort()
-}
-
 export function createCommandRecord(
   projectDir: string,
   ordinal: number,
@@ -63,6 +47,9 @@ export function createCommandRecord(
   startedAt: number,
   endedAt: number,
   result: BoundedProcessResult,
+  junitDiscovery = discoverJUnitResults(projectDir, {
+    minimumMtimeMs: startedAt,
+  }),
 ): CiReverificationCommandRecord {
   const stdout = Buffer.from(result.stdout)
   const stderr = Buffer.from(result.stderr)
@@ -70,9 +57,11 @@ export function createCommandRecord(
     durationMs: Math.max(0, endedAt - startedAt),
     exitCode: result.status,
     fixedArgvId,
-    junitRefs: collectJUnitRefs(projectDir, startedAt),
+    junitRefs: junitDiscovery.files.map((file) => file.ref),
     ordinal,
-    outcome: result.outcome === "timeout" || result.timedOut ? "timeout" : result.status === 0 ? "passed" : "failed",
+    outcome: junitDiscovery.safe
+      ? result.outcome === "timeout" || result.timedOut ? "timeout" : result.status === 0 ? "passed" : "failed"
+      : "failed",
     stderrBytes: stderr.byteLength,
     stderrSha256: sha256(stderr),
     stdoutBytes: stdout.byteLength,
