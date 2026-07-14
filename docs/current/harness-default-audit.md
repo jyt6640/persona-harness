@@ -10,6 +10,13 @@ This record does not change a default, authorize a runtime feature, or make
 `--strict` a remediation command. The future attach column is a design input
 for a later separately accepted STEP; it is not implemented behavior.
 
+> [!NOTE]
+> Post-snapshot update: `evidenceMode` is now an active privacy control.
+> `metadata_only` remains an accepted deprecated input alias and normalizes to
+> canonical `safe_metadata`. The matrix below remains the exact historical
+> `d91a5539...` snapshot; current mode behavior is documented in
+> `docs/current/persona-harness-detailed-usage.md`.
+
 ## Classification Vocabulary
 
 - **measured-negative**: keep off. Reopening requires a separate measurement

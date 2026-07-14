@@ -1,15 +1,18 @@
-import { mkdirSync } from "node:fs"
-import { join } from "node:path"
-
-import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
-import { writeFileAtomic } from "../io/atomic-file.js"
-import { warnRuntimeFailure } from "./error-boundary.js"
+import {
+  allowsPromptDiagnostics,
+  EVIDENCE_PRIVACY_CLASS,
+  type EvidencePrivacyClass,
+} from "../config/evidence-privacy.js"
+import { summarizeEvidenceText, type EvidenceTextSummary } from "./evidence-redaction.js"
+import {
+  evidenceRunId,
+  evidenceWriteContext,
+  writeEvidenceRecord,
+  type EvidenceWriteContext,
+  type EvidenceWriteOptions,
+} from "./evidence-file.js"
 import type { TopLevelIntent } from "./top-level-intent-router.js"
 import type { PendingInjection } from "./types.js"
-
-type EvidenceWriteOptions = {
-  readonly evidenceDir?: string
-}
 
 export type RailComplianceFindingCode =
   | "review-rail-file-modification"
@@ -85,46 +88,33 @@ export type ObserverReportOnlyEvidenceEvent = {
   readonly limitations: readonly string[]
 }
 
-function safeSlug(value: string): string {
-  return value
-    .replace(/\\/g, "/")
-    .split("/")
-    .at(-1)
-    ?.replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .toLowerCase() || "target"
+function promptDiagnostic(
+  context: EvidenceWriteContext,
+  prompt: string | undefined,
+): EvidenceTextSummary | undefined {
+  return prompt !== undefined && allowsPromptDiagnostics(context.mode)
+    ? summarizeEvidenceText(prompt, { includePreview: true, maxPreviewChars: 2_048 })
+    : undefined
 }
 
-function writeEvidenceJson(evidenceDir: string, runId: string, payload: unknown): void {
-  const outputPath = join(evidenceDir, `${runId}.json`)
-  try {
-    mkdirSync(evidenceDir, { recursive: true })
-    writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
-  } catch (error) {
-    if (error instanceof Error) {
-      warnRuntimeFailure("evidence-write", "evidence-write", outputPath, error)
-      return
-    }
-    warnRuntimeFailure("evidence-write", "evidence-write", outputPath, new Error(String(error)))
-  }
-}
-
-function evidenceDirFor(projectDir: string, options: EvidenceWriteOptions): string | undefined {
-  const result = resolveSafeEvidenceRootResult(projectDir, options.evidenceDir)
-  return result.ok ? result.path : undefined
+function privacyClassForPrompt(diagnostic: EvidenceTextSummary | undefined): EvidencePrivacyClass {
+  return diagnostic === undefined
+    ? EVIDENCE_PRIVACY_CLASS.metadataSafe
+    : EVIDENCE_PRIVACY_CLASS.promptDiagnostics
 }
 
 export function writePhase0Evidence(projectDir: string, event: EvidenceEvent, options: EvidenceWriteOptions = {}): void {
-  const evidenceRoot = evidenceDirFor(projectDir, options)
-  if (evidenceRoot === undefined) {
+  const context = evidenceWriteContext(projectDir, options)
+  if (context === undefined) {
     return
   }
   const now = new Date()
-  const evidenceDir = join(evidenceRoot, "phase0")
-  const runId = `${now.toISOString().replace(/[:.]/g, "-")}-${safeSlug(event.injection.targetFile)}`
+  const runId = evidenceRunId()
   const payload = {
     schemaVersion: "phase0.1",
     runId,
     timestamp: now.toISOString(),
+    privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
     hook: event.hook,
     sessionID: event.sessionID,
     callID: event.callID,
@@ -140,7 +130,7 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent, op
     injectedPolicyCount: event.injection.policies.length,
   }
 
-  writeEvidenceJson(evidenceDir, runId, payload)
+  writeEvidenceRecord(context, "injection", runId, payload)
 }
 
 export function writeIntentEvidence(
@@ -148,21 +138,22 @@ export function writeIntentEvidence(
   event: IntentEvidenceEvent,
   options: EvidenceWriteOptions = {},
 ): void {
-  const evidenceRoot = evidenceDirFor(projectDir, options)
-  if (evidenceRoot === undefined) {
+  const context = evidenceWriteContext(projectDir, options)
+  if (context === undefined) {
     return
   }
   const now = new Date()
-  const evidenceDir = join(evidenceRoot, "phase0")
-  const runId = `${now.toISOString().replace(/[:.]/g, "-")}-intent-${safeSlug(event.intent.primary)}`
+  const runId = evidenceRunId()
+  const diagnostic = promptDiagnostic(context, event.userPrompt)
   const payload = {
     schemaVersion: "phase0.intent.1",
     runId,
     timestamp: now.toISOString(),
+    privacyClass: privacyClassForPrompt(diagnostic),
     hook: event.hook,
     sessionID: event.sessionID,
     injectedInto: event.injectedInto,
-    userPrompt: event.userPrompt,
+    ...(diagnostic === undefined ? {} : { promptDiagnostic: diagnostic }),
     primaryIntent: event.intent.primary,
     secondaryIntents: event.intent.secondary,
     reason: event.intent.reason,
@@ -170,7 +161,7 @@ export function writeIntentEvidence(
     railMarker: event.railMarker,
   }
 
-  writeEvidenceJson(evidenceDir, runId, payload)
+  writeEvidenceRecord(context, "intent", runId, payload)
 }
 
 export function writeRailComplianceEvidence(
@@ -178,22 +169,23 @@ export function writeRailComplianceEvidence(
   event: RailComplianceEvidenceEvent,
   options: EvidenceWriteOptions = {},
 ): void {
-  const evidenceRoot = evidenceDirFor(projectDir, options)
-  if (evidenceRoot === undefined) {
+  const context = evidenceWriteContext(projectDir, options)
+  if (context === undefined) {
     return
   }
   const now = new Date()
-  const evidenceDir = join(evidenceRoot, "phase0")
-  const runId = `${now.toISOString().replace(/[:.]/g, "-")}-rail-compliance-${safeSlug(event.code)}`
+  const runId = evidenceRunId()
+  const diagnostic = promptDiagnostic(context, event.userPrompt)
   const payload = {
     schemaVersion: "phase0.rail-compliance.1",
     runId,
     timestamp: now.toISOString(),
+    privacyClass: privacyClassForPrompt(diagnostic),
     hook: event.hook,
     sessionID: event.sessionID,
     callID: event.callID,
     injectedInto: "rail-compliance",
-    userPrompt: event.userPrompt,
+    ...(diagnostic === undefined ? {} : { promptDiagnostic: diagnostic }),
     primaryIntent: event.primaryIntent,
     secondaryIntents: event.secondaryIntents,
     railMarker: event.railMarker,
@@ -206,7 +198,7 @@ export function writeRailComplianceEvidence(
     reportOnly: true,
   }
 
-  writeEvidenceJson(evidenceDir, runId, payload)
+  writeEvidenceRecord(context, "rail-compliance", runId, payload)
 }
 
 export function writeContinuationEvidence(
@@ -214,17 +206,18 @@ export function writeContinuationEvidence(
   event: ContinuationEvidenceEvent,
   options: EvidenceWriteOptions = {},
 ): void {
-  const evidenceRoot = evidenceDirFor(projectDir, options)
-  if (evidenceRoot === undefined) {
+  const context = evidenceWriteContext(projectDir, options)
+  if (context === undefined) {
     return
   }
   const now = new Date()
-  const evidenceDir = join(evidenceRoot, "phase0")
-  const runId = `${now.toISOString().replace(/[:.]/g, "-")}-continuation-${safeSlug(event.sessionID)}`
+  const runId = evidenceRunId()
+  const diagnostic = promptDiagnostic(context, event.nextPromptHint)
   const payload = {
     schemaVersion: "phase0.continuation.1",
     runId,
     timestamp: now.toISOString(),
+    privacyClass: privacyClassForPrompt(diagnostic),
     hook: event.hook,
     sessionID: event.sessionID,
     injectedInto: "continuation",
@@ -235,11 +228,11 @@ export function writeContinuationEvidence(
     pendingTicketPath: event.pendingTicketPath,
     remainingReadRange: event.remainingReadRange,
     remainingScope: event.remainingScope,
-    nextPromptHint: event.nextPromptHint,
+    ...(diagnostic === undefined ? {} : { nextPromptDiagnostic: diagnostic }),
     reportOnly: true,
   }
 
-  writeEvidenceJson(evidenceDir, runId, payload)
+  writeEvidenceRecord(context, "continuation", runId, payload)
 }
 
 export function writeObserverReportOnlyEvidence(
@@ -247,17 +240,17 @@ export function writeObserverReportOnlyEvidence(
   event: ObserverReportOnlyEvidenceEvent,
   options: EvidenceWriteOptions = {},
 ): void {
-  const evidenceRoot = evidenceDirFor(projectDir, options)
-  if (evidenceRoot === undefined) {
+  const context = evidenceWriteContext(projectDir, options)
+  if (context === undefined) {
     return
   }
   const now = new Date()
-  const evidenceDir = join(evidenceRoot, "phase0")
-  const runId = `${now.toISOString().replace(/[:.]/g, "-")}-observer-report-only-${safeSlug(event.targetFile)}`
+  const runId = evidenceRunId()
   const payload = {
     schemaVersion: "phase0.observer-report-only.1",
     runId,
     timestamp: now.toISOString(),
+    privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
     hook: event.hook,
     sessionID: event.sessionID,
     callID: event.callID,
@@ -271,5 +264,5 @@ export function writeObserverReportOnlyEvidence(
     enforcement: false,
   }
 
-  writeEvidenceJson(evidenceDir, runId, payload)
+  writeEvidenceRecord(context, "observer-report-only", runId, payload)
 }

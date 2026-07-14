@@ -1,11 +1,12 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { join } from "node:path"
 
+import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import type { MultiAgentRole } from "../config/harness-config.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
-import { writeFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
+import { writePrivateEvidenceJson } from "./evidence-file.js"
 import { HEURISTIC_LIMITATION, ROLE_BOUNDARY_LIMITATIONS } from "./role-boundary-policy.js"
 
 export type RoleBoundaryHeuristicFinding = {
@@ -52,6 +53,7 @@ type RoleBoundaryEvidencePayload = {
   readonly lastSeen: string
   readonly limitations: readonly string[]
   readonly observations: readonly RoleBoundaryObservation[]
+  readonly privacyClass: "metadata-safe"
   readonly reportOnly: true
   readonly schemaVersion: "role-boundary-heuristic.1"
   readonly sessionID: string
@@ -61,9 +63,14 @@ function safeSessionKey(sessionID: string): string {
   return sessionID.replace(/[^a-zA-Z0-9._-]+/g, "-").toLowerCase() || "session"
 }
 
-function roleBoundaryEvidenceDir(projectDir: string): string | undefined {
+function roleBoundaryEvidenceRoot(projectDir: string): string | undefined {
   const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
-  return evidenceRoot.ok ? join(evidenceRoot.path, "role-boundary") : undefined
+  return evidenceRoot.ok ? evidenceRoot.path : undefined
+}
+
+function roleBoundaryEvidenceDir(projectDir: string): string | undefined {
+  const evidenceRoot = roleBoundaryEvidenceRoot(projectDir)
+  return evidenceRoot === undefined ? undefined : join(evidenceRoot, "role-boundary")
 }
 
 function roleBoundaryEvidencePath(projectDir: string, sessionID: string): string | undefined {
@@ -120,6 +127,7 @@ function readEvidence(path: string): RoleBoundaryEvidencePayload | undefined {
       lastSeen: typeof parsed.lastSeen === "string" ? parsed.lastSeen : new Date().toISOString(),
       limitations: ROLE_BOUNDARY_LIMITATIONS,
       observations,
+      privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
       reportOnly: true,
       schemaVersion: "role-boundary-heuristic.1",
       sessionID: typeof parsed.sessionID === "string" ? parsed.sessionID : "unknown-session",
@@ -153,8 +161,9 @@ function updateObservation(
 }
 
 export function appendRoleBoundaryObservation(projectDir: string, input: RoleBoundaryObservationInput): void {
+  const evidenceRoot = roleBoundaryEvidenceRoot(projectDir)
   const outputPath = roleBoundaryEvidencePath(projectDir, input.sessionID)
-  if (outputPath === undefined) {
+  if (evidenceRoot === undefined || outputPath === undefined) {
     return
   }
   const now = new Date().toISOString()
@@ -180,14 +189,14 @@ export function appendRoleBoundaryObservation(projectDir: string, input: RoleBou
     lastSeen: now,
     limitations: ROLE_BOUNDARY_LIMITATIONS,
     observations,
+    privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
     reportOnly: true,
     schemaVersion: "role-boundary-heuristic.1",
     sessionID: input.sessionID,
   }
 
   try {
-    mkdirSync(dirname(outputPath), { recursive: true })
-    writeFileAtomic(outputPath, `${JSON.stringify(payload, null, 2)}\n`)
+    writePrivateEvidenceJson(evidenceRoot, outputPath, payload)
   } catch (error) {
     if (error instanceof Error) {
       warnRuntimeFailure("evidence-write", "role-boundary-heuristic-write", outputPath, error)
