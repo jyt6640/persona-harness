@@ -65,14 +65,13 @@ export function enableStrictClosureVerification(projectDir: string): CliRunResul
     return parsed
   }
   const enforce = isRecord(parsed.enforce) ? parsed.enforce : {}
-  const nextConfig = withRuntimeInjection({
+  const nextConfig = {
     ...parsed,
     enforce: {
       ...enforce,
       executeVerification: true,
-      systemConstitution: true,
     },
-  })
+  }
   writeHarnessConfigObject(projectDir, nextConfig)
   return undefined
 }
