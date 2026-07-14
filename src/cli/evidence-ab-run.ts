@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process"
-import { mkdirSync } from "node:fs"
+import { createHash, randomUUID } from "node:crypto"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
+import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
-import { writeFileAtomic } from "../io/atomic-file.js"
+import { writePrivateEvidenceJson } from "../runtime/evidence-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   type AbRunConfig,
@@ -17,7 +18,14 @@ import {
 
 const AB_DIRECTORY = "ab"
 
-function runCommand(config: AbRunConfig, options: EvidenceAbRunOptions): AbRunRecord {
+type PrivateAbRunRecord = Omit<AbRunRecord, "command"> & {
+  readonly commandSummary: {
+    readonly argvCount: number
+    readonly sha256: string
+  }
+}
+
+function runCommand(config: AbRunConfig, options: EvidenceAbRunOptions): PrivateAbRunRecord {
   const started = Date.now()
   const result = spawnSync(config.command[0] ?? "", config.command.slice(1), {
     cwd: resolve(options.projectDir ?? process.cwd()),
@@ -32,7 +40,10 @@ function runCommand(config: AbRunConfig, options: EvidenceAbRunOptions): AbRunRe
     closureBlockerDelta: config.closure.closureBlockerDelta,
     closureBlockersAfter: config.closure.closureBlockersAfter,
     closureBlockersBefore: config.closure.closureBlockersBefore,
-    command: config.command,
+    commandSummary: {
+      argvCount: config.command.length,
+      sha256: `sha256:${createHash("sha256").update(JSON.stringify(config.command)).digest("hex")}`,
+    },
     continuationApplied: config.closure.continuationApplied,
     earlyCompletionBlocked: config.closure.earlyCompletionBlocked,
     elapsedMs: config.elapsedMs ?? measuredElapsedMs,
@@ -40,7 +51,7 @@ function runCommand(config: AbRunConfig, options: EvidenceAbRunOptions): AbRunRe
     finishStatus,
     finishStatusAfter: config.closure.finishStatusAfter,
     finishStatusBefore: config.closure.finishStatusBefore,
-    id: config.runId ?? `${safeEvidenceSlug(config.condition)}-${started}`,
+    id: config.runId === null ? randomUUID() : safeEvidenceSlug(config.runId),
     mcpCalls: config.mcpCalls,
     outcome: config.outcome ?? (exitStatus === 0 ? "command-passed" : "command-failed"),
     providerTokens: config.providerTokens,
@@ -56,14 +67,14 @@ function runCommand(config: AbRunConfig, options: EvidenceAbRunOptions): AbRunRe
 
 function writeRunEvidence(
   config: AbRunConfig,
-  run: AbRunRecord,
+  run: PrivateAbRunRecord,
   evidenceRoot: string,
 ): string {
   const scenarioDir = join(evidenceRoot, AB_DIRECTORY, safeEvidenceSlug(config.scenario))
-  mkdirSync(scenarioDir, { recursive: true })
   const filePath = join(scenarioDir, `${safeEvidenceSlug(config.condition)}-${safeEvidenceSlug(run.id)}.json`)
   const evidence = {
     schemaVersion: "persona-ab-measurement.1",
+    privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
     scenarioId: config.scenario,
     scenarioLabel: config.scenarioLabel ?? config.scenario,
     source: config.source ?? "ph evidence ab-run",
@@ -85,7 +96,7 @@ function writeRunEvidence(
       },
     ],
   }
-  writeFileAtomic(filePath, `${JSON.stringify(evidence, null, 2)}\n`)
+  writePrivateEvidenceJson(evidenceRoot, filePath, evidence)
   return filePath
 }
 
