@@ -33,6 +33,8 @@ deleting evidence/status history.
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
   [`release/v0.7.0-rc.2-release-notes.md`](release/v0.7.0-rc.2-release-notes.md).
+- Current RC release readiness decision:
+  [`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -114,10 +116,10 @@ deleting evidence/status history.
   checks, registry integrity readback, and fail-closed GitHub release
   idempotency. On 2026-07-13, the recorded GitHub repository controls added
   strict main protection, immutable-action enforcement, and protected
-  `npm-publish` environment settings. The authenticated trusted-publisher
-  binding is recorded in the P3-9 decision; issue `#10` remains the separate
-  staged-publish least-privilege review. RC3 publish, `latest`, stable, and GA
-  claims remain NO-GO.
+  `npm-publish` environment settings. Closed issue `#10` records the
+  owner-authenticated publisher binding with `publish` permission only; the
+  current release readiness decision keeps publication, `latest`, stable, and
+  GA NO-GO until a fresh versioned RC gate is complete.
 - P3-4 adds fresh fixed-command execution and nonzero JUnit testcase
   enforcement. Local cooperative receipts remain untrusted under P3-2; no
   finish authority or strong integrity claim is enabled.

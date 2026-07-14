@@ -55,6 +55,13 @@ capsule is [`docs/releases/v0.7.0-rc.2/`](../../releases/v0.7.0-rc.2/README.md).
 Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.2`.
 The completed publish does not move `latest` or broaden any product claim.
 
+Current `main` now differs from the registry gitHead while retaining the
+already-published `0.7.0-rc.2` version. The current decision is
+[`rc-release-readiness-decision.md`](rc-release-readiness-decision.md):
+next-RC planning may begin, but current-main publication, tag/release work,
+Stable/GA, and npm `latest` remain NO-GO until a fresh versioned RC gate is
+complete.
+
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
 `next=0.7.0-rc.2`, with no `alpha` dist-tag after the post-stable T0
