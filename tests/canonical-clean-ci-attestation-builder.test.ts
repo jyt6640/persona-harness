@@ -83,6 +83,7 @@ describe("canonical clean CI attestation builder contract", () => {
     expect(builder).toContain("clean-ci-builder-failure.1")
     expect(builder).toContain("authorityEligible: false")
     expect(builder).toContain("rawOutputIncluded: false")
+    expect(builder).toContain("failedTestFiles")
     expect(builder).toContain("report")
     expect(builder).not.toContain("rawFailureMessage")
   })
@@ -102,12 +103,45 @@ describe("canonical clean CI attestation builder contract", () => {
           numTodoTests: 0,
           numTotalTests: 1102,
           secretMarker: "DO_NOT_PERSIST",
+          testResults: [
+            {
+              assertionResults: [{ status: "failed", title: "SECRET_ASSERTION_TITLE" }],
+              name: "/workspace/repo/tests/failing-builder.test.ts",
+              status: "failed",
+            },
+            {
+              assertionResults: [],
+              name: "tests/safe-relative.test.ts",
+              status: "failed",
+            },
+            {
+              assertionResults: [],
+              name: "/outside/tests/escaped.test.ts",
+              status: "failed",
+            },
+            {
+              assertionResults: [],
+              name: "../outside.test.ts",
+              status: "failed",
+            },
+            {
+              assertionResults: [],
+              name: "/workspace/repo/tests/../secrets.txt",
+              status: "failed",
+            },
+            {
+              assertionResults: [],
+              name: "C:\\repo\\tests\\windows.test.ts",
+              status: "failed",
+            },
+          ],
         }),
       )
 
       const diagnostic = createFailureDiagnostic(
         { commandId: "tests", exitCode: 1, exitState: "exit-nonzero" },
         reportPath,
+        "/workspace/repo",
       )
       const serialized = JSON.stringify(diagnostic)
 
@@ -117,7 +151,14 @@ describe("canonical clean CI attestation builder contract", () => {
       expect(diagnostic.report.available).toBe(true)
       expect(diagnostic.report.digest).toMatch(/^sha256:/)
       expect(diagnostic.report.summary).toEqual({ failed: 1, passed: 1101, skipped: 0, total: 1102 })
+      expect(diagnostic.report.failedTestFiles).toEqual([
+        "tests/failing-builder.test.ts",
+        "tests/safe-relative.test.ts",
+      ])
       expect(serialized).not.toContain("DO_NOT_PERSIST")
+      expect(serialized).not.toContain("SECRET_ASSERTION_TITLE")
+      expect(serialized).not.toContain("/workspace/repo")
+      expect(serialized).not.toContain("/outside")
       expect(serialized).not.toContain("stdout")
       expect(serialized).not.toContain("stderr")
     } finally {
