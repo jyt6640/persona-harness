@@ -8,9 +8,16 @@ import {
 } from "../io/bounded-path-walker.js"
 import { DEFAULT_CONVENTION_LEVELS } from "./convention-registry.js"
 import type { ConventionLevel } from "./convention-registry.js"
+import {
+  DEFAULT_EVIDENCE_MODE,
+  isEvidenceModeInput,
+  normalizeEvidenceMode,
+  type EvidenceMode,
+} from "./evidence-privacy.js"
 import { isRecord, stripJsonComments } from "./jsonc.js"
 
 export type { ConventionLevel } from "./convention-registry.js"
+export type { EvidenceMode, EvidencePrivacyClass } from "./evidence-privacy.js"
 
 export type HarnessConfig = {
   readonly conventions: Readonly<Record<string, ConventionLevel>>
@@ -22,7 +29,7 @@ export type HarnessConfig = {
   readonly telemetry: HarnessTelemetryConfig
   readonly multiAgent: HarnessMultiAgentConfig
   readonly maxRulesPerInjection: number
-  readonly evidenceMode: "metadata_only"
+  readonly evidenceMode: EvidenceMode
   readonly enabledDomains: readonly string[]
   readonly scenario: Phase0Scenario
 }
@@ -136,7 +143,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
     models: {},
   },
   maxRulesPerInjection: 12,
-  evidenceMode: "metadata_only",
+  evidenceMode: DEFAULT_EVIDENCE_MODE,
   enabledDomains: ["backend", "programming", "workflow"],
   scenario: "step1",
 }
@@ -220,7 +227,7 @@ function validConfigShape(value: Record<string, unknown>): boolean {
         || value.enabledDomains.some((item) => typeof item !== "string" || item.trim() === "")))
     || !isNumberIfPresent(value, "maxRulesPerInjection")
     || (typeof value.maxRulesPerInjection === "number" && (!Number.isInteger(value.maxRulesPerInjection) || value.maxRulesPerInjection <= 0))
-    || (value.evidenceMode !== undefined && value.evidenceMode !== "metadata_only")
+    || (value.evidenceMode !== undefined && !isEvidenceModeInput(value.evidenceMode))
     || (value.scenario !== undefined && value.scenario !== "step1" && value.scenario !== "step2-3")
   ) {
     return false
@@ -317,8 +324,8 @@ function readScenario(value: unknown, fallback: Phase0Scenario): Phase0Scenario 
   return value === "step2-3" ? "step2-3" : fallback
 }
 
-function readEvidenceMode(value: unknown): "metadata_only" {
-  return value === "metadata_only" ? "metadata_only" : DEFAULT_CONFIG.evidenceMode
+function readEvidenceMode(value: unknown): EvidenceMode {
+  return normalizeEvidenceMode(value)
 }
 
 function readEnforceConfig(value: unknown): HarnessEnforceConfig {

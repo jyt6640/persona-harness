@@ -194,10 +194,14 @@ describe("ph bearshell", () => {
     expect(result.stdout).toBe("BUILD SUCCESSFUL\n")
     expect(evidence).toHaveLength(1)
     expect(evidence[0]).toMatchObject({
-      command: "node -e console.log('BUILD SUCCESSFUL')",
+      schemaVersion: "phase0.execution.2",
+      privacyClass: "metadata-safe",
       status: 0,
       tool: "bearshell",
+      diagnosticSignals: ["BUILD SUCCESSFUL"],
     })
+    expect(evidence[0]?.["command"]).toBeUndefined()
+    expect(evidence[0]?.["stdout"]).toBeUndefined()
     expect(after.state.verification).toBe("passed")
   })
 

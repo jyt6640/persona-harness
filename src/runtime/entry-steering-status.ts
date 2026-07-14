@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
+import { join } from "node:path"
 
+import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import type { HarnessConfig } from "../config/harness-config.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
-import { writeFileAtomic } from "../io/atomic-file.js"
 import { detectEntryIntent, type EntryIntentRationale } from "./entry-intent-detector.js"
+import { writePrivateEvidenceJson } from "./evidence-file.js"
 import type { TransformMessagesOutput } from "./types.js"
 
 const STATUS_DIRECTORY = "entry-steering"
@@ -16,6 +17,7 @@ const ADVISORY = "[Persona Harness Entry Steering] Implementation intent detecte
 type EntrySteeringStatusPayload = {
   readonly decision: "detected" | "not-detected"
   readonly fired: boolean
+  readonly privacyClass: "metadata-safe"
   readonly rationale: EntryIntentRationale
   readonly sessionKey: string
 }
@@ -30,14 +32,14 @@ function sessionKey(sessionID: string): string {
   return createHash("sha256").update(sessionID).digest("hex").slice(0, 16)
 }
 
-function statusDirectory(projectDir: string, config: HarnessConfig): string | undefined {
+function statusEvidenceRoot(projectDir: string, config: HarnessConfig): string | undefined {
   const evidenceRoot = resolveSafeEvidenceRootResult(projectDir, config.evidenceDir)
-  return evidenceRoot.ok ? join(evidenceRoot.path, STATUS_DIRECTORY) : undefined
+  return evidenceRoot.ok ? evidenceRoot.path : undefined
 }
 
-function statusPath(projectDir: string, config: HarnessConfig, sessionID: string): string | undefined {
-  const directory = statusDirectory(projectDir, config)
-  return directory === undefined ? undefined : join(directory, `${sessionKey(sessionID)}.json`)
+function statusDirectory(projectDir: string, config: HarnessConfig): string | undefined {
+  const evidenceRoot = statusEvidenceRoot(projectDir, config)
+  return evidenceRoot === undefined ? undefined : join(evidenceRoot, STATUS_DIRECTORY)
 }
 
 function firstUserText(output: TransformMessagesOutput, sessionID: string): string | undefined {
@@ -94,10 +96,11 @@ export class EntrySteeringTracker {
     if (!this.config.enabled || !this.config.features.entrySteering || this.decidedSessions.has(sessionID)) {
       return
     }
-    const path = statusPath(this.projectDir, this.config, sessionID)
-    if (path === undefined) {
+    const evidenceRoot = statusEvidenceRoot(this.projectDir, this.config)
+    if (evidenceRoot === undefined) {
       return
     }
+    const path = join(evidenceRoot, STATUS_DIRECTORY, `${sessionKey(sessionID)}.json`)
     this.decidedSessions.add(sessionID)
     if (existsSync(path)) {
       return
@@ -108,11 +111,11 @@ export class EntrySteeringTracker {
     const payload: EntrySteeringStatusPayload = {
       decision: result.detected ? "detected" : "not-detected",
       fired,
+      privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
       rationale: result.rationale,
       sessionKey: sessionKey(sessionID),
     }
-    mkdirSync(dirname(path), { recursive: true })
-    writeFileAtomic(path, `${JSON.stringify(payload, null, 2)}\n`)
+    writePrivateEvidenceJson(evidenceRoot, path, payload)
   }
 }
 
