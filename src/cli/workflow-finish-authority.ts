@@ -8,6 +8,7 @@ import {
   assessSemanticTddChain,
   type SemanticTddAssessment,
 } from "./workflow-semantic-tdd.js"
+import { assessExternalFinishAttestation } from "./workflow-external-finish-attestation.js"
 
 export const TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID = "trusted-authority-required"
 
@@ -15,12 +16,13 @@ export type WorkflowFinishAuthority = {
   readonly assessment: VerificationAuthorityAssessment
   readonly blocker: ClosureBlocker
   readonly semanticTdd: SemanticTddAssessment
-  readonly status: "blocked"
+  readonly status: "blocked" | "trusted"
 }
 
 export function readWorkflowFinishAuthority(projectDir: string): WorkflowFinishAuthority {
   const assessment = assessVerificationAuthority(projectDir)
   const semanticTdd = assessSemanticTddChain(projectDir)
+  const external = assessExternalFinishAttestation(projectDir)
   const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
   const source = evidenceRoot.ok
     ? `${evidenceRoot.relativePath} (diagnostic only)`
@@ -34,11 +36,12 @@ export function readWorkflowFinishAuthority(projectDir: string): WorkflowFinishA
         "Unsigned project-local bearshell output, JUnit XML, TDD JSON, generatedBy markers, self-computed digests, arbitrary command/head/exit values, and stale attempt IDs are diagnostic only.",
         `Receipt assessment: ${assessment.summary}.`,
         `Semantic TDD assessment: ${semanticTdd.summary}.`,
-        "P3-3 defines the receipt and attempt boundary; P3-4 or a future external attestation path must provide trusted authority before finish can pass.",
+        `External attestation assessment: ${external.reason}.`,
+        "Only a verified clean-CI external attestation can provide authority; local cooperative evidence remains untrusted.",
       ].join(" "),
       source,
     },
     semanticTdd,
-    status: "blocked",
+    status: external.status === "trusted" ? "trusted" : "blocked",
   }
 }

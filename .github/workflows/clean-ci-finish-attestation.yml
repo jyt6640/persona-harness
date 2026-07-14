@@ -1,0 +1,67 @@
+name: Clean CI finish attestation
+
+on:
+  push:
+    branches:
+      - feat/verify-clean-ci-finish-attestations
+  workflow_dispatch:
+
+concurrency:
+  group: clean-ci-finish-attestation-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+jobs:
+  issue:
+    name: Issue clean CI finish attestation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify repository
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Create canonical finish-attestation subject and predicate
+        run: node scripts/issue-clean-ci-finish-attestation.mjs
+
+      - name: Sign finish-attestation predicate
+        id: attest
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763
+        with:
+          subject-path: .ci/finish-attestation/receipt.json
+          predicate-type: https://github.com/jyt6640/persona-harness/attestations/finish-attestation.1
+          predicate-path: .ci/finish-attestation/predicate.json
+
+      - name: Collect signed bundle
+        run: cp "${{ steps.attest.outputs.bundle-path }}" .ci/finish-attestation/bundle.json
+
+      - name: Upload signed finish attestation
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: clean-ci-finish-attestation
+          path: .ci/finish-attestation
+          if-no-files-found: error
+          retention-days: 7
