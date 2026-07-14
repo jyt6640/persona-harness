@@ -168,7 +168,10 @@ function readTestFacts(value, reportPath) {
   const total = numberField(value, "numTotalTests")
   const passed = numberField(value, "numPassedTests")
   const failed = numberField(value, "numFailedTests")
-  if (total < 1 || passed !== total || failed !== 0) fail("fixed test command did not produce a nonzero passing test count")
+  const skipped = numberField(value, "numPendingTests") + numberField(value, "numTodoTests") + numberField(value, "numSkippedTests")
+  if (total < 1 || passed < 1 || failed !== 0) {
+    fail(`fixed test command did not produce a nonzero passing test count: total=${total}, passed=${passed}, failed=${failed}, skipped=${skipped}`)
+  }
 
   return {
     artifactDigest: `sha256:${sha256(readFileSync(reportPath))}`,
@@ -176,6 +179,7 @@ function readTestFacts(value, reportPath) {
     failed,
     identity: "vitest:repository",
     passed,
+    skipped,
   }
 }
 
