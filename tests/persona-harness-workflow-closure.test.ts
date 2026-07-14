@@ -486,6 +486,27 @@ describe("ph workflow closure read-only planner", () => {
     expect(result.output).toContain("HEAD")
   })
 
+  it("fails closed when recent JUnit XML is malformed", () => {
+    const projectDir = createWorkflowProject()
+    writeDirectVerificationConfig(projectDir)
+    writeGradleWrapper(
+      projectDir,
+      [
+        "#!/bin/sh",
+        "mkdir -p build/test-results/test",
+        "printf '%s\\n' '<testsuite><testcase></testsuite>' > build/test-results/test/TEST-malformed.xml",
+        "exit 0",
+      ].join("\n") + "\n",
+    )
+
+    const result = runDirectTestVerification(projectDir)
+
+    expect(result.verification).toBe("unknown")
+    expect(result.junitRefs).toEqual([])
+    expect(result.diagnosticCodes).toContain("junit-malformed-xml")
+    expect(result.reason).toContain("failed closed")
+  })
+
   it("passes verification from PH-run direct execution when enforcement is enabled", () => {
     const projectDir = createWorkflowProject()
     writeDirectVerificationConfig(projectDir)

@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { isRecord } from "../config/jsonc.js"
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import { discoverJUnitResults, JUNIT_RESULT_DIRS } from "./junit-result-discovery.js"
 import type { ClosureVerification } from "./workflow-closure-verification.js"
 
 export type ExecutionEvidenceVerification = {
@@ -12,7 +13,6 @@ export type ExecutionEvidenceVerification = {
   readonly verification: Exclude<ClosureVerification, "not-run">
 }
 
-const JUNIT_RESULT_DIRS = ["build/test-results/test", "target/surefire-reports"] as const
 const SUCCESS_PATTERNS = [
   /BUILD SUCCESSFUL/i,
   /(?:test|build|runtime smoke|bootRun)\s+PASS/i,
@@ -70,7 +70,7 @@ export function readExecutionEvidenceVerification(projectDir: string): Execution
   const entries = evidenceRead.entries
   const evidenceText = entries.map((entry) => entry.text).join("\n")
   const junit = junitVerification(projectDir)
-  if (junit.verification !== "unknown") {
+  if (junit.verification !== "unknown" || junit.observed) {
     return junit
   }
   if (FAILURE_PATTERNS.some((pattern) => pattern.test(evidenceText))) {
@@ -208,30 +208,16 @@ function valueText(value: unknown): string {
 }
 
 function junitVerification(projectDir: string): ExecutionEvidenceVerification {
-  const walked = JUNIT_RESULT_DIRS.map((dir) =>
-    walkBoundedFiles(join(projectDir, dir), projectDir, {
-      displayRoot: dir,
-      extensions: [".xml"],
-      includeText: true,
-    }),
-  )
-  if (walked.some((result) => !result.safe)) {
+  const discovered = discoverJUnitResults(projectDir)
+  if (!discovered.safe) {
     return {
       evidenceRef: JUNIT_RESULT_DIRS[0],
       observed: true,
-      reason: "JUnit verification traversal is unsafe or exceeds bounded limits; read-only recovery is required",
+      reason: `JUnit verification traversal is unsafe or exceeds bounded limits; read-only recovery is required (${discovered.diagnostics.join(", ")})`,
       verification: "unknown",
     }
   }
-  const files = walked.flatMap((result, index) => {
-    const root = JUNIT_RESULT_DIRS[index]
-    if (root === undefined) {
-      return []
-    }
-    return result.files.flatMap((file) => file.text === undefined
-      ? []
-      : [{ ref: `${root}/${file.relativePath}`, text: file.text }])
-  })
+  const files = discovered.files
   if (files.length === 0) {
     return { observed: false, reason: "no JUnit XML verification evidence observed", verification: "unknown" }
   }
