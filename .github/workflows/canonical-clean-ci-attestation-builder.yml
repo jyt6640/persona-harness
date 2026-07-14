@@ -58,3 +58,12 @@ jobs:
           path: .ci/canonical-clean-ci-attestation-builder
           if-no-files-found: error
           retention-days: 7
+
+      - name: Upload sanitized builder failure diagnostic
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: canonical-clean-ci-attestation-builder-failure
+          path: .ci/canonical-clean-ci-attestation-builder/failure-diagnostic.json
+          if-no-files-found: ignore
+          retention-days: 7
