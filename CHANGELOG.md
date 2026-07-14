@@ -8,10 +8,13 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## [0.7.0-rc.3] - 2026-07-14
 
-- Prepares a new next-channel release candidate after the published
-  `0.7.0-rc.2` identity. This entry is candidate documentation only: no
-  `v0.7.0-rc.3` tag, GitHub prerelease, npm package, registry gitHead, or
-  dist-tag movement has occurred.
+- Publishes the next-channel prerelease from exact main
+  `728e9c339463ea521fa4388a37d1c76f76c9d726` through trusted workflow run
+  `29310969744`. `persona-harness@next=0.7.0-rc.3`; `latest` remains `0.6.0`.
+- Registry gitHead matches main and the matching Git tag/GitHub prerelease
+  `v0.7.0-rc.3` target that commit. npm SHA-1 is
+  `9d1fb27ab86d344afcd748b66959188ea9553258`, and integrity is
+  `sha512-P7ITZAhnOKmbq5RFKzTun7ruL8E4bJP1E049QcaAl3iMtPQZnQRevBfN+pE/tIBPyfNv0la5kPmQOwSADm4epQ==`.
 - Carries the post-rc2 integrity boundaries: unsigned project-local evidence
   remains diagnostic-only; strict receipt parsing, fresh fixed-command
   verification, semantic TDD assessment, configured evidence-root/path safety,
@@ -20,7 +23,7 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 - Carries immutable CI/release workflow controls and explicit Korean root-help
   locale selection through `--lang ko`, while default English help remains
   unchanged.
-- The candidate remains a prerelease-only preparation. `latest`, Stable, GA,
+- This remains a prerelease-only release. `latest`, Stable, GA,
   token-saving, product-efficacy, broad reliability, security certification,
   and trusted external finish-attestation claims remain out of scope.
 

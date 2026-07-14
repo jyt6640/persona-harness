@@ -23,8 +23,10 @@ deleting evidence/status history.
   and does not address hostile same-user filesystem path replacement. Existing
   draft/approval commands remain the route for vague product ideas.
 - Current published next-channel capsule:
-  [`docs/releases/v0.7.0-rc.2/`](../releases/v0.7.0-rc.2/README.md).
+  [`docs/releases/v0.7.0-rc.3/`](../releases/v0.7.0-rc.3/README.md).
 - Previous published next-channel capsule:
+  [`docs/releases/v0.7.0-rc.2/`](../releases/v0.7.0-rc.2/README.md).
+- Earlier published next-channel capsule:
   [`docs/releases/v0.7.0-rc.1/`](../releases/v0.7.0-rc.1/README.md).
 - Current published stable capsule:
   [`docs/releases/v0.6.0/`](../releases/v0.6.0/README.md).
@@ -32,8 +34,6 @@ deleting evidence/status history.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.7.0-rc.2-release-notes.md`](release/v0.7.0-rc.2-release-notes.md).
-- Prepared next-channel candidate release notes:
   [`release/v0.7.0-rc.3-release-notes.md`](release/v0.7.0-rc.3-release-notes.md).
 - Current RC release readiness decision:
   [`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md).
@@ -88,7 +88,7 @@ deleting evidence/status history.
 
 - `0.6.0` is published as the stable npm `latest` package after QA accepted
   the final External registry smoke. Current published channels are
-  `latest=0.6.0` and `next=0.7.0-rc.2`; the legacy `alpha` dist-tag has been
+  `latest=0.6.0` and `next=0.7.0-rc.3`; the legacy `alpha` dist-tag has been
   retired after stable. Explicit historical alpha versions remain available by
   exact version. S-3 removed the failed-finish human `Summary:` header after
   S-2 regated it as non-inferior=false.
@@ -98,9 +98,11 @@ deleting evidence/status history.
   `185885b7918459ef12bbea120a4261962cd57059`. Registry gitHead and matching
   tag/GitHub prerelease `v0.7.0-rc.2` target that commit; package hashes and
   workflow provenance are recorded in its durable release facts.
-- `0.7.0-rc.3` is prepared as the next prerelease candidate only. Its release
-  note records no tag, package, registry, or dist-tag fact; current published
-  channels remain `latest=0.6.0` and `next=0.7.0-rc.2`.
+- `0.7.0-rc.3` is published to npm `next` from exact main
+  `728e9c339463ea521fa4388a37d1c76f76c9d726`. Registry gitHead, matching tag,
+  and GitHub prerelease `v0.7.0-rc.3` target that commit; its package hashes,
+  installed-registry smoke, and workflow provenance are recorded in its
+  durable release facts.
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)

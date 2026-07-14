@@ -4,7 +4,7 @@ Use this package for repeatable release operations and release note drafting.
 
 Durable versioned summaries now live under `docs/releases/`. For the current
 published next-channel line, start with
-[`docs/releases/v0.7.0-rc.2/README.md`](../../releases/v0.7.0-rc.2/README.md).
+[`docs/releases/v0.7.0-rc.3/README.md`](../../releases/v0.7.0-rc.3/README.md).
 The files in this directory remain the release-operation and release-note
 sources used by the existing workflow.
 
@@ -42,37 +42,23 @@ Its published release note is
 [`v0.7.0-rc.1-release-notes.md`](v0.7.0-rc.1-release-notes.md), and its durable
 capsule is [`docs/releases/v0.7.0-rc.1/`](../../releases/v0.7.0-rc.1/README.md).
 
-`0.7.0-rc.2` was published to npm `next` from exact main
-`185885b7918459ef12bbea120a4261962cd57059` by trusted workflow run
-`29184360718`. Registry gitHead matches that commit; npm SHA-1 is
-`0d5595b697694c54ece6adfd8c5e8e77f3c2f3e3`, and npm integrity is
-`sha512-LJhFcJq/Hp5HcriXfz6ziLYGESbHK7slPDXbnAAHwRExys6ywMPyaU/2KO/8h0tk5KjYCMlCsVE/Q4fG+Ah5Cg==`.
-The matching Git tag and GitHub prerelease `v0.7.0-rc.2` target the same
+`0.7.0-rc.3` was published to npm `next` from exact main
+`728e9c339463ea521fa4388a37d1c76f76c9d726` by trusted workflow run
+`29310969744`. Registry gitHead matches that commit; npm SHA-1 is
+`9d1fb27ab86d344afcd748b66959188ea9553258`, and npm integrity is
+`sha512-P7ITZAhnOKmbq5RFKzTun7ruL8E4bJP1E049QcaAl3iMtPQZnQRevBfN+pE/tIBPyfNv0la5kPmQOwSADm4epQ==`.
+The matching Git tag and GitHub prerelease `v0.7.0-rc.3` target the same
 commit. Its release record is
-[`v0.7.0-rc.2-release-notes.md`](v0.7.0-rc.2-release-notes.md), and its durable
-capsule is [`docs/releases/v0.7.0-rc.2/`](../../releases/v0.7.0-rc.2/README.md).
+[`v0.7.0-rc.3-release-notes.md`](v0.7.0-rc.3-release-notes.md), and its durable
+capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 
-Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.2`.
+Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.3`.
 The completed publish does not move `latest` or broaden any product claim.
-
-## Prepared Next-Channel Candidate
-
-[`v0.7.0-rc.3-release-notes.md`](v0.7.0-rc.3-release-notes.md) prepares the
-next prerelease identity. It is not published: no `v0.7.0-rc.3` tag, GitHub
-release, npm package, registry gitHead, integrity value, or `next` dist-tag
-movement exists yet. The current registry state remains `latest=0.6.0` and
-`next=0.7.0-rc.2`.
-
-Current `main` now differs from the registry gitHead while retaining the
-already-published `0.7.0-rc.2` version. The current decision is
-[`rc-release-readiness-decision.md`](rc-release-readiness-decision.md):
-next-RC planning may begin, but current-main publication, tag/release work,
-Stable/GA, and npm `latest` remain NO-GO until a fresh versioned RC gate is
-complete.
+`0.7.0-rc.2` remains the previous published `next` record.
 
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
-`next=0.7.0-rc.2`, with no `alpha` dist-tag after the post-stable T0
+`next=0.7.0-rc.3`, with no `alpha` dist-tag after the post-stable T0
 retirement. Registry verification confirmed
 `persona-harness@latest=0.6.0`, gitHead
 `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
@@ -848,6 +834,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.6.0-rc.3 release notes](v0.6.0-rc.3-release-notes.md)
 - [v0.6.0-rc.4 release notes](v0.6.0-rc.4-release-notes.md)
 - [v0.6.0 release notes](v0.6.0-release-notes.md)
+- [v0.7.0-rc.3 release notes](v0.7.0-rc.3-release-notes.md)
 - [v0.7.0-rc.2 release notes](v0.7.0-rc.2-release-notes.md)
 - [v0.7.0-rc.1 release notes](v0.7.0-rc.1-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
