@@ -1,3 +1,5 @@
+import type { VerificationDecision } from "./workflow-verification-decision.js"
+
 export type SemanticTddState =
   | "invalid"
   | "legacy-only"
@@ -38,6 +40,7 @@ export type SemanticTddPhase = {
 
 export type SemanticTddAssessment = {
   readonly authorityEligible: false
+  readonly decision: VerificationDecision
   readonly diagnosticCodes: readonly SemanticTddDiagnosticCode[]
   readonly diagnostics: readonly SemanticTddDiagnostic[]
   readonly green?: SemanticTddPhase
