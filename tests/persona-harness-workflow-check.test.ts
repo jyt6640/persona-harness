@@ -1551,15 +1551,34 @@ describe("ph bootstrap backend", () => {
     expect(result.stdout).toContain("sets enforce.executeVerification: true")
     expect(result.stdout).toContain("PH runs the project verification command during closure/finish")
     expect(result.stdout).toContain("expect toolchain command cost")
-    expect(result.stdout).toContain("sets features.runtimeInjection: true and enforce.systemConstitution: true")
+    expect(result.stdout).toContain("does not enable features.runtimeInjection or enforce.systemConstitution; each remains independently opt-in")
     expect(result.stdout).toContain("does not enable enforce.writeDeny, enforce.idleContinuation, or enforce.ralphLoop")
     expect(result.stdout).toContain("no generated app product-quality certification or closure guarantee")
     expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(true)
-    expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(true)
-    expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(true)
+    expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(false)
+    expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(false)
     expect(loadHarnessConfig(projectDir).enforce.writeDeny).toBe(false)
     expect(loadHarnessConfig(projectDir).enforce.idleContinuation).toBe(false)
     expect(loadHarnessConfig(projectDir).enforce.ralphLoop.enabled).toBe(false)
+  })
+
+  it("keeps runtime injection independently opt-in when strict verification is also requested", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["bootstrap", "backend", "--strict", "--runtime-injection-preview"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      packageRoot: process.cwd(),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("enabled strict closure verification")
+    expect(result.stdout).toContain("enabled runtime injection preview")
+    expect(result.stdout).toContain("Runtime injection preview:")
+    expect(loadHarnessConfig(projectDir).enforce.executeVerification).toBe(true)
+    expect(loadHarnessConfig(projectDir).features.runtimeInjection).toBe(true)
+    expect(loadHarnessConfig(projectDir).enforce.systemConstitution).toBe(false)
   })
 
   it("enables runtime injection preview without strict verification when explicitly requested", () => {
