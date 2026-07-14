@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 32
+- current active pointer/status: 39
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 54
 - versioned durable: 23
 
-Total indexed files: 314
+Total indexed files: 321
 
 ## File Inventory
 
@@ -108,6 +108,13 @@ Total indexed files: 314
 | `docs/current/ph-bearshell-mvp.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/ph-core-adapter-boundary-design.md` | current active pointer/status | - | Item 25 design-only PH-core/language-pack/adapter ownership and dependency boundary. |
 | `docs/current/p3-integrity-roadmap.md` | current active pointer/status | - | Accepted P3-first integrity roadmap, release hold, assurance model, and P2 hold; docs-only pending implementation. |
+| `docs/current/p3-2-closure-authority-acceptance-record.md` | current active pointer/status | - | Candidate finish boundary: unsigned project-local evidence is diagnostic-only and no trusted authority path exists yet. |
+| `docs/current/p3-3-verification-receipt-acceptance-record.md` | current active pointer/status | - | Strict receipt/attempt parser and read-only lifecycle diagnostics; no receipt issuance or finish-authority acceptance. |
+| `docs/current/p3-8-ci-release-integrity-acceptance-record.md` | current active pointer/status | - | PR/main CI and canonical-main/registry/release idempotency checks plus repository-admin readback; staged-publish least privilege and release approval remain separate gates. |
+| `docs/current/p3-9-rc3-integrity-governance-decision.md` | current active pointer/status | - | Exact-main source/package/governance decision: constrained P2 source-only resumption GO; Stable/GA/latest/publish remain NO-GO. |
+| `docs/current/korean-cli-help-scope-authorization.md` | current active pointer/status | - | Sole user-authorized #19 product-scope exception for Korean CLI help locale selection; all other P2 product work and release boundaries remain held. |
+| `docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md` | current active pointer/status | - | Fresh POSIX Java/Spring/Gradle execution, receipt/attempt issuance, and nonzero testcase enforcement; P3-2 remains blocking. |
+| `docs/current/p3-5-semantic-tdd-acceptance-record.md` | current active pointer/status | - | Fresh red-to-green JUnit identity/lineage assessment; local structure remains untrusted and P3-2 remains blocking. |
 | `docs/current/phase-artifact-retention-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/phase2-scope-settlement.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/productization-path-decision.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
