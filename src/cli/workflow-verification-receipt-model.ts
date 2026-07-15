@@ -160,6 +160,7 @@ export function parseVerificationAttempt(text: string, path: string): ReceiptPar
     schemaVersion,
     sessionId: binding.sessionId,
     sourceHead: binding.sourceHead,
+    sourceIdentity: binding.sourceIdentity,
     startedAt,
     status,
     workspaceIdentity: binding.workspaceIdentity,

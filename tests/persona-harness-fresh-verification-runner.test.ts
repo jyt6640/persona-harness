@@ -52,6 +52,10 @@ describe("fresh fixed-command verification runner", () => {
     })
     expect(attemptSource).not.toContain("secret-output")
     expect(receiptSource).not.toContain("secret-output")
+    expect(attemptSource).toContain('"schemaVersion": "source-identity.1"')
+    expect(receiptSource).toContain('"schemaVersion": "source-identity.1"')
+    expect(attemptSource).not.toContain(projectDir)
+    expect(receiptSource).not.toContain(projectDir)
   })
 
   it("fails closed on a zero-test command and does not issue a receipt", () => {

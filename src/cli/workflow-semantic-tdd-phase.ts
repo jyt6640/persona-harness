@@ -16,6 +16,7 @@ import {
   buildFreshArtifactBinding,
   type FreshArtifactBinding,
 } from "./fresh-verification-lifecycle.js"
+import { captureSourceIdentity, sameSourceIdentity } from "./source-identity.js"
 import { readSemanticJUnitEvidence, type SemanticJUnitTestcase } from "./workflow-semantic-tdd-junit.js"
 import type {
   SemanticTddDiagnosticCode,
@@ -130,6 +131,7 @@ export function compareSemanticTddLineage(
 ): readonly SemanticTddDiagnosticCode[] {
   const codes: SemanticTddDiagnosticCode[] = []
   if (red.sourceHead !== green.sourceHead
+    || !sameSourceIdentity(red.sourceIdentity, green.sourceIdentity)
     || red.dirtyWorktreeDigest !== green.dirtyWorktreeDigest
     || red.phVersion !== green.phVersion
     || red.command.catalogId !== green.command.catalogId
@@ -154,6 +156,7 @@ function sameBinding(binding: FreshArtifactBinding, attempt: VerificationAttempt
     && binding.dirtyWorktreeDigest === attempt.dirtyWorktreeDigest
     && binding.phVersion === attempt.phVersion
     && binding.sourceHead === attempt.sourceHead
+    && sameSourceIdentity(binding.sourceIdentity, attempt.sourceIdentity)
     && JSON.stringify(binding.workspaceIdentity) === JSON.stringify(attempt.workspaceIdentity)
 }
 
@@ -162,6 +165,16 @@ function matchesCurrentProjectBindings(projectDir: string, binding: FreshArtifac
   if (workspace.status !== "available") return false
   const git = captureGitIdentity(projectDir, workspace.value)
   if (!git.available || git.head === undefined || git.status === undefined) return false
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) return false
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) return false
+  const sourceIdentity = captureSourceIdentity(
+    projectDir,
+    git,
+    evidencePath.relativePath || configResult.config.evidenceDir,
+  )
+  if (sourceIdentity.status !== "available") return false
   const currentWorkspace = {
     deviceIdentity: `${workspace.value.dev}:${workspace.value.ino}`,
     platform: platformName(process.platform),
@@ -172,6 +185,7 @@ function matchesCurrentProjectBindings(projectDir: string, binding: FreshArtifac
     }))}`,
   }
   return binding.sourceHead === git.head
+    && sameSourceIdentity(binding.sourceIdentity, sourceIdentity.value)
     && binding.dirtyWorktreeDigest === `sha256:${git.status.digest}`
     && JSON.stringify(binding.workspaceIdentity) === JSON.stringify(currentWorkspace)
 }
@@ -188,6 +202,7 @@ function provenanceDigest(
     finishId: attempt.finishId,
     sessionId: attempt.sessionId,
     status,
+    sourceIdentity: binding.sourceIdentity,
     testCount,
   })
   return `sha256:${createHash("sha256").update(source).digest("hex")}`

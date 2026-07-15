@@ -104,6 +104,19 @@ describe("semantic TDD red-to-green evidence", () => {
     expect(assessment.diagnosticCodes).toContain("semantic-binding-mismatch")
   })
 
+  it("rejects byte-only source drift that preserves the current Git status record", () => {
+    const projectDir = createProject(semanticScript(matchingTestcase()))
+    const sourcePath = join(projectDir, "src", "main", "java", "App.java")
+    writeFileSync(sourcePath, "class App { int firstChange; }\n")
+    runChain(projectDir)
+    writeFileSync(sourcePath, "class App { int secondChange; }\n")
+
+    const assessment = assessSemanticTddChain(projectDir)
+
+    expect(assessment.state).toBe("mismatch")
+    expect(assessment.diagnosticCodes).toContain("semantic-binding-mismatch")
+  })
+
   it("rejects a provenance-only receipt mutation", () => {
     const projectDir = createProject(semanticScript(matchingTestcase()))
     runChain(projectDir)

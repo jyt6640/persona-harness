@@ -303,10 +303,10 @@ describe("CI reverification adversarial boundaries", () => {
     expect(artifact).not.toContain("generated/4999")
   })
 
-  it("allows local pre-Git snapshot absence but makes CI pre-Git failure unavailable", () => {
+  it("requires a Git-backed source identity in every reverification mode", () => {
     const local = createProject()
     const unavailableGit = () => ({ available: false, diagnosticCode: "git-worktree-unavailable" })
-    expect(runCiReverification(local, "local", { captureGit: unavailableGit }).finalStatus).toBe("passed")
+    expect(runCiReverification(local, "local", { captureGit: unavailableGit }).finalStatus).toBe("unavailable")
 
     const ci = createProject()
     expect(runCiReverification(ci, "ci", { captureGit: unavailableGit }).finalStatus).toBe("unavailable")
