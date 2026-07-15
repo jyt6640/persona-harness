@@ -184,6 +184,11 @@ describe("workflow prompt sanitization", () => {
       env: {},
       invocationName: "ph",
     })
+    const closureStatus = runPersonaCli(["workflow", "closure", "status", "--json"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
     const resume = runPersonaCli(["workflow", "continue", "--full"], {
       cwd: projectDir,
       env: {},
@@ -218,7 +223,15 @@ describe("workflow prompt sanitization", () => {
     expect(loopJson.status).toBe(1)
     expect(loopText.status).toBe(1)
     expect(execution.status).toBe(1)
-    for (const output of [closure.stdout, resume.stdout, loopJson.stdout, loopText.stdout, execution.stdout, argvText]) {
+    for (const output of [
+      closure.stdout,
+      closureStatus.stdout,
+      resume.stdout,
+      loopJson.stdout,
+      loopText.stdout,
+      execution.stdout,
+      argvText,
+    ]) {
       assertSanitized(output)
     }
 
