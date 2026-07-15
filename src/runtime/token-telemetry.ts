@@ -7,7 +7,7 @@ import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
-import { writePrivateEvidenceJson } from "./evidence-file.js"
+import { opaqueEvidenceKey, writePrivateEvidenceJson } from "./evidence-file.js"
 
 export type TokenUsage = {
   readonly cacheRead: number
@@ -65,7 +65,7 @@ type TokenTelemetryRecorderOptions = {
 const LIMIT_UNAVAILABLE_REASON = "model context limit not observed for this session; ratio not computed"
 
 export function safeSessionKey(sessionID: string): string {
-  return sessionID.replace(/[^a-zA-Z0-9._-]+/g, "-").toLowerCase() || "session"
+  return opaqueEvidenceKey(sessionID)
 }
 
 function tokenUsageFrom(message: Extract<Message, { role: "assistant" }>): TokenUsage {

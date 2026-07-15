@@ -5,6 +5,7 @@ import type { AssistantMessage, Model } from "@opencode-ai/sdk"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { opaqueEvidenceKey } from "../src/runtime/evidence-file.js"
 import type { TokenCompactionSummarizeOptions } from "../src/runtime/token-compaction.js"
 import type { TransformSystemOutput } from "../src/runtime/types.js"
 import { cleanupProjects, createProject, writeHarnessConfig } from "./helpers/rule-fixtures.js"
@@ -68,7 +69,7 @@ function lowRatioMessage(): AssistantMessage {
 }
 
 function compactionEvidence(projectDir: string): Record<string, unknown> {
-  const path = join(projectDir, ".persona", "evidence", "compaction", "session-token-compaction.json")
+  const path = join(projectDir, ".persona", "evidence", "compaction", `${opaqueEvidenceKey("session-token-compaction")}.json`)
   const parsed: unknown = JSON.parse(readFileSync(path, "utf8"))
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     throw new Error(`expected compaction evidence object at ${path}`)
@@ -129,7 +130,7 @@ describe("Phase 0 token compaction", () => {
     const summarizeCalls = await sendMessageUpdated(projectDir, highRatioMessage())
 
     expect(summarizeCalls).toHaveLength(0)
-    expect(existsSync(join(projectDir, ".persona", "evidence", "compaction", "session-token-compaction.json"))).toBe(
+    expect(existsSync(join(projectDir, ".persona", "evidence", "compaction", `${opaqueEvidenceKey("session-token-compaction")}.json`))).toBe(
       false,
     )
   })
@@ -163,7 +164,10 @@ describe("Phase 0 token compaction", () => {
     const projectDir = createProject()
     writeHarnessConfig(projectDir, { enforce: { compaction: { enabled: true, threshold: 0.78 } } })
     mkdirSync(join(projectDir, ".persona", "evidence", "compaction"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "compaction", "session-token-compaction.json"), "{ nope\n")
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "compaction", `${opaqueEvidenceKey("session-token-compaction")}.json`),
+      "{ nope\n",
+    )
 
     await sendMessageUpdated(projectDir, highRatioMessage())
 
