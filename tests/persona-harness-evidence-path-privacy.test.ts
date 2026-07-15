@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import { writeFileAtomic } from "../src/io/atomic-file.js"
 import { formatRuntimeWarning } from "../src/runtime/error-boundary.js"
 import { writePrivateEvidenceJson } from "../src/runtime/evidence-file.js"
+import { writeIntentEvidence } from "../src/runtime/evidence.js"
 import { appendRoleBoundaryObservation, readRoleBoundaryHeuristicFindings } from "../src/runtime/role-boundary-evidence.js"
 import { writeBearshellExecutionEvidence } from "../src/runtime/execution-evidence.js"
 
@@ -118,20 +119,21 @@ describe("evidence absolute path privacy", () => {
     const externalPath = join(externalDir, "nested-external-marker.txt")
     const windowsPath = "C:\\Users\\runner\\external-windows-marker.txt"
     const uncPath = "\\\\server\\share\\external-unc-marker.txt"
+    const sentinelPath = "[REDACTED]-/path"
 
     appendRoleBoundaryObservation(projectDir, {
-      callID: `${token}-${externalPath}`,
-      currentTicketId: `${token}-${projectPath}`,
+      callID: `${token}-${externalPath} ${sentinelPath}`,
+      currentTicketId: `${token}-${projectPath} ${sentinelPath}`,
       path: projectPath,
-      policy: `${token}-${externalPath}`,
+      policy: `${token}-${externalPath} ${sentinelPath}`,
       role: "implementer",
       sessionID: "session-recursive-path-privacy",
     })
     const nestedPath = join(projectDir, ".persona", "evidence", "nested", "metadata.json")
     writePrivateEvidenceJson(join(projectDir, ".persona", "evidence"), nestedPath, {
       nested: {
-        arrays: [`${token}-${externalPath}`, [projectPath, windowsPath, uncPath]],
-        currentTicketId: `${token}-${projectPath}`,
+        arrays: [`${token}-${externalPath}`, [projectPath, windowsPath, uncPath, sentinelPath]],
+        currentTicketId: `${token}-${projectPath} ${sentinelPath}`,
       },
     }, { projectDir })
 
@@ -143,7 +145,34 @@ describe("evidence absolute path privacy", () => {
     expect(source).not.toContain(externalDir)
     expect(source).not.toContain(windowsPath)
     expect(source).not.toContain(uncPath)
+    expect(source).not.toContain(sentinelPath)
     expect(source).toContain("src/main/java/App.java")
+    expect(source).toContain("[REDACTED_PATH]")
+  })
+
+  it("sanitizes sentinel-prefixed paths in opt-in intent evidence", () => {
+    const projectDir = createProject("prompt_diagnostics")
+    const externalDir = mkdtempSync(join(tmpdir(), "persona-evidence-external-"))
+    projects.push(externalDir)
+    const externalPath = join(externalDir, "intent-external-marker.txt")
+    writeIntentEvidence(projectDir, {
+      hook: "experimental.chat.messages.transform",
+      injectedInto: "intent-workflow",
+      intent: {
+        primary: "programming",
+        reason: "Direct code creation or edit request detected.",
+        secondary: [],
+      },
+      railMarker: "[Persona Harness Programming Workflow]",
+      sessionID: "intent-path-privacy",
+      userPrompt: `[REDACTED]-/path ${externalPath}`,
+    })
+
+    const files = evidenceFiles(projectDir, "phase0")
+    expect(files).toHaveLength(1)
+    const source = readFileSync(files[0] ?? "", "utf8")
+    expect(source).not.toContain("[REDACTED]-/path")
+    expect(source).not.toContain(externalDir)
     expect(source).toContain("[REDACTED_PATH]")
   })
 })
