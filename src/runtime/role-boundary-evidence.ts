@@ -6,7 +6,7 @@ import type { MultiAgentRole } from "../config/harness-config.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
-import { writePrivateEvidenceJson } from "./evidence-file.js"
+import { opaqueEvidenceKey, writePrivateEvidenceJson } from "./evidence-file.js"
 import { HEURISTIC_LIMITATION, ROLE_BOUNDARY_LIMITATIONS } from "./role-boundary-policy.js"
 
 export type RoleBoundaryHeuristicFinding = {
@@ -59,10 +59,6 @@ type RoleBoundaryEvidencePayload = {
   readonly sessionID: string
 }
 
-function safeSessionKey(sessionID: string): string {
-  return sessionID.replace(/[^a-zA-Z0-9._-]+/g, "-").toLowerCase() || "session"
-}
-
 function roleBoundaryEvidenceRoot(projectDir: string): string | undefined {
   const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
   return evidenceRoot.ok ? evidenceRoot.path : undefined
@@ -75,7 +71,7 @@ function roleBoundaryEvidenceDir(projectDir: string): string | undefined {
 
 function roleBoundaryEvidencePath(projectDir: string, sessionID: string): string | undefined {
   const evidenceDir = roleBoundaryEvidenceDir(projectDir)
-  return evidenceDir === undefined ? undefined : join(evidenceDir, `${safeSessionKey(sessionID)}.json`)
+  return evidenceDir === undefined ? undefined : join(evidenceDir, `${opaqueEvidenceKey(sessionID)}.json`)
 }
 
 function observationKey(observation: Pick<RoleBoundaryObservation, "currentTicketId" | "path" | "role">): string {

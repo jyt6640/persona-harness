@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { join } from "node:path"
 
 import {
@@ -17,6 +17,10 @@ export type EvidenceWriteOptions = {
 export type EvidenceWriteContext = {
   readonly evidenceRoot: string
   readonly mode: EvidenceMode
+}
+
+export function opaqueEvidenceKey(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex")
 }
 
 export function evidenceWriteContext(
