@@ -29,9 +29,17 @@ type RegistryInput = {
 
 const VERSION_PATTERN =
   /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
+const SENSITIVE_VERSION_PATTERN =
+  /(?:sk[-_]?live[-_]|api[-_]?key|apikey|bearer|password|passwd|jdbc|pem|private[-_]?key|secret|https?:\/\/|[A-Za-z0-9._%+-]+:[^/@\s]+@)/iu
+const MAX_CHANNEL_VERSION_LENGTH = 128
 
 function boundedVersion(value: unknown): string | undefined {
-  return typeof value === "string" && VERSION_PATTERN.test(value) ? value : undefined
+  return typeof value === "string"
+    && value.length <= MAX_CHANNEL_VERSION_LENGTH
+    && !SENSITIVE_VERSION_PATTERN.test(value)
+    && VERSION_PATTERN.test(value)
+    ? value
+    : undefined
 }
 
 function unavailableSummary(installedVersion: string, status: Exclude<RegistryStatus, "available">): DoctorRegistrySummary {

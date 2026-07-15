@@ -128,6 +128,49 @@ describe("ph doctor registry diagnostics", () => {
     }
   })
 
+  it.each([
+    ["token in build metadata", "1.2.3+sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"],
+    ["token in prerelease", "1.2.3-sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"],
+    ["API key fragment", "1.2.3+api-key-secret"],
+    ["Bearer fragment", "1.2.3-bearer-secret"],
+    ["password fragment", "1.2.3+password-secret"],
+    ["JDBC fragment", "1.2.3-jdbc-secret"],
+    ["PEM fragment", "1.2.3+pem-secret"],
+    ["URL userinfo fragment", "1.2.3+user:password@host"],
+    ["oversized build metadata", `1.2.3+${"a".repeat(5_000)}`],
+  ] as const)("rejects sensitive or oversized semver-shaped %s values", (_kind, value) => {
+    const projectDir = project()
+    const tags = JSON.stringify({ latest: value })
+    const plaintext = doctor(projectDir, {
+      PH_DOCTOR_REGISTRY_DIST_TAGS: tags,
+    })
+    const json = runPersonaCli(["doctor", "--json"], {
+      cwd: projectDir,
+      env: {
+        PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
+        PH_DOCTOR_REGISTRY_DIST_TAGS: tags,
+      },
+      invocationName: "ph",
+    })
+
+    expect(plaintext.status).toBe(0)
+    expect(plaintext.stdout).toContain("Registry status: malformed")
+    expect(plaintext.stdout).toContain("Runtime readiness: WARN")
+    expect(plaintext.stdout).not.toContain(value)
+    expect(json.status).toBe(0)
+    const payload = JSON.parse(json.stdout) as {
+      readonly registry: {
+        readonly status: string
+        readonly channels: { readonly latest: string }
+      }
+      readonly runtimeReadiness: string
+    }
+    expect(payload.registry.status).toBe("malformed")
+    expect(payload.registry.channels.latest).toBe("unavailable")
+    expect(payload.runtimeReadiness).toBe("WARN")
+    expect(json.stdout).not.toContain(value)
+  })
+
   it("provides a bounded JSON projection with preview/privacy and authority boundaries", () => {
     const projectDir = project()
     const result = runPersonaCli(["doctor", "--json"], {
