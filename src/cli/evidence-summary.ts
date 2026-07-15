@@ -10,6 +10,7 @@ import { evidenceAbRunUsage, runEvidenceAbRunCommand } from "./evidence-ab-run.j
 import { formatEvidenceAbReport, readEvidenceAbReport } from "./evidence-ab-report.js"
 import { formatEvidencePminusReport, readEvidencePminusReport } from "./evidence-pminus-report.js"
 import { formatEvidencePminusStatus, readEvidencePminusStatus } from "./evidence-pminus-status.js"
+import { publicEvidencePath, publicProjectRoot } from "./evidence-public-projection.js"
 
 type EvidenceOptions = {
   readonly env?: Readonly<Record<string, string | undefined>>
@@ -481,12 +482,12 @@ export function readEvidenceMetrics(options: EvidenceOptions = {}): EvidenceMetr
         }
         const finish = finishStatus(record)
         if (finish !== undefined) {
-          finishRecords.push({ file: filePath, status: finish })
+          finishRecords.push({ file: publicEvidencePath(projectDir, filePath), status: finish })
         }
         readChars += directReadChars(record)
       }
     } catch {
-      unreadableFiles.push(filePath)
+      unreadableFiles.push(publicEvidencePath(projectDir, filePath))
     }
   }
 
@@ -517,7 +518,7 @@ export function readEvidenceMetrics(options: EvidenceOptions = {}): EvidenceMetr
       byTool: Object.fromEntries(Array.from(mcpCounts.entries()).sort(([left], [right]) => left.localeCompare(right))),
       total: mcpTotal,
     },
-    projectDir,
+    projectDir: publicProjectRoot(),
     readChars: {
       total: readChars,
       unavailableReason: readChars === 0 ? "no structured readChars/readOutput evidence found" : null,
@@ -551,7 +552,7 @@ function formatEvidenceSummary(projectDir: string, summary: EvidenceSummary): st
   return [
     "# Persona Evidence Summary",
     "",
-    `Project: \`${projectDir}\``,
+    `Project: \`${publicProjectRoot()}\``,
     `Total evidence files: ${summary.records.length}`,
     `Unreadable evidence files: ${summary.unreadableFiles.length}`,
     "",
@@ -706,8 +707,8 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
     return {
       status: 0,
       stdout: [
-        `Evidence summary written: ${outputPath}`,
-        `Evidence directory: ${evidenceRoot.path}`,
+        `Evidence summary written: ${publicEvidencePath(projectDir, outputPath)}`,
+        `Evidence directory: ${evidenceRoot.relativePath}`,
         ...warningLines,
       ].join("\n") + "\n",
       stderr: "",
