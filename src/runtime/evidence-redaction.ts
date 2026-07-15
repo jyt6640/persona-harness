@@ -29,6 +29,12 @@ export type EvidenceTextSummaryOptions = EvidenceSanitizationOptions & {
   readonly maxPreviewChars: number
 }
 
+const EMBEDDED_JSON_MAX_CHARS = 16_384
+const EMBEDDED_JSON_MAX_DEPTH = 8
+const EMBEDDED_JSON_MAX_NODES = 512
+const SENSITIVE_EVIDENCE_KEY =
+  /^(?:api[_-]?key|access[_-]?key|access[_-]?token|auth(?:orization)?|password|passwd|pwd|secret|token)(?:[_-]?(?:id|value|name))?$/iu
+
 const REDACTION_RULES: readonly RedactionRule[] = [
   {
     pattern: /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/gu,
@@ -82,6 +88,7 @@ export function redactEvidenceText(
     redactionCount += text.match(rule.pattern)?.length ?? 0
     text = text.replace(rule.pattern, rule.replacement)
   }
+  text = text.replace(/\[REDACTED\]\s*-\s*(?=[/\\]|[A-Za-z]:)/gu, "")
   const paths = redactAbsolutePaths(text, options.projectDir)
   text = paths.text
   redactionCount += paths.redactionCount
@@ -112,18 +119,77 @@ export function sanitizeEvidenceValue(
   maxStringChars = 4_096,
   options: EvidenceSanitizationOptions = {},
 ): unknown {
+  return sanitizeEvidenceValueAtDepth(value, maxStringChars, options, 0)
+}
+
+function sanitizeEvidenceValueAtDepth(
+  value: unknown,
+  maxStringChars: number,
+  options: EvidenceSanitizationOptions,
+  depth: number,
+  key?: string,
+): unknown {
   if (typeof value === "string") {
+    if (key !== undefined && SENSITIVE_EVIDENCE_KEY.test(key)) {
+      return "[REDACTED]"
+    }
+    const embedded = parseEmbeddedJson(value, depth)
+    if (embedded !== undefined) {
+      const sanitized = sanitizeEvidenceValueAtDepth(embedded, maxStringChars, options, depth + 1)
+      const serialized = JSON.stringify(sanitized)
+      if (serialized !== undefined) {
+        return boundPreview(serialized, maxStringChars)
+      }
+    }
     return boundPreview(redactEvidenceText(value, options).text, maxStringChars)
   }
   if (Array.isArray(value)) {
-    return value.map((item) => sanitizeEvidenceValue(item, maxStringChars, options))
+    return value.map((item) => sanitizeEvidenceValueAtDepth(item, maxStringChars, options, depth + 1))
   }
   if (typeof value !== "object" || value === null) {
     return value
   }
   return Object.fromEntries(
-    Object.entries(value).map(([key, nested]) => [key, sanitizeEvidenceValue(nested, maxStringChars, options)]),
+    Object.entries(value).map(([key, nested]) => [
+      key,
+      sanitizeEvidenceValueAtDepth(nested, maxStringChars, options, depth + 1, key),
+    ]),
   )
+}
+
+function parseEmbeddedJson(source: string, depth: number): unknown | undefined {
+  const trimmed = source.trim()
+  if (
+    depth >= EMBEDDED_JSON_MAX_DEPTH
+    || source.length > EMBEDDED_JSON_MAX_CHARS
+    || !((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]")))
+  ) {
+    return undefined
+  }
+  try {
+    const parsed: unknown = JSON.parse(source)
+    return isEmbeddedJsonWithinBudget(parsed, 0, { count: 0 }) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function isEmbeddedJsonWithinBudget(
+  value: unknown,
+  depth: number,
+  nodes: { count: number },
+): boolean {
+  nodes.count += 1
+  if (nodes.count > EMBEDDED_JSON_MAX_NODES || depth > EMBEDDED_JSON_MAX_DEPTH) {
+    return false
+  }
+  if (Array.isArray(value)) {
+    return value.every((item) => isEmbeddedJsonWithinBudget(item, depth + 1, nodes))
+  }
+  if (typeof value === "object" && value !== null) {
+    return Object.values(value).every((item) => isEmbeddedJsonWithinBudget(item, depth + 1, nodes))
+  }
+  return true
 }
 
 type RedactedPathText = {

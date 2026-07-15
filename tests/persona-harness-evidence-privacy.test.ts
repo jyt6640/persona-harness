@@ -21,7 +21,8 @@ import {
 import { loadHarnessConfig } from "../src/config/harness-config.js"
 import { supportsPosixFileModes } from "../src/io/atomic-file.js"
 import { writeBearshellExecutionEvidence } from "../src/runtime/execution-evidence.js"
-import { writeIntentEvidence } from "../src/runtime/evidence.js"
+import { sanitizeEvidenceValue } from "../src/runtime/evidence-redaction.js"
+import { writeIntentEvidence, writeRailComplianceEvidence } from "../src/runtime/evidence.js"
 
 const projects: string[] = []
 
@@ -236,5 +237,90 @@ describe("local evidence privacy", () => {
     expect(statSync(evidenceRoot).mode & 0o777).toBe(0o700)
     expect(statSync(evidenceDir).mode & 0o777).toBe(0o700)
     expect(statSync(path).mode & 0o777).toBe(0o600)
+  })
+
+  it("sanitizes bounded embedded JSON strings before persistence", () => {
+    const projectDir = createProject()
+    const password = "password-json-string-marker"
+    const apiKey = "sk-live-embedded-json-string-marker"
+    const source = JSON.stringify({
+      nested: [
+        { password },
+        { authorization: "Bearer embedded-json-string-token" },
+        { apiKey },
+        { path: join(projectDir, "outside-marker.json") },
+        { sentinel: "[REDACTED]-/external/embedded-marker.json" },
+      ],
+    })
+
+    const sanitized = sanitizeEvidenceValue(source)
+    expect(typeof sanitized).toBe("string")
+    if (typeof sanitized !== "string") {
+      throw new Error("expected sanitized JSON string")
+    }
+    expect(sanitized).not.toContain(password)
+    expect(sanitized).not.toContain(apiKey)
+    expect(sanitized).not.toContain(projectDir)
+    expect(sanitized).not.toContain("/external/embedded-marker.json")
+    expect(JSON.parse(sanitized)).toMatchObject({
+      nested: [
+        { password: "[REDACTED]" },
+        { authorization: "[REDACTED]" },
+        { apiKey: "[REDACTED]" },
+        { path: "[REDACTED_PATH]" },
+        { sentinel: "[REDACTED_PATH]" },
+      ],
+    })
+
+    const oversized = JSON.stringify({ password: "oversized-secret", padding: "x".repeat(20_000) })
+    const bounded = sanitizeEvidenceValue(oversized)
+    expect(typeof bounded).toBe("string")
+    expect(String(bounded)).not.toContain("oversized-secret")
+    expect(String(bounded).length).toBeLessThanOrEqual(4_096)
+
+    const malformed = '{"password":"malformed-secret", "path":"/malformed/path"'
+    expect(String(sanitizeEvidenceValue(malformed))).not.toContain("malformed-secret")
+    expect(String(sanitizeEvidenceValue(malformed))).not.toContain("/malformed/path")
+
+    let deep: unknown = { password: "deep-secret" }
+    for (let index = 0; index < 12; index += 1) {
+      deep = { nested: deep }
+    }
+    const deepResult = String(sanitizeEvidenceValue(JSON.stringify(deep)))
+    expect(deepResult).not.toContain("deep-secret")
+    expect(deepResult.length).toBeLessThanOrEqual(4_096)
+  })
+
+  it("sanitizes JSON-encoded rail-compliance messages in the real writer", () => {
+    const projectDir = createProject()
+    const secret = "rail-compliance-password-marker"
+    const message = JSON.stringify({
+      nested: [{ password: secret }, { path: join(projectDir, "rail-marker.json") }],
+    })
+
+    writeRailComplianceEvidence(projectDir, {
+      hook: "tool.execute.after",
+      sessionID: "embedded-json-session",
+      callID: "embedded-json-call",
+      userPrompt: "safe prompt",
+      primaryIntent: "debug",
+      secondaryIntents: [],
+      railMarker: "[Persona Harness Debug Workflow]",
+      finding: "WARN",
+      confidence: "HIGH",
+      code: "debug-rail-edit-without-reproduction",
+      message,
+      observedAction: "safe action",
+      expectedAction: "safe expected action",
+    })
+
+    const payload = readOnlyEvidence(projectDir)
+    expect(typeof payload.message).toBe("string")
+    const persistedMessage = String(payload.message)
+    expect(persistedMessage).not.toContain(secret)
+    expect(persistedMessage).not.toContain(projectDir)
+    expect(JSON.parse(persistedMessage)).toMatchObject({
+      nested: [{ password: "[REDACTED]" }, { path: "[REDACTED_PATH]" }],
+    })
   })
 })
