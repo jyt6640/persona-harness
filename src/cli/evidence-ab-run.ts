@@ -1,11 +1,11 @@
 import { spawnSync } from "node:child_process"
 import { createHash, randomUUID } from "node:crypto"
-import { join, resolve } from "node:path"
+import { join, relative, resolve } from "node:path"
 import process from "node:process"
 
 import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
-import { writePrivateEvidenceJson } from "../runtime/evidence-file.js"
+import { opaqueEvidenceKey, writePrivateEvidenceJson } from "../runtime/evidence-file.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   type AbRunConfig,
@@ -13,7 +13,6 @@ import {
   EVIDENCE_AB_RUN_USAGE,
   type EvidenceAbRunOptions,
   parseAbRunConfig,
-  safeEvidenceSlug,
 } from "./evidence-ab-run-options.js"
 
 const AB_DIRECTORY = "ab"
@@ -51,7 +50,7 @@ function runCommand(config: AbRunConfig, options: EvidenceAbRunOptions): Private
     finishStatus,
     finishStatusAfter: config.closure.finishStatusAfter,
     finishStatusBefore: config.closure.finishStatusBefore,
-    id: config.runId === null ? randomUUID() : safeEvidenceSlug(config.runId),
+    id: config.runId === null ? randomUUID() : opaqueEvidenceKey(config.runId),
     mcpCalls: config.mcpCalls,
     outcome: config.outcome ?? (exitStatus === 0 ? "command-passed" : "command-failed"),
     providerTokens: config.providerTokens,
@@ -70,8 +69,8 @@ function writeRunEvidence(
   run: PrivateAbRunRecord,
   evidenceRoot: string,
 ): string {
-  const scenarioDir = join(evidenceRoot, AB_DIRECTORY, safeEvidenceSlug(config.scenario))
-  const filePath = join(scenarioDir, `${safeEvidenceSlug(config.condition)}-${safeEvidenceSlug(run.id)}.json`)
+  const scenarioDir = join(evidenceRoot, AB_DIRECTORY, opaqueEvidenceKey(config.scenario))
+  const filePath = join(scenarioDir, `${opaqueEvidenceKey(config.condition)}-${opaqueEvidenceKey(run.id)}.json`)
   const evidence = {
     schemaVersion: "persona-ab-measurement.1",
     privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
@@ -116,12 +115,13 @@ export function runEvidenceAbRunCommand(args: readonly string[], options: Eviden
   }
   const run = runCommand(config, options)
   const filePath = writeRunEvidence(config, run, evidenceRoot.path)
+  const relativePath = relative(projectDir, filePath).replace(/\\/g, "/")
   return {
     status: 0,
     stdout: [
-      `A/B evidence written: ${filePath}`,
-      `Scenario: ${config.scenario}`,
-      `Condition: ${config.condition}`,
+      `A/B evidence written: ${relativePath}`,
+      `Scenario: ${opaqueEvidenceKey(config.scenario)}`,
+      `Condition: ${opaqueEvidenceKey(config.condition)}`,
       `Run: ${run.id}`,
       `Exit status: ${run.exitStatus ?? "signal"}`,
       `Finish status: ${run.finishStatus}`,
