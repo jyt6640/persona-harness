@@ -82,7 +82,7 @@ describe("phase0 report-only observer hook", () => {
       injectedInto: "observer-report-only",
       reportOnly: true,
       enforcement: false,
-      targetFile,
+      targetFile: "[REDACTED_PATH]",
     })
     expect(observerEvidence?.["findings"]).toEqual(
       expect.arrayContaining([

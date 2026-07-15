@@ -50,21 +50,24 @@ export function writeBearshellExecutionEvidence(projectDir: string, event: Execu
     commandSummary: summarizeEvidenceText(event.command, {
       includePreview: includeDiagnostics,
       maxPreviewChars: COMMAND_PREVIEW_CHARS,
+      projectDir,
     }),
     stdoutSummary: summarizeEvidenceText(event.stdout, {
       includePreview: includeDiagnostics,
       maxPreviewChars: OUTPUT_PREVIEW_CHARS,
+      projectDir,
     }),
     stderrSummary: summarizeEvidenceText(event.stderr, {
       includePreview: includeDiagnostics,
       maxPreviewChars: OUTPUT_PREVIEW_CHARS,
+      projectDir,
     }),
     diagnosticSignals: diagnosticSignals(event.stdout, event.stderr),
     verificationCommand: verificationCommandSignal(event.command),
   }
 
   try {
-    writePrivateEvidenceJson(evidencePath.path, outputPath, payload)
+    writePrivateEvidenceJson(evidencePath.path, outputPath, payload, { projectDir })
     return relative(projectDir, outputPath).replace(/\\/g, "/")
   } catch (error) {
     warnRuntimeFailure("evidence-write", "bearshell-execution-evidence", outputPath, error instanceof Error ? error : new Error(String(error)))

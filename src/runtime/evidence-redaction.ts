@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto"
+import { isAbsolute, relative, resolve } from "node:path"
 
 type RedactionRule = {
   readonly pattern: RegExp
@@ -19,7 +20,11 @@ export type EvidenceTextSummary = {
   readonly truncated: boolean
 }
 
-type EvidenceTextSummaryOptions = {
+export type EvidenceSanitizationOptions = {
+  readonly projectDir?: string
+}
+
+export type EvidenceTextSummaryOptions = EvidenceSanitizationOptions & {
   readonly includePreview: boolean
   readonly maxPreviewChars: number
 }
@@ -67,13 +72,19 @@ const REDACTION_RULES: readonly RedactionRule[] = [
   },
 ] as const
 
-export function redactEvidenceText(source: string): RedactedEvidenceText {
+export function redactEvidenceText(
+  source: string,
+  options: EvidenceSanitizationOptions = {},
+): RedactedEvidenceText {
   let text = source
   let redactionCount = 0
   for (const rule of REDACTION_RULES) {
     redactionCount += text.match(rule.pattern)?.length ?? 0
     text = text.replace(rule.pattern, rule.replacement)
   }
+  const paths = redactAbsolutePaths(text, options.projectDir)
+  text = paths.text
+  redactionCount += paths.redactionCount
   return { redactionCount, text }
 }
 
@@ -81,7 +92,7 @@ export function summarizeEvidenceText(
   source: string,
   options: EvidenceTextSummaryOptions,
 ): EvidenceTextSummary {
-  const redacted = redactEvidenceText(source)
+  const redacted = redactEvidenceText(source, options)
   const truncated = redacted.text.length > options.maxPreviewChars
   const preview = options.includePreview
     ? boundPreview(redacted.text, options.maxPreviewChars)
@@ -96,19 +107,56 @@ export function summarizeEvidenceText(
   }
 }
 
-export function sanitizeEvidenceValue(value: unknown, maxStringChars = 4_096): unknown {
+export function sanitizeEvidenceValue(
+  value: unknown,
+  maxStringChars = 4_096,
+  options: EvidenceSanitizationOptions = {},
+): unknown {
   if (typeof value === "string") {
-    return boundPreview(redactEvidenceText(value).text, maxStringChars)
+    return boundPreview(redactEvidenceText(value, options).text, maxStringChars)
   }
   if (Array.isArray(value)) {
-    return value.map((item) => sanitizeEvidenceValue(item, maxStringChars))
+    return value.map((item) => sanitizeEvidenceValue(item, maxStringChars, options))
   }
   if (typeof value !== "object" || value === null) {
     return value
   }
   return Object.fromEntries(
-    Object.entries(value).map(([key, nested]) => [key, sanitizeEvidenceValue(nested, maxStringChars)]),
+    Object.entries(value).map(([key, nested]) => [key, sanitizeEvidenceValue(nested, maxStringChars, options)]),
   )
+}
+
+type RedactedPathText = {
+  readonly redactionCount: number
+  readonly text: string
+}
+
+const POSIX_ABSOLUTE_PATH = /(?<![A-Za-z0-9:_/-])\/(?:[^\s"'`<>|;&/]+\/)+[^\s"'`<>|;&]*/gu
+const WINDOWS_ABSOLUTE_PATH = /\b[A-Za-z]:[\\/](?:[^\s"'`<>|;&]+[\\/]?)+/gu
+const UNC_ABSOLUTE_PATH = /(?<![A-Za-z0-9])\\\\(?:[^\s"'`<>|;&]+[\\/]?)+/gu
+
+function redactAbsolutePaths(source: string, projectDir: string | undefined): RedactedPathText {
+  let redactionCount = 0
+  let text = source
+  for (const pattern of [POSIX_ABSOLUTE_PATH, WINDOWS_ABSOLUTE_PATH, UNC_ABSOLUTE_PATH]) {
+    text = text.replace(pattern, (candidate) => {
+      redactionCount += 1
+      return safePathReference(candidate, projectDir)
+    })
+  }
+  return { redactionCount, text }
+}
+
+function safePathReference(candidate: string, projectDir: string | undefined): string {
+  const trimmed = candidate.replace(/[),.;:\]}]+$/u, "")
+  const suffix = candidate.slice(trimmed.length)
+  if (projectDir !== undefined && isAbsolute(trimmed)) {
+    const relativePath = relative(resolve(projectDir), resolve(trimmed))
+    if (relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath))) {
+      return `${relativePath || "."}${suffix}`
+    }
+  }
+  return "[REDACTED_PATH]"
 }
 
 function boundPreview(text: string, maxChars: number): string {

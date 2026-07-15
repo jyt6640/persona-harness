@@ -8,7 +8,7 @@ import {
 } from "../config/harness-config.js"
 import { ensurePrivateDirectory, writePrivateFileAtomic } from "../io/atomic-file.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
-import { sanitizeEvidenceValue } from "./evidence-redaction.js"
+import { sanitizeEvidenceValue, type EvidenceSanitizationOptions } from "./evidence-redaction.js"
 
 export type EvidenceWriteOptions = {
   readonly evidenceDir?: string
@@ -45,9 +45,10 @@ export function writePrivateEvidenceJson(
   evidenceRoot: string,
   outputPath: string,
   payload: unknown,
+  options: EvidenceSanitizationOptions = {},
 ): void {
   ensurePrivateDirectory(evidenceRoot)
-  const sanitized = sanitizeEvidenceValue(payload)
+  const sanitized = sanitizeEvidenceValue(payload, 4_096, options)
   writePrivateFileAtomic(outputPath, `${JSON.stringify(sanitized, null, 2)}\n`)
 }
 
