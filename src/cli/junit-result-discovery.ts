@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { lstatSync } from "node:fs"
 import { join } from "node:path"
 
@@ -18,8 +19,23 @@ export const JUNIT_RESULT_DISCOVERY_LIMITS = {
 } as const
 
 export type JunitResultDiscoveryOptions = {
+  readonly baseline?: ReadonlyMap<string, JunitResultFileSnapshot>
   readonly minimumMtimeMs?: number
   readonly minimumMtimeToleranceMs?: number
+}
+
+export type JunitResultFileSnapshot = {
+  readonly bytes: number
+  readonly dev: string
+  readonly ino: string
+  readonly mtimeMs: number
+  readonly sha256: string
+}
+
+export type JunitResultSnapshot = {
+  readonly diagnostics: readonly string[]
+  readonly files: ReadonlyMap<string, JunitResultFileSnapshot>
+  readonly safe: boolean
 }
 
 export type JunitResultFile = {
@@ -65,6 +81,20 @@ export function discoverJUnitResults(
   }
 }
 
+export function snapshotJUnitResults(projectDir: string): JunitResultSnapshot {
+  const roots = JUNIT_RESULT_DIRS.map((root) => snapshotRoot(projectDir, root))
+  const diagnostics = uniqueSorted(roots.flatMap((root) => root.diagnostics))
+  const files = new Map<string, JunitResultFileSnapshot>()
+  for (const root of roots) {
+    for (const [ref, snapshot] of root.files) files.set(ref, snapshot)
+  }
+  return {
+    diagnostics,
+    files,
+    safe: diagnostics.length === 0,
+  }
+}
+
 function discoverRoot(
   projectDir: string,
   root: string,
@@ -90,7 +120,18 @@ function discoverRoot(
           diagnostics.push("junit-symlink-rejected")
           return []
         }
-        if (stat.mtimeMs < minimumMtimeMs - minimumMtimeToleranceMs) return []
+        const ref = `${root}/${file.relativePath}`
+        const currentSnapshot = snapshotFile(stat, file.bytes, file.text)
+        const baseline = options.baseline?.get(ref)
+        if (options.baseline !== undefined && baseline !== undefined && sameSnapshot(baseline, currentSnapshot)) {
+          return []
+        }
+        if (
+          options.baseline === undefined
+          && stat.mtimeMs < minimumMtimeMs - minimumMtimeToleranceMs
+        ) {
+          return []
+        }
       } catch (error) {
         if (error instanceof Error) {
           diagnostics.push("junit-unreadable")
@@ -111,6 +152,64 @@ function discoverRoot(
     files,
     safe: walked.safe && diagnostics.length === 0,
   }
+}
+
+function snapshotRoot(
+  projectDir: string,
+  root: string,
+): { readonly diagnostics: readonly string[]; readonly files: ReadonlyMap<string, JunitResultFileSnapshot> } {
+  const walked = walkBoundedFiles(join(projectDir, root), projectDir, {
+    ...JUNIT_RESULT_DISCOVERY_LIMITS,
+    displayRoot: root,
+    extensions: [".xml"],
+    includeText: true,
+  })
+  const diagnostics = walked.diagnostics.map(pathDiagnosticCode)
+  const files = new Map<string, JunitResultFileSnapshot>()
+  for (const file of walked.files) {
+    if (file.text === undefined) continue
+    try {
+      const stat = lstatSync(file.absolutePath)
+      if (stat.isSymbolicLink() || !stat.isFile()) {
+        diagnostics.push("junit-symlink-rejected")
+        continue
+      }
+      files.set(`${root}/${file.relativePath}`, snapshotFile(stat, file.bytes, file.text))
+    } catch (error) {
+      if (error instanceof Error) {
+        diagnostics.push("junit-unreadable")
+        continue
+      }
+      throw error
+    }
+  }
+  return { diagnostics: uniqueSorted(diagnostics), files }
+}
+
+function snapshotFile(
+  stat: {
+    readonly dev: number | bigint
+    readonly ino: number | bigint
+    readonly mtimeMs: number
+  },
+  bytes: number,
+  text: string,
+): JunitResultFileSnapshot {
+  return {
+    bytes,
+    dev: String(stat.dev),
+    ino: String(stat.ino),
+    mtimeMs: stat.mtimeMs,
+    sha256: createHash("sha256").update(text).digest("hex"),
+  }
+}
+
+function sameSnapshot(left: JunitResultFileSnapshot, right: JunitResultFileSnapshot): boolean {
+  return left.bytes === right.bytes
+    && left.dev === right.dev
+    && left.ino === right.ino
+    && left.mtimeMs === right.mtimeMs
+    && left.sha256 === right.sha256
 }
 
 function pathDiagnosticCode(diagnostic: PathSafetyDiagnostic): string {

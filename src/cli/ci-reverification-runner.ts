@@ -26,7 +26,7 @@ import {
   samePathIdentity,
 } from "./ci-reverification-identity.js"
 import { determineCiReverificationFinalStatus, type CiReverificationFinalStatus } from "./ci-reverification-model.js"
-import { discoverJUnitResults } from "./junit-result-discovery.js"
+import { discoverJUnitResults, snapshotJUnitResults } from "./junit-result-discovery.js"
 
 export type CiReverificationMode = "ci" | "local"
 
@@ -114,6 +114,7 @@ export function runCiReverification(
           break
         }
         const startedAt = now()
+        const baseline = snapshotJUnitResults(projectDir)
         const result = runProcess({
           args: [command.task],
           command: wrapper,
@@ -126,6 +127,7 @@ export function runCiReverification(
         if (result.outcome === "spawn-failure") diagnostics.push("verification-spawn-failure")
         if (result.outcome === "timeout") diagnostics.push("verification-timeout")
         const junitDiscovery = discoverJUnitResults(projectDir, {
+          baseline: baseline.files,
           minimumMtimeMs: startedAt,
         })
         diagnostics.push(...junitDiscovery.diagnostics)
