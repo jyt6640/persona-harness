@@ -33,6 +33,7 @@ import {
   assessVerificationAuthority,
   type VerificationAuthorityAssessment,
 } from "./workflow-verification-receipt.js"
+import { readDoctorRegistry, type DoctorRegistrySummary } from "./doctor-registry.js"
 
 type DoctorOptions = {
   readonly projectDir?: string
@@ -58,6 +59,7 @@ export type DoctorSummary = {
   readonly reachability: DoctorReachabilitySummary
   readonly packageVersion: string
   readonly registry: string
+  readonly registryDetails: DoctorRegistrySummary
   readonly opencodeConfig: "present" | "missing"
   readonly pluginPath: "configured" | "missing" | "unreadable"
   readonly harnessConfig: "present" | "missing" | "invalid"
@@ -131,23 +133,21 @@ function packageVersion(): string {
   }
 }
 
-function registryStatus(options: DoctorOptions): string {
+function registrySummary(installedVersion: string, options: DoctorOptions): DoctorRegistrySummary {
   const env = options.env ?? process.env
-  const distTagsJson = env.PH_DOCTOR_REGISTRY_DIST_TAGS ?? commandOutput("npm", ["view", "persona-harness", "dist-tags", "--json"], options)
-  if (distTagsJson === undefined || distTagsJson.length === 0) {
-    return "unavailable"
-  }
-  try {
-    const parsed: unknown = JSON.parse(distTagsJson)
-    if (!isRecord(parsed)) {
-      return "unavailable"
-    }
-    const alpha = typeof parsed.alpha === "string" ? parsed.alpha : "missing"
-    const latest = typeof parsed.latest === "string" ? parsed.latest : "missing"
-    return `alpha=${alpha}, latest=${latest}`
-  } catch {
-    return "unavailable"
-  }
+  const distTagOverride = env.PH_DOCTOR_REGISTRY_DIST_TAGS
+  const distTagsJson = distTagOverride
+    ?? commandOutput("npm", ["view", "persona-harness", "dist-tags", "--json"], options)
+  const deprecated = env.PH_DOCTOR_REGISTRY_DEPRECATED
+    ?? (distTagOverride === undefined
+      ? commandOutput("npm", ["view", "persona-harness", "deprecated", "--json"], options)
+      : undefined)
+  return readDoctorRegistry({
+    deprecatedText: deprecated,
+    distTagsText: distTagsJson,
+    forcedStatus: env.PH_DOCTOR_REGISTRY_FAILURE,
+    installedVersion,
+  })
 }
 
 function normalizeRelativePath(filePath: string, rootDir: string): string {
@@ -214,6 +214,8 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const conventionPackDiagnostics = summarizeConventionPackDiagnostics(projectDir)
   const opencode = opencodeVersion(options)
   const reachability = readDoctorReachability(projectDir)
+  const packageVersionValue = packageVersion()
+  const registryDetails = registrySummary(packageVersionValue, options)
   const verificationAuthority = assessVerificationAuthority(projectDir)
   const runtimeFindings = [
     ...platformFindings(options.platform ?? process.platform),
@@ -223,6 +225,9 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     ...(pathSafetyDiagnostics.length > 0
       ? ["Harness configuration/path safety is blocked; read-only recovery is required."]
       : []),
+    ...(registryDetails.status === "available"
+      ? []
+      : ["npm registry facts are unavailable or malformed; channel drift and deprecation are not verified."]),
   ]
   return {
     projectDir,
@@ -233,8 +238,9 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     runtimeReadiness: runtimeFindings.length === 0 ? "PASS" : "WARN",
     runtimeFindings,
     reachability,
-    packageVersion: packageVersion(),
-    registry: registryStatus(options),
+    packageVersion: packageVersionValue,
+    registry: registryDetails.text,
+    registryDetails,
     opencodeConfig: pathStatus(join(projectDir, ".opencode/opencode.json")),
     pluginPath:
       reachability.projectPluginState === "configured"
@@ -342,7 +348,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
   return [
     "Persona Harness Doctor",
     "",
-    `Project: ${summary.projectDir}`,
+    "Project: local workspace (path redacted)",
     `Node: ${summary.node}`,
     `npm: ${summary.npm}`,
     `npx: ${summary.npx}`,
@@ -363,6 +369,13 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     ...summary.reachability.findings.map((finding) => `- [${finding.level}] ${finding.message}`),
     ...summary.reachability.followUpLines,
     `Persona package version: ${summary.packageVersion}`,
+    `Registry status: ${summary.registryDetails.status}`,
+    `Installed channel: ${summary.registryDetails.channels.installed}`,
+    `Latest channel: ${summary.registryDetails.channels.latest} (${summary.registryDetails.channelStates.latest})`,
+    `Next channel: ${summary.registryDetails.channels.next} (${summary.registryDetails.channelStates.next})`,
+    `Legacy channel: ${summary.registryDetails.channels.legacy}`,
+    `Deprecation: ${summary.registryDetails.deprecation}`,
+    `Finish authority: ${summary.verificationAuthority.authorityEligible ? "ELIGIBLE" : "BLOCKED"}`,
     `npm registry: ${summary.registry}`,
     "",
     "Project integration:",
@@ -392,11 +405,35 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
   ].join("\n")
 }
 
-export function runDoctorCommand(_args: readonly string[], options: DoctorOptions = {}): CliRunResult {
+function doctorJson(summary: DoctorSummary): string {
+  return `${JSON.stringify({
+    authority: {
+      finish: summary.verificationAuthority.authorityEligible ? "eligible" : "blocked",
+      receipt: "diagnostic-only",
+    },
+    preview: {
+      entrySteering: summary.entrySteeringEnabled,
+      runtimeInjection: loadHarnessConfigResult(summary.projectDir).config.features.runtimeInjection,
+    },
+    privacy: {
+      diagnostics: "bounded",
+      evidence: loadHarnessConfigResult(summary.projectDir).config.evidenceMode,
+    },
+    reachability: {
+      agents: summary.reachability.agentsState,
+      level: summary.reachability.level,
+      plugin: summary.reachability.projectPluginState,
+    },
+    registry: summary.registryDetails,
+    runtimeReadiness: summary.runtimeReadiness,
+    schemaVersion: "doctor.1",
+  }, null, 2)}\n`
+}
+
+export function runDoctorCommand(args: readonly string[], options: DoctorOptions = {}): CliRunResult {
   const summary = readDoctorSummary(options)
-  return {
-    status: summary.reachability.level === "BLOCK" || summary.pathSafetyDiagnostics.length > 0 ? 1 : 0,
-    stdout: `${formatDoctorSummary(summary)}\n`,
-    stderr: "",
-  }
+  const status = summary.reachability.level === "BLOCK" || summary.pathSafetyDiagnostics.length > 0 ? 1 : 0
+  return args.length === 1 && args[0] === "--json"
+    ? { status, stdout: doctorJson(summary), stderr: "" }
+    : { status, stdout: `${formatDoctorSummary(summary)}\n`, stderr: "" }
 }
