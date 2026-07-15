@@ -1,3 +1,6 @@
+import { realpathSync } from "node:fs"
+import { isAbsolute, relative, resolve } from "node:path"
+
 import type {
   ClosureBlocker,
   ClosureNextPayload,
@@ -131,6 +134,25 @@ export function safeArtifactReference(value: string | undefined): string | undef
   return segments.some((segment) => segment.length === 0 || segment === "." || segment === "..")
     ? undefined
     : normalized
+}
+
+export function safeProjectArtifactReference(projectDir: string, artifactPath: string | undefined): string | undefined {
+  if (artifactPath === undefined || !isAbsolute(artifactPath)) {
+    return undefined
+  }
+  let projectRoot: string
+  let targetPath: string
+  try {
+    projectRoot = realpathSync(resolve(projectDir))
+    targetPath = realpathSync(resolve(artifactPath))
+  } catch (error) {
+    if (error instanceof Error) {
+      return undefined
+    }
+    throw error
+  }
+  const relativePath = relative(projectRoot, targetPath)
+  return safeArtifactReference(relativePath)
 }
 
 export function safeWorkflowCommand(value: string | undefined): string | undefined {
