@@ -47,6 +47,8 @@ deleting evidence/status history.
   [`p3-8-ci-release-integrity-acceptance-record.md`](p3-8-ci-release-integrity-acceptance-record.md).
 - P3-9 RC3 integrity governance decision:
   [`p3-9-rc3-integrity-governance-decision.md`](p3-9-rc3-integrity-governance-decision.md).
+- Stable containment execution evidence:
+  [`stable-containment-execution-evidence.md`](stable-containment-execution-evidence.md).
 - P3-4 fresh fixed-command verifier candidate:
   [`p3-4-fresh-fixed-command-verifier-acceptance-record.md`](p3-4-fresh-fixed-command-verifier-acceptance-record.md).
 - P3-5 semantic TDD candidate:

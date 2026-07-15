@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 41
+- current active pointer/status: 42
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 55
 - versioned durable: 26
 
-Total indexed files: 327
+Total indexed files: 328
 
 ## File Inventory
 
@@ -113,6 +113,7 @@ Total indexed files: 327
 | `docs/current/p3-3-verification-receipt-acceptance-record.md` | current active pointer/status | - | Strict receipt/attempt parser and read-only lifecycle diagnostics; no receipt issuance or finish-authority acceptance. |
 | `docs/current/p3-8-ci-release-integrity-acceptance-record.md` | current active pointer/status | - | PR/main CI and canonical-main/registry/release idempotency checks plus repository-admin readback; staged-publish least privilege and release approval remain separate gates. |
 | `docs/current/p3-9-rc3-integrity-governance-decision.md` | current active pointer/status | - | Exact-main source/package/governance decision: constrained P2 source-only resumption GO; Stable/GA/latest/publish remain NO-GO. |
+| `docs/current/stable-containment-execution-evidence.md` | current active pointer/status | - | Issue #60 durable pre-execution record for exact `0.6.0` deprecation; action not yet executed and no latest/next movement. |
 | `docs/current/korean-cli-help-scope-authorization.md` | current active pointer/status | - | Sole user-authorized #19 product-scope exception for Korean CLI help locale selection; all other P2 product work and release boundaries remain held. |
 | `docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md` | current active pointer/status | - | Fresh POSIX Java/Spring/Gradle execution, receipt/attempt issuance, and nonzero testcase enforcement; P3-2 remains blocking. |
 | `docs/current/p3-5-semantic-tdd-acceptance-record.md` | current active pointer/status | - | Fresh red-to-green JUnit identity/lineage assessment; local structure remains untrusted and P3-2 remains blocking. |
