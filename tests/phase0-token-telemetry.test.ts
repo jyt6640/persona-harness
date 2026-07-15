@@ -5,6 +5,7 @@ import type { AssistantMessage, Model } from "@opencode-ai/sdk"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { opaqueEvidenceKey } from "../src/runtime/evidence-file.js"
 import { TokenTelemetryRecorder } from "../src/runtime/token-telemetry.js"
 import type { TransformSystemOutput } from "../src/runtime/types.js"
 import { cleanupProjects, createProject, writeHarnessConfig } from "./helpers/rule-fixtures.js"
@@ -61,7 +62,7 @@ function modelWithContextLimit(context: number): Model {
 }
 
 function readEvidence(projectDir: string, sessionID = "session-token-usage"): Record<string, unknown> {
-  const path = join(projectDir, ".persona", "evidence", "token-usage", `${sessionID}.json`)
+  const path = join(projectDir, ".persona", "evidence", "token-usage", `${opaqueEvidenceKey(sessionID)}.json`)
   const parsed: unknown = JSON.parse(readFileSync(path, "utf8"))
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     throw new Error(`expected token evidence object at ${path}`)
@@ -138,7 +139,10 @@ describe("Phase 0 token telemetry", () => {
   it("recovers from truncated token usage evidence by writing a fresh safe payload", () => {
     const projectDir = createProject()
     mkdirSync(join(projectDir, ".persona", "evidence", "token-usage"), { recursive: true })
-    writeFileSync(join(projectDir, ".persona", "evidence", "token-usage", "session-token-usage.json"), "{ nope\n")
+    writeFileSync(
+      join(projectDir, ".persona", "evidence", "token-usage", `${opaqueEvidenceKey("session-token-usage")}.json`),
+      "{ nope\n",
+    )
     const recorder = new TokenTelemetryRecorder(projectDir)
 
     const result = recorder.recordMessage(assistantMessage())
@@ -196,8 +200,8 @@ describe("Phase 0 token telemetry", () => {
       },
     })
 
-    expect(existsSync(join(projectDir, ".persona", "evidence", "token-usage", "session-token-usage.json"))).toBe(true)
-    expect(existsSync(join(projectDir, ".persona", "changed-evidence", "token-usage", "session-token-usage.json"))).toBe(
+    expect(existsSync(join(projectDir, ".persona", "evidence", "token-usage", `${opaqueEvidenceKey("session-token-usage")}.json`))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "changed-evidence", "token-usage", `${opaqueEvidenceKey("session-token-usage")}.json`))).toBe(
       false,
     )
   })
@@ -214,7 +218,7 @@ describe("Phase 0 token telemetry", () => {
       },
     })
 
-    expect(existsSync(join(projectDir, ".persona", "evidence", "token-usage", "session-token-usage.json"))).toBe(
+    expect(existsSync(join(projectDir, ".persona", "evidence", "token-usage", `${opaqueEvidenceKey("session-token-usage")}.json`))).toBe(
       false,
     )
   })
