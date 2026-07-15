@@ -3,9 +3,8 @@ import { join } from "node:path"
 
 import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import { isRecord } from "../config/jsonc.js"
-import { writePrivateEvidenceJson } from "./evidence-file.js"
+import { opaqueEvidenceKey, writePrivateEvidenceJson } from "./evidence-file.js"
 import type { TokenUsage } from "./token-telemetry.js"
-import { safeSessionKey } from "./token-telemetry.js"
 
 export type TokenCompactionSummarizeOptions = {
   readonly body: {
@@ -55,7 +54,7 @@ type CompactionEvidence = {
 }
 
 function compactionEvidencePath(evidenceDir: string, sessionID: string): string {
-  return join(evidenceDir, "compaction", `${safeSessionKey(sessionID)}.json`)
+  return join(evidenceDir, "compaction", `${opaqueEvidenceKey(sessionID)}.json`)
 }
 
 function isCompactionAttempt(value: unknown): value is CompactionAttempt {
