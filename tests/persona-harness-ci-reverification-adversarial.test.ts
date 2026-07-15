@@ -136,6 +136,116 @@ describe("CI reverification adversarial boundaries", () => {
     expect(record.junitRefs).toEqual([])
   })
 
+  it("fails closed and records a bounded diagnostic for malformed recent JUnit XML", () => {
+    const projectDir = createProject()
+    const result = runCiReverification(projectDir, "ci", {
+      runProcess: () => {
+        const resultDir = join(projectDir, "build", "test-results", "test")
+        mkdirSync(resultDir, { recursive: true })
+        writeFileSync(join(resultDir, "malformed.xml"), "<testsuite><testcase></testsuite>\n")
+        return {
+          killed: false,
+          outcome: "passed",
+          outputLimited: false,
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "",
+          timedOut: false,
+        }
+      },
+    })
+
+    expect(result.finalStatus).toBe("failed")
+    expect(result.diagnosticCodes).toContain("junit-malformed-xml")
+  })
+
+  it("fails closed when current-phase malformed XML has an older filesystem mtime", () => {
+    const projectDir = createProject()
+    const result = runCiReverification(projectDir, "ci", {
+      now: () => 2_000,
+      runProcess: () => {
+        const resultDir = join(projectDir, "build", "test-results", "test")
+        mkdirSync(resultDir, { recursive: true })
+        const malformedPath = join(resultDir, "mtime-skew.xml")
+        writeFileSync(malformedPath, "<testsuite><testcase></testsuite>\n")
+        utimesSync(malformedPath, new Date(1_999), new Date(1_999))
+        return {
+          killed: false,
+          outcome: "passed",
+          outputLimited: false,
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "",
+          timedOut: false,
+        }
+      },
+    })
+
+    expect(result.finalStatus).toBe("failed")
+    expect(result.diagnosticCodes).toContain("junit-malformed-xml")
+  })
+
+  it("accepts changed current-phase content at a reused path despite older mtime", () => {
+    const projectDir = createProject()
+    const resultDir = join(projectDir, "build", "test-results", "test")
+    mkdirSync(resultDir, { recursive: true })
+    const reusedPath = join(resultDir, "reused.xml")
+    writeFileSync(reusedPath, "<testsuite tests=\"1\" />\n")
+    utimesSync(reusedPath, new Date(1_500), new Date(1_500))
+
+    const result = runCiReverification(projectDir, "ci", {
+      now: () => 2_000,
+      runProcess: () => {
+        writeFileSync(reusedPath, "<testsuite><testcase></testsuite>\n")
+        utimesSync(reusedPath, new Date(1_999), new Date(1_999))
+        return {
+          killed: false,
+          outcome: "passed",
+          outputLimited: false,
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "",
+          timedOut: false,
+        }
+      },
+    })
+
+    expect(result.finalStatus).toBe("failed")
+    expect(result.diagnosticCodes).toContain("junit-malformed-xml")
+  })
+
+  it("excludes an unchanged prior-phase red result inside the mtime skew window", () => {
+    const projectDir = createProject()
+    const resultDir = join(projectDir, "build", "test-results", "test")
+    mkdirSync(resultDir, { recursive: true })
+    const priorPath = join(resultDir, "prior-red.xml")
+    writeFileSync(priorPath, "<testsuite tests=\"1\" failures=\"1\"><testcase><failure /></testcase></testsuite>\n")
+    utimesSync(priorPath, new Date(1_500), new Date(1_500))
+
+    const result = runCiReverification(projectDir, "ci", {
+      now: () => 2_000,
+      runProcess: () => ({
+        killed: false,
+        outcome: "passed",
+        outputLimited: false,
+        signal: null,
+        status: 0,
+        stderr: "",
+        stdout: "",
+        timedOut: false,
+      }),
+    })
+
+    expect(result.finalStatus).toBe("passed")
+    const artifact = JSON.parse(readFileSync(result.artifactPath ?? "", "utf8")) as {
+      readonly commands: readonly { readonly junitRefs: readonly string[] }[]
+    }
+    expect(artifact.commands.every((command) => command.junitRefs.length === 0)).toBe(true)
+  })
+
   it("stops after the 300s attempt budget and records a later unavailable command", () => {
     const projectDir = createProject()
     const times = [0, 0, 0, 0, 0, 300_001, 300_001]
