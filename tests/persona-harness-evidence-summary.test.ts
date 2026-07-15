@@ -1,10 +1,12 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import process from "node:process"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { PUBLIC_REDACTED_PATH, publicEvidencePath } from "../src/cli/evidence-public-projection.js"
 
 const tempProjects: string[] = []
 
@@ -53,7 +55,7 @@ describe("ph evidence summary", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Evidence summary written")
-    expect(result.stdout).toContain(`Evidence directory: ${join(projectDir, ".persona", "evidence")}`)
+    expect(result.stdout).toContain("Evidence directory: .persona/evidence")
     const summary = readFileSync(join(projectDir, ".persona", "evidence", "summary.md"), "utf8")
     expect(summary).toContain("# Persona Evidence Summary")
     expect(summary).toContain("Total evidence files: 2")
@@ -701,5 +703,75 @@ describe("ph evidence summary", () => {
     expect(result.stdout).toContain("Kill criteria are decision support only")
     expect(result.stdout).toContain("- none")
     expect(existsSync(join(projectDir, ".persona", "evidence", "pminus-report.md"))).toBe(false)
+  })
+
+  it("projects every public evidence report path relative to the project", () => {
+    const projectDir = createTempProject()
+    const externalMarker = join(tmpdir(), "external-report-marker")
+    const run = runPersonaCli(
+      [
+        "evidence",
+        "ab-run",
+        "--scenario",
+        "public-report-paths",
+        "--condition",
+        "off",
+        "--run-id",
+        "run-one",
+        "--",
+        process.execPath,
+        "-e",
+        "process.exit(0)",
+      ],
+      { cwd: projectDir, env: {}, invocationName: "ph" },
+    )
+    expect(run.status).toBe(0)
+
+    const outputs = [
+      runPersonaCli(["evidence", "ab-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+      runPersonaCli(["evidence", "ab-report"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+      runPersonaCli(["evidence", "pminus-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+      runPersonaCli(["evidence", "pminus-report"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+      runPersonaCli(["evidence", "pminus-status", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+      runPersonaCli(["evidence", "pminus-status"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+    ]
+    for (const output of outputs) {
+      expect(output.status).toBe(0)
+      expect(output.stdout).not.toContain(projectDir)
+      expect(output.stdout).not.toContain(externalMarker)
+      expect(output.stdout).not.toContain("C:\\report-outside")
+      expect(output.stdout).not.toContain("\\\\report-host\\share")
+    }
+
+    const abReport = JSON.parse(outputs[0]?.stdout ?? "{}") as {
+      readonly projectDir: string
+      readonly evidenceDir: string
+      readonly scenarios: readonly { readonly files: readonly string[] }[]
+    }
+    expect(abReport.projectDir).toBe(".")
+    expect(abReport.evidenceDir).toBe(".persona/evidence")
+    const abFiles = abReport.scenarios.flatMap((scenario) => scenario.files)
+    expect(abFiles).toHaveLength(1)
+    expect(abFiles[0]).toMatch(/^\.persona\/evidence\/ab\/[^/]+\/[^/]+\.json$/u)
+
+    const pminusReport = JSON.parse(outputs[2]?.stdout ?? "{}") as {
+      readonly projectDir: string
+      readonly evidenceDir: string
+      readonly scenarios: readonly { readonly evidenceFiles: readonly string[] }[]
+    }
+    expect(pminusReport.projectDir).toBe(".")
+    expect(pminusReport.evidenceDir).toBe(".persona/evidence")
+    expect(pminusReport.scenarios.flatMap((scenario) => scenario.evidenceFiles)).toEqual(abFiles)
+  })
+
+  it("redacts outside, traversal, Windows, and UNC report paths", () => {
+    const projectDir = createTempProject()
+
+    expect(publicEvidencePath(projectDir, join(projectDir, ".persona", "evidence", "ab", "report.json"))).toBe(
+      ".persona/evidence/ab/report.json",
+    )
+    expect(publicEvidencePath(projectDir, join(projectDir, "..", "outside.json"))).toBe(PUBLIC_REDACTED_PATH)
+    expect(publicEvidencePath(projectDir, "C:\\report-outside\\report.json")).toBe(PUBLIC_REDACTED_PATH)
+    expect(publicEvidencePath(projectDir, "\\\\report-host\\share\\report.json")).toBe(PUBLIC_REDACTED_PATH)
   })
 })

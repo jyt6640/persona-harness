@@ -5,6 +5,7 @@ import type { Event, Model, Part, UserMessage } from "@opencode-ai/sdk"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { opaqueEvidenceKey } from "../src/runtime/evidence-file.js"
 import type { IdleContinuationClient, IdlePromptAsyncOptions } from "../src/runtime/idle-continuation.js"
 import type { TextCompleteOutput, TransformMessagesOutput } from "../src/runtime/types.js"
 
@@ -287,7 +288,7 @@ describe("runtime session classification for multi-agent hooks", () => {
     writeRuntimeMultiAgentConfig()
     const evidenceDir = join(fixtureWorkspace, ".persona", "evidence", "session-injection-skips")
     mkdirSync(evidenceDir, { recursive: true })
-    writeFileSync(join(evidenceDir, "session-unknown.json"), "{ nope\n")
+    writeFileSync(join(evidenceDir, `${opaqueEvidenceKey("session-unknown")}.json`), "{ nope\n")
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const targetFile = fixturePath("ReservationController.java")
 
