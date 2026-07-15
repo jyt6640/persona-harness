@@ -7,7 +7,7 @@ import { EVIDENCE_PRIVACY_CLASS } from "../config/evidence-privacy.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
-import { writePrivateEvidenceJson } from "./evidence-file.js"
+import { opaqueEvidenceKey, writePrivateEvidenceJson } from "./evidence-file.js"
 
 type SessionKind = "main" | "subagent" | "unknown"
 
@@ -63,10 +63,6 @@ const RUNTIME_INJECTION_SURFACES: readonly RuntimeInjectionSurface[] = [
   "text-continuation",
 ]
 
-function safeSessionKey(sessionID: string): string {
-  return sessionID.replace(/[^a-zA-Z0-9._-]+/g, "-").toLowerCase() || "session"
-}
-
 function skipEvidenceLocation(
   projectDir: string,
   sessionID: string,
@@ -75,7 +71,7 @@ function skipEvidenceLocation(
   return evidenceRoot.ok
     ? {
         evidenceRoot: evidenceRoot.path,
-        path: join(evidenceRoot.path, "session-injection-skips", `${safeSessionKey(sessionID)}.json`),
+        path: join(evidenceRoot.path, "session-injection-skips", `${opaqueEvidenceKey(sessionID)}.json`),
       }
     : undefined
 }
