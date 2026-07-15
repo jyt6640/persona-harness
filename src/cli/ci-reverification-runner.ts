@@ -125,10 +125,7 @@ export function runCiReverification(
         if (result.outcome === "signal") diagnostics.push("verification-signal")
         if (result.outcome === "spawn-failure") diagnostics.push("verification-spawn-failure")
         if (result.outcome === "timeout") diagnostics.push("verification-timeout")
-        const junitDiscovery = discoverJUnitResults(projectDir, {
-          minimumMtimeMs: startedAt,
-          minimumMtimeToleranceMs: 1_000,
-        })
+        const junitDiscovery = discoverFreshJUnitResults(projectDir, startedAt)
         diagnostics.push(...junitDiscovery.diagnostics)
         const record = createCommandRecord(
           projectDir,
@@ -222,4 +219,15 @@ export function runCiReverification(
     }
   }
   return { artifactPath: written.path, diagnosticCodes: artifact.diagnosticCodes, finalStatus }
+}
+
+function discoverFreshJUnitResults(projectDir: string, startedAt: number) {
+  const exact = discoverJUnitResults(projectDir, { minimumMtimeMs: startedAt })
+  if (exact.files.length > 0 || exact.diagnostics.length > 0) {
+    return exact
+  }
+  return discoverJUnitResults(projectDir, {
+    minimumMtimeMs: startedAt,
+    minimumMtimeToleranceMs: 1_000,
+  })
 }
