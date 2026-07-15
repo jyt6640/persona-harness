@@ -6,6 +6,7 @@ import type { Event } from "@opencode-ai/sdk"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
+import { opaqueEvidenceKey } from "../src/runtime/evidence-file.js"
 import type { IdleContinuationClient, IdlePromptAsyncOptions } from "../src/runtime/idle-continuation.js"
 import { readRalphLoopState, ralphLoopStatePath } from "../src/runtime/ralph-loop-state.js"
 
@@ -339,7 +340,7 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     expect(output.output).not.toContain("[Persona Harness Ralph Loop Tool Continuation]")
     expect(readRalphLoopState(projectDir).sessions["session-arbitrary-output"]).toBeUndefined()
     expect(
-      existsSync(join(projectDir, ".persona", "evidence", "session-injection-skips", "session-arbitrary-output.json")),
+      existsSync(join(projectDir, ".persona", "evidence", "session-injection-skips", `${opaqueEvidenceKey("session-arbitrary-output")}.json`)),
     ).toBe(false)
   })
 
