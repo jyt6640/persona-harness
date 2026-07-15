@@ -82,6 +82,52 @@ describe("ph doctor registry diagnostics", () => {
     expect(result.stdout).toContain("Finish authority: BLOCKED")
   })
 
+  it.each([
+    ["token", "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"],
+    ["secret", "Bearer super-secret-registry-value"],
+    ["posix path", "/tmp/registry-version"],
+    ["windows path", "C:\\Users\\runner\\registry-version"],
+    ["empty", ""],
+  ] as const)("rejects unsafe %s channel values in plaintext and JSON", (_kind, value) => {
+    const projectDir = project()
+    const tags = JSON.stringify({ latest: value, alpha: value })
+    const plaintext = doctor(projectDir, {
+      PH_DOCTOR_REGISTRY_DIST_TAGS: tags,
+    })
+    const json = runPersonaCli(["doctor", "--json"], {
+      cwd: projectDir,
+      env: {
+        PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
+        PH_DOCTOR_REGISTRY_DIST_TAGS: tags,
+      },
+      invocationName: "ph",
+    })
+
+    expect(plaintext.status).toBe(0)
+    expect(plaintext.stdout).toContain("Registry status: malformed")
+    if (value.length > 0) {
+      expect(plaintext.stdout).not.toContain(value)
+    }
+    expect(json.status).toBe(0)
+    const payload = JSON.parse(json.stdout) as {
+      readonly registry: {
+        readonly status: string
+        readonly channels: {
+          readonly latest: string
+          readonly legacy: string
+        }
+      }
+      readonly runtimeReadiness: string
+    }
+    expect(payload.registry.status).toBe("malformed")
+    expect(payload.registry.channels.latest).toBe("unavailable")
+    expect(payload.registry.channels.legacy).toBe("unavailable")
+    expect(payload.runtimeReadiness).toBe("WARN")
+    if (value.length > 0) {
+      expect(json.stdout).not.toContain(value)
+    }
+  })
+
   it("provides a bounded JSON projection with preview/privacy and authority boundaries", () => {
     const projectDir = project()
     const result = runPersonaCli(["doctor", "--json"], {
