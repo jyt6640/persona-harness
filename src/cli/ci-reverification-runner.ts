@@ -25,6 +25,7 @@ import {
   captureWorkspaceIdentity,
   samePathIdentity,
 } from "./ci-reverification-identity.js"
+import { captureSourceIdentity, sameSourceIdentity } from "./source-identity.js"
 import { determineCiReverificationFinalStatus, type CiReverificationFinalStatus } from "./ci-reverification-model.js"
 import { discoverJUnitResults, snapshotJUnitResults } from "./junit-result-discovery.js"
 
@@ -42,6 +43,7 @@ export type CiReverificationRunnerOptions = {
   readonly beforePostCapture?: () => void
   readonly captureEvidenceParent?: typeof captureEvidenceParentIdentity
   readonly captureGit?: typeof captureGitIdentity
+  readonly captureSource?: typeof captureSourceIdentity
   readonly captureWorkspace?: typeof captureWorkspaceIdentity
   readonly commandTimeoutMs?: number
   readonly now?: () => number
@@ -70,6 +72,7 @@ export function runCiReverification(
   const captureEvidenceParent = options.captureEvidenceParent
     ?? ((workspaceRoot) => captureEvidenceParentIdentity(workspaceRoot, evidencePath.relativePath))
   const captureGit = options.captureGit ?? captureGitIdentity
+  const captureSource = options.captureSource ?? captureSourceIdentity
   const writeArtifact = options.writeArtifact ?? writeAndRereadCiReverificationArtifact
   const commandTimeoutMs = options.commandTimeoutMs ?? 120_000
   const attemptBudgetMs = options.attemptBudgetMs ?? 300_000
@@ -86,6 +89,14 @@ export function runCiReverification(
     return { diagnosticCodes: [preParentResult.diagnosticCode], finalStatus: "unavailable" }
   }
   const preGit = captureGit(projectDir, preRootResult.value)
+  const preSourceResult = captureSource(
+    projectDir,
+    preGit,
+    evidencePath.relativePath || configResult.config.evidenceDir,
+  )
+  if (preSourceResult.status === "unavailable") {
+    return { diagnosticCodes: [preSourceResult.diagnosticCode], finalStatus: "unavailable" }
+  }
   const preflight = preflightDiagnostic(projectDir, mode, platform)
     ?? (mode === "ci" && !preGit.available ? preGit.diagnosticCode : undefined)
   if (preflight !== undefined) diagnostics.push(preflight)
@@ -152,8 +163,20 @@ export function runCiReverification(
   const postGit = postRoot === undefined
     ? { available: false, diagnosticCode: "workspace-root-post-unavailable" }
     : captureGit(projectDir, postRoot)
+  const postSourceResult = postRoot === undefined
+    ? { diagnosticCode: "source-identity-workspace-unavailable", status: "unavailable" as const }
+    : captureSource(
+        projectDir,
+        postGit,
+        evidencePath.relativePath || configResult.config.evidenceDir,
+      )
+  const postSource = postSourceResult.status === "available" ? postSourceResult.value : undefined
   if (postRootResult.status === "unavailable") diagnostics.push(postRootResult.diagnosticCode)
   if (!postGit.available && preGit.available) diagnostics.push(postGit.diagnosticCode)
+  if (postSourceResult.status === "unavailable") diagnostics.push(postSourceResult.diagnosticCode)
+  if (postSource !== undefined && !sameSourceIdentity(preSourceResult.value, postSource)) {
+    diagnostics.push("source-identity-content-changed")
+  }
   const postParentResult = captureEvidenceParent(postRoot ?? preRootResult.value)
   const postParent = postParentResult.status === "available" ? postParentResult.value : undefined
   if (postParentResult.status === "unavailable") diagnostics.push(postParentResult.diagnosticCode)
@@ -166,6 +189,8 @@ export function runCiReverification(
     postParent,
     preGit,
     postGit,
+    preSourceResult.value,
+    postSource,
   )
   const disallowed = Array.isArray(mutationSnapshot.disallowedTracked)
     ? mutationSnapshot.disallowedTracked.length > 0
@@ -174,6 +199,8 @@ export function runCiReverification(
     postRoot === undefined
     || !samePathIdentity(preRootResult.value, postRoot)
     || (preGit.available && (!postGit.available || preGit.head !== postGit.head))
+    || postSource === undefined
+    || !sameSourceIdentity(preSourceResult.value, postSource)
   )
   const parentValid = postParent !== undefined && samePathIdentity(preParentResult.value, postParent)
   let finalStatus = determineCiReverificationFinalStatus({

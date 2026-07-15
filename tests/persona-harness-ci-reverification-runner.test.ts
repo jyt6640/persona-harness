@@ -84,6 +84,7 @@ describe("CI reverification runner", () => {
     const source = readFileSync(result.artifactPath ?? "", "utf8")
     expect(source).not.toContain("secret-output")
     const artifact = JSON.parse(source)
+    expect(JSON.stringify(artifact.mutationSnapshot.sourceIdentity)).not.toContain(projectDir)
     expect(artifact.commands.map((command: { readonly fixedArgvId: string }) => command.fixedArgvId)).toEqual([
       "gradle-wrapper-test.1",
       "gradle-wrapper-build.1",
@@ -170,7 +171,7 @@ describe("CI reverification runner", () => {
     expect(timeoutResult.finalStatus).toBe("timeout")
   })
 
-  it("blocks new tracked source mutation only in CI and preserves the file", () => {
+  it("blocks new tracked source mutation in every verification mode and preserves the file", () => {
     function mutate(projectDir: string): () => BoundedProcessResult {
       let calls = 0
       return (): BoundedProcessResult => {
@@ -184,8 +185,49 @@ describe("CI reverification runner", () => {
     expect(readFileSync(join(ciProject, "src", "main", "java", "App.java"), "utf8")).toContain("changed")
 
     const localProject = createProject(successScript())
-    expect(runCiReverification(localProject, "local", { runProcess: mutate(localProject) }).finalStatus).toBe("passed")
+    expect(runCiReverification(localProject, "local", { runProcess: mutate(localProject) }).finalStatus).toBe("partial")
     expect(readFileSync(join(localProject, "src", "main", "java", "App.java"), "utf8")).toContain("changed")
+  })
+
+  it("blocks content-only drift when Git status remains modified", () => {
+    const projectDir = createProject(successScript())
+    const sourcePath = join(projectDir, "src", "main", "java", "App.java")
+    writeFileSync(sourcePath, "class App { int firstChange; }\n")
+    const root = captureWorkspaceIdentity(projectDir)
+    if (root.status !== "available") {
+      throw new Error("expected workspace identity for content drift fixture")
+    }
+    const before = captureGitIdentity(projectDir, root.value)
+    if (!before.available || before.status === undefined) {
+      throw new Error("expected Git identity for content drift fixture")
+    }
+
+    const result = runCiReverification(projectDir, "ci", {
+      runProcess: () => {
+        writeFileSync(sourcePath, "class App { int secondChange; }\n")
+        return {
+          killed: false,
+          outcome: "passed",
+          outputLimited: false,
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "",
+          timedOut: false,
+        }
+      },
+    })
+    const artifact = JSON.parse(readFileSync(result.artifactPath ?? "", "utf8")) as {
+      readonly mutationSnapshot: {
+        readonly post: { readonly normalizedPorcelainNameStatusNulSha256: string }
+        readonly pre: { readonly normalizedPorcelainNameStatusNulSha256: string }
+      }
+    }
+
+    expect(artifact.mutationSnapshot.pre.normalizedPorcelainNameStatusNulSha256).toBe(before.status.digest)
+    expect(artifact.mutationSnapshot.post.normalizedPorcelainNameStatusNulSha256).toBe(before.status.digest)
+    expect(result.finalStatus).toBe("partial")
+    expect(result.diagnosticCodes).toContain("source-identity-content-changed")
   })
 
   it("maps unsupported platform, artifact failure, HEAD change, and root capture failure", () => {

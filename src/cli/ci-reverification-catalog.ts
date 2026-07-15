@@ -10,6 +10,7 @@ import { samePathIdentity, type EvidenceParentIdentity, type GitIdentity, type P
 import { discoverJUnitResults, type JunitResultDiscovery } from "./junit-result-discovery.js"
 import { classifyObservedMutations, parseGitStatusPorcelain } from "./ci-reverification-mutation.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
+import { sameSourceIdentity, type SourceIdentity } from "./source-identity.js"
 
 export const REVERIFICATION_COMMAND_CATALOG_ID = "java-spring-gradle-wrapper.1" as const
 export const REVERIFICATION_COMMANDS = [
@@ -98,6 +99,8 @@ export function mutationSnapshotData(
   postParent: EvidenceParentIdentity | undefined,
   preGit: GitIdentity,
   postGit: GitIdentity,
+  preSourceIdentity: SourceIdentity,
+  postSourceIdentity: SourceIdentity | undefined,
 ): Readonly<Record<string, unknown>> {
   const preStatus = preGit.status ?? EMPTY_STATUS
   const postStatus = postGit.status ?? EMPTY_STATUS
@@ -123,6 +126,11 @@ export function mutationSnapshotData(
     post: { entryCount: postStatus.entryCount, normalizedPorcelainNameStatusNulSha256: postStatus.digest },
     pre: { entryCount: preStatus.entryCount, normalizedPorcelainNameStatusNulSha256: preStatus.digest },
     schemaVersion: "mutationSnapshot.1",
+    sourceIdentity: {
+      equal: postSourceIdentity !== undefined && sameSourceIdentity(preSourceIdentity, postSourceIdentity),
+      post: postSourceIdentity,
+      pre: preSourceIdentity,
+    },
     untracked: classified.untracked,
     workspaceRoot: { equal: postRoot !== undefined && samePathIdentity(preRoot, postRoot), post: postRoot, pre: preRoot },
   }
