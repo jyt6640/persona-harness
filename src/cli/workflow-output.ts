@@ -7,6 +7,7 @@ import {
 import { cachedWorkflowRailOutput } from "./workflow-rail-cache.js"
 import { workflowFinishFollowUpLines, type WorkflowFinishFollowUp } from "./workflow-finish-follow-up.js"
 import { isStructuredWorkflowRequiredFix, type WorkflowRequiredFix } from "./workflow-required-fix.js"
+import { safeWorkflowCode } from "./workflow-safe-rendering.js"
 
 export type WorkflowGuardKind = "implement" | "final"
 export type WorkflowRunnerKind = "implement"
@@ -87,14 +88,18 @@ function failedFinishRunnerOutput(
   runnerKind: WorkflowRunnerKind,
   options: WorkflowFinishFailureOutputOptions,
 ): CliRunResult {
-  const otherBlockers = options.blockerIds.filter((blockerId) => blockerId !== options.followUp.blockerId)
+  const blockerId = safeWorkflowCode(options.followUp.blockerId, "invalid-blocker-code")
+  const otherBlockers = options.blockerIds
+    .filter((candidate) => candidate !== options.followUp.blockerId)
+    .slice(0, 8)
+    .map((candidate) => safeWorkflowCode(candidate, "invalid-blocker-code"))
   return {
     status: 1,
     stdout: "",
     stderr: [
       `Workflow finish failed: ${runnerKind}`,
       "",
-      `Blocker: ${options.followUp.blockerId}`,
+      `Blocker: ${blockerId}`,
       ...workflowFinishFollowUpLines(options.followUp),
       ...(otherBlockers.length === 0 ? [] : ["", "Other blockers:", ...otherBlockers.map((blockerId) => `- ${blockerId}`)]),
       "",

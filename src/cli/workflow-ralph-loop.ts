@@ -1,10 +1,15 @@
-import { resolve } from "node:path"
+import { relative, resolve } from "node:path"
 import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
-import type { ClosureBlocker, ClosureStep } from "./workflow-closure.js"
 import { closureStepNextAction, createContinuationPromptLines } from "./continuation-prompt.js"
 import { readWorkflowClosurePayload } from "./workflow-closure.js"
+import {
+  safeClosureBlocker,
+  safeClosureStep,
+  type SafeWorkflowBlocker,
+  type SafeWorkflowStep,
+} from "./workflow-safe-rendering.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import { readRalphLoopState, ralphLoopStatePath } from "../runtime/ralph-loop-state.js"
 
@@ -45,8 +50,8 @@ type RalphLoopPayload = {
     readonly eligible: boolean
     readonly reason: "closure-blocker-present" | "no-closure-blockers"
   }
-  readonly blocker: ClosureBlocker | null
-  readonly nextStep: ClosureStep | null
+  readonly blocker: SafeWorkflowBlocker | null
+  readonly nextStep: SafeWorkflowStep | null
   readonly nextAction: string | null
   readonly promptLines: readonly string[]
   readonly measurementPlan: {
@@ -70,8 +75,10 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
   const config = loadHarnessConfig(projectDir)
   const persistedState = readRalphLoopState(projectDir)
   const closure = readWorkflowClosurePayload("next", projectDir)
-  const blocker = closure.state.blockers[0] ?? null
-  const nextStep = closure.action === "next" ? closure.nextStep : null
+  const rawBlocker = closure.state.blockers[0] ?? null
+  const rawNextStep = closure.action === "next" ? closure.nextStep : null
+  const blocker = rawBlocker === null ? null : safeClosureBlocker(rawBlocker)
+  const nextStep = rawNextStep === null ? null : safeClosureStep(rawNextStep)
   const knownSessions = Object.keys(persistedState.sessions).length
   const depth = blocker === null ? undefined : { index: 1, total: closure.state.blockers.length }
   return {
@@ -85,7 +92,7 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
       cooldownMs: config.enforce.ralphLoop.cooldownMs,
       enabled: config.enforce.ralphLoop.enabled,
       ordinaryIdleContinuationDisabledWhenEnabled: true,
-      statePath: ralphLoopStatePath(projectDir),
+      statePath: relative(projectDir, ralphLoopStatePath(projectDir)),
       runtimeSurface: config.enforce.ralphLoop.toolOutputTrigger ? "tool.execute.after" : "session.idle",
       runtimeSurfaces: config.enforce.ralphLoop.toolOutputTrigger ? ["tool.execute.after"] : ["session.idle"],
       toolOutputTriggerEnabled: config.enforce.ralphLoop.toolOutputTrigger,
@@ -108,8 +115,10 @@ function ralphLoopPayload(projectDir: string): RalphLoopPayload {
     },
     blocker,
     nextStep,
-    nextAction: nextStep === null ? null : closureStepNextAction(nextStep),
-    promptLines: blocker === null ? [] : createContinuationPromptLines({ blocker, context: "ralph-loop", depth, step: nextStep }),
+    nextAction: rawNextStep === null ? null : closureStepNextAction(rawNextStep),
+    promptLines: rawBlocker === null
+      ? []
+      : createContinuationPromptLines({ blocker: rawBlocker, context: "ralph-loop", depth, step: rawNextStep }),
     measurementPlan: {
       sample: "n=30 blocker/completion A/B",
       metrics: [
@@ -153,8 +162,10 @@ function formatRalphLoopText(payload: RalphLoopPayload): string {
       "Result: continuation is eligible because closure blockers remain.",
       "Early completion: blocked by PH closure gate until `npx ph workflow finish implement` passes.",
       `First blocker: ${payload.blocker.id}`,
-      `Reason: ${payload.blocker.reason}`,
-      `Source: ${payload.blocker.source}`,
+      ...(payload.blocker.evidenceRef === undefined ? [] : [`Artifact: ${payload.blocker.evidenceRef}`]),
+      ...(payload.blocker.source === undefined || payload.blocker.source === payload.blocker.evidenceRef
+        ? []
+        : [`Artifact: ${payload.blocker.source}`]),
     )
     if (payload.nextAction !== null) {
       lines.push(`Next action: ${payload.nextAction}`)

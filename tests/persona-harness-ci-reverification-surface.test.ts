@@ -13,7 +13,7 @@ function git(projectDir: string, args: readonly string[]): void {
   execFileSync("git", [...args], { cwd: projectDir, stdio: "ignore" })
 }
 
-function createBootstrappedProject(): string {
+function createBootstrappedProject(gradlew?: string): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-ci-surface-"))
   projects.push(projectDir)
   const bootstrap = runPersonaCli(["bootstrap", "backend", "--no-developer-mcp"], {
@@ -49,7 +49,7 @@ function createBootstrappedProject(): string {
   writeFileSync(join(projectDir, ".persona", "evidence", ".gitkeep"), "")
   writeFileSync(
     join(projectDir, "gradlew"),
-    [
+    gradlew ?? [
       "#!/bin/sh",
       "mkdir -p build/test-results/test",
       "printf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\"><testcase classname=\"SurfaceTest\" name=\"works\"/></testsuite>' > build/test-results/test/TEST-surface.xml",
@@ -123,5 +123,25 @@ describe("CI reverification public surface", () => {
     })
 
     expect(ambientCi).toEqual(plain)
+  })
+
+  it("keeps reverify artifact diagnostics project-relative", () => {
+    const projectDir = createBootstrappedProject([
+      "#!/bin/sh",
+      "mkdir -p build/test-results/test",
+      "printf '%s\\n' '<testsuite' > build/test-results/test/TEST-surface.xml",
+      "exit 0",
+    ].join("\n") + "\n")
+    const result = runPersonaCli(["workflow", "finish", "implement", "--reverify", "--ci"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).not.toContain(projectDir)
+    expect(result.stderr).not.toContain(projectDir)
+    expect(result.stderr).toContain("artifact: .persona/evidence/ci-reverification/")
+    expect(result.stderr).toContain("junit-malformed-xml")
   })
 })

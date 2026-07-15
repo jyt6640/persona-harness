@@ -7,14 +7,14 @@ import { readWorkflowReportStatus, type WorkflowReportStatus } from "../runtime/
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH, type PlanOptions } from "./plan.js"
 import { PlanStatusError, readWorkflowPlanStatus } from "./plan-status.js"
 import { createImplementationPrompt } from "./plan-prompts.js"
-import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
 import { readWorkflowClosurePayload, type ClosurePayload } from "./workflow-closure.js"
 import { workflowClosureRailLines } from "./workflow-closure-rail.js"
 import { workflowRequiredActionLine } from "./workflow-context-guidance.js"
 import { planUncheckedItems } from "./workflow-plan-unchecked.js"
 import { cachedWorkflowRailOutput } from "./workflow-rail-cache.js"
-import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
-import { pendingWorkflowTicketResumeLines, pendingWorkflowTickets, TICKET_BY_TICKET_GUIDANCE, TIMEBOXED_SCOPE_GUIDANCE } from "./workflow-ticket-summary.js"
+import { safeWorkflowCode } from "./workflow-safe-rendering.js"
+import { safePendingTicketResumeLines } from "./workflow-safe-ticket-prompt.js"
+import { pendingWorkflowTickets, TICKET_BY_TICKET_GUIDANCE, TIMEBOXED_SCOPE_GUIDANCE } from "./workflow-ticket-summary.js"
 
 type WorkflowSnapshot = {
   readonly projectDir: string
@@ -23,8 +23,6 @@ type WorkflowSnapshot = {
   readonly reviewStatus: WorkflowReportStatus
   readonly implementationReportText: string | undefined
   readonly closurePayload: ClosurePayload
-  readonly workflowStatus: WorkflowStatusSummary
-  readonly verificationFailure: VerificationFailureSummary
   readonly pendingTicket: ReturnType<typeof pendingWorkflowTickets>[number] | undefined
 }
 
@@ -87,8 +85,6 @@ function workflowSnapshot(options: PlanOptions): WorkflowSnapshot {
     reviewStatus,
     closurePayload: readWorkflowClosurePayload("next", projectDir),
     implementationReportText: reportText(projectDir, IMPLEMENTATION_REPORT_PATH),
-    workflowStatus: readWorkflowStatus(projectDir),
-    verificationFailure: readVerificationFailure(projectDir, implementationStatus),
     pendingTicket: pendingWorkflowTickets(projectDir)[0],
   }
 }
@@ -130,8 +126,8 @@ function nextActionLines(snapshot: WorkflowSnapshot): readonly string[] {
     return [
       "Continuation is next.",
       "Next command: npx ph workflow continue",
-      "Continuation evidence:",
-      ...evidenceLines(snapshot.implementationReportText).map((line) => `  ${line}`),
+      "Continuation evidence status: present.",
+      `Artifact: ${IMPLEMENTATION_REPORT_PATH}`,
     ]
   }
 
@@ -157,7 +153,7 @@ export function runNextCommand(options: PlanOptions = {}): CliRunResult {
     "Persona Harness next action",
     "",
     `Plan: ${PLAN_PATH}`,
-    `Plan status: ${snapshot.planStatus ?? "missing"}`,
+    `Plan status: ${safeWorkflowCode(snapshot.planStatus ?? "missing", "unknown")}`,
     `Implementation report status: ${snapshot.implementationStatus}`,
     `Review report status: ${snapshot.reviewStatus}`,
     "",
@@ -213,18 +209,18 @@ function resumePrompt(snapshot: WorkflowSnapshot, reportText: string): string {
     "Persona Harness resume prompt",
     "",
     `Plan: ${PLAN_PATH}`,
-    `Plan status: ${snapshot.planStatus ?? "missing"}`,
+    `Plan status: ${safeWorkflowCode(snapshot.planStatus ?? "missing", "unknown")}`,
     `Implementation report: ${IMPLEMENTATION_REPORT_PATH}`,
     `Implementation report status: ${snapshot.implementationStatus}`,
     `Review report status: ${snapshot.reviewStatus}`,
     "",
     hasEvidence ? "Continue from this recorded state:" : "No filled continuation evidence found.",
-    ...linesOfEvidence,
+    ...(hasEvidence ? [`Artifact: ${IMPLEMENTATION_REPORT_PATH}`] : []),
     "",
-    ...pendingWorkflowTicketResumeLines(snapshot.pendingTicket, snapshot.projectDir),
+    ...safePendingTicketResumeLines(snapshot.pendingTicket),
     ...workflowClosureRailLines(snapshot.closurePayload),
-    "Plan unchecked items:",
-    ...(uncheckedItems.length > 0 ? uncheckedItems : ["- No unchecked plan checklist items found."]),
+    `Plan unchecked status: ${uncheckedItems.length > 0 ? "present" : "none"}.`,
+    `Artifact: ${PLAN_PATH}`,
     "",
     "Required action:",
     workflowRequiredActionLine(snapshot.projectDir),
@@ -267,7 +263,7 @@ export function runResumeCommand(options: PlanOptions & { readonly full?: boolea
       stdout: "",
       stderr: [
         "Workflow plan is not accepted.",
-        `Current status: ${snapshot.planStatus ?? "missing"}`,
+        `Current status: ${safeWorkflowCode(snapshot.planStatus ?? "missing", "unknown")}`,
         "Run npx ph plan --accept after review, or npx ph plan --revise if the plan needs changes.",
       ].join("\n") + "\n",
     }

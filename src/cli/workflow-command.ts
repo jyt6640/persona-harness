@@ -31,6 +31,7 @@ import { formatWorkflowStatus, readWorkflowStatus } from "./workflow-status.js"
 import { stdinEncodingError } from "./stdin-text.js"
 import { runWorkflowTddStatus } from "./workflow-tdd-status.js"
 import { recordTddGreenForCurrentTicket, runWorkflowTddTest } from "./workflow-tdd.js"
+import { safeProjectArtifactReference, safeWorkflowCode } from "./workflow-safe-rendering.js"
 import type { WorkflowStateWriteOptions } from "./workflow-state-conflict.js"
 import {
   runWorkflowArchive,
@@ -149,9 +150,12 @@ function runWorkflowFinish(
   if (reverify) {
     const result = runFreshFixedVerification(summary.projectDir, ci ? "ci" : "local")
     if (result.finalStatus !== "passed") {
-      const evidence = result.artifactPath === undefined ? "artifact unavailable" : `artifact: ${result.artifactPath}`
+      const artifactReference = safeProjectArtifactReference(summary.projectDir, result.artifactPath)
+      const diagnostics = result.diagnosticCodes
+        .slice(0, 8)
+        .map((code) => safeWorkflowCode(code, "invalid-diagnostic-code"))
       return failedRunnerOutput("finish", runnerKind, [
-        `Evidence reverification ${result.finalStatus}; ${evidence}; diagnostics: ${result.diagnosticCodes.join(", ") || "none"}.`,
+        `Evidence reverification ${result.finalStatus}; ${artifactReference === undefined ? "artifact-unavailable" : `artifact: ${artifactReference}`}; diagnostics: ${diagnostics.join(", ") || "none"}.`,
       ])
     }
   }

@@ -9,9 +9,14 @@ import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventi
 import type { CliRunResult } from "./bearshell.js"
 import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
 import { readWorkflowFinishAuthority, TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID } from "./workflow-finish-authority.js"
+import {
+  safeWorkflowClosureNextPayload,
+  safeWorkflowClosureStatusPayload,
+} from "./workflow-safe-rendering.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
 import { readTddClosureFinding, type TddClosureFinding } from "./workflow-tdd.js"
 
+// allow: SIZE_OK - blocker collection and step priority stay one deterministic closure state machine.
 export type ClosureAction = "next" | "status"
 type ClosureArchive = "complete" | "history-only-repair" | "pending"
 type ClosureEvidence = "missing" | "present"
@@ -86,9 +91,13 @@ const DEFAULT_EVIDENCE_DIR = ".persona/evidence"
 
 export function runWorkflowClosureCommand(action: ClosureAction, options: { readonly projectDir?: string }): CliRunResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
+  const payload = readWorkflowClosurePayload(action, projectDir)
+  const output = payload.action === "next"
+    ? safeWorkflowClosureNextPayload(payload)
+    : safeWorkflowClosureStatusPayload(payload)
   return {
     status: 0,
-    stdout: `${JSON.stringify(readWorkflowClosurePayload(action, projectDir), null, 2)}\n`,
+    stdout: `${JSON.stringify(output, null, 2)}\n`,
     stderr: "",
   }
 }

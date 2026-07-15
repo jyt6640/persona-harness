@@ -496,7 +496,7 @@ enforcement: inject_only
 
     expect(next.status).toBe(0)
     expect(next.stdout).toContain("Ticket: step-1")
-    expect(next.stdout).toContain("Legacy Ticket")
+    expect(next.stdout).toContain("ticket-title-unavailable")
     expect(next.stdout).not.toContain("schemaVersion:")
     expect(check.stdout).toContain("pending tickets: present")
     expect(check.stdout).toContain("Do not claim overall completion while pending tickets remain.")

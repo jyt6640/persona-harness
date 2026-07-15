@@ -142,7 +142,7 @@ function writeControllerRepositoryViolation(projectDir: string): void {
   writeFileSync(join(projectDir, "src", "main", "java", "com", "example", "TaskRepository.java"), "interface TaskRepository {}\n")
 }
 
-function writeActiveTicket(projectDir: string, ticketId = "req-1"): void {
+function writeActiveTicket(projectDir: string, ticketId = "req-1", title = "Task CRUD API"): void {
   mkdirSync(join(projectDir, ".persona", "workflow", "work", ticketId), { recursive: true })
   writeFileSync(
     join(projectDir, ".persona", "workflow", "backlog.md"),
@@ -153,7 +153,7 @@ function writeActiveTicket(projectDir: string, ticketId = "req-1"): void {
       "",
       "| Order | Ticket | Title | Status | Path |",
       "| --- | --- | --- | --- | --- |",
-      `| 1 | ${ticketId} | Task CRUD API | pending | .persona/workflow/work/${ticketId}/00-task-card.md |`,
+      `| 1 | ${ticketId} | ${title} | pending | .persona/workflow/work/${ticketId}/00-task-card.md |`,
     ].join("\n"),
   )
   writeFileSync(join(projectDir, ".persona", "workflow", "work", ticketId, "00-task-card.md"), `# Task Card: ${ticketId}\n`)
@@ -383,6 +383,39 @@ describe("ph workflow closure read-only planner", () => {
     expect(next.nextStep).toMatchObject(next.steps[0])
   })
 
+  it("does not expose raw ticket titles in closure status nested state", () => {
+    const projectDir = createWorkflowProject()
+    const secret = "PH_SECRET_TOKEN=sk_issue51_closure_status"
+    writeActiveTicket(projectDir, "req-51", secret)
+
+    const result = runPersonaCli(["workflow", "closure", "status", "--json"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const check = runPersonaCli(["workflow", "check"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const next = runPersonaCli(["workflow", "next"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain(secret)
+    expect(check.stdout).not.toContain(secret)
+    expect(next.stdout).not.toContain(secret)
+    expect(check.stdout).toContain("Title: ticket-title-unavailable")
+    expect(next.stdout).toContain("Title: ticket-title-unavailable")
+    const payload = JSON.parse(result.stdout)
+    expect(payload.state.currentTicket.title).toBe("ticket-title-unavailable")
+    expect(payload.state.blockers.find((blocker: { readonly tickets?: readonly unknown[] }) => blocker.tickets)?.tickets[0].title)
+      .toBe("ticket-title-unavailable")
+  })
+
   it("uses report content as the first actionable blocker for the post-build alpha6-like state", () => {
     const projectDir = createWorkflowProject()
     writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nruntime smoke PASS")
@@ -439,7 +472,7 @@ describe("ph workflow closure read-only planner", () => {
       blockerId: "verification-unknown",
       status: "blocked",
     })
-    expect(output.steps[0].reason).toContain("no structured execution evidence")
+    expect(output.steps[0]).not.toHaveProperty("reason")
   })
 
   it("accepts structured bearshell execution success evidence", () => {
@@ -467,7 +500,7 @@ describe("ph workflow closure read-only planner", () => {
       id: "fix-verification",
       status: "blocked",
     })
-    expect(output.steps[0].reason).toContain("PH direct verification failed")
+    expect(output.steps[0]).not.toHaveProperty("reason")
     expect(finish.status).toBe(1)
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Blocker: verification-failed")
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next action: Fix the compile/test failure reported by Persona Harness verification.")
@@ -532,7 +565,7 @@ describe("ph workflow closure read-only planner", () => {
       id: "verify-app",
       status: "blocked",
     })
-    expect(output.steps[0].reason).toContain("PH direct verification is enabled")
+    expect(output.steps[0]).not.toHaveProperty("reason")
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Blocker: verification-unknown")
     expect(`${finish.stdout}\n${finish.stderr}`).toContain("Next action: Ensure the project has a supported verification command")
     expect(`${finish.stdout}\n${finish.stderr}`).not.toContain("Next command:")
@@ -565,7 +598,10 @@ describe("ph workflow closure read-only planner", () => {
       blockerId: "verification-failed",
       status: "blocked",
     })
-    expect(output.steps[0].reason).toContain("JUnit XML")
+    expect(output.steps[0]).toMatchObject({
+      evidenceRef: "build/test-results/test/TEST-sample.xml",
+    })
+    expect(output.steps[0]).not.toHaveProperty("reason")
   })
 
   it("moves from implementation report to review report after implementation is filled", () => {
