@@ -131,7 +131,7 @@ type RedactedPathText = {
   readonly text: string
 }
 
-const POSIX_ABSOLUTE_PATH = /(?<![A-Za-z0-9:_/-])\/(?:[^\s"'`<>|;&/]+\/)+[^\s"'`<>|;&]*/gu
+const POSIX_ABSOLUTE_PATH = /(?<![A-Za-z0-9:_/])\/(?:[^\s"'`<>|;&/]+\/)+[^\s"'`<>|;&]*/gu
 const WINDOWS_ABSOLUTE_PATH = /\b[A-Za-z]:[\\/](?:[^\s"'`<>|;&]+[\\/]?)+/gu
 const UNC_ABSOLUTE_PATH = /(?<![A-Za-z0-9])\\\\(?:[^\s"'`<>|;&]+[\\/]?)+/gu
 
