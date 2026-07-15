@@ -127,6 +127,7 @@ export function runCiReverification(
         if (result.outcome === "timeout") diagnostics.push("verification-timeout")
         const junitDiscovery = discoverJUnitResults(projectDir, {
           minimumMtimeMs: startedAt,
+          minimumMtimeToleranceMs: 1_000,
         })
         diagnostics.push(...junitDiscovery.diagnostics)
         const record = createCommandRecord(

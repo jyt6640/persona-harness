@@ -160,6 +160,60 @@ describe("CI reverification adversarial boundaries", () => {
     expect(result.diagnosticCodes).toContain("junit-malformed-xml")
   })
 
+  it("fails closed when malformed JUnit mtime is just before command start", () => {
+    const projectDir = createProject()
+    const result = runCiReverification(projectDir, "ci", {
+      now: () => 2_000,
+      runProcess: () => {
+        const resultDir = join(projectDir, "build", "test-results", "test")
+        mkdirSync(resultDir, { recursive: true })
+        const resultPath = join(resultDir, "malformed-boundary.xml")
+        writeFileSync(resultPath, "<testsuite><testcase></testsuite>\n")
+        utimesSync(resultPath, new Date(1_999), new Date(1_999))
+        return {
+          killed: false,
+          outcome: "passed",
+          outputLimited: false,
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "",
+          timedOut: false,
+        }
+      },
+    })
+
+    expect(result.finalStatus).toBe("failed")
+    expect(result.diagnosticCodes).toContain("junit-malformed-xml")
+  })
+
+  it("excludes JUnit output older than the freshness tolerance", () => {
+    const projectDir = createProject()
+    const result = runCiReverification(projectDir, "ci", {
+      now: () => 2_000,
+      runProcess: () => {
+        const resultDir = join(projectDir, "build", "test-results", "test")
+        mkdirSync(resultDir, { recursive: true })
+        const resultPath = join(resultDir, "stale-boundary.xml")
+        writeFileSync(resultPath, "<testsuite><testcase></testsuite>\n")
+        utimesSync(resultPath, new Date(0), new Date(0))
+        return {
+          killed: false,
+          outcome: "passed",
+          outputLimited: false,
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "",
+          timedOut: false,
+        }
+      },
+    })
+
+    expect(result.finalStatus).toBe("passed")
+    expect(result.diagnosticCodes).not.toContain("junit-malformed-xml")
+  })
+
   it("stops after the 300s attempt budget and records a later unavailable command", () => {
     const projectDir = createProject()
     const times = [0, 0, 0, 0, 0, 300_001, 300_001]
