@@ -74,18 +74,18 @@ function writeRunEvidence(
   const evidence = {
     schemaVersion: "persona-ab-measurement.1",
     privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
-    scenarioId: config.scenario,
-    scenarioLabel: config.scenarioLabel ?? config.scenario,
+    scenarioId: opaqueEvidenceKey(config.scenario),
+    scenarioLabel: opaqueEvidenceKey(config.scenarioLabel ?? config.scenario),
     source: config.source ?? "ph evidence ab-run",
     surface: {
       defaultState: config.surface.defaultState,
-      id: config.surface.id ?? config.scenario,
-      label: config.surface.label ?? config.surface.id ?? config.scenario,
+      id: opaqueEvidenceKey(config.surface.id ?? config.scenario),
+      label: opaqueEvidenceKey(config.surface.label ?? config.surface.id ?? config.scenario),
     },
     conditions: [
       {
-        id: config.condition,
-        label: config.conditionLabel ?? config.condition,
+        id: opaqueEvidenceKey(config.condition),
+        label: opaqueEvidenceKey(config.conditionLabel ?? config.condition),
         runs: [
           {
             ...run,

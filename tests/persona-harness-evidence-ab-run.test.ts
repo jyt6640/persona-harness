@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { opaqueEvidenceKey } from "../src/runtime/evidence-file.js"
 
 const tempProjects: string[] = []
 
@@ -185,11 +186,11 @@ describe("ph evidence ab-run", () => {
       runPersonaCli(["evidence", "ab-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }).stdout,
     )
     expect(abReport.scenarios).toHaveLength(3)
-    expect(abReport.scenarios.find((scenario: { readonly id: string }) => scenario.id === "tdd-integrity")).toMatchObject({
+    expect(abReport.scenarios.find((scenario: { readonly id: string }) => scenario.id === opaqueEvidenceKey("tdd-integrity"))).toMatchObject({
       conditions: [
-        { id: "off", closure: { metrics: { blockerDelta: { samples: 0 } } } },
+        { id: opaqueEvidenceKey("off"), closure: { metrics: { blockerDelta: { samples: 0 } } } },
         {
-          id: "on",
+          id: opaqueEvidenceKey("on"),
           closure: {
             continuationApplied: 1,
             earlyCompletionBlocked: 1,
@@ -204,23 +205,25 @@ describe("ph evidence ab-run", () => {
         },
       ],
     })
-    expect(abReport.scenarios.find((scenario: { readonly id: string }) => scenario.id === "codegraph-navigation"))
+    expect(abReport.scenarios.find((scenario: { readonly id: string }) => scenario.id === opaqueEvidenceKey("codegraph-navigation")))
       .toMatchObject({
         conditions: [
-          { id: "off", metrics: { readChars: { total: 200 } } },
-          { id: "on", metrics: { readChars: { total: 400 } } },
+          { id: opaqueEvidenceKey("off"), metrics: { readChars: { total: 200 } } },
+          { id: opaqueEvidenceKey("on"), metrics: { readChars: { total: 400 } } },
         ],
       })
 
     const pminusReport = JSON.parse(
       runPersonaCli(["evidence", "pminus-report", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" }).stdout,
     )
-    const tddScenario = pminusReport.scenarios.find((scenario: { readonly id: string }) => scenario.id === "tdd-integrity")
+    const tddScenario = pminusReport.scenarios.find(
+      (scenario: { readonly id: string }) => scenario.id === opaqueEvidenceKey("tdd-integrity"),
+    )
     const codegraphScenario = pminusReport.scenarios.find(
-      (scenario: { readonly id: string }) => scenario.id === "codegraph-navigation",
+      (scenario: { readonly id: string }) => scenario.id === opaqueEvidenceKey("codegraph-navigation"),
     )
     const missingScenario = pminusReport.scenarios.find(
-      (scenario: { readonly id: string }) => scenario.id === "missing-telemetry",
+      (scenario: { readonly id: string }) => scenario.id === opaqueEvidenceKey("missing-telemetry"),
     )
     expect(tddScenario).toMatchObject({ outcome: "improved", surfaceDecisionHint: "keep" })
     expect(codegraphScenario).toMatchObject({
