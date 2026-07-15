@@ -6,6 +6,8 @@ import type { AssistantMessage } from "@opencode-ai/sdk"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { isRecord } from "../src/config/jsonc.js"
+import { opaqueEvidenceKey } from "../src/runtime/evidence-file.js"
 import { appendRoleBoundaryObservation } from "../src/runtime/role-boundary-evidence.js"
 import { RuntimeSessionRegistry } from "../src/runtime/session-registry.js"
 import { writeCompactionAttempt } from "../src/runtime/token-compaction-evidence.js"
@@ -112,5 +114,53 @@ describe("evidence filename privacy", () => {
     expect(paths).not.toContain(token)
     expect(source).not.toContain(token)
     expect(files.some((path) => path.includes(token))).toBe(false)
+  })
+
+  it("persists only opaque A/B identifiers while preserving deterministic correlation", () => {
+    const projectDir = mkdtempSync(join(tmpdir(), "persona-evidence-ab-opaque-"))
+    projects.push(projectDir)
+    const scenario = "scenario-safe-correlation"
+    const scenarioLabel = "Scenario Label"
+    const condition = "condition-safe-correlation"
+    const conditionLabel = "Condition Label"
+    const result = runPersonaCli([
+      "evidence",
+      "ab-run",
+      "--scenario",
+      scenario,
+      "--scenario-label",
+      scenarioLabel,
+      "--condition",
+      condition,
+      "--condition-label",
+      conditionLabel,
+      "--run-id",
+      "run-safe-correlation",
+      "--",
+      process.execPath,
+      "-e",
+      "process.exit(0)",
+    ], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    expect(result.status).toBe(0)
+    const files = evidenceFiles(projectDir)
+    expect(files).toHaveLength(1)
+    const payload: unknown = JSON.parse(readFileSync(files[0] ?? "", "utf8"))
+    if (!isRecord(payload)) {
+      throw new Error("expected A/B evidence object")
+    }
+    const surface = isRecord(payload.surface) ? payload.surface : {}
+    const conditions = Array.isArray(payload.conditions) ? payload.conditions : []
+    const conditionRecord = isRecord(conditions[0]) ? conditions[0] : {}
+    expect(payload.scenarioId).toBe(opaqueEvidenceKey(scenario))
+    expect(payload.scenarioLabel).toBe(opaqueEvidenceKey(scenarioLabel))
+    expect(surface.id).toBe(opaqueEvidenceKey(scenario))
+    expect(surface.label).toBe(opaqueEvidenceKey(scenario))
+    expect(conditionRecord.id).toBe(opaqueEvidenceKey(condition))
+    expect(conditionRecord.label).toBe(opaqueEvidenceKey(conditionLabel))
+    const source = readFileSync(files[0] ?? "", "utf8")
+    for (const raw of [scenario, scenarioLabel, condition, conditionLabel, "run-safe-correlation"]) {
+      expect(source).not.toContain(raw)
+    }
   })
 })
