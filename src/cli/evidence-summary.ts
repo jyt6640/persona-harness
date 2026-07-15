@@ -10,6 +10,7 @@ import { evidenceAbRunUsage, runEvidenceAbRunCommand } from "./evidence-ab-run.j
 import { formatEvidenceAbReport, readEvidenceAbReport } from "./evidence-ab-report.js"
 import { formatEvidencePminusReport, readEvidencePminusReport } from "./evidence-pminus-report.js"
 import { formatEvidencePminusStatus, readEvidencePminusStatus } from "./evidence-pminus-status.js"
+import { evidenceRetentionUsage, runEvidenceRetentionCommand } from "./evidence-retention.js"
 import { publicEvidencePath, publicProjectRoot } from "./evidence-public-projection.js"
 
 type EvidenceOptions = {
@@ -675,6 +676,12 @@ export function writeEvidenceSummary(options: EvidenceOptions = {}): string | un
 }
 
 export function runEvidenceCommand(args: readonly string[], options: EvidenceOptions = {}, invocationName = "ph"): CliRunResult {
+  if (args[0] === "retain") {
+    if (args[1] === "--help" || args[1] === "-h" || args[1] === "help") {
+      return { status: 0, stdout: `${evidenceRetentionUsage(invocationName)}\n`, stderr: "" }
+    }
+    return runEvidenceRetentionCommand(args.slice(1), options, invocationName)
+  }
   if (args[0] === "ab-run") {
     if (args[1] === "--help" || args[1] === "-h" || args[1] === "help") {
       return { status: 0, stdout: evidenceAbRunUsage(invocationName), stderr: "" }
@@ -753,6 +760,6 @@ export function runEvidenceCommand(args: readonly string[], options: EvidenceOpt
   return {
     status: 1,
     stdout: "",
-    stderr: `Usage: ${invocationName} evidence <summary|metrics [--json]|ab-report [--json]|pminus-report [--json]|pminus-status [--json]|ab-run ...>\n`,
+    stderr: `Usage: ${invocationName} evidence <summary|metrics [--json]|ab-report [--json]|pminus-report [--json]|pminus-status [--json]|retain [--dry-run|--apply] [--json]|ab-run ...>\n`,
   }
 }
