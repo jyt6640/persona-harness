@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from "vitest"
 import { createContinuationPromptLines } from "../src/cli/continuation-prompt.js"
 import { runPersonaCli } from "../src/cli/index.js"
 import type { ClosureBlocker, ClosureStep } from "../src/cli/workflow-closure.js"
+import { failedGuardOutput, failedRunnerOutput } from "../src/cli/workflow-output.js"
+import type { StructuredWorkflowRequiredFix } from "../src/cli/workflow-required-fix.js"
 
 const SECRET_MARKER = "PH_SECRET_TOKEN=sk_issue51_do_not_emit"
 const INJECTION_MARKERS = [
@@ -175,6 +177,24 @@ describe("workflow prompt sanitization", () => {
     expect(prompt).toContain(".persona/evidence/phase0/verification.json")
   })
 
+  it("keeps guard and runner failure results free of raw structured details", () => {
+    const fix: StructuredWorkflowRequiredFix = {
+      blockerId: "verification-failed",
+      detail: ADVERSARIAL_TEXT,
+      nextAction: ADVERSARIAL_TEXT,
+      reason: ADVERSARIAL_TEXT,
+      source: ADVERSARIAL_TEXT,
+      step: null,
+      type: "closure-blocker",
+    }
+
+    const runner = failedRunnerOutput("implement", "implement", [fix])
+    const guard = failedGuardOutput("final", [ADVERSARIAL_TEXT])
+
+    assertSanitized(runner.stderr)
+    assertSanitized(guard.stderr)
+  })
+
   it("excludes the injection corpus from closure JSON, plaintext previews, and child argv", () => {
     const projectDir = createInjectedProject()
     const opencodeCommand = writeFakeOpencode(projectDir)
@@ -199,6 +219,21 @@ describe("workflow prompt sanitization", () => {
       env: {},
       invocationName: "ph",
     })
+    const workflowCheck = runPersonaCli(["workflow", "check"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const nextTicket = runPersonaCli(["workflow", "next"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const archive = runPersonaCli(["workflow", "archive", "req-51"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
     const execution = runPersonaCli(
       [
         "workflow",
@@ -218,9 +253,23 @@ describe("workflow prompt sanitization", () => {
     expect(loopJson.status).toBe(1)
     expect(loopText.status).toBe(1)
     expect(execution.status).toBe(1)
-    for (const output of [closure.stdout, resume.stdout, loopJson.stdout, loopText.stdout, execution.stdout, argvText]) {
+    for (const output of [
+      closure.stdout,
+      resume.stdout,
+      loopJson.stdout,
+      loopText.stdout,
+      workflowCheck.stdout,
+      workflowCheck.stderr,
+      nextTicket.stdout,
+      nextTicket.stderr,
+      archive.stdout,
+      archive.stderr,
+      execution.stdout,
+      argvText,
+    ]) {
       assertSanitized(output)
     }
+    expect(workflowCheck.stdout).not.toContain(projectDir)
 
     const closurePayload = JSON.parse(closure.stdout)
     const loopPayload = JSON.parse(loopJson.stdout)

@@ -12,6 +12,28 @@ const MAX_PATH_LENGTH = 240
 const MAX_TICKETS = 16
 const SAFE_CODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u
 const SAFE_PATH_PATTERN = /^[A-Za-z0-9._@+/-]+$/u
+const SAFE_DIAGNOSTIC_CODES: ReadonlySet<string> = new Set([
+  "authority-diagnostic-unavailable",
+  "configured-path-unavailable",
+  "convention-diagnostic",
+  "evidence-diagnostic-unavailable",
+  "implementation-report-missing",
+  "junit-diagnostic-unavailable",
+  "pending-ticket",
+  "plan-not-accepted",
+  "profile-not-ready",
+  "report-coverage-missing",
+  "review-report-missing",
+  "stack-alignment-mismatch",
+  "tdd-diagnostic-unavailable",
+  "trusted-authority-required",
+  "verification-failed",
+  "verification-unknown",
+  "workflow-diagnostic-unavailable",
+] as const)
+const SAFE_DISPLAY_TEXT_PATTERN = /^[^\u0000-\u0009\u000B\u000C\u000E-\u001F\u007F<]{1,2048}$/u
+const SUSPICIOUS_DISPLAY_TEXT_PATTERN = /(?:PH_SECRET_TOKEN|PROMPT_INJECTION|SYSTEM_XML|MARKDOWN_INSTRUCTION|ANSI_SENTINEL|CONTROL_SENTINEL|REPEAT_SENTINEL|ignore previous instructions|<system>|```)/iu
+const ABSOLUTE_PATH_PATTERN = /(?:^|[\s:])(?:\/[^/\s][^\s]*|[A-Za-z]:[\\/][^\s]*)/u
 const SAFE_FIXED_COMMANDS: ReadonlySet<string> = new Set([
   "npx ph plan",
   "npx ph plan --accept",
@@ -50,6 +72,83 @@ export type WorkflowDiagnosticReference = {
 
 export function safeWorkflowCode(value: string, fallback: string): string {
   return value.length <= MAX_CODE_LENGTH && SAFE_CODE_PATTERN.test(value) ? value : fallback
+}
+
+export function safeWorkflowDiagnostic(value: string): string {
+  if (SAFE_DIAGNOSTIC_CODES.has(value)) {
+    return value
+  }
+  if (
+    (/^(?:service|controller|architecture)\.[A-Za-z0-9._-]+ (?:block|warn|report):/u.test(value)
+      || /^Closure blocker:/u.test(value))
+    && value.length <= 2_048
+    && !ABSOLUTE_PATH_PATTERN.test(value)
+    && !/[\u0000\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(value)
+    && !SUSPICIOUS_DISPLAY_TEXT_PATTERN.test(value)
+  ) {
+    return value
+  }
+  if (
+    value.length <= 2_048
+    && !ABSOLUTE_PATH_PATTERN.test(value)
+    && !/[\u0000\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(value)
+    && !SUSPICIOUS_DISPLAY_TEXT_PATTERN.test(value)
+    && SAFE_DISPLAY_TEXT_PATTERN.test(value)
+  ) {
+    return value
+  }
+  if (/^\.persona\/workflow\/plan\.md must be accepted$/u.test(value)
+    || /^\.persona\/workflow\/plan\.md is missing\./u.test(value)) {
+    return "plan-not-accepted"
+  }
+  if (/^\.persona\/workflow\/implementation-report\.md must (?:be filled|exist)$/u.test(value)) {
+    return "implementation-report-missing"
+  }
+  if (/^\.persona\/workflow\/review-report\.md must (?:be filled|exist)$/u.test(value)) {
+    return "review-report-missing"
+  }
+  if (/^archive completed workflow with /u.test(value)) {
+    return "archive completed workflow"
+  }
+  if (/review report/iu.test(value) && /\.persona\/workflow\/review-report\.md/iu.test(value)) {
+    return ".persona/workflow/review-report.md must be filled"
+  }
+  if (/^Harness initialized but project profile is not ready\./u.test(value)) {
+    return "profile-not-ready"
+  }
+  if (/authority|trusted-authority|unsigned|attestation/iu.test(value)) {
+    return "trusted-authority-required"
+  }
+  if (/verification|junit|test evidence|bearshell|compile|gradle|build/iu.test(value)) {
+    return /failed|failure|error|inconclusive/iu.test(value)
+      ? "verification-failed"
+      : "verification-unknown"
+  }
+  if (/configured (?:evidence|rules)|unsafe|path traversal|read-only recovery/iu.test(value)) {
+    return "configured-path-unavailable"
+  }
+  if (/report coverage|read coverage/iu.test(value)) {
+    return "report-coverage-missing"
+  }
+  if (/stack alignment/iu.test(value)) {
+    return "stack-alignment-mismatch"
+  }
+  if (/convention/iu.test(value)) {
+    return "convention-diagnostic"
+  }
+  if (/tdd/iu.test(value)) {
+    return "tdd-diagnostic-unavailable"
+  }
+  if (/pending|backlog|ticket/iu.test(value)) {
+    return "pending-ticket"
+  }
+  return "workflow-diagnostic-unavailable"
+}
+
+export function safeWorkflowTitle(value: string): string {
+  return /^Malformed workflow backlog:/u.test(value)
+    ? "Malformed workflow backlog"
+    : "ticket-title-unavailable"
 }
 
 export function safeArtifactReference(value: string | undefined): string | undefined {

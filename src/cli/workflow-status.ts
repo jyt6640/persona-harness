@@ -20,6 +20,7 @@ import {
   workflowPendingTicketStatus,
   type WorkflowPendingTicket,
 } from "./workflow-ticket-summary.js"
+import { safeWorkflowDiagnostic } from "./workflow-safe-rendering.js"
 
 export type WorkflowStatusSummary = {
   readonly projectDir: string
@@ -445,7 +446,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     "Persona Harness Workflow Check",
     "",
     `Workflow status: ${summary.finding}`,
-    `Project: ${summary.projectDir}`,
+    "Project: current workspace",
     "",
     "Artifacts:",
     `- .persona/workflow/plan.md: ${summary.plan}`,
@@ -456,10 +457,10 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- profile read coverage: ${summary.profileReadCoverage}`,
     `- java role read coverage: ${summary.javaRoleReadCoverage}`,
     `- report coverage: ${summary.reportCoverage}`,
-    `- command discipline: ${summary.commandDiscipline}`,
-    `- verification failure: ${summary.verificationFailure}`,
-    `- stack alignment: ${summary.stackAlignment}`,
-    `- architecture conventions: ${summary.architectureConventions}`,
+    `- command discipline: ${safeWorkflowDiagnostic(summary.commandDiscipline)}`,
+    `- verification failure: ${safeWorkflowDiagnostic(summary.verificationFailure)}`,
+    `- stack alignment: ${safeWorkflowDiagnostic(summary.stackAlignment)}`,
+    `- architecture conventions: ${safeWorkflowDiagnostic(summary.architectureConventions)}`,
     `- backend shape report: ${backendShapeReportStatus(summary.projectDir)}`,
     ...formatPendingWorkflowTicketStatusLines(summary.pendingTickets),
     ...(selfProfileGuidance.length === 0
@@ -470,7 +471,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
           ...selfProfileGuidance.map((line) => `- ${line}`),
         ]),
     "",
-    `Next: ${summary.next}`,
+    `Next: ${safeWorkflowDiagnostic(summary.next)}`,
     "",
     "Scope:",
     "- report-only workflow status",

@@ -1,5 +1,6 @@
 import type { CliRunResult } from "./bearshell.js"
 import type { ClosureBlocker } from "./workflow-closure.js"
+import { safeArtifactReference, safeWorkflowCode, safeWorkflowDiagnostic, safeWorkflowTitle } from "./workflow-safe-rendering.js"
 import {
   BACKLOG_PATH,
   DRAFT_REQUIREMENTS_ASSUMPTIONS_PATH,
@@ -212,10 +213,10 @@ export function nextTicketOutput(ticketId: string, title: string, path: string):
     stdout: [
       "Persona Workflow Next Ticket",
       "",
-      `Ticket: ${ticketId}`,
-      `Title: ${title}`,
-      `Card: ${path}`,
-      `Path: ${path}`,
+      `Ticket: ${safeWorkflowCode(ticketId, "invalid-ticket-code")}`,
+      `Title: ${safeWorkflowTitle(title)}`,
+      `Card: ${safeArtifactReference(path) ?? ".persona/workflow/work"}`,
+      `Path: ${safeArtifactReference(path) ?? ".persona/workflow/work"}`,
       "",
       "Next:",
       "- Read the task card.",
@@ -253,7 +254,8 @@ export function archiveBlockedOutput(ticketId: string, blockers: readonly Closur
       "",
       "Archive requires the ticket to be reviewed against current workflow closure state.",
       "Resolve these non-ticket blockers before archiving:",
-      ...blockers.map((blocker) => `- ${blocker.id}: ${blocker.reason}`),
+      ...blockers.map((blocker) =>
+        `- ${safeWorkflowCode(blocker.id, "invalid-blocker-code")}: ${safeWorkflowDiagnostic(blocker.reason)}`),
       "",
       "Next:",
       "- Run `npx ph workflow closure next --json` for the first blocker.",

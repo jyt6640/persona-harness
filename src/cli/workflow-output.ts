@@ -7,7 +7,7 @@ import {
 import { cachedWorkflowRailOutput } from "./workflow-rail-cache.js"
 import { workflowFinishFollowUpLines, type WorkflowFinishFollowUp } from "./workflow-finish-follow-up.js"
 import { isStructuredWorkflowRequiredFix, type WorkflowRequiredFix } from "./workflow-required-fix.js"
-import { safeWorkflowCode } from "./workflow-safe-rendering.js"
+import { safeWorkflowCode, safeWorkflowDiagnostic } from "./workflow-safe-rendering.js"
 
 export type WorkflowGuardKind = "implement" | "final"
 export type WorkflowRunnerKind = "implement"
@@ -19,7 +19,7 @@ export type WorkflowFinishFailureOutputOptions = {
 }
 
 function requiredFixDetail(fix: WorkflowRequiredFix): string {
-  return isStructuredWorkflowRequiredFix(fix) ? fix.detail : fix
+  return isStructuredWorkflowRequiredFix(fix) ? safeWorkflowDiagnostic(fix.detail) : safeWorkflowDiagnostic(fix)
 }
 
 export function uninitializedHarnessOutput(): CliRunResult {
@@ -54,7 +54,7 @@ export function failedGuardOutput(guardKind: WorkflowGuardKind, reasons: readonl
       `Workflow guard failed: ${guardKind}`,
       "",
       "Required fixes:",
-      ...reasons.map((reason) => `- ${reason}`),
+      ...reasons.map((reason) => `- ${safeWorkflowDiagnostic(reason)}`),
       "",
       "This is a workflow-state gate only. It does not certify generated app product quality.",
     ].join("\n") + "\n",
