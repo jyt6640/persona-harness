@@ -192,7 +192,7 @@ export function appendRoleBoundaryObservation(projectDir: string, input: RoleBou
   }
 
   try {
-    writePrivateEvidenceJson(evidenceRoot, outputPath, payload)
+    writePrivateEvidenceJson(evidenceRoot, outputPath, payload, { projectDir })
   } catch (error) {
     if (error instanceof Error) {
       warnRuntimeFailure("evidence-write", "role-boundary-heuristic-write", outputPath, error)
