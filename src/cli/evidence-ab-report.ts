@@ -4,6 +4,7 @@ import process from "node:process"
 
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { isRecord } from "../config/jsonc.js"
+import { publicEvidencePath, publicProjectRoot } from "./evidence-public-projection.js"
 
 type EvidenceAbOptions = {
   readonly projectDir?: string
@@ -321,7 +322,7 @@ function conditionReport(value: unknown, index: number): AbConditionReport | und
   }
 }
 
-function scenarioReport(value: unknown, filePath: string): AbScenarioReport | undefined {
+function scenarioReport(projectDir: string, value: unknown, filePath: string): AbScenarioReport | undefined {
   if (!isRecord(value) || value.schemaVersion !== AB_SCHEMA_VERSION) {
     return undefined
   }
@@ -336,7 +337,7 @@ function scenarioReport(value: unknown, filePath: string): AbScenarioReport | un
   const surfaceId = stringValue(surface?.id) ?? stringValue(value.surfaceId) ?? id
   return {
     conditions,
-    files: [filePath],
+    files: [publicEvidencePath(projectDir, filePath)],
     id,
     label: stringValue(value.scenarioLabel) ?? id,
     sources: [stringValue(value.source) ?? "unknown"],
@@ -396,7 +397,7 @@ export function readEvidenceAbReport(options: EvidenceAbOptions = {}): EvidenceA
     filesScanned += 1
     try {
       for (const parsed of objectsFromEvidenceFile(filePath)) {
-        const scenario = scenarioReport(parsed, filePath)
+        const scenario = scenarioReport(projectDir, parsed, filePath)
         if (scenario === undefined) {
           continue
         }
@@ -404,7 +405,7 @@ export function readEvidenceAbReport(options: EvidenceAbOptions = {}): EvidenceA
         scenarios.set(scenario.id, current === undefined ? scenario : mergeScenario(current, scenario))
       }
     } catch {
-      unreadableFiles.push(filePath)
+      unreadableFiles.push(publicEvidencePath(projectDir, filePath))
     }
   }
 
@@ -417,7 +418,7 @@ export function readEvidenceAbReport(options: EvidenceAbOptions = {}): EvidenceA
       "Provider-token, read-char, tool-call, and outcome deltas are not token-saving or product-efficacy claims.",
       "Use repeated matched scenarios before interpreting a condition as better or worse.",
     ],
-    projectDir,
+    projectDir: publicProjectRoot(),
     scenarios: Array.from(scenarios.values()).sort((left, right) => left.id.localeCompare(right.id)),
     schemaVersion: "evidence-ab-report.1",
     unreadableFiles,
