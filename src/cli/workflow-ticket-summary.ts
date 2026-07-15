@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { BACKLOG_PATH, HISTORY_DIR, parseBacklogState, TASK_CARD_NAME, type BacklogTicket, WORK_DIR } from "./workflow-ticket-model.js"
+import { safeArtifactReference, safeWorkflowCode, safeWorkflowTitle } from "./workflow-safe-rendering.js"
 
 export type WorkflowPendingTicket = {
   readonly ticket: string
@@ -114,12 +115,12 @@ export function formatPendingWorkflowTicketStatusLines(tickets: readonly Workflo
     TICKET_BY_TICKET_GUIDANCE,
     TIMEBOXED_SCOPE_GUIDANCE,
     ...tickets.flatMap((ticket) => [
-      `  Ticket: ${ticket.ticket}`,
-      `  Title: ${ticket.title}`,
-      `  Path: ${ticket.path}`,
-      ...pendingTicketStateLines(ticket.ticket, ticket.archiveState),
+      `  Ticket: ${safeWorkflowCode(ticket.ticket, "invalid-ticket-code")}`,
+      `  Title: ${safeWorkflowTitle(ticket.title)}`,
+      `  Path: ${safeArtifactReference(ticket.path) ?? ".persona/workflow/work"}`,
+      ...pendingTicketStateLines(safeWorkflowCode(ticket.ticket, "invalid-ticket-code"), ticket.archiveState),
       "  Next command: `npx ph workflow next` or `npx ph workflow continue`",
-      `  If ${archiveCandidateLabel(ticket.ticket)} is actually complete after review: \`npx ph workflow archive ${ticket.ticket}\``,
+      `  If ${archiveCandidateLabel(safeWorkflowCode(ticket.ticket, "invalid-ticket-code"))} is actually complete after review: \`npx ph workflow archive ${safeWorkflowCode(ticket.ticket, "invalid-ticket-code")}\``,
       "  Archive is a candidate action only; do not auto-archive.",
       ...(ticket.reviewArchiveCandidate
         ? ["  Note: technical constraints review/archive candidate; do not auto-archive."]

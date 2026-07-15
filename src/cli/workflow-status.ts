@@ -445,7 +445,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     "Persona Harness Workflow Check",
     "",
     `Workflow status: ${summary.finding}`,
-    `Project: ${summary.projectDir}`,
+    "Project: current workspace",
     "",
     "Artifacts:",
     `- .persona/workflow/plan.md: ${summary.plan}`,
