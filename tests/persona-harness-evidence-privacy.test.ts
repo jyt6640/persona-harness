@@ -21,7 +21,8 @@ import {
 import { loadHarnessConfig } from "../src/config/harness-config.js"
 import { supportsPosixFileModes } from "../src/io/atomic-file.js"
 import { writeBearshellExecutionEvidence } from "../src/runtime/execution-evidence.js"
-import { writeIntentEvidence } from "../src/runtime/evidence.js"
+import { sanitizeEvidenceValue } from "../src/runtime/evidence-redaction.js"
+import { writeIntentEvidence, writeRailComplianceEvidence } from "../src/runtime/evidence.js"
 
 const projects: string[] = []
 
@@ -236,5 +237,81 @@ describe("local evidence privacy", () => {
     expect(statSync(evidenceRoot).mode & 0o777).toBe(0o700)
     expect(statSync(evidenceDir).mode & 0o777).toBe(0o700)
     expect(statSync(path).mode & 0o777).toBe(0o600)
+  })
+
+  it("recursively sanitizes valid bounded JSON-shaped evidence strings", () => {
+    const projectDir = createProject()
+    const source = JSON.stringify({
+      nested: [
+        { password: "escaped-placeholder" },
+        { apiKey: "sk-live-bounded-json-marker" },
+        { path: `${projectDir}/contained.json` },
+        { sentinel: "[REDACTED]-/external/bounded.json" },
+      ],
+    }).replace(
+      '"password":"escaped-placeholder"',
+      '"password":"\\u0070\\u0061\\u0073\\u0073\\u0077\\u006f\\u0072\\u0064\\u002d\\u006d\\u0061\\u0072\\u006b\\u0065\\u0072"',
+    )
+
+    const sanitized = sanitizeEvidenceValue(source)
+    expect(typeof sanitized).toBe("string")
+    if (typeof sanitized !== "string") {
+      throw new Error("expected sanitized JSON string")
+    }
+    expect(sanitized).not.toContain("sk-live-bounded-json-marker")
+    expect(sanitized).not.toContain("password-marker")
+    expect(sanitized).not.toContain(projectDir)
+    expect(sanitized).not.toContain("/external/bounded.json")
+    expect(JSON.parse(sanitized)).toMatchObject({
+      nested: [
+        { password: "[REDACTED]" },
+        { apiKey: "[REDACTED]" },
+        { path: "[REDACTED_PATH]" },
+        { sentinel: "[REDACTED_PATH]" },
+      ],
+    })
+  })
+
+  it("fails closed for malformed and out-of-budget JSON-shaped strings", () => {
+    const cases = [
+      '{"password":"malformed-password-marker"',
+      JSON.stringify({ password: "oversized-password-marker", padding: "x".repeat(20_000) }),
+      JSON.stringify({ password: "deep-password-marker", nested: { nested: { nested: { nested: { nested: { nested: { nested: { nested: { nested: { nested: { nested: { nested: {} } } } } } } } } } } } }),
+      JSON.stringify(Array.from({ length: 513 }, (_, index) => ({ id: `node-${index}`, token: "sk-live-node-marker" }))),
+    ]
+
+    for (const source of cases) {
+      expect(sanitizeEvidenceValue(source)).toBe("[REDACTED_JSON]")
+    }
+  })
+
+  it("fails closed for out-of-budget JSON-shaped rail-compliance messages", () => {
+    const projectDir = createProject()
+    const message = JSON.stringify({
+      password: "rail-oversized-password-marker",
+      padding: "x".repeat(20_000),
+    })
+
+    writeRailComplianceEvidence(projectDir, {
+      hook: "tool.execute.after",
+      sessionID: "bounded-session",
+      callID: "bounded-call",
+      userPrompt: "safe prompt",
+      primaryIntent: "debug",
+      secondaryIntents: [],
+      railMarker: "[Persona Harness Debug Workflow]",
+      finding: "WARN",
+      confidence: "HIGH",
+      code: "debug-rail-edit-without-reproduction",
+      message,
+      observedAction: "safe action",
+      expectedAction: "safe expected action",
+    })
+
+    const files = evidenceFiles(projectDir)
+    expect(files).toHaveLength(1)
+    const payload = JSON.parse(readFileSync(files[0] ?? "", "utf8")) as Record<string, unknown>
+    expect(payload.message).toBe("[REDACTED_JSON]")
+    expect(JSON.stringify(payload)).not.toContain("rail-oversized-password-marker")
   })
 })
