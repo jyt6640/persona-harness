@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { writeFileAtomic } from "../src/io/atomic-file.js"
 import { formatRuntimeWarning } from "../src/runtime/error-boundary.js"
+import { writePrivateEvidenceJson } from "../src/runtime/evidence-file.js"
 import { appendRoleBoundaryObservation, readRoleBoundaryHeuristicFindings } from "../src/runtime/role-boundary-evidence.js"
 import { writeBearshellExecutionEvidence } from "../src/runtime/execution-evidence.js"
 
@@ -106,5 +107,43 @@ describe("evidence absolute path privacy", () => {
     expect(warning).not.toContain(projectDir)
     expect(warning).not.toContain(externalDir)
     expect(warning).toContain("[REDACTED_PATH]")
+  })
+
+  it("recursively sanitizes role metadata after secret masking and path-shaped prefixes", () => {
+    const projectDir = createProject()
+    const externalDir = mkdtempSync(join(tmpdir(), "persona-evidence-external-"))
+    projects.push(externalDir)
+    const token = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+    const projectPath = join(projectDir, "src", "main", "java", "App.java")
+    const externalPath = join(externalDir, "nested-external-marker.txt")
+    const windowsPath = "C:\\Users\\runner\\external-windows-marker.txt"
+    const uncPath = "\\\\server\\share\\external-unc-marker.txt"
+
+    appendRoleBoundaryObservation(projectDir, {
+      callID: `${token}-${externalPath}`,
+      currentTicketId: `${token}-${projectPath}`,
+      path: projectPath,
+      policy: `${token}-${externalPath}`,
+      role: "implementer",
+      sessionID: "session-recursive-path-privacy",
+    })
+    const nestedPath = join(projectDir, ".persona", "evidence", "nested", "metadata.json")
+    writePrivateEvidenceJson(join(projectDir, ".persona", "evidence"), nestedPath, {
+      nested: {
+        arrays: [`${token}-${externalPath}`, [projectPath, windowsPath, uncPath]],
+        currentTicketId: `${token}-${projectPath}`,
+      },
+    }, { projectDir })
+
+    const roleSource = readFileSync(evidenceFiles(projectDir, "role-boundary")[0] ?? "", "utf8")
+    const nestedSource = readFileSync(nestedPath, "utf8")
+    const source = `${roleSource}\n${nestedSource}`
+    expect(source).not.toContain(token)
+    expect(source).not.toContain(projectDir)
+    expect(source).not.toContain(externalDir)
+    expect(source).not.toContain(windowsPath)
+    expect(source).not.toContain(uncPath)
+    expect(source).toContain("src/main/java/App.java")
+    expect(source).toContain("[REDACTED_PATH]")
   })
 })
