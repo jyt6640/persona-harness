@@ -6,6 +6,7 @@ import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/
 import { personaHarnessVersion } from "./version.js"
 import { sha256 } from "./ci-reverification-catalog.js"
 import type { CiReverificationArtifact } from "./ci-reverification-artifact.js"
+import { parseSourceIdentity, type SourceIdentity } from "./source-identity.js"
 import {
   parseVerificationAttempt,
   parseVerificationReceipt,
@@ -25,6 +26,7 @@ export type FreshArtifactBinding = {
   readonly issuedAt: string
   readonly phVersion: string
   readonly sourceHead: string
+  readonly sourceIdentity: SourceIdentity
   readonly workspaceIdentity: VerificationWorkspaceIdentity
 }
 
@@ -45,6 +47,7 @@ export function buildFreshArtifactBinding(
   const workspaceRoot = recordValue(mutation.workspaceRoot)
   const rootPre = workspaceRoot === undefined ? undefined : recordValue(workspaceRoot.pre)
   const sourceHead = stringValue(git?.preHead)
+  const sourceIdentity = parseSourceIdentity(recordValue(mutation.sourceIdentity)?.pre)
   const dirtyWorktreeDigest = stringValue(pre?.normalizedPorcelainNameStatusNulSha256)
   const realpath = stringValue(rootPre?.realpath)
   const device = stringValue(rootPre?.dev)
@@ -58,6 +61,8 @@ export function buildFreshArtifactBinding(
     || realpath === undefined
     || device === undefined
     || inode === undefined
+    || sourceIdentity === undefined
+    || sourceIdentity.repositoryHead !== sourceHead?.toLowerCase()
     || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(phVersion)
   ) {
     return undefined
@@ -73,6 +78,7 @@ export function buildFreshArtifactBinding(
     issuedAt: new Date(now()).toISOString(),
     phVersion,
     sourceHead: sourceHead.toLowerCase(),
+    sourceIdentity,
     workspaceIdentity: {
       deviceIdentity: `${device}:${inode}`,
       platform: platformName(process.platform),
@@ -100,6 +106,7 @@ export function writeFreshLifecycleRecords(
     finishId,
     sessionId,
     status,
+    sourceIdentity: binding.sourceIdentity,
     testCount,
   })
   const attempt = buildAttempt(binding, finishId, provenanceDigest, sessionId, status, receiptId)
@@ -134,6 +141,7 @@ function buildAttempt(
     schemaVersion: "verification-attempt.1",
     sessionId,
     sourceHead: binding.sourceHead,
+    sourceIdentity: binding.sourceIdentity,
     startedAt: binding.issuedAt,
     status: completed ? "completed" : "failed",
     workspaceIdentity: binding.workspaceIdentity,
@@ -165,6 +173,7 @@ function buildReceipt(
     schemaVersion: "verification-receipt.1",
     sessionId,
     sourceHead: binding.sourceHead,
+    sourceIdentity: binding.sourceIdentity,
     workspaceIdentity: binding.workspaceIdentity,
   }
 }
