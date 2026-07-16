@@ -28,47 +28,52 @@ function validInput(
     plan: {
       canonicalMainHead: SOURCE_SHA,
       packageName: "persona-harness",
-      packageVersion: "1.2.3",
-      promotionTarget: "latest",
+      packageVersion: "1.2.3-rc.1",
+      promotionTarget: "next",
       schemaVersion: "staged-package-plan.1",
       sourceHead: SOURCE_SHA,
-      sourceTag: "v1.2.3",
-      stagedTag: "next",
+      sourceTag: "v1.2.3-rc.1",
+      stagedTag: "staging",
     },
     preflight: {
       exactVersion: "absent",
       outputDigest: AUDIT_DIGEST,
       packageName: "persona-harness",
       schemaVersion: "staged-package-preflight.1",
-      version: "1.2.3",
-    },
-    provenance: {
-      method: "npm-audit-signatures",
-      outputDigest: AUDIT_DIGEST,
-      status: "verified",
+      version: "1.2.3-rc.1",
     },
     registry: {
-      distTags: { latest: "1.2.2", next: "1.2.3" },
+      distTags: { staging: "1.2.3-rc.1" },
       gitHead: SOURCE_SHA,
       integrity: TARBALL_INTEGRITY,
       packageName: "persona-harness",
       schemaVersion: "staged-package-registry-facts.1",
       shasum: TARBALL_SHA1,
-      version: "1.2.3",
+      version: "1.2.3-rc.1",
     },
     tarball: {
       integrity: TARBALL_INTEGRITY,
       packageName: "persona-harness",
       sha1: TARBALL_SHA1,
       sha256: TARBALL_SHA256,
-      version: "1.2.3",
+      version: "1.2.3-rc.1",
     },
     ...overrides,
   }
 }
 
 describe("staged package verification assessment", () => {
-  it("verifies matching staged facts while requiring a separate release approval", () => {
+  it("blocks caller-coordinated local facts without artifact provenance", () => {
+    const result = assessStagedPackageVerification(validInput())
+
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toContain("artifact-provenance-unavailable")
+    expect(result.promotionAuthorized).toBe(false)
+    expect(result.promotionDecision).toBe("release-approval-required")
+    expect(result.registryMutation).toBe("not-performed")
+  })
+
+  it("keeps matched local staged facts blocked until artifact provenance exists", () => {
     const result = assessStagedPackageVerification(validInput())
 
     expect(result).toMatchObject({
@@ -77,9 +82,32 @@ describe("staged package verification assessment", () => {
       promotionAuthorized: false,
       promotionDecision: "release-approval-required",
       registryMutation: "not-performed",
-      verificationStatus: "verified",
+      verificationStatus: "blocked",
     })
-    expect(result.diagnostics).toEqual([])
+    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable"])
+    expect(result.provenance.artifactBinding.status).toBe("unavailable")
+    expect(JSON.stringify(result)).not.toContain("npm-audit-signatures")
+  })
+
+  it("keeps a fixed next prerelease route blocked until artifact provenance exists", () => {
+    const input = validInput({
+      plan: {
+        ...validInput().plan,
+        stagedTag: "next",
+      },
+      registry: {
+        ...validInput().registry,
+        distTags: { next: "1.2.3-rc.1" },
+      },
+    })
+
+    const result = assessStagedPackageVerification(input)
+
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable"])
+    expect(result.promotionAuthorized).toBe(false)
+    expect(result.promotionDecision).toBe("release-approval-required")
+    expect(result.registryMutation).toBe("not-performed")
   })
 
   it.each([
@@ -101,11 +129,62 @@ describe("staged package verification assessment", () => {
     [
       "a non-staged channel",
       { plan: { ...validInput().plan, stagedTag: "latest" } },
-      "staged-tag-invalid",
+      "staged-plan-invalid",
+    ],
+    [
+      "an unknown staged channel",
+      { plan: { ...validInput().plan, stagedTag: "preview" } },
+      "staged-plan-invalid",
+    ],
+    [
+      "a malformed staged channel",
+      { plan: { ...validInput().plan, stagedTag: "staging\nnext" } },
+      "staged-plan-invalid",
+    ],
+    [
+      "a latest promotion target",
+      { plan: { ...validInput().plan, promotionTarget: "latest" } },
+      "staged-plan-invalid",
+    ],
+    [
+      "a stable package selected for the prerelease route",
+      {
+        plan: {
+          ...validInput().plan,
+          packageVersion: "1.2.3",
+          sourceTag: "v1.2.3",
+        },
+        preflight: { ...validInput().preflight, version: "1.2.3" },
+        registry: {
+          ...validInput().registry,
+          distTags: { staging: "1.2.3" },
+          version: "1.2.3",
+        },
+        tarball: { ...validInput().tarball, version: "1.2.3" },
+      },
+      "staged-plan-invalid",
+    ],
+    [
+      "a stable package with hyphenated build metadata",
+      {
+        plan: {
+          ...validInput().plan,
+          packageVersion: "1.2.3+build-alpha",
+          sourceTag: "v1.2.3+build-alpha",
+        },
+        preflight: { ...validInput().preflight, version: "1.2.3+build-alpha" },
+        registry: {
+          ...validInput().registry,
+          distTags: { staging: "1.2.3+build-alpha" },
+          version: "1.2.3+build-alpha",
+        },
+        tarball: { ...validInput().tarball, version: "1.2.3+build-alpha" },
+      },
+      "staged-plan-invalid",
     ],
     [
       "a staged tag that resolves elsewhere",
-      { registry: { ...validInput().registry, distTags: { latest: "1.2.2", next: "1.2.2" } } },
+      { registry: { ...validInput().registry, distTags: { staging: "1.2.2" } } },
       "staged-dist-tag-mismatch",
     ],
     [
@@ -113,7 +192,7 @@ describe("staged package verification assessment", () => {
       {
         registry: {
           ...validInput().registry,
-          distTags: { latest: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa", next: "1.2.3" },
+          distTags: { staging: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa" },
         },
       },
       "registry-facts-invalid",
@@ -132,11 +211,6 @@ describe("staged package verification assessment", () => {
       "a tarball integrity mismatch",
       { registry: { ...validInput().registry, integrity: `sha512-${"f".repeat(86)}` } },
       "registry-integrity-mismatch",
-    ],
-    [
-      "unverified provenance",
-      { provenance: { ...validInput().provenance, status: "unverified" } },
-      "provenance-unverified",
     ],
     [
       "a failed installed package surface",

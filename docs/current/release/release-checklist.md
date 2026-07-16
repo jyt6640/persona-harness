@@ -5,7 +5,9 @@ Use this checklist before every npm release.
 ## 1. Scope
 
 - Confirm the release version and dist-tag.
-- Confirm whether the release is `alpha`, `beta`, or `latest`.
+- Confirm whether the release is an initial prerelease `staging` publish, a
+  separately approved `next` promotion, or a separately approved `latest`
+  Stable/GA release.
 - Confirm the supported product surface.
 - Confirm unsupported surfaces are still documented.
 - Confirm no generated evidence, experiments, or local fixtures are included in package contents.
@@ -82,10 +84,13 @@ npm publish --dry-run --tag <dist-tag>
 
 Use this order for prerelease refreshes:
 
-1. Publish through `.github/workflows/publish.yml` after QA release GO.
+1. Publish through `.github/workflows/publish.yml` with
+   `dist_tag=staging` and `approval_scope=staging-only` after QA release GO.
 2. Verify the registry package with `npm view persona-harness@<version> version gitHead dist.shasum --json`.
 3. Verify dist-tags with `npm dist-tag ls persona-harness`.
 4. Push `main` and the matching `v${package.json.version}` tag only after registry verification succeeds.
+5. Complete the staged installed-package gate before any separately approved
+   `next` promotion dispatch.
 
 Tag pushes are verification/GitHub-release events only. They must not be used as the npm publish trigger, because npm publish happens through the trusted publishing workflow and must be verified before tag creation.
 
@@ -146,16 +151,22 @@ Use the GitHub Actions workflow:
 
 Inputs:
 
-- `dist_tag=next` for prerelease candidates.
-- `dist_tag=latest` for stable releases.
+- `dist_tag=staging` with `approval_scope=staging-only` for an initial
+  prerelease staging publish.
+- `dist_tag=next` with `approval_scope=next-promotion-approved` only after
+  the staged package has passed its separate promotion gate.
+- `dist_tag=latest` with `approval_scope=ga-approved` for a separately
+  approved stable/GA release.
 
 ### GitHub Actions trusted publishing path
 
 The `.github/workflows/publish.yml` workflow publishes the current ref with
 trusted publishing.
 
-- prerelease versions can publish only with dist-tag `next`.
-- stable versions can publish only with dist-tag `latest`.
+- prerelease versions can publish only with `staging` or separately approved
+  `next`.
+- stable versions can publish only with separately approved `latest`.
+- the approval scope must match the fixed selected channel.
 - after publish, the workflow verifies registry `gitHead`, `dist.shasum`, and
   dist-tag state.
 

@@ -11,6 +11,8 @@ export const INSTALLED_CHECKS = [
 
 export type InstalledCheck = (typeof INSTALLED_CHECKS)[number]
 export type JsonRecord = Readonly<Record<string, unknown>>
+export const STAGED_PACKAGE_TAGS = ["staging", "next"] as const
+export type StagedPackageTag = (typeof STAGED_PACKAGE_TAGS)[number]
 
 export type VerifiedInstalled = {
   readonly authorityBlocked: boolean
@@ -27,10 +29,10 @@ export type VerifiedPlan = {
   readonly canonicalMainHead: string
   readonly packageName: "persona-harness"
   readonly packageVersion: string
-  readonly promotionTarget: "latest"
+  readonly promotionTarget: "next"
   readonly sourceHead: string
   readonly sourceTag: string
-  readonly stagedTag: "latest" | "next"
+  readonly stagedTag: StagedPackageTag
 }
 
 export type VerifiedPreflight = {
@@ -41,14 +43,12 @@ export type VerifiedPreflight = {
 }
 
 export type VerifiedRegistry = {
-  readonly distTags: {
-    readonly latest: string
-    readonly next: string
-  }
   readonly gitHead: string
   readonly integrity: string
   readonly packageName: "persona-harness"
   readonly shasum: string
+  readonly stagedTag: StagedPackageTag
+  readonly stagedVersion: string
   readonly version: string
 }
 
@@ -60,18 +60,11 @@ export type VerifiedTarball = {
   readonly version: string
 }
 
-export type VerifiedProvenance = {
-  readonly method: "npm-audit-signatures"
-  readonly outputDigest: string
-  readonly status: "unverified" | "verified"
-}
-
 export type StagedPackageVerificationAssessment = {
   readonly diagnostics: readonly string[]
   readonly installed: VerifiedInstalled | undefined
   readonly plan: VerifiedPlan | undefined
   readonly preflight: VerifiedPreflight | undefined
-  readonly provenance: VerifiedProvenance | undefined
   readonly registry: VerifiedRegistry | undefined
   readonly tarball: VerifiedTarball | undefined
 }
@@ -94,11 +87,6 @@ export type StagedPackageVerificationInput = {
     readonly packageName: string
     readonly schemaVersion: string
     readonly version: string
-  }
-  readonly provenance: {
-    readonly method: string
-    readonly outputDigest: string
-    readonly status: string
   }
   readonly registry: {
     readonly distTags: Readonly<Record<string, string>>
@@ -126,10 +114,8 @@ export type StagedPackageVerificationResult = {
   readonly promotionAuthorized: false
   readonly promotionDecision: "blocked" | "release-approval-required"
   readonly provenance: {
-    readonly auditSignatures: {
-      readonly method: "npm-audit-signatures" | "unavailable"
-      readonly outputDigest: string
-      readonly status: "unavailable" | "verified"
+    readonly artifactBinding: {
+      readonly status: "unavailable"
     }
     readonly registry: {
       readonly gitHead: string

@@ -2,8 +2,15 @@ import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 
 const CANONICAL_MAIN_REF = "refs/heads/main"
-const VALID_DIST_TAGS = new Set(["latest", "next"])
+const MAX_SEMVER_LENGTH = 256
+const VALID_DIST_TAGS = new Set(["staging", "next", "latest"])
+const REQUIRED_APPROVAL_SCOPES = {
+  staging: "staging-only",
+  next: "next-promotion-approved",
+  latest: "ga-approved",
+}
 const VALID_RELEASE_TARGETS = new Set(["main", "refs/heads/main"])
+const STRICT_SEMVER = /^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?:-(?<prerelease>(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+(?<build>[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/u
 
 function success(extra = {}) {
   return { ok: true, ...extra }
@@ -40,18 +47,42 @@ export function checkTagSource({ canonicalMainSha, isAncestor, packageVersion, s
   return success()
 }
 
-export function checkDistTagCompatibility({ distTag, version }) {
-  if (!VALID_DIST_TAGS.has(distTag)) {
-    return failure("dist-tag-unsupported", `Unsupported npm dist-tag ${distTag}; expected latest or next.`)
+export function checkDistTagCompatibility({ approvalScope, distTag, version }) {
+  const semver = parseStrictSemver(version)
+  if (semver === undefined) {
+    return failure("version-semver", "Package version must be bounded strict SemVer.")
   }
-  const prerelease = version.includes("-")
-  if (distTag === "latest" && prerelease) {
+  if (!VALID_DIST_TAGS.has(distTag)) {
+    return failure("dist-tag-unsupported", `Unsupported npm dist-tag ${distTag}; expected staging, next, or latest.`)
+  }
+  const requiredApprovalScope = REQUIRED_APPROVAL_SCOPES[distTag]
+  if (approvalScope !== requiredApprovalScope) {
+    return failure(
+      `dist-tag-${distTag}-approval`,
+      `Dist-tag ${distTag} requires approval scope ${requiredApprovalScope}.`,
+    )
+  }
+  if (distTag === "staging" && !semver.prerelease) {
+    return failure("dist-tag-staging-stable", `Stable version ${version} cannot use staging.`)
+  }
+  if (distTag === "latest" && semver.prerelease) {
     return failure("dist-tag-prerelease-latest", `Prerelease version ${version} cannot use latest.`)
   }
-  if (distTag === "next" && !prerelease) {
+  if (distTag === "next" && !semver.prerelease) {
     return failure("dist-tag-stable-next", `Stable version ${version} cannot use next.`)
   }
   return success()
+}
+
+function parseStrictSemver(value) {
+  if (typeof value !== "string" || value.length === 0 || value.length > MAX_SEMVER_LENGTH) {
+    return undefined
+  }
+  const match = STRICT_SEMVER.exec(value)
+  if (match === null || match[0] !== value) {
+    return undefined
+  }
+  return { prerelease: match.groups?.["prerelease"] !== undefined }
 }
 
 export function checkRegistryMetadata({ distTag, distTagsText, expectedHead, expectedVersion, metadata }) {
@@ -163,6 +194,7 @@ async function main() {
   }
   if (command === "dist-tag") {
     printResult(checkDistTagCompatibility({
+      approvalScope: requiredArg("--approval-scope"),
       distTag: requiredArg("--dist-tag"),
       version: requiredArg("--version"),
     }))

@@ -2,11 +2,11 @@ import {
   INSTALLED_CHECKS,
   type InstalledCheck,
   type JsonRecord,
+  type StagedPackageTag,
   type StagedPackageVerificationAssessment,
   type VerifiedInstalled,
   type VerifiedPlan,
   type VerifiedPreflight,
-  type VerifiedProvenance,
   type VerifiedRegistry,
   type VerifiedTarball,
 } from "./staged-package-verification-types.js"
@@ -58,6 +58,15 @@ function safeSourceTag(value: unknown): string | undefined {
     : undefined
 }
 
+function safeStagedTag(value: unknown): StagedPackageTag | undefined {
+  return value === "staging" || value === "next" ? value : undefined
+}
+
+function isPrereleaseVersion(value: string): boolean {
+  const buildMetadataIndex = value.indexOf("+")
+  return (buildMetadataIndex === -1 ? value : value.slice(0, buildMetadataIndex)).includes("-")
+}
+
 function safePlan(value: unknown): VerifiedPlan | undefined {
   if (!isRecord(value) || value["schemaVersion"] !== "staged-package-plan.1") return undefined
   const canonicalMainHead = safeSha(value["canonicalMainHead"])
@@ -65,19 +74,20 @@ function safePlan(value: unknown): VerifiedPlan | undefined {
   const packageVersion = safeVersion(value["packageVersion"])
   const sourceHead = safeSha(value["sourceHead"])
   const sourceTag = safeSourceTag(value["sourceTag"])
-  const stagedTag = value["stagedTag"] === "latest" || value["stagedTag"] === "next" ? value["stagedTag"] : undefined
+  const stagedTag = safeStagedTag(value["stagedTag"])
   if (
     canonicalMainHead === undefined
     || packageName === undefined
     || packageVersion === undefined
-    || value["promotionTarget"] !== "latest"
+    || !isPrereleaseVersion(packageVersion)
+    || value["promotionTarget"] !== "next"
     || sourceHead === undefined
     || sourceTag === undefined
     || stagedTag === undefined
   ) {
     return undefined
   }
-  return { canonicalMainHead, packageName, packageVersion, promotionTarget: "latest", sourceHead, sourceTag, stagedTag }
+  return { canonicalMainHead, packageName, packageVersion, promotionTarget: "next", sourceHead, sourceTag, stagedTag }
 }
 
 function safePreflight(value: unknown): VerifiedPreflight | undefined {
@@ -93,26 +103,25 @@ function safePreflight(value: unknown): VerifiedPreflight | undefined {
     : { exactVersion, outputDigest, packageName, version }
 }
 
-function safeRegistry(value: unknown): VerifiedRegistry | undefined {
+function safeRegistry(value: unknown, stagedTag: StagedPackageTag | undefined): VerifiedRegistry | undefined {
   if (!isRecord(value) || value["schemaVersion"] !== "staged-package-registry-facts.1" || !isRecord(value["distTags"])) {
     return undefined
   }
+  if (stagedTag === undefined) return undefined
   const packageName = safePackageName(value["packageName"])
   const version = safeVersion(value["version"])
   const gitHead = safeSha(value["gitHead"])
   const shasum = safeSha(value["shasum"])
   const integrity = safeIntegrity(value["integrity"])
-  const latest = safeVersion(value["distTags"]["latest"])
-  const next = safeVersion(value["distTags"]["next"])
+  const stagedVersion = safeVersion(value["distTags"][stagedTag])
   return packageName === undefined
     || version === undefined
     || gitHead === undefined
     || shasum === undefined
     || integrity === undefined
-    || latest === undefined
-    || next === undefined
+    || stagedVersion === undefined
     ? undefined
-    : { distTags: { latest, next }, gitHead, integrity, packageName, shasum, version }
+    : { gitHead, integrity, packageName, shasum, stagedTag, stagedVersion, version }
 }
 
 function safeTarball(value: unknown): VerifiedTarball | undefined {
@@ -125,15 +134,6 @@ function safeTarball(value: unknown): VerifiedTarball | undefined {
   return packageName === undefined || version === undefined || sha1 === undefined || sha256 === undefined || integrity === undefined
     ? undefined
     : { integrity, packageName, sha1, sha256: sha256.slice("sha256:".length), version }
-}
-
-function safeProvenance(value: unknown): VerifiedProvenance | undefined {
-  if (!isRecord(value)) return undefined
-  const outputDigest = safeDigest(value["outputDigest"])
-  const status = value["status"] === "unverified" || value["status"] === "verified" ? value["status"] : undefined
-  return value["method"] !== "npm-audit-signatures" || outputDigest === undefined || status === undefined
-    ? undefined
-    : { method: "npm-audit-signatures", outputDigest, status }
 }
 
 function safeInstalled(value: unknown): VerifiedInstalled | undefined {
@@ -192,9 +192,8 @@ export function assessStagedPackageVerificationInput(input: unknown): StagedPack
   const source = isRecord(input) ? input : {}
   const plan = safePlan(source["plan"])
   const preflight = safePreflight(source["preflight"])
-  const registry = safeRegistry(source["registry"])
+  const registry = safeRegistry(source["registry"], plan?.stagedTag)
   const tarball = safeTarball(source["tarball"])
-  const provenance = safeProvenance(source["provenance"])
   const installed = safeInstalled(source["installed"])
   const diagnostics = new Set<string>()
 
@@ -202,13 +201,12 @@ export function assessStagedPackageVerificationInput(input: unknown): StagedPack
   if (preflight === undefined) diagnostics.add("existing-version-preflight-invalid")
   if (registry === undefined) diagnostics.add("registry-facts-invalid")
   if (tarball === undefined) diagnostics.add("tarball-provenance-invalid")
-  if (provenance === undefined || provenance.status !== "verified") diagnostics.add("provenance-unverified")
+  diagnostics.add("artifact-provenance-unavailable")
   if (installed === undefined) diagnostics.add("installed-black-box-invalid")
 
   if (plan !== undefined) {
     if (plan.sourceHead !== plan.canonicalMainHead) diagnostics.add("source-main-mismatch")
     if (plan.sourceTag !== `v${plan.packageVersion}`) diagnostics.add("source-tag-version-mismatch")
-    if (plan.stagedTag !== "next") diagnostics.add("staged-tag-invalid")
   }
   if (plan !== undefined && preflight !== undefined) {
     if (preflight.packageName !== plan.packageName || preflight.version !== plan.packageVersion) {
@@ -221,7 +219,9 @@ export function assessStagedPackageVerificationInput(input: unknown): StagedPack
       diagnostics.add("registry-package-mismatch")
     }
     if (registry.gitHead !== plan.sourceHead) diagnostics.add("registry-git-head-mismatch")
-    if (registry.distTags.next !== plan.packageVersion) diagnostics.add("staged-dist-tag-mismatch")
+    if (registry.stagedTag !== plan.stagedTag || registry.stagedVersion !== plan.packageVersion) {
+      diagnostics.add("staged-dist-tag-mismatch")
+    }
   }
   if (tarball !== undefined && registry !== undefined) {
     if (tarball.packageName !== registry.packageName || tarball.version !== registry.version) {
@@ -241,7 +241,6 @@ export function assessStagedPackageVerificationInput(input: unknown): StagedPack
     installed,
     plan,
     preflight,
-    provenance,
     registry,
     tarball,
   }

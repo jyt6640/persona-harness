@@ -65,18 +65,40 @@ describe("release workflow policy", () => {
   })
 
   it.each([
-    ["prerelease next", "0.7.0-rc.1", "next"],
-    ["stable latest", "0.7.0", "latest"],
-  ])("accepts %s", (_label, version, distTag) => {
-    expect(checkDistTagCompatibility({ distTag, version })).toEqual({ ok: true })
+    ["prerelease staging", "0.7.0-rc.1", "staging", "staging-only"],
+    ["prerelease staging with build metadata", "1.2.3-rc.1+build.5", "staging", "staging-only"],
+    ["prerelease next after promotion approval", "0.7.0-rc.1", "next", "next-promotion-approved"],
+    ["stable latest after GA approval", "0.7.0", "latest", "ga-approved"],
+    ["stable latest with build metadata", "1.2.3+build.5", "latest", "ga-approved"],
+  ])("accepts %s", (_label, version, distTag, approvalScope) => {
+    expect(checkDistTagCompatibility({ approvalScope, distTag, version })).toEqual({ ok: true })
   })
 
   it.each([
-    ["prerelease latest", "0.7.0-rc.1", "latest"],
-    ["stable next", "0.7.0", "next"],
-    ["unsupported tag", "0.7.0", "beta"],
-  ])("rejects %s", (_label, version, distTag) => {
-    expect(checkDistTagCompatibility({ distTag, version })).toMatchObject({ ok: false })
+    ["prerelease latest", "0.7.0-rc.1", "latest", "ga-approved"],
+    ["stable next", "0.7.0", "next", "next-promotion-approved"],
+    ["stable staging", "0.7.0", "staging", "staging-only"],
+    ["next without a separate approval", "0.7.0-rc.1", "next", "staging-only"],
+    ["latest without a separate GA approval", "0.7.0", "latest", "next-promotion-approved"],
+    ["unsupported tag", "0.7.0", "beta", "staging-only"],
+  ])("rejects %s", (_label, version, distTag, approvalScope) => {
+    expect(checkDistTagCompatibility({ approvalScope, distTag, version })).toMatchObject({ ok: false })
+  })
+
+  it.each([
+    ["QA malformed prerelease", "not-semver-rc"],
+    ["partial version", "1.2"],
+    ["leading-zero major", "01.2.3"],
+    ["leading-zero prerelease number", "1.2.3-01"],
+    ["path-shaped build metadata", "1.2.3+../unsafe"],
+    ["control-character suffix", "1.2.3-rc.1\nunsafe"],
+    ["oversized build metadata", "1.2.3+" + "a".repeat(257)],
+  ])("rejects invalid strict SemVer before channel decisions: %s", (_label, version) => {
+    expect(checkDistTagCompatibility({
+      approvalScope: "staging-only",
+      distTag: "staging",
+      version,
+    })).toMatchObject({ code: "version-semver", ok: false })
   })
 
   it("requires registry version, gitHead, shasum, integrity, and dist-tag", () => {

@@ -45,7 +45,15 @@ workflow_dispatch
 
 Inputs:
 
-- `dist_tag`: `next` or `latest`.
+- `dist_tag`: one fixed channel only: `staging`, `next`, or `latest`.
+- `package.json` version: bounded strict SemVer; malformed, partial,
+  leading-zero, control-character, path-shaped, and oversized forms are
+  rejected before channel selection.
+- `approval_scope`: must match the selected channel:
+  - `staging` requires `staging-only` and accepts prerelease versions only;
+  - `next` requires `next-promotion-approved` and accepts prerelease versions
+    only; this is a separate later promotion dispatch after staging evidence;
+  - `latest` requires `ga-approved` and accepts stable versions only.
 
 The workflow verifies:
 
@@ -69,7 +77,8 @@ npm publish --access public --tag <dist_tag> --provenance
 The workflow refuses unsafe tag/version combinations:
 
 - prerelease versions cannot publish as `latest`;
-- stable versions cannot publish as `next`.
+- stable versions cannot publish as `staging` or `next`;
+- the selected approval scope cannot authorize a different channel.
 
 ## Registry Post-Check
 
@@ -109,11 +118,18 @@ and create GitHub release notes. It is not the npm publish path.
 1. Prepare the release commit.
 2. Push the release prep commit to `origin/main`.
 3. QA verifies release readiness.
-4. Run `.github/workflows/publish.yml` with `dist_tag=next` or `latest`.
-5. Confirm workflow registry post-check passed.
-6. Create and push the matching git tag.
-7. Run External registry smoke.
-8. Record post-publish docs.
+4. Run `.github/workflows/publish.yml` first with
+   `dist_tag=staging` and `approval_scope=staging-only`.
+5. Confirm the workflow registry post-check and the staged-package verifier
+   passed against that exact immutable version.
+6. Create and push the matching git tag only through the separately approved
+   tag/release sequence; the publish workflow never moves a tag itself.
+7. Run External registry smoke from a fresh exact-version install.
+8. Obtain a separate explicit approval and a new protected workflow dispatch
+   before moving the verified prerelease to `next`.
+9. Do not select `latest` unless the version is stable and a separate
+   Stable/GA decision approved `approval_scope=ga-approved`.
+10. Record post-publish docs.
 
 ## Boundaries
 

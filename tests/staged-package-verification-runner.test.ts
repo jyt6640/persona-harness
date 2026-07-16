@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
@@ -74,6 +74,26 @@ function packCurrentRepository(root: string): string {
   })
 }
 
+function repackTarball(root: string, tarballPath: string): string {
+  const extractionRoot = join(root, "repacked")
+  const repackedTarballPath = join(root, "repacked-persona-harness.tgz")
+  mkdirSync(extractionRoot)
+
+  const extract = spawnSync("tar", ["-xzf", tarballPath, "-C", extractionRoot], {
+    encoding: "utf8",
+    maxBuffer: 4 * 1024 * 1024,
+  })
+  expect(extract.status).toBe(0)
+  appendFileSync(join(extractionRoot, "package", "README.md"), "\nrepacked fixture\n")
+
+  const repack = spawnSync("tar", ["-czf", repackedTarballPath, "-C", extractionRoot, "package"], {
+    encoding: "utf8",
+    maxBuffer: 4 * 1024 * 1024,
+  })
+  expect(repack.status).toBe(0)
+  return repackedTarballPath
+}
+
 function writeFacts(root: string, tarballPath: string): StagedPackageVerificationOptions {
   const packageJson: unknown = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"))
   expect(typeof packageJson).toBe("object")
@@ -92,11 +112,11 @@ function writeFacts(root: string, tarballPath: string): StagedPackageVerificatio
     canonicalMainHead: SOURCE_SHA,
     packageName: "persona-harness",
     packageVersion,
-    promotionTarget: "latest",
+    promotionTarget: "next",
     schemaVersion: "staged-package-plan.1",
     sourceHead: SOURCE_SHA,
     sourceTag: `v${packageVersion}`,
-    stagedTag: "next",
+    stagedTag: "staging",
   })}\n`)
   writeFileSync(preflightPath, `${JSON.stringify({
     exactVersion: "absent",
@@ -106,7 +126,7 @@ function writeFacts(root: string, tarballPath: string): StagedPackageVerificatio
     version: packageVersion,
   })}\n`)
   writeFileSync(registryFactsPath, `${JSON.stringify({
-    distTags: { latest: "0.0.0", next: packageVersion },
+    distTags: { staging: packageVersion },
     gitHead: SOURCE_SHA,
     integrity,
     packageName: "persona-harness",
@@ -141,13 +161,14 @@ describe("staged package verification runner", () => {
     packedTarballPath = packCurrentRepository(createSuiteRoot())
   }, 60_000)
 
-  it("runs a fresh exact-version installed black-box while retaining a non-promoting result", { timeout: 60_000 }, () => {
+  it("runs a fresh exact-version installed black-box while requiring artifact provenance", { timeout: 60_000 }, () => {
     const root = createFixtureRoot()
     const options = writeFacts(root, packedTarballPath)
 
     const result = runStagedPackageVerification(options)
 
-    expect(result.verificationStatus).toBe("verified")
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toContain("artifact-provenance-unavailable")
     expect(result.promotionAuthorized).toBe(false)
     expect(result.promotionDecision).toBe("release-approval-required")
     expect(result.installed).toMatchObject({
@@ -162,7 +183,31 @@ describe("staged package verification runner", () => {
     })
   })
 
-  it("fails closed when the provenance verifier reports a bounded failure", () => {
+  it("blocks caller-coordinated facts for a same-name version repacked tarball", { timeout: 60_000 }, () => {
+    const root = createFixtureRoot()
+    const repackedTarballPath = repackTarball(root, packedTarballPath)
+    const options = writeFacts(root, repackedTarballPath)
+    let genericAuditCalls = 0
+    const result = runStagedPackageVerification({
+      ...options,
+      commandRunner: (command, args, cwd) => {
+        if (command === "npm" && args[0] === "audit" && args[1] === "signatures" && args[2] === "--json") {
+          genericAuditCalls += 1
+          return { output: "verified", status: 0 }
+        }
+        return runCommand(command, args, cwd)
+      },
+    })
+
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toContain("artifact-provenance-unavailable")
+    expect(result.promotionAuthorized).toBe(false)
+    expect(result.promotionDecision).toBe("release-approval-required")
+    expect(result.registryMutation).toBe("not-performed")
+    expect(genericAuditCalls).toBe(0)
+  })
+
+  it("keeps generic audit failures diagnostic-only without artifact provenance", () => {
     const root = createFixtureRoot()
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
     const options = writeFacts(root, packedTarballPath)
@@ -172,7 +217,7 @@ describe("staged package verification runner", () => {
     })
 
     expect(result.verificationStatus).toBe("blocked")
-    expect(result.diagnostics).toContain("provenance-unverified")
+    expect(result.diagnostics).toContain("artifact-provenance-unavailable")
     expect(JSON.stringify(result)).not.toContain(secret)
     expect(JSON.stringify(result)).not.toContain("/private/tmp/secret")
   })
@@ -206,6 +251,25 @@ describe("staged package verification runner", () => {
 
     expect(result.verificationStatus).toBe("blocked")
     expect(result.diagnostics).toContain("registry-facts-invalid")
+    expect(JSON.stringify(result)).not.toContain(secret)
+  })
+
+  it("fails closed without reflecting oversized fact contents", () => {
+    const root = createFixtureRoot()
+    const options = writeFacts(root, packedTarballPath)
+    const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+
+    writeFileSync(
+      options.planPath,
+      `${JSON.stringify({ marker: `${secret}${"x".repeat(64 * 1024)}`, schemaVersion: "staged-package-plan.1" })}\n`,
+    )
+    const result = runStagedPackageVerification({
+      ...options,
+      tarballPath: join(root, "missing.tgz"),
+    })
+
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toContain("staged-plan-invalid")
     expect(JSON.stringify(result)).not.toContain(secret)
   })
 })
