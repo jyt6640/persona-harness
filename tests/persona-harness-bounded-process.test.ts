@@ -106,14 +106,19 @@ describe("bounded streaming process helper", () => {
     expect(Buffer.byteLength(result.stderr)).toBeLessThanOrEqual(256)
   })
 
-  it.runIf(process.platform !== "win32")("kills a descendant with the timed-out process group", () => {
+  it.runIf(process.platform !== "win32")("stops a descendant with the timed-out process group", async () => {
     const dir = createTempDir()
-    const pidPath = join(dir, "descendant.pid")
+    const heartbeatPath = join(dir, "descendant.heartbeat")
+    const descendantScript = [
+      "import { appendFileSync, writeFileSync } from 'node:fs'",
+      `const heartbeatPath = ${JSON.stringify(heartbeatPath)}`,
+      "process.on('SIGTERM', () => {})",
+      "writeFileSync(heartbeatPath, 'started\\n')",
+      "setInterval(() => appendFileSync(heartbeatPath, 'tick\\n'), 10)",
+    ].join(";")
     const script = [
       "import { spawn } from 'node:child_process'",
-      "import { writeFileSync } from 'node:fs'",
-      `const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' })`,
-      `writeFileSync(${JSON.stringify(pidPath)}, String(child.pid))`,
+      `spawn(process.execPath, ['-e', ${JSON.stringify(descendantScript)}], { stdio: 'ignore' })`,
       "process.on('SIGTERM', () => {})",
       "setInterval(() => {}, 1000)",
     ].join(";")
@@ -123,14 +128,17 @@ describe("bounded streaming process helper", () => {
       command: process.execPath,
       cwd: dir,
       graceMs: 50,
-      timeoutMs: 100,
+      timeoutMs: 1_000,
     })
 
     expect(result.outcome).toBe("timeout")
     expect(result.killed).toBe(true)
-    expect(existsSync(pidPath)).toBe(true)
-    const descendantPid = Number(readFileSync(pidPath, "utf8"))
-    expect(Number.isInteger(descendantPid)).toBe(true)
-    expect(() => process.kill(descendantPid, 0)).toThrow()
+    expect(existsSync(heartbeatPath)).toBe(true)
+    const heartbeatBefore = readFileSync(heartbeatPath, "utf8")
+    expect(heartbeatBefore).toContain("started\n")
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 150))
+
+    expect(readFileSync(heartbeatPath, "utf8")).toBe(heartbeatBefore)
   })
 })
