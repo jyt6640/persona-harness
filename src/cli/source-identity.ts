@@ -77,7 +77,7 @@ export function captureSourceIdentity(
       git: {
         head: git.head,
         statusDigest,
-        trackedIndexDigest: tracked.digest,
+        trackedIndexDigest: digest(tracked.digest),
       },
     })
     return {
