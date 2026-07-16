@@ -1,40 +1,11 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
-import { join, relative } from "node:path"
-
 import { SERVICE_STATE_OWNERSHIP_CONVENTION } from "../config/convention-registry.js"
+import { readBoundedJavaSources } from "./bounded-java-source.js"
 
 type ServiceStateField = {
   readonly fieldName: string
   readonly line: number
   readonly terms: readonly string[]
   readonly typeName: string
-}
-
-const JAVA_MAIN_DIR = join("src", "main", "java")
-
-function collectJavaFiles(projectDir: string, suffix: string): readonly string[] {
-  const rootDir = join(projectDir, JAVA_MAIN_DIR)
-  const files: string[] = []
-
-  function visit(dirPath: string): void {
-    if (!existsSync(dirPath)) {
-      return
-    }
-    for (const entry of readdirSync(dirPath)) {
-      const entryPath = join(dirPath, entry)
-      const stat = statSync(entryPath)
-      if (stat.isDirectory()) {
-        visit(entryPath)
-        continue
-      }
-      if (stat.isFile() && entryPath.endsWith(suffix)) {
-        files.push(entryPath)
-      }
-    }
-  }
-
-  visit(rootDir)
-  return files.sort()
 }
 
 function className(filePath: string): string {
@@ -98,18 +69,23 @@ function javaPrivateFields(source: string): readonly ServiceStateField[] {
 }
 
 export function serviceStateOwnershipConventionFindings(projectDir: string): readonly string[] {
-  return collectJavaFiles(projectDir, "Service.java").flatMap((filePath) => {
-    const source = readFileSync(filePath, "utf8")
-    const stateFields = javaPrivateFields(source)
-    if (stateFields.length === 0) {
-      return []
-    }
-    const evidence = stateFields
-      .map((field) => `${field.typeName} ${field.fieldName} at ${relative(projectDir, filePath)}:${field.line}`)
-      .join(", ")
-    const terms = Array.from(new Set(stateFields.flatMap((field) => field.terms))).join("/")
-    return [
-      `${className(filePath)} owns in-memory state/id sequence (${terms}); ${SERVICE_STATE_OWNERSHIP_CONVENTION.actionableMessage} Source: ${evidence}`,
-    ]
-  })
+  const sources = readBoundedJavaSources(projectDir)
+  if (!sources.safe) {
+    return ["Java convention discovery is unavailable; read-only recovery is required."]
+  }
+  return sources.files
+    .filter((file) => file.relativePath.endsWith("Service.java"))
+    .flatMap((file) => {
+      const stateFields = javaPrivateFields(file.text)
+      if (stateFields.length === 0) {
+        return []
+      }
+      const evidence = stateFields
+        .map((field) => `${field.typeName} ${field.fieldName} at ${file.relativePath}:${field.line}`)
+        .join(", ")
+      const terms = Array.from(new Set(stateFields.flatMap((field) => field.terms))).join("/")
+      return [
+        `${className(file.relativePath)} owns in-memory state/id sequence (${terms}); ${SERVICE_STATE_OWNERSHIP_CONVENTION.actionableMessage} Source: ${evidence}`,
+      ]
+    })
 }
