@@ -116,6 +116,39 @@ describe("package files policy", () => {
     }
   })
 
+  it("packages the staged package verifier CLI while retaining its release contract", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const sourcePaths = [
+      "src/cli/staged-package-verification-assessment.ts",
+      "src/cli/staged-package-verification-command.ts",
+      "src/cli/staged-package-verification-core.ts",
+      "src/cli/staged-package-verification-installed.ts",
+      "src/cli/staged-package-verification-runner.ts",
+      "src/cli/staged-package-verification-runtime.ts",
+      "src/cli/staged-package-verification-types.ts",
+    ]
+    const packagedRuntimePaths = [
+      "dist/cli/staged-package-verification-assessment.js",
+      "dist/cli/staged-package-verification-command.js",
+      "dist/cli/staged-package-verification-core.js",
+      "dist/cli/staged-package-verification-installed.js",
+      "dist/cli/staged-package-verification-runner.js",
+      "dist/cli/staged-package-verification-runtime.js",
+      "dist/cli/staged-package-verification-types.js",
+    ]
+    const packagedContract = "docs/current/release/staged-package-verification.md"
+
+    for (const filePath of sourcePaths) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+    }
+    for (const filePath of packagedRuntimePaths) {
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
+    expect(existsSync(path.join(packageRoot, "scripts", "staged-package-verification.mjs"))).toBe(false)
+    expect(existsSync(path.join(packageRoot, packagedContract))).toBe(true)
+    expect(isCoveredByPackageFiles(packagedContract, packageJson.files)).toBe(true)
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
