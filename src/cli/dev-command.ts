@@ -5,6 +5,7 @@ import { runFeedbackCommand } from "./feedback.js"
 import { runObserveCommand } from "./observe.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
+import { runStagedPackageVerificationCommand } from "./staged-package-verification-command.js"
 import { runWorkflowCommand } from "./workflow-command.js"
 
 type DevOptions = {
@@ -14,7 +15,7 @@ type DevOptions = {
 
 export function devUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} dev <evidence|smoke|feedback|ralph-loop|observe|bearshell|review> [args...]`,
+    `Usage: ${invocation} dev <evidence|smoke|feedback|ralph-loop|observe|bearshell|review|staged-package> [args...]`,
     "",
     "Discover developer and measurement commands without changing their direct command paths.",
     "",
@@ -26,6 +27,7 @@ export function devUsage(invocation = "ph"): string {
     `  observe [--json] <path>      Alias for ${invocation} observe`,
     `  bearshell <command> [args...] Alias for ${invocation} bearshell`,
     `  review backend-shape         Alias for ${invocation} review backend-shape`,
+    `  staged-package ...           Read-only local-tarball staged package verification`,
     "",
     "Existing direct command paths remain supported.",
   ].join("\n")
@@ -57,6 +59,9 @@ export function runDevCommand(args: readonly string[], options: DevOptions = {},
   }
   if (command === "review") {
     return runReviewCommand(args.slice(1), options, devInvocation)
+  }
+  if (command === "staged-package") {
+    return runStagedPackageVerificationCommand(args.slice(1), `${devInvocation} staged-package`)
   }
   return {
     status: 1,

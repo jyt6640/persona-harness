@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   assessStagedPackageVerification,
   type StagedPackageVerificationInput,
-} from "../scripts/staged-package-verification-core.mjs"
+} from "../src/cli/staged-package-verification-core.js"
 
 const SOURCE_SHA = "a".repeat(40)
 const TARBALL_SHA1 = "b".repeat(40)

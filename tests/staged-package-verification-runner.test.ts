@@ -9,7 +9,8 @@ import { afterEach, describe, expect, it } from "vitest"
 import {
   runStagedPackageVerification,
   type StagedPackageVerificationOptions,
-} from "../scripts/staged-package-verification.mjs"
+} from "../src/cli/staged-package-verification-runner.js"
+import { withPackagePackLock } from "./package-pack-lock.js"
 
 const fixtureRoots: string[] = []
 const SOURCE_SHA = "a".repeat(40)
@@ -24,22 +25,45 @@ function createFixtureRoot(): string {
   return root
 }
 
-function packCurrentRepository(root: string): string {
-  const packDirectory = join(root, "pack")
-  mkdirSync(packDirectory)
-  const result = spawnSync("npm", ["pack", "--json", "--pack-destination", packDirectory], {
-    cwd: process.cwd(),
+function runCommand(command: string, args: readonly string[], cwd: string): { readonly output: string; readonly status: number } {
+  const result = spawnSync(command, args, {
+    cwd,
     encoding: "utf8",
     maxBuffer: 4 * 1024 * 1024,
   })
+  return {
+    output: `${result.stdout}\n${result.stderr}`,
+    status: typeof result.status === "number" ? result.status : 1,
+  }
+}
 
-  expect(result.status).toBe(0)
-  const parsed: unknown = JSON.parse(result.stdout)
-  expect(Array.isArray(parsed)).toBe(true)
-  const entry = Array.isArray(parsed) && isRecord(parsed[0]) ? parsed[0] : undefined
-  const filename = entry?.["filename"]
-  expect(typeof filename).toBe("string")
-  return join(packDirectory, typeof filename === "string" ? filename : "missing.tgz")
+function commandRunnerForProvenance(status: number, output: string) {
+  return (command: string, args: readonly string[], cwd: string): { readonly output: string; readonly status: number } => {
+    if (command === "npm" && args[0] === "audit" && args[1] === "signatures" && args[2] === "--json") {
+      return { output, status }
+    }
+    return runCommand(command, args, cwd)
+  }
+}
+
+function packCurrentRepository(root: string): string {
+  return withPackagePackLock(() => {
+    const packDirectory = join(root, "pack")
+    mkdirSync(packDirectory)
+    const result = spawnSync("npm", ["pack", "--json", "--pack-destination", packDirectory], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      maxBuffer: 4 * 1024 * 1024,
+    })
+
+    expect(result.status).toBe(0)
+    const parsed: unknown = JSON.parse(result.stdout)
+    expect(Array.isArray(parsed)).toBe(true)
+    const entry = Array.isArray(parsed) && isRecord(parsed[0]) ? parsed[0] : undefined
+    const filename = entry?.["filename"]
+    expect(typeof filename).toBe("string")
+    return join(packDirectory, typeof filename === "string" ? filename : "missing.tgz")
+  })
 }
 
 function writeFacts(root: string, tarballPath: string): StagedPackageVerificationOptions {
@@ -84,9 +108,9 @@ function writeFacts(root: string, tarballPath: string): StagedPackageVerificatio
   })}\n`)
 
   return {
+    commandRunner: commandRunnerForProvenance(0, "verified"),
     planPath,
     preflightPath,
-    provenanceRunner: () => ({ output: "verified", status: 0 }),
     registryFactsPath,
     tarballPath,
   }
@@ -99,7 +123,7 @@ afterEach(() => {
 })
 
 describe("staged package verification runner", () => {
-  it("runs a fresh exact-version installed black-box while retaining a non-promoting result", () => {
+  it("runs a fresh exact-version installed black-box while retaining a non-promoting result", { timeout: 60_000 }, () => {
     const root = createFixtureRoot()
     const options = writeFacts(root, packCurrentRepository(root))
 
@@ -126,7 +150,7 @@ describe("staged package verification runner", () => {
     const options = writeFacts(root, packCurrentRepository(root))
     const result = runStagedPackageVerification({
       ...options,
-      provenanceRunner: () => ({ output: `${secret} /private/tmp/secret`, status: 1 }),
+      commandRunner: commandRunnerForProvenance(1, `${secret} /private/tmp/secret`),
     })
 
     expect(result.verificationStatus).toBe("blocked")
