@@ -12,6 +12,7 @@ import {
   readSemanticTddPhase,
   semanticTddPublicPhase,
 } from "./workflow-semantic-tdd-phase.js"
+import { assessSemanticTddTransition } from "./workflow-semantic-tdd-transition.js"
 import type {
   SemanticTddAssessment,
   SemanticTddDiagnosticCode,
@@ -28,6 +29,23 @@ export type {
 } from "./workflow-semantic-tdd-types.js"
 
 export function assessSemanticTddChain(projectDir: string, now = new Date()): SemanticTddAssessment {
+  const sourceAware = assessSemanticTddTransition(projectDir)
+  if (sourceAware.state === "valid-untrusted" && sourceAware.envelope !== undefined) {
+    return {
+      authorityEligible: false,
+      decision: diagnosticVerificationDecision(
+        "semantic-valid-untrusted",
+        "source-aware semantic TDD transition is diagnostic-only without trusted authority",
+      ),
+      diagnosticCodes: [],
+      diagnostics: [],
+      green: publicTransitionPhase(sourceAware.envelope.green),
+      red: publicTransitionPhase(sourceAware.envelope.red),
+      sourceAwareTransition: sourceAware.envelope,
+      state: "valid-untrusted",
+      summary: "source-aware red-to-green transition is structurally valid but remains untrusted",
+    }
+  }
   const configResult = loadHarnessConfigResult(projectDir)
   if (!configResult.safe) {
     return result("malformed", ["semantic-artifact-invalid"], "harness configuration is invalid; semantic verification is blocked", undefined, undefined, ".persona/harness.jsonc")
@@ -145,6 +163,24 @@ export function assessSemanticTddChain(projectDir: string, now = new Date()): Se
     red: red.phase.public,
     state: "valid-untrusted",
     summary: "fresh red-to-green JUnit chain is structurally valid but remains untrusted without external authority",
+  }
+}
+
+function publicTransitionPhase(phase: {
+  readonly artifactDigest: string
+  readonly attemptId: string
+  readonly finishId: string
+  readonly sessionId: string
+  readonly sourceHead: string
+  readonly testcaseId: string
+}): SemanticTddPhase {
+  return {
+    artifactPath: ".persona/evidence/ci-reverification",
+    attemptId: phase.attemptId,
+    finishId: phase.finishId,
+    sessionId: phase.sessionId,
+    sourceHead: phase.sourceHead,
+    testcaseId: phase.testcaseId,
   }
 }
 

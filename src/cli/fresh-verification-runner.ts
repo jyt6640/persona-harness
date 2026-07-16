@@ -13,6 +13,11 @@ import {
   buildFreshArtifactBinding,
   writeFreshLifecycleRecords,
 } from "./fresh-verification-lifecycle.js"
+import { sameSourceIdentity } from "./source-identity.js"
+import {
+  captureSemanticTddSourceSnapshot,
+  persistSemanticTddSourceSnapshot,
+} from "./workflow-semantic-tdd-source-snapshot.js"
 import { diagnosticVerificationDecision, type VerificationDecision } from "./workflow-verification-decision.js"
 
 export type FreshVerificationResult = {
@@ -40,6 +45,8 @@ export function runFreshFixedVerification(
 ): FreshVerificationResult {
   const now = options.now ?? Date.now
   const runReverification = options.runReverification ?? runCiReverification
+  const sourceSnapshotCapturedAt = new Date(now()).toISOString()
+  const sourceSnapshot = captureSemanticTddSourceSnapshot(projectDir, sourceSnapshotCapturedAt)
   const result = runReverification(projectDir, mode, {
     ...options.reverificationOptions,
     now,
@@ -83,6 +90,14 @@ export function runFreshFixedVerification(
       testCount: testCountResult.testCount,
     }
   }
+  const snapshotDiagnosticCodes = sourceSnapshot.status === "unavailable"
+    ? [`semantic-${sourceSnapshot.diagnosticCode}`]
+    : sourceSnapshot.value.sourceHead !== binding.sourceHead
+      || sourceSnapshot.value.dirtyWorktreeDigest !== binding.dirtyWorktreeDigest
+      || !sameSourceIdentity(sourceSnapshot.value.snapshot.sourceIdentity, binding.sourceIdentity)
+      ? ["semantic-source-snapshot-binding-mismatch"]
+      : []
+  const snapshotCaptureValid = snapshotDiagnosticCodes.length === 0
 
   const idFactory = options.idFactory ?? randomUUID
   const sessionId = `session-${idFactory()}`
@@ -100,6 +115,7 @@ export function runFreshFixedVerification(
     const nextFinalStatus = finalStatus === "passed" ? "artifact-invalid" : finalStatus
     const nextDiagnosticCodes = [
       ...diagnosticCodes,
+      ...snapshotDiagnosticCodes,
       lifecycle.diagnosticCode ?? "fresh-attempt-write-invalid",
     ]
     return {
@@ -111,8 +127,13 @@ export function runFreshFixedVerification(
     }
   }
   if (status === "fail") {
+    const snapshot = snapshotCaptureValid
+      ? persistSemanticTddSourceSnapshot(projectDir, binding.attemptId, "red", sourceSnapshotCapturedAt, sourceSnapshot)
+      : {}
     const nextDiagnosticCodes = [
       ...diagnosticCodes,
+      ...snapshotDiagnosticCodes,
+      ...(snapshot.diagnosticCode === undefined ? [] : [snapshot.diagnosticCode]),
       ...(lifecycle.diagnosticCode === undefined ? [] : [lifecycle.diagnosticCode]),
     ]
     return {
@@ -138,11 +159,22 @@ export function runFreshFixedVerification(
       testCount: testCountResult.testCount,
     }
   }
+  const snapshot = snapshotCaptureValid
+    ? persistSemanticTddSourceSnapshot(projectDir, binding.attemptId, "green", sourceSnapshotCapturedAt, sourceSnapshot)
+    : {}
   return {
     artifactPath: result.artifactPath,
     attemptPath: lifecycle.attemptPath,
-    decision: freshDiagnosticDecision(finalStatus, diagnosticCodes),
-    diagnosticCodes,
+    decision: freshDiagnosticDecision(finalStatus, [
+      ...diagnosticCodes,
+      ...snapshotDiagnosticCodes,
+      ...(snapshot.diagnosticCode === undefined ? [] : [snapshot.diagnosticCode]),
+    ]),
+    diagnosticCodes: [
+      ...diagnosticCodes,
+      ...snapshotDiagnosticCodes,
+      ...(snapshot.diagnosticCode === undefined ? [] : [snapshot.diagnosticCode]),
+    ],
     finalStatus,
     receiptPath: lifecycle.receiptPath,
     testCount: testCountResult.testCount,
