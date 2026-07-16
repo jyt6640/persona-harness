@@ -136,7 +136,7 @@ function writeFacts(root: string, tarballPath: string): readonly string[] {
     canonicalMainHead: SOURCE_SHA,
     packageName: "persona-harness",
     packageVersion: version,
-    promotionTarget: "latest",
+    promotionTarget: "next",
     schemaVersion: "staged-package-plan.1",
     sourceHead: SOURCE_SHA,
     sourceTag: `v${version}`,
@@ -150,7 +150,54 @@ function writeFacts(root: string, tarballPath: string): readonly string[] {
     version,
   })}\n`)
   writeFileSync(registryFactsPath, `${JSON.stringify({
-    distTags: { latest: "0.0.0", next: version },
+    distTags: { next: version },
+    gitHead: SOURCE_SHA,
+    integrity,
+    packageName: "persona-harness",
+    schemaVersion: "staged-package-registry-facts.1",
+    shasum: sha1,
+    version,
+  })}\n`)
+  return [
+    "--plan",
+    planPath,
+    "--preflight",
+    preflightPath,
+    "--registry-facts",
+    registryFactsPath,
+    "--tarball",
+    tarballPath,
+  ]
+}
+
+function writeStagingFacts(root: string, tarballPath: string): readonly string[] {
+  const version = packageVersion()
+  const tarballBytes = readFileSync(tarballPath)
+  const sha1 = createHash("sha1").update(tarballBytes).digest("hex")
+  const integrity = `sha512-${createHash("sha512").update(tarballBytes).digest("base64")}`
+  const planPath = join(root, "staging-plan.json")
+  const preflightPath = join(root, "staging-preflight.json")
+  const registryFactsPath = join(root, "staging-registry.json")
+
+  writeFileSync(planPath, `${JSON.stringify({
+    canonicalMainHead: SOURCE_SHA,
+    packageName: "persona-harness",
+    packageVersion: version,
+    promotionTarget: "next",
+    schemaVersion: "staged-package-plan.1",
+    sourceHead: SOURCE_SHA,
+    sourceTag: `v${version}`,
+    stagedTag: "staging",
+  })}\n`)
+  writeFileSync(preflightPath, `${JSON.stringify({
+    exactVersion: "absent",
+    outputDigest: `sha256:${"b".repeat(64)}`,
+    packageName: "persona-harness",
+    schemaVersion: "staged-package-preflight.1",
+    version,
+  })}\n`)
+  writeFileSync(registryFactsPath, `${JSON.stringify({
+    distTags: { staging: version },
     gitHead: SOURCE_SHA,
     integrity,
     packageName: "persona-harness",
@@ -274,6 +321,25 @@ describe("installed staged package verification CLI", () => {
     })
     expect(readFileSync(join(process.cwd(), "package.json"), "utf8")).toBe(repositoryManifestBefore)
     expect(readFileSync(join(process.cwd(), "package-lock.json"), "utf8")).toBe(repositoryLockBefore)
+  })
+
+  it("verifies fixed staging facts from the packed installed CLI without promotion", { timeout: 60_000 }, () => {
+    const root = createFixtureRoot()
+    const installed = consumer()
+    const npmBin = provenanceNpmPath(root)
+    const result = run(
+      installed.phPath,
+      ["dev", "staged-package", ...writeStagingFacts(root, packedTarballPath), "--json"],
+      installed.consumerDir,
+      packageTestEnvironment({ PATH: `${npmBin}:${process.env.PATH ?? ""}` }),
+    )
+    const payload = parseResult(result)
+
+    expect(result.status).toBe(0)
+    expect(payload["verificationStatus"]).toBe("verified")
+    expect(payload["promotionAuthorized"]).toBe(false)
+    expect(payload["promotionDecision"]).toBe("release-approval-required")
+    expect(payload["registryMutation"]).toBe("not-performed")
   })
 
   it("keeps hostile paths out of the installed CLI result", () => {

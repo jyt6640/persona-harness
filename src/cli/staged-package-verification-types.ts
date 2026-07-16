@@ -11,6 +11,8 @@ export const INSTALLED_CHECKS = [
 
 export type InstalledCheck = (typeof INSTALLED_CHECKS)[number]
 export type JsonRecord = Readonly<Record<string, unknown>>
+export const STAGED_PACKAGE_TAGS = ["staging", "next"] as const
+export type StagedPackageTag = (typeof STAGED_PACKAGE_TAGS)[number]
 
 export type VerifiedInstalled = {
   readonly authorityBlocked: boolean
@@ -27,10 +29,10 @@ export type VerifiedPlan = {
   readonly canonicalMainHead: string
   readonly packageName: "persona-harness"
   readonly packageVersion: string
-  readonly promotionTarget: "latest"
+  readonly promotionTarget: "next"
   readonly sourceHead: string
   readonly sourceTag: string
-  readonly stagedTag: "latest" | "next"
+  readonly stagedTag: StagedPackageTag
 }
 
 export type VerifiedPreflight = {
@@ -41,14 +43,12 @@ export type VerifiedPreflight = {
 }
 
 export type VerifiedRegistry = {
-  readonly distTags: {
-    readonly latest: string
-    readonly next: string
-  }
   readonly gitHead: string
   readonly integrity: string
   readonly packageName: "persona-harness"
   readonly shasum: string
+  readonly stagedTag: StagedPackageTag
+  readonly stagedVersion: string
   readonly version: string
 }
 
