@@ -25,7 +25,7 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
   const blockerId = step.blockerId ?? "unmapped-blocker"
   if (step.id === TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID) {
     return {
-      action: "No trusted Persona Harness or external authority receipt is available. Obtain one through the future P3 authority path; keep unsigned project-local evidence diagnostic-only.",
+      action: "No trusted Persona Harness or external authority receipt is available. Provide the fixed canonical-main finish-attestation bundle; keep unsigned project-local evidence diagnostic-only.",
       blockerId,
     }
   }

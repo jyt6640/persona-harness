@@ -183,7 +183,7 @@ export function assessVerificationAuthority(projectDir: string, now = new Date()
     "untrusted",
     [{ code: "legacy-evidence-only", message: "Receipt structure is valid, but P3-3 does not verify issuer attestation or issue finish authority.", path: receiptDirectory }],
     legacyEvidence,
-    "receipt is structurally valid but untrusted until a future P3 execution or external attestation path is implemented",
+    "receipt is structurally valid but untrusted until the product-owned canonical-main finish attestation is verified",
     receipt,
     attempt,
   )

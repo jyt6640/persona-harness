@@ -68,7 +68,7 @@ export function readWorkflowFinishAuthority(
       `Receipt assessment: ${assessment.summary}.`,
       `Semantic TDD assessment: ${semanticTdd.summary}.`,
       `External attestation assessment: ${externalAttestation.summary}.`,
-      "P3-3 defines the receipt and attempt boundary; P3-4 or a future external attestation path must provide trusted authority before finish can pass.",
+      "P3-3 defines the diagnostic receipt and attempt boundary; only a verified canonical-main finish-attestation.1 bundle can provide trusted authority before finish can pass.",
     ].join(" "),
   )
   return {
