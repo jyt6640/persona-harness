@@ -104,6 +104,19 @@ describe("semantic TDD red-to-green evidence", () => {
     expect(assessment.diagnosticCodes).toContain("semantic-binding-mismatch")
   })
 
+  it("rejects byte-only source drift that preserves the current Git status record", () => {
+    const projectDir = createProject(semanticScript(matchingTestcase()))
+    const sourcePath = join(projectDir, "src", "main", "java", "App.java")
+    writeFileSync(sourcePath, "class App { int firstChange; }\n")
+    runChain(projectDir)
+    writeFileSync(sourcePath, "class App { int secondChange; }\n")
+
+    const assessment = assessSemanticTddChain(projectDir)
+
+    expect(assessment.state).toBe("mismatch")
+    expect(assessment.diagnosticCodes).toContain("semantic-binding-mismatch")
+  })
+
   it("rejects a provenance-only receipt mutation", () => {
     const projectDir = createProject(semanticScript(matchingTestcase()))
     runChain(projectDir)
@@ -163,6 +176,41 @@ describe("semantic TDD red-to-green evidence", () => {
 
     expect(assessment.state).toBe("invalid")
     expect(assessment.diagnosticCodes).toContain("semantic-artifact-invalid")
+  })
+
+  it("rejects a legacy raw mutation snapshot without echoing its project path", () => {
+    const projectDir = createProject(semanticScript(matchingTestcase()))
+    runChain(projectDir)
+    const artifactDir = join(projectDir, ".persona", "evidence", "ci-reverification")
+    const artifactName = readdirSync(artifactDir).find((entry) => {
+      if (!entry.endsWith(".json")) return false
+      const candidate = JSON.parse(readFileSync(join(artifactDir, entry), "utf8")) as Readonly<Record<string, unknown>>
+      return candidate.finalStatus === "passed"
+    })
+    expect(artifactName).toBeDefined()
+    if (artifactName === undefined) throw new Error("green artifact fixture was not created")
+    const artifactPath = join(artifactDir, artifactName)
+    const artifact = JSON.parse(readFileSync(artifactPath, "utf8")) as Readonly<Record<string, unknown>>
+    writeFileSync(artifactPath, `${JSON.stringify({
+      ...artifact,
+      mutationSnapshot: {
+        schemaVersion: "mutationSnapshot.1",
+        workspaceRoot: {
+          pre: {
+            dev: "1",
+            ino: "2",
+            realpath: projectDir,
+          },
+        },
+      },
+    }, null, 2)}\n`)
+
+    const assessment = assessSemanticTddChain(projectDir)
+
+    expect(assessment.state).toBe("invalid")
+    expect(assessment.diagnosticCodes).toContain("semantic-artifact-invalid")
+    expect(JSON.stringify(assessment)).not.toContain(projectDir)
+    expect(readWorkflowFinishAuthority(projectDir).blocker.id).toBe("trusted-authority-required")
   })
 
   it("rejects replayed phase records and preserves legacy evidence as diagnostic-only", () => {

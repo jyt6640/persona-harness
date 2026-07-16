@@ -6,10 +6,16 @@ import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { isRecord } from "../config/jsonc.js"
 import type { BoundedProcessResult } from "./bounded-process.js"
 import type { CiReverificationArtifact, CiReverificationCommandRecord } from "./ci-reverification-artifact.js"
-import { samePathIdentity, type EvidenceParentIdentity, type GitIdentity, type PosixPathIdentity } from "./ci-reverification-identity.js"
+import type { EvidenceParentIdentity, GitIdentity, PosixPathIdentity } from "./ci-reverification-identity.js"
 import { discoverJUnitResults, type JunitResultDiscovery } from "./junit-result-discovery.js"
 import { classifyObservedMutations, parseGitStatusPorcelain } from "./ci-reverification-mutation.js"
+import {
+  createMutationSnapshot,
+  createOverflowMutationSnapshot,
+  type MutationSnapshot,
+} from "./ci-reverification-mutation-snapshot.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
+import type { SourceIdentity } from "./source-identity.js"
 
 export const REVERIFICATION_COMMAND_CATALOG_ID = "java-spring-gradle-wrapper.1" as const
 export const REVERIFICATION_COMMANDS = [
@@ -98,48 +104,38 @@ export function mutationSnapshotData(
   postParent: EvidenceParentIdentity | undefined,
   preGit: GitIdentity,
   postGit: GitIdentity,
-): Readonly<Record<string, unknown>> {
+  preSourceIdentity: SourceIdentity,
+  postSourceIdentity: SourceIdentity | undefined,
+): MutationSnapshot {
   const preStatus = preGit.status ?? EMPTY_STATUS
   const postStatus = postGit.status ?? EMPTY_STATUS
   const classified = classifyObservedMutations(preStatus, postStatus, mode)
-  return {
-    allowlist: { allowedTracked: classified.allowedTracked, id: REVERIFICATION_COMMAND_CATALOG_ID, roots: ["build/**", ".gradle/**"] },
-    artifactParent: {
-      equal: postParent !== undefined && samePathIdentity(preParent, postParent),
-      post: postParent,
-      pre: preParent,
-      relativePath: preParent.relativePath,
-    },
-    decision: preGit.available ? classified.decision : "snapshot-unavailable",
-    disallowedTracked: classified.disallowedTracked,
-    git: {
-      available: preGit.available && postGit.available,
-      diagnosticCode: postGit.available ? preGit.diagnosticCode : postGit.diagnosticCode,
-      headEqual: preGit.head !== undefined && preGit.head === postGit.head,
-      postHead: postGit.head,
-      preHead: preGit.head,
-    },
-    observed: classified.observed,
-    post: { entryCount: postStatus.entryCount, normalizedPorcelainNameStatusNulSha256: postStatus.digest },
-    pre: { entryCount: preStatus.entryCount, normalizedPorcelainNameStatusNulSha256: preStatus.digest },
-    schemaVersion: "mutationSnapshot.1",
-    untracked: classified.untracked,
-    workspaceRoot: { equal: postRoot !== undefined && samePathIdentity(preRoot, postRoot), post: postRoot, pre: preRoot },
-  }
+  return createMutationSnapshot({
+    classified,
+    postGit,
+    postParent,
+    postRoot,
+    postSourceIdentity,
+    postStatus,
+    preGit,
+    preParent,
+    preRoot,
+    preSourceIdentity,
+    preStatus,
+  })
 }
 
 export function overflowArtifact(artifact: CiReverificationArtifact): CiReverificationArtifact {
   const mutationSource = JSON.stringify(artifact.mutationSnapshot)
-  const post = artifact.mutationSnapshot.post
+  const post = artifact.mutationSnapshot.kind === "complete"
+    ? artifact.mutationSnapshot.post
+    : undefined
   const entryCount = isRecord(post) && typeof post.entryCount === "number" ? post.entryCount : 0
   return {
     ...artifact,
     diagnosticCodes: [...artifact.diagnosticCodes, "artifact-size-exceeded"],
     finalStatus: "artifact-invalid",
-    mutationSnapshot: {
-      overflowSummary: { byteCount: Buffer.byteLength(mutationSource), entryCount, entryDigest: sha256(mutationSource) },
-      schemaVersion: "mutationSnapshot.1",
-    },
+    mutationSnapshot: createOverflowMutationSnapshot(mutationSource, entryCount),
   }
 }
 

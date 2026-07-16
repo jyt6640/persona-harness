@@ -8,7 +8,6 @@ import {
   REVERIFICATION_COMMANDS,
   commandPlanSha256,
   profileSha256,
-  sha256,
 } from "./ci-reverification-catalog.js"
 import { parseCiReverificationArtifact, type CiReverificationArtifact } from "./ci-reverification-artifact.js"
 import { captureGitIdentity, captureWorkspaceIdentity } from "./ci-reverification-identity.js"
@@ -16,6 +15,9 @@ import {
   buildFreshArtifactBinding,
   type FreshArtifactBinding,
 } from "./fresh-verification-lifecycle.js"
+import { safeProjectArtifactReference } from "./workflow-safe-rendering.js"
+import { verificationWorkspaceBinding } from "./ci-reverification-mutation-snapshot.js"
+import { captureSourceIdentity, sameSourceIdentity } from "./source-identity.js"
 import { readSemanticJUnitEvidence, type SemanticJUnitTestcase } from "./workflow-semantic-tdd-junit.js"
 import type {
   SemanticTddDiagnosticCode,
@@ -53,6 +55,7 @@ export function readSemanticTddPhase(
   const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
   if (!evidencePath.ok) return invalidPhase("semantic-artifact-invalid")
   const artifactPath = join(evidencePath.path, CI_ARTIFACT_DIR, `${attempt.attemptId}.json`)
+  const publicArtifactPath = safeProjectArtifactReference(projectDir, artifactPath) ?? "[UNAVAILABLE]"
   const source = readText(projectDir, artifactPath)
   const artifact = source === undefined ? undefined : parseCiReverificationArtifact(source)
   if (artifact === undefined) return invalidPhase("semantic-artifact-invalid")
@@ -108,7 +111,7 @@ export function readSemanticTddPhase(
     phase: {
       binding,
       public: {
-        artifactPath,
+        artifactPath: publicArtifactPath,
         attemptId: attempt.attemptId,
         finishId: attempt.finishId,
         sessionId: attempt.sessionId,
@@ -130,6 +133,7 @@ export function compareSemanticTddLineage(
 ): readonly SemanticTddDiagnosticCode[] {
   const codes: SemanticTddDiagnosticCode[] = []
   if (red.sourceHead !== green.sourceHead
+    || !sameSourceIdentity(red.sourceIdentity, green.sourceIdentity)
     || red.dirtyWorktreeDigest !== green.dirtyWorktreeDigest
     || red.phVersion !== green.phVersion
     || red.command.catalogId !== green.command.catalogId
@@ -154,6 +158,7 @@ function sameBinding(binding: FreshArtifactBinding, attempt: VerificationAttempt
     && binding.dirtyWorktreeDigest === attempt.dirtyWorktreeDigest
     && binding.phVersion === attempt.phVersion
     && binding.sourceHead === attempt.sourceHead
+    && sameSourceIdentity(binding.sourceIdentity, attempt.sourceIdentity)
     && JSON.stringify(binding.workspaceIdentity) === JSON.stringify(attempt.workspaceIdentity)
 }
 
@@ -162,16 +167,24 @@ function matchesCurrentProjectBindings(projectDir: string, binding: FreshArtifac
   if (workspace.status !== "available") return false
   const git = captureGitIdentity(projectDir, workspace.value)
   if (!git.available || git.head === undefined || git.status === undefined) return false
+  const configResult = loadHarnessConfigResult(projectDir)
+  if (!configResult.safe) return false
+  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+  if (!evidencePath.ok) return false
+  const sourceIdentity = captureSourceIdentity(
+    projectDir,
+    git,
+    evidencePath.relativePath || configResult.config.evidenceDir,
+  )
+  if (sourceIdentity.status !== "available") return false
+  const currentWorkspaceBinding = verificationWorkspaceBinding(workspace.value)
   const currentWorkspace = {
-    deviceIdentity: `${workspace.value.dev}:${workspace.value.ino}`,
+    deviceIdentity: currentWorkspaceBinding.deviceIdentity,
     platform: platformName(process.platform),
-    rootDigest: `sha256:${sha256(JSON.stringify({
-      device: workspace.value.dev,
-      inode: workspace.value.ino,
-      realpath: workspace.value.realpath,
-    }))}`,
+    rootDigest: currentWorkspaceBinding.rootDigest,
   }
   return binding.sourceHead === git.head
+    && sameSourceIdentity(binding.sourceIdentity, sourceIdentity.value)
     && binding.dirtyWorktreeDigest === `sha256:${git.status.digest}`
     && JSON.stringify(binding.workspaceIdentity) === JSON.stringify(currentWorkspace)
 }
@@ -188,6 +201,7 @@ function provenanceDigest(
     finishId: attempt.finishId,
     sessionId: attempt.sessionId,
     status,
+    sourceIdentity: binding.sourceIdentity,
     testCount,
   })
   return `sha256:${createHash("sha256").update(source).digest("hex")}`

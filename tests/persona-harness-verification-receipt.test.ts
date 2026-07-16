@@ -12,6 +12,7 @@ import {
   parseVerificationAttempt,
   parseVerificationReceipt,
 } from "../src/cli/workflow-verification-receipt.js"
+import { SOURCE_IDENTITY_EXCLUSIONS } from "../src/cli/source-identity.js"
 
 const tempProjects: string[] = []
 const NOW = "2026-07-13T12:00:00.000Z"
@@ -46,6 +47,8 @@ describe("verification receipt and attempt contract", () => {
 
   it.each([
     ["missing field", (value: Record<string, unknown>) => { delete value.receiptId }],
+    ["missing source identity", (value: Record<string, unknown>) => { delete value.sourceIdentity }],
+    ["malformed source identity", (value: Record<string, unknown>) => { value.sourceIdentity = { schemaVersion: "source-identity.1" } }],
     ["unknown field", (value: Record<string, unknown>) => { value.extra = "reject" }],
     ["invalid source head", (value: Record<string, unknown>) => { value.sourceHead = "arbitrary-head" }],
     ["invalid digest", (value: Record<string, unknown>) => { value.dirtyWorktreeDigest = "self-computed" }],
@@ -81,7 +84,11 @@ describe("verification receipt and attempt contract", () => {
   it.each([
     ["missing session binding", (value: Record<string, unknown>) => { value.sessionId = "other-session" }],
     ["missing finish binding", (value: Record<string, unknown>) => { value.finishId = "other-finish" }],
-    ["different source head", (value: Record<string, unknown>) => { value.sourceHead = "fedcba9876543210fedcba9876543210fedcba98" }],
+    ["different source head", (value: Record<string, unknown>) => {
+      const sourceHead = "fedcba9876543210fedcba9876543210fedcba98"
+      value.sourceHead = sourceHead
+      value.sourceIdentity = { ...sourceIdentity(), repositoryHead: sourceHead }
+    }],
     ["different argv digest", (value: Record<string, unknown>) => {
       value.command = { catalogId: "ph-gradle-spring-verify.1", argvDigest: `sha256:${"b".repeat(64)}` }
     }],
@@ -113,6 +120,29 @@ describe("verification receipt and attempt contract", () => {
       expect.objectContaining({
         code: "binding-mismatch",
         message: "Receipt and attempt provenanceDigest values differ.",
+      }),
+    ]))
+  })
+
+  it("rejects a receipt source identity content digest mismatch without changing the attempt", () => {
+    const receipt = validReceipt({
+      sourceIdentity: {
+        ...sourceIdentity(),
+        contentDigest: `sha256:${"b".repeat(64)}`,
+      },
+    })
+    const attempt = validAttempt()
+    const projectDir = createProject()
+    writeReceiptSet(projectDir, receipt, attempt)
+
+    const assessment = assessVerificationAuthority(projectDir, new Date(NOW))
+
+    expect(assessment.authorityEligible).toBe(false)
+    expect(assessment.state).toBe("mismatch")
+    expect(assessment.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "binding-mismatch",
+        message: "Receipt and attempt sourceIdentity values differ.",
       }),
     ]))
   })
@@ -267,6 +297,7 @@ function validReceipt(overrides: Partial<Record<string, unknown>> = {}): Record<
     sessionId: "session-001",
     finishId: "finish-001",
     sourceHead: SOURCE_HEAD,
+    sourceIdentity: sourceIdentity(),
     dirtyWorktreeDigest: DIGEST,
     workspaceIdentity: {
       rootDigest: DIGEST,
@@ -297,6 +328,7 @@ function validAttempt(overrides: Partial<Record<string, unknown>> = {}): Record<
     sessionId: "session-001",
     finishId: "finish-001",
     sourceHead: SOURCE_HEAD,
+    sourceIdentity: sourceIdentity(),
     dirtyWorktreeDigest: DIGEST,
     workspaceIdentity: {
       rootDigest: DIGEST,
@@ -314,6 +346,20 @@ function validAttempt(overrides: Partial<Record<string, unknown>> = {}): Record<
     receiptId: "receipt-001",
     provenanceDigest: DIGEST,
     ...overrides,
+  }
+}
+
+function sourceIdentity(): Record<string, unknown> {
+  return {
+    schemaVersion: "source-identity.1",
+    repositoryHead: SOURCE_HEAD,
+    gitStatusDigest: DIGEST,
+    trackedIndexDigest: DIGEST,
+    contentDigest: DIGEST,
+    entryCount: 3,
+    trackedEntryCount: 2,
+    untrackedEntryCount: 1,
+    exclusions: SOURCE_IDENTITY_EXCLUSIONS,
   }
 }
 

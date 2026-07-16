@@ -1,4 +1,5 @@
 import { isRecord } from "../config/jsonc.js"
+import { parseSourceIdentity, type SourceIdentity } from "./source-identity.js"
 import {
   COMMAND_KEYS,
   ISSUER_KEYS,
@@ -43,12 +44,14 @@ export function readBindingFields(
   readonly phVersion: string
   readonly sessionId: string
   readonly sourceHead: string
+  readonly sourceIdentity: SourceIdentity
   readonly workspaceIdentity: VerificationWorkspaceIdentity
 } | undefined {
   const attemptId = readIdentifier(record.attemptId, "attemptId", path, diagnostics)
   const sessionId = readIdentifier(record.sessionId, "sessionId", path, diagnostics)
   const finishId = readIdentifier(record.finishId, "finishId", path, diagnostics)
   const sourceHead = readSourceHead(record.sourceHead, "sourceHead", path, diagnostics)
+  const sourceIdentity = readSourceIdentity(record.sourceIdentity, path, diagnostics)
   const dirtyWorktreeDigest = readDigest(record.dirtyWorktreeDigest, "dirtyWorktreeDigest", path, diagnostics)
   const workspaceIdentity = readWorkspaceIdentity(record.workspaceIdentity, path, diagnostics)
   const command = readCommand(record.command, path, diagnostics)
@@ -58,6 +61,7 @@ export function readBindingFields(
     || sessionId === undefined
     || finishId === undefined
     || sourceHead === undefined
+    || sourceIdentity === undefined
     || dirtyWorktreeDigest === undefined
     || workspaceIdentity === undefined
     || command === undefined
@@ -65,7 +69,11 @@ export function readBindingFields(
   ) {
     return undefined
   }
-  return { attemptId, command, dirtyWorktreeDigest, finishId, phVersion, sessionId, sourceHead, workspaceIdentity }
+  if (sourceIdentity.repositoryHead !== sourceHead) {
+    diagnostics.push({ code: "invalid-field", message: "sourceIdentity.repositoryHead must bind sourceHead.", path: `${path}.sourceIdentity.repositoryHead` })
+    return undefined
+  }
+  return { attemptId, command, dirtyWorktreeDigest, finishId, phVersion, sessionId, sourceHead, sourceIdentity, workspaceIdentity }
 }
 
 export function readIssuer(
@@ -99,6 +107,18 @@ export function readWorkspaceIdentity(
   return rootDigest === undefined || deviceIdentity === undefined || platform === undefined
     ? undefined
     : { deviceIdentity, platform, rootDigest }
+}
+
+function readSourceIdentity(
+  value: unknown,
+  path: string,
+  diagnostics: ReceiptDiagnostic[],
+): SourceIdentity | undefined {
+  const sourceIdentity = parseSourceIdentity(value)
+  if (sourceIdentity === undefined) {
+    diagnostics.push({ code: "invalid-field", message: "sourceIdentity must be a strict source-identity.1 record.", path: `${path}.sourceIdentity` })
+  }
+  return sourceIdentity
 }
 
 export function readCommand(
