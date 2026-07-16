@@ -2,6 +2,7 @@ export type StagedPackageVerificationInput = {
   readonly installed: {
     readonly authorityBlocked: boolean
     readonly cliHelp: boolean
+    readonly closureAuthorityParity: boolean
     readonly exactVersion: boolean
     readonly npmTest: boolean
     readonly sourceCheckoutIndependent: boolean
