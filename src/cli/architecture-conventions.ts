@@ -1,6 +1,3 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
-import { join, relative } from "node:path"
-
 import {
   CONTROLLER_REPOSITORY_CONVENTION,
   SERVICE_STATE_OWNERSHIP_CONVENTION,
@@ -12,6 +9,7 @@ import type { ConventionLevel } from "../config/harness-config.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryEvidence } from "../observer/controller-repository-observer.js"
 import { runAstGrepConvention } from "./ast-grep-convention-runner.js"
+import { readBoundedJavaSources, type BoundedJavaSourceFile } from "./bounded-java-source.js"
 import { readConventionDefinitions } from "./convention-definitions.js"
 import { serviceStateOwnershipConventionFindings } from "./service-state-convention.js"
 import { springBootJarEnabledConventionFindings } from "./spring-bootjar-convention.js"
@@ -33,7 +31,6 @@ export type ArchitectureConventionSummary = {
   readonly architectureConventionsFinding: ArchitectureConventionFinding
 }
 
-const JAVA_MAIN_DIR = join("src", "main", "java")
 const SERVICE_ARCHITECTURE_STYLES = [
   "simple-layered",
   "clean-architecture-light",
@@ -47,35 +44,6 @@ function serviceArchitectureApplies(projectDir: string): boolean {
   return intent?.language === "java"
     && intent.framework === "spring"
     && SERVICE_ARCHITECTURE_STYLES.some((style) => style === intent.architectureStyle)
-}
-
-function collectControllerFiles(projectDir: string): readonly string[] {
-  return collectJavaFiles(projectDir, "Controller.java")
-}
-
-function collectJavaFiles(projectDir: string, suffix: string): readonly string[] {
-  const rootDir = join(projectDir, JAVA_MAIN_DIR)
-  const files: string[] = []
-
-  function visit(dirPath: string): void {
-    if (!existsSync(dirPath)) {
-      return
-    }
-    for (const entry of readdirSync(dirPath)) {
-      const entryPath = join(dirPath, entry)
-      const stat = statSync(entryPath)
-      if (stat.isDirectory()) {
-        visit(entryPath)
-        continue
-      }
-      if (stat.isFile() && entryPath.endsWith(suffix)) {
-        files.push(entryPath)
-      }
-    }
-  }
-
-  visit(rootDir)
-  return files.sort()
 }
 
 function className(filePath: string): string {
@@ -93,9 +61,8 @@ function repositoryName(evidence: ControllerRepositoryEvidence): string | undefi
   return undefined
 }
 
-function directDependencyFinding(projectDir: string, filePath: string): string | undefined {
-  const source = readFileSync(filePath, "utf8")
-  const observation = observeControllerRepositoryDependency({ filePath, source })
+function directDependencyFinding(file: BoundedJavaSourceFile): string | undefined {
+  const observation = observeControllerRepositoryDependency({ filePath: file.absolutePath, source: file.text })
   if (observation.finding !== "WARN") {
     return undefined
   }
@@ -104,7 +71,7 @@ function directDependencyFinding(projectDir: string, filePath: string): string |
   if (dependency === undefined) {
     return undefined
   }
-  return `${className(filePath)} directly depends on ${dependency}; ${CONTROLLER_REPOSITORY_CONVENTION.actionableMessage} Source: ${relative(projectDir, filePath)}`
+  return `${className(file.relativePath)} directly depends on ${dependency}; ${CONTROLLER_REPOSITORY_CONVENTION.actionableMessage} Source: ${file.relativePath}`
 }
 
 function configuredConventionLevel(projectDir: string, definition: ConventionDefinition): ConventionLevel {
@@ -115,11 +82,23 @@ function effectiveConventionLevel(definition: ConventionDefinition, level: Conve
   return level === "block" && (!definition.blockAllowed || !definition.highPrecision || definition.fixPath.trim() === "") ? "warn" : level
 }
 
-function controllerRepositoryConventionFindings(projectDir: string): readonly string[] {
-  return collectControllerFiles(projectDir).flatMap((filePath) => {
-    const finding = directDependencyFinding(projectDir, filePath)
-    return finding === undefined ? [] : [finding]
-  })
+function controllerRepositoryConventionFindings(projectDir: string): ConventionEvaluation {
+  const sources = readBoundedJavaSources(projectDir)
+  if (!sources.safe) {
+    return {
+      findings: [],
+      warnings: ["Java convention discovery is unavailable; read-only recovery is required."],
+    }
+  }
+  return {
+    findings: sources.files
+      .filter((file) => file.relativePath.endsWith("Controller.java"))
+      .flatMap((file) => {
+        const finding = directDependencyFinding(file)
+        return finding === undefined ? [] : [finding]
+      }),
+    warnings: [],
+  }
 }
 
 type ConventionEvaluation = {
@@ -129,7 +108,7 @@ type ConventionEvaluation = {
 
 function conventionFindings(projectDir: string, definition: ConventionDefinition): ConventionEvaluation {
   if (definition.check.kind === "observer" && definition.id === CONTROLLER_REPOSITORY_CONVENTION.id) {
-    return { findings: controllerRepositoryConventionFindings(projectDir), warnings: [] }
+    return controllerRepositoryConventionFindings(projectDir)
   }
   if (definition.check.kind === "observer" && definition.id === SERVICE_STATE_OWNERSHIP_CONVENTION.id) {
     return { findings: serviceStateOwnershipConventionFindings(projectDir), warnings: [] }

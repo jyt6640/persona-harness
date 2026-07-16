@@ -1,43 +1,17 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 
 import { SPRING_BOOTJAR_ENABLED_CONVENTION } from "../config/convention-registry.js"
+import { readBoundedJavaSources } from "./bounded-java-source.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
 
 const EXECUTABLE_SPRING_APPLICATION_TYPES = ["batch", "mvc-web", "rest-api"] as const
-const JAVA_MAIN_DIR = join("src", "main", "java")
-
 function executableSpringBootAppApplies(projectDir: string): boolean {
   const intent = readProfileIntent(projectDir)
   return intent?.language === "java"
     && intent.framework === "spring"
     && intent.buildTool === "gradle"
     && EXECUTABLE_SPRING_APPLICATION_TYPES.some((applicationType) => applicationType === intent.applicationType)
-}
-
-function collectJavaFiles(projectDir: string): readonly string[] {
-  const rootDir = join(projectDir, JAVA_MAIN_DIR)
-  const files: string[] = []
-
-  function visit(dirPath: string): void {
-    if (!existsSync(dirPath)) {
-      return
-    }
-    for (const entry of readdirSync(dirPath)) {
-      const entryPath = join(dirPath, entry)
-      const stat = statSync(entryPath)
-      if (stat.isDirectory()) {
-        visit(entryPath)
-        continue
-      }
-      if (stat.isFile() && entryPath.endsWith(".java")) {
-        files.push(entryPath)
-      }
-    }
-  }
-
-  visit(rootDir)
-  return files.sort()
 }
 
 function lineNumberAt(source: string, index: number): number {
@@ -68,10 +42,6 @@ function springBootBuildSignal(source: string): boolean {
   return /org\.springframework\.boot|spring-boot-starter/u.test(source)
 }
 
-function hasSpringBootApplication(projectDir: string): boolean {
-  return collectJavaFiles(projectDir).some((filePath) => readFileSync(filePath, "utf8").includes("@SpringBootApplication"))
-}
-
 function disabledBootJarLine(source: string): number | undefined {
   const codeOnly = stripGradleCommentsAndLiterals(source)
   const directMatch = /\b(?:tasks\.)?bootJar\s*\{[\s\S]{0,300}?\b(?:enabled\s*=\s*false|enabled\.set\(\s*false\s*\))/u.exec(codeOnly)
@@ -85,9 +55,14 @@ function disabledBootJarLine(source: string): number | undefined {
 }
 
 export function springBootJarEnabledConventionFindings(projectDir: string): readonly string[] {
-  if (!executableSpringBootAppApplies(projectDir) || !hasSpringBootApplication(projectDir)) {
+  if (!executableSpringBootAppApplies(projectDir)) {
     return []
   }
+  const sources = readBoundedJavaSources(projectDir)
+  if (!sources.safe) {
+    return ["Java convention discovery is unavailable; read-only recovery is required."]
+  }
+  if (!sources.files.some((file) => file.text.includes("@SpringBootApplication"))) return []
   return buildFilePaths(projectDir).flatMap((filePath) => {
     const source = readFileSync(filePath, "utf8")
     if (!springBootBuildSignal(source)) {

@@ -1,8 +1,9 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
+import { lstatSync, readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import { redactEvidenceText } from "../runtime/evidence-redaction.js"
 export type JavaRoleReadCoverageFinding = "PASS" | "WARN"
 
 export type JavaRoleReadCoverageSummary = {
@@ -27,6 +28,8 @@ type JavaRoleFile = {
 }
 
 const JAVA_MAIN_DIR = join("src", "main", "java")
+const JAVA_ROLE_MAX_DEPTH = 64
+const JAVA_ROLE_MAX_ENTRIES = 10_000
 const ACTIONABLE_INJECTION_PATTERN = /"injectedInto"\s*:\s*"(?:tool-output|model-input)"/
 const ANY_INJECTION_PATTERN = /"injectedInto"\s*:/
 
@@ -58,25 +61,53 @@ function javaRoleFor(relativePath: string): JavaGeneratedRole | undefined {
   return undefined
 }
 
-function collectJavaRoleFiles(projectDir: string): readonly JavaRoleFile[] {
+function collectJavaRoleFiles(projectDir: string): { readonly files: readonly JavaRoleFile[]; readonly safe: boolean } {
   const rootDir = join(projectDir, JAVA_MAIN_DIR)
   const files: JavaRoleFile[] = []
+  let entryCount = 0
+  let safe = true
 
-  function visit(dirPath: string): void {
-    if (!existsSync(dirPath)) {
+  function visit(dirPath: string, depth: number): void {
+    if (!safe) {
       return
     }
-    for (const entry of readdirSync(dirPath)) {
+    if (depth > JAVA_ROLE_MAX_DEPTH) {
+      safe = false
+      return
+    }
+    let entries: readonly string[]
+    try {
+      entries = readdirSync(dirPath).sort()
+    } catch {
+      safe = false
+      return
+    }
+    for (const entry of entries) {
+      entryCount += 1
+      if (entryCount > JAVA_ROLE_MAX_ENTRIES) {
+        safe = false
+        return
+      }
       const entryPath = join(dirPath, entry)
-      const stat = statSync(entryPath)
+      let stat: ReturnType<typeof lstatSync>
+      try {
+        stat = lstatSync(entryPath)
+      } catch {
+        safe = false
+        return
+      }
+      if (stat.isSymbolicLink()) {
+        safe = false
+        return
+      }
       if (stat.isDirectory()) {
-        visit(entryPath)
+        visit(entryPath, depth + 1)
         continue
       }
       if (!stat.isFile() || !entryPath.endsWith(".java")) {
         continue
       }
-      const relativePath = normalizePath(relative(projectDir, entryPath))
+      const relativePath = safeJavaRelativePath(normalizePath(relative(projectDir, entryPath)))
       const role = javaRoleFor(relativePath)
       if (role !== undefined) {
         files.push({ path: relativePath, role })
@@ -84,8 +115,18 @@ function collectJavaRoleFiles(projectDir: string): readonly JavaRoleFile[] {
     }
   }
 
-  visit(rootDir)
-  return files
+  try {
+    const root = lstatSync(rootDir)
+    if (root.isSymbolicLink() || !root.isDirectory()) {
+      return { files: [], safe: false }
+    }
+  } catch (error) {
+    return isMissingPath(error)
+      ? { files: [], safe: true }
+      : { files: [], safe: false }
+  }
+  visit(rootDir, 0)
+  return { files, safe }
 }
 
 function collectEvidenceTexts(projectDir: string): { readonly safe: boolean; readonly texts: readonly string[] } {
@@ -149,7 +190,15 @@ export function readJavaRoleReadCoverage(projectDir: string, implementationStatu
     }
   }
 
-  const javaFiles = collectJavaRoleFiles(projectDir)
+  const javaResult = collectJavaRoleFiles(projectDir)
+  if (!javaResult.safe) {
+    return {
+      javaRoleReadCoverage: "Java role discovery is unavailable; read-only recovery is required.",
+      javaRoleReadCoverageBlocking: true,
+      javaRoleReadCoverageFinding: "WARN",
+    }
+  }
+  const javaFiles = javaResult.files
   if (javaFiles.length === 0) {
     return {
       javaRoleReadCoverage: "no generated Java role files observed",
@@ -181,4 +230,26 @@ export function readJavaRoleReadCoverage(projectDir: string, implementationStatu
     javaRoleReadCoverageBlocking: true,
     javaRoleReadCoverageFinding: "WARN",
   }
+}
+
+function safeJavaRelativePath(value: string): string {
+  const normalized = normalizePath(value)
+  if (
+    normalized.length === 0
+    || normalized.length > 240
+    || !/^[A-Za-z0-9._@+/-]+$/u.test(normalized)
+    || normalized.startsWith("../")
+    || normalized.includes("/../")
+    || redactEvidenceText(normalized).text !== normalized
+  ) {
+    return "[UNAVAILABLE]"
+  }
+  return normalized
+}
+
+function isMissingPath(error: unknown): boolean {
+  return typeof error === "object"
+    && error !== null
+    && "code" in error
+    && error.code === "ENOENT"
 }
