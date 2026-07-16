@@ -15,9 +15,12 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import type { BoundedProcessResult } from "../src/cli/bounded-process.js"
+import { parseCiReverificationArtifact } from "../src/cli/ci-reverification-artifact.js"
 import { captureGitIdentity, captureWorkspaceIdentity } from "../src/cli/ci-reverification-identity.js"
 import { writeAndRereadCiReverificationArtifact } from "../src/cli/ci-reverification-artifact.js"
 import { runCiReverification } from "../src/cli/ci-reverification-runner.js"
+import { verificationWorkspaceBinding } from "../src/cli/ci-reverification-mutation-snapshot.js"
+import { buildFreshArtifactBinding } from "../src/cli/fresh-verification-lifecycle.js"
 
 const projects: string[] = []
 
@@ -84,7 +87,20 @@ describe("CI reverification runner", () => {
     const source = readFileSync(result.artifactPath ?? "", "utf8")
     expect(source).not.toContain("secret-output")
     const artifact = JSON.parse(source)
+    const parsedArtifact = parseCiReverificationArtifact(source)
+    const freshBinding = parsedArtifact === undefined || result.artifactPath === undefined
+      ? undefined
+      : buildFreshArtifactBinding(parsedArtifact, result.artifactPath, () => 0)
+    const workspace = captureWorkspaceIdentity(projectDir)
     expect(JSON.stringify(artifact.mutationSnapshot.sourceIdentity)).not.toContain(projectDir)
+    expect(JSON.stringify(artifact.mutationSnapshot)).not.toContain(projectDir)
+    expect(artifact.mutationSnapshot.schemaVersion).toBe("mutationSnapshot.2")
+    expect(freshBinding?.workspaceIdentity).toEqual({
+      ...verificationWorkspaceBinding(workspace.status === "available" ? workspace.value : (() => {
+        throw new Error("expected workspace identity")
+      })()),
+      platform: process.platform,
+    })
     expect(artifact.commands.map((command: { readonly fixedArgvId: string }) => command.fixedArgvId)).toEqual([
       "gradle-wrapper-test.1",
       "gradle-wrapper-build.1",
@@ -116,6 +132,7 @@ describe("CI reverification runner", () => {
     expect(artifact.mutationSnapshot.artifactParent.relativePath).toBe(".persona/custom-evidence")
     expect(artifact.mutationSnapshot.artifactParent.pre.relativePath).toBe(".persona/custom-evidence")
     expect(artifact.mutationSnapshot.artifactParent.post.relativePath).toBe(".persona/custom-evidence")
+    expect(JSON.stringify(artifact.mutationSnapshot)).not.toContain(projectDir)
   })
 
   it("rejects duplicate artifact IDs without replacing the original bytes", () => {
@@ -228,6 +245,35 @@ describe("CI reverification runner", () => {
     expect(artifact.mutationSnapshot.post.normalizedPorcelainNameStatusNulSha256).toBe(before.status.digest)
     expect(result.finalStatus).toBe("partial")
     expect(result.diagnosticCodes).toContain("source-identity-content-changed")
+  })
+
+  it("persists digest-only mutation summaries without project paths or token-shaped filenames", () => {
+    const projectDir = createProject(successScript())
+    const token = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+    const result = runCiReverification(projectDir, "ci", {
+      runProcess: () => {
+        writeFileSync(join(projectDir, "src", "main", "java", `${token}-Controller.java`), "class AddedController {}\n")
+        return {
+          killed: false,
+          outcome: "passed",
+          outputLimited: false,
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "",
+          timedOut: false,
+        }
+      },
+    })
+    const artifact = readFileSync(result.artifactPath ?? "", "utf8")
+
+    expect(result.finalStatus).toBe("partial")
+    expect(result.diagnosticCodes).toContain("source-identity-content-changed")
+    expect(artifact).toContain('"schemaVersion": "mutationSnapshot.2"')
+    expect(artifact).not.toContain(projectDir)
+    expect(artifact).not.toContain(token)
+    expect(artifact).not.toContain("realpath")
+    expect(artifact).not.toContain("disallowedTracked\": [")
   })
 
   it("maps unsupported platform, artifact failure, HEAD change, and root capture failure", () => {

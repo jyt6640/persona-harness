@@ -3,6 +3,10 @@ import { join } from "node:path"
 
 import { isRecord } from "../config/jsonc.js"
 import type { CiReverificationFinalStatus } from "./ci-reverification-model.js"
+import {
+  type MutationSnapshot,
+} from "./ci-reverification-mutation-snapshot.js"
+import { parseMutationSnapshot } from "./ci-reverification-mutation-snapshot-parser.js"
 
 export const CI_REVERIFICATION_ARTIFACT_MAX_BYTES = 256 * 1024
 
@@ -27,13 +31,37 @@ export type CiReverificationArtifact = {
   readonly diagnosticCodes: readonly string[]
   readonly finalStatus: CiReverificationFinalStatus
   readonly mode: "ci" | "local"
-  readonly mutationSnapshot: Readonly<Record<string, unknown>>
+  readonly mutationSnapshot: MutationSnapshot
   readonly profileSha256: string
   readonly schemaVersion: "ph-ci-reverification.1"
 }
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/u
 const FORBIDDEN_KEYS = new Set(["env", "environment", "stderr", "stdout"])
+const ARTIFACT_KEYS = [
+  "attemptId",
+  "commandCatalogId",
+  "commandPlanSha256",
+  "commands",
+  "diagnosticCodes",
+  "finalStatus",
+  "mode",
+  "mutationSnapshot",
+  "profileSha256",
+  "schemaVersion",
+] as const
+const COMMAND_RECORD_KEYS = [
+  "durationMs",
+  "exitCode",
+  "fixedArgvId",
+  "junitRefs",
+  "ordinal",
+  "outcome",
+  "stderrBytes",
+  "stderrSha256",
+  "stdoutBytes",
+  "stdoutSha256",
+] as const
 
 function isFinalStatus(value: unknown): value is CiReverificationFinalStatus {
   return value === "artifact-invalid"
@@ -52,7 +80,8 @@ function containsForbiddenKey(value: unknown): boolean {
 
 function isCommandRecord(value: unknown): value is CiReverificationCommandRecord {
   if (!isRecord(value)) return false
-  return Number.isInteger(value.ordinal)
+  return hasExactKeys(value, COMMAND_RECORD_KEYS)
+    && Number.isInteger(value.ordinal)
     && (value.fixedArgvId === "gradle-wrapper-test.1" || value.fixedArgvId === "gradle-wrapper-build.1")
     && (value.outcome === "passed" || value.outcome === "failed" || value.outcome === "timeout" || value.outcome === "unavailable")
     && typeof value.exitCode === "number"
@@ -64,7 +93,7 @@ function isCommandRecord(value: unknown): value is CiReverificationCommandRecord
     && typeof value.stderrSha256 === "string"
     && SHA256_PATTERN.test(value.stderrSha256)
     && Array.isArray(value.junitRefs)
-    && value.junitRefs.every((item) => typeof item === "string")
+    && value.junitRefs.every(isSafeJUnitReference)
 }
 
 export function parseCiReverificationArtifact(source: string): CiReverificationArtifact | undefined {
@@ -75,7 +104,8 @@ export function parseCiReverificationArtifact(source: string): CiReverificationA
   } catch {
     return undefined
   }
-  if (!isRecord(parsed) || containsForbiddenKey(parsed)) return undefined
+  if (!isRecord(parsed) || !hasExactKeys(parsed, ARTIFACT_KEYS) || containsForbiddenKey(parsed)) return undefined
+  const mutationSnapshot = parseMutationSnapshot(parsed.mutationSnapshot)
   if (parsed.schemaVersion !== "ph-ci-reverification.1"
     || typeof parsed.attemptId !== "string"
     || parsed.attemptId.trim() === ""
@@ -89,8 +119,8 @@ export function parseCiReverificationArtifact(source: string): CiReverificationA
     || !parsed.commands.every(isCommandRecord)
     || !isFinalStatus(parsed.finalStatus)
     || !Array.isArray(parsed.diagnosticCodes)
-    || !parsed.diagnosticCodes.every((item) => typeof item === "string")
-    || !isRecord(parsed.mutationSnapshot)) {
+    || !parsed.diagnosticCodes.every(isSafeDiagnosticCode)
+    || mutationSnapshot === undefined) {
     return undefined
   }
   return {
@@ -101,10 +131,27 @@ export function parseCiReverificationArtifact(source: string): CiReverificationA
     diagnosticCodes: parsed.diagnosticCodes,
     finalStatus: parsed.finalStatus,
     mode: parsed.mode,
-    mutationSnapshot: parsed.mutationSnapshot,
+    mutationSnapshot,
     profileSha256: parsed.profileSha256,
     schemaVersion: parsed.schemaVersion,
   }
+}
+
+function hasExactKeys(value: Readonly<Record<string, unknown>>, keys: readonly string[]): boolean {
+  return Object.keys(value).length === keys.length && keys.every((key) => key in value)
+}
+
+function isSafeDiagnosticCode(value: unknown): value is string {
+  return typeof value === "string" && /^[a-z][a-z0-9-]{0,95}$/u.test(value)
+}
+
+function isSafeJUnitReference(value: unknown): value is string {
+  if (typeof value !== "string" || value.length === 0 || value.length > 240) return false
+  const normalized = value.replaceAll("\\", "/")
+  return /^[A-Za-z0-9._@+/-]+$/u.test(normalized)
+    && !normalized.startsWith("/")
+    && !normalized.startsWith("../")
+    && !normalized.includes("/../")
 }
 
 export function serializeCiReverificationArtifact(artifact: CiReverificationArtifact): string | undefined {
