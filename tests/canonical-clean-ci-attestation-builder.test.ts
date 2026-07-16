@@ -9,32 +9,38 @@ import { createFailureDiagnostic, FIXED_COMMANDS } from "../scripts/build-clean-
 const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "canonical-clean-ci-attestation-builder.yml")
 const builderPath = join(root, "scripts", "build-clean-ci-attestation.mjs")
+const authorityPath = join(root, "src", "cli", "workflow-finish-authority.ts")
 
 describe("canonical clean CI attestation builder contract", () => {
-  it("declares reusable, manual, and non-main staging triggers without caller inputs", () => {
+  it("declares protected-main push-only triggers without caller inputs", () => {
     const workflow = readFileSync(workflowPath, "utf8")
-    const callStart = workflow.indexOf("  workflow_call:")
-    const dispatchStart = workflow.indexOf("  workflow_dispatch:")
 
-    expect(callStart).toBeGreaterThanOrEqual(0)
-    expect(dispatchStart).toBeGreaterThan(callStart)
-    expect(workflow.slice(callStart, dispatchStart)).not.toContain("inputs:")
-    expect(workflow).toContain("  push:")
-    expect(workflow).toContain("    branches-ignore:")
-    expect(workflow).toContain("      - main")
+    expect(workflow).toContain("  push:\n    branches:\n      - main")
+    expect(workflow).not.toContain("branches-ignore:")
+    expect(workflow).not.toContain("workflow_call:")
+    expect(workflow).not.toContain("workflow_dispatch:")
+    expect(workflow).not.toContain("inputs:")
   })
 
-  it("keeps builder output explicitly non-authoritative", () => {
+  it("emits the versioned producer claim without wiring product Finish authority", () => {
     const workflow = readFileSync(workflowPath, "utf8")
     const builder = readFileSync(builderPath, "utf8")
+    const authority = readFileSync(authorityPath, "utf8")
 
-    expect(builder).toContain('authorityEligible: false')
-    expect(builder).toContain('"staging-non-authoritative"')
-    expect(builder).toContain('"clean-ci-builder.1"')
+    expect(builder).toContain('authorityEligible: true')
+    expect(builder).toContain('"external-attested"')
+    expect(builder).toContain('"finish-attestation.1"')
+    expect(builder).toContain("captureSourceIdentity")
+    expect(builder).toContain("GITHUB_EVENT_NAME")
+    expect(builder).toContain("GITHUB_REPOSITORY_ID")
+    expect(builder).toContain("RUNNER_ENVIRONMENT")
     expect(builder).toContain("GITHUB_WORKFLOW_REF")
     expect(builder).toContain("GITHUB_RUN_ATTEMPT")
     expect(workflow).not.toContain("workflow finish")
     expect(workflow).not.toContain("workflow-finish-authority")
+    expect(authority).toContain('status: "blocked"')
+    expect(authority).toContain("TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID")
+    expect(authority).not.toContain("verifyExternalFinishAttestation")
   })
 
   it("uses fixed commands, explicit source bindings, and immutable action pins", () => {
@@ -43,11 +49,16 @@ describe("canonical clean CI attestation builder contract", () => {
 
     for (const required of [
       "GITHUB_REPOSITORY",
+      "GITHUB_REPOSITORY_ID",
       "GITHUB_REF",
+      "GITHUB_EVENT_NAME",
       "GITHUB_SHA",
       "GITHUB_WORKFLOW_SHA",
       "GITHUB_RUN_ID",
       "GITHUB_RUN_ATTEMPT",
+      "RUNNER_ENVIRONMENT",
+      "RUNNER_LABEL",
+      "RUNNER_OS",
       "--porcelain=v1",
       "argvDigest",
       "numTotalTests",
@@ -63,7 +74,7 @@ describe("canonical clean CI attestation builder contract", () => {
     expect(workflow).toContain("id-token: write")
     expect(workflow).toContain("attestations: write")
     expect(workflow).toContain("artifact-metadata: write")
-    expect(workflow).toContain("predicate-type: https://github.com/jyt6640/persona-harness/attestations/clean-ci-builder.1")
+    expect(workflow).toContain("predicate-type: https://github.com/jyt6640/persona-harness/attestations/finish-attestation.1")
   })
 
   it("pins the hosted-CI Vitest timeout in the immutable test command", () => {
