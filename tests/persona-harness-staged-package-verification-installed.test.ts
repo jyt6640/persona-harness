@@ -13,12 +13,15 @@ import { join } from "node:path"
 import process from "node:process"
 import { spawnSync } from "node:child_process"
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest"
 
 import { withPackagePackLock } from "./package-pack-lock.js"
 
 const fixtureRoots: string[] = []
+const suiteRoots: string[] = []
 const SOURCE_SHA = "a".repeat(40)
+let installedConsumer: InstalledConsumer | undefined
+let packedTarballPath = ""
 
 type JsonRecord = Readonly<Record<string, unknown>>
 
@@ -36,6 +39,12 @@ function isRecord(value: unknown): value is JsonRecord {
 function createFixtureRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "persona-staged-package-installed-test-"))
   fixtureRoots.push(root)
+  return root
+}
+
+function createSuiteRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), "persona-staged-package-installed-suite-"))
+  suiteRoots.push(root)
   return root
 }
 
@@ -208,29 +217,47 @@ afterEach(() => {
   }
 })
 
+afterAll(() => {
+  for (const root of suiteRoots.splice(0)) {
+    rmSync(root, { force: true, recursive: true })
+  }
+})
+
 describe("installed staged package verification CLI", () => {
+  beforeAll(() => {
+    const root = createSuiteRoot()
+    packedTarballPath = packCurrentRepository(root)
+    installedConsumer = installConsumer(root, packedTarballPath)
+  }, 60_000)
+
+  function consumer(): InstalledConsumer {
+    if (installedConsumer === undefined) {
+      throw new Error("Expected installed consumer")
+    }
+    return installedConsumer
+  }
+
   it("runs all eight checks from a fresh local-tarball install without authorizing promotion", { timeout: 60_000 }, () => {
     const root = createFixtureRoot()
     const repositoryManifestBefore = readFileSync(join(process.cwd(), "package.json"), "utf8")
     const repositoryLockBefore = readFileSync(join(process.cwd(), "package-lock.json"), "utf8")
-    const tarballPath = packCurrentRepository(root)
-    const consumer = installConsumer(root, tarballPath)
-    const installedHelp = run(consumer.phPath, ["--help"], consumer.consumerDir)
+    const installed = consumer()
+    const installedHelp = run(installed.phPath, ["--help"], installed.consumerDir)
     expect(installedHelp.status).toBe(0)
     expect(installedHelp.stdout).toContain("Usage: ph")
     const npmBin = provenanceNpmPath(root)
     const result = run(
-      consumer.phPath,
-      ["dev", "staged-package", ...writeFacts(root, tarballPath), "--json"],
-      consumer.consumerDir,
+      installed.phPath,
+      ["dev", "staged-package", ...writeFacts(root, packedTarballPath), "--json"],
+      installed.consumerDir,
       packageTestEnvironment({ PATH: `${npmBin}:${process.env.PATH ?? ""}` }),
     )
     const payload = parseResult(result)
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe("")
-    expect(existsSync(join(consumer.packageRoot, "dist", "cli", "staged-package-verification-command.js"))).toBe(true)
-    expect(existsSync(join(consumer.packageRoot, "tests"))).toBe(false)
+    expect(existsSync(join(installed.packageRoot, "dist", "cli", "staged-package-verification-command.js"))).toBe(true)
+    expect(existsSync(join(installed.packageRoot, "tests"))).toBe(false)
     expect(payload["verificationStatus"]).toBe("verified")
     expect(payload["promotionAuthorized"]).toBe(false)
     expect(payload["promotionDecision"]).toBe("release-approval-required")
@@ -251,11 +278,10 @@ describe("installed staged package verification CLI", () => {
 
   it("keeps hostile paths out of the installed CLI result", () => {
     const root = createFixtureRoot()
-    const tarballPath = packCurrentRepository(root)
-    const consumer = installConsumer(root, tarballPath)
+    const installed = consumer()
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
     const hostilePath = `/private/tmp/${secret}/fact.json`
-    const result = run(consumer.phPath, [
+    const result = run(installed.phPath, [
       "dev",
       "staged-package",
       "--plan",
@@ -267,7 +293,7 @@ describe("installed staged package verification CLI", () => {
       "--tarball",
       hostilePath,
       "--json",
-    ], consumer.consumerDir)
+    ], installed.consumerDir)
     const output = `${result.stdout}\n${result.stderr}`
 
     expect(result.status).toBe(1)

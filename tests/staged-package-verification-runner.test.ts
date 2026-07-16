@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest"
 
 import {
   runStagedPackageVerification,
@@ -13,7 +13,9 @@ import {
 import { withPackagePackLock } from "./package-pack-lock.js"
 
 const fixtureRoots: string[] = []
+const suiteRoots: string[] = []
 const SOURCE_SHA = "a".repeat(40)
+let packedTarballPath = ""
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -22,6 +24,12 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 function createFixtureRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "persona-staged-package-verification-"))
   fixtureRoots.push(root)
+  return root
+}
+
+function createSuiteRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), "persona-staged-package-verification-suite-"))
+  suiteRoots.push(root)
   return root
 }
 
@@ -122,10 +130,20 @@ afterEach(() => {
   }
 })
 
+afterAll(() => {
+  for (const suiteRoot of suiteRoots.splice(0)) {
+    rmSync(suiteRoot, { force: true, recursive: true })
+  }
+})
+
 describe("staged package verification runner", () => {
+  beforeAll(() => {
+    packedTarballPath = packCurrentRepository(createSuiteRoot())
+  }, 60_000)
+
   it("runs a fresh exact-version installed black-box while retaining a non-promoting result", { timeout: 60_000 }, () => {
     const root = createFixtureRoot()
-    const options = writeFacts(root, packCurrentRepository(root))
+    const options = writeFacts(root, packedTarballPath)
 
     const result = runStagedPackageVerification(options)
 
@@ -147,7 +165,7 @@ describe("staged package verification runner", () => {
   it("fails closed when the provenance verifier reports a bounded failure", () => {
     const root = createFixtureRoot()
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
-    const options = writeFacts(root, packCurrentRepository(root))
+    const options = writeFacts(root, packedTarballPath)
     const result = runStagedPackageVerification({
       ...options,
       commandRunner: commandRunnerForProvenance(1, `${secret} /private/tmp/secret`),
@@ -161,7 +179,7 @@ describe("staged package verification runner", () => {
 
   it("fails closed without following a symlinked fact path", () => {
     const root = createFixtureRoot()
-    const options = writeFacts(root, packCurrentRepository(root))
+    const options = writeFacts(root, packedTarballPath)
     const linkedPlanPath = join(root, "linked-plan.json")
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
 
@@ -180,7 +198,7 @@ describe("staged package verification runner", () => {
 
   it("fails closed without reflecting malformed fact contents", () => {
     const root = createFixtureRoot()
-    const options = writeFacts(root, packCurrentRepository(root))
+    const options = writeFacts(root, packedTarballPath)
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
 
     writeFileSync(options.registryFactsPath, `{"marker":"${secret}"`)
