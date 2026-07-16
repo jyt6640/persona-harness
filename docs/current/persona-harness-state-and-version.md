@@ -218,7 +218,7 @@ Decision:
 
 - Rule metadata diagnostics and MVP scope diagnostics are report surfaces.
 - They are not product-quality gates.
-- Scope checker runs under `npm test` for visibility, but scope findings themselves exit `0`.
+- Scope checker runs under `npm run test:repository` for visibility, but scope findings themselves exit `0`.
 
 Implications:
 
@@ -256,7 +256,8 @@ Actual result:
 
 ### Commands
 
-- `npm test`: runs scope diagnostics, then Vitest.
+- `npm test`: runs the installed-package self-contained CLI smoke.
+- `npm run test:repository`: runs scope diagnostics, docs checks, workflow policy checks, Vitest, then a sequential offline packed-install contract.
 - `npm run test:unit`: runs Vitest only.
 - `npm run typecheck`: TypeScript typecheck.
 - `npm run build`: build dist.
