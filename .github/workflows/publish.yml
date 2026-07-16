@@ -6,11 +6,21 @@ on:
       dist_tag:
         description: "npm dist-tag to publish"
         required: true
-        default: "next"
+        default: "staging"
         type: choice
         options:
+          - staging
           - next
           - latest
+      approval_scope:
+        description: "Required explicit release approval scope for the selected channel"
+        required: true
+        default: "staging-only"
+        type: choice
+        options:
+          - staging-only
+          - next-promotion-approved
+          - ga-approved
 
 concurrency:
   group: publish-${{ github.ref }}-${{ inputs.dist_tag }}
@@ -86,6 +96,7 @@ jobs:
 
       - name: Validate publish inputs
         env:
+          APPROVAL_SCOPE: ${{ inputs.approval_scope }}
           DIST_TAG: ${{ inputs.dist_tag }}
         run: |
           set -euo pipefail
@@ -93,6 +104,7 @@ jobs:
           echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
           echo "EXPECTED_GIT_HEAD=${GITHUB_SHA}" >> "$GITHUB_ENV"
           node scripts/release-workflow-policy.mjs dist-tag \
+            --approval-scope "$APPROVAL_SCOPE" \
             --version "$version" \
             --dist-tag "$DIST_TAG"
 
@@ -136,6 +148,7 @@ jobs:
             echo "- package: persona-harness@${PACKAGE_VERSION}"
             echo "- gitHead: ${EXPECTED_GIT_HEAD}"
             echo "- dist-tag: ${{ inputs.dist_tag }}"
+            echo "- approval scope: ${{ inputs.approval_scope }}"
             echo
             echo "### Registry package"
             echo '```json'

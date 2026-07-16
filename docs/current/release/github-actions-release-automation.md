@@ -80,11 +80,16 @@ Npm publish is no longer performed by the tag workflow. Use
 
 Supported dist-tags:
 
-- `next` for prerelease candidates.
-- `latest` for stable releases.
+- `staging` for the first approved prerelease publish, with
+  `approval_scope=staging-only`.
+- `next` only for a separately approved prerelease promotion, with
+  `approval_scope=next-promotion-approved`.
+- `latest` only for a separately approved stable/GA release, with
+  `approval_scope=ga-approved`.
 
 The publish workflow rejects prerelease versions published as `latest` and
-stable versions published as `next`.
+stable versions published as `staging` or `next`. It also rejects an approval
+scope that does not match the fixed selected channel.
 
 ## GitHub Release Notes
 
@@ -124,10 +129,12 @@ Manual dispatch exists for controlled publishes after QA release GO.
 
 Inputs:
 
-- `dist_tag`: `next` or `latest`
+- `dist_tag`: `staging`, `next`, or `latest`
+- `approval_scope`: `staging-only`, `next-promotion-approved`, or
+  `ga-approved`, matching the selected channel
 
 Manual dispatch does not replace version commits, registry verification, or
-post-publish git tags.
+post-publish git tags. It never creates or moves a Git tag.
 
 ## Release Sequence
 
@@ -137,9 +144,14 @@ post-publish git tags.
 4. Run local verification.
 5. Commit the release prep.
 6. Push the commit.
-7. Run `.github/workflows/publish.yml` with the intended dist-tag.
-8. Verify registry gitHead and shasum from the workflow post-check.
-9. Create and push the matching tag.
+7. Run `.github/workflows/publish.yml` first with `dist_tag=staging` and
+   `approval_scope=staging-only`.
+8. Verify registry gitHead and shasum from the workflow post-check and run the
+   staged installed-package gate.
+9. Create and push the matching tag only through its separately approved
+   release sequence.
+10. Obtain a separate approval and dispatch before moving the exact verified
+    prerelease to `next`.
 
 ```bash
 git push origin main

@@ -847,9 +847,12 @@ Release verification and GitHub release-note automation live in
 
 - Push `vX.Y.Z*` tags to verify the package and create GitHub release notes only.
 - Publish npm packages from `.github/workflows/publish.yml` after QA release GO
-  with an explicit dist-tag (`next` or `latest`).
-- Release-candidate packages use npm dist-tag `next`; stable packages use
-  `latest`.
+  with a fixed channel and matching approval scope.
+- Release-candidate packages first use `staging` with `staging-only`; moving a
+  verified immutable prerelease to `next` requires a later separate
+  `next-promotion-approved` dispatch.
+- Stable packages use `latest` only with a separately approved `ga-approved`
+  dispatch.
 - The publish workflow verifies docs, injection-value, typecheck, tests, build,
   product smoke, and package dry-run before npm publish.
 - The publish workflow uses npm Trusted Publishing/OIDC; no `NPM_TOKEN` secret

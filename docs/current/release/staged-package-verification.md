@@ -1,7 +1,7 @@
 # Staged Package Verification
 
 This is a read-only gate for a candidate package that has already been staged
-under `next`. It verifies aligned facts before a later, separately authorized
+under `staging`. It verifies aligned facts before a later, separately authorized
 channel-promotion decision. It does not publish, tag, deprecate, move a
 dist-tag, or authorize a release.
 
@@ -19,7 +19,7 @@ ph dev staged-package --plan <path> --preflight <path> --registry-facts <path> -
 The gate accepts bounded, versioned fact files plus one local tarball:
 
 - `staged-package-plan.1` binds the candidate package/version, canonical main
-  source head, matching `v<version>` tag, current staged tag `next`, and the
+  source head, matching `v<version>` tag, current staged tag `staging`, and the
   intended later promotion target.
 - `staged-package-preflight.1` records a read-only exact-version availability
   check. A present version blocks the gate.
@@ -64,6 +64,16 @@ it always reports:
 
 Promotion remains a separate release approval action. Existing workflow-finish
 authority remains unchanged and local package facts do not create Finish PASS.
+
+## Channel Sequence
+
+For an approved prerelease, publish to the fixed `staging` channel first and
+complete this gate plus the registry and fresh installed-package readback.
+Moving that exact immutable version to `next` requires a later, separate
+workflow dispatch with the explicit `next-promotion-approved` scope. `latest`
+is not a prerelease target and requires a separate approved stable/GA decision.
+Neither the verifier nor the publish workflow creates or moves a Git tag
+automatically.
 
 ## Durable Closure Evidence
 

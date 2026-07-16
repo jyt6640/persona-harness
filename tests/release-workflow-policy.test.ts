@@ -65,18 +65,22 @@ describe("release workflow policy", () => {
   })
 
   it.each([
-    ["prerelease next", "0.7.0-rc.1", "next"],
-    ["stable latest", "0.7.0", "latest"],
-  ])("accepts %s", (_label, version, distTag) => {
-    expect(checkDistTagCompatibility({ distTag, version })).toEqual({ ok: true })
+    ["prerelease staging", "0.7.0-rc.1", "staging", "staging-only"],
+    ["prerelease next after promotion approval", "0.7.0-rc.1", "next", "next-promotion-approved"],
+    ["stable latest after GA approval", "0.7.0", "latest", "ga-approved"],
+  ])("accepts %s", (_label, version, distTag, approvalScope) => {
+    expect(checkDistTagCompatibility({ approvalScope, distTag, version })).toEqual({ ok: true })
   })
 
   it.each([
-    ["prerelease latest", "0.7.0-rc.1", "latest"],
-    ["stable next", "0.7.0", "next"],
-    ["unsupported tag", "0.7.0", "beta"],
-  ])("rejects %s", (_label, version, distTag) => {
-    expect(checkDistTagCompatibility({ distTag, version })).toMatchObject({ ok: false })
+    ["prerelease latest", "0.7.0-rc.1", "latest", "ga-approved"],
+    ["stable next", "0.7.0", "next", "next-promotion-approved"],
+    ["stable staging", "0.7.0", "staging", "staging-only"],
+    ["next without a separate approval", "0.7.0-rc.1", "next", "staging-only"],
+    ["latest without a separate GA approval", "0.7.0", "latest", "next-promotion-approved"],
+    ["unsupported tag", "0.7.0", "beta", "staging-only"],
+  ])("rejects %s", (_label, version, distTag, approvalScope) => {
+    expect(checkDistTagCompatibility({ approvalScope, distTag, version })).toMatchObject({ ok: false })
   })
 
   it("requires registry version, gitHead, shasum, integrity, and dist-tag", () => {

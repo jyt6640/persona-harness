@@ -19,6 +19,7 @@ export type TagSource = {
 }
 
 export type DistTagCompatibility = {
+  readonly approvalScope: string
   readonly distTag: string
   readonly version: string
 }

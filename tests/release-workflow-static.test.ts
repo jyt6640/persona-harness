@@ -47,4 +47,68 @@ describe("CI and release workflow policy surface", () => {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
   })
+
+  it("rejects a publish workflow that omits the fixed staging approval surface", () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), "release-workflow-staging-policy-test-"))
+    try {
+      mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
+      mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
+      copyFileSync(
+        join(process.cwd(), "scripts", "check-release-workflows.mjs"),
+        join(fixtureDir, "scripts", "check-release-workflows.mjs"),
+      )
+
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml"]) {
+        const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
+        const source = readFileSync(sourcePath, "utf8")
+        const unsafeSource = workflowName === "publish.yml"
+          ? source
+            .replace("          - staging\n", "")
+            .replace('--approval-scope "$APPROVAL_SCOPE"', '--approval-scope ""')
+          : source
+        writeFileSync(join(fixtureDir, ".github", "workflows", workflowName), unsafeSource)
+      }
+
+      const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
+        cwd: fixtureDir,
+        encoding: "utf8",
+      })
+
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain("publish staging approval")
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it("rejects a publish workflow that creates or moves a Git tag", () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), "release-workflow-tag-movement-test-"))
+    try {
+      mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
+      mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
+      copyFileSync(
+        join(process.cwd(), "scripts", "check-release-workflows.mjs"),
+        join(fixtureDir, "scripts", "check-release-workflows.mjs"),
+      )
+
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml"]) {
+        const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
+        const source = readFileSync(sourcePath, "utf8")
+        const unsafeSource = workflowName === "publish.yml"
+          ? `${source}\n      - name: Unsafe tag movement\n        run: git tag v0.7.0-rc.4\n`
+          : source
+        writeFileSync(join(fixtureDir, ".github", "workflows", workflowName), unsafeSource)
+      }
+
+      const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
+        cwd: fixtureDir,
+        encoding: "utf8",
+      })
+
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain("publish no automatic tag movement")
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
 })
