@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -8,6 +7,7 @@ import {
   captureGitIdentity,
   captureWorkspaceIdentity,
 } from "./ci-reverification-identity.js"
+import { runFixedGit } from "./fixed-git.js"
 import { captureSourceIdentity, sameSourceIdentity } from "./source-identity.js"
 import type { SourceIdentity } from "./source-identity-types.js"
 import type { FinishAttestationDiagnostic } from "./workflow-finish-attestation-types.js"
@@ -32,12 +32,7 @@ export function compareCurrentSource(
 
   const tempRoot = mkdtempSync(join(tmpdir(), "persona-harness-source-"))
   const cleanRoot = join(tempRoot, "source")
-  const added = spawnSync("git", ["worktree", "add", "--detach", cleanRoot, expected.repositoryHead], {
-    cwd: projectDir,
-    encoding: "utf8",
-    shell: false,
-    timeout: 10_000,
-  })
+  const added = runFixedGit(projectDir, ["worktree", "add", "--detach", cleanRoot, expected.repositoryHead])
   if (added.status !== 0) {
     rmSync(tempRoot, { force: true, recursive: true })
     return { code: "source-drift", message: "A clean source snapshot could not be materialized.", path: "source" }
@@ -54,12 +49,7 @@ export function compareCurrentSource(
     }
     return undefined
   } finally {
-    spawnSync("git", ["worktree", "remove", "--force", cleanRoot], {
-      cwd: projectDir,
-      encoding: "utf8",
-      shell: false,
-      timeout: 10_000,
-    })
+    runFixedGit(projectDir, ["worktree", "remove", "--force", cleanRoot])
     rmSync(tempRoot, { force: true, recursive: true })
   }
 }

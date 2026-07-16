@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
@@ -49,6 +50,45 @@ describe("finish-attestation.1 product authority", () => {
     expect(result.authorityEligible).toBe(false)
     expect(["malformed", "crypto-failed", "wrong-policy"]).toContain(result.state)
     expect(existsSync(join(project.projectDir, FINISH_ATTESTATION_CONSUMPTION_PATH))).toBe(false)
+  })
+
+  it.skipIf(process.platform === "win32")("does not trust modified tracked source when PATH git fakes clean status", () => {
+    const project = track(createRealArtifactProject())
+    writeFileSync(join(project.projectDir, "README.md"), `${readFileSync(join(project.projectDir, "README.md"), "utf8")}\nattacker-change\n`)
+    const shimRoot = mkdtempSync(join(tmpdir(), "persona-finish-attestation-git-shim-"))
+    const shim = join(shimRoot, "git")
+    const shimTarget = join(shimRoot, "git-shim")
+    writeFileSync(
+      shimTarget,
+      ["#!/bin/sh", 'if [ "$1" = "status" ]; then exit 0; fi', 'exec /usr/bin/git "$@"', ""].join("\n"),
+      { mode: 0o755 },
+    )
+    symlinkSync(shimTarget, shim)
+    try {
+      const result = withEnvironment({ PATH: shimRoot }, () =>
+        verifyExternalFinishAttestation(project.projectDir, REAL_ATTESTATION_NOW, { consume: false }),
+      )
+
+      expect(result).toMatchObject({ authorityEligible: false, state: "source-drift" })
+    } finally {
+      rmSync(shimRoot, { force: true, recursive: true })
+    }
+  })
+
+  it("does not trust modified tracked source when Git environment redirects the repository", () => {
+    const project = track(createRealArtifactProject())
+    writeFileSync(join(project.projectDir, "README.md"), `${readFileSync(join(project.projectDir, "README.md"), "utf8")}\nattacker-change\n`)
+    const injectedGitDir = mkdtempSync(join(tmpdir(), "persona-finish-attestation-git-dir-"))
+    try {
+      const result = withEnvironment(
+        { GIT_DIR: injectedGitDir, GIT_WORK_TREE: project.projectDir, GIT_CONFIG_GLOBAL: join(injectedGitDir, "config") },
+        () => verifyExternalFinishAttestation(project.projectDir, REAL_ATTESTATION_NOW, { consume: false }),
+      )
+
+      expect(result).toMatchObject({ authorityEligible: false, state: "source-drift" })
+    } finally {
+      rmSync(injectedGitDir, { force: true, recursive: true })
+    }
   })
 
   it("rechecks expiry after an earlier trusted validation", () => {
@@ -110,4 +150,20 @@ describe("finish-attestation.1 product authority", () => {
 function track(project: RealArtifactProject): RealArtifactProject {
   projects.push(project)
   return project
+}
+
+function withEnvironment<T>(updates: Readonly<Record<string, string>>, operation: () => T): T {
+  const previous = new Map<string, string | undefined>()
+  for (const [key, value] of Object.entries(updates)) {
+    previous.set(key, process.env[key])
+    process.env[key] = value
+  }
+  try {
+    return operation()
+  } finally {
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+  }
 }
