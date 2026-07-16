@@ -192,9 +192,8 @@ export function runCiReverification(
     preSourceResult.value,
     postSource,
   )
-  const disallowed = Array.isArray(mutationSnapshot.disallowedTracked)
-    ? mutationSnapshot.disallowedTracked.length > 0
-    : false
+  const disallowed = mutationSnapshot.kind === "complete"
+    && mutationSnapshot.disallowedTracked.count > 0
   const identityPartial = commandRecords.length > 0 && (
     postRoot === undefined
     || !samePathIdentity(preRootResult.value, postRoot)
