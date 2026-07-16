@@ -79,6 +79,7 @@
     "docs/current/stable-containment-execution-evidence.md",
     "docs/current/korean-cli-help-scope-authorization.md",
     "docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md",
+    "docs/current/p3-10-external-finish-attestation-verifier-acceptance-record.md",
     "docs/current/p3-5-semantic-tdd-acceptance-record.md",
     "docs/current/quick-demo-acceptance-record.md",
     "docs/current/rail-entry-measurement-status.md",
@@ -103,7 +104,8 @@
     "packages/lsp-tools-mcp/lib",
     "packages/shared-skills/skills/programming/SKILL.md",
     "packages/shared-skills/skills/programming/references/java",
-    "packages/shared-skills/skills/workflow"
+    "packages/shared-skills/skills/workflow",
+    "scripts/verify-finish-attestation.mjs"
   ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
@@ -139,7 +141,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "1.15.13"
+    "@opencode-ai/plugin": "1.15.13",
+    "@sigstore/bundle": "4.0.0",
+    "@sigstore/tuf": "4.0.0",
+    "@sigstore/verify": "3.0.0"
   },
   "optionalDependencies": {
     "@colbymchenry/codegraph": "1.1.6",

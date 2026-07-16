@@ -32,7 +32,7 @@ type TrustedLocalVerificationDecision = {
   readonly verifiedAt: string
 }
 
-type TrustedExternalVerificationDecision = {
+export type TrustedExternalVerificationDecision = {
   readonly attestationId: string
   readonly authority: "external-attested"
   readonly decisionId: string
@@ -72,6 +72,18 @@ export function blockedVerificationDecision(
     status: "blocked",
     summary,
   }
+}
+
+export function externalAttestedVerificationDecision(
+  input: Omit<TrustedExternalVerificationDecision, "authority" | "status">,
+): TrustedExternalVerificationDecision {
+  const decision: TrustedExternalVerificationDecision = Object.freeze({
+    ...input,
+    authority: "external-attested",
+    status: "trusted",
+  })
+  trustedDecisionObjects.add(decision)
+  return decision
 }
 
 export function isTrustedVerificationDecision(value: unknown): value is TrustedVerificationDecision {

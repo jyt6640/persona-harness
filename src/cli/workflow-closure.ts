@@ -103,9 +103,40 @@ export function runWorkflowClosureCommand(action: ClosureAction, options: { read
 }
 
 export function readWorkflowClosurePayload(
+  action: "next",
+  projectDir: string,
+  options?: {
+    readonly consumeExternalAttestation?: boolean
+    readonly now?: Date
+    readonly recordTddGreenEvidence?: boolean
+  },
+): ClosureNextPayload
+export function readWorkflowClosurePayload(
+  action: "status",
+  projectDir: string,
+  options?: {
+    readonly consumeExternalAttestation?: boolean
+    readonly now?: Date
+    readonly recordTddGreenEvidence?: boolean
+  },
+): ClosureStatusPayload
+export function readWorkflowClosurePayload(
   action: ClosureAction,
   projectDir: string,
-  options: { readonly recordTddGreenEvidence?: boolean } = {},
+  options?: {
+    readonly consumeExternalAttestation?: boolean
+    readonly now?: Date
+    readonly recordTddGreenEvidence?: boolean
+  },
+): ClosurePayload
+export function readWorkflowClosurePayload(
+  action: ClosureAction,
+  projectDir: string,
+  options: {
+    readonly consumeExternalAttestation?: boolean
+    readonly now?: Date
+    readonly recordTddGreenEvidence?: boolean
+  } = {},
 ): ClosurePayload {
   const state = readWorkflowClosureState(projectDir, options)
   const steps = closureSteps(state)
@@ -115,7 +146,14 @@ export function readWorkflowClosurePayload(
   return { action, state, steps }
 }
 
-function readWorkflowClosureState(projectDir: string, options: { readonly recordTddGreenEvidence?: boolean }): WorkflowClosureState {
+function readWorkflowClosureState(
+  projectDir: string,
+  options: {
+    readonly consumeExternalAttestation?: boolean
+    readonly now?: Date
+    readonly recordTddGreenEvidence?: boolean
+  },
+): WorkflowClosureState {
   const summary = readWorkflowStatus(projectDir)
   const verification = readClosureVerification(projectDir, summary)
   const pendingTickets = summary.pendingTickets.map((ticket) => ticket.ticket)
@@ -173,7 +211,10 @@ function readWorkflowClosureState(projectDir: string, options: { readonly record
               source: configResult.config.evidenceDir,
             }]
           : []
-  const authority = readWorkflowFinishAuthority(projectDir)
+  const authority = readWorkflowFinishAuthority(projectDir, {
+    consumeExternalAttestation: options.consumeExternalAttestation ?? false,
+    now: options.now,
+  })
   const blockers = configBlockers.length > 0
     ? configBlockers
     : pathBlockers.length > 0
