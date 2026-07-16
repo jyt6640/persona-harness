@@ -1,0 +1,75 @@
+name: Supported Node matrix
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supported-node-matrix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  support:
+    name: Support matrix / ${{ matrix.platform }} / Node ${{ matrix.node }} / ${{ matrix.coverage }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux
+            node: 20
+            coverage: supported
+          - runner: ubuntu-latest
+            platform: linux
+            node: 22
+            coverage: supported
+          - runner: ubuntu-latest
+            platform: linux
+            node: 24
+            coverage: supported
+          - runner: macos-latest
+            platform: macos
+            node: 22
+            coverage: limited-smoke
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Show support environment
+        run: |
+          node --version
+          npm --version
+          printf 'platform=%s node=%s coverage=%s\n' '${{ matrix.platform }}' '${{ matrix.node }}' '${{ matrix.coverage }}'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check support matrix policy
+        run: node scripts/check-supported-node-matrix.mjs
+
+      - name: Run Linux source repository checks
+        if: matrix.platform == 'linux'
+        run: npm run test:repository
+
+      - name: Build source candidate
+        run: npm run build
+
+      - name: Verify source-built package surface
+        run: node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "${{ matrix.platform }}" --expected-node-major "${{ matrix.node }}"
+
+      - name: Verify fresh local-tarball installed package surface
+        run: node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "${{ matrix.platform }}" --expected-node-major "${{ matrix.node }}"
