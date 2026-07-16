@@ -4,8 +4,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { isAbsolute, join, normalize, relative, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
-export const BUILDER_SCHEMA = "clean-ci-builder.1"
-export const BUILDER_PREDICATE_TYPE = "https://github.com/jyt6640/persona-harness/attestations/clean-ci-builder.1"
+import { captureCleanSourceIdentity } from "./build-clean-ci-source-identity.mjs"
+
+export const BUILDER_SCHEMA = "finish-attestation.1"
+export const BUILDER_PREDICATE_TYPE = "https://github.com/jyt6640/persona-harness/attestations/finish-attestation.1"
 export const COMMAND_CATALOG_ID = "persona-harness-clean-ci-builder.1"
 export const FAILURE_DIAGNOSTIC_SCHEMA = "clean-ci-builder-failure.1"
 const COMMAND_TIMEOUT_MS = 300_000
@@ -45,8 +47,8 @@ function main() {
     const receipt = createReceipt(context, commandResults, testFacts, packFacts, packageJson.version)
     const receiptBytes = Buffer.from(`${canonicalJson(receipt)}\n`)
     const predicate = {
-      authorityEligible: false,
-      authorityBoundary: "builder-output-is-non-authoritative",
+      authorityBoundary: "external-attested",
+      authorityEligible: true,
       predicateType: BUILDER_PREDICATE_TYPE,
       receiptDigest: `sha256:${sha256(receiptBytes)}`,
       receipt,
@@ -76,12 +78,16 @@ function readGitHubContext() {
   const workspaceRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim()
   const sourceHead = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()
   const context = {
+    event: requiredEnv("GITHUB_EVENT_NAME"),
     repository: requiredEnv("GITHUB_REPOSITORY"),
+    repositoryId: numberEnv("GITHUB_REPOSITORY_ID"),
     ref: requiredEnv("GITHUB_REF"),
     sourceHead,
     contextHead: requiredEnv("GITHUB_SHA"),
     workflowSha: requiredEnv("GITHUB_WORKFLOW_SHA"),
     workflowRef: requiredEnv("GITHUB_WORKFLOW_REF"),
+    runnerEnvironment: requiredEnv("RUNNER_ENVIRONMENT"),
+    runnerOs: requiredEnv("RUNNER_OS"),
     runId: requiredEnv("GITHUB_RUN_ID"),
     runAttempt: requiredEnv("GITHUB_RUN_ATTEMPT"),
     workspaceRoot,
@@ -98,6 +104,7 @@ function readGitHubContext() {
   return {
     ...context,
     cleanStatusDigest: `sha256:${sha256(cleanStatus)}`,
+    sourceIdentity: captureCleanSourceIdentity(workspaceRoot),
   }
 }
 
@@ -131,7 +138,6 @@ function runCommand(command, workspaceRoot) {
 }
 
 function createReceipt(context, commandResults, testFacts, packFacts, phVersion) {
-  const builderStatus = context.ref === "refs/heads/main" ? "canonical-main-builder-candidate" : "staging-non-authoritative"
   const commandCatalog = FIXED_COMMANDS.map((command) => ({
     args: command.args,
     executable: command.executable,
@@ -139,9 +145,8 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
   }))
 
   return {
-    authorityBoundary: "builder-output-is-non-authoritative",
-    authorityEligible: false,
-    builderStatus,
+    authorityBoundary: "external-attested",
+    authorityEligible: true,
     command: {
       argvDigest: `sha256:${sha256(canonicalJson(commandCatalog))}`,
       catalogId: COMMAND_CATALOG_ID,
@@ -155,6 +160,7 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
       })),
     },
     expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    event: context.event,
     finishId: `clean-ci-builder-finish-${context.runId}-${context.runAttempt}`,
     issuedAt: new Date().toISOString(),
     nonce: `clean-ci-builder-${context.runId}-${context.runAttempt}-${context.sourceHead}`,
@@ -162,6 +168,7 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
     predicateType: BUILDER_PREDICATE_TYPE,
     ref: context.ref,
     repository: context.repository,
+    repositoryId: context.repositoryId,
     replayState: "unconsumed",
     runAttempt: Number(context.runAttempt),
     runId: context.runId,
@@ -171,15 +178,18 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
       clean: true,
       dirtyWorktreeDigest: context.cleanStatusDigest,
       head: context.sourceHead,
+      identity: context.sourceIdentity,
     },
     test: testFacts,
     workflow: {
-      jobWorkflowRef: context.workflowRef,
-      workflowSha: context.workflowSha,
+      path: ".github/workflows/canonical-clean-ci-attestation-builder.yml",
+      ref: context.workflowRef,
+      sha: context.workflowSha,
     },
-    workspaceIdentity: {
-      identityDigest: `sha256:${sha256(context.workspaceRoot)}`,
-      kind: "github-hosted-runner",
+    runner: {
+      environment: context.runnerEnvironment,
+      label: "ubuntu-latest",
+      os: context.runnerOs,
     },
     attemptId: `clean-ci-builder-attempt-${context.runId}-${context.runAttempt}`,
     pack: packFacts,
@@ -255,6 +265,13 @@ function requiredEnv(name) {
   const value = process.env[name]
   if (value === undefined || value.length === 0) fail(`missing GitHub context: ${name}`)
   return value
+}
+
+function numberEnv(name) {
+  const value = requiredEnv(name)
+  const parsed = Number(value)
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) fail(`invalid GitHub context: ${name}`)
+  return parsed
 }
 
 function commandExitState(result) {

@@ -173,7 +173,9 @@ function readWorkflowClosureState(projectDir: string, options: { readonly record
               source: configResult.config.evidenceDir,
             }]
           : []
-  const authority = readWorkflowFinishAuthority(projectDir)
+  const authority = readWorkflowFinishAuthority(projectDir, {
+    consumeExternalAttestation: legacyBlockers.length === 0 && configBlockers.length === 0 && pathBlockers.length === 0,
+  })
   const blockers = configBlockers.length > 0
     ? configBlockers
     : pathBlockers.length > 0

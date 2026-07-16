@@ -74,6 +74,18 @@ export function blockedVerificationDecision(
   }
 }
 
+export function externalAttestedVerificationDecision(
+  input: Omit<TrustedExternalVerificationDecision, "authority" | "status">,
+): TrustedExternalVerificationDecision {
+  const decision: TrustedExternalVerificationDecision = Object.freeze({
+    ...input,
+    authority: "external-attested",
+    status: "trusted",
+  })
+  trustedDecisionObjects.add(decision)
+  return decision
+}
+
 export function isTrustedVerificationDecision(value: unknown): value is TrustedVerificationDecision {
   if (typeof value !== "object" || value === null || !("status" in value) || value.status !== "trusted") {
     return false

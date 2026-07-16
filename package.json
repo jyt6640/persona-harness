@@ -87,6 +87,8 @@
     "docs/current/role-rules-dogfooding-readiness.md",
     "docs/current/role-scoped-rule-delivery.md",
     "docs/current/workflow-string-gate-parsing-audit.md",
+    "scripts/build-clean-ci-source-identity.mjs",
+    "scripts/verify-finish-attestation.mjs",
     "docs/current/workflow-state-concurrency.md",
     "docs/current/release",
     "docs/releases",
@@ -139,7 +141,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "1.15.13"
+    "@opencode-ai/plugin": "1.15.13",
+    "@sigstore/bundle": "4.0.0",
+    "@sigstore/tuf": "4.0.0",
+    "@sigstore/verify": "3.0.0"
   },
   "optionalDependencies": {
     "@colbymchenry/codegraph": "1.1.6",
