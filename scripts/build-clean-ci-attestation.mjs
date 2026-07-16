@@ -14,6 +14,9 @@ export const CANONICAL_REPOSITORY = "jyt6640/persona-harness"
 export const CANONICAL_REPOSITORY_ID = 1272008570
 export const CANONICAL_WORKFLOW_PATH = ".github/workflows/canonical-clean-ci-attestation-builder.yml"
 export const CANONICAL_WORKFLOW_REF = `${CANONICAL_REPOSITORY}/${CANONICAL_WORKFLOW_PATH}@refs/heads/main`
+export const CANONICAL_RUNNER_LABEL = "ubuntu-latest"
+const CANONICAL_RUNNER_ENVIRONMENT = "github-hosted"
+const CANONICAL_RUNNER_OS = "Linux"
 const COMMAND_TIMEOUT_MS = 300_000
 const OUTPUT_DIRECTORY = ".ci/canonical-clean-ci-attestation-builder"
 const TEST_REPORT_PATH = `${OUTPUT_DIRECTORY}/test-results.json`
@@ -81,6 +84,7 @@ function readGitHubContext() {
 
   const workspaceRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim()
   const sourceHead = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()
+  const runnerContext = readCanonicalRunnerContext(process.env)
   const context = {
     repository: requiredEnv("GITHUB_REPOSITORY"),
     repositoryId: requiredEnv("GITHUB_REPOSITORY_ID"),
@@ -92,9 +96,9 @@ function readGitHubContext() {
     workflowRef: requiredEnv("GITHUB_WORKFLOW_REF"),
     runId: requiredEnv("GITHUB_RUN_ID"),
     runAttempt: requiredEnv("GITHUB_RUN_ATTEMPT"),
-    runnerEnvironment: requiredEnv("RUNNER_ENVIRONMENT"),
-    runnerLabel: requiredEnv("RUNNER_LABEL"),
-    runnerOs: requiredEnv("RUNNER_OS"),
+    runnerEnvironment: runnerContext.environment,
+    runnerLabel: runnerContext.label,
+    runnerOs: runnerContext.os,
     workspaceRoot,
   }
 
@@ -106,9 +110,9 @@ function readGitHubContext() {
     || context.repository !== CANONICAL_REPOSITORY
     || context.repositoryId !== String(CANONICAL_REPOSITORY_ID)
     || context.workflowRef !== CANONICAL_WORKFLOW_REF
-    || context.runnerEnvironment !== "github-hosted"
-    || context.runnerLabel !== "ubuntu-latest"
-    || context.runnerOs !== "Linux"
+    || context.runnerEnvironment !== CANONICAL_RUNNER_ENVIRONMENT
+    || context.runnerLabel !== CANONICAL_RUNNER_LABEL
+    || context.runnerOs !== CANONICAL_RUNNER_OS
   ) {
     fail("clean-CI builder requires the canonical protected-main GitHub context")
   }
@@ -122,6 +126,19 @@ function readGitHubContext() {
     ...context,
     cleanStatusDigest: `sha256:${sha256(cleanStatus)}`,
     sourceIdentity: captureSourceIdentity(workspaceRoot),
+  }
+}
+
+export function readCanonicalRunnerContext(env = process.env) {
+  const environment = requiredEnvFrom(env, "RUNNER_ENVIRONMENT")
+  const os = requiredEnvFrom(env, "RUNNER_OS")
+  if (environment !== CANONICAL_RUNNER_ENVIRONMENT || os !== CANONICAL_RUNNER_OS) {
+    fail("clean-CI builder requires the canonical protected-main GitHub context")
+  }
+  return {
+    environment,
+    label: CANONICAL_RUNNER_LABEL,
+    os,
   }
 }
 
@@ -279,7 +296,11 @@ function sortKeys(value) {
 }
 
 function requiredEnv(name) {
-  const value = process.env[name]
+  return requiredEnvFrom(process.env, name)
+}
+
+function requiredEnvFrom(env, name) {
+  const value = env[name]
   if (value === undefined || value.length === 0) fail(`missing GitHub context: ${name}`)
   return value
 }

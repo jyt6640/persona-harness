@@ -4,6 +4,12 @@ export type BuilderFailure = {
   readonly exitState: string
 }
 
+export type CanonicalRunnerContext = {
+  readonly environment: "github-hosted"
+  readonly label: "ubuntu-latest"
+  readonly os: "Linux"
+}
+
 export type FailureReportSummary = {
   readonly available: boolean
   readonly digest: string | null
@@ -35,6 +41,12 @@ export const FIXED_COMMANDS: readonly {
   readonly args: readonly string[]
 }[]
 
+export const CANONICAL_RUNNER_LABEL: "ubuntu-latest"
+
 export const FAILURE_DIAGNOSTIC_SCHEMA: "clean-ci-builder-failure.1"
 
 export function createFailureDiagnostic(failure: BuilderFailure, reportPath: string, workspaceRoot: string): FailureDiagnostic
+
+export function readCanonicalRunnerContext(
+  env?: Readonly<Record<string, string | undefined>>,
+): CanonicalRunnerContext
