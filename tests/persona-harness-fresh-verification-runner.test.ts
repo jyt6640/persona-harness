@@ -24,6 +24,11 @@ afterEach(() => {
 describe("fresh fixed-command verification runner", () => {
   it("writes a bound completed attempt and local receipt only after fresh tests run", () => {
     const projectDir = createProject(successScript())
+    const token = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+    mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })
+    writeFileSync(join(projectDir, "src", "main", "java", `${token}-Fixture.java`), "class Fixture {}\n")
+    execFileSync("git", ["add", "src/main/java"], { cwd: projectDir })
+    execFileSync("git", ["commit", "-qm", "tracked fixture name"], { cwd: projectDir })
 
     const result = runFreshFixedVerification(projectDir, "ci", {
       finishId: "finish-test-001",
@@ -39,6 +44,7 @@ describe("fresh fixed-command verification runner", () => {
     expect(result.attemptPath).toContain(".persona/evidence/verification-attempts/")
     expect(result.receiptPath).toContain(".persona/evidence/verification-receipts/")
 
+    const artifactSource = readFileSync(result.artifactPath ?? "", "utf8")
     const attemptSource = readFileSync(result.attemptPath ?? "", "utf8")
     const receiptSource = readFileSync(result.receiptPath ?? "", "utf8")
     const parsedAttempt = parseVerificationAttempt(attemptSource, "attempt.json")
@@ -50,8 +56,16 @@ describe("fresh fixed-command verification runner", () => {
       authorityEligible: false,
       state: "untrusted",
     })
+    expect(artifactSource).not.toContain(projectDir)
+    expect(artifactSource).not.toContain(token)
     expect(attemptSource).not.toContain("secret-output")
     expect(receiptSource).not.toContain("secret-output")
+    expect(attemptSource).toContain('"schemaVersion": "source-identity.1"')
+    expect(receiptSource).toContain('"schemaVersion": "source-identity.1"')
+    expect(attemptSource).not.toContain(projectDir)
+    expect(receiptSource).not.toContain(projectDir)
+    expect(attemptSource).not.toContain(token)
+    expect(receiptSource).not.toContain(token)
   })
 
   it("fails closed on a zero-test command and does not issue a receipt", () => {

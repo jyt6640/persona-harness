@@ -1,10 +1,11 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { readJavaRoleReadCoverage } from "../src/cli/java-role-read-coverage.js"
 
 const tempProjects: string[] = []
 
@@ -177,4 +178,79 @@ describe("ph workflow Java role read coverage", () => {
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
+
+  it("fails closed without following a dangling generated Java role symlink", () => {
+    const projectDir = createTempProject()
+    writeReadyJpaProfile(projectDir)
+    writeWorkflowEvidence(projectDir)
+    writeSpringJpaProject(projectDir)
+    const danglingPath = join(projectDir, "src", "main", "java", "com", "example", "presentation", "DanglingController.java")
+    symlinkSync(join(projectDir, "missing-java-target"), danglingPath)
+
+    expect(() => readJavaRoleReadCoverage(projectDir, "filled")).not.toThrow()
+    const summary = readJavaRoleReadCoverage(projectDir, "filled")
+
+    expect(summary).toEqual({
+      javaRoleReadCoverage: "Java role discovery is unavailable; read-only recovery is required.",
+      javaRoleReadCoverageBlocking: true,
+      javaRoleReadCoverageFinding: "WARN",
+    })
+    expect(JSON.stringify(summary)).not.toContain(projectDir)
+  })
+
+  it("rejects cyclic and unreadable Java role paths without emitting their locations", () => {
+    const projectDir = createTempProject()
+    writeReadyJpaProfile(projectDir)
+    writeWorkflowEvidence(projectDir)
+    writeSpringJpaProject(projectDir)
+    const presentationDir = join(projectDir, "src", "main", "java", "com", "example", "presentation")
+    symlinkSync(presentationDir, join(presentationDir, "cycle"), "dir")
+
+    expectUnsafeJavaRoleDiscovery(projectDir)
+
+    rmSync(join(presentationDir, "cycle"))
+    const unreadableDir = join(presentationDir, "unreadable")
+    mkdirSync(unreadableDir)
+    writeFileSync(join(unreadableDir, "HiddenController.java"), "class HiddenController {}\n")
+    chmodSync(unreadableDir, 0o000)
+    try {
+      expectUnsafeJavaRoleDiscovery(projectDir)
+    } finally {
+      chmodSync(unreadableDir, 0o700)
+    }
+  })
+
+  it("keeps a missing Java source root bounded and nonblocking", () => {
+    const projectDir = createTempProject()
+    writeReadyJpaProfile(projectDir)
+    writeWorkflowEvidence(projectDir)
+    writeSpringJpaProject(projectDir)
+    const sourceRoot = join(projectDir, "src", "main", "java")
+    rmSync(sourceRoot, { recursive: true, force: true })
+
+    const summary = readJavaRoleReadCoverage(projectDir, "filled")
+
+    expect(summary).toEqual({
+      javaRoleReadCoverage: "no generated Java role files observed",
+      javaRoleReadCoverageBlocking: false,
+      javaRoleReadCoverageFinding: "PASS",
+    })
+    expect(JSON.stringify(summary)).not.toContain(projectDir)
+  })
 })
+
+function expectUnsafeJavaRoleDiscovery(projectDir: string): void {
+  const summary = readJavaRoleReadCoverage(projectDir, "filled")
+  const check = runPersonaCli(["workflow", "check"], { cwd: projectDir, env: {}, invocationName: "ph" })
+  const closure = runPersonaCli(["workflow", "closure", "status", "--json"], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+  expect(summary).toEqual({
+    javaRoleReadCoverage: "Java role discovery is unavailable; read-only recovery is required.",
+    javaRoleReadCoverageBlocking: true,
+    javaRoleReadCoverageFinding: "WARN",
+  })
+  expect(check.status).toBe(0)
+  expect(check.stdout + check.stderr).not.toContain(projectDir)
+  expect(closure.status).toBe(0)
+  expect(closure.stdout + closure.stderr).not.toContain(projectDir)
+}

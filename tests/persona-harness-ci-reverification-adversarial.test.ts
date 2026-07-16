@@ -274,7 +274,7 @@ describe("CI reverification adversarial boundaries", () => {
     expect(readFileSync(ledger, "utf8")).toBe(bytes)
   })
 
-  it("returns artifact-invalid for parent replacement and oversized mutation data", () => {
+  it("returns artifact-invalid for parent replacement and compacts oversized mutation data", () => {
     const replaced = createProject()
     expect(runCiReverification(replaced, "ci", {
       beforeArtifactWrite: () => {
@@ -295,18 +295,31 @@ describe("CI reverification adversarial boundaries", () => {
         return captures === 2 && actual.available ? { ...actual, status: hugeStatus } : actual
       },
     })
-    expect(overflowResult.finalStatus).toBe("artifact-invalid")
+    expect(overflowResult.finalStatus).toBe("partial")
     expect(overflowResult.artifactPath).toBeDefined()
-    const artifact = readFileSync(overflowResult.artifactPath ?? "", "utf8")
-    expect(Buffer.byteLength(artifact)).toBeLessThanOrEqual(256 * 1024)
-    expect(artifact).toContain("artifact-size-exceeded")
-    expect(artifact).not.toContain("generated/4999")
+    const source = readFileSync(overflowResult.artifactPath ?? "", "utf8")
+    const artifact = JSON.parse(source) as {
+      readonly mutationSnapshot: {
+        readonly kind: string
+        readonly schemaVersion: string
+        readonly untracked: { readonly count: number; readonly digest: string }
+      }
+    }
+    expect(Buffer.byteLength(source)).toBeLessThanOrEqual(256 * 1024)
+    expect(artifact.mutationSnapshot.kind).toBe("complete")
+    expect(artifact.mutationSnapshot.schemaVersion).toBe("mutationSnapshot.2")
+    expect(artifact.mutationSnapshot.untracked).toEqual({
+      count: 5_000,
+      digest: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+    })
+    expect(source).not.toContain("generated/4999")
+    expect(source).not.toContain("artifact-size-exceeded")
   })
 
-  it("allows local pre-Git snapshot absence but makes CI pre-Git failure unavailable", () => {
+  it("requires a Git-backed source identity in every reverification mode", () => {
     const local = createProject()
     const unavailableGit = () => ({ available: false, diagnosticCode: "git-worktree-unavailable" })
-    expect(runCiReverification(local, "local", { captureGit: unavailableGit }).finalStatus).toBe("passed")
+    expect(runCiReverification(local, "local", { captureGit: unavailableGit }).finalStatus).toBe("unavailable")
 
     const ci = createProject()
     expect(runCiReverification(ci, "ci", { captureGit: unavailableGit }).finalStatus).toBe("unavailable")

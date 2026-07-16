@@ -19,6 +19,7 @@ import {
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { legacyDiagnostic, readJsonDirectoryAt, readLegacyEvidence } from "./workflow-verification-receipt-storage.js"
 import { diagnosticVerificationDecision } from "./workflow-verification-decision.js"
+import { sameSourceIdentity } from "./source-identity.js"
 
 export {
   VERIFICATION_ATTEMPT_DIR,
@@ -211,6 +212,7 @@ function compareBindings(
     ["sessionId", receipt.sessionId === attempt.sessionId],
     ["finishId", receipt.finishId === attempt.finishId],
     ["sourceHead", receipt.sourceHead === attempt.sourceHead],
+    ["sourceIdentity", sameSourceIdentity(receipt.sourceIdentity, attempt.sourceIdentity)],
     ["dirtyWorktreeDigest", receipt.dirtyWorktreeDigest === attempt.dirtyWorktreeDigest],
     ["provenanceDigest", receipt.provenanceDigest === attempt.provenanceDigest],
     ["phVersion", receipt.phVersion === attempt.phVersion],

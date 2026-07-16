@@ -6,6 +6,7 @@ import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/
 import { personaHarnessVersion } from "./version.js"
 import { sha256 } from "./ci-reverification-catalog.js"
 import type { CiReverificationArtifact } from "./ci-reverification-artifact.js"
+import type { SourceIdentity } from "./source-identity.js"
 import {
   parseVerificationAttempt,
   parseVerificationReceipt,
@@ -25,6 +26,7 @@ export type FreshArtifactBinding = {
   readonly issuedAt: string
   readonly phVersion: string
   readonly sourceHead: string
+  readonly sourceIdentity: SourceIdentity
   readonly workspaceIdentity: VerificationWorkspaceIdentity
 }
 
@@ -40,24 +42,18 @@ export function buildFreshArtifactBinding(
   now: () => number,
 ): FreshArtifactBinding | undefined {
   const mutation = artifact.mutationSnapshot
-  const git = recordValue(mutation.git)
-  const pre = recordValue(mutation.pre)
-  const workspaceRoot = recordValue(mutation.workspaceRoot)
-  const rootPre = workspaceRoot === undefined ? undefined : recordValue(workspaceRoot.pre)
-  const sourceHead = stringValue(git?.preHead)
-  const dirtyWorktreeDigest = stringValue(pre?.normalizedPorcelainNameStatusNulSha256)
-  const realpath = stringValue(rootPre?.realpath)
-  const device = stringValue(rootPre?.dev)
-  const inode = stringValue(rootPre?.ino)
+  if (mutation.kind !== "complete") return undefined
+  const sourceHead = mutation.git.preHead
+  const sourceIdentity = mutation.sourceIdentity.pre
+  const dirtyWorktreeDigest = mutation.pre.normalizedPorcelainNameStatusNulSha256
+  const workspaceRoot = mutation.workspaceRoot.pre
   const phVersion = personaHarnessVersion()
   if (
     sourceHead === undefined
     || !/^[0-9a-f]{40,64}$/u.test(sourceHead)
     || dirtyWorktreeDigest === undefined
     || !/^[a-f0-9]{64}$/u.test(dirtyWorktreeDigest)
-    || realpath === undefined
-    || device === undefined
-    || inode === undefined
+    || sourceIdentity.repositoryHead !== sourceHead?.toLowerCase()
     || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(phVersion)
   ) {
     return undefined
@@ -73,10 +69,11 @@ export function buildFreshArtifactBinding(
     issuedAt: new Date(now()).toISOString(),
     phVersion,
     sourceHead: sourceHead.toLowerCase(),
+    sourceIdentity,
     workspaceIdentity: {
-      deviceIdentity: `${device}:${inode}`,
+      deviceIdentity: workspaceRoot.deviceIdentity,
       platform: platformName(process.platform),
-      rootDigest: digest({ device, inode, realpath }),
+      rootDigest: workspaceRoot.identityDigest,
     },
   }
 }
@@ -100,6 +97,7 @@ export function writeFreshLifecycleRecords(
     finishId,
     sessionId,
     status,
+    sourceIdentity: binding.sourceIdentity,
     testCount,
   })
   const attempt = buildAttempt(binding, finishId, provenanceDigest, sessionId, status, receiptId)
@@ -134,6 +132,7 @@ function buildAttempt(
     schemaVersion: "verification-attempt.1",
     sessionId,
     sourceHead: binding.sourceHead,
+    sourceIdentity: binding.sourceIdentity,
     startedAt: binding.issuedAt,
     status: completed ? "completed" : "failed",
     workspaceIdentity: binding.workspaceIdentity,
@@ -165,6 +164,7 @@ function buildReceipt(
     schemaVersion: "verification-receipt.1",
     sessionId,
     sourceHead: binding.sourceHead,
+    sourceIdentity: binding.sourceIdentity,
     workspaceIdentity: binding.workspaceIdentity,
   }
 }
@@ -207,18 +207,6 @@ function writeRecord(
     if (error instanceof Error) return undefined
     throw error
   }
-}
-
-function recordValue(value: unknown): Readonly<Record<string, unknown>> | undefined {
-  return isRecord(value) ? value : undefined
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-function stringValue(value: unknown): string | undefined {
-  return typeof value === "string" ? value : undefined
 }
 
 function digest(value: Readonly<Record<string, unknown>>): string {

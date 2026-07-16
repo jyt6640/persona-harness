@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process"
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 
 import { readProfileIntent, type ProfileIntent } from "./stack-alignment-profile.js"
@@ -56,30 +56,58 @@ function hasAny(projectDir: string, relativePaths: readonly string[]): boolean {
   return relativePaths.some((relativePath) => existsSync(join(projectDir, relativePath)))
 }
 
-function hasFileDeep(dirPath: string, predicate: (filePath: string) => boolean): boolean {
-  if (!existsSync(dirPath)) return false
-  for (const entry of readdirSync(dirPath)) {
+function hasFileDeep(dirPath: string, predicate: (filePath: string) => boolean, depth = 0): boolean {
+  if (depth > 64) return false
+  const entries = safeDirectoryEntries(dirPath)
+  if (entries === undefined) return false
+  for (const entry of entries) {
     const entryPath = join(dirPath, entry)
-    const stat = statSync(entryPath)
+    const stat = safeLstat(entryPath)
+    if (stat === undefined || stat.isSymbolicLink()) continue
     if (stat.isFile() && predicate(entryPath)) return true
-    if (stat.isDirectory() && hasFileDeep(entryPath, predicate)) return true
+    if (stat.isDirectory() && hasFileDeep(entryPath, predicate, depth + 1)) return true
   }
   return false
 }
 
-function readFilesDeep(dirPath: string, predicate: (filePath: string) => boolean): string {
-  if (!existsSync(dirPath)) return ""
+function readFilesDeep(dirPath: string, predicate: (filePath: string) => boolean, depth = 0): string {
+  if (depth > 64) return ""
+  const entries = safeDirectoryEntries(dirPath)
+  if (entries === undefined) return ""
   const chunks: string[] = []
-  for (const entry of readdirSync(dirPath)) {
+  for (const entry of entries) {
     const entryPath = join(dirPath, entry)
-    const stat = statSync(entryPath)
+    const stat = safeLstat(entryPath)
+    if (stat === undefined || stat.isSymbolicLink()) continue
     if (stat.isDirectory()) {
-      chunks.push(readFilesDeep(entryPath, predicate))
+      chunks.push(readFilesDeep(entryPath, predicate, depth + 1))
     } else if (stat.isFile() && predicate(entryPath)) {
-      chunks.push(readFileSync(entryPath, "utf8"))
+      try {
+        chunks.push(readFileSync(entryPath, "utf8"))
+      } catch {
+        return ""
+      }
     }
   }
   return chunks.join("\n")
+}
+
+function safeDirectoryEntries(dirPath: string): readonly string[] | undefined {
+  const stat = safeLstat(dirPath)
+  if (stat === undefined || stat.isSymbolicLink() || !stat.isDirectory()) return undefined
+  try {
+    return readdirSync(dirPath)
+  } catch {
+    return undefined
+  }
+}
+
+function safeLstat(path: string): ReturnType<typeof lstatSync> | undefined {
+  try {
+    return lstatSync(path)
+  } catch {
+    return undefined
+  }
 }
 
 function canRunSystemGradle(): boolean {
