@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -18,7 +19,9 @@ async function main() {
   if (!stat.isFile() || stat.size > MAX_BUNDLE_BYTES) {
     throw new Error("finish attestation bundle is missing, unsafe, or too large")
   }
-  const bundle = bundleFromJSON(JSON.parse(readFileSync(bundlePath, "utf8")))
+  const bundleBytes = readFileSync(bundlePath)
+  const bundleDigest = `sha256:${createHash("sha256").update(bundleBytes).digest("hex")}`
+  const bundle = bundleFromJSON(JSON.parse(bundleBytes.toString("utf8")))
   if (bundle.content?.$case !== "dsseEnvelope") {
     throw new Error("finish attestation must use a DSSE envelope")
   }
@@ -41,7 +44,7 @@ async function main() {
       subjectAlternativeName: CERTIFICATE_IDENTITY,
     })
     const statement = JSON.parse(Buffer.from(bundle.content.dsseEnvelope.payload).toString("utf8"))
-    process.stdout.write(JSON.stringify({ ok: true, statement }))
+    process.stdout.write(JSON.stringify({ bundleDigest, ok: true, statement }))
   } finally {
     rmSync(cachePath, { force: true, recursive: true })
   }

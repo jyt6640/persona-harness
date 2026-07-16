@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, mkdirSync, openSync, closeSync, writeFileSync } from "node:fs"
+import { existsSync, lstatSync, mkdirSync, openSync, closeSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
@@ -36,7 +36,7 @@ const MAX_BUNDLE_BYTES = 16 * 1024 * 1024
 const WORKER_TIMEOUT_MS = 120_000
 const MAX_WORKER_OUTPUT_BYTES = 2 * 1024 * 1024
 const CLOCK_SKEW_MS = 5 * 60 * 1000
-const trustedAttestationCache = new Map<string, { readonly mtimeMs: number; readonly result: FinishAttestationAssessment; readonly size: number }>()
+const trustedAttestationCache = new Map<string, { readonly bundleDigest: string; readonly result: FinishAttestationAssessment }>()
 
 export function verifyExternalFinishAttestation(
   projectDir: string,
@@ -49,12 +49,16 @@ export function verifyExternalFinishAttestation(
   if (bundleStat === undefined || bundleStat.size > MAX_BUNDLE_BYTES) {
     return blocked("malformed", "External finish attestation bundle is missing, unsafe, or exceeds the bounded size.", "bundle")
   }
+  const bundleDigest = sha256Digest(readFileSync(bundlePath))
   const cached = trustedAttestationCache.get(projectDir)
-  if (cached !== undefined && cached.mtimeMs === bundleStat.mtimeMs && cached.size === bundleStat.size) {
+  if (cached !== undefined && cached.bundleDigest === bundleDigest) {
     return cached.result
   }
   const worker = runVerifierWorker(projectDir)
   if (!worker.ok) return blocked(worker.state, worker.message, "bundle")
+  if (worker.bundleDigest !== bundleDigest) {
+    return blocked("binding-mismatch", "Bundle bytes changed during product-owned verification.", "bundle")
+  }
   const parsed = parseFinishAttestationStatement(worker.statement)
   if (!parsed.ok) return blocked("malformed", parsed.diagnostics[0]?.message ?? "External attestation payload is malformed.", "payload")
   const receipt = parsed.value.predicate.receipt
@@ -87,7 +91,7 @@ export function verifyExternalFinishAttestation(
     summary: "Signed canonical-main finish attestation passed product-owned Sigstore, policy, source, freshness, and replay checks.",
   }
   if (options.consume !== false) {
-    trustedAttestationCache.set(projectDir, { mtimeMs: bundleStat.mtimeMs, result: trusted, size: bundleStat.size })
+    trustedAttestationCache.set(projectDir, { bundleDigest, result: trusted })
   }
   return trusted
 }
@@ -131,7 +135,7 @@ function compareCurrentSource(
   return undefined
 }
 
-function runVerifierWorker(projectDir: string): { readonly ok: true; readonly statement: unknown } | { readonly ok: false; readonly message: string; readonly state: "crypto-failed" | "malformed" | "stale" } {
+function runVerifierWorker(projectDir: string): { readonly bundleDigest: string; readonly ok: true; readonly statement: unknown } | { readonly ok: false; readonly message: string; readonly state: "crypto-failed" | "malformed" | "stale" } {
   const result = spawnSync(process.execPath, [WORKER_PATH], {
     cwd: projectDir,
     encoding: "utf8",
@@ -149,7 +153,10 @@ function runVerifierWorker(projectDir: string): { readonly ok: true; readonly st
     if (!isRecord(output) || output.ok !== true || !("statement" in output)) {
       return { message: "Product-owned verifier returned an invalid result.", ok: false, state: "malformed" }
     }
-    return { ok: true, statement: output.statement }
+    if (!isString(output.bundleDigest)) {
+      return { message: "Product-owned verifier omitted the verified bundle digest.", ok: false, state: "malformed" }
+    }
+    return { bundleDigest: output.bundleDigest, ok: true, statement: output.statement }
   } catch (error) {
     if (error instanceof SyntaxError) {
       return { message: "Product-owned verifier output was not valid JSON.", ok: false, state: "malformed" }
@@ -178,6 +185,10 @@ function isAlreadyExists(error: unknown): boolean {
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string"
 }
 
 function blocked(
