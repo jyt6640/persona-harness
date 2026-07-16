@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
@@ -111,6 +111,7 @@ describe("staged package verification runner", () => {
     expect(result.installed).toMatchObject({
       authorityBlocked: "verified",
       cliHelp: "verified",
+      closureAuthorityParity: "verified",
       exactVersion: "verified",
       npmTest: "verified",
       sourceCheckoutIndependent: "verified",
@@ -132,5 +133,37 @@ describe("staged package verification runner", () => {
     expect(result.diagnostics).toContain("provenance-unverified")
     expect(JSON.stringify(result)).not.toContain(secret)
     expect(JSON.stringify(result)).not.toContain("/private/tmp/secret")
+  })
+
+  it("fails closed without following a symlinked fact path", () => {
+    const root = createFixtureRoot()
+    const options = writeFacts(root, packCurrentRepository(root))
+    const linkedPlanPath = join(root, "linked-plan.json")
+    const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+
+    writeFileSync(options.planPath, `{"payload":"${secret}"`)
+    symlinkSync(options.planPath, linkedPlanPath)
+    const result = runStagedPackageVerification({
+      ...options,
+      planPath: linkedPlanPath,
+    })
+
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toContain("staged-plan-invalid")
+    expect(JSON.stringify(result)).not.toContain(secret)
+    expect(JSON.stringify(result)).not.toContain(linkedPlanPath)
+  })
+
+  it("fails closed without reflecting malformed fact contents", () => {
+    const root = createFixtureRoot()
+    const options = writeFacts(root, packCurrentRepository(root))
+    const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+
+    writeFileSync(options.registryFactsPath, `{"marker":"${secret}"`)
+    const result = runStagedPackageVerification(options)
+
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toContain("registry-facts-invalid")
+    expect(JSON.stringify(result)).not.toContain(secret)
   })
 })

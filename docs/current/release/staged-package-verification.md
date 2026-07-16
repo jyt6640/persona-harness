@@ -33,7 +33,8 @@ disposable consumer. The gate verifies:
 - the installed version matches the planned exact version;
 - repository-only test/source paths are absent; and
 - an authority-negative `workflow finish implement` fixture is nonzero,
-  reports `trusted-authority-required`, and never reports Finish PASS.
+  reports `trusted-authority-required`, never reports Finish PASS, and agrees
+  with `workflow closure next --json` on the same blocked authority state.
 
 The gate also records only a digest and status for the npm signature audit
 command. It does not retain raw command output.
