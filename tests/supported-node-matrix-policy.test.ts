@@ -16,6 +16,14 @@ describe("supported Node matrix policy", () => {
     expect(result.stdout).toContain("Support Node matrix policy: PASS")
   })
 
+  it("checks out full history for the protected-main signed artifact source", () => {
+    const workflow = readFileSync(join(repositoryRoot, ".github", "workflows", "supported-node-matrix.yml"), "utf8")
+
+    expect(workflow).toContain(
+      "uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5\n        with:\n          fetch-depth: 0",
+    )
+  })
+
   it("rejects a Linux Node matrix drift", () => {
     const fixtureRoot = createPolicyFixture()
     try {
