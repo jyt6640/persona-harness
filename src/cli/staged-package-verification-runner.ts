@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
@@ -7,7 +6,6 @@ import { assessStagedPackageVerification, type StagedPackageVerificationResult }
 import {
   createInstalledConsumer,
   installedTarballFacts,
-  readProvenanceFact,
   runInstalledStagedPackageMatrix,
 } from "./staged-package-verification-installed.js"
 import {
@@ -30,14 +28,6 @@ function planVersion(plan: JsonRecord): unknown {
   return plan["packageVersion"]
 }
 
-function unavailableProvenance() {
-  return {
-    method: "npm-audit-signatures" as const,
-    outputDigest: `sha256:${createHash("sha256").update("").digest("hex")}`,
-    status: "unverified" as const,
-  }
-}
-
 export function runStagedPackageVerification(options: StagedPackageVerificationOptions): StagedPackageVerificationResult {
   const commandRunner = options.commandRunner ?? runStagedPackageCommand
   const plan = readJsonFact(options.planPath, "staged-package-plan.1")
@@ -52,16 +42,13 @@ export function runStagedPackageVerification(options: StagedPackageVerificationO
     const matrix = consumer === undefined
       ? {}
       : runInstalledStagedPackageMatrix(consumer, tempRoot, commandRunner)
-    const provenance = consumer === undefined
-      ? unavailableProvenance()
-      : readProvenanceFact(consumer, commandRunner)
     const tarball = consumer === undefined || tarballFacts === undefined
       ? {}
       : installedTarballFacts(consumer, tarballFacts)
     const installed = consumer === undefined
       ? {}
       : { ...matrix, exactVersion: consumer.version === planVersion(plan) }
-    return assessStagedPackageVerification({ installed, plan, preflight, provenance, registry, tarball })
+    return assessStagedPackageVerification({ installed, plan, preflight, registry, tarball })
   } finally {
     rmSync(tempRoot, { force: true, recursive: true })
   }

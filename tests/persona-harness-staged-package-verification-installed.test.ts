@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
 import {
+  appendFileSync,
   chmodSync,
   existsSync,
   mkdirSync,
@@ -91,6 +92,20 @@ function packCurrentRepository(root: string): string {
     }
     return join(packDirectory, filename)
   })
+}
+
+function repackTarball(root: string, tarballPath: string): string {
+  const extractionRoot = join(root, "repacked")
+  const repackedTarballPath = join(root, "repacked-persona-harness.tgz")
+  mkdirSync(extractionRoot)
+
+  const extract = run("tar", ["-xzf", tarballPath, "-C", extractionRoot], process.cwd())
+  expect(extract.status).toBe(0)
+  appendFileSync(join(extractionRoot, "package", "README.md"), "\nrepacked fixture\n")
+
+  const repack = run("tar", ["-czf", repackedTarballPath, "-C", extractionRoot, "package"], process.cwd())
+  expect(repack.status).toBe(0)
+  return repackedTarballPath
 }
 
 function installConsumer(root: string, tarballPath: string): InstalledConsumer {
@@ -225,7 +240,7 @@ function npmExecutable(): string {
   return result.stdout.trim()
 }
 
-function provenanceNpmPath(root: string): string {
+function provenanceNpmPath(root: string, auditMarkerPath?: string): string {
   const binDirectory = join(root, "bin")
   const wrapperPath = join(binDirectory, "npm")
   mkdirSync(binDirectory)
@@ -234,6 +249,7 @@ function provenanceNpmPath(root: string): string {
     [
       "#!/bin/sh",
       "if [ \"$1\" = \"audit\" ] && [ \"$2\" = \"signatures\" ] && [ \"$3\" = \"--json\" ]; then",
+      ...(auditMarkerPath === undefined ? [] : [`  printf invoked > ${JSON.stringify(auditMarkerPath)}`]),
       "  printf '{}\\n'",
       "  exit 0",
       "fi",
@@ -301,11 +317,12 @@ describe("installed staged package verification CLI", () => {
     )
     const payload = parseResult(result)
 
-    expect(result.status).toBe(0)
+    expect(result.status).toBe(1)
     expect(result.stderr).toBe("")
     expect(existsSync(join(installed.packageRoot, "dist", "cli", "staged-package-verification-command.js"))).toBe(true)
     expect(existsSync(join(installed.packageRoot, "tests"))).toBe(false)
-    expect(payload["verificationStatus"]).toBe("verified")
+    expect(payload["verificationStatus"]).toBe("blocked")
+    expect(payload["diagnostics"]).toContain("artifact-provenance-unavailable")
     expect(payload["promotionAuthorized"]).toBe(false)
     expect(payload["promotionDecision"]).toBe("release-approval-required")
     expect(payload["registryMutation"]).toBe("not-performed")
@@ -335,11 +352,35 @@ describe("installed staged package verification CLI", () => {
     )
     const payload = parseResult(result)
 
-    expect(result.status).toBe(0)
-    expect(payload["verificationStatus"]).toBe("verified")
+    expect(result.status).toBe(1)
+    expect(payload["verificationStatus"]).toBe("blocked")
+    expect(payload["diagnostics"]).toContain("artifact-provenance-unavailable")
     expect(payload["promotionAuthorized"]).toBe(false)
     expect(payload["promotionDecision"]).toBe("release-approval-required")
     expect(payload["registryMutation"]).toBe("not-performed")
+  })
+
+  it("blocks caller-coordinated facts for a same-name version repacked tarball", { timeout: 60_000 }, () => {
+    const root = createFixtureRoot()
+    const installed = consumer()
+    const auditMarkerPath = join(root, "generic-audit-called")
+    const npmBin = provenanceNpmPath(root, auditMarkerPath)
+    const repackedTarballPath = repackTarball(root, packedTarballPath)
+    const result = run(
+      installed.phPath,
+      ["dev", "staged-package", ...writeStagingFacts(root, repackedTarballPath), "--json"],
+      installed.consumerDir,
+      packageTestEnvironment({ PATH: `${npmBin}:${process.env.PATH ?? ""}` }),
+    )
+    const payload = parseResult(result)
+
+    expect(result.status).toBe(1)
+    expect(payload["verificationStatus"]).toBe("blocked")
+    expect(payload["diagnostics"]).toContain("artifact-provenance-unavailable")
+    expect(payload["promotionAuthorized"]).toBe(false)
+    expect(payload["promotionDecision"]).toBe("release-approval-required")
+    expect(payload["registryMutation"]).toBe("not-performed")
+    expect(existsSync(auditMarkerPath)).toBe(false)
   })
 
   it("keeps hostile paths out of the installed CLI result", () => {

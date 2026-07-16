@@ -1,7 +1,8 @@
 # Staged Package Verification
 
 This is a read-only gate for a candidate package that has already been staged
-under `staging`. It verifies aligned facts before a later, separately authorized
+under `staging`. It validates aligned facts and requires independently issued
+exact-artifact provenance before a later, separately authorized
 channel-promotion decision. It does not publish, tag, deprecate, move a
 dist-tag, or authorize a release.
 
@@ -31,6 +32,15 @@ The gate accepts bounded, versioned fact files plus one local tarball:
 - The supplied local tarball is hashed independently. Its package/version,
   shasum, and integrity must agree with the staged registry facts.
 
+At this boundary, no product-owned verifier yet cryptographically binds a
+selected local tarball to independently issued registry provenance. Therefore a
+generic `npm audit signatures --json` success and caller-provided matching
+facts are diagnostic-only: the command emits
+`artifact-provenance-unavailable` and cannot report `verificationStatus:
+"verified"`. A future product-owned GitHub/Sigstore artifact verifier must
+bind the exact tarball bytes, selected tag, package/version, source/gitHead,
+shasum, integrity, and provenance before `verified` becomes available.
+
 All fact parsing is strict and bounded. Malformed, secret-shaped, or
 unrecognized values block without echoing their raw contents.
 
@@ -47,14 +57,14 @@ disposable consumer. The gate verifies:
   reports `trusted-authority-required`, never reports Finish PASS, and agrees
   with `workflow closure next --json` on the same blocked authority state.
 
-The gate also records only a digest and status for the npm signature audit
-command. It does not retain raw command output.
+The gate does not treat a generic npm signature-audit result as artifact
+provenance and does not retain raw command output.
 
 ## Decision Boundary
 
-`staged-package-verification.1` can report `verificationStatus: "verified"`
-only when the supplied facts and installed black-box surface agree. Even then
-it always reports:
+`staged-package-verification.1` currently blocks local tarballs with
+`artifact-provenance-unavailable`, even when supplied facts and the installed
+black-box surface agree. It always reports:
 
 ```json
 {

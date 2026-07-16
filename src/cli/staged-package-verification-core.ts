@@ -19,6 +19,8 @@ function installedStatus(
 export function assessStagedPackageVerification(input: unknown): StagedPackageVerificationResult {
   const assessment = assessStagedPackageVerificationInput(input)
   const verificationStatus = assessment.diagnostics.length === 0 ? "verified" : "blocked"
+  const provenanceUnavailableOnly =
+    assessment.diagnostics.length === 1 && assessment.diagnostics[0] === "artifact-provenance-unavailable"
   return {
     diagnostics: assessment.diagnostics,
     durableEvidence: "required-before-closure",
@@ -34,12 +36,12 @@ export function assessStagedPackageVerification(input: unknown): StagedPackageVe
     },
     mode: "read-only",
     promotionAuthorized: false,
-    promotionDecision: verificationStatus === "verified" ? "release-approval-required" : "blocked",
+    promotionDecision: verificationStatus === "verified" || provenanceUnavailableOnly
+      ? "release-approval-required"
+      : "blocked",
     provenance: {
-      auditSignatures: {
-        method: assessment.provenance?.method ?? "unavailable",
-        outputDigest: assessment.provenance?.outputDigest ?? "unavailable",
-        status: assessment.provenance?.status === "verified" ? "verified" : "unavailable",
+      artifactBinding: {
+        status: "unavailable",
       },
       registry: {
         gitHead: assessment.registry?.gitHead ?? "unavailable",

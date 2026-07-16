@@ -60,18 +60,11 @@ export type VerifiedTarball = {
   readonly version: string
 }
 
-export type VerifiedProvenance = {
-  readonly method: "npm-audit-signatures"
-  readonly outputDigest: string
-  readonly status: "unverified" | "verified"
-}
-
 export type StagedPackageVerificationAssessment = {
   readonly diagnostics: readonly string[]
   readonly installed: VerifiedInstalled | undefined
   readonly plan: VerifiedPlan | undefined
   readonly preflight: VerifiedPreflight | undefined
-  readonly provenance: VerifiedProvenance | undefined
   readonly registry: VerifiedRegistry | undefined
   readonly tarball: VerifiedTarball | undefined
 }
@@ -94,11 +87,6 @@ export type StagedPackageVerificationInput = {
     readonly packageName: string
     readonly schemaVersion: string
     readonly version: string
-  }
-  readonly provenance: {
-    readonly method: string
-    readonly outputDigest: string
-    readonly status: string
   }
   readonly registry: {
     readonly distTags: Readonly<Record<string, string>>
@@ -126,10 +114,8 @@ export type StagedPackageVerificationResult = {
   readonly promotionAuthorized: false
   readonly promotionDecision: "blocked" | "release-approval-required"
   readonly provenance: {
-    readonly auditSignatures: {
-      readonly method: "npm-audit-signatures" | "unavailable"
-      readonly outputDigest: string
-      readonly status: "unavailable" | "verified"
+    readonly artifactBinding: {
+      readonly status: "unavailable"
     }
     readonly registry: {
       readonly gitHead: string

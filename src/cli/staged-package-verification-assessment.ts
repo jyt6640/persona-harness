@@ -7,7 +7,6 @@ import {
   type VerifiedInstalled,
   type VerifiedPlan,
   type VerifiedPreflight,
-  type VerifiedProvenance,
   type VerifiedRegistry,
   type VerifiedTarball,
 } from "./staged-package-verification-types.js"
@@ -137,15 +136,6 @@ function safeTarball(value: unknown): VerifiedTarball | undefined {
     : { integrity, packageName, sha1, sha256: sha256.slice("sha256:".length), version }
 }
 
-function safeProvenance(value: unknown): VerifiedProvenance | undefined {
-  if (!isRecord(value)) return undefined
-  const outputDigest = safeDigest(value["outputDigest"])
-  const status = value["status"] === "unverified" || value["status"] === "verified" ? value["status"] : undefined
-  return value["method"] !== "npm-audit-signatures" || outputDigest === undefined || status === undefined
-    ? undefined
-    : { method: "npm-audit-signatures", outputDigest, status }
-}
-
 function safeInstalled(value: unknown): VerifiedInstalled | undefined {
   if (!isRecord(value)) return undefined
   const authorityBlocked = value["authorityBlocked"]
@@ -204,7 +194,6 @@ export function assessStagedPackageVerificationInput(input: unknown): StagedPack
   const preflight = safePreflight(source["preflight"])
   const registry = safeRegistry(source["registry"], plan?.stagedTag)
   const tarball = safeTarball(source["tarball"])
-  const provenance = safeProvenance(source["provenance"])
   const installed = safeInstalled(source["installed"])
   const diagnostics = new Set<string>()
 
@@ -212,7 +201,7 @@ export function assessStagedPackageVerificationInput(input: unknown): StagedPack
   if (preflight === undefined) diagnostics.add("existing-version-preflight-invalid")
   if (registry === undefined) diagnostics.add("registry-facts-invalid")
   if (tarball === undefined) diagnostics.add("tarball-provenance-invalid")
-  if (provenance === undefined || provenance.status !== "verified") diagnostics.add("provenance-unverified")
+  diagnostics.add("artifact-provenance-unavailable")
   if (installed === undefined) diagnostics.add("installed-black-box-invalid")
 
   if (plan !== undefined) {
@@ -252,7 +241,6 @@ export function assessStagedPackageVerificationInput(input: unknown): StagedPack
     installed,
     plan,
     preflight,
-    provenance,
     registry,
     tarball,
   }

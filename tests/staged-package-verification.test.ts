@@ -42,11 +42,6 @@ function validInput(
       schemaVersion: "staged-package-preflight.1",
       version: "1.2.3-rc.1",
     },
-    provenance: {
-      method: "npm-audit-signatures",
-      outputDigest: AUDIT_DIGEST,
-      status: "verified",
-    },
     registry: {
       distTags: { staging: "1.2.3-rc.1" },
       gitHead: SOURCE_SHA,
@@ -68,7 +63,17 @@ function validInput(
 }
 
 describe("staged package verification assessment", () => {
-  it("verifies matching staged facts while requiring a separate release approval", () => {
+  it("blocks caller-coordinated local facts without artifact provenance", () => {
+    const result = assessStagedPackageVerification(validInput())
+
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toContain("artifact-provenance-unavailable")
+    expect(result.promotionAuthorized).toBe(false)
+    expect(result.promotionDecision).toBe("release-approval-required")
+    expect(result.registryMutation).toBe("not-performed")
+  })
+
+  it("keeps matched local staged facts blocked until artifact provenance exists", () => {
     const result = assessStagedPackageVerification(validInput())
 
     expect(result).toMatchObject({
@@ -77,12 +82,14 @@ describe("staged package verification assessment", () => {
       promotionAuthorized: false,
       promotionDecision: "release-approval-required",
       registryMutation: "not-performed",
-      verificationStatus: "verified",
+      verificationStatus: "blocked",
     })
-    expect(result.diagnostics).toEqual([])
+    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable"])
+    expect(result.provenance.artifactBinding.status).toBe("unavailable")
+    expect(JSON.stringify(result)).not.toContain("npm-audit-signatures")
   })
 
-  it("verifies a fixed next prerelease route without authorizing promotion", () => {
+  it("keeps a fixed next prerelease route blocked until artifact provenance exists", () => {
     const input = validInput({
       plan: {
         ...validInput().plan,
@@ -96,7 +103,8 @@ describe("staged package verification assessment", () => {
 
     const result = assessStagedPackageVerification(input)
 
-    expect(result.verificationStatus).toBe("verified")
+    expect(result.verificationStatus).toBe("blocked")
+    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable"])
     expect(result.promotionAuthorized).toBe(false)
     expect(result.promotionDecision).toBe("release-approval-required")
     expect(result.registryMutation).toBe("not-performed")
@@ -203,11 +211,6 @@ describe("staged package verification assessment", () => {
       "a tarball integrity mismatch",
       { registry: { ...validInput().registry, integrity: `sha512-${"f".repeat(86)}` } },
       "registry-integrity-mismatch",
-    ],
-    [
-      "unverified provenance",
-      { provenance: { ...validInput().provenance, status: "unverified" } },
-      "provenance-unverified",
     ],
     [
       "a failed installed package surface",

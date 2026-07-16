@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto"
 import {
   existsSync,
   mkdirSync,
@@ -205,22 +204,6 @@ export function runInstalledStagedPackageMatrix(
       && consumer.cliPath.startsWith(consumer.consumerRoot),
     version: version.status === 0 && version.output.trim() === consumer.version,
     workflowHelp: workflowHelp.status === 0 && workflowHelp.output.includes("Usage: ph workflow"),
-  }
-}
-
-export function readProvenanceFact(
-  consumer: InstalledConsumer,
-  commandRunner: CommandRunner,
-): {
-  readonly method: "npm-audit-signatures"
-  readonly outputDigest: string
-  readonly status: "unverified" | "verified"
-} {
-  const result = commandRunner("npm", ["audit", "signatures", "--json"], consumer.consumerDir)
-  return {
-    method: "npm-audit-signatures",
-    outputDigest: `sha256:${createHash("sha256").update(result.output).digest("hex")}`,
-    status: result.status === 0 ? "verified" : "unverified",
   }
 }
 
