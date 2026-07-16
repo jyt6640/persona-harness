@@ -5,6 +5,15 @@ under `next`. It verifies aligned facts before a later, separately authorized
 channel-promotion decision. It does not publish, tag, deprecate, move a
 dist-tag, or authorize a release.
 
+## Installed CLI
+
+The verifier is part of the packaged CLI and runs from a fresh installed
+tarball without a source checkout:
+
+```text
+ph dev staged-package --plan <path> --preflight <path> --registry-facts <path> --tarball <path> [--json]
+```
+
 ## Inputs
 
 The gate accepts bounded, versioned fact files plus one local tarball:
