@@ -257,7 +257,7 @@ Actual result:
 ### Commands
 
 - `npm test`: runs the installed-package self-contained CLI smoke.
-- `npm run test:repository`: runs scope diagnostics, docs checks, workflow policy checks, Vitest, then a sequential offline packed-install contract.
+- `npm run test:repository`: runs scope diagnostics, docs checks, workflow policy checks, Vitest, then a sequential fresh clean-cache packed-install contract. It uses normal npm dependency resolution for the local tarball consumer; separate External installed-package smoke is the offline package proof.
 - `npm run test:unit`: runs Vitest only.
 - `npm run typecheck`: TypeScript typecheck.
 - `npm run build`: build dist.
