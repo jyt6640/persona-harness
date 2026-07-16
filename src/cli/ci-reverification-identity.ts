@@ -1,8 +1,8 @@
 import { lstatSync, realpathSync, statSync } from "node:fs"
-import { spawnSync } from "node:child_process"
 import { isAbsolute, join, relative } from "node:path"
 
 import { parseGitStatusPorcelain, type GitStatusSnapshot } from "./ci-reverification-mutation.js"
+import { runFixedGit } from "./fixed-git.js"
 
 export type PosixPathIdentity = {
   readonly dev: string
@@ -93,14 +93,8 @@ export function captureEvidenceParentIdentity(
 }
 
 function runGit(projectDir: string, args: readonly string[]): { readonly status: number; readonly stdout: string } {
-  const result = spawnSync("git", [...args], {
-    cwd: projectDir,
-    encoding: "utf8",
-    maxBuffer: 4 * 1024 * 1024,
-    shell: false,
-    timeout: 5_000,
-  })
-  return { status: result.status ?? 1, stdout: typeof result.stdout === "string" ? result.stdout : "" }
+  const result = runFixedGit(projectDir, args)
+  return { status: result.status, stdout: result.stdout }
 }
 
 export function captureGitIdentity(projectDir: string, workspaceRoot: PosixPathIdentity): GitIdentity {

@@ -1,0 +1,15 @@
+{
+  "artifactId": 8380944195,
+  "artifactName": "canonical-clean-ci-attestation-builder",
+  "artifactZipSha256": "448afbba6db79c1c6fe591fbe7ccc4d63bbdaea515695cf3135cf067e62c9f84",
+  "bundleSha256": "262a8d40669ac3ecc96cd48b753ae2413e448e64813bde8e1eb5455df5774db0",
+  "jobId": "87666253022",
+  "runId": "29511625395",
+  "sourceHead": "84901174235f0a9c7bc08f0dbd5be6d94c02d500",
+  "testFacts": {
+    "count": 1227,
+    "failed": 0,
+    "passed": 1221,
+    "skipped": 6
+  }
+}
