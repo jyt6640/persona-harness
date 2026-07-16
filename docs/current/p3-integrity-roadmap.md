@@ -214,6 +214,20 @@ P3 is split into narrow units:
   exact tag/version/main ancestry, registry readback, and the Level 2 trusted
   external attestation boundary.
 
+### Issue #83 Producer-Only Bootstrap Boundary
+
+Issue #83 may land a canonical protected-main `finish-attestation.1` producer
+candidate before the product-owned verifier exists. The candidate is limited to
+the `push` event on `refs/heads/main`, records the fixed repository, workflow,
+source, runner, command, test, package, and attempt bindings, and emits a signed
+producer claim for later verification. It does not add a verifier, a trusted
+authority decision, a local evidence fallback, or a Finish PASS route.
+
+Until a later product-owned verifier validates a real protected-main bundle with
+fresh online trust-root and transparency checks, `workflow finish implement` and
+closure remain blocked by `trusted-authority-required`. Manual, staging, fork,
+reusable, legacy, locally fabricated, and cached bundles remain ineligible.
+
 ## Boundaries
 
 This record is docs-only. It does not implement P3, change product behavior,

@@ -2,10 +2,8 @@ name: Canonical clean CI attestation builder
 
 on:
   push:
-    branches-ignore:
+    branches:
       - main
-  workflow_call:
-  workflow_dispatch:
 
 concurrency:
   group: canonical-clean-ci-attestation-builder-${{ github.ref }}
@@ -19,7 +17,7 @@ permissions:
 
 jobs:
   build:
-    name: Build non-authoritative clean CI attestation
+    name: Build canonical clean CI finish attestation
     runs-on: ubuntu-latest
 
     steps:
@@ -40,12 +38,12 @@ jobs:
       - name: Build canonical receipt and predicate
         run: node scripts/build-clean-ci-attestation.mjs
 
-      - name: Sign non-authoritative builder predicate
+      - name: Sign canonical finish predicate
         id: attest
         uses: actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc
         with:
           subject-path: .ci/canonical-clean-ci-attestation-builder/receipt.json
-          predicate-type: https://github.com/jyt6640/persona-harness/attestations/clean-ci-builder.1
+          predicate-type: https://github.com/jyt6640/persona-harness/attestations/finish-attestation.1
           predicate-path: .ci/canonical-clean-ci-attestation-builder/predicate.json
 
       - name: Collect signed bundle

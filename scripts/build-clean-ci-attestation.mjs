@@ -4,10 +4,16 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { isAbsolute, join, normalize, relative, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
-export const BUILDER_SCHEMA = "clean-ci-builder.1"
-export const BUILDER_PREDICATE_TYPE = "https://github.com/jyt6640/persona-harness/attestations/clean-ci-builder.1"
+import { captureSourceIdentity } from "./build-clean-ci-source-identity.mjs"
+
+export const BUILDER_SCHEMA = "finish-attestation.1"
+export const BUILDER_PREDICATE_TYPE = "https://github.com/jyt6640/persona-harness/attestations/finish-attestation.1"
 export const COMMAND_CATALOG_ID = "persona-harness-clean-ci-builder.1"
 export const FAILURE_DIAGNOSTIC_SCHEMA = "clean-ci-builder-failure.1"
+export const CANONICAL_REPOSITORY = "jyt6640/persona-harness"
+export const CANONICAL_REPOSITORY_ID = 1272008570
+export const CANONICAL_WORKFLOW_PATH = ".github/workflows/canonical-clean-ci-attestation-builder.yml"
+export const CANONICAL_WORKFLOW_REF = `${CANONICAL_REPOSITORY}/${CANONICAL_WORKFLOW_PATH}@refs/heads/main`
 const COMMAND_TIMEOUT_MS = 300_000
 const OUTPUT_DIRECTORY = ".ci/canonical-clean-ci-attestation-builder"
 const TEST_REPORT_PATH = `${OUTPUT_DIRECTORY}/test-results.json`
@@ -45,8 +51,8 @@ function main() {
     const receipt = createReceipt(context, commandResults, testFacts, packFacts, packageJson.version)
     const receiptBytes = Buffer.from(`${canonicalJson(receipt)}\n`)
     const predicate = {
-      authorityEligible: false,
-      authorityBoundary: "builder-output-is-non-authoritative",
+      authorityEligible: true,
+      authorityBoundary: "external-attested",
       predicateType: BUILDER_PREDICATE_TYPE,
       receiptDigest: `sha256:${sha256(receiptBytes)}`,
       receipt,
@@ -77,18 +83,35 @@ function readGitHubContext() {
   const sourceHead = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()
   const context = {
     repository: requiredEnv("GITHUB_REPOSITORY"),
+    repositoryId: requiredEnv("GITHUB_REPOSITORY_ID"),
     ref: requiredEnv("GITHUB_REF"),
+    event: requiredEnv("GITHUB_EVENT_NAME"),
     sourceHead,
     contextHead: requiredEnv("GITHUB_SHA"),
     workflowSha: requiredEnv("GITHUB_WORKFLOW_SHA"),
     workflowRef: requiredEnv("GITHUB_WORKFLOW_REF"),
     runId: requiredEnv("GITHUB_RUN_ID"),
     runAttempt: requiredEnv("GITHUB_RUN_ATTEMPT"),
+    runnerEnvironment: requiredEnv("RUNNER_ENVIRONMENT"),
+    runnerLabel: requiredEnv("RUNNER_LABEL"),
+    runnerOs: requiredEnv("RUNNER_OS"),
     workspaceRoot,
   }
 
   if (sourceHead !== context.contextHead) fail("checked out HEAD does not match GitHub SHA")
   if (workspaceRoot !== process.cwd()) fail("builder must run at the repository root")
+  if (
+    context.event !== "push"
+    || context.ref !== "refs/heads/main"
+    || context.repository !== CANONICAL_REPOSITORY
+    || context.repositoryId !== String(CANONICAL_REPOSITORY_ID)
+    || context.workflowRef !== CANONICAL_WORKFLOW_REF
+    || context.runnerEnvironment !== "github-hosted"
+    || context.runnerLabel !== "ubuntu-latest"
+    || context.runnerOs !== "Linux"
+  ) {
+    fail("clean-CI builder requires the canonical protected-main GitHub context")
+  }
 
   const cleanStatus = execFileSync("git", ["status", "--porcelain=v1", "-z", "--untracked-files=all"], {
     encoding: "buffer",
@@ -98,6 +121,7 @@ function readGitHubContext() {
   return {
     ...context,
     cleanStatusDigest: `sha256:${sha256(cleanStatus)}`,
+    sourceIdentity: captureSourceIdentity(workspaceRoot),
   }
 }
 
@@ -131,7 +155,6 @@ function runCommand(command, workspaceRoot) {
 }
 
 function createReceipt(context, commandResults, testFacts, packFacts, phVersion) {
-  const builderStatus = context.ref === "refs/heads/main" ? "canonical-main-builder-candidate" : "staging-non-authoritative"
   const commandCatalog = FIXED_COMMANDS.map((command) => ({
     args: command.args,
     executable: command.executable,
@@ -139,9 +162,8 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
   }))
 
   return {
-    authorityBoundary: "builder-output-is-non-authoritative",
-    authorityEligible: false,
-    builderStatus,
+    authorityBoundary: "external-attested",
+    authorityEligible: true,
     command: {
       argvDigest: `sha256:${sha256(canonicalJson(commandCatalog))}`,
       catalogId: COMMAND_CATALOG_ID,
@@ -154,6 +176,7 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
         stdoutDigest,
       })),
     },
+    event: context.event,
     expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
     finishId: `clean-ci-builder-finish-${context.runId}-${context.runAttempt}`,
     issuedAt: new Date().toISOString(),
@@ -162,6 +185,7 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
     predicateType: BUILDER_PREDICATE_TYPE,
     ref: context.ref,
     repository: context.repository,
+    repositoryId: Number(context.repositoryId),
     replayState: "unconsumed",
     runAttempt: Number(context.runAttempt),
     runId: context.runId,
@@ -171,15 +195,18 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
       clean: true,
       dirtyWorktreeDigest: context.cleanStatusDigest,
       head: context.sourceHead,
+      identity: context.sourceIdentity,
     },
     test: testFacts,
     workflow: {
-      jobWorkflowRef: context.workflowRef,
-      workflowSha: context.workflowSha,
+      path: CANONICAL_WORKFLOW_PATH,
+      ref: context.workflowRef,
+      sha: context.workflowSha,
     },
-    workspaceIdentity: {
-      identityDigest: `sha256:${sha256(context.workspaceRoot)}`,
-      kind: "github-hosted-runner",
+    runner: {
+      environment: context.runnerEnvironment,
+      label: context.runnerLabel,
+      os: context.runnerOs,
     },
     attemptId: `clean-ci-builder-attempt-${context.runId}-${context.runAttempt}`,
     pack: packFacts,
