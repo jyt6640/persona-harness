@@ -6,10 +6,11 @@ import { fileURLToPath } from "node:url"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
+const consumerNpmCache = join(temporaryRoot, "npm-cache")
 
 try {
   const tarballPath = packCurrentRepository()
-  const installedPackage = installOfflineTarball(tarballPath)
+  const installedPackage = installFreshTarball(tarballPath)
 
   assertRepositoryOnlyFilesAreAbsent(installedPackage)
   assertInstalledPackageTestPasses(installedPackage)
@@ -26,9 +27,10 @@ function packCurrentRepository() {
   return resolvePackTarball(result.stdout, packDirectory)
 }
 
-function installOfflineTarball(tarballPath) {
+function installFreshTarball(tarballPath) {
   const consumerDirectory = join(temporaryRoot, "consumer")
   mkdirSync(consumerDirectory)
+  mkdirSync(consumerNpmCache)
   writeFileSync(
     join(consumerDirectory, "package.json"),
     `${JSON.stringify({ private: true }, null, 2)}\n`,
@@ -36,13 +38,14 @@ function installOfflineTarball(tarballPath) {
 
   const result = runNpm(consumerDirectory, [
     "install",
-    "--offline",
+    "--cache",
+    consumerNpmCache,
     "--ignore-scripts",
     "--no-audit",
     "--no-fund",
     tarballPath,
   ])
-  requireSuccess("offline package installation", result)
+  requireSuccess("fresh package installation", result)
   return join(consumerDirectory, "node_modules", "persona-harness")
 }
 
