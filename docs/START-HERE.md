@@ -38,8 +38,9 @@ A reading map for people seeing Persona Harness (PH) for the first time.
 
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
-| macOS / Linux + OpenCode | Verified | Current Persona Harness host-adapter and product evidence is limited to OpenCode on macOS/Linux. |
-| Windows | Unverified | No Windows support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
+| Linux + OpenCode | Supported matrix | Node 20, 22, and 24 each run source-built checks plus a fresh local-tarball installed black-box check. |
+| macOS + OpenCode | Limited smoke | macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
+| Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
 | Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
 
 ## I am confused by docs/current
