@@ -272,7 +272,7 @@ npx ph history --id first-run
 
 ```bash
 npm install
-npm test
+npm run test:repository
 npm run typecheck
 npm run build
 npm run report:rules
@@ -544,10 +544,12 @@ npm run check:scope:strict
 npm pack --dry-run
 ```
 
-`npm test`는 Vitest 전에 diagnostics-only scope check와 docs taxonomy check를 함께 실행한다. scope drift가 보이더라도 finding 자체는 test failure gate가 아니며, scope report만 보고 싶으면 `npm run check:scope`를 실행한다. 새 docs가 루트에 생기면 `npm run check:docs`가 실패하고 `docs/current`, `docs/evidence-reviews`, `docs/phases`, `docs/archive` 중 이동할 위치를 제안한다.
+`npm run test:repository`는 Vitest 전에 diagnostics-only scope check와 docs taxonomy check를 함께 실행하고, Vitest가 끝난 뒤에는 별도 순차 단계로 빈 npm 캐시에서 local tarball consumer를 설치하는 fresh packed-install contract를 확인한다. 이 repository contract는 패키지 의존성 해석에 일반 npm 설치를 사용하며, 오프라인 설치 증명은 별도의 External installed-package smoke에 남긴다. scope drift가 보이더라도 finding 자체는 test failure gate가 아니며, scope report만 보고 싶으면 `npm run check:scope`를 실행한다. 새 docs가 루트에 생기면 `npm run check:docs`가 실패하고 `docs/current`, `docs/evidence-reviews`, `docs/phases`, `docs/archive` 중 이동할 위치를 제안한다.
 릴리즈나 CI에서 scope drift를 실패로 다루고 싶으면 `npm run check:scope:strict`를 실행한다.
 
 테스트는 매 테스트마다 `.persona-test-fixtures/`를 비우고 Java fixture를 다시 만든다. 이 경로는 Git에 커밋하지 않는다.
+
+`npm test`는 설치된 package의 self-contained CLI smoke다. repository checkout의 전체 테스트는 `npm run test:repository`를 사용한다.
 
 `npm run report:rules`는 빌드 후 `.persona/rules` frontmatter diagnostics를 읽고 ignored output인 `.persona/evidence/phase-next/rule-diagnostics-report.md`에 markdown report를 남긴다. 이 report는 diagnostics-only surface다. invalid metadata를 보여주지만 rule loading, rule selection, injection, test, typecheck, build를 막지 않는다.
 

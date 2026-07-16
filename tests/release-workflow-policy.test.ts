@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs"
+import { join, resolve } from "node:path"
+
 import { describe, expect, it } from "vitest"
 
 import {
@@ -11,6 +14,7 @@ import {
 const MAIN_SHA = "a".repeat(40)
 const TAG_SHA = "b".repeat(40)
 const INTEGRITY = "sha512-" + "c".repeat(86)
+const repositoryRoot = resolve(process.cwd())
 
 describe("release workflow policy", () => {
   it("accepts an exact canonical main source", () => {
@@ -141,4 +145,39 @@ describe("release workflow policy", () => {
       tagCommit: "tagCommit" in override ? override.tagCommit : TAG_SHA,
     })).toMatchObject({ ok: false, code })
   })
+
+  it("keeps package and repository test contracts explicit and sequential", () => {
+    const scripts = readPackageScripts(join(repositoryRoot, "package.json"))
+
+    expect(scripts["test"]).toBe("npm run test:package")
+    expect(scripts["test:package"]).toBe("node dist/cli/index.js --help")
+    expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs")
+    expect(scripts["test:repository"]).toBe(
+      "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:installed-package-contract",
+    )
+
+    for (const workflow of ["ci.yml", "publish.yml", "release.yml"]) {
+      const source = readFileSync(join(repositoryRoot, ".github", "workflows", workflow), "utf8")
+      expect(source).toContain("npm run test:repository")
+    }
+  })
 })
+
+function readPackageScripts(packagePath: string): Readonly<Record<string, string>> {
+  const parsed: unknown = JSON.parse(readFileSync(packagePath, "utf8"))
+  if (!isRecord(parsed) || !isRecord(parsed["scripts"])) {
+    throw new TypeError("package scripts are unavailable")
+  }
+  const scripts: Record<string, string> = {}
+  for (const [name, value] of Object.entries(parsed["scripts"])) {
+    if (typeof value !== "string") {
+      throw new TypeError("package scripts must be strings")
+    }
+    scripts[name] = value
+  }
+  return scripts
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}

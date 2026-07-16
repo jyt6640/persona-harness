@@ -41,7 +41,9 @@ function hasImmutableActionPins(path, text) {
 
 const requirements = [
   ["ci trigger", ".github/workflows/ci.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("- main")],
-  ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm test", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
+  ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm run test:repository", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
+  ["publish repository tests", ".github/workflows/publish.yml", (text) => text.includes("npm run test:repository")],
+  ["release repository tests", ".github/workflows/release.yml", (text) => text.includes("npm run test:repository")],
   ["ci no publish", ".github/workflows/ci.yml", (text) => !text.includes("npm publish")],
   ["publish canonical main", ".github/workflows/publish.yml", (text) => text.includes("canonical-main") && text.includes("refs/remotes/origin/main") && text.includes("git fetch origin main")],
   ["publish dist tags", ".github/workflows/publish.yml", (text) => text.includes("next") && text.includes("latest") && text.includes("dist-tag")],

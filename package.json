@@ -131,7 +131,10 @@
     "observe:test-contract": "node scripts/observe-test-contract.mjs",
     "measure:entry-steering": "npm run build && node experiments/entry-intent-corpus/measure.mjs",
     "report:rules": "npm run build && node scripts/report-rule-diagnostics.mjs",
-    "test": "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run",
+    "test": "npm run test:package",
+    "test:package": "node dist/cli/index.js --help",
+    "test:installed-package-contract": "node scripts/test-installed-package-contract.mjs",
+    "test:repository": "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:installed-package-contract",
     "test:unit": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
