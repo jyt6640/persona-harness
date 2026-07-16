@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { createFailureDiagnostic, FIXED_COMMANDS } from "../scripts/build-clean-ci-attestation.mjs"
+import { createFailureDiagnostic, FIXED_COMMANDS, readCanonicalRunnerContext } from "../scripts/build-clean-ci-attestation.mjs"
 
 const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "canonical-clean-ci-attestation-builder.yml")
@@ -12,6 +12,47 @@ const builderPath = join(root, "scripts", "build-clean-ci-attestation.mjs")
 const authorityPath = join(root, "src", "cli", "workflow-finish-authority.ts")
 
 describe("canonical clean CI attestation builder contract", () => {
+  it("derives the fixed runner label from the real GitHub-hosted environment shape", () => {
+    const context = readCanonicalRunnerContext({
+      RUNNER_ENVIRONMENT: "github-hosted",
+      RUNNER_NAME: "GitHub Actions 42",
+      RUNNER_OS: "Linux",
+    })
+
+    expect(context).toEqual({
+      environment: "github-hosted",
+      label: "ubuntu-latest",
+      os: "Linux",
+    })
+    expect(context.label).toBe("ubuntu-latest")
+  })
+
+  it.each([["RUNNER_ENVIRONMENT", { RUNNER_OS: "Linux" }], ["RUNNER_OS", { RUNNER_ENVIRONMENT: "github-hosted" }]])(
+    "fails closed when %s is missing",
+    (missing, env) => {
+      expect(() => readCanonicalRunnerContext(env)).toThrow(`missing GitHub context: ${missing}`)
+    },
+  )
+
+  it("fails closed for a non-canonical hosted runner context", () => {
+    expect(() =>
+      readCanonicalRunnerContext({
+        RUNNER_ENVIRONMENT: "self-hosted",
+        RUNNER_OS: "Linux",
+      }),
+    ).toThrow("clean-CI builder requires the canonical protected-main GitHub context")
+  })
+
+  it("does not accept a caller-provided runner label override", () => {
+    const context = readCanonicalRunnerContext({
+      RUNNER_ENVIRONMENT: "github-hosted",
+      RUNNER_LABEL: "self-hosted",
+      RUNNER_OS: "Linux",
+    })
+
+    expect(context.label).toBe("ubuntu-latest")
+  })
+
   it("declares protected-main push-only triggers without caller inputs", () => {
     const workflow = readFileSync(workflowPath, "utf8")
 
@@ -57,8 +98,9 @@ describe("canonical clean CI attestation builder contract", () => {
       "GITHUB_RUN_ID",
       "GITHUB_RUN_ATTEMPT",
       "RUNNER_ENVIRONMENT",
-      "RUNNER_LABEL",
       "RUNNER_OS",
+      "CANONICAL_RUNNER_LABEL",
+      "runs-on: ubuntu-latest",
       "--porcelain=v1",
       "argvDigest",
       "numTotalTests",
@@ -70,6 +112,7 @@ describe("canonical clean CI attestation builder contract", () => {
       expect(`${workflow}\n${builder}`).toContain(required)
     }
 
+    expect(builder).not.toContain('requiredEnv("RUNNER_LABEL")')
     expect(workflow).toContain("contents: read")
     expect(workflow).toContain("id-token: write")
     expect(workflow).toContain("attestations: write")
