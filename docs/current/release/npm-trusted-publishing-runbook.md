@@ -46,6 +46,9 @@ workflow_dispatch
 Inputs:
 
 - `dist_tag`: one fixed channel only: `staging`, `next`, or `latest`.
+- `package.json` version: bounded strict SemVer; malformed, partial,
+  leading-zero, control-character, path-shaped, and oversized forms are
+  rejected before channel selection.
 - `approval_scope`: must match the selected channel:
   - `staging` requires `staging-only` and accepts prerelease versions only;
   - `next` requires `next-promotion-approved` and accepts prerelease versions
