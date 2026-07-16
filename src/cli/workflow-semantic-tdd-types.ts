@@ -1,4 +1,5 @@
 import type { VerificationDecision } from "./workflow-verification-decision.js"
+import type { SemanticTddTransitionEnvelope } from "./workflow-semantic-tdd-transition-types.js"
 
 export type SemanticTddState =
   | "invalid"
@@ -47,4 +48,5 @@ export type SemanticTddAssessment = {
   readonly red?: SemanticTddPhase
   readonly state: SemanticTddState
   readonly summary: string
+  readonly sourceAwareTransition?: SemanticTddTransitionEnvelope
 }

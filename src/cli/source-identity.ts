@@ -24,7 +24,7 @@ const DEFAULT_LIMITS = {
   maxTotalBytes: 64 * 1024 * 1024,
 } as const
 
-type SourceIdentityEntry =
+export type SourceIdentityEntry =
   | { readonly kind: "directory"; readonly mode: string; readonly path: string }
   | { readonly classification: "tracked" | "untracked"; readonly contentDigest: string; readonly kind: "file"; readonly mode: string; readonly path: string }
   | { readonly kind: "missing-tracked"; readonly path: string }
@@ -95,8 +95,31 @@ export function captureSourceIdentity(
       },
     }
   } catch (error) {
-    if (error instanceof SourceIdentityError) return unavailable(error.code)
-    return unavailable("source-identity-unavailable")
+    if (error instanceof SourceIdentityError) return { diagnosticCode: error.code, status: "unavailable" }
+    return { diagnosticCode: "source-identity-unavailable", status: "unavailable" }
+  }
+}
+
+export function captureSourceIdentityEntries(
+  projectDir: string,
+  git: GitIdentity,
+  evidenceRelativePath: string,
+  overrides: SourceIdentityLimits = {},
+): { readonly diagnosticCode: string; readonly status: "unavailable" } | { readonly status: "available"; readonly value: readonly SourceIdentityEntry[] } {
+  const limits = { ...DEFAULT_LIMITS, ...overrides }
+  try {
+    const root = realpathSync(projectDir)
+    const evidenceRoot = normalizedRelativePath(evidenceRelativePath)
+    const tracked = trackedIndex(projectDir, limits.maxEntries)
+    const scanned = scanWorkspace(root, evidenceRoot, tracked.paths, limits)
+    const missingTracked = [...tracked.paths]
+      .filter((path) => !isExcluded(path, evidenceRoot) && !scanned.paths.has(path))
+      .sort()
+      .map((path) => ({ kind: "missing-tracked", path }) satisfies SourceIdentityEntry)
+    return { status: "available", value: [...scanned.entries, ...missingTracked].sort((left, right) => entryKey(left).localeCompare(entryKey(right))) }
+  } catch (error) {
+    if (error instanceof SourceIdentityError) return { diagnosticCode: error.code, status: "unavailable" }
+    return { diagnosticCode: "source-identity-unavailable", status: "unavailable" }
   }
 }
 
