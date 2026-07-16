@@ -71,6 +71,18 @@ function hasNoFinishPass(output) {
   return !output.includes("Finish status: PASS") && !output.includes('"finish":"pass"')
 }
 
+function closureBlocksAuthority(result) {
+  if (result.status !== 0 || !hasNoFinishPass(result.output)) return false
+  try {
+    const parsed = JSON.parse(result.output)
+    return parsed?.state?.finish === "blocked"
+      && Array.isArray(parsed?.state?.blockers)
+      && parsed.state.blockers.some((blocker) => blocker?.id === "trusted-authority-required")
+  } catch {
+    return false
+  }
+}
+
 function runInstalledStagedPackageMatrix(consumer, tempRoot) {
   const fixtureDir = join(tempRoot, "authority-fixture")
   mkdirSync(fixtureDir, { recursive: true })
@@ -82,6 +94,9 @@ function runInstalledStagedPackageMatrix(consumer, tempRoot) {
   const finish = fixtureReady
     ? run(process.execPath, [consumer.cliPath, "workflow", "finish", "implement"], fixtureDir)
     : { output: "", status: 1 }
+  const closure = fixtureReady
+    ? run(process.execPath, [consumer.cliPath, "workflow", "closure", "next", "--json"], fixtureDir)
+    : { output: "", status: 1 }
 
   return {
     authorityBlocked:
@@ -89,6 +104,7 @@ function runInstalledStagedPackageMatrix(consumer, tempRoot) {
       && finish.output.includes("trusted-authority-required")
       && hasNoFinishPass(finish.output),
     cliHelp: help.status === 0 && help.output.includes("Usage: ph"),
+    closureAuthorityParity: closureBlocksAuthority(closure),
     npmTest: npmTest.status === 0 && npmTest.output.includes("Persona Harness"),
     sourceCheckoutIndependent:
       !existsSync(join(consumer.packageRoot, "tests"))

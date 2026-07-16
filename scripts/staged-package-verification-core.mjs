@@ -9,6 +9,7 @@ const MAX_VERSION_LENGTH = 128
 const INSTALLED_KEYS = [
   "authorityBlocked",
   "cliHelp",
+  "closureAuthorityParity",
   "exactVersion",
   "npmTest",
   "sourceCheckoutIndependent",
@@ -193,6 +194,8 @@ function installedDiagnosticName(key) {
     ? "authority-boundary"
     : key === "cliHelp"
       ? "cli-help"
+      : key === "closureAuthorityParity"
+        ? "closure-authority-parity"
       : key === "exactVersion"
         ? "exact-version"
         : key === "npmTest"

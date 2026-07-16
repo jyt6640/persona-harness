@@ -18,6 +18,7 @@ function validInput(
     installed: {
       authorityBlocked: true,
       cliHelp: true,
+      closureAuthorityParity: true,
       exactVersion: true,
       npmTest: true,
       sourceCheckoutIndependent: true,
