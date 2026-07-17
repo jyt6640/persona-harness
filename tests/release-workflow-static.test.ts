@@ -6,6 +6,18 @@ import { tmpdir } from "node:os"
 import { describe, expect, it } from "vitest"
 
 describe("CI and release workflow policy surface", () => {
+  it("keeps GitHub release creation behind an explicit manual GA-approved gate", () => {
+    const workflow = readFileSync(join(process.cwd(), ".github", "workflows", "release.yml"), "utf8")
+
+    expect(workflow).toContain("workflow_dispatch:")
+    expect(workflow).toContain("approval_scope:")
+    expect(workflow).toContain("          - ga-approved")
+    expect(workflow).toContain("tag:")
+    expect(workflow).toContain("inputs.approval_scope == 'ga-approved'")
+    expect(workflow).not.toContain("  push:")
+    expect(workflow).not.toContain("tags:")
+  })
+
   it("passes the repository workflow policy checker", () => {
     const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
       cwd: process.cwd(),
@@ -26,7 +38,7 @@ describe("CI and release workflow policy surface", () => {
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
       )
 
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml"]) {
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml", "production-integrity-audit.yml"]) {
         const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
         const floatingText = readFileSync(sourcePath, "utf8")
           .replaceAll("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5", "actions/checkout@v4")
@@ -58,7 +70,7 @@ describe("CI and release workflow policy surface", () => {
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
       )
 
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml"]) {
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml", "production-integrity-audit.yml"]) {
         const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
         const source = readFileSync(sourcePath, "utf8")
         const unsafeSource = workflowName === "publish.yml"
@@ -91,7 +103,7 @@ describe("CI and release workflow policy surface", () => {
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
       )
 
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml"]) {
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml", "production-integrity-audit.yml"]) {
         const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
         const source = readFileSync(sourcePath, "utf8")
         const unsafeSource = workflowName === "publish.yml"
@@ -122,7 +134,7 @@ describe("CI and release workflow policy surface", () => {
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
       )
 
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml"]) {
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml", "production-integrity-audit.yml"]) {
         const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
         const source = readFileSync(sourcePath, "utf8")
         const unsafeSource = workflowName === "staged-package-artifact-attestation.yml"

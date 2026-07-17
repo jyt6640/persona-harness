@@ -1,13 +1,22 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing immutable stable release tag matching the current package version"
+        required: true
+        type: string
+      approval_scope:
+        description: "Required explicit approval scope for GitHub release creation"
+        required: true
+        default: "ga-approved"
+        type: choice
+        options:
+          - ga-approved
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag }}
   cancel-in-progress: false
 
 permissions:
@@ -15,7 +24,8 @@ permissions:
 
 jobs:
   verify:
-    name: Verify package
+    name: Verify approved stable release source
+    if: github.repository == 'jyt6640/persona-harness' && github.ref == 'refs/heads/main' && inputs.approval_scope == 'ga-approved'
     runs-on: ubuntu-latest
 
     steps:
@@ -24,42 +34,36 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify release source
+      - name: Verify approved release source
         env:
+          APPROVAL_SCOPE: ${{ inputs.approval_scope }}
           GITHUB_REF: ${{ github.ref }}
-          GITHUB_SHA: ${{ github.sha }}
-          TAG_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TAG_NAME: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          git fetch origin main --no-tags
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_REPOSITORY" = jyt6640/persona-harness
+          git fetch origin main --tags
           package_version="$(node -p "require('./package.json').version")"
           canonical_main_sha="$(git rev-parse refs/remotes/origin/main)"
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            tag_commit="$(git rev-parse "${GITHUB_REF}^{commit}")"
-            if git merge-base --is-ancestor "$tag_commit" refs/remotes/origin/main; then
-              is_ancestor=true
-            else
-              is_ancestor=false
-            fi
-            node scripts/release-workflow-policy.mjs tag-source \
-              --tag "$TAG_NAME" \
-              --version "$package_version" \
-              --sha "$GITHUB_SHA" \
-              --tag-commit "$tag_commit" \
-              --canonical-main-sha "$canonical_main_sha" \
-              --is-ancestor "$is_ancestor"
+          tag_commit="$(git rev-parse "refs/tags/${TAG_NAME}^{commit}")"
+          if git merge-base --is-ancestor "$tag_commit" refs/remotes/origin/main; then
+            is_ancestor=true
           else
-            if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
-              is_ancestor=true
-            else
-              is_ancestor=false
-            fi
-            node scripts/release-workflow-policy.mjs canonical-main \
-              --ref "$GITHUB_REF" \
-              --sha "$GITHUB_SHA" \
-              --canonical-main-sha "$canonical_main_sha" \
-              --is-ancestor "$is_ancestor"
+            is_ancestor=false
           fi
+          node scripts/release-workflow-policy.mjs tag-source \
+            --tag "$TAG_NAME" \
+            --version "$package_version" \
+            --sha "$tag_commit" \
+            --tag-commit "$tag_commit" \
+            --canonical-main-sha "$canonical_main_sha" \
+            --is-ancestor "$is_ancestor"
+          node scripts/release-workflow-policy.mjs dist-tag \
+            --approval-scope "$APPROVAL_SCOPE" \
+            --version "$package_version" \
+            --dist-tag latest
 
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -95,27 +99,13 @@ jobs:
         run: npm pack --dry-run
 
       - name: Publish dry run
-        env:
-          TAG_NAME: ${{ github.ref_name }}
-        run: |
-          dist_tag=next
-          if [[ "$TAG_NAME" == v* ]]; then
-            dist_tag=latest
-            if [[ "$TAG_NAME" == *"-alpha."* ]]; then
-              dist_tag=alpha
-            elif [[ "$TAG_NAME" == *"-beta."* ]]; then
-              dist_tag=beta
-            elif [[ "$TAG_NAME" == *"-rc."* ]]; then
-              dist_tag=next
-            fi
-          fi
-          npm publish --dry-run --access public --tag "$dist_tag"
+        run: npm publish --dry-run --access public --tag latest
 
   github-release:
-    name: Create GitHub release notes
+    name: Create approved GitHub release notes
     needs: verify
+    if: github.event_name == 'workflow_dispatch' && inputs.approval_scope == 'ga-approved'
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
 
@@ -124,6 +114,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
+          ref: ${{ inputs.tag }}
 
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -132,45 +123,36 @@ jobs:
 
       - name: Generate release body
         env:
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ inputs.tag }}
         run: node scripts/generate-github-release-notes.mjs --tag "$TAG_NAME" --out github-release-notes.md
 
       - name: Create or verify GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.ref_name }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
+          TAG_NAME: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          prerelease_args=()
-          expected_prerelease=false
-          if [[ "$TAG_NAME" == *"-"* ]]; then
-            prerelease_args+=(--prerelease)
-            expected_prerelease=true
-          fi
+          tag_commit="$(git rev-parse "refs/tags/${TAG_NAME}^{commit}")"
           if gh release view "$TAG_NAME" \
             --json tagName,name,isPrerelease,targetCommitish \
             > existing-release.json 2> release-view-error.txt; then
             :
           else
             if ! grep -Eiq "404|not found" release-view-error.txt; then
-              cat release-view-error.txt
               exit 1
             fi
             gh release create "$TAG_NAME" \
-              --target "$GITHUB_SHA" \
+              --target "$tag_commit" \
               --notes-file github-release-notes.md \
-              --title "$TAG_NAME" \
-              "${prerelease_args[@]}"
+              --title "$TAG_NAME"
             gh release view "$TAG_NAME" \
               --json tagName,name,isPrerelease,targetCommitish \
               > existing-release.json
           fi
-          tag_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG_NAME}" --jq '.sha')"
           node scripts/release-workflow-policy.mjs release-state \
             --release existing-release.json \
             --tag "$TAG_NAME" \
             --tag-commit "$tag_commit" \
-            --expected-commit "$GITHUB_SHA" \
-            --expected-prerelease "$expected_prerelease"
+            --expected-commit "$tag_commit" \
+            --expected-prerelease false

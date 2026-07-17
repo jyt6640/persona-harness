@@ -92,7 +92,9 @@ Use this order for prerelease refreshes:
 5. Complete the staged installed-package gate before any separately approved
    `next` promotion dispatch.
 
-Tag pushes are verification/GitHub-release events only. They must not be used as the npm publish trigger, because npm publish happens through the trusted publishing workflow and must be verified before tag creation.
+Tag pushes do not create GitHub releases and must not be used as the npm
+publish trigger, because npm publish happens through the trusted publishing
+workflow and must be verified before tag creation.
 
 Expected:
 
@@ -104,7 +106,8 @@ Expected:
 - Injection value state is acceptable for the release.
 - Publish dry-run reports the expected package version, files, and dist-tag.
 
-GitHub Actions also runs the verification subset on release tags:
+The manual GitHub Release workflow runs the verification subset only after an
+explicit GA-approved dispatch:
 
 ```bash
 npm test
@@ -178,8 +181,9 @@ Required repository setup:
 - push the version commit before running the publish workflow;
 - create/push the git tag only after registry verification.
 
-The `.github/workflows/release.yml` workflow verifies pushed tags and creates
-GitHub release notes. It is not the npm publish path.
+The `.github/workflows/release.yml` workflow is manual-only. It verifies an
+explicitly supplied existing stable tag and creates GitHub release notes only
+with `approval_scope=ga-approved`. It is not the npm publish path.
 
 ## 8. Post-publish
 
@@ -189,6 +193,6 @@ GitHub release notes. It is not the npm publish path.
 - Confirm `npx ph init` works from the published package.
 - Update `CHANGELOG.md` date if it was left as `Unreleased`.
 - Create GitHub release notes from the release notes template if this release gets a GitHub release.
-- For tag releases, GitHub Actions creates GitHub release notes from
-  `docs/current/release/v<version>-release-notes.md` using
+- For separately approved stable GitHub releases, the manual workflow creates
+  notes from `docs/current/release/v<version>-release-notes.md` using
   `scripts/generate-github-release-notes.mjs`.

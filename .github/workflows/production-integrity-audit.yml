@@ -1,0 +1,46 @@
+name: Production integrity audit
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-integrity-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit protected-main staged package integrity
+    if: github.repository == 'jyt6640/persona-harness' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run fixed production integrity audit
+        run: node scripts/run-production-integrity-audit.mjs
+
+      - name: Upload sanitized audit summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-integrity-audit-summary
+          path: .ci/production-integrity-audit/summary.json
+          if-no-files-found: error
+          retention-days: 30

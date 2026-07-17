@@ -6,13 +6,26 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+## [0.7.0-rc.8] - 2026-07-17
+
+- Prepares an immutable RC8 source candidate with versioned package metadata,
+  a manual-only GitHub Release workflow, and a fixed protected-main production
+  integrity-audit workflow. Source preparation does not assert live registry,
+  tag, GitHub release, channel, or audit completion facts; those facts belong
+  in governed registry and audit records after their authorized lifecycle.
+- The audit workflow has no caller inputs and cannot publish, tag, release,
+  move a channel, or change Finish authority. It records sanitized command
+  outcomes and digest-bound source, registry, subject, and artifact facts only.
+- The future staging path remains separate and read-only until its governed
+  release approval and exact-artifact evidence exist.
+
 ## [0.7.0-rc.7] - 2026-07-17
 
 - Prepares a new immutable staging-first prerelease source candidate with a
   packaged, fixed-policy online verifier for a GitHub/Sigstore attestation
-  whose subject is the exact npm package tarball. This records source
-  preparation only: no `v0.7.0-rc.7` tag, GitHub prerelease, npm package,
-  registry gitHead, provenance artifact, or dist-tag movement has occurred.
+  whose subject is the exact npm package tarball. This is a historical source
+  preparation record; live tag, GitHub release, registry, provenance, and
+  channel facts are maintained in governed registry and audit records.
 - Keeps the existing local `ph dev staged-package` caller-fact path blocked as
   `artifact-provenance-unavailable`. The new
   `ph dev staged-package-provenance` path fetches only fixed npm and GitHub

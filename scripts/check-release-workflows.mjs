@@ -7,6 +7,7 @@ const workflowPaths = [
   ".github/workflows/canonical-clean-ci-attestation-builder.yml",
   ".github/workflows/staged-package-artifact-attestation.yml",
   ".github/workflows/staged-producer-context-diagnostic.yml",
+  ".github/workflows/production-integrity-audit.yml",
 ]
 
 const immutableActionPins = {
@@ -35,6 +36,11 @@ const expectedActionCounts = {
   ".github/workflows/staged-producer-context-diagnostic.yml": {
     checkout: 1,
   },
+  ".github/workflows/production-integrity-audit.yml": {
+    checkout: 1,
+    setupNode: 1,
+    uploadArtifact: 1,
+  },
 }
 
 function countOccurrences(text, value) {
@@ -60,9 +66,9 @@ const requirements = [
   ["publish staging approval", ".github/workflows/publish.yml", (text) => text.includes("          - staging") && text.includes("          - next") && text.includes("          - latest") && text.includes("          - staging-only") && text.includes("          - next-promotion-approved") && text.includes("          - ga-approved") && text.includes("approval_scope:") && text.includes('--approval-scope "$APPROVAL_SCOPE"')],
   ["publish no automatic tag movement", ".github/workflows/publish.yml", (text) => !text.includes("git tag") && !text.includes("git push")],
   ["publish integrity readback", ".github/workflows/publish.yml", (text) => text.includes("dist.integrity") && text.includes("dist.shasum") && text.includes("gitHead")],
-  ["release tag ancestry", ".github/workflows/release.yml", (text) => text.includes("tag-source") && text.includes("git fetch origin main") && text.includes("v*.*.*")],
-  ["release idempotency", ".github/workflows/release.yml", (text) => text.includes("gh release view") && text.includes("release-state") && text.includes("--target \"$GITHUB_SHA\"")],
-  ["release state fields", ".github/workflows/release.yml", (text) => text.includes("targetCommitish") && text.includes("isPrerelease") && text.includes("gh release create")],
+  ["release manual approval", ".github/workflows/release.yml", (text) => text.includes("workflow_dispatch:") && text.includes("approval_scope:") && text.includes("          - ga-approved") && text.includes("inputs.approval_scope == 'ga-approved'") && text.includes("tag-source") && text.includes("git fetch origin main") && !text.includes("\n  push:") && !text.includes("tags:\n")],
+  ["release idempotency", ".github/workflows/release.yml", (text) => text.includes("gh release view") && text.includes("release-state") && text.includes("--target \"$tag_commit\"")],
+  ["release state fields", ".github/workflows/release.yml", (text) => text.includes("targetCommitish") && text.includes("isPrerelease") && text.includes("gh release create") && text.includes("--expected-prerelease false")],
   ["builder triggers", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("  push:\n    branches:\n      - main") && !text.includes("workflow_call:") && !text.includes("workflow_dispatch:") && !text.includes("branches-ignore:")],
   ["builder no caller inputs", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => !text.includes("inputs:")],
   ["builder attestation predicate", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("finish-attestation.1") && text.includes("bundle-path")],
@@ -85,6 +91,9 @@ const requirements = [
   ["staged producer context diagnostic protected main", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("github.repository == 'jyt6640/persona-harness'") && text.includes("github.ref == 'refs/heads/main'") && text.includes("runs-on: ubuntu-latest")],
   ["staged producer context diagnostic no signing or registry", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("node scripts/diagnose-staged-package-artifact-context.mjs") && !text.includes("id-token:") && !text.includes("attestations:") && !text.includes("artifact-metadata:") && !text.includes("actions/attest") && !text.includes("actions/upload-artifact") && !text.includes("npm ") && !text.includes("registry") && !text.includes("git tag") && !text.includes("git push")],
   ["staged producer context diagnostic least privilege", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("contents: read") && !text.includes("contents: write")],
+  ["production audit dispatch only", ".github/workflows/production-integrity-audit.yml", (text) => text.includes("workflow_dispatch:") && !text.includes("inputs:") && !text.includes("pull_request:") && !text.includes("push:")],
+  ["production audit protected main", ".github/workflows/production-integrity-audit.yml", (text) => text.includes("github.repository == 'jyt6640/persona-harness'") && text.includes("github.ref == 'refs/heads/main'") && text.includes("contents: read") && !text.includes("contents: write") && !text.includes("id-token:") && !text.includes("attestations:")],
+  ["production audit fixed read-only route", ".github/workflows/production-integrity-audit.yml", (text) => text.includes("node scripts/run-production-integrity-audit.mjs") && text.includes("if: always()") && text.includes("production-integrity-audit-summary") && text.includes(".ci/production-integrity-audit/summary.json") && !text.includes("npm publish") && !text.includes("git tag") && !text.includes("git push") && !text.includes("gh release") && !text.includes("workflow finish")],
 ]
 
 async function main() {
