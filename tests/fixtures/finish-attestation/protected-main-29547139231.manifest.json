@@ -1,0 +1,14 @@
+{
+  "artifactId": 8394443498,
+  "artifactZipSha256": "3fa86796d084097f24d840b9277ad05354f103ba62df3f4590dcd385b228678e",
+  "bundleSha256": "3669383e48d3dc31bc22f0964ed056e9445365fc1233037a911db974d0e54e07",
+  "jobId": "87781776913",
+  "runId": "29547139231",
+  "sourceHead": "24383ca61eb806c0f107e8f64af1911845eb159a",
+  "testFacts": {
+    "count": 1274,
+    "failed": 0,
+    "passed": 1268,
+    "skipped": 6
+  }
+}

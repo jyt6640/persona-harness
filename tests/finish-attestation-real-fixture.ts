@@ -6,8 +6,11 @@ import { join } from "node:path"
 export const PROTECTED_MAIN_HEAD = "84901174235f0a9c7bc08f0dbd5be6d94c02d500"
 export const REAL_ATTESTATION_NOW = new Date("2026-07-16T16:00:00.000Z")
 export const EXPIRED_ATTESTATION_NOW = new Date("2026-07-16T17:35:45.394Z")
+export const FRESH_PROTECTED_MAIN_HEAD = "24383ca61eb806c0f107e8f64af1911845eb159a"
+export const FRESH_REAL_ATTESTATION_NOW = new Date("2026-07-17T01:30:00.000Z")
 
 const BUNDLE_FIXTURE = join(process.cwd(), "tests", "fixtures", "finish-attestation", "protected-main-29511625395.bundle.json")
+const FRESH_BUNDLE_FIXTURE = join(process.cwd(), "tests", "fixtures", "finish-attestation", "protected-main-29547139231.bundle.json")
 
 export type RealArtifactProject = {
   readonly cleanup: () => void
@@ -15,9 +18,21 @@ export type RealArtifactProject = {
 }
 
 export function createRealArtifactProject(workflowReady = false): RealArtifactProject {
+  return createArtifactProject(PROTECTED_MAIN_HEAD, BUNDLE_FIXTURE, workflowReady)
+}
+
+export function createFreshRealArtifactProject(workflowReady = false): RealArtifactProject {
+  return createArtifactProject(FRESH_PROTECTED_MAIN_HEAD, FRESH_BUNDLE_FIXTURE, workflowReady)
+}
+
+function createArtifactProject(
+  protectedMainHead: string,
+  bundleFixture: string,
+  workflowReady: boolean,
+): RealArtifactProject {
   const tempRoot = mkdtempSync(join(tmpdir(), "persona-finish-attestation-real-"))
   const projectDir = join(tempRoot, "project")
-  const worktree = spawnSync("git", ["worktree", "add", "--detach", projectDir, PROTECTED_MAIN_HEAD], {
+  const worktree = spawnSync("git", ["worktree", "add", "--detach", projectDir, protectedMainHead], {
     cwd: process.cwd(),
     encoding: "utf8",
     shell: false,
@@ -29,7 +44,7 @@ export function createRealArtifactProject(workflowReady = false): RealArtifactPr
 
   const bundlePath = join(projectDir, ".persona", "evidence", "finish-attestation", "bundle.json")
   mkdirSync(join(bundlePath, ".."), { recursive: true })
-  copyFileSync(BUNDLE_FIXTURE, bundlePath)
+  copyFileSync(bundleFixture, bundlePath)
   if (workflowReady) writeWorkflowFixture(projectDir)
 
   return {

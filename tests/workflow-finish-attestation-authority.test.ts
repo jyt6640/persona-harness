@@ -124,9 +124,26 @@ describe("finish-attestation.1 product authority", () => {
 
   it("keeps exclusive consumption fail-closed for duplicate callers", async () => {
     const project = track(createRealArtifactProject())
+    const binding = {
+      attestationId: "attestation-1",
+      bundleDigest: `sha256:${"a".repeat(64)}`,
+      expiresAt: "2026-07-17T02:00:00.000Z",
+      finishId: "finish-1",
+      issuedAt: "2026-07-17T01:00:00.000Z",
+      nonce: "nonce-1",
+      phVersion: "0.7.0-rc.3",
+      receiptDigest: `sha256:${"b".repeat(64)}`,
+      requestId: "request-1",
+      runAttempt: 1,
+      runId: "run-1",
+      sessionId: "session-1",
+      sourceHead: "84901174235f0a9c7bc08f0dbd5be6d94c02d500",
+      sourceIdentityDigest: `sha256:${"c".repeat(64)}`,
+      workspaceIdentityDigest: `sha256:${"d".repeat(64)}`,
+    } as const
     const [first, second] = await Promise.all([
-      Promise.resolve().then(() => consumeFinishAttestation(project.projectDir, "attestation-1", "nonce-1", "request-1")),
-      Promise.resolve().then(() => consumeFinishAttestation(project.projectDir, "attestation-1", "nonce-1", "request-2")),
+      Promise.resolve().then(() => consumeFinishAttestation(project.projectDir, binding)),
+      Promise.resolve().then(() => consumeFinishAttestation(project.projectDir, { ...binding, requestId: "request-2" })),
     ])
 
     expect(first).toEqual({ ok: true })
