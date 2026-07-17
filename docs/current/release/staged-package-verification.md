@@ -41,6 +41,12 @@ facts are diagnostic-only: the command emits
 bind the exact tarball bytes, selected tag, package/version, source/gitHead,
 shasum, integrity, and provenance before `verified` becomes available.
 
+The producer-only bootstrap is documented in
+[`staged-package-artifact-attestation-producer.md`](staged-package-artifact-attestation-producer.md).
+It can create a future controlled GitHub artifact attestation whose subject is
+the exact downloaded npm `.tgz`, but it does not alter this verifier's local
+blocked behavior or provide a shipped positive verification path.
+
 All fact parsing is strict and bounded. Malformed, secret-shaped, or
 unrecognized values block without echoing their raw contents.
 

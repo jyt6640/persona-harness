@@ -32,6 +32,7 @@ Use these files when making current product, measurement, or release decisions.
 | Package/version timeline | `docs/releases/package-index.md` | Chronological package index from `0.1.0` through current prereleases. |
 | Release operations | `docs/current/release/README.md` | Release runbook and workflow-compatible release-note sources. |
 | Staged package verification | `docs/current/release/staged-package-verification.md` | Read-only staging-first prerelease gate for exact selected `staging` or later-approved `next` facts. Local tarballs remain blocked until a product-owned exact-artifact provenance verifier exists; it never authorizes channel promotion. |
+| Staged package artifact producer | `docs/current/release/staged-package-artifact-attestation-producer.md` | Controlled protected-main producer bootstrap for a future exact npm `.tgz` attestation. No shipped verifier, release action, or positive staged-package result exists yet. |
 | RC release readiness decision | `docs/current/release/rc-release-readiness-decision.md` | Exact current-main decision: next-RC planning may start, while publication, Stable/GA, and `latest` remain blocked. |
 | External review adoption status | `docs/current/external-review-adoption-status.md` | Stage 16-e adoption/rejection/defer matrix for external review items; docs-only, no schema/product expansion. |
 | Diff-rules classification | `docs/current/diff-rules-classification.md` | T6 classification of all 50 `references/diff-rules` files for future role delivery or T8 gate-candidate work. |

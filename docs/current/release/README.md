@@ -56,6 +56,11 @@ Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.3`.
 The completed publish does not move `latest` or broaden any product claim.
 `0.7.0-rc.2` remains the previous published `next` record.
 
+The staged-package artifact producer is a controlled future-run bootstrap only:
+[`staged-package-artifact-attestation-producer.md`](staged-package-artifact-attestation-producer.md).
+It does not publish, move a channel, or make local staged-package verification
+positive.
+
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
 `next=0.7.0-rc.3`, with no `alpha` dist-tag after the post-stable T0

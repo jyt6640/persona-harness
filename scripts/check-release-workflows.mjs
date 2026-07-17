@@ -5,6 +5,7 @@ const workflowPaths = [
   ".github/workflows/publish.yml",
   ".github/workflows/release.yml",
   ".github/workflows/canonical-clean-ci-attestation-builder.yml",
+  ".github/workflows/staged-package-artifact-attestation.yml",
 ]
 
 const immutableActionPins = {
@@ -23,6 +24,12 @@ const expectedActionCounts = {
     checkout: 1,
     setupNode: 1,
     uploadArtifact: 2,
+  },
+  ".github/workflows/staged-package-artifact-attestation.yml": {
+    attest: 1,
+    checkout: 1,
+    setupNode: 1,
+    uploadArtifact: 1,
   },
 }
 
@@ -58,6 +65,12 @@ const requirements = [
   ["builder producer-only boundary", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("Build canonical clean CI finish attestation") && !text.includes("workflow finish") && !text.includes("workflow-finish-authority")],
   ["builder least privilege", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
   ["builder failure artifact", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("if: always()") && text.includes("failure-diagnostic.json") && text.includes("canonical-clean-ci-attestation-builder-failure") && text.includes("if-no-files-found: ignore")],
+  ["staged artifact attester trigger", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("workflow_dispatch:") && !text.includes("workflow_call:") && !text.includes("pull_request:") && !text.includes("push:")],
+  ["staged artifact attester fixed inputs", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("channel:") && text.includes("version:") && text.includes("          - staging") && text.includes("          - next") && !text.includes("registry_url:") && !text.includes("package_name:") && !text.includes("source_head:")],
+  ["staged artifact attester source policy", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("github.repository == 'jyt6640/persona-harness'") && text.includes("github.ref == 'refs/heads/main'") && text.includes("git fetch origin main") && text.includes("git status --porcelain=v1")],
+  ["staged artifact attester subject", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("staged-package-artifact-binding.1") && text.includes("subject-path: .ci/staged-package-artifact-attestation/package.tgz") && !text.includes("subject-path: .ci/staged-package-artifact-attestation/predicate.json")],
+  ["staged artifact attester producer-only boundary", ".github/workflows/staged-package-artifact-attestation.yml", (text) => !text.includes("npm publish") && !text.includes("git tag") && !text.includes("git push") && !text.includes("workflow finish")],
+  ["staged artifact attester least privilege", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
 ]
 
 async function main() {
