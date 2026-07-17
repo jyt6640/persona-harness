@@ -24,10 +24,10 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - legacy current evidence review: 2
 - operational stable: 41
 - phase archive: 46
-- version-specific release note: 55
+- version-specific release note: 56
 - versioned durable: 26
 
-Total indexed files: 328
+Total indexed files: 329
 
 ## File Inventory
 
@@ -194,6 +194,7 @@ Total indexed files: 328
 | `docs/current/release/v0.7.0-rc.1-release-notes.md` | version-specific release note | v0.7.0-rc.1 | Workflow-compatible published release-note source with npm `next`/tag provenance for v0.7.0-rc.1. |
 | `docs/current/release/v0.7.0-rc.2-release-notes.md` | version-specific release note | v0.7.0-rc.2 | Workflow-compatible published release-note source with npm `next`/tag/workflow provenance for v0.7.0-rc.2. |
 | `docs/current/release/v0.7.0-rc.3-release-notes.md` | version-specific release note | v0.7.0-rc.3 | Workflow-compatible published release-note source with npm `next`, tag, GitHub prerelease, and workflow provenance. |
+| `docs/current/release/v0.7.0-rc.4-release-notes.md` | version-specific release note | v0.7.0-rc.4 | Workflow-compatible staging-first source candidate; it records preparation only, not a published tag, package, registry, or promotion fact. |
 | `docs/current/rule-curation.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/rule-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/shared-skill-reference-direction.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |

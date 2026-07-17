@@ -2,7 +2,16 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSy
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+const attestedFixtureVersion = vi.hoisted(() => ({
+  current: "0.7.0-rc.3",
+  expected: "0.7.0-rc.3",
+}))
+
+vi.mock("../src/cli/version.js", () => ({
+  personaHarnessVersion: () => attestedFixtureVersion.current,
+}))
 
 import {
   FINISH_ATTESTATION_BUNDLE_PATH,
@@ -20,13 +29,15 @@ import {
 } from "./finish-attestation-real-fixture.js"
 
 const projects: RealArtifactProject[] = []
+const currentPackageVersion = readPackageVersion()
 
 afterEach(() => {
+  attestedFixtureVersion.current = attestedFixtureVersion.expected
   for (const project of projects.splice(0)) project.cleanup()
 })
 
 describe("finish-attestation.1 product authority", () => {
-  it("trusts the original signed artifact only after product-owned verification", () => {
+  it("trusts the original signed artifact under its signed product version after product-owned verification", () => {
     const project = track(createRealArtifactProject())
     const result = verifyExternalFinishAttestation(project.projectDir, REAL_ATTESTATION_NOW, { consume: false })
 
@@ -38,6 +49,21 @@ describe("finish-attestation.1 product authority", () => {
         source: { head: "84901174235f0a9c7bc08f0dbd5be6d94c02d500" },
       },
     })
+  })
+
+  it("binds the original signed artifact to its exact current product version", () => {
+    const project = track(createRealArtifactProject())
+    attestedFixtureVersion.current = currentPackageVersion
+
+    const result = verifyExternalFinishAttestation(project.projectDir, REAL_ATTESTATION_NOW, { consume: false })
+
+    if (currentPackageVersion === attestedFixtureVersion.expected) {
+      expect(result).toMatchObject({ authorityEligible: true, state: "trusted" })
+      return
+    }
+    expect(result).toMatchObject({ authorityEligible: false, state: "binding-mismatch" })
+    expect(result.diagnostics[0]).toMatchObject({ path: "predicate.receipt.phVersion" })
+    expect(existsSync(join(project.projectDir, FINISH_ATTESTATION_CONSUMPTION_PATH))).toBe(false)
   })
 
   it("never trusts copied local receipt or predicate JSON without the signed bundle", () => {
@@ -183,4 +209,11 @@ function withEnvironment<T>(updates: Readonly<Record<string, string>>, operation
       else process.env[key] = value
     }
   }
+}
+
+function readPackageVersion(): string {
+  const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8")
+  const match = /"version"\s*:\s*"([^"]+)"/u.exec(packageJson)
+  if (match?.[1] === undefined) throw new Error("package version is unavailable")
+  return match[1]
 }

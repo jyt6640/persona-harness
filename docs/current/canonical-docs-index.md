@@ -25,6 +25,7 @@ Use these files when making current product, measurement, or release decisions.
 | Harness default audit | `docs/current/harness-default-audit.md` | P1 STEP 1 full config-field/default/path audit, dead-flag inventory, and doctor semantic dictionary; no default change. |
 | Entry steering status | `docs/current/entry-steering-status.md` | Default-off OpenCode first-message advisory, source-only bilingual corpus measurement, bounded status record, and no-claim boundary. |
 | AGENTS managed block contract | `docs/current/agents-managed-block-contract.md` | P1 STEP 2 doctor inspection plus P1 STEP 3 bounded managed-V1/project-local attach writer; no default, configuration/evidence-schema, measured-negative, version, or release-state change. |
+| 0.7.0-rc.4 prepared release notes | `docs/current/release/v0.7.0-rc.4-release-notes.md` | Staging-first source candidate only; no tag, package, registry, promotion, Stable/GA, or `latest` fact. |
 | 0.7.0-rc.3 published capsule | `docs/releases/v0.7.0-rc.3/README.md` | Current npm `next` candidate with matching registry gitHead, tag, GitHub prerelease, and workflow provenance. |
 | 0.7.0-rc.2 published capsule | `docs/releases/v0.7.0-rc.2/README.md` | Previous npm `next` candidate with registry gitHead/tag/workflow provenance. |
 | 0.7.0-rc.1 published capsule | `docs/releases/v0.7.0-rc.1/README.md` | Earlier published npm `next` candidate with registry gitHead/tag provenance. |

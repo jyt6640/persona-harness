@@ -61,6 +61,20 @@ The staged-package artifact producer is a controlled future-run bootstrap only:
 It does not publish, move a channel, or make local staged-package verification
 positive.
 
+## Prepared Staging Candidate
+
+[`v0.7.0-rc.4-release-notes.md`](v0.7.0-rc.4-release-notes.md) prepares a
+fresh prerelease source identity. It is not published: no `v0.7.0-rc.4` tag,
+GitHub release, npm package, registry gitHead, integrity value, provenance
+artifact, or dist-tag movement exists yet. Published channels remain
+`latest=0.6.0` and `next=0.7.0-rc.3`.
+
+Any future prerelease action is staging-first and requires a separate approved
+`staging-only` release decision. This source candidate neither authorizes that
+action nor a later `next` promotion. Local or caller-supplied staged-package
+facts remain `artifact-provenance-unavailable`; only a future product-owned
+exact-artifact verification path can change that status.
+
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
 `next=0.7.0-rc.3`, with no `alpha` dist-tag after the post-stable T0
