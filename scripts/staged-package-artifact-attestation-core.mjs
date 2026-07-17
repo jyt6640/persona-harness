@@ -11,7 +11,18 @@ export const STAGED_PACKAGE_ARTIFACT_PACKAGE = "persona-harness"
 export const STAGED_PACKAGE_ARTIFACT_REGISTRY_ORIGIN = "https://registry.npmjs.org"
 export const STAGED_PACKAGE_ARTIFACT_WORKFLOW_PATH = ".github/workflows/staged-package-artifact-attestation.yml"
 export const STAGED_PACKAGE_ARTIFACT_WORKFLOW_REF = `${STAGED_PACKAGE_ARTIFACT_REPOSITORY}/${STAGED_PACKAGE_ARTIFACT_WORKFLOW_PATH}@refs/heads/main`
+export const STAGED_PACKAGE_ARTIFACT_RUNNER_LABEL = "ubuntu-latest"
 export const STAGED_PACKAGE_ARTIFACT_CHANNELS = ["staging", "next"]
+export const STAGED_PACKAGE_ARTIFACT_CONTEXT_REQUIREMENTS = [
+  { code: "repository", expected: STAGED_PACKAGE_ARTIFACT_REPOSITORY, key: "repository" },
+  { code: "repository-id", expected: String(STAGED_PACKAGE_ARTIFACT_REPOSITORY_ID), key: "repositoryId" },
+  { code: "ref", expected: "refs/heads/main", key: "ref" },
+  { code: "event", expected: "workflow_dispatch", key: "event" },
+  { code: "workflow-ref", expected: STAGED_PACKAGE_ARTIFACT_WORKFLOW_REF, key: "workflowRef" },
+  { code: "runner-environment", expected: "github-hosted", key: "runnerEnvironment" },
+  { code: "runner-label", expected: STAGED_PACKAGE_ARTIFACT_RUNNER_LABEL, key: "runnerLabel" },
+  { code: "runner-os", expected: "Linux", key: "runnerOs" },
+]
 
 const MAX_SEMVER_LENGTH = 256
 const STRICT_SEMVER = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
@@ -135,17 +146,7 @@ function readVersion(value) {
 
 export function validateStagedPackageArtifactContext(value) {
   if (!isRecord(value)) throw new StagedPackageArtifactProducerError("staged-producer-context-invalid")
-  const required = [
-    ["repository", STAGED_PACKAGE_ARTIFACT_REPOSITORY],
-    ["repositoryId", String(STAGED_PACKAGE_ARTIFACT_REPOSITORY_ID)],
-    ["ref", "refs/heads/main"],
-    ["event", "workflow_dispatch"],
-    ["workflowRef", STAGED_PACKAGE_ARTIFACT_WORKFLOW_REF],
-    ["runnerEnvironment", "github-hosted"],
-    ["runnerLabel", "ubuntu-latest"],
-    ["runnerOs", "Linux"],
-  ]
-  if (required.some(([key, expected]) => value[key] !== expected)) {
+  if (STAGED_PACKAGE_ARTIFACT_CONTEXT_REQUIREMENTS.some(({ expected, key }) => value[key] !== expected)) {
     throw new StagedPackageArtifactProducerError("staged-producer-context-policy")
   }
   if (

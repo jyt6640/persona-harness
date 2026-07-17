@@ -28,7 +28,7 @@ const expectedActionCounts = {
   },
   ".github/workflows/staged-package-artifact-attestation.yml": {
     attest: 1,
-    checkout: 1,
+    checkout: 2,
     setupNode: 1,
     uploadArtifact: 1,
   },
@@ -70,11 +70,17 @@ const requirements = [
   ["builder least privilege", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
   ["builder failure artifact", ".github/workflows/canonical-clean-ci-attestation-builder.yml", (text) => text.includes("if: always()") && text.includes("failure-diagnostic.json") && text.includes("canonical-clean-ci-attestation-builder-failure") && text.includes("if-no-files-found: ignore")],
   ["staged artifact attester trigger", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("workflow_dispatch:") && !text.includes("workflow_call:") && !text.includes("pull_request:") && !text.includes("push:")],
-  ["staged artifact attester fixed inputs", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("channel:") && text.includes("version:") && text.includes("          - staging") && text.includes("          - next") && !text.includes("registry_url:") && !text.includes("package_name:") && !text.includes("source_head:")],
+  ["staged artifact attester fixed inputs", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("mode:") && text.includes("channel:") && text.includes("version:") && text.includes("          - produce") && text.includes("          - diagnose") && text.includes("          - staging") && text.includes("          - next") && !text.includes("registry_url:") && !text.includes("package_name:") && !text.includes("source_head:")],
   ["staged artifact attester source policy", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("github.repository == 'jyt6640/persona-harness'") && text.includes("github.ref == 'refs/heads/main'") && text.includes("git fetch origin main") && text.includes("git status --porcelain=v1")],
   ["staged artifact attester subject", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("staged-package-artifact-binding.1") && text.includes("subject-path: .ci/staged-package-artifact-attestation/package.tgz") && !text.includes("subject-path: .ci/staged-package-artifact-attestation/predicate.json")],
   ["staged artifact attester producer-only boundary", ".github/workflows/staged-package-artifact-attestation.yml", (text) => !text.includes("npm publish") && !text.includes("git tag") && !text.includes("git push") && !text.includes("workflow finish")],
-  ["staged artifact attester least privilege", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
+  ["staged artifact attester least privilege", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("  diagnose:") && text.includes("inputs.mode == 'diagnose'") && text.includes("node scripts/diagnose-native-staged-package-artifact-context.mjs") && text.includes("  attest:") && text.includes("inputs.mode == 'produce'") && text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
+  ["staged artifact attester diagnostic isolation", ".github/workflows/staged-package-artifact-attestation.yml", (text) => {
+    const diagnoseStart = text.indexOf("  diagnose:")
+    const attestStart = text.indexOf("  attest:")
+    const diagnose = diagnoseStart >= 0 && attestStart > diagnoseStart ? text.slice(diagnoseStart, attestStart) : ""
+    return diagnose.includes("permissions:\n      contents: read") && !diagnose.includes("id-token:") && !diagnose.includes("attestations:") && !diagnose.includes("artifact-metadata:") && !diagnose.includes("actions/attest") && !diagnose.includes("actions/upload-artifact") && !diagnose.includes("build-staged-package-artifact-attestation") && !diagnose.includes(".ci/staged-package-artifact-attestation") && !diagnose.includes("npm ") && !diagnose.includes("registry") && !diagnose.includes("git tag") && !diagnose.includes("git push")
+  }],
   ["staged producer context diagnostic trigger", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("workflow_dispatch:") && !text.includes("inputs:") && !text.includes("workflow_call:") && !text.includes("pull_request:") && !text.includes("push:")],
   ["staged producer context diagnostic protected main", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("github.repository == 'jyt6640/persona-harness'") && text.includes("github.ref == 'refs/heads/main'") && text.includes("runs-on: ubuntu-latest")],
   ["staged producer context diagnostic no signing or registry", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("node scripts/diagnose-staged-package-artifact-context.mjs") && !text.includes("id-token:") && !text.includes("attestations:") && !text.includes("artifact-metadata:") && !text.includes("actions/attest") && !text.includes("actions/upload-artifact") && !text.includes("npm ") && !text.includes("registry") && !text.includes("git tag") && !text.includes("git push")],

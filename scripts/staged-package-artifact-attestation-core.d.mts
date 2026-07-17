@@ -7,7 +7,13 @@ export const STAGED_PACKAGE_ARTIFACT_PACKAGE: "persona-harness"
 export const STAGED_PACKAGE_ARTIFACT_REGISTRY_ORIGIN: "https://registry.npmjs.org"
 export const STAGED_PACKAGE_ARTIFACT_WORKFLOW_PATH: ".github/workflows/staged-package-artifact-attestation.yml"
 export const STAGED_PACKAGE_ARTIFACT_WORKFLOW_REF: "jyt6640/persona-harness/.github/workflows/staged-package-artifact-attestation.yml@refs/heads/main"
+export const STAGED_PACKAGE_ARTIFACT_RUNNER_LABEL: "ubuntu-latest"
 export const STAGED_PACKAGE_ARTIFACT_CHANNELS: readonly ["staging", "next"]
+export const STAGED_PACKAGE_ARTIFACT_CONTEXT_REQUIREMENTS: readonly {
+  readonly code: string
+  readonly expected: string
+  readonly key: string
+}[]
 export const FIXED_STAGED_PACKAGE_ARTIFACT_COMMAND_PLAN: readonly Readonly<Record<string, string>>[]
 
 export class StagedPackageArtifactProducerError extends Error {
