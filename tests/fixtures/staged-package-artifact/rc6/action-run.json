@@ -1,0 +1,15 @@
+{
+  "conclusion": "success",
+  "event": "workflow_dispatch",
+  "head_branch": "main",
+  "head_sha": "1c8976c58102908329f63dc78286b2646bfc52dd",
+  "id": 29576542050,
+  "path": ".github/workflows/staged-package-artifact-attestation.yml",
+  "repository": {
+    "full_name": "jyt6640/persona-harness",
+    "id": 1272008570
+  },
+  "run_attempt": 1,
+  "status": "completed",
+  "workflow_id": 314877981
+}

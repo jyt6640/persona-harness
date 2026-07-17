@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process"
 import { copyFileSync, existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
@@ -14,6 +14,7 @@ try {
 
   assertRepositoryOnlyFilesAreAbsent(installedPackage)
   assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+  assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
   assertInstalledPackageTestPasses(installedPackage)
   process.stdout.write("installed-package-test-contract: PASS\n")
 } finally {
@@ -88,6 +89,54 @@ function assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage
     `import { verifyExternalFinishAttestation } from ${JSON.stringify(modulePath)}; const result = verifyExternalFinishAttestation(process.cwd(), new Date("2026-07-16T16:00:00.000Z"), { consume: false }); if (result.authorityEligible || result.state !== "source-drift") process.exit(1);`,
   ])
   requireSuccess("installed packaged verifier fail-closed probe", probe)
+}
+
+function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory) {
+  const fixtureRoot = join(consumerDirectory, "staged-artifact-fixture")
+  const packageFixtureRoot = join(repositoryRoot, "tests", "fixtures", "staged-package-artifact", "rc6")
+  const corePath = join(installedPackage, "scripts", "staged-package-artifact-provenance-core.mjs")
+  const workerPath = join(installedPackage, "scripts", "verify-staged-package-artifact-attestation.mjs")
+  const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
+  mkdirSync(fixtureRoot)
+  for (const fileName of ["action-run.json", "bundle.json", "package.tgz"]) {
+    copyFileSync(join(packageFixtureRoot, fileName), join(fixtureRoot, fileName))
+  }
+  if (!existsSync(corePath) || !existsSync(workerPath)) {
+    throw new Error("installed package is missing staged artifact provenance code")
+  }
+  const help = runNode(consumerDirectory, [phPath, "dev", "staged-package-provenance", "--help"])
+  requireSuccess("installed staged artifact verifier help", help)
+  const probe = runNode(consumerDirectory, [
+    "--input-type=module",
+    "-e",
+    [
+      `import { verifyStagedPackageArtifactEvidence } from ${JSON.stringify(pathToFileURL(corePath).href)};`,
+      'import { readFileSync } from "node:fs";',
+      'import { join } from "node:path";',
+      'const fixture = join(process.cwd(), "staged-artifact-fixture");',
+      'const read = (name) => JSON.parse(readFileSync(join(fixture, name), "utf8"));',
+      'const tarball = readFileSync(join(fixture, "package.tgz"));',
+      'const attestation = { bundle: read("bundle.json"), repository_id: 1272008570 };',
+      'const result = await verifyStagedPackageArtifactEvidence({',
+      '  actionRun: read("action-run.json"),',
+      '  attestation,',
+      '  attestations: [attestation],',
+      '  channel: "staging",',
+      '  now: new Date("2026-07-17T12:00:00.000Z"),',
+      '  registryIndex: { "dist-tags": { staging: "0.7.0-rc.6" } },',
+      '  registryVersion: {',
+      '    dist: { integrity: "sha512-Gf3g0U4YZ3fmD327ruboyPCEctMITx+0X9l7iUN9IKD82jWygwxVZS+tiYvYRSAn1udYW5Lq8QwldZ+4n7mY7Q==", shasum: "3fa7e7579e885ee9446f2e4b55bdaa13b1abf80e", tarball: "https://registry.npmjs.org/persona-harness/-/persona-harness-0.7.0-rc.6.tgz" },',
+      '    gitHead: "1c8976c58102908329f63dc78286b2646bfc52dd",',
+      '    name: "persona-harness",',
+      '    version: "0.7.0-rc.6",',
+      '  },',
+      '  tarballBytes: tarball,',
+      '  version: "0.7.0-rc.6",',
+      '});',
+      'if (result.channel !== "staging" || result.version !== "0.7.0-rc.6" || result.subjectDigest !== "sha256:37f679a0125c354d5f5c5c8ad933fe7a6e7d9e6df6ab892afdf06ed2310b7794") process.exit(1);',
+    ].join("\n"),
+  ])
+  requireSuccess("installed staged artifact verifier exact-byte probe", probe)
 }
 
 function runNpm(cwd, args) {

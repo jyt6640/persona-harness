@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.7.0-rc.6",
+  "version": "0.7.0-rc.7",
   "private": false,
   "type": "module",
   "description": "Gate-first CLI for Java/Spring backend workflow evidence, completion checks, and optional OpenCode runtime guidance.",
@@ -105,7 +105,13 @@
     "packages/shared-skills/skills/programming/SKILL.md",
     "packages/shared-skills/skills/programming/references/java",
     "packages/shared-skills/skills/workflow",
-    "scripts/verify-finish-attestation.mjs"
+    "scripts/verify-finish-attestation.mjs",
+    "scripts/staged-package-artifact-provenance-core.mjs",
+    "scripts/staged-package-artifact-provenance-crypto.mjs",
+    "scripts/staged-package-artifact-provenance-network.mjs",
+    "scripts/staged-package-artifact-provenance-policy.mjs",
+    "scripts/staged-package-artifact-tarball.mjs",
+    "scripts/verify-staged-package-artifact-attestation.mjs"
   ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
@@ -144,7 +150,8 @@
     "@opencode-ai/plugin": "1.15.13",
     "@sigstore/bundle": "4.0.0",
     "@sigstore/tuf": "4.0.0",
-    "@sigstore/verify": "3.0.0"
+    "@sigstore/verify": "3.0.0",
+    "snappy": "7.3.3"
   },
   "optionalDependencies": {
     "@colbymchenry/codegraph": "1.1.6",

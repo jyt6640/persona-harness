@@ -61,7 +61,7 @@ describe("public CLI discovery", () => {
     expect(workflow.stdout).toContain("workflow <check|implement|test|tdd|continue|loop|ralph-loop")
     expect(workflow.stdout).toContain("workflow draft/approve/capture/split/next/archive")
     expect(dev.status).toBe(0)
-    expect(dev.stdout).toContain("Usage: ph dev <evidence|smoke|feedback|ralph-loop|observe|bearshell|review|staged-package>")
+    expect(dev.stdout).toContain("Usage: ph dev <evidence|smoke|feedback|ralph-loop|observe|bearshell|review|staged-package|staged-package-provenance>")
     expect(dev.stdout).toContain("Alias for ph evidence")
     expect(dev.stdout).toContain("Alias for ph workflow ralph-loop")
     expect(dev.stdout).toContain("Existing direct command paths remain supported.")
@@ -82,6 +82,11 @@ describe("public CLI discovery", () => {
     const devBearshell = runPersonaCli(["dev", "bearshell", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const devReview = runPersonaCli(["dev", "review", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
     const devStagedPackage = runPersonaCli(["dev", "staged-package", "--help"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+    const devStagedPackageProvenance = runPersonaCli(["dev", "staged-package-provenance", "--help"], {
       cwd: projectDir,
       env: {},
       invocationName: "ph",
@@ -110,6 +115,8 @@ describe("public CLI discovery", () => {
     expect(devReview.stdout).toContain("Usage: ph dev review backend-shape")
     expect(devStagedPackage.status).toBe(0)
     expect(devStagedPackage.stdout).toContain("Usage: ph dev staged-package")
+    expect(devStagedPackageProvenance.status).toBe(0)
+    expect(devStagedPackageProvenance.stdout).toContain("Usage: ph dev staged-package-provenance")
   })
 
   it("returns isolated usage errors for invalid root, workflow, and dev inputs", () => {

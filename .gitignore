@@ -40,6 +40,9 @@ AGENTS.md
 .persona-continuation-test-fixtures/
 .playwright-cli/
 fixtures/
+!tests/fixtures/
+!tests/fixtures/staged-package-artifact/
+!tests/fixtures/staged-package-artifact/**
 !experiments/p3-adversarial-closure-fixtures/fixtures/
 !experiments/p3-adversarial-closure-fixtures/fixtures/**
 !experiments/p3-7-ph-init-safe-upgrade-contract/fixtures/
