@@ -24,10 +24,10 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - legacy current evidence review: 2
 - operational stable: 41
 - phase archive: 46
-- version-specific release note: 58
+- version-specific release note: 59
 - versioned durable: 26
 
-Total indexed files: 331
+Total indexed files: 332
 
 ## File Inventory
 
@@ -130,8 +130,8 @@ Total indexed files: 331
 | `docs/current/role-scoped-rule-delivery.md` | current active pointer/status | - | T7 role/stage scoped static rule delivery status and boundary record. |
 | `docs/current/role-rules-dogfooding-readiness.md` | current active pointer/status | - | T10 ROLE-RULES dogfooding readiness checklist, violation-log template, and next queue. |
 | `docs/current/release/README.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
-| `docs/current/release/staged-package-artifact-attestation-producer.md` | operational stable | - | Controlled producer-only bootstrap for future exact npm tarball attestation; no shipped verifier, release action, or positive staged-package result. |
-| `docs/current/release/staged-package-verification.md` | operational stable | - | Read-only staging-first prerelease verification contract: exact selected `staging` or later-approved `next` facts, local-install checks, and an exact-artifact provenance requirement before any verified result. |
+| `docs/current/release/staged-package-artifact-attestation-producer.md` | operational stable | - | Controlled protected-main source for exact npm tarball attestations consumed only through fixed product verifier policy; no release or authority action. |
+| `docs/current/release/staged-package-verification.md` | operational stable | - | Read-only staging-first verification contract: caller-fact local tarballs remain blocked while the fixed online path independently verifies an exact artifact without promotion authority. |
 | `docs/current/release/rc-release-readiness-decision.md` | current active pointer/status | - | Exact current-main release decision: next-RC planning may begin, while publication, Stable/GA, and npm latest remain held. |
 | `docs/current/release/github-actions-release-automation.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/release/next-version-blocked.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
@@ -197,6 +197,7 @@ Total indexed files: 331
 | `docs/current/release/v0.7.0-rc.4-release-notes.md` | version-specific release note | v0.7.0-rc.4 | Workflow-compatible staging-first source candidate; it records preparation only, not a published tag, package, registry, or promotion fact. |
 | `docs/current/release/v0.7.0-rc.5-release-notes.md` | version-specific release note | v0.7.0-rc.5 | Workflow-compatible staging-first source candidate with a fresh source identity; it records preparation only, not a published tag, package, registry, or promotion fact. |
 | `docs/current/release/v0.7.0-rc.6-release-notes.md` | version-specific release note | v0.7.0-rc.6 | Workflow-compatible staging-first source candidate with a fresh source identity; it records preparation only, not a published tag, package, registry, or promotion fact. |
+| `docs/current/release/v0.7.0-rc.7-release-notes.md` | version-specific release note | v0.7.0-rc.7 | Workflow-compatible staging-first source candidate with a packaged read-only exact-artifact verifier; it records preparation only, not a published tag, package, registry, provenance, or promotion fact. |
 | `docs/current/rule-curation.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/rule-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/shared-skill-reference-direction.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |

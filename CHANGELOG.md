@@ -6,6 +6,27 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+## [0.7.0-rc.7] - 2026-07-17
+
+- Prepares a new immutable staging-first prerelease source candidate with a
+  packaged, fixed-policy online verifier for a GitHub/Sigstore attestation
+  whose subject is the exact npm package tarball. This records source
+  preparation only: no `v0.7.0-rc.7` tag, GitHub prerelease, npm package,
+  registry gitHead, provenance artifact, or dist-tag movement has occurred.
+- Keeps the existing local `ph dev staged-package` caller-fact path blocked as
+  `artifact-provenance-unavailable`. The new
+  `ph dev staged-package-provenance` path fetches only fixed npm and GitHub
+  origins, verifies the exact tarball, GitHub/Sigstore bundle, protected
+  workflow identity, Rekor inclusion, and signed source/run bindings before a
+  read-only artifact verification result.
+- Adds the maintained cross-platform Snappy transport decoder required by the
+  GitHub attestation bundle endpoint. Node 20, 22, and 24 remain the supported
+  Linux matrix; this does not change the limited macOS or unverified Windows
+  support statements.
+- Preserves staging-first release policy, no automatic tag/channel movement,
+  promotion authorization false, registry mutation not performed, and the
+  trusted external Finish/closure authority boundary.
+
 ## [0.7.0-rc.6] - 2026-07-17
 
 - Prepares a new immutable prerelease source candidate after the corrected

@@ -15,6 +15,12 @@ tarball without a source checkout:
 ph dev staged-package --plan <path> --preflight <path> --registry-facts <path> --tarball <path> [--json]
 ```
 
+The separately packaged fixed-policy online verifier is:
+
+```text
+ph dev staged-package-provenance --channel <staging|next> --version <strict-semver> [--json]
+```
+
 ## Inputs
 
 The gate accepts bounded, versioned fact files plus one local tarball:
@@ -32,20 +38,27 @@ The gate accepts bounded, versioned fact files plus one local tarball:
 - The supplied local tarball is hashed independently. Its package/version,
   shasum, and integrity must agree with the staged registry facts.
 
-At this boundary, no product-owned verifier yet cryptographically binds a
-selected local tarball to independently issued registry provenance. Therefore a
-generic `npm audit signatures --json` success and caller-provided matching
-facts are diagnostic-only: the command emits
+The local caller-fact command cannot cryptographically bind a selected local
+tarball to independently issued registry provenance. Therefore a generic
+`npm audit signatures --json` success and caller-provided matching facts remain
+diagnostic-only: `ph dev staged-package` emits
 `artifact-provenance-unavailable` and cannot report `verificationStatus:
-"verified"`. A future product-owned GitHub/Sigstore artifact verifier must
-bind the exact tarball bytes, selected tag, package/version, source/gitHead,
-shasum, integrity, and provenance before `verified` becomes available.
+"verified"`.
 
-The producer-only bootstrap is documented in
+`ph dev staged-package-provenance` is the only shipped positive provenance
+path. It accepts no caller URLs, facts, repositories, workflows, trust roots,
+or artifact paths. It fetches the selected fixed npm tag/version/tarball and
+GitHub artifact attestation itself, verifies the exact tarball SHA-1, SRI, and
+SHA-256, validates GitHub/Sigstore DSSE certificate, protected workflow,
+repository/ref/run, Rekor inclusion, lifecycle, nonce, source/gitHead, fixed
+command plan, and predicate bindings. Offline, unavailable, malformed,
+repacked, copied, expired, duplicate, or mismatched evidence blocks with a
+bounded diagnostic.
+
+The controlled producer is documented in
 [`staged-package-artifact-attestation-producer.md`](staged-package-artifact-attestation-producer.md).
-It can create a future controlled GitHub artifact attestation whose subject is
-the exact downloaded npm `.tgz`, but it does not alter this verifier's local
-blocked behavior or provide a shipped positive verification path.
+It attests the exact downloaded npm `.tgz`; the verifier never accepts a local
+repack, generic audit result, or copied JSON as a substitute.
 
 All fact parsing is strict and bounded. Malformed, secret-shaped, or
 unrecognized values block without echoing their raw contents.
@@ -68,9 +81,10 @@ provenance and does not retain raw command output.
 
 ## Decision Boundary
 
-`staged-package-verification.1` currently blocks local tarballs with
+`staged-package-verification.1` continues to block local tarballs with
 `artifact-provenance-unavailable`, even when supplied facts and the installed
-black-box surface agree. It always reports:
+black-box surface agree. The separate online artifact verifier may report an
+exact-artifact result, but both commands always report:
 
 ```json
 {
@@ -81,7 +95,8 @@ black-box surface agree. It always reports:
 ```
 
 Promotion remains a separate release approval action. Existing workflow-finish
-authority remains unchanged and local package facts do not create Finish PASS.
+authority remains unchanged; neither local facts nor artifact provenance create
+Finish PASS.
 
 ## Channel Sequence
 

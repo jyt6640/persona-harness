@@ -1,9 +1,11 @@
 # Staged Package Artifact Attestation Producer
 
-This is a producer-only bootstrap for future staged-package provenance. It does
-not verify an attestation in the shipped CLI, change
-`ph dev staged-package`, authorize promotion, publish a package, create a Git
-tag, move a dist-tag, or affect Finish or closure authority.
+This is the controlled producer for staged-package provenance. The shipped
+`ph dev staged-package-provenance` verifier can consume only its independently
+fetched GitHub/Sigstore attestations. It does not change the local
+`ph dev staged-package` caller-fact boundary, authorize promotion, publish a
+package, create a Git tag, move a dist-tag, or affect Finish or closure
+authority.
 
 ## Controlled Future Run
 
@@ -32,16 +34,17 @@ The predicate is explicitly producer-only diagnostic data:
 
 - `authorityEligible` is `false`;
 - `tagState` is `deferred`;
-- no shipped verifier consumes it yet;
+- only the fixed-policy online verifier may consume it after independently
+  fetching and hashing the selected registry tarball;
 - locally packed/repacked tarballs and caller-provided facts remain
   `artifact-provenance-unavailable`;
 - no Finish PASS, channel promotion, registry mutation, or release claim is
   enabled.
 
-A later verifier slice requires a real controlled staging artifact and must
-independently fetch, hash, and verify the exact subject against product-owned
-trust policy. Synthetic unit fixtures exercise only producer parsing and
-binding failures; they are not provenance artifacts.
+The verifier uses the fixed npm/GitHub/Sigstore policy, validates the exact
+signed subject and predicate bindings, and remains read-only and
+non-authoritative. Synthetic unit fixtures exercise parsing and binding
+failures only; they are not provenance artifacts.
 
 ## Implementation Preflight
 

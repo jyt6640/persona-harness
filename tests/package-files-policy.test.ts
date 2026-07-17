@@ -149,13 +149,52 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles(packagedContract, packageJson.files)).toBe(true)
   })
 
+  it("packages the fixed-policy artifact provenance verifier but excludes its signed fixture", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const packagedScripts = [
+      "scripts/staged-package-artifact-provenance-core.mjs",
+      "scripts/staged-package-artifact-provenance-crypto.mjs",
+      "scripts/staged-package-artifact-provenance-network.mjs",
+      "scripts/staged-package-artifact-provenance-policy.mjs",
+      "scripts/staged-package-artifact-tarball.mjs",
+      "scripts/verify-staged-package-artifact-attestation.mjs",
+    ]
+    const sourcePaths = [
+      "src/cli/staged-package-artifact-provenance-command.ts",
+      "src/cli/staged-package-artifact-provenance-types.ts",
+      "src/cli/staged-package-artifact-provenance-worker.ts",
+    ]
+    const runtimePaths = [
+      "dist/cli/staged-package-artifact-provenance-command.js",
+      "dist/cli/staged-package-artifact-provenance-types.js",
+      "dist/cli/staged-package-artifact-provenance-worker.js",
+    ]
+    const fixturePaths = [
+      "tests/fixtures/staged-package-artifact/rc6/action-run.json",
+      "tests/fixtures/staged-package-artifact/rc6/bundle.json",
+      "tests/fixtures/staged-package-artifact/rc6/manifest.json",
+      "tests/fixtures/staged-package-artifact/rc6/package.tgz",
+      "tests/fixtures/staged-package-artifact/rc6/predicate.json",
+    ]
+
+    for (const filePath of [...packagedScripts, ...sourcePaths]) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+    }
+    for (const filePath of [...packagedScripts, ...runtimePaths]) {
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
+    for (const fixturePath of fixturePaths) {
+      expect(existsSync(path.join(packageRoot, fixturePath))).toBe(true)
+      expect(isCoveredByPackageFiles(fixturePath, packageJson.files)).toBe(false)
+    }
+  })
+
   it("keeps the staged artifact producer source-only while packaging its boundary record", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const producerPaths = [
       "scripts/build-staged-package-artifact-attestation.mjs",
       "scripts/staged-package-artifact-attestation-core.mjs",
       "scripts/staged-package-artifact-attestation-core.d.mts",
-      "scripts/staged-package-artifact-tarball.mjs",
       "scripts/staged-package-artifact-context-diagnostic-core.mjs",
       "scripts/staged-package-artifact-context-diagnostic-core.d.mts",
       "scripts/diagnose-staged-package-artifact-context.mjs",
@@ -196,7 +235,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.7.0-rc.6-release-notes.md",
+      "docs/current/release/v0.7.0-rc.7-release-notes.md",
       "docs/current/release/rc-release-readiness-decision.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",

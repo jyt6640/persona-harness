@@ -20,8 +20,8 @@ const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "staged-package-artifact-attestation.yml")
 const producerPath = join(root, "scripts", "build-staged-package-artifact-attestation.mjs")
 const HEAD = "a".repeat(40)
-const VERSION = "0.7.0-rc.6"
-const RC5_REGISTRY_GIT_HEAD = "77f084002ed899fd4e58d8e6c8a75e8709db3cd4"
+const VERSION = "0.7.0-rc.7"
+const RC6_REGISTRY_GIT_HEAD = "1c8976c58102908329f63dc78286b2646bfc52dd"
 
 type RegistryVersionFixture = {
   readonly dist: {
@@ -109,11 +109,11 @@ describe("staged package artifact attestation producer policy", () => {
     expect(JSON.stringify(result.predicate)).not.toContain("external-attested")
   })
 
-  it("keeps a historical RC5 registry gitHead blocked for the fresh RC6 source tuple", () => {
+  it("keeps a historical RC6 registry gitHead blocked for the fresh RC7 source tuple", () => {
     expect(readFileSync(join(root, "package.json"), "utf8")).toContain(`"version": "${VERSION}"`)
     expect(() =>
       createStagedPackageArtifactPredicate(producerInput({
-        registryVersion: { ...registryVersion(), gitHead: RC5_REGISTRY_GIT_HEAD },
+        registryVersion: { ...registryVersion(), gitHead: RC6_REGISTRY_GIT_HEAD },
       })),
     ).toThrow("staged-producer-registry-binding")
 

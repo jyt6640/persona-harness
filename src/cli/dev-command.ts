@@ -5,6 +5,7 @@ import { runFeedbackCommand } from "./feedback.js"
 import { runObserveCommand } from "./observe.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
+import { runStagedPackageArtifactProvenanceCommand } from "./staged-package-artifact-provenance-command.js"
 import { runStagedPackageVerificationCommand } from "./staged-package-verification-command.js"
 import { runWorkflowCommand } from "./workflow-command.js"
 
@@ -15,7 +16,7 @@ type DevOptions = {
 
 export function devUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} dev <evidence|smoke|feedback|ralph-loop|observe|bearshell|review|staged-package> [args...]`,
+    `Usage: ${invocation} dev <evidence|smoke|feedback|ralph-loop|observe|bearshell|review|staged-package|staged-package-provenance> [args...]`,
     "",
     "Discover developer and measurement commands without changing their direct command paths.",
     "",
@@ -28,6 +29,7 @@ export function devUsage(invocation = "ph"): string {
     `  bearshell <command> [args...] Alias for ${invocation} bearshell`,
     `  review backend-shape         Alias for ${invocation} review backend-shape`,
     `  staged-package ...           Read-only local-tarball staged package verification`,
+    `  staged-package-provenance ... Fixed-policy online staged artifact provenance verification`,
     "",
     "Existing direct command paths remain supported.",
   ].join("\n")
@@ -62,6 +64,9 @@ export function runDevCommand(args: readonly string[], options: DevOptions = {},
   }
   if (command === "staged-package") {
     return runStagedPackageVerificationCommand(args.slice(1), `${devInvocation} staged-package`)
+  }
+  if (command === "staged-package-provenance") {
+    return runStagedPackageArtifactProvenanceCommand(args.slice(1), `${devInvocation} staged-package-provenance`)
   }
   return {
     status: 1,

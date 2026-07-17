@@ -56,29 +56,31 @@ Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.3`.
 The completed publish does not move `latest` or broaden any product claim.
 `0.7.0-rc.2` remains the previous published `next` record.
 
-The staged-package artifact producer is a controlled future-run bootstrap only:
+The staged-package artifact producer is a controlled future-run source:
 [`staged-package-artifact-attestation-producer.md`](staged-package-artifact-attestation-producer.md).
-It does not publish, move a channel, or make local staged-package verification
-positive.
+The packaged fixed-policy verifier can independently verify the producer's
+exact public artifact subject, but remains read-only/non-authoritative and does
+not publish or move a channel.
 
 ## Prepared Staging Candidate
 
-[`v0.7.0-rc.6-release-notes.md`](v0.7.0-rc.6-release-notes.md) prepares a
-fresh prerelease source identity. It is not published: no `v0.7.0-rc.6` tag,
-GitHub release, npm package, registry gitHead, integrity value, provenance
-artifact, or dist-tag movement exists yet. Published channels remain
+[`v0.7.0-rc.7-release-notes.md`](v0.7.0-rc.7-release-notes.md) prepares a
+fresh prerelease source identity and the packaged exact-artifact verifier. It
+is not published: no `v0.7.0-rc.7` tag, GitHub release, npm package, registry
+gitHead, integrity value, provenance artifact, or dist-tag movement exists
+yet. Published channels remain
 `latest=0.6.0` and `next=0.7.0-rc.3`.
 
-The prior RC5 source identity remains historical for this version. The
-controlled producer must reject RC5 registry gitHead facts when evaluating RC6;
-the future RC6 package must bind to its own exact protected-main source
+The prior RC6 source identity remains historical for this version. The
+controlled producer must reject RC6 registry gitHead facts when evaluating RC7;
+the future RC7 package must bind to its own exact protected-main source
 identity.
 
 Any future prerelease action is staging-first and requires a separate approved
 `staging-only` release decision. This source candidate neither authorizes that
 action nor a later `next` promotion. Local or caller-supplied staged-package
-facts remain `artifact-provenance-unavailable`; only a future product-owned
-exact-artifact verification path can change that status.
+facts remain `artifact-provenance-unavailable`; only the packaged
+fixed-policy exact-artifact verifier can report a read-only verified result.
 
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,

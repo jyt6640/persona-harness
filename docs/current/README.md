@@ -34,7 +34,7 @@ deleting evidence/status history.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.7.0-rc.6-release-notes.md`](release/v0.7.0-rc.6-release-notes.md).
+  [`release/v0.7.0-rc.7-release-notes.md`](release/v0.7.0-rc.7-release-notes.md).
 - Current RC release readiness decision:
   [`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md).
 - P3 integrity roadmap and release hold:
@@ -105,13 +105,14 @@ deleting evidence/status history.
   and GitHub prerelease `v0.7.0-rc.3` target that commit; its package hashes,
   installed-registry smoke, and workflow provenance are recorded in its
   durable release facts.
-- `0.7.0-rc.6` is source-prepared only as a staging-first prerelease
+- `0.7.0-rc.7` is source-prepared only as a staging-first prerelease
   candidate. It records no tag, GitHub prerelease, npm package, registry
-  gitHead, integrity, provenance, or dist-tag fact. Its future registry
-  gitHead must bind to its own exact protected-main source identity; RC5
-  registry facts cannot authorize RC6. Published channels remain
-  `latest=0.6.0` and `next=0.7.0-rc.3`; local or caller-provided
-  staged-package evidence remains `artifact-provenance-unavailable`.
+  gitHead, RC7 provenance, or dist-tag fact. Its future registry gitHead must
+  bind to its own exact protected-main source identity; RC6 registry facts
+  cannot authorize RC7. The packaged fixed-policy artifact verifier remains
+  read-only/non-authoritative, while local or caller-provided staged-package
+  evidence remains `artifact-provenance-unavailable`. Published channels remain
+  `latest=0.6.0` and `next=0.7.0-rc.3`.
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)
