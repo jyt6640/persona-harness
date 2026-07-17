@@ -64,23 +64,28 @@ not publish or move a channel.
 
 ## Prepared Staging Candidate
 
-[`v0.7.0-rc.7-release-notes.md`](v0.7.0-rc.7-release-notes.md) prepares a
-fresh prerelease source identity and the packaged exact-artifact verifier. It
-is not published: no `v0.7.0-rc.7` tag, GitHub release, npm package, registry
-gitHead, integrity value, provenance artifact, or dist-tag movement exists
-yet. Published channels remain
-`latest=0.6.0` and `next=0.7.0-rc.3`.
+[`v0.7.0-rc.8-release-notes.md`](v0.7.0-rc.8-release-notes.md) records the
+fresh immutable RC8 source preparation and its release-control changes. It is
+not live registry, tag, GitHub release, channel, provenance, or audit evidence.
+Those lifecycle facts belong only in governed registry and audit records after
+their separately authorized actions.
 
-The prior RC6 source identity remains historical for this version. The
-controlled producer must reject RC6 registry gitHead facts when evaluating RC7;
-the future RC7 package must bind to its own exact protected-main source
-identity.
+The prior RC7 source identity is historical for RC8. The controlled producer
+must reject RC7 registry gitHead facts when evaluating RC8; a future RC8
+package must bind to its own exact protected-main source identity.
 
 Any future prerelease action is staging-first and requires a separate approved
 `staging-only` release decision. This source candidate neither authorizes that
 action nor a later `next` promotion. Local or caller-supplied staged-package
 facts remain `artifact-provenance-unavailable`; only the packaged
 fixed-policy exact-artifact verifier can report a read-only verified result.
+
+After separately authorized staging and exact-artifact production, the
+no-input protected-main
+[`production-integrity-audit.md`](production-integrity-audit.md) workflow
+creates the durable sanitized Actions artifact used for release/audit review.
+It is read-only and cannot create a package, tag, GitHub release, or channel
+movement.
 
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
@@ -863,15 +868,19 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.7.0-rc.3 release notes](v0.7.0-rc.3-release-notes.md)
 - [v0.7.0-rc.2 release notes](v0.7.0-rc.2-release-notes.md)
 - [v0.7.0-rc.1 release notes](v0.7.0-rc.1-release-notes.md)
+- [v0.7.0-rc.8 release notes](v0.7.0-rc.8-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
 
-Release verification and GitHub release-note automation live in
+Release verification and explicit manual GitHub release-note automation live in
 `.github/workflows/release.yml`. Npm publishing lives in
 `.github/workflows/publish.yml`; see
 [`npm-trusted-publishing-runbook.md`](npm-trusted-publishing-runbook.md).
 
-- Push `vX.Y.Z*` tags to verify the package and create GitHub release notes only.
+- Tag pushes do not trigger GitHub Release creation.
+- Create GitHub release notes only through the manual `Release` workflow with
+  the explicit `ga-approved` scope and an existing stable tag that passes its
+  fixed protected-main policy.
 - Publish npm packages from `.github/workflows/publish.yml` after QA release GO
   with a fixed channel and matching approval scope.
 - Release-candidate packages first use `staging` with `staging-only`; moving a
@@ -883,12 +892,13 @@ Release verification and GitHub release-note automation live in
   product smoke, and package dry-run before npm publish.
 - The publish workflow uses npm Trusted Publishing/OIDC; no `NPM_TOKEN` secret
   is required for the trusted path.
-- The workflow checks that the pushed tag matches `package.json` version.
-- The tag workflow generates the GitHub Release body from
+- The manual workflow checks that the supplied existing tag matches
+  `package.json` version.
+- The manual workflow generates the GitHub Release body from
   `docs/current/release/v<version>-release-notes.md`.
 - The publish workflow verifies registry gitHead, dist.shasum, and dist-tag
   state after publish.
 - Create/push the matching git tag only after registry verification succeeds.
-- Tag pushes do not run real `npm publish`.
-- GitHub release notes are generated from repository release notes for tag
-  releases.
+- Tag pushes do not run real `npm publish` or create GitHub releases.
+- GitHub release notes are generated from repository release notes only for
+  manually approved stable releases.

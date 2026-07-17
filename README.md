@@ -24,7 +24,7 @@
 > AI agents love to say "Done!" — Persona Harness makes them show their work. It is a local workflow gate that records and checks reports, evidence, and verification results for explicitly defined gates.
 
 > [!IMPORTANT]
-> **Alpha, gate-first, measured.** Stable: `persona-harness@latest=0.6.0`; current next-channel RC: `0.7.0-rc.2`. A 2026-07-12 local production audit found completion-integrity bypasses in the current RC line, so Stable/GA and npm `latest` movement are **NO-GO pending P3**. Runtime injection remains **default-off / opt-in**. See [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md), [`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md), and [`injection-value-status.json`](docs/current/injection-value-status.json).
+> **Alpha, gate-first, measured.** Live registry channels, tags, GitHub releases, and audit lifecycle facts are maintained in governed registry and audit records; source documentation records only its own preparation boundary. Runtime injection remains **default-off / opt-in**. See [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md), [`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md), and [`injection-value-status.json`](docs/current/injection-value-status.json).
 
 ## Measured Behavior
 

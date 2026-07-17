@@ -235,7 +235,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.7.0-rc.7-release-notes.md",
+      "docs/current/release/v0.7.0-rc.8-release-notes.md",
       "docs/current/release/rc-release-readiness-decision.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",

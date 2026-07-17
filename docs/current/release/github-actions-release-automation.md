@@ -25,28 +25,18 @@ See:
 docs/current/release/npm-trusted-publishing-runbook.md
 ```
 
-The tag release workflow has two jobs:
+The manual GitHub Release workflow has two jobs:
 
 1. `verify`
 2. `github-release`
 
-## Tag Policy
+## Manual GitHub Release Policy
 
-Tags must match `package.json` exactly.
+The manually supplied existing stable tag must match `package.json` exactly and
+must satisfy the fixed protected-main/GA approval policy. Tag pushes do not
+trigger this workflow.
 
 Examples:
-
-```text
-package.json version: 0.3.0-alpha.3
-tag: v0.3.0-alpha.3
-dist-tag: alpha
-```
-
-```text
-package.json version: 0.3.0-beta.0
-tag: v0.3.0-beta.0
-dist-tag: beta
-```
 
 ```text
 package.json version: 1.0.0
@@ -54,7 +44,8 @@ tag: v1.0.0
 dist-tag: latest
 ```
 
-The workflow fails early if the pushed tag does not equal `v${package.json.version}`.
+The workflow fails early unless its explicit `ga-approved` dispatch supplies
+an existing stable tag equal to `v${package.json.version}`.
 
 ## Verification
 
@@ -70,12 +61,12 @@ npm run check:scope:strict
 npm run check:injection-value
 npm run check:github-release-notes
 npm pack --dry-run
-npm publish --dry-run --access public --tag <resolved-dist-tag>
+npm publish --dry-run --access public --tag latest
 ```
 
 ## Publish
 
-Npm publish is no longer performed by the tag workflow. Use
+Npm publish is not performed by the GitHub Release workflow. Use
 `.github/workflows/publish.yml` through `workflow_dispatch` after QA release GO.
 
 Supported dist-tags:
@@ -93,7 +84,7 @@ scope that does not match the fixed selected channel.
 
 ## GitHub Release Notes
 
-For tag releases, the workflow runs:
+For explicitly approved stable GitHub releases, the workflow runs:
 
 ```bash
 node scripts/generate-github-release-notes.mjs --tag "$TAG_NAME" --out github-release-notes.md
@@ -125,7 +116,9 @@ No `NPM_TOKEN` secret is required for the trusted publishing path.
 
 ## Manual Dispatch
 
-Manual dispatch exists for controlled publishes after QA release GO.
+Manual dispatch exists for controlled publishes after QA release GO. GitHub
+Release creation is a separate manual-only GA-approved dispatch and requires an
+existing stable tag.
 
 Inputs:
 
@@ -149,9 +142,12 @@ post-publish git tags. It never creates or moves a Git tag.
 8. Verify registry gitHead and shasum from the workflow post-check and run the
    staged installed-package gate.
 9. Create and push the matching tag only through its separately approved
-   release sequence.
-10. Obtain a separate approval and dispatch before moving the exact verified
-    prerelease to `next`.
+   immutable-tag sequence.
+10. If a GitHub release is separately approved, dispatch
+    `.github/workflows/release.yml` with that existing stable tag and
+    `approval_scope=ga-approved`.
+11. Obtain a separate approval and dispatch before moving the exact verified
+   prerelease to `next`.
 
 ```bash
 git push origin main
