@@ -4,9 +4,11 @@ import { join } from "node:path"
 import { personaHarnessVersion } from "./version.js"
 import { canonicalJson, sha256Digest } from "./workflow-finish-attestation-canonical.js"
 import {
+  captureFinishAttestationWorkspaceDigest,
   consumeFinishAttestation,
-  hasConsumedFinishAttestation,
   isSafeFinishAttestationDirectory,
+  matchesFinishAttestationTerminalRecord,
+  readFinishAttestationTerminalRecord,
 } from "./workflow-finish-attestation-consumption.js"
 import { parseFinishAttestationStatement } from "./workflow-finish-attestation-parser.js"
 import { compareCurrentSource } from "./workflow-finish-attestation-source.js"
@@ -47,6 +49,22 @@ export function verifyExternalFinishAttestation(
   now = new Date(),
   options: { readonly consume?: boolean } = {},
 ): FinishAttestationAssessment {
+  return verifyExternalFinishAttestationInternal(projectDir, now, options, false)
+}
+
+export function verifyExternalFinishAttestationForClosure(
+  projectDir: string,
+  now = new Date(),
+): FinishAttestationAssessment {
+  return verifyExternalFinishAttestationInternal(projectDir, now, { consume: false }, true)
+}
+
+function verifyExternalFinishAttestationInternal(
+  projectDir: string,
+  now: Date,
+  options: { readonly consume?: boolean },
+  allowConsumed: boolean,
+): FinishAttestationAssessment {
   const bundlePath = join(projectDir, FINISH_ATTESTATION_BUNDLE_PATH)
   const bundleBytes = readBundleBytes(projectDir, bundlePath)
   if (bundleBytes === undefined) {
@@ -81,11 +99,45 @@ export function verifyExternalFinishAttestation(
   if (!Number.isFinite(issuedAt) || !Number.isFinite(expiresAt) || expiresAt <= nowMs || issuedAt > nowMs + CLOCK_SKEW_MS) {
     return blocked("stale", "External finish attestation is expired or issued outside the accepted clock skew.", "predicate.receipt.lifecycle")
   }
-  if (hasConsumedFinishAttestation(projectDir)) {
-    return blocked("replayed", "External finish attestation has already been consumed.", FINISH_ATTESTATION_CONSUMPTION_PATH)
+  const workspaceIdentityDigest = captureFinishAttestationWorkspaceDigest(projectDir)
+  if (workspaceIdentityDigest === undefined) {
+    return blocked("source-drift", "Current workspace identity is unavailable.", "workspace")
   }
-  if (options.consume !== false) {
-    const consumed = consumeFinishAttestation(projectDir, receipt.finishId, receipt.nonce, `${receipt.runId}:${receipt.runAttempt}`)
+  const terminalBinding = {
+    attestationId: receipt.finishId,
+    bundleDigest,
+    expiresAt: receipt.expiresAt,
+    finishId: receipt.finishId,
+    issuedAt: receipt.issuedAt,
+    nonce: receipt.nonce,
+    phVersion: receipt.phVersion,
+    receiptDigest,
+    requestId: `${receipt.runId}:${receipt.runAttempt}`,
+    runAttempt: receipt.runAttempt,
+    runId: receipt.runId,
+    sessionId: receipt.sessionId,
+    sourceHead: receipt.source.head,
+    sourceIdentityDigest: receipt.source.identity.contentDigest,
+    workspaceIdentityDigest,
+  } as const
+  const terminal = readFinishAttestationTerminalRecord(projectDir)
+  if (terminal.state === "invalid") {
+    return blocked("binding-mismatch", terminal.message, FINISH_ATTESTATION_CONSUMPTION_PATH)
+  }
+  if (terminal.state === "present") {
+    if (!allowConsumed) {
+      return blocked("replayed", "External finish attestation has already been consumed.", FINISH_ATTESTATION_CONSUMPTION_PATH)
+    }
+    if (Date.parse(terminal.value.consumedAt) > nowMs) {
+      return blocked("binding-mismatch", "Finish attestation terminal record was consumed in the future.", FINISH_ATTESTATION_CONSUMPTION_PATH)
+    }
+    const match = matchesFinishAttestationTerminalRecord(terminal.value, terminalBinding)
+    if (!match.ok) {
+      return blocked("binding-mismatch", match.message, FINISH_ATTESTATION_CONSUMPTION_PATH)
+    }
+  }
+  if (options.consume !== false && terminal.state === "missing") {
+    const consumed = consumeFinishAttestation(projectDir, terminalBinding)
     if (!consumed.ok) {
       return blocked(
         consumed.code === "replayed-attestation" ? "replayed" : "binding-mismatch",

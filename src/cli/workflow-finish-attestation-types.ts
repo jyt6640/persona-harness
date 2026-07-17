@@ -1,6 +1,7 @@
 import type { SourceIdentity } from "./source-identity-types.js"
 
 export const FINISH_ATTESTATION_SCHEMA = "finish-attestation.1" as const
+export const FINISH_ATTESTATION_TERMINAL_SCHEMA = "finish-attestation-terminal.1" as const
 export const FINISH_ATTESTATION_PREDICATE_TYPE =
   "https://github.com/jyt6640/persona-harness/attestations/finish-attestation.1" as const
 export const FINISH_ATTESTATION_BUNDLE_PATH = ".persona/evidence/finish-attestation/bundle.json" as const

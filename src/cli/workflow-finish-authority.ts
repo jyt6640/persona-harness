@@ -15,6 +15,7 @@ import {
 } from "./workflow-verification-decision.js"
 import {
   verifyExternalFinishAttestation,
+  verifyExternalFinishAttestationForClosure,
   type FinishAttestationAssessment,
 } from "./workflow-finish-attestation.js"
 
@@ -35,9 +36,11 @@ export function readWorkflowFinishAuthority(
 ): WorkflowFinishAuthority {
   const assessment = assessVerificationAuthority(projectDir)
   const semanticTdd = assessSemanticTddChain(projectDir)
-  const externalAttestation = verifyExternalFinishAttestation(projectDir, options.now ?? new Date(), {
-    consume: options.consumeExternalAttestation,
-  })
+  const externalAttestation = options.consumeExternalAttestation === false
+    ? verifyExternalFinishAttestationForClosure(projectDir, options.now ?? new Date())
+    : verifyExternalFinishAttestation(projectDir, options.now ?? new Date(), {
+        consume: options.consumeExternalAttestation,
+      })
   const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
   const source = evidenceRoot.ok
     ? `${evidenceRoot.relativePath} (diagnostic only)`
