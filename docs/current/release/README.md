@@ -62,30 +62,27 @@ The packaged fixed-policy verifier can independently verify the producer's
 exact public artifact subject, but remains read-only/non-authoritative and does
 not publish or move a channel.
 
-## Prepared Staging Candidate
+## Prepared Stable Source Candidate
 
-[`v0.7.0-rc.8-release-notes.md`](v0.7.0-rc.8-release-notes.md) records the
-fresh immutable RC8 source preparation and its release-control changes. It is
-not live registry, tag, GitHub release, channel, provenance, or audit evidence.
-Those lifecycle facts belong only in governed registry and audit records after
-their separately authorized actions.
+[`v0.7.0-release-notes.md`](v0.7.0-release-notes.md) records the immutable
+GA-source-preparation candidate. It is not live registry, tag, GitHub release,
+`latest`, provenance, stable-completion, or audit evidence. Those lifecycle
+facts belong only in governed registry and audit records after their separately
+authorized actions.
 
-The prior RC7 source identity is historical for RC8. The controlled producer
-must reject RC7 registry gitHead facts when evaluating RC8; a future RC8
-package must bind to its own exact protected-main source identity.
+The staged-package producer remains restricted to `staging|next`.
+[`production-integrity-audit.md`](production-integrity-audit.md) derives its
+fixed channel from strict SemVer, including `latest` for a stable version, but
+the staged provenance verifier remains an expected non-authoritative block for
+that channel. A future stable-promotion completion approval must be durable
+and protected after the actual stable lifecycle; no such approval record is
+created, inferred, or accepted by this source candidate.
 
-Any future prerelease action is staging-first and requires a separate approved
-`staging-only` release decision. This source candidate neither authorizes that
-action nor a later `next` promotion. Local or caller-supplied staged-package
-facts remain `artifact-provenance-unavailable`; only the packaged
-fixed-policy exact-artifact verifier can report a read-only verified result.
-
-After separately authorized staging and exact-artifact production, the
-no-input protected-main
-[`production-integrity-audit.md`](production-integrity-audit.md) workflow
-creates the durable sanitized Actions artifact used for release/audit review.
-It is read-only and cannot create a package, tag, GitHub release, or channel
-movement.
+The fixed release policy permits strict stable SemVer only with `latest` and
+explicit `ga-approved`. This source candidate neither authorizes that action
+nor creates its prerequisite tag. Local or caller-supplied staged-package facts
+remain `artifact-provenance-unavailable`; Finish and closure authority remain
+unchanged.
 
 Current stable package: `0.6.0` is published to npm `latest` after QA accepted
 the final External registry smoke. Current registry state is `latest=0.6.0`,
@@ -868,6 +865,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.7.0-rc.3 release notes](v0.7.0-rc.3-release-notes.md)
 - [v0.7.0-rc.2 release notes](v0.7.0-rc.2-release-notes.md)
 - [v0.7.0-rc.1 release notes](v0.7.0-rc.1-release-notes.md)
+- [v0.7.0 release notes](v0.7.0-release-notes.md)
 - [v0.7.0-rc.8 release notes](v0.7.0-rc.8-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   assessProductionIntegrityAudit,
+  deriveProductionIntegrityAuditChannel,
   type ProductionIntegrityAuditInput,
 } from "../scripts/production-integrity-audit-core.mjs"
 
@@ -39,6 +40,61 @@ describe("production integrity audit summary", () => {
     expect(result.summaryDigest).toMatch(/^sha256:[a-f0-9]{64}$/u)
   })
 
+  it("derives latest for a strict stable source and expects the staging-only verifier to remain blocked", () => {
+    const result = assessProductionIntegrityAudit(stableInput())
+
+    expect(deriveProductionIntegrityAuditChannel("0.7.0")).toBe("latest")
+    expect(result).toMatchObject({
+      authorityEligible: false,
+      channel: "latest",
+      diagnostics: [],
+      mode: "read-only",
+      promotionAuthorized: false,
+      promotionDecision: "release-approval-required",
+      registryMutation: "not-performed",
+      status: "passed",
+    })
+    expect(result.commandCatalog).toContainEqual({
+      actualExit: 1,
+      expectedExit: 1,
+      id: "fixed-provenance-verifier",
+      status: "expected-block",
+    })
+  })
+
+  it("derives channels only from strict bounded SemVer", () => {
+    expect(deriveProductionIntegrityAuditChannel("0.7.0-rc.1")).toBe("staging")
+    expect(deriveProductionIntegrityAuditChannel("0.7.0+build.1")).toBe("latest")
+    expect(deriveProductionIntegrityAuditChannel("01.7.0")).toBe("unavailable")
+    expect(deriveProductionIntegrityAuditChannel("0.7.0-01")).toBe("unavailable")
+  })
+
+  it("fails closed when the strict SemVer-derived channel is not bound to the selected registry tag", () => {
+    const result = assessProductionIntegrityAudit({
+      ...stableInput(),
+      registry: {
+        ...stableInput().registry,
+        selectedVersion: "0.7.0-rc.8",
+      },
+    })
+
+    expect(result.status).toBe("blocked")
+    expect(result.diagnostics).toContain("audit-registry-channel")
+  })
+
+  it("fails closed if the staging-only verifier unexpectedly reports success for latest", () => {
+    const result = assessProductionIntegrityAudit({
+      ...stableInput(),
+      commandResults: {
+        ...stableInput().commandResults,
+        fixedProvenanceVerifier: 0,
+      },
+    })
+
+    expect(result.status).toBe("blocked")
+    expect(result.diagnostics).toContain("audit-fixed-provenance-verifier")
+  })
+
   it("fails closed without reflecting unsafe raw values into the durable summary", () => {
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
     const result = assessProductionIntegrityAudit({
@@ -69,7 +125,7 @@ function input(): ProductionIntegrityAuditInput {
       gitHead: SHA,
       integrity: INTEGRITY,
       shasum: SHA1,
-      stagingVersion: "0.7.0-rc.8",
+      selectedVersion: "0.7.0-rc.8",
       tarball: {
         integrity: INTEGRITY,
         sha1: SHA1,
@@ -84,5 +140,21 @@ function input(): ProductionIntegrityAuditInput {
       sha256: SHA256,
     },
     version: "0.7.0-rc.8",
+  }
+}
+
+function stableInput(): ProductionIntegrityAuditInput {
+  return {
+    ...input(),
+    commandResults: {
+      ...input().commandResults,
+      fixedProvenanceVerifier: 1,
+    },
+    registry: {
+      ...input().registry,
+      selectedVersion: "0.7.0",
+      version: "0.7.0",
+    },
+    version: "0.7.0",
   }
 }

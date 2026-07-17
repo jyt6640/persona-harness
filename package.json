@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.7.0-rc.8",
+  "version": "0.7.0",
   "private": false,
   "type": "module",
   "description": "Gate-first CLI for Java/Spring backend workflow evidence, completion checks, and optional OpenCode runtime guidance.",
