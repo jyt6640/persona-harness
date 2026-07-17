@@ -2,9 +2,27 @@
 
 All notable Persona Harness changes are recorded here.
 
-This project uses npm prerelease versions for tester-facing alpha and release-candidate builds. Verify `latest` and `next` before treating a default install as current; if a legacy `alpha` dist-tag appears, treat it as historical channel state until explicitly reauthorized. Stable support guarantees are still deferred.
+This project uses governed prerelease and stable release paths. Verify live
+registry and audit records before treating a default install as current; source
+preparation alone does not establish stable support or channel state.
 
 ## Unreleased
+
+## [0.7.0] - 2026-07-17
+
+- Prepares the immutable `0.7.0` stable source candidate. At candidate
+  creation, no `0.7.0` registry package, tag, GitHub release, or dist-tag fact
+  is asserted; live lifecycle facts remain in governed registry and audit
+  records.
+- Retains the fixed release policy: only strict stable SemVer with
+  `latest` and explicit `ga-approved` can enter the future release path.
+  This source candidate does not publish, tag, release, or move a channel.
+- Keeps the no-input production-integrity audit read-only: strict stable
+  SemVer selects `latest`, while the staged provenance verifier remains an
+  expected non-authoritative block until separately durable stable approval
+  exists.
+  Any future stable-promotion completion approval must be durable and
+  protected after the actual lifecycle; none is fabricated here.
 
 ## [0.7.0-rc.8] - 2026-07-17
 

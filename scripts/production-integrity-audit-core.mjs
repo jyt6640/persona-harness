@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto"
 
 export const PRODUCTION_INTEGRITY_AUDIT_SCHEMA = "production-integrity-audit.1"
-export const PRODUCTION_INTEGRITY_AUDIT_CHANNEL = "staging"
 export const PRODUCTION_INTEGRITY_AUDIT_PACKAGE = "persona-harness"
 
 const COMMANDS = [
@@ -15,17 +14,18 @@ const COMMIT = /^[a-f0-9]{40}$/u
 const SHA1 = /^[a-f0-9]{40}$/u
 const SHA256 = /^sha256:[a-f0-9]{64}$/u
 const INTEGRITY = /^sha512-[A-Za-z0-9+/=]+$/u
-const SEMVER = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
+const SEMVER = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?<prerelease>-(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
 
 export function assessProductionIntegrityAudit(input) {
   const value = record(input)
   const sourceHead = safeCommit(value.sourceHead)
   const version = safeVersion(value.version)
+  const channel = deriveProductionIntegrityAuditChannel(value.version)
   const sourceTarball = safeTarball(value.sourceTarball)
   const registry = safeRegistry(value.registry)
   const commandResults = safeCommandResults(value.commandResults)
   const diagnostics = new Set()
-  const commandCatalog = COMMANDS.map(([id, key]) => commandStatus(id, commandResults?.[key]))
+  const commandCatalog = COMMANDS.map(([id, key]) => commandStatus(id, commandResults?.[key], channel))
 
   if (sourceHead === undefined) diagnostics.add("audit-source-head-invalid")
   if (version === undefined) diagnostics.add("audit-version-invalid")
@@ -34,16 +34,16 @@ export function assessProductionIntegrityAudit(input) {
   if (commandResults === undefined) diagnostics.add("audit-command-results-invalid")
   if (sourceHead !== undefined && registry !== undefined && registry.gitHead !== sourceHead) diagnostics.add("audit-registry-git-head")
   if (version !== undefined && registry !== undefined && registry.version !== version) diagnostics.add("audit-registry-version")
-  if (version !== undefined && registry !== undefined && registry.stagingVersion !== version) diagnostics.add("audit-registry-staging")
+  if (version !== undefined && registry !== undefined && registry.selectedVersion !== version) diagnostics.add("audit-registry-channel")
   if (sourceTarball !== undefined && registry !== undefined && sourceTarball.sha256 !== registry.tarball.sha256) diagnostics.add("audit-source-tarball-binding")
   if (registry !== undefined && (registry.shasum !== registry.tarball.sha1 || registry.integrity !== registry.tarball.integrity)) diagnostics.add("audit-registry-tarball-binding")
   for (const result of commandCatalog) {
-    if (result.status !== "passed") diagnostics.add(`audit-${result.id}`)
+    if (result.status === "blocked") diagnostics.add(`audit-${result.id}`)
   }
 
   const summary = {
     authorityEligible: false,
-    channel: PRODUCTION_INTEGRITY_AUDIT_CHANNEL,
+    channel,
     commandCatalog,
     diagnostics: [...diagnostics].sort(),
     mode: "read-only",
@@ -60,7 +60,7 @@ export function assessProductionIntegrityAudit(input) {
         registryDigest: digest(canonicalJson({
           integrity: registry.integrity,
           shasum: registry.shasum,
-          stagingVersion: registry.stagingVersion,
+          selectedVersion: registry.selectedVersion,
           version: registry.version,
         })),
         subjectDigest: registry.tarball.sha256,
@@ -69,7 +69,7 @@ export function assessProductionIntegrityAudit(input) {
         gitHead: registry.gitHead,
         integrity: registry.integrity,
         shasum: registry.shasum,
-        stagingVersion: registry.stagingVersion,
+        selectedVersion: registry.selectedVersion,
         version: registry.version,
       })),
       subjectDigest: registry?.tarball.sha256 ?? "unavailable",
@@ -92,12 +92,22 @@ export function assessProductionIntegrityAudit(input) {
   return { ...summary, summaryDigest: digest(canonicalJson(summary)) }
 }
 
-function commandStatus(id, actualExit) {
+export function deriveProductionIntegrityAuditChannel(version) {
+  if (typeof version !== "string" || version.length > 128) return "unavailable"
+  const match = SEMVER.exec(version)
+  if (match === null) return "unavailable"
+  return match.groups?.prerelease === undefined ? "latest" : "staging"
+}
+
+function commandStatus(id, actualExit, channel) {
+  const expectedExit = id === "fixed-provenance-verifier" && channel === "latest" ? 1 : 0
   return {
     actualExit: actualExit ?? "unavailable",
-    expectedExit: 0,
+    expectedExit,
     id,
-    status: actualExit === 0 ? "passed" : "blocked",
+    status: actualExit === expectedExit
+      ? expectedExit === 0 ? "passed" : "expected-block"
+      : "blocked",
   }
 }
 
@@ -112,14 +122,14 @@ function unavailableTarball() {
 function safeRegistry(value) {
   const registry = record(value)
   const version = safeVersion(registry.version)
-  const stagingVersion = safeVersion(registry.stagingVersion)
+  const selectedVersion = safeVersion(registry.selectedVersion)
   const gitHead = safeCommit(registry.gitHead)
   const integrity = safeIntegrity(registry.integrity)
   const shasum = safeSha1(registry.shasum)
   const tarball = safeTarball(registry.tarball)
-  return version === undefined || stagingVersion === undefined || gitHead === undefined || integrity === undefined || shasum === undefined || tarball === undefined
+  return version === undefined || selectedVersion === undefined || gitHead === undefined || integrity === undefined || shasum === undefined || tarball === undefined
     ? undefined
-    : { gitHead, integrity, shasum, stagingVersion, tarball, version }
+    : { gitHead, integrity, selectedVersion, shasum, tarball, version }
 }
 
 function safeTarball(value) {
@@ -153,7 +163,7 @@ function safeIntegrity(value) {
 }
 
 function safeVersion(value) {
-  return typeof value === "string" && value.length <= 256 && SEMVER.test(value) ? value : undefined
+  return deriveProductionIntegrityAuditChannel(value) === "unavailable" ? undefined : value
 }
 
 function record(value) {

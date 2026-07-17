@@ -17,6 +17,27 @@ const INTEGRITY = "sha512-" + "c".repeat(86)
 const repositoryRoot = resolve(process.cwd())
 
 describe("release workflow policy", () => {
+  it("keeps the current stable source eligible only for GA-approved latest", () => {
+    const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
+
+    expect(packageVersion).toBe("0.7.0")
+    expect(checkDistTagCompatibility({
+      approvalScope: "ga-approved",
+      distTag: "latest",
+      version: packageVersion,
+    })).toEqual({ ok: true })
+    expect(checkDistTagCompatibility({
+      approvalScope: "staging-only",
+      distTag: "staging",
+      version: packageVersion,
+    })).toMatchObject({ code: "dist-tag-staging-stable", ok: false })
+    expect(checkDistTagCompatibility({
+      approvalScope: "next-promotion-approved",
+      distTag: "next",
+      version: packageVersion,
+    })).toMatchObject({ code: "dist-tag-stable-next", ok: false })
+  })
+
   it("accepts an exact canonical main source", () => {
     expect(checkCanonicalMainSource({
       canonicalMainSha: MAIN_SHA,
@@ -198,6 +219,14 @@ function readPackageScripts(packagePath: string): Readonly<Record<string, string
     scripts[name] = value
   }
   return scripts
+}
+
+function readPackageVersion(packagePath: string): string {
+  const parsed: unknown = JSON.parse(readFileSync(packagePath, "utf8"))
+  if (!isRecord(parsed) || typeof parsed["version"] !== "string") {
+    throw new TypeError("package version is unavailable")
+  }
+  return parsed["version"]
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {

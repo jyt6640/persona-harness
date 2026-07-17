@@ -16,7 +16,7 @@ export type ProductionIntegrityAuditInput = {
     readonly gitHead: string
     readonly integrity: string
     readonly shasum: string
-    readonly stagingVersion: string
+    readonly selectedVersion: string
     readonly tarball: ProductionIntegrityAuditTarball
     readonly version: string
   }
@@ -27,12 +27,12 @@ export type ProductionIntegrityAuditInput = {
 
 export type ProductionIntegrityAuditResult = {
   readonly authorityEligible: false
-  readonly channel: "staging"
+  readonly channel: ProductionIntegrityAuditChannel
   readonly commandCatalog: readonly {
     readonly actualExit: number | "unavailable"
-    readonly expectedExit: 0
+    readonly expectedExit: 0 | 1
     readonly id: string
-    readonly status: "blocked" | "passed"
+    readonly status: "blocked" | "expected-block" | "passed"
   }[]
   readonly diagnostics: readonly string[]
   readonly mode: "read-only"
@@ -50,8 +50,10 @@ export type ProductionIntegrityAuditResult = {
   readonly summaryDigest: string
 }
 
-export const PRODUCTION_INTEGRITY_AUDIT_CHANNEL: "staging"
+export type ProductionIntegrityAuditChannel = "latest" | "staging" | "unavailable"
 export const PRODUCTION_INTEGRITY_AUDIT_PACKAGE: "persona-harness"
+
+export function deriveProductionIntegrityAuditChannel(version: unknown): ProductionIntegrityAuditChannel
 
 export function assessProductionIntegrityAudit(
   input: ProductionIntegrityAuditInput,

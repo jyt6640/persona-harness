@@ -35,11 +35,15 @@ describe("production integrity audit workflow", () => {
   it("keeps direct registry installation separate from downloaded-tarball binding", () => {
     const runner = readFileSync(runnerPath, "utf8")
 
+    expect(runner).toContain("deriveProductionIntegrityAuditChannel(version)")
+    expect(runner).toContain('if (channel === "latest")')
     expect(runner).toContain('"install"')
     expect(runner).toContain("PRODUCTION_INTEGRITY_AUDIT_PACKAGE}@${version}")
     expect(runner).toContain('"--registry"')
     expect(runner).toContain('"https://registry.npmjs.org"')
     expect(runner).toContain("runInstalledCompletionIntegrityMatrix(registryConsumer.consumer")
+    expect(runner).toMatch(/"--channel",\s+channel/u)
+    expect(runner).not.toContain("PRODUCTION_INTEGRITY_AUDIT_CHANNEL")
     expect(runner).not.toContain("createStablePromotionConsumer")
   })
 })

@@ -20,6 +20,7 @@ const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "staged-package-artifact-attestation.yml")
 const producerPath = join(root, "scripts", "build-staged-package-artifact-attestation.mjs")
 const HEAD = "a".repeat(40)
+const CURRENT_SOURCE_VERSION = "0.7.0"
 const VERSION = "0.7.0-rc.8"
 const RC7_REGISTRY_GIT_HEAD = "659f7d86fcd653f49eead719b91093f35f73ad3e"
 
@@ -109,8 +110,8 @@ describe("staged package artifact attestation producer policy", () => {
     expect(JSON.stringify(result.predicate)).not.toContain("external-attested")
   })
 
-  it("keeps a historical RC7 registry gitHead blocked for the fresh RC8 source tuple", () => {
-    expect(readFileSync(join(root, "package.json"), "utf8")).toContain(`"version": "${VERSION}"`)
+  it("keeps a historical RC7 registry gitHead blocked while the stable source version stays separate", () => {
+    expect(readFileSync(join(root, "package.json"), "utf8")).toContain(`"version": "${CURRENT_SOURCE_VERSION}"`)
     expect(() =>
       createStagedPackageArtifactPredicate(producerInput({
         registryVersion: { ...registryVersion(), gitHead: RC7_REGISTRY_GIT_HEAD },

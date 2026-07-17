@@ -34,7 +34,7 @@ deleting evidence/status history.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.7.0-rc.8-release-notes.md`](release/v0.7.0-rc.8-release-notes.md).
+  [`release/v0.7.0-release-notes.md`](release/v0.7.0-release-notes.md).
 - Current RC release readiness decision:
   [`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md).
 - P3 integrity roadmap and release hold:
@@ -105,12 +105,14 @@ deleting evidence/status history.
   and GitHub prerelease `v0.7.0-rc.3` target that commit; its package hashes,
   installed-registry smoke, and workflow provenance are recorded in its
   durable release facts.
-- `0.7.0-rc.8` is a source-preparation record for the next immutable
-  staging-first candidate. It does not claim a current tag, registry package,
-  GitHub release, channel, provenance artifact, or audit outcome. Those live
-  facts are maintained in governed registry and audit records. The packaged
-  fixed-policy artifact verifier remains read-only/non-authoritative, while
-  local or caller-provided staged-package evidence remains
+- `0.7.0` is a source-preparation candidate for the user-authorized GA path.
+  It does not claim a current package, tag, registry channel, GitHub release,
+  promotion, or audit completion. Those live facts are maintained in governed
+  registry and audit records. The no-input production-integrity audit
+  does not establish this stable lifecycle; a future durable protected stable
+  completion approval must be observed after the actual release path. The
+  packaged fixed-policy artifact verifier remains read-only/non-authoritative,
+  while local or caller-provided staged-package evidence remains
   `artifact-provenance-unavailable`.
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is

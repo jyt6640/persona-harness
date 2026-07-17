@@ -14,7 +14,7 @@ import { basename, join, relative, resolve, sep } from "node:path"
 
 import {
   assessProductionIntegrityAudit,
-  PRODUCTION_INTEGRITY_AUDIT_CHANNEL,
+  deriveProductionIntegrityAuditChannel,
   PRODUCTION_INTEGRITY_AUDIT_PACKAGE,
 } from "./production-integrity-audit-core.mjs"
 import { runInstalledCompletionIntegrityMatrix } from "./stable-promotion-completion-integrity-runner.mjs"
@@ -30,13 +30,15 @@ export function runProductionIntegrityAudit(root = process.cwd(), env = process.
   try {
     const context = readContext(env)
     const version = readVersion(projectRoot)
+    const channel = deriveProductionIntegrityAuditChannel(version)
+    if (channel === "unavailable") throw new TypeError("audit channel is invalid")
     const sourceTests = run("npm", ["run", "test:repository"], projectRoot)
     const sourceBuild = sourceTests.status === 0
       ? run("npm", ["run", "build"], projectRoot)
       : unavailableCommand()
     const sourceReady = sourceTests.status === 0 && sourceBuild.status === 0
     const sourceTarball = sourceReady ? pack(projectRoot, temporaryRoot, [], version) : undefined
-    const registryMetadata = sourceReady ? readRegistryMetadata(projectRoot, version) : undefined
+    const registryMetadata = sourceReady ? readRegistryMetadata(projectRoot, version, channel) : undefined
     const registryTarball = sourceReady
       ? pack(projectRoot, temporaryRoot, [`${PRODUCTION_INTEGRITY_AUDIT_PACKAGE}@${version}`], version)
       : undefined
@@ -46,7 +48,7 @@ export function runProductionIntegrityAudit(root = process.cwd(), env = process.
       : runInstalledCompletionIntegrityMatrix(registryConsumer.consumer, temporaryRoot)
     const matrixStatus = matrix !== undefined && Object.values(matrix).every((value) => value) ? 0 : 1
     const provenance = sourceReady && registryTarball !== undefined
-      ? verifyProvenance(projectRoot, version, context.sourceHead, registryTarball.facts.sha256)
+      ? verifyProvenance(projectRoot, channel, version, context.sourceHead, registryTarball.facts.sha256)
       : unavailableCommand()
     return assessProductionIntegrityAudit({
       commandResults: {
@@ -62,7 +64,7 @@ export function runProductionIntegrityAudit(root = process.cwd(), env = process.
             gitHead: registryMetadata.gitHead,
             integrity: registryMetadata.integrity,
             shasum: registryMetadata.shasum,
-            stagingVersion: registryMetadata.stagingVersion,
+            selectedVersion: registryMetadata.selectedVersion,
             tarball: registryTarball.facts,
             version: registryMetadata.version,
           },
@@ -111,7 +113,7 @@ function readVersion(root) {
   return parsed.version
 }
 
-function readRegistryMetadata(root, version) {
+function readRegistryMetadata(root, version, channel) {
   const metadataResult = run("npm", ["view", `${PRODUCTION_INTEGRITY_AUDIT_PACKAGE}@${version}`, "version", "gitHead", "dist.shasum", "dist.integrity", "--json", "--registry", REGISTRY], root)
   const tagsResult = run("npm", ["view", PRODUCTION_INTEGRITY_AUDIT_PACKAGE, "dist-tags", "--json", "--registry", REGISTRY], root)
   if (metadataResult.status !== 0 || tagsResult.status !== 0) return undefined
@@ -128,7 +130,7 @@ function readRegistryMetadata(root, version) {
       || !/^sha512-[A-Za-z0-9+/=]+$/u.test(metadata["dist.integrity"])
       || typeof metadata["dist.shasum"] !== "string"
       || !/^[a-f0-9]{40}$/u.test(metadata["dist.shasum"])
-      || typeof tags[PRODUCTION_INTEGRITY_AUDIT_CHANNEL] !== "string"
+      || typeof tags[channel] !== "string"
     ) {
       return undefined
     }
@@ -136,7 +138,7 @@ function readRegistryMetadata(root, version) {
       gitHead: metadata.gitHead,
       integrity: metadata["dist.integrity"],
       shasum: metadata["dist.shasum"],
-      stagingVersion: tags[PRODUCTION_INTEGRITY_AUDIT_CHANNEL],
+      selectedVersion: tags[channel],
       version: metadata.version,
     }
   } catch {
@@ -203,17 +205,18 @@ function installRegistryConsumer(temporaryRoot, version) {
   }
 }
 
-function verifyProvenance(root, version, sourceHead, subjectDigest) {
+function verifyProvenance(root, channel, version, sourceHead, subjectDigest) {
   const result = run(process.execPath, [
     join(root, "dist", "cli", "index.js"),
     "dev",
     "staged-package-provenance",
     "--channel",
-    PRODUCTION_INTEGRITY_AUDIT_CHANNEL,
+    channel,
     "--version",
     version,
     "--json",
   ], root)
+  if (channel === "latest") return { status: result.status }
   if (result.status !== 0) return { status: result.status }
   try {
     const parsed = JSON.parse(result.stdout)
