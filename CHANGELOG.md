@@ -6,6 +6,27 @@ This project uses npm prerelease versions for tester-facing alpha and release-ca
 
 ## Unreleased
 
+## [0.7.0-rc.5] - 2026-07-17
+
+- Prepares a new immutable prerelease source candidate after the untagged,
+  unpublished `0.7.0-rc.4` source preparation. This entry records source
+  preparation only: no `v0.7.0-rc.5` tag, GitHub prerelease, npm package,
+  registry gitHead, integrity value, provenance artifact, or dist-tag movement
+  has occurred.
+- Preserves exact source binding for the controlled staged-package producer.
+  A registry package whose gitHead belongs to RC4 cannot bind to the fresh RC5
+  source tuple; a future RC5 staging artifact must carry the exact protected
+  main source identity for its own version.
+- Keeps the governed prerelease sequence staging-first. Any future `staging`
+  publication needs separate release approval, and a later move to `next`
+  needs its own explicit approval. Stable, GA, and `latest` remain NO-GO.
+- Keeps local or caller-provided staged-package facts fail-closed as
+  `artifact-provenance-unavailable`; the protected producer bootstrap does not
+  create a local positive provenance path or a promotion decision.
+- Keeps workflow finish and closure authority bound to the existing trusted
+  external-attestation decision. Local cooperative evidence remains
+  non-authoritative.
+
 ## [0.7.0-rc.4] - 2026-07-17
 
 - Prepares a fresh immutable prerelease source candidate after published

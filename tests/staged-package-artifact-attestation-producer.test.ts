@@ -18,7 +18,8 @@ const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "staged-package-artifact-attestation.yml")
 const producerPath = join(root, "scripts", "build-staged-package-artifact-attestation.mjs")
 const HEAD = "a".repeat(40)
-const VERSION = "0.7.0-rc.4"
+const VERSION = "0.7.0-rc.5"
+const RC4_REGISTRY_GIT_HEAD = "1c7a99e4deea1629c5292e5fed96623a6a8b9d2e"
 
 type RegistryVersionFixture = {
   readonly dist: {
@@ -77,7 +78,7 @@ describe("staged package artifact attestation producer policy", () => {
     expect(result.predicate).toMatchObject({
       authorityBoundary: "producer-only-diagnostic",
       authorityEligible: false,
-      expectedTag: "v0.7.0-rc.4",
+      expectedTag: `v${VERSION}`,
       predicateType: STAGED_PACKAGE_ARTIFACT_PREDICATE_TYPE,
       registry: {
         gitHead: HEAD,
@@ -104,6 +105,22 @@ describe("staged package artifact attestation producer policy", () => {
       },
     })
     expect(JSON.stringify(result.predicate)).not.toContain("external-attested")
+  })
+
+  it("keeps a historical RC4 registry gitHead blocked for the fresh RC5 source tuple", () => {
+    expect(readFileSync(join(root, "package.json"), "utf8")).toContain(`"version": "${VERSION}"`)
+    expect(() =>
+      createStagedPackageArtifactPredicate(producerInput({
+        registryVersion: { ...registryVersion(), gitHead: RC4_REGISTRY_GIT_HEAD },
+      })),
+    ).toThrow("staged-producer-registry-binding")
+
+    const result = createStagedPackageArtifactPredicate(producerInput())
+    expect(result.predicate).toMatchObject({
+      source: { head: HEAD },
+      tarball: { version: VERSION },
+      registry: { gitHead: HEAD },
+    })
   })
 
   it("allows the fixed next channel only when its own selected mapping is exact", () => {
