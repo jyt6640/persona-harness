@@ -63,7 +63,7 @@ describe("canonical clean CI attestation builder contract", () => {
     expect(workflow).not.toContain("inputs:")
   })
 
-  it("emits the versioned producer claim without wiring product Finish authority", () => {
+  it("emits the versioned producer claim with the single product Finish authority path", () => {
     const workflow = readFileSync(workflowPath, "utf8")
     const builder = readFileSync(builderPath, "utf8")
     const authority = readFileSync(authorityPath, "utf8")
@@ -81,7 +81,7 @@ describe("canonical clean CI attestation builder contract", () => {
     expect(workflow).not.toContain("workflow-finish-authority")
     expect(authority).toContain('status: "blocked"')
     expect(authority).toContain("TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID")
-    expect(authority).not.toContain("verifyExternalFinishAttestation")
+    expect(authority).toContain("verifyExternalFinishAttestation")
   })
 
   it("uses fixed commands, explicit source bindings, and immutable action pins", () => {

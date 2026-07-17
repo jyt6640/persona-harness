@@ -1,10 +1,10 @@
-import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs"
 import { join } from "node:path"
 
 import type { GitIdentity } from "./ci-reverification-identity.js"
 import type { MutationEntry } from "./ci-reverification-mutation.js"
+import { runFixedGit } from "./fixed-git.js"
 import {
   SOURCE_IDENTITY_EXCLUSIONS,
   SOURCE_IDENTITY_SCHEMA,
@@ -77,7 +77,7 @@ export function captureSourceIdentity(
       git: {
         head: git.head,
         statusDigest,
-        trackedIndexDigest: tracked.digest,
+        trackedIndexDigest: digest(tracked.digest),
       },
     })
     return {
@@ -124,14 +124,8 @@ export function captureSourceIdentityEntries(
 }
 
 function trackedIndex(projectDir: string, maxEntries: number): { readonly digest: string; readonly paths: ReadonlySet<string> } {
-  const result = spawnSync("git", ["ls-files", "--stage", "-z"], {
-    cwd: projectDir,
-    encoding: "utf8",
-    maxBuffer: 4 * 1024 * 1024,
-    shell: false,
-    timeout: 5_000,
-  })
-  if (result.status !== 0 || typeof result.stdout !== "string") {
+  const result = runFixedGit(projectDir, ["ls-files", "--stage", "-z"])
+  if (!result.available || result.status !== 0) {
     throw new SourceIdentityError("source-identity-index-unavailable")
   }
   const records = result.stdout.split("\0").filter((entry) => entry.length > 0)

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { copyFileSync, existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -10,9 +10,10 @@ const consumerNpmCache = join(temporaryRoot, "npm-cache")
 
 try {
   const tarballPath = packCurrentRepository()
-  const installedPackage = installFreshTarball(tarballPath)
+  const { consumerDirectory, installedPackage } = installFreshTarball(tarballPath)
 
   assertRepositoryOnlyFilesAreAbsent(installedPackage)
+  assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
   assertInstalledPackageTestPasses(installedPackage)
   process.stdout.write("installed-package-test-contract: PASS\n")
 } finally {
@@ -46,7 +47,10 @@ function installFreshTarball(tarballPath) {
     tarballPath,
   ])
   requireSuccess("fresh package installation", result)
-  return join(consumerDirectory, "node_modules", "persona-harness")
+  return {
+    consumerDirectory,
+    installedPackage: join(consumerDirectory, "node_modules", "persona-harness"),
+  }
 }
 
 function assertRepositoryOnlyFilesAreAbsent(installedPackage) {
@@ -66,6 +70,26 @@ function assertInstalledPackageTestPasses(installedPackage) {
   }
 }
 
+function assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory) {
+  const workerPath = join(installedPackage, "scripts", "verify-finish-attestation.mjs")
+  if (!existsSync(workerPath)) {
+    throw new Error("installed package is missing the product-owned verifier worker")
+  }
+  const bundlePath = join(consumerDirectory, ".persona", "evidence", "finish-attestation", "bundle.json")
+  mkdirSync(dirname(bundlePath), { recursive: true })
+  copyFileSync(
+    join(repositoryRoot, "tests", "fixtures", "finish-attestation", "protected-main-29511625395.bundle.json"),
+    bundlePath,
+  )
+  const modulePath = join(installedPackage, "dist", "cli", "workflow-finish-attestation.js")
+  const probe = runNode(consumerDirectory, [
+    "--input-type=module",
+    "-e",
+    `import { verifyExternalFinishAttestation } from ${JSON.stringify(modulePath)}; const result = verifyExternalFinishAttestation(process.cwd(), new Date("2026-07-16T16:00:00.000Z"), { consume: false }); if (result.authorityEligible || result.state !== "source-drift") process.exit(1);`,
+  ])
+  requireSuccess("installed packaged verifier fail-closed probe", probe)
+}
+
 function runNpm(cwd, args) {
   const result = spawnSync("npm", args, {
     cwd,
@@ -75,6 +99,22 @@ function runNpm(cwd, args) {
   })
   if (result.error) {
     throw new Error("npm process could not start")
+  }
+  return {
+    status: result.status,
+    stdout: result.stdout ?? "",
+  }
+}
+
+function runNode(cwd, args) {
+  const result = spawnSync(process.execPath, args, {
+    cwd,
+    encoding: "utf8",
+    env: process.env,
+    maxBuffer: 4 * 1024 * 1024,
+  })
+  if (result.error) {
+    throw new Error("node process could not start")
   }
   return {
     status: result.status,
