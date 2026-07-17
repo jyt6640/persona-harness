@@ -156,6 +156,9 @@ describe("package files policy", () => {
       "scripts/staged-package-artifact-attestation-core.mjs",
       "scripts/staged-package-artifact-attestation-core.d.mts",
       "scripts/staged-package-artifact-tarball.mjs",
+      "scripts/staged-package-artifact-context-diagnostic-core.mjs",
+      "scripts/staged-package-artifact-context-diagnostic-core.d.mts",
+      "scripts/diagnose-staged-package-artifact-context.mjs",
     ]
     const boundaryRecord = "docs/current/release/staged-package-artifact-attestation-producer.md"
 
