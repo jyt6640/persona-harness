@@ -149,6 +149,24 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles(packagedContract, packageJson.files)).toBe(true)
   })
 
+  it("keeps the staged artifact producer source-only while packaging its boundary record", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const producerPaths = [
+      "scripts/build-staged-package-artifact-attestation.mjs",
+      "scripts/staged-package-artifact-attestation-core.mjs",
+      "scripts/staged-package-artifact-attestation-core.d.mts",
+      "scripts/staged-package-artifact-tarball.mjs",
+    ]
+    const boundaryRecord = "docs/current/release/staged-package-artifact-attestation-producer.md"
+
+    for (const filePath of producerPaths) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
+    }
+    expect(existsSync(path.join(packageRoot, boundaryRecord))).toBe(true)
+    expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")

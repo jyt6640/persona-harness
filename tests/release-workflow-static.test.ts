@@ -26,7 +26,7 @@ describe("CI and release workflow policy surface", () => {
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
       )
 
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml"]) {
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml"]) {
         const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
         const floatingText = readFileSync(sourcePath, "utf8")
           .replaceAll("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5", "actions/checkout@v4")
@@ -58,7 +58,7 @@ describe("CI and release workflow policy surface", () => {
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
       )
 
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml"]) {
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml"]) {
         const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
         const source = readFileSync(sourcePath, "utf8")
         const unsafeSource = workflowName === "publish.yml"
@@ -91,7 +91,7 @@ describe("CI and release workflow policy surface", () => {
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
       )
 
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml"]) {
+      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "staged-package-artifact-attestation.yml"]) {
         const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
         const source = readFileSync(sourcePath, "utf8")
         const unsafeSource = workflowName === "publish.yml"
