@@ -3,6 +3,14 @@ name: Produce staged package artifact attestation
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Fixed producer execution mode"
+        required: true
+        default: produce
+        type: choice
+        options:
+          - produce
+          - diagnose
       channel:
         description: "Fixed staged package channel"
         required: true
@@ -20,16 +28,29 @@ concurrency:
   group: staged-package-artifact-attestation-${{ github.ref }}-${{ inputs.channel }}-${{ inputs.version }}
   cancel-in-progress: false
 
-permissions:
-  contents: read
-  id-token: write
-  attestations: write
-  artifact-metadata: write
-
 jobs:
+  diagnose:
+    name: Diagnose native protected-main staged producer context
+    if: github.repository == 'jyt6640/persona-harness' && github.ref == 'refs/heads/main' && inputs.mode == 'diagnose'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Emit bounded native producer context diagnostic
+        run: node scripts/diagnose-native-staged-package-artifact-context.mjs
+
   attest:
     name: Produce protected-main staged package artifact binding
-    if: github.repository == 'jyt6640/persona-harness' && github.ref == 'refs/heads/main'
+    if: github.repository == 'jyt6640/persona-harness' && github.ref == 'refs/heads/main' && inputs.mode == 'produce'
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     runs-on: ubuntu-latest
 
     steps:
