@@ -6,6 +6,7 @@ const workflowPaths = [
   ".github/workflows/release.yml",
   ".github/workflows/canonical-clean-ci-attestation-builder.yml",
   ".github/workflows/staged-package-artifact-attestation.yml",
+  ".github/workflows/staged-producer-context-diagnostic.yml",
 ]
 
 const immutableActionPins = {
@@ -30,6 +31,9 @@ const expectedActionCounts = {
     checkout: 1,
     setupNode: 1,
     uploadArtifact: 1,
+  },
+  ".github/workflows/staged-producer-context-diagnostic.yml": {
+    checkout: 1,
   },
 }
 
@@ -71,6 +75,10 @@ const requirements = [
   ["staged artifact attester subject", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("staged-package-artifact-binding.1") && text.includes("subject-path: .ci/staged-package-artifact-attestation/package.tgz") && !text.includes("subject-path: .ci/staged-package-artifact-attestation/predicate.json")],
   ["staged artifact attester producer-only boundary", ".github/workflows/staged-package-artifact-attestation.yml", (text) => !text.includes("npm publish") && !text.includes("git tag") && !text.includes("git push") && !text.includes("workflow finish")],
   ["staged artifact attester least privilege", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
+  ["staged producer context diagnostic trigger", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("workflow_dispatch:") && !text.includes("inputs:") && !text.includes("workflow_call:") && !text.includes("pull_request:") && !text.includes("push:")],
+  ["staged producer context diagnostic protected main", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("github.repository == 'jyt6640/persona-harness'") && text.includes("github.ref == 'refs/heads/main'") && text.includes("runs-on: ubuntu-latest")],
+  ["staged producer context diagnostic no signing or registry", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("node scripts/diagnose-staged-package-artifact-context.mjs") && !text.includes("id-token:") && !text.includes("attestations:") && !text.includes("artifact-metadata:") && !text.includes("actions/attest") && !text.includes("actions/upload-artifact") && !text.includes("npm ") && !text.includes("registry") && !text.includes("git tag") && !text.includes("git push")],
+  ["staged producer context diagnostic least privilege", ".github/workflows/staged-producer-context-diagnostic.yml", (text) => text.includes("contents: read") && !text.includes("contents: write")],
 ]
 
 async function main() {
