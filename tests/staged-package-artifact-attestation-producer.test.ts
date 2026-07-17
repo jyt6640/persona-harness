@@ -1,7 +1,9 @@
+import { spawnSync, execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { spawnSync } from "node:child_process"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 import { gzipSync } from "node:zlib"
 
 import { describe, expect, it } from "vitest"
@@ -144,6 +146,22 @@ describe("staged package artifact attestation producer policy", () => {
     expect(result.stdout).toBe("")
   })
 
+  it("keeps the actual producer context builder valid for a clean protected-main job", () => {
+    const workspace = mkdtempSync(join(tmpdir(), "staged-producer-context-"))
+    try {
+      const head = initializeProducerWorkspace(workspace)
+      const result = readProducerContext(workspace, head)
+
+      expect(result.status).toBe(0)
+      expect(result.stderr).toBe("")
+      expect(result.stdout).toContain(`"contextHead":"${head}"`)
+      expect(result.stdout).toContain('"repositoryId":"1272008570"')
+      expect(result.stdout).toContain('"runAttempt":"1"')
+    } finally {
+      rmSync(workspace, { force: true, recursive: true })
+    }
+  })
+
   it.each([
     ["channel", () => producerInput({ channel: "latest" }), "staged-producer-channel-invalid"],
     ["strict SemVer", () => producerInput({ version: "not-semver-rc" }), "staged-producer-version-invalid"],
@@ -240,4 +258,42 @@ function packedTarball(name: string, version: string): Buffer {
 
 function createDigest(algorithm: "sha1" | "sha512", value: Buffer, encoding: "base64" | "hex"): string {
   return createHash(algorithm).update(value).digest(encoding)
+}
+
+function initializeProducerWorkspace(workspace: string): string {
+  writeFileSync(join(workspace, "fixture.txt"), "fixture\n")
+  execFileSync("git", ["init", "-q"], { cwd: workspace })
+  execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: workspace })
+  execFileSync("git", ["config", "user.name", "PH Test"], { cwd: workspace })
+  execFileSync("git", ["add", "fixture.txt"], { cwd: workspace })
+  execFileSync("git", ["commit", "-qm", "producer context fixture"], { cwd: workspace })
+  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: workspace, encoding: "utf8" }).trim()
+  execFileSync("git", ["update-ref", "refs/remotes/origin/main", head], { cwd: workspace })
+  return head
+}
+
+function readProducerContext(workspace: string, head: string) {
+  const source = [
+    `import { readGitHubContext } from ${JSON.stringify(pathToFileURL(producerPath).href)}`,
+    "process.stdout.write(JSON.stringify(readGitHubContext()))",
+  ].join(";")
+  return spawnSync(process.execPath, ["--input-type=module", "--eval", source], {
+    cwd: workspace,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      GITHUB_ACTIONS: "true",
+      GITHUB_EVENT_NAME: "workflow_dispatch",
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_REPOSITORY: "jyt6640/persona-harness",
+      GITHUB_REPOSITORY_ID: "1272008570",
+      GITHUB_RUN_ATTEMPT: "1",
+      GITHUB_RUN_ID: "29570375578",
+      GITHUB_SHA: head,
+      GITHUB_WORKFLOW_REF: "jyt6640/persona-harness/.github/workflows/staged-package-artifact-attestation.yml@refs/heads/main",
+      GITHUB_WORKFLOW_SHA: head,
+      RUNNER_ENVIRONMENT: "github-hosted",
+      RUNNER_OS: "Linux",
+    },
+  })
 }

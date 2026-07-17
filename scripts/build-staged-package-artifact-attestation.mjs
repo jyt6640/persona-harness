@@ -64,7 +64,7 @@ function readArguments(args) {
   return { channel, version }
 }
 
-function readGitHubContext() {
+export function readGitHubContext() {
   if (process.env.GITHUB_ACTIONS !== "true") throw new StagedPackageArtifactProducerError("staged-producer-github-actions")
 
   const workspaceRoot = gitText(["rev-parse", "--show-toplevel"])
@@ -97,7 +97,8 @@ function readGitHubContext() {
   if (workspaceRoot !== process.cwd() || cleanStatus.byteLength !== 0 || sourceHead !== canonicalMainHead) {
     throw new StagedPackageArtifactProducerError("staged-producer-source-state")
   }
-  return { ...validateStagedPackageArtifactContext(context), workspaceRoot }
+  validateStagedPackageArtifactContext(context)
+  return context
 }
 
 async function readRegistryJson(path) {
