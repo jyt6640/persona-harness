@@ -63,15 +63,15 @@ positive.
 
 ## Prepared Staging Candidate
 
-[`v0.7.0-rc.5-release-notes.md`](v0.7.0-rc.5-release-notes.md) prepares a
-fresh prerelease source identity. It is not published: no `v0.7.0-rc.5` tag,
+[`v0.7.0-rc.6-release-notes.md`](v0.7.0-rc.6-release-notes.md) prepares a
+fresh prerelease source identity. It is not published: no `v0.7.0-rc.6` tag,
 GitHub release, npm package, registry gitHead, integrity value, provenance
 artifact, or dist-tag movement exists yet. Published channels remain
 `latest=0.6.0` and `next=0.7.0-rc.3`.
 
-The prior RC4 source candidate remains historical preparation only. The
-controlled producer must reject RC4 registry gitHead facts when evaluating RC5;
-the future RC5 package must bind to its own exact protected-main source
+The prior RC5 source identity remains historical for this version. The
+controlled producer must reject RC5 registry gitHead facts when evaluating RC6;
+the future RC6 package must bind to its own exact protected-main source
 identity.
 
 Any future prerelease action is staging-first and requires a separate approved
