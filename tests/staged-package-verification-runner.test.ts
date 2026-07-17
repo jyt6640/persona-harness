@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 
+// allow: SIZE_OK - one integrated runner contract keeps shared tarball, cache, and adversarial facts coherent.
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest"
 
 import {
@@ -11,11 +12,19 @@ import {
   type StagedPackageVerificationOptions,
 } from "../src/cli/staged-package-verification-runner.js"
 import { withPackagePackLock } from "./package-pack-lock.js"
+import {
+  createInstallCacheObservation,
+  suiteNpmCommandRunner,
+  warmSuiteNpmCache,
+  type PackageCommandResult,
+  type SuiteNpmCache,
+} from "./staged-package-verification-suite-cache.js"
 
 const fixtureRoots: string[] = []
 const suiteRoots: string[] = []
 const SOURCE_SHA = "a".repeat(40)
 let packedTarballPath = ""
+let suiteNpmCache: SuiteNpmCache | undefined
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -33,7 +42,7 @@ function createSuiteRoot(): string {
   return root
 }
 
-function runCommand(command: string, args: readonly string[], cwd: string): { readonly output: string; readonly status: number } {
+function runCommand(command: string, args: readonly string[], cwd: string): PackageCommandResult {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
@@ -45,13 +54,9 @@ function runCommand(command: string, args: readonly string[], cwd: string): { re
   }
 }
 
-function commandRunnerForProvenance(status: number, output: string) {
-  return (command: string, args: readonly string[], cwd: string): { readonly output: string; readonly status: number } => {
-    if (command === "npm" && args[0] === "audit" && args[1] === "signatures" && args[2] === "--json") {
-      return { output, status }
-    }
-    return runCommand(command, args, cwd)
-  }
+function cache(): SuiteNpmCache {
+  if (suiteNpmCache === undefined) throw new Error("suite-npm-cache-unavailable")
+  return suiteNpmCache
 }
 
 function packCurrentRepository(root: string): string {
@@ -136,7 +141,11 @@ function writeFacts(root: string, tarballPath: string): StagedPackageVerificatio
   })}\n`)
 
   return {
-    commandRunner: commandRunnerForProvenance(0, "verified"),
+    commandRunner: suiteNpmCommandRunner({
+      cache: cache(),
+      runProvenance: () => ({ output: "verified", status: 0 }),
+      runner: runCommand,
+    }),
     planPath,
     preflightPath,
     registryFactsPath,
@@ -158,7 +167,9 @@ afterAll(() => {
 
 describe("staged package verification runner", () => {
   beforeAll(() => {
-    packedTarballPath = packCurrentRepository(createSuiteRoot())
+    const suiteRoot = createSuiteRoot()
+    packedTarballPath = packCurrentRepository(suiteRoot)
+    suiteNpmCache = warmSuiteNpmCache(suiteRoot, packedTarballPath, runCommand)
   }, 60_000)
 
   it("runs a fresh exact-version installed black-box while requiring artifact provenance", { timeout: 60_000 }, () => {
@@ -190,13 +201,14 @@ describe("staged package verification runner", () => {
     let genericAuditCalls = 0
     const result = runStagedPackageVerification({
       ...options,
-      commandRunner: (command, args, cwd) => {
-        if (command === "npm" && args[0] === "audit" && args[1] === "signatures" && args[2] === "--json") {
+      commandRunner: suiteNpmCommandRunner({
+        cache: cache(),
+        runProvenance: () => {
           genericAuditCalls += 1
           return { output: "verified", status: 0 }
-        }
-        return runCommand(command, args, cwd)
-      },
+        },
+        runner: runCommand,
+      }),
     })
 
     expect(result.verificationStatus).toBe("blocked")
@@ -213,7 +225,11 @@ describe("staged package verification runner", () => {
     const options = writeFacts(root, packedTarballPath)
     const result = runStagedPackageVerification({
       ...options,
-      commandRunner: commandRunnerForProvenance(1, `${secret} /private/tmp/secret`),
+      commandRunner: suiteNpmCommandRunner({
+        cache: cache(),
+        runProvenance: () => ({ output: `${secret} /private/tmp/secret`, status: 1 }),
+        runner: runCommand,
+      }),
     })
 
     expect(result.verificationStatus).toBe("blocked")
@@ -227,16 +243,25 @@ describe("staged package verification runner", () => {
     const options = writeFacts(root, packedTarballPath)
     const linkedPlanPath = join(root, "linked-plan.json")
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+    const cacheObservation = createInstallCacheObservation()
 
     writeFileSync(options.planPath, `{"payload":"${secret}"`)
     symlinkSync(options.planPath, linkedPlanPath)
     const result = runStagedPackageVerification({
       ...options,
+      commandRunner: suiteNpmCommandRunner({
+        cache: cache(),
+        observeInstall: cacheObservation.observe,
+        runProvenance: () => ({ output: "verified", status: 0 }),
+        runner: runCommand,
+      }),
       planPath: linkedPlanPath,
     })
 
     expect(result.verificationStatus).toBe("blocked")
     expect(result.diagnostics).toContain("staged-plan-invalid")
+    expect(result.installed).toMatchObject({ cliHelp: "verified", npmTest: "verified" })
+    expect(cacheObservation.path()).toBe(cache().path)
     expect(JSON.stringify(result)).not.toContain(secret)
     expect(JSON.stringify(result)).not.toContain(linkedPlanPath)
   })
@@ -245,12 +270,23 @@ describe("staged package verification runner", () => {
     const root = createFixtureRoot()
     const options = writeFacts(root, packedTarballPath)
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+    const cacheObservation = createInstallCacheObservation()
 
     writeFileSync(options.registryFactsPath, `{"marker":"${secret}"`)
-    const result = runStagedPackageVerification(options)
+    const result = runStagedPackageVerification({
+      ...options,
+      commandRunner: suiteNpmCommandRunner({
+        cache: cache(),
+        observeInstall: cacheObservation.observe,
+        runProvenance: () => ({ output: "verified", status: 0 }),
+        runner: runCommand,
+      }),
+    })
 
     expect(result.verificationStatus).toBe("blocked")
     expect(result.diagnostics).toContain("registry-facts-invalid")
+    expect(result.installed).toMatchObject({ cliHelp: "verified", npmTest: "verified" })
+    expect(cacheObservation.path()).toBe(cache().path)
     expect(JSON.stringify(result)).not.toContain(secret)
   })
 
