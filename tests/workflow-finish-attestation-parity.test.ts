@@ -3,6 +3,15 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+const attestedFixtureVersion = vi.hoisted(() => ({
+  current: "0.7.0-rc.3",
+  expected: "0.7.0-rc.3",
+}))
+
+vi.mock("../src/cli/version.js", () => ({
+  personaHarnessVersion: () => attestedFixtureVersion.current,
+}))
+
 import { runPersonaCli } from "../src/cli/index.js"
 import { FINISH_ATTESTATION_BUNDLE_PATH, FINISH_ATTESTATION_CONSUMPTION_PATH } from "../src/cli/workflow-finish-attestation.js"
 import { readWorkflowFinishAuthority } from "../src/cli/workflow-finish-authority.js"
@@ -21,6 +30,7 @@ const projects: RealArtifactProject[] = []
 
 afterEach(() => {
   vi.useRealTimers()
+  attestedFixtureVersion.current = attestedFixtureVersion.expected
   for (const project of projects.splice(0)) project.cleanup()
 })
 

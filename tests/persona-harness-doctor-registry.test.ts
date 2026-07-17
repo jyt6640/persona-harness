@@ -5,8 +5,10 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { personaHarnessVersion } from "../src/cli/version.js"
 
 const projects: string[] = []
+const PUBLISHED_NEXT_VERSION = "0.7.0-rc.3"
 
 function project(): string {
   const directory = mkdtempSync(join(tmpdir(), "persona-doctor-registry-"))
@@ -36,16 +38,18 @@ describe("ph doctor registry diagnostics", () => {
     const result = doctor(project(), {
       PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({
         latest: "0.6.0",
-        next: "0.7.0-rc.3",
+        next: PUBLISHED_NEXT_VERSION,
       }),
       PH_DOCTOR_REGISTRY_DEPRECATED: "false",
     })
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Registry status: available")
-    expect(result.stdout).toContain("Installed channel: 0.7.0-rc.3")
+    expect(result.stdout).toContain(`Installed channel: ${personaHarnessVersion()}`)
     expect(result.stdout).toContain("Latest channel: 0.6.0 (DRIFT)")
-    expect(result.stdout).toContain("Next channel: 0.7.0-rc.3 (MATCH)")
+    expect(result.stdout).toContain(
+      `Next channel: ${PUBLISHED_NEXT_VERSION} (${personaHarnessVersion() === PUBLISHED_NEXT_VERSION ? "MATCH" : "DRIFT"})`,
+    )
     expect(result.stdout).toContain("Legacy channel: retired")
     expect(result.stdout).toContain("Deprecation: none observed")
     expect(result.stdout).toContain("Finish authority: BLOCKED")
