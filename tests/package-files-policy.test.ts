@@ -216,10 +216,16 @@ describe("package files policy", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const sourceOnlyPaths = [
       ".github/workflows/persona-harness-project-finish.yml",
+      ".github/workflows/persona-harness-project-finish-context-diagnostic.yml",
       "scripts/build-project-finish-attestation.mjs",
       "scripts/project-finish-attestation-producer-context.mjs",
+      "scripts/project-finish-attestation-producer-context-diagnostic.mjs",
+      "scripts/project-finish-attestation-oidc.mjs",
+      "scripts/diagnose-project-finish-producer-context.mjs",
       "tests/fixtures/project-finish-attestation/caller-workflow.yml",
       "tests/project-finish-attestation-producer-workflow.test.ts",
+      "tests/project-finish-attestation-producer-context-diagnostic.test.ts",
+      "tests/project-finish-attestation-producer-context-diagnostic-cli.test.ts",
     ]
     const runtimePaths = [
       "dist/cli/project-finish-attestation-producer.js",

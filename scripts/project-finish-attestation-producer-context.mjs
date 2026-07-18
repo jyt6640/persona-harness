@@ -1,4 +1,6 @@
 export const PROJECT_FINISH_PRODUCER_CONTEXT_FAILURE = "project-finish-producer-context"
+export const PROJECT_FINISH_PRODUCER_DIAGNOSTIC_WORKFLOW_PATH =
+  ".github/workflows/persona-harness-project-finish-context-diagnostic.yml"
 
 const CALLER_WORKFLOW_PATH = /^\.github\/workflows\/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.ya?ml$/u
 const IMMUTABLE_SHA = /^[a-f0-9]{40}$/u
@@ -14,51 +16,21 @@ export class ProjectFinishProducerContextError extends Error {
 }
 
 export function deriveProjectFinishProducerContext(claims, environment) {
-  const repository = requiredClaim(claims, "repository")
-  const repositoryId = requiredClaim(claims, "repository_id")
-  const eventName = requiredClaim(claims, "event_name")
-  const ref = requiredClaim(claims, "ref")
-  const repositoryVisibility = requiredClaim(claims, "repository_visibility")
-  const callerWorkflowRef = requiredClaim(claims, "workflow_ref")
-  const callerWorkflowSha = requiredClaim(claims, "workflow_sha")
-  const reusableWorkflowRef = requiredClaim(claims, "job_workflow_ref")
-  const observedReusableWorkflowSha = requiredClaim(claims, "job_workflow_sha")
-  const claimRunId = requiredClaim(claims, "run_id")
-  const claimRunAttempt = requiredClaim(claims, "run_attempt")
-  const runnerEnvironment = requiredClaim(claims, "runner_environment")
-  const githubEventName = requiredEnvironment(environment, "GITHUB_EVENT_NAME")
-  const githubRef = requiredEnvironment(environment, "GITHUB_REF")
-  const githubRepository = requiredEnvironment(environment, "GITHUB_REPOSITORY")
-  const githubRepositoryId = requiredEnvironment(environment, "GITHUB_REPOSITORY_ID")
-  const githubRepositoryVisibility = requiredEnvironment(environment, "GITHUB_REPOSITORY_VISIBILITY")
-  const sourceHead = requiredEnvironment(environment, "GITHUB_SHA")
-  const producerSha = requiredEnvironment(environment, "PERSONA_HARNESS_PRODUCER_SHA")
-  const runId = requiredEnvironment(environment, "GITHUB_RUN_ID")
-  const runAttemptValue = requiredEnvironment(environment, "GITHUB_RUN_ATTEMPT")
-  const runAttempt = positiveInteger(runAttemptValue)
-
-  if (
-    githubEventName !== "push"
-    || eventName !== githubEventName
-    || githubRef !== "refs/heads/main"
-    || ref !== githubRef
-    || githubRepository !== repository
-    || githubRepositoryId !== repositoryId
-    || githubRepositoryVisibility !== "public"
-    || repositoryVisibility !== githubRepositoryVisibility
-    || !IMMUTABLE_SHA.test(sourceHead)
-    || sourceHead !== callerWorkflowSha
-    || !isCallerWorkflowRef(callerWorkflowRef, repository)
-    || !IMMUTABLE_SHA.test(producerSha)
-    || !isReusableWorkflowRef(reusableWorkflowRef)
-    || observedReusableWorkflowSha !== producerSha
-    || claimRunId !== runId
-    || claimRunAttempt !== runAttemptValue
-    || runnerEnvironment !== "github-hosted"
-  ) {
+  const assessment = analyzeContext(claims, environment, PRODUCER_WORKFLOW_PATH)
+  if (assessment.outcome !== "match") {
     throw new ProjectFinishProducerContextError()
   }
 
+  const {
+    callerWorkflowRef,
+    callerWorkflowSha,
+    producerSha,
+    repository,
+    repositoryId,
+    runAttempt,
+    runId,
+    sourceHead,
+  } = assessment.value
   return {
     callerWorkflowRef,
     callerWorkflowSha,
@@ -75,6 +47,100 @@ export function deriveProjectFinishProducerContext(claims, environment) {
   }
 }
 
+export function assessProjectFinishProducerContextDiagnosticWorkflow(claims, environment) {
+  return analyzeContext(claims, environment, PROJECT_FINISH_PRODUCER_DIAGNOSTIC_WORKFLOW_PATH)
+}
+
+function analyzeContext(claims, environment, workflowPath) {
+  const claimRecord = isRecord(claims) ? claims : {}
+  const environmentRecord = isRecord(environment) ? environment : {}
+  const repository = boundedValue(claimRecord.repository)
+  const repositoryId = boundedValue(claimRecord.repository_id)
+  const eventName = boundedValue(claimRecord.event_name)
+  const ref = boundedValue(claimRecord.ref)
+  const repositoryVisibility = boundedValue(claimRecord.repository_visibility)
+  const callerWorkflowRef = boundedValue(claimRecord.workflow_ref)
+  const callerWorkflowSha = boundedValue(claimRecord.workflow_sha)
+  const reusableWorkflowRef = boundedValue(claimRecord.job_workflow_ref)
+  const observedReusableWorkflowSha = boundedValue(claimRecord.job_workflow_sha)
+  const claimRunId = boundedValue(claimRecord.run_id)
+  const claimRunAttempt = boundedValue(claimRecord.run_attempt)
+  const runnerEnvironment = boundedValue(claimRecord.runner_environment)
+  const githubEventName = boundedValue(environmentRecord.GITHUB_EVENT_NAME)
+  const githubRef = boundedValue(environmentRecord.GITHUB_REF)
+  const githubRepository = boundedValue(environmentRecord.GITHUB_REPOSITORY)
+  const githubRepositoryId = boundedValue(environmentRecord.GITHUB_REPOSITORY_ID)
+  const githubRepositoryVisibility = boundedValue(environmentRecord.GITHUB_REPOSITORY_VISIBILITY)
+  const sourceHead = boundedValue(environmentRecord.GITHUB_SHA)
+  const producerSha = boundedValue(environmentRecord.PERSONA_HARNESS_PRODUCER_SHA)
+  const runId = boundedValue(environmentRecord.GITHUB_RUN_ID)
+  const runAttemptValue = boundedValue(environmentRecord.GITHUB_RUN_ATTEMPT)
+  const fields = [
+    statusForFixedPair("event", eventName, githubEventName, "push"),
+    statusForFixedPair("ref", ref, githubRef, "refs/heads/main"),
+    statusForEqualPair("repository", repository, githubRepository),
+    statusForEqualPair("repository-id", repositoryId, githubRepositoryId, isPositiveInteger),
+    statusForFixedPair("repository-visibility", repositoryVisibility, githubRepositoryVisibility, "public"),
+    statusForEqualPair("caller-workflow-sha", callerWorkflowSha, sourceHead, isImmutableSha),
+    statusForCallerWorkflowRef(callerWorkflowRef, repository),
+    statusForValue("producer-pin", producerSha, isImmutableSha),
+    statusForFixed("reusable-workflow-ref", reusableWorkflowRef, `${PRODUCER_REPOSITORY}/${workflowPath}@refs/heads/main`),
+    statusForEqualPair("reusable-workflow-sha", observedReusableWorkflowSha, producerSha, isImmutableSha),
+    statusForEqualPair("run-id", claimRunId, runId),
+    statusForEqualPair("run-attempt", claimRunAttempt, runAttemptValue, isPositiveInteger),
+    statusForFixed("runner-environment", runnerEnvironment, "github-hosted"),
+  ]
+  const outcome = fields.every((field) => field.status === "match") ? "match" : "blocked"
+  return {
+    diagnosticCodes: fields
+      .filter((field) => field.status !== "match")
+      .map((field) => `${PROJECT_FINISH_PRODUCER_CONTEXT_FAILURE}-${field.code}-${field.status}`),
+    fields,
+    outcome,
+    value: outcome === "match"
+      ? {
+        callerWorkflowRef,
+        callerWorkflowSha,
+        producerSha,
+        repository,
+        repositoryId,
+        runAttempt: positiveInteger(runAttemptValue),
+        runId,
+        sourceHead,
+      }
+      : undefined,
+  }
+}
+
+function statusForCallerWorkflowRef(value, repository) {
+  if (value === undefined || repository === undefined) return field("caller-workflow-ref", "missing")
+  return field("caller-workflow-ref", isCallerWorkflowRef(value, repository) ? "match" : "mismatch")
+}
+
+function statusForFixed(code, value, expected) {
+  if (value === undefined) return field(code, "missing")
+  return field(code, value === expected ? "match" : "mismatch")
+}
+
+function statusForFixedPair(code, left, right, expected) {
+  if (left === undefined || right === undefined) return field(code, "missing")
+  return field(code, left === expected && right === expected ? "match" : "mismatch")
+}
+
+function statusForValue(code, value, validator) {
+  if (value === undefined) return field(code, "missing")
+  return field(code, validator(value) ? "match" : "mismatch")
+}
+
+function statusForEqualPair(code, left, right, validator = () => true) {
+  if (left === undefined || right === undefined) return field(code, "missing")
+  return field(code, validator(left) && validator(right) && left === right ? "match" : "mismatch")
+}
+
+function field(code, status) {
+  return { code, status }
+}
+
 function isCallerWorkflowRef(value, repository) {
   const prefix = `${repository}/`
   if (
@@ -88,9 +154,10 @@ function isCallerWorkflowRef(value, repository) {
   return CALLER_WORKFLOW_PATH.test(path)
 }
 
-function isReusableWorkflowRef(value) {
-  const target = `${PRODUCER_REPOSITORY}/${PRODUCER_WORKFLOW_PATH}`
-  return value === `${target}@refs/heads/main`
+function boundedValue(value) {
+  return typeof value === "string" && value.length > 0 && value.length <= 512 && !/[\u0000\r\n]/u.test(value)
+    ? value
+    : undefined
 }
 
 function positiveInteger(value) {
@@ -100,22 +167,12 @@ function positiveInteger(value) {
   return parsed
 }
 
-function requiredClaim(claims, key) {
-  if (!isRecord(claims)) throw new ProjectFinishProducerContextError()
-  const value = claims[key]
-  if (typeof value !== "string" || value.length === 0 || value.length > 512 || /[\u0000\r\n]/u.test(value)) {
-    throw new ProjectFinishProducerContextError()
-  }
-  return value
+function isImmutableSha(value) {
+  return IMMUTABLE_SHA.test(value)
 }
 
-function requiredEnvironment(environment, key) {
-  if (!isRecord(environment)) throw new ProjectFinishProducerContextError()
-  const value = environment[key]
-  if (typeof value !== "string" || value.length === 0 || value.length > 512 || /[\u0000\r\n]/u.test(value)) {
-    throw new ProjectFinishProducerContextError()
-  }
-  return value
+function isPositiveInteger(value) {
+  return POSITIVE_INTEGER.test(value) && Number.isSafeInteger(Number(value))
 }
 
 function isRecord(value) {
