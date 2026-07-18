@@ -212,6 +212,31 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
   })
 
+  it("keeps the project finish attestation producer source-only while packaging its boundary record", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const sourceOnlyPaths = [
+      ".github/workflows/persona-harness-project-finish.yml",
+      "scripts/build-project-finish-attestation.mjs",
+      "tests/fixtures/project-finish-attestation/caller-workflow.yml",
+      "tests/project-finish-attestation-producer-workflow.test.ts",
+    ]
+    const runtimePaths = [
+      "dist/cli/project-finish-attestation-producer.js",
+      "dist/cli/project-finish-attestation-producer-runner.js",
+    ]
+    const boundaryRecord = "docs/current/release/project-finish-attestation-producer.md"
+
+    for (const filePath of sourceOnlyPaths) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
+    }
+    for (const filePath of runtimePaths) {
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
+    expect(existsSync(path.join(packageRoot, boundaryRecord))).toBe(true)
+    expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
