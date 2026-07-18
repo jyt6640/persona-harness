@@ -29,7 +29,9 @@ export function createValidProjectFinishAttestationStatement(): Record<string, u
 
 export function createValidProjectFinishAttestationReceipt(): Record<string, unknown> {
   const sourceHead = "a".repeat(40)
-  const workflowRef = `example/public-gradle-app/${PROJECT_FINISH_ATTESTATION_POLICY.workflowPath}@refs/heads/main`
+  const callerWorkflowRef = "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main"
+  const reusableWorkflowSha = "b".repeat(40)
+  const reusableWorkflowRef = `${PROJECT_FINISH_ATTESTATION_POLICY.producerRepository}/${PROJECT_FINISH_ATTESTATION_POLICY.workflowPath}@${reusableWorkflowSha}`
   return {
     build: {
       artifactDigest: `sha256:${"b".repeat(64)}`,
@@ -93,12 +95,18 @@ export function createValidProjectFinishAttestationReceipt(): Record<string, unk
       skipped: 1,
     },
     workflow: {
-      certificateSan: `https://github.com/${workflowRef}`,
-      path: PROJECT_FINISH_ATTESTATION_POLICY.workflowPath,
-      ref: workflowRef,
+      caller: {
+        ref: callerWorkflowRef,
+        sha: sourceHead,
+      },
+      certificateSan: `https://github.com/${callerWorkflowRef}`,
+      reusable: {
+        path: PROJECT_FINISH_ATTESTATION_POLICY.workflowPath,
+        ref: reusableWorkflowRef,
+        sha: reusableWorkflowSha,
+      },
       runAttempt: 2,
       runId: "1001",
-      sha: sourceHead,
     },
   }
 }

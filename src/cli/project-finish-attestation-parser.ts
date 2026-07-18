@@ -37,6 +37,7 @@ export function parseProjectFinishAttestationStatement(value: unknown): ProjectF
   return {
     ok: true,
     value: {
+      _type: "https://in-toto.io/Statement/v1",
       predicate,
       predicateType: PROJECT_FINISH_ATTESTATION_PREDICATE_TYPE,
       subject,

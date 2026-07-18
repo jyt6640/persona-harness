@@ -40,6 +40,32 @@ describe("project-finish-attestation.1 parser and policy", () => {
     })
   })
 
+  it("requires separately bound caller and reusable workflow identities", () => {
+    const statement = createValidProjectFinishAttestationStatement()
+    const workflow = recordField(receipt(statement), "workflow")
+    const callerSha = "a".repeat(40)
+    const reusableSha = "b".repeat(40)
+
+    delete workflow["path"]
+    delete workflow["ref"]
+    delete workflow["sha"]
+    workflow["caller"] = {
+      ref: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
+      sha: callerSha,
+    }
+    workflow["certificateSan"] = "https://github.com/example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main"
+    workflow["reusable"] = {
+      path: ".github/workflows/persona-harness-project-finish.yml",
+      ref: `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@${reusableSha}`,
+      sha: reusableSha,
+    }
+    recomputeReceiptDigest(statement)
+
+    const parsed = parseProjectFinishAttestationStatement(statement)
+
+    expect(parsed.ok).toBe(true)
+  })
+
   it.each([
     ["unknown schema", (statement: Record<string, unknown>) => setReceiptField(statement, "schemaVersion", "finish-attestation.1")],
     ["existing finish attestation predicate", (statement: Record<string, unknown>) => {

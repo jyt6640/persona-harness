@@ -62,6 +62,12 @@ The packaged fixed-policy verifier can independently verify the producer's
 exact public artifact subject, but remains read-only/non-authoritative and does
 not publish or move a channel.
 
+The project-finish attestation producer is a separate consumer-project source
+contract: [`project-finish-attestation-producer.md`](project-finish-attestation-producer.md).
+It requires protected integration plus a separately authorized fresh public
+caller push before a genuine Artifact Attestation exists. It does not enable a
+verifier, Finish authority, or a branch-protection/enrollment/review claim.
+
 ## Prepared Stable Source Candidate
 
 [`v0.7.0-release-notes.md`](v0.7.0-release-notes.md) records the immutable

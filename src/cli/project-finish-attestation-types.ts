@@ -9,6 +9,7 @@ export const PROJECT_FINISH_ATTESTATION_POLICY = {
   catalogId: "persona-harness-project-gradle.1",
   event: "push",
   policyMarker: "project-finish-attestation-v1-public-push-main",
+  producerRepository: "jyt6640/persona-harness",
   projectScope: "repository-root-gradle-project",
   ref: "refs/heads/main",
   subjectName: "project-finish-attestation-receipt.json",
@@ -84,16 +85,23 @@ export type ProjectFinishAttestationReceipt = {
     readonly skipped: number
   }
   readonly workflow: {
+    readonly caller: {
+      readonly ref: string
+      readonly sha: string
+    }
     readonly certificateSan: string
-    readonly path: typeof PROJECT_FINISH_ATTESTATION_POLICY.workflowPath
-    readonly ref: string
+    readonly reusable: {
+      readonly path: typeof PROJECT_FINISH_ATTESTATION_POLICY.workflowPath
+      readonly ref: string
+      readonly sha: string
+    }
     readonly runAttempt: number
     readonly runId: string
-    readonly sha: string
   }
 }
 
 export type ProjectFinishAttestationStatement = {
+  readonly _type: "https://in-toto.io/Statement/v1"
   readonly predicate: {
     readonly policyMarker: typeof PROJECT_FINISH_ATTESTATION_POLICY.policyMarker
     readonly receipt: ProjectFinishAttestationReceipt

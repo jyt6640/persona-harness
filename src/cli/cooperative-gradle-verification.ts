@@ -10,7 +10,11 @@ import {
 import { type CooperativeFinishContext } from "./cooperative-finish-context.js"
 import { assessCooperativeJUnit } from "./cooperative-junit.js"
 import { snapshotJUnitResults } from "./junit-result-discovery.js"
-import { captureSourceIdentity, sameSourceIdentity } from "./source-identity.js"
+import {
+  captureSourceIdentity,
+  sameSourceIdentity,
+  type SourceIdentity,
+} from "./source-identity.js"
 
 export const COOPERATIVE_GRADLE_COMMAND_CATALOG = [
   {
@@ -32,9 +36,14 @@ export type CooperativeGradleVerification =
   | {
       readonly kind: "passed"
       readonly value: {
-        readonly commandPlanDigest: string
-        readonly sourceSnapshotDigest: string
-        readonly testCount: number
+      readonly commandPlanDigest: string
+      readonly buildOutputDigest: string
+      readonly junitDigest: string
+      readonly passedTestCount: number
+      readonly skippedTestCount: number
+      readonly sourceIdentity: SourceIdentity
+      readonly sourceSnapshotDigest: string
+      readonly testCount: number
       }
     }
 
@@ -89,7 +98,12 @@ export function runCooperativeGradleVerification(
   return {
     kind: "passed",
     value: {
+      buildOutputDigest: processOutputDigest(build.result),
       commandPlanDigest: commandPlanDigest(),
+      junitDigest: junit.digest,
+      passedTestCount: junit.passed,
+      skippedTestCount: junit.skipped,
+      sourceIdentity: preSource.value,
       sourceSnapshotDigest: preSource.value.contentDigest,
       testCount: junit.testCount,
     },
@@ -164,6 +178,14 @@ function nonFreshTaskLine(result: BoundedProcessResult, task: string): boolean {
 
 function commandPlanDigest(): string {
   return `sha256:${createHash("sha256").update(JSON.stringify(COOPERATIVE_GRADLE_COMMAND_CATALOG)).digest("hex")}`
+}
+
+function processOutputDigest(result: BoundedProcessResult): string {
+  return `sha256:${createHash("sha256")
+    .update(result.stdout)
+    .update("\u0000")
+    .update(result.stderr)
+    .digest("hex")}`
 }
 
 function blocked(code: string): CooperativeGradleVerification {

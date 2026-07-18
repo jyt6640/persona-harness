@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 59
 - versioned durable: 26
 
-Total indexed files: 333
+Total indexed files: 334
 
 ## File Inventory
 
@@ -131,6 +131,7 @@ Total indexed files: 333
 | `docs/current/role-scoped-rule-delivery.md` | current active pointer/status | - | T7 role/stage scoped static rule delivery status and boundary record. |
 | `docs/current/role-rules-dogfooding-readiness.md` | current active pointer/status | - | T10 ROLE-RULES dogfooding readiness checklist, violation-log template, and next queue. |
 | `docs/current/release/README.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
+| `docs/current/release/project-finish-attestation-producer.md` | operational stable | - | Reusable public-push project-finish producer source contract; no signed original artifact, verifier, Finish authority, branch-protection, enrollment, review, or approval claim exists until separately governed postmerge evidence. |
 | `docs/current/release/staged-package-artifact-attestation-producer.md` | operational stable | - | Controlled protected-main source for exact npm tarball attestations consumed only through fixed product verifier policy; no release or authority action. |
 | `docs/current/release/staged-package-verification.md` | operational stable | - | Read-only staging-first verification contract: caller-fact local tarballs remain blocked while the fixed online path independently verifies an exact artifact without promotion authority. |
 | `docs/current/release/rc-release-readiness-decision.md` | current active pointer/status | - | Exact current-main release decision: next-RC planning may begin, while publication, Stable/GA, and npm latest remain held. |
