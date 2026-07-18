@@ -67,8 +67,14 @@ memory.
 Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
 statuses and bounded diagnostic codes. It does not store a JWT, token, header,
 repository URL, ref, SHA, workspace path, source content, or caller input. The
-diagnostic has no registry or arbitrary network route; its only platform read
-is the fixed OIDC claim endpoint required to inspect the invocation context.
+diagnostic reports `networkAccess: true` with the fixed
+`github-actions-oidc-only` scope because it may read the GitHub Actions OIDC
+claim in memory. It has no registry or arbitrary network route. Before it
+constructs a bearer header, the OIDC helper accepts only the fixed hosted
+GitHub Actions endpoint form, rejects malformed or untrusted endpoint text
+without a request, and never follows a redirect. Its bounded summary records
+whether an OIDC request was attempted, but never records endpoint text or a
+token.
 It creates no receipt, predicate, signed bundle, attestation, Finish result,
 or authority record. A separately uploaded summary artifact is diagnostic-only
 and is not attested or authority-bearing.
