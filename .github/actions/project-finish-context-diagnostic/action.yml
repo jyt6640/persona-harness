@@ -1,0 +1,44 @@
+name: Run bounded project finish context diagnostic
+description: Run the fixed diagnostic evaluator without an ambient shell launcher.
+
+inputs:
+  diagnostic-actions:
+    required: true
+  diagnostic-caller-workflow-ref:
+    required: true
+  diagnostic-caller-workflow-sha:
+    required: true
+  diagnostic-event-name:
+    required: true
+  diagnostic-producer-checkout:
+    required: true
+  diagnostic-producer-sha:
+    required: true
+  diagnostic-ref:
+    required: true
+  diagnostic-repository:
+    required: true
+  diagnostic-repository-id:
+    required: true
+  diagnostic-repository-visibility:
+    required: true
+  diagnostic-reusable-workflow-ref:
+    required: true
+  diagnostic-reusable-workflow-sha:
+    required: true
+  diagnostic-run-attempt:
+    required: true
+  diagnostic-run-id:
+    required: true
+  diagnostic-runner-environment:
+    required: true
+  diagnostic-runner-os:
+    required: true
+  diagnostic-source-head:
+    required: true
+  diagnostic-workspace:
+    required: true
+
+runs:
+  using: node20
+  main: index.mjs

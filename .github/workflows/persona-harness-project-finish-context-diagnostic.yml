@@ -8,11 +8,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  diagnose:
+  resolve:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.repository.private == false
+    outputs:
+      producer-checkout: ${{ steps.producer-checkout.outputs.status }}
+      producer-sha: ${{ steps.producer-pin.outputs.sha }}
     permissions:
       contents: read
-      id-token: write
     runs-on: ubuntu-latest
 
     steps:
@@ -172,61 +174,54 @@ jobs:
           repository: jyt6640/persona-harness
 
       - name: Verify reusable diagnostic checkout
+        id: producer-checkout
         working-directory: .persona-harness-producer
         env:
           PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
-        run: node scripts/verify-project-finish-producer-checkout.mjs
-
-      - name: Setup diagnostic Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 20
-
-      - name: Emit bounded project producer context diagnostic
-        working-directory: .persona-harness-producer
-        env:
-          PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true"
-          PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
-          PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: ${{ github.workflow_sha }}
-          PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: ${{ github.event_name }}
-          PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
-          PROJECT_FINISH_DIAGNOSTIC_REF: ${{ github.ref }}
-          PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: ${{ github.repository }}
-          PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: ${{ github.repository_id }}
-          PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: ${{ github.repository_visibility }}
-          PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main
-          PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: ${{ steps.producer-pin.outputs.sha }}
-          PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: ${{ github.run_attempt }}
-          PROJECT_FINISH_DIAGNOSTIC_RUN_ID: ${{ github.run_id }}
-          PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: ${{ runner.environment }}
-          PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: ${{ runner.os }}
-          PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: ${{ github.sha }}
-          PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          node_binary="$(command -v node)"
-          test -x "$node_binary"
-          env -i \
-            PROJECT_FINISH_DIAGNOSTIC_ACTIONS="$PROJECT_FINISH_DIAGNOSTIC_ACTIONS" \
-            PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF="$PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF" \
-            PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA="$PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA" \
-            PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME="$PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME" \
-            PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN="${ACTIONS_ID_TOKEN_REQUEST_TOKEN-}" \
-            PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL="${ACTIONS_ID_TOKEN_REQUEST_URL-}" \
-            PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA="$PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA" \
-            PROJECT_FINISH_DIAGNOSTIC_REF="$PROJECT_FINISH_DIAGNOSTIC_REF" \
-            PROJECT_FINISH_DIAGNOSTIC_REPOSITORY="$PROJECT_FINISH_DIAGNOSTIC_REPOSITORY" \
-            PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID="$PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID" \
-            PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY="$PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY" \
-            PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF="$PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF" \
-            PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA="$PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA" \
-            PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT="$PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT" \
-            PROJECT_FINISH_DIAGNOSTIC_RUN_ID="$PROJECT_FINISH_DIAGNOSTIC_RUN_ID" \
-            PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT="$PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT" \
-            PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS="$PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS" \
-            PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD="$PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD" \
-            PROJECT_FINISH_DIAGNOSTIC_WORKSPACE="$PROJECT_FINISH_DIAGNOSTIC_WORKSPACE" \
-            "$node_binary" scripts/diagnose-project-finish-producer-context.mjs
+          node scripts/verify-project-finish-producer-checkout.mjs
+          printf 'status=match\n' >> "$GITHUB_OUTPUT"
+
+  diagnose:
+    needs: resolve
+    if: needs.resolve.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout immutable Persona Harness diagnostic source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 1
+          path: .persona-harness-producer
+          persist-credentials: false
+          ref: ${{ needs.resolve.outputs.producer-sha }}
+          repository: jyt6640/persona-harness
+
+      - name: Emit bounded project producer context diagnostic
+        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic
+        with:
+          diagnostic-actions: "true"
+          diagnostic-caller-workflow-ref: ${{ github.workflow_ref }}
+          diagnostic-caller-workflow-sha: ${{ github.workflow_sha }}
+          diagnostic-event-name: ${{ github.event_name }}
+          diagnostic-producer-checkout: ${{ needs.resolve.outputs.producer-checkout }}
+          diagnostic-producer-sha: ${{ needs.resolve.outputs.producer-sha }}
+          diagnostic-ref: ${{ github.ref }}
+          diagnostic-repository: ${{ github.repository }}
+          diagnostic-repository-id: ${{ github.repository_id }}
+          diagnostic-repository-visibility: ${{ github.repository_visibility }}
+          diagnostic-reusable-workflow-ref: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main
+          diagnostic-reusable-workflow-sha: ${{ needs.resolve.outputs.producer-sha }}
+          diagnostic-run-attempt: ${{ github.run_attempt }}
+          diagnostic-run-id: ${{ github.run_id }}
+          diagnostic-runner-environment: ${{ runner.environment }}
+          diagnostic-runner-os: ${{ runner.os }}
+          diagnostic-source-head: ${{ github.sha }}
+          diagnostic-workspace: ${{ github.workspace }}
 
       - name: Upload bounded project producer context diagnostic
         if: always()

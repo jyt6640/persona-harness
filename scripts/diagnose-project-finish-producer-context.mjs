@@ -15,8 +15,12 @@ import {
 const OUTPUT_DIRECTORY = ".ci/project-finish-attestation-context-diagnostic"
 const FAILURE_CODE = "project-finish-producer-context-diagnostic-failed"
 
-async function main() {
-  const forwarded = readForwardedEnvironment(process.env)
+export async function runProjectFinishProducerContextDiagnostic({
+  environment = process.env,
+  producerCheckout,
+  producerRoot = process.cwd(),
+} = {}) {
+  const forwarded = readForwardedEnvironment(environment)
   const workspace = workspaceRoot(forwarded.workspace)
   const oidc = await readProjectFinishAttestationOidc(forwarded.oidc)
   const result = assessProjectFinishProducerContextDiagnostic({
@@ -24,14 +28,22 @@ async function main() {
     environment: forwarded.context,
     oidcEndpointStatus: oidc.endpointStatus,
     oidcRequestAttempted: oidc.requestAttempted,
-    producerCheckout: producerCheckoutStatus(process.cwd(), forwarded.context.PERSONA_HARNESS_PRODUCER_SHA),
+    producerCheckout: producerCheckoutStatus(producerRoot, forwarded.context.PERSONA_HARNESS_PRODUCER_SHA, producerCheckout),
   })
   writeSummary(workspace, result)
+  return result
+}
+
+async function main() {
+  const result = await runProjectFinishProducerContextDiagnostic()
   process.stdout.write(`${JSON.stringify(result)}\n`)
   if (result.outcome !== "match") process.exitCode = 1
 }
 
-function producerCheckoutStatus(producerRoot, producerSha) {
+function producerCheckoutStatus(producerRoot, producerSha, observedStatus) {
+  if (observedStatus === "match" || observedStatus === "missing" || observedStatus === "mismatch") {
+    return observedStatus
+  }
   if (typeof producerSha !== "string" || producerSha.length === 0) return "missing"
   return verifyProjectFinishProducerCheckout(producerRoot, producerSha).kind === "verified"
     ? "match"

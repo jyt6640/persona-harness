@@ -85,9 +85,12 @@ describe("project finish context diagnostic workflow pin resolver", () => {
     const workflow = readFileSync(workflowPath, "utf8")
 
     expect(workflow).not.toContain("GITHUB_JOB:")
-    expect(workflow).toContain("PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: ${{ github.workflow_sha }}")
+    expect(workflow).toContain("diagnostic-caller-workflow-sha: ${{ github.workflow_sha }}")
     expect(workflow).not.toContain("ref: ${{ github.workflow_sha }}")
     expect(workflow).toContain("matching.length !== 1")
+    expect(workflow).toContain("needs.resolve.outputs.producer-sha")
+    expect(workflow).toContain("needs.resolve.outputs.producer-checkout")
+    expect(workflow).toContain("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic")
     expect(workflow).toContain("contents: read")
     expect(workflow).toContain("id-token: write")
     expect(workflow).not.toContain("attestations:")
