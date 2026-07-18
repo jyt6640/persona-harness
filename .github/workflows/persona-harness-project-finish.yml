@@ -179,12 +179,10 @@ jobs:
           repository: jyt6640/persona-harness
 
       - name: Verify reusable producer checkout
+        working-directory: .persona-harness-producer
         env:
           PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
-        run: |
-          set -euo pipefail
-          test "$(git -C .persona-harness-producer rev-parse HEAD)" = "$PERSONA_HARNESS_PRODUCER_SHA"
-          test "$(git -C .persona-harness-producer config --get remote.origin.url)" = https://github.com/jyt6640/persona-harness.git
+        run: node scripts/verify-project-finish-producer-checkout.mjs
 
       - name: Setup producer Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
