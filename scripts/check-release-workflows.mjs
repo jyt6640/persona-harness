@@ -80,6 +80,19 @@ function hasContextDiagnosticSafeRuntime(text) {
     && !/\n\s+run:/u.test(diagnose)
 }
 
+function hasContextDiagnosticSummaryBootstrap(text) {
+  const bootstrap = text.indexOf('summary.write(failureSummary("bootstrap"))')
+  const evaluatorImport = text.indexOf('await import("../../../scripts/diagnose-project-finish-producer-context.mjs")')
+  return text.includes('SUMMARY_SCHEMA = "project-finish-attestation-context-diagnostic-summary.1"')
+    && bootstrap >= 0
+    && evaluatorImport > bootstrap
+    && text.includes('failureSummary("runtime-load")')
+    && text.includes('failureSummary("runtime")')
+    && !text.includes('import { runProjectFinishProducerContextDiagnostic')
+    && !text.includes("node_modules")
+    && !text.includes("npm install")
+}
+
 const requirements = [
   ["ci trigger", ".github/workflows/ci.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("- main")],
   ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm run test:repository", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
@@ -159,6 +172,7 @@ async function main() {
     || contextActionMetadata.includes("run:")
     || contextActionEntrypoint.includes("node:child_process")
     || contextActionEntrypoint.includes("process.env.PATH")
+    || !hasContextDiagnosticSummaryBootstrap(contextActionEntrypoint)
   ) {
     failures.push("project finish context diagnostic local runtime")
   }

@@ -1,5 +1,5 @@
 name: Run bounded project finish context diagnostic
-description: Run the fixed diagnostic evaluator without an ambient shell launcher.
+description: Write a bounded diagnostic summary before evaluating fixed context.
 
 inputs:
   diagnostic-actions:

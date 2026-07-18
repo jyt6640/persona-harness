@@ -231,6 +231,7 @@ describe("package files policy", () => {
       "tests/project-finish-attestation-producer-context-diagnostic.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-cli.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-forwarding.test.ts",
+      "tests/project-finish-attestation-producer-context-diagnostic-summary.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-workflow.test.ts",
     ]
     const runtimePaths = [
