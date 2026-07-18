@@ -39,21 +39,106 @@ jobs:
           test "$(git rev-parse refs/remotes/origin/main)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
+      - name: Resolve immutable Persona Harness producer revision
+        id: producer-pin
+        env:
+          CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
+          GITHUB_JOB: ${{ github.job }}
+        run: |
+          ruby <<'RUBY'
+          # BEGIN PRODUCER_PIN_RESOLVER
+          require "yaml"
+          require "psych"
+
+          EXPECTED_REPOSITORY = "jyt6640/persona-harness"
+          EXPECTED_WORKFLOW_PATH = ".github/workflows/persona-harness-project-finish.yml"
+          EXPECTED_TARGET = "#{EXPECTED_REPOSITORY}/#{EXPECTED_WORKFLOW_PATH}"
+          CALLER_PATH = /\A\.github\/workflows\/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.ya?ml\z/
+          PINNED_TARGET = /\A#{Regexp.escape(EXPECTED_TARGET)}@([a-f0-9]{40})\z/
+
+          def fail_closed
+            raise "project-finish-producer-caller-pin"
+          end
+
+          def reject_duplicate_mapping_keys(node)
+            case node
+            when Psych::Nodes::Document, Psych::Nodes::Sequence, Psych::Nodes::Stream
+              node.children.each { |child| reject_duplicate_mapping_keys(child) }
+            when Psych::Nodes::Mapping
+              keys = {}
+              node.children.each_slice(2) do |key, value|
+                fail_closed unless key.is_a?(Psych::Nodes::Scalar)
+                fail_closed if keys.key?(key.value)
+                keys[key.value] = true
+                reject_duplicate_mapping_keys(value)
+              end
+            when Psych::Nodes::Alias
+              fail_closed
+            end
+          end
+
+          begin
+            workspace = File.realpath(ENV.fetch("GITHUB_WORKSPACE"))
+            repository = ENV.fetch("GITHUB_REPOSITORY")
+            workflow_ref = ENV.fetch("CALLER_WORKFLOW_REF")
+            job_name = ENV.fetch("GITHUB_JOB")
+            ref_match = /\A#{Regexp.escape(repository)}\/(.+)@refs\/heads\/main\z/.match(workflow_ref)
+            fail_closed if ref_match.nil?
+            relative_path = ref_match[1]
+            fail_closed unless CALLER_PATH.match?(relative_path)
+
+            candidate = File.expand_path(relative_path, workspace)
+            fail_closed unless candidate.start_with?("#{workspace}/")
+            fail_closed unless File.lstat(candidate).file?
+            fail_closed unless File.realpath(candidate) == candidate
+
+            source = File.read(candidate)
+            stream = Psych.parse_stream(source)
+            fail_closed unless stream.children.length == 1
+            reject_duplicate_mapping_keys(stream.children[0])
+            document = YAML.safe_load(source, [], [], false)
+            fail_closed unless document.is_a?(Hash)
+            jobs = document["jobs"]
+            fail_closed unless jobs.is_a?(Hash)
+            current_job = jobs[job_name]
+            fail_closed unless current_job.is_a?(Hash)
+            current_uses = current_job["uses"]
+            fail_closed unless current_uses.is_a?(String)
+
+            matching_jobs = jobs.each_with_object([]) do |(name, job), values|
+              next unless name.is_a?(String) && job.is_a?(Hash)
+              uses = job["uses"]
+              next unless uses.is_a?(String) && uses.start_with?("#{EXPECTED_TARGET}@")
+              values << [name, uses]
+            end
+            pin_match = PINNED_TARGET.match(current_uses)
+            fail_closed if pin_match.nil?
+            fail_closed unless matching_jobs == [[job_name, current_uses]]
+
+            File.open(ENV.fetch("GITHUB_OUTPUT"), "a") do |output|
+              output.write("sha=#{pin_match[1]}\n")
+            end
+          rescue StandardError
+            abort "project-finish-producer-caller-pin"
+          end
+          # END PRODUCER_PIN_RESOLVER
+          RUBY
+
       - name: Checkout immutable Persona Harness producer
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 1
           path: .persona-harness-producer
           persist-credentials: false
-          ref: ${{ github.workflow_sha }}
+          ref: ${{ steps.producer-pin.outputs.sha }}
           repository: jyt6640/persona-harness
 
       - name: Verify reusable producer checkout
         env:
-          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
         run: |
           set -euo pipefail
-          test "$(git -C .persona-harness-producer rev-parse HEAD)" = "$GITHUB_WORKFLOW_SHA"
+          test "$(git -C .persona-harness-producer rev-parse HEAD)" = "$PERSONA_HARNESS_PRODUCER_SHA"
           test "$(git -C .persona-harness-producer config --get remote.origin.url)" = https://github.com/jyt6640/persona-harness.git
 
       - name: Setup producer Node
@@ -73,6 +158,8 @@ jobs:
 
       - name: Build canonical project receipt and predicate
         working-directory: .persona-harness-producer
+        env:
+          PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
         run: node scripts/build-project-finish-attestation.mjs
 
       - name: Sign canonical project receipt

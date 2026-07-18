@@ -60,7 +60,7 @@ async function readProducerContext() {
     || requiredEnv("GITHUB_REPOSITORY") !== repository
     || requiredEnv("GITHUB_REPOSITORY_ID") !== requiredClaim(claims, "repository_id")
     || requiredEnv("GITHUB_REPOSITORY_VISIBILITY") !== "public"
-    || requiredEnv("GITHUB_WORKFLOW_SHA") !== reusableWorkflowSha
+    || requiredEnv("PERSONA_HARNESS_PRODUCER_SHA") !== reusableWorkflowSha
     || sourceHead !== callerWorkflowSha
     || reusableWorkflowRef !== `${PROJECT_FINISH_ATTESTATION_POLICY.producerRepository}/${PROJECT_FINISH_ATTESTATION_POLICY.workflowPath}@${reusableWorkflowSha}`
   ) {
