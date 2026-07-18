@@ -64,6 +64,14 @@ immutable caller-pin parsing, immutable Persona checkout, and fixed
 public-push context policy before it reads the fixed GitHub OIDC claim in
 memory.
 
+The diagnostic resolver does not use the called reusable workflow's job ID to
+select a caller job: GitHub may expose the called job identity rather than the
+caller invocation job. Instead, after bounded structural parsing, it accepts
+exactly one full immutable pin for the fixed diagnostic workflow path across
+the checked-out caller workflow. The parsed diagnostic SHA remains separate
+from the caller workflow SHA and is cross-checked against the diagnostic
+checkout and OIDC reusable-workflow identity.
+
 Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
 statuses and bounded diagnostic codes. It does not store a JWT, token, header,
 repository URL, ref, SHA, workspace path, source content, or caller input. The
