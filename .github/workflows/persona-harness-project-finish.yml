@@ -39,21 +39,151 @@ jobs:
           test "$(git rev-parse refs/remotes/origin/main)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
+      - name: Resolve immutable Persona Harness producer revision
+        id: producer-pin
+        env:
+          CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
+          GITHUB_JOB: ${{ github.job }}
+        run: |
+          node <<'NODE'
+          // BEGIN PRODUCER_PIN_RESOLVER
+          const fs = require("node:fs")
+          const path = require("node:path")
+
+          const FAILURE_CODE = "project-finish-producer-caller-pin"
+          const EXPECTED_REPOSITORY = "jyt6640/persona-harness"
+          const EXPECTED_WORKFLOW_PATH = ".github/workflows/persona-harness-project-finish.yml"
+          const EXPECTED_TARGET = `${EXPECTED_REPOSITORY}/${EXPECTED_WORKFLOW_PATH}`
+          const MAX_WORKFLOW_BYTES = 128 * 1024
+          const CALLER_PATH = /^\.github\/workflows\/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.ya?ml$/u
+          const PINNED_TARGET = new RegExp(`^${escapeRegExp(EXPECTED_TARGET)}@([a-f0-9]{40})$`, "u")
+
+          function failClosed() {
+            throw new Error(FAILURE_CODE)
+          }
+
+          function requiredEnv(name) {
+            const value = process.env[name]
+            if (typeof value !== "string" || value.length === 0 || value.length > 512 || /[\u0000\r\n]/u.test(value)) failClosed()
+            return value
+          }
+
+          function escapeRegExp(value) {
+            return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
+          }
+
+          function structuredJobs(source) {
+            const lines = source.split(/\r?\n/u).flatMap((raw, index) => {
+              if (raw.includes("\u0000") || raw.includes("\t")) failClosed()
+              const content = stripComment(raw.slice(raw.search(/\S/u)))
+              return content.length === 0 ? [] : [{ content, indent: raw.length - raw.trimStart().length, line: index + 1 }]
+            })
+            const roots = lines.filter(({ content, indent }) => indent === 0 && content === "jobs:")
+            if (roots.length !== 1) failClosed()
+            const jobsRoot = roots[0]
+            const section = lines.filter(({ indent, line }) => line > jobsRoot.line && indent > jobsRoot.indent)
+            if (section.length === 0) failClosed()
+            const jobIndent = section[0].indent
+            const jobs = new Map()
+            let current
+
+            for (const entry of section) {
+              if (entry.indent < jobIndent) break
+              if (entry.indent === jobIndent) {
+                const match = /^([A-Za-z0-9_-]{1,128}):$/u.exec(entry.content)
+                if (match === null || jobs.has(match[1])) failClosed()
+                current = { keys: new Set(), name: match[1], propertyIndent: undefined, uses: undefined }
+                jobs.set(match[1], current)
+                continue
+              }
+              if (current === undefined) failClosed()
+              if (current.propertyIndent === undefined) current.propertyIndent = entry.indent
+              if (entry.indent !== current.propertyIndent) continue
+
+              const match = /^([A-Za-z0-9_-]{1,128}):(?:[ ]+(.*))?$/u.exec(entry.content)
+              if (match === null || current.keys.has(match[1])) failClosed()
+              current.keys.add(match[1])
+              if (match[1] === "uses") current.uses = parseScalar(match[2])
+            }
+            return jobs
+          }
+
+          function stripComment(value) {
+            let quote = ""
+            for (let index = 0; index < value.length; index += 1) {
+              const character = value[index]
+              if (quote === "") {
+                if (character === "'" || character === "\"") quote = character
+                if (character === "#" && (index === 0 || /\s/u.test(value[index - 1]))) return value.slice(0, index).trimEnd()
+              } else if (character === quote && value[index - 1] !== "\\") {
+                quote = ""
+              }
+            }
+            return value.trimEnd()
+          }
+
+          function parseScalar(value) {
+            if (typeof value !== "string" || value.length === 0 || value.length > 512) failClosed()
+            if (value.startsWith("\"")) {
+              try {
+                const decoded = JSON.parse(value)
+                if (typeof decoded !== "string") failClosed()
+                return decoded
+              } catch {
+                failClosed()
+              }
+            }
+            if (value.startsWith("'")) {
+              if (!/^'[^']*'$/u.test(value)) failClosed()
+              return value.slice(1, -1)
+            }
+            if (/[&*!|>{}\[\],]/u.test(value)) failClosed()
+            return value
+          }
+
+          try {
+            const workspace = fs.realpathSync(requiredEnv("GITHUB_WORKSPACE"))
+            const repository = requiredEnv("GITHUB_REPOSITORY")
+            const workflowRef = requiredEnv("CALLER_WORKFLOW_REF")
+            const jobName = requiredEnv("GITHUB_JOB")
+            const reference = new RegExp(`^${escapeRegExp(repository)}/(.+)@refs/heads/main$`, "u").exec(workflowRef)
+            if (reference === null || !CALLER_PATH.test(reference[1])) failClosed()
+
+            const candidate = path.resolve(workspace, reference[1])
+            if (path.relative(workspace, candidate).startsWith("..") || !fs.lstatSync(candidate).isFile() || fs.realpathSync(candidate) !== candidate) failClosed()
+
+            const source = fs.readFileSync(candidate, "utf8")
+            if (Buffer.byteLength(source, "utf8") > MAX_WORKFLOW_BYTES) failClosed()
+            const jobs = structuredJobs(source)
+            const current = jobs.get(jobName)
+            if (current === undefined || current.uses === undefined) failClosed()
+            const matching = [...jobs.values()].filter(({ uses }) => typeof uses === "string" && uses.startsWith(`${EXPECTED_TARGET}@`))
+            const pin = PINNED_TARGET.exec(current.uses)
+            if (pin === null || matching.length !== 1 || matching[0] !== current) failClosed()
+
+            fs.appendFileSync(requiredEnv("GITHUB_OUTPUT"), `sha=${pin[1]}\n`, { encoding: "utf8", mode: 0o600 })
+          } catch {
+            process.stderr.write(`${FAILURE_CODE}\n`)
+            process.exitCode = 1
+          }
+          // END PRODUCER_PIN_RESOLVER
+          NODE
+
       - name: Checkout immutable Persona Harness producer
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 1
           path: .persona-harness-producer
           persist-credentials: false
-          ref: ${{ github.workflow_sha }}
+          ref: ${{ steps.producer-pin.outputs.sha }}
           repository: jyt6640/persona-harness
 
       - name: Verify reusable producer checkout
         env:
-          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
         run: |
           set -euo pipefail
-          test "$(git -C .persona-harness-producer rev-parse HEAD)" = "$GITHUB_WORKFLOW_SHA"
+          test "$(git -C .persona-harness-producer rev-parse HEAD)" = "$PERSONA_HARNESS_PRODUCER_SHA"
           test "$(git -C .persona-harness-producer config --get remote.origin.url)" = https://github.com/jyt6640/persona-harness.git
 
       - name: Setup producer Node
@@ -73,6 +203,8 @@ jobs:
 
       - name: Build canonical project receipt and predicate
         working-directory: .persona-harness-producer
+        env:
+          PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
         run: node scripts/build-project-finish-attestation.mjs
 
       - name: Sign canonical project receipt

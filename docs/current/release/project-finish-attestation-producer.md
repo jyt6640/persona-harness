@@ -22,6 +22,17 @@ facts itself:
 - PH version; and
 - run, attempt, finish, session, nonce, issuance, and expiry values.
 
+Before checking out Persona Harness, the workflow reads the already checked-out
+caller workflow at GitHub's bounded caller-workflow identity. A bounded
+structural parser accepts exactly one YAML job mapping for
+`jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml`
+reference with a full immutable SHA. Branches, tags, another repository or
+path, duplicate declarations, malformed YAML, and unsafe workflow paths block
+with a bounded diagnostic. The caller checkout SHA is bound separately and is
+never used as the Persona Harness checkout ref. After checkout, the producer
+cross-checks the parsed SHA against the reusable-workflow identity claim before
+it builds the canonical subject.
+
 The canonical receipt bytes are the Artifact Attestation subject. The predicate
 binds their SHA-256 digest. The workflow uploads only the receipt, predicate,
 signed bundle, or an allowlisted failure diagnostic code.
