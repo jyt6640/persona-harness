@@ -31,6 +31,8 @@ type XmlNode = {
   readonly name: string
 }
 
+const MAX_XML_DEPTH = 128
+
 export function assessCooperativeJUnit(
   projectDir: string,
   baseline: JunitResultSnapshot,
@@ -125,14 +127,25 @@ function caseTotals(cases: readonly XmlNode[]): JunitTotals {
   let failures = 0
   let skipped = 0
   for (const testCase of cases) {
-    const hasError = testCase.children.some((child) => child.name === "error")
-    const hasFailure = testCase.children.some((child) => child.name === "failure")
-    const hasSkipped = testCase.children.some((child) => child.name === "skipped")
+    const hasError = hasDescendant(testCase, "error")
+    const hasFailure = hasDescendant(testCase, "failure")
+    const hasSkipped = hasDescendant(testCase, "skipped")
     errors += hasError ? 1 : 0
     failures += hasFailure ? 1 : 0
     skipped += hasSkipped ? 1 : 0
   }
   return { errors, failures, skipped, tests: cases.length }
+}
+
+function hasDescendant(node: XmlNode, name: string): boolean {
+  const pending = [...node.children]
+  while (pending.length > 0) {
+    const candidate = pending.pop()
+    if (candidate === undefined) continue
+    if (candidate.name === name) return true
+    pending.push(...candidate.children)
+  }
+  return false
 }
 
 function readTotals(node: XmlNode, required: boolean): JunitTotals | null | undefined {
@@ -219,6 +232,7 @@ function parseXml(source: string): XmlNode | undefined {
         stack.at(-1)?.children.push(node)
       }
     } else {
+      if (stack.length >= MAX_XML_DEPTH) return undefined
       stack.push(node)
     }
     cursor = end + 1

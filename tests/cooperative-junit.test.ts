@@ -40,6 +40,7 @@ describe("cooperative JUnit assessment", () => {
   it.each([
     ["hidden failure", "<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"works\"><failure/></testcase></testsuite>", "junit-accounting-mismatch"],
     ["hidden error", "<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"works\"><error/></testcase></testsuite>", "junit-accounting-mismatch"],
+    ["nested hidden failure", "<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"works\"><system-out><failure/></system-out></testcase></testsuite>", "junit-accounting-mismatch"],
     ["aggregate mismatch", "<testsuite tests=\"2\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"works\"/></testsuite>", "junit-accounting-mismatch"],
     ["all skipped", "<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"1\"><testcase name=\"works\"><skipped/></testcase></testsuite>", "junit-skipped-only"],
     ["zero tests", "<testsuite tests=\"0\" failures=\"0\" errors=\"0\" skipped=\"0\"/>", "junit-zero-tests"],
