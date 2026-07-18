@@ -1,8 +1,18 @@
-import { runProjectFinishProducerContextDiagnostic } from "../../../scripts/diagnose-project-finish-producer-context.mjs"
-import { dirname, resolve } from "node:path"
+import { closeSync, ftruncateSync, lstatSync, mkdirSync, openSync, realpathSync, writeSync } from "node:fs"
+import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const FAILURE_CODE = "project-finish-producer-context-diagnostic-failed"
+const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"
+const SUMMARY_FILENAME = "summary.json"
+const SUMMARY_SCHEMA = "project-finish-attestation-context-diagnostic-summary.1"
+const SUMMARY_CODES = {
+  bootstrap: "project-finish-attestation-context-diagnostic-bootstrap-pending",
+  runtime: "project-finish-attestation-context-diagnostic-runtime-unavailable",
+  runtimeLoad: "project-finish-attestation-context-diagnostic-runtime-load-unavailable",
+}
+const FIELD_STATUS = new Set(["match", "mismatch", "missing"])
+const SAFE_CODE = /^[a-z0-9][a-z0-9.-]{0,159}$/u
 
 const INPUTS = [
   ["DIAGNOSTIC_ACTIONS", "PROJECT_FINISH_DIAGNOSTIC_ACTIONS"],
@@ -21,17 +31,36 @@ const INPUTS = [
   ["DIAGNOSTIC_RUNNER_ENVIRONMENT", "PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT"],
   ["DIAGNOSTIC_RUNNER_OS", "PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS"],
   ["DIAGNOSTIC_SOURCE_HEAD", "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD"],
-  ["DIAGNOSTIC_WORKSPACE", "PROJECT_FINISH_DIAGNOSTIC_WORKSPACE"],
 ]
 
 async function main() {
-  const result = await runProjectFinishProducerContextDiagnostic({
-    environment: forwardedEnvironment(),
-    producerCheckout: producerCheckoutStatus(),
-    producerRoot: resolve(dirname(fileURLToPath(import.meta.url)), "../../.."),
-  })
-  process.stdout.write(`${JSON.stringify(result)}\n`)
-  if (result.outcome !== "match") process.exitCode = 1
+  const summary = createSummaryWriter()
+  try {
+    summary.write(failureSummary("bootstrap"))
+    const environment = forwardedEnvironment()
+    const producerCheckout = producerCheckoutStatus()
+    const producerRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..")
+    let runner
+    try {
+      ({ runProjectFinishProducerContextDiagnostic: runner } =
+        await import("../../../scripts/diagnose-project-finish-producer-context.mjs"))
+    } catch {
+      finish(summary, failureSummary("runtime-load"))
+      return
+    }
+    try {
+      const result = await runner({
+        environment,
+        producerCheckout,
+        producerRoot,
+      })
+      finish(summary, resultSummary(result))
+    } catch {
+      finish(summary, failureSummary("runtime"))
+    }
+  } finally {
+    summary.close()
+  }
 }
 
 function forwardedEnvironment() {
@@ -60,7 +89,115 @@ function producerCheckoutStatus() {
   return value === "match" || value === "missing" ? value : "mismatch"
 }
 
+function createSummaryWriter() {
+  const runnerTemp = actionInput("DIAGNOSTIC_RUNNER_TEMP")
+  if (typeof runnerTemp !== "string" || !isAbsolute(runnerTemp) || runnerTemp !== resolve(runnerTemp)) {
+    throw new Error(FAILURE_CODE)
+  }
+  const rootEntry = lstatSync(runnerTemp)
+  if (!rootEntry.isDirectory() || rootEntry.isSymbolicLink()) {
+    throw new Error(FAILURE_CODE)
+  }
+  const root = realpathSync(runnerTemp)
+  if (root !== runnerTemp) throw new Error(FAILURE_CODE)
+  const directory = join(root, OUTPUT_DIRECTORY)
+  if (relative(root, directory) !== OUTPUT_DIRECTORY) {
+    throw new Error(FAILURE_CODE)
+  }
+  mkdirSync(directory, { mode: 0o700 })
+  const directoryEntry = lstatSync(directory)
+  if (!directoryEntry.isDirectory() || directoryEntry.isSymbolicLink()) {
+    throw new Error(FAILURE_CODE)
+  }
+  const descriptor = openSync(join(directory, SUMMARY_FILENAME), "wx", 0o600)
+  return {
+    write(summary) {
+      const bytes = Buffer.from(`${JSON.stringify(summary)}\n`, "utf8")
+      ftruncateSync(descriptor, 0)
+      writeSync(descriptor, bytes, 0, bytes.length, 0)
+    },
+    close() {
+      closeSync(descriptor)
+    },
+  }
+}
+
+function finish(summary, result) {
+  summary.write(result)
+  process.stdout.write(`${JSON.stringify(result)}\n`)
+  if (result.outcome !== "match") process.exitCode = 1
+}
+
+function resultSummary(result) {
+  const input = isRecord(result) ? result : {}
+  const outcome = input.outcome === "match" ? "match" : "blocked"
+  return {
+    ...baseSummary(outcome, "context"),
+    diagnostic_codes: safeCodes(input.diagnosticCodes),
+    fields: safeFields(input.fields),
+    networkAccess: input.networkAccess === true,
+    networkAccessScope: input.networkAccess === true ? "github-actions-oidc-only" : "none",
+    oidcClaimRead: input.oidcClaimRead === true,
+    oidcRequestAttempted: input.oidcRequestAttempted === true,
+  }
+}
+
+function failureSummary(stage) {
+  const code = stage === "runtime-load"
+    ? SUMMARY_CODES.runtimeLoad
+    : stage === "runtime"
+      ? SUMMARY_CODES.runtime
+      : SUMMARY_CODES.bootstrap
+  return {
+    ...baseSummary("blocked", stage),
+    diagnostic_codes: [code],
+    fields: [{ code: stage, status: "missing" }],
+    networkAccess: false,
+    networkAccessScope: "none",
+    oidcClaimRead: false,
+    oidcRequestAttempted: false,
+  }
+}
+
+function baseSummary(outcome, failureStage) {
+  return {
+    artifactProducer: false,
+    authorityEligible: false,
+    diagnosticOnly: true,
+    diagnostic_status: outcome,
+    failure_stage: failureStage,
+    outcome,
+    predicateCreated: false,
+    receiptCreated: false,
+    registryAccess: false,
+    schemaVersion: SUMMARY_SCHEMA,
+    signing: false,
+  }
+}
+
+function safeCodes(value) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((code) => typeof code === "string" && SAFE_CODE.test(code)))].slice(0, 32)
+}
+
+function safeFields(value) {
+  if (!Array.isArray(value)) return []
+  const fields = []
+  for (const candidate of value) {
+    if (!isRecord(candidate) || typeof candidate.code !== "string" || !SAFE_CODE.test(candidate.code)) continue
+    if (typeof candidate.status !== "string" || !FIELD_STATUS.has(candidate.status)) continue
+    if (fields.some((field) => field.code === candidate.code)) continue
+    fields.push({ code: candidate.code, status: candidate.status })
+    if (fields.length === 32) break
+  }
+  return fields
+}
+
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
 await main().catch(() => {
-  process.stderr.write(`${FAILURE_CODE}\n`)
+  process.stdout.write(`${JSON.stringify(failureSummary("bootstrap"))}\n`)
   process.exitCode = 1
 })

@@ -178,8 +178,10 @@ describe("project finish context diagnostic forwarding", () => {
     const action = readFileSync(actionPath, "utf8")
     expect(actionMetadata).toContain("using: node20")
     expect(actionMetadata).toContain("main: index.mjs")
+    expect(actionMetadata).toContain("diagnostic-runner-temp:")
     expect(actionMetadata).not.toContain("using: composite")
     expect(actionMetadata).not.toContain("run:")
+    expect(actionMetadata).not.toContain("diagnostic-workspace:")
     expect(action).not.toContain("node:child_process")
     expect(action).not.toContain("process.env.PATH")
     for (const name of [
@@ -198,8 +200,8 @@ describe("project finish context diagnostic forwarding", () => {
       "diagnostic-run-id",
       "diagnostic-runner-environment",
       "diagnostic-runner-os",
+      "diagnostic-runner-temp",
       "diagnostic-source-head",
-      "diagnostic-workspace",
     ]) {
       expect(diagnosticStep).toContain(name)
     }
@@ -253,7 +255,7 @@ function forwardedEnvironment(workspace: string): Record<string, string> {
     PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
     PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
     PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: callerSha,
-    PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: workspace,
+    PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: workspace,
   }
 }
 
@@ -282,14 +284,14 @@ function actionEnvironment(workspace: string, shadowDirectory: string, markerPat
     INPUT_DIAGNOSTIC_RUNNER_ENVIRONMENT: forwarded.PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT,
     INPUT_DIAGNOSTIC_RUNNER_OS: forwarded.PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS,
     INPUT_DIAGNOSTIC_SOURCE_HEAD: forwarded.PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD,
-    INPUT_DIAGNOSTIC_WORKSPACE: forwarded.PROJECT_FINISH_DIAGNOSTIC_WORKSPACE,
+    INPUT_DIAGNOSTIC_RUNNER_TEMP: forwarded.PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP,
     PATH: shadowDirectory,
     SHADOW_EXECUTION_MARKER: markerPath,
   }
 }
 
 function summaryPath(workspace: string): string {
-  return join(workspace, ".ci", "project-finish-attestation-context-diagnostic", "summary.json")
+  return join(workspace, "project-finish-attestation-context-diagnostic", "summary.json")
 }
 
 function claims(): Record<string, string> {

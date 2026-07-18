@@ -48,7 +48,7 @@ describe("project finish context diagnostic workflow pin resolver", () => {
           PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
           PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD:
             "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
-          PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: workspace,
+          PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: workspace,
         },
       })
       const output = `${result.stdout}${result.stderr}`
