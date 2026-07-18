@@ -15,13 +15,13 @@ export function prepareCooperativeFinishContext(projectDir: string): Cooperative
   const config = loadHarnessConfigResult(projectDir)
   if (!config.safe) return { code: "harness-config-invalid", kind: "blocked" }
 
-  const evidenceRoot = resolveConfiguredPathResult(projectDir, config.config.evidenceDir)
-  if (!evidenceRoot.ok) return { code: "evidence-path-unsafe", kind: "blocked" }
-
   const workspace = captureWorkspaceIdentity(projectDir)
   if (workspace.status === "unavailable") {
     return { code: workspace.diagnosticCode, kind: "blocked" }
   }
+
+  const evidenceRoot = resolveConfiguredPathResult(workspace.value.realpath, config.config.evidenceDir)
+  if (!evidenceRoot.ok) return { code: "evidence-path-unsafe", kind: "blocked" }
 
   return {
     kind: "ready",

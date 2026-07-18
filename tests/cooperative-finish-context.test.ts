@@ -42,6 +42,23 @@ describe("cooperative Finish context", () => {
     expect(existsSync(join(projectDir, ".persona", "cooperative-evidence"))).toBe(false)
   })
 
+  it("returns the configured evidence root under the canonical workspace identity", () => {
+    // Given: a project opened through a workspace symlink.
+    const projectDir = createProject({ evidenceDir: ".persona/cooperative-evidence" })
+    const alias = `${projectDir}-alias`
+    symlinkSync(projectDir, alias)
+    projects.push(alias)
+
+    // When: cooperative Finish resolves the configured root through that alias.
+    const result = prepareCooperativeFinishContext(alias)
+
+    // Then: the selected root is anchored to the actual workspace directory.
+    expect(result.kind).toBe("ready")
+    if (result.kind === "ready") {
+      expect(result.value.evidenceRoot).toBe(join(result.value.workspace.realpath, ".persona", "cooperative-evidence"))
+    }
+  })
+
   it("blocks malformed configuration without creating evidence paths", () => {
     // Given: a malformed harness configuration and no evidence directory.
     const projectDir = createProject("{ malformed")
