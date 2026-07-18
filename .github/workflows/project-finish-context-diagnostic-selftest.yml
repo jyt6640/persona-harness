@@ -45,6 +45,8 @@ jobs:
           persist-credentials: false
 
       - name: Exercise local diagnostic action entrypoint
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         uses: ./.github/actions/project-finish-context-diagnostic-selftest
         with:
           diagnostic-runner-temp: ${{ runner.temp }}

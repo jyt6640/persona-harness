@@ -173,6 +173,7 @@ describe("project finish context diagnostic workflow fallback", () => {
       )
       expect(selftestWorkflow).toContain("runs-on: ubuntu-latest")
       expect(selftestWorkflow).toContain("uses: ./.github/actions/project-finish-context-diagnostic-selftest")
+      expect(selftestWorkflow).toContain("ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true")
       expect(selftestWorkflow).not.toContain("id-token:")
       expect(selftestWorkflow).not.toContain("npm install")
       expect(selftestWorkflow).not.toContain("npm ci")
