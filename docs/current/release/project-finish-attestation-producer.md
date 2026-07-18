@@ -72,6 +72,16 @@ the checked-out caller workflow. The parsed diagnostic SHA remains separate
 from the caller workflow SHA and is cross-checked against the diagnostic
 checkout and OIDC reusable-workflow identity.
 
+The diagnostic evaluator runs under an environment-cleared process. The
+workflow forwards only fixed, private aliases for the public-push context:
+event, ref, repository identity, caller workflow identity, source SHA, parsed
+diagnostic pin, run/attempt, and GitHub-hosted runner facts. It passes the
+OIDC endpoint and request token only to the in-memory OIDC reader. The decoded
+OIDC claim supplies the observed reusable-workflow reference and SHA, which
+are checked separately from the caller workflow SHA/ref and the parsed pin.
+Ambient runner environment, home, path, Git configuration, and caller values
+cannot enter the evaluator.
+
 Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
 statuses and bounded diagnostic codes. It does not store a JWT, token, header,
 repository URL, ref, SHA, workspace path, source content, or caller input. The
