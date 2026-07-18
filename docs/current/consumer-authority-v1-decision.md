@@ -20,6 +20,20 @@ V1 separates two assurance modes:
 No local receipt, JUnit report, TDD record, digest, generated marker, or
 caller-supplied JSON becomes authority through this decision.
 
+## Typed Model Boundary
+
+The Issue #109 implementation records `diagnostic-only`, `blocked`,
+`cooperative-current-process`, and `external-attested` as distinct decision
+kinds. Each kind carries separate completion eligibility, assurance,
+authority-provider, and consumption-state fields.
+
+A cooperative current-process capability remains module-private and
+nonserializable. Copied JSON, casts, disk evidence, or receipt fields cannot
+construct it. Finish still selects external assurance by default, and no
+automatic fallback to cooperative evidence is enabled. The future
+`--assurance cooperative` and `--require external` CLI surfaces remain
+unimplemented by this decision-model change.
+
 ## External Evidence Scope
 
 V1 signed external evidence proves only the claims cryptographically bound by
