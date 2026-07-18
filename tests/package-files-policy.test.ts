@@ -259,6 +259,16 @@ describe("package files policy", () => {
     }
     expect(existsSync(path.join(packageRoot, boundaryRecord))).toBe(true)
     expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
+
+    const candidateBoundaryPaths = [...sourceOnlyPaths, boundaryRecord]
+    const packagedCandidateBoundaryPaths = candidateBoundaryPaths.filter((filePath) =>
+      isCoveredByPackageFiles(filePath, packageJson.files),
+    )
+    const boundaryRecordText = readFileSync(path.join(packageRoot, boundaryRecord), "utf8")
+
+    expect(packagedCandidateBoundaryPaths).toEqual([boundaryRecord])
+    expect(boundaryRecordText).toContain("same package path set but content-different")
+    expect(boundaryRecordText).toMatch(/requires fresh\s+External verification/u)
   })
 
   it("keeps direct current README links covered by packaged files", () => {

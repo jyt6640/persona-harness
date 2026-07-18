@@ -164,3 +164,8 @@ producer.
 The workflow, builder, and caller fixture are repository-only source material.
 The package ships this boundary record and compiled structural modules, but no
 signed fixture, caller workflow, producer script, or public success command.
+Because this boundary record is package-visible, a candidate that changes it
+can retain the same package path set but content-different package bytes. It
+must not claim byte-identical package output or waive installed-package review
+only because the workflow and local actions are excluded; it requires fresh
+External verification.
