@@ -16,18 +16,21 @@ const STATUS_SHA256 = "b".repeat(64)
 describe("CI evidence reverification", () => {
   it("parses local and explicit CI finish reverification flags", () => {
     expect(parseWorkflowArgs(["finish", "implement", "--reverify"])).toEqual({
+      assurance: "external",
       ci: false,
       kind: "finish",
       reverify: true,
       runnerKind: "implement",
     })
     expect(parseWorkflowArgs(["finish", "implement", "--reverify", "--ci"])).toEqual({
+      assurance: "external",
       ci: true,
       kind: "finish",
       reverify: true,
       runnerKind: "implement",
     })
     expect(parseWorkflowArgs(["finish", "implement", "--ci", "--reverify"])).toEqual({
+      assurance: "external",
       ci: true,
       kind: "finish",
       reverify: true,
@@ -42,7 +45,7 @@ describe("CI evidence reverification", () => {
     })
     expect(parseWorkflowArgs(["finish", "implement", "--reverify", "--json"])).toEqual({
       kind: "invalid",
-      message: "workflow finish implement accepts only --reverify and --ci.",
+      message: "workflow finish implement accepts only --reverify, --ci, and --assurance cooperative.",
     })
     expect(parseWorkflowArgs(["finish", "implement", "--reverify", "--reverify"])).toEqual({
       kind: "invalid",
