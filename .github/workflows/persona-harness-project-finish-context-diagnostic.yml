@@ -33,9 +33,9 @@ jobs:
           test "$GITHUB_EVENT_NAME" = push
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_REPOSITORY_VISIBILITY" = public
-          git fetch origin main --no-tags
-          test "$(git rev-parse refs/remotes/origin/main)" = "$GITHUB_SHA"
-          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch origin main --no-tags >/dev/null 2>&1
+          test "$(git rev-parse refs/remotes/origin/main 2>/dev/null)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all 2>/dev/null)"
 
       - name: Resolve immutable Persona Harness diagnostic revision
         id: producer-pin

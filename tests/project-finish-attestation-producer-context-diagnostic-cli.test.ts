@@ -99,6 +99,8 @@ describe("project finish producer context diagnostic CLI", () => {
     expect(workflow).toContain("github.event_name == 'push'")
     expect(workflow).toContain("github.ref == 'refs/heads/main'")
     expect(workflow).toContain("github.event.repository.private == false")
+    expect(workflow).toContain("git fetch origin main --no-tags >/dev/null 2>&1")
+    expect(workflow).toContain("git rev-parse refs/remotes/origin/main 2>/dev/null")
     expect(workflow).toContain("contents: read")
     expect(workflow).toContain("id-token: write")
     expect(workflow).toContain("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5")
