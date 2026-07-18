@@ -40,7 +40,7 @@ describe("cooperative Gradle verification", () => {
         calls.push({ args: options.args, command: options.command })
         if (options.args.includes("test")) writeReport(projectDir, "fresh")
         return passed(options.args.includes("test")
-          ? "> Task :cleanTest\n> Task :test\nBUILD SUCCESSFUL\n"
+          ? "> Task :cleanTest UP-TO-DATE\n> Task :test\nBUILD SUCCESSFUL\n"
           : "> Task :test UP-TO-DATE\n> Task :build\nBUILD SUCCESSFUL\n")
       },
     })

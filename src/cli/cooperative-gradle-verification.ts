@@ -143,10 +143,8 @@ function testDiagnostic(command: { readonly result: BoundedProcessResult; readon
 }
 
 function testExecutionDiagnostic(result: BoundedProcessResult, tasks: readonly string[]): string | undefined {
-  for (const task of tasks) {
-    if (!taskLine(result, task)) return "test-task-not-executed"
-    if (nonFreshTaskLine(result, task)) return "test-task-nonfresh"
-  }
+  if (!tasks.every((task) => taskLine(result, task))) return "test-task-not-executed"
+  if (nonFreshTaskLine(result, "test")) return "test-task-nonfresh"
   return undefined
 }
 
