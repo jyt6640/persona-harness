@@ -33,6 +33,7 @@ import { runWorkflowTddStatus } from "./workflow-tdd-status.js"
 import { recordTddGreenForCurrentTicket, runWorkflowTddTest } from "./workflow-tdd.js"
 import { safeProjectArtifactReference, safeWorkflowCode } from "./workflow-safe-rendering.js"
 import type { WorkflowStateWriteOptions } from "./workflow-state-conflict.js"
+import type { FinishAssuranceRequirement } from "./workflow-verification-decision.js"
 import {
   runWorkflowArchive,
   runWorkflowApproveRequirements,
@@ -141,6 +142,7 @@ function runWorkflowFinish(
   runnerKind: WorkflowRunnerKind,
   reverify: boolean,
   ci: boolean,
+  assurance: FinishAssuranceRequirement,
   options: WorkflowOptions,
 ): CliRunResult {
   const summary = readWorkflowStatus(options.projectDir)
@@ -159,7 +161,7 @@ function runWorkflowFinish(
       ])
     }
   }
-  return runWorkflowFinishResult(runnerKind, summary.projectDir)
+  return runWorkflowFinishResult(runnerKind, summary.projectDir, assurance)
 }
 
 function runWorkflowCheck(options: WorkflowOptions): CliRunResult {
@@ -278,7 +280,7 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
     return runWorkflowStart(parsed.runnerKind, options)
   }
   if (parsed.kind === "finish") {
-    return runWorkflowFinish(parsed.runnerKind, parsed.reverify, parsed.ci, options)
+    return runWorkflowFinish(parsed.runnerKind, parsed.reverify, parsed.ci, parsed.assurance, options)
   }
   return runWorkflowCheck({ ...options, full: parsed.full })
 }
