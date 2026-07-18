@@ -1,0 +1,16 @@
+name: Project finish attestation caller source fixture
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+jobs:
+  produce:
+    uses: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@a724b7fbd79e836c6af1c0088b19e222d4b7f94f
