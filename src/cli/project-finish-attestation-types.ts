@@ -101,6 +101,7 @@ export type ProjectFinishAttestationReceipt = {
 }
 
 export type ProjectFinishAttestationStatement = {
+  readonly _type: "https://in-toto.io/Statement/v1"
   readonly predicate: {
     readonly policyMarker: typeof PROJECT_FINISH_ATTESTATION_POLICY.policyMarker
     readonly receipt: ProjectFinishAttestationReceipt
