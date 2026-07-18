@@ -14,23 +14,27 @@ const SUMMARY_CODES = {
 const FIELD_STATUS = new Set(["match", "mismatch", "missing"])
 const SAFE_CODE = /^[a-z0-9][a-z0-9.-]{0,159}$/u
 
-const INPUTS = [
-  ["DIAGNOSTIC_ACTIONS", "PROJECT_FINISH_DIAGNOSTIC_ACTIONS"],
-  ["DIAGNOSTIC_CALLER_WORKFLOW_REF", "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF"],
-  ["DIAGNOSTIC_CALLER_WORKFLOW_SHA", "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA"],
-  ["DIAGNOSTIC_EVENT_NAME", "PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME"],
-  ["DIAGNOSTIC_PRODUCER_SHA", "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA"],
-  ["DIAGNOSTIC_REF", "PROJECT_FINISH_DIAGNOSTIC_REF"],
-  ["DIAGNOSTIC_REPOSITORY", "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY"],
-  ["DIAGNOSTIC_REPOSITORY_ID", "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID"],
-  ["DIAGNOSTIC_REPOSITORY_VISIBILITY", "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY"],
-  ["DIAGNOSTIC_REUSABLE_WORKFLOW_REF", "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF"],
-  ["DIAGNOSTIC_REUSABLE_WORKFLOW_SHA", "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA"],
-  ["DIAGNOSTIC_RUN_ATTEMPT", "PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT"],
-  ["DIAGNOSTIC_RUN_ID", "PROJECT_FINISH_DIAGNOSTIC_RUN_ID"],
-  ["DIAGNOSTIC_RUNNER_ENVIRONMENT", "PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT"],
-  ["DIAGNOSTIC_RUNNER_OS", "PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS"],
-  ["DIAGNOSTIC_SOURCE_HEAD", "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD"],
+const PRIVATE_ENVIRONMENT_KEYS = [
+  "PROJECT_FINISH_DIAGNOSTIC_ACTIONS",
+  "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF",
+  "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA",
+  "PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME",
+  "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN",
+  "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL",
+  "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT",
+  "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA",
+  "PROJECT_FINISH_DIAGNOSTIC_REF",
+  "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY",
+  "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID",
+  "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY",
+  "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF",
+  "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA",
+  "PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT",
+  "PROJECT_FINISH_DIAGNOSTIC_RUN_ID",
+  "PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT",
+  "PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS",
+  "PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP",
+  "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD",
 ]
 
 async function main() {
@@ -63,27 +67,19 @@ async function main() {
 
 function forwardedEnvironment() {
   const environment = {}
-  for (const [inputName, alias] of INPUTS) {
-    environment[alias] = actionInput(inputName)
+  for (const name of PRIVATE_ENVIRONMENT_KEYS) {
+    environment[name] = privateEnvironment(name)
   }
-  environment.PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN =
-    platformEnvironment("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-  environment.PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL =
-    platformEnvironment("ACTIONS_ID_TOKEN_REQUEST_URL")
   return environment
 }
 
-function actionInput(name) {
-  return platformEnvironment(`INPUT_${name.replaceAll("_", "-")}`)
-}
-
-function platformEnvironment(name) {
+function privateEnvironment(name) {
   const value = process.env[name]
   return typeof value === "string" ? value : undefined
 }
 
 function producerCheckoutStatus() {
-  const value = actionInput("DIAGNOSTIC_PRODUCER_CHECKOUT")
+  const value = privateEnvironment("PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT")
   return value === "match" || value === "missing" ? value : "mismatch"
 }
 
@@ -104,7 +100,7 @@ function assertFallbackSummary() {
 }
 
 function fallbackSummaryPath() {
-  const runnerTemp = actionInput("DIAGNOSTIC_RUNNER_TEMP")
+  const runnerTemp = privateEnvironment("PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP")
   if (typeof runnerTemp !== "string" || !isAbsolute(runnerTemp) || runnerTemp !== resolve(runnerTemp)) {
     throw new Error(FAILURE_CODE)
   }
@@ -131,7 +127,7 @@ function fallbackSummaryPath() {
 }
 
 function writeActionOutput(name, value) {
-  const output = platformEnvironment("GITHUB_OUTPUT")
+  const output = privateEnvironment("GITHUB_OUTPUT")
   if (output === undefined || output.length > 1_024 || /[\u0000\r\n]/u.test(output)) return
   try {
     const descriptor = openSync(output, "a", 0o600)

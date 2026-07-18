@@ -112,7 +112,7 @@ describe("project finish context diagnostic forwarding", () => {
     }
   })
 
-  it("runs the trusted local action without resolving an ambient launcher before reading OIDC", () => {
+  it("runs the trusted local action from explicit private aliases without resolving an ambient launcher before reading OIDC", () => {
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-action-")))
     const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-action-hook-")))
     const shadowDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-action-shadow-")))
@@ -154,9 +154,9 @@ describe("project finish context diagnostic forwarding", () => {
   it("uses a fixed local Node action and private aliases rather than a token-bearing shell launcher", () => {
     const workflow = readFileSync(workflowPath, "utf8")
     const diagnosticStart = workflow.indexOf("      - name: Emit bounded project producer context diagnostic")
-    const uploadStart = workflow.indexOf("      - name: Upload bounded project producer context diagnostic")
-    const diagnosticStep = diagnosticStart >= 0 && uploadStart > diagnosticStart
-      ? workflow.slice(diagnosticStart, uploadStart)
+    const finalizerStart = workflow.indexOf("      - name: Finalize bounded project producer context diagnostic")
+    const diagnosticStep = diagnosticStart >= 0 && finalizerStart > diagnosticStart
+      ? workflow.slice(diagnosticStart, finalizerStart)
       : ""
     const resolveStart = workflow.indexOf("  resolve:")
     const diagnoseJobStart = workflow.indexOf("  diagnose:")
@@ -179,33 +179,39 @@ describe("project finish context diagnostic forwarding", () => {
     const action = readFileSync(actionPath, "utf8")
     expect(actionMetadata).toContain("using: node20")
     expect(actionMetadata).toContain("main: index.mjs")
-    expect(actionMetadata).toContain("diagnostic-runner-temp:")
+    expect(actionMetadata).not.toContain("inputs:")
     expect(actionMetadata).not.toContain("using: composite")
     expect(actionMetadata).not.toContain("run:")
     expect(actionMetadata).not.toContain("diagnostic-workspace:")
     expect(action).not.toContain("node:child_process")
     expect(action).not.toContain("process.env.PATH")
+    expect(action).not.toContain("INPUT_")
+    expect(action).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
     for (const name of [
-      "diagnostic-caller-workflow-ref",
-      "diagnostic-caller-workflow-sha",
-      "diagnostic-event-name",
-      "diagnostic-producer-checkout",
-      "diagnostic-producer-sha",
-      "diagnostic-ref",
-      "diagnostic-repository",
-      "diagnostic-repository-id",
-      "diagnostic-repository-visibility",
-      "diagnostic-reusable-workflow-ref",
-      "diagnostic-reusable-workflow-sha",
-      "diagnostic-run-attempt",
-      "diagnostic-run-id",
-      "diagnostic-runner-environment",
-      "diagnostic-runner-os",
-      "diagnostic-runner-temp",
-      "diagnostic-source-head",
+      "PROJECT_FINISH_DIAGNOSTIC_ACTIONS:",
+      "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:",
+      "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA:",
+      "PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME:",
+      "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN:",
+      "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL:",
+      "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT:",
+      "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA:",
+      "PROJECT_FINISH_DIAGNOSTIC_REF:",
+      "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY:",
+      "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID:",
+      "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY:",
+      "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:",
+      "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA:",
+      "PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT:",
+      "PROJECT_FINISH_DIAGNOSTIC_RUN_ID:",
+      "PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT:",
+      "PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS:",
+      "PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP:",
+      "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD:",
     ]) {
       expect(diagnosticStep).toContain(name)
     }
+    expect(diagnosticStep).not.toContain("\n        with:")
   })
 })
 
@@ -226,15 +232,18 @@ function runDiagnosticAction(
   nodeArguments: readonly string[] = [],
   environment = actionEnvironment(workspace, "", ""),
 ) {
+  const runnerTemp = environment.PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP
   spawnSync(process.execPath, [fallbackActionPath], {
     cwd: root,
     encoding: "utf8",
-    env: githubActionEnvironment(environment),
+    env: {
+      "INPUT_DIAGNOSTIC-RUNNER-TEMP": runnerTemp,
+    },
   })
   return spawnSync(process.execPath, [...nodeArguments, actionPath], {
     cwd: root,
     encoding: "utf8",
-    env: githubActionEnvironment(environment),
+    env: environment,
   })
 }
 
@@ -268,43 +277,18 @@ function forwardedEnvironment(workspace: string): Record<string, string> {
 function actionEnvironment(workspace: string, shadowDirectory: string, markerPath: string): Record<string, string> {
   const forwarded = forwardedEnvironment(workspace)
   return {
+    ...forwarded,
     ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
     ACTIONS_ID_TOKEN_REQUEST_URL: forwarded.PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL,
     GITHUB_WORKSPACE: `ambient-${secret}`,
     GIT_CONFIG_GLOBAL: `ambient-${secret}`,
     HOME: `ambient-${secret}`,
-    INPUT_DIAGNOSTIC_ACTIONS: forwarded.PROJECT_FINISH_DIAGNOSTIC_ACTIONS,
-    INPUT_DIAGNOSTIC_CALLER_WORKFLOW_REF: forwarded.PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF,
-    INPUT_DIAGNOSTIC_CALLER_WORKFLOW_SHA: forwarded.PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA,
-    INPUT_DIAGNOSTIC_EVENT_NAME: forwarded.PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME,
-    INPUT_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
-    INPUT_DIAGNOSTIC_PRODUCER_SHA: forwarded.PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA,
-    INPUT_DIAGNOSTIC_REF: forwarded.PROJECT_FINISH_DIAGNOSTIC_REF,
-    INPUT_DIAGNOSTIC_REPOSITORY: forwarded.PROJECT_FINISH_DIAGNOSTIC_REPOSITORY,
-    INPUT_DIAGNOSTIC_REPOSITORY_ID: forwarded.PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID,
-    INPUT_DIAGNOSTIC_REPOSITORY_VISIBILITY: forwarded.PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY,
-    INPUT_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: forwarded.PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF,
-    INPUT_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: forwarded.PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA,
-    INPUT_DIAGNOSTIC_RUN_ATTEMPT: forwarded.PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT,
-    INPUT_DIAGNOSTIC_RUN_ID: forwarded.PROJECT_FINISH_DIAGNOSTIC_RUN_ID,
-    INPUT_DIAGNOSTIC_RUNNER_ENVIRONMENT: forwarded.PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT,
-    INPUT_DIAGNOSTIC_RUNNER_OS: forwarded.PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS,
-    INPUT_DIAGNOSTIC_SOURCE_HEAD: forwarded.PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD,
-    INPUT_DIAGNOSTIC_RUNNER_TEMP: forwarded.PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP,
+    INPUT_DIAGNOSTIC_EVENT_NAME: `hostile-${secret}`,
+    INPUT_DIAGNOSTIC_RUNNER_TEMP: `hostile-${secret}`,
     PATH: shadowDirectory,
+    PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
     SHADOW_EXECUTION_MARKER: markerPath,
   }
-}
-
-function githubActionEnvironment(environment: Readonly<Record<string, string>>): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(environment).map(([name, value]) => [
-      name.startsWith("INPUT_")
-        ? `INPUT_${name.slice("INPUT_".length).replaceAll("_", "-")}`
-        : name,
-      value,
-    ]),
-  )
 }
 
 function summaryPath(workspace: string): string {

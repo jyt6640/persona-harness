@@ -85,11 +85,44 @@ function hasContextDiagnosticSafeRuntime(text) {
     && !/\n\s+run:/u.test(diagnose)
 }
 
+function hasContextDiagnosticPrivateEnvironment(text) {
+  const diagnosticStart = text.indexOf("      - name: Emit bounded project producer context diagnostic")
+  const finalizerStart = text.indexOf("      - name: Finalize bounded project producer context diagnostic")
+  const diagnostic = diagnosticStart >= 0 && finalizerStart > diagnosticStart
+    ? text.slice(diagnosticStart, finalizerStart)
+    : ""
+  const aliases = [
+    "PROJECT_FINISH_DIAGNOSTIC_ACTIONS",
+    "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF",
+    "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA",
+    "PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME",
+    "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN",
+    "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL",
+    "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT",
+    "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA",
+    "PROJECT_FINISH_DIAGNOSTIC_REF",
+    "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY",
+    "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID",
+    "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY",
+    "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF",
+    "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA",
+    "PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT",
+    "PROJECT_FINISH_DIAGNOSTIC_RUN_ID",
+    "PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT",
+    "PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS",
+    "PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP",
+    "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD",
+  ]
+  return diagnostic.includes("env:")
+    && !diagnostic.includes("\n        with:")
+    && aliases.every((alias) => diagnostic.includes(`${alias}:`))
+}
+
 function hasContextDiagnosticSummaryReplacement(text) {
   const evaluatorImport = text.indexOf('await import("../../../scripts/diagnose-project-finish-producer-context.mjs")')
   return text.includes('SUMMARY_SCHEMA = "project-finish-attestation-context-diagnostic-summary.1"')
     && text.includes('const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"')
-    && text.includes('actionInput("DIAGNOSTIC_RUNNER_TEMP")')
+    && text.includes('privateEnvironment("PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP")')
     && text.includes("replaceFallbackSummary(summary)")
     && evaluatorImport >= 0
     && text.includes('writeActionOutput("summary-status", summary.outcome)')
@@ -99,6 +132,8 @@ function hasContextDiagnosticSummaryReplacement(text) {
     && !text.includes("DIAGNOSTIC_WORKSPACE")
     && !text.includes("node_modules")
     && !text.includes("npm install")
+    && !text.includes("INPUT_")
+    && !text.includes("ACTIONS_ID_TOKEN_REQUEST_")
 }
 
 function hasContextDiagnosticFallbackRuntime(metadata, entrypoint) {
@@ -152,7 +187,7 @@ const requirements = [
   ["project finish attester boundary", ".github/workflows/persona-harness-project-finish.yml", (text) => !text.includes("npm publish") && !text.includes("git tag") && !text.includes("git push") && !text.includes("workflow finish") && text.includes("failure-diagnostic.json") && text.includes("if: always()") && text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
   ["project finish context diagnostic trigger", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("workflow_call:") && !text.includes("inputs:") && !text.includes("workflow_dispatch:") && !text.includes("pull_request:") && !text.includes("push:")],
   ["project finish context diagnostic public push policy", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("github.event_name == 'push'") && text.includes("github.ref == 'refs/heads/main'") && text.includes("github.event.repository.private == false") && text.includes("git fetch origin main") && text.includes("git status --porcelain=v1")],
-  ["project finish context diagnostic fixed binding", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("persona-harness-project-finish-context-diagnostic.yml") && text.includes("CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}") && text.includes("matching.length !== 1") && !text.includes("GITHUB_JOB:") && text.includes("ref: ${{ steps.producer-pin.outputs.sha }}") && text.includes("PERSONA_HARNESS_PRODUCER_SHA") && text.includes("node scripts/verify-project-finish-producer-checkout.mjs") && text.includes("needs.resolve.outputs.producer-sha") && text.includes("needs.resolve.outputs.producer-checkout") && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-fallback") && text.includes('ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""') && text.includes('ACTIONS_ID_TOKEN_REQUEST_URL: ""') && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic") && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-finalizer") && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-outcome") && text.includes("continue-on-error: true") && text.includes("diagnostic-caller-workflow-ref: ${{ github.workflow_ref }}") && text.includes("diagnostic-caller-workflow-sha: ${{ github.workflow_sha }}") && text.includes("diagnostic-reusable-workflow-ref: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main") && text.includes("diagnostic-runner-temp: ${{ runner.temp }}") && text.includes("path: ${{ runner.temp }}/project-finish-attestation-context-diagnostic/summary.json") && !text.includes("diagnostic-workspace:") && !text.includes("command -v node") && !text.includes("env -i") && !text.includes("Setup diagnostic Node") && hasContextDiagnosticSafeRuntime(text)],
+  ["project finish context diagnostic fixed binding", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("persona-harness-project-finish-context-diagnostic.yml") && text.includes("CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}") && text.includes("matching.length !== 1") && !text.includes("GITHUB_JOB:") && text.includes("ref: ${{ steps.producer-pin.outputs.sha }}") && text.includes("PERSONA_HARNESS_PRODUCER_SHA") && text.includes("node scripts/verify-project-finish-producer-checkout.mjs") && text.includes("needs.resolve.outputs.producer-sha") && text.includes("needs.resolve.outputs.producer-checkout") && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-fallback") && text.includes('ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""') && text.includes('ACTIONS_ID_TOKEN_REQUEST_URL: ""') && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic") && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-finalizer") && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-outcome") && text.includes("continue-on-error: true") && text.includes("path: ${{ runner.temp }}/project-finish-attestation-context-diagnostic/summary.json") && !text.includes("diagnostic-workspace:") && !text.includes("command -v node") && !text.includes("env -i") && !text.includes("Setup diagnostic Node") && hasContextDiagnosticPrivateEnvironment(text) && hasContextDiagnosticSafeRuntime(text)],
   ["project finish context diagnostic boundary", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("contents: read") && text.includes("id-token: write") && text.includes("project-finish-attestation-context-diagnostic") && text.includes("summary.json") && text.includes("if-no-files-found: error") && !text.includes("contents: write") && !text.includes("attestations:") && !text.includes("artifact-metadata:") && !text.includes("actions/attest") && !text.includes("npm ") && !text.includes("build-project-finish-attestation.mjs") && !text.includes("receipt.json") && !text.includes("predicate.json") && !text.includes("git tag") && !text.includes("git push") && !text.includes("workflow finish")],
   ["project finish context diagnostic hosted selftest", ".github/workflows/project-finish-context-diagnostic-selftest.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("runs-on: ubuntu-latest") && text.includes("uses: ./.github/actions/project-finish-context-diagnostic-selftest") && text.includes("ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true") && text.includes("if: always()") && text.includes("if-no-files-found: error") && text.includes("path: ${{ runner.temp }}/project-finish-context-diagnostic-selftest/summary.json") && text.includes("contents: read") && !text.includes("id-token:") && !text.includes("npm install") && !text.includes("npm ci")],
   ["staged artifact attester trigger", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("workflow_dispatch:") && !text.includes("workflow_call:") && !text.includes("pull_request:") && !text.includes("push:")],
@@ -217,7 +252,9 @@ async function main() {
     || contextActionMetadata.includes("run:")
     || contextActionEntrypoint.includes("node:child_process")
     || contextActionEntrypoint.includes("process.env.PATH")
-    || !contextActionEntrypoint.includes('name.replaceAll("_", "-")')
+    || contextActionMetadata.includes("inputs:")
+    || contextActionEntrypoint.includes("INPUT_")
+    || contextActionEntrypoint.includes("ACTIONS_ID_TOKEN_REQUEST_")
     || !hasContextDiagnosticSummaryReplacement(contextActionEntrypoint)
     || !hasContextDiagnosticFallbackRuntime(fallbackActionMetadata, fallbackActionEntrypoint)
     || !hasContextDiagnosticFinalizerRuntime(finalizerActionMetadata, finalizerActionEntrypoint)
