@@ -1,5 +1,6 @@
 import type { WorkflowGuardKind, WorkflowRunnerKind } from "./workflow-output.js"
 import { workflowTicketUsage } from "./workflow-tickets.js"
+import type { FinishAssuranceRequirement } from "./workflow-verification-decision.js"
 
 export type ParsedWorkflowArgs =
   | { readonly full: boolean; readonly kind: "check" }
@@ -22,7 +23,13 @@ export type ParsedWorkflowArgs =
   | { readonly kind: "relay"; readonly relayArgs: readonly string[] }
   | { readonly kind: "guard"; readonly guardKind: WorkflowGuardKind }
   | { readonly kind: "start"; readonly runnerKind: WorkflowRunnerKind }
-  | { readonly ci: boolean; readonly kind: "finish"; readonly reverify: boolean; readonly runnerKind: WorkflowRunnerKind }
+  | {
+      readonly assurance: FinishAssuranceRequirement
+      readonly ci: boolean
+      readonly kind: "finish"
+      readonly reverify: boolean
+      readonly runnerKind: WorkflowRunnerKind
+    }
   | { readonly kind: "draft" }
   | { readonly kind: "approve-requirements" }
   | { readonly kind: "capture" }
@@ -175,19 +182,38 @@ function parseWorkflowFinishArgs(args: readonly string[]): ParsedWorkflowArgs {
       ? { kind: "invalid", message: "workflow finish requires implement." }
       : { kind: "invalid", message: `Unknown workflow finish: ${args[0]}` }
   }
-  const flags = args.slice(1)
-  if (!flags.every((flag) => flag === "--reverify" || flag === "--ci")) {
-    return { kind: "invalid", message: "workflow finish implement accepts only --reverify and --ci." }
+  let assurance: FinishAssuranceRequirement = "external"
+  let ci = false
+  let reverify = false
+  for (let index = 1; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === "--reverify") {
+      if (reverify) return { kind: "invalid", message: "workflow finish implement does not accept duplicate flags." }
+      reverify = true
+      continue
+    }
+    if (arg === "--ci") {
+      if (ci) return { kind: "invalid", message: "workflow finish implement does not accept duplicate flags." }
+      ci = true
+      continue
+    }
+    if (arg === "--assurance") {
+      if (assurance === "cooperative" || args[index + 1] !== "cooperative") {
+        return { kind: "invalid", message: "workflow finish implement accepts only --assurance cooperative." }
+      }
+      assurance = "cooperative"
+      index += 1
+      continue
+    }
+    return { kind: "invalid", message: "workflow finish implement accepts only --reverify, --ci, and --assurance cooperative." }
   }
-  if (new Set(flags).size !== flags.length) {
-    return { kind: "invalid", message: "workflow finish implement does not accept duplicate flags." }
+  if (assurance === "cooperative" && (reverify || ci)) {
+    return { kind: "invalid", message: "workflow finish implement --assurance cooperative does not accept --reverify or --ci." }
   }
-  const reverify = flags.includes("--reverify")
-  const ci = flags.includes("--ci")
   if (ci && !reverify) {
     return { kind: "invalid", message: "workflow finish --ci requires --reverify." }
   }
-  return { ci, kind: "finish", reverify, runnerKind: "implement" }
+  return { assurance, ci, kind: "finish", reverify, runnerKind: "implement" }
 }
 
 function parseFullOnlyArgs(args: readonly string[], kind: "check" | "continue" | "implement"): ParsedWorkflowArgs {
