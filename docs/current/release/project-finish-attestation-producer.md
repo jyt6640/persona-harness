@@ -23,8 +23,8 @@ facts itself:
 - run, attempt, finish, session, nonce, issuance, and expiry values.
 
 Before checking out Persona Harness, the workflow reads the already checked-out
-caller workflow at GitHub's bounded caller-workflow identity. A structured YAML
-parse accepts exactly one
+caller workflow at GitHub's bounded caller-workflow identity. A bounded
+structural parser accepts exactly one YAML job mapping for
 `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml`
 reference with a full immutable SHA. Branches, tags, another repository or
 path, duplicate declarations, malformed YAML, and unsafe workflow paths block
