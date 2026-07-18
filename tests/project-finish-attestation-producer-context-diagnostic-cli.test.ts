@@ -25,7 +25,10 @@ describe("project finish producer context diagnostic CLI", () => {
         artifactProducer: false,
         authorityEligible: false,
         diagnosticOnly: true,
+        networkAccess: true,
+        networkAccessScope: "github-actions-oidc-only",
         oidcClaimRead: false,
+        oidcRequestAttempted: false,
         outcome: "blocked",
         signing: false,
       })
@@ -55,7 +58,10 @@ describe("project finish producer context diagnostic CLI", () => {
       expect(JSON.parse(summary)).toMatchObject({
         authorityEligible: false,
         diagnosticOnly: true,
+        networkAccess: true,
+        networkAccessScope: "github-actions-oidc-only",
         oidcClaimRead: true,
+        oidcRequestAttempted: true,
         outcome: "match",
         signing: false,
       })
@@ -69,6 +75,32 @@ describe("project finish producer context diagnostic CLI", () => {
     } finally {
       rmSync(workspace, { force: true, recursive: true })
       rmSync(hookDirectory, { force: true, recursive: true })
+    }
+  })
+
+  it("blocks an untrusted OIDC endpoint without reflecting or requesting it", () => {
+    const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-diagnostic-")))
+    const endpoint = `https://untrusted.example/${secret}`
+    try {
+      const result = runDiagnostic(workspace, [], true, endpoint)
+      const summary = readFileSync(summaryPath(workspace), "utf8")
+      const output = `${result.stdout}${result.stderr}${summary}`
+
+      expect(result.status).toBe(1)
+      expect(JSON.parse(summary)).toMatchObject({
+        networkAccess: true,
+        networkAccessScope: "github-actions-oidc-only",
+        oidcClaimRead: false,
+        oidcRequestAttempted: false,
+        outcome: "blocked",
+      })
+      expect(JSON.parse(summary).diagnosticCodes).toContain(
+        "project-finish-attestation-producer-context-diagnostic.2-oidc-endpoint-mismatch",
+      )
+      expect(output).not.toContain(secret)
+      expect(output).not.toContain("untrusted.example")
+    } finally {
+      rmSync(workspace, { force: true, recursive: true })
     }
   })
 
@@ -120,6 +152,7 @@ function runDiagnostic(
   workspace: string,
   nodeArguments: readonly string[] = [],
   includeOidcEndpoint = false,
+  oidcEndpoint = "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 ) {
   return spawnSync(process.execPath, [...nodeArguments, diagnosticScript], {
     cwd: root,
@@ -141,7 +174,7 @@ function runDiagnostic(
       ...(includeOidcEndpoint
         ? {
           ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-          ACTIONS_ID_TOKEN_REQUEST_URL: "https://token.actions.githubusercontent.com/oidc",
+          ACTIONS_ID_TOKEN_REQUEST_URL: oidcEndpoint,
         }
         : {}),
     },

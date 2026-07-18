@@ -6,7 +6,7 @@ import {
   assessProjectFinishProducerContextDiagnostic,
 } from "./project-finish-attestation-producer-context-diagnostic.mjs"
 import {
-  readProjectFinishAttestationOidcClaims,
+  readProjectFinishAttestationOidc,
 } from "./project-finish-attestation-oidc.mjs"
 import {
   verifyProjectFinishProducerCheckout,
@@ -17,10 +17,12 @@ const FAILURE_CODE = "project-finish-producer-context-diagnostic-failed"
 
 async function main() {
   const workspace = workspaceRoot()
-  const claims = await readProjectFinishAttestationOidcClaims()
+  const oidc = await readProjectFinishAttestationOidc()
   const result = assessProjectFinishProducerContextDiagnostic({
-    claims,
+    claims: oidc.claims,
     environment: process.env,
+    oidcEndpointStatus: oidc.endpointStatus,
+    oidcRequestAttempted: oidc.requestAttempted,
     producerCheckout: producerCheckoutStatus(process.cwd(), process.env.PERSONA_HARNESS_PRODUCER_SHA),
   })
   writeSummary(workspace, result)

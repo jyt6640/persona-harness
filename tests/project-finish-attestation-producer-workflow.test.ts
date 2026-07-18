@@ -11,6 +11,7 @@ const scriptPath = join(root, "scripts", "build-project-finish-attestation.mjs")
 const contextPath = join(root, "scripts", "project-finish-attestation-producer-context.mjs")
 const oidcPath = join(root, "scripts", "project-finish-attestation-oidc.mjs")
 const callerFixturePath = join(root, "tests", "fixtures", "project-finish-attestation", "caller-workflow.yml")
+const diagnosticPath = join(root, "scripts", "project-finish-attestation-producer-context-diagnostic.mjs")
 
 describe("project finish attestation producer workflow contract", () => {
   it("declares a pinned reusable producer with no caller-controlled inputs", () => {
@@ -56,9 +57,15 @@ describe("project finish attestation producer workflow contract", () => {
     const source = readFileSync(scriptPath, "utf8")
     const context = readFileSync(contextPath, "utf8")
     const oidc = readFileSync(oidcPath, "utf8")
+    const diagnostic = readFileSync(diagnosticPath, "utf8")
 
     expect(oidc).toContain("ACTIONS_ID_TOKEN_REQUEST_URL")
     expect(oidc).toContain("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+    expect(oidc).toContain("pipelines.actions.githubusercontent.com")
+    expect(oidc).not.toContain("followRedirect")
+    expect(diagnostic).toContain("networkAccess: true")
+    expect(diagnostic).toContain('networkAccessScope: "github-actions-oidc-only"')
+    expect(diagnostic).not.toContain("networkAccess: false")
     expect(context).toContain("job_workflow_ref")
     expect(context).toContain("job_workflow_sha")
     expect(context).toContain("workflow_ref")

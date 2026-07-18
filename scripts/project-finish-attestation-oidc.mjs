@@ -1,32 +1,107 @@
 import { get } from "node:https"
 
 const MAX_OIDC_RESPONSE_BYTES = 64 * 1024
+const GITHUB_ACTIONS_OIDC_ORIGIN = "https://pipelines.actions.githubusercontent.com"
+const GITHUB_ACTIONS_OIDC_PREFIX = `${GITHUB_ACTIONS_OIDC_ORIGIN}/`
+const OIDC_AUDIENCE = "persona-harness-project-finish-attestation"
+const OIDC_PATH = /^\/(?:[A-Za-z0-9._~-]+\/)*[A-Za-z0-9._~-]+$/u
+const OIDC_API_VERSION = /^\d+\.\d+(?:-preview\.\d+)?$/u
+const OIDC_SERVICE_CONNECTION_ID = /^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$/u
+const OIDC_SAFE_ENDPOINT = /^[A-Za-z0-9:/?&=._~-]+$/u
 
 export async function readProjectFinishAttestationOidcClaims(environment = process.env) {
+  const result = await readProjectFinishAttestationOidc(environment)
+  return result.claims
+}
+
+export async function readProjectFinishAttestationOidc(environment = process.env) {
   const endpoint = boundedEnvironment(environment, "ACTIONS_ID_TOKEN_REQUEST_URL")
   const requestToken = boundedEnvironment(environment, "ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-  if (endpoint === undefined || requestToken === undefined) return undefined
+  if (endpoint === undefined || requestToken === undefined) {
+    return {
+      claims: undefined,
+      endpointStatus: "missing",
+      requestAttempted: false,
+    }
+  }
 
-  let url
-  try {
-    url = new URL(endpoint)
-  } catch {
-    return undefined
+  const url = parseGitHubActionsOidcEndpoint(endpoint)
+  if (url === undefined) {
+    return {
+      claims: undefined,
+      endpointStatus: "mismatch",
+      requestAttempted: false,
+    }
   }
-  if (url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.hash !== "") {
-    return undefined
-  }
-  url.searchParams.set("audience", "persona-harness-project-finish-attestation")
+
   const response = await readJson(url, requestToken)
-  if (!isRecord(response) || typeof response.value !== "string") return undefined
+  if (!isRecord(response) || typeof response.value !== "string") {
+    return {
+      claims: undefined,
+      endpointStatus: "match",
+      requestAttempted: true,
+    }
+  }
   const parts = response.value.split(".")
-  if (parts.length !== 3 || parts[1] === undefined) return undefined
+  if (parts.length !== 3 || parts[1] === undefined) {
+    return {
+      claims: undefined,
+      endpointStatus: "match",
+      requestAttempted: true,
+    }
+  }
   try {
     const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"))
-    return isRecord(payload) ? payload : undefined
+    return {
+      claims: isRecord(payload) ? payload : undefined,
+      endpointStatus: "match",
+      requestAttempted: true,
+    }
+  } catch {
+    return {
+      claims: undefined,
+      endpointStatus: "match",
+      requestAttempted: true,
+    }
+  }
+}
+
+function parseGitHubActionsOidcEndpoint(endpoint) {
+  if (!endpoint.startsWith(GITHUB_ACTIONS_OIDC_PREFIX) || !OIDC_SAFE_ENDPOINT.test(endpoint)) {
+    return undefined
+  }
+  try {
+    const url = new URL(endpoint)
+    if (
+      url.protocol !== "https:" ||
+      url.origin !== GITHUB_ACTIONS_OIDC_ORIGIN ||
+      url.hostname !== "pipelines.actions.githubusercontent.com" ||
+      url.port !== "" ||
+      url.username !== "" ||
+      url.password !== "" ||
+      url.hash !== "" ||
+      !OIDC_PATH.test(url.pathname) ||
+      !hasCanonicalOidcQuery(url)
+    ) {
+      return undefined
+    }
+    url.searchParams.set("audience", OIDC_AUDIENCE)
+    return url
   } catch {
     return undefined
   }
+}
+
+function hasCanonicalOidcQuery(url) {
+  if (url.search === "") return true
+  const entries = [...url.searchParams.entries()]
+  if (entries.length !== 2) return false
+  const values = new Map(entries)
+  if (values.size !== 2 || values.get("api-version") === undefined || values.get("serviceConnectionId") === undefined) {
+    return false
+  }
+  return OIDC_API_VERSION.test(values.get("api-version")) &&
+    OIDC_SERVICE_CONNECTION_ID.test(values.get("serviceConnectionId"))
 }
 
 function readJson(url, requestToken) {

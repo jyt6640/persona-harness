@@ -225,6 +225,7 @@ describe("package files policy", () => {
       "scripts/diagnose-project-finish-producer-context.mjs",
       "tests/fixtures/project-finish-attestation/caller-workflow.yml",
       "tests/project-finish-attestation-producer-workflow.test.ts",
+      "tests/project-finish-attestation-oidc.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-cli.test.ts",
     ]

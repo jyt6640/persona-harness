@@ -3,15 +3,22 @@ import {
 } from "./project-finish-attestation-producer-context.mjs"
 
 export const PROJECT_FINISH_PRODUCER_CONTEXT_DIAGNOSTIC_SCHEMA =
-  "project-finish-attestation-producer-context-diagnostic.1"
+  "project-finish-attestation-producer-context-diagnostic.2"
 
 export function assessProjectFinishProducerContextDiagnostic(value) {
   const input = isRecord(value) ? value : {}
   const claims = isRecord(input.claims) ? input.claims : undefined
   const environment = isRecord(input.environment) ? input.environment : {}
+  const oidcEndpointStatus = statusForOidcEndpoint(input.oidcEndpointStatus, claims)
+  const oidcRequestAttempted =
+    typeof input.oidcRequestAttempted === "boolean" ? input.oidcRequestAttempted : claims !== undefined
   const core = assessProjectFinishProducerContextDiagnosticWorkflow(claims, environment)
   const fields = [
     statusForFixed("github-actions", environment.GITHUB_ACTIONS, "true"),
+    {
+      code: "oidc-endpoint",
+      status: oidcEndpointStatus,
+    },
     {
       code: "oidc-claims",
       status: claims === undefined ? "missing" : "match",
@@ -31,8 +38,10 @@ export function assessProjectFinishProducerContextDiagnostic(value) {
     diagnosticCodes,
     diagnosticOnly: true,
     fields,
-    networkAccess: false,
+    networkAccess: true,
+    networkAccessScope: "github-actions-oidc-only",
     oidcClaimRead: claims !== undefined,
+    oidcRequestAttempted,
     outcome: diagnosticCodes.length === 0 ? "match" : "blocked",
     predicateCreated: false,
     receiptCreated: false,
@@ -40,6 +49,11 @@ export function assessProjectFinishProducerContextDiagnostic(value) {
     schemaVersion: PROJECT_FINISH_PRODUCER_CONTEXT_DIAGNOSTIC_SCHEMA,
     signing: false,
   }
+}
+
+function statusForOidcEndpoint(value, claims) {
+  if (value === "match" || value === "mismatch" || value === "missing") return value
+  return claims === undefined ? "missing" : "match"
 }
 
 function statusForFixed(code, value, expected) {

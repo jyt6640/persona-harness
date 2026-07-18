@@ -17,8 +17,10 @@ describe("project finish producer context diagnostic", () => {
       artifactProducer: false,
       authorityEligible: false,
       diagnosticOnly: true,
-      networkAccess: false,
+      networkAccess: true,
+      networkAccessScope: "github-actions-oidc-only",
       oidcClaimRead: true,
+      oidcRequestAttempted: true,
       outcome: "match",
       predicateCreated: false,
       receiptCreated: false,
@@ -72,6 +74,22 @@ describe("project finish producer context diagnostic", () => {
     expect(rendered).not.toContain("attacker/repository")
     expect(rendered).not.toContain("self-hosted")
     expect(rendered).not.toContain("Windows")
+  })
+
+  it("reports an untrusted OIDC endpoint as a bounded mismatch without reflecting it", () => {
+    const result = assessProjectFinishProducerContextDiagnostic({
+      ...context(),
+      oidcEndpointStatus: "mismatch",
+      oidcRequestAttempted: false,
+    })
+    const rendered = JSON.stringify(result)
+
+    expect(result.outcome).toBe("blocked")
+    expect(result.networkAccess).toBe(true)
+    expect(result.networkAccessScope).toBe("github-actions-oidc-only")
+    expect(result.oidcRequestAttempted).toBe(false)
+    expect(result.fields).toContainEqual({ code: "oidc-endpoint", status: "mismatch" })
+    expect(rendered).not.toContain(secret)
   })
 
 })
