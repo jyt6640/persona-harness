@@ -217,6 +217,7 @@ describe("package files policy", () => {
     const sourceOnlyPaths = [
       ".github/workflows/persona-harness-project-finish.yml",
       "scripts/build-project-finish-attestation.mjs",
+      "scripts/project-finish-attestation-producer-context.mjs",
       "tests/fixtures/project-finish-attestation/caller-workflow.yml",
       "tests/project-finish-attestation-producer-workflow.test.ts",
     ]

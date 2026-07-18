@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest"
 const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "persona-harness-project-finish.yml")
 const scriptPath = join(root, "scripts", "build-project-finish-attestation.mjs")
+const contextPath = join(root, "scripts", "project-finish-attestation-producer-context.mjs")
 const callerFixturePath = join(root, "tests", "fixtures", "project-finish-attestation", "caller-workflow.yml")
 
 describe("project finish attestation producer workflow contract", () => {
@@ -52,14 +53,16 @@ describe("project finish attestation producer workflow contract", () => {
 
   it("uses only platform-derived OIDC workflow claims in the bounded artifact builder", () => {
     const source = readFileSync(scriptPath, "utf8")
+    const context = readFileSync(contextPath, "utf8")
 
     expect(source).toContain("ACTIONS_ID_TOKEN_REQUEST_URL")
     expect(source).toContain("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-    expect(source).toContain("job_workflow_ref")
-    expect(source).toContain("job_workflow_sha")
-    expect(source).toContain("workflow_ref")
-    expect(source).toContain("workflow_sha")
-    expect(source).toContain("PERSONA_HARNESS_PRODUCER_SHA")
+    expect(context).toContain("job_workflow_ref")
+    expect(context).toContain("job_workflow_sha")
+    expect(context).toContain("workflow_ref")
+    expect(context).toContain("workflow_sha")
+    expect(context).toContain("PERSONA_HARNESS_PRODUCER_SHA")
+    expect(source).toContain("deriveProjectFinishProducerContext")
     expect(source).toContain("verifyProjectFinishProducerCheckout")
     expect(source).not.toContain('requiredEnv("GITHUB_WORKFLOW_SHA")')
     expect(source).toContain("runProjectFinishAttestationProducer")
