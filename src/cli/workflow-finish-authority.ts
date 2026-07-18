@@ -10,6 +10,7 @@ import {
 } from "./workflow-semantic-tdd.js"
 import {
   blockedVerificationDecision,
+  completionEligibleForAssurance,
   externalAttestedVerificationDecision,
   type VerificationDecision,
 } from "./workflow-verification-decision.js"
@@ -48,21 +49,24 @@ export function readWorkflowFinishAuthority(
   if (externalAttestation.authorityEligible && externalAttestation.receipt !== undefined) {
     const decision = externalAttestedVerificationDecision({
       attestationId: externalAttestation.receipt.finishId,
+      consumptionState: externalAttestation.consumptionState === "consumed" ? "consumed" : "unconsumed",
       decisionId: `external-finish-${externalAttestation.receipt.finishId}`,
       sourceSnapshotDigest: externalAttestation.receipt.source.identity.contentDigest,
       verifiedAt: (options.now ?? new Date()).toISOString(),
     })
-    return {
-      assessment,
-      blocker: {
-        id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
-        reason: externalAttestation.summary,
-        source,
-      },
-      decision,
-      externalAttestation,
-      semanticTdd,
-      status: "trusted",
+    if (completionEligibleForAssurance(decision)) {
+      return {
+        assessment,
+        blocker: {
+          id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
+          reason: externalAttestation.summary,
+          source,
+        },
+        decision,
+        externalAttestation,
+        semanticTdd,
+        status: "trusted",
+      }
     }
   }
   const decision = blockedVerificationDecision(

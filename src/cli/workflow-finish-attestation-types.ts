@@ -151,6 +151,7 @@ export type FinishAttestationState =
 
 export type FinishAttestationAssessment = {
   readonly authorityEligible: boolean
+  readonly consumptionState: "not-applicable" | "unconsumed" | "consumed"
   readonly decision: "blocked" | "trusted"
   readonly diagnostics: readonly FinishAttestationDiagnostic[]
   readonly receipt?: FinishAttestationReceipt

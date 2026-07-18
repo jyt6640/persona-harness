@@ -48,6 +48,38 @@ describe("public Finish and closure attestation parity", () => {
     expect(closure.nextStep?.id).toBe("terminal")
   })
 
+  it("keeps the public finish and closure path explicitly external across consumption", () => {
+    const project = track(createFreshRealArtifactProject(true))
+    vi.useFakeTimers({ now: FRESH_REAL_ATTESTATION_NOW })
+
+    const preview = readWorkflowFinishAuthority(project.projectDir, {
+      consumeExternalAttestation: false,
+      now: FRESH_REAL_ATTESTATION_NOW,
+    })
+    const finish = runFinish(project.projectDir)
+    const closure = readWorkflowFinishAuthority(project.projectDir, {
+      consumeExternalAttestation: false,
+      now: FRESH_REAL_ATTESTATION_NOW,
+    })
+
+    expect(preview.decision).toMatchObject({
+      assurance: "external",
+      authorityProvider: "external-attested",
+      completionEligible: true,
+      consumptionState: "unconsumed",
+      kind: "external-attested",
+    })
+    expect(finish.status).toBe(0)
+    expect(closure.decision).toMatchObject({
+      assurance: "external",
+      authorityProvider: "external-attested",
+      completionEligible: true,
+      consumptionState: "consumed",
+      kind: "external-attested",
+    })
+    expect(closure.status).toBe("trusted")
+  })
+
   it("blocks a second independent public Finish after the first consumption", () => {
     const project = track(createFreshRealArtifactProject(true))
     vi.useFakeTimers({ now: FRESH_REAL_ATTESTATION_NOW })
