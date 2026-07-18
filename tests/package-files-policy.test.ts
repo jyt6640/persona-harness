@@ -220,6 +220,7 @@ describe("package files policy", () => {
       "scripts/build-project-finish-attestation.mjs",
       "scripts/project-finish-attestation-producer-context.mjs",
       "scripts/project-finish-attestation-producer-context-diagnostic.mjs",
+      "scripts/project-finish-attestation-producer-context-diagnostic.d.mts",
       "scripts/project-finish-attestation-oidc.mjs",
       "scripts/diagnose-project-finish-producer-context.mjs",
       "tests/fixtures/project-finish-attestation/caller-workflow.yml",
