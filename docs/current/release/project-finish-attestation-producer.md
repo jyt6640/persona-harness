@@ -30,9 +30,15 @@ reference with a full immutable SHA. Branches, tags, another repository or
 path, duplicate declarations, malformed YAML, and unsafe workflow paths block
 with a bounded diagnostic. The caller checkout SHA is bound separately and is
 never used as the Persona Harness checkout ref. After checkout, the producer
-cross-checks the parsed SHA against the reusable-workflow identity claim before
-it builds the canonical subject. The checked-out producer must also have an
-exact matching HEAD and normalize to the fixed
+cross-checks the parsed SHA against the reusable `job_workflow_sha` claim
+before it builds the canonical subject. The caller `workflow_sha` remains
+separately bound to the caller checkout SHA; it is not a reusable-workflow
+revision. The reusable `job_workflow_ref` may identify only the fixed Persona
+Harness repository and workflow path at `refs/heads/main`, while the parsed
+immutable caller pin, reusable SHA claim, and producer checkout HEAD must all
+agree. The OIDC event, ref, public repository identity, run ID, run attempt,
+and GitHub-hosted runner claim must also match the platform environment. The
+checked-out producer must normalize to the fixed
 `github.com/jyt6640/persona-harness` identity. Only the canonical GitHub HTTPS
 checkout spelling, with or without its optional `.git` suffix, is accepted;
 credentials, userinfo, query or fragment components, another host, noncanonical

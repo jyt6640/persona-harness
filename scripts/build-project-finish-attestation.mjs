@@ -7,11 +7,11 @@ import {
   runProjectFinishAttestationProducer,
 } from "../dist/cli/project-finish-attestation-producer-runner.js"
 import {
-  PROJECT_FINISH_ATTESTATION_POLICY,
-} from "../dist/cli/project-finish-attestation-types.js"
-import {
   verifyProjectFinishProducerCheckout,
 } from "./verify-project-finish-producer-checkout.mjs"
+import {
+  deriveProjectFinishProducerContext,
+} from "./project-finish-attestation-producer-context.mjs"
 
 const OUTPUT_DIRECTORY = ".ci/project-finish-attestation"
 const MAX_OIDC_RESPONSE_BYTES = 64 * 1024
@@ -50,37 +50,10 @@ async function readProducerContext() {
     throw new ProducerScriptError("project-finish-producer-github-actions")
   }
   const claims = await readOidcClaims()
-  const repository = requiredClaim(claims, "repository")
-  const sourceHead = requiredEnv("GITHUB_SHA")
-  const callerWorkflowRef = requiredClaim(claims, "workflow_ref")
-  const callerWorkflowSha = requiredClaim(claims, "workflow_sha")
-  const reusableWorkflowRef = requiredClaim(claims, "job_workflow_ref")
-  const reusableWorkflowSha = requiredClaim(claims, "job_workflow_sha")
-  if (
-    requiredEnv("GITHUB_EVENT_NAME") !== "push"
-    || requiredEnv("GITHUB_REF") !== "refs/heads/main"
-    || requiredEnv("GITHUB_REPOSITORY") !== repository
-    || requiredEnv("GITHUB_REPOSITORY_ID") !== requiredClaim(claims, "repository_id")
-    || requiredEnv("GITHUB_REPOSITORY_VISIBILITY") !== "public"
-    || requiredEnv("PERSONA_HARNESS_PRODUCER_SHA") !== reusableWorkflowSha
-    || sourceHead !== callerWorkflowSha
-    || reusableWorkflowRef !== `${PROJECT_FINISH_ATTESTATION_POLICY.producerRepository}/${PROJECT_FINISH_ATTESTATION_POLICY.workflowPath}@${reusableWorkflowSha}`
-  ) {
+  try {
+    return deriveProjectFinishProducerContext(claims, process.env)
+  } catch {
     throw new ProducerScriptError("project-finish-producer-context")
-  }
-  return {
-    callerWorkflowRef,
-    callerWorkflowSha,
-    issuedAt: new Date().toISOString(),
-    repository: {
-      id: positiveInteger(requiredClaim(claims, "repository_id")),
-      slug: repository,
-      visibility: "public",
-    },
-    reusableWorkflowSha,
-    runAttempt: positiveInteger(requiredEnv("GITHUB_RUN_ATTEMPT")),
-    runId: requiredEnv("GITHUB_RUN_ID"),
-    sourceHead,
   }
 }
 
@@ -209,27 +182,12 @@ function outputDirectory(workspace) {
   return output
 }
 
-function requiredClaim(claims, key) {
-  const value = claims[key]
-  if (typeof value !== "string" || value.length === 0 || value.length > 512 || /[\u0000\r\n]/u.test(value)) {
-    throw new ProducerScriptError("project-finish-producer-oidc")
-  }
-  return value
-}
-
 function requiredEnv(name) {
   const value = process.env[name]
   if (value === undefined || value.length === 0 || value.length > 512 || /[\u0000\r\n]/u.test(value)) {
     throw new ProducerScriptError("project-finish-producer-context")
   }
   return value
-}
-
-function positiveInteger(value) {
-  if (!/^[1-9][0-9]*$/u.test(value)) throw new ProducerScriptError("project-finish-producer-context")
-  const parsed = Number(value)
-  if (!Number.isSafeInteger(parsed)) throw new ProducerScriptError("project-finish-producer-context")
-  return parsed
 }
 
 function diagnosticCode(error) {
