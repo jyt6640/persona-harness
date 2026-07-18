@@ -33,6 +33,7 @@ describe("CI and release workflow policy surface", () => {
     try {
       mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
       mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
+      copyContextDiagnosticAction(fixtureDir)
       copyFileSync(
         join(process.cwd(), "scripts", "check-release-workflows.mjs"),
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
@@ -65,6 +66,7 @@ describe("CI and release workflow policy surface", () => {
     try {
       mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
       mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
+      copyContextDiagnosticAction(fixtureDir)
       copyFileSync(
         join(process.cwd(), "scripts", "check-release-workflows.mjs"),
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
@@ -98,6 +100,7 @@ describe("CI and release workflow policy surface", () => {
     try {
       mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
       mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
+      copyContextDiagnosticAction(fixtureDir)
       copyFileSync(
         join(process.cwd(), "scripts", "check-release-workflows.mjs"),
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
@@ -129,6 +132,7 @@ describe("CI and release workflow policy surface", () => {
     try {
       mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
       mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
+      copyContextDiagnosticAction(fixtureDir)
       copyFileSync(
         join(process.cwd(), "scripts", "check-release-workflows.mjs"),
         join(fixtureDir, "scripts", "check-release-workflows.mjs"),
@@ -158,3 +162,14 @@ describe("CI and release workflow policy surface", () => {
     }
   })
 })
+
+function copyContextDiagnosticAction(fixtureDir: string): void {
+  const actionDirectory = join(fixtureDir, ".github", "actions", "project-finish-context-diagnostic")
+  mkdirSync(actionDirectory, { recursive: true })
+  for (const fileName of ["action.yml", "index.mjs"]) {
+    copyFileSync(
+      join(process.cwd(), ".github", "actions", "project-finish-context-diagnostic", fileName),
+      join(actionDirectory, fileName),
+    )
+  }
+}

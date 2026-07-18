@@ -217,6 +217,8 @@ describe("package files policy", () => {
     const sourceOnlyPaths = [
       ".github/workflows/persona-harness-project-finish.yml",
       ".github/workflows/persona-harness-project-finish-context-diagnostic.yml",
+      ".github/actions/project-finish-context-diagnostic/action.yml",
+      ".github/actions/project-finish-context-diagnostic/index.mjs",
       "scripts/build-project-finish-attestation.mjs",
       "scripts/project-finish-attestation-producer-context.mjs",
       "scripts/project-finish-attestation-producer-context-diagnostic.mjs",
@@ -228,6 +230,7 @@ describe("package files policy", () => {
       "tests/project-finish-attestation-oidc.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-cli.test.ts",
+      "tests/project-finish-attestation-producer-context-diagnostic-forwarding.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-workflow.test.ts",
     ]
     const runtimePaths = [

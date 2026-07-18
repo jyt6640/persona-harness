@@ -72,6 +72,20 @@ the checked-out caller workflow. The parsed diagnostic SHA remains separate
 from the caller workflow SHA and is cross-checked against the diagnostic
 checkout and OIDC reusable-workflow identity.
 
+The id-token-free resolution job performs the caller-pin and producer-checkout
+preflight. The separate OIDC job has no diagnostic `run:` step: it loads a
+fixed local `node20` action from the verified Persona Harness checkout. That
+action constructs a new in-memory environment from only fixed private context
+aliases for the public-push facts: event, ref, repository identity, caller
+workflow identity, source SHA, parsed diagnostic pin, run/attempt, and
+GitHub-hosted runner facts. It passes the platform OIDC endpoint and request
+token only to the in-memory OIDC reader. No shell, `env`, `node`, or `git`
+launcher is resolved through ambient `PATH` after the OIDC-bearing job begins.
+The decoded OIDC claim supplies the observed reusable-workflow reference and
+SHA, which are checked separately from the caller workflow SHA/ref and the
+parsed pin. Ambient runner environment, home, Git configuration, and caller
+values cannot enter the evaluator.
+
 Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
 statuses and bounded diagnostic codes. It does not store a JWT, token, header,
 repository URL, ref, SHA, workspace path, source content, or caller input. The

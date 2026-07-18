@@ -109,8 +109,8 @@ describe("project finish producer context diagnostic CLI", () => {
       cwd: root,
       encoding: "utf8",
       env: {
-        GITHUB_ACTIONS: "true",
-        GITHUB_WORKSPACE: `relative-${secret}`,
+        PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+        PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: `relative-${secret}`,
       },
     })
 
@@ -137,7 +137,9 @@ describe("project finish producer context diagnostic CLI", () => {
     expect(workflow).toContain("id-token: write")
     expect(workflow).toContain("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5")
     expect(workflow).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02")
-    expect(workflow).toContain("diagnose-project-finish-producer-context.mjs")
+    expect(workflow).toContain("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic")
+    expect(workflow).not.toContain("command -v node")
+    expect(workflow).not.toContain("env -i")
     expect(workflow).not.toContain("attestations:")
     expect(workflow).not.toContain("artifact-metadata:")
     expect(workflow).not.toContain("actions/attest")
@@ -158,23 +160,29 @@ function runDiagnostic(
     cwd: root,
     encoding: "utf8",
     env: {
-      GITHUB_ACTIONS: "true",
-      GITHUB_EVENT_NAME: "push",
-      GITHUB_REF: "refs/heads/main",
-      GITHUB_REPOSITORY: "example/public-gradle-app",
-      GITHUB_REPOSITORY_ID: "987654321",
-      GITHUB_REPOSITORY_VISIBILITY: "public",
-      GITHUB_RUN_ATTEMPT: "1",
-      GITHUB_RUN_ID: "1001",
-      GITHUB_SHA: callerSha,
-      GITHUB_WORKSPACE: workspace,
-      PERSONA_HARNESS_PRODUCER_SHA: producerSha,
-      RUNNER_ENVIRONMENT: "github-hosted",
-      RUNNER_OS: "Linux",
+      PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+      PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:
+        "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
+      PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: callerSha,
+      PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: "push",
+      PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: producerSha,
+      PROJECT_FINISH_DIAGNOSTIC_REF: "refs/heads/main",
+      PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
+      PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
+      PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
+      PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
+        "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+      PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: producerSha,
+      PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
+      PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
+      PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
+      PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
+      PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: callerSha,
+      PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: workspace,
       ...(includeOidcEndpoint
         ? {
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-          ACTIONS_ID_TOKEN_REQUEST_URL: oidcEndpoint,
+          PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: secret,
+          PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: oidcEndpoint,
         }
         : {}),
     },

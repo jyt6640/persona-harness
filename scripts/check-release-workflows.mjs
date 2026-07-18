@@ -36,8 +36,7 @@ const expectedActionCounts = {
     uploadArtifact: 2,
   },
   ".github/workflows/persona-harness-project-finish-context-diagnostic.yml": {
-    checkout: 2,
-    setupNode: 1,
+    checkout: 3,
     uploadArtifact: 1,
   },
   ".github/workflows/staged-package-artifact-attestation.yml": {
@@ -69,6 +68,18 @@ function hasImmutableActionPins(path, text) {
   }) && !/actions\/(?:attest|checkout|setup-node|upload-artifact)@v\d+\b/.test(text)
 }
 
+function hasContextDiagnosticSafeRuntime(text) {
+  const resolveStart = text.indexOf("  resolve:")
+  const diagnoseStart = text.indexOf("  diagnose:")
+  const resolve = resolveStart >= 0 && diagnoseStart > resolveStart ? text.slice(resolveStart, diagnoseStart) : ""
+  const diagnose = diagnoseStart >= 0 ? text.slice(diagnoseStart) : ""
+  return resolve.length > 0
+    && diagnose.length > 0
+    && !resolve.includes("id-token:")
+    && diagnose.includes("id-token: write")
+    && !/\n\s+run:/u.test(diagnose)
+}
+
 const requirements = [
   ["ci trigger", ".github/workflows/ci.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("- main")],
   ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm run test:repository", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
@@ -95,7 +106,7 @@ const requirements = [
   ["project finish attester boundary", ".github/workflows/persona-harness-project-finish.yml", (text) => !text.includes("npm publish") && !text.includes("git tag") && !text.includes("git push") && !text.includes("workflow finish") && text.includes("failure-diagnostic.json") && text.includes("if: always()") && text.includes("contents: read") && text.includes("id-token: write") && text.includes("attestations: write") && text.includes("artifact-metadata: write") && !text.includes("contents: write")],
   ["project finish context diagnostic trigger", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("workflow_call:") && !text.includes("inputs:") && !text.includes("workflow_dispatch:") && !text.includes("pull_request:") && !text.includes("push:")],
   ["project finish context diagnostic public push policy", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("github.event_name == 'push'") && text.includes("github.ref == 'refs/heads/main'") && text.includes("github.event.repository.private == false") && text.includes("git fetch origin main") && text.includes("git status --porcelain=v1")],
-  ["project finish context diagnostic fixed binding", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("persona-harness-project-finish-context-diagnostic.yml") && text.includes("CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}") && text.includes("matching.length !== 1") && !text.includes("GITHUB_JOB:") && text.includes("ref: ${{ steps.producer-pin.outputs.sha }}") && text.includes("PERSONA_HARNESS_PRODUCER_SHA") && text.includes("node scripts/verify-project-finish-producer-checkout.mjs") && text.includes("node scripts/diagnose-project-finish-producer-context.mjs")],
+  ["project finish context diagnostic fixed binding", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("persona-harness-project-finish-context-diagnostic.yml") && text.includes("CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}") && text.includes("matching.length !== 1") && !text.includes("GITHUB_JOB:") && text.includes("ref: ${{ steps.producer-pin.outputs.sha }}") && text.includes("PERSONA_HARNESS_PRODUCER_SHA") && text.includes("node scripts/verify-project-finish-producer-checkout.mjs") && text.includes("needs.resolve.outputs.producer-sha") && text.includes("needs.resolve.outputs.producer-checkout") && text.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic") && text.includes("diagnostic-caller-workflow-ref: ${{ github.workflow_ref }}") && text.includes("diagnostic-caller-workflow-sha: ${{ github.workflow_sha }}") && text.includes("diagnostic-reusable-workflow-ref: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main") && !text.includes("command -v node") && !text.includes("env -i") && !text.includes("Setup diagnostic Node") && hasContextDiagnosticSafeRuntime(text)],
   ["project finish context diagnostic boundary", ".github/workflows/persona-harness-project-finish-context-diagnostic.yml", (text) => text.includes("contents: read") && text.includes("id-token: write") && text.includes("project-finish-attestation-context-diagnostic") && text.includes("summary.json") && !text.includes("contents: write") && !text.includes("attestations:") && !text.includes("artifact-metadata:") && !text.includes("actions/attest") && !text.includes("npm ") && !text.includes("build-project-finish-attestation.mjs") && !text.includes("receipt.json") && !text.includes("predicate.json") && !text.includes("git tag") && !text.includes("git push") && !text.includes("workflow finish")],
   ["staged artifact attester trigger", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("workflow_dispatch:") && !text.includes("workflow_call:") && !text.includes("pull_request:") && !text.includes("push:")],
   ["staged artifact attester fixed inputs", ".github/workflows/staged-package-artifact-attestation.yml", (text) => text.includes("mode:") && text.includes("channel:") && text.includes("version:") && text.includes("          - produce") && text.includes("          - diagnose") && text.includes("          - staging") && text.includes("          - next") && !text.includes("registry_url:") && !text.includes("package_name:") && !text.includes("source_head:")],
@@ -120,6 +131,10 @@ const requirements = [
 
 async function main() {
   const contents = new Map(await Promise.all(workflowPaths.map(async (path) => [path, await readFile(path, "utf8")])))
+  const [contextActionMetadata, contextActionEntrypoint] = await Promise.all([
+    readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
+  ])
   const failures = []
   for (const [name, path, predicate] of requirements) {
     const text = contents.get(path)
@@ -136,6 +151,16 @@ async function main() {
     if (text.includes("pull_request_target")) {
       failures.push(`forbidden pull_request_target (${path})`)
     }
+  }
+  if (
+    !contextActionMetadata.includes("using: node20")
+    || !contextActionMetadata.includes("main: index.mjs")
+    || contextActionMetadata.includes("using: composite")
+    || contextActionMetadata.includes("run:")
+    || contextActionEntrypoint.includes("node:child_process")
+    || contextActionEntrypoint.includes("process.env.PATH")
+  ) {
+    failures.push("project finish context diagnostic local runtime")
   }
   if (failures.length > 0) {
     throw new Error(`Release workflow policy failed: ${failures.join(", ")}`)
