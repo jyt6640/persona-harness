@@ -102,13 +102,18 @@ or authority record. A separately uploaded summary artifact is diagnostic-only
 and is not attested or authority-bearing.
 
 The local `node20` action first uses only Node standard-library filesystem
-operations to create the fixed bounded summary at
-`.ci/project-finish-attestation-context-diagnostic/summary.json`. Only after
-that bootstrap does it dynamically load the fixed evaluator. A missing
-evaluator, evaluator load failure, or evaluator runtime failure overwrites the
-same artifact with a blocked, allowlisted summary and exits nonzero. The
-diagnostic job does not install dependencies, use an ambient dependency cache,
-or invoke a child process to obtain this artifact.
+operations to create the fixed bounded summary under the platform-owned runner
+temporary root at
+`project-finish-attestation-context-diagnostic/summary.json`. The action
+rejects relative, noncanonical, or symlinked temp roots and creates the child
+directory and summary file without following a caller-workspace path. The
+workflow uploads that exact runner-temp path with `if: always`; it never writes
+a diagnostic summary below caller workspace. Only after that bootstrap does it
+dynamically load the fixed evaluator. A missing evaluator, evaluator load
+failure, or evaluator runtime failure overwrites the same artifact with a
+blocked, allowlisted summary and exits nonzero. The diagnostic job does not
+install dependencies, use an ambient dependency cache, or invoke a child
+process to obtain this artifact.
 
 A diagnostic `match` is not a producer success and does not enable a retry,
 external trust, completion, release, or Finish authority. After protected
