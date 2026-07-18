@@ -31,7 +31,12 @@ path, duplicate declarations, malformed YAML, and unsafe workflow paths block
 with a bounded diagnostic. The caller checkout SHA is bound separately and is
 never used as the Persona Harness checkout ref. After checkout, the producer
 cross-checks the parsed SHA against the reusable-workflow identity claim before
-it builds the canonical subject.
+it builds the canonical subject. The checked-out producer must also have an
+exact matching HEAD and normalize to the fixed
+`github.com/jyt6640/persona-harness` identity. Only the canonical GitHub HTTPS
+checkout spelling, with or without its optional `.git` suffix, is accepted;
+credentials, userinfo, query or fragment components, another host, noncanonical
+paths, and SSH-style remotes block without reflecting the remote text.
 
 The canonical receipt bytes are the Artifact Attestation subject. The predicate
 binds their SHA-256 digest. The workflow uploads only the receipt, predicate,
