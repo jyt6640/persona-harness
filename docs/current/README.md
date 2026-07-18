@@ -53,6 +53,8 @@ deleting evidence/status history.
   [`p3-4-fresh-fixed-command-verifier-acceptance-record.md`](p3-4-fresh-fixed-command-verifier-acceptance-record.md).
 - P3-5 semantic TDD candidate:
   [`p3-5-semantic-tdd-acceptance-record.md`](p3-5-semantic-tdd-acceptance-record.md).
+- Consumer authority V1 decision:
+  [`consumer-authority-v1-decision.md`](consumer-authority-v1-decision.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
 - External review adoption status:

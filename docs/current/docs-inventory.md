@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 3
-- current active pointer/status: 42
+- current active pointer/status: 43
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 16
@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 59
 - versioned durable: 26
 
-Total indexed files: 332
+Total indexed files: 333
 
 ## File Inventory
 
@@ -56,6 +56,7 @@ Total indexed files: 332
 | `docs/current/ci-evidence-reverification-design.md` | current active pointer/status | - | Item 19 design lineage for the accepted reverification contract; it is not itself the current contract. |
 | `docs/current/ci-finish-contract.md` | current active pointer/status | - | Exact CI finish exit/stream and closure JSON artifact contract; documents the absence of `finish --json`. |
 | `docs/current/clean-opencode-ph-bearshell-smoke.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
+| `docs/current/consumer-authority-v1-decision.md` | current active pointer/status | - | Issue #108 V1 decision: bounded signed-push claims, separate user-scoped enrollment, public-only scope, cooperative same-invocation requirements, and Finish-only consumption. No authority behavior is enabled. |
 | `docs/current/desktop-test-artifacts-index.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/diff-rules-classification.md` | current active pointer/status | - | T6 classification table for all `references/diff-rules` files; docs-only scope fixture for future T8/T7 decisions. |
 | `docs/current/diff-rules-distribution-retirement-acceptance-record.md` | current active pointer/status | - | Item 12 exact-main package/init diff-rules retirement, legacy advisory, and claim boundary record. |
