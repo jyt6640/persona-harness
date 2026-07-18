@@ -140,8 +140,19 @@ function runAction(path, environment) {
   return spawnSync(process.execPath, [path], {
     cwd: sourceRoot(),
     encoding: "utf8",
-    env: environment,
+    env: githubActionEnvironment(environment),
   })
+}
+
+function githubActionEnvironment(environment) {
+  return Object.fromEntries(
+    Object.entries(environment).map(([name, value]) => [
+      name.startsWith("INPUT_")
+        ? `INPUT_${name.slice("INPUT_".length).replaceAll("_", "-")}`
+        : name,
+      value,
+    ]),
+  )
 }
 
 function actionOutput(path, name) {
@@ -234,7 +245,7 @@ function fallbackSummary() {
 }
 
 function input(name) {
-  const value = process.env[`INPUT_${name}`]
+  const value = process.env[`INPUT_${name.replaceAll("_", "-")}`]
   return typeof value === "string" && value.length > 0 && value.length <= 1_024 && !/[\u0000\r\n]/u.test(value)
     ? value
     : undefined

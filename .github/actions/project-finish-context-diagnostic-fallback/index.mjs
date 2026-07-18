@@ -42,7 +42,7 @@ function canonicalRunnerTemp() {
 }
 
 function actionInput(name) {
-  const value = process.env[`INPUT_${name}`]
+  const value = process.env[`INPUT_${name.replaceAll("_", "-")}`]
   return typeof value === "string" ? value : undefined
 }
 

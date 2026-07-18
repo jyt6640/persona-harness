@@ -34,6 +34,23 @@ const runtimeSources = [
 ] as const
 
 describe("project finish context diagnostic workflow fallback", () => {
+  it("reads GitHub's hyphenated local-action input name before creating the fallback", () => {
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-fallback-temp-")))
+    try {
+      const fallback = run(fallbackActionPath, {
+        "INPUT_DIAGNOSTIC-RUNNER-TEMP": runnerTemp,
+      })
+
+      expect(fallback.status).toBe(0)
+      expect(readSummary(runnerTemp)).toMatchObject({
+        failure_stage: "fallback",
+        outcome: "blocked",
+      })
+    } finally {
+      rmSync(runnerTemp, { force: true, recursive: true })
+    }
+  })
+
   it("preserves the trusted fallback when the exact action entrypoint cannot load its evaluator", () => {
     const fixture = createActionCheckout()
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-fallback-temp-")))
@@ -159,6 +176,10 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(selftestWorkflow).not.toContain("id-token:")
       expect(selftestWorkflow).not.toContain("npm install")
       expect(selftestWorkflow).not.toContain("npm ci")
+      expect(readFileSync(fallbackActionPath, "utf8")).toContain('name.replaceAll("_", "-")')
+      expect(readFileSync(finalizerActionPath, "utf8")).toContain('name.replaceAll("_", "-")')
+      expect(readFileSync(actionPath, "utf8")).toContain('name.replaceAll("_", "-")')
+      expect(readFileSync(selftestActionPath, "utf8")).toContain('name.replaceAll("_", "-")')
     } finally {
       rmSync(runnerTemp, { force: true, recursive: true })
     }
@@ -210,10 +231,21 @@ function run(path: string, environment: Readonly<Record<string, string>>) {
     cwd: root,
     encoding: "utf8",
     env: {
-      ...environment,
+      ...githubActionEnvironment(environment),
       NODE_PATH: "",
     },
   })
+}
+
+function githubActionEnvironment(environment: Readonly<Record<string, string>>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(environment).map(([name, value]) => [
+      name.startsWith("INPUT_")
+        ? `INPUT_${name.slice("INPUT_".length).replaceAll("_", "-")}`
+        : name,
+      value,
+    ]),
+  )
 }
 
 function readSummary(runnerTemp: string): Record<string, unknown> {

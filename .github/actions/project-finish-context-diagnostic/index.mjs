@@ -74,7 +74,7 @@ function forwardedEnvironment() {
 }
 
 function actionInput(name) {
-  return platformEnvironment(`INPUT_${name}`)
+  return platformEnvironment(`INPUT_${name.replaceAll("_", "-")}`)
 }
 
 function platformEnvironment(name) {

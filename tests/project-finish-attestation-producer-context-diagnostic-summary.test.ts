@@ -260,12 +260,12 @@ function runAction(
   spawnSync(process.execPath, [fallbackActionSource], {
     cwd: fixture,
     encoding: "utf8",
-    env: actionEnvironment,
+    env: githubActionEnvironment(actionEnvironment),
   })
   return spawnSync(process.execPath, [...nodeArguments, join(fixture, ".github", "actions", "project-finish-context-diagnostic", "index.mjs")], {
     cwd: fixture,
     encoding: "utf8",
-    env: actionEnvironment,
+    env: githubActionEnvironment(actionEnvironment),
   })
 }
 
@@ -293,6 +293,17 @@ function environment(workspace: string, runnerTemp: string): Record<string, stri
     INPUT_DIAGNOSTIC_SOURCE_HEAD: callerSha,
     NODE_PATH: "",
   }
+}
+
+function githubActionEnvironment(environment: Readonly<Record<string, string>>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(environment).map(([name, value]) => [
+      name.startsWith("INPUT_")
+        ? `INPUT_${name.slice("INPUT_".length).replaceAll("_", "-")}`
+        : name,
+      value,
+    ]),
+  )
 }
 
 function summaryPath(runnerTemp: string): string {

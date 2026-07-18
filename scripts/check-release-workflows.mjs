@@ -108,6 +108,7 @@ function hasContextDiagnosticFallbackRuntime(metadata, entrypoint) {
     && !metadata.includes("run:")
     && entrypoint.includes('project-finish-attestation-context-diagnostic-fallback-pending')
     && entrypoint.includes('const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"')
+    && entrypoint.includes('name.replaceAll("_", "-")')
     && !entrypoint.includes("node:child_process")
     && !entrypoint.includes("process.env.PATH")
     && !entrypoint.includes("ACTIONS_ID_TOKEN")
@@ -120,6 +121,7 @@ function hasContextDiagnosticFinalizerRuntime(metadata, entrypoint) {
     && metadata.includes("diagnostic-summary-status:")
     && entrypoint.includes('project-finish-attestation-context-diagnostic-finalizer-blocked')
     && entrypoint.includes('writeOutput("outcome", outcome)')
+    && entrypoint.includes('name.replaceAll("_", "-")')
     && !entrypoint.includes("node:child_process")
     && !entrypoint.includes("process.env.PATH")
 }
@@ -215,6 +217,7 @@ async function main() {
     || contextActionMetadata.includes("run:")
     || contextActionEntrypoint.includes("node:child_process")
     || contextActionEntrypoint.includes("process.env.PATH")
+    || !contextActionEntrypoint.includes('name.replaceAll("_", "-")')
     || !hasContextDiagnosticSummaryReplacement(contextActionEntrypoint)
     || !hasContextDiagnosticFallbackRuntime(fallbackActionMetadata, fallbackActionEntrypoint)
     || !hasContextDiagnosticFinalizerRuntime(finalizerActionMetadata, finalizerActionEntrypoint)

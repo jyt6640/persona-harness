@@ -172,7 +172,7 @@ function writeOutput(name, value) {
 }
 
 function boundedInput(name) {
-  const value = process.env[`INPUT_${name}`]
+  const value = process.env[`INPUT_${name.replaceAll("_", "-")}`]
   return typeof value === "string" && value.length > 0 && value.length <= 1_024 && !/[\u0000\r\n]/u.test(value)
     ? value
     : undefined

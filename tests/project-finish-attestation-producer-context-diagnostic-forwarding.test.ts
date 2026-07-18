@@ -229,12 +229,12 @@ function runDiagnosticAction(
   spawnSync(process.execPath, [fallbackActionPath], {
     cwd: root,
     encoding: "utf8",
-    env: environment,
+    env: githubActionEnvironment(environment),
   })
   return spawnSync(process.execPath, [...nodeArguments, actionPath], {
     cwd: root,
     encoding: "utf8",
-    env: environment,
+    env: githubActionEnvironment(environment),
   })
 }
 
@@ -294,6 +294,17 @@ function actionEnvironment(workspace: string, shadowDirectory: string, markerPat
     PATH: shadowDirectory,
     SHADOW_EXECUTION_MARKER: markerPath,
   }
+}
+
+function githubActionEnvironment(environment: Readonly<Record<string, string>>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(environment).map(([name, value]) => [
+      name.startsWith("INPUT_")
+        ? `INPUT_${name.slice("INPUT_".length).replaceAll("_", "-")}`
+        : name,
+      value,
+    ]),
+  )
 }
 
 function summaryPath(workspace: string): string {
