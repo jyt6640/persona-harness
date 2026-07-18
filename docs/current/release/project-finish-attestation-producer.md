@@ -53,6 +53,33 @@ bound repository, workflow, run, and source facts. It does not prove branch
 protection, enrollment, review, approval, or any push-to-enrolled-main claim.
 Enrollment remains separate user-scoped policy for a later verifier.
 
+## Context Diagnostic Gate
+
+When a genuine reusable producer invocation blocks before signing with a
+bounded context code, the separate reusable workflow
+`.github/workflows/persona-harness-project-finish-context-diagnostic.yml`
+can be pinned by a public caller on a fresh `push` to `refs/heads/main`.
+It has no caller inputs and repeats the same caller-source verification,
+immutable caller-pin parsing, immutable Persona checkout, and fixed
+public-push context policy before it reads the fixed GitHub OIDC claim in
+memory.
+
+Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
+statuses and bounded diagnostic codes. It does not store a JWT, token, header,
+repository URL, ref, SHA, workspace path, source content, or caller input. The
+diagnostic has no registry or arbitrary network route; its only platform read
+is the fixed OIDC claim endpoint required to inspect the invocation context.
+It creates no receipt, predicate, signed bundle, attestation, Finish result,
+or authority record. A separately uploaded summary artifact is diagnostic-only
+and is not attested or authority-bearing.
+
+A diagnostic `match` is not a producer success and does not enable a retry,
+external trust, completion, release, or Finish authority. After protected
+integration and fresh source QA plus External approval, one authorized public
+fixture diagnostic push may preserve its sanitized summary. That result is the
+required observability gate before any later separately authorized producer
+retry.
+
 ## Source Candidate Boundary
 
 The tracked caller workflow fixture is a static source contract only. It uses
