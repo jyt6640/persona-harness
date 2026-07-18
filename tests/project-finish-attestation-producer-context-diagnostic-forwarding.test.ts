@@ -157,6 +157,12 @@ describe("project finish context diagnostic forwarding", () => {
     const diagnosticStep = diagnosticStart >= 0 && uploadStart > diagnosticStart
       ? workflow.slice(diagnosticStart, uploadStart)
       : ""
+    const resolveStart = workflow.indexOf("  resolve:")
+    const diagnoseJobStart = workflow.indexOf("  diagnose:")
+    const resolve = resolveStart >= 0 && diagnoseJobStart > resolveStart
+      ? workflow.slice(resolveStart, diagnoseJobStart)
+      : ""
+    const diagnosticJob = diagnoseJobStart >= 0 ? workflow.slice(diagnoseJobStart) : ""
 
     expect(existsSync(actionMetadataPath)).toBe(true)
     expect(existsSync(actionPath)).toBe(true)
@@ -165,6 +171,9 @@ describe("project finish context diagnostic forwarding", () => {
     expect(diagnosticStep).not.toContain("env -i")
     expect(diagnosticStep).not.toContain("command -v node")
     expect(workflow).not.toContain("Setup diagnostic Node")
+    expect(resolve).not.toContain("id-token:")
+    expect(diagnosticJob).toContain("id-token: write")
+    expect(diagnosticJob).not.toMatch(/\n\s+run:/u)
     const actionMetadata = readFileSync(actionMetadataPath, "utf8")
     const action = readFileSync(actionPath, "utf8")
     expect(actionMetadata).toContain("using: node20")
