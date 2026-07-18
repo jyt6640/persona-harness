@@ -42,8 +42,10 @@ describe("project finish attestation producer workflow contract", () => {
     expect(workflow).not.toContain("git push")
     expect(workflow).not.toContain("workflow finish")
     expect(workflow).toContain("id: producer-pin")
+    expect(workflow).toContain("node <<'NODE'")
     expect(workflow).toContain("ref: ${{ steps.producer-pin.outputs.sha }}")
     expect(workflow).not.toContain("ref: ${{ github.workflow_sha }}")
+    expect(workflow).not.toContain("ruby <<")
   })
 
   it("uses only platform-derived OIDC workflow claims in the bounded artifact builder", () => {
@@ -84,6 +86,10 @@ describe("project finish attestation producer workflow contract", () => {
     expect(resolveProducerPin(caller)).toBe(expectedSha)
   })
 
+  it("derives a valid producer pin without a host Ruby executable", () => {
+    expect(resolveProducerPin(callerWorkflow("d".repeat(40)), { PATH: "" })).toBe("d".repeat(40))
+  })
+
   it.each([
     ["mutable branch", callerWorkflow("main")],
     ["mutable tag", callerWorkflow("v0.7.0")],
@@ -116,23 +122,24 @@ jobs:
 `
 }
 
-function resolveProducerPin(callerWorkflowSource: string): string {
+function resolveProducerPin(callerWorkflowSource: string, environment: NodeJS.ProcessEnv = {}): string {
   const workflow = readFileSync(workflowPath, "utf8")
-  const resolver = rubyResolver(workflow)
+  const resolver = nodeResolver(workflow)
   const fixtureDirectory = mkdtempSync(join(tmpdir(), "project-finish-producer-caller-pin-"))
   const fixtureRoot = realpathSync(fixtureDirectory)
   const callerPath = join(fixtureRoot, ".github", "workflows", "caller.yml")
   const outputPath = join(fixtureRoot, "output")
-  const resolverPath = join(fixtureRoot, "resolver.rb")
+  const resolverPath = join(fixtureRoot, "resolver.cjs")
   mkdirSync(join(fixtureRoot, ".github", "workflows"), { recursive: true })
   writeFileSync(callerPath, callerWorkflowSource)
   writeFileSync(resolverPath, resolver)
 
   try {
-    execFileSync("ruby", [resolverPath], {
+    execFileSync(process.execPath, [resolverPath], {
       encoding: "utf8",
       env: {
         ...process.env,
+        ...environment,
         CALLER_WORKFLOW_PATH: callerPath,
         GITHUB_REPOSITORY: "example/public-gradle-app",
         GITHUB_JOB: "attest",
@@ -149,8 +156,8 @@ function resolveProducerPin(callerWorkflowSource: string): string {
   }
 }
 
-function rubyResolver(workflow: string): string {
-  const match = /# BEGIN PRODUCER_PIN_RESOLVER\n(?<resolver>[\s\S]+?)# END PRODUCER_PIN_RESOLVER/u.exec(workflow)
+function nodeResolver(workflow: string): string {
+  const match = /\/\/ BEGIN PRODUCER_PIN_RESOLVER\n(?<resolver>[\s\S]+?)\/\/ END PRODUCER_PIN_RESOLVER/u.exec(workflow)
   if (match?.groups?.resolver === undefined) {
     throw new Error("project-finish-producer-caller-pin")
   }

@@ -45,84 +45,129 @@ jobs:
           CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
           GITHUB_JOB: ${{ github.job }}
         run: |
-          ruby <<'RUBY'
-          # BEGIN PRODUCER_PIN_RESOLVER
-          require "yaml"
-          require "psych"
+          node <<'NODE'
+          // BEGIN PRODUCER_PIN_RESOLVER
+          const fs = require("node:fs")
+          const path = require("node:path")
 
-          EXPECTED_REPOSITORY = "jyt6640/persona-harness"
-          EXPECTED_WORKFLOW_PATH = ".github/workflows/persona-harness-project-finish.yml"
-          EXPECTED_TARGET = "#{EXPECTED_REPOSITORY}/#{EXPECTED_WORKFLOW_PATH}"
-          CALLER_PATH = /\A\.github\/workflows\/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.ya?ml\z/
-          PINNED_TARGET = /\A#{Regexp.escape(EXPECTED_TARGET)}@([a-f0-9]{40})\z/
+          const FAILURE_CODE = "project-finish-producer-caller-pin"
+          const EXPECTED_REPOSITORY = "jyt6640/persona-harness"
+          const EXPECTED_WORKFLOW_PATH = ".github/workflows/persona-harness-project-finish.yml"
+          const EXPECTED_TARGET = `${EXPECTED_REPOSITORY}/${EXPECTED_WORKFLOW_PATH}`
+          const MAX_WORKFLOW_BYTES = 128 * 1024
+          const CALLER_PATH = /^\.github\/workflows\/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.ya?ml$/u
+          const PINNED_TARGET = new RegExp(`^${escapeRegExp(EXPECTED_TARGET)}@([a-f0-9]{40})$`, "u")
 
-          def fail_closed
-            raise "project-finish-producer-caller-pin"
-          end
+          function failClosed() {
+            throw new Error(FAILURE_CODE)
+          }
 
-          def reject_duplicate_mapping_keys(node)
-            case node
-            when Psych::Nodes::Document, Psych::Nodes::Sequence, Psych::Nodes::Stream
-              node.children.each { |child| reject_duplicate_mapping_keys(child) }
-            when Psych::Nodes::Mapping
-              keys = {}
-              node.children.each_slice(2) do |key, value|
-                fail_closed unless key.is_a?(Psych::Nodes::Scalar)
-                fail_closed if keys.key?(key.value)
-                keys[key.value] = true
-                reject_duplicate_mapping_keys(value)
-              end
-            when Psych::Nodes::Alias
-              fail_closed
-            end
-          end
+          function requiredEnv(name) {
+            const value = process.env[name]
+            if (typeof value !== "string" || value.length === 0 || value.length > 512 || /[\u0000\r\n]/u.test(value)) failClosed()
+            return value
+          }
 
-          begin
-            workspace = File.realpath(ENV.fetch("GITHUB_WORKSPACE"))
-            repository = ENV.fetch("GITHUB_REPOSITORY")
-            workflow_ref = ENV.fetch("CALLER_WORKFLOW_REF")
-            job_name = ENV.fetch("GITHUB_JOB")
-            ref_match = /\A#{Regexp.escape(repository)}\/(.+)@refs\/heads\/main\z/.match(workflow_ref)
-            fail_closed if ref_match.nil?
-            relative_path = ref_match[1]
-            fail_closed unless CALLER_PATH.match?(relative_path)
+          function escapeRegExp(value) {
+            return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
+          }
 
-            candidate = File.expand_path(relative_path, workspace)
-            fail_closed unless candidate.start_with?("#{workspace}/")
-            fail_closed unless File.lstat(candidate).file?
-            fail_closed unless File.realpath(candidate) == candidate
+          function structuredJobs(source) {
+            const lines = source.split(/\r?\n/u).flatMap((raw, index) => {
+              if (raw.includes("\u0000") || raw.includes("\t")) failClosed()
+              const content = stripComment(raw.slice(raw.search(/\S/u)))
+              return content.length === 0 ? [] : [{ content, indent: raw.length - raw.trimStart().length, line: index + 1 }]
+            })
+            const roots = lines.filter(({ content, indent }) => indent === 0 && content === "jobs:")
+            if (roots.length !== 1) failClosed()
+            const jobsRoot = roots[0]
+            const section = lines.filter(({ indent, line }) => line > jobsRoot.line && indent > jobsRoot.indent)
+            if (section.length === 0) failClosed()
+            const jobIndent = section[0].indent
+            const jobs = new Map()
+            let current
 
-            source = File.read(candidate)
-            stream = Psych.parse_stream(source)
-            fail_closed unless stream.children.length == 1
-            reject_duplicate_mapping_keys(stream.children[0])
-            document = YAML.safe_load(source, [], [], false)
-            fail_closed unless document.is_a?(Hash)
-            jobs = document["jobs"]
-            fail_closed unless jobs.is_a?(Hash)
-            current_job = jobs[job_name]
-            fail_closed unless current_job.is_a?(Hash)
-            current_uses = current_job["uses"]
-            fail_closed unless current_uses.is_a?(String)
+            for (const entry of section) {
+              if (entry.indent < jobIndent) break
+              if (entry.indent === jobIndent) {
+                const match = /^([A-Za-z0-9_-]{1,128}):$/u.exec(entry.content)
+                if (match === null || jobs.has(match[1])) failClosed()
+                current = { keys: new Set(), name: match[1], propertyIndent: undefined, uses: undefined }
+                jobs.set(match[1], current)
+                continue
+              }
+              if (current === undefined) failClosed()
+              if (current.propertyIndent === undefined) current.propertyIndent = entry.indent
+              if (entry.indent !== current.propertyIndent) continue
 
-            matching_jobs = jobs.each_with_object([]) do |(name, job), values|
-              next unless name.is_a?(String) && job.is_a?(Hash)
-              uses = job["uses"]
-              next unless uses.is_a?(String) && uses.start_with?("#{EXPECTED_TARGET}@")
-              values << [name, uses]
-            end
-            pin_match = PINNED_TARGET.match(current_uses)
-            fail_closed if pin_match.nil?
-            fail_closed unless matching_jobs == [[job_name, current_uses]]
+              const match = /^([A-Za-z0-9_-]{1,128}):(?:[ ]+(.*))?$/u.exec(entry.content)
+              if (match === null || current.keys.has(match[1])) failClosed()
+              current.keys.add(match[1])
+              if (match[1] === "uses") current.uses = parseScalar(match[2])
+            }
+            return jobs
+          }
 
-            File.open(ENV.fetch("GITHUB_OUTPUT"), "a") do |output|
-              output.write("sha=#{pin_match[1]}\n")
-            end
-          rescue StandardError
-            abort "project-finish-producer-caller-pin"
-          end
-          # END PRODUCER_PIN_RESOLVER
-          RUBY
+          function stripComment(value) {
+            let quote = ""
+            for (let index = 0; index < value.length; index += 1) {
+              const character = value[index]
+              if (quote === "") {
+                if (character === "'" || character === "\"") quote = character
+                if (character === "#" && (index === 0 || /\s/u.test(value[index - 1]))) return value.slice(0, index).trimEnd()
+              } else if (character === quote && value[index - 1] !== "\\") {
+                quote = ""
+              }
+            }
+            return value.trimEnd()
+          }
+
+          function parseScalar(value) {
+            if (typeof value !== "string" || value.length === 0 || value.length > 512) failClosed()
+            if (value.startsWith("\"")) {
+              try {
+                const decoded = JSON.parse(value)
+                if (typeof decoded !== "string") failClosed()
+                return decoded
+              } catch {
+                failClosed()
+              }
+            }
+            if (value.startsWith("'")) {
+              if (!/^'[^']*'$/u.test(value)) failClosed()
+              return value.slice(1, -1)
+            }
+            if (/[&*!|>{}\[\],]/u.test(value)) failClosed()
+            return value
+          }
+
+          try {
+            const workspace = fs.realpathSync(requiredEnv("GITHUB_WORKSPACE"))
+            const repository = requiredEnv("GITHUB_REPOSITORY")
+            const workflowRef = requiredEnv("CALLER_WORKFLOW_REF")
+            const jobName = requiredEnv("GITHUB_JOB")
+            const reference = new RegExp(`^${escapeRegExp(repository)}/(.+)@refs/heads/main$`, "u").exec(workflowRef)
+            if (reference === null || !CALLER_PATH.test(reference[1])) failClosed()
+
+            const candidate = path.resolve(workspace, reference[1])
+            if (path.relative(workspace, candidate).startsWith("..") || !fs.lstatSync(candidate).isFile() || fs.realpathSync(candidate) !== candidate) failClosed()
+
+            const source = fs.readFileSync(candidate, "utf8")
+            if (Buffer.byteLength(source, "utf8") > MAX_WORKFLOW_BYTES) failClosed()
+            const jobs = structuredJobs(source)
+            const current = jobs.get(jobName)
+            if (current === undefined || current.uses === undefined) failClosed()
+            const matching = [...jobs.values()].filter(({ uses }) => typeof uses === "string" && uses.startsWith(`${EXPECTED_TARGET}@`))
+            const pin = PINNED_TARGET.exec(current.uses)
+            if (pin === null || matching.length !== 1 || matching[0] !== current) failClosed()
+
+            fs.appendFileSync(requiredEnv("GITHUB_OUTPUT"), `sha=${pin[1]}\n`, { encoding: "utf8", mode: 0o600 })
+          } catch {
+            process.stderr.write(`${FAILURE_CODE}\n`)
+            process.exitCode = 1
+          }
+          // END PRODUCER_PIN_RESOLVER
+          NODE
 
       - name: Checkout immutable Persona Harness producer
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
