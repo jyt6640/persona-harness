@@ -120,6 +120,8 @@ uploads the fixed runner-temp path with `if: always` before a token-blind local
 action marks a blocked diagnostic nonzero. It never writes a diagnostic summary
 below caller workspace, installs dependencies, uses an ambient dependency
 cache, or invokes a child process to obtain the diagnostic artifact.
+Each local action reads only the declared hyphenated GitHub Actions input name;
+there is no test-only underscore input alias in the hosted path.
 
 A separate hosted Linux `node20` selftest executes the exact local entrypoint
 from a checkout without `node_modules` or `npm install`. It checks missing
