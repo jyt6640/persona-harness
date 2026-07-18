@@ -41,7 +41,6 @@ jobs:
         id: producer-pin
         env:
           CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
-          GITHUB_JOB: ${{ github.job }}
         run: |
           node <<'NODE'
           const fs = require("node:fs")
@@ -142,7 +141,6 @@ jobs:
             const workspace = fs.realpathSync(requiredEnv("GITHUB_WORKSPACE"))
             const repository = requiredEnv("GITHUB_REPOSITORY")
             const workflowRef = requiredEnv("CALLER_WORKFLOW_REF")
-            const jobName = requiredEnv("GITHUB_JOB")
             const reference = new RegExp(`^${escapeRegExp(repository)}/(.+)@refs/heads/main$`, "u").exec(workflowRef)
             if (reference === null || !CALLER_PATH.test(reference[1])) failClosed()
 
@@ -152,11 +150,10 @@ jobs:
             const source = fs.readFileSync(candidate, "utf8")
             if (Buffer.byteLength(source, "utf8") > MAX_WORKFLOW_BYTES) failClosed()
             const jobs = structuredJobs(source)
-            const current = jobs.get(jobName)
-            if (current === undefined || current.uses === undefined) failClosed()
             const matching = [...jobs.values()].filter(({ uses }) => typeof uses === "string" && uses.startsWith(`${EXPECTED_TARGET}@`))
-            const pin = PINNED_TARGET.exec(current.uses)
-            if (pin === null || matching.length !== 1 || matching[0] !== current) failClosed()
+            if (matching.length !== 1 || matching[0]?.uses === undefined) failClosed()
+            const pin = PINNED_TARGET.exec(matching[0].uses)
+            if (pin === null) failClosed()
 
             fs.appendFileSync(requiredEnv("GITHUB_OUTPUT"), `sha=${pin[1]}\n`, { encoding: "utf8", mode: 0o600 })
           } catch {
