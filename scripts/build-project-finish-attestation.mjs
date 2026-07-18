@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process"
 import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs"
 import { get } from "node:https"
 import { isAbsolute, join, relative } from "node:path"
@@ -10,6 +9,9 @@ import {
 import {
   PROJECT_FINISH_ATTESTATION_POLICY,
 } from "../dist/cli/project-finish-attestation-types.js"
+import {
+  verifyProjectFinishProducerCheckout,
+} from "./verify-project-finish-producer-checkout.mjs"
 
 const OUTPUT_DIRECTORY = ".ci/project-finish-attestation"
 const MAX_OIDC_RESPONSE_BYTES = 64 * 1024
@@ -145,10 +147,7 @@ function readJson(url, requestToken) {
 }
 
 function verifyProducerCheckout(producerRoot, reusableWorkflowSha) {
-  if (
-    gitText(producerRoot, ["rev-parse", "HEAD"]) !== reusableWorkflowSha
-    || gitText(producerRoot, ["config", "--get", "remote.origin.url"]) !== "https://github.com/jyt6640/persona-harness.git"
-  ) {
+  if (verifyProjectFinishProducerCheckout(producerRoot, reusableWorkflowSha).kind === "blocked") {
     throw new ProducerScriptError("project-finish-producer-checkout")
   }
 }
@@ -237,10 +236,6 @@ function diagnosticCode(error) {
   return error instanceof ProducerScriptError && /^[a-z0-9-]{1,128}$/u.test(error.code)
     ? error.code
     : "project-finish-producer-failed"
-}
-
-function gitText(cwd, args) {
-  return execFileSync("git", args, { cwd, encoding: "utf8" }).trim()
 }
 
 function isRecord(value) {
