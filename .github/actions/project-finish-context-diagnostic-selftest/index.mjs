@@ -21,6 +21,7 @@ const FAILURE_CODE = "project-finish-producer-context-diagnostic-selftest-failed
 const OUTPUT_DIRECTORY = "project-finish-context-diagnostic-selftest"
 const SUMMARY_FILENAME = "summary.json"
 const DIAGNOSTIC_DIRECTORY = "project-finish-attestation-context-diagnostic"
+const SELFTEST_SECRET = "PH_CONTEXT_DIAGNOSTIC_SELFTEST_SECRET"
 const RUNTIME_SOURCES = [
   "diagnose-project-finish-producer-context.mjs",
   "project-finish-attestation-oidc.mjs",
@@ -35,6 +36,7 @@ function main() {
   const summaryPath = join(summaryDirectory, SUMMARY_FILENAME)
   writeJson(summaryPath, fallbackSummary())
   const cases = [
+    runCase("canonical-context", "canonical-context"),
     runCase("missing-evaluator", "missing"),
     runCase("runtime-error", "runtime-error"),
     runCase("oidc-blocked", "oidc-blocked"),
@@ -59,30 +61,45 @@ function runCase(id, kind) {
     mkdirSync(diagnosticTemp, { mode: 0o700 })
     createDiagnosticCheckout(checkout, kind)
 
-    const fallback = runAction(fallbackEntrypoint(), {
+    const fallback = runInputAction(fallbackEntrypoint(), {
       INPUT_DIAGNOSTIC_RUNNER_TEMP: diagnosticTemp,
     })
     const outputPath = join(caseRoot, "outputs")
-    const diagnostic = runAction(join(checkout, ".github", "actions", "project-finish-context-diagnostic", "index.mjs"), {
-      ...diagnosticEnvironment(diagnosticTemp),
-      GITHUB_OUTPUT: outputPath,
-    })
-    const finalizer = runAction(finalizerEntrypoint(), {
+    const oidcToken = kind === "canonical-context"
+      ? `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
+      : undefined
+    const hookPath = join(caseRoot, "oidc-hook.mjs")
+    if (oidcToken !== undefined) writeFileSyncSafe(hookPath, oidcHook(oidcToken))
+    const diagnostic = runAction(
+      join(checkout, ".github", "actions", "project-finish-context-diagnostic", "index.mjs"),
+      {
+        ...diagnosticEnvironment(diagnosticTemp, oidcToken === undefined ? undefined : SELFTEST_SECRET),
+        INPUT_DIAGNOSTIC_EVENT_NAME: `hostile-${SELFTEST_SECRET}`,
+        INPUT_DIAGNOSTIC_RUNNER_TEMP: `hostile-${SELFTEST_SECRET}`,
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: `ambient-${SELFTEST_SECRET}`,
+        ACTIONS_ID_TOKEN_REQUEST_URL: `https://untrusted.example/${SELFTEST_SECRET}`,
+        GITHUB_OUTPUT: outputPath,
+      },
+      oidcToken === undefined ? [] : ["--import", hookPath],
+    )
+    const finalizer = runInputAction(finalizerEntrypoint(), {
       INPUT_DIAGNOSTIC_RUNNER_TEMP: diagnosticTemp,
       INPUT_DIAGNOSTIC_STEP_OUTCOME: diagnostic.status === 0 ? "success" : "failure",
       INPUT_DIAGNOSTIC_SUMMARY_STATUS: actionOutput(outputPath, "summary-status") ?? "",
     })
     const summary = readDiagnosticSummary(diagnosticTemp)
-    const expectedStage = kind === "oidc-blocked" ? "context" : "fallback"
+    const expectsMatch = kind === "canonical-context"
+    const expectedStage = kind === "oidc-blocked" || expectsMatch ? "context" : "fallback"
     const safe =
       fallback.status === 0 &&
       finalizer.status === 0 &&
-      diagnostic.status === 1 &&
+      diagnostic.status === (expectsMatch ? 0 : 1) &&
       isRecord(summary) &&
-      summary.outcome === "blocked" &&
+      summary.outcome === (expectsMatch ? "match" : "blocked") &&
       summary.failure_stage === expectedStage &&
+      (!expectsMatch || hasOnlyMatchingFields(summary)) &&
       !existsSync(join(checkout, "node_modules")) &&
-      doesNotReflect(`${diagnostic.stdout}${diagnostic.stderr}${finalizer.stdout}${finalizer.stderr}${JSON.stringify(summary)}`)
+      doesNotReflect(`${diagnostic.stdout}${diagnostic.stderr}${finalizer.stdout}${finalizer.stderr}${JSON.stringify(summary)}`, oidcToken)
     return { id, status: safe ? "match" : "mismatch" }
   } finally {
     rmSync(caseRoot, { force: true, recursive: true })
@@ -102,46 +119,54 @@ function createDiagnosticCheckout(checkout, kind) {
     )
     return
   }
-  if (kind === "oidc-blocked") {
+  if (kind === "oidc-blocked" || kind === "canonical-context") {
     for (const source of RUNTIME_SOURCES) {
       copyFileSync(join(sourceRoot(), "scripts", source), join(scriptsDirectory, source))
     }
   }
 }
 
-function diagnosticEnvironment(runnerTemp) {
+function diagnosticEnvironment(runnerTemp, token) {
   return {
-    INPUT_DIAGNOSTIC_ACTIONS: "true",
-    INPUT_DIAGNOSTIC_CALLER_WORKFLOW_REF:
+    PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+    PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:
       "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
-    INPUT_DIAGNOSTIC_CALLER_WORKFLOW_SHA: "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
-    INPUT_DIAGNOSTIC_EVENT_NAME: "push",
-    INPUT_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
-    INPUT_DIAGNOSTIC_PRODUCER_SHA: "3bef5f4696769fb11042e881387ff83045a542ef",
-    INPUT_DIAGNOSTIC_REF: "refs/heads/main",
-    INPUT_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
-    INPUT_DIAGNOSTIC_REPOSITORY_ID: "987654321",
-    INPUT_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
-    INPUT_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
+    PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
+    PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: "push",
+    PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: token ?? "",
+    PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: token === undefined
+      ? ""
+      : "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
+    PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: "3bef5f4696769fb11042e881387ff83045a542ef",
+    PROJECT_FINISH_DIAGNOSTIC_REF: "refs/heads/main",
+    PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
+    PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
+    PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
+    PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
       "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
-    INPUT_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: "3bef5f4696769fb11042e881387ff83045a542ef",
-    INPUT_DIAGNOSTIC_RUN_ATTEMPT: "1",
-    INPUT_DIAGNOSTIC_RUN_ID: "1001",
-    INPUT_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
-    INPUT_DIAGNOSTIC_RUNNER_OS: "Linux",
-    INPUT_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
-    INPUT_DIAGNOSTIC_SOURCE_HEAD: "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
+    PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: "3bef5f4696769fb11042e881387ff83045a542ef",
+    PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
+    PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
+    PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
+    PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
+    PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
+    PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
     NODE_PATH: "",
-    UNRELATED_SECRET: "PH_CONTEXT_DIAGNOSTIC_SELFTEST_SECRET",
+    UNRELATED_SECRET: SELFTEST_SECRET,
   }
 }
 
-function runAction(path, environment) {
-  return spawnSync(process.execPath, [path], {
+function runAction(path, environment, nodeArguments = []) {
+  return spawnSync(process.execPath, [...nodeArguments, path], {
     cwd: sourceRoot(),
     encoding: "utf8",
-    env: githubActionEnvironment(environment),
+    env: environment,
   })
+}
+
+function runInputAction(path, environment) {
+  return runAction(path, githubActionEnvironment(environment))
 }
 
 function githubActionEnvironment(environment) {
@@ -228,8 +253,18 @@ function writeFileSyncSafe(path, value) {
   }
 }
 
-function doesNotReflect(value) {
-  return !value.includes("PH_CONTEXT_DIAGNOSTIC_SELFTEST_SECRET") && !value.includes(sourceRoot())
+function hasOnlyMatchingFields(summary) {
+  return Array.isArray(summary.diagnostic_codes) &&
+    summary.diagnostic_codes.length === 0 &&
+    Array.isArray(summary.fields) &&
+    summary.fields.length > 0 &&
+    summary.fields.every((field) => isRecord(field) && field.status === "match")
+}
+
+function doesNotReflect(value, token) {
+  return !value.includes(SELFTEST_SECRET) &&
+    !value.includes(sourceRoot()) &&
+    (token === undefined || !value.includes(token))
 }
 
 function fallbackSummary() {
@@ -242,6 +277,50 @@ function fallbackSummary() {
     outcome: "blocked",
     signing: false,
   }
+}
+
+function claims() {
+  return {
+    event_name: "push",
+    job_workflow_ref: "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+    job_workflow_sha: "3bef5f4696769fb11042e881387ff83045a542ef",
+    ref: "refs/heads/main",
+    repository: "example/public-gradle-app",
+    repository_id: "987654321",
+    repository_visibility: "public",
+    run_attempt: "1",
+    run_id: "1001",
+    runner_environment: "github-hosted",
+    workflow_ref: "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
+    workflow_sha: "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
+  }
+}
+
+function oidcHook(token) {
+  return `import { createRequire, syncBuiltinESMExports } from "node:module"
+import { EventEmitter } from "node:events"
+
+const require = createRequire(import.meta.url)
+const https = require("node:https")
+
+https.get = (_url, _options, callback) => {
+  const request = new EventEmitter()
+  request.setTimeout = () => request
+  request.destroy = () => request
+  queueMicrotask(() => {
+    const response = new EventEmitter()
+    response.headers = {}
+    response.resume = () => undefined
+    response.statusCode = 200
+    callback(response)
+    response.emit("data", Buffer.from(JSON.stringify({ value: ${JSON.stringify(token)} })))
+    response.emit("end")
+  })
+  return request
+}
+
+syncBuiltinESMExports()
+`
 }
 
 function input(name) {

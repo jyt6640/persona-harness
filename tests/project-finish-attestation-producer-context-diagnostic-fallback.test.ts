@@ -87,8 +87,8 @@ describe("project finish context diagnostic workflow fallback", () => {
     try {
       expect(runFallback(runnerTemp).status).toBe(0)
       const diagnostic = runDiagnostic(fixture, runnerTemp, {
-        INPUT_DIAGNOSTIC_ACTIONS: "true",
-        INPUT_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
+        PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+        PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
       })
       const finalizer = runFinalizer(runnerTemp, "failure", "blocked")
       const summary = readSummary(runnerTemp)
@@ -154,6 +154,7 @@ describe("project finish context diagnostic workflow fallback", () => {
         signing: false,
       })
       expect(summary.cases).toEqual([
+        { id: "canonical-context", status: "match" },
         { id: "missing-evaluator", status: "match" },
         { id: "runtime-error", status: "match" },
         { id: "oidc-blocked", status: "match" },
@@ -179,7 +180,8 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(selftestWorkflow).not.toContain("npm ci")
       expect(readFileSync(fallbackActionPath, "utf8")).toContain('name.replaceAll("_", "-")')
       expect(readFileSync(finalizerActionPath, "utf8")).toContain('name.replaceAll("_", "-")')
-      expect(readFileSync(actionPath, "utf8")).toContain('name.replaceAll("_", "-")')
+      expect(readFileSync(actionPath, "utf8")).toContain('privateEnvironment("PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP")')
+      expect(readFileSync(actionPath, "utf8")).not.toContain("INPUT_")
       expect(readFileSync(selftestActionPath, "utf8")).toContain('name.replaceAll("_", "-")')
     } finally {
       rmSync(runnerTemp, { force: true, recursive: true })
@@ -208,7 +210,7 @@ function runFallback(runnerTemp: string) {
 
 function runDiagnostic(fixture: string, runnerTemp: string, overrides: Readonly<Record<string, string>> = {}) {
   return run(join(fixture, ".github", "actions", "project-finish-context-diagnostic", "index.mjs"), {
-    INPUT_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
+    PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
     ...overrides,
   })
 }
