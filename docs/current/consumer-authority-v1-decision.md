@@ -55,6 +55,29 @@ policy. Enrollment is product policy, not a signed artifact field. V1 supports
 public repositories only. Private-repository authentication, authorization,
 and credential lifecycle are deferred.
 
+## Project Finish Attestation Schema Boundary
+
+`project-finish-attestation.1` is a future project-consumer signed-subject
+contract. Its receipt canonically binds a public repository identifier, a
+`push` event on `refs/heads/main`, the workflow file and certificate SAN, source
+identity, one repository-root Gradle project, the fixed Gradle command catalog,
+test and build facts, PH version, and lifecycle run/attempt/finish/nonce values.
+
+The DSSE subject must name the canonical receipt and match both the predicate
+receipt digest and the verifier's recomputation from canonical receipt bytes.
+Missing, extra, reordered, duplicated, or substituted subjects are invalid.
+The receipt does not carry enrollment: enrollment remains a separate
+user-scoped product policy and is not a signed field. A signed `push` to
+`refs/heads/main` is not evidence of historical or current branch protection,
+review, or approval.
+
+This schema record is structural only. Until a later external verifier checks
+the signature, certificate, identity, and replay state, parsed
+`project-finish-attestation.1` evidence remains blocked as
+`signature-unverified`. It is distinct from existing
+`finish-attestation.1` evidence and cannot provide consumer authority, a
+Finish PASS, or a closure terminal result.
+
 ## Cooperative Same-Invocation Contract
 
 For V1, "same process" means one `ph workflow finish implement` invocation
