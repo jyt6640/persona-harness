@@ -77,6 +77,24 @@ describe("verification decision model", () => {
     expect(completionEligibleForAssurance(diskValue, "external")).toBe(false)
   })
 
+  it("rejects copied external receipt fields because disk data cannot create external authority", () => {
+    const diskValue: unknown = JSON.parse(JSON.stringify({
+      assurance: "external",
+      attestationId: "copied-attestation",
+      authorityProvider: "external-attested",
+      completionEligible: true,
+      consumptionState: "unconsumed",
+      decisionId: "copied-decision",
+      kind: "external-attested",
+      sourceSnapshotDigest: "sha256:copied",
+      status: "trusted",
+      verifiedAt: "2026-07-18T00:00:00.000Z",
+    }))
+
+    expect(isExternalAttestedVerificationDecision(diskValue)).toBe(false)
+    expect(completionEligibleForAssurance(diskValue)).toBe(false)
+  })
+
   it("keeps the default finish requirement external even when another eligible assurance kind exists", () => {
     const decision = externalAttestedVerificationDecision({
       attestationId: "attestation-1",
