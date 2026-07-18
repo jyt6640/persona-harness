@@ -228,6 +228,7 @@ describe("package files policy", () => {
       "tests/project-finish-attestation-oidc.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-cli.test.ts",
+      "tests/project-finish-attestation-producer-context-diagnostic-workflow.test.ts",
     ]
     const runtimePaths = [
       "dist/cli/project-finish-attestation-producer.js",
