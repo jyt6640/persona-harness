@@ -56,7 +56,19 @@ describe("cooperative Gradle verification", () => {
         command: "./gradlew",
       },
     ])
-    expect(result).toMatchObject({ kind: "passed", value: { testCount: 1 } })
+    expect(result).toMatchObject({
+      kind: "passed",
+      value: {
+        buildOutputDigest: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        junitDigest: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        passedTestCount: 1,
+        skippedTestCount: 0,
+        sourceIdentity: expect.objectContaining({
+          repositoryHead: expect.stringMatching(/^[a-f0-9]{40}$/u),
+        }),
+        testCount: 1,
+      },
+    })
   })
 
   it.each([
