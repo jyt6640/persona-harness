@@ -19,6 +19,7 @@ const workflowPath = join(root, ".github", "workflows", "persona-harness-project
 const actionDirectory = join(root, ".github", "actions", "project-finish-context-diagnostic")
 const actionMetadataPath = join(actionDirectory, "action.yml")
 const actionPath = join(actionDirectory, "index.mjs")
+const fallbackActionPath = join(root, ".github", "actions", "project-finish-context-diagnostic-fallback", "index.mjs")
 const callerSha = "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8"
 const producerSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim()
 const secret = "PH_CONTEXT_FORWARDING_SECRET_sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
@@ -225,6 +226,11 @@ function runDiagnosticAction(
   nodeArguments: readonly string[] = [],
   environment = actionEnvironment(workspace, "", ""),
 ) {
+  spawnSync(process.execPath, [fallbackActionPath], {
+    cwd: root,
+    encoding: "utf8",
+    env: environment,
+  })
   return spawnSync(process.execPath, [...nodeArguments, actionPath], {
     cwd: root,
     encoding: "utf8",

@@ -1,0 +1,10 @@
+name: Create bounded project finish context diagnostic fallback
+description: Create the trusted runner-temp diagnostic fallback before OIDC evaluation.
+
+inputs:
+  diagnostic-runner-temp:
+    required: true
+
+runs:
+  using: node20
+  main: index.mjs
