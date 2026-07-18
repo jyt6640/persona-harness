@@ -48,10 +48,10 @@ export function deriveProjectFinishProducerContext(claims, environment) {
 }
 
 export function assessProjectFinishProducerContextDiagnosticWorkflow(claims, environment) {
-  return analyzeContext(claims, environment, PROJECT_FINISH_PRODUCER_DIAGNOSTIC_WORKFLOW_PATH)
+  return analyzeContext(claims, environment, PROJECT_FINISH_PRODUCER_DIAGNOSTIC_WORKFLOW_PATH, true)
 }
 
-function analyzeContext(claims, environment, workflowPath) {
+function analyzeContext(claims, environment, workflowPath, requireDiagnosticForwarding = false) {
   const claimRecord = isRecord(claims) ? claims : {}
   const environmentRecord = isRecord(environment) ? environment : {}
   const repository = boundedValue(claimRecord.repository)
@@ -72,7 +72,11 @@ function analyzeContext(claims, environment, workflowPath) {
   const githubRepositoryId = boundedValue(environmentRecord.GITHUB_REPOSITORY_ID)
   const githubRepositoryVisibility = boundedValue(environmentRecord.GITHUB_REPOSITORY_VISIBILITY)
   const sourceHead = boundedValue(environmentRecord.GITHUB_SHA)
+  const observedCallerWorkflowRef = boundedValue(environmentRecord.GITHUB_WORKFLOW_REF)
+  const observedCallerWorkflowSha = boundedValue(environmentRecord.GITHUB_WORKFLOW_SHA)
   const producerSha = boundedValue(environmentRecord.PERSONA_HARNESS_PRODUCER_SHA)
+  const diagnosticWorkflowRef = boundedValue(environmentRecord.PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_REF)
+  const diagnosticWorkflowSha = boundedValue(environmentRecord.PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_SHA)
   const runId = boundedValue(environmentRecord.GITHUB_RUN_ID)
   const runAttemptValue = boundedValue(environmentRecord.GITHUB_RUN_ATTEMPT)
   const fields = [
@@ -81,11 +85,31 @@ function analyzeContext(claims, environment, workflowPath) {
     statusForEqualPair("repository", repository, githubRepository),
     statusForEqualPair("repository-id", repositoryId, githubRepositoryId, isPositiveInteger),
     statusForFixedPair("repository-visibility", repositoryVisibility, githubRepositoryVisibility, "public"),
-    statusForEqualPair("caller-workflow-sha", callerWorkflowSha, sourceHead, isImmutableSha),
-    statusForCallerWorkflowRef(callerWorkflowRef, repository),
+    statusForCallerWorkflowSha(
+      callerWorkflowSha,
+      sourceHead,
+      observedCallerWorkflowSha,
+      requireDiagnosticForwarding,
+    ),
+    statusForCallerWorkflowRef(
+      callerWorkflowRef,
+      repository,
+      observedCallerWorkflowRef,
+      requireDiagnosticForwarding,
+    ),
     statusForValue("producer-pin", producerSha, isImmutableSha),
-    statusForFixed("reusable-workflow-ref", reusableWorkflowRef, `${PRODUCER_REPOSITORY}/${workflowPath}@refs/heads/main`),
-    statusForEqualPair("reusable-workflow-sha", observedReusableWorkflowSha, producerSha, isImmutableSha),
+    statusForReusableWorkflowRef(
+      reusableWorkflowRef,
+      `${PRODUCER_REPOSITORY}/${workflowPath}@refs/heads/main`,
+      diagnosticWorkflowRef,
+      requireDiagnosticForwarding,
+    ),
+    statusForReusableWorkflowSha(
+      observedReusableWorkflowSha,
+      producerSha,
+      diagnosticWorkflowSha,
+      requireDiagnosticForwarding,
+    ),
     statusForEqualPair("run-id", claimRunId, runId),
     statusForEqualPair("run-attempt", claimRunAttempt, runAttemptValue, isPositiveInteger),
     statusForFixed("runner-environment", runnerEnvironment, "github-hosted"),
@@ -112,9 +136,70 @@ function analyzeContext(claims, environment, workflowPath) {
   }
 }
 
-function statusForCallerWorkflowRef(value, repository) {
-  if (value === undefined || repository === undefined) return field("caller-workflow-ref", "missing")
-  return field("caller-workflow-ref", isCallerWorkflowRef(value, repository) ? "match" : "mismatch")
+function statusForCallerWorkflowSha(value, sourceHead, observed, requireDiagnosticForwarding) {
+  if (
+    value === undefined
+    || sourceHead === undefined
+    || (requireDiagnosticForwarding && observed === undefined)
+  ) {
+    return field("caller-workflow-sha", "missing")
+  }
+  return field(
+    "caller-workflow-sha",
+    isImmutableSha(value)
+      && value === sourceHead
+      && (!requireDiagnosticForwarding || value === observed)
+      ? "match"
+      : "mismatch",
+  )
+}
+
+function statusForCallerWorkflowRef(value, repository, observed, requireDiagnosticForwarding) {
+  if (
+    value === undefined
+    || repository === undefined
+    || (requireDiagnosticForwarding && observed === undefined)
+  ) {
+    return field("caller-workflow-ref", "missing")
+  }
+  return field(
+    "caller-workflow-ref",
+    isCallerWorkflowRef(value, repository)
+      && (!requireDiagnosticForwarding || value === observed)
+      ? "match"
+      : "mismatch",
+  )
+}
+
+function statusForReusableWorkflowRef(value, expected, observed, requireDiagnosticForwarding) {
+  if (value === undefined || (requireDiagnosticForwarding && observed === undefined)) {
+    return field("reusable-workflow-ref", "missing")
+  }
+  return field(
+    "reusable-workflow-ref",
+    value === expected
+      && (!requireDiagnosticForwarding || observed === expected)
+      ? "match"
+      : "mismatch",
+  )
+}
+
+function statusForReusableWorkflowSha(value, producerSha, observed, requireDiagnosticForwarding) {
+  if (
+    value === undefined
+    || producerSha === undefined
+    || (requireDiagnosticForwarding && observed === undefined)
+  ) {
+    return field("reusable-workflow-sha", "missing")
+  }
+  return field(
+    "reusable-workflow-sha",
+    isImmutableSha(value)
+      && value === producerSha
+      && (!requireDiagnosticForwarding || value === observed)
+      ? "match"
+      : "mismatch",
+  )
 }
 
 function statusForFixed(code, value, expected) {

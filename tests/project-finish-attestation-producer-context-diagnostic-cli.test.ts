@@ -109,8 +109,8 @@ describe("project finish producer context diagnostic CLI", () => {
       cwd: root,
       encoding: "utf8",
       env: {
-        GITHUB_ACTIONS: "true",
-        GITHUB_WORKSPACE: `relative-${secret}`,
+        PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+        PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: `relative-${secret}`,
       },
     })
 
@@ -158,23 +158,29 @@ function runDiagnostic(
     cwd: root,
     encoding: "utf8",
     env: {
-      GITHUB_ACTIONS: "true",
-      GITHUB_EVENT_NAME: "push",
-      GITHUB_REF: "refs/heads/main",
-      GITHUB_REPOSITORY: "example/public-gradle-app",
-      GITHUB_REPOSITORY_ID: "987654321",
-      GITHUB_REPOSITORY_VISIBILITY: "public",
-      GITHUB_RUN_ATTEMPT: "1",
-      GITHUB_RUN_ID: "1001",
-      GITHUB_SHA: callerSha,
-      GITHUB_WORKSPACE: workspace,
-      PERSONA_HARNESS_PRODUCER_SHA: producerSha,
-      RUNNER_ENVIRONMENT: "github-hosted",
-      RUNNER_OS: "Linux",
+      PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+      PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:
+        "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
+      PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: callerSha,
+      PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: "push",
+      PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: producerSha,
+      PROJECT_FINISH_DIAGNOSTIC_REF: "refs/heads/main",
+      PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
+      PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
+      PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
+      PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
+        "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+      PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: producerSha,
+      PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
+      PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
+      PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
+      PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
+      PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: callerSha,
+      PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: workspace,
       ...(includeOidcEndpoint
         ? {
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-          ACTIONS_ID_TOKEN_REQUEST_URL: oidcEndpoint,
+          PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: secret,
+          PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: oidcEndpoint,
         }
         : {}),
     },
