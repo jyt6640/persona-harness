@@ -121,6 +121,7 @@ function verifyExternalFinishAttestationInternal(
     workspaceIdentityDigest,
   } as const
   const terminal = readFinishAttestationTerminalRecord(projectDir)
+  let consumptionState: "unconsumed" | "consumed" = "unconsumed"
   if (terminal.state === "invalid") {
     return blocked("binding-mismatch", terminal.message, FINISH_ATTESTATION_CONSUMPTION_PATH)
   }
@@ -135,6 +136,7 @@ function verifyExternalFinishAttestationInternal(
     if (!match.ok) {
       return blocked("binding-mismatch", match.message, FINISH_ATTESTATION_CONSUMPTION_PATH)
     }
+    consumptionState = "consumed"
   }
   if (options.consume !== false && terminal.state === "missing") {
     const consumed = consumeFinishAttestation(projectDir, terminalBinding)
@@ -145,9 +147,11 @@ function verifyExternalFinishAttestationInternal(
         FINISH_ATTESTATION_CONSUMPTION_PATH,
       )
     }
+    consumptionState = "consumed"
   }
   return {
     authorityEligible: true,
+    consumptionState,
     decision: "trusted",
     diagnostics: [],
     receipt,
@@ -175,6 +179,7 @@ function blocked(
 ): FinishAttestationAssessment {
   return {
     authorityEligible: false,
+    consumptionState: "not-applicable",
     decision: "blocked",
     diagnostics: [{ code: state === "replayed" ? "replayed-attestation" : state, message, path }],
     state,
