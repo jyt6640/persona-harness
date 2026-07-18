@@ -1,5 +1,4 @@
 import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs"
-import { get } from "node:https"
 import { isAbsolute, join, relative } from "node:path"
 import { pathToFileURL } from "node:url"
 
@@ -12,9 +11,11 @@ import {
 import {
   deriveProjectFinishProducerContext,
 } from "./project-finish-attestation-producer-context.mjs"
+import {
+  readProjectFinishAttestationOidcClaims,
+} from "./project-finish-attestation-oidc.mjs"
 
 const OUTPUT_DIRECTORY = ".ci/project-finish-attestation"
-const MAX_OIDC_RESPONSE_BYTES = 64 * 1024
 
 class ProducerScriptError extends Error {
   constructor(code) {
@@ -49,74 +50,13 @@ async function readProducerContext() {
   if (process.env.GITHUB_ACTIONS !== "true") {
     throw new ProducerScriptError("project-finish-producer-github-actions")
   }
-  const claims = await readOidcClaims()
+  const claims = await readProjectFinishAttestationOidcClaims()
+  if (claims === undefined) throw new ProducerScriptError("project-finish-producer-oidc")
   try {
     return deriveProjectFinishProducerContext(claims, process.env)
   } catch {
     throw new ProducerScriptError("project-finish-producer-context")
   }
-}
-
-async function readOidcClaims() {
-  const endpoint = requiredEnv("ACTIONS_ID_TOKEN_REQUEST_URL")
-  const requestToken = requiredEnv("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-  const url = new URL(endpoint)
-  if (url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.hash !== "") {
-    throw new ProducerScriptError("project-finish-producer-oidc")
-  }
-  url.searchParams.set("audience", "persona-harness-project-finish-attestation")
-  const response = await readJson(url, requestToken)
-  if (!isRecord(response) || typeof response.value !== "string") {
-    throw new ProducerScriptError("project-finish-producer-oidc")
-  }
-  const parts = response.value.split(".")
-  if (parts.length !== 3 || parts[1] === undefined) {
-    throw new ProducerScriptError("project-finish-producer-oidc")
-  }
-  try {
-    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"))
-    if (!isRecord(payload)) throw new ProducerScriptError("project-finish-producer-oidc")
-    return payload
-  } catch {
-    throw new ProducerScriptError("project-finish-producer-oidc")
-  }
-}
-
-function readJson(url, requestToken) {
-  return new Promise((resolve, reject) => {
-    const request = get(url, {
-      headers: {
-        accept: "application/json",
-        authorization: `bearer ${requestToken}`,
-      },
-    }, (response) => {
-      const chunks = []
-      let total = 0
-      if (response.statusCode !== 200 || response.headers.location !== undefined) {
-        response.resume()
-        reject(new ProducerScriptError("project-finish-producer-oidc"))
-        return
-      }
-      response.on("data", (chunk) => {
-        total += chunk.length
-        if (total > MAX_OIDC_RESPONSE_BYTES) {
-          request.destroy(new ProducerScriptError("project-finish-producer-oidc"))
-          return
-        }
-        chunks.push(chunk)
-      })
-      response.on("end", () => {
-        try {
-          resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")))
-        } catch {
-          reject(new ProducerScriptError("project-finish-producer-oidc"))
-        }
-      })
-      response.on("error", () => reject(new ProducerScriptError("project-finish-producer-oidc")))
-    })
-    request.setTimeout(15_000, () => request.destroy(new ProducerScriptError("project-finish-producer-oidc")))
-    request.on("error", () => reject(new ProducerScriptError("project-finish-producer-oidc")))
-  })
 }
 
 function verifyProducerCheckout(producerRoot, reusableWorkflowSha) {
