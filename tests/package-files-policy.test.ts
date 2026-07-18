@@ -245,6 +245,7 @@ describe("package files policy", () => {
       "docs/current/stable-containment-execution-evidence.md",
       "docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md",
       "docs/current/p3-5-semantic-tdd-acceptance-record.md",
+      "docs/current/consumer-authority-v1-decision.md",
       "docs/current/canonical-docs-index.md",
       "docs/current/external-review-adoption-status.md",
       "docs/current/diff-rules-classification.md",
