@@ -216,14 +216,22 @@ export function passedImplementOutput(projectDir: string, options: { readonly fu
   }
 }
 
-export function passedFinishOutput(runnerKind: WorkflowRunnerKind): CliRunResult {
+export function passedFinishOutput(
+  runnerKind: WorkflowRunnerKind,
+  assurance: "cooperative" | "external" = "external",
+): CliRunResult {
   return {
     status: 0,
     stdout: [
       `Persona Harness Workflow Finish: ${runnerKind}`,
       "",
       "Finish status: PASS",
-      "Workflow evidence is complete; final answer may be reported.",
+      ...(assurance === "cooperative"
+        ? [
+            "Cooperative current-process verification was consumed only in this CLI invocation.",
+            "Workflow status, evidence fetch, and workflow closure still require external attestation.",
+          ]
+        : ["Workflow evidence is complete; final answer may be reported."]),
       "",
       "Next:",
       "- `npx ph history --id <run-id>` when this workflow should be archived.",

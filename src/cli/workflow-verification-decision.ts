@@ -1,3 +1,6 @@
+import { isLiveCooperativeDecision } from "./cooperative-finish-authority.js"
+import type { CooperativeCurrentProcessVerificationDecision } from "./cooperative-finish-authority.js"
+
 export type VerificationAssurance =
   | "diagnostic-only"
   | "none"
@@ -40,31 +43,6 @@ export type BlockedVerificationDecision = {
   readonly summary: string
 }
 
-class CurrentProcessCapability {
-  readonly #brand = true
-
-  private constructor() {}
-
-  static create(): CurrentProcessCapability {
-    return new CurrentProcessCapability()
-  }
-}
-
-type CooperativeCurrentProcessVerificationDecision = {
-  readonly assurance: "cooperative"
-  readonly authorityProvider: "cooperative-current-process"
-  readonly commandCatalogId: string
-  readonly commandPlanDigest: string
-  readonly completionEligible: true
-  readonly consumptionState: "unconsumed"
-  readonly decisionId: string
-  readonly kind: "cooperative-current-process"
-  readonly sourceSnapshotDigest: string
-  readonly status: "trusted"
-  readonly testCount: number
-  readonly verifiedAt: string
-}
-
 export type ExternalAttestedVerificationDecision = {
   readonly assurance: "external"
   readonly attestationId: string
@@ -95,8 +73,6 @@ type ExternalAttestedDecisionInput = {
   readonly verifiedAt: string
 }
 
-const completionEligibleDecisionObjects = new WeakSet<object>()
-const currentProcessCapabilities = new WeakMap<object, CurrentProcessCapability>()
 const externalAttestedDecisionObjects = new WeakSet<object>()
 
 export function diagnosticVerificationDecision(
@@ -143,7 +119,6 @@ export function externalAttestedVerificationDecision(
     kind: "external-attested",
     status: "trusted",
   })
-  completionEligibleDecisionObjects.add(decision)
   externalAttestedDecisionObjects.add(decision)
   return decision
 }
@@ -151,7 +126,7 @@ export function externalAttestedVerificationDecision(
 export function isCompletionEligibleVerificationDecision(
   value: unknown,
 ): value is CompletionEligibleVerificationDecision {
-  return typeof value === "object" && value !== null && completionEligibleDecisionObjects.has(value)
+  return isLiveCooperativeDecision(value) || isExternalAttestedVerificationDecision(value)
 }
 
 export function isExternalAttestedVerificationDecision(
@@ -172,7 +147,7 @@ export function completionEligibleForAssurance(
 ): boolean {
   switch (requirement) {
     case "cooperative":
-      return typeof value === "object" && value !== null && currentProcessCapabilities.has(value)
+      return isLiveCooperativeDecision(value)
     case "external":
       return isExternalAttestedVerificationDecision(value)
     default:
@@ -192,23 +167,6 @@ export function verificationDecisionSummary(decision: VerificationDecision): str
     default:
       return assertNever(decision)
   }
-}
-
-function createCurrentProcessVerificationDecision(
-  input: Omit<CooperativeCurrentProcessVerificationDecision, "assurance" | "authorityProvider" | "completionEligible" | "consumptionState" | "kind" | "status">,
-): CooperativeCurrentProcessVerificationDecision {
-  const decision: CooperativeCurrentProcessVerificationDecision = Object.freeze({
-    ...input,
-    assurance: "cooperative",
-    authorityProvider: "cooperative-current-process",
-    completionEligible: true,
-    consumptionState: "unconsumed",
-    kind: "cooperative-current-process",
-    status: "trusted",
-  })
-  completionEligibleDecisionObjects.add(decision)
-  currentProcessCapabilities.set(decision, CurrentProcessCapability.create())
-  return decision
 }
 
 function assertNever(value: never): never {

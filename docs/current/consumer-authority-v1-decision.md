@@ -1,8 +1,9 @@
 # Consumer Authority V1 Decision
 
-Status: Issue #108 source decision only. This record defines an implementation
-target for later issues; it does not add an authority path, CLI flag, workflow,
-release action, or Finish PASS claim.
+Status: Issue #108 defined this source decision. Issue #113 implements the
+explicit-only, current-process cooperative Finish path described here. It does
+not add external authority, a receipt, a release action, or a durable Finish
+terminal record.
 
 ## Decision
 
@@ -11,9 +12,9 @@ V1 separates two assurance modes:
 - The existing default remains external evidence or a blocked result. Missing,
   unavailable, malformed, expired, replayed, or mismatched external evidence
   remains blocked.
-- A later explicit `--assurance cooperative` mode may use the defined
-  same-invocation cooperative runner. This flag is not implemented by this
-  record.
+- `ph workflow finish implement --assurance cooperative` may consume a
+  same-invocation cooperative runner once after its fixed Gradle verification
+  succeeds. This explicit mode never falls back from external assurance.
 - A later `--require external` mode remains strict and accepts only the
   external evidence path. This flag is not implemented by this record.
 
@@ -30,9 +31,8 @@ authority-provider, and consumption-state fields.
 A cooperative current-process capability remains module-private and
 nonserializable. Copied JSON, casts, disk evidence, or receipt fields cannot
 construct it. Finish still selects external assurance by default, and no
-automatic fallback to cooperative evidence is enabled. The future
-`--assurance cooperative` and `--require external` CLI surfaces remain
-unimplemented by this decision-model change.
+automatic fallback to cooperative evidence is enabled. Issue #113 implements
+only `--assurance cooperative`; `--require external` remains unimplemented.
 
 ## External Evidence Scope
 
@@ -92,31 +92,35 @@ The required Gradle sequence is:
 ./gradlew --no-daemon --no-build-cache build --console=plain
 ```
 
-The runner owns pre- and post-command source snapshots and report snapshots.
-The following outcomes block cooperative authority:
+The runner validates the configured evidence root before taking snapshots or
+writing any evidence. It owns pre- and post-command source snapshots and report
+snapshots. The following outcomes block cooperative authority:
 
-- `UP-TO-DATE`, `FROM-CACHE`, or `NO-SOURCE` task outcomes;
+- a non-executed `:test` task or root `:build` task, including
+  `UP-TO-DATE`, `FROM-CACHE`, or `NO-SOURCE` outcomes;
 - stale or unchanged JUnit XML;
 - zero executed tests or an all-skipped test result;
 - malformed, unsafe, unreadable, oversized, binary, or symlinked reports; and
 - any pre/post source, workspace, command-plan, or report-ownership drift.
 
-The existing fresh-verification and JUnit/source-identity modules are reusable
-input boundaries. This decision does not change their current diagnostic-only
-authority result.
+The first `cleanTest` task may legitimately report no work in a fresh project;
+it is not treated as test execution. The required `:test` task must execute.
+The runner accepts dirty worktrees only when the complete tracked, staged,
+unstaged, and included-untracked source identity is unchanged across both
+commands.
 
 ## Status, Fetch, And Consumption
 
-Status, evidence fetch, and `workflow closure next --json` are non-consuming.
-Each must independently validate the selected evidence and bindings before
-reporting an eligible preview. `workflow finish implement` is the only
-consuming surface.
+The cooperative capability is consumed in memory only by the same
+`workflow finish implement --assurance cooperative` invocation that created
+it. It writes no receipt, terminal record, marker, or reusable authority.
+Status, evidence fetch, and `workflow closure next --json` cannot consume or
+recover it; after a cooperative PASS, those surfaces remain external-only and
+block without independently valid external evidence.
 
-Consumption and replay follow the existing external-attestation model:
-successful Finish writes one exclusive terminal record, binds it to the
-attestation, source, workspace, session, finish, run, nonce, receipt, and
-expiry fields, and rejects a second or mismatched consumption. A preview never
-creates that terminal record.
+External-attestation consumption remains separate. When external authority is
+available, its lifecycle may use its exclusive terminal record and bindings;
+the cooperative path never writes or accepts that record.
 
 ## Evidence Reference Discipline
 
@@ -145,11 +149,13 @@ After this decision merges:
 2. Issue #113 may begin only after Issue #109.
 3. Issue #111 may begin only after Issue #110.
 
-No positive authority claim is authorized by this documentation issue. Later
-implementation, source QA, installed-package External, enrollment-policy, and
-fixture-evidence gates remain separate.
+Issue #113's source and fresh packed-consumer fixture checks are separate from
+external authority. A registry-installed positive is expressly deferred to
+Issue #116 after Issue #122; this implementation does not publish, tag, or
+claim registry evidence.
 
 ## Boundary
 
-This record changes no authority code, workflow, registry, tag, release,
-dist-tag, package version, default, schema, or Finish/closure behavior.
+This record does not change registry, tag, release, dist-tag, package version,
+external-assurance default, or schema behavior. The only Finish behavior added
+by Issue #113 is the explicit, same-invocation cooperative path above.

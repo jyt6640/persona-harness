@@ -125,10 +125,13 @@ deleting evidence/status history.
   recorded in `p3-integrity-roadmap.md`; they are release-planning evidence,
   not a published third-party certification. Completed P2 source-only evidence
   and bundles remain retained, not converted into product or release evidence.
-- The P3-2 candidate branch blocks finish PASS when no trusted Persona Harness
-  or external authority receipt exists. Unsigned local reports, bearshell
-  output, JUnit XML, TDD JSON, markers, and self-computed digests remain
-  diagnostic-only; this candidate is not yet accepted into canonical main.
+- The P3-2 candidate branch blocks default Finish PASS when no trusted Persona
+  Harness or external authority receipt exists. Unsigned local reports,
+  bearshell output, JUnit XML, TDD JSON, markers, and self-computed digests
+  remain diagnostic-only. Issue #113 adds only the explicit
+  `--assurance cooperative` same-invocation Gradle path: it creates no receipt
+  or terminal authority, and later status, evidence fetch, and closure remain
+  external-blocked.
 - P3-3 defines receipt/attempt parsing and read-only lifecycle diagnostics only.
   It does not issue, verify, migrate, or accept any receipt as finish authority;
   P3-2 remains blocked until a later trusted path exists.
@@ -141,8 +144,9 @@ deleting evidence/status history.
   current release readiness decision keeps publication, `latest`, stable, and
   GA NO-GO until a fresh versioned RC gate is complete.
 - P3-4 adds fresh fixed-command execution and nonzero JUnit testcase
-  enforcement. Local cooperative receipts remain untrusted under P3-2; no
-  finish authority or strong integrity claim is enabled.
+  enforcement. Issue #113 may consume those checks only inside an explicit
+  current-process Finish invocation; no local cooperative receipt, later
+  authority, or strong external integrity claim is enabled.
 - P3-5 adds read-only red-to-green JUnit identity and lineage assessment.
   Structurally valid local chains remain untrusted; no finish authority or
   external attestation is enabled.
