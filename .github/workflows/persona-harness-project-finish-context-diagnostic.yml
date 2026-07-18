@@ -220,8 +220,8 @@ jobs:
           diagnostic-run-id: ${{ github.run_id }}
           diagnostic-runner-environment: ${{ runner.environment }}
           diagnostic-runner-os: ${{ runner.os }}
+          diagnostic-runner-temp: ${{ runner.temp }}
           diagnostic-source-head: ${{ github.sha }}
-          diagnostic-workspace: ${{ github.workspace }}
 
       - name: Upload bounded project producer context diagnostic
         if: always()
@@ -229,5 +229,5 @@ jobs:
         with:
           if-no-files-found: ignore
           name: project-finish-attestation-context-diagnostic
-          path: .ci/project-finish-attestation-context-diagnostic/summary.json
+          path: ${{ runner.temp }}/project-finish-attestation-context-diagnostic/summary.json
           retention-days: 7

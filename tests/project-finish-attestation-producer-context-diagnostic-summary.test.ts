@@ -7,6 +7,7 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
@@ -29,12 +30,15 @@ const runtimeSources = [
 ] as const
 
 describe("project finish context diagnostic summary bootstrap", () => {
-  it("writes a bounded summary when the evaluator module is unavailable before launch", () => {
+  it("writes a bounded summary only to canonical runner temp when caller .ci is symlinked", () => {
     const fixture = createActionCheckout([])
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
+    const outside = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-outside-")))
     try {
-      const result = runAction(fixture, workspace)
-      const summary = readFileSync(summaryPath(workspace), "utf8")
+      symlinkSync(outside, join(workspace, ".ci"))
+      const result = runAction(fixture, workspace, runnerTemp)
+      const summary = readFileSync(summaryPath(runnerTemp), "utf8")
       const rendered = `${result.stdout}${result.stderr}${summary}`
 
       expect(result.status).toBe(1)
@@ -48,29 +52,36 @@ describe("project finish context diagnostic summary bootstrap", () => {
         registryAccess: false,
         signing: false,
       })
+      expect(existsSync(summaryPath(workspace))).toBe(false)
+      expect(existsSync(summaryPath(outside))).toBe(false)
       expect(rendered).not.toContain(secret)
       expect(rendered).not.toContain(workspace)
+      expect(rendered).not.toContain(runnerTemp)
+      expect(rendered).not.toContain(outside)
       expect(rendered).not.toContain(fixture)
     } finally {
       rmSync(fixture, { force: true, recursive: true })
       rmSync(workspace, { force: true, recursive: true })
+      rmSync(runnerTemp, { force: true, recursive: true })
+      rmSync(outside, { force: true, recursive: true })
     }
   })
 
   it("runs canonical synthetic context from an action-like checkout without node_modules", () => {
     const fixture = createActionCheckout(runtimeSources)
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
     const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-hook-")))
     const hookPath = join(hookDirectory, "oidc-hook.mjs")
     const token = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
     try {
       writeFileSync(hookPath, oidcHook(token))
-      const result = runAction(fixture, workspace, ["--import", hookPath], {
+      const result = runAction(fixture, workspace, runnerTemp, ["--import", hookPath], {
         ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
         ACTIONS_ID_TOKEN_REQUEST_URL:
           "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
       })
-      const summary = readFileSync(summaryPath(workspace), "utf8")
+      const summary = readFileSync(summaryPath(runnerTemp), "utf8")
       const rendered = `${result.stdout}${result.stderr}${summary}`
 
       expect(existsSync(join(fixture, "node_modules"))).toBe(false)
@@ -88,23 +99,86 @@ describe("project finish context diagnostic summary bootstrap", () => {
       expect(rendered).not.toContain(secret)
       expect(rendered).not.toContain(token)
       expect(rendered).not.toContain(workspace)
+      expect(rendered).not.toContain(runnerTemp)
       expect(rendered).not.toContain(fixture)
     } finally {
       rmSync(fixture, { force: true, recursive: true })
       rmSync(workspace, { force: true, recursive: true })
+      rmSync(runnerTemp, { force: true, recursive: true })
       rmSync(hookDirectory, { force: true, recursive: true })
+    }
+  })
+
+  it("does not follow a caller leaf summary symlink when the evaluator throws", () => {
+    const fixture = createActionCheckout([], "runtime-error")
+    const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
+    const outside = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-outside-")))
+    try {
+      const callerDirectory = join(workspace, ".ci", "project-finish-attestation-context-diagnostic")
+      mkdirSync(callerDirectory, { recursive: true })
+      symlinkSync(join(outside, "summary.json"), join(callerDirectory, "summary.json"))
+      const result = runAction(fixture, workspace, runnerTemp)
+      const summary = readFileSync(summaryPath(runnerTemp), "utf8")
+      const rendered = `${result.stdout}${result.stderr}${summary}`
+
+      expect(result.status).toBe(1)
+      expect(JSON.parse(summary)).toMatchObject({
+        diagnostic_status: "blocked",
+        failure_stage: "runtime",
+        outcome: "blocked",
+      })
+      expect(existsSync(join(outside, "summary.json"))).toBe(false)
+      expect(rendered).not.toContain(secret)
+      expect(rendered).not.toContain(workspace)
+      expect(rendered).not.toContain(runnerTemp)
+      expect(rendered).not.toContain(outside)
+    } finally {
+      rmSync(fixture, { force: true, recursive: true })
+      rmSync(workspace, { force: true, recursive: true })
+      rmSync(runnerTemp, { force: true, recursive: true })
+      rmSync(outside, { force: true, recursive: true })
+    }
+  })
+
+  it("blocks hostile runner temp roots without a caller-workspace summary", () => {
+    const fixture = createActionCheckout([])
+    const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
+    const outside = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-outside-")))
+    const symlinkedTemp = join(workspace, "runner-temp")
+    try {
+      symlinkSync(outside, symlinkedTemp)
+      symlinkSync(outside, join(runnerTemp, "project-finish-attestation-context-diagnostic"))
+      for (const hostileRunnerTemp of ["relative-runner-temp", symlinkedTemp, runnerTemp]) {
+        const result = runAction(fixture, workspace, hostileRunnerTemp)
+        const rendered = `${result.stdout}${result.stderr}`
+
+        expect(result.status).toBe(1)
+        expect(existsSync(summaryPath(workspace))).toBe(false)
+        expect(existsSync(summaryPath(outside))).toBe(false)
+        expect(rendered).not.toContain(secret)
+        expect(rendered).not.toContain(workspace)
+        expect(rendered).not.toContain(outside)
+      }
+    } finally {
+      rmSync(fixture, { force: true, recursive: true })
+      rmSync(workspace, { force: true, recursive: true })
+      rmSync(runnerTemp, { force: true, recursive: true })
+      rmSync(outside, { force: true, recursive: true })
     }
   })
 
   it("writes a bounded summary for a hostile OIDC endpoint without reflecting it", () => {
     const fixture = createActionCheckout(runtimeSources)
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
     try {
-      const result = runAction(fixture, workspace, [], {
+      const result = runAction(fixture, workspace, runnerTemp, [], {
         ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
         ACTIONS_ID_TOKEN_REQUEST_URL: `https://untrusted.example/${secret}`,
       })
-      const summary = readFileSync(summaryPath(workspace), "utf8")
+      const summary = readFileSync(summaryPath(runnerTemp), "utf8")
       const rendered = `${result.stdout}${result.stderr}${summary}`
 
       expect(result.status).toBe(1)
@@ -116,9 +190,11 @@ describe("project finish context diagnostic summary bootstrap", () => {
       expect(rendered).not.toContain(secret)
       expect(rendered).not.toContain("untrusted.example")
       expect(rendered).not.toContain(workspace)
+      expect(rendered).not.toContain(runnerTemp)
     } finally {
       rmSync(fixture, { force: true, recursive: true })
       rmSync(workspace, { force: true, recursive: true })
+      rmSync(runnerTemp, { force: true, recursive: true })
     }
   })
 
@@ -129,18 +205,23 @@ describe("project finish context diagnostic summary bootstrap", () => {
     const evaluatorImport = action.indexOf('await import("../../../scripts/diagnose-project-finish-producer-context.mjs")')
 
     expect(workflow).toContain("if: always()")
-    expect(workflow).toContain(".ci/project-finish-attestation-context-diagnostic/summary.json")
+    expect(workflow).toContain("diagnostic-runner-temp: ${{ runner.temp }}")
+    expect(workflow).toContain("${{ runner.temp }}/project-finish-attestation-context-diagnostic/summary.json")
     expect(workflow).toContain("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic")
+    expect(workflow).not.toContain("diagnostic-workspace: ${{ github.workspace }}")
     expect(bootstrap).toBeGreaterThanOrEqual(0)
     expect(evaluatorImport).toBeGreaterThan(bootstrap)
     expect(action).toContain('SUMMARY_SCHEMA = "project-finish-attestation-context-diagnostic-summary.1"')
     expect(action).not.toContain("node:child_process")
     expect(action).not.toContain("node_modules")
     expect(action).not.toContain("npm install")
+    expect(action).toContain('const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"')
+    expect(action).toContain('actionInput("DIAGNOSTIC_RUNNER_TEMP")')
+    expect(action).not.toContain("DIAGNOSTIC_WORKSPACE")
   })
 })
 
-function createActionCheckout(sources: readonly string[]): string {
+function createActionCheckout(sources: readonly string[], evaluator: "missing" | "runtime-error" = "missing"): string {
   const fixture = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-action-")))
   const actionDirectory = join(fixture, ".github", "actions", "project-finish-context-diagnostic")
   const scriptsDirectory = join(fixture, "scripts")
@@ -150,12 +231,19 @@ function createActionCheckout(sources: readonly string[]): string {
   for (const source of sources) {
     copyFileSync(join(root, "scripts", source), join(scriptsDirectory, source))
   }
+  if (evaluator === "runtime-error") {
+    writeFileSync(
+      join(scriptsDirectory, "diagnose-project-finish-producer-context.mjs"),
+      'export async function runProjectFinishProducerContextDiagnostic() { throw new Error("runtime") }\n',
+    )
+  }
   return fixture
 }
 
 function runAction(
   fixture: string,
   workspace: string,
+  runnerTemp: string,
   nodeArguments: readonly string[] = [],
   overrides: Readonly<Record<string, string>> = {},
 ) {
@@ -163,13 +251,13 @@ function runAction(
     cwd: fixture,
     encoding: "utf8",
     env: {
-      ...environment(workspace),
+      ...environment(workspace, runnerTemp),
       ...overrides,
     },
   })
 }
 
-function environment(workspace: string): Record<string, string> {
+function environment(workspace: string, runnerTemp: string): Record<string, string> {
   return {
     INPUT_DIAGNOSTIC_ACTIONS: "true",
     INPUT_DIAGNOSTIC_CALLER_WORKFLOW_REF:
@@ -189,14 +277,14 @@ function environment(workspace: string): Record<string, string> {
     INPUT_DIAGNOSTIC_RUN_ID: "1001",
     INPUT_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
     INPUT_DIAGNOSTIC_RUNNER_OS: "Linux",
+    INPUT_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
     INPUT_DIAGNOSTIC_SOURCE_HEAD: callerSha,
-    INPUT_DIAGNOSTIC_WORKSPACE: workspace,
     NODE_PATH: "",
   }
 }
 
-function summaryPath(workspace: string): string {
-  return join(workspace, ".ci", "project-finish-attestation-context-diagnostic", "summary.json")
+function summaryPath(runnerTemp: string): string {
+  return join(runnerTemp, "project-finish-attestation-context-diagnostic", "summary.json")
 }
 
 function claims(): Record<string, string> {

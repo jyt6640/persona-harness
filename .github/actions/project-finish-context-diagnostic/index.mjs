@@ -1,9 +1,10 @@
-import { mkdirSync, realpathSync, writeFileSync } from "node:fs"
+import { closeSync, ftruncateSync, lstatSync, mkdirSync, openSync, realpathSync, writeSync } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const FAILURE_CODE = "project-finish-producer-context-diagnostic-failed"
-const OUTPUT_DIRECTORY = ".ci/project-finish-attestation-context-diagnostic"
+const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"
+const SUMMARY_FILENAME = "summary.json"
 const SUMMARY_SCHEMA = "project-finish-attestation-context-diagnostic-summary.1"
 const SUMMARY_CODES = {
   bootstrap: "project-finish-attestation-context-diagnostic-bootstrap-pending",
@@ -30,32 +31,35 @@ const INPUTS = [
   ["DIAGNOSTIC_RUNNER_ENVIRONMENT", "PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT"],
   ["DIAGNOSTIC_RUNNER_OS", "PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS"],
   ["DIAGNOSTIC_SOURCE_HEAD", "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD"],
-  ["DIAGNOSTIC_WORKSPACE", "PROJECT_FINISH_DIAGNOSTIC_WORKSPACE"],
 ]
 
 async function main() {
   const summary = createSummaryWriter()
-  summary.write(failureSummary("bootstrap"))
-  const environment = forwardedEnvironment()
-  const producerCheckout = producerCheckoutStatus()
-  const producerRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..")
-  let runner
   try {
-    ({ runProjectFinishProducerContextDiagnostic: runner } =
-      await import("../../../scripts/diagnose-project-finish-producer-context.mjs"))
-  } catch {
-    finish(summary, failureSummary("runtime-load"))
-    return
-  }
-  try {
-    const result = await runner({
-      environment,
-      producerCheckout,
-      producerRoot,
-    })
-    finish(summary, resultSummary(result))
-  } catch {
-    finish(summary, failureSummary("runtime"))
+    summary.write(failureSummary("bootstrap"))
+    const environment = forwardedEnvironment()
+    const producerCheckout = producerCheckoutStatus()
+    const producerRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..")
+    let runner
+    try {
+      ({ runProjectFinishProducerContextDiagnostic: runner } =
+        await import("../../../scripts/diagnose-project-finish-producer-context.mjs"))
+    } catch {
+      finish(summary, failureSummary("runtime-load"))
+      return
+    }
+    try {
+      const result = await runner({
+        environment,
+        producerCheckout,
+        producerRoot,
+      })
+      finish(summary, resultSummary(result))
+    } catch {
+      finish(summary, failureSummary("runtime"))
+    }
+  } finally {
+    summary.close()
   }
 }
 
@@ -86,23 +90,34 @@ function producerCheckoutStatus() {
 }
 
 function createSummaryWriter() {
-  const workspace = actionInput("DIAGNOSTIC_WORKSPACE")
-  if (typeof workspace !== "string" || !isAbsolute(workspace)) {
+  const runnerTemp = actionInput("DIAGNOSTIC_RUNNER_TEMP")
+  if (typeof runnerTemp !== "string" || !isAbsolute(runnerTemp) || runnerTemp !== resolve(runnerTemp)) {
     throw new Error(FAILURE_CODE)
   }
-  const root = realpathSync(workspace)
-  if (relative(root, workspace) !== "") {
+  const rootEntry = lstatSync(runnerTemp)
+  if (!rootEntry.isDirectory() || rootEntry.isSymbolicLink()) {
     throw new Error(FAILURE_CODE)
   }
+  const root = realpathSync(runnerTemp)
+  if (root !== runnerTemp) throw new Error(FAILURE_CODE)
   const directory = join(root, OUTPUT_DIRECTORY)
-  if (relative(root, directory).startsWith("..")) {
+  if (relative(root, directory) !== OUTPUT_DIRECTORY) {
     throw new Error(FAILURE_CODE)
   }
-  mkdirSync(directory, { recursive: true, mode: 0o700 })
-  const summaryPath = join(directory, "summary.json")
+  mkdirSync(directory, { mode: 0o700 })
+  const directoryEntry = lstatSync(directory)
+  if (!directoryEntry.isDirectory() || directoryEntry.isSymbolicLink()) {
+    throw new Error(FAILURE_CODE)
+  }
+  const descriptor = openSync(join(directory, SUMMARY_FILENAME), "wx", 0o600)
   return {
     write(summary) {
-      writeFileSync(summaryPath, `${JSON.stringify(summary)}\n`, { flag: "w", mode: 0o600 })
+      const bytes = Buffer.from(`${JSON.stringify(summary)}\n`, "utf8")
+      ftruncateSync(descriptor, 0)
+      writeSync(descriptor, bytes, 0, bytes.length, 0)
+    },
+    close() {
+      closeSync(descriptor)
     },
   }
 }

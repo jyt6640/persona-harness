@@ -104,13 +104,13 @@ describe("project finish producer context diagnostic CLI", () => {
     }
   })
 
-  it("fails with a bounded code when its diagnostic workspace is unusable", () => {
+  it("fails with a bounded code when its diagnostic runner temp is unusable", () => {
     const result = spawnSync(process.execPath, [diagnosticScript], {
       cwd: root,
       encoding: "utf8",
       env: {
         PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
-        PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: `relative-${secret}`,
+        PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: `relative-${secret}`,
       },
     })
 
@@ -178,7 +178,7 @@ function runDiagnostic(
       PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
       PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
       PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: callerSha,
-      PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: workspace,
+      PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: workspace,
       ...(includeOidcEndpoint
         ? {
           PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: secret,
@@ -190,7 +190,7 @@ function runDiagnostic(
 }
 
 function summaryPath(workspace: string): string {
-  return join(workspace, ".ci", "project-finish-attestation-context-diagnostic", "summary.json")
+  return join(workspace, "project-finish-attestation-context-diagnostic", "summary.json")
 }
 
 function claims(): Record<string, string> {
