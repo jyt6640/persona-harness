@@ -29,7 +29,7 @@ export function createValidProjectFinishAttestationStatement(): Record<string, u
 
 export function createValidProjectFinishAttestationReceipt(): Record<string, unknown> {
   const sourceHead = "a".repeat(40)
-  const callerWorkflowRef = `example/public-gradle-app/.github/workflows/project-finish.yml@${sourceHead}`
+  const callerWorkflowRef = "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main"
   const reusableWorkflowSha = "b".repeat(40)
   const reusableWorkflowRef = `${PROJECT_FINISH_ATTESTATION_POLICY.producerRepository}/${PROJECT_FINISH_ATTESTATION_POLICY.workflowPath}@${reusableWorkflowSha}`
   return {

@@ -50,10 +50,10 @@ describe("project-finish-attestation.1 parser and policy", () => {
     delete workflow["ref"]
     delete workflow["sha"]
     workflow["caller"] = {
-      ref: `example/public-gradle-app/.github/workflows/project-finish.yml@${callerSha}`,
+      ref: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
       sha: callerSha,
     }
-    workflow["certificateSan"] = `https://github.com/example/public-gradle-app/.github/workflows/project-finish.yml@${callerSha}`
+    workflow["certificateSan"] = "https://github.com/example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main"
     workflow["reusable"] = {
       path: ".github/workflows/persona-harness-project-finish.yml",
       ref: `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@${reusableSha}`,

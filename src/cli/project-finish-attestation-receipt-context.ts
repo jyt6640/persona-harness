@@ -155,7 +155,7 @@ function readCallerWorkflow(
   }
   const prefix = `${repositorySlug}/.github/workflows/`
   if (!value.ref.startsWith(prefix) || value.sha !== sourceHead) return undefined
-  const suffix = `@${value.sha}`
+  const suffix = "@refs/heads/main"
   const relativePath = value.ref.slice(prefix.length, -suffix.length)
   if (
     !value.ref.endsWith(suffix)

@@ -31,7 +31,7 @@ describe("project finish attestation producer artifacts", () => {
     if (parsed.ok) {
       expect(parsed.value.predicate.receipt.workflow).toMatchObject({
         caller: {
-          ref: `example/public-gradle-app/.github/workflows/project-finish.yml@${SOURCE_HEAD}`,
+          ref: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
           sha: SOURCE_HEAD,
         },
         reusable: {
@@ -43,7 +43,7 @@ describe("project finish attestation producer artifacts", () => {
   })
 
   it.each([
-    ["caller ref", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main" }],
+    ["caller ref", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/feature" }],
     ["source identity", {
       source: {
         ...facts().source,
@@ -64,7 +64,7 @@ describe("project finish attestation producer artifacts", () => {
 function facts(): ProjectFinishAttestationProducerFacts {
   return {
     buildArtifactDigest: `sha256:${"d".repeat(64)}`,
-    callerWorkflowRef: `example/public-gradle-app/.github/workflows/project-finish.yml@${SOURCE_HEAD}`,
+    callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
     callerWorkflowSha: SOURCE_HEAD,
     issuedAt: "2026-07-18T01:00:00.000Z",
     phVersion: "0.7.0",

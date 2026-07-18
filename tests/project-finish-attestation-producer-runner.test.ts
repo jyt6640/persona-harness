@@ -67,7 +67,7 @@ describe("project finish attestation producer runner", () => {
 
 function context() {
   return {
-    callerWorkflowRef: `example/public-gradle-app/.github/workflows/project-finish.yml@${SOURCE_HEAD}`,
+    callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
     callerWorkflowSha: SOURCE_HEAD,
     issuedAt: "2026-07-18T01:00:00.000Z",
     repository: {
