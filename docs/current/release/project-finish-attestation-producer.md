@@ -75,12 +75,15 @@ checkout and OIDC reusable-workflow identity.
 The id-token-free resolution job performs the caller-pin and producer-checkout
 preflight. The separate OIDC job has no diagnostic `run:` step: it loads a
 fixed local `node20` action from the verified Persona Harness checkout. That
-action constructs a new in-memory environment from only fixed private context
-aliases for the public-push facts: event, ref, repository identity, caller
-workflow identity, source SHA, parsed diagnostic pin, run/attempt, and
-GitHub-hosted runner facts. It passes the platform OIDC endpoint and request
-token only to the in-memory OIDC reader. No shell, `env`, `node`, or `git`
-launcher is resolved through ambient `PATH` after the OIDC-bearing job begins.
+action has no security-context `with:` inputs. The reusable diagnostic step
+sets an explicit fixed `PROJECT_FINISH_DIAGNOSTIC_*` environment allowlist for
+the public-push facts: event, ref, repository identity, caller workflow
+identity, source SHA, parsed diagnostic pin, run/attempt, and GitHub-hosted
+runner facts. It passes the platform OIDC endpoint and request token only
+through those private aliases to the in-memory OIDC reader. The action ignores
+`INPUT_*` names and ambient GitHub/OIDC context variables for these values. No
+shell, `env`, `node`, or `git` launcher is resolved through ambient `PATH`
+after the OIDC-bearing job begins.
 The decoded OIDC claim supplies the observed reusable-workflow reference and
 SHA, which are checked separately from the caller workflow SHA/ref and the
 parsed pin. Ambient runner environment, home, Git configuration, and caller
@@ -120,14 +123,17 @@ uploads the fixed runner-temp path with `if: always` before a token-blind local
 action marks a blocked diagnostic nonzero. It never writes a diagnostic summary
 below caller workspace, installs dependencies, uses an ambient dependency
 cache, or invokes a child process to obtain the diagnostic artifact.
-Each local action reads only the declared hyphenated GitHub Actions input name;
-there is no test-only underscore input alias in the hosted path.
+The diagnostic action reads only its fixed private environment aliases. The
+separate fallback, finalizer, and outcome actions use their own narrowly scoped
+declared action inputs and do not receive the OIDC-bearing aliases.
 
 A separate hosted Linux `node20` selftest executes the exact local entrypoint
 from a checkout without `node_modules` or `npm install`. It checks missing
-evaluator, evaluator runtime failure, and OIDC-blocked paths all leave a
-sanitized summary artifact available for upload. The selftest has no
-`id-token` permission and does not create producer evidence.
+evaluator, evaluator runtime failure, OIDC-blocked, and a synthetic canonical
+private-environment map. The canonical selftest asserts every reported context
+field is an allowlisted `match`; every path leaves a sanitized summary artifact
+available for upload. The selftest has no `id-token` permission and does not
+create producer evidence.
 
 A diagnostic `match` is not a producer success and does not enable a retry,
 external trust, completion, release, or Finish authority. After protected
