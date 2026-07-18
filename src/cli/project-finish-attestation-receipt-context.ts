@@ -116,29 +116,77 @@ export function readProjectFinishAttestationWorkflow(
   },
   diagnostics: ProjectFinishAttestationDiagnostic[],
 ): ProjectFinishAttestationReceipt["workflow"] | undefined {
-  const expectedRef = `${binding.repositorySlug}/${PROJECT_FINISH_ATTESTATION_POLICY.workflowPath}@refs/heads/main`
-  const expectedSan = `https://github.com/${expectedRef}`
   if (
     !isRecord(value)
-    || !exactKeys(value, ["certificateSan", "path", "ref", "runAttempt", "runId", "sha"])
-    || value.certificateSan !== expectedSan
-    || value.path !== PROJECT_FINISH_ATTESTATION_POLICY.workflowPath
-    || value.ref !== expectedRef
-    || !isCommit(value.sha)
-    || value.sha !== binding.sourceHead
+    || !exactKeys(value, ["caller", "certificateSan", "reusable", "runAttempt", "runId"])
+    || !isString(value.certificateSan)
     || value.runAttempt !== binding.lifecycle.runAttempt
     || value.runId !== binding.lifecycle.runId
   ) {
     diagnostics.push(wrong("predicate.receipt.workflow"))
     return undefined
   }
+  const caller = readCallerWorkflow(value.caller, binding.repositorySlug, binding.sourceHead)
+  const reusable = readReusableWorkflow(value.reusable)
+  if (
+    caller === undefined
+    || reusable === undefined
+    || value.certificateSan !== `https://github.com/${caller.ref}`
+  ) {
+    diagnostics.push(wrong("predicate.receipt.workflow"))
+    return undefined
+  }
   return {
-    certificateSan: expectedSan,
-    path: PROJECT_FINISH_ATTESTATION_POLICY.workflowPath,
-    ref: expectedRef,
+    caller,
+    certificateSan: value.certificateSan,
+    reusable,
     runAttempt: binding.lifecycle.runAttempt,
     runId: binding.lifecycle.runId,
-    sha: binding.sourceHead,
+  }
+}
+
+function readCallerWorkflow(
+  value: unknown,
+  repositorySlug: string,
+  sourceHead: string,
+): ProjectFinishAttestationReceipt["workflow"]["caller"] | undefined {
+  if (!isRecord(value) || !exactKeys(value, ["ref", "sha"]) || !isString(value.ref) || !isCommit(value.sha)) {
+    return undefined
+  }
+  const prefix = `${repositorySlug}/.github/workflows/`
+  if (!value.ref.startsWith(prefix) || value.sha !== sourceHead) return undefined
+  const suffix = `@${value.sha}`
+  const relativePath = value.ref.slice(prefix.length, -suffix.length)
+  if (
+    !value.ref.endsWith(suffix)
+    || relativePath.length === 0
+    || relativePath.includes("\\")
+    || relativePath.split("/").some((part) => part === "" || part === "." || part === "..")
+    || !relativePath.endsWith(".yml")
+  ) {
+    return undefined
+  }
+  return { ref: value.ref, sha: value.sha }
+}
+
+function readReusableWorkflow(
+  value: unknown,
+): ProjectFinishAttestationReceipt["workflow"]["reusable"] | undefined {
+  if (
+    !isRecord(value)
+    || !exactKeys(value, ["path", "ref", "sha"])
+    || value.path !== PROJECT_FINISH_ATTESTATION_POLICY.workflowPath
+    || !isString(value.ref)
+    || !isCommit(value.sha)
+  ) {
+    return undefined
+  }
+  const expectedRef = `${PROJECT_FINISH_ATTESTATION_POLICY.producerRepository}/${PROJECT_FINISH_ATTESTATION_POLICY.workflowPath}@${value.sha}`
+  if (value.ref !== expectedRef) return undefined
+  return {
+    path: PROJECT_FINISH_ATTESTATION_POLICY.workflowPath,
+    ref: value.ref,
+    sha: value.sha,
   }
 }
 
