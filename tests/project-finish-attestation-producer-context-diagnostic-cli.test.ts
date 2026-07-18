@@ -48,7 +48,7 @@ describe("project finish producer context diagnostic CLI", () => {
     const token = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
     try {
       writeFileSync(hookPath, oidcHook(token))
-      const result = runDiagnostic(workspace, ["--import", hookPath])
+      const result = runDiagnostic(workspace, ["--import", hookPath], true)
       const summary = readFileSync(summaryPath(workspace), "utf8")
 
       expect(result.status).toBe(0)
@@ -116,13 +116,15 @@ describe("project finish producer context diagnostic CLI", () => {
   })
 })
 
-function runDiagnostic(workspace: string, nodeArguments: readonly string[] = []) {
+function runDiagnostic(
+  workspace: string,
+  nodeArguments: readonly string[] = [],
+  includeOidcEndpoint = false,
+) {
   return spawnSync(process.execPath, [...nodeArguments, diagnosticScript], {
     cwd: root,
     encoding: "utf8",
     env: {
-      ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-      ACTIONS_ID_TOKEN_REQUEST_URL: "https://token.actions.githubusercontent.com/oidc",
       GITHUB_ACTIONS: "true",
       GITHUB_EVENT_NAME: "push",
       GITHUB_REF: "refs/heads/main",
@@ -136,6 +138,12 @@ function runDiagnostic(workspace: string, nodeArguments: readonly string[] = [])
       PERSONA_HARNESS_PRODUCER_SHA: producerSha,
       RUNNER_ENVIRONMENT: "github-hosted",
       RUNNER_OS: "Linux",
+      ...(includeOidcEndpoint
+        ? {
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
+          ACTIONS_ID_TOKEN_REQUEST_URL: "https://token.actions.githubusercontent.com/oidc",
+        }
+        : {}),
     },
   })
 }
