@@ -17,6 +17,7 @@ import { describe, expect, it } from "vitest"
 
 const root = process.cwd()
 const actionSource = join(root, ".github", "actions", "project-finish-context-diagnostic", "index.mjs")
+const fallbackActionSource = join(root, ".github", "actions", "project-finish-context-diagnostic-fallback", "index.mjs")
 const workflowPath = join(root, ".github", "workflows", "persona-harness-project-finish-context-diagnostic.yml")
 const secret = "PH_SUMMARY_SECRET_sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
 const callerSha = "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8"
@@ -45,7 +46,7 @@ describe("project finish context diagnostic summary bootstrap", () => {
       expect(JSON.parse(summary)).toMatchObject({
         authorityEligible: false,
         diagnostic_status: "blocked",
-        failure_stage: "runtime-load",
+        failure_stage: "fallback",
         outcome: "blocked",
         predicateCreated: false,
         receiptCreated: false,
@@ -125,7 +126,7 @@ describe("project finish context diagnostic summary bootstrap", () => {
       expect(result.status).toBe(1)
       expect(JSON.parse(summary)).toMatchObject({
         diagnostic_status: "blocked",
-        failure_stage: "runtime",
+        failure_stage: "fallback",
         outcome: "blocked",
       })
       expect(existsSync(join(outside, "summary.json"))).toBe(false)
@@ -201,22 +202,27 @@ describe("project finish context diagnostic summary bootstrap", () => {
   it("uploads the fixed summary path after every diagnostic result", () => {
     const workflow = readFileSync(workflowPath, "utf8")
     const action = readFileSync(actionSource, "utf8")
-    const bootstrap = action.indexOf('summary.write(failureSummary("bootstrap"))')
     const evaluatorImport = action.indexOf('await import("../../../scripts/diagnose-project-finish-producer-context.mjs")')
 
     expect(workflow).toContain("if: always()")
+    expect(workflow).toContain("Create bounded project producer context fallback")
+    expect(workflow).toContain("continue-on-error: true")
+    expect(workflow).toContain("Finalize bounded project producer context diagnostic")
+    expect(workflow).toContain("Report bounded project producer context diagnostic outcome")
     expect(workflow).toContain("diagnostic-runner-temp: ${{ runner.temp }}")
     expect(workflow).toContain("${{ runner.temp }}/project-finish-attestation-context-diagnostic/summary.json")
     expect(workflow).toContain("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic")
     expect(workflow).not.toContain("diagnostic-workspace: ${{ github.workspace }}")
-    expect(bootstrap).toBeGreaterThanOrEqual(0)
-    expect(evaluatorImport).toBeGreaterThan(bootstrap)
+    expect(evaluatorImport).toBeGreaterThanOrEqual(0)
     expect(action).toContain('SUMMARY_SCHEMA = "project-finish-attestation-context-diagnostic-summary.1"')
     expect(action).not.toContain("node:child_process")
     expect(action).not.toContain("node_modules")
     expect(action).not.toContain("npm install")
     expect(action).toContain('const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"')
     expect(action).toContain('actionInput("DIAGNOSTIC_RUNNER_TEMP")')
+    expect(action).toContain("replaceFallbackSummary(summary)")
+    expect(action).toContain('writeActionOutput("summary-status", summary.outcome)')
+    expect(action).not.toContain('summary.write(failureSummary("bootstrap"))')
     expect(action).not.toContain("DIAGNOSTIC_WORKSPACE")
   })
 })
@@ -247,13 +253,19 @@ function runAction(
   nodeArguments: readonly string[] = [],
   overrides: Readonly<Record<string, string>> = {},
 ) {
+  const actionEnvironment = {
+    ...environment(workspace, runnerTemp),
+    ...overrides,
+  }
+  spawnSync(process.execPath, [fallbackActionSource], {
+    cwd: fixture,
+    encoding: "utf8",
+    env: githubActionEnvironment(actionEnvironment),
+  })
   return spawnSync(process.execPath, [...nodeArguments, join(fixture, ".github", "actions", "project-finish-context-diagnostic", "index.mjs")], {
     cwd: fixture,
     encoding: "utf8",
-    env: {
-      ...environment(workspace, runnerTemp),
-      ...overrides,
-    },
+    env: githubActionEnvironment(actionEnvironment),
   })
 }
 
@@ -281,6 +293,17 @@ function environment(workspace: string, runnerTemp: string): Record<string, stri
     INPUT_DIAGNOSTIC_SOURCE_HEAD: callerSha,
     NODE_PATH: "",
   }
+}
+
+function githubActionEnvironment(environment: Readonly<Record<string, string>>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(environment).map(([name, value]) => [
+      name.startsWith("INPUT_")
+        ? `INPUT_${name.slice("INPUT_".length).replaceAll("_", "-")}`
+        : name,
+      value,
+    ]),
+  )
 }
 
 function summaryPath(runnerTemp: string): string {

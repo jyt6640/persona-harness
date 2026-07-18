@@ -201,7 +201,17 @@ jobs:
           ref: ${{ needs.resolve.outputs.producer-sha }}
           repository: jyt6640/persona-harness
 
+      - name: Create bounded project producer context fallback
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""
+          ACTIONS_ID_TOKEN_REQUEST_URL: ""
+        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-fallback
+        with:
+          diagnostic-runner-temp: ${{ runner.temp }}
+
       - name: Emit bounded project producer context diagnostic
+        id: diagnostic
+        continue-on-error: true
         uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic
         with:
           diagnostic-actions: "true"
@@ -223,11 +233,32 @@ jobs:
           diagnostic-runner-temp: ${{ runner.temp }}
           diagnostic-source-head: ${{ github.sha }}
 
+      - name: Finalize bounded project producer context diagnostic
+        id: finalizer
+        if: always()
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""
+          ACTIONS_ID_TOKEN_REQUEST_URL: ""
+        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-finalizer
+        with:
+          diagnostic-runner-temp: ${{ runner.temp }}
+          diagnostic-step-outcome: ${{ steps.diagnostic.outcome }}
+          diagnostic-summary-status: ${{ steps.diagnostic.outputs.summary-status }}
+
       - name: Upload bounded project producer context diagnostic
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          if-no-files-found: ignore
+          if-no-files-found: error
           name: project-finish-attestation-context-diagnostic
           path: ${{ runner.temp }}/project-finish-attestation-context-diagnostic/summary.json
           retention-days: 7
+
+      - name: Report bounded project producer context diagnostic outcome
+        if: always()
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""
+          ACTIONS_ID_TOKEN_REQUEST_URL: ""
+        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-outcome
+        with:
+          diagnostic-outcome: ${{ steps.finalizer.outputs.outcome }}

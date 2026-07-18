@@ -39,6 +39,10 @@ inputs:
   diagnostic-runner-temp:
     required: true
 
+outputs:
+  summary-status:
+    description: Bounded status of the persisted diagnostic summary.
+
 runs:
   using: node20
   main: index.mjs

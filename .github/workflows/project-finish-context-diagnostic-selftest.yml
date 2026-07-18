@@ -1,0 +1,61 @@
+name: Project finish context diagnostic action selftest
+
+on:
+  pull_request:
+    paths:
+      - ".github/actions/project-finish-context-diagnostic/**"
+      - ".github/actions/project-finish-context-diagnostic-fallback/**"
+      - ".github/actions/project-finish-context-diagnostic-finalizer/**"
+      - ".github/actions/project-finish-context-diagnostic-outcome/**"
+      - ".github/actions/project-finish-context-diagnostic-selftest/**"
+      - ".github/workflows/persona-harness-project-finish-context-diagnostic.yml"
+      - ".github/workflows/project-finish-context-diagnostic-selftest.yml"
+      - "scripts/diagnose-project-finish-producer-context.mjs"
+      - "scripts/project-finish-attestation-oidc.mjs"
+      - "scripts/project-finish-attestation-producer-context-diagnostic.mjs"
+      - "scripts/project-finish-attestation-producer-context.mjs"
+      - "scripts/verify-project-finish-producer-checkout.mjs"
+  push:
+    paths:
+      - ".github/actions/project-finish-context-diagnostic/**"
+      - ".github/actions/project-finish-context-diagnostic-fallback/**"
+      - ".github/actions/project-finish-context-diagnostic-finalizer/**"
+      - ".github/actions/project-finish-context-diagnostic-outcome/**"
+      - ".github/actions/project-finish-context-diagnostic-selftest/**"
+      - ".github/workflows/persona-harness-project-finish-context-diagnostic.yml"
+      - ".github/workflows/project-finish-context-diagnostic-selftest.yml"
+      - "scripts/diagnose-project-finish-producer-context.mjs"
+      - "scripts/project-finish-attestation-oidc.mjs"
+      - "scripts/project-finish-attestation-producer-context-diagnostic.mjs"
+      - "scripts/project-finish-attestation-producer-context.mjs"
+      - "scripts/verify-project-finish-producer-checkout.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    name: Dependency-free diagnostic action selftest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Exercise local diagnostic action entrypoint
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+        uses: ./.github/actions/project-finish-context-diagnostic-selftest
+        with:
+          diagnostic-runner-temp: ${{ runner.temp }}
+
+      - name: Upload diagnostic action selftest summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          if-no-files-found: error
+          name: project-finish-context-diagnostic-selftest
+          path: ${{ runner.temp }}/project-finish-context-diagnostic-selftest/summary.json
+          retention-days: 7

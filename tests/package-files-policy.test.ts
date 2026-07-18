@@ -217,8 +217,17 @@ describe("package files policy", () => {
     const sourceOnlyPaths = [
       ".github/workflows/persona-harness-project-finish.yml",
       ".github/workflows/persona-harness-project-finish-context-diagnostic.yml",
+      ".github/workflows/project-finish-context-diagnostic-selftest.yml",
       ".github/actions/project-finish-context-diagnostic/action.yml",
       ".github/actions/project-finish-context-diagnostic/index.mjs",
+      ".github/actions/project-finish-context-diagnostic-fallback/action.yml",
+      ".github/actions/project-finish-context-diagnostic-fallback/index.mjs",
+      ".github/actions/project-finish-context-diagnostic-finalizer/action.yml",
+      ".github/actions/project-finish-context-diagnostic-finalizer/index.mjs",
+      ".github/actions/project-finish-context-diagnostic-outcome/action.yml",
+      ".github/actions/project-finish-context-diagnostic-outcome/index.mjs",
+      ".github/actions/project-finish-context-diagnostic-selftest/action.yml",
+      ".github/actions/project-finish-context-diagnostic-selftest/index.mjs",
       "scripts/build-project-finish-attestation.mjs",
       "scripts/project-finish-attestation-producer-context.mjs",
       "scripts/project-finish-attestation-producer-context-diagnostic.mjs",
@@ -233,6 +242,7 @@ describe("package files policy", () => {
       "tests/project-finish-attestation-producer-context-diagnostic-forwarding.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-summary.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-workflow.test.ts",
+      "tests/project-finish-attestation-producer-context-diagnostic-fallback.test.ts",
     ]
     const runtimePaths = [
       "dist/cli/project-finish-attestation-producer.js",
@@ -249,6 +259,16 @@ describe("package files policy", () => {
     }
     expect(existsSync(path.join(packageRoot, boundaryRecord))).toBe(true)
     expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
+
+    const candidateBoundaryPaths = [...sourceOnlyPaths, boundaryRecord]
+    const packagedCandidateBoundaryPaths = candidateBoundaryPaths.filter((filePath) =>
+      isCoveredByPackageFiles(filePath, packageJson.files),
+    )
+    const boundaryRecordText = readFileSync(path.join(packageRoot, boundaryRecord), "utf8")
+
+    expect(packagedCandidateBoundaryPaths).toEqual([boundaryRecord])
+    expect(boundaryRecordText).toContain("same package path set but content-different")
+    expect(boundaryRecordText).toMatch(/requires fresh\s+External verification/u)
   })
 
   it("keeps direct current README links covered by packaged files", () => {

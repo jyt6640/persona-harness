@@ -1,0 +1,10 @@
+name: Selftest project finish context diagnostic actions
+description: Exercise the exact local diagnostic action entrypoint without dependencies or OIDC.
+
+inputs:
+  diagnostic-runner-temp:
+    required: true
+
+runs:
+  using: node20
+  main: index.mjs

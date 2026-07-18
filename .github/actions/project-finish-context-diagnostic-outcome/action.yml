@@ -1,0 +1,10 @@
+name: Report bounded project finish context diagnostic outcome
+description: Fail the diagnostic job only after its bounded summary artifact upload.
+
+inputs:
+  diagnostic-outcome:
+    required: true
+
+runs:
+  using: node20
+  main: index.mjs

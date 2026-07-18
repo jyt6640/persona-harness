@@ -1,0 +1,18 @@
+name: Finalize bounded project finish context diagnostic
+description: Preserve a valid bounded diagnostic summary or restore a trusted fallback.
+
+inputs:
+  diagnostic-runner-temp:
+    required: true
+  diagnostic-step-outcome:
+    required: true
+  diagnostic-summary-status:
+    required: false
+
+outputs:
+  outcome:
+    description: Bounded final diagnostic outcome.
+
+runs:
+  using: node20
+  main: index.mjs

@@ -1,4 +1,4 @@
-import { closeSync, ftruncateSync, lstatSync, mkdirSync, openSync, realpathSync, writeSync } from "node:fs"
+import { closeSync, ftruncateSync, lstatSync, openSync, realpathSync, writeSync } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -34,32 +34,30 @@ const INPUTS = [
 ]
 
 async function main() {
-  const summary = createSummaryWriter()
+  assertFallbackSummary()
+  const environment = forwardedEnvironment()
+  const producerCheckout = producerCheckoutStatus()
+  const producerRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..")
+  let runner
   try {
-    summary.write(failureSummary("bootstrap"))
-    const environment = forwardedEnvironment()
-    const producerCheckout = producerCheckoutStatus()
-    const producerRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..")
-    let runner
-    try {
-      ({ runProjectFinishProducerContextDiagnostic: runner } =
-        await import("../../../scripts/diagnose-project-finish-producer-context.mjs"))
-    } catch {
-      finish(summary, failureSummary("runtime-load"))
-      return
-    }
-    try {
-      const result = await runner({
-        environment,
-        producerCheckout,
-        producerRoot,
-      })
-      finish(summary, resultSummary(result))
-    } catch {
-      finish(summary, failureSummary("runtime"))
-    }
-  } finally {
-    summary.close()
+    ({ runProjectFinishProducerContextDiagnostic: runner } =
+      await import("../../../scripts/diagnose-project-finish-producer-context.mjs"))
+  } catch {
+    finish(failureSummary("runtime-load"))
+    return
+  }
+  try {
+    const result = await runner({
+      environment,
+      producerCheckout,
+      producerRoot,
+    })
+    const summary = resultSummary(result)
+    replaceFallbackSummary(summary)
+    writeActionOutput("summary-status", summary.outcome)
+    finish(summary)
+  } catch {
+    finish(failureSummary("runtime"))
   }
 }
 
@@ -76,7 +74,7 @@ function forwardedEnvironment() {
 }
 
 function actionInput(name) {
-  return platformEnvironment(`INPUT_${name}`)
+  return platformEnvironment(`INPUT_${name.replaceAll("_", "-")}`)
 }
 
 function platformEnvironment(name) {
@@ -89,7 +87,23 @@ function producerCheckoutStatus() {
   return value === "match" || value === "missing" ? value : "mismatch"
 }
 
-function createSummaryWriter() {
+function replaceFallbackSummary(summary) {
+  const path = fallbackSummaryPath()
+  const descriptor = openSync(path, "r+")
+  try {
+    const bytes = Buffer.from(`${JSON.stringify(summary)}\n`, "utf8")
+    ftruncateSync(descriptor, 0)
+    writeSync(descriptor, bytes, 0, bytes.length, 0)
+  } finally {
+    closeSync(descriptor)
+  }
+}
+
+function assertFallbackSummary() {
+  fallbackSummaryPath()
+}
+
+function fallbackSummaryPath() {
   const runnerTemp = actionInput("DIAGNOSTIC_RUNNER_TEMP")
   if (typeof runnerTemp !== "string" || !isAbsolute(runnerTemp) || runnerTemp !== resolve(runnerTemp)) {
     throw new Error(FAILURE_CODE)
@@ -104,26 +118,34 @@ function createSummaryWriter() {
   if (relative(root, directory) !== OUTPUT_DIRECTORY) {
     throw new Error(FAILURE_CODE)
   }
-  mkdirSync(directory, { mode: 0o700 })
   const directoryEntry = lstatSync(directory)
-  if (!directoryEntry.isDirectory() || directoryEntry.isSymbolicLink()) {
+  if (!directoryEntry.isDirectory() || directoryEntry.isSymbolicLink() || realpathSync(directory) !== directory) {
     throw new Error(FAILURE_CODE)
   }
-  const descriptor = openSync(join(directory, SUMMARY_FILENAME), "wx", 0o600)
-  return {
-    write(summary) {
-      const bytes = Buffer.from(`${JSON.stringify(summary)}\n`, "utf8")
-      ftruncateSync(descriptor, 0)
-      writeSync(descriptor, bytes, 0, bytes.length, 0)
-    },
-    close() {
+  const path = join(directory, SUMMARY_FILENAME)
+  const fileEntry = lstatSync(path)
+  if (!fileEntry.isFile() || fileEntry.isSymbolicLink() || realpathSync(path) !== path) {
+    throw new Error(FAILURE_CODE)
+  }
+  return path
+}
+
+function writeActionOutput(name, value) {
+  const output = platformEnvironment("GITHUB_OUTPUT")
+  if (output === undefined || output.length > 1_024 || /[\u0000\r\n]/u.test(output)) return
+  try {
+    const descriptor = openSync(output, "a", 0o600)
+    try {
+      writeSync(descriptor, `${name}=${value}\n`)
+    } finally {
       closeSync(descriptor)
-    },
+    }
+  } catch {
+    // The workflow finalizer verifies the bounded summary even when outputs are unavailable.
   }
 }
 
-function finish(summary, result) {
-  summary.write(result)
+function finish(result) {
   process.stdout.write(`${JSON.stringify(result)}\n`)
   if (result.outcome !== "match") process.exitCode = 1
 }
