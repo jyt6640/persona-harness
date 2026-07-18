@@ -7,17 +7,23 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
+const sourceCli = sourceCliArgument(process.argv.slice(2))
 
 try {
-  const tarballPath = packCurrentRepository()
-  const { consumerDirectory, installedPackage } = installFreshTarball(tarballPath)
+  if (sourceCli === undefined) {
+    const tarballPath = packCurrentRepository()
+    const { consumerDirectory, installedPackage } = installFreshTarball(tarballPath)
 
-  assertRepositoryOnlyFilesAreAbsent(installedPackage)
-  assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
-  assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
-  assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
-  assertInstalledPackageTestPasses(installedPackage)
-  process.stdout.write("installed-package-test-contract: PASS\n")
+    assertRepositoryOnlyFilesAreAbsent(installedPackage)
+    assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+    assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
+    assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+    assertInstalledPackageTestPasses(installedPackage)
+    process.stdout.write("installed-package-test-contract: PASS\n")
+  } else {
+    assertSourceCooperativeFinishWorks(sourceCli)
+    process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
+  }
 } finally {
   rmSync(temporaryRoot, { force: true, recursive: true })
 }
@@ -149,11 +155,23 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
+  assertCooperativeFinishWorks(fixtureRoot, phPath, "installed package")
+}
+
+function assertSourceCooperativeFinishWorks(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertCooperativeFinishWorks(join(temporaryRoot, "source-cli-cooperative-gradle-fixture"), phPath, "source CLI")
+}
+
+function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
   createCooperativeGradleFixture(fixtureRoot)
 
   const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
   if (defaultFinish.status === 0) {
-    throw new Error("installed package default Finish unexpectedly accepted local cooperative evidence")
+    throw new Error(`${label} default Finish unexpectedly accepted local cooperative evidence`)
   }
   const cooperativeFinish = runNode(fixtureRoot, [
     phPath,
@@ -163,14 +181,14 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     "--assurance",
     "cooperative",
   ])
-  requireSuccess("installed package cooperative Finish", cooperativeFinish)
+  requireSuccess(`${label} cooperative Finish`, cooperativeFinish)
   if (!cooperativeFinish.stdout.includes("Finish status: PASS")) {
-    throw new Error("installed package cooperative Finish did not report PASS")
+    throw new Error(`${label} cooperative Finish did not report PASS`)
   }
   const closure = runNode(fixtureRoot, [phPath, "workflow", "closure", "next", "--json"])
-  requireSuccess("installed package external-only closure", closure)
+  requireSuccess(`${label} external-only closure`, closure)
   if (!closure.stdout.includes("trusted-authority-required")) {
-    throw new Error("installed package closure did not remain external-only after cooperative Finish")
+    throw new Error(`${label} closure did not remain external-only after cooperative Finish`)
   }
   const junitPath = join(
     fixtureRoot,
@@ -180,11 +198,11 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     "TEST-example.cooperative.CooperativeApplicationTest.xml",
   )
   if (!existsSync(junitPath) || !readFileSync(junitPath, "utf8").includes("<testcase")) {
-    throw new Error("installed package cooperative Finish did not produce real JUnit XML")
+    throw new Error(`${label} cooperative Finish did not produce real JUnit XML`)
   }
   for (const directory of ["verification-attempts", "verification-receipts", "finish-attestation"]) {
     if (existsSync(join(fixtureRoot, ".persona", "custom-evidence", directory))) {
-      throw new Error(`installed package cooperative Finish wrote forgeable authority directory ${directory}`)
+      throw new Error(`${label} cooperative Finish wrote forgeable authority directory ${directory}`)
     }
   }
 }
@@ -398,4 +416,10 @@ function resolvePackTarball(output, packDirectory) {
 
 function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function sourceCliArgument(args) {
+  if (args.length === 0) return undefined
+  if (args.length === 2 && args[0] === "--source-cli" && args[1].trim() !== "") return args[1]
+  throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--source-cli dist/cli/index.js]")
 }
