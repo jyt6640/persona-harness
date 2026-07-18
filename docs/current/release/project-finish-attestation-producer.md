@@ -101,19 +101,31 @@ It creates no receipt, predicate, signed bundle, attestation, Finish result,
 or authority record. A separately uploaded summary artifact is diagnostic-only
 and is not attested or authority-bearing.
 
-The local `node20` action first uses only Node standard-library filesystem
-operations to create the fixed bounded summary under the platform-owned runner
-temporary root at
-`project-finish-attestation-context-diagnostic/summary.json`. The action
+Before the OIDC-bearing local action runs, a separate token-blind local
+`node20` action creates the fixed bounded fallback under the platform-owned
+runner temporary root at
+`project-finish-attestation-context-diagnostic/summary.json`. That pre-step
 rejects relative, noncanonical, or symlinked temp roots and creates the child
 directory and summary file without following a caller-workspace path. The
-workflow uploads that exact runner-temp path with `if: always`; it never writes
-a diagnostic summary below caller workspace. Only after that bootstrap does it
-dynamically load the fixed evaluator. A missing evaluator, evaluator load
-failure, or evaluator runtime failure overwrites the same artifact with a
-blocked, allowlisted summary and exits nonzero. The diagnostic job does not
-install dependencies, use an ambient dependency cache, or invoke a child
-process to obtain this artifact.
+workflow explicitly clears the OIDC request variables for the fallback,
+finalizer, and post-upload result steps.
+
+The OIDC diagnostic action verifies that exact fallback exists but does not
+replace it until the fixed evaluator has produced a valid bounded result. A
+missing evaluator, evaluator load failure, evaluator runtime failure, or
+summary write failure leaves the fallback unchanged. The trusted finalizer
+preserves a valid bounded result or restores a fixed blocked fallback using
+only the diagnostic step outcome and bounded action output. The workflow
+uploads the fixed runner-temp path with `if: always` before a token-blind local
+action marks a blocked diagnostic nonzero. It never writes a diagnostic summary
+below caller workspace, installs dependencies, uses an ambient dependency
+cache, or invokes a child process to obtain the diagnostic artifact.
+
+A separate hosted Linux `node20` selftest executes the exact local entrypoint
+from a checkout without `node_modules` or `npm install`. It checks missing
+evaluator, evaluator runtime failure, and OIDC-blocked paths all leave a
+sanitized summary artifact available for upload. The selftest has no
+`id-token` permission and does not create producer evidence.
 
 A diagnostic `match` is not a producer success and does not enable a retry,
 external trust, completion, release, or Finish authority. After protected
