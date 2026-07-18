@@ -28,19 +28,27 @@ describe("project finish context diagnostic workflow pin resolver", () => {
         cwd: root,
         encoding: "utf8",
         env: {
-          GITHUB_ACTIONS: "true",
-          GITHUB_EVENT_NAME: "push",
-          GITHUB_REF: "refs/heads/main",
-          GITHUB_REPOSITORY: "example/public-gradle-app",
-          GITHUB_REPOSITORY_ID: "987654321",
-          GITHUB_REPOSITORY_VISIBILITY: "public",
-          GITHUB_RUN_ATTEMPT: "1",
-          GITHUB_RUN_ID: "1001",
-          GITHUB_SHA: "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
-          GITHUB_WORKSPACE: workspace,
-          PERSONA_HARNESS_PRODUCER_SHA: pin.output,
-          RUNNER_ENVIRONMENT: "github-hosted",
-          RUNNER_OS: "Linux",
+          PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+          PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:
+            "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
+          PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA:
+            "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
+          PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: "push",
+          PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: pin.output,
+          PROJECT_FINISH_DIAGNOSTIC_REF: "refs/heads/main",
+          PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
+          PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
+          PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
+          PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
+            "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+          PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: pin.output,
+          PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
+          PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
+          PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
+          PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
+          PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD:
+            "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
+          PROJECT_FINISH_DIAGNOSTIC_WORKSPACE: workspace,
         },
       })
       const output = `${result.stdout}${result.stderr}`
@@ -77,7 +85,8 @@ describe("project finish context diagnostic workflow pin resolver", () => {
     const workflow = readFileSync(workflowPath, "utf8")
 
     expect(workflow).not.toContain("GITHUB_JOB:")
-    expect(workflow).not.toContain("github.workflow_sha")
+    expect(workflow).toContain("PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: ${{ github.workflow_sha }}")
+    expect(workflow).not.toContain("ref: ${{ github.workflow_sha }}")
     expect(workflow).toContain("matching.length !== 1")
     expect(workflow).toContain("contents: read")
     expect(workflow).toContain("id-token: write")

@@ -124,6 +124,11 @@ function context(): {
       GITHUB_RUN_ATTEMPT: "1",
       GITHUB_RUN_ID: "1001",
       GITHUB_SHA: callerSha,
+      GITHUB_WORKFLOW_REF: "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
+      GITHUB_WORKFLOW_SHA: callerSha,
+      PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_REF:
+        "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+      PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_SHA: producerSha,
       PERSONA_HARNESS_PRODUCER_SHA: producerSha,
       RUNNER_ENVIRONMENT: "github-hosted",
       RUNNER_OS: "Linux",
