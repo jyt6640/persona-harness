@@ -313,7 +313,7 @@ function environment(workspace: string, runnerTemp: string): Record<string, stri
     PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
     PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
     PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
-      "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+      `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${producerSha}`,
     PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: producerSha,
     PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
     PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
@@ -344,7 +344,8 @@ function claims(): Record<string, string> {
   return {
     aud: "persona-harness-project-finish-attestation",
     event_name: "push",
-    job_workflow_ref: "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+    job_workflow_ref:
+      `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${producerSha}`,
     job_workflow_sha: producerSha,
     ref: "refs/heads/main",
     repository: "example/public-gradle-app",

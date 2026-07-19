@@ -7,6 +7,11 @@ import {
 
 const callerSha = "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8"
 const producerSha = "02b590429b559def7fabc7e05a0ced975dc88f86"
+const hostedCallerSha = "e171cb0fd5e4b9cff76f235e62a4958c57658210"
+const hostedProducerSha = "8a3d6b068ef61b47d9d734b9de8d24a91271388b"
+const hostedRepository = "jyt6640/persona-harness-attestation-claim-fixture"
+const hostedRepositoryId = "1304576182"
+const hostedRunId = "29674006647"
 const secret = "PH_CONTEXT_SECRET_sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
 
 describe("project finish producer context diagnostic", () => {
@@ -35,8 +40,55 @@ describe("project finish producer context diagnostic", () => {
       { code: "reusable-workflow-sha", status: "match" },
       { code: "runner-environment", status: "match" },
       { code: "runner-os", status: "match" },
+      { code: "source-head", status: "match" },
     ]))
     expect(result.fields.every((field) => ["match", "missing", "mismatch"].includes(field.status))).toBe(true)
+  })
+
+  it("accepts the immutable reusable workflow ref from the authentic caller shape", () => {
+    const result = assessProjectFinishProducerContextDiagnostic(context())
+
+    expect(result.outcome).toBe("match")
+    expect(result.fields).toContainEqual({ code: "reusable-workflow-ref", status: "match" })
+  })
+
+  it("keeps the observed caller and reusable revision identities distinct", () => {
+    const result = assessProjectFinishProducerContextDiagnostic({
+      claims: {
+        ...context().claims,
+        job_workflow_ref:
+          `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${hostedProducerSha}`,
+        job_workflow_sha: hostedProducerSha,
+        repository: hostedRepository,
+        repository_id: hostedRepositoryId,
+        run_id: hostedRunId,
+        workflow_ref:
+          `${hostedRepository}/.github/workflows/research-attestation.yml@refs/heads/main`,
+        workflow_sha: hostedCallerSha,
+      },
+      environment: {
+        ...context().environment,
+        GITHUB_REPOSITORY: hostedRepository,
+        GITHUB_REPOSITORY_ID: hostedRepositoryId,
+        GITHUB_RUN_ID: hostedRunId,
+        GITHUB_SHA: hostedCallerSha,
+        GITHUB_WORKFLOW_REF:
+          `${hostedRepository}/.github/workflows/research-attestation.yml@refs/heads/main`,
+        GITHUB_WORKFLOW_SHA: hostedCallerSha,
+        PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_REF:
+          `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${hostedProducerSha}`,
+        PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_SHA: hostedProducerSha,
+        PERSONA_HARNESS_PRODUCER_SHA: hostedProducerSha,
+      },
+      producerCheckout: "match" as const,
+    })
+
+    expect(result.outcome).toBe("match")
+    expect(result.fields).toEqual(expect.arrayContaining([
+      { code: "caller-workflow-sha", status: "match" },
+      { code: "reusable-workflow-sha", status: "match" },
+      { code: "source-head", status: "match" },
+    ]))
   })
 
   it.each([
@@ -102,7 +154,8 @@ function context(): {
   return {
     claims: {
       event_name: "push",
-      job_workflow_ref: "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+      job_workflow_ref:
+        "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@02b590429b559def7fabc7e05a0ced975dc88f86",
       job_workflow_sha: producerSha,
       ref: "refs/heads/main",
       repository: "example/public-gradle-app",
@@ -127,7 +180,7 @@ function context(): {
       GITHUB_WORKFLOW_REF: "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
       GITHUB_WORKFLOW_SHA: callerSha,
       PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_REF:
-        "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+        "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@02b590429b559def7fabc7e05a0ced975dc88f86",
       PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_SHA: producerSha,
       PERSONA_HARNESS_PRODUCER_SHA: producerSha,
       RUNNER_ENVIRONMENT: "github-hosted",

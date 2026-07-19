@@ -115,6 +115,9 @@ function hasContextDiagnosticPrivateEnvironment(text) {
   ]
   return diagnostic.includes("env:")
     && diagnostic.includes("\n        with:")
+    && diagnostic.includes(
+      "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${{ needs.resolve.outputs.producer-sha }}",
+    )
     && !diagnostic.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     && !diagnostic.includes("ACTIONS_ID_TOKEN_REQUEST_")
     && aliases.every((alias) => diagnostic.includes(`${alias}:`))
@@ -179,6 +182,9 @@ function hasContextDiagnosticNativeIntegrationSelftest(text) {
     && exercise.includes("continue-on-error: true")
     && exercise.includes("uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd")
     && exercise.includes("runRequiredNativeProjectFinishContextSelftestWithCore")
+    && exercise.includes(
+      "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${{ needs.resolve.outputs.producer-sha }}",
+    )
     && !exercise.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     && !exercise.includes("ACTIONS_ID_TOKEN_REQUEST_")
     && !/\n\s+run:/u.test(exercise)

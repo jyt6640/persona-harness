@@ -15,6 +15,26 @@ import { runNativeProjectFinishContextSelftest } from "../project-finish-context
 const FAILURE_CODE = "project-finish-producer-context-diagnostic-selftest-failed"
 const OUTPUT_DIRECTORY = "project-finish-context-diagnostic-selftest"
 const SUMMARY_FILENAME = "summary.json"
+const CONTEXT_CODES = new Set([
+  "github-actions",
+  "event",
+  "ref",
+  "repository",
+  "repository-id",
+  "repository-visibility",
+  "caller-workflow-sha",
+  "caller-workflow-ref",
+  "producer-pin",
+  "reusable-workflow-ref",
+  "reusable-workflow-sha",
+  "run-id",
+  "run-attempt",
+  "runner-environment",
+  "runner-environment-env",
+  "runner-os",
+  "source-head",
+  "producer-checkout",
+])
 
 export async function runRequiredNativeProjectFinishContextSelftest(options = {}) {
   const { getIdToken } = options
@@ -107,17 +127,20 @@ function fallbackSummary() {
 
 function blockedSummary(nativeCase) {
   const stage = nativeStage(nativeCase)
-  const diagnosticCode = {
+  const diagnosticCodes = stage === "context"
+    ? nativeContextCodes(nativeCase).map(
+      (code) => `project-finish-producer-context-diagnostic-native-context-${code}-blocked`,
+    )
+    : [{
     bridge: "project-finish-producer-context-diagnostic-native-bridge-invocation-unavailable",
     capability: "project-finish-producer-context-diagnostic-native-oidc-capability-unavailable",
-    context: "project-finish-producer-context-diagnostic-native-context-blocked",
     validation: "project-finish-producer-context-diagnostic-native-oidc-validation-blocked",
-  }[stage]
+  }[stage]]
   return {
     artifactProducer: false,
     authorityEligible: false,
     cases: [nativeCase],
-    diagnosticCodes: [diagnosticCode],
+    diagnosticCodes,
     diagnosticOnly: true,
     failure_stage: "native-oidc",
     nativeRunnerOidc: {
@@ -125,10 +148,18 @@ function blockedSummary(nativeCase) {
       requirement: "required",
       stage,
       status: "mismatch",
+      ...(stage === "context" ? { contextCodes: nativeContextCodes(nativeCase) } : {}),
     },
     outcome: "blocked",
     signing: false,
   }
+}
+
+function nativeContextCodes(value) {
+  const codes = Array.isArray(value?.contextCodes)
+    ? value.contextCodes.filter((code) => typeof code === "string" && CONTEXT_CODES.has(code))
+    : []
+  return codes.length > 0 ? codes : ["unknown"]
 }
 
 function matchedSummary(nativeCase) {

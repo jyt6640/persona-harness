@@ -21,6 +21,26 @@ const PRIVATE_CONTEXT_KEYS = [
   "PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP",
   "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD",
 ]
+const CONTEXT_CODES = [
+  "github-actions",
+  "event",
+  "ref",
+  "repository",
+  "repository-id",
+  "repository-visibility",
+  "caller-workflow-sha",
+  "caller-workflow-ref",
+  "producer-pin",
+  "reusable-workflow-ref",
+  "reusable-workflow-sha",
+  "run-id",
+  "run-attempt",
+  "runner-environment",
+  "runner-environment-env",
+  "runner-os",
+  "source-head",
+  "producer-checkout",
+]
 
 export async function runNativeProjectFinishContextSelftest({ githubActionsCoreToken, sourceRoot }) {
   const environment = nativeEnvironment()
@@ -44,7 +64,10 @@ export async function runNativeProjectFinishContextSelftest({ githubActionsCoreT
         status: "match",
       }
     }
-    return nativeCase(stageForDiagnostic(result))
+    const contextCodes = contextCodesForDiagnostic(result)
+    return contextCodes.length === 0 && hasOidcValidationFailure(result)
+      ? nativeCase("validation")
+      : nativeCase("context", contextCodes)
   } catch {
     return nativeCase("bridge")
   }
@@ -65,8 +88,8 @@ function allContextStatusesMatch(value) {
   return value.fields.every((field) => isRecord(field) && field.status === "match")
 }
 
-function stageForDiagnostic(value) {
-  if (!isRecord(value) || !Array.isArray(value.fields)) return "bridge"
+function contextCodesForDiagnostic(value) {
+  if (!isRecord(value) || !Array.isArray(value.fields)) return []
   const fields = value.fields.filter((field) => isRecord(field))
   if (
     fields.some((field) =>
@@ -74,13 +97,31 @@ function stageForDiagnostic(value) {
       field.status !== "match",
     )
   ) {
-    return "validation"
+    return []
   }
-  return "context"
+  return CONTEXT_CODES.filter((code) =>
+    fields.some((field) => field.code === code && field.status !== "match"),
+  )
 }
 
-function nativeCase(stage) {
-  return {
+function hasOidcValidationFailure(value) {
+  if (!isRecord(value) || !Array.isArray(value.fields)) return false
+  return value.fields.some((field) =>
+    isRecord(field) &&
+    (field.code === "oidc-audience" || field.code === "oidc-claims" || field.code === "oidc-token") &&
+    field.status !== "match",
+  )
+}
+
+function nativeCase(stage, contextCodes = []) {
+  return stage === "context"
+    ? {
+      contextCodes,
+      id: "native-runner-context",
+      stage,
+      status: "mismatch",
+    }
+    : {
     id: "native-runner-context",
     stage,
     status: "mismatch",
