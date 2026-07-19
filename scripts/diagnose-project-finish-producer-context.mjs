@@ -79,9 +79,9 @@ function readForwardedEnvironment(environment) {
     },
     oidc: {
       ACTIONS_ID_TOKEN_REQUEST_TOKEN:
-        forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN"),
+        forwardedValue(environment, "ACTIONS_ID_TOKEN_REQUEST_TOKEN"),
       ACTIONS_ID_TOKEN_REQUEST_URL:
-        forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL"),
+        forwardedValue(environment, "ACTIONS_ID_TOKEN_REQUEST_URL"),
     },
   }
 }

@@ -85,7 +85,8 @@ describe("project finish context diagnostic workflow pin resolver", () => {
     const workflow = readFileSync(workflowPath, "utf8")
 
     expect(workflow).not.toContain("GITHUB_JOB:")
-    expect(workflow).toContain("diagnostic-caller-workflow-sha: ${{ github.workflow_sha }}")
+    expect(workflow).toContain("PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: ${{ github.workflow_sha }}")
+    expect(workflow).not.toContain("diagnostic-caller-workflow-sha:")
     expect(workflow).not.toContain("ref: ${{ github.workflow_sha }}")
     expect(workflow).toContain("matching.length !== 1")
     expect(workflow).toContain("needs.resolve.outputs.producer-sha")

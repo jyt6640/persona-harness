@@ -219,7 +219,11 @@ describe("project finish context diagnostic summary bootstrap", () => {
     expect(action).not.toContain("node_modules")
     expect(action).not.toContain("npm install")
     expect(action).toContain('const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"')
-    expect(action).toContain('actionInput("DIAGNOSTIC_RUNNER_TEMP")')
+    expect(action).toContain('privateEnvironment("PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP")')
+    expect(action).not.toContain("INPUT_")
+    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
+    expect(action).not.toContain("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     expect(action).toContain("replaceFallbackSummary(summary)")
     expect(action).toContain('writeActionOutput("summary-status", summary.outcome)')
     expect(action).not.toContain('summary.write(failureSummary("bootstrap"))')
@@ -260,37 +264,39 @@ function runAction(
   spawnSync(process.execPath, [fallbackActionSource], {
     cwd: fixture,
     encoding: "utf8",
-    env: githubActionEnvironment(actionEnvironment),
+    env: githubActionEnvironment({
+      INPUT_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
+    }),
   })
   return spawnSync(process.execPath, [...nodeArguments, join(fixture, ".github", "actions", "project-finish-context-diagnostic", "index.mjs")], {
     cwd: fixture,
     encoding: "utf8",
-    env: githubActionEnvironment(actionEnvironment),
+    env: actionEnvironment,
   })
 }
 
 function environment(workspace: string, runnerTemp: string): Record<string, string> {
   return {
-    INPUT_DIAGNOSTIC_ACTIONS: "true",
-    INPUT_DIAGNOSTIC_CALLER_WORKFLOW_REF:
+    PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+    PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:
       "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
-    INPUT_DIAGNOSTIC_CALLER_WORKFLOW_SHA: callerSha,
-    INPUT_DIAGNOSTIC_EVENT_NAME: "push",
-    INPUT_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
-    INPUT_DIAGNOSTIC_PRODUCER_SHA: producerSha,
-    INPUT_DIAGNOSTIC_REF: "refs/heads/main",
-    INPUT_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
-    INPUT_DIAGNOSTIC_REPOSITORY_ID: "987654321",
-    INPUT_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
-    INPUT_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
+    PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: callerSha,
+    PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: "push",
+    PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
+    PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: producerSha,
+    PROJECT_FINISH_DIAGNOSTIC_REF: "refs/heads/main",
+    PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
+    PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
+    PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
+    PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
       "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
-    INPUT_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: producerSha,
-    INPUT_DIAGNOSTIC_RUN_ATTEMPT: "1",
-    INPUT_DIAGNOSTIC_RUN_ID: "1001",
-    INPUT_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
-    INPUT_DIAGNOSTIC_RUNNER_OS: "Linux",
-    INPUT_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
-    INPUT_DIAGNOSTIC_SOURCE_HEAD: callerSha,
+    PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: producerSha,
+    PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
+    PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
+    PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
+    PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
+    PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
+    PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: callerSha,
     NODE_PATH: "",
   }
 }

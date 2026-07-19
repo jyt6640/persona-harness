@@ -164,14 +164,17 @@ describe("CI and release workflow policy surface", () => {
 })
 
 function copyContextDiagnosticAction(fixtureDir: string): void {
-  for (const actionName of [
-    "project-finish-context-diagnostic",
-    "project-finish-context-diagnostic-fallback",
-    "project-finish-context-diagnostic-finalizer",
-  ]) {
+  const actions = [
+    { actionName: "project-finish-context-diagnostic", fileNames: ["action.yml", "index.mjs"] },
+    { actionName: "project-finish-context-diagnostic-fallback", fileNames: ["action.yml", "index.mjs"] },
+    { actionName: "project-finish-context-diagnostic-finalizer", fileNames: ["action.yml", "index.mjs"] },
+    { actionName: "project-finish-context-diagnostic-selftest", fileNames: ["action.yml", "index.mjs", "native.mjs", "selftest.mjs"] },
+    { actionName: "project-finish-context-diagnostic-native-selftest", fileNames: ["action.yml", "index.mjs", "native-selftest.mjs"] },
+  ] as const
+  for (const { actionName, fileNames } of actions) {
     const actionDirectory = join(fixtureDir, ".github", "actions", actionName)
     mkdirSync(actionDirectory, { recursive: true })
-    for (const fileName of ["action.yml", "index.mjs"]) {
+    for (const fileName of fileNames) {
       copyFileSync(
         join(process.cwd(), ".github", "actions", actionName, fileName),
         join(actionDirectory, fileName),

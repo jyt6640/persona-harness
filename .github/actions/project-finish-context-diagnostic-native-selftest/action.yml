@@ -1,0 +1,6 @@
+name: Require native runner OIDC project finish context selftest
+description: Require the native runner OIDC capability while exercising the exact local diagnostic action.
+
+runs:
+  using: node20
+  main: index.mjs

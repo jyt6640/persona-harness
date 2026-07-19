@@ -75,16 +75,32 @@ checkout and OIDC reusable-workflow identity.
 The id-token-free resolution job performs the caller-pin and producer-checkout
 preflight. The separate OIDC job has no diagnostic `run:` step: it loads a
 fixed local `node20` action from the verified Persona Harness checkout. That
-action constructs a new in-memory environment from only fixed private context
-aliases for the public-push facts: event, ref, repository identity, caller
-workflow identity, source SHA, parsed diagnostic pin, run/attempt, and
-GitHub-hosted runner facts. It passes the platform OIDC endpoint and request
-token only to the in-memory OIDC reader. No shell, `env`, `node`, or `git`
-launcher is resolved through ambient `PATH` after the OIDC-bearing job begins.
+action has no security-context `with:` inputs. The reusable diagnostic step
+sets an explicit fixed `PROJECT_FINISH_DIAGNOSTIC_*` environment allowlist for
+the public-push facts: event, ref, repository identity, caller workflow
+identity, source SHA, parsed diagnostic pin, run/attempt, and GitHub-hosted
+runner facts. It passes the platform OIDC endpoint and request token only
+from the two documented runner-time variables
+`ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN` to the
+in-memory OIDC reader. Those variables are a runner capability, not workflow
+`env` context values; the reusable workflow never aliases them. The action
+ignores `INPUT_*`, private OIDC aliases, and ambient GitHub context values for
+the security context. No shell, `env`, `node`, or `git` launcher is resolved
+through ambient `PATH` after the OIDC-bearing job begins.
 The decoded OIDC claim supplies the observed reusable-workflow reference and
 SHA, which are checked separately from the caller workflow SHA/ref and the
 parsed pin. Ambient runner environment, home, Git configuration, and caller
 values cannot enter the evaluator.
+
+The ordinary pull-request and branch selftest is intentionally id-token-free.
+Its bounded summary labels native runner OIDC as `not-collected` and
+`not-required`; it is not evidence that the native runner capability works.
+The reusable workflow instead runs a separate native selftest with
+`id-token: write`. That action requires both documented runner-time OIDC
+variables. When either is unavailable, it records only the fixed
+native-OIDC-unavailable mismatch summary, uploads that summary, and then the
+workflow reports the fixed blocked outcome. A native selftest cannot silently
+omit the OIDC case or convert an id-token-free check into native evidence.
 
 Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
 statuses and bounded diagnostic codes. It does not store a JWT, token, header,
@@ -120,14 +136,26 @@ uploads the fixed runner-temp path with `if: always` before a token-blind local
 action marks a blocked diagnostic nonzero. It never writes a diagnostic summary
 below caller workspace, installs dependencies, uses an ambient dependency
 cache, or invokes a child process to obtain the diagnostic artifact.
-Each local action reads only the declared hyphenated GitHub Actions input name;
-there is no test-only underscore input alias in the hosted path.
+The diagnostic action reads only its fixed private environment aliases. The
+separate fallback, finalizer, and outcome actions use their own narrowly scoped
+declared action inputs and do not receive the OIDC-bearing aliases.
 
 A separate hosted Linux `node20` selftest executes the exact local entrypoint
 from a checkout without `node_modules` or `npm install`. It checks missing
-evaluator, evaluator runtime failure, and OIDC-blocked paths all leave a
-sanitized summary artifact available for upload. The selftest has no
-`id-token` permission and does not create producer evidence.
+evaluator, evaluator runtime failure, OIDC-blocked, and a synthetic canonical
+private-environment map. The canonical selftest asserts every reported context
+field is an allowlisted `match`; every path leaves a sanitized summary artifact
+available for upload. The selftest has no `id-token` permission and does not
+create producer evidence.
+
+Within the real reusable diagnostic workflow, a separate
+`hosted-selftest` job has `id-token: write` and uses the same explicit private
+context map as the diagnostic action. Its selftest action reads the actual
+runner-time OIDC capability, performs the canonical endpoint request through
+the bounded OIDC reader, and requires every production context status to
+match before the ordinary diagnostic action can run. It uploads only a
+diagnostic-only case result and never creates a receipt, predicate, signature,
+registry result, or authority state.
 
 A diagnostic `match` is not a producer success and does not enable a retry,
 external trust, completion, release, or Finish authority. After protected
