@@ -34,7 +34,7 @@ cross-checks the parsed SHA against the reusable `job_workflow_sha` claim
 before it builds the canonical subject. The caller `workflow_sha` remains
 separately bound to the caller checkout SHA; it is not a reusable-workflow
 revision. The reusable `job_workflow_ref` may identify only the fixed Persona
-Harness repository and workflow path at `refs/heads/main`, while the parsed
+Harness repository and workflow path at that parsed immutable revision, while the parsed
 immutable caller pin, reusable SHA claim, and producer checkout HEAD must all
 agree. The OIDC event, ref, public repository identity, run ID, run attempt,
 and GitHub-hosted runner claim must also match the platform environment. The
@@ -102,8 +102,11 @@ bridge import or handoff failure, `validation` for a bounded token, audience,
 or claim failure, or `context` for a later fixed context mismatch. The outer
 decision remains blocked for every non-match stage. These stages are codes and
 statuses only; they do not expose an error, token, claim, URL, path, or
-exception. A native selftest cannot silently omit the OIDC case or convert an
-id-token-free check into native evidence.
+exception. A `context` block adds only fixed identity-field codes for the
+event, ref, public repository, caller and reusable workflow identities,
+run/attempt, runner, source head, and producer checkout; it never includes
+the corresponding values. A native selftest cannot silently omit the OIDC
+case or convert an id-token-free check into native evidence.
 
 Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
 statuses and bounded diagnostic codes. It does not store a JWT, token, header,
