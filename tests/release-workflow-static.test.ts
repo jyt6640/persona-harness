@@ -165,7 +165,10 @@ describe("CI and release workflow policy surface", () => {
 
 function copyContextDiagnosticAction(fixtureDir: string): void {
   const actions = [
-    { actionName: "project-finish-context-diagnostic", fileNames: ["action.yml", "index.mjs", "oidc-capability-bridge.cjs"] },
+    {
+      actionName: "project-finish-context-diagnostic",
+      fileNames: ["action.yml", "index.mjs", "oidc-capability-bridge.cjs", "oidc-capability-bridge-summary.cjs"],
+    },
     { actionName: "project-finish-context-diagnostic-fallback", fileNames: ["action.yml", "index.mjs"] },
     { actionName: "project-finish-context-diagnostic-finalizer", fileNames: ["action.yml", "index.mjs"] },
     { actionName: "project-finish-context-diagnostic-selftest", fileNames: ["action.yml", "index.mjs", "native.mjs", "selftest.mjs"] },

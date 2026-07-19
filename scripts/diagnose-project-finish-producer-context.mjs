@@ -28,8 +28,10 @@ export async function runProjectFinishProducerContextDiagnostic(options = {}) {
   const result = assessProjectFinishProducerContextDiagnostic({
     claims: oidc.claims,
     environment: forwarded.context,
+    oidcAudienceStatus: oidc.audienceStatus,
     oidcEndpointStatus: oidc.endpointStatus,
     oidcRequestAttempted: oidc.requestAttempted,
+    oidcTokenStatus: oidc.tokenStatus,
     producerCheckout: producerCheckoutStatus(producerRoot, forwarded.context.PERSONA_HARNESS_PRODUCER_SHA, producerCheckout),
   })
   return result

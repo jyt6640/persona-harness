@@ -66,9 +66,9 @@ function runCase(id, kind) {
       INPUT_DIAGNOSTIC_RUNNER_TEMP: diagnosticTemp,
     })
     const outputPath = join(caseRoot, "outputs")
-    const oidcToken = kind === "canonical-context"
-      ? `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
-      : undefined
+    const oidcToken = kind === "oidc-blocked"
+      ? undefined
+      : `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
     const diagnostic = runBridge(
       join(checkout, ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge.cjs"),
       {
@@ -88,7 +88,13 @@ function runCase(id, kind) {
     })
     const summary = readDiagnosticSummary(diagnosticTemp)
     const expectsMatch = kind === "canonical-context"
-    const expectedStage = kind === "oidc-blocked" || expectsMatch ? "context" : "fallback"
+    const expectedStage = kind === "canonical-context"
+      ? "context"
+      : kind === "missing"
+        ? "runtime-load"
+        : kind === "runtime-error"
+          ? "runtime"
+          : "oidc-capability"
     const safe =
       fallback.status === 0 &&
       finalizer.status === 0 &&
@@ -112,6 +118,7 @@ function createDiagnosticCheckout(checkout, kind) {
   mkdirSync(scriptsDirectory, { recursive: true })
   copyFileSync(diagnosticEntrypoint(), join(actionDirectory, "index.mjs"))
   copyFileSync(diagnosticBridge(), join(actionDirectory, "oidc-capability-bridge.cjs"))
+  copyFileSync(diagnosticBridgeSummary(), join(actionDirectory, "oidc-capability-bridge-summary.cjs"))
   if (kind === "runtime-error") {
     writeFileSyncSafe(
       join(scriptsDirectory, "diagnose-project-finish-producer-context.mjs"),
@@ -162,7 +169,10 @@ const core = {
     return ${JSON.stringify(oidcToken)}
   },
 }
-bridge.runProjectFinishContextDiagnosticWithCore({ core })
+bridge.runProjectFinishContextDiagnosticWithCore({
+  core,
+  runnerTemp: process.env.PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP,
+})
   .then((summary) => {
     process.stdout.write(JSON.stringify(summary) + "\\n")
     process.exitCode = summary.outcome === "match" ? 0 : 1
@@ -299,6 +309,7 @@ function fallbackSummary() {
 
 function claims() {
   return {
+    aud: "persona-harness-project-finish-attestation",
     event_name: "push",
     job_workflow_ref: "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
     job_workflow_sha: "3bef5f4696769fb11042e881387ff83045a542ef",
@@ -331,6 +342,10 @@ function diagnosticEntrypoint() {
 
 function diagnosticBridge() {
   return join(sourceRoot(), ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge.cjs")
+}
+
+function diagnosticBridgeSummary() {
+  return join(sourceRoot(), ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge-summary.cjs")
 }
 
 function fallbackEntrypoint() {

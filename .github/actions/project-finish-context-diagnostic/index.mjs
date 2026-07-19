@@ -45,7 +45,7 @@ export async function runProjectFinishContextDiagnosticAction(options = {}) {
     ({ runProjectFinishProducerContextDiagnostic: runner } =
       await import("../../../scripts/diagnose-project-finish-producer-context.mjs"))
   } catch {
-    return failureSummary("runtime-load")
+    return persistFailure("runtime-load")
   }
   try {
     const result = await runner({
@@ -61,7 +61,7 @@ export async function runProjectFinishContextDiagnosticAction(options = {}) {
     writeActionOutput("summary-status", summary.outcome)
     return summary
   } catch {
-    return failureSummary("runtime")
+    return persistFailure("runtime")
   }
 }
 
@@ -175,6 +175,13 @@ function failureSummary(stage) {
     oidcClaimRead: false,
     oidcRequestAttempted: false,
   }
+}
+
+function persistFailure(stage) {
+  const summary = failureSummary(stage)
+  replaceFallbackSummary(summary)
+  writeActionOutput("summary-status", summary.outcome)
+  return summary
 }
 
 function baseSummary(outcome, failureStage) {

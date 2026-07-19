@@ -16,46 +16,35 @@ const FAILURE_CODE = "project-finish-producer-context-diagnostic-selftest-failed
 const OUTPUT_DIRECTORY = "project-finish-context-diagnostic-selftest"
 const SUMMARY_FILENAME = "summary.json"
 
-export async function runRequiredNativeProjectFinishContextSelftest({ getIdToken } = {}) {
-  const runnerTemp = canonicalRunnerTemp()
-  const summaryDirectory = createDirectory(runnerTemp, OUTPUT_DIRECTORY)
-  const summaryPath = join(summaryDirectory, SUMMARY_FILENAME)
-  writeJson(summaryPath, fallbackSummary())
-
-  const nativeCase = await runNativeProjectFinishContextSelftest({
-    githubActionsCoreToken: await readCoreToken(getIdToken),
-    sourceRoot: sourceRoot(),
-  }).catch(() => ({
-    id: "native-runner-context",
-    status: "mismatch",
-  }))
-  if (nativeCase.status !== "match") {
-    replaceJson(summaryPath, blockedSummary(nativeCase))
-    throw new Error(FAILURE_CODE)
+export async function runRequiredNativeProjectFinishContextSelftest(options = {}) {
+  const { getIdToken } = options
+  const ownsWriter = options.summaryWriter === undefined
+  const summaryWriter = options.summaryWriter ?? createSummaryWriter(canonicalRunnerTemp())
+  try {
+    summaryWriter.replace(fallbackSummary())
+    const token = Object.hasOwn(options, "githubActionsCoreToken")
+      ? boundedToken(options.githubActionsCoreToken)
+      : await readCoreToken(getIdToken)
+    const nativeCase = token === undefined
+      ? nativeCaseFor("capability")
+      : await runNativeProjectFinishContextSelftest({
+        githubActionsCoreToken: token,
+        sourceRoot: sourceRoot(),
+      })
+    const summary = nativeCase.status === "match"
+      ? matchedSummary(nativeCase)
+      : blockedSummary(nativeCase)
+    summaryWriter.replace(summary)
+    return summary
+  } finally {
+    if (ownsWriter) summaryWriter.close()
   }
-
-  replaceJson(summaryPath, {
-    artifactProducer: false,
-    authorityEligible: false,
-    cases: [nativeCase],
-    diagnosticOnly: true,
-    nativeRunnerOidc: {
-      evidence: "collected",
-      requirement: "required",
-      status: "match",
-    },
-    outcome: "match",
-    signing: false,
-  })
 }
 
 async function readCoreToken(getIdToken) {
   if (typeof getIdToken !== "function") return undefined
   try {
-    const token = await getIdToken()
-    return typeof token === "string" && token.length > 0 && token.length <= 16 * 1024 && !/[\u0000\r\n]/u.test(token)
-      ? token
-      : undefined
+    return boundedToken(await getIdToken())
   } catch {
     return undefined
   }
@@ -84,26 +73,23 @@ function createDirectory(root, name) {
   return directory
 }
 
-function writeJson(path, value) {
-  const descriptor = openSync(path, "wx", 0o600)
-  try {
-    const bytes = Buffer.from(`${JSON.stringify(value)}\n`, "utf8")
-    writeSync(descriptor, bytes, 0, bytes.length, 0)
-  } finally {
-    closeSync(descriptor)
-  }
-}
-
-function replaceJson(path, value) {
-  const entry = lstatSync(path)
-  if (!entry.isFile() || entry.isSymbolicLink() || realpathSync(path) !== path) throw new Error(FAILURE_CODE)
-  const descriptor = openSync(path, "r+")
-  try {
-    const bytes = Buffer.from(`${JSON.stringify(value)}\n`, "utf8")
-    ftruncateSync(descriptor, 0)
-    writeSync(descriptor, bytes, 0, bytes.length, 0)
-  } finally {
-    closeSync(descriptor)
+function createSummaryWriter(root) {
+  const summaryDirectory = createDirectory(root, OUTPUT_DIRECTORY)
+  const summaryPath = join(summaryDirectory, SUMMARY_FILENAME)
+  const descriptor = openSync(summaryPath, "wx", 0o600)
+  let closed = false
+  return {
+    replace(value) {
+      if (closed) throw new Error(FAILURE_CODE)
+      const bytes = Buffer.from(`${JSON.stringify(value)}\n`, "utf8")
+      ftruncateSync(descriptor, 0)
+      writeSync(descriptor, bytes, 0, bytes.length, 0)
+    },
+    close() {
+      if (closed) return
+      closed = true
+      closeSync(descriptor)
+    },
   }
 }
 
@@ -120,23 +106,69 @@ function fallbackSummary() {
 }
 
 function blockedSummary(nativeCase) {
+  const stage = nativeStage(nativeCase)
+  const diagnosticCode = {
+    bridge: "project-finish-producer-context-diagnostic-native-bridge-invocation-unavailable",
+    capability: "project-finish-producer-context-diagnostic-native-oidc-capability-unavailable",
+    context: "project-finish-producer-context-diagnostic-native-context-blocked",
+    validation: "project-finish-producer-context-diagnostic-native-oidc-validation-blocked",
+  }[stage]
   return {
     artifactProducer: false,
     authorityEligible: false,
     cases: [nativeCase],
-    diagnosticCodes: [
-      "project-finish-producer-context-diagnostic-native-oidc-unavailable",
-    ],
+    diagnosticCodes: [diagnosticCode],
     diagnosticOnly: true,
     failure_stage: "native-oidc",
     nativeRunnerOidc: {
       evidence: "required",
       requirement: "required",
+      stage,
       status: "mismatch",
     },
     outcome: "blocked",
     signing: false,
   }
+}
+
+function matchedSummary(nativeCase) {
+  return {
+    artifactProducer: false,
+    authorityEligible: false,
+    cases: [nativeCase],
+    diagnosticOnly: true,
+    nativeRunnerOidc: {
+      evidence: "collected",
+      requirement: "required",
+      stage: "match",
+      status: "match",
+    },
+    outcome: "match",
+    signing: false,
+  }
+}
+
+function nativeCaseFor(stage) {
+  return {
+    id: "native-runner-context",
+    stage,
+    status: "mismatch",
+  }
+}
+
+function nativeStage(value) {
+  return value?.stage === "bridge" ||
+    value?.stage === "capability" ||
+    value?.stage === "context" ||
+    value?.stage === "validation"
+    ? value.stage
+    : "bridge"
+}
+
+function boundedToken(value) {
+  return typeof value === "string" && value.length > 0 && value.length <= 16 * 1024 && !/[\u0000\r\n]/u.test(value)
+    ? value
+    : undefined
 }
 
 function privateEnvironment(name) {

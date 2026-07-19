@@ -27,7 +27,7 @@ function canPreserve(summary, stepOutcome, summaryStatus) {
   if (!isSafeSummary(summary)) return false
   if (summary.outcome === "match") return stepOutcome === "success" && summaryStatus === "match"
   if (summaryStatus === "blocked") return true
-  return summary.failure_stage === "fallback" && summaryStatus === undefined
+  return stepOutcome === "failure" && summaryStatus === undefined
 }
 
 function readSummary(root) {

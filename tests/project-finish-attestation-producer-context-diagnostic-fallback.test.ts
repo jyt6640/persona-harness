@@ -59,7 +59,7 @@ describe("project finish context diagnostic workflow fallback", () => {
     }
   })
 
-  it("preserves the trusted fallback when the exact action entrypoint cannot load its evaluator", () => {
+  it("replaces the fallback with a bounded runtime-load stage when the exact action entrypoint cannot load its evaluator", () => {
     const fixture = createActionCheckout()
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-fallback-temp-")))
     try {
@@ -74,12 +74,12 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(summary).toMatchObject({
         authorityEligible: false,
         diagnostic_status: "blocked",
-        failure_stage: "fallback",
+        failure_stage: "runtime-load",
         outcome: "blocked",
         signing: false,
       })
       expect(summary.diagnostic_codes).toEqual([
-        "project-finish-attestation-context-diagnostic-fallback-pending",
+        "project-finish-attestation-context-diagnostic-runtime-load-unavailable",
       ])
       expect(rendered(diagnostic, finalizer, summary)).not.toContain(fixture)
       expect(rendered(diagnostic, finalizer, summary)).not.toContain(runnerTemp)
@@ -269,17 +269,132 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(selftest.status).toBe(0)
       expect(summary.cases).toContainEqual({
         id: "native-runner-context",
+        stage: "match",
         status: "match",
       })
       expect(summary.nativeRunnerOidc).toEqual({
         evidence: "collected",
         requirement: "required",
+        stage: "match",
         status: "match",
       })
       expect(output).not.toContain(secret)
       expect(output).not.toContain(token)
       expect(output).not.toContain(runnerTemp)
     } finally {
+      rmSync(runnerTemp, { force: true, recursive: true })
+    }
+  })
+
+  it("reports a bounded capability stage when the trusted GitHub Script getter rejects", () => {
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-capability-")))
+    const nativeSecret = `PH_NATIVE_OIDC_REQUIRED_SECRET_${secret}`
+    try {
+      const selftest = runNativeSelftest(runnerTemp, undefined, {
+        ...nativeContext(runnerTemp),
+        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: nativeSecret,
+        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: `https://untrusted.example/${nativeSecret}`,
+      }, "reject")
+      const summary = JSON.parse(
+        readFileSync(join(runnerTemp, "project-finish-context-diagnostic-selftest", "summary.json"), "utf8"),
+      )
+      const output = `${selftest.stdout}${selftest.stderr}${JSON.stringify(summary)}`
+
+      expect(selftest.status).toBe(1)
+      expect(summary).toEqual({
+        artifactProducer: false,
+        authorityEligible: false,
+        cases: [{ id: "native-runner-context", stage: "capability", status: "mismatch" }],
+        diagnosticCodes: [
+          "project-finish-producer-context-diagnostic-native-oidc-capability-unavailable",
+        ],
+        diagnosticOnly: true,
+        failure_stage: "native-oidc",
+        nativeRunnerOidc: {
+          evidence: "required",
+          requirement: "required",
+          stage: "capability",
+          status: "mismatch",
+        },
+        outcome: "blocked",
+        signing: false,
+      })
+      expect(output).not.toContain(nativeSecret)
+      expect(output).not.toContain(runnerTemp)
+    } finally {
+      rmSync(runnerTemp, { force: true, recursive: true })
+    }
+  })
+
+  it("reports a bounded validation stage for a trusted token with the wrong audience", () => {
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-validation-")))
+    const token = `header.${Buffer.from(JSON.stringify({ ...claims(), aud: "hostile-audience" })).toString("base64url")}.signature`
+    try {
+      const selftest = runNativeSelftest(runnerTemp, token, nativeContext(runnerTemp))
+      const summary = JSON.parse(
+        readFileSync(join(runnerTemp, "project-finish-context-diagnostic-selftest", "summary.json"), "utf8"),
+      )
+      const output = `${selftest.stdout}${selftest.stderr}${JSON.stringify(summary)}`
+
+      expect(selftest.status).toBe(1)
+      expect(summary).toMatchObject({
+        diagnosticCodes: [
+          "project-finish-producer-context-diagnostic-native-oidc-validation-blocked",
+        ],
+        failure_stage: "native-oidc",
+        nativeRunnerOidc: {
+          evidence: "required",
+          requirement: "required",
+          stage: "validation",
+          status: "mismatch",
+        },
+        outcome: "blocked",
+      })
+      expect(output).not.toContain(token)
+      expect(output).not.toContain(runnerTemp)
+    } finally {
+      rmSync(runnerTemp, { force: true, recursive: true })
+    }
+  })
+
+  it("reports a bounded bridge stage when the verified native module cannot load", () => {
+    const fixture = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-bridge-")))
+    const actionDirectory = join(fixture, ".github", "actions", "project-finish-context-diagnostic")
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-bridge-temp-")))
+    const token = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
+    try {
+      mkdirSync(actionDirectory, { recursive: true })
+      copyFileSync(oidcCapabilityBridgePath, join(actionDirectory, "oidc-capability-bridge.cjs"))
+      const summaryBridgePath = join(root, ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge-summary.cjs")
+      if (existsSync(summaryBridgePath)) {
+        copyFileSync(summaryBridgePath, join(actionDirectory, "oidc-capability-bridge-summary.cjs"))
+      }
+
+      const selftest = runNativeSelftest(runnerTemp, token, nativeContext(runnerTemp), "return", fixture)
+      const summary = JSON.parse(
+        readFileSync(join(runnerTemp, "project-finish-context-diagnostic-selftest", "summary.json"), "utf8"),
+      )
+      const output = `${selftest.stdout}${selftest.stderr}${JSON.stringify(summary)}`
+
+      expect(selftest.status).toBe(1)
+      expect(summary).toMatchObject({
+        diagnosticCodes: [
+          "project-finish-producer-context-diagnostic-native-bridge-invocation-unavailable",
+        ],
+        failure_stage: "native-oidc",
+        nativeRunnerOidc: {
+          evidence: "required",
+          requirement: "required",
+          stage: "bridge",
+          status: "mismatch",
+        },
+        outcome: "blocked",
+      })
+      expect(output).not.toContain(fixture)
+      expect(output).not.toContain(token)
+      expect(output).not.toContain(runnerTemp)
+    } finally {
+      rmSync(fixture, { force: true, recursive: true })
       rmSync(runnerTemp, { force: true, recursive: true })
     }
   })
@@ -302,15 +417,16 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(summary).toEqual({
         artifactProducer: false,
         authorityEligible: false,
-        cases: [{ id: "native-runner-context", status: "mismatch" }],
+        cases: [{ id: "native-runner-context", stage: "capability", status: "mismatch" }],
         diagnosticCodes: [
-          "project-finish-producer-context-diagnostic-native-oidc-unavailable",
+          "project-finish-producer-context-diagnostic-native-oidc-capability-unavailable",
         ],
         diagnosticOnly: true,
         failure_stage: "native-oidc",
         nativeRunnerOidc: {
           evidence: "required",
           requirement: "required",
+          stage: "capability",
           status: "mismatch",
         },
         outcome: "blocked",
@@ -324,10 +440,10 @@ describe("project finish context diagnostic workflow fallback", () => {
   })
 
   it.each([
-    undefined,
-    "",
-    `malformed-${secret}`,
-  ])("fails closed when the trusted native OIDC capability is unavailable", (token) => {
+    [undefined, "capability"],
+    ["", "capability"],
+    [`malformed-${secret}`, "validation"],
+  ] as const)("fails closed when the trusted native OIDC %s path blocks at %s", (token, stage) => {
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-partial-")))
     try {
       const selftest = runNativeSelftest(runnerTemp, token, nativeContext(runnerTemp))
@@ -337,10 +453,11 @@ describe("project finish context diagnostic workflow fallback", () => {
       const output = `${selftest.stdout}${selftest.stderr}${JSON.stringify(summary)}`
 
       expect(selftest.status).toBe(1)
-      expect(summary.cases).toEqual([{ id: "native-runner-context", status: "mismatch" }])
+      expect(summary.cases).toEqual([{ id: "native-runner-context", stage, status: "mismatch" }])
       expect(summary.nativeRunnerOidc).toEqual({
         evidence: "required",
         requirement: "required",
+        stage,
         status: "mismatch",
       })
       expect(output).not.toContain(secret)
@@ -426,18 +543,33 @@ function runNativeSelftest(
   runnerTemp: string,
   oidcToken: string | undefined = undefined,
   overrides: Readonly<Record<string, string>> = {},
+  coreBehavior: "return" | "reject" = "return",
+  bridgeCheckout = root,
 ) {
+  const bridgePath = join(
+    bridgeCheckout,
+    ".github",
+    "actions",
+    "project-finish-context-diagnostic",
+    "oidc-capability-bridge.cjs",
+  )
+  const getIdTokenBody = coreBehavior === "reject"
+    ? `throw new Error(${JSON.stringify(`hostile-${secret}`)})`
+    : `return ${JSON.stringify(oidcToken)}`
   const script = `
-const bridge = require(${JSON.stringify(oidcCapabilityBridgePath)})
+const bridge = require(${JSON.stringify(bridgePath)})
 const core = {
   getIDToken: async (audience) => {
     if (audience !== "persona-harness-project-finish-attestation") throw new Error("audience")
-    return ${JSON.stringify(oidcToken)}
+    ${getIdTokenBody}
   },
 }
-bridge.runRequiredNativeProjectFinishContextSelftestWithCore({ core })
-  .then(() => {
-    process.exitCode = 0
+bridge.runRequiredNativeProjectFinishContextSelftestWithCore({
+  core,
+  runnerTemp: ${JSON.stringify(runnerTemp)},
+})
+  .then((summary) => {
+    process.exitCode = summary.outcome === "match" ? 0 : 1
   })
   .catch(() => {
     process.stderr.write("project-finish-producer-context-diagnostic-selftest-failed\\n")
@@ -526,6 +658,7 @@ function writeDirectory(path: string): void {
 
 function claims(): Record<string, string> {
   return {
+    aud: "persona-harness-project-finish-attestation",
     event_name: "push",
     job_workflow_ref:
       "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",

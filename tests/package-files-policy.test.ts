@@ -221,6 +221,7 @@ describe("package files policy", () => {
       ".github/actions/project-finish-context-diagnostic/action.yml",
       ".github/actions/project-finish-context-diagnostic/index.mjs",
       ".github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs",
+      ".github/actions/project-finish-context-diagnostic/oidc-capability-bridge-summary.cjs",
       ".github/actions/project-finish-context-diagnostic-fallback/action.yml",
       ".github/actions/project-finish-context-diagnostic-fallback/index.mjs",
       ".github/actions/project-finish-context-diagnostic-finalizer/action.yml",

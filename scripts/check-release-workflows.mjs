@@ -128,8 +128,8 @@ function hasContextDiagnosticSummaryReplacement(text) {
     && text.includes("replaceFallbackSummary(summary)")
     && evaluatorImport >= 0
     && text.includes('writeActionOutput("summary-status", summary.outcome)')
-    && text.includes('return failureSummary("runtime-load")')
-    && text.includes('failureSummary("runtime")')
+    && text.includes('return persistFailure("runtime-load")')
+    && text.includes('persistFailure("runtime")')
     && !text.includes('import { runProjectFinishProducerContextDiagnostic')
     && !text.includes("DIAGNOSTIC_WORKSPACE")
     && !text.includes("node_modules")
@@ -194,6 +194,10 @@ function hasContextDiagnosticNativeIntegrationSelftest(text) {
 function hasContextDiagnosticOidcCapabilityBridge(text) {
   return text.includes('const OIDC_AUDIENCE = "persona-harness-project-finish-attestation"')
     && text.includes("core.getIDToken(OIDC_AUDIENCE)")
+    && text.includes("createContextBridgeSummaryWriter")
+    && text.includes("createNativeBridgeSummaryWriter")
+    && text.includes("nativeBridgeFailure")
+    && text.includes("summaryWriter.replace(nativeFallbackSummary())")
     && text.includes("runProjectFinishContextDiagnosticWithCore")
     && text.includes("runRequiredNativeProjectFinishContextSelftestWithCore")
     && !text.includes("process.env")
@@ -202,6 +206,20 @@ function hasContextDiagnosticOidcCapabilityBridge(text) {
     && !text.includes("node:child_process")
     && !text.includes("https")
     && !text.includes("authorization")
+}
+
+function hasContextDiagnosticBridgeSummary(text) {
+  return text.includes('const CONTEXT_DIRECTORY = "project-finish-attestation-context-diagnostic"')
+    && text.includes('const NATIVE_DIRECTORY = "project-finish-context-diagnostic-selftest"')
+    && text.includes("createContextBridgeSummaryWriter")
+    && text.includes("createNativeBridgeSummaryWriter")
+    && text.includes("project-finish-producer-context-diagnostic-oidc-capability-unavailable")
+    && text.includes("project-finish-producer-context-diagnostic-native-oidc-capability-unavailable")
+    && text.includes("project-finish-producer-context-diagnostic-native-bridge-invocation-unavailable")
+    && !text.includes("process.env")
+    && !text.includes("ACTIONS_ID_TOKEN_REQUEST_")
+    && !text.includes("INPUT_")
+    && !text.includes("node:child_process")
 }
 
 function hasContextDiagnosticFallbackRuntime(metadata, entrypoint) {
@@ -285,6 +303,7 @@ async function main() {
     contextActionMetadata,
     contextActionEntrypoint,
     contextActionBridge,
+    contextActionBridgeSummary,
     selftestActionMetadata,
     selftestActionEntrypoint,
     selftestCore,
@@ -300,6 +319,7 @@ async function main() {
     readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic/oidc-capability-bridge-summary.cjs", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-selftest/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-selftest/index.mjs", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-selftest/selftest.mjs", "utf8"),
@@ -342,6 +362,7 @@ async function main() {
     || contextActionEntrypoint.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_")
     || !hasContextDiagnosticSummaryReplacement(contextActionEntrypoint)
     || !hasContextDiagnosticOidcCapabilityBridge(contextActionBridge)
+    || !hasContextDiagnosticBridgeSummary(contextActionBridgeSummary)
     || !hasContextDiagnosticFallbackRuntime(fallbackActionMetadata, fallbackActionEntrypoint)
     || !hasContextDiagnosticFinalizerRuntime(finalizerActionMetadata, finalizerActionEntrypoint)
   ) {
@@ -371,8 +392,11 @@ async function main() {
     || nativeSelftestRuntime.includes("INPUT_")
     || nativeSelftestRuntime.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     || nativeSelftestRuntime.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_")
-    || !nativeSelftestCore.includes("project-finish-producer-context-diagnostic-native-oidc-unavailable")
+    || !nativeSelftestCore.includes("project-finish-producer-context-diagnostic-native-oidc-capability-unavailable")
+    || !nativeSelftestCore.includes("project-finish-producer-context-diagnostic-native-oidc-validation-blocked")
+    || !nativeSelftestCore.includes("project-finish-producer-context-diagnostic-native-bridge-invocation-unavailable")
     || !nativeSelftestCore.includes('failure_stage: "native-oidc"')
+    || !nativeSelftestCore.includes('nativeCaseFor("capability")')
   ) {
     failures.push("project finish context diagnostic native OIDC selftest")
   }

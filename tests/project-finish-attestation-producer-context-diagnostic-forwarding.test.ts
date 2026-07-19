@@ -294,7 +294,10 @@ const core = {
     return ${JSON.stringify(oidcToken)}
   },
 }
-bridge.runProjectFinishContextDiagnosticWithCore({ core })
+bridge.runProjectFinishContextDiagnosticWithCore({
+  core,
+  runnerTemp: ${JSON.stringify(runnerTemp)},
+})
   .then((summary) => {
     process.stdout.write(JSON.stringify(summary) + "\\n")
     process.exitCode = summary.outcome === "match" ? 0 : 1
@@ -361,6 +364,7 @@ function summaryPath(workspace: string): string {
 
 function claims(): Record<string, string> {
   return {
+    aud: "persona-harness-project-finish-attestation",
     event_name: "push",
     job_workflow_ref: "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
     job_workflow_sha: producerSha,
