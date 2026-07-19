@@ -18,6 +18,7 @@ import { describe, expect, it } from "vitest"
 const root = process.cwd()
 const actionSource = join(root, ".github", "actions", "project-finish-context-diagnostic", "index.mjs")
 const bridgeSource = join(root, ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge.cjs")
+const bridgeSummarySource = join(root, ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge-summary.cjs")
 const fallbackActionSource = join(root, ".github", "actions", "project-finish-context-diagnostic-fallback", "index.mjs")
 const workflowPath = join(root, ".github", "workflows", "persona-harness-project-finish-context-diagnostic.yml")
 const secret = "PH_SUMMARY_SECRET_sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
@@ -37,9 +38,10 @@ describe("project finish context diagnostic summary bootstrap", () => {
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
     const outside = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-outside-")))
+    const token = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
     try {
       symlinkSync(outside, join(workspace, ".ci"))
-      const result = runAction(fixture, workspace, runnerTemp)
+      const result = runAction(fixture, workspace, runnerTemp, token)
       const summary = readFileSync(summaryPath(runnerTemp), "utf8")
       const rendered = `${result.stdout}${result.stderr}${summary}`
 
@@ -47,7 +49,7 @@ describe("project finish context diagnostic summary bootstrap", () => {
       expect(JSON.parse(summary)).toMatchObject({
         authorityEligible: false,
         diagnostic_status: "blocked",
-        failure_stage: "fallback",
+        failure_stage: "runtime-load",
         outcome: "blocked",
         predicateCreated: false,
         receiptCreated: false,
@@ -108,18 +110,19 @@ describe("project finish context diagnostic summary bootstrap", () => {
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
     const outside = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-outside-")))
+    const token = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
     try {
       const callerDirectory = join(workspace, ".ci", "project-finish-attestation-context-diagnostic")
       mkdirSync(callerDirectory, { recursive: true })
       symlinkSync(join(outside, "summary.json"), join(callerDirectory, "summary.json"))
-      const result = runAction(fixture, workspace, runnerTemp)
+      const result = runAction(fixture, workspace, runnerTemp, token)
       const summary = readFileSync(summaryPath(runnerTemp), "utf8")
       const rendered = `${result.stdout}${result.stderr}${summary}`
 
       expect(result.status).toBe(1)
       expect(JSON.parse(summary)).toMatchObject({
         diagnostic_status: "blocked",
-        failure_stage: "fallback",
+        failure_stage: "runtime",
         outcome: "blocked",
       })
       expect(existsSync(join(outside, "summary.json"))).toBe(false)
@@ -178,7 +181,7 @@ describe("project finish context diagnostic summary bootstrap", () => {
       expect(result.status).toBe(1)
       expect(JSON.parse(summary)).toMatchObject({
         diagnostic_status: "blocked",
-        failure_stage: "context",
+        failure_stage: "oidc-capability",
         outcome: "blocked",
       })
       expect(rendered).not.toContain(secret)
@@ -236,6 +239,7 @@ function createActionCheckout(sources: readonly string[], evaluator: "missing" |
   mkdirSync(scriptsDirectory, { recursive: true })
   copyFileSync(actionSource, join(actionDirectory, "index.mjs"))
   copyFileSync(bridgeSource, join(actionDirectory, "oidc-capability-bridge.cjs"))
+  copyFileSync(bridgeSummarySource, join(actionDirectory, "oidc-capability-bridge-summary.cjs"))
   for (const source of sources) {
     copyFileSync(join(root, "scripts", source), join(scriptsDirectory, source))
   }
@@ -275,7 +279,10 @@ const core = {
     return ${JSON.stringify(oidcToken)}
   },
 }
-bridge.runProjectFinishContextDiagnosticWithCore({ core })
+bridge.runProjectFinishContextDiagnosticWithCore({
+  core,
+  runnerTemp: ${JSON.stringify(runnerTemp)},
+})
   .then((summary) => {
     process.stdout.write(JSON.stringify(summary) + "\\n")
     process.exitCode = summary.outcome === "match" ? 0 : 1
@@ -335,6 +342,7 @@ function summaryPath(runnerTemp: string): string {
 
 function claims(): Record<string, string> {
   return {
+    aud: "persona-harness-project-finish-attestation",
     event_name: "push",
     job_workflow_ref: "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
     job_workflow_sha: producerSha,

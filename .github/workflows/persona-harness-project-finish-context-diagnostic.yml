@@ -237,7 +237,10 @@ jobs:
         with:
           script: |
             const bridge = require("./.persona-harness-producer/.github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs")
-            const summary = await bridge.runProjectFinishContextDiagnosticWithCore({ core })
+            const summary = await bridge.runProjectFinishContextDiagnosticWithCore({
+              core,
+              runnerTemp: process.env.PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP,
+            })
             core.setOutput("summary-status", summary.outcome)
             if (summary.outcome !== "match") {
               core.setFailed("project-finish-producer-context-diagnostic-blocked")
@@ -317,7 +320,14 @@ jobs:
         with:
           script: |
             const bridge = require("./.persona-harness-producer/.github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs")
-            await bridge.runRequiredNativeProjectFinishContextSelftestWithCore({ core })
+            const summary = await bridge.runRequiredNativeProjectFinishContextSelftestWithCore({
+              core,
+              runnerTemp: process.env.PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP,
+            })
+            core.setOutput("summary-status", summary.outcome)
+            if (summary.outcome !== "match") {
+              core.setFailed("project-finish-producer-context-diagnostic-blocked")
+            }
 
       - name: Upload native runner OIDC diagnostic context summary
         if: always()

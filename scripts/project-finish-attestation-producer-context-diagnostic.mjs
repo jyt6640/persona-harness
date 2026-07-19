@@ -10,6 +10,8 @@ export function assessProjectFinishProducerContextDiagnostic(value) {
   const claims = isRecord(input.claims) ? input.claims : undefined
   const environment = isRecord(input.environment) ? input.environment : {}
   const oidcEndpointStatus = statusForOidcEndpoint(input.oidcEndpointStatus, claims)
+  const oidcTokenStatus = statusForOidcField(input.oidcTokenStatus, claims)
+  const oidcAudienceStatus = statusForOidcField(input.oidcAudienceStatus, claims)
   const oidcRequestAttempted =
     typeof input.oidcRequestAttempted === "boolean" ? input.oidcRequestAttempted : claims !== undefined
   const core = assessProjectFinishProducerContextDiagnosticWorkflow(claims, environment)
@@ -18,6 +20,14 @@ export function assessProjectFinishProducerContextDiagnostic(value) {
     {
       code: "oidc-endpoint",
       status: oidcEndpointStatus,
+    },
+    {
+      code: "oidc-token",
+      status: oidcTokenStatus,
+    },
+    {
+      code: "oidc-audience",
+      status: oidcAudienceStatus,
     },
     {
       code: "oidc-claims",
@@ -52,6 +62,11 @@ export function assessProjectFinishProducerContextDiagnostic(value) {
 }
 
 function statusForOidcEndpoint(value, claims) {
+  if (value === "match" || value === "mismatch" || value === "missing") return value
+  return claims === undefined ? "missing" : "match"
+}
+
+function statusForOidcField(value, claims) {
   if (value === "match" || value === "mismatch" || value === "missing") return value
   return claims === undefined ? "missing" : "match"
 }

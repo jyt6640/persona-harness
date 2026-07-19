@@ -20,27 +20,33 @@ export async function readProjectFinishAttestationOidc(environment = process.env
   const requestToken = boundedEnvironment(environment, "ACTIONS_ID_TOKEN_REQUEST_TOKEN")
   if (endpoint === undefined || requestToken === undefined) {
     return {
+      audienceStatus: "missing",
       claims: undefined,
       endpointStatus: "missing",
       requestAttempted: false,
+      tokenStatus: "missing",
     }
   }
 
   const url = parseGitHubActionsOidcEndpoint(endpoint)
   if (url === undefined) {
     return {
+      audienceStatus: "missing",
       claims: undefined,
       endpointStatus: "mismatch",
       requestAttempted: false,
+      tokenStatus: "missing",
     }
   }
 
   const response = await readJson(url, requestToken)
   if (!isRecord(response) || typeof response.value !== "string") {
     return {
+      audienceStatus: "missing",
       claims: undefined,
       endpointStatus: "match",
       requestAttempted: true,
+      tokenStatus: "missing",
     }
   }
   return decodeOidcToken(response.value, "match", true)
@@ -53,33 +59,57 @@ export function readProjectFinishAttestationOidcToken(token) {
 function decodeOidcToken(token, endpointStatus, requestAttempted) {
   if (!isBoundedToken(token)) {
     return {
+      audienceStatus: "missing",
       claims: undefined,
       endpointStatus: "missing",
       requestAttempted: false,
+      tokenStatus: "missing",
     }
   }
   const parts = token.split(".")
   if (parts.length !== 3 || parts[1] === undefined) {
     return {
+      audienceStatus: "missing",
       claims: undefined,
       endpointStatus,
       requestAttempted,
+      tokenStatus: "mismatch",
     }
   }
   try {
     const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"))
+    if (!isRecord(payload)) {
+      return {
+        audienceStatus: "missing",
+        claims: undefined,
+        endpointStatus,
+        requestAttempted,
+        tokenStatus: "mismatch",
+      }
+    }
     return {
-      claims: isRecord(payload) ? payload : undefined,
+      audienceStatus: audienceStatus(payload.aud),
+      claims: payload,
       endpointStatus,
       requestAttempted,
+      tokenStatus: "match",
     }
   } catch {
     return {
+      audienceStatus: "missing",
       claims: undefined,
       endpointStatus,
       requestAttempted,
+      tokenStatus: "mismatch",
     }
   }
+}
+
+function audienceStatus(value) {
+  if (typeof value !== "string" || value.length === 0 || value.length > 512 || /[\u0000\r\n]/u.test(value)) {
+    return "missing"
+  }
+  return value === OIDC_AUDIENCE ? "match" : "mismatch"
 }
 
 function parseGitHubActionsOidcEndpoint(endpoint) {

@@ -96,10 +96,14 @@ Its bounded summary labels native runner OIDC as `not-collected` and
 `not-required`; it is not evidence that the native runner capability works.
 The reusable workflow instead runs a separate native selftest with
 `id-token: write` through the same pinned Toolkit capability bridge. If the
-capability cannot obtain a bounded token, it records only the fixed
-native-OIDC-unavailable mismatch summary, uploads that summary, and then the
-workflow reports the fixed blocked outcome. A native selftest cannot silently
-omit the OIDC case or convert an id-token-free check into native evidence.
+native path blocks, it records one fixed native stage before the upload:
+`capability` for a Toolkit acquisition failure, `bridge` for a fixed source
+bridge import or handoff failure, `validation` for a bounded token, audience,
+or claim failure, or `context` for a later fixed context mismatch. The outer
+decision remains blocked for every non-match stage. These stages are codes and
+statuses only; they do not expose an error, token, claim, URL, path, or
+exception. A native selftest cannot silently omit the OIDC case or convert an
+id-token-free check into native evidence.
 
 Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
 statuses and bounded diagnostic codes. It does not store a JWT, token, header,
