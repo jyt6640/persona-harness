@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process"
+import { execFileSync, spawnSync } from "node:child_process"
 import {
   copyFileSync,
   existsSync,
@@ -25,6 +25,9 @@ const workflowPath = join(root, ".github", "workflows", "persona-harness-project
 const selftestWorkflowPath = join(root, ".github", "workflows", "project-finish-context-diagnostic-selftest.yml")
 const outputDirectory = "project-finish-attestation-context-diagnostic"
 const summaryName = "summary.json"
+const callerSha = "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8"
+const producerSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim()
+const secret = "PH_NATIVE_OIDC_SELFTEST_SECRET_sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
 const runtimeSources = [
   "diagnose-project-finish-producer-context.mjs",
   "project-finish-attestation-oidc.mjs",
@@ -166,6 +169,9 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(workflow).toContain("Finalize bounded project producer context diagnostic")
       expect(workflow).toContain("Report bounded project producer context diagnostic outcome")
       expect(workflow).toContain("if-no-files-found: error")
+      expect(workflow).toContain("hosted-selftest:")
+      expect(workflow).toContain("Exercise native runner OIDC diagnostic context")
+      expect(workflow).toContain("Upload native runner OIDC diagnostic context summary")
       expect(workflow.indexOf("Create bounded project producer context fallback")).toBeLessThan(
         workflow.indexOf("Emit bounded project producer context diagnostic"),
       )
@@ -183,8 +189,61 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(readFileSync(actionPath, "utf8")).toContain('privateEnvironment("PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP")')
       expect(readFileSync(actionPath, "utf8")).not.toContain("INPUT_")
       expect(readFileSync(selftestActionPath, "utf8")).toContain('name.replaceAll("_", "-")')
+      expect(readFileSync(selftestActionPath, "utf8")).toContain('await import("./native.mjs")')
     } finally {
       rmSync(runnerTemp, { force: true, recursive: true })
+    }
+  })
+
+  it("uses native runner OIDC values for an all-match reusable diagnostic selftest", () => {
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-")))
+    const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-hook-")))
+    const hookPath = join(hookDirectory, "oidc-hook.mjs")
+    const token = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
+    try {
+      writeFileSync(hookPath, oidcHook(token))
+      const selftest = runSelftest(runnerTemp, ["--import", hookPath], {
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
+        ACTIONS_ID_TOKEN_REQUEST_URL:
+          "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
+        PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:
+          "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
+        PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: callerSha,
+        PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: "push",
+        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: `hostile-${secret}`,
+        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: `https://untrusted.example/${secret}`,
+        PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
+        PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: producerSha,
+        PROJECT_FINISH_DIAGNOSTIC_REF: "refs/heads/main",
+        PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
+        PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
+        PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
+        PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
+          "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+        PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: producerSha,
+        PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
+        PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
+        PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "github-hosted",
+        PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Linux",
+        PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: callerSha,
+      })
+      const summary = JSON.parse(
+        readFileSync(join(runnerTemp, "project-finish-context-diagnostic-selftest", "summary.json"), "utf8"),
+      )
+      const output = `${selftest.stdout}${selftest.stderr}${JSON.stringify(summary)}`
+
+      expect(selftest.status).toBe(0)
+      expect(summary.cases).toContainEqual({
+        id: "native-runner-context",
+        status: "match",
+      })
+      expect(output).not.toContain(secret)
+      expect(output).not.toContain(token)
+      expect(output).not.toContain(runnerTemp)
+    } finally {
+      rmSync(runnerTemp, { force: true, recursive: true })
+      rmSync(hookDirectory, { force: true, recursive: true })
     }
   })
 })
@@ -223,14 +282,23 @@ function runFinalizer(runnerTemp: string, stepOutcome: string, summaryStatus: st
   })
 }
 
-function runSelftest(runnerTemp: string) {
+function runSelftest(
+  runnerTemp: string,
+  nodeArguments: readonly string[] = [],
+  overrides: Readonly<Record<string, string>> = {},
+) {
   return run(selftestActionPath, {
     INPUT_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
-  })
+    ...overrides,
+  }, nodeArguments)
 }
 
-function run(path: string, environment: Readonly<Record<string, string>>) {
-  return spawnSync(process.execPath, [path], {
+function run(
+  path: string,
+  environment: Readonly<Record<string, string>>,
+  nodeArguments: readonly string[] = [],
+) {
+  return spawnSync(process.execPath, [...nodeArguments, path], {
     cwd: root,
     encoding: "utf8",
     env: {
@@ -265,4 +333,50 @@ function rendered(
 
 function writeDirectory(path: string): void {
   mkdirSync(path, { recursive: true })
+}
+
+function claims(): Record<string, string> {
+  return {
+    event_name: "push",
+    job_workflow_ref:
+      "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+    job_workflow_sha: producerSha,
+    ref: "refs/heads/main",
+    repository: "example/public-gradle-app",
+    repository_id: "987654321",
+    repository_visibility: "public",
+    run_attempt: "1",
+    run_id: "1001",
+    runner_environment: "github-hosted",
+    workflow_ref:
+      "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
+    workflow_sha: callerSha,
+  }
+}
+
+function oidcHook(token: string): string {
+  return `import { createRequire, syncBuiltinESMExports } from "node:module"
+import { EventEmitter } from "node:events"
+
+const require = createRequire(import.meta.url)
+const https = require("node:https")
+
+https.get = (_url, _options, callback) => {
+  const request = new EventEmitter()
+  request.setTimeout = () => request
+  request.destroy = () => request
+  queueMicrotask(() => {
+    const response = new EventEmitter()
+    response.headers = {}
+    response.resume = () => undefined
+    response.statusCode = 200
+    callback(response)
+    response.emit("data", Buffer.from(JSON.stringify({ value: ${JSON.stringify(token)} })))
+    response.emit("end")
+  })
+  return request
+}
+
+syncBuiltinESMExports()
+`
 }

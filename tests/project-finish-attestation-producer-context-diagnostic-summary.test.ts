@@ -78,8 +78,8 @@ describe("project finish context diagnostic summary bootstrap", () => {
     try {
       writeFileSync(hookPath, oidcHook(token))
       const result = runAction(fixture, workspace, runnerTemp, ["--import", hookPath], {
-        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: secret,
-        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL:
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
+        ACTIONS_ID_TOKEN_REQUEST_URL:
           "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
       })
       const summary = readFileSync(summaryPath(runnerTemp), "utf8")
@@ -176,8 +176,8 @@ describe("project finish context diagnostic summary bootstrap", () => {
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
     try {
       const result = runAction(fixture, workspace, runnerTemp, [], {
-        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: secret,
-        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: `https://untrusted.example/${secret}`,
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
+        ACTIONS_ID_TOKEN_REQUEST_URL: `https://untrusted.example/${secret}`,
       })
       const summary = readFileSync(summaryPath(runnerTemp), "utf8")
       const rendered = `${result.stdout}${result.stderr}${summary}`
@@ -221,7 +221,9 @@ describe("project finish context diagnostic summary bootstrap", () => {
     expect(action).toContain('const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"')
     expect(action).toContain('privateEnvironment("PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP")')
     expect(action).not.toContain("INPUT_")
-    expect(action).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
+    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
+    expect(action).not.toContain("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     expect(action).toContain("replaceFallbackSummary(summary)")
     expect(action).toContain('writeActionOutput("summary-status", summary.outcome)')
     expect(action).not.toContain('summary.write(failureSummary("bootstrap"))')

@@ -30,7 +30,7 @@ const RUNTIME_SOURCES = [
   "verify-project-finish-producer-checkout.mjs",
 ]
 
-function main() {
+async function main() {
   const runnerTemp = canonicalRunnerTemp()
   const summaryDirectory = createDirectory(runnerTemp, OUTPUT_DIRECTORY)
   const summaryPath = join(summaryDirectory, SUMMARY_FILENAME)
@@ -41,6 +41,8 @@ function main() {
     runCase("runtime-error", "runtime-error"),
     runCase("oidc-blocked", "oidc-blocked"),
   ]
+  const nativeCase = await runNativeRunnerCase()
+  if (nativeCase !== undefined) cases.push(nativeCase)
   if (cases.some(({ status }) => status !== "match")) throw new Error(FAILURE_CODE)
   replaceJson(summaryPath, {
     artifactProducer: false,
@@ -50,6 +52,21 @@ function main() {
     outcome: "match",
     signing: false,
   })
+}
+
+async function runNativeRunnerCase() {
+  try {
+    const { runNativeProjectFinishContextSelftest } =
+      await import("./native.mjs")
+    return await runNativeProjectFinishContextSelftest({
+      sourceRoot: sourceRoot(),
+    })
+  } catch {
+    return {
+      id: "native-runner-context",
+      status: "mismatch",
+    }
+  }
 }
 
 function runCase(id, kind) {
@@ -73,11 +90,15 @@ function runCase(id, kind) {
     const diagnostic = runAction(
       join(checkout, ".github", "actions", "project-finish-context-diagnostic", "index.mjs"),
       {
-        ...diagnosticEnvironment(diagnosticTemp, oidcToken === undefined ? undefined : SELFTEST_SECRET),
+        ...diagnosticEnvironment(diagnosticTemp),
         INPUT_DIAGNOSTIC_EVENT_NAME: `hostile-${SELFTEST_SECRET}`,
         INPUT_DIAGNOSTIC_RUNNER_TEMP: `hostile-${SELFTEST_SECRET}`,
-        ACTIONS_ID_TOKEN_REQUEST_TOKEN: `ambient-${SELFTEST_SECRET}`,
-        ACTIONS_ID_TOKEN_REQUEST_URL: `https://untrusted.example/${SELFTEST_SECRET}`,
+        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: `hostile-${SELFTEST_SECRET}`,
+        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: `https://untrusted.example/${SELFTEST_SECRET}`,
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: oidcToken === undefined ? `ambient-${SELFTEST_SECRET}` : SELFTEST_SECRET,
+        ACTIONS_ID_TOKEN_REQUEST_URL: oidcToken === undefined
+          ? `https://untrusted.example/${SELFTEST_SECRET}`
+          : "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
         GITHUB_OUTPUT: outputPath,
       },
       oidcToken === undefined ? [] : ["--import", hookPath],
@@ -126,17 +147,13 @@ function createDiagnosticCheckout(checkout, kind) {
   }
 }
 
-function diagnosticEnvironment(runnerTemp, token) {
+function diagnosticEnvironment(runnerTemp) {
   return {
     PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
     PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:
       "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
     PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8",
     PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: "push",
-    PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: token ?? "",
-    PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: token === undefined
-      ? ""
-      : "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT: "match",
     PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: "3bef5f4696769fb11042e881387ff83045a542ef",
     PROJECT_FINISH_DIAGNOSTIC_REF: "refs/heads/main",
@@ -350,9 +367,7 @@ function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-try {
-  main()
-} catch {
+await main().catch(() => {
   process.stderr.write(`${FAILURE_CODE}\n`)
   process.exitCode = 1
-}
+})

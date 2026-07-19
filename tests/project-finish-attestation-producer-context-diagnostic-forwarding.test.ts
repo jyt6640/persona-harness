@@ -25,7 +25,7 @@ const producerSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, enco
 const secret = "PH_CONTEXT_FORWARDING_SECRET_sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
 
 describe("project finish context diagnostic forwarding", () => {
-  it("uses private allowlisted context aliases instead of ambient GitHub environment values", () => {
+  it("uses fixed private context aliases and native runner OIDC variables", () => {
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-forwarding-")))
     const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-forwarding-hook-")))
     const hookPath = join(hookDirectory, "oidc-hook.mjs")
@@ -33,8 +33,10 @@ describe("project finish context diagnostic forwarding", () => {
     try {
       writeFileSync(hookPath, oidcHook(oidcToken))
       const environment = forwardedEnvironment(workspace)
-      environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN = `ambient-github-context-${secret}`
-      environment.ACTIONS_ID_TOKEN_REQUEST_URL = `https://untrusted.example/${secret}`
+      environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN = secret
+      environment.ACTIONS_ID_TOKEN_REQUEST_URL = canonicalOidcEndpoint
+      environment.PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN = `hostile-${secret}`
+      environment.PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL = `https://untrusted.example/${secret}`
       environment.GITHUB_WORKSPACE = `ambient-github-context-${secret}`
       const result = runForwardedDiagnostic(workspace, ["--import", hookPath], environment)
       const summary = readFileSync(summaryPath(workspace), "utf8")
@@ -67,6 +69,8 @@ describe("project finish context diagnostic forwarding", () => {
     try {
       writeFileSync(hookPath, oidcHook(oidcToken))
       const environment = forwardedEnvironment(workspace)
+      environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN = secret
+      environment.ACTIONS_ID_TOKEN_REQUEST_URL = canonicalOidcEndpoint
       delete environment.PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF
       const result = runForwardedDiagnostic(workspace, ["--import", hookPath], environment)
       const summary = readFileSync(summaryPath(workspace), "utf8")
@@ -85,6 +89,33 @@ describe("project finish context diagnostic forwarding", () => {
     }
   })
 
+  it("blocks when runner OIDC variables are missing even if private OIDC aliases are present", () => {
+    const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-forwarding-")))
+    const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-forwarding-hook-")))
+    const hookPath = join(hookDirectory, "oidc-hook.mjs")
+    const oidcToken = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
+    try {
+      writeFileSync(hookPath, oidcHook(oidcToken))
+      const environment = forwardedEnvironment(workspace)
+      environment.PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN = secret
+      environment.PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL = canonicalOidcEndpoint
+      const result = runForwardedDiagnostic(workspace, ["--import", hookPath], environment)
+      const summary = readFileSync(summaryPath(workspace), "utf8")
+      const output = `${result.stdout}${result.stderr}${summary}`
+
+      expect(result.status).toBe(1)
+      expect(JSON.parse(summary).diagnosticCodes).toContain(
+        "project-finish-attestation-producer-context-diagnostic.2-oidc-endpoint-missing",
+      )
+      expect(output).not.toContain(secret)
+      expect(output).not.toContain(oidcToken)
+      expect(output).not.toContain(workspace)
+    } finally {
+      rmSync(workspace, { force: true, recursive: true })
+      rmSync(hookDirectory, { force: true, recursive: true })
+    }
+  })
+
   it("blocks a hostile forwarded value without reflecting it", () => {
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-forwarding-")))
     const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-forwarding-hook-")))
@@ -93,6 +124,8 @@ describe("project finish context diagnostic forwarding", () => {
     try {
       writeFileSync(hookPath, oidcHook(oidcToken))
       const environment = forwardedEnvironment(workspace)
+      environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN = secret
+      environment.ACTIONS_ID_TOKEN_REQUEST_URL = canonicalOidcEndpoint
       environment.PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF =
         `example/public-gradle-app/.github/workflows/${secret}.yml@refs/heads/main`
       const result = runForwardedDiagnostic(workspace, ["--import", hookPath], environment)
@@ -186,14 +219,13 @@ describe("project finish context diagnostic forwarding", () => {
     expect(action).not.toContain("node:child_process")
     expect(action).not.toContain("process.env.PATH")
     expect(action).not.toContain("INPUT_")
-    expect(action).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
+    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
     for (const name of [
       "PROJECT_FINISH_DIAGNOSTIC_ACTIONS:",
       "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:",
       "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA:",
       "PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME:",
-      "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN:",
-      "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL:",
       "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT:",
       "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA:",
       "PROJECT_FINISH_DIAGNOSTIC_REF:",
@@ -211,6 +243,8 @@ describe("project finish context diagnostic forwarding", () => {
     ]) {
       expect(diagnosticStep).toContain(name)
     }
+    expect(diagnosticStep).not.toContain("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN:")
+    expect(diagnosticStep).not.toContain("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL:")
     expect(diagnosticStep).not.toContain("\n        with:")
   })
 })
@@ -254,9 +288,6 @@ function forwardedEnvironment(workspace: string): Record<string, string> {
       "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
     PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA: callerSha,
     PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME: "push",
-    PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: secret,
-    PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL:
-      "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: producerSha,
     PROJECT_FINISH_DIAGNOSTIC_REF: "refs/heads/main",
     PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: "example/public-gradle-app",
@@ -279,7 +310,7 @@ function actionEnvironment(workspace: string, shadowDirectory: string, markerPat
   return {
     ...forwarded,
     ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-    ACTIONS_ID_TOKEN_REQUEST_URL: forwarded.PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL,
+    ACTIONS_ID_TOKEN_REQUEST_URL: canonicalOidcEndpoint,
     GITHUB_WORKSPACE: `ambient-${secret}`,
     GIT_CONFIG_GLOBAL: `ambient-${secret}`,
     HOME: `ambient-${secret}`,
@@ -290,6 +321,9 @@ function actionEnvironment(workspace: string, shadowDirectory: string, markerPat
     SHADOW_EXECUTION_MARKER: markerPath,
   }
 }
+
+const canonicalOidcEndpoint =
+  "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
 function summaryPath(workspace: string): string {
   return join(workspace, "project-finish-attestation-context-diagnostic", "summary.json")

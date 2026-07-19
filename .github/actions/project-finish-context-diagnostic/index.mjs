@@ -19,8 +19,6 @@ const PRIVATE_ENVIRONMENT_KEYS = [
   "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF",
   "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_SHA",
   "PROJECT_FINISH_DIAGNOSTIC_EVENT_NAME",
-  "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN",
-  "PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL",
   "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT",
   "PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA",
   "PROJECT_FINISH_DIAGNOSTIC_REF",
@@ -70,12 +68,22 @@ function forwardedEnvironment() {
   for (const name of PRIVATE_ENVIRONMENT_KEYS) {
     environment[name] = privateEnvironment(name)
   }
-  return environment
+  return {
+    ...environment,
+    ...nativeOidcEnvironment(),
+  }
 }
 
 function privateEnvironment(name) {
   const value = process.env[name]
   return typeof value === "string" ? value : undefined
+}
+
+function nativeOidcEnvironment() {
+  return {
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN,
+    ACTIONS_ID_TOKEN_REQUEST_URL: process.env.ACTIONS_ID_TOKEN_REQUEST_URL,
+  }
 }
 
 function producerCheckoutStatus() {

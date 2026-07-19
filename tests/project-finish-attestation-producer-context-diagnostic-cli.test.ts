@@ -181,8 +181,8 @@ function runDiagnostic(
       PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: workspace,
       ...(includeOidcEndpoint
         ? {
-          PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: secret,
-          PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: oidcEndpoint,
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
+          ACTIONS_ID_TOKEN_REQUEST_URL: oidcEndpoint,
         }
         : {}),
     },

@@ -228,6 +228,7 @@ describe("package files policy", () => {
       ".github/actions/project-finish-context-diagnostic-outcome/index.mjs",
       ".github/actions/project-finish-context-diagnostic-selftest/action.yml",
       ".github/actions/project-finish-context-diagnostic-selftest/index.mjs",
+      ".github/actions/project-finish-context-diagnostic-selftest/native.mjs",
       "scripts/build-project-finish-attestation.mjs",
       "scripts/project-finish-attestation-producer-context.mjs",
       "scripts/project-finish-attestation-producer-context-diagnostic.mjs",
