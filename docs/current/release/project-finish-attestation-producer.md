@@ -80,10 +80,13 @@ sets an explicit fixed `PROJECT_FINISH_DIAGNOSTIC_*` environment allowlist for
 the public-push facts: event, ref, repository identity, caller workflow
 identity, source SHA, parsed diagnostic pin, run/attempt, and GitHub-hosted
 runner facts. It passes the platform OIDC endpoint and request token only
-through those private aliases to the in-memory OIDC reader. The action ignores
-`INPUT_*` names and ambient GitHub/OIDC context variables for these values. No
-shell, `env`, `node`, or `git` launcher is resolved through ambient `PATH`
-after the OIDC-bearing job begins.
+from the two documented runner-time variables
+`ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN` to the
+in-memory OIDC reader. Those variables are a runner capability, not workflow
+`env` context values; the reusable workflow never aliases them. The action
+ignores `INPUT_*`, private OIDC aliases, and ambient GitHub context values for
+the security context. No shell, `env`, `node`, or `git` launcher is resolved
+through ambient `PATH` after the OIDC-bearing job begins.
 The decoded OIDC claim supplies the observed reusable-workflow reference and
 SHA, which are checked separately from the caller workflow SHA/ref and the
 parsed pin. Ambient runner environment, home, Git configuration, and caller
@@ -134,6 +137,15 @@ private-environment map. The canonical selftest asserts every reported context
 field is an allowlisted `match`; every path leaves a sanitized summary artifact
 available for upload. The selftest has no `id-token` permission and does not
 create producer evidence.
+
+Within the real reusable diagnostic workflow, a separate
+`hosted-selftest` job has `id-token: write` and uses the same explicit private
+context map as the diagnostic action. Its selftest action reads the actual
+runner-time OIDC capability, performs the canonical endpoint request through
+the bounded OIDC reader, and requires every production context status to
+match before the ordinary diagnostic action can run. It uploads only a
+diagnostic-only case result and never creates a receipt, predicate, signature,
+registry result, or authority state.
 
 A diagnostic `match` is not a producer success and does not enable a retry,
 external trust, completion, release, or Finish authority. After protected
