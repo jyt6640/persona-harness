@@ -17,6 +17,7 @@ import { describe, expect, it } from "vitest"
 
 const root = process.cwd()
 const actionSource = join(root, ".github", "actions", "project-finish-context-diagnostic", "index.mjs")
+const bridgeSource = join(root, ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge.cjs")
 const fallbackActionSource = join(root, ".github", "actions", "project-finish-context-diagnostic-fallback", "index.mjs")
 const workflowPath = join(root, ".github", "workflows", "persona-harness-project-finish-context-diagnostic.yml")
 const secret = "PH_SUMMARY_SECRET_sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
@@ -72,16 +73,9 @@ describe("project finish context diagnostic summary bootstrap", () => {
     const fixture = createActionCheckout(runtimeSources)
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
-    const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-hook-")))
-    const hookPath = join(hookDirectory, "oidc-hook.mjs")
     const token = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
     try {
-      writeFileSync(hookPath, oidcHook(token))
-      const result = runAction(fixture, workspace, runnerTemp, ["--import", hookPath], {
-        ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-        ACTIONS_ID_TOKEN_REQUEST_URL:
-          "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-      })
+      const result = runAction(fixture, workspace, runnerTemp, token)
       const summary = readFileSync(summaryPath(runnerTemp), "utf8")
       const rendered = `${result.stdout}${result.stderr}${summary}`
 
@@ -106,7 +100,6 @@ describe("project finish context diagnostic summary bootstrap", () => {
       rmSync(fixture, { force: true, recursive: true })
       rmSync(workspace, { force: true, recursive: true })
       rmSync(runnerTemp, { force: true, recursive: true })
-      rmSync(hookDirectory, { force: true, recursive: true })
     }
   })
 
@@ -170,14 +163,14 @@ describe("project finish context diagnostic summary bootstrap", () => {
     }
   })
 
-  it("writes a bounded summary for a hostile OIDC endpoint without reflecting it", () => {
+  it("writes a bounded summary when the trusted OIDC capability is unavailable without reflecting hostile aliases", () => {
     const fixture = createActionCheckout(runtimeSources)
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-workspace-")))
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-summary-temp-")))
     try {
-      const result = runAction(fixture, workspace, runnerTemp, [], {
-        ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-        ACTIONS_ID_TOKEN_REQUEST_URL: `https://untrusted.example/${secret}`,
+      const result = runAction(fixture, workspace, runnerTemp, undefined, {
+        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: secret,
+        PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: `https://untrusted.example/${secret}`,
       })
       const summary = readFileSync(summaryPath(runnerTemp), "utf8")
       const rendered = `${result.stdout}${result.stderr}${summary}`
@@ -211,7 +204,8 @@ describe("project finish context diagnostic summary bootstrap", () => {
     expect(workflow).toContain("Report bounded project producer context diagnostic outcome")
     expect(workflow).toContain("diagnostic-runner-temp: ${{ runner.temp }}")
     expect(workflow).toContain("${{ runner.temp }}/project-finish-attestation-context-diagnostic/summary.json")
-    expect(workflow).toContain("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic")
+    expect(workflow).toContain("uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd")
+    expect(workflow).toContain("runProjectFinishContextDiagnosticWithCore")
     expect(workflow).not.toContain("diagnostic-workspace: ${{ github.workspace }}")
     expect(evaluatorImport).toBeGreaterThanOrEqual(0)
     expect(action).toContain('SUMMARY_SCHEMA = "project-finish-attestation-context-diagnostic-summary.1"')
@@ -221,13 +215,16 @@ describe("project finish context diagnostic summary bootstrap", () => {
     expect(action).toContain('const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"')
     expect(action).toContain('privateEnvironment("PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP")')
     expect(action).not.toContain("INPUT_")
-    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
+    expect(action).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
     expect(action).not.toContain("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     expect(action).toContain("replaceFallbackSummary(summary)")
     expect(action).toContain('writeActionOutput("summary-status", summary.outcome)')
     expect(action).not.toContain('summary.write(failureSummary("bootstrap"))')
     expect(action).not.toContain("DIAGNOSTIC_WORKSPACE")
+    const bridge = readFileSync(bridgeSource, "utf8")
+    expect(bridge).toContain("core.getIDToken")
+    expect(bridge).not.toContain("process.env")
+    expect(bridge).not.toContain("node:child_process")
   })
 })
 
@@ -238,6 +235,7 @@ function createActionCheckout(sources: readonly string[], evaluator: "missing" |
   mkdirSync(actionDirectory, { recursive: true })
   mkdirSync(scriptsDirectory, { recursive: true })
   copyFileSync(actionSource, join(actionDirectory, "index.mjs"))
+  copyFileSync(bridgeSource, join(actionDirectory, "oidc-capability-bridge.cjs"))
   for (const source of sources) {
     copyFileSync(join(root, "scripts", source), join(scriptsDirectory, source))
   }
@@ -254,7 +252,7 @@ function runAction(
   fixture: string,
   workspace: string,
   runnerTemp: string,
-  nodeArguments: readonly string[] = [],
+  oidcToken: string | undefined = undefined,
   overrides: Readonly<Record<string, string>> = {},
 ) {
   const actionEnvironment = {
@@ -268,7 +266,26 @@ function runAction(
       INPUT_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
     }),
   })
-  return spawnSync(process.execPath, [...nodeArguments, join(fixture, ".github", "actions", "project-finish-context-diagnostic", "index.mjs")], {
+  const bridgePath = join(fixture, ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge.cjs")
+  const script = `
+const bridge = require(${JSON.stringify(bridgePath)})
+const core = {
+  getIDToken: async (audience) => {
+    if (audience !== "persona-harness-project-finish-attestation") throw new Error("audience")
+    return ${JSON.stringify(oidcToken)}
+  },
+}
+bridge.runProjectFinishContextDiagnosticWithCore({ core })
+  .then((summary) => {
+    process.stdout.write(JSON.stringify(summary) + "\\n")
+    process.exitCode = summary.outcome === "match" ? 0 : 1
+  })
+  .catch(() => {
+    process.stderr.write("project-finish-producer-context-diagnostic-failed\\n")
+    process.exitCode = 1
+  })
+`
+  return spawnSync(process.execPath, ["--input-type=commonjs", "--eval", script], {
     cwd: fixture,
     encoding: "utf8",
     env: actionEnvironment,
@@ -331,31 +348,4 @@ function claims(): Record<string, string> {
     workflow_ref: "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
     workflow_sha: callerSha,
   }
-}
-
-function oidcHook(token: string): string {
-  return `import { createRequire, syncBuiltinESMExports } from "node:module"
-import { EventEmitter } from "node:events"
-
-const require = createRequire(import.meta.url)
-const https = require("node:https")
-
-https.get = (_url, _options, callback) => {
-  const request = new EventEmitter()
-  request.setTimeout = () => request
-  request.destroy = () => request
-  queueMicrotask(() => {
-    const response = new EventEmitter()
-    response.headers = {}
-    response.resume = () => undefined
-    response.statusCode = 200
-    callback(response)
-    response.emit("data", Buffer.from(JSON.stringify({ value: ${JSON.stringify(token)} })))
-    response.emit("end")
-  })
-  return request
-}
-
-syncBuiltinESMExports()
-`
 }

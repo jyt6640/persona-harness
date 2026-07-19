@@ -16,13 +16,14 @@ const FAILURE_CODE = "project-finish-producer-context-diagnostic-selftest-failed
 const OUTPUT_DIRECTORY = "project-finish-context-diagnostic-selftest"
 const SUMMARY_FILENAME = "summary.json"
 
-export async function runRequiredNativeProjectFinishContextSelftest() {
+export async function runRequiredNativeProjectFinishContextSelftest({ getIdToken } = {}) {
   const runnerTemp = canonicalRunnerTemp()
   const summaryDirectory = createDirectory(runnerTemp, OUTPUT_DIRECTORY)
   const summaryPath = join(summaryDirectory, SUMMARY_FILENAME)
   writeJson(summaryPath, fallbackSummary())
 
   const nativeCase = await runNativeProjectFinishContextSelftest({
+    githubActionsCoreToken: await readCoreToken(getIdToken),
     sourceRoot: sourceRoot(),
   }).catch(() => ({
     id: "native-runner-context",
@@ -46,6 +47,18 @@ export async function runRequiredNativeProjectFinishContextSelftest() {
     outcome: "match",
     signing: false,
   })
+}
+
+async function readCoreToken(getIdToken) {
+  if (typeof getIdToken !== "function") return undefined
+  try {
+    const token = await getIdToken()
+    return typeof token === "string" && token.length > 0 && token.length <= 16 * 1024 && !/[\u0000\r\n]/u.test(token)
+      ? token
+      : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function canonicalRunnerTemp() {

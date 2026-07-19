@@ -69,23 +69,17 @@ function runCase(id, kind) {
     const oidcToken = kind === "canonical-context"
       ? `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
       : undefined
-    const hookPath = join(caseRoot, "oidc-hook.mjs")
-    if (oidcToken !== undefined) writeFileSyncSafe(hookPath, oidcHook(oidcToken))
-    const diagnostic = runAction(
-      join(checkout, ".github", "actions", "project-finish-context-diagnostic", "index.mjs"),
+    const diagnostic = runBridge(
+      join(checkout, ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge.cjs"),
       {
         ...diagnosticEnvironment(diagnosticTemp),
         INPUT_DIAGNOSTIC_EVENT_NAME: `hostile-${SELFTEST_SECRET}`,
         INPUT_DIAGNOSTIC_RUNNER_TEMP: `hostile-${SELFTEST_SECRET}`,
         PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: `hostile-${SELFTEST_SECRET}`,
         PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: `https://untrusted.example/${SELFTEST_SECRET}`,
-        ACTIONS_ID_TOKEN_REQUEST_TOKEN: oidcToken === undefined ? `ambient-${SELFTEST_SECRET}` : SELFTEST_SECRET,
-        ACTIONS_ID_TOKEN_REQUEST_URL: oidcToken === undefined
-          ? `https://untrusted.example/${SELFTEST_SECRET}`
-          : "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
         GITHUB_OUTPUT: outputPath,
       },
-      oidcToken === undefined ? [] : ["--import", hookPath],
+      oidcToken,
     )
     const finalizer = runInputAction(finalizerEntrypoint(), {
       INPUT_DIAGNOSTIC_RUNNER_TEMP: diagnosticTemp,
@@ -117,6 +111,7 @@ function createDiagnosticCheckout(checkout, kind) {
   mkdirSync(actionDirectory, { recursive: true })
   mkdirSync(scriptsDirectory, { recursive: true })
   copyFileSync(diagnosticEntrypoint(), join(actionDirectory, "index.mjs"))
+  copyFileSync(diagnosticBridge(), join(actionDirectory, "oidc-capability-bridge.cjs"))
   if (kind === "runtime-error") {
     writeFileSyncSafe(
       join(scriptsDirectory, "diagnose-project-finish-producer-context.mjs"),
@@ -158,8 +153,26 @@ function diagnosticEnvironment(runnerTemp) {
   }
 }
 
-function runAction(path, environment, nodeArguments = []) {
-  return spawnSync(process.execPath, [...nodeArguments, path], {
+function runBridge(path, environment, oidcToken) {
+  const script = `
+const bridge = require(${JSON.stringify(path)})
+const core = {
+  getIDToken: async (audience) => {
+    if (audience !== "persona-harness-project-finish-attestation") throw new Error("audience")
+    return ${JSON.stringify(oidcToken)}
+  },
+}
+bridge.runProjectFinishContextDiagnosticWithCore({ core })
+  .then((summary) => {
+    process.stdout.write(JSON.stringify(summary) + "\\n")
+    process.exitCode = summary.outcome === "match" ? 0 : 1
+  })
+  .catch(() => {
+    process.stderr.write("project-finish-producer-context-diagnostic-failed\\n")
+    process.exitCode = 1
+  })
+`
+  return spawnSync(process.execPath, ["--input-type=commonjs", "--eval", script], {
     cwd: sourceRoot(),
     encoding: "utf8",
     env: environment,
@@ -167,7 +180,11 @@ function runAction(path, environment, nodeArguments = []) {
 }
 
 function runInputAction(path, environment) {
-  return runAction(path, githubActionEnvironment(environment))
+  return spawnSync(process.execPath, [path], {
+    cwd: sourceRoot(),
+    encoding: "utf8",
+    env: githubActionEnvironment(environment),
+  })
 }
 
 function githubActionEnvironment(environment) {
@@ -297,33 +314,6 @@ function claims() {
   }
 }
 
-function oidcHook(token) {
-  return `import { createRequire, syncBuiltinESMExports } from "node:module"
-import { EventEmitter } from "node:events"
-
-const require = createRequire(import.meta.url)
-const https = require("node:https")
-
-https.get = (_url, _options, callback) => {
-  const request = new EventEmitter()
-  request.setTimeout = () => request
-  request.destroy = () => request
-  queueMicrotask(() => {
-    const response = new EventEmitter()
-    response.headers = {}
-    response.resume = () => undefined
-    response.statusCode = 200
-    callback(response)
-    response.emit("data", Buffer.from(JSON.stringify({ value: ${JSON.stringify(token)} })))
-    response.emit("end")
-  })
-  return request
-}
-
-syncBuiltinESMExports()
-`
-}
-
 function input(name) {
   const value = process.env[`INPUT_${name.replaceAll("_", "-")}`]
   return typeof value === "string" && value.length > 0 && value.length <= 1_024 && !/[\u0000\r\n]/u.test(value)
@@ -337,6 +327,10 @@ function sourceRoot() {
 
 function diagnosticEntrypoint() {
   return join(sourceRoot(), ".github", "actions", "project-finish-context-diagnostic", "index.mjs")
+}
+
+function diagnosticBridge() {
+  return join(sourceRoot(), ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge.cjs")
 }
 
 function fallbackEntrypoint() {

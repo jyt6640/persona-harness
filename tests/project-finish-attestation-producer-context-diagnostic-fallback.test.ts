@@ -25,6 +25,7 @@ const selftestCorePath = join(root, ".github", "actions", "project-finish-contex
 const nativeSelftestActionPath = join(root, ".github", "actions", "project-finish-context-diagnostic-native-selftest", "index.mjs")
 const nativeSelftestCorePath = join(root, ".github", "actions", "project-finish-context-diagnostic-native-selftest", "native-selftest.mjs")
 const nativeSelftestMetadataPath = join(root, ".github", "actions", "project-finish-context-diagnostic-native-selftest", "action.yml")
+const oidcCapabilityBridgePath = join(root, ".github", "actions", "project-finish-context-diagnostic", "oidc-capability-bridge.cjs")
 const workflowPath = join(root, ".github", "workflows", "persona-harness-project-finish-context-diagnostic.yml")
 const selftestWorkflowPath = join(root, ".github", "workflows", "project-finish-context-diagnostic-selftest.yml")
 const outputDirectory = "project-finish-attestation-context-diagnostic"
@@ -220,8 +221,9 @@ describe("project finish context diagnostic workflow fallback", () => {
         requirement: "not-required",
       })
       expect(workflow).toContain(
-        "uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-native-selftest",
+        "uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd",
       )
+      expect(workflow).toContain("runRequiredNativeProjectFinishContextSelftestWithCore")
       expect(workflow).toContain("continue-on-error: true")
       expect(workflow.indexOf("Upload native runner OIDC diagnostic context summary")).toBeLessThan(
         workflow.indexOf("Report native runner OIDC diagnostic selftest outcome"),
@@ -233,15 +235,9 @@ describe("project finish context diagnostic workflow fallback", () => {
 
   it("uses native runner OIDC values for an all-match reusable diagnostic selftest", () => {
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-")))
-    const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-hook-")))
-    const hookPath = join(hookDirectory, "oidc-hook.mjs")
     const token = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
     try {
-      writeFileSync(hookPath, oidcHook(token))
-      const selftest = runNativeSelftest(runnerTemp, ["--import", hookPath], {
-        ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-        ACTIONS_ID_TOKEN_REQUEST_URL:
-          "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      const selftest = runNativeSelftest(runnerTemp, token, {
         PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true",
         PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:
           "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
@@ -285,7 +281,6 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(output).not.toContain(runnerTemp)
     } finally {
       rmSync(runnerTemp, { force: true, recursive: true })
-      rmSync(hookDirectory, { force: true, recursive: true })
     }
   })
 
@@ -293,7 +288,7 @@ describe("project finish context diagnostic workflow fallback", () => {
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-missing-")))
     const nativeSecret = `PH_NATIVE_OIDC_REQUIRED_SECRET_${secret}`
     try {
-      const selftest = runNativeSelftest(runnerTemp, [], {
+      const selftest = runNativeSelftest(runnerTemp, undefined, {
         ...nativeContext(runnerTemp),
         PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN: nativeSecret,
         PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL: `https://untrusted.example/${nativeSecret}`,
@@ -329,19 +324,13 @@ describe("project finish context diagnostic workflow fallback", () => {
   })
 
   it.each([
-    "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
-    "ACTIONS_ID_TOKEN_REQUEST_URL",
-  ])("fails closed when required native runner OIDC variable %s is absent", (missingName) => {
+    undefined,
+    "",
+    `malformed-${secret}`,
+  ])("fails closed when the trusted native OIDC capability is unavailable", (token) => {
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-partial-")))
     try {
-      const environment: Record<string, string> = {
-        ...nativeContext(runnerTemp),
-        ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-        ACTIONS_ID_TOKEN_REQUEST_URL:
-          "https://pipelines.actions.githubusercontent.com/oidc?api-version=7.1&serviceConnectionId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-      }
-      delete environment[missingName]
-      const selftest = runNativeSelftest(runnerTemp, [], environment)
+      const selftest = runNativeSelftest(runnerTemp, token, nativeContext(runnerTemp))
       const summary = JSON.parse(
         readFileSync(join(runnerTemp, "project-finish-context-diagnostic-selftest", "summary.json"), "utf8"),
       )
@@ -355,6 +344,7 @@ describe("project finish context diagnostic workflow fallback", () => {
         status: "mismatch",
       })
       expect(output).not.toContain(secret)
+      expect(output).not.toContain("malformed-")
       expect(output).not.toContain(runnerTemp)
     } finally {
       rmSync(runnerTemp, { force: true, recursive: true })
@@ -364,10 +354,7 @@ describe("project finish context diagnostic workflow fallback", () => {
   it("does not turn an id-token-free selftest into native OIDC evidence", () => {
     const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-id-token-free-selftest-")))
     try {
-      const selftest = runSelftest(runnerTemp, [], {
-        ACTIONS_ID_TOKEN_REQUEST_TOKEN: secret,
-        ACTIONS_ID_TOKEN_REQUEST_URL: `https://untrusted.example/${secret}`,
-      })
+      const selftest = runSelftest(runnerTemp)
       const summary = JSON.parse(
         readFileSync(join(runnerTemp, "project-finish-context-diagnostic-selftest", "summary.json"), "utf8"),
       )
@@ -437,13 +424,37 @@ function runSelftest(
 
 function runNativeSelftest(
   runnerTemp: string,
-  nodeArguments: readonly string[] = [],
+  oidcToken: string | undefined = undefined,
   overrides: Readonly<Record<string, string>> = {},
 ) {
-  return run(nativeSelftestActionPath, {
-    PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
-    ...overrides,
-  }, nodeArguments)
+  const script = `
+const bridge = require(${JSON.stringify(oidcCapabilityBridgePath)})
+const core = {
+  getIDToken: async (audience) => {
+    if (audience !== "persona-harness-project-finish-attestation") throw new Error("audience")
+    return ${JSON.stringify(oidcToken)}
+  },
+}
+bridge.runRequiredNativeProjectFinishContextSelftestWithCore({ core })
+  .then(() => {
+    process.exitCode = 0
+  })
+  .catch(() => {
+    process.stderr.write("project-finish-producer-context-diagnostic-selftest-failed\\n")
+    process.exitCode = 1
+  })
+`
+  return spawnSync(process.execPath, ["--input-type=commonjs", "--eval", script], {
+    cwd: root,
+    encoding: "utf8",
+    env: {
+      ...githubActionEnvironment({
+        PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: runnerTemp,
+        ...overrides,
+      }),
+      NODE_PATH: "",
+    },
+  })
 }
 
 function nativeContext(runnerTemp: string): Record<string, string> {
@@ -530,31 +541,4 @@ function claims(): Record<string, string> {
       "example/public-gradle-app/.github/workflows/project-finish-context-diagnostic.yml@refs/heads/main",
     workflow_sha: callerSha,
   }
-}
-
-function oidcHook(token: string): string {
-  return `import { createRequire, syncBuiltinESMExports } from "node:module"
-import { EventEmitter } from "node:events"
-
-const require = createRequire(import.meta.url)
-const https = require("node:https")
-
-https.get = (_url, _options, callback) => {
-  const request = new EventEmitter()
-  request.setTimeout = () => request
-  request.destroy = () => request
-  queueMicrotask(() => {
-    const response = new EventEmitter()
-    response.headers = {}
-    response.resume = () => undefined
-    response.statusCode = 200
-    callback(response)
-    response.emit("data", Buffer.from(JSON.stringify({ value: ${JSON.stringify(token)} })))
-    response.emit("end")
-  })
-  return request
-}
-
-syncBuiltinESMExports()
-`
 }

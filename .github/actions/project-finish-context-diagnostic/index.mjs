@@ -1,6 +1,6 @@
 import { closeSync, ftruncateSync, lstatSync, openSync, realpathSync, writeSync } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
 const FAILURE_CODE = "project-finish-producer-context-diagnostic-failed"
 const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"
@@ -35,7 +35,7 @@ const PRIVATE_ENVIRONMENT_KEYS = [
   "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD",
 ]
 
-async function main() {
+export async function runProjectFinishContextDiagnosticAction(options = {}) {
   assertFallbackSummary()
   const environment = forwardedEnvironment()
   const producerCheckout = producerCheckoutStatus()
@@ -45,21 +45,23 @@ async function main() {
     ({ runProjectFinishProducerContextDiagnostic: runner } =
       await import("../../../scripts/diagnose-project-finish-producer-context.mjs"))
   } catch {
-    finish(failureSummary("runtime-load"))
-    return
+    return failureSummary("runtime-load")
   }
   try {
     const result = await runner({
       environment,
+      ...(Object.hasOwn(options, "githubActionsCoreToken")
+        ? { githubActionsCoreToken: options.githubActionsCoreToken }
+        : {}),
       producerCheckout,
       producerRoot,
     })
     const summary = resultSummary(result)
     replaceFallbackSummary(summary)
     writeActionOutput("summary-status", summary.outcome)
-    finish(summary)
+    return summary
   } catch {
-    finish(failureSummary("runtime"))
+    return failureSummary("runtime")
   }
 }
 
@@ -68,22 +70,12 @@ function forwardedEnvironment() {
   for (const name of PRIVATE_ENVIRONMENT_KEYS) {
     environment[name] = privateEnvironment(name)
   }
-  return {
-    ...environment,
-    ...nativeOidcEnvironment(),
-  }
+  return environment
 }
 
 function privateEnvironment(name) {
   const value = process.env[name]
   return typeof value === "string" ? value : undefined
-}
-
-function nativeOidcEnvironment() {
-  return {
-    ACTIONS_ID_TOKEN_REQUEST_TOKEN: process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN,
-    ACTIONS_ID_TOKEN_REQUEST_URL: process.env.ACTIONS_ID_TOKEN_REQUEST_URL,
-  }
 }
 
 function producerCheckoutStatus() {
@@ -223,7 +215,14 @@ function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-await main().catch(() => {
-  process.stdout.write(`${JSON.stringify(failureSummary("bootstrap"))}\n`)
-  process.exitCode = 1
-})
+async function main() {
+  const summary = await runProjectFinishContextDiagnosticAction()
+  finish(summary)
+}
+
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main().catch(() => {
+    process.stdout.write(`${JSON.stringify(failureSummary("bootstrap"))}\n`)
+    process.exitCode = 1
+  })
+}

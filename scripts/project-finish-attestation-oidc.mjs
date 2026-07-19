@@ -1,6 +1,7 @@
 import { get } from "node:https"
 
 const MAX_OIDC_RESPONSE_BYTES = 64 * 1024
+const MAX_OIDC_TOKEN_BYTES = 16 * 1024
 const GITHUB_ACTIONS_OIDC_ORIGIN = "https://pipelines.actions.githubusercontent.com"
 const GITHUB_ACTIONS_OIDC_PREFIX = `${GITHUB_ACTIONS_OIDC_ORIGIN}/`
 const OIDC_AUDIENCE = "persona-harness-project-finish-attestation"
@@ -42,26 +43,41 @@ export async function readProjectFinishAttestationOidc(environment = process.env
       requestAttempted: true,
     }
   }
-  const parts = response.value.split(".")
+  return decodeOidcToken(response.value, "match", true)
+}
+
+export function readProjectFinishAttestationOidcToken(token) {
+  return decodeOidcToken(token, "match", true)
+}
+
+function decodeOidcToken(token, endpointStatus, requestAttempted) {
+  if (!isBoundedToken(token)) {
+    return {
+      claims: undefined,
+      endpointStatus: "missing",
+      requestAttempted: false,
+    }
+  }
+  const parts = token.split(".")
   if (parts.length !== 3 || parts[1] === undefined) {
     return {
       claims: undefined,
-      endpointStatus: "match",
-      requestAttempted: true,
+      endpointStatus,
+      requestAttempted,
     }
   }
   try {
     const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"))
     return {
       claims: isRecord(payload) ? payload : undefined,
-      endpointStatus: "match",
-      requestAttempted: true,
+      endpointStatus,
+      requestAttempted,
     }
   } catch {
     return {
       claims: undefined,
-      endpointStatus: "match",
-      requestAttempted: true,
+      endpointStatus,
+      requestAttempted,
     }
   }
 }
@@ -163,6 +179,13 @@ function boundedEnvironment(environment, key) {
   return typeof value === "string" && value.length > 0 && value.length <= 512 && !/[\u0000\r\n]/u.test(value)
     ? value
     : undefined
+}
+
+function isBoundedToken(value) {
+  return typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= MAX_OIDC_TOKEN_BYTES &&
+    !/[\u0000\r\n]/u.test(value)
 }
 
 function isRecord(value) {
