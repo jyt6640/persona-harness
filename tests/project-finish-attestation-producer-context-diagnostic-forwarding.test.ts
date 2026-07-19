@@ -19,6 +19,7 @@ const workflowPath = join(root, ".github", "workflows", "persona-harness-project
 const actionDirectory = join(root, ".github", "actions", "project-finish-context-diagnostic")
 const actionMetadataPath = join(actionDirectory, "action.yml")
 const actionPath = join(actionDirectory, "index.mjs")
+const oidcCapabilityBridgePath = join(actionDirectory, "oidc-capability-bridge.cjs")
 const fallbackActionPath = join(root, ".github", "actions", "project-finish-context-diagnostic-fallback", "index.mjs")
 const callerSha = "2a8ddd2838bb655219d7f5408ee3c8688eb3f6e8"
 const producerSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim()
@@ -147,19 +148,16 @@ describe("project finish context diagnostic forwarding", () => {
 
   it("runs the trusted local action from explicit private aliases without resolving an ambient launcher before reading OIDC", () => {
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-action-")))
-    const hookDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-action-hook-")))
     const shadowDirectory = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-context-action-shadow-")))
     const markerPath = join(shadowDirectory, "executed")
-    const hookPath = join(hookDirectory, "oidc-hook.mjs")
     const oidcToken = `header.${Buffer.from(JSON.stringify(claims())).toString("base64url")}.signature`
     try {
-      writeFileSync(hookPath, oidcHook(oidcToken))
       for (const executable of ["env", "node", "sh", "git"]) {
         const executablePath = join(shadowDirectory, executable)
         writeFileSync(executablePath, shadowExecutable())
         chmodSync(executablePath, 0o700)
       }
-      const result = runDiagnosticAction(workspace, ["--import", hookPath], actionEnvironment(workspace, shadowDirectory, markerPath))
+      const result = runDiagnosticBridge(workspace, actionEnvironment(workspace, shadowDirectory, markerPath), oidcToken)
       const summary = readFileSync(summaryPath(workspace), "utf8")
       const output = `${result.stdout}${result.stderr}${summary}`
 
@@ -179,12 +177,11 @@ describe("project finish context diagnostic forwarding", () => {
       expect(output).not.toContain(shadowDirectory)
     } finally {
       rmSync(workspace, { force: true, recursive: true })
-      rmSync(hookDirectory, { force: true, recursive: true })
       rmSync(shadowDirectory, { force: true, recursive: true })
     }
   })
 
-  it("uses a fixed local Node action and private aliases rather than a token-bearing shell launcher", () => {
+  it("uses a pinned GitHub Script bridge and a token-blind local action rather than a token-bearing shell launcher", () => {
     const workflow = readFileSync(workflowPath, "utf8")
     const diagnosticStart = workflow.indexOf("      - name: Emit bounded project producer context diagnostic")
     const finalizerStart = workflow.indexOf("      - name: Finalize bounded project producer context diagnostic")
@@ -200,7 +197,8 @@ describe("project finish context diagnostic forwarding", () => {
 
     expect(existsSync(actionMetadataPath)).toBe(true)
     expect(existsSync(actionPath)).toBe(true)
-    expect(diagnosticStep).toContain("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic")
+    expect(diagnosticStep).toContain("uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd")
+    expect(diagnosticStep).toContain("runProjectFinishContextDiagnosticWithCore")
     expect(diagnosticStep).not.toContain("run:")
     expect(diagnosticStep).not.toContain("env -i")
     expect(diagnosticStep).not.toContain("command -v node")
@@ -219,8 +217,11 @@ describe("project finish context diagnostic forwarding", () => {
     expect(action).not.toContain("node:child_process")
     expect(action).not.toContain("process.env.PATH")
     expect(action).not.toContain("INPUT_")
-    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-    expect(action).toContain("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
+    expect(action).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
+    const bridge = readFileSync(oidcCapabilityBridgePath, "utf8")
+    expect(bridge).toContain("core.getIDToken")
+    expect(bridge).not.toContain("process.env")
+    expect(bridge).not.toContain("node:child_process")
     for (const name of [
       "PROJECT_FINISH_DIAGNOSTIC_ACTIONS:",
       "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF:",
@@ -245,7 +246,18 @@ describe("project finish context diagnostic forwarding", () => {
     }
     expect(diagnosticStep).not.toContain("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_TOKEN:")
     expect(diagnosticStep).not.toContain("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_URL:")
-    expect(diagnosticStep).not.toContain("\n        with:")
+    expect(diagnosticStep).toContain("\n        with:")
+  })
+
+  it("uses a pinned GitHub Script OIDC capability bridge for both reusable hosted paths", () => {
+    const workflow = readFileSync(workflowPath, "utf8")
+
+    expect(existsSync(oidcCapabilityBridgePath)).toBe(true)
+    expect(readFileSync(oidcCapabilityBridgePath, "utf8")).toContain("core.getIDToken")
+    expect(workflow.match(/actions\/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd/gu)).toHaveLength(2)
+    expect(workflow).toContain("runProjectFinishContextDiagnosticWithCore")
+    expect(workflow).toContain("runRequiredNativeProjectFinishContextSelftestWithCore")
+    expect(workflow).not.toContain("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-native-selftest")
   })
 })
 
@@ -261,10 +273,10 @@ function runForwardedDiagnostic(
   })
 }
 
-function runDiagnosticAction(
+function runDiagnosticBridge(
   workspace: string,
-  nodeArguments: readonly string[] = [],
   environment = actionEnvironment(workspace, "", ""),
+  oidcToken: string | undefined = undefined,
 ) {
   const runnerTemp = environment.PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP
   spawnSync(process.execPath, [fallbackActionPath], {
@@ -274,7 +286,25 @@ function runDiagnosticAction(
       "INPUT_DIAGNOSTIC-RUNNER-TEMP": runnerTemp,
     },
   })
-  return spawnSync(process.execPath, [...nodeArguments, actionPath], {
+  const script = `
+const bridge = require(${JSON.stringify(oidcCapabilityBridgePath)})
+const core = {
+  getIDToken: async (audience) => {
+    if (audience !== "persona-harness-project-finish-attestation") throw new Error("audience")
+    return ${JSON.stringify(oidcToken)}
+  },
+}
+bridge.runProjectFinishContextDiagnosticWithCore({ core })
+  .then((summary) => {
+    process.stdout.write(JSON.stringify(summary) + "\\n")
+    process.exitCode = summary.outcome === "match" ? 0 : 1
+  })
+  .catch(() => {
+    process.stderr.write("project-finish-producer-context-diagnostic-failed\\n")
+    process.exitCode = 1
+  })
+`
+  return spawnSync(process.execPath, ["--input-type=commonjs", "--eval", script], {
     cwd: root,
     encoding: "utf8",
     env: environment,

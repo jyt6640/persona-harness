@@ -7,6 +7,7 @@ import {
 } from "./project-finish-attestation-producer-context-diagnostic.mjs"
 import {
   readProjectFinishAttestationOidc,
+  readProjectFinishAttestationOidcToken,
 } from "./project-finish-attestation-oidc.mjs"
 import {
   verifyProjectFinishProducerCheckout,
@@ -16,13 +17,14 @@ const OUTPUT_DIRECTORY = "project-finish-attestation-context-diagnostic"
 const SUMMARY_FILENAME = "summary.json"
 const FAILURE_CODE = "project-finish-producer-context-diagnostic-failed"
 
-export async function runProjectFinishProducerContextDiagnostic({
-  environment = process.env,
-  producerCheckout,
-  producerRoot = process.cwd(),
-} = {}) {
+export async function runProjectFinishProducerContextDiagnostic(options = {}) {
+  const environment = options.environment ?? process.env
+  const producerCheckout = options.producerCheckout
+  const producerRoot = options.producerRoot ?? process.cwd()
   const forwarded = readForwardedEnvironment(environment)
-  const oidc = await readProjectFinishAttestationOidc(forwarded.oidc)
+  const oidc = Object.hasOwn(options, "githubActionsCoreToken")
+    ? readProjectFinishAttestationOidcToken(options.githubActionsCoreToken)
+    : await readProjectFinishAttestationOidc(forwarded.oidc)
   const result = assessProjectFinishProducerContextDiagnostic({
     claims: oidc.claims,
     environment: forwarded.context,

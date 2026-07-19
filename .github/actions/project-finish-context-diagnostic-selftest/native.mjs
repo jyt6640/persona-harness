@@ -22,12 +22,9 @@ const PRIVATE_CONTEXT_KEYS = [
   "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD",
 ]
 
-export async function runNativeProjectFinishContextSelftest({ sourceRoot }) {
+export async function runNativeProjectFinishContextSelftest({ githubActionsCoreToken, sourceRoot }) {
   const environment = nativeEnvironment()
-  if (
-    environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN === undefined
-    || environment.ACTIONS_ID_TOKEN_REQUEST_URL === undefined
-  ) {
+  if (githubActionsCoreToken === undefined) {
     return {
       id: "native-runner-context",
       status: "mismatch",
@@ -38,6 +35,7 @@ export async function runNativeProjectFinishContextSelftest({ sourceRoot }) {
   )
   const result = await module.runProjectFinishProducerContextDiagnostic({
     environment,
+    githubActionsCoreToken,
     producerCheckout: environment.PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT,
     producerRoot: sourceRoot,
   })
@@ -52,11 +50,7 @@ function nativeEnvironment() {
   for (const name of PRIVATE_CONTEXT_KEYS) {
     environment[name] = process.env[name]
   }
-  return {
-    ...environment,
-    ACTIONS_ID_TOKEN_REQUEST_TOKEN: process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN,
-    ACTIONS_ID_TOKEN_REQUEST_URL: process.env.ACTIONS_ID_TOKEN_REQUEST_URL,
-  }
+  return environment
 }
 
 function allContextStatusesMatch(value) {

@@ -73,20 +73,19 @@ from the caller workflow SHA and is cross-checked against the diagnostic
 checkout and OIDC reusable-workflow identity.
 
 The id-token-free resolution job performs the caller-pin and producer-checkout
-preflight. The separate OIDC job has no diagnostic `run:` step: it loads a
-fixed local `node20` action from the verified Persona Harness checkout. That
-action has no security-context `with:` inputs. The reusable diagnostic step
-sets an explicit fixed `PROJECT_FINISH_DIAGNOSTIC_*` environment allowlist for
-the public-push facts: event, ref, repository identity, caller workflow
-identity, source SHA, parsed diagnostic pin, run/attempt, and GitHub-hosted
-runner facts. It passes the platform OIDC endpoint and request token only
-from the two documented runner-time variables
-`ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN` to the
-in-memory OIDC reader. Those variables are a runner capability, not workflow
-`env` context values; the reusable workflow never aliases them. The action
-ignores `INPUT_*`, private OIDC aliases, and ambient GitHub context values for
-the security context. No shell, `env`, `node`, or `git` launcher is resolved
-through ambient `PATH` after the OIDC-bearing job begins.
+preflight. The separate OIDC job has no diagnostic `run:` step. It invokes the
+immutable `actions/github-script` runtime, which obtains the token through the
+documented Actions Toolkit `core.getIDToken` capability with the fixed
+audience. The token remains in that trusted JavaScript runtime and is passed
+only in memory to a fixed source-only bridge from the verified Persona Harness
+checkout. The reusable diagnostic step sets an explicit fixed
+`PROJECT_FINISH_DIAGNOSTIC_*` environment allowlist for the public-push facts:
+event, ref, repository identity, caller workflow identity, source SHA, parsed
+diagnostic pin, run/attempt, and GitHub-hosted runner facts. It never aliases
+the runner OIDC request URL or token through workflow `env`, action inputs, or
+outputs. The bridge ignores `INPUT_*`, private OIDC aliases, and ambient GitHub
+context values for the security context. No shell, `env`, `node`, or `git`
+launcher is resolved through ambient `PATH` after the OIDC-bearing job begins.
 The decoded OIDC claim supplies the observed reusable-workflow reference and
 SHA, which are checked separately from the caller workflow SHA/ref and the
 parsed pin. Ambient runner environment, home, Git configuration, and caller
@@ -96,8 +95,8 @@ The ordinary pull-request and branch selftest is intentionally id-token-free.
 Its bounded summary labels native runner OIDC as `not-collected` and
 `not-required`; it is not evidence that the native runner capability works.
 The reusable workflow instead runs a separate native selftest with
-`id-token: write`. That action requires both documented runner-time OIDC
-variables. When either is unavailable, it records only the fixed
+`id-token: write` through the same pinned Toolkit capability bridge. If the
+capability cannot obtain a bounded token, it records only the fixed
 native-OIDC-unavailable mismatch summary, uploads that summary, and then the
 workflow reports the fixed blocked outcome. A native selftest cannot silently
 omit the OIDC case or convert an id-token-free check into native evidence.
@@ -107,17 +106,17 @@ statuses and bounded diagnostic codes. It does not store a JWT, token, header,
 repository URL, ref, SHA, workspace path, source content, or caller input. The
 diagnostic reports `networkAccess: true` with the fixed
 `github-actions-oidc-only` scope because it may read the GitHub Actions OIDC
-claim in memory. It has no registry or arbitrary network route. Before it
-constructs a bearer header, the OIDC helper accepts only the fixed hosted
-GitHub Actions endpoint form, rejects malformed or untrusted endpoint text
-without a request, and never follows a redirect. Its bounded summary records
-whether an OIDC request was attempted, but never records endpoint text or a
-token.
+claim in memory. It has no registry or arbitrary network route. The bridge
+does not construct a bearer request or accept an endpoint value. Direct
+endpoint handling elsewhere remains limited to the fixed hosted GitHub Actions
+endpoint form, rejects malformed or untrusted endpoint text without a request,
+and never follows a redirect. Its bounded summary records whether OIDC
+acquisition was attempted, but never records endpoint text or a token.
 It creates no receipt, predicate, signed bundle, attestation, Finish result,
 or authority record. A separately uploaded summary artifact is diagnostic-only
 and is not attested or authority-bearing.
 
-Before the OIDC-bearing local action runs, a separate token-blind local
+Before the OIDC capability bridge runs, a separate token-blind local
 `node20` action creates the fixed bounded fallback under the platform-owned
 runner temporary root at
 `project-finish-attestation-context-diagnostic/summary.json`. That pre-step
@@ -126,7 +125,7 @@ directory and summary file without following a caller-workspace path. The
 workflow explicitly clears the OIDC request variables for the fallback,
 finalizer, and post-upload result steps.
 
-The OIDC diagnostic action verifies that exact fallback exists but does not
+The OIDC bridge verifies that exact fallback exists but does not
 replace it until the fixed evaluator has produced a valid bounded result. A
 missing evaluator, evaluator load failure, evaluator runtime failure, or
 summary write failure leaves the fallback unchanged. The trusted finalizer
@@ -150,12 +149,12 @@ create producer evidence.
 
 Within the real reusable diagnostic workflow, a separate
 `hosted-selftest` job has `id-token: write` and uses the same explicit private
-context map as the diagnostic action. Its selftest action reads the actual
-runner-time OIDC capability, performs the canonical endpoint request through
-the bounded OIDC reader, and requires every production context status to
-match before the ordinary diagnostic action can run. It uploads only a
-diagnostic-only case result and never creates a receipt, predicate, signature,
-registry result, or authority state.
+context map as the diagnostic bridge. Its selftest uses the actual Toolkit OIDC
+capability, requires every production context status to match before the
+ordinary diagnostic bridge can run, and keeps unavailable capability
+fail-closed after artifact upload. It uploads only a diagnostic-only case
+result and never creates a receipt, predicate, signature, registry result, or
+authority state.
 
 A diagnostic `match` is not a producer success and does not enable a retry,
 external trust, completion, release, or Finish authority. After protected

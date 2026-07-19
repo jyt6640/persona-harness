@@ -16,6 +16,7 @@ const workflowPaths = [
 const immutableActionPins = {
   attest: "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc",
   checkout: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5",
+  githubScript: "actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd",
   setupNode: "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
   uploadArtifact: "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
 }
@@ -38,6 +39,7 @@ const expectedActionCounts = {
   },
   ".github/workflows/persona-harness-project-finish-context-diagnostic.yml": {
     checkout: 4,
+    githubScript: 2,
     uploadArtifact: 2,
   },
   ".github/workflows/project-finish-context-diagnostic-selftest.yml": {
@@ -70,7 +72,7 @@ function hasImmutableActionPins(path, text) {
   return Object.entries(immutableActionPins).every(([name, pin]) => {
     const expectedCount = expected[name] ?? 0
     return countOccurrences(text, pin) === expectedCount
-  }) && !/actions\/(?:attest|checkout|setup-node|upload-artifact)@v\d+\b/.test(text)
+  }) && !/actions\/(?:attest|checkout|github-script|setup-node|upload-artifact)@v\d+\b/.test(text)
 }
 
 function hasContextDiagnosticSafeRuntime(text) {
@@ -112,7 +114,7 @@ function hasContextDiagnosticPrivateEnvironment(text) {
     "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD",
   ]
   return diagnostic.includes("env:")
-    && !diagnostic.includes("\n        with:")
+    && diagnostic.includes("\n        with:")
     && !diagnostic.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     && !diagnostic.includes("ACTIONS_ID_TOKEN_REQUEST_")
     && aliases.every((alias) => diagnostic.includes(`${alias}:`))
@@ -126,7 +128,7 @@ function hasContextDiagnosticSummaryReplacement(text) {
     && text.includes("replaceFallbackSummary(summary)")
     && evaluatorImport >= 0
     && text.includes('writeActionOutput("summary-status", summary.outcome)')
-    && text.includes('finish(failureSummary("runtime-load"))')
+    && text.includes('return failureSummary("runtime-load")')
     && text.includes('failureSummary("runtime")')
     && !text.includes('import { runProjectFinishProducerContextDiagnostic')
     && !text.includes("DIAGNOSTIC_WORKSPACE")
@@ -134,10 +136,9 @@ function hasContextDiagnosticSummaryReplacement(text) {
     && !text.includes("npm install")
     && !text.includes("INPUT_")
     && !text.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
-    && countOccurrences(text, "ACTIONS_ID_TOKEN_REQUEST_TOKEN") === 2
-    && countOccurrences(text, "ACTIONS_ID_TOKEN_REQUEST_URL") === 2
-    && text.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-    && text.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
+    && !text.includes("ACTIONS_ID_TOKEN_REQUEST_")
+    && text.includes("githubActionsCoreToken")
+    && text.includes("runProjectFinishContextDiagnosticAction")
 }
 
 function hasContextDiagnosticNativeIntegrationSelftest(text) {
@@ -176,7 +177,8 @@ function hasContextDiagnosticNativeIntegrationSelftest(text) {
   return selftest.includes("id-token: write")
     && exercise.includes("id: native-selftest")
     && exercise.includes("continue-on-error: true")
-    && exercise.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-native-selftest")
+    && exercise.includes("uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd")
+    && exercise.includes("runRequiredNativeProjectFinishContextSelftestWithCore")
     && !exercise.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     && !exercise.includes("ACTIONS_ID_TOKEN_REQUEST_")
     && !/\n\s+run:/u.test(exercise)
@@ -187,6 +189,19 @@ function hasContextDiagnosticNativeIntegrationSelftest(text) {
     && outcome.includes("if: always()")
     && outcome.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-outcome")
     && outcome.includes("steps.native-selftest.outcome")
+}
+
+function hasContextDiagnosticOidcCapabilityBridge(text) {
+  return text.includes('const OIDC_AUDIENCE = "persona-harness-project-finish-attestation"')
+    && text.includes("core.getIDToken(OIDC_AUDIENCE)")
+    && text.includes("runProjectFinishContextDiagnosticWithCore")
+    && text.includes("runRequiredNativeProjectFinishContextSelftestWithCore")
+    && !text.includes("process.env")
+    && !text.includes("ACTIONS_ID_TOKEN_REQUEST_")
+    && !text.includes("INPUT_")
+    && !text.includes("node:child_process")
+    && !text.includes("https")
+    && !text.includes("authorization")
 }
 
 function hasContextDiagnosticFallbackRuntime(metadata, entrypoint) {
@@ -269,6 +284,7 @@ async function main() {
   const [
     contextActionMetadata,
     contextActionEntrypoint,
+    contextActionBridge,
     selftestActionMetadata,
     selftestActionEntrypoint,
     selftestCore,
@@ -283,6 +299,7 @@ async function main() {
   ] = await Promise.all([
     readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-selftest/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-selftest/index.mjs", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-selftest/selftest.mjs", "utf8"),
@@ -322,9 +339,9 @@ async function main() {
     || contextActionMetadata.includes("inputs:")
     || contextActionEntrypoint.includes("INPUT_")
     || contextActionEntrypoint.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
-    || !contextActionEntrypoint.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-    || !contextActionEntrypoint.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
+    || contextActionEntrypoint.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_")
     || !hasContextDiagnosticSummaryReplacement(contextActionEntrypoint)
+    || !hasContextDiagnosticOidcCapabilityBridge(contextActionBridge)
     || !hasContextDiagnosticFallbackRuntime(fallbackActionMetadata, fallbackActionEntrypoint)
     || !hasContextDiagnosticFinalizerRuntime(finalizerActionMetadata, finalizerActionEntrypoint)
   ) {
@@ -353,8 +370,7 @@ async function main() {
     || nativeSelftestCore.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
     || nativeSelftestRuntime.includes("INPUT_")
     || nativeSelftestRuntime.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
-    || !nativeSelftestRuntime.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-    || !nativeSelftestRuntime.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
+    || nativeSelftestRuntime.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_")
     || !nativeSelftestCore.includes("project-finish-producer-context-diagnostic-native-oidc-unavailable")
     || !nativeSelftestCore.includes('failure_stage: "native-oidc"')
   ) {

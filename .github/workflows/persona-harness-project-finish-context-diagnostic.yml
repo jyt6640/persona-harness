@@ -233,7 +233,15 @@ jobs:
           PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: ${{ runner.os }}
           PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: ${{ runner.temp }}
           PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: ${{ github.sha }}
-        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const bridge = require("./.persona-harness-producer/.github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs")
+            const summary = await bridge.runProjectFinishContextDiagnosticWithCore({ core })
+            core.setOutput("summary-status", summary.outcome)
+            if (summary.outcome !== "match") {
+              core.setFailed("project-finish-producer-context-diagnostic-blocked")
+            }
 
       - name: Finalize bounded project producer context diagnostic
         id: finalizer
@@ -305,7 +313,11 @@ jobs:
           PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: ${{ runner.os }}
           PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: ${{ runner.temp }}
           PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: ${{ github.sha }}
-        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-native-selftest
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const bridge = require("./.persona-harness-producer/.github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs")
+            await bridge.runRequiredNativeProjectFinishContextSelftestWithCore({ core })
 
       - name: Upload native runner OIDC diagnostic context summary
         if: always()
