@@ -92,6 +92,16 @@ SHA, which are checked separately from the caller workflow SHA/ref and the
 parsed pin. Ambient runner environment, home, Git configuration, and caller
 values cannot enter the evaluator.
 
+The ordinary pull-request and branch selftest is intentionally id-token-free.
+Its bounded summary labels native runner OIDC as `not-collected` and
+`not-required`; it is not evidence that the native runner capability works.
+The reusable workflow instead runs a separate native selftest with
+`id-token: write`. That action requires both documented runner-time OIDC
+variables. When either is unavailable, it records only the fixed
+native-OIDC-unavailable mismatch summary, uploads that summary, and then the
+workflow reports the fixed blocked outcome. A native selftest cannot silently
+omit the OIDC case or convert an id-token-free check into native evidence.
+
 Its summary contains only allowlisted `match`, `missing`, or `mismatch` field
 statuses and bounded diagnostic codes. It does not store a JWT, token, header,
 repository URL, ref, SHA, workspace path, source content, or caller input. The
