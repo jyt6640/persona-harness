@@ -28,7 +28,10 @@ export async function runNativeProjectFinishContextSelftest({ sourceRoot }) {
     environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN === undefined
     || environment.ACTIONS_ID_TOKEN_REQUEST_URL === undefined
   ) {
-    return undefined
+    return {
+      id: "native-runner-context",
+      status: "mismatch",
+    }
   }
   const module = await import(
     pathToFileURL(join(sourceRoot, "scripts", "diagnose-project-finish-producer-context.mjs")).href,

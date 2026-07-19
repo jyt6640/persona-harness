@@ -143,6 +143,16 @@ function hasContextDiagnosticSummaryReplacement(text) {
 function hasContextDiagnosticNativeIntegrationSelftest(text) {
   const start = text.indexOf("  hosted-selftest:")
   const selftest = start >= 0 ? text.slice(start) : ""
+  const exerciseStart = selftest.indexOf("      - name: Exercise required native runner OIDC diagnostic context")
+  const uploadStart = selftest.indexOf("      - name: Upload native runner OIDC diagnostic context summary")
+  const outcomeStart = selftest.indexOf("      - name: Report native runner OIDC diagnostic selftest outcome")
+  const exercise = exerciseStart >= 0 && uploadStart > exerciseStart
+    ? selftest.slice(exerciseStart, uploadStart)
+    : ""
+  const upload = uploadStart >= 0 && outcomeStart > uploadStart
+    ? selftest.slice(uploadStart, outcomeStart)
+    : ""
+  const outcome = outcomeStart >= 0 ? selftest.slice(outcomeStart) : ""
   const aliases = [
     "PROJECT_FINISH_DIAGNOSTIC_ACTIONS",
     "PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF",
@@ -164,15 +174,19 @@ function hasContextDiagnosticNativeIntegrationSelftest(text) {
     "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD",
   ]
   return selftest.includes("id-token: write")
-    && selftest.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-selftest")
-    && selftest.includes("Upload native runner OIDC diagnostic context summary")
-    && selftest.includes("if: always()")
-    && selftest.includes("project-finish-attestation-context-native-selftest")
-    && selftest.includes("project-finish-context-diagnostic-selftest/summary.json")
-    && !selftest.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
-    && !selftest.includes("ACTIONS_ID_TOKEN_REQUEST_")
-    && !/\n\s+run:/u.test(selftest)
-    && aliases.every((alias) => selftest.includes(`${alias}:`))
+    && exercise.includes("id: native-selftest")
+    && exercise.includes("continue-on-error: true")
+    && exercise.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-native-selftest")
+    && !exercise.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
+    && !exercise.includes("ACTIONS_ID_TOKEN_REQUEST_")
+    && !/\n\s+run:/u.test(exercise)
+    && aliases.every((alias) => exercise.includes(`${alias}:`))
+    && upload.includes("if: always()")
+    && upload.includes("project-finish-attestation-context-native-selftest")
+    && upload.includes("project-finish-context-diagnostic-selftest/summary.json")
+    && outcome.includes("if: always()")
+    && outcome.includes("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-outcome")
+    && outcome.includes("steps.native-selftest.outcome")
 }
 
 function hasContextDiagnosticFallbackRuntime(metadata, entrypoint) {
@@ -255,6 +269,13 @@ async function main() {
   const [
     contextActionMetadata,
     contextActionEntrypoint,
+    selftestActionMetadata,
+    selftestActionEntrypoint,
+    selftestCore,
+    nativeSelftestActionMetadata,
+    nativeSelftestActionEntrypoint,
+    nativeSelftestCore,
+    nativeSelftestRuntime,
     fallbackActionMetadata,
     fallbackActionEntrypoint,
     finalizerActionMetadata,
@@ -262,6 +283,13 @@ async function main() {
   ] = await Promise.all([
     readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic-selftest/action.yml", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic-selftest/index.mjs", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic-selftest/selftest.mjs", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/action.yml", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/index.mjs", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/native-selftest.mjs", "utf8"),
+    readFile(".github/actions/project-finish-context-diagnostic-selftest/native.mjs", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-fallback/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-fallback/index.mjs", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-finalizer/action.yml", "utf8"),
@@ -301,6 +329,36 @@ async function main() {
     || !hasContextDiagnosticFinalizerRuntime(finalizerActionMetadata, finalizerActionEntrypoint)
   ) {
     failures.push("project finish context diagnostic local runtime")
+  }
+  if (
+    !selftestActionMetadata.includes("using: node20")
+    || !selftestActionMetadata.includes("main: index.mjs")
+    || selftestActionMetadata.includes("using: composite")
+    || selftestActionMetadata.includes("run:")
+    || !selftestActionEntrypoint.includes("runProjectFinishContextDiagnosticSelftest()")
+    || !selftestCore.includes('evidence: "not-collected"')
+    || !selftestCore.includes('requirement: "not-required"')
+    || !nativeSelftestActionMetadata.includes("using: node20")
+    || !nativeSelftestActionMetadata.includes("main: index.mjs")
+    || nativeSelftestActionMetadata.includes("using: composite")
+    || nativeSelftestActionMetadata.includes("run:")
+    || nativeSelftestActionMetadata.includes("inputs:")
+    || !nativeSelftestActionEntrypoint.includes("runRequiredNativeProjectFinishContextSelftest()")
+    || nativeSelftestActionEntrypoint.includes("process.env.")
+    || nativeSelftestActionEntrypoint.includes("INPUT_")
+    || nativeSelftestCore.includes("node:child_process")
+    || nativeSelftestCore.includes("spawnSync")
+    || nativeSelftestCore.includes("INPUT_")
+    || nativeSelftestCore.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_")
+    || nativeSelftestCore.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
+    || nativeSelftestRuntime.includes("INPUT_")
+    || nativeSelftestRuntime.includes("PROJECT_FINISH_DIAGNOSTIC_OIDC_REQUEST_")
+    || !nativeSelftestRuntime.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+    || !nativeSelftestRuntime.includes("process.env.ACTIONS_ID_TOKEN_REQUEST_URL")
+    || !nativeSelftestCore.includes("project-finish-producer-context-diagnostic-native-oidc-unavailable")
+    || !nativeSelftestCore.includes('failure_stage: "native-oidc"')
+  ) {
+    failures.push("project finish context diagnostic native OIDC selftest")
   }
   if (failures.length > 0) {
     throw new Error(`Release workflow policy failed: ${failures.join(", ")}`)

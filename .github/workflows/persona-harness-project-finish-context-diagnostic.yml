@@ -283,7 +283,9 @@ jobs:
           ref: ${{ needs.resolve.outputs.producer-sha }}
           repository: jyt6640/persona-harness
 
-      - name: Exercise native runner OIDC diagnostic context
+      - name: Exercise required native runner OIDC diagnostic context
+        id: native-selftest
+        continue-on-error: true
         env:
           PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "true"
           PROJECT_FINISH_DIAGNOSTIC_CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
@@ -303,9 +305,7 @@ jobs:
           PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: ${{ runner.os }}
           PROJECT_FINISH_DIAGNOSTIC_RUNNER_TEMP: ${{ runner.temp }}
           PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: ${{ github.sha }}
-        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-selftest
-        with:
-          diagnostic-runner-temp: ${{ runner.temp }}
+        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-native-selftest
 
       - name: Upload native runner OIDC diagnostic context summary
         if: always()
@@ -315,3 +315,12 @@ jobs:
           name: project-finish-attestation-context-native-selftest
           path: ${{ runner.temp }}/project-finish-context-diagnostic-selftest/summary.json
           retention-days: 7
+
+      - name: Report native runner OIDC diagnostic selftest outcome
+        if: always()
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""
+          ACTIONS_ID_TOKEN_REQUEST_URL: ""
+        uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic-outcome
+        with:
+          diagnostic-outcome: ${{ steps.native-selftest.outcome == 'success' && 'match' || 'blocked' }}
