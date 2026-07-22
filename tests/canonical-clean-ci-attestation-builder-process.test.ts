@@ -123,8 +123,9 @@ describe("canonical builder bounded process contract", () => {
     ].join(";")
     const parentScript = [
       "import { spawn } from 'node:child_process'",
+      "import { existsSync } from 'node:fs'",
       `spawn(process.execPath, ['-e', ${JSON.stringify(descendantScript)}], { stdio: 'ignore' })`,
-      "setInterval(() => process.stdout.write('x'.repeat(16 * 1024)), 1)",
+      `setInterval(() => { if (existsSync(${JSON.stringify(heartbeatPath)})) process.stdout.write('x'.repeat(16 * 1024)) }, 1)`,
     ].join(";")
 
     await expect(runBoundedBuilderCommand(
@@ -163,7 +164,7 @@ describe("canonical builder bounded process contract", () => {
     await expect(runBoundedBuilderCommand(
       fixedNodeCommand("timeout-descendant", parentScript),
       fixtureRoot,
-      { graceMs: 50, timeoutMs: 100 },
+      { graceMs: 50, timeoutMs: 1_000 },
     )).rejects.toMatchObject({
       details: { commandId: "timeout-descendant", exitState: "timeout" },
     })
