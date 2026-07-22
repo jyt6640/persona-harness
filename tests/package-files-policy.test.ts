@@ -246,6 +246,8 @@ describe("package files policy", () => {
       "scripts/diagnose-project-finish-producer-context.mjs",
       "tests/fixtures/project-finish-attestation/caller-workflow.yml",
       "tests/project-finish-attestation-producer-workflow.test.ts",
+      "tests/project-finish-attestation-producer-inputs.test.ts",
+      "tests/project-finish-attestation-producer-profile.test.ts",
       "tests/project-finish-attestation-oidc.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic.test.ts",
       "tests/project-finish-attestation-producer-context-diagnostic-cli.test.ts",
@@ -255,8 +257,10 @@ describe("package files policy", () => {
       "tests/project-finish-attestation-producer-context-diagnostic-fallback.test.ts",
     ]
     const runtimePaths = [
+      "dist/cli/project-finish-attestation-inputs.js",
       "dist/cli/project-finish-attestation-producer.js",
       "dist/cli/project-finish-attestation-producer-runner.js",
+      "dist/io/no-follow-file.js",
     ]
     const boundaryRecord = "docs/current/release/project-finish-attestation-producer.md"
 
