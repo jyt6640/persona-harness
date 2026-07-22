@@ -44,6 +44,24 @@ checkout spelling, with or without its optional `.git` suffix, is accepted;
 credentials, userinfo, query or fragment components, another host, noncanonical
 paths, and SSH-style remotes block without reflecting the remote text.
 
+## Producer OIDC Capability Boundary
+
+The signing job obtains its fixed-audience GitHub OIDC token only through the
+immutable `actions/github-script` Toolkit capability bridge. The bridge loads
+the fixed producer builder before requesting the token, then keeps the token
+in the trusted JavaScript call chain while it invokes that builder. It does not
+read runner OIDC request variables, pass a token through a shell, `PATH`, child
+process, workflow input, output, artifact, summary, or log, or accept a
+caller-provided endpoint, audience, or trust value.
+
+The builder accepts that in-memory token only after strict issuer and audience
+validation, then applies the existing public-push, caller/reusable workflow,
+source, checkout, and receipt bindings. An unavailable Toolkit capability,
+bridge load or invocation failure, or invalid token blocks with the fixed
+`project-finish-producer-oidc` code and creates no receipt, predicate, signed
+bundle, or authority result. This is a source contract only: it does not
+assert that a producer invocation has successfully signed an artifact.
+
 The canonical receipt bytes are the Artifact Attestation subject. The predicate
 binds their SHA-256 digest. The workflow uploads only the receipt, predicate,
 signed bundle, or an allowlisted failure diagnostic code.

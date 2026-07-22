@@ -12,6 +12,7 @@ const contextPath = join(root, "scripts", "project-finish-attestation-producer-c
 const oidcPath = join(root, "scripts", "project-finish-attestation-oidc.mjs")
 const callerFixturePath = join(root, "tests", "fixtures", "project-finish-attestation", "caller-workflow.yml")
 const diagnosticPath = join(root, "scripts", "project-finish-attestation-producer-context-diagnostic.mjs")
+const producerGuidePath = join(root, "docs", "current", "release", "project-finish-attestation-producer.md")
 
 describe("project finish attestation producer workflow contract", () => {
   it("declares a pinned reusable producer with no caller-controlled inputs", () => {
@@ -87,6 +88,16 @@ describe("project finish attestation producer workflow contract", () => {
     expect(workflow).toContain("runProjectFinishAttestationProducerWithCore({ core })")
     expect(workflow).toContain("PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}")
     expect(workflow).not.toContain("run: node scripts/build-project-finish-attestation.mjs")
+  })
+
+  it("documents the producer OIDC bridge as an in-memory, fail-closed source boundary", () => {
+    const guide = readFileSync(producerGuidePath, "utf8")
+
+    expect(guide).toContain("## Producer OIDC Capability Boundary")
+    expect(guide).toContain("immutable `actions/github-script` Toolkit capability bridge")
+    expect(guide).toContain("project-finish-producer-oidc")
+    expect(guide).toMatch(/creates no receipt, predicate, signed\s+bundle, or authority result/u)
+    expect(guide).toMatch(/does not\s+assert that a producer invocation has successfully signed an artifact/u)
   })
 
   it("keeps the postmerge caller path pinned to an immutable reusable workflow SHA", () => {
