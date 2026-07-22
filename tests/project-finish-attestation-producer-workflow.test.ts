@@ -46,6 +46,12 @@ describe("project finish attestation producer workflow contract", () => {
     expect(workflow).toContain("working-directory: .project-finish-caller")
     expect(workflow).toContain("subject-path: .project-finish-attestation-artifacts/receipt.json")
     expect(workflow).toContain("predicate-path: .project-finish-attestation-artifacts/predicate.json")
+    expect(workflow).toContain("include-hidden-files: true")
+    expect(workflow).toContain(".project-finish-attestation-artifacts/receipt.json")
+    expect(workflow).toContain(".project-finish-attestation-artifacts/predicate.json")
+    expect(workflow).toContain(".project-finish-attestation-artifacts/bundle.json")
+    expect(workflow).toContain("project-finish-attestation-artifact-handoff.mjs")
+    expect(workflow).not.toContain('run: cp "${{ steps.attest.outputs.bundle-path }}"')
     expect(workflow).toContain("project-finish-attestation.1")
     expect(workflow).toContain("if: always()")
     expect(workflow).toContain("failure-diagnostic.json")
@@ -131,6 +137,16 @@ describe("project finish attestation producer workflow contract", () => {
     expect(guide).toContain("`.project-finish-attestation-artifacts`")
     expect(guide).toMatch(/never broadens\s+the caller source exclusion list/u)
     expect(guide).toMatch(/no receipt, predicate, bundle, or signature is\s+created/u)
+  })
+
+  it("documents the exact hidden signed-artifact handoff without granting authority", () => {
+    const guide = readFileSync(producerGuidePath, "utf8")
+
+    expect(guide).toContain("## Signed Artifact Handoff")
+    expect(guide).toContain("`receipt.json` and `predicate.json`")
+    expect(guide).toContain("`bundle.json`")
+    expect(guide).toContain("`include-hidden-files: true`")
+    expect(guide).toContain("does not validate a signature or create any authority result")
   })
 
   it("keeps the postmerge caller path pinned to an immutable reusable workflow SHA", () => {
