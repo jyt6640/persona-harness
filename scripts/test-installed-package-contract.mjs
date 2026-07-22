@@ -178,8 +178,10 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
   )).href
   const validProject = join(consumerDirectory, "project-finish-producer-valid")
   const hostileProject = join(consumerDirectory, "project-finish-producer-hostile")
+  const replacementProject = join(consumerDirectory, "project-finish-producer-replacement")
   createProjectFinishProducerFixture(validProject, "absent")
   createProjectFinishProducerFixture(hostileProject, "symlink-profile")
+  createProjectFinishProducerFixture(replacementProject, "replace-profile")
 
   const probe = runNode(consumerDirectory, [
     "--input-type=module",
@@ -208,7 +210,58 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
     ].join("\n"),
   ])
   requireSuccess("installed project finish producer no-follow intake probe", probe)
-  for (const projectDir of [validProject, hostileProject]) {
+  const replacementProbe = runNode(consumerDirectory, [
+    "--input-type=module",
+    "-e",
+    [
+      'import { execFileSync } from "node:child_process";',
+      'import fs, { realpathSync, renameSync, symlinkSync, unlinkSync } from "node:fs";',
+      'import { syncBuiltinESMExports } from "node:module";',
+      'import { join } from "node:path";',
+      `const modulePath = ${JSON.stringify(modulePath)};`,
+      'const projectDir = "./project-finish-producer-replacement";',
+      'const profilePath = realpathSync(join(projectDir, ".persona", "project-profile.jsonc"));',
+      'const draftPath = join(projectDir, ".persona", "project-profile.draft.jsonc");',
+      'const outsidePath = join(projectDir, "outside-profile.jsonc");',
+      'const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
+      'const context = {',
+      '  callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
+      '  callerWorkflowSha: head,',
+      '  issuedAt: "2026-07-22T01:00:00.000Z",',
+      '  repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" },',
+      '  reusableWorkflowSha: "b".repeat(40),',
+      '  runAttempt: 1,',
+      '  runId: "43",',
+      '  sourceHead: head,',
+      '};',
+      'const originalOpen = fs.openSync;',
+      'let swapped = false;',
+      'fs.openSync = (...args) => {',
+      '  if (!swapped && args[0] === profilePath) {',
+      '    swapped = true;',
+      '    renameSync(profilePath, draftPath);',
+      '    symlinkSync(outsidePath, profilePath);',
+      '  }',
+      '  return originalOpen(...args);',
+      '};',
+      'syncBuiltinESMExports();',
+      'try {',
+      '  const { runProjectFinishAttestationProducer } = await import(modulePath);',
+      '  const result = runProjectFinishAttestationProducer(projectDir, context, "0.7.0");',
+      '  if (!swapped || result.kind !== "blocked" || result.code !== "project-finish-producer-profile") process.exit(1);',
+      '  if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
+      '} finally {',
+      '  fs.openSync = originalOpen;',
+      '  syncBuiltinESMExports();',
+      '  if (swapped) {',
+      '    unlinkSync(profilePath);',
+      '    renameSync(draftPath, profilePath);',
+      '  }',
+      '}',
+    ].join("\n"),
+  ])
+  requireSuccess("installed project finish producer replacement probe", replacementProbe)
+  for (const projectDir of [validProject, hostileProject, replacementProject]) {
     if (existsSync(join(projectDir, ".ci", "project-finish-attestation"))) {
       throw new Error("installed project finish producer created an artifact for a local intake probe")
     }
@@ -404,6 +457,18 @@ function createProjectFinishProducerFixture(projectDir, profileMode) {
     mkdirSync(profileDirectory)
     writeFileSync(outside, '{"marker":"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"}\n')
     symlinkSync(outside, join(profileDirectory, "project-profile.jsonc"))
+  }
+  if (profileMode === "replace-profile") {
+    const profileDirectory = join(projectDir, ".persona")
+    mkdirSync(profileDirectory)
+    writeFileSync(
+      join(profileDirectory, "project-profile.jsonc"),
+      `${JSON.stringify({ ...cooperativeProfile(), status: "draft" })}\n`,
+    )
+    writeFileSync(
+      join(projectDir, "outside-profile.jsonc"),
+      `${JSON.stringify({ marker: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa", ...cooperativeProfile() })}\n`,
+    )
   }
   requireSuccess("installed producer fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
   requireSuccess("installed producer fixture Git config email", runCommand(projectDir, "git", ["config", "user.email", "ph@example.invalid"]))
