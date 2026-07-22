@@ -13,6 +13,14 @@ prefixes such as feat, fix, docs, ci, or refactor when useful. -->
 
 Closes #
 
+## Closure readiness
+
+- [ ] Linked issue and its observable close condition are stated above.
+- [ ] I included the full deterministic boundary from input through the final artifact or output.
+- [ ] I showed the relevant fail-closed or adversarial boundary, not only the happy path.
+- [ ] I linked independent evidence or explained why none is required.
+- [ ] I named the single hosted-only residual that remains after local verification, or stated that none remains.
+
 ## User-visible behavior
 
 - [ ] I described the expected happy path and a meaningful failure or boundary path.
@@ -39,3 +47,13 @@ Evidence, run IDs, or screenshots when applicable:
 Release or migration notes:
 
 - None.
+
+## External decision
+
+- [ ] Package bytes are unchanged, so External is waived with an equal-footing package comparison.
+- [ ] Package bytes changed, so fresh External verification is required before integration.
+
+## Further implementation
+
+- [ ] This PR closes the linked issue's complete boundary; no further implementation is expected before its final evidence gate.
+- [ ] Further implementation is expected; I described the remaining boundary and why this PR does not claim closure.

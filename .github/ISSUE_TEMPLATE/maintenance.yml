@@ -31,6 +31,27 @@ body:
     validations:
       required: true
   - type: textarea
+    id: close_condition
+    attributes:
+      label: Observable close condition
+      description: State the exact command, artifact, state transition, or user-visible result that would close this issue.
+    validations:
+      required: true
+  - type: textarea
+    id: full_boundary
+    attributes:
+      label: Full boundary and fail-closed case
+      description: Name every input-to-output link in scope, plus the malformed, missing, unsafe, or hostile input that must block safely.
+    validations:
+      required: true
+  - type: textarea
+    id: independent_evidence
+    attributes:
+      label: Independent evidence and hosted residual
+      description: Name the independent evidence needed for closure and the one hosted-only observation that cannot be reproduced locally. Write "None" only when both are truly absent.
+    validations:
+      required: true
+  - type: textarea
     id: risk
     attributes:
       label: Risks and non-goals
