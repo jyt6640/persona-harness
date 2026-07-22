@@ -17,6 +17,10 @@ const temporaryDirectories: string[] = []
 const AUDIENCE = "persona-harness-project-finish-attestation"
 const CALLER_SHA = "a".repeat(40)
 const PRODUCER_SHA = "b".repeat(40)
+const AUTHENTIC_CALLER_SHA = "7a4b8ab207711b48a3fbf166157bb15b5f9260d0"
+const AUTHENTIC_PRODUCER_SHA = "a41e8977325895279ad2d379f94954451281c231"
+const AUTHENTIC_REPOSITORY = "jyt6640/persona-harness-attestation-claim-fixture"
+const AUTHENTIC_REPOSITORY_ID = "1304576182"
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -129,6 +133,43 @@ describe("project finish producer OIDC capability bridge", () => {
     })
   })
 
+  it("accepts the authentic pinned caller shape only with explicitly forwarded public visibility", () => {
+    const workspace = createWorkspace()
+    const result = readProjectFinishAttestationProducerContextFromToken(
+      oidcToken(authenticClaims()),
+      authenticProducerEnvironment(workspace),
+    )
+
+    expect(result).toMatchObject({
+      kind: "ready",
+      value: {
+        callerWorkflowSha: AUTHENTIC_CALLER_SHA,
+        reusableWorkflowSha: AUTHENTIC_PRODUCER_SHA,
+        sourceHead: AUTHENTIC_CALLER_SHA,
+      },
+    })
+  })
+
+  it("blocks hostile caller visibility before it can create a receipt or predicate", async () => {
+    const workspace = createWorkspace()
+    const marker = "PH_CONTEXT_SECRET=sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
+    const result = await runProjectFinishAttestationProducerWithCore({
+      core: {
+        getIDToken: async () => oidcToken(authenticClaims()),
+      },
+      environment: {
+        ...authenticProducerEnvironment(workspace),
+        GITHUB_REPOSITORY_VISIBILITY: "public",
+        PERSONA_HARNESS_CALLER_VISIBILITY: marker,
+      },
+    })
+
+    expect(result).toEqual({ code: "project-finish-producer-context", kind: "blocked" })
+    expect(JSON.stringify(result)).not.toContain(marker)
+    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "receipt.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "predicate.json"))).toBe(false)
+  })
+
   it("does not route hostile aliases or raw OIDC request fields into the bridge", () => {
     const bridge = readFileSync(
       join(process.cwd(), "scripts", "project-finish-attestation-producer-oidc-capability-bridge.cjs"),
@@ -137,6 +178,8 @@ describe("project finish producer OIDC capability bridge", () => {
 
     expect(bridge).toContain("PRODUCER_ENVIRONMENT_KEYS")
     expect(bridge).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
+    expect(bridge).not.toContain('"GITHUB_REPOSITORY_VISIBILITY"')
+    expect(bridge).toContain('"PERSONA_HARNESS_CALLER_VISIBILITY"')
     expect(bridge).not.toContain("process.env.PATH")
     expect(bridge).not.toContain("core.setOutput")
   })
@@ -149,14 +192,16 @@ function producerEnvironment(workspace: string): NodeJS.ProcessEnv {
     GITHUB_REF: "refs/heads/main",
     GITHUB_REPOSITORY: "example/public-gradle-app",
     GITHUB_REPOSITORY_ID: "123",
-    GITHUB_REPOSITORY_VISIBILITY: "public",
     GITHUB_RUN_ATTEMPT: "1",
     GITHUB_RUN_ID: "42",
     GITHUB_SHA: CALLER_SHA,
     GITHUB_WORKFLOW_REF: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
     GITHUB_WORKFLOW_SHA: CALLER_SHA,
     GITHUB_WORKSPACE: workspace,
+    PERSONA_HARNESS_CALLER_VISIBILITY: "public",
     PERSONA_HARNESS_PRODUCER_SHA: PRODUCER_SHA,
+    RUNNER_ENVIRONMENT: "github-hosted",
+    RUNNER_OS: "Linux",
   }
 }
 
@@ -176,6 +221,46 @@ function claims(): Record<string, string> {
     runner_environment: "github-hosted",
     workflow_ref: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
     workflow_sha: CALLER_SHA,
+  }
+}
+
+function authenticClaims(): Record<string, string> {
+  return {
+    aud: AUDIENCE,
+    event_name: "push",
+    iss: "https://token.actions.githubusercontent.com",
+    job_workflow_ref:
+      `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@${AUTHENTIC_PRODUCER_SHA}`,
+    job_workflow_sha: AUTHENTIC_PRODUCER_SHA,
+    ref: "refs/heads/main",
+    repository: AUTHENTIC_REPOSITORY,
+    repository_id: AUTHENTIC_REPOSITORY_ID,
+    repository_visibility: "public",
+    run_attempt: "1",
+    run_id: "29884375298",
+    runner_environment: "github-hosted",
+    workflow_ref: `${AUTHENTIC_REPOSITORY}/.github/workflows/research-attestation.yml@refs/heads/main`,
+    workflow_sha: AUTHENTIC_CALLER_SHA,
+  }
+}
+
+function authenticProducerEnvironment(workspace: string): NodeJS.ProcessEnv {
+  return {
+    GITHUB_ACTIONS: "true",
+    GITHUB_EVENT_NAME: "push",
+    GITHUB_REF: "refs/heads/main",
+    GITHUB_REPOSITORY: AUTHENTIC_REPOSITORY,
+    GITHUB_REPOSITORY_ID: AUTHENTIC_REPOSITORY_ID,
+    GITHUB_RUN_ATTEMPT: "1",
+    GITHUB_RUN_ID: "29884375298",
+    GITHUB_SHA: AUTHENTIC_CALLER_SHA,
+    GITHUB_WORKFLOW_REF: `${AUTHENTIC_REPOSITORY}/.github/workflows/research-attestation.yml@refs/heads/main`,
+    GITHUB_WORKFLOW_SHA: AUTHENTIC_CALLER_SHA,
+    GITHUB_WORKSPACE: workspace,
+    PERSONA_HARNESS_CALLER_VISIBILITY: "public",
+    PERSONA_HARNESS_PRODUCER_SHA: AUTHENTIC_PRODUCER_SHA,
+    RUNNER_ENVIRONMENT: "github-hosted",
+    RUNNER_OS: "Linux",
   }
 }
 

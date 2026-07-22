@@ -201,6 +201,7 @@ jobs:
 
       - name: Build canonical project receipt and predicate
         env:
+          PERSONA_HARNESS_CALLER_VISIBILITY: ${{ github.event.repository.visibility }}
           PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:

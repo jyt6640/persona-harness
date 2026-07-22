@@ -67,7 +67,8 @@ function readForwardedEnvironment(environment) {
       GITHUB_REF: forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_REF"),
       GITHUB_REPOSITORY: forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY"),
       GITHUB_REPOSITORY_ID: forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID"),
-      GITHUB_REPOSITORY_VISIBILITY: forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY"),
+      PERSONA_HARNESS_CALLER_VISIBILITY:
+        forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY"),
       GITHUB_RUN_ATTEMPT: forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT"),
       GITHUB_RUN_ID: forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_RUN_ID"),
       GITHUB_SHA: forwardedValue(environment, "PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD"),

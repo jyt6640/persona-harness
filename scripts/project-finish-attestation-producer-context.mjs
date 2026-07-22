@@ -70,7 +70,7 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
   const githubRef = boundedValue(environmentRecord.GITHUB_REF)
   const githubRepository = boundedValue(environmentRecord.GITHUB_REPOSITORY)
   const githubRepositoryId = boundedValue(environmentRecord.GITHUB_REPOSITORY_ID)
-  const githubRepositoryVisibility = boundedValue(environmentRecord.GITHUB_REPOSITORY_VISIBILITY)
+  const callerVisibility = boundedValue(environmentRecord.PERSONA_HARNESS_CALLER_VISIBILITY)
   const sourceHead = boundedValue(environmentRecord.GITHUB_SHA)
   const observedCallerWorkflowRef = boundedValue(environmentRecord.GITHUB_WORKFLOW_REF)
   const observedCallerWorkflowSha = boundedValue(environmentRecord.GITHUB_WORKFLOW_SHA)
@@ -79,6 +79,8 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
   const diagnosticWorkflowSha = boundedValue(environmentRecord.PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_SHA)
   const runId = boundedValue(environmentRecord.GITHUB_RUN_ID)
   const runAttemptValue = boundedValue(environmentRecord.GITHUB_RUN_ATTEMPT)
+  const observedRunnerEnvironment = boundedValue(environmentRecord.RUNNER_ENVIRONMENT)
+  const runnerOs = boundedValue(environmentRecord.RUNNER_OS)
   const expectedReusableWorkflowRef = producerSha === undefined
     ? undefined
     : `${PRODUCER_REPOSITORY}/${workflowPath}@${producerSha}`
@@ -87,18 +89,16 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
     statusForFixedPair("ref", ref, githubRef, "refs/heads/main"),
     statusForEqualPair("repository", repository, githubRepository),
     statusForEqualPair("repository-id", repositoryId, githubRepositoryId, isPositiveInteger),
-    statusForFixedPair("repository-visibility", repositoryVisibility, githubRepositoryVisibility, "public"),
+    statusForFixedPair("repository-visibility", repositoryVisibility, callerVisibility, "public"),
     statusForCallerWorkflowSha(
       callerWorkflowSha,
       observedCallerWorkflowSha,
-      requireDiagnosticForwarding,
     ),
     statusForSourceHead(callerWorkflowSha, sourceHead),
     statusForCallerWorkflowRef(
       callerWorkflowRef,
       repository,
       observedCallerWorkflowRef,
-      requireDiagnosticForwarding,
     ),
     statusForValue("producer-pin", producerSha, isImmutableSha),
     statusForReusableWorkflowRef(
@@ -115,7 +115,8 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
     ),
     statusForEqualPair("run-id", claimRunId, runId),
     statusForEqualPair("run-attempt", claimRunAttempt, runAttemptValue, isPositiveInteger),
-    statusForFixed("runner-environment", runnerEnvironment, "github-hosted"),
+    statusForFixedPair("runner-environment", runnerEnvironment, observedRunnerEnvironment, "github-hosted"),
+    statusForFixed("runner-os", runnerOs, "Linux"),
   ]
   const outcome = fields.every((field) => field.status === "match") ? "match" : "blocked"
   return {
@@ -139,17 +140,14 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
   }
 }
 
-function statusForCallerWorkflowSha(value, observed, requireDiagnosticForwarding) {
-  if (
-    value === undefined
-    || (requireDiagnosticForwarding && observed === undefined)
-  ) {
+function statusForCallerWorkflowSha(value, observed) {
+  if (value === undefined || observed === undefined) {
     return field("caller-workflow-sha", "missing")
   }
   return field(
     "caller-workflow-sha",
     isImmutableSha(value)
-      && (!requireDiagnosticForwarding || value === observed)
+      && value === observed
       ? "match"
       : "mismatch",
   )
@@ -163,18 +161,14 @@ function statusForSourceHead(value, sourceHead) {
   )
 }
 
-function statusForCallerWorkflowRef(value, repository, observed, requireDiagnosticForwarding) {
-  if (
-    value === undefined
-    || repository === undefined
-    || (requireDiagnosticForwarding && observed === undefined)
-  ) {
+function statusForCallerWorkflowRef(value, repository, observed) {
+  if (value === undefined || repository === undefined || observed === undefined) {
     return field("caller-workflow-ref", "missing")
   }
   return field(
     "caller-workflow-ref",
     isCallerWorkflowRef(value, repository)
-      && (!requireDiagnosticForwarding || value === observed)
+      && value === observed
       ? "match"
       : "mismatch",
   )

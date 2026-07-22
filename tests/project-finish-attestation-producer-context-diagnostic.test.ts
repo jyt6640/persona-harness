@@ -173,7 +173,7 @@ function context(): {
       GITHUB_REF: "refs/heads/main",
       GITHUB_REPOSITORY: "example/public-gradle-app",
       GITHUB_REPOSITORY_ID: "987654321",
-      GITHUB_REPOSITORY_VISIBILITY: "public",
+      PERSONA_HARNESS_CALLER_VISIBILITY: "public",
       GITHUB_RUN_ATTEMPT: "1",
       GITHUB_RUN_ID: "1001",
       GITHUB_SHA: callerSha,
