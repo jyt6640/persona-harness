@@ -36,6 +36,9 @@ jobs:
       - name: Check CI and release workflow policy
         run: npm run check:release-workflows
 
+      - name: Check supported Node policy
+        run: node scripts/check-supported-node-matrix.mjs
+
       - name: Check docs
         run: npm run check:docs
 
@@ -53,6 +56,12 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify Linux Node 20 source-built package surface
+        run: node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "linux" --expected-node-major "20"
+
+      - name: Verify Linux Node 20 fresh local-tarball installed package surface
+        run: node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "linux" --expected-node-major "20"
 
       - name: Pack dry run
         run: npm pack --dry-run --json

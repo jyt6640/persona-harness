@@ -153,10 +153,12 @@ do not change the P0-3 root CLI discovery contract.
 
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
-| Linux + OpenCode | Supported matrix | Node 20, 22, and 24 each run source-built checks plus a fresh local-tarball installed black-box check. |
-| macOS + OpenCode | Limited smoke | macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
+| Linux + OpenCode | Required Node 20; manual Node 22/24 | Required Verify repository runs Linux Node 20 source-built and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains Linux Node 22 and 24 on demand. |
+| macOS + OpenCode | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
 | Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
 | Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
+
+Automatic CI boundary: Verify repository is the required Linux Node 20 PR/main gate. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
 
 ## Boundaries & safety
 
