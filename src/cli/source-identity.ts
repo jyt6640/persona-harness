@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto"
-import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs"
+import { lstatSync, readdirSync, realpathSync } from "node:fs"
 import { join } from "node:path"
 
+import {
+  captureNoFollowDirectory,
+  readNoFollowRegularFile,
+  sameNoFollowPathIdentity,
+} from "../io/no-follow-file.js"
 import type { GitIdentity } from "./ci-reverification-identity.js"
 import type { MutationEntry } from "./ci-reverification-mutation.js"
 import { runFixedGit } from "./fixed-git.js"
@@ -158,6 +163,8 @@ function scanWorkspace(
   let untrackedEntryCount = 0
 
   const visit = (directory: string, parent: string): void => {
+    const beforeDirectory = captureNoFollowDirectory(directory)
+    if (beforeDirectory.kind !== "ready") throw new SourceIdentityError("source-identity-unavailable")
     const names = readdirSync(directory).map((entry) => {
       if (entry.includes("\\") || entry.includes("\0")) throw new SourceIdentityError("source-identity-path-invalid")
       return entry
@@ -176,7 +183,12 @@ function scanWorkspace(
         continue
       }
       if (!stat.isFile()) throw new SourceIdentityError("source-identity-special-file")
-      const size = Number(stat.size)
+      const file = readNoFollowRegularFile(absolutePath, limits.maxFileBytes, directory)
+      if (file.kind === "blocked") {
+        throw new SourceIdentityError(file.code === "limit" ? "source-identity-file-limit" : "source-identity-unavailable")
+      }
+      if (file.kind === "absent") throw new SourceIdentityError("source-identity-unavailable")
+      const size = file.value.bytes.byteLength
       if (!Number.isSafeInteger(size) || size > limits.maxFileBytes) {
         throw new SourceIdentityError("source-identity-file-limit")
       }
@@ -188,12 +200,19 @@ function scanWorkspace(
       paths.add(path)
       entries.push({
         classification,
-        contentDigest: digest(readFileSync(absolutePath)),
+        contentDigest: digest(file.value.bytes),
         kind: "file",
-        mode: mode(stat.mode),
+        mode: file.value.identity.mode,
         path,
       })
       if (entries.length > limits.maxEntries) throw new SourceIdentityError("source-identity-entry-limit")
+    }
+    const afterDirectory = captureNoFollowDirectory(directory)
+    if (
+      afterDirectory.kind !== "ready"
+      || !sameNoFollowPathIdentity(beforeDirectory.value, afterDirectory.value)
+    ) {
+      throw new SourceIdentityError("source-identity-unavailable")
     }
   }
 

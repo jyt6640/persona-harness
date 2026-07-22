@@ -11,6 +11,12 @@ import { type CooperativeFinishContext } from "./cooperative-finish-context.js"
 import { assessCooperativeJUnit } from "./cooperative-junit.js"
 import { snapshotJUnitResults } from "./junit-result-discovery.js"
 import {
+  bindProjectFinishAttestationInputSnapshot,
+  captureProjectFinishAttestationInputSnapshot,
+  sameProjectFinishAttestationInputSnapshot,
+  type ProjectFinishAttestationInputSnapshot,
+} from "./project-finish-attestation-inputs.js"
+import {
   captureSourceIdentity,
   sameSourceIdentity,
   type SourceIdentity,
@@ -57,7 +63,49 @@ export function runCooperativeGradleVerification(
   context: CooperativeFinishContext,
   options: CooperativeGradleVerificationOptions = {},
 ): CooperativeGradleVerification {
-  const preflight = preflightDiagnostic(projectDir, "local", process.platform)
+  const projectRoot = canonicalProjectRoot(projectDir, context)
+  if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
+  const preflight = preflightDiagnostic(projectRoot.value, "local", process.platform)
+  return runGradleVerification(projectRoot.value, context, preflight, options)
+}
+
+export function runProjectFinishAttestationGradleVerification(
+  projectDir: string,
+  context: CooperativeFinishContext,
+  options: CooperativeGradleVerificationOptions = {},
+): CooperativeGradleVerification {
+  const projectRoot = canonicalProjectRoot(projectDir, context)
+  if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
+  const inputSnapshot = captureProjectFinishAttestationInputSnapshot(projectRoot.value)
+  if (inputSnapshot.kind === "blocked") return blocked(inputSnapshot.code)
+  return runGradleVerification(
+    projectRoot.value,
+    context,
+    process.platform === "win32" ? "platform-windows-unavailable" : undefined,
+    options,
+    inputSnapshot.value,
+  )
+}
+
+function canonicalProjectRoot(
+  projectDir: string,
+  context: CooperativeFinishContext,
+): { readonly code: string; readonly kind: "blocked" } | { readonly kind: "ready"; readonly value: string } {
+  const workspace = captureWorkspaceIdentity(projectDir)
+  if (workspace.status === "unavailable") return { code: workspace.diagnosticCode, kind: "blocked" }
+  if (!samePathIdentity(context.workspace, workspace.value)) {
+    return { code: "workspace-identity-drift", kind: "blocked" }
+  }
+  return { kind: "ready", value: workspace.value.realpath }
+}
+
+function runGradleVerification(
+  projectDir: string,
+  context: CooperativeFinishContext,
+  preflight: string | undefined,
+  options: CooperativeGradleVerificationOptions,
+  inputSnapshot?: ProjectFinishAttestationInputSnapshot,
+): CooperativeGradleVerification {
   if (preflight !== undefined || safeGradleWrapper(projectDir) === undefined) {
     return blocked(preflight ?? "gradle-wrapper-unavailable")
   }
@@ -65,6 +113,9 @@ export function runCooperativeGradleVerification(
   if (!preGit.available) return blocked(preGit.diagnosticCode)
   const preSource = captureSourceIdentity(projectDir, preGit, context.evidenceRootRelativePath)
   if (preSource.status === "unavailable") return blocked(preSource.diagnosticCode)
+  const boundPreSource = inputSnapshot === undefined
+    ? preSource.value
+    : bindProjectFinishAttestationInputSnapshot(preSource.value, inputSnapshot)
   const baseline = snapshotJUnitResults(projectDir)
   if (!baseline.safe) return blocked("junit-unsafe-report")
 
@@ -91,9 +142,21 @@ export function runCooperativeGradleVerification(
   }
   const postGit = captureGitIdentity(projectDir, postWorkspace.value)
   if (!postGit.available) return blocked(postGit.diagnosticCode)
+  let postInputSnapshot: ProjectFinishAttestationInputSnapshot | undefined
+  if (inputSnapshot !== undefined) {
+    const postInputs = captureProjectFinishAttestationInputSnapshot(projectDir)
+    if (postInputs.kind === "blocked") return blocked(postInputs.code)
+    if (!sameProjectFinishAttestationInputSnapshot(inputSnapshot, postInputs.value)) {
+      return blocked("source-identity-drift")
+    }
+    postInputSnapshot = postInputs.value
+  }
   const postSource = captureSourceIdentity(projectDir, postGit, context.evidenceRootRelativePath)
   if (postSource.status === "unavailable") return blocked(postSource.diagnosticCode)
-  if (!sameSourceIdentity(preSource.value, postSource.value)) return blocked("source-identity-drift")
+  const boundPostSource = postInputSnapshot === undefined
+    ? postSource.value
+    : bindProjectFinishAttestationInputSnapshot(postSource.value, postInputSnapshot)
+  if (!sameSourceIdentity(boundPreSource, boundPostSource)) return blocked("source-identity-drift")
 
   return {
     kind: "passed",
@@ -103,8 +166,8 @@ export function runCooperativeGradleVerification(
       junitDigest: junit.digest,
       passedTestCount: junit.passed,
       skippedTestCount: junit.skipped,
-      sourceIdentity: preSource.value,
-      sourceSnapshotDigest: preSource.value.contentDigest,
+      sourceIdentity: boundPreSource,
+      sourceSnapshotDigest: boundPreSource.contentDigest,
       testCount: junit.testCount,
     },
   }
