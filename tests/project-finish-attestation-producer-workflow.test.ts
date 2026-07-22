@@ -169,6 +169,10 @@ describe("project finish attestation producer workflow contract", () => {
 
     try {
       expect(resolveProjectFinishAttestationCallerWorkspace({ GITHUB_WORKSPACE: runnerRoot })).toBe(callerRoot)
+      const runnerAlias = join(outside, "runner")
+      symlinkSync(runnerRoot, runnerAlias)
+      expect(() => resolveProjectFinishAttestationCallerWorkspace({ GITHUB_WORKSPACE: runnerAlias }))
+        .toThrow("project-finish-producer-workspace")
       rmSync(callerRoot, { force: true, recursive: true })
       symlinkSync("outside-caller", callerRoot)
       expect(() => resolveProjectFinishAttestationCallerWorkspace({ GITHUB_WORKSPACE: runnerRoot }))
