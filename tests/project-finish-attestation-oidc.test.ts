@@ -65,7 +65,10 @@ describe("project finish attestation OIDC endpoint", () => {
 })
 
 function probe(endpoint: string, responseKind: "success" | "redirect" = "success"): ProbeResult {
-  const token = `header.${Buffer.from("{}").toString("base64url")}.signature`
+  const token = `header.${Buffer.from(JSON.stringify({
+    aud: "persona-harness-project-finish-attestation",
+    iss: "https://token.actions.githubusercontent.com",
+  })).toString("base64url")}.signature`
   const script = `
 import { EventEmitter } from "node:events"
 import { createRequire, syncBuiltinESMExports } from "node:module"

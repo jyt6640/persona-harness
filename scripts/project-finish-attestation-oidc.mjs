@@ -5,6 +5,7 @@ const MAX_OIDC_TOKEN_BYTES = 16 * 1024
 const GITHUB_ACTIONS_OIDC_ORIGIN = "https://pipelines.actions.githubusercontent.com"
 const GITHUB_ACTIONS_OIDC_PREFIX = `${GITHUB_ACTIONS_OIDC_ORIGIN}/`
 const OIDC_AUDIENCE = "persona-harness-project-finish-attestation"
+const OIDC_ISSUER = "https://token.actions.githubusercontent.com"
 const OIDC_PATH = /^\/(?:[A-Za-z0-9._~-]+\/)*[A-Za-z0-9._~-]+$/u
 const OIDC_API_VERSION = /^\d+\.\d+(?:-preview\.\d+)?$/u
 const OIDC_SERVICE_CONNECTION_ID = /^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$/u
@@ -53,7 +54,13 @@ export async function readProjectFinishAttestationOidc(environment = process.env
 }
 
 export function readProjectFinishAttestationOidcToken(token) {
-  return decodeOidcToken(token, "match", true)
+  const result = decodeOidcToken(token, "match", true)
+  return result.audienceStatus === "match"
+    && result.tokenStatus === "match"
+    && isRecord(result.claims)
+    && result.claims.iss === OIDC_ISSUER
+    ? result.claims
+    : undefined
 }
 
 function decodeOidcToken(token, endpointStatus, requestAttempted) {

@@ -58,6 +58,7 @@ describe("project finish attestation producer workflow contract", () => {
     const context = readFileSync(contextPath, "utf8")
     const oidc = readFileSync(oidcPath, "utf8")
     const diagnostic = readFileSync(diagnosticPath, "utf8")
+    const workflow = readFileSync(workflowPath, "utf8")
 
     expect(oidc).toContain("ACTIONS_ID_TOKEN_REQUEST_URL")
     expect(oidc).toContain("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
@@ -72,7 +73,7 @@ describe("project finish attestation producer workflow contract", () => {
     expect(context).toContain("workflow_sha")
     expect(context).toContain("PERSONA_HARNESS_PRODUCER_SHA")
     expect(source).toContain("deriveProjectFinishProducerContext")
-    expect(source).toContain("readProjectFinishAttestationOidcClaims")
+    expect(source).toContain("readProjectFinishAttestationOidcToken")
     expect(source).toContain("verifyProjectFinishProducerCheckout")
     expect(source).not.toContain('requiredEnv("GITHUB_WORKFLOW_SHA")')
     expect(source).toContain("runProjectFinishAttestationProducer")
@@ -80,6 +81,12 @@ describe("project finish attestation producer workflow contract", () => {
     expect(source).not.toContain("--workflow")
     expect(source).not.toContain("--command")
     expect(source).not.toContain("npm publish")
+    expect(source).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
+    expect(workflow).toContain("actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd")
+    expect(workflow).toContain("project-finish-attestation-producer-oidc-capability-bridge.cjs")
+    expect(workflow).toContain("runProjectFinishAttestationProducerWithCore({ core })")
+    expect(workflow).toContain("PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}")
+    expect(workflow).not.toContain("run: node scripts/build-project-finish-attestation.mjs")
   })
 
   it("keeps the postmerge caller path pinned to an immutable reusable workflow SHA", () => {
