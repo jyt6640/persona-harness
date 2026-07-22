@@ -1,5 +1,15 @@
 import { spawnSync } from "node:child_process"
-import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+  chmodSync,
+  copyFileSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -17,6 +27,7 @@ try {
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
     assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
+    assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     assertInstalledPackageTestPasses(installedPackage)
     process.stdout.write("installed-package-test-contract: PASS\n")
@@ -156,6 +167,52 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
   assertCooperativeFinishWorks(fixtureRoot, phPath, "installed package")
+}
+
+function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory) {
+  const modulePath = pathToFileURL(join(
+    installedPackage,
+    "dist",
+    "cli",
+    "project-finish-attestation-producer-runner.js",
+  )).href
+  const validProject = join(consumerDirectory, "project-finish-producer-valid")
+  const hostileProject = join(consumerDirectory, "project-finish-producer-hostile")
+  createProjectFinishProducerFixture(validProject, "absent")
+  createProjectFinishProducerFixture(hostileProject, "symlink-profile")
+
+  const probe = runNode(consumerDirectory, [
+    "--input-type=module",
+    "-e",
+    [
+      'import { execFileSync } from "node:child_process";',
+      `import { runProjectFinishAttestationProducer } from ${JSON.stringify(modulePath)};`,
+      'const context = (projectDir) => {',
+      '  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
+      '  return {',
+      '    callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
+      '    callerWorkflowSha: head,',
+      '    issuedAt: "2026-07-22T01:00:00.000Z",',
+      '    repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" },',
+      '    reusableWorkflowSha: "b".repeat(40),',
+      '    runAttempt: 1,',
+      '    runId: "42",',
+      '    sourceHead: head,',
+      '  };',
+      '};',
+      'const valid = runProjectFinishAttestationProducer("./project-finish-producer-valid", context("./project-finish-producer-valid"), "0.7.0");',
+      'const hostile = runProjectFinishAttestationProducer("./project-finish-producer-hostile", context("./project-finish-producer-hostile"), "0.7.0");',
+      'if (valid.kind !== "passed" || hostile.kind !== "blocked" || hostile.code !== "project-finish-producer-profile") process.exit(1);',
+      'if (valid.value.receipt.source.root !== "." || hostile.value !== undefined) process.exit(1);',
+      'if (JSON.stringify(hostile).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
+    ].join("\n"),
+  ])
+  requireSuccess("installed project finish producer no-follow intake probe", probe)
+  for (const projectDir of [validProject, hostileProject]) {
+    if (existsSync(join(projectDir, ".ci", "project-finish-attestation"))) {
+      throw new Error("installed project finish producer created an artifact for a local intake probe")
+    }
+  }
 }
 
 function assertSourceCooperativeFinishWorks(sourceCliPath) {
@@ -316,6 +373,43 @@ function createCooperativeGradleFixture(projectDir) {
   requireSuccess("installed fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
   requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
+}
+
+function createProjectFinishProducerFixture(projectDir, profileMode) {
+  mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })
+  writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
+  writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'project-finish-producer'\n")
+  writeFileSync(join(projectDir, "src", "main", "java", "App.java"), "class App {}\n")
+  writeFileSync(
+    join(projectDir, "gradlew"),
+    [
+      "#!/bin/sh",
+      "case \"$*\" in",
+      "  *cleanTest*)",
+      "    mkdir -p build/test-results/test",
+      "    printf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"works\"/></testsuite>' > build/test-results/test/TEST-producer.xml",
+      "    printf '%s\\n' '> Task :cleanTest' '> Task :test' 'BUILD SUCCESSFUL'",
+      "    ;;",
+      "  *)",
+      "    printf '%s\\n' '> Task :build' 'BUILD SUCCESSFUL'",
+      "    ;;",
+      "esac",
+      "",
+    ].join("\n"),
+  )
+  chmodSync(join(projectDir, "gradlew"), 0o755)
+  if (profileMode === "symlink-profile") {
+    const profileDirectory = join(projectDir, ".persona")
+    const outside = join(projectDir, "outside-profile.jsonc")
+    mkdirSync(profileDirectory)
+    writeFileSync(outside, '{"marker":"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"}\n')
+    symlinkSync(outside, join(profileDirectory, "project-profile.jsonc"))
+  }
+  requireSuccess("installed producer fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
+  requireSuccess("installed producer fixture Git config email", runCommand(projectDir, "git", ["config", "user.email", "ph@example.invalid"]))
+  requireSuccess("installed producer fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
+  requireSuccess("installed producer fixture Git add", runCommand(projectDir, "git", ["add", "."]))
+  requireSuccess("installed producer fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "producer fixture"]))
 }
 
 function cooperativeProfile() {
