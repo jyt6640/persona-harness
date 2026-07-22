@@ -225,7 +225,7 @@ jobs:
           PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: ${{ github.repository }}
           PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: ${{ github.repository_id }}
           PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: ${{ github.repository_visibility }}
-          PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main
+          PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${{ needs.resolve.outputs.producer-sha }}
           PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: ${{ needs.resolve.outputs.producer-sha }}
           PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: ${{ github.run_attempt }}
           PROJECT_FINISH_DIAGNOSTIC_RUN_ID: ${{ github.run_id }}
@@ -308,7 +308,7 @@ jobs:
           PROJECT_FINISH_DIAGNOSTIC_REPOSITORY: ${{ github.repository }}
           PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: ${{ github.repository_id }}
           PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: ${{ github.repository_visibility }}
-          PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main
+          PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${{ needs.resolve.outputs.producer-sha }}
           PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: ${{ needs.resolve.outputs.producer-sha }}
           PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: ${{ github.run_attempt }}
           PROJECT_FINISH_DIAGNOSTIC_RUN_ID: ${{ github.run_id }}

@@ -252,7 +252,7 @@ describe("project finish context diagnostic workflow fallback", () => {
         PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
         PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
         PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
-          "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+          `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${producerSha}`,
         PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: producerSha,
         PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
         PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
@@ -395,6 +395,72 @@ describe("project finish context diagnostic workflow fallback", () => {
       expect(output).not.toContain(runnerTemp)
     } finally {
       rmSync(fixture, { force: true, recursive: true })
+      rmSync(runnerTemp, { force: true, recursive: true })
+    }
+  })
+
+  it.each([
+    ["github-actions", {}, { PROJECT_FINISH_DIAGNOSTIC_ACTIONS: "false" }],
+    ["event", { event_name: "workflow_dispatch" }, {}],
+    ["ref", { ref: "refs/heads/feature" }, {}],
+    ["repository", { repository: "attacker/repository" }, {}],
+    ["repository-id", { repository_id: "1" }, {}],
+    ["repository-visibility", { repository_visibility: "private" }, {}],
+    ["caller-workflow-sha", { workflow_sha: "a".repeat(40) }, {}],
+    ["caller-workflow-ref", {
+      workflow_ref: "example/public-gradle-app/.github/workflows/other.yml@refs/heads/main",
+    }, {}],
+    ["producer-pin", {}, { PROJECT_FINISH_DIAGNOSTIC_PRODUCER_SHA: "not-an-immutable-sha" }],
+    ["reusable-workflow-ref", {
+      job_workflow_ref:
+        `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${"c".repeat(40)}`,
+    }, {}],
+    ["reusable-workflow-sha", { job_workflow_sha: "d".repeat(40) }, {}],
+    ["run-id", { run_id: "1002" }, {}],
+    ["run-attempt", { run_attempt: "2" }, {}],
+    ["runner-environment", { runner_environment: "self-hosted" }, {}],
+    ["runner-environment-env", {}, { PROJECT_FINISH_DIAGNOSTIC_RUNNER_ENVIRONMENT: "self-hosted" }],
+    ["runner-os", {}, { PROJECT_FINISH_DIAGNOSTIC_RUNNER_OS: "Windows" }],
+    ["source-head", {}, { PROJECT_FINISH_DIAGNOSTIC_SOURCE_HEAD: "e".repeat(40) }],
+    ["producer-checkout", {}, { PROJECT_FINISH_DIAGNOSTIC_PRODUCER_CHECKOUT: "mismatch" }],
+  ] as const)("reports the bounded %s context subcode without reflecting values", (
+    code,
+    claimOverride,
+    environmentOverride,
+  ) => {
+    const runnerTemp = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-native-selftest-context-")))
+    const token = `header.${Buffer.from(JSON.stringify({ ...claims(), ...claimOverride })).toString("base64url")}.signature`
+    try {
+      const selftest = runNativeSelftest(runnerTemp, token, {
+        ...nativeContext(runnerTemp),
+        ...environmentOverride,
+      })
+      const summary = JSON.parse(
+        readFileSync(join(runnerTemp, "project-finish-context-diagnostic-selftest", "summary.json"), "utf8"),
+      )
+      const output = `${selftest.stdout}${selftest.stderr}${JSON.stringify(summary)}`
+
+      expect(selftest.status).toBe(1)
+      expect(summary.diagnosticCodes).toContain(
+        `project-finish-producer-context-diagnostic-native-context-${code}-blocked`,
+      )
+      expect(summary).toMatchObject({
+        nativeRunnerOidc: {
+          evidence: "required",
+          requirement: "required",
+          stage: "context",
+          status: "mismatch",
+        },
+        outcome: "blocked",
+      })
+      expect(summary.nativeRunnerOidc.contextCodes).toContain(code)
+      expect(output).not.toContain(secret)
+      expect(output).not.toContain(token)
+      expect(output).not.toContain(runnerTemp)
+      expect(output).not.toContain("attacker/repository")
+      expect(output).not.toContain("self-hosted")
+      expect(output).not.toContain("Windows")
+    } finally {
       rmSync(runnerTemp, { force: true, recursive: true })
     }
   })
@@ -603,7 +669,7 @@ function nativeContext(runnerTemp: string): Record<string, string> {
     PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
     PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
     PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
-      "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+      `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${producerSha}`,
     PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: producerSha,
     PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
     PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
@@ -661,7 +727,7 @@ function claims(): Record<string, string> {
     aud: "persona-harness-project-finish-attestation",
     event_name: "push",
     job_workflow_ref:
-      "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+      `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${producerSha}`,
     job_workflow_sha: producerSha,
     ref: "refs/heads/main",
     repository: "example/public-gradle-app",

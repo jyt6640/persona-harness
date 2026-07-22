@@ -79,6 +79,9 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
   const diagnosticWorkflowSha = boundedValue(environmentRecord.PERSONA_HARNESS_DIAGNOSTIC_WORKFLOW_SHA)
   const runId = boundedValue(environmentRecord.GITHUB_RUN_ID)
   const runAttemptValue = boundedValue(environmentRecord.GITHUB_RUN_ATTEMPT)
+  const expectedReusableWorkflowRef = producerSha === undefined
+    ? undefined
+    : `${PRODUCER_REPOSITORY}/${workflowPath}@${producerSha}`
   const fields = [
     statusForFixedPair("event", eventName, githubEventName, "push"),
     statusForFixedPair("ref", ref, githubRef, "refs/heads/main"),
@@ -87,10 +90,10 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
     statusForFixedPair("repository-visibility", repositoryVisibility, githubRepositoryVisibility, "public"),
     statusForCallerWorkflowSha(
       callerWorkflowSha,
-      sourceHead,
       observedCallerWorkflowSha,
       requireDiagnosticForwarding,
     ),
+    statusForSourceHead(callerWorkflowSha, sourceHead),
     statusForCallerWorkflowRef(
       callerWorkflowRef,
       repository,
@@ -100,7 +103,7 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
     statusForValue("producer-pin", producerSha, isImmutableSha),
     statusForReusableWorkflowRef(
       reusableWorkflowRef,
-      `${PRODUCER_REPOSITORY}/${workflowPath}@refs/heads/main`,
+      expectedReusableWorkflowRef,
       diagnosticWorkflowRef,
       requireDiagnosticForwarding,
     ),
@@ -136,10 +139,9 @@ function analyzeContext(claims, environment, workflowPath, requireDiagnosticForw
   }
 }
 
-function statusForCallerWorkflowSha(value, sourceHead, observed, requireDiagnosticForwarding) {
+function statusForCallerWorkflowSha(value, observed, requireDiagnosticForwarding) {
   if (
     value === undefined
-    || sourceHead === undefined
     || (requireDiagnosticForwarding && observed === undefined)
   ) {
     return field("caller-workflow-sha", "missing")
@@ -147,10 +149,17 @@ function statusForCallerWorkflowSha(value, sourceHead, observed, requireDiagnost
   return field(
     "caller-workflow-sha",
     isImmutableSha(value)
-      && value === sourceHead
       && (!requireDiagnosticForwarding || value === observed)
       ? "match"
       : "mismatch",
+  )
+}
+
+function statusForSourceHead(value, sourceHead) {
+  if (value === undefined || sourceHead === undefined) return field("source-head", "missing")
+  return field(
+    "source-head",
+    isImmutableSha(value) && value === sourceHead ? "match" : "mismatch",
   )
 }
 
@@ -172,7 +181,7 @@ function statusForCallerWorkflowRef(value, repository, observed, requireDiagnost
 }
 
 function statusForReusableWorkflowRef(value, expected, observed, requireDiagnosticForwarding) {
-  if (value === undefined || (requireDiagnosticForwarding && observed === undefined)) {
+  if (value === undefined || expected === undefined || (requireDiagnosticForwarding && observed === undefined)) {
     return field("reusable-workflow-ref", "missing")
   }
   return field(

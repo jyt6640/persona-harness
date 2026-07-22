@@ -91,7 +91,8 @@ function contextInput(override: {
 } {
   return {
     claims: {
-      job_workflow_ref: "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@refs/heads/main",
+      job_workflow_ref:
+        `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@${producerSha}`,
       job_workflow_sha: producerSha,
       event_name: "push",
       repository: "example/public-gradle-app",

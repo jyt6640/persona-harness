@@ -40,7 +40,7 @@ describe("project finish context diagnostic workflow pin resolver", () => {
           PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_ID: "987654321",
           PROJECT_FINISH_DIAGNOSTIC_REPOSITORY_VISIBILITY: "public",
           PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF:
-            "jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@refs/heads/main",
+            `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${pin.output}`,
           PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_SHA: pin.output,
           PROJECT_FINISH_DIAGNOSTIC_RUN_ATTEMPT: "1",
           PROJECT_FINISH_DIAGNOSTIC_RUN_ID: "1001",
@@ -91,6 +91,9 @@ describe("project finish context diagnostic workflow pin resolver", () => {
     expect(workflow).toContain("matching.length !== 1")
     expect(workflow).toContain("needs.resolve.outputs.producer-sha")
     expect(workflow).toContain("needs.resolve.outputs.producer-checkout")
+    expect(workflow).toContain(
+      "PROJECT_FINISH_DIAGNOSTIC_REUSABLE_WORKFLOW_REF: jyt6640/persona-harness/.github/workflows/persona-harness-project-finish-context-diagnostic.yml@${{ needs.resolve.outputs.producer-sha }}",
+    )
     expect(workflow).toContain("uses: ./.persona-harness-producer/.github/actions/project-finish-context-diagnostic")
     expect(workflow).toContain("contents: read")
     expect(workflow).toContain("id-token: write")
