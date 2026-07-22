@@ -3,7 +3,7 @@ import {
   type CooperativeFinishContextResult,
 } from "./cooperative-finish-context.js"
 import {
-  runCooperativeGradleVerification,
+  runProjectFinishAttestationGradleVerification,
   type CooperativeGradleVerification,
 } from "./cooperative-gradle-verification.js"
 import {
@@ -55,7 +55,7 @@ export function runProjectFinishAttestationProducer(
   const prepared = (options.prepareContext ?? prepareCooperativeFinishContext)(projectDir)
   if (prepared.kind === "blocked") return blocked(prepared.code)
 
-  const verification = (options.verify ?? runCooperativeGradleVerification)(projectDir, prepared.value)
+  const verification = (options.verify ?? runProjectFinishAttestationGradleVerification)(projectDir, prepared.value)
   if (verification.kind === "blocked") return blocked(verification.code)
   if (verification.value.sourceIdentity.repositoryHead !== context.sourceHead) {
     return blocked("project-finish-producer-binding")
