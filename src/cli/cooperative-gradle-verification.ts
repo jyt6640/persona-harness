@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto"
+import { lstatSync } from "node:fs"
 
 import { runBoundedProcess, type BoundedProcessOptions, type BoundedProcessResult } from "./bounded-process.js"
 import { preflightDiagnostic, safeGradleWrapper } from "./ci-reverification-catalog.js"
@@ -91,6 +92,14 @@ function canonicalProjectRoot(
   projectDir: string,
   context: CooperativeFinishContext,
 ): { readonly code: string; readonly kind: "blocked" } | { readonly kind: "ready"; readonly value: string } {
+  try {
+    const supplied = lstatSync(projectDir, { bigint: true })
+    if (supplied.isSymbolicLink() || !supplied.isDirectory()) {
+      return { code: "workspace-root-unavailable", kind: "blocked" }
+    }
+  } catch {
+    return { code: "workspace-root-unavailable", kind: "blocked" }
+  }
   const workspace = captureWorkspaceIdentity(projectDir)
   if (workspace.status === "unavailable") return { code: workspace.diagnosticCode, kind: "blocked" }
   if (!samePathIdentity(context.workspace, workspace.value)) {

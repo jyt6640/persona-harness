@@ -179,9 +179,14 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
   const validProject = join(consumerDirectory, "project-finish-producer-valid")
   const hostileProject = join(consumerDirectory, "project-finish-producer-hostile")
   const replacementProject = join(consumerDirectory, "project-finish-producer-replacement")
+  const symlinkProject = join(consumerDirectory, "project-finish-producer-symlink")
+  const producerBin = join(consumerDirectory, ".persona-harness-producer", "node_modules", ".bin")
   createProjectFinishProducerFixture(validProject, "absent")
   createProjectFinishProducerFixture(hostileProject, "symlink-profile")
   createProjectFinishProducerFixture(replacementProject, "replace-profile")
+  mkdirSync(producerBin, { recursive: true })
+  symlinkSync("../outside", join(producerBin, "node"))
+  symlinkSync("project-finish-producer-valid", symlinkProject)
 
   const probe = runNode(consumerDirectory, [
     "--input-type=module",
@@ -204,7 +209,8 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
       '};',
       'const valid = runProjectFinishAttestationProducer("./project-finish-producer-valid", context("./project-finish-producer-valid"), "0.7.0");',
       'const hostile = runProjectFinishAttestationProducer("./project-finish-producer-hostile", context("./project-finish-producer-hostile"), "0.7.0");',
-      'if (valid.kind !== "passed" || hostile.kind !== "blocked" || hostile.code !== "project-finish-producer-profile") process.exit(1);',
+      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", context("./project-finish-producer-symlink"), "0.7.0");',
+      'if (valid.kind !== "passed" || hostile.kind !== "blocked" || hostile.code !== "project-finish-producer-profile" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") process.exit(1);',
       'if (valid.value.receipt.source.root !== "." || hostile.value !== undefined) process.exit(1);',
       'if (JSON.stringify(hostile).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
@@ -261,7 +267,7 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
     ].join("\n"),
   ])
   requireSuccess("installed project finish producer replacement probe", replacementProbe)
-  for (const projectDir of [validProject, hostileProject, replacementProject]) {
+  for (const projectDir of [validProject, hostileProject, replacementProject, symlinkProject]) {
     if (existsSync(join(projectDir, ".ci", "project-finish-attestation"))) {
       throw new Error("installed project finish producer created an artifact for a local intake probe")
     }

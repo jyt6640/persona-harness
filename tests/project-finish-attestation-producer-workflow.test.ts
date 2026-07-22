@@ -1,9 +1,20 @@
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
+
+import { resolveProjectFinishAttestationCallerWorkspace } from "../scripts/build-project-finish-attestation.mjs"
 
 const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "persona-harness-project-finish.yml")
@@ -31,8 +42,10 @@ describe("project finish attestation producer workflow contract", () => {
     expect(workflow).toContain("actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020")
     expect(workflow).toContain("actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc")
     expect(workflow).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02")
-    expect(workflow).toContain("subject-path: .ci/project-finish-attestation/receipt.json")
-    expect(workflow).toContain("predicate-path: .ci/project-finish-attestation/predicate.json")
+    expect(workflow).toContain("path: .project-finish-caller")
+    expect(workflow).toContain("working-directory: .project-finish-caller")
+    expect(workflow).toContain("subject-path: .project-finish-attestation-artifacts/receipt.json")
+    expect(workflow).toContain("predicate-path: .project-finish-attestation-artifacts/predicate.json")
     expect(workflow).toContain("project-finish-attestation.1")
     expect(workflow).toContain("if: always()")
     expect(workflow).toContain("failure-diagnostic.json")
@@ -110,6 +123,16 @@ describe("project finish attestation producer workflow contract", () => {
     expect(guide).toContain("reusable workflow reference and SHA must")
   })
 
+  it("documents runner-owned caller, producer, and artifact isolation", () => {
+    const guide = readFileSync(producerGuidePath, "utf8")
+
+    expect(guide).toContain("`.project-finish-caller`")
+    expect(guide).toContain("`.persona-harness-producer`")
+    expect(guide).toContain("`.project-finish-attestation-artifacts`")
+    expect(guide).toMatch(/never broadens\s+the caller source exclusion list/u)
+    expect(guide).toMatch(/no receipt, predicate, bundle, or signature is\s+created/u)
+  })
+
   it("keeps the postmerge caller path pinned to an immutable reusable workflow SHA", () => {
     expect(existsSync(callerFixturePath)).toBe(true)
 
@@ -132,6 +155,31 @@ describe("project finish attestation producer workflow contract", () => {
 
   it("derives a valid producer pin without a host Ruby executable", () => {
     expect(resolveProducerPin(callerWorkflow("d".repeat(40)), { PATH: "" })).toBe("d".repeat(40))
+  })
+
+  it("isolates the fixed caller checkout from trusted producer symlinks and rejects caller aliases", () => {
+    const runnerRoot = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-producer-runner-root-")))
+    const callerRoot = join(runnerRoot, ".project-finish-caller")
+    const producerBin = join(runnerRoot, ".persona-harness-producer", "node_modules", ".bin")
+    const outside = join(runnerRoot, "outside-caller")
+    mkdirSync(callerRoot)
+    mkdirSync(producerBin, { recursive: true })
+    mkdirSync(outside)
+    symlinkSync("../outside-caller", join(producerBin, "node"))
+
+    try {
+      expect(resolveProjectFinishAttestationCallerWorkspace({ GITHUB_WORKSPACE: runnerRoot })).toBe(callerRoot)
+      const runnerAlias = join(outside, "runner")
+      symlinkSync(runnerRoot, runnerAlias)
+      expect(() => resolveProjectFinishAttestationCallerWorkspace({ GITHUB_WORKSPACE: runnerAlias }))
+        .toThrow("project-finish-producer-workspace")
+      rmSync(callerRoot, { force: true, recursive: true })
+      symlinkSync("outside-caller", callerRoot)
+      expect(() => resolveProjectFinishAttestationCallerWorkspace({ GITHUB_WORKSPACE: runnerRoot }))
+        .toThrow("project-finish-producer-workspace")
+    } finally {
+      rmSync(runnerRoot, { force: true, recursive: true })
+    }
   })
 
   it.each([
@@ -181,6 +229,7 @@ function resolveProducerPin(callerWorkflowSource: string, environment: NodeJS.Pr
   try {
     execFileSync(process.execPath, [resolverPath], {
       encoding: "utf8",
+      cwd: fixtureRoot,
       env: {
         ...process.env,
         ...environment,
