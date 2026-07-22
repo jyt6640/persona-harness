@@ -238,6 +238,7 @@ describe("package files policy", () => {
       "scripts/build-project-finish-attestation.mjs",
       "scripts/build-project-finish-attestation.d.mts",
       "scripts/project-finish-attestation-artifact-handoff.mjs",
+      "scripts/project-finish-attestation-artifact-handoff.d.mts",
       "scripts/project-finish-attestation-producer-context.mjs",
       "scripts/project-finish-attestation-producer-context-diagnostic.mjs",
       "scripts/project-finish-attestation-producer-context-diagnostic.d.mts",
