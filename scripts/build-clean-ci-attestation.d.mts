@@ -4,6 +4,26 @@ export type BuilderFailure = {
   readonly exitState: string
 }
 
+export type BuilderCommand = {
+  readonly args: readonly string[]
+  readonly executable: string
+  readonly id: string
+}
+
+export type BuilderCommandRunOptions = {
+  readonly graceMs?: number
+  readonly timeoutMs?: number
+}
+
+export type BuilderCommandResult = {
+  readonly argv: readonly string[]
+  readonly exitCode: number
+  readonly id: string
+  readonly stderrDigest: string
+  readonly stdout: string
+  readonly stdoutDigest: string
+}
+
 export type CanonicalRunnerContext = {
   readonly environment: "github-hosted"
   readonly label: "ubuntu-latest"
@@ -35,11 +55,7 @@ export type FailureDiagnostic = {
   readonly schemaVersion: "clean-ci-builder-failure.1"
 }
 
-export const FIXED_COMMANDS: readonly {
-  readonly id: string
-  readonly executable: string
-  readonly args: readonly string[]
-}[]
+export const FIXED_COMMANDS: readonly BuilderCommand[]
 
 export const CANONICAL_RUNNER_LABEL: "ubuntu-latest"
 
@@ -50,3 +66,9 @@ export function createFailureDiagnostic(failure: BuilderFailure, reportPath: str
 export function readCanonicalRunnerContext(
   env?: Readonly<Record<string, string | undefined>>,
 ): CanonicalRunnerContext
+
+export function runBoundedBuilderCommand(
+  command: BuilderCommand,
+  workspaceRoot: string,
+  options?: BuilderCommandRunOptions,
+): Promise<BuilderCommandResult>
