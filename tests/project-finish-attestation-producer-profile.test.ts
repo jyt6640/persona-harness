@@ -4,6 +4,7 @@ import fs, {
   mkdirSync,
   mkdtempSync,
   renameSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   unlinkSync,
@@ -11,7 +12,7 @@ import fs, {
 } from "node:fs"
 import { syncBuiltinESMExports } from "node:module"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { join, relative } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -47,6 +48,39 @@ describe("project finish producer input readiness", () => {
         },
       },
     })
+  })
+
+  it("accepts a relative public caller root through the producer verification boundary", () => {
+    const projectDir = createProject("absent")
+    const callerRoot = relative(process.cwd(), projectDir)
+
+    const result = runProjectFinishAttestationProducer(callerRoot, producerContext(callerRoot), "0.7.0")
+
+    expect(result).toMatchObject({
+      kind: "passed",
+      value: {
+        receipt: {
+          source: { root: "." },
+          test: { count: 1, failed: 0, passed: 1, skipped: 0 },
+        },
+      },
+    })
+  })
+
+  it("blocks a producer root that differs from its prepared workspace identity", () => {
+    const preparedProject = createProject("absent")
+    const suppliedProject = createProject("absent")
+    let calls = 0
+
+    const result = runProjectFinishAttestationGradleVerification(suppliedProject, readyContext(preparedProject), {
+      runProcess: () => {
+        calls += 1
+        return passed("")
+      },
+    })
+
+    expect(result).toEqual({ code: "workspace-identity-drift", kind: "blocked" })
+    expect(calls).toBe(0)
   })
 
   it("keeps ordinary cooperative Finish profile-less callers blocked", () => {
@@ -123,7 +157,7 @@ describe("project finish producer input readiness", () => {
     writeFileSync(profilePath, `${JSON.stringify({ ...canonicalProfile(), status: "draft" })}\n`)
     writeFileSync(outsidePath, `${JSON.stringify(canonicalProfile())}\n`)
 
-    const swapped = swapAtNoFollowOpen(profilePath, draftPath, outsidePath, () => (
+    const swapped = swapAtNoFollowOpen(realpathSync(profilePath), draftPath, outsidePath, () => (
       runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
     ))
 

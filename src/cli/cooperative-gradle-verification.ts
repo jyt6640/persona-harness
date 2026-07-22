@@ -63,8 +63,10 @@ export function runCooperativeGradleVerification(
   context: CooperativeFinishContext,
   options: CooperativeGradleVerificationOptions = {},
 ): CooperativeGradleVerification {
-  const preflight = preflightDiagnostic(projectDir, "local", process.platform)
-  return runGradleVerification(projectDir, context, preflight, options)
+  const projectRoot = canonicalProjectRoot(projectDir, context)
+  if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
+  const preflight = preflightDiagnostic(projectRoot.value, "local", process.platform)
+  return runGradleVerification(projectRoot.value, context, preflight, options)
 }
 
 export function runProjectFinishAttestationGradleVerification(
@@ -72,15 +74,29 @@ export function runProjectFinishAttestationGradleVerification(
   context: CooperativeFinishContext,
   options: CooperativeGradleVerificationOptions = {},
 ): CooperativeGradleVerification {
-  const inputSnapshot = captureProjectFinishAttestationInputSnapshot(projectDir)
+  const projectRoot = canonicalProjectRoot(projectDir, context)
+  if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
+  const inputSnapshot = captureProjectFinishAttestationInputSnapshot(projectRoot.value)
   if (inputSnapshot.kind === "blocked") return blocked(inputSnapshot.code)
   return runGradleVerification(
-    projectDir,
+    projectRoot.value,
     context,
     process.platform === "win32" ? "platform-windows-unavailable" : undefined,
     options,
     inputSnapshot.value,
   )
+}
+
+function canonicalProjectRoot(
+  projectDir: string,
+  context: CooperativeFinishContext,
+): { readonly code: string; readonly kind: "blocked" } | { readonly kind: "ready"; readonly value: string } {
+  const workspace = captureWorkspaceIdentity(projectDir)
+  if (workspace.status === "unavailable") return { code: workspace.diagnosticCode, kind: "blocked" }
+  if (!samePathIdentity(context.workspace, workspace.value)) {
+    return { code: "workspace-identity-drift", kind: "blocked" }
+  }
+  return { kind: "ready", value: workspace.value.realpath }
 }
 
 function runGradleVerification(
