@@ -68,7 +68,10 @@ describe("canonical builder bounded process contract", () => {
   it("fails closed at the fixed stdout cap without retaining a 2 MiB command output", async () => {
     const marker = "CANONICAL_BUILDER_STDOUT_SECRET"
     const error = await runBoundedBuilderCommand(
-      fixedNodeCommand("output-cap", `process.stdout.write(${JSON.stringify(marker)}.repeat(2 * 1024 * 1024))`),
+      fixedNodeCommand(
+        "output-cap",
+        `process.stdout.write(${JSON.stringify(marker)} + 'x'.repeat(${2 * 1024 * 1024 - marker.length}))`,
+      ),
       createTempDir(),
       boundedOptions,
     ).catch((candidate: unknown) => candidate)
@@ -83,7 +86,10 @@ describe("canonical builder bounded process contract", () => {
   it("fails closed at the fixed stderr cap without retaining raw output", async () => {
     const marker = "CANONICAL_BUILDER_STDERR_SECRET"
     const error = await runBoundedBuilderCommand(
-      fixedNodeCommand("stderr-cap", `process.stderr.write(${JSON.stringify(marker)}.repeat(2 * 1024 * 1024))`),
+      fixedNodeCommand(
+        "stderr-cap",
+        `process.stderr.write(${JSON.stringify(marker)} + 'x'.repeat(${2 * 1024 * 1024 - marker.length}))`,
+      ),
       createTempDir(),
       boundedOptions,
     ).catch((candidate: unknown) => candidate)
