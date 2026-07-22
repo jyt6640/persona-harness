@@ -273,6 +273,29 @@ artifact-directory condition may leave only a bounded failure diagnostic in its
 separate runner-owned directory; no receipt, predicate, bundle, or signature is
 created. A caller-controlled `.ci` path is never used for producer artifacts.
 
+## Signed Artifact Handoff
+
+The successful artifact directory is intentionally hidden from the caller
+checkout and has one fixed lifecycle. Before signing it contains exactly
+`receipt.json` and `predicate.json`; after the pinned attestation action it
+contains exactly those files plus `bundle.json`. The producer-owned handoff
+script opens every file with no-follow descriptor checks, verifies bounded
+nonempty regular files and directory identities before and after each phase,
+and copies the pinned attestation action's bundle output into a newly created
+private `bundle.json`. It treats the bundle as opaque bytes for upload only; it
+does not validate a signature or create any authority result.
+
+An empty, missing, stale, extra, aliased, symlinked, replaced, or oversized
+handoff file blocks before the successful upload step. A blocked handoff can
+write only the fixed bounded failure diagnostic when its runner-owned root is
+still safe; it never follows an artifact alias or exposes a source path,
+bundle, token, claim, raw log, Finish result, release result, or authority
+state. The workflow explicitly uploads the three fixed hidden success paths
+with `include-hidden-files: true`, then uploads the one fixed hidden failure
+diagnostic path with the same opt-in. The explicit files and upload
+postcondition prevent an empty directory match from being treated as an
+original signed-artifact handoff.
+
 This source boundary is not a signing result. The remaining hosted-only
 residual is one separately authorized GitHub public-push producer observation,
 followed by independent verification of its original signed artifact.
