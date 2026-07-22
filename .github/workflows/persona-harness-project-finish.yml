@@ -200,10 +200,16 @@ jobs:
         run: npm run build
 
       - name: Build canonical project receipt and predicate
-        working-directory: .persona-harness-producer
         env:
           PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}
-        run: node scripts/build-project-finish-attestation.mjs
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const bridge = require("./.persona-harness-producer/scripts/project-finish-attestation-producer-oidc-capability-bridge.cjs")
+            const result = await bridge.runProjectFinishAttestationProducerWithCore({ core })
+            if (result.kind === "blocked") {
+              core.setFailed(result.code)
+            }
 
       - name: Sign canonical project receipt
         id: attest
