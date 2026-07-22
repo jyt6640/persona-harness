@@ -117,11 +117,54 @@ describe("content-aware source identity", () => {
     const bounded = captureSourceIdentity(projectDir, git(projectDir), ".persona/evidence", { maxFileBytes: 1 })
     expect(bounded).toEqual({ diagnosticCode: "source-identity-file-limit", status: "unavailable" })
   })
+
+  it("scans only the fixed caller checkout when a runner-owned producer checkout contains symlinks", () => {
+    const runnerRoot = mkdtempSync(join(tmpdir(), "persona-source-identity-runner-"))
+    const callerRoot = join(runnerRoot, ".project-finish-caller")
+    const producerBin = join(runnerRoot, ".persona-harness-producer", "node_modules", ".bin")
+    projects.push(runnerRoot)
+    createProjectAt(callerRoot)
+    writeFileSync(join(runnerRoot, "runner.txt"), "runner\n")
+    execFileSync("git", ["init", "-q"], { cwd: runnerRoot })
+    execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: runnerRoot })
+    execFileSync("git", ["config", "user.name", "PH Test"], { cwd: runnerRoot })
+    execFileSync("git", ["add", "runner.txt"], { cwd: runnerRoot })
+    execFileSync("git", ["commit", "-qm", "runner fixture"], { cwd: runnerRoot })
+    mkdirSync(producerBin, { recursive: true })
+    symlinkSync("../outside", join(producerBin, "node"))
+
+    expect(captureSourceIdentity(callerRoot, git(callerRoot), ".persona/evidence").status).toBe("available")
+    expect(captureSourceIdentity(runnerRoot, git(runnerRoot), ".persona/evidence")).toEqual({
+      diagnosticCode: "source-identity-symlink",
+      status: "unavailable",
+    })
+  })
+
+  it("accepts the explicit Git worktree metadata link file without accepting caller source symlinks", () => {
+    const primary = createProject()
+    const worktreeParent = mkdtempSync(join(tmpdir(), "persona-source-identity-worktree-"))
+    const worktree = join(worktreeParent, "caller")
+    projects.push(worktreeParent)
+    execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: primary })
+
+    expect(captureSourceIdentity(worktree, git(worktree), ".persona/evidence").status).toBe("available")
+    unlinkSync(join(worktree, "src", "App.java"))
+    symlinkSync("../package.json", join(worktree, "src", "App.java"))
+    expect(captureSourceIdentity(worktree, git(worktree), ".persona/evidence")).toEqual({
+      diagnosticCode: "source-identity-symlink",
+      status: "unavailable",
+    })
+  })
 })
 
 function createProject(): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-source-identity-"))
   projects.push(projectDir)
+  createProjectAt(projectDir)
+  return projectDir
+}
+
+function createProjectAt(projectDir: string): void {
   mkdirSync(join(projectDir, ".persona", "evidence"), { recursive: true })
   mkdirSync(join(projectDir, "src"), { recursive: true })
   mkdirSync(join(projectDir, "build"), { recursive: true })
@@ -133,7 +176,6 @@ function createProject(): string {
   execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
   execFileSync("git", ["add", "."], { cwd: projectDir })
   execFileSync("git", ["commit", "-qm", "source identity fixture"], { cwd: projectDir })
-  return projectDir
 }
 
 function capture(projectDir: string): SourceIdentity {

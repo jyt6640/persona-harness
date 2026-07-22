@@ -22,9 +22,11 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
+          path: .project-finish-caller
           persist-credentials: false
 
       - name: Verify pushed public project checkout
+        working-directory: .project-finish-caller
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_REF: ${{ github.ref }}
@@ -41,6 +43,7 @@ jobs:
 
       - name: Resolve immutable Persona Harness producer revision
         id: producer-pin
+        working-directory: .project-finish-caller
         env:
           CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
           GITHUB_JOB: ${{ github.job }}
@@ -142,7 +145,7 @@ jobs:
           }
 
           try {
-            const workspace = fs.realpathSync(requiredEnv("GITHUB_WORKSPACE"))
+            const workspace = fs.realpathSync(process.cwd())
             const repository = requiredEnv("GITHUB_REPOSITORY")
             const workflowRef = requiredEnv("CALLER_WORKFLOW_REF")
             const jobName = requiredEnv("GITHUB_JOB")
@@ -216,19 +219,19 @@ jobs:
         id: attest
         uses: actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc
         with:
-          predicate-path: .ci/project-finish-attestation/predicate.json
+          predicate-path: .project-finish-attestation-artifacts/predicate.json
           predicate-type: https://github.com/jyt6640/persona-harness/attestations/project-finish-attestation.1
-          subject-path: .ci/project-finish-attestation/receipt.json
+          subject-path: .project-finish-attestation-artifacts/receipt.json
 
       - name: Collect signed bundle
-        run: cp "${{ steps.attest.outputs.bundle-path }}" .ci/project-finish-attestation/bundle.json
+        run: cp "${{ steps.attest.outputs.bundle-path }}" .project-finish-attestation-artifacts/bundle.json
 
       - name: Upload signed project finish attestation
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           if-no-files-found: error
           name: project-finish-attestation
-          path: .ci/project-finish-attestation
+          path: .project-finish-attestation-artifacts
           retention-days: 7
 
       - name: Upload bounded project finish failure diagnostic
@@ -237,5 +240,5 @@ jobs:
         with:
           if-no-files-found: ignore
           name: project-finish-attestation-failure
-          path: .ci/project-finish-attestation/failure-diagnostic.json
+          path: .project-finish-attestation-failure/failure-diagnostic.json
           retention-days: 7

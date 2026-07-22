@@ -1,4 +1,13 @@
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs"
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -37,12 +46,29 @@ describe("project finish producer OIDC capability bridge", () => {
     })
 
     expect(result).toEqual({ code: "project-finish-producer-oidc", kind: "blocked" })
-    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "receipt.json"))).toBe(false)
-    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "predicate.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "receipt.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "predicate.json"))).toBe(false)
     expect(readDiagnostic(workspace)).toEqual({
       code: "project-finish-producer-oidc",
       schemaVersion: "project-finish-attestation-producer-diagnostic.1",
     })
+  })
+
+  it("does not write a failure diagnostic or authority artifact through a runner output alias", async () => {
+    const workspace = createWorkspace()
+    const outside = join(workspace, "outside")
+    mkdirSync(outside)
+    symlinkSync("outside", join(workspace, ".project-finish-attestation-failure"))
+
+    const result = await runProjectFinishAttestationBuilder({
+      environment: producerEnvironment(workspace),
+      oidcToken: undefined,
+    })
+
+    expect(result).toEqual({ code: "project-finish-producer-oidc", kind: "blocked" })
+    expect(existsSync(join(outside, "failure-diagnostic.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "receipt.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "predicate.json"))).toBe(false)
   })
 
   it("uses only the fixed audience and keeps an unavailable core token bounded", async () => {
@@ -62,8 +88,8 @@ describe("project finish producer OIDC capability bridge", () => {
     expect(calls).toEqual([AUDIENCE])
     expect(result).toEqual({ code: "project-finish-producer-oidc", kind: "blocked" })
     expect(JSON.stringify(result)).not.toContain(marker)
-    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "receipt.json"))).toBe(false)
-    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "predicate.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "receipt.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "predicate.json"))).toBe(false)
   })
 
   it("does not acquire a token when the fixed producer module cannot load", async () => {
@@ -102,8 +128,8 @@ describe("project finish producer OIDC capability bridge", () => {
       code: "project-finish-producer-checkout",
       schemaVersion: "project-finish-attestation-producer-diagnostic.1",
     })
-    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "receipt.json"))).toBe(false)
-    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "predicate.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "receipt.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "predicate.json"))).toBe(false)
   })
 
   it("keeps invalid audience or issuer tokens blocked and accepts the authentic distinct caller and producer shape", () => {
@@ -166,8 +192,8 @@ describe("project finish producer OIDC capability bridge", () => {
 
     expect(result).toEqual({ code: "project-finish-producer-context", kind: "blocked" })
     expect(JSON.stringify(result)).not.toContain(marker)
-    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "receipt.json"))).toBe(false)
-    expect(existsSync(join(workspace, ".ci", "project-finish-attestation", "predicate.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "receipt.json"))).toBe(false)
+    expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "predicate.json"))).toBe(false)
   })
 
   it("does not route hostile aliases or raw OIDC request fields into the bridge", () => {
@@ -269,11 +295,16 @@ function oidcToken(payload: Record<string, string>): string {
 }
 
 function readDiagnostic(workspace: string): unknown {
-  return JSON.parse(readFileSync(join(workspace, ".ci", "project-finish-attestation", "failure-diagnostic.json"), "utf8"))
+  return JSON.parse(readFileSync(
+    join(workspace, ".project-finish-attestation-failure", "failure-diagnostic.json"),
+    "utf8",
+  ))
 }
 
 function createWorkspace(): string {
   const directory = mkdtempSync(join(tmpdir(), "project-finish-producer-oidc-bridge-"))
   temporaryDirectories.push(directory)
-  return realpathSync(directory)
+  const workspace = realpathSync(directory)
+  mkdirSync(join(workspace, ".project-finish-caller"))
+  return workspace
 }

@@ -12,7 +12,7 @@ import fs, {
 } from "node:fs"
 import { syncBuiltinESMExports } from "node:module"
 import { tmpdir } from "node:os"
-import { join, relative } from "node:path"
+import { basename, join, relative } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -67,6 +67,22 @@ describe("project finish producer input readiness", () => {
     })
   })
 
+  it("keeps runner-owned producer symlinks outside the public caller source identity", () => {
+    const runnerRoot = mkdtempSync(join(tmpdir(), "project-finish-producer-runner-"))
+    const projectDir = createProject("absent", join(runnerRoot, ".project-finish-caller"))
+    const producerBin = join(runnerRoot, ".persona-harness-producer", "node_modules", ".bin")
+    projects.push(runnerRoot)
+    mkdirSync(producerBin, { recursive: true })
+    symlinkSync("../outside", join(producerBin, "node"))
+
+    const result = runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
+
+    expect(result).toMatchObject({
+      kind: "passed",
+      value: { receipt: { source: { root: "." } } },
+    })
+  })
+
   it("blocks a producer root that differs from its prepared workspace identity", () => {
     const preparedProject = createProject("absent")
     const suppliedProject = createProject("absent")
@@ -80,6 +96,23 @@ describe("project finish producer input readiness", () => {
     })
 
     expect(result).toEqual({ code: "workspace-identity-drift", kind: "blocked" })
+    expect(calls).toBe(0)
+  })
+
+  it("blocks a symlinked caller root before it can capture source or execute Gradle", () => {
+    const projectDir = createProject("absent")
+    const alias = join(projectDir, "..", `${basename(projectDir)}-alias`)
+    symlinkSync(projectDir, alias)
+    let calls = 0
+
+    const result = runProjectFinishAttestationGradleVerification(alias, readyContext(alias), {
+      runProcess: () => {
+        calls += 1
+        return passed("")
+      },
+    })
+
+    expect(result).toEqual({ code: "workspace-root-unavailable", kind: "blocked" })
     expect(calls).toBe(0)
   })
 
@@ -171,8 +204,8 @@ describe("project finish producer input readiness", () => {
 
 function createProject(
   mode: "absent" | "canonical" | "malformed" | "missing-settings" | "symlink-profile" | "symlink-settings",
+  projectDir = mkdtempSync(join(tmpdir(), "project-finish-producer-profile-")),
 ): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "project-finish-producer-profile-"))
   projects.push(projectDir)
   mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })
   writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")

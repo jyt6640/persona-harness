@@ -28,6 +28,10 @@ export function runProjectFinishAttestationBuilder(input?: {
   readonly producerRoot?: string
 }): Promise<ProjectFinishAttestationBuilderResult>
 
+export function resolveProjectFinishAttestationCallerWorkspace(
+  environment?: NodeJS.ProcessEnv,
+): string
+
 export function readProjectFinishAttestationProducerContextFromToken(
   oidcToken: unknown,
   environment?: NodeJS.ProcessEnv,

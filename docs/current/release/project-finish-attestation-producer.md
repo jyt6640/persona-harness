@@ -10,6 +10,12 @@ reusable local authority record.
 The reusable workflow
 `.github/workflows/persona-harness-project-finish.yml` has no caller inputs.
 It runs only for a public-repository `push` event on `refs/heads/main`. The
+workflow derives three fixed sibling paths below the platform-owned runner
+workspace: `.project-finish-caller` for the pushed consumer source,
+`.persona-harness-producer` for the immutable producer revision, and
+`.project-finish-attestation-artifacts` for a successful subject and predicate.
+The failure diagnostic uses the separate fixed
+`.project-finish-attestation-failure` directory. None is a caller input. The
 workflow checks out the pushed consumer source and a separately checked-out,
 immutable Persona Harness reusable-workflow revision. It derives all receipt
 facts itself:
@@ -23,7 +29,8 @@ facts itself:
 - run, attempt, finish, session, nonce, issuance, and expiry values.
 
 Before checking out Persona Harness, the workflow reads the already checked-out
-caller workflow at GitHub's bounded caller-workflow identity. A bounded
+caller workflow inside `.project-finish-caller` at GitHub's bounded
+caller-workflow identity. A bounded
 structural parser accepts exactly one YAML job mapping for
 `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml`
 reference with a full immutable SHA. Branches, tags, another repository or
@@ -236,6 +243,18 @@ subsequent intake, Gradle, JUnit, and source-snapshot operation uses that one
 verified canonical root, so a relative caller path cannot create a second
 containment base.
 
+The caller root is never the ambient runner workspace. The builder accepts
+only the fixed direct `.project-finish-caller` child after no-follow directory
+and canonical identity checks, then rechecks the runner and caller identities
+before artifact preparation. A caller checkout alias, a symlinked caller root,
+or a replaced root blocks. The immutable producer checkout remains the sibling
+`.persona-harness-producer`; its dependency links are not caller source and are
+therefore not scanned or excluded. This structural separation never broadens
+the caller source exclusion list: a symlink anywhere inside the caller tree
+still blocks. Git metadata remains the existing explicit `.git` exclusion, so
+normal Git directory and worktree link-file representations do not become
+caller source entries.
+
 Before any fixed Gradle command, the producer reads the optional profile and
 exactly one `build.gradle`/`build.gradle.kts` plus one
 `settings.gradle`/`settings.gradle.kts` through no-follow file descriptors.
@@ -246,6 +265,13 @@ oversized, nonregular, symlinked, replaced, or changed inputs block before a
 receipt, predicate, signed bundle, or authority result can exist. The
 content-aware source snapshot uses the same no-follow read discipline for
 caller source files and rejects unsafe replacement during capture.
+
+Receipt and predicate bytes are written privately into a freshly created,
+runner-owned staging directory and promoted only into the fixed artifact
+directory after caller and runner identity rechecks. A blocked caller or
+artifact-directory condition may leave only a bounded failure diagnostic in its
+separate runner-owned directory; no receipt, predicate, bundle, or signature is
+created. A caller-controlled `.ci` path is never used for producer artifacts.
 
 This source boundary is not a signing result. The remaining hosted-only
 residual is one separately authorized GitHub public-push producer observation,
