@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { execFileSync, spawnSync } from "node:child_process"
+import { execFileSync, spawn } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { isAbsolute, join, normalize, relative, sep } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -18,6 +18,10 @@ export const CANONICAL_RUNNER_LABEL = "ubuntu-latest"
 const CANONICAL_RUNNER_ENVIRONMENT = "github-hosted"
 const CANONICAL_RUNNER_OS = "Linux"
 const COMMAND_TIMEOUT_MS = 300_000
+const COMMAND_TERMINATION_GRACE_MS = 5_000
+const COMMAND_MAX_STDOUT_BYTES = 1024 * 1024
+const COMMAND_MAX_STDERR_BYTES = 1024 * 1024
+const COMMAND_MAX_TOTAL_OUTPUT_BYTES = 1024 * 1024
 const OUTPUT_DIRECTORY = ".ci/canonical-clean-ci-attestation-builder"
 const TEST_REPORT_PATH = `${OUTPUT_DIRECTORY}/test-results.json`
 
@@ -36,7 +40,7 @@ export const FIXED_COMMANDS = [
   { id: "pack", executable: "npm", args: ["pack", "--dry-run", "--json"] },
 ]
 
-function main() {
+async function main() {
   let context
   let outputDir
   try {
@@ -45,7 +49,10 @@ function main() {
     mkdirSync(join(context.workspaceRoot, ".ci"), { recursive: true })
     mkdirSync(outputDir, { recursive: false })
 
-    const commandResults = FIXED_COMMANDS.map((command) => runCommand(command, context.workspaceRoot))
+    const commandResults = []
+    for (const command of FIXED_COMMANDS) {
+      commandResults.push(await runBoundedBuilderCommand(command, context.workspaceRoot))
+    }
     const testReportPath = join(context.workspaceRoot, TEST_REPORT_PATH)
     const testReport = readJson(testReportPath)
     const testFacts = readTestFacts(testReport, testReportPath)
@@ -142,33 +149,118 @@ export function readCanonicalRunnerContext(env = process.env) {
   }
 }
 
-function runCommand(command, workspaceRoot) {
+export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
   const executable = command.executable === "node" ? process.execPath : command.executable
-  const result = spawnSync(executable, command.args, {
-    cwd: workspaceRoot,
-    encoding: "utf8",
-    env: process.env,
-    shell: false,
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: COMMAND_TIMEOUT_MS,
-  })
+  const timeoutMs = positiveInteger(options.timeoutMs, COMMAND_TIMEOUT_MS)
+  const graceMs = positiveInteger(options.graceMs, COMMAND_TERMINATION_GRACE_MS)
 
-  if (result.error !== undefined || result.status !== 0) {
-    throw new BuilderCommandFailure({
-      commandId: command.id,
-      exitCode: typeof result.status === "number" ? result.status : null,
-      exitState: commandExitState(result),
+  return new Promise((resolve, reject) => {
+    let child
+    let closeSignal = null
+    let closeStatus = null
+    let directChildClosed = false
+    let graceTimer
+    let outputLimited = false
+    let settled = false
+    let terminationEscalated = false
+    let terminationStarted = false
+    let timeoutTimer
+    let timedOut = false
+    let totalOutputBytes = 0
+    const stdout = createBoundedOutputCapture(COMMAND_MAX_STDOUT_BYTES)
+    const stderr = createBoundedOutputCapture(COMMAND_MAX_STDERR_BYTES)
+
+    const clearTimers = () => {
+      clearTimeout(timeoutTimer)
+      if (graceTimer !== undefined) clearTimeout(graceTimer)
+    }
+    const failCommand = (exitCode, exitState) => {
+      reject(new BuilderCommandFailure({ commandId: command.id, exitCode, exitState }))
+    }
+    const complete = () => {
+      if (settled || !directChildClosed || (terminationStarted && !terminationEscalated)) return
+      settled = true
+      clearTimers()
+      const exitCode = typeof closeStatus === "number" ? closeStatus : signalExitCode(closeSignal)
+      if (outputLimited) {
+        failCommand(exitCode, "output-limit")
+        return
+      }
+      if (timedOut) {
+        failCommand(exitCode, "timeout")
+        return
+      }
+      if (exitCode !== 0) {
+        failCommand(exitCode, closeSignal === null ? "exit-nonzero" : "signal")
+        return
+      }
+
+      resolve({
+        id: command.id,
+        argv: [command.executable, ...command.args],
+        exitCode,
+        stderrDigest: stderr.digest(),
+        stdout: stdout.text(),
+        stdoutDigest: stdout.digest(),
+      })
+    }
+    const terminate = () => {
+      if (terminationStarted || child === undefined) return
+      terminationStarted = true
+      terminateProcessTree(child.pid, "SIGTERM")
+      graceTimer = setTimeout(() => {
+        terminationEscalated = true
+        graceTimer = undefined
+        terminateProcessTree(child.pid, "SIGKILL")
+        complete()
+      }, graceMs)
+    }
+    const capture = (stream, chunk) => {
+      if (settled || outputLimited) return
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      totalOutputBytes += bytes.byteLength
+      const streamExceeded = stream.append(bytes)
+      if (streamExceeded || totalOutputBytes > COMMAND_MAX_TOTAL_OUTPUT_BYTES) {
+        outputLimited = true
+        terminate()
+      }
+    }
+
+    try {
+      child = spawn(executable, command.args, {
+        cwd: workspaceRoot,
+        detached: process.platform !== "win32",
+        env: process.env,
+        shell: false,
+        stdio: ["ignore", "pipe", "pipe"],
+        windowsHide: true,
+      })
+    } catch {
+      settled = true
+      failCommand(null, "spawn-failure")
+      return
+    }
+
+    timeoutTimer = setTimeout(() => {
+      timedOut = true
+      terminate()
+    }, timeoutMs)
+    child.stdout.on("data", (chunk) => capture(stdout, chunk))
+    child.stderr.on("data", (chunk) => capture(stderr, chunk))
+    child.on("error", () => {
+      if (settled) return
+      settled = true
+      clearTimers()
+      failCommand(null, "spawn-failure")
     })
-  }
-
-  return {
-    id: command.id,
-    argv: [command.executable, ...command.args],
-    exitCode: result.status,
-    stderrDigest: `sha256:${sha256(result.stderr ?? "")}`,
-    stdout: result.stdout ?? "",
-    stdoutDigest: `sha256:${sha256(result.stdout ?? "")}`,
-  }
+    child.on("close", (status, signal) => {
+      if (settled) return
+      closeSignal = signal
+      closeStatus = status
+      directChildClosed = true
+      complete()
+    })
+  })
 }
 
 function createReceipt(context, commandResults, testFacts, packFacts, phVersion) {
@@ -305,11 +397,62 @@ function requiredEnvFrom(env, name) {
   return value
 }
 
-function commandExitState(result) {
-  if (result.error?.code === "ETIMEDOUT") return "timeout"
-  if (result.signal !== null) return "signal"
-  if (result.error !== undefined) return "spawn-failure"
-  return "exit-nonzero"
+function positiveInteger(value, fallback) {
+  return Number.isInteger(value) && value > 0 ? value : fallback
+}
+
+function createBoundedOutputCapture(limit) {
+  const chunks = []
+  const hash = createHash("sha256")
+  let byteLength = 0
+
+  return {
+    append(chunk) {
+      byteLength += chunk.byteLength
+      if (byteLength > limit) return true
+      hash.update(chunk)
+      chunks.push(Buffer.from(chunk))
+      return false
+    },
+    digest() {
+      return `sha256:${hash.digest("hex")}`
+    },
+    text() {
+      return Buffer.concat(chunks, byteLength).toString("utf8")
+    },
+  }
+}
+
+function terminateProcessTree(pid, signal) {
+  if (pid === undefined) return
+  try {
+    if (process.platform === "win32") process.kill(pid, signal)
+    else process.kill(-pid, signal)
+  } catch {
+    try {
+      process.kill(pid, signal)
+    } catch {}
+  }
+}
+
+function signalExitCode(signal) {
+  const signalCodes = {
+    SIGABRT: 6,
+    SIGBUS: 7,
+    SIGFPE: 8,
+    SIGHUP: 1,
+    SIGILL: 4,
+    SIGINT: 2,
+    SIGKILL: 9,
+    SIGPIPE: 13,
+    SIGQUIT: 3,
+    SIGSEGV: 11,
+    SIGTERM: 15,
+    SIGTRAP: 5,
+    SIGUSR1: 10,
+    SIGUSR2: 12,
+  }
+  return signal === null ? null : 128 + (signalCodes[signal] ?? 1)
 }
 
 function createFailureDiagnostic(failure, reportPath, workspaceRoot) {
@@ -422,4 +565,6 @@ function fail(message) {
   throw new Error(message)
 }
 
-if (fileURLToPath(import.meta.url) === process.argv[1]) main()
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
+  void main()
+}
