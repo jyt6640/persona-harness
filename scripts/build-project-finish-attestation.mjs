@@ -9,7 +9,7 @@ import {
   deriveProjectFinishProducerContext,
 } from "./project-finish-attestation-producer-context.mjs"
 import {
-  readProjectFinishAttestationOidcToken,
+  readProjectFinishAttestationProducerOidcClaims,
 } from "./project-finish-attestation-oidc.mjs"
 
 const OUTPUT_DIRECTORY = ".ci/project-finish-attestation"
@@ -49,7 +49,7 @@ export function readProjectFinishAttestationProducerContextFromToken(oidcToken, 
   if (environment.GITHUB_ACTIONS !== "true") {
     return { code: "project-finish-producer-github-actions", kind: "blocked" }
   }
-  const claims = readProjectFinishAttestationOidcToken(oidcToken)
+  const claims = readProjectFinishAttestationProducerOidcClaims(oidcToken)
   if (claims === undefined) return { code: "project-finish-producer-oidc", kind: "blocked" }
   try {
     return { kind: "ready", value: deriveProjectFinishProducerContext(claims, environment) }

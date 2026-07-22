@@ -54,7 +54,11 @@ export async function readProjectFinishAttestationOidc(environment = process.env
 }
 
 export function readProjectFinishAttestationOidcToken(token) {
-  const result = decodeOidcToken(token, "match", true)
+  return decodeOidcToken(token, "match", true)
+}
+
+export function readProjectFinishAttestationProducerOidcClaims(token) {
+  const result = readProjectFinishAttestationOidcToken(token)
   return result.audienceStatus === "match"
     && result.tokenStatus === "match"
     && isRecord(result.claims)

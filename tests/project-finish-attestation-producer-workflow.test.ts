@@ -73,7 +73,7 @@ describe("project finish attestation producer workflow contract", () => {
     expect(context).toContain("workflow_sha")
     expect(context).toContain("PERSONA_HARNESS_PRODUCER_SHA")
     expect(source).toContain("deriveProjectFinishProducerContext")
-    expect(source).toContain("readProjectFinishAttestationOidcToken")
+    expect(source).toContain("readProjectFinishAttestationProducerOidcClaims")
     expect(source).toContain("verifyProjectFinishProducerCheckout")
     expect(source).not.toContain('requiredEnv("GITHUB_WORKFLOW_SHA")')
     expect(source).toContain("runProjectFinishAttestationProducer")

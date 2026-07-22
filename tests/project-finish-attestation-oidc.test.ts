@@ -9,6 +9,23 @@ const oidcModuleUrl = pathToFileURL(join(root, "scripts", "project-finish-attest
 const secret = "OIDC_ENDPOINT_SECRET_sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
 
 describe("project finish attestation OIDC endpoint", () => {
+  it("keeps the diagnostic token reader structured while the producer uses a stricter claims helper", async () => {
+    const module = await import(oidcModuleUrl)
+    const token = `header.${Buffer.from(JSON.stringify({
+      aud: "persona-harness-project-finish-attestation",
+      iss: "https://token.actions.githubusercontent.com",
+    })).toString("base64url")}.signature`
+
+    expect(module.readProjectFinishAttestationOidcToken(token)).toMatchObject({
+      audienceStatus: "match",
+      tokenStatus: "match",
+    })
+    expect(module.readProjectFinishAttestationProducerOidcClaims(token)).toMatchObject({
+      aud: "persona-harness-project-finish-attestation",
+      iss: "https://token.actions.githubusercontent.com",
+    })
+  })
+
   it("does not attach a bearer token to an arbitrary HTTPS endpoint", () => {
     const result = probe(`https://untrusted.example/oidc/${secret}`)
 
