@@ -86,6 +86,7 @@ describe("project finish attestation producer workflow contract", () => {
     expect(workflow).toContain("actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd")
     expect(workflow).toContain("project-finish-attestation-producer-oidc-capability-bridge.cjs")
     expect(workflow).toContain("runProjectFinishAttestationProducerWithCore({ core })")
+    expect(workflow).toContain("PERSONA_HARNESS_CALLER_VISIBILITY: ${{ github.event.repository.visibility }}")
     expect(workflow).toContain("PERSONA_HARNESS_PRODUCER_SHA: ${{ steps.producer-pin.outputs.sha }}")
     expect(workflow).not.toContain("run: node scripts/build-project-finish-attestation.mjs")
   })
@@ -98,6 +99,15 @@ describe("project finish attestation producer workflow contract", () => {
     expect(guide).toContain("project-finish-producer-oidc")
     expect(guide).toMatch(/creates no receipt, predicate, signed\s+bundle, or authority result/u)
     expect(guide).toMatch(/does not\s+assert that a producer invocation has successfully signed an artifact/u)
+  })
+
+  it("documents explicit platform visibility and distinct caller and reusable bindings", () => {
+    const guide = readFileSync(producerGuidePath, "utf8")
+
+    expect(guide).toContain("PERSONA_HARNESS_CALLER_VISIBILITY")
+    expect(guide).toContain("not accepted from a raw runner variable")
+    expect(guide).toContain("caller workflow reference and SHA must independently match")
+    expect(guide).toContain("reusable workflow reference and SHA must")
   })
 
   it("keeps the postmerge caller path pinned to an immutable reusable workflow SHA", () => {
