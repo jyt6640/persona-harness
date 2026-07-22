@@ -1,19 +1,19 @@
 import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
-import { spawnSync } from "node:child_process"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
 import { describe, expect, it } from "vitest"
 
+import { collectSupportedNodeMatrixDiagnostics } from "../scripts/check-supported-node-matrix.mjs"
+
 const repositoryRoot = process.cwd()
-const policyScript = join(repositoryRoot, "scripts", "check-supported-node-matrix.mjs")
 
 describe("supported Node matrix policy", () => {
-  it("accepts the committed Linux, macOS, and Windows support contract", () => {
-    const result = runPolicy(repositoryRoot)
+  it("evaluates the committed contract in process without a child policy runner", async () => {
+    const diagnostics = await collectSupportedNodeMatrixDiagnostics(repositoryRoot)
 
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain("Support Node matrix policy: PASS")
+    expect(diagnostics).toEqual([])
+    expect(readFileSync(join(repositoryRoot, "scripts", "check-supported-node-matrix.mjs"), "utf8")).not.toContain("node:child_process")
   })
 
   it("checks out full history for the protected-main signed artifact source", () => {
@@ -24,7 +24,7 @@ describe("supported Node matrix policy", () => {
     )
   })
 
-  it("rejects a Linux Node matrix drift", () => {
+  it("rejects a Linux Node matrix drift", async () => {
     const fixtureRoot = createPolicyFixture()
     try {
       const workflowPath = join(fixtureRoot, ".github", "workflows", "supported-node-matrix.yml")
@@ -33,16 +33,15 @@ describe("supported Node matrix policy", () => {
         readFileSync(workflowPath, "utf8").replace("node: 24", "node: 25"),
       )
 
-      const result = runPolicy(fixtureRoot)
+      const diagnostics = await collectSupportedNodeMatrixDiagnostics(fixtureRoot)
 
-      expect(result.status).toBe(1)
-      expect(result.stderr).toContain("matrix rows")
+      expect(diagnostics).toContain("matrix rows")
     } finally {
       rmSync(fixtureRoot, { force: true, recursive: true })
     }
   })
 
-  it("rejects a public support-document drift", () => {
+  it("rejects a public support-document drift", async () => {
     const fixtureRoot = createPolicyFixture()
     try {
       const readmePath = join(fixtureRoot, "README.md")
@@ -51,16 +50,15 @@ describe("supported Node matrix policy", () => {
         readFileSync(readmePath, "utf8").replace("macOS Node 22 smoke only", "macOS Node 20 smoke only"),
       )
 
-      const result = runPolicy(fixtureRoot)
+      const diagnostics = await collectSupportedNodeMatrixDiagnostics(fixtureRoot)
 
-      expect(result.status).toBe(1)
-      expect(result.stderr).toContain("support table")
+      expect(diagnostics).toContain("README.md support table")
     } finally {
       rmSync(fixtureRoot, { force: true, recursive: true })
     }
   })
 
-  it("rejects removal of the Linux source repository checks", () => {
+  it("rejects removal of the Linux source repository checks", async () => {
     const fixtureRoot = createPolicyFixture()
     try {
       const workflowPath = join(fixtureRoot, ".github", "workflows", "supported-node-matrix.yml")
@@ -69,16 +67,15 @@ describe("supported Node matrix policy", () => {
         readFileSync(workflowPath, "utf8").replace("npm run test:repository", "npm test"),
       )
 
-      const result = runPolicy(fixtureRoot)
+      const diagnostics = await collectSupportedNodeMatrixDiagnostics(fixtureRoot)
 
-      expect(result.status).toBe(1)
-      expect(result.stderr).toContain("Linux repository checks")
+      expect(diagnostics).toContain("Linux repository checks")
     } finally {
       rmSync(fixtureRoot, { force: true, recursive: true })
     }
   })
 
-  it("rejects a floating workflow action pin", () => {
+  it("rejects a floating workflow action pin", async () => {
     const fixtureRoot = createPolicyFixture()
     try {
       const workflowPath = join(fixtureRoot, ".github", "workflows", "supported-node-matrix.yml")
@@ -90,10 +87,9 @@ describe("supported Node matrix policy", () => {
         ),
       )
 
-      const result = runPolicy(fixtureRoot)
+      const diagnostics = await collectSupportedNodeMatrixDiagnostics(fixtureRoot)
 
-      expect(result.status).toBe(1)
-      expect(result.stderr).toContain("immutable checkout action pin")
+      expect(diagnostics).toContain("immutable checkout action pin")
     } finally {
       rmSync(fixtureRoot, { force: true, recursive: true })
     }
@@ -112,14 +108,10 @@ function createPolicyFixture(): string {
   )
   cpSync(join(repositoryRoot, "README.md"), join(fixtureRoot, "README.md"))
   cpSync(join(repositoryRoot, "docs", "START-HERE.md"), join(fixtureRoot, "docs", "START-HERE.md"))
-  cpSync(policyScript, join(fixtureRoot, "scripts", "check-supported-node-matrix.mjs"))
+  cpSync(
+    join(repositoryRoot, "scripts", "check-supported-node-matrix.mjs"),
+    join(fixtureRoot, "scripts", "check-supported-node-matrix.mjs"),
+  )
 
   return fixtureRoot
-}
-
-function runPolicy(cwd: string): ReturnType<typeof spawnSync> {
-  return spawnSync(process.execPath, [join("scripts", "check-supported-node-matrix.mjs")], {
-    cwd,
-    encoding: "utf8",
-  })
 }

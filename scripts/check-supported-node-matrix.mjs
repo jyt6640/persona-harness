@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
-
-const projectRoot = resolve(process.argv[2] ?? process.cwd())
+import { pathToFileURL } from "node:url"
 
 const CHECKOUT_PIN = "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5"
 const SETUP_NODE_PIN = "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
@@ -21,17 +20,24 @@ const supportTable = [
   "| Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |",
 ].join("\n")
 
-async function main() {
+export async function collectSupportedNodeMatrixDiagnostics(root = process.cwd()) {
+  const projectRoot = resolve(root)
   const [workflow, readme, startHere] = await Promise.all([
-    readPolicyFile(".github/workflows/supported-node-matrix.yml"),
-    readPolicyFile("README.md"),
-    readPolicyFile("docs/START-HERE.md"),
+    readPolicyFile(projectRoot, ".github/workflows/supported-node-matrix.yml"),
+    readPolicyFile(projectRoot, "README.md"),
+    readPolicyFile(projectRoot, "docs/START-HERE.md"),
   ])
   const diagnostics = []
 
   validateWorkflow(workflow, diagnostics)
   validateSupportDocument("README.md", readme, diagnostics)
   validateSupportDocument("docs/START-HERE.md", startHere, diagnostics)
+
+  return diagnostics
+}
+
+async function main() {
+  const diagnostics = await collectSupportedNodeMatrixDiagnostics(process.argv[2] ?? process.cwd())
 
   if (diagnostics.length > 0) {
     throw new Error(`Support Node matrix policy failed: ${diagnostics.join(", ")}`)
@@ -40,7 +46,7 @@ async function main() {
   console.log("Support Node matrix policy: PASS")
 }
 
-async function readPolicyFile(relativePath) {
+async function readPolicyFile(projectRoot, relativePath) {
   try {
     return await readFile(resolve(projectRoot, relativePath), "utf8")
   } catch {
@@ -119,7 +125,9 @@ function countOccurrences(text, value) {
   return text.split(value).length - 1
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : "Support Node matrix policy failed")
-  process.exitCode = 1
-})
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : "Support Node matrix policy failed")
+    process.exitCode = 1
+  })
+}
