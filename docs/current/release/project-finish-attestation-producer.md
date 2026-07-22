@@ -38,6 +38,16 @@ Harness repository and workflow path at that parsed immutable revision, while th
 immutable caller pin, reusable SHA claim, and producer checkout HEAD must all
 agree. The OIDC event, ref, public repository identity, run ID, run attempt,
 and GitHub-hosted runner claim must also match the platform environment. The
+caller workflow reference and SHA must independently match the platform caller
+workflow reference and SHA, while the reusable workflow reference and SHA must
+match the parsed immutable pin and the checked-out Persona Harness revision.
+Repository visibility is not accepted from a raw runner variable: the producer
+receives it only through its fixed `PERSONA_HARNESS_CALLER_VISIBILITY` mapping
+from the GitHub public-repository event context, and cross-checks that value
+against the signed claim. The runner environment and Linux runner OS are
+separate required bindings.
+
+The
 checked-out producer must normalize to the fixed
 `github.com/jyt6640/persona-harness` identity. Only the canonical GitHub HTTPS
 checkout spelling, with or without its optional `.git` suffix, is accepted;

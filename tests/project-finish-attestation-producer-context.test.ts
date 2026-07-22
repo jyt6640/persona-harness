@@ -27,6 +27,14 @@ describe("project finish attestation producer context", () => {
     ["caller workflow SHA", {
       claims: { workflow_sha: "a".repeat(40) },
     }],
+    ["observed caller workflow SHA", {
+      environment: { GITHUB_WORKFLOW_SHA: "a".repeat(40) },
+    }],
+    ["observed caller workflow ref", {
+      environment: {
+        GITHUB_WORKFLOW_REF: "example/public-gradle-app/.github/workflows/other.yml@refs/heads/main",
+      },
+    }],
     ["event", {
       claims: { event_name: "pull_request" },
     }],
@@ -58,6 +66,15 @@ describe("project finish attestation producer context", () => {
     ["repository ID", {
       environment: { GITHUB_REPOSITORY_ID: "123" },
     }],
+    ["explicit caller visibility", {
+      environment: { PERSONA_HARNESS_CALLER_VISIBILITY: "private" },
+    }],
+    ["secret-shaped explicit caller visibility", {
+      environment: { PERSONA_HARNESS_CALLER_VISIBILITY: secretMarker },
+    }],
+    ["missing explicit caller visibility", {
+      environment: { PERSONA_HARNESS_CALLER_VISIBILITY: "" },
+    }],
     ["run ID", {
       claims: { run_id: "1002" },
     }],
@@ -66,6 +83,12 @@ describe("project finish attestation producer context", () => {
     }],
     ["runner environment", {
       claims: { runner_environment: "self-hosted" },
+    }],
+    ["observed runner environment", {
+      environment: { RUNNER_ENVIRONMENT: "self-hosted" },
+    }],
+    ["runner OS", {
+      environment: { RUNNER_OS: "Windows" },
     }],
     ["secret-shaped caller ref", {
       claims: {
@@ -115,7 +138,12 @@ function contextInput(override: {
       GITHUB_RUN_ATTEMPT: "1",
       GITHUB_RUN_ID: "1001",
       GITHUB_SHA: callerSha,
+      GITHUB_WORKFLOW_REF: "example/public-gradle-app/.github/workflows/research-attestation.yml@refs/heads/main",
+      GITHUB_WORKFLOW_SHA: callerSha,
+      PERSONA_HARNESS_CALLER_VISIBILITY: "public",
       PERSONA_HARNESS_PRODUCER_SHA: producerSha,
+      RUNNER_ENVIRONMENT: "github-hosted",
+      RUNNER_OS: "Linux",
       ...override.environment,
     },
   }
