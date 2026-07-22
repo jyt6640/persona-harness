@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
@@ -24,6 +24,11 @@ describe("closure-ready repository templates", () => {
   })
 
   it("requires PRs to carry issue linkage, closure proof, residual, External decision, and remaining implementation", () => {
+    const githubEntries = readdirSync(join(root, ".github"))
+
+    expect(githubEntries).toContain("PULL_REQUEST_TEMPLATE.md")
+    expect(githubEntries).not.toContain("pull_request_template.md")
+
     const template = readFileSync(join(root, ".github/PULL_REQUEST_TEMPLATE.md"), "utf8")
 
     expect(template).toContain("Closes #")
