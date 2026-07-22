@@ -22,6 +22,9 @@ import {
 import {
   readProjectFinishAttestationProducerOidcClaims,
 } from "./project-finish-attestation-oidc.mjs"
+import {
+  verifyProjectFinishAttestationArtifactHandoff,
+} from "./project-finish-attestation-artifact-handoff.mjs"
 
 const CALLER_CHECKOUT_DIRECTORY = ".project-finish-caller"
 const ARTIFACT_DIRECTORY = ".project-finish-attestation-artifacts"
@@ -134,6 +137,13 @@ function writeArtifacts(workspace, artifacts) {
     const output = join(workspace.runner.realpath, ARTIFACT_DIRECTORY)
     if (pathExists(output)) throw new ProducerScriptError("project-finish-producer-workspace")
     renameSync(staging.realpath, output)
+    const handoff = verifyProjectFinishAttestationArtifactHandoff({
+      environment: { GITHUB_WORKSPACE: workspace.runner.realpath },
+      phase: "unsigned",
+    })
+    if (handoff.kind === "blocked") {
+      throw new ProducerScriptError("project-finish-producer-artifact-handoff")
+    }
   } catch (error) {
     rmSync(staging.realpath, { force: true, recursive: true })
     throw error
