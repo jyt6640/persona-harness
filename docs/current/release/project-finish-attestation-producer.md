@@ -221,6 +221,29 @@ No copied JSON, local receipt, JUnit file, synthetic fixture, caller-supplied
 fact, or package-release attestation becomes consumer authority through this
 producer.
 
+## Caller Intake Boundary
+
+The producer accepts a public Gradle caller without a Persona intake profile.
+That exception is limited to the producer path; ordinary cooperative Finish
+still requires its local ready profile and remains blocked for a profile-less
+workspace. When the optional profile is present, it must be a bounded,
+canonical Java/Spring/Gradle profile.
+
+Before any fixed Gradle command, the producer reads the optional profile and
+exactly one `build.gradle`/`build.gradle.kts` plus one
+`settings.gradle`/`settings.gradle.kts` through no-follow file descriptors.
+It verifies post-open regular-file and stat identity invariants, binds only
+their digests and verified descriptor identities into the source snapshot, and
+captures the same inputs after the fixed commands. Missing, malformed,
+oversized, nonregular, symlinked, replaced, or changed inputs block before a
+receipt, predicate, signed bundle, or authority result can exist. The
+content-aware source snapshot uses the same no-follow read discipline for
+caller source files and rejects unsafe replacement during capture.
+
+This source boundary is not a signing result. The remaining hosted-only
+residual is one separately authorized GitHub public-push producer observation,
+followed by independent verification of its original signed artifact.
+
 ## Distribution Boundary
 
 The workflow, builder, and caller fixture are repository-only source material.
