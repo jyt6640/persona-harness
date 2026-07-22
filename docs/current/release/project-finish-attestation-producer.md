@@ -229,6 +229,13 @@ still requires its local ready profile and remains blocked for a profile-less
 workspace. When the optional profile is present, it must be a bounded,
 canonical Java/Spring/Gradle profile.
 
+The supplied caller root is captured as a canonical workspace identity before
+intake. Relative and absolute spellings must resolve to the prepared workspace
+identity; any mismatch blocks before descriptor or source capture. Every
+subsequent intake, Gradle, JUnit, and source-snapshot operation uses that one
+verified canonical root, so a relative caller path cannot create a second
+containment base.
+
 Before any fixed Gradle command, the producer reads the optional profile and
 exactly one `build.gradle`/`build.gradle.kts` plus one
 `settings.gradle`/`settings.gradle.kts` through no-follow file descriptors.
