@@ -1,37 +1,46 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
-
-const projectRoot = resolve(process.argv[2] ?? process.cwd())
+import { pathToFileURL } from "node:url"
 
 const CHECKOUT_PIN = "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5"
 const SETUP_NODE_PIN = "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
 
-const expectedRows = [
-  "ubuntu-latest:linux:20:supported",
+const expectedMatrixRows = [
   "ubuntu-latest:linux:22:supported",
   "ubuntu-latest:linux:24:supported",
   "macos-latest:macos:22:limited-smoke",
 ].sort()
 
 const supportTable = [
-  "| Linux + OpenCode | Supported matrix | Node 20, 22, and 24 each run source-built checks plus a fresh local-tarball installed black-box check. |",
-  "| macOS + OpenCode | Limited smoke | macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |",
+  "| Linux + OpenCode | Required Node 20; manual Node 22/24 | Required Verify repository runs Linux Node 20 source-built and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains Linux Node 22 and 24 on demand. |",
+  "| macOS + OpenCode | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |",
   "| Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |",
   "| Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |",
 ].join("\n")
 
-async function main() {
-  const [workflow, readme, startHere] = await Promise.all([
-    readPolicyFile(".github/workflows/supported-node-matrix.yml"),
-    readPolicyFile("README.md"),
-    readPolicyFile("docs/START-HERE.md"),
+const automaticSupportBoundary = "Automatic CI boundary: Verify repository is the required Linux Node 20 PR/main gate. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest."
+
+export async function collectSupportedNodeMatrixDiagnostics(root = process.cwd()) {
+  const projectRoot = resolve(root)
+  const [verifyWorkflow, matrixWorkflow, readme, startHere] = await Promise.all([
+    readPolicyFile(projectRoot, ".github/workflows/ci.yml"),
+    readPolicyFile(projectRoot, ".github/workflows/supported-node-matrix.yml"),
+    readPolicyFile(projectRoot, "README.md"),
+    readPolicyFile(projectRoot, "docs/START-HERE.md"),
   ])
   const diagnostics = []
 
-  validateWorkflow(workflow, diagnostics)
+  validateVerifyWorkflow(verifyWorkflow, diagnostics)
+  validateMatrixWorkflow(matrixWorkflow, diagnostics)
   validateSupportDocument("README.md", readme, diagnostics)
   validateSupportDocument("docs/START-HERE.md", startHere, diagnostics)
+
+  return diagnostics
+}
+
+async function main() {
+  const diagnostics = await collectSupportedNodeMatrixDiagnostics(process.argv[2] ?? process.cwd())
 
   if (diagnostics.length > 0) {
     throw new Error(`Support Node matrix policy failed: ${diagnostics.join(", ")}`)
@@ -40,7 +49,7 @@ async function main() {
   console.log("Support Node matrix policy: PASS")
 }
 
-async function readPolicyFile(relativePath) {
+async function readPolicyFile(projectRoot, relativePath) {
   try {
     return await readFile(resolve(projectRoot, relativePath), "utf8")
   } catch {
@@ -48,9 +57,44 @@ async function readPolicyFile(relativePath) {
   }
 }
 
-function validateWorkflow(workflow, diagnostics) {
+function validateVerifyWorkflow(workflow, diagnostics) {
+  const requiredCommands = [
+    "npm ci",
+    "node scripts/check-supported-node-matrix.mjs",
+    "npm run test:repository",
+    "npm run build",
+    "npm pack --dry-run --json",
+    'scripts/verify-supported-node-surface.mjs --surface source --expected-platform "linux" --expected-node-major "20"',
+    'scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "linux" --expected-node-major "20"',
+  ]
+  if (
+    !workflow.includes("name: Verify repository")
+    || !workflow.includes("runs-on: ubuntu-latest")
+    || !workflow.includes("node-version: 20")
+    || !requiredCommands.every((command) => workflow.includes(command))
+  ) {
+    diagnostics.push("Verify repository Linux Node 20 support surface")
+  }
+  if (
+    !workflow.includes("pull_request:")
+    || !workflow.includes("push:\n    branches:\n      - main")
+  ) {
+    diagnostics.push("Verify repository automatic triggers")
+  }
+  if (
+    !workflow.includes("permissions:\n  contents: read")
+    || workflow.includes("id-token: write")
+    || workflow.includes("attestations: write")
+    || workflow.includes("actions/upload-artifact@")
+    || workflow.includes("npm publish")
+  ) {
+    diagnostics.push("Verify repository read-only boundary")
+  }
+}
+
+function validateMatrixWorkflow(workflow, diagnostics) {
   const actualRows = readMatrixRows(workflow)
-  if (JSON.stringify(actualRows) !== JSON.stringify(expectedRows)) {
+  if (JSON.stringify(actualRows) !== JSON.stringify(expectedMatrixRows)) {
     diagnostics.push("matrix rows")
   }
   if (workflow.toLowerCase().includes("windows")) {
@@ -65,11 +109,11 @@ function validateWorkflow(workflow, diagnostics) {
     diagnostics.push("non-support authority or publish action")
   }
   if (
-    !workflow.includes("pull_request:")
-    || !workflow.includes("push:\n    branches:\n      - main")
-    || !workflow.includes("workflow_dispatch:")
+    !workflow.includes("workflow_dispatch:")
+    || workflow.includes("pull_request:")
+    || workflow.includes("push:")
   ) {
-    diagnostics.push("workflow triggers")
+    diagnostics.push("manual-only matrix triggers")
   }
   if (!workflow.includes("name: Support matrix / ${{ matrix.platform }} / Node ${{ matrix.node }} / ${{ matrix.coverage }}")) {
     diagnostics.push("matrix job identity")
@@ -91,6 +135,13 @@ function validateWorkflow(workflow, diagnostics) {
   ) {
     diagnostics.push("source or installed tarball surface")
   }
+  if (
+    !workflow.includes("permissions:\n  contents: read")
+    || workflow.includes("contents: write")
+    || workflow.includes("actions/upload-artifact@")
+  ) {
+    diagnostics.push("matrix read-only boundary")
+  }
   if (countOccurrences(workflow, CHECKOUT_PIN) !== 1 || workflow.includes("actions/checkout@v4")) {
     diagnostics.push("immutable checkout action pin")
   }
@@ -100,7 +151,7 @@ function validateWorkflow(workflow, diagnostics) {
 }
 
 function validateSupportDocument(path, content, diagnostics) {
-  if (!content.includes(supportTable)) {
+  if (!content.includes(supportTable) || !content.includes(automaticSupportBoundary)) {
     diagnostics.push(`${path} support table`)
   }
 }
@@ -119,7 +170,9 @@ function countOccurrences(text, value) {
   return text.split(value).length - 1
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : "Support Node matrix policy failed")
-  process.exitCode = 1
-})
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : "Support Node matrix policy failed")
+    process.exitCode = 1
+  })
+}
