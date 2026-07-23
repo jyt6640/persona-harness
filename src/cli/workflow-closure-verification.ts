@@ -8,7 +8,8 @@ import {
   hasVerificationSuccessText,
   readExecutionEvidenceVerification,
 } from "./workflow-execution-evidence.js"
-import type { WorkflowStatusSummary } from "./workflow-status.js"
+import { readVerificationFailure } from "./verification-failure.js"
+import { readWorkflowReportStatus } from "../runtime/workflow-report-status.js"
 
 export type ClosureVerification = "failed" | "not-run" | "passed" | "unknown"
 
@@ -21,7 +22,7 @@ export type ClosureVerificationSummary = {
 const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 
-export function readClosureVerification(projectDir: string, summary: WorkflowStatusSummary): ClosureVerificationSummary {
+export function readClosureVerification(projectDir: string): ClosureVerificationSummary {
   const configResult = loadHarnessConfigResult(projectDir)
   if (!configResult.safe) {
     return {
@@ -35,8 +36,12 @@ export function readClosureVerification(projectDir: string, summary: WorkflowSta
     return runDirectClosureVerification(projectDir)
   }
 
-  if (summary.verificationFailureBlocking) {
-    return { reason: summary.verificationFailure, verification: "failed" }
+  const verificationFailure = readVerificationFailure(
+    projectDir,
+    readWorkflowReportStatus(projectDir, IMPLEMENTATION_REPORT_PATH),
+  )
+  if (verificationFailure.verificationFailureBlocking) {
+    return { reason: verificationFailure.verificationFailure, verification: "failed" }
   }
 
   const reportText = readWorkflowReportText(projectDir)

@@ -85,6 +85,14 @@ function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): stri
   if (blocker.id === "implementation-report-missing") {
     return [`Closure blocker: ${blocker.id}`, ".persona/workflow/implementation-report.md must be filled"].join("\n")
   }
+  if (blocker.id === "implementation-report-conflicting" || blocker.id === "implementation-report-malformed") {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      `Implementation report status is not trustworthy: ${blocker.reason}`,
+      "Do not choose a legacy or frontmatter status marker by fallback.",
+      "Correct the report status markers, then re-run `npx ph workflow check`.",
+    ].join("\n")
+  }
   if (blocker.id === "review-report-missing") {
     return [
       `Closure blocker: ${blocker.id}`,
@@ -93,8 +101,30 @@ function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): stri
       "Next action: fill .persona/workflow/review-report.md after review/manual QA, then run `npx ph plan --report-filled review`.",
     ].join("\n")
   }
+  if (blocker.id === "review-report-conflicting" || blocker.id === "review-report-malformed") {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      `Review report status is not trustworthy: ${blocker.reason}`,
+      "Do not choose a legacy or frontmatter status marker by fallback.",
+      "Correct the report status markers, then re-run `npx ph workflow check`.",
+    ].join("\n")
+  }
   if (blocker.id === "evidence-missing") {
     return [`Closure blocker: ${blocker.id}`, blocker.reason].join("\n")
+  }
+  if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale") {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      `Persisted workflow-loop state is not safe to continue: ${blocker.reason}`,
+      "Review the state and rule-pack identity before replacing it; do not silently recover or continue from it.",
+    ].join("\n")
+  }
+  if (blocker.id === "ralph-loop-state-malformed") {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      `Persisted ralph-loop state is not safe to continue: ${blocker.reason}`,
+      "Review the state before replacing it; do not silently recover or continue from it.",
+    ].join("\n")
   }
   if (blocker.id === "command-discipline-blocking") {
     return [`Closure blocker: ${blocker.id}`, `Command discipline blocking: ${blocker.reason}. Rerun final verification through \`npx ph bearshell\`.`].join("\n")

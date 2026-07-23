@@ -8,6 +8,7 @@ const checkScopeScript = resolve("scripts/check-mvp-scope.mjs")
 const checkInjectionValueScript = resolve("scripts/check-injection-value.mjs")
 const checkDocsTaxonomyScript = resolve("scripts/check-docs-taxonomy.mjs")
 const cleanupScript = resolve("scripts/cleanup-phase-artifacts.mjs")
+const acceptanceResultsScript = resolve("scripts/generate-acceptance-results-index.mjs")
 const packageJsonPath = resolve("package.json")
 
 let tempDirs: string[] = []
@@ -75,6 +76,56 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
 function writeInjectionValueStatus(projectDir: string, status: Record<string, unknown>): void {
   mkdirSync(join(projectDir, "docs", "current"), { recursive: true })
   writeFileSync(join(projectDir, "docs", "current", "injection-value-status.json"), `${JSON.stringify(status, null, 2)}\n`)
+}
+
+function writeCurrentLifecycleDocs(projectDir: string): void {
+  const currentDir = join(projectDir, "docs", "current")
+  const releaseDir = join(currentDir, "release")
+  mkdirSync(releaseDir, { recursive: true })
+  writeFileSync(
+    join(currentDir, "canonical-docs-index.md"),
+    [
+      "# Canonical Docs Index",
+      "",
+      "## Canonical Current Records",
+      "",
+      "| Topic | Canonical file |",
+      "| --- | --- |",
+      "| Lifecycle | `docs/current/workflow-closure-state-machine-design.md` |",
+      "",
+      "## Archive And History Records",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(currentDir, "README.md"),
+    [
+      "# Current Docs",
+      "",
+      "## Selection Rule",
+      "",
+      "Use workflow-closure-state-machine-design.md as current.",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(currentDir, "docs-inventory.md"),
+    [
+      "| `docs/current/workflow-closure-state-machine-design.md` | current active pointer/status |",
+      "| `docs/current/v0.3.0-workflow-report-status-lifecycle.md` | historical version-specific record |",
+      "| `docs/current/release/next-version-readiness.md` | historical version-specific record |",
+      "| `docs/current/release/rc-release-readiness-decision.md` | archived historical |",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(currentDir, "workflow-closure-state-machine-design.md"),
+    "# Workflow Lifecycle\n\nStatus: current canonical lifecycle contract.\n\nworkflow-lifecycle.1\n",
+  )
+  writeFileSync(
+    join(currentDir, "v0.3.0-workflow-report-status-lifecycle.md"),
+    "# Historical\n\nStatus: historical\n",
+  )
+  writeFileSync(join(releaseDir, "README.md"), "# Release\n\n## Current Workflow Lifecycle Boundary\n\nThis is not a release state.\n")
+  writeFileSync(join(releaseDir, "next-version-readiness.md"), "# Historical\n\nStatus: historical\n")
+  writeFileSync(join(releaseDir, "rc-release-readiness-decision.md"), "# Historical\n\nStatus: historical\n")
 }
 
 afterEach(() => {
@@ -306,12 +357,22 @@ describe("maintenance scripts", () => {
     mkdirSync(join(projectDir, "docs", "archive"), { recursive: true })
     writeFileSync(join(projectDir, "docs", "README.md"), "# Docs\n")
     writeFileSync(join(projectDir, "docs", "project-progress-board.md"), "# Progress\n")
+    writeCurrentLifecycleDocs(projectDir)
 
     const result = runNodeScript(checkDocsTaxonomyScript, [projectDir], projectDir)
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Docs taxonomy diagnostics finding: PASS")
     expect(result.stdout).toContain("Docs taxonomy diagnostics count: 0")
+  })
+
+  it("keeps the generated acceptance index clear that historical docs cannot select current lifecycle guidance", () => {
+    const result = runNodeScript(acceptanceResultsScript, ["--check"], process.cwd())
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Acceptance results index check: PASS")
+    expect(readFileSync(resolve("docs/current/acceptance-results/README.md"), "utf8"))
+      .toContain("cannot select a historical docs/current/ record")
   })
 
   it("rejects new root docs and suggests the taxonomy package", () => {

@@ -5,6 +5,11 @@ Status: historical pre-RC3 current-main release-planning decision as of
 GitHub release, npm publication, dist-tag change, Stable/GA claim, or npm
 `latest` movement.
 
+Selection: historical record only. Do not select this document as current
+release readiness or workflow lifecycle guidance; use the current docs pointer,
+canonical docs index, and
+[`../workflow-closure-state-machine-design.md`](../workflow-closure-state-machine-design.md).
+
 ## Exact Assessment
 
 - Assessed protected `main`:

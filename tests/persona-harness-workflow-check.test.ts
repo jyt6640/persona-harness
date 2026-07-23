@@ -567,7 +567,7 @@ describe("ph workflow check", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Workflow status: PASS")
     expect(result.stdout).toContain("- command discipline: bearshell observed")
-    expect(result.stdout).toContain("Next: archive completed workflow")
+    expect(result.stdout).toContain("Next: local workflow lifecycle is complete, but finish remains blocked until the existing trusted-authority path provides eligible evidence")
   })
 
   it("blocks closure when a Spring Controller directly depends on a Repository", () => {
