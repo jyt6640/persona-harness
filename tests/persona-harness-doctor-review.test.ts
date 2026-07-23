@@ -103,7 +103,7 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain("Rules surface: 0 files")
     expect(result.stdout).toContain("Stale fixture scan: PASS")
     expect(result.stdout).not.toContain("Legacy package material:")
-    expect(result.stdout).toContain("npm registry: alpha=0.3.0-alpha.3, latest=0.3.0-alpha.3")
+    expect(result.stdout).toContain("npm registry: fixed registry channel readback (read-only; channels are not authority)")
   })
 
   it("advises without deleting legacy diff-rules from existing projects", () => {
