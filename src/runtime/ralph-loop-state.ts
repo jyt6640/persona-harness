@@ -35,6 +35,7 @@ export type RalphLoopStateFile = {
 }
 
 export type RalphLoopStateSnapshot = {
+  readonly integrity: "absent" | "malformed" | "valid"
   readonly state: RalphLoopStateFile
   readonly token: FileChangeToken | null
 }
@@ -129,17 +130,68 @@ function readSessions(value: unknown): Record<string, RalphLoopSessionState> {
   return sessions
 }
 
+function isRalphLoopStateFile(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value) || value.schemaVersion !== SCHEMA_VERSION || !isNonEmptyString(value.updatedAt) || !isRecord(value.sessions)) {
+    return false
+  }
+  return Object.entries(value.sessions).every(([sessionID, state]) =>
+    sessionID.trim() !== "" && isRalphLoopSessionState(state),
+  )
+}
+
+function isRalphLoopSessionState(value: unknown): value is Record<string, unknown> {
+  if (
+    !isRecord(value)
+    || !isNonnegativeNumber(value.attemptsUsed)
+    || !isRecord(value.blockerAttempts)
+    || typeof value.capped !== "boolean"
+    || typeof value.capSummaryNotified !== "boolean"
+    || !isNullableNonEmptyString(value.lastBlockerId)
+    || !isNullableStopReason(value.lastStopReason)
+    || !isNullableNonEmptyString(value.lastUtteranceAt)
+  ) {
+    return false
+  }
+  return Object.entries(value.blockerAttempts).every(([blockerId, attempt]) =>
+    blockerId.trim() !== "" && isRalphLoopBlockerAttemptState(attempt),
+  )
+}
+
+function isRalphLoopBlockerAttemptState(value: unknown): value is Record<string, unknown> {
+  return isRecord(value)
+    && isNonnegativeNumber(value.attempts)
+    && typeof value.capped === "boolean"
+    && isNullableNonEmptyString(value.lastUtteranceAt)
+}
+
+function isNonnegativeNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== ""
+}
+
+function isNullableNonEmptyString(value: unknown): value is string | null {
+  return value === null || isNonEmptyString(value)
+}
+
+function isNullableStopReason(value: unknown): value is RalphLoopStopReason | null {
+  return value === null || readStopReason(value) !== null
+}
+
 export function readRalphLoopStateSnapshot(projectDir: string, now = new Date().toISOString()): RalphLoopStateSnapshot {
   const outputPath = ralphLoopStatePath(projectDir)
   if (!existsSync(outputPath)) {
-    return { state: emptyRalphLoopState(now), token: null }
+    return { integrity: "absent", state: emptyRalphLoopState(now), token: null }
   }
   try {
     const parsed: unknown = JSON.parse(readFileSync(outputPath, "utf8"))
-    if (!isRecord(parsed) || parsed.schemaVersion !== SCHEMA_VERSION) {
-      return { state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
+    if (!isRalphLoopStateFile(parsed)) {
+      return { integrity: "malformed", state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
     }
     return {
+      integrity: "valid",
       state: {
         schemaVersion: SCHEMA_VERSION,
         sessions: readSessions(parsed.sessions),
@@ -150,10 +202,10 @@ export function readRalphLoopStateSnapshot(projectDir: string, now = new Date().
   } catch (error) {
     if (error instanceof Error) {
       warnRuntimeFailure("evidence-write", "ralph-loop-state-read", outputPath, error)
-      return { state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
+      return { integrity: "malformed", state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
     }
     warnRuntimeFailure("evidence-write", "ralph-loop-state-read", outputPath, new Error(String(error)))
-    return { state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
+    return { integrity: "malformed", state: emptyRalphLoopState(now), token: fileChangeToken(outputPath) }
   }
 }
 

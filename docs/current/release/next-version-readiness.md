@@ -1,5 +1,11 @@
 # Next Version Readiness
 
+Status: historical v0.3.6-alpha.1 readiness snapshot. It is retained for
+version-era context only and must not be selected as current release readiness,
+publish authorization, or workflow lifecycle guidance. Use the current docs
+pointer and
+[`../workflow-closure-state-machine-design.md`](../workflow-closure-state-machine-design.md).
+
 ## Candidate
 
 ```text
@@ -88,9 +94,11 @@ Top-level router design:
 - `리팩터링해줘` -> refactor primary.
 - `커밋하고 푸쉬해` -> git primary.
 
-## Release Decision
+## Historical Release Decision
 
-Ready to publish under the `alpha` dist-tag after final git commit/push.
+At the time of this snapshot, the recorded decision was to publish under the
+`alpha` dist-tag after a final git commit/push. It does not authorize any
+current publication, tag, registry movement, or release action.
 
 ## Known Gaps
 

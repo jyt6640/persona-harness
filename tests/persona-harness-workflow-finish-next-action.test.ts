@@ -38,6 +38,21 @@ const CURRENT_TICKET = {
   title: "Finish UX fixture",
 }
 
+const BASE_LIFECYCLE = {
+  blockers: [],
+  evidence: { source: ".persona/evidence", status: "present" },
+  finishAuthority: { blocker: null, status: "trusted" },
+  loops: { ralph: "absent", workflow: "absent" },
+  paths: { evidence: "safe", harness: "safe", rules: "safe" },
+  readiness: "ready-for-closure",
+  reports: {
+    implementation: { source: "legacy", status: "filled" },
+    review: { source: "legacy", status: "filled" },
+  },
+  schemaVersion: "workflow-lifecycle.1",
+  tickets: { status: "pending" },
+} as const
+
 const BASE_STATE: WorkflowClosureState = {
   archive: "pending",
   blockers: [],
@@ -45,6 +60,7 @@ const BASE_STATE: WorkflowClosureState = {
   evidence: "present",
   finish: "blocked",
   implementationReport: "filled",
+  lifecycle: BASE_LIFECYCLE,
   pendingTickets: ["req-1"],
   plan: "accepted",
   reportCoverage: "sufficient",
@@ -78,11 +94,57 @@ const FINISH_BLOCKER_MATRIX: readonly FinishMatrixRow[] = [
     stepId: "fill-implementation-report",
   },
   {
+    action: "Resolve conflicting or malformed implementation report status markers before continuing.",
+    blockerId: "implementation-report-conflicting",
+    command: { phase: "after-action", value: "npx ph workflow check" },
+    priority: 1,
+    stepId: "repair-implementation-report-status",
+  },
+  {
+    action: "Resolve conflicting or malformed implementation report status markers before continuing.",
+    blockerId: "implementation-report-malformed",
+    command: { phase: "after-action", value: "npx ph workflow check" },
+    priority: 1,
+    stepId: "repair-implementation-report-status",
+  },
+  {
     action: "Complete the required substantive content in .persona/workflow/review-report.md after review/manual QA before marking it filled.",
     blockerId: "review-report-missing",
     command: { phase: "after-action", value: "npx ph plan --report-filled review" },
     priority: 1,
     stepId: "fill-review-report",
+  },
+  {
+    action: "Resolve conflicting or malformed review report status markers before continuing.",
+    blockerId: "review-report-conflicting",
+    command: { phase: "after-action", value: "npx ph workflow check" },
+    priority: 1,
+    stepId: "repair-review-report-status",
+  },
+  {
+    action: "Resolve conflicting or malformed review report status markers before continuing.",
+    blockerId: "review-report-malformed",
+    command: { phase: "after-action", value: "npx ph workflow check" },
+    priority: 1,
+    stepId: "repair-review-report-status",
+  },
+  {
+    action: "Review and repair the persisted workflow-loop state and rule-pack identity before continuing.",
+    blockerId: "workflow-loop-state-malformed",
+    priority: 1,
+    stepId: "repair-workflow-loop-state",
+  },
+  {
+    action: "Review and repair the persisted workflow-loop state and rule-pack identity before continuing.",
+    blockerId: "workflow-loop-state-stale",
+    priority: 1,
+    stepId: "repair-workflow-loop-state",
+  },
+  {
+    action: "Review and repair the persisted ralph-loop state before continuing.",
+    blockerId: "ralph-loop-state-malformed",
+    priority: 1,
+    stepId: "repair-ralph-loop-state",
   },
   {
     action: "Review the current ticket and confirm it is complete before archiving it.",
