@@ -11,11 +11,11 @@ not product-efficacy, reliability, closure-guarantee, or delegation evidence.
 | State surface | Primary writer | Other readers / observers | T5 behavior |
 | --- | --- | --- | --- |
 | `.persona/workflow/plan.md` status | CLI `ph plan --accept` / `--revise` / `--auto-accept` | CLI plan gates and workflow status readers | Read-modify-write status updates use an mtime/size token and abort when the file changes after read. |
-| `.persona/workflow/implementation-report.md` and `review-report.md` status | CLI `ph plan --report-filled <implementation\|review>` | CLI finish/check/next/resume readers and runtime rail-compliance observers | Read-modify-write status updates use an mtime/size token and abort when the file changes after read. |
+| `.persona/workflow/implementation-report.md` and `review-report.md` status | CLI `ph plan --report-filled <implementation\|review>` | CLI finish/check/next/resume readers, lifecycle projection, and runtime rail-compliance observers | Read-modify-write status updates use an mtime/size token and abort when the file changes after read. Conflicting or malformed markers are surfaced read-only by the lifecycle projection; no reader chooses a fallback marker. |
 | `.persona/workflow/requirements/backlog.md` draft status | CLI `ph workflow approve requirements` | CLI split/next guidance | Draft approval uses an mtime/size token and aborts when the draft changes after read. |
 | `.persona/workflow/backlog.md` ticket status | CLI `ph workflow archive <ticket>` | CLI next/closure/finish/check readers and relay/role surfaces | Backlog repair/archive writes use an mtime/size token and abort when the backlog changes after read. |
-| `.persona/workflow/workflow-loop-state.json` | CLI `ph workflow loop` | CLI `workflow loop --dry-run --json` readers | Loop writes carry a state-file token across iterations and abort when an external process changes the file. |
-| `.persona/workflow/ralph-loop-state.json` | OpenCode plugin/runtime hooks for ralph-loop idle/tool-output continuation | CLI dry-run/reporting readers | Runtime hook writes carry a state-file token and fail closed when another writer changes the file before the hook write. |
+| `.persona/workflow/workflow-loop-state.json` | CLI `ph workflow loop` | CLI `workflow loop --dry-run --json` readers and lifecycle projection | Loop writes carry a state-file token across iterations and abort when an external process changes the file. The projection reports malformed state or a rule-pack mismatch as a blocker without repairing it. |
+| `.persona/workflow/ralph-loop-state.json` | OpenCode plugin/runtime hooks for ralph-loop idle/tool-output continuation | CLI dry-run/reporting readers and lifecycle projection | Runtime hook writes carry a state-file token and fail closed when another writer changes the file before the hook write. The projection reports malformed state without continuing from it. |
 
 ## Conflict Behavior
 
@@ -31,6 +31,19 @@ For CLI commands this is a status-1 abort. For runtime ralph-loop hook writes,
 the write returns false and the hook fails closed: no continuation attempt or
 tool-output append should be emitted from a stale state write.
 
+## Lifecycle Projection Read Safety
+
+`workflow-lifecycle.1` is read-only over these surfaces. It treats an
+unterminated or conflicting report status, malformed loop state, stale
+workflow-loop rule-pack hash, missing evidence, pending ticket, and unsafe
+configured path as a blocker. It does not normalize, overwrite, auto-archive,
+or recreate the affected artifact while observing it.
+
+The projection's `finishAuthority` field is read-only for workflow status and
+normal closure planning. It carries the existing authority result for
+status/closure consistency and does not change the authority reader's explicit
+verification or consumption behavior.
+
 ## Out Of Scope
 
 - Create-only workflow artifacts, such as initial split/capture/template files,
@@ -39,8 +52,8 @@ tool-output append should be emitted from a stale state write.
   ownership surfaces for T5.
 - Directory moves, such as moving a ticket work directory into history, are not
   converted into a multi-file transaction by T5.
-- No gate semantics, JSON output schema, evidence schema, defaults, hook
-  signatures, versioning, publish, or dist-tag behavior changes are included.
+- No authority verification or consumption, producer, signature, versioning,
+  publish, tag, registry, release, or dist-tag behavior changes are included.
 
 ## Coverage
 

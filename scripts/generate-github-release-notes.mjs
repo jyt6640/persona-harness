@@ -52,6 +52,10 @@ not add token-saving, provider-token-saving, product-efficacy,
 navigation-benefit, app-quality, full-TDD/test-sufficiency, CodeGraph/LSP
 default/effectiveness, broad reliability, closure guarantee, Codex support,
 code-nav replacement, or automatic downgrade/removal claims.
+
+It also does not select a current workflow lifecycle state or prove #111
+producer success, signature verification, registry publication, tag movement,
+GitHub release creation, or release completion.
 `
 }
 
