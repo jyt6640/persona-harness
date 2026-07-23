@@ -36,8 +36,10 @@ const SAFE_DIAGNOSTIC_CODES: ReadonlySet<string> = new Set([
   "verification-failed",
   "verification-unknown",
   "workflow-diagnostic-unavailable",
+  "workflow-loop-state-absent",
   "workflow-loop-state-malformed",
   "workflow-loop-state-stale",
+  "ralph-loop-state-absent",
   "ralph-loop-state-malformed",
 ] as const)
 const SAFE_FIXED_COMMANDS: ReadonlySet<string> = new Set([
@@ -101,9 +103,10 @@ export function safeWorkflowDiagnostic(value: string): string {
     return "review-report-missing"
   }
   if (/workflow-loop/iu.test(value)) {
+    if (/absent|missing/iu.test(value)) return "workflow-loop-state-absent"
     return /stale|different rule pack/iu.test(value) ? "workflow-loop-state-stale" : "workflow-loop-state-malformed"
   }
-  if (/ralph-loop/iu.test(value)) return "ralph-loop-state-malformed"
+  if (/ralph-loop/iu.test(value)) return /absent|missing/iu.test(value) ? "ralph-loop-state-absent" : "ralph-loop-state-malformed"
   if (/report coverage|read coverage/iu.test(value)) {
     return "report-coverage-missing"
   }

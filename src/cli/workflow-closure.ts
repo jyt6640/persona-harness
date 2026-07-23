@@ -264,7 +264,15 @@ function closureBlockers(
       source: blocker.source,
     })))
   }
-  pushLifecycleBlocker(blockers, lifecycle, "workflow-loop-state-malformed", "workflow-loop-state-stale", "ralph-loop-state-malformed")
+  pushLifecycleBlocker(
+    blockers,
+    lifecycle,
+    "workflow-loop-state-absent",
+    "workflow-loop-state-malformed",
+    "workflow-loop-state-stale",
+    "ralph-loop-state-absent",
+    "ralph-loop-state-malformed",
+  )
   if (state.tdd.kind === "red-missing") {
     blockers.push({
       evidenceRef: state.tdd.evidenceRef,
@@ -304,10 +312,7 @@ function pushLifecycleBlocker(
   lifecycle: WorkflowLifecycleProjection,
   ...ids: readonly string[]
 ): void {
-  const blocker = lifecycle.blockers.find((candidate) => ids.includes(candidate.id))
-  if (blocker !== undefined) {
-    blockers.push(blocker)
-  }
+  blockers.push(...lifecycle.blockers.filter((candidate) => ids.includes(candidate.id)))
 }
 
 function pushLifecycleImplementationReportBlocker(
@@ -408,8 +413,14 @@ export function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState
   if (blocker.id === "evidence-missing") {
     return { blockerId: blocker.id, id: "record-workflow-evidence", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
+  if (blocker.id === "workflow-loop-state-absent") {
+    return { blockerId: blocker.id, id: "initialize-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
   if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale") {
     return { blockerId: blocker.id, id: "repair-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "ralph-loop-state-absent") {
+    return { blockerId: blocker.id, id: "initialize-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "ralph-loop-state-malformed") {
     return { blockerId: blocker.id, id: "repair-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }

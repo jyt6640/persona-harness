@@ -389,8 +389,14 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
     }
     return `run \`npx ph workflow next\` or \`npx ph workflow continue\` for pending ticket ${pendingTicket?.ticket ?? "<unknown>"}`
   }
+  if (summary.lifecycle.loops.workflow === "absent") {
+    return "run the explicit bounded workflow loop to establish persisted workflow-loop state before continuing"
+  }
   if (summary.lifecycle.loops.workflow === "malformed" || summary.lifecycle.loops.workflow === "stale") {
     return "review and repair the persisted workflow-loop state before continuing"
+  }
+  if (summary.lifecycle.loops.ralph === "absent") {
+    return "establish persisted ralph-loop state through the approved bounded runtime before continuing"
   }
   if (summary.lifecycle.loops.ralph === "malformed") {
     return "review and repair the persisted ralph-loop state before continuing"
