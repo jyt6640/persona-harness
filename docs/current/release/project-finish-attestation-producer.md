@@ -1,9 +1,11 @@
 # Project Finish Attestation Producer
 
 This source candidate adds the producer-side contract for
-`project-finish-attestation.1`. It does not add a verifier, an external
-authority decision, a Finish PASS, a release action, a registry action, or a
-reusable local authority record.
+`project-finish-attestation.1`. This producer record does not itself define
+verifier behavior; the separate verifier-core boundary is
+[`project-finish-attestation-verifier.md`](project-finish-attestation-verifier.md).
+It does not add an external authority decision, a Finish PASS, a release
+action, a registry action, or a reusable local authority record.
 
 ## Fixed Producer Boundary
 

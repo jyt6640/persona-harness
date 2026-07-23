@@ -26,6 +26,7 @@ try {
 
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
     assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+    assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
@@ -113,6 +114,41 @@ function assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage
     `import { verifyExternalFinishAttestation } from ${JSON.stringify(modulePath)}; const result = verifyExternalFinishAttestation(process.cwd(), new Date("2026-07-16T16:00:00.000Z"), { consume: false }); if (result.authorityEligible || result.state !== "source-drift") process.exit(1);`,
   ])
   requireSuccess("installed packaged verifier fail-closed probe", probe)
+}
+
+function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory) {
+  const workerPath = join(installedPackage, "scripts", "verify-project-finish-attestation.mjs")
+  const modulePath = pathToFileURL(join(
+    installedPackage,
+    "dist",
+    "cli",
+    "project-finish-attestation-verifier.js",
+  )).href
+  const projectDir = join(consumerDirectory, "project-finish-verifier-local")
+  const evidenceDirectory = join(projectDir, ".persona", "evidence", "project-finish-attestation")
+  if (!existsSync(workerPath)) {
+    throw new Error("installed package is missing the project finish verifier worker")
+  }
+  mkdirSync(evidenceDirectory, { recursive: true })
+  writeFileSync(join(evidenceDirectory, "bundle.json"), '{"local":"unsigned"}\n')
+  writeFileSync(join(evidenceDirectory, "predicate.json"), '{}\n')
+  writeFileSync(join(evidenceDirectory, "receipt.json"), '{}\n')
+
+  const probe = runNode(consumerDirectory, [
+    "--input-type=module",
+    "-e",
+    [
+      "import { inspectProjectFinishAttestation } from " + JSON.stringify(modulePath) + ";",
+      'import { existsSync } from "node:fs";',
+      'import { join } from "node:path";',
+      'const projectDir = join(process.cwd(), "project-finish-verifier-local");',
+      'const enrollment = { callerWorkflowPath: "project.yml", repositoryId: 123, repositorySlug: "example/public-project", reusableWorkflowSha: "b".repeat(40) };',
+      'const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-23T02:45:00.000Z"));',
+      'const consumption = join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json");',
+      'if (result.authorityEligible || result.state !== "malformed" || existsSync(consumption)) process.exit(1);',
+    ].join("\n"),
+  ])
+  requireSuccess("installed project finish verifier no-source-fallback probe", probe)
 }
 
 function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory) {

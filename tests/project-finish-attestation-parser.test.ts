@@ -40,6 +40,24 @@ describe("project-finish-attestation.1 parser and policy", () => {
     })
   })
 
+  it("requires the GitHub artifact subject basename used by the original bundle", () => {
+    const statement = createValidProjectFinishAttestationStatement()
+    const subject = arrayField(statement, "subject")
+    const digest = recordField(subject[0], "digest")
+    subject[0] = {
+      digest,
+      name: "project-finish-attestation-receipt.json",
+    }
+
+    const result = assessProjectFinishAttestationStatement(statement)
+
+    expect(result).toMatchObject({
+      authorityEligible: false,
+      decision: "blocked",
+      state: "wrong-policy",
+    })
+  })
+
   it("requires separately bound caller and reusable workflow identities", () => {
     const statement = createValidProjectFinishAttestationStatement()
     const workflow = recordField(receipt(statement), "workflow")
