@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
 
@@ -28,6 +29,7 @@ function writeFilledWorkflowReports(projectDir: string): void {
   )
   mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
   writeFileSync(join(projectDir, ".persona", "evidence", "phase0", "sample.json"), "{}\n")
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }
 
 afterEach(() => {

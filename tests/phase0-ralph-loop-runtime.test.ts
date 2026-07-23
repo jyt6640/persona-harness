@@ -9,6 +9,7 @@ import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import { opaqueEvidenceKey } from "../src/runtime/evidence-file.js"
 import type { IdleContinuationClient, IdlePromptAsyncOptions } from "../src/runtime/idle-continuation.js"
 import { readRalphLoopState, ralphLoopStatePath } from "../src/runtime/ralph-loop-state.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
 
@@ -57,6 +58,7 @@ function writePassableWorkflow(projectDir: string): void {
     "gradlew test\nBUILD SUCCESSFUL\ngradlew build\nBUILD SUCCESSFUL\nTomcat started on port 8080",
   )
   writeFilledReports(projectDir)
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }
 
 function writeProfile(projectDir: string): void {
@@ -520,6 +522,7 @@ describe("Phase 0 ralph-loop runtime continuation", () => {
     fillImplementationReport(projectDir)
     await hooks.event?.({ event: { properties: { sessionID: "session-blocker-change" }, type: "session.idle" } })
     fillReviewReport(projectDir)
+    writeCurrentWorkflowLifecycleLoopStates(projectDir)
     await hooks.event?.({ event: { properties: { sessionID: "session-blocker-change" }, type: "session.idle" } })
 
     const sessionState = readRalphLoopState(projectDir).sessions["session-blocker-change"]

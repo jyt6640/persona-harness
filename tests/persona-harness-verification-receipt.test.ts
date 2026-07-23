@@ -13,6 +13,7 @@ import {
   parseVerificationReceipt,
 } from "../src/cli/workflow-verification-receipt.js"
 import { SOURCE_IDENTITY_EXCLUSIONS } from "../src/cli/source-identity.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
 const NOW = "2026-07-13T12:00:00.000Z"
@@ -417,4 +418,5 @@ function writeFinishFixture(projectDir: string): void {
     tool: "bearshell",
     toolOutput: "BUILD SUCCESSFUL",
   })
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }
