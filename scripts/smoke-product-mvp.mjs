@@ -187,6 +187,40 @@ function writeWorkflowPassEvidence(dir) {
   writeEvidence(dir, "src/main/java/com/example/global/exception/BookNotFoundException.java", "exception")
 }
 
+function writeCurrentWorkflowLoopStates(dir) {
+  const preview = runCli(dir, ["workflow", "loop", "--dry-run", "--json"])
+  if (preview.status !== 1) {
+    throw new SmokeAssertionError("workflow pass loop preview did not report the expected blocked state", preview)
+  }
+  let payload
+  try {
+    payload = JSON.parse(preview.stdout)
+  } catch {
+    throw new SmokeAssertionError("workflow pass loop preview did not return JSON", preview)
+  }
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload) || typeof payload.rulePackHash !== "string") {
+    throw new SmokeAssertionError("workflow pass loop preview did not return a rule-pack hash", preview)
+  }
+  writeFileSync(
+    join(dir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: payload.rulePackHash,
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(dir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+}
+
 function assertObserveReport(stdout, result) {
   const report = JSON.parse(stdout)
   if (typeof report !== "object" || report === null || !Array.isArray(report.findings)) {
@@ -226,6 +260,7 @@ try {
   assertCommand(runCli(passDir, ["plan"]), 0, "workflow pass plan")
   assertCommand(runCli(passDir, ["plan", "--accept"]), 0, "workflow pass accept")
   writeWorkflowPassEvidence(passDir)
+  writeCurrentWorkflowLoopStates(passDir)
   assertCommand(runCli(passDir, ["workflow", "continue"]), 0, "workflow pass continue")
   const passCheck = assertCommand(runCli(passDir, ["workflow", "check"]), 0, "workflow pass check")
   assertIncludes(passCheck.stdout, "Workflow status: PASS", "workflow check PASS", passCheck)
