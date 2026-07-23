@@ -244,7 +244,7 @@ Total indexed files: 334
 | `docs/current/vendored-shared-skills-tarball-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/workflow-closure-state-machine-design.md` | current active pointer/status | - | Canonical `workflow-lifecycle.1` contract for status, closure, loop-state, and finish projection; selected by the current docs index and README. |
 | `docs/current/workflow-string-gate-parsing-audit.md` | current active pointer/status | - | T4 report-status parsing migration and retained string-gate audit record. |
-| `docs/current/workflow-state-concurrency.md` | current active pointer/status | - | Current ownership, conflict detection, and read-only malformed/stale-state handling for lifecycle inputs. |
+| `docs/current/workflow-state-concurrency.md` | current active pointer/status | - | Current ownership, conflict detection, and read-only absent/malformed/stale-state handling for lifecycle inputs. |
 | `docs/current/workflow-transition-test-map.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/workflow.md` | operational stable | - | Stable non-versioned guide or index. |
 | `docs/evidence-reviews/README.md` | evidence review archive | - | Evidence/review record; durable but not the current status surface. |
