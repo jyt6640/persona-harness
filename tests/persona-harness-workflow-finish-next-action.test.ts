@@ -17,6 +17,7 @@ import {
 } from "../src/cli/workflow-closure-finish.js"
 import { failedRunnerOutput } from "../src/cli/workflow-output.js"
 import { runPersonaCli } from "../src/cli/index.js"
+import { rulePackContentHash } from "../src/rules/rule-delivery.js"
 
 type FinishMatrixRow = {
   readonly action: string
@@ -129,6 +130,12 @@ const FINISH_BLOCKER_MATRIX: readonly FinishMatrixRow[] = [
     stepId: "repair-review-report-status",
   },
   {
+    action: "Run the explicit bounded workflow loop to establish persisted workflow-loop state before continuing.",
+    blockerId: "workflow-loop-state-absent",
+    priority: 1,
+    stepId: "initialize-workflow-loop-state",
+  },
+  {
     action: "Review and repair the persisted workflow-loop state and rule-pack identity before continuing.",
     blockerId: "workflow-loop-state-malformed",
     priority: 1,
@@ -139,6 +146,12 @@ const FINISH_BLOCKER_MATRIX: readonly FinishMatrixRow[] = [
     blockerId: "workflow-loop-state-stale",
     priority: 1,
     stepId: "repair-workflow-loop-state",
+  },
+  {
+    action: "Establish persisted ralph-loop state through the approved bounded runtime before continuing.",
+    blockerId: "ralph-loop-state-absent",
+    priority: 1,
+    stepId: "initialize-ralph-loop-state",
   },
   {
     action: "Review and repair the persisted ralph-loop state before continuing.",
@@ -263,6 +276,27 @@ function writeFilledReviewReport(projectDir: string): void {
       "- `npx ph bearshell --shell './gradlew bootRun'`",
       "- Manual QA completed.",
     ].join("\n"),
+  )
+}
+
+function writeCurrentLoopStates(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: rulePackContentHash(projectDir),
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
   )
 }
 
@@ -471,6 +505,7 @@ describe("ph workflow finish next action matrix", () => {
       env: {},
       invocationName: "ph",
     })
+    writeCurrentLoopStates(projectDir)
     const finish = runPersonaCli(["workflow", "finish", "implement"], {
       cwd: projectDir,
       env: {},
@@ -509,11 +544,15 @@ describe("ph workflow finish next action matrix", () => {
       "verification-unknown",
       "implementation-report-missing",
       "review-report-missing",
+      "workflow-loop-state-absent",
+      "ralph-loop-state-absent",
     ])
     expect(payload.steps.map((step) => step.blockerId)).toEqual([
       "verification-unknown",
       "implementation-report-missing",
       "review-report-missing",
+      "workflow-loop-state-absent",
+      "ralph-loop-state-absent",
     ])
   })
 })

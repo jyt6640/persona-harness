@@ -82,9 +82,21 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
       command: commandForStep(step),
     }
   }
+  if (step.id === "initialize-workflow-loop-state") {
+    return {
+      action: "Run the explicit bounded workflow loop to establish persisted workflow-loop state before continuing.",
+      blockerId,
+    }
+  }
   if (step.id === "repair-workflow-loop-state") {
     return {
       action: "Review and repair the persisted workflow-loop state and rule-pack identity before continuing.",
+      blockerId,
+    }
+  }
+  if (step.id === "initialize-ralph-loop-state") {
+    return {
+      action: "Establish persisted ralph-loop state through the approved bounded runtime before continuing.",
       blockerId,
     }
   }

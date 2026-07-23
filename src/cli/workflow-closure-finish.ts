@@ -112,11 +112,25 @@ function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): stri
   if (blocker.id === "evidence-missing") {
     return [`Closure blocker: ${blocker.id}`, blocker.reason].join("\n")
   }
+  if (blocker.id === "workflow-loop-state-absent") {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      "No persisted workflow-loop state is available.",
+      "Run the explicit bounded workflow loop to establish its state before continuing.",
+    ].join("\n")
+  }
   if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale") {
     return [
       `Closure blocker: ${blocker.id}`,
       `Persisted workflow-loop state is not safe to continue: ${blocker.reason}`,
       "Review the state and rule-pack identity before replacing it; do not silently recover or continue from it.",
+    ].join("\n")
+  }
+  if (blocker.id === "ralph-loop-state-absent") {
+    return [
+      `Closure blocker: ${blocker.id}`,
+      "No persisted ralph-loop state is available.",
+      "Establish it through the approved bounded runtime before continuing.",
     ].join("\n")
   }
   if (blocker.id === "ralph-loop-state-malformed") {

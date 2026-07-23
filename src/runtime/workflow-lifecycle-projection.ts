@@ -128,11 +128,7 @@ function lifecycleBlockers(
       source: input.evidenceSource,
     }] : []),
     ...workflowLoopBlockers(loops.workflow),
-    ...(loops.ralph === "malformed" ? [{
-      id: "ralph-loop-state-malformed",
-      reason: "ralph-loop state is malformed; review the persisted state before retrying continuation.",
-      source: ".persona/workflow/ralph-loop-state.json",
-    }] : []),
+    ...ralphLoopBlockers(loops.ralph),
     ...(input.pendingTicketCount === 0 ? [] : [{
       id: "pending-ticket",
       reason: "pending workflow tickets remain",
@@ -165,6 +161,11 @@ function reportBlocker(
 function workflowLoopBlockers(status: WorkflowLifecycleProjection["loops"]["workflow"]): readonly WorkflowLifecycleBlocker[] {
   switch (status) {
     case "absent":
+      return [{
+        id: "workflow-loop-state-absent",
+        reason: "workflow-loop state is absent; establish the explicit bounded loop state before continuing.",
+        source: ".persona/workflow/workflow-loop-state.json",
+      }]
     case "current":
     case "unassessed":
       return []
@@ -179,6 +180,27 @@ function workflowLoopBlockers(status: WorkflowLifecycleProjection["loops"]["work
         id: "workflow-loop-state-stale",
         reason: "workflow-loop state was created for a different rule pack; review or replace it before continuing.",
         source: ".persona/workflow/workflow-loop-state.json",
+      }]
+    default:
+      return assertNever(status)
+  }
+}
+
+function ralphLoopBlockers(status: WorkflowLifecycleProjection["loops"]["ralph"]): readonly WorkflowLifecycleBlocker[] {
+  switch (status) {
+    case "absent":
+      return [{
+        id: "ralph-loop-state-absent",
+        reason: "ralph-loop state is absent; establish it through the approved bounded runtime before continuing.",
+        source: ".persona/workflow/ralph-loop-state.json",
+      }]
+    case "current":
+      return []
+    case "malformed":
+      return [{
+        id: "ralph-loop-state-malformed",
+        reason: "ralph-loop state is malformed; review the persisted state before retrying continuation.",
+        source: ".persona/workflow/ralph-loop-state.json",
       }]
     default:
       return assertNever(status)
