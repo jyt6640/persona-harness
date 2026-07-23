@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { rulePackContentHash } from "../src/rules/rule-delivery.js"
 
 const tempProjects: string[] = []
 
@@ -27,6 +28,28 @@ function prepareAcceptedWorkflow(projectDir: string): void {
   writeFileSync(
     join(projectDir, ".persona", "evidence", "phase0", "2026-06-24T00-00-00-000Z-project-profile.jsonc.json"),
     `${JSON.stringify({ targetFile: join(projectDir, ".persona", "project-profile.jsonc"), fileRole: "project-profile" }, null, 2)}\n`,
+  )
+  writeCurrentLoopStates(projectDir)
+}
+
+function writeCurrentLoopStates(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: rulePackContentHash(projectDir),
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
   )
 }
 
@@ -86,7 +109,7 @@ describe("ph workflow noise classification", () => {
     expect(result.stdout).toContain("Workflow status: PASS")
     expect(result.stdout).toContain("note: direct `.persona/rules` read observed")
     expect(result.stdout).toContain("direct `.persona/rules` read observed")
-    expect(result.stdout).toContain("Next: archive completed workflow")
+    expect(result.stdout).toContain("Next: local workflow lifecycle is complete, but finish remains blocked until the existing trusted-authority path provides eligible evidence")
   })
 
   it("blocks implementation finish when only non-blocking workflow noise remains", () => {

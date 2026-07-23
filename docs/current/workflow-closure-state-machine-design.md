@@ -1,262 +1,138 @@
-# Workflow Closure State Machine Design
+# Workflow Closure Lifecycle Projection
 
-Status: design contract; read-only first slice implemented in
-`5df7dc1 feat(cli): add workflow closure planner`
+Status: current canonical lifecycle contract.
 
-This is a product design contract for the workflow closure planner. It exists
-because the current workflow rail guides an agent, but does not structurally
-drive closure after the generated app already builds, tests, and runs.
+This document is the selected current contract for `workflow-lifecycle.1`.
+It supersedes earlier planner-only descriptions for status, closure, report, and
+loop-state consistency. Historical report-marker notes remain at
+[`v0.3.0-workflow-report-status-lifecycle.md`](v0.3.0-workflow-report-status-lifecycle.md)
+but are not current lifecycle input.
 
-## Problem
+## Scope
 
-The alpha6 single finish trial reached successful Java/Spring/Gradle app
-generation and verification, then failed to return to workflow closure:
+The projection is a read-only, fail-closed view of workflow state. It is shared
+by:
 
-- `.persona/workflow/implementation-report.md` stayed `Status: template`.
-- `.persona/workflow/review-report.md` stayed `Status: template`.
-- `req-1` stayed pending.
-- `npx ph workflow finish implement` correctly exited 1.
+- `readWorkflowStatus` and `npx ph workflow check`;
+- `npx ph workflow closure status --json` and `next --json`;
+- closure step selection and finish follow-up guidance; and
+- persisted workflow-loop and ralph-loop state readers.
 
-That means the final gate worked. The missing product behavior is not another
-sentence in the rail. The missing behavior is a state machine that can read the
-current workflow state, compute exact missing closure steps, execute or request
-the next step, re-read state after the action, and stop at the precise blocker.
+It is not a release state machine. It does not issue or consume authority, run
+a producer, create a signature, publish a package, move a tag, create a GitHub
+release, or decide that a release is complete.
 
-## State Model
+## Projection Shape
 
-The closure machine should derive one structured snapshot from existing workflow
-readers before every decision:
+`workflow-lifecycle.1` contains the following stable groups:
 
 ```ts
-type WorkflowClosureState = {
-  readonly plan: "missing" | "draft" | "needs-revision" | "accepted" | "unknown"
-  readonly currentTicket:
-    | { readonly id: string; readonly title: string; readonly state: "active-work" | "history-only" | "missing-work" }
-    | undefined
-  readonly pendingTickets: readonly string[]
-  readonly implementationReport: "missing" | "template" | "filled" | "unknown"
-  readonly reviewReport: "missing" | "template" | "filled" | "unknown"
-  readonly evidence: "missing" | "present"
-  readonly verification: "unknown" | "not-run" | "failed" | "passed"
-  readonly reportCoverage: "not-checked" | "missing" | "sufficient"
-  readonly archive: "not-needed" | "pending" | "history-only-repair" | "complete"
-  readonly finish: "not-run" | "blocked" | "passed"
-  readonly blockers: readonly ClosureBlocker[]
+type WorkflowLifecycleProjection = {
+  readonly schemaVersion: "workflow-lifecycle.1"
+  readonly reports: {
+    readonly implementation: { readonly source: "file" | "frontmatter" | "legacy" | "missing"; readonly status: ReportStatus }
+    readonly review: { readonly source: "file" | "frontmatter" | "legacy" | "missing"; readonly status: ReportStatus }
+  }
+  readonly evidence: { readonly source: string; readonly status: "missing" | "present" }
+  readonly paths: { readonly harness: "invalid" | "safe"; readonly rules: PathStatus; readonly evidence: PathStatus }
+  readonly loops: { readonly workflow: "absent" | "current" | "malformed" | "stale" | "unassessed"; readonly ralph: "absent" | "current" | "malformed" }
+  readonly tickets: { readonly status: "clear" | "pending" }
+  readonly finishAuthority: { readonly status: "blocked" | "trusted"; readonly blocker: LifecycleBlocker | null }
+  readonly readiness: "blocked" | "ready-for-closure"
+  readonly blockers: readonly LifecycleBlocker[]
 }
+
+type ReportStatus = "conflicting" | "filled" | "malformed" | "missing" | "template" | "unknown"
+type PathStatus = "safe" | "unavailable" | "unsafe"
 ```
 
-Notes:
+`readiness` describes the deterministic local lifecycle only. A value of
+`ready-for-closure` is not Finish PASS and is not release readiness.
+`finishAuthority` is a separate final-gate observation using the already
+implemented authority reader. A blocked authority remains a closure/finish
+blocker after the local closure gates are clear; it is intentionally not
+silently converted into local lifecycle readiness.
 
-- Plan/report status already comes from `workflow-status.ts` and `plan-next.ts`.
-- Ticket state already comes from `workflow-ticket-summary.ts`.
-- Report coverage already comes from `workflow-report-coverage.ts`.
-- Verification should remain evidence-based; the CLI must not infer success from
-  command names alone.
-- Finish status is the result of running or simulating
-  `npx ph workflow finish implement`; it is not replaced by the closure machine.
+## Fail-Closed Rules
 
-## Implemented CLI Surface
+1. An invalid harness configuration, unsafe rules path, or unsafe evidence path
+   is returned as a safety blocker before downstream state is trusted.
+2. A missing report, untouched template, unknown status, malformed frontmatter,
+   repeated contradictory status marker, or conflict between frontmatter and a
+   legacy `Status:` marker blocks the relevant report. The parser does not pick
+   a fallback winner.
+3. Missing evidence blocks lifecycle progression. Evidence presence alone does
+   not create trusted authority.
+4. An absent or malformed workflow-loop or ralph-loop state blocks
+   continuation. Absence maps to a bounded initialization step; a malformed
+   state maps to a distinct review-and-repair step. A valid workflow-loop state
+   whose rule-pack hash differs from the current rule pack is `stale` and also
+   blocks continuation. The reader never creates, rewrites, or repairs state
+   while reporting it.
+5. Pending tickets block closure; history-only backlog state remains a repair
+   case instead of an implicit archive.
+6. Workflow status and normal closure planning call the existing authority
+   reader without consumption. Its blocked result continues to reject copied,
+   synthetic, stale, or otherwise untrusted local evidence. This contract does
+   not alter authority verification, attestation consumption, or producer behavior.
 
-Implemented read-only first slice:
+## Closure And Finish Boundary
 
-```text
-npx ph workflow closure status [--json]
-npx ph workflow closure next [--json]
-```
+Closure reads one status summary and carries its exact lifecycle projection in
+`state.lifecycle`. Safe JSON rendering preserves schema, bounded blocker IDs,
+and safe artifact references while omitting raw diagnostic prose.
 
-Future candidate only:
+Closure orders work as follows:
 
-```text
-npx ph workflow closure run --step <step-id>
-```
+1. lifecycle safety blockers;
+2. deterministic verification, report, evidence, coverage, ticket, and loop
+   blockers; then
+3. the existing `trusted-authority-required` final blocker when all earlier
+   blockers are clear and `finishAuthority.status` is `blocked`.
 
-The first slice intentionally ships only `status` and `next`. There is no
-`closure run`, no auto-fill, no auto-archive, and no workflow finish automation
-in this slice.
+`workflow finish implement` still decides Finish PASS through its existing
+finish and authority path. The projection cannot manufacture a pass by having
+no local blockers. Conversely, a copied or synthetic #111-like report or
+evidence file remains diagnostic-only and cannot satisfy the final authority
+boundary.
 
-Output contract:
+## Repair Guidance
 
-- `status` prints the current state and blockers.
-- `next` prints a deterministic command sequence with the first incomplete step
-  marked as actionable.
-- `--json` returns the same data for agents/runners without parsing prose.
-- `workflow finish implement` remains the final authority.
-- No command should mark substantive reports filled or archive tickets unless
-  the required state transition is already observable.
+Closure maps invalid report states to `repair-implementation-report-status` or
+`repair-review-report-status`, requiring the markers to be corrected before a
+fresh `npx ph workflow check`. Absent persisted state maps to
+`initialize-workflow-loop-state` or `initialize-ralph-loop-state`; stale or
+malformed state maps to `repair-workflow-loop-state` or
+`repair-ralph-loop-state`. These are explicit human-or-runtime actions, not
+automatic recovery commands.
 
-Example JSON shape:
+## Concurrency And Paths
 
-```json
-{
-  "state": {
-    "plan": "accepted",
-    "currentTicket": { "id": "req-1", "title": "Task CRUD API", "state": "active-work" },
-    "implementationReport": "template",
-    "reviewReport": "template",
-    "evidence": "present",
-    "verification": "passed",
-    "archive": "pending",
-    "finish": "blocked"
-  },
-  "steps": [
-    {
-      "id": "fill-implementation-report",
-      "kind": "human-or-model-content",
-      "status": "blocked",
-      "reason": "implementation report is template",
-      "commandAfterContent": "npx ph plan --report-filled implementation"
-    },
-    {
-      "id": "fill-review-report",
-      "kind": "human-or-model-content",
-      "status": "pending",
-      "commandAfterContent": "npx ph plan --report-filled review"
-    },
-    {
-      "id": "archive-current-ticket",
-      "kind": "cli-command",
-      "status": "pending",
-      "command": "npx ph workflow archive req-1"
-    },
-    {
-      "id": "finish-implement",
-      "kind": "cli-command",
-      "status": "pending",
-      "command": "npx ph workflow finish implement"
-    }
-  ]
-}
-```
+The projection consumes snapshot readers only. State writers retain their
+existing token checks and must refuse replacement races. See
+[`workflow-state-concurrency.md`](workflow-state-concurrency.md) for ownership,
+no-follow/path constraints, and the rule that absent state must be established
+explicitly while malformed or stale persisted state must be reviewed before a
+writer replaces it.
 
-## Transitions
+## Current-Document Selection
 
-The closure machine should be transition-driven, not string-driven.
+Use this file through [`README.md`](README.md) or the
+[`canonical docs index`](canonical-docs-index.md). A retained historical file,
+including any `v0.*` lifecycle note or historical release-readiness decision,
+must not be selected as current based on its directory alone.
 
-1. `plan != accepted`
-   - Stop.
-   - Required command: `npx ph plan --accept` or `npx ph plan --revise`.
-2. `verification == failed`
-   - Stop.
-   - Required action: fix compile/test/runtime failure, rerun verification, then
-     re-run closure status.
-3. `implementationReport != filled`
-   - Stop at human/model content boundary.
-   - Required content: actual implementation report with read coverage,
-     verification evidence, and continuation state.
-   - Allowed command after content exists:
-     `npx ph plan --report-filled implementation`.
-4. `reviewReport != filled`
-   - Stop at human/model content boundary.
-   - Required content: review/manual QA result and requirement satisfaction
-     notes.
-   - Allowed command after content exists:
-     `npx ph plan --report-filled review`.
-5. `pendingTickets.length > 0`
-   - Stop unless the current ticket is review-confirmed satisfied.
-   - Allowed command after review confirmation:
-     `npx ph workflow archive <ticket>`.
-   - If `history-only`, allow archive repair.
-6. `finish != passed`
-   - Run or instruct `npx ph workflow finish implement`.
-   - Re-read full state after the command.
-   - If blocked, surface the exact final gate reason and stop.
-7. `finish == passed`
-   - Terminal closure.
+## Nonclaims
 
-## Invariants
+This contract does not claim #111 producer success, signature verification,
+registry publication, tag movement, GitHub release creation, release
+completion, generated-application quality, broad reliability, or independent
+External verification. It is workflow lifecycle and closure-state truth only.
 
-- `workflow finish implement` remains the final authority.
-- The closure machine must never mark finish passed by inspecting state alone.
-- The CLI must not invent implementation or review evidence.
-- The CLI must not auto-fill substantive report bodies.
-- The CLI must not auto-archive a pending ticket unless the command is
-  explicitly invoked and the ticket state transition can be verified.
-- Every state-changing command must be followed by a fresh read of the workflow
-  state.
-- Report-only analyzers remain report-only; backend-shape/observe do not become
-  product quality certification.
+## Coverage
 
-## Human And Model Boundary
-
-CLI can automate:
-
-- Reading workflow state.
-- Computing blockers and next steps.
-- Running existing CLI state transitions when explicitly requested.
-- Verifying that a command changed observable state.
-- Returning structured JSON for agents/runners.
-
-CLI must ask the model/user for:
-
-- Implementation report substance.
-- Review report substance.
-- Requirement satisfaction judgment before archive.
-- Code fixes for failed build/test/runtime.
-- Any explanation of why a ticket should remain pending.
-
-## Failure Modes
-
-- `missing-report-content`: report is missing/template/unknown.
-- `missing-evidence`: `.persona/evidence` is absent when final gate requires it.
-- `verification-failed`: compile/test/runtime failure evidence exists.
-- `verification-unknown`: verification commands are mentioned without success or
-  failure output.
-- `pending-ticket`: backlog has pending work.
-- `history-backlog-mismatch`: history exists but backlog still marks pending.
-- `provider-timeout`: model/provider stopped before requested content or command.
-- `state-transition-missing`: command ran but state did not change.
-- `finish-blocked`: final gate failed with explicit reasons.
-
-## Minimal First Slice
-
-Do not start with a full executor. The implemented first slice is a read-only
-planner:
-
-1. Add a structured closure state module that reuses existing readers.
-2. Add `npx ph workflow closure status --json`.
-3. Add `npx ph workflow closure next --json`.
-4. Keep human output short, but make tests assert the JSON shape.
-5. Do not add `run` until state reads and blocker ordering are stable.
-
-This first slice gives agents and runners a deterministic closure target without
-weakening gates or pretending the CLI can write substantive reports.
-
-The alpha6 single finish trial failure remains valid. This planner is the
-structural follow-up to that failure, not retroactive success for the trial.
-
-## Test Strategy
-
-Use fixture workspaces, not eval runs.
-
-- Plan missing/draft/accepted states.
-- Template implementation report after app verification evidence exists.
-- Filled implementation report plus template review report.
-- Filled reports plus pending `req-*`.
-- `history-only` archive repair.
-- Verification failed before report closure.
-- Verification unknown: command text without success/failure output.
-- Finish pass terminal state.
-- JSON assertions for step IDs, status, command, blocker reason, and source.
-- Built CLI smoke for `workflow closure status --json` and
-  `workflow closure next --json` once implemented.
-
-## Non-goals
-
-- No new closure checklist wording patch.
-- No finish gate weakening.
-- No fake report filling.
-- No automatic product quality certification.
-- No eval-core, fixture, policy, or scorer changes.
-- No model regeneration in CLI tests.
-
-## Open Questions
-
-- Should the first command be named `workflow closure` or
-  `workflow finalize`? `closure` is clearer for state inspection; `finalize`
-  may imply automation before the CLI can safely automate content steps.
-- Should the eventual executor support only one step per invocation? One-step
-  execution is safer because every step can re-read state before proceeding.
-- Should provider timeout be represented in workflow state, or only in runner
-  metadata? Product CLI can report `unknown/stopped`, but runner-specific
-  timeout labels should stay outside CLI state unless a local artifact records
-  them.
+Focused coverage exercises shared status/closure/next/follow-up projection
+parity, conflicting report markers, malformed report frontmatter, absent,
+stale, and malformed loop state, unsafe path handling, pending tickets, no
+authority, and synthetic local evidence that remains blocked by the existing
+authority boundary.

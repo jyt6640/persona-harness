@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 type FixtureCase = "forged-bearshell-build-success" | "forged-tdd-self-digest-pass"
 
@@ -152,6 +153,7 @@ function writeWorkflowSetup(projectDir: string): void {
     join(projectDir, ".persona", "harness.jsonc"),
     `${JSON.stringify({ enforce: { executeVerification: false, tdd: false } }, null, 2)}\n`,
   )
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }
 
 function runFinish(projectDir: string) {

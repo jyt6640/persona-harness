@@ -98,6 +98,10 @@ describe("P3-6 config/path safety", () => {
       status: "blocked",
     })
     expect(closurePayload.nextStep).not.toHaveProperty("reason")
+    expect(closurePayload.state.lifecycle).toMatchObject({
+      paths: { harness: "invalid" },
+      readiness: "blocked",
+    })
     expect(closure.stdout).not.toContain("SyntaxError")
     expect(closure.stdout).not.toContain("broken")
     expect(readFileSync(configPath, "utf8")).toBe(before)

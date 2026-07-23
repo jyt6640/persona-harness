@@ -16,6 +16,8 @@ import {
 } from "../src/cli/workflow-closure.js"
 import { CONVENTION_REGISTRY } from "../src/config/convention-registry.js"
 import { loadHarnessConfig } from "../src/config/harness-config.js"
+import { formatWorkflowStatus, readWorkflowStatus } from "../src/cli/workflow-status.js"
+import { rulePackContentHash } from "../src/rules/rule-delivery.js"
 
 const tempProjects: string[] = []
 
@@ -71,6 +73,27 @@ function writeFilledReports(projectDir: string): void {
   writeFileSync(
     join(projectDir, ".persona", "workflow", "review-report.md"),
     ["Status: filled", "- `npx ph bearshell ./gradlew bootRun`", "Tomcat started on port 8080", "Started TaskApplication"].join("\n"),
+  )
+}
+
+function writeCurrentLoopStates(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: rulePackContentHash(projectDir),
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
   )
 }
 
@@ -194,8 +217,24 @@ const REQUIRED_STATE_KEYS = [
   "reportCoverage",
   "archive",
   "finish",
+  "lifecycle",
   "blockers",
 ] as const
+
+const CONTRACT_LIFECYCLE = {
+  blockers: [],
+  evidence: { source: ".persona/evidence", status: "present" },
+  finishAuthority: { blocker: null, status: "trusted" },
+  loops: { ralph: "absent", workflow: "absent" },
+  paths: { evidence: "safe", harness: "safe", rules: "safe" },
+  readiness: "ready-for-closure",
+  reports: {
+    implementation: { source: "legacy", status: "filled" },
+    review: { source: "legacy", status: "filled" },
+  },
+  schemaVersion: "workflow-lifecycle.1",
+  tickets: { status: "pending" },
+} as const
 
 const CONTRACT_STATE: WorkflowClosureState = {
   archive: "pending",
@@ -211,6 +250,7 @@ const CONTRACT_STATE: WorkflowClosureState = {
   evidence: "present",
   finish: "blocked",
   implementationReport: "filled",
+  lifecycle: CONTRACT_LIFECYCLE,
   pendingTickets: ["req-1"],
   plan: "accepted",
   reportCoverage: "sufficient",
@@ -224,8 +264,17 @@ const CLOSURE_BLOCKER_IDS = [
   "verification-failed",
   "verification-unknown",
   "implementation-report-missing",
+  "implementation-report-conflicting",
+  "implementation-report-malformed",
   "review-report-missing",
+  "review-report-conflicting",
+  "review-report-malformed",
   "evidence-missing",
+  "workflow-loop-state-absent",
+  "workflow-loop-state-malformed",
+  "workflow-loop-state-stale",
+  "ralph-loop-state-absent",
+  "ralph-loop-state-malformed",
   "tdd-red-evidence-missing",
   "tdd-not-red-then-green",
   "command-discipline-blocking",
@@ -318,6 +367,7 @@ describe("ph workflow closure read-only planner", () => {
       join(projectDir, ".persona", "workflow", "implementation-report.md"),
       ["Status: filled", "- README ranges read: all", "- `npx ph bearshell ./gradlew test`", "BUILD FAILED"].join("\n"),
     )
+    writeCurrentLoopStates(projectDir)
 
     const expectedOrder = [
       "verification-failed",
@@ -624,6 +674,7 @@ describe("ph workflow closure read-only planner", () => {
     const projectDir = createWorkflowProject()
     writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL")
     writeFilledReports(projectDir)
+    writeCurrentLoopStates(projectDir)
     writeActiveTicket(projectDir)
 
     const output = closureJson(projectDir)
@@ -635,12 +686,14 @@ describe("ph workflow closure read-only planner", () => {
       blockerId: "pending-ticket",
       commandAfterContent: "npx ph workflow archive req-1",
     })
+    expect(output.state.lifecycle.tickets).toEqual({ status: "pending" })
   })
 
   it("shows history-only backlog mismatch as a repairable action without repairing it", () => {
     const projectDir = createWorkflowProject()
     writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL")
     writeFilledReports(projectDir)
+    writeCurrentLoopStates(projectDir)
     writeHistoryOnlyTicket(projectDir)
 
     const output = closureJson(projectDir)
@@ -659,6 +712,7 @@ describe("ph workflow closure read-only planner", () => {
     const projectDir = createWorkflowProject()
     writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL\nTomcat started on port 8080")
     writeFilledReports(projectDir)
+    writeCurrentLoopStates(projectDir)
 
     const output = closureJson(projectDir)
 
@@ -668,6 +722,184 @@ describe("ph workflow closure read-only planner", () => {
       blockerId: "trusted-authority-required",
       kind: "human-or-model-content",
       status: "blocked",
+    })
+  })
+
+  it("shares the canonical lifecycle projection between workflow status and closure", () => {
+    const projectDir = createWorkflowProject()
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL")
+    writeFilledReports(projectDir)
+
+    const status = readWorkflowStatus(projectDir)
+    const closure = closureJson(projectDir, "status")
+    const next = closureJson(projectDir, "next")
+
+    expect(status.lifecycle).toMatchObject({
+      schemaVersion: "workflow-lifecycle.1",
+      reports: {
+        implementation: { status: "filled" },
+        review: { status: "filled" },
+      },
+      loops: { ralph: "absent", workflow: "absent" },
+      finishAuthority: {
+        blocker: { id: "trusted-authority-required" },
+        status: "blocked",
+      },
+      readiness: "blocked",
+      tickets: { status: "clear" },
+    })
+    expect(status.lifecycle.blockers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "workflow-loop-state-absent" }),
+      expect.objectContaining({ id: "ralph-loop-state-absent" }),
+    ]))
+    expect(status.finding).toBe("WARN")
+    expect(status.next).toBe("run the explicit bounded workflow loop to establish persisted workflow-loop state before continuing")
+    expect(closure.state.lifecycle).toMatchObject({
+      loops: status.lifecycle.loops,
+      finishAuthority: {
+        blocker: { id: "trusted-authority-required" },
+        status: status.lifecycle.finishAuthority.status,
+      },
+      paths: status.lifecycle.paths,
+      readiness: status.lifecycle.readiness,
+      reports: status.lifecycle.reports,
+      schemaVersion: status.lifecycle.schemaVersion,
+      tickets: status.lifecycle.tickets,
+    })
+    expect(closure.state.lifecycle.blockers.map((blocker: { readonly id: string }) => blocker.id))
+      .toEqual(status.lifecycle.blockers.map((blocker) => blocker.id))
+    expect(formatWorkflowStatus(status)).toContain("Lifecycle readiness: blocked")
+    expect(closure.state.finish).toBe("blocked")
+    expect(closure.steps[0]).toMatchObject({
+      blockerId: "workflow-loop-state-absent",
+      id: "initialize-workflow-loop-state",
+      status: "blocked",
+    })
+    expect(next.nextStep).toMatchObject({
+      blockerId: "workflow-loop-state-absent",
+      id: "initialize-workflow-loop-state",
+      status: "blocked",
+    })
+    expect(next.state.blockers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "workflow-loop-state-absent" }),
+      expect.objectContaining({ id: "ralph-loop-state-absent" }),
+    ]))
+  })
+
+  it("retains absent loop blockers alongside report, evidence, ticket, and authority boundaries", () => {
+    const projectDir = createWorkflowProject()
+    writeActiveTicket(projectDir)
+
+    const status = readWorkflowStatus(projectDir)
+
+    expect(status.lifecycle).toMatchObject({
+      finishAuthority: { blocker: { id: "trusted-authority-required" }, status: "blocked" },
+      loops: { ralph: "absent", workflow: "absent" },
+      readiness: "blocked",
+      tickets: { status: "pending" },
+    })
+    expect(status.lifecycle.blockers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "implementation-report-missing" }),
+      expect.objectContaining({ id: "review-report-missing" }),
+      expect.objectContaining({ id: "evidence-missing" }),
+      expect.objectContaining({ id: "workflow-loop-state-absent" }),
+      expect.objectContaining({ id: "ralph-loop-state-absent" }),
+      expect.objectContaining({ id: "pending-ticket" }),
+    ]))
+    expect(status.finding).toBe("WARN")
+  })
+
+  it("keeps conflicting reports and stale loop state as explicit lifecycle blockers", () => {
+    const projectDir = createWorkflowProject()
+    writeStructuredVerificationEvidence(projectDir, 0, "gradlew.bat test\nBUILD SUCCESSFUL\ngradlew.bat build\nBUILD SUCCESSFUL")
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "implementation-report.md"),
+      [
+        "---",
+        "status: template",
+        "---",
+        "Status: filled",
+        "- README ranges read: all",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell ./gradlew test`",
+      ].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "review-report.md"),
+      ["Status: filled", "- `npx ph bearshell ./gradlew bootRun`"].join("\n"),
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+      `${JSON.stringify({
+        finalDecision: "iteration-cap",
+        iterations: [],
+        rulePackHash: `sha256:${"0".repeat(64)}`,
+        schemaVersion: "workflow-loop-state.2",
+        startedAt: "2026-07-01T00:00:00.000Z",
+      }, null, 2)}\n`,
+    )
+    writeFileSync(join(projectDir, ".persona", "workflow", "ralph-loop-state.json"), "{ truncated\n")
+
+    const status = readWorkflowStatus(projectDir)
+    const closure = closureJson(projectDir, "status")
+
+    expect(status.lifecycle).toMatchObject({
+      readiness: "blocked",
+      reports: { implementation: { status: "conflicting" } },
+      loops: { ralph: "malformed", workflow: "stale" },
+      blockers: expect.arrayContaining([
+        expect.objectContaining({ id: "implementation-report-conflicting" }),
+        expect.objectContaining({ id: "workflow-loop-state-stale" }),
+        expect.objectContaining({ id: "ralph-loop-state-malformed" }),
+      ]),
+    })
+    expect(closure.state.lifecycle).toMatchObject({
+      loops: status.lifecycle.loops,
+      paths: status.lifecycle.paths,
+      readiness: status.lifecycle.readiness,
+      reports: status.lifecycle.reports,
+      schemaVersion: status.lifecycle.schemaVersion,
+      tickets: status.lifecycle.tickets,
+    })
+    expect(closure.state.lifecycle.blockers.map((blocker: { readonly id: string }) => blocker.id))
+      .toEqual(status.lifecycle.blockers.map((blocker) => blocker.id))
+    expect(closure.steps[0]).toMatchObject({
+      blockerId: "implementation-report-conflicting",
+      id: "repair-implementation-report-status",
+      status: "blocked",
+    })
+  })
+
+  it("fails closed for schema-shaped loop state with malformed contents", () => {
+    const projectDir = createWorkflowProject()
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+      `${JSON.stringify({
+        finalDecision: "not-a-decision",
+        iterations: [],
+        rulePackHash: `sha256:${"0".repeat(64)}`,
+        schemaVersion: "workflow-loop-state.2",
+        startedAt: "2026-07-01T00:00:00.000Z",
+      }, null, 2)}\n`,
+    )
+    writeFileSync(
+      join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+      `${JSON.stringify({
+        schemaVersion: "workflow-ralph-loop-state.1",
+        sessions: {},
+        updatedAt: 42,
+      }, null, 2)}\n`,
+    )
+
+    const status = readWorkflowStatus(projectDir)
+
+    expect(status.lifecycle).toMatchObject({
+      loops: { ralph: "malformed", workflow: "malformed" },
+      readiness: "blocked",
+      blockers: expect.arrayContaining([
+        expect.objectContaining({ id: "workflow-loop-state-malformed" }),
+        expect.objectContaining({ id: "ralph-loop-state-malformed" }),
+      ]),
     })
   })
 })

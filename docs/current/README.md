@@ -15,6 +15,13 @@ historical records that were created before the versioned release-docs
 structure. Prefer append-only correction, summary, or migration pointers over
 deleting evidence/status history.
 
+## Selection Rule
+
+Use a document as current only when this README or
+[`canonical-docs-index.md`](canonical-docs-index.md) selects it. In particular,
+the retained `v0.3.*` snapshots and the historical release-readiness files do
+not become current merely because they remain under `docs/current/`.
+
 ## Current Canonical Pointers
 
 - Prepared-project CLI entry: `npx ph go "<concrete implementation goal>"`
@@ -35,8 +42,6 @@ deleting evidence/status history.
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
   [`release/v0.7.0-release-notes.md`](release/v0.7.0-release-notes.md).
-- Current RC release readiness decision:
-  [`release/rc-release-readiness-decision.md`](release/rc-release-readiness-decision.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -57,6 +62,8 @@ deleting evidence/status history.
   [`consumer-authority-v1-decision.md`](consumer-authority-v1-decision.md).
 - Canonical/archive/generated docs map:
   [`canonical-docs-index.md`](canonical-docs-index.md).
+- Canonical workflow lifecycle projection:
+  [`workflow-closure-state-machine-design.md`](workflow-closure-state-machine-design.md).
 - External review adoption status:
   [`external-review-adoption-status.md`](external-review-adoption-status.md).
 - Diff-rules classification:
@@ -132,6 +139,16 @@ deleting evidence/status history.
   `--assurance cooperative` same-invocation Gradle path: it creates no receipt
   or terminal authority, and later status, evidence fetch, and closure remain
   external-blocked.
+- `workflow-lifecycle.1` is the current shared, fail-closed projection for
+  `workflow check`, closure JSON, persisted loop state, and finish guidance.
+  It treats missing/template/malformed/conflicting report markers, unsafe
+  configured paths, missing evidence, absent, stale, or malformed loop state, and
+  pending tickets as blockers. Its read-only `finishAuthority` field surfaces
+  the existing trusted-authority result without issuing, verifying, or
+  consuming authority. Neither lifecycle readiness nor a blocked/trusted
+  authority field proves #111 producer success, signature verification,
+  registry publication, tag movement, GitHub release creation, or release
+  completion.
 - P3-3 defines receipt/attempt parsing and read-only lifecycle diagnostics only.
   It does not issue, verify, migrate, or accept any receipt as finish authority;
   P3-2 remains blocked until a later trusted path exists.
@@ -192,8 +209,12 @@ deleting evidence/status history.
 - `docs-inventory.md` tracks every file under `docs/**`, including files that
   are intentionally retained in legacy locations.
 - Older `v0.3.*`, `v0.4.*`, and transitional files under `docs/current/` are
-  historical unless a current pointer above names them. Do not rewrite them to
-  look current; add explicit correction or migration notes if needed.
+  historical unless a current pointer above names them. In particular,
+  `v0.3.0-workflow-report-status-lifecycle.md`,
+  `release/next-version-readiness.md`, and
+  `release/rc-release-readiness-decision.md` are not current selection inputs.
+  Do not rewrite them to look current; add explicit correction or migration
+  notes if needed.
 
 ## Product Positioning Boundary
 

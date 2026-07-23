@@ -30,10 +30,16 @@ try {
     assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+    assertWorkflowLifecycleAbsenceBlocks(
+      join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
+      join(consumerDirectory, "node_modules", ".bin", "ph"),
+      "installed package",
+    )
     assertInstalledPackageTestPasses(installedPackage)
     process.stdout.write("installed-package-test-contract: PASS\n")
   } else {
     assertSourceCooperativeFinishWorks(sourceCli)
+    assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
     process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
   }
 } finally {
@@ -318,8 +324,74 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   assertCooperativeFinishWorks(join(temporaryRoot, "source-cli-cooperative-gradle-fixture"), phPath, "source CLI")
 }
 
+function assertSourceWorkflowLifecycleAbsenceBlocks(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertWorkflowLifecycleAbsenceBlocks(
+    join(temporaryRoot, "source-cli-workflow-lifecycle-absence-fixture"),
+    phPath,
+    "source CLI",
+  )
+}
+
+function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
+  mkdirSync(fixtureRoot, { recursive: true })
+  requireSuccess(`${label} lifecycle fixture intake`, runNode(fixtureRoot, [phPath, "intake", "--default", "backend"]))
+  requireSuccess(`${label} lifecycle fixture plan`, runNode(fixtureRoot, [phPath, "plan"]))
+  requireSuccess(`${label} lifecycle fixture plan acceptance`, runNode(fixtureRoot, [phPath, "plan", "--accept"]))
+  mkdirSync(join(fixtureRoot, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(
+    join(fixtureRoot, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- README ranges read: all",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(fixtureRoot, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- `npx ph bearshell --shell './gradlew build'`",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(fixtureRoot, ".persona", "evidence", "phase0", "verification.json"),
+    `${JSON.stringify({
+      command: "npx ph bearshell --shell './gradlew test'",
+      status: 0,
+      tool: "bearshell",
+      toolOutput: "BUILD SUCCESSFUL",
+    }, null, 2)}\n`,
+  )
+
+  const closure = runNode(fixtureRoot, [phPath, "workflow", "closure", "next", "--json"])
+  requireSuccess(`${label} lifecycle absence closure`, closure)
+  const payload = JSON.parse(closure.stdout)
+  const lifecycle = isRecord(payload) && isRecord(payload.state) && isRecord(payload.state.lifecycle)
+    ? payload.state.lifecycle
+    : undefined
+  const blockers = lifecycle !== undefined && Array.isArray(lifecycle.blockers)
+    ? lifecycle.blockers.map((blocker) => isRecord(blocker) ? blocker.id : undefined)
+    : []
+  if (
+    lifecycle === undefined
+    || lifecycle.readiness !== "blocked"
+    || !blockers.includes("workflow-loop-state-absent")
+    || !blockers.includes("ralph-loop-state-absent")
+  ) {
+    throw new Error(`${label} lifecycle absence did not fail closed`)
+  }
+  if (closure.stdout.includes("sk-live-") || existsSync(join(fixtureRoot, ".persona", "evidence", "finish-attestation"))) {
+    throw new Error(`${label} lifecycle absence probe reflected unsafe content or created authority evidence`)
+  }
+}
+
 function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
-  createCooperativeGradleFixture(fixtureRoot)
+  createCooperativeGradleFixture(fixtureRoot, phPath, label)
 
   const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
   if (defaultFinish.status === 0) {
@@ -359,7 +431,7 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
   }
 }
 
-function createCooperativeGradleFixture(projectDir) {
+function createCooperativeGradleFixture(projectDir, phPath, label) {
   mkdirSync(join(projectDir, ".persona", "custom-evidence", "phase0"), { recursive: true })
   mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
   mkdirSync(join(projectDir, "src", "main", "java", "example", "cooperative"), { recursive: true })
@@ -401,6 +473,7 @@ function createCooperativeGradleFixture(projectDir) {
       toolOutput: "BUILD SUCCESSFUL",
     })}\n`,
   )
+  writeCurrentLoopStates(projectDir, phPath, label)
   requireSuccess(
     "installed fixture Gradle wrapper",
     runCommand(projectDir, "gradle", ["wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
@@ -468,6 +541,35 @@ function createCooperativeGradleFixture(projectDir) {
   requireSuccess("installed fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
   requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
+}
+
+function writeCurrentLoopStates(projectDir, phPath, label) {
+  const preview = runNode(projectDir, [phPath, "workflow", "loop", "--dry-run", "--json"])
+  if (preview.status !== 1) {
+    throw new Error(`${label} lifecycle loop preview did not report the expected blocked state`)
+  }
+  const payload = JSON.parse(preview.stdout)
+  if (!isRecord(payload) || typeof payload.rulePackHash !== "string") {
+    throw new Error(`${label} lifecycle loop preview did not return a rule-pack hash`)
+  }
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: payload.rulePackHash,
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
 }
 
 function createProjectFinishProducerFixture(projectDir, profileMode) {

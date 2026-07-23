@@ -17,6 +17,7 @@ import {
 } from "../src/cli/workflow-closure-finish.js"
 import { failedRunnerOutput } from "../src/cli/workflow-output.js"
 import { runPersonaCli } from "../src/cli/index.js"
+import { rulePackContentHash } from "../src/rules/rule-delivery.js"
 
 type FinishMatrixRow = {
   readonly action: string
@@ -38,6 +39,21 @@ const CURRENT_TICKET = {
   title: "Finish UX fixture",
 }
 
+const BASE_LIFECYCLE = {
+  blockers: [],
+  evidence: { source: ".persona/evidence", status: "present" },
+  finishAuthority: { blocker: null, status: "trusted" },
+  loops: { ralph: "absent", workflow: "absent" },
+  paths: { evidence: "safe", harness: "safe", rules: "safe" },
+  readiness: "ready-for-closure",
+  reports: {
+    implementation: { source: "legacy", status: "filled" },
+    review: { source: "legacy", status: "filled" },
+  },
+  schemaVersion: "workflow-lifecycle.1",
+  tickets: { status: "pending" },
+} as const
+
 const BASE_STATE: WorkflowClosureState = {
   archive: "pending",
   blockers: [],
@@ -45,6 +61,7 @@ const BASE_STATE: WorkflowClosureState = {
   evidence: "present",
   finish: "blocked",
   implementationReport: "filled",
+  lifecycle: BASE_LIFECYCLE,
   pendingTickets: ["req-1"],
   plan: "accepted",
   reportCoverage: "sufficient",
@@ -78,11 +95,69 @@ const FINISH_BLOCKER_MATRIX: readonly FinishMatrixRow[] = [
     stepId: "fill-implementation-report",
   },
   {
+    action: "Resolve conflicting or malformed implementation report status markers before continuing.",
+    blockerId: "implementation-report-conflicting",
+    command: { phase: "after-action", value: "npx ph workflow check" },
+    priority: 1,
+    stepId: "repair-implementation-report-status",
+  },
+  {
+    action: "Resolve conflicting or malformed implementation report status markers before continuing.",
+    blockerId: "implementation-report-malformed",
+    command: { phase: "after-action", value: "npx ph workflow check" },
+    priority: 1,
+    stepId: "repair-implementation-report-status",
+  },
+  {
     action: "Complete the required substantive content in .persona/workflow/review-report.md after review/manual QA before marking it filled.",
     blockerId: "review-report-missing",
     command: { phase: "after-action", value: "npx ph plan --report-filled review" },
     priority: 1,
     stepId: "fill-review-report",
+  },
+  {
+    action: "Resolve conflicting or malformed review report status markers before continuing.",
+    blockerId: "review-report-conflicting",
+    command: { phase: "after-action", value: "npx ph workflow check" },
+    priority: 1,
+    stepId: "repair-review-report-status",
+  },
+  {
+    action: "Resolve conflicting or malformed review report status markers before continuing.",
+    blockerId: "review-report-malformed",
+    command: { phase: "after-action", value: "npx ph workflow check" },
+    priority: 1,
+    stepId: "repair-review-report-status",
+  },
+  {
+    action: "Run the explicit bounded workflow loop to establish persisted workflow-loop state before continuing.",
+    blockerId: "workflow-loop-state-absent",
+    priority: 1,
+    stepId: "initialize-workflow-loop-state",
+  },
+  {
+    action: "Review and repair the persisted workflow-loop state and rule-pack identity before continuing.",
+    blockerId: "workflow-loop-state-malformed",
+    priority: 1,
+    stepId: "repair-workflow-loop-state",
+  },
+  {
+    action: "Review and repair the persisted workflow-loop state and rule-pack identity before continuing.",
+    blockerId: "workflow-loop-state-stale",
+    priority: 1,
+    stepId: "repair-workflow-loop-state",
+  },
+  {
+    action: "Establish persisted ralph-loop state through the approved bounded runtime before continuing.",
+    blockerId: "ralph-loop-state-absent",
+    priority: 1,
+    stepId: "initialize-ralph-loop-state",
+  },
+  {
+    action: "Review and repair the persisted ralph-loop state before continuing.",
+    blockerId: "ralph-loop-state-malformed",
+    priority: 1,
+    stepId: "repair-ralph-loop-state",
   },
   {
     action: "Review the current ticket and confirm it is complete before archiving it.",
@@ -201,6 +276,27 @@ function writeFilledReviewReport(projectDir: string): void {
       "- `npx ph bearshell --shell './gradlew bootRun'`",
       "- Manual QA completed.",
     ].join("\n"),
+  )
+}
+
+function writeCurrentLoopStates(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: rulePackContentHash(projectDir),
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
   )
 }
 
@@ -409,6 +505,7 @@ describe("ph workflow finish next action matrix", () => {
       env: {},
       invocationName: "ph",
     })
+    writeCurrentLoopStates(projectDir)
     const finish = runPersonaCli(["workflow", "finish", "implement"], {
       cwd: projectDir,
       env: {},
@@ -447,11 +544,15 @@ describe("ph workflow finish next action matrix", () => {
       "verification-unknown",
       "implementation-report-missing",
       "review-report-missing",
+      "workflow-loop-state-absent",
+      "ralph-loop-state-absent",
     ])
     expect(payload.steps.map((step) => step.blockerId)).toEqual([
       "verification-unknown",
       "implementation-report-missing",
       "review-report-missing",
+      "workflow-loop-state-absent",
+      "ralph-loop-state-absent",
     ])
   })
 })

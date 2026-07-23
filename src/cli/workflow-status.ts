@@ -6,7 +6,11 @@ import { findConventionByBlockerId } from "../config/convention-registry.js"
 import { loadHarnessConfigResult, resolveConfiguredPathResult, resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import { walkBoundedFiles, type BoundedWalkResult } from "../io/bounded-path-walker.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
-import { readWorkflowReportStatus } from "../runtime/workflow-report-status.js"
+import { readRalphLoopStateSnapshot } from "../runtime/ralph-loop-state.js"
+import { projectWorkflowLifecycle, type WorkflowLifecycleProjection } from "../runtime/workflow-lifecycle-projection.js"
+import { readWorkflowReportStatusDetail } from "../runtime/workflow-report-status.js"
+import { rulePackContentHash } from "../rules/rule-delivery.js"
+import { inspectRuleCatalogPaths } from "../rules/rule-catalog.js"
 import { readArchitectureConventions, type ArchitectureConventionBlocker, type ArchitectureConventionSummary } from "./architecture-conventions.js"
 import { backendShapeReportStatus } from "./backend-shape-report-status.js"
 import { readJavaRoleReadCoverage, type JavaRoleReadCoverageSummary } from "./java-role-read-coverage.js"
@@ -15,6 +19,8 @@ import { readWorkflowReportCoverage, type WorkflowReportCoverageSummary } from "
 import { readStackAlignment, type StackAlignmentSummary } from "./stack-alignment.js"
 import { readVerificationFailure, type VerificationFailureSummary } from "./verification-failure.js"
 import { POST_BUILD_CLOSURE_NEXT_ACTION } from "./workflow-closure-rail.js"
+import { readWorkflowFinishAuthority, type WorkflowFinishAuthority } from "./workflow-finish-authority.js"
+import { readWorkflowLoopStateSnapshot } from "./workflow-loop-state.js"
 import {
   formatPendingWorkflowTicketStatusLines,
   workflowPendingTicketStatus,
@@ -37,6 +43,7 @@ export type WorkflowStatusSummary = {
   readonly javaRoleReadCoverage: string
   readonly javaRoleReadCoverageBlocking: boolean
   readonly javaRoleReadCoverageFinding: "PASS" | "WARN"
+  readonly lifecycle: WorkflowLifecycleProjection
   readonly reportCoverage: string
   readonly reportCoverageBlocking: boolean
   readonly reportCoverageFinding: "PASS" | "WARN"
@@ -58,11 +65,17 @@ export type WorkflowStatusSummary = {
   readonly next: string
 }
 
+export type WorkflowStatusOptions = {
+  readonly finishAuthority?: WorkflowFinishAuthority
+  readonly now?: Date
+}
+
 const PLAN_PATH = ".persona/workflow/plan.md"
 const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const README_PATH = "README.md"
 const PROFILE_PATH = ".persona/project-profile.jsonc"
+const DEFAULT_EVIDENCE_DIR = ".persona/evidence"
 
 function readStatusLine(filePath: string): string {
   if (!existsSync(filePath)) {
@@ -347,10 +360,16 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.plan !== "accepted") {
     return "review plan, then run `npx ph plan --accept` or `npx ph plan --revise`"
   }
+  if (summary.lifecycle.reports.implementation.status === "conflicting" || summary.lifecycle.reports.implementation.status === "malformed") {
+    return "repair the implementation report status markers before continuing"
+  }
   if (summary.implementation !== "filled") {
     return summary.pendingTickets.length > 0 ? POST_BUILD_CLOSURE_NEXT_ACTION : "run `npx ph workflow implement`, implement, fill implementation report, then run `npx ph plan --report-filled implementation`"
   }
   if (summary.verificationFailureBlocking) return "fix compile/test failure, rerun `./gradlew test` or `gradlew.bat test`, then run `npx ph workflow check`"
+  if (summary.lifecycle.reports.review.status === "conflicting" || summary.lifecycle.reports.review.status === "malformed") {
+    return "repair the review report status markers before continuing"
+  }
   if (summary.review !== "filled") return "fill review report and run `npx ph plan --report-filled review`"
   if (summary.commandDisciplineBlocking) return "rerun final verification through `npx ph bearshell`"
   if (summary.reportCoverageBlocking) return "fill report coverage: read README/profile/generated Java role files, update reports, then run `npx ph workflow check`"
@@ -370,15 +389,34 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
     }
     return `run \`npx ph workflow next\` or \`npx ph workflow continue\` for pending ticket ${pendingTicket?.ticket ?? "<unknown>"}`
   }
+  if (summary.lifecycle.loops.workflow === "absent") {
+    return "run the explicit bounded workflow loop to establish persisted workflow-loop state before continuing"
+  }
+  if (summary.lifecycle.loops.workflow === "malformed" || summary.lifecycle.loops.workflow === "stale") {
+    return "review and repair the persisted workflow-loop state before continuing"
+  }
+  if (summary.lifecycle.loops.ralph === "absent") {
+    return "establish persisted ralph-loop state through the approved bounded runtime before continuing"
+  }
+  if (summary.lifecycle.loops.ralph === "malformed") {
+    return "review and repair the persisted ralph-loop state before continuing"
+  }
   if (summary.stackAlignmentFinding === "WARN") return "review profile/generated stack mismatch before archiving workflow"
   if (summary.commandDisciplineFinding === "WARN") {
     return "review non-blocking workflow notes, then archive completed workflow if acceptable"
   }
+  if (summary.lifecycle.finishAuthority.status === "blocked") {
+    return "local workflow lifecycle is complete, but finish remains blocked until the existing trusted-authority path provides eligible evidence"
+  }
   return "archive completed workflow with `npx ph history --id <run-id>`"
 }
 
-export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSummary {
+export function readWorkflowStatus(projectDirInput?: string, options: WorkflowStatusOptions = {}): WorkflowStatusSummary {
   const projectDir = resolve(projectDirInput ?? process.cwd())
+  const finishAuthority = options.finishAuthority ?? readWorkflowFinishAuthority(projectDir, {
+    consumeExternalAttestation: false,
+    now: options.now,
+  })
   const configResult = loadHarnessConfigResult(projectDir)
   const evidencePath = configResult.safe
     ? resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
@@ -394,13 +432,26 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
         present: false,
         safe: false,
       }
+  const reports = {
+    implementation: readWorkflowReportStatusDetail(projectDir, IMPLEMENTATION_REPORT_PATH),
+    review: readWorkflowReportStatusDetail(projectDir, REVIEW_REPORT_PATH),
+  }
   const summary = {
     projectDir,
     plan: readStatusLine(join(projectDir, PLAN_PATH)),
-    implementation: readWorkflowReportStatus(projectDir, IMPLEMENTATION_REPORT_PATH),
-    review: readWorkflowReportStatus(projectDir, REVIEW_REPORT_PATH),
+    implementation: reports.implementation.status,
+    review: reports.review.status,
     evidence: evidence.files.length > 0 ? "present" : "missing",
   } as const
+  const rules = configResult.safe ? inspectRuleCatalogPaths(projectDir) : undefined
+  const displayEvidenceRoot = evidencePath?.ok === true
+    ? evidencePath.relativePath || configResult.config.evidenceDir
+    : DEFAULT_EVIDENCE_DIR
+  const workflowLoop = readWorkflowLoopStateSnapshot(projectDir)
+  const ralphLoop = readRalphLoopStateSnapshot(projectDir)
+  const currentRulePackHash = configResult.safe && rules?.safe === true && workflowLoop.integrity === "valid"
+    ? rulePackContentHash(projectDir)
+    : undefined
   const coverage = readCoverage(projectDir, summary.implementation, evidence)
   const profileCoverage = profileReadCoverage(projectDir, summary.implementation, evidence)
   const javaRoleCoverage: JavaRoleReadCoverageSummary = readJavaRoleReadCoverage(projectDir, summary.implementation)
@@ -418,7 +469,25 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
   const architectureConventions: ArchitectureConventionSummary = readArchitectureConventions(projectDir, summary.implementation)
   const pendingTickets = workflowPendingTicketStatus(projectDir)
   const pendingTicketsFinding = pendingTickets.length > 0 ? "WARN" : "PASS"
-  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, ...architectureConventions, pendingTickets, pendingTicketsFinding })
+  const completedLifecycle = projectWorkflowLifecycle({
+    currentRulePackHash,
+    evidence: summary.evidence,
+    evidencePath: configResult.safe ? evidence.safe ? "safe" : "unsafe" : "unavailable",
+    evidenceSource: displayEvidenceRoot,
+    finishAuthority: {
+      blocker: finishAuthority.status === "blocked" ? finishAuthority.blocker : null,
+      status: finishAuthority.status,
+    },
+    harness: configResult.safe ? "safe" : "invalid",
+    implementationReport: reports.implementation,
+    pendingTicketCount: pendingTickets.length,
+    ralphLoop,
+    reviewReport: reports.review,
+    rulesPath: configResult.safe ? rules?.safe === true ? "safe" : "unsafe" : "unavailable",
+    rulesSource: configResult.safe ? configResult.config.rulesDir : ".persona/rules",
+    workflowLoop,
+  })
+  const next = nextAction({ ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, lifecycle: completedLifecycle, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, ...architectureConventions, pendingTickets, pendingTicketsFinding })
   const finding =
     summary.plan === "accepted"
     && summary.implementation === "filled"
@@ -432,9 +501,10 @@ export function readWorkflowStatus(projectDirInput?: string): WorkflowStatusSumm
     && stack.stackAlignmentFinding === "PASS"
     && architectureConventions.architectureConventionsFinding === "PASS"
     && pendingTicketsFinding === "PASS"
+    && completedLifecycle.readiness === "ready-for-closure"
       ? "PASS"
       : "WARN"
-  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, ...architectureConventions, pendingTickets, pendingTicketsFinding, finding, next }
+  return { ...summary, ...coverage, ...profileCoverage, ...javaRoleCoverage, lifecycle: completedLifecycle, ...reportCoverageSummary, ...command, ...verificationFailure, ...stack, ...architectureConventions, pendingTickets, pendingTicketsFinding, finding, next }
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
@@ -452,6 +522,13 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- .persona/workflow/implementation-report.md: ${summary.implementation}`,
     `- .persona/workflow/review-report.md: ${summary.review}`,
     `- ${displayEvidenceRoot}: ${summary.evidence}`,
+    `- lifecycle reports: implementation=${summary.lifecycle.reports.implementation.status}; review=${summary.lifecycle.reports.review.status}`,
+    `- lifecycle paths: harness=${summary.lifecycle.paths.harness}; rules=${summary.lifecycle.paths.rules}; evidence=${summary.lifecycle.paths.evidence}`,
+    `- lifecycle loops: workflow=${summary.lifecycle.loops.workflow}; ralph=${summary.lifecycle.loops.ralph}`,
+    `- lifecycle tickets: ${summary.lifecycle.tickets.status}`,
+    `- lifecycle finish authority: ${summary.lifecycle.finishAuthority.status}; blocker=${summary.lifecycle.finishAuthority.blocker?.id ?? "none"}`,
+    `- Lifecycle readiness: ${summary.lifecycle.readiness}`,
+    `- lifecycle blockers: ${summary.lifecycle.blockers.length === 0 ? "none" : summary.lifecycle.blockers.map((blocker) => blocker.id).join(", ")}`,
     `- read coverage: ${summary.readCoverage}`,
     `- profile read coverage: ${summary.profileReadCoverage}`,
     `- java role read coverage: ${summary.javaRoleReadCoverage}`,

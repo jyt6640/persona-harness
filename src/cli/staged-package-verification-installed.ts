@@ -9,6 +9,10 @@ import { join } from "node:path"
 import process from "node:process"
 
 import {
+  WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
+  writeWorkflowLoopState,
+} from "./workflow-loop-state.js"
+import {
   isRegularBoundedFile,
   parseJsonRecord,
   type CommandResult,
@@ -16,9 +20,12 @@ import {
   type TarballFacts,
 } from "./staged-package-verification-runtime.js"
 import type { JsonRecord } from "./staged-package-verification-types.js"
+import { emptyRalphLoopState, writeRalphLoopState } from "../runtime/ralph-loop-state.js"
+import { rulePackContentHash } from "../rules/rule-delivery.js"
 
 const MAX_FACT_BYTES = 64 * 1024
 const MAX_TARBALL_BYTES = 64 * 1024 * 1024
+const FIXTURE_LIFECYCLE_STARTED_AT = "2026-07-01T00:00:00.000Z"
 
 type InstalledLauncher = {
   readonly argsPrefix: readonly string[]
@@ -114,6 +121,21 @@ function runInstalledCli(
   return commandRunner(consumer.launcher.command, [...consumer.launcher.argsPrefix, ...args], cwd)
 }
 
+function writeCurrentLifecycleStates(projectDir: string): boolean {
+  try {
+    writeWorkflowLoopState(projectDir, {
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: rulePackContentHash(projectDir),
+      schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
+      startedAt: FIXTURE_LIFECYCLE_STARTED_AT,
+    })
+    return writeRalphLoopState(projectDir, emptyRalphLoopState(FIXTURE_LIFECYCLE_STARTED_AT))
+  } catch {
+    return false
+  }
+}
+
 function writeAuthorityNegativeFixture(
   projectDir: string,
   consumer: InstalledConsumer,
@@ -136,6 +158,7 @@ function writeAuthorityNegativeFixture(
       "- `npx ph bearshell --shell './gradlew test'`",
     ].join("\n"),
   )
+  if (!writeCurrentLifecycleStates(projectDir)) return false
   writeFileSync(
     join(projectDir, ".persona", "workflow", "review-report.md"),
     [

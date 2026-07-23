@@ -54,9 +54,23 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
       command: commandForStep(step),
     }
   }
+  if (step.id === "repair-implementation-report-status") {
+    return {
+      action: "Resolve conflicting or malformed implementation report status markers before continuing.",
+      blockerId,
+      command: commandForStep(step),
+    }
+  }
   if (step.id === "fill-review-report") {
     return {
       action: "Complete the required substantive content in .persona/workflow/review-report.md after review/manual QA before marking it filled.",
+      blockerId,
+      command: commandForStep(step),
+    }
+  }
+  if (step.id === "repair-review-report-status") {
+    return {
+      action: "Resolve conflicting or malformed review report status markers before continuing.",
       blockerId,
       command: commandForStep(step),
     }
@@ -66,6 +80,30 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
       action: "Record workflow verification evidence.",
       blockerId,
       command: commandForStep(step),
+    }
+  }
+  if (step.id === "initialize-workflow-loop-state") {
+    return {
+      action: "Run the explicit bounded workflow loop to establish persisted workflow-loop state before continuing.",
+      blockerId,
+    }
+  }
+  if (step.id === "repair-workflow-loop-state") {
+    return {
+      action: "Review and repair the persisted workflow-loop state and rule-pack identity before continuing.",
+      blockerId,
+    }
+  }
+  if (step.id === "initialize-ralph-loop-state") {
+    return {
+      action: "Establish persisted ralph-loop state through the approved bounded runtime before continuing.",
+      blockerId,
+    }
+  }
+  if (step.id === "repair-ralph-loop-state") {
+    return {
+      action: "Review and repair the persisted ralph-loop state before continuing.",
+      blockerId,
     }
   }
   if (step.id === "record-tdd-red") {

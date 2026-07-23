@@ -2,9 +2,7 @@ import { resolve } from "node:path"
 import process from "node:process"
 
 import { findConventionByBlockerId } from "../config/convention-registry.js"
-import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
-import { walkBoundedFiles } from "../io/bounded-path-walker.js"
-import { inspectRuleCatalogPaths } from "../rules/rule-catalog.js"
+import type { WorkflowLifecycleProjection } from "../runtime/workflow-lifecycle-projection.js"
 import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventions.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
@@ -14,6 +12,7 @@ import {
   safeWorkflowClosureStatusPayload,
 } from "./workflow-safe-rendering.js"
 import { readWorkflowStatus, type WorkflowStatusSummary } from "./workflow-status.js"
+import { workflowPendingTicketStatus } from "./workflow-ticket-summary.js"
 import { readTddClosureFinding, type TddClosureFinding } from "./workflow-tdd.js"
 
 // allow: SIZE_OK - blocker collection and step priority stay one deterministic closure state machine.
@@ -21,7 +20,7 @@ export type ClosureAction = "next" | "status"
 type ClosureArchive = "complete" | "history-only-repair" | "pending"
 type ClosureEvidence = "missing" | "present"
 type ClosureFinish = "blocked" | "passed"
-type ClosureReportStatus = "filled" | "missing" | "template" | "unknown"
+type ClosureReportStatus = "conflicting" | "filled" | "malformed" | "missing" | "template" | "unknown"
 export type ClosureStepKind = "cli-command" | "human-or-model-content" | "terminal"
 export type ClosureStepStatus = "blocked" | "complete" | "pending"
 export const UNMAPPED_BLOCKER_STEP_ID = "unmapped-blocker"
@@ -61,6 +60,7 @@ export type WorkflowClosureState = {
   readonly evidence: ClosureEvidence
   readonly finish: ClosureFinish
   readonly implementationReport: ClosureReportStatus
+  readonly lifecycle: WorkflowLifecycleProjection
   readonly pendingTickets: readonly string[]
   readonly plan: string
   readonly reportCoverage: "missing" | "not-checked" | "sufficient"
@@ -87,7 +87,6 @@ export type ClosurePayload = ClosureNextPayload | ClosureStatusPayload
 const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const PLAN_PATH = ".persona/workflow/plan.md"
-const DEFAULT_EVIDENCE_DIR = ".persona/evidence"
 
 export function runWorkflowClosureCommand(action: ClosureAction, options: { readonly projectDir?: string }): CliRunResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
@@ -154,17 +153,23 @@ function readWorkflowClosureState(
     readonly recordTddGreenEvidence?: boolean
   },
 ): WorkflowClosureState {
-  const summary = readWorkflowStatus(projectDir)
-  const verification = readClosureVerification(projectDir, summary)
+  const verification = readClosureVerification(projectDir)
+  const initialTicket = workflowPendingTicketStatus(projectDir)[0]?.ticket ?? null
+  const tdd = readTddClosureFinding(projectDir, initialTicket, { recordGreenEvidence: options.recordTddGreenEvidence })
+  const authority = readWorkflowFinishAuthority(projectDir, {
+    consumeExternalAttestation: options.consumeExternalAttestation ?? false,
+    now: options.now,
+  })
+  const summary = readWorkflowStatus(projectDir, { finishAuthority: authority, now: options.now })
   const pendingTickets = summary.pendingTickets.map((ticket) => ticket.ticket)
   const currentTicket = closureTickets(summary)[0] ?? null
-  const tdd = readTddClosureFinding(projectDir, currentTicket?.id ?? null, { recordGreenEvidence: options.recordTddGreenEvidence })
   const partialState = {
     archive: closureArchive(summary),
     currentTicket,
     evidence: summary.evidence,
     finish: "blocked" as const,
     implementationReport: closureReportStatus(summary.implementation),
+    lifecycle: summary.lifecycle,
     pendingTickets,
     plan: summary.plan,
     reportCoverage: closureReportCoverage(summary),
@@ -172,55 +177,12 @@ function readWorkflowClosureState(
     tdd,
     verification: verification.verification,
   }
-  const configResult = loadHarnessConfigResult(projectDir)
-  const configuredEvidencePath = configResult.safe
-    ? resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
-    : undefined
-  const displayEvidenceRoot = configuredEvidencePath?.ok === true
-    ? configuredEvidencePath.relativePath || configResult.config.evidenceDir
-    : DEFAULT_EVIDENCE_DIR
-  const legacyBlockers = closureBlockers(partialState, verification, summary, displayEvidenceRoot)
-  const configBlockers: readonly ClosureBlocker[] = configResult.safe
-    ? []
-    : [{
-        id: "harness-config-invalid",
-        reason: "harness.jsonc is malformed, corrupt, or unsafe; read-only recovery is required before continuing.",
-        source: ".persona/harness.jsonc",
-      }]
-  const rulesPathSafety = configResult.safe ? inspectRuleCatalogPaths(projectDir) : undefined
-  const evidencePathSafety = configuredEvidencePath
-  const evidenceTraversal = evidencePathSafety?.ok === true
-    ? walkBoundedFiles(evidencePathSafety.path, projectDir, {
-        displayRoot: evidencePathSafety.relativePath || configResult.config.evidenceDir,
-        includeText: false,
-      })
-    : undefined
-  const pathBlockers: readonly ClosureBlocker[] =
-    configBlockers.length > 0
-      ? []
-      : rulesPathSafety !== undefined && !rulesPathSafety.safe
-        ? [{
-            id: "rules-path-unsafe",
-            reason: "configured rules traversal is unsafe or exceeds bounded no-follow limits; read-only recovery is required before continuing.",
-            source: configResult.config.rulesDir,
-          }]
-        : evidenceTraversal !== undefined && !evidenceTraversal.safe
-          ? [{
-              id: "evidence-path-unsafe",
-              reason: "configured evidence traversal is unsafe or exceeds bounded no-follow limits; read-only recovery is required before continuing.",
-              source: configResult.config.evidenceDir,
-            }]
-          : []
-  const authority = readWorkflowFinishAuthority(projectDir, {
-    consumeExternalAttestation: options.consumeExternalAttestation ?? false,
-    now: options.now,
-  })
-  const blockers = configBlockers.length > 0
-    ? configBlockers
-    : pathBlockers.length > 0
-      ? pathBlockers
-      : legacyBlockers.length === 0 && authority.status === "blocked"
-        ? [authority.blocker]
+  const lifecycleSafetyBlockers = closureLifecycleSafetyBlockers(summary.lifecycle)
+  const legacyBlockers = closureBlockers(partialState, verification, summary, summary.lifecycle)
+  const blockers = lifecycleSafetyBlockers.length > 0
+    ? lifecycleSafetyBlockers
+      : legacyBlockers.length === 0 && summary.lifecycle.finishAuthority.blocker !== null
+        ? [summary.lifecycle.finishAuthority.blocker]
         : legacyBlockers
   const finish: ClosureFinish = blockers.length === 0 ? "passed" : "blocked"
   const state = { ...partialState, finish }
@@ -239,7 +201,7 @@ function closureTickets(summary: WorkflowStatusSummary): readonly ClosureTicket[
 }
 
 function closureReportStatus(status: string): ClosureReportStatus {
-  if (status === "filled" || status === "missing" || status === "template") {
+  if (status === "conflicting" || status === "filled" || status === "malformed" || status === "missing" || status === "template") {
     return status
   }
   return "unknown"
@@ -263,26 +225,20 @@ function closureBlockers(
   state: Omit<WorkflowClosureState, "blockers">,
   verification: ReturnType<typeof readClosureVerification>,
   summary: WorkflowStatusSummary,
-  evidenceRoot: string,
+  lifecycle: WorkflowLifecycleProjection,
 ): readonly ClosureBlocker[] {
   if (state.plan !== "accepted") {
     return [{ id: "plan-not-accepted", reason: `workflow plan is ${state.plan}`, source: PLAN_PATH }]
   }
   const blockers: ClosureBlocker[] = []
   if (verification.verification === "failed") {
-    blockers.push({ evidenceRef: verification.evidenceRef, id: "verification-failed", reason: verification.reason, source: verification.evidenceRef ?? evidenceRoot })
+    blockers.push({ evidenceRef: verification.evidenceRef, id: "verification-failed", reason: verification.reason, source: verification.evidenceRef ?? lifecycle.evidence.source })
   } else if (verification.verification !== "passed") {
-    blockers.push({ evidenceRef: verification.evidenceRef, id: "verification-unknown", reason: verification.reason, source: verification.evidenceRef ?? evidenceRoot })
+    blockers.push({ evidenceRef: verification.evidenceRef, id: "verification-unknown", reason: verification.reason, source: verification.evidenceRef ?? lifecycle.evidence.source })
   }
-  if (state.implementationReport !== "filled") {
-    blockers.push({ evidenceRef: state.evidence === "present" ? evidenceRoot : undefined, id: "implementation-report-missing", reason: `implementation report is ${state.implementationReport}`, source: IMPLEMENTATION_REPORT_PATH })
-  }
-  if (state.reviewReport !== "filled") {
-    blockers.push({ id: "review-report-missing", reason: `review report is ${state.reviewReport}`, source: REVIEW_REPORT_PATH })
-  }
-  if (state.evidence !== "present") {
-    blockers.push({ id: "evidence-missing", reason: `${evidenceRoot} must contain at least one evidence file`, source: evidenceRoot })
-  }
+  pushLifecycleImplementationReportBlocker(blockers, lifecycle, state.evidence)
+  pushLifecycleBlocker(blockers, lifecycle, "review-report-conflicting", "review-report-malformed", "review-report-missing")
+  pushLifecycleBlocker(blockers, lifecycle, "evidence-missing")
   if (summary.commandDisciplineBlocking) {
     blockers.push({ id: "command-discipline-blocking", reason: summary.commandDiscipline, source: "workflow reports" })
   }
@@ -308,6 +264,15 @@ function closureBlockers(
       source: blocker.source,
     })))
   }
+  pushLifecycleBlocker(
+    blockers,
+    lifecycle,
+    "workflow-loop-state-absent",
+    "workflow-loop-state-malformed",
+    "workflow-loop-state-stale",
+    "ralph-loop-state-absent",
+    "ralph-loop-state-malformed",
+  )
   if (state.tdd.kind === "red-missing") {
     blockers.push({
       evidenceRef: state.tdd.evidenceRef,
@@ -323,7 +288,7 @@ function closureBlockers(
       source: state.tdd.source,
     })
   }
-  if (state.currentTicket !== null) {
+  if (lifecycle.tickets.status === "pending" && state.currentTicket !== null) {
     const tickets = closureTickets(summary)
     blockers.push(
       state.currentTicket.state === "history-only"
@@ -332,6 +297,40 @@ function closureBlockers(
     )
   }
   return blockers
+}
+
+function closureLifecycleSafetyBlockers(lifecycle: WorkflowLifecycleProjection): readonly ClosureBlocker[] {
+  return lifecycle.blockers.filter((blocker) =>
+    blocker.id === "harness-config-invalid"
+    || blocker.id === "rules-path-unsafe"
+    || blocker.id === "evidence-path-unsafe",
+  )
+}
+
+function pushLifecycleBlocker(
+  blockers: ClosureBlocker[],
+  lifecycle: WorkflowLifecycleProjection,
+  ...ids: readonly string[]
+): void {
+  blockers.push(...lifecycle.blockers.filter((candidate) => ids.includes(candidate.id)))
+}
+
+function pushLifecycleImplementationReportBlocker(
+  blockers: ClosureBlocker[],
+  lifecycle: WorkflowLifecycleProjection,
+  evidence: ClosureEvidence,
+): void {
+  const blocker = lifecycle.blockers.find((candidate) =>
+    candidate.id === "implementation-report-conflicting"
+    || candidate.id === "implementation-report-malformed"
+    || candidate.id === "implementation-report-missing",
+  )
+  if (blocker !== undefined) {
+    blockers.push({
+      ...blocker,
+      ...(evidence === "present" ? { evidenceRef: lifecycle.evidence.source } : {}),
+    })
+  }
 }
 
 function satisfiedTechnicalConstraintSignals(summary: WorkflowStatusSummary): readonly string[] {
@@ -402,11 +401,29 @@ export function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState
   if (blocker.id === "implementation-report-missing") {
     return { blockerId: blocker.id, commandAfterContent: "npx ph plan --report-filled implementation", evidenceRef: blocker.evidenceRef, id: "fill-implementation-report", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
+  if (blocker.id === "implementation-report-conflicting" || blocker.id === "implementation-report-malformed") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "repair-implementation-report-status", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
   if (blocker.id === "review-report-missing") {
     return { blockerId: blocker.id, commandAfterContent: "npx ph plan --report-filled review", id: "fill-review-report", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
+  if (blocker.id === "review-report-conflicting" || blocker.id === "review-report-malformed") {
+    return { blockerId: blocker.id, commandAfterContent: "npx ph workflow check", id: "repair-review-report-status", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
   if (blocker.id === "evidence-missing") {
     return { blockerId: blocker.id, id: "record-workflow-evidence", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "workflow-loop-state-absent") {
+    return { blockerId: blocker.id, id: "initialize-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale") {
+    return { blockerId: blocker.id, id: "repair-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "ralph-loop-state-absent") {
+    return { blockerId: blocker.id, id: "initialize-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "ralph-loop-state-malformed") {
+    return { blockerId: blocker.id, id: "repair-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "tdd-red-evidence-missing") {
     return { blockerId: blocker.id, command: "npx ph workflow test", evidenceRef: blocker.evidenceRef, id: "record-tdd-red", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }

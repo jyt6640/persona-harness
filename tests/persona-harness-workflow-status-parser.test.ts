@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { rulePackContentHash } from "../src/rules/rule-delivery.js"
 
 type ReportMarkdownCase = {
   readonly name: string
@@ -60,6 +61,27 @@ function writeStructuredVerificationSuccessEvidence(projectDir: string): void {
   )
 }
 
+function writeCurrentLoopStates(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: rulePackContentHash(projectDir),
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+}
+
 function createPlannedBackendProject(): string {
   const projectDir = createTempProject()
   writeFileSync(join(projectDir, "README.md"), "# Equipment API\n\n- 장비 등록\n")
@@ -70,6 +92,7 @@ function createPlannedBackendProject(): string {
   writeJavaBackendMarkers(projectDir)
   mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
   writeStructuredVerificationSuccessEvidence(projectDir)
+  writeCurrentLoopStates(projectDir)
   return projectDir
 }
 
@@ -238,7 +261,7 @@ describe("workflow report status parser", () => {
     expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("keeps legacy Status-line fallback when frontmatter would make finish stricter", () => {
+  it("fails closed when frontmatter and legacy report statuses conflict", () => {
     const projectDir = createPlannedBackendProject()
     writeConflictingReports(projectDir)
 
@@ -246,9 +269,10 @@ describe("workflow report status parser", () => {
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(check.status).toBe(0)
-    expect(check.stdout).toContain(".persona/workflow/implementation-report.md: filled")
-    expect(check.stdout).toContain(".persona/workflow/review-report.md: filled")
+    expect(check.stdout).toContain(".persona/workflow/implementation-report.md: conflicting")
+    expect(check.stdout).toContain(".persona/workflow/review-report.md: conflicting")
+    expect(check.stdout).toContain("Workflow status: WARN")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
+    expect(finish.stderr).toContain("Blocker: implementation-report-conflicting")
   })
 })
