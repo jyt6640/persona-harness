@@ -12,7 +12,7 @@ export const PROJECT_FINISH_ATTESTATION_POLICY = {
   producerRepository: "jyt6640/persona-harness",
   projectScope: "repository-root-gradle-project",
   ref: "refs/heads/main",
-  subjectName: "project-finish-attestation-receipt.json",
+  subjectName: "receipt.json",
   workflowPath: ".github/workflows/persona-harness-project-finish.yml",
 } as const
 

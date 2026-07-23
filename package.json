@@ -107,6 +107,7 @@
     "packages/shared-skills/skills/programming/references/java",
     "packages/shared-skills/skills/workflow",
     "scripts/verify-finish-attestation.mjs",
+    "scripts/verify-project-finish-attestation.mjs",
     "scripts/staged-package-artifact-provenance-core.mjs",
     "scripts/staged-package-artifact-provenance-crypto.mjs",
     "scripts/staged-package-artifact-provenance-network.mjs",

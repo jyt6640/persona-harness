@@ -292,6 +292,33 @@ describe("package files policy", () => {
     expect(boundaryRecordText).toMatch(/requires fresh\s+External verification/u)
   })
 
+  it("packages the project finish verifier worker without packaging synthetic attestation evidence", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const runtimePaths = [
+      "dist/cli/project-finish-attestation-source.js",
+      "dist/cli/project-finish-attestation-verifier-types.js",
+      "dist/cli/project-finish-attestation-verifier.js",
+      "dist/cli/project-finish-attestation-worker.js",
+      "scripts/verify-project-finish-attestation.mjs",
+    ]
+    const sourceOnlyPaths = [
+      "tests/project-finish-attestation-consumption.test.ts",
+      "tests/project-finish-attestation-source.test.ts",
+      "tests/project-finish-attestation-verifier.test.ts",
+      "tests/project-finish-attestation-worker.test.ts",
+      "tests/helpers/project-finish-attestation-fixture.ts",
+    ]
+
+    for (const filePath of runtimePaths) {
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
+    expect(existsSync(path.join(packageRoot, "scripts/verify-project-finish-attestation.mjs"))).toBe(true)
+    for (const filePath of sourceOnlyPaths) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
+    }
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
