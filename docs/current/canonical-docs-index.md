@@ -17,7 +17,7 @@ current decision inputs.
 | --- | --- | --- |
 | Current docs pointer | `docs/current/README.md` | Short entrypoint for active status and versioned records. |
 | Workflow lifecycle projection | `docs/current/workflow-closure-state-machine-design.md` | Current `workflow-lifecycle.1` contract shared by workflow status, closure JSON, loop-state checks, and finish guidance. It is a fail-closed workflow projection, not release evidence. |
-| Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Current writer ownership plus read-only malformed/stale-state handling for the lifecycle projection. |
+| Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Current writer ownership plus read-only absent/malformed/stale-state handling for the lifecycle projection. |
 | P0-1 `ph go` acceptance | `docs/current/p0-go-acceptance-record.md` | Exact-main acceptance, provenance, cooperative recovery boundary, and item-7 package evidence. |
 | P0-2 finish next-action acceptance | `docs/current/p0-finish-next-action-acceptance-record.md` | Exact-main finish follow-up and report-transition acceptance with local-tarball package evidence. |
 | P0-3 public discovery acceptance | `docs/current/p0-public-discovery-acceptance-record.md` | Exact-main root/dev discovery and writer-safety acceptance with local-tarball package evidence. |
