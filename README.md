@@ -10,7 +10,7 @@
 
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
-[![node](https://img.shields.io/badge/node-%3E%3D20-c4f042?labelColor=black&style=flat-square)](https://nodejs.org)
+[![node](https://img.shields.io/badge/node-%5E20.17.0%20%7C%7C%20%3E%3D22.9.0-c4f042?labelColor=black&style=flat-square)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](./LICENSE)
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
@@ -58,7 +58,7 @@ earned by measurement first — see [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 
 ## Install
 
-Requires Node.js 20+, Java 21+ / Gradle, and the OpenCode CLI with a configured provider.
+Requires Node.js ^20.17.0 || >=22.9.0 (Node 21 is unsupported), Java 21+ / Gradle, and the OpenCode CLI with a configured provider.
 
 ```bash
 # OpenCode
@@ -151,14 +151,23 @@ do not change the P0-3 root CLI discovery contract.
 
 ## Platform And Host Support
 
+### Node runtime floor
+
+The packaged CLI and its product-owned Sigstore authority verifiers require
+Node.js ^20.17.0 || >=22.9.0. `ph doctor` reports this range without reflecting
+unsafe runtime input; a lower or malformed runtime blocks CLI authority work
+before verification. Repository source tests use a stricter Vite toolchain
+floor (Node 20.19.0 or Node 22.12.0+), which is distinct from the published
+package engine.
+
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
-| Linux + OpenCode | Required Node 20; manual Node 22/24 | Required Verify repository runs Linux Node 20 source-built and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains Linux Node 22 and 24 on demand. |
+| Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository runs Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
 | macOS + OpenCode | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
 | Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
 | Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
 
-Automatic CI boundary: Verify repository is the required Linux Node 20 PR/main gate. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
+Automatic CI boundary: Verify repository is the required Linux Node 20.19.0 PR/main gate. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
 
 ## Boundaries & safety
 
