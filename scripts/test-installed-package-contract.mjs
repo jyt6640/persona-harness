@@ -30,10 +30,16 @@ try {
     assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+    assertWorkflowLifecycleAbsenceBlocks(
+      join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
+      join(consumerDirectory, "node_modules", ".bin", "ph"),
+      "installed package",
+    )
     assertInstalledPackageTestPasses(installedPackage)
     process.stdout.write("installed-package-test-contract: PASS\n")
   } else {
     assertSourceCooperativeFinishWorks(sourceCli)
+    assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
     process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
   }
 } finally {
@@ -316,6 +322,72 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
   assertCooperativeFinishWorks(join(temporaryRoot, "source-cli-cooperative-gradle-fixture"), phPath, "source CLI")
+}
+
+function assertSourceWorkflowLifecycleAbsenceBlocks(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertWorkflowLifecycleAbsenceBlocks(
+    join(temporaryRoot, "source-cli-workflow-lifecycle-absence-fixture"),
+    phPath,
+    "source CLI",
+  )
+}
+
+function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
+  mkdirSync(fixtureRoot, { recursive: true })
+  requireSuccess(`${label} lifecycle fixture intake`, runNode(fixtureRoot, [phPath, "intake", "--default", "backend"]))
+  requireSuccess(`${label} lifecycle fixture plan`, runNode(fixtureRoot, [phPath, "plan"]))
+  requireSuccess(`${label} lifecycle fixture plan acceptance`, runNode(fixtureRoot, [phPath, "plan", "--accept"]))
+  mkdirSync(join(fixtureRoot, ".persona", "evidence", "phase0"), { recursive: true })
+  writeFileSync(
+    join(fixtureRoot, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- README ranges read: all",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell --shell './gradlew test'`",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(fixtureRoot, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- `npx ph bearshell --shell './gradlew build'`",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(fixtureRoot, ".persona", "evidence", "phase0", "verification.json"),
+    `${JSON.stringify({
+      command: "npx ph bearshell --shell './gradlew test'",
+      status: 0,
+      tool: "bearshell",
+      toolOutput: "BUILD SUCCESSFUL",
+    }, null, 2)}\n`,
+  )
+
+  const closure = runNode(fixtureRoot, [phPath, "workflow", "closure", "next", "--json"])
+  requireSuccess(`${label} lifecycle absence closure`, closure)
+  const payload = JSON.parse(closure.stdout)
+  const lifecycle = isRecord(payload) && isRecord(payload.state) && isRecord(payload.state.lifecycle)
+    ? payload.state.lifecycle
+    : undefined
+  const blockers = lifecycle !== undefined && Array.isArray(lifecycle.blockers)
+    ? lifecycle.blockers.map((blocker) => isRecord(blocker) ? blocker.id : undefined)
+    : []
+  if (
+    lifecycle === undefined
+    || lifecycle.readiness !== "blocked"
+    || !blockers.includes("workflow-loop-state-absent")
+    || !blockers.includes("ralph-loop-state-absent")
+  ) {
+    throw new Error(`${label} lifecycle absence did not fail closed`)
+  }
+  if (closure.stdout.includes("sk-live-") || existsSync(join(fixtureRoot, ".persona", "evidence", "finish-attestation"))) {
+    throw new Error(`${label} lifecycle absence probe reflected unsafe content or created authority evidence`)
+  }
 }
 
 function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
