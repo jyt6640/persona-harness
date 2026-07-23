@@ -8,6 +8,21 @@ published next-channel line, start with
 The files in this directory remain the release-operation and release-note
 sources used by the existing workflow.
 
+## Current Workflow Lifecycle Boundary
+
+The current workflow/closure/finish state contract is
+[`../workflow-closure-state-machine-design.md`](../workflow-closure-state-machine-design.md).
+`workflow-lifecycle.1` is a read-only, fail-closed workflow projection; it is
+not a release state, approval, or producer record. A blocked or trusted
+`finishAuthority` value does not claim #111 producer success, signature
+verification, registry publication, tag movement, GitHub release creation, or
+release completion.
+
+Only documents selected by `docs/current/README.md` or
+`docs/current/canonical-docs-index.md` are current inputs. Retained historical
+files such as `next-version-readiness.md` and
+`rc-release-readiness-decision.md` are context, not current release decisions.
+
 ## Release Messaging Guardrail
 
 Describe Persona Harness as an AI coding workflow rail + evidence + continuation harness.

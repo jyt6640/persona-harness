@@ -30,5 +30,8 @@ npm run check:acceptance-results
 - Do not record automatic downgrade/removal, token-saving, product-efficacy,
   app-quality, broad reliability, closure guarantee, or release claims unless a
   separate accepted evidence path supports that exact claim.
+- This generated index cannot select a historical docs/current/ record as
+  current workflow lifecycle or release guidance; use the canonical docs index
+  and current docs pointer for that selection.
 
 Template: [TEMPLATE.md](TEMPLATE.md)

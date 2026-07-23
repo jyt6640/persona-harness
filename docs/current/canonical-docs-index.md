@@ -8,10 +8,16 @@ product claims.
 ## Canonical Current Records
 
 Use these files when making current product, measurement, or release decisions.
+Being located under `docs/current/` is not enough: a file is current only when
+this section or the current pointer explicitly selects it. Version-labelled
+snapshots and historical readiness decisions remain retained records, not
+current decision inputs.
 
 | Topic | Canonical file | Notes |
 | --- | --- | --- |
 | Current docs pointer | `docs/current/README.md` | Short entrypoint for active status and versioned records. |
+| Workflow lifecycle projection | `docs/current/workflow-closure-state-machine-design.md` | Current `workflow-lifecycle.1` contract shared by workflow status, closure JSON, loop-state checks, and finish guidance. It is a fail-closed workflow projection, not release evidence. |
+| Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Current writer ownership plus read-only malformed/stale-state handling for the lifecycle projection. |
 | P0-1 `ph go` acceptance | `docs/current/p0-go-acceptance-record.md` | Exact-main acceptance, provenance, cooperative recovery boundary, and item-7 package evidence. |
 | P0-2 finish next-action acceptance | `docs/current/p0-finish-next-action-acceptance-record.md` | Exact-main finish follow-up and report-transition acceptance with local-tarball package evidence. |
 | P0-3 public discovery acceptance | `docs/current/p0-public-discovery-acceptance-record.md` | Exact-main root/dev discovery and writer-safety acceptance with local-tarball package evidence. |
@@ -36,7 +42,6 @@ Use these files when making current product, measurement, or release decisions.
 | Staged package artifact producer | `docs/current/release/staged-package-artifact-attestation-producer.md` | Controlled protected-main producer for an exact npm `.tgz` attestation consumed only through fixed npm/GitHub/Sigstore verifier policy. No release action or authority result is enabled. |
 | Project finish attestation producer | `docs/current/release/project-finish-attestation-producer.md` | Reusable public-push producer for canonical consumer receipt subjects. A signed artifact requires protected integration plus a separately authorized public caller push; this source record enables no verifier or Finish authority. |
 | Production integrity audit | `docs/current/release/production-integrity-audit.md` | Fixed protected-main read-only audit workflow producing a sanitized digest-bound Actions artifact after a separately authorized staged lifecycle. |
-| RC release readiness decision | `docs/current/release/rc-release-readiness-decision.md` | Exact current-main decision: next-RC planning may start, while publication, Stable/GA, and `latest` remain blocked. |
 | External review adoption status | `docs/current/external-review-adoption-status.md` | Stage 16-e adoption/rejection/defer matrix for external review items; docs-only, no schema/product expansion. |
 | Diff-rules classification | `docs/current/diff-rules-classification.md` | T6 classification of all 50 `references/diff-rules` files for future role delivery or T8 gate-candidate work. |
 | Java Iron List gate matrix | `docs/current/java-ironlist-gate-matrix.md` | Item 11 source/fixture/convention-state inventory; it does not add Java enforcement. |
@@ -72,6 +77,7 @@ and checks. Treat these as evidence history, not current product direction.
 | --- | --- | --- |
 | Versioned durable release history | `docs/releases/v<version>/` | Frozen release facts, registry smoke records, and measurement summaries. |
 | Older current-era compatibility docs | `docs/current/v*`, older current docs | Compatibility records retained for link stability. |
+| Historical lifecycle and readiness snapshots | `docs/current/v0.3.0-workflow-report-status-lifecycle.md`, `docs/current/release/next-version-readiness.md`, `docs/current/release/rc-release-readiness-decision.md` | Retained history only. Do not select these files for current workflow lifecycle or release readiness. |
 | Evidence reviews | `docs/evidence-reviews/` | A/B reviews, actual-run reviews, regrades, and generated-run observations. |
 | Phase archives | `docs/phases/` | Phase-specific plans, decisions, and completion notes. |
 | Superseded docs | `docs/archive/` | Historical snapshots and retired transition plans. |

@@ -86,7 +86,7 @@ describe("ph workflow noise classification", () => {
     expect(result.stdout).toContain("Workflow status: PASS")
     expect(result.stdout).toContain("note: direct `.persona/rules` read observed")
     expect(result.stdout).toContain("direct `.persona/rules` read observed")
-    expect(result.stdout).toContain("Next: archive completed workflow")
+    expect(result.stdout).toContain("Next: local workflow lifecycle is complete, but finish remains blocked until the existing trusted-authority path provides eligible evidence")
   })
 
   it("blocks implementation finish when only non-blocking workflow noise remains", () => {

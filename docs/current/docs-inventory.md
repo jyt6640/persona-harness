@@ -13,16 +13,16 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 
 ## Classification Counts
 
-- archived historical: 3
+- archived historical: 4
 - current active pointer/status: 43
 - current compatibility doc: 21
 - current index: 1
-- current or historical decision/status: 16
+- current or historical decision/status: 15
 - current status JSON: 1
 - evidence review archive: 47
-- historical version-specific current doc: 27
+- historical version-specific record: 28
 - legacy current evidence review: 2
-- operational stable: 41
+- operational stable: 40
 - phase archive: 46
 - version-specific release note: 59
 - versioned durable: 26
@@ -130,14 +130,14 @@ Total indexed files: 334
 | `docs/current/ralph-loop-measurement-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/role-scoped-rule-delivery.md` | current active pointer/status | - | T7 role/stage scoped static rule delivery status and boundary record. |
 | `docs/current/role-rules-dogfooding-readiness.md` | current active pointer/status | - | T10 ROLE-RULES dogfooding readiness checklist, violation-log template, and next queue. |
-| `docs/current/release/README.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
+| `docs/current/release/README.md` | current active pointer/status | - | Current release-operation entrypoint. It points to the canonical workflow lifecycle projection and cannot turn historical readiness snapshots into current release evidence. |
 | `docs/current/release/project-finish-attestation-producer.md` | operational stable | - | Reusable public-push project-finish producer source contract; no signed original artifact, verifier, Finish authority, branch-protection, enrollment, review, or approval claim exists until separately governed postmerge evidence. |
 | `docs/current/release/staged-package-artifact-attestation-producer.md` | operational stable | - | Controlled protected-main source for exact npm tarball attestations consumed only through fixed product verifier policy; no release or authority action. |
 | `docs/current/release/staged-package-verification.md` | operational stable | - | Read-only staging-first verification contract: caller-fact local tarballs remain blocked while the fixed online path independently verifies an exact artifact without promotion authority. |
-| `docs/current/release/rc-release-readiness-decision.md` | current active pointer/status | - | Exact current-main release decision: next-RC planning may begin, while publication, Stable/GA, and npm latest remain held. |
+| `docs/current/release/rc-release-readiness-decision.md` | archived historical | - | Historical pre-RC3 readiness decision retained for exact-era context; never select it as current release or lifecycle guidance. |
 | `docs/current/release/github-actions-release-automation.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/release/next-version-blocked.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
-| `docs/current/release/next-version-readiness.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
+| `docs/current/release/next-version-readiness.md` | historical version-specific record | v0.3.6-alpha.1 | Historical alpha readiness snapshot retained for links; it is not a current publish, release, or lifecycle decision. |
 | `docs/current/release/npm-trusted-publishing-runbook.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/release/release-checklist.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/release/release-notes-template.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
@@ -211,39 +211,39 @@ Total indexed files: 334
 | `docs/current/stop-continuation-hook-design.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/team-project-adoption-guide.md` | operational stable | - | Stable non-versioned guide or index. |
 | `docs/current/top-level-intent-router-design.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
-| `docs/current/v0.2.1-package-metadata-audit.md` | historical version-specific current doc | v0.2.1 | Historical v0.2.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.2.1-release-readiness.md` | historical version-specific current doc | v0.2.1 | Historical v0.2.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.2.1-support-contract.md` | historical version-specific current doc | v0.2.1 | Historical v0.2.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-alpha-publish-readiness.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-backend-profile-summary-injection-design.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-blackbear-plan-artifact.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-domain-behavior-guidance-review.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-external-tester-feedback-template.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-external-tester-guide.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-gradle-spring-build-guidance.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-installed-package-evidence-noise-policy.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-intake-transcript-fixture.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-interactive-intake-design.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-philosophy-policy-overlay-design.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-plan-acceptance.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-profile-schema-decision.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-project-intake-philosophy-workflow.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-step-api-contract-scope-decision.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-workflow-history.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-workflow-next-surface-decision.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.0-workflow-report-status-lifecycle.md` | historical version-specific current doc | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.1-external-tester-feedback-template.md` | historical version-specific current doc | v0.3.1 | Historical v0.3.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.1-external-tester-guide.md` | historical version-specific current doc | v0.3.1 | Historical v0.3.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.1-workflow-diagnostics-surface.md` | historical version-specific current doc | v0.3.1 | Historical v0.3.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.3-existing-project-adaptation-mode.md` | historical version-specific current doc | v0.3.3 | Historical v0.3.3 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.6-requirements-draft-workflow.md` | historical version-specific current doc | v0.3.6 | Historical v0.3.6 current-era doc; summarize in a version capsule only when the version becomes active again. |
-| `docs/current/v0.3.6-workflow-ticket-backlog.md` | historical version-specific current doc | v0.3.6 | Historical v0.3.6 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.2.1-package-metadata-audit.md` | historical version-specific record | v0.2.1 | Historical v0.2.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.2.1-release-readiness.md` | historical version-specific record | v0.2.1 | Historical v0.2.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.2.1-support-contract.md` | historical version-specific record | v0.2.1 | Historical v0.2.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-alpha-publish-readiness.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-backend-profile-summary-injection-design.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-blackbear-plan-artifact.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-domain-behavior-guidance-review.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-external-tester-feedback-template.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-external-tester-guide.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-gradle-spring-build-guidance.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-installed-package-evidence-noise-policy.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-intake-transcript-fixture.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-interactive-intake-design.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-philosophy-policy-overlay-design.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-plan-acceptance.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-profile-schema-decision.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-project-intake-philosophy-workflow.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-step-api-contract-scope-decision.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-workflow-history.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-workflow-next-surface-decision.md` | historical version-specific record | v0.3.0 | Historical v0.3.0 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.0-workflow-report-status-lifecycle.md` | historical version-specific record | v0.3.0 | Historical report-marker snapshot. The current fail-closed lifecycle contract is `workflow-closure-state-machine-design.md`; never select this file as current. |
+| `docs/current/v0.3.1-external-tester-feedback-template.md` | historical version-specific record | v0.3.1 | Historical v0.3.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.1-external-tester-guide.md` | historical version-specific record | v0.3.1 | Historical v0.3.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.1-workflow-diagnostics-surface.md` | historical version-specific record | v0.3.1 | Historical v0.3.1 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.3-existing-project-adaptation-mode.md` | historical version-specific record | v0.3.3 | Historical v0.3.3 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.6-requirements-draft-workflow.md` | historical version-specific record | v0.3.6 | Historical v0.3.6 current-era doc; summarize in a version capsule only when the version becomes active again. |
+| `docs/current/v0.3.6-workflow-ticket-backlog.md` | historical version-specific record | v0.3.6 | Historical v0.3.6 current-era doc; summarize in a version capsule only when the version becomes active again. |
 | `docs/current/v0.4-evaluation-plan.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/v0.4-evaluation-runbook.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/vendored-shared-skills-tarball-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
-| `docs/current/workflow-closure-state-machine-design.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
+| `docs/current/workflow-closure-state-machine-design.md` | current active pointer/status | - | Canonical `workflow-lifecycle.1` contract for status, closure, loop-state, and finish projection; selected by the current docs index and README. |
 | `docs/current/workflow-string-gate-parsing-audit.md` | current active pointer/status | - | T4 report-status parsing migration and retained string-gate audit record. |
-| `docs/current/workflow-state-concurrency.md` | current active pointer/status | - | T5 ownership and conflict-detection record for workflow state writers. |
+| `docs/current/workflow-state-concurrency.md` | current active pointer/status | - | Current ownership, conflict detection, and read-only malformed/stale-state handling for lifecycle inputs. |
 | `docs/current/workflow-transition-test-map.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/workflow.md` | operational stable | - | Stable non-versioned guide or index. |
 | `docs/evidence-reviews/README.md` | evidence review archive | - | Evidence/review record; durable but not the current status surface. |
