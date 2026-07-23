@@ -6,8 +6,6 @@ import {
   openSync,
   readFileSync,
   realpathSync,
-  renameSync,
-  rmSync,
   writeFileSync,
 } from "node:fs"
 import { isAbsolute, join, relative } from "node:path"
@@ -25,10 +23,15 @@ import {
 import {
   verifyProjectFinishAttestationArtifactHandoff,
 } from "./project-finish-attestation-artifact-handoff.mjs"
+import {
+  ArtifactOutputError,
+  closeProjectFinishAttestationArtifactReservation,
+  materializeProjectFinishAttestationArtifactReservation,
+  reserveProjectFinishAttestationArtifactOutput,
+  verifyProjectFinishAttestationArtifactReservation,
+} from "./project-finish-attestation-artifact-output.mjs"
 
 const CALLER_CHECKOUT_DIRECTORY = ".project-finish-caller"
-const ARTIFACT_DIRECTORY = ".project-finish-attestation-artifacts"
-const ARTIFACT_STAGING_DIRECTORY = ".project-finish-attestation-artifacts-staging"
 const FAILURE_DIRECTORY = ".project-finish-attestation-failure"
 
 export async function runProjectFinishAttestationBuilder({
@@ -37,6 +40,7 @@ export async function runProjectFinishAttestationBuilder({
   producerRoot = process.cwd(),
 } = {}) {
   let workspace
+  let artifactReservation
   try {
     workspace = resolveProjectFinishAttestationWorkspace(environment)
   } catch (error) {
@@ -50,6 +54,7 @@ export async function runProjectFinishAttestationBuilder({
     const { runProjectFinishAttestationProducer } = await import(
       pathToFileURL(join(producerRoot, "dist", "cli", "project-finish-attestation-producer-runner.js")).href,
     )
+    artifactReservation = reserveProjectFinishAttestationArtifactOutput(workspace.runner.realpath)
     const result = runProjectFinishAttestationProducer(
       workspace.caller.realpath,
       context.value,
@@ -57,10 +62,14 @@ export async function runProjectFinishAttestationBuilder({
     )
     if (result.kind === "blocked") return recordBlocked(workspace, result.code)
     if (!sameWorkspace(workspace)) return recordBlocked(workspace, "project-finish-producer-workspace")
-    writeArtifacts(workspace, result.value)
+    writeArtifacts(workspace, artifactReservation, result.value)
     return { kind: "passed" }
   } catch (error) {
     return recordBlocked(workspace, diagnosticCode(error))
+  } finally {
+    if (artifactReservation !== undefined) {
+      closeProjectFinishAttestationArtifactReservation(artifactReservation)
+    }
   }
 }
 
@@ -127,16 +136,11 @@ function resolveProjectFinishAttestationWorkspace(environment) {
   return { caller, runner }
 }
 
-function writeArtifacts(workspace, artifacts) {
-  if (!sameWorkspace(workspace)) throw new ProducerScriptError("project-finish-producer-workspace")
-  const staging = createRunnerDirectory(workspace, ARTIFACT_STAGING_DIRECTORY)
+function writeArtifacts(workspace, reservation, artifacts) {
   try {
-    writePrivateFile(join(staging.realpath, "receipt.json"), artifacts.receiptBytes)
-    writePrivateFile(join(staging.realpath, "predicate.json"), `${JSON.stringify(artifacts.predicate)}\n`)
     if (!sameWorkspace(workspace)) throw new ProducerScriptError("project-finish-producer-workspace")
-    const output = join(workspace.runner.realpath, ARTIFACT_DIRECTORY)
-    if (pathExists(output)) throw new ProducerScriptError("project-finish-producer-workspace")
-    renameSync(staging.realpath, output)
+    materializeProjectFinishAttestationArtifactReservation(reservation, artifacts)
+    verifyProjectFinishAttestationArtifactReservation(reservation)
     const handoff = verifyProjectFinishAttestationArtifactHandoff({
       environment: { GITHUB_WORKSPACE: workspace.runner.realpath },
       phase: "unsigned",
@@ -145,8 +149,11 @@ function writeArtifacts(workspace, artifacts) {
       throw new ProducerScriptError("project-finish-producer-artifact-handoff")
     }
   } catch (error) {
-    rmSync(staging.realpath, { force: true, recursive: true })
-    throw error
+    if (error instanceof ProducerScriptError) throw error
+    if (error instanceof ArtifactOutputError) {
+      throw new ProducerScriptError("project-finish-producer-workspace")
+    }
+    throw new ProducerScriptError("project-finish-producer-workspace")
   }
 }
 
@@ -251,15 +258,6 @@ function sameDirectory(expected) {
 function isContained(root, candidate) {
   const path = relative(root, candidate)
   return path === "" || (!path.startsWith("..") && !isAbsolute(path))
-}
-
-function pathExists(path) {
-  try {
-    lstatSync(path, { bigint: true })
-    return true
-  } catch {
-    return false
-  }
 }
 
 function requiredEnvironment(environment, name) {

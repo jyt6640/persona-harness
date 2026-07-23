@@ -266,12 +266,24 @@ receipt, predicate, signed bundle, or authority result can exist. The
 content-aware source snapshot uses the same no-follow read discipline for
 caller source files and rejects unsafe replacement during capture.
 
-Receipt and predicate bytes are written privately into a freshly created,
-runner-owned staging directory and promoted only into the fixed artifact
-directory after caller and runner identity rechecks. A blocked caller or
-artifact-directory condition may leave only a bounded failure diagnostic in its
-separate runner-owned directory; no receipt, predicate, bundle, or signature is
-created. A caller-controlled `.ci` path is never used for producer artifacts.
+Before the caller's fixed Gradle commands run, the builder creates one private
+runner-owned output reservation and opens the empty fixed `receipt.json` and
+`predicate.json` leaves with no-follow descriptors. The reservation retains
+the runner, output-directory, and leaf identities. After the caller result it
+rechecks those identities before and after every write and writes bytes only
+through the already-open leaf descriptors. It deliberately performs no
+pathname staging-to-final rename.
+
+Replacing the reserved output parent, final output root, or either leaf blocks
+before the unsigned handoff. A replacement that races a final descriptor write
+cannot redirect bytes through an alias: the descriptor still addresses the
+original reserved inode and the post-write identity check rejects the handoff.
+Any such unlinked bytes are never visible through the caller-controlled alias
+and are never uploaded. A blocked caller or output condition can leave only an empty,
+unverified reservation or a bounded failure diagnostic under the runner-owned
+root; it creates no accepted receipt, predicate, bundle, signature, authority,
+or Finish result. A caller-controlled `.ci` path is never used for producer
+artifacts.
 
 ## Signed Artifact Handoff
 
