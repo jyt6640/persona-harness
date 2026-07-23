@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
@@ -11,6 +11,10 @@ import {
   runStagedPackageVerification,
   type StagedPackageVerificationOptions,
 } from "../src/cli/staged-package-verification-runner.js"
+import {
+  createInstalledConsumer,
+  runInstalledStagedPackageMatrix,
+} from "../src/cli/staged-package-verification-installed.js"
 import { withPackagePackLock } from "./package-pack-lock.js"
 import {
   createInstallCacheObservation,
@@ -192,6 +196,46 @@ describe("staged package verification runner", () => {
       sourceCheckoutIndependent: "verified",
       version: "verified",
       workflowHelp: "verified",
+    })
+  })
+
+  it("seeds normal authority fixtures while explicit lifecycle removal stays blocked", { timeout: 60_000 }, () => {
+    const root = createFixtureRoot()
+    const commandRunner = suiteNpmCommandRunner({
+      cache: cache(),
+      runProvenance: () => ({ output: "verified", status: 0 }),
+      runner: runCommand,
+    })
+    const consumer = createInstalledConsumer(root, packedTarballPath, commandRunner)
+    if (consumer === undefined) throw new Error("Expected installed consumer")
+
+    const seeded = runInstalledStagedPackageMatrix(consumer, root, commandRunner)
+    expect(seeded.authorityBlocked).toBe(true)
+    expect(seeded.closureAuthorityParity).toBe(true)
+
+    const fixtureDir = join(root, "authority-fixture")
+    const workflowLoopStatePath = join(fixtureDir, ".persona", "workflow", "workflow-loop-state.json")
+    const ralphLoopStatePath = join(fixtureDir, ".persona", "workflow", "ralph-loop-state.json")
+    expect(existsSync(workflowLoopStatePath)).toBe(true)
+    expect(existsSync(ralphLoopStatePath)).toBe(true)
+    rmSync(workflowLoopStatePath)
+    rmSync(ralphLoopStatePath)
+
+    const unseeded = runCommand(
+      process.execPath,
+      [consumer.cliPath, "workflow", "closure", "next", "--json"],
+      fixtureDir,
+    )
+    expect(unseeded.status).toBe(0)
+    expect(unseeded.output).toContain("workflow-loop-state-absent")
+    expect(JSON.parse(unseeded.output)).toMatchObject({
+      state: {
+        finish: "blocked",
+        lifecycle: {
+          loops: { ralph: "absent", workflow: "absent" },
+          readiness: "blocked",
+        },
+      },
     })
   })
 
