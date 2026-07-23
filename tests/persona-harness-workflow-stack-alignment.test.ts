@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
 
@@ -62,6 +63,7 @@ function writeWorkflowEvidence(projectDir: string): void {
     join(projectDir, ".persona", "evidence", "phase0", "2026-06-24T00-00-00-000Z-project-profile.jsonc.json"),
     `${JSON.stringify({ targetFile: join(projectDir, ".persona", "project-profile.jsonc"), fileRole: "project-profile" }, null, 2)}\n`,
   )
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }
 
 function writePersonaHarnessPackageJson(projectDir: string): void {

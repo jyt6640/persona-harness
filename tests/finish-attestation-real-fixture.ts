@@ -3,6 +3,8 @@ import { copyFileSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
+
 export const PROTECTED_MAIN_HEAD = "84901174235f0a9c7bc08f0dbd5be6d94c02d500"
 export const REAL_ATTESTATION_NOW = new Date("2026-07-16T16:00:00.000Z")
 export const EXPIRED_ATTESTATION_NOW = new Date("2026-07-16T17:35:45.394Z")
@@ -83,4 +85,5 @@ function writeWorkflowFixture(projectDir: string): void {
       toolOutput: "BUILD SUCCESSFUL",
     })}\n`,
   )
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }

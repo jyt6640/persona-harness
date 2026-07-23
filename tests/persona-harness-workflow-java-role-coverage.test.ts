@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 import { readJavaRoleReadCoverage } from "../src/cli/java-role-read-coverage.js"
 
 const tempProjects: string[] = []
@@ -63,6 +64,7 @@ function writeWorkflowEvidence(projectDir: string): void {
     join(projectDir, ".persona", "evidence", "phase0", "project-profile.json"),
     `${JSON.stringify({ targetFile: join(projectDir, ".persona", "project-profile.jsonc"), fileRole: "project-profile" }, null, 2)}\n`,
   )
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }
 
 function writeSpringJpaProject(projectDir: string): void {

@@ -5,6 +5,7 @@ import { dirname, join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
 
@@ -87,6 +88,7 @@ function writeStructuredVerificationSuccessEvidence(projectDir: string): void {
     join(projectDir, ".persona", "evidence", "phase0", "verification.json"),
     `${JSON.stringify({ command: "npx ph bearshell --shell './gradlew test'", status: 0, tool: "bearshell", toolOutput: "BUILD SUCCESSFUL" }, null, 2)}\n`,
   )
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }
 
 afterEach(() => {

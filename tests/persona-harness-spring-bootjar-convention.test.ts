@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 import { SPRING_BOOTJAR_ENABLED_CONVENTION } from "../src/config/convention-registry.js"
 
 const tempProjects: string[] = []
@@ -55,6 +56,7 @@ function writeReportsAndEvidence(projectDir: string): void {
       2,
     )}\n`,
   )
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
 }
 
 function writePendingTicket(projectDir: string): void {
