@@ -218,23 +218,36 @@ describe("staged package verification runner", () => {
     const ralphLoopStatePath = join(fixtureDir, ".persona", "workflow", "ralph-loop-state.json")
     expect(existsSync(workflowLoopStatePath)).toBe(true)
     expect(existsSync(ralphLoopStatePath)).toBe(true)
-    rmSync(workflowLoopStatePath)
-    rmSync(ralphLoopStatePath)
+    const workflowLoopState = readFileSync(workflowLoopStatePath)
 
-    const unseeded = runCommand(
+    rmSync(workflowLoopStatePath)
+
+    const workflowAbsent = runCommand(
       process.execPath,
       [consumer.cliPath, "workflow", "closure", "next", "--json"],
       fixtureDir,
     )
-    expect(unseeded.status).toBe(0)
-    expect(unseeded.output).toContain("workflow-loop-state-absent")
-    expect(JSON.parse(unseeded.output)).toMatchObject({
+    expect(workflowAbsent.status).toBe(0)
+    expect(workflowAbsent.output).toContain("workflow-loop-state-absent")
+    expect(workflowAbsent.output).not.toContain("ralph-loop-state-absent")
+    expect(JSON.parse(workflowAbsent.output)).toMatchObject({
+      state: { finish: "blocked" },
+    })
+
+    writeFileSync(workflowLoopStatePath, workflowLoopState)
+    rmSync(ralphLoopStatePath)
+
+    const ralphAbsent = runCommand(
+      process.execPath,
+      [consumer.cliPath, "workflow", "closure", "next", "--json"],
+      fixtureDir,
+    )
+    expect(ralphAbsent.status).toBe(0)
+    expect(ralphAbsent.output).not.toContain("workflow-loop-state-absent")
+    expect(ralphAbsent.output).toContain("ralph-loop-state-absent")
+    expect(JSON.parse(ralphAbsent.output)).toMatchObject({
       state: {
         finish: "blocked",
-        lifecycle: {
-          loops: { ralph: "absent", workflow: "absent" },
-          readiness: "blocked",
-        },
       },
     })
   })
