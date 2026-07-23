@@ -13,10 +13,11 @@ import { spawnSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import process from "node:process"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-supported-node-surface-"))
+const FIXTURE_LIFECYCLE_STARTED_AT = "2026-07-01T00:00:00.000Z"
 
 class SupportSurfaceError extends Error {}
 
@@ -24,8 +25,8 @@ try {
   const input = parseInput(process.argv.slice(2))
   assertRuntimeIdentity(input)
   const candidateTarballSha256 = input.surface === "installed"
-    ? verifyInstalledSurface(input)
-    : verifySourceSurface(input)
+    ? await verifyInstalledSurface(input)
+    : await verifySourceSurface(input)
 
   console.log(JSON.stringify({
     candidateTarballSha256,
@@ -77,24 +78,24 @@ function assertRuntimeIdentity(input) {
   }
 }
 
-function verifySourceSurface(input) {
+async function verifySourceSurface(input) {
   const cliPath = join(repositoryRoot, "dist", "cli", "index.js")
   if (!existsSync(cliPath)) {
     throw new SupportSurfaceError("Source-built CLI is unavailable")
   }
   assertPackageTest(repositoryRoot, "source-built package")
-  assertCliSurface(
+  await assertCliSurface(
     (cwd, args) => runCommand(process.execPath, [cliPath, ...args], cwd),
     input.surface,
   )
   return null
 }
 
-function verifyInstalledSurface(input) {
+async function verifyInstalledSurface(input) {
   const tarballPath = packLocalTarball()
   const installed = installLocalTarball(tarballPath)
   assertPackageTest(installed.packageRoot, "installed package")
-  assertCliSurface(
+  await assertCliSurface(
     (cwd, args) => runCommand(installed.binPath, args, cwd),
     input.surface,
   )
@@ -155,13 +156,15 @@ function assertPackageTest(packageRoot, label) {
   }
 }
 
-function assertCliSurface(runCli, surface) {
+async function assertCliSurface(runCli, surface) {
   requireSuccess(runCli(repositoryRoot, ["--help"]), `${surface} ph --help`)
   requireSuccess(runCli(repositoryRoot, ["version"]), `${surface} ph version`)
   requireSuccess(runCli(repositoryRoot, ["workflow", "--help"]), `${surface} ph workflow --help`)
 
   const fixtureRoot = join(temporaryRoot, `${surface}-authority-negative`)
-  writeAuthorityNegativeFixture(fixtureRoot)
+  if (!await writeAuthorityNegativeFixture(fixtureRoot)) {
+    throw new SupportSurfaceError(`${surface} authority-negative fixture setup failed`)
+  }
   const finish = runCli(fixtureRoot, ["workflow", "finish", "implement"])
   const output = `${finish.stdout}\n${finish.stderr}`
   if (finish.status === 0 || !output.includes("trusted-authority-required") || output.includes("Finish status: PASS")) {
@@ -169,7 +172,7 @@ function assertCliSurface(runCli, surface) {
   }
 }
 
-function writeAuthorityNegativeFixture(projectRoot) {
+async function writeAuthorityNegativeFixture(projectRoot) {
   mkdirSync(join(projectRoot, ".persona", "evidence", "phase0"), { recursive: true })
   mkdirSync(join(projectRoot, ".persona", "workflow"), { recursive: true })
   writeFileSync(join(projectRoot, ".persona", "workflow", "plan.md"), "Status: accepted\n")
@@ -195,6 +198,30 @@ function writeAuthorityNegativeFixture(projectRoot) {
       toolOutput: "BUILD SUCCESSFUL",
     })}\n`,
   )
+  return writeCurrentLifecycleStates(projectRoot)
+}
+
+async function writeCurrentLifecycleStates(projectRoot) {
+  try {
+    const [workflowLoopState, ralphLoopState, ruleDelivery] = await Promise.all([
+      import(pathToFileURL(join(repositoryRoot, "dist", "cli", "workflow-loop-state.js")).href),
+      import(pathToFileURL(join(repositoryRoot, "dist", "runtime", "ralph-loop-state.js")).href),
+      import(pathToFileURL(join(repositoryRoot, "dist", "rules", "rule-delivery.js")).href),
+    ])
+    workflowLoopState.writeWorkflowLoopState(projectRoot, {
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: ruleDelivery.rulePackContentHash(projectRoot),
+      schemaVersion: workflowLoopState.WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
+      startedAt: FIXTURE_LIFECYCLE_STARTED_AT,
+    })
+    return ralphLoopState.writeRalphLoopState(
+      projectRoot,
+      ralphLoopState.emptyRalphLoopState(FIXTURE_LIFECYCLE_STARTED_AT),
+    )
+  } catch {
+    return false
+  }
 }
 
 function runCommand(command, args, cwd) {
