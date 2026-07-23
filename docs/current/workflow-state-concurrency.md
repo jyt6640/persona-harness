@@ -14,8 +14,8 @@ not product-efficacy, reliability, closure-guarantee, or delegation evidence.
 | `.persona/workflow/implementation-report.md` and `review-report.md` status | CLI `ph plan --report-filled <implementation\|review>` | CLI finish/check/next/resume readers, lifecycle projection, and runtime rail-compliance observers | Read-modify-write status updates use an mtime/size token and abort when the file changes after read. Conflicting or malformed markers are surfaced read-only by the lifecycle projection; no reader chooses a fallback marker. |
 | `.persona/workflow/requirements/backlog.md` draft status | CLI `ph workflow approve requirements` | CLI split/next guidance | Draft approval uses an mtime/size token and aborts when the draft changes after read. |
 | `.persona/workflow/backlog.md` ticket status | CLI `ph workflow archive <ticket>` | CLI next/closure/finish/check readers and relay/role surfaces | Backlog repair/archive writes use an mtime/size token and abort when the backlog changes after read. |
-| `.persona/workflow/workflow-loop-state.json` | CLI `ph workflow loop` | CLI `workflow loop --dry-run --json` readers and lifecycle projection | Loop writes carry a state-file token across iterations and abort when an external process changes the file. The projection reports malformed state or a rule-pack mismatch as a blocker without repairing it. |
-| `.persona/workflow/ralph-loop-state.json` | OpenCode plugin/runtime hooks for ralph-loop idle/tool-output continuation | CLI dry-run/reporting readers and lifecycle projection | Runtime hook writes carry a state-file token and fail closed when another writer changes the file before the hook write. The projection reports malformed state without continuing from it. |
+| `.persona/workflow/workflow-loop-state.json` | CLI `ph workflow loop` | CLI `workflow loop --dry-run --json` readers and lifecycle projection | Loop writes carry a state-file token across iterations and abort when an external process changes the file. The projection reports absent or malformed state and a rule-pack mismatch as blockers without creating or repairing state. |
+| `.persona/workflow/ralph-loop-state.json` | OpenCode plugin/runtime hooks for ralph-loop idle/tool-output continuation | CLI dry-run/reporting readers and lifecycle projection | Runtime hook writes carry a state-file token and fail closed when another writer changes the file before the hook write. The projection reports absent or malformed state without creating it or continuing from it. |
 
 ## Conflict Behavior
 
@@ -34,10 +34,10 @@ tool-output append should be emitted from a stale state write.
 ## Lifecycle Projection Read Safety
 
 `workflow-lifecycle.1` is read-only over these surfaces. It treats an
-unterminated or conflicting report status, malformed loop state, stale
-workflow-loop rule-pack hash, missing evidence, pending ticket, and unsafe
-configured path as a blocker. It does not normalize, overwrite, auto-archive,
-or recreate the affected artifact while observing it.
+unterminated or conflicting report status, absent or malformed loop state,
+stale workflow-loop rule-pack hash, missing evidence, pending ticket, and
+unsafe configured path as a blocker. It does not normalize, overwrite,
+auto-archive, or recreate the affected artifact while observing it.
 
 The projection's `finishAuthority` field is read-only for workflow status and
 normal closure planning. It carries the existing authority result for

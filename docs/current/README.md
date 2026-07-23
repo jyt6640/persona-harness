@@ -142,7 +142,7 @@ not become current merely because they remain under `docs/current/`.
 - `workflow-lifecycle.1` is the current shared, fail-closed projection for
   `workflow check`, closure JSON, persisted loop state, and finish guidance.
   It treats missing/template/malformed/conflicting report markers, unsafe
-  configured paths, missing evidence, stale or malformed loop state, and
+  configured paths, missing evidence, absent, stale, or malformed loop state, and
   pending tickets as blockers. Its read-only `finishAuthority` field surfaces
   the existing trusted-authority result without issuing, verifying, or
   consuming authority. Neither lifecycle readiness nor a blocked/trusted
