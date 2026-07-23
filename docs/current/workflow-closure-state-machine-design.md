@@ -63,10 +63,12 @@ silently converted into local lifecycle readiness.
    a fallback winner.
 3. Missing evidence blocks lifecycle progression. Evidence presence alone does
    not create trusted authority.
-4. A malformed workflow-loop or ralph-loop state blocks continuation. A valid
-   workflow-loop state whose rule-pack hash differs from the current rule pack
-   is `stale` and blocks continuation. The reader never rewrites or repairs the
-   state while reporting it.
+4. An absent or malformed workflow-loop or ralph-loop state blocks
+   continuation. Absence maps to a bounded initialization step; a malformed
+   state maps to a distinct review-and-repair step. A valid workflow-loop state
+   whose rule-pack hash differs from the current rule pack is `stale` and also
+   blocks continuation. The reader never creates, rewrites, or repairs state
+   while reporting it.
 5. Pending tickets block closure; history-only backlog state remains a repair
    case instead of an implicit archive.
 6. Workflow status and normal closure planning call the existing authority
@@ -98,17 +100,20 @@ boundary.
 
 Closure maps invalid report states to `repair-implementation-report-status` or
 `repair-review-report-status`, requiring the markers to be corrected before a
-fresh `npx ph workflow check`. Stale or malformed persisted state maps to
-`repair-workflow-loop-state` or `repair-ralph-loop-state`; these are review and
-repair actions, not automatic recovery commands.
+fresh `npx ph workflow check`. Absent persisted state maps to
+`initialize-workflow-loop-state` or `initialize-ralph-loop-state`; stale or
+malformed state maps to `repair-workflow-loop-state` or
+`repair-ralph-loop-state`. These are explicit human-or-runtime actions, not
+automatic recovery commands.
 
 ## Concurrency And Paths
 
 The projection consumes snapshot readers only. State writers retain their
 existing token checks and must refuse replacement races. See
 [`workflow-state-concurrency.md`](workflow-state-concurrency.md) for ownership,
-no-follow/path constraints, and the rule that malformed or stale persisted
-state must be reviewed before a writer replaces it.
+no-follow/path constraints, and the rule that absent state must be established
+explicitly while malformed or stale persisted state must be reviewed before a
+writer replaces it.
 
 ## Current-Document Selection
 
@@ -126,7 +131,8 @@ External verification. It is workflow lifecycle and closure-state truth only.
 
 ## Coverage
 
-Focused coverage exercises shared status/closure projection parity, conflicting
-report markers, malformed report frontmatter, stale and malformed loop state,
-unsafe path handling, pending tickets, no authority, and synthetic local
-evidence that remains blocked by the existing authority boundary.
+Focused coverage exercises shared status/closure/next/follow-up projection
+parity, conflicting report markers, malformed report frontmatter, absent,
+stale, and malformed loop state, unsafe path handling, pending tickets, no
+authority, and synthetic local evidence that remains blocked by the existing
+authority boundary.
