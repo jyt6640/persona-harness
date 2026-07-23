@@ -28,6 +28,12 @@ try {
     assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
+    assertDoctorRegistryReadback(
+      join(consumerDirectory, "doctor-registry-fixture"),
+      join(consumerDirectory, "node_modules", ".bin", "ph"),
+      installedPackage,
+      "installed package",
+    )
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     assertWorkflowLifecycleAbsenceBlocks(
@@ -38,6 +44,7 @@ try {
     assertInstalledPackageTestPasses(installedPackage)
     process.stdout.write("installed-package-test-contract: PASS\n")
   } else {
+    assertSourceDoctorRegistryReadback(sourceCli)
     assertSourceCooperativeFinishWorks(sourceCli)
     assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
     process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
@@ -322,6 +329,92 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
   assertCooperativeFinishWorks(join(temporaryRoot, "source-cli-cooperative-gradle-fixture"), phPath, "source CLI")
+}
+
+function assertSourceDoctorRegistryReadback(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertDoctorRegistryReadback(
+    join(temporaryRoot, "source-cli-doctor-registry-fixture"),
+    phPath,
+    repositoryRoot,
+    "source CLI",
+  )
+}
+
+function assertDoctorRegistryReadback(fixtureRoot, phPath, packageRoot, label) {
+  const installedVersion = readPackageVersion(packageRoot)
+  mkdirSync(join(fixtureRoot, ".opencode"), { recursive: true })
+  mkdirSync(join(fixtureRoot, ".persona"), { recursive: true })
+  writeFileSync(
+    join(fixtureRoot, "AGENTS.md"),
+    [
+      "<!-- persona-harness:agents:start schema=persona-harness.agents.v1 -->",
+      "# Persona Harness Agent Instructions",
+      "",
+      "- Run `npx ph workflow implement` before implementation.",
+      "- Run `npx ph workflow finish implement` before claiming completion.",
+      "<!-- persona-harness:agents:end -->",
+      "",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(fixtureRoot, ".opencode", "opencode.json"),
+    `${JSON.stringify({ plugin: ["persona-harness"] }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(fixtureRoot, ".persona", "harness.jsonc"),
+    `${JSON.stringify({ enforce: { executeVerification: false } }, null, 2)}\n`,
+  )
+
+  const result = runNode(
+    fixtureRoot,
+    [phPath, "doctor", "--json"],
+    {
+      PH_DOCTOR_OPENCODE_VERSION: "1.0.0-installed-test",
+      PH_DOCTOR_REGISTRY_DEPRECATED: JSON.stringify("deprecated test-only marker"),
+      PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({
+        latest: installedVersion,
+        next: "0.7.0-rc.3",
+        staging: "0.7.0-rc.8",
+      }),
+    },
+  )
+  requireSuccess(`${label} doctor registry readback`, result)
+  const payload = JSON.parse(result.stdout)
+  if (!isRecord(payload) || !isRecord(payload.registry) || !isRecord(payload.authority)) {
+    throw new Error(`${label} doctor registry readback did not return a bounded JSON object`)
+  }
+  const channels = payload.registry.channels
+  if (
+    !isRecord(channels)
+    || channels["installed"] !== installedVersion
+    || channels["latest"] !== installedVersion
+    || channels["next"] !== "0.7.0-rc.3"
+    || channels["staging"] !== "0.7.0-rc.8"
+    || channels["legacy"] !== "retired"
+    || payload.registry.deprecation !== "present"
+    || payload.authority.finish !== "blocked"
+  ) {
+    throw new Error(`${label} doctor registry readback violated the non-authoritative channel contract`)
+  }
+  if (
+    result.stdout.includes("deprecated test-only marker")
+    || result.stdout.includes(repositoryRoot)
+    || result.stdout.includes(fixtureRoot)
+  ) {
+    throw new Error(`${label} doctor registry readback reflected an unsafe local fact`)
+  }
+}
+
+function readPackageVersion(packageRoot) {
+  const parsed = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
+  if (!isRecord(parsed) || typeof parsed.version !== "string" || parsed.version.length === 0) {
+    throw new Error("doctor registry package version is unavailable")
+  }
+  return parsed.version
 }
 
 function assertSourceWorkflowLifecycleAbsenceBlocks(sourceCliPath) {
@@ -675,11 +768,11 @@ function runCommand(cwd, command, args) {
   }
 }
 
-function runNode(cwd, args) {
+function runNode(cwd, args, environment = {}) {
   const result = spawnSync(process.execPath, args, {
     cwd,
     encoding: "utf8",
-    env: process.env,
+    env: { ...process.env, ...environment },
     maxBuffer: 4 * 1024 * 1024,
   })
   if (result.error) {
