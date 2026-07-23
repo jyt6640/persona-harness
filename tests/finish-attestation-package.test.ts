@@ -17,7 +17,12 @@ describe("finish-attestation package contract", () => {
     const worker = readFileSync("scripts/verify-finish-attestation.mjs", "utf8")
 
     expect(packageJson.files ?? []).toContain("scripts/verify-finish-attestation.mjs")
+    expect(packageJson.files ?? []).toContain("scripts/node-runtime-floor.mjs")
+    expect(worker).toContain("assessSigstoreNodeRuntime")
     expect(worker).toContain("@sigstore/tuf")
+    expect(worker).toContain('await import("@sigstore/tuf")')
+    expect(worker).not.toMatch(/^import\s+.*@sigstore\//mu)
+    expect(worker.indexOf("assessSigstoreNodeRuntime(process.versions.node)")).toBeLessThan(worker.indexOf('await import("@sigstore/tuf")'))
     expect(worker).toContain("forceCache: false")
     expect(worker).not.toContain("gh ")
     expect(worker).not.toContain("process.env")

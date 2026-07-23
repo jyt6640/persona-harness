@@ -10,7 +10,7 @@
 
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
-[![node](https://img.shields.io/badge/node-%3E%3D20-c4f042?labelColor=black&style=flat-square)](https://nodejs.org)
+[![node](https://img.shields.io/badge/node-%5E20.17.0%20%7C%7C%20%3E%3D22.9.0-c4f042?labelColor=black&style=flat-square)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](./LICENSE)
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
@@ -50,7 +50,7 @@
 
 ## 安装
 
-需要 Node.js 20+、Java 21+ / Gradle，以及已配置供应商的 OpenCode CLI。
+需要 Node.js ^20.17.0 || >=22.9.0（不支持 Node 21）、Java 21+ / Gradle，以及已配置供应商的 OpenCode CLI。
 
 ```bash
 # OpenCode

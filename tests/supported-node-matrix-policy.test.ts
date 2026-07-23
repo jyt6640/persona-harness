@@ -9,7 +9,7 @@ import { collectSupportedNodeMatrixDiagnostics } from "../scripts/check-supporte
 const repositoryRoot = process.cwd()
 
 describe("supported Node matrix policy", () => {
-  it("assigns automatic Linux Node 20 package evidence to Verify repository and keeps the matrix manual", async () => {
+  it("assigns automatic Linux Node 20.19 source evidence to Verify repository and keeps exact product floors manual", async () => {
     const diagnostics = await collectSupportedNodeMatrixDiagnostics(repositoryRoot)
     const verify = readFileSync(join(repositoryRoot, ".github", "workflows", "ci.yml"), "utf8")
     const matrix = readFileSync(join(repositoryRoot, ".github", "workflows", "supported-node-matrix.yml"), "utf8")
@@ -17,20 +17,24 @@ describe("supported Node matrix policy", () => {
     expect(diagnostics).toEqual([])
     expect(readFileSync(join(repositoryRoot, "scripts", "check-supported-node-matrix.mjs"), "utf8")).not.toContain("node:child_process")
     expect(verify).toContain("name: Verify repository")
-    expect(verify).toContain("node-version: 20")
+    expect(verify).toContain("node-version: 20.19.0")
     expect(verify).toContain(
-      'node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "linux" --expected-node-major "20"',
+      'node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "linux" --expected-node "20.19.0" --expected-node-mode "exact"',
     )
     expect(verify).toContain(
-      'node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "linux" --expected-node-major "20"',
+      'node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "linux" --expected-node "20.19.0" --expected-node-mode "exact"',
     )
     expect(matrix).toContain("workflow_dispatch:")
     expect(matrix).not.toContain("pull_request:")
     expect(matrix).not.toContain("push:")
-    expect(matrix).not.toContain("node: 20")
-    expect(matrix).toContain("node: 22")
-    expect(matrix).toContain("node: 24")
+    expect(matrix).toContain('node: "20.17.0"')
+    expect(matrix).toContain('node: "22.9.0"')
+    expect(matrix).toContain('node: "20"')
+    expect(matrix).toContain('node: "22"')
+    expect(matrix).toContain('node: "24"')
     expect(matrix).toContain("platform: macos")
+    expect(matrix).toContain("if: matrix.platform == 'linux' && matrix.coverage == 'supported-latest'")
+    expect(matrix).toContain('--expected-node-mode "${{ matrix.node-mode }}"')
   })
 
   it("checks out full history for the protected-main signed artifact source", () => {
@@ -47,7 +51,7 @@ describe("supported Node matrix policy", () => {
       const workflowPath = join(fixtureRoot, ".github", "workflows", "supported-node-matrix.yml")
       writeFileSync(
         workflowPath,
-        readFileSync(workflowPath, "utf8").replace("node: 24", "node: 25"),
+        readFileSync(workflowPath, "utf8").replace('node: "24"', 'node: "25"'),
       )
 
       const diagnostics = await collectSupportedNodeMatrixDiagnostics(fixtureRoot)
@@ -70,6 +74,23 @@ describe("supported Node matrix policy", () => {
       const diagnostics = await collectSupportedNodeMatrixDiagnostics(fixtureRoot)
 
       expect(diagnostics).toContain("README.md support table")
+    } finally {
+      rmSync(fixtureRoot, { force: true, recursive: true })
+    }
+  })
+
+  it("rejects a package engine drift from the fixed Sigstore runtime floor", async () => {
+    const fixtureRoot = createPolicyFixture()
+    try {
+      const packagePath = join(fixtureRoot, "package.json")
+      writeFileSync(
+        packagePath,
+        readFileSync(packagePath, "utf8").replace("^20.17.0 || >=22.9.0", ">=20.0.0"),
+      )
+
+      const diagnostics = await collectSupportedNodeMatrixDiagnostics(fixtureRoot)
+
+      expect(diagnostics).toContain("package Sigstore Node engine")
     } finally {
       rmSync(fixtureRoot, { force: true, recursive: true })
     }
@@ -196,6 +217,7 @@ function createPolicyFixture(): string {
     join(fixtureRoot, ".github", "workflows", "ci.yml"),
   )
   cpSync(join(repositoryRoot, "README.md"), join(fixtureRoot, "README.md"))
+  cpSync(join(repositoryRoot, "package.json"), join(fixtureRoot, "package.json"))
   cpSync(join(repositoryRoot, "docs", "START-HERE.md"), join(fixtureRoot, "docs", "START-HERE.md"))
   cpSync(
     join(repositoryRoot, "scripts", "check-supported-node-matrix.mjs"),

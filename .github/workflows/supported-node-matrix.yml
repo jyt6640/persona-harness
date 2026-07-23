@@ -20,15 +20,39 @@ jobs:
         include:
           - runner: ubuntu-latest
             platform: linux
-            node: 22
-            coverage: supported
+            node: "20.17.0"
+            expected-node: "20.17.0"
+            node-mode: exact
+            coverage: runtime-floor
           - runner: ubuntu-latest
             platform: linux
-            node: 24
-            coverage: supported
+            node: "22.9.0"
+            expected-node: "22.9.0"
+            node-mode: exact
+            coverage: runtime-floor
+          - runner: ubuntu-latest
+            platform: linux
+            node: "20"
+            expected-node: "20"
+            node-mode: major
+            coverage: supported-latest
+          - runner: ubuntu-latest
+            platform: linux
+            node: "22"
+            expected-node: "22"
+            node-mode: major
+            coverage: supported-latest
+          - runner: ubuntu-latest
+            platform: linux
+            node: "24"
+            expected-node: "24"
+            node-mode: major
+            coverage: supported-latest
           - runner: macos-latest
             platform: macos
-            node: 22
+            node: "22"
+            expected-node: "22"
+            node-mode: major
             coverage: limited-smoke
 
     steps:
@@ -56,14 +80,14 @@ jobs:
         run: node scripts/check-supported-node-matrix.mjs
 
       - name: Run Linux source repository checks
-        if: matrix.platform == 'linux'
+        if: matrix.platform == 'linux' && matrix.coverage == 'supported-latest'
         run: npm run test:repository
 
       - name: Build source candidate
         run: npm run build
 
       - name: Verify source-built package surface
-        run: node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "${{ matrix.platform }}" --expected-node-major "${{ matrix.node }}"
+        run: node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "${{ matrix.platform }}" --expected-node "${{ matrix.expected-node }}" --expected-node-mode "${{ matrix.node-mode }}"
 
       - name: Verify fresh local-tarball installed package surface
-        run: node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "${{ matrix.platform }}" --expected-node-major "${{ matrix.node }}"
+        run: node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "${{ matrix.platform }}" --expected-node "${{ matrix.expected-node }}" --expected-node-mode "${{ matrix.node-mode }}"

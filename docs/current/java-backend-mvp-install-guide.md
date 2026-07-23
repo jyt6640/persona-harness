@@ -10,7 +10,7 @@ frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 
 
 ## Requirements
 
-- Node.js 20+
+- Node.js ^20.17.0 || >=22.9.0 (Node 21 unsupported)
 - npm
 - OpenCode terminal CLI
 - OpenCode에 연결된 model/provider

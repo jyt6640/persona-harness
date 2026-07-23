@@ -32,7 +32,12 @@ export function runProjectFinishAttestationWorker(bundleBytes: Buffer): ProjectF
       }
       return { bundleDigest: output.bundleDigest, ok: true, statement: output.statement }
     }
-    if (output.state === "crypto-failed" || output.state === "malformed" || output.state === "network-unavailable") {
+    if (
+      output.state === "crypto-failed"
+      || output.state === "malformed"
+      || output.state === "network-unavailable"
+      || output.state === "runtime-unsupported"
+    ) {
       return { ok: false, state: output.state }
     }
     return { ok: false, state: "malformed" }

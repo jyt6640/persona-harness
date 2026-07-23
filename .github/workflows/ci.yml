@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 20
+          node-version: 20.19.0
           cache: npm
 
       - name: Install dependencies
@@ -57,11 +57,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Verify Linux Node 20 source-built package surface
-        run: node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "linux" --expected-node-major "20"
+      - name: Verify Linux Node 20.19 source-built package surface
+        run: node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "linux" --expected-node "20.19.0" --expected-node-mode "exact"
 
-      - name: Verify Linux Node 20 fresh local-tarball installed package surface
-        run: node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "linux" --expected-node-major "20"
+      - name: Verify Linux Node 20.19 fresh local-tarball installed package surface
+        run: node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "linux" --expected-node "20.19.0" --expected-node-mode "exact"
 
       - name: Pack dry run
         run: npm pack --dry-run --json

@@ -23,14 +23,14 @@ class SupportSurfaceError extends Error {}
 
 try {
   const input = parseInput(process.argv.slice(2))
-  assertRuntimeIdentity(input)
-  const candidateTarballSha256 = input.surface === "installed"
+  const runtime = assertRuntimeIdentity(input)
+  const verification = input.surface === "installed"
     ? await verifyInstalledSurface(input)
     : await verifySourceSurface(input)
 
   console.log(JSON.stringify({
-    candidateTarballSha256,
-    nodeMajor: input.nodeMajor,
+    ...verification,
+    nodeVersion: runtime.nodeVersion,
     platform: input.platform,
     surface: input.surface,
   }))
@@ -47,7 +47,7 @@ function parseInput(args) {
     const flag = args[index]
     const value = args[index + 1]
     if (
-      (flag !== "--surface" && flag !== "--expected-platform" && flag !== "--expected-node-major")
+      (flag !== "--surface" && flag !== "--expected-platform" && flag !== "--expected-node" && flag !== "--expected-node-mode")
       || value === undefined
       || values.has(flag)
     ) {
@@ -57,25 +57,37 @@ function parseInput(args) {
   }
   const surface = values.get("--surface")
   const platform = values.get("--expected-platform")
-  const nodeMajor = Number(values.get("--expected-node-major"))
+  const expectedNode = values.get("--expected-node")
+  const nodeMode = values.get("--expected-node-mode")
   if (
     (surface !== "source" && surface !== "installed")
     || (platform !== "linux" && platform !== "macos")
-    || !Number.isSafeInteger(nodeMajor)
-    || ![20, 22, 24].includes(nodeMajor)
-    || (platform === "macos" && nodeMajor !== 22)
+    || typeof expectedNode !== "string"
+    || (nodeMode !== "exact" && nodeMode !== "major")
+    || !isSupportedRuntimeExpectation(expectedNode, nodeMode)
+    || (platform === "macos" && (expectedNode !== "22" || nodeMode !== "major"))
   ) {
     throw new SupportSurfaceError("Invalid support surface arguments")
   }
-  return { nodeMajor, platform, surface }
+  return { expectedNode, nodeMode, platform, surface }
 }
 
 function assertRuntimeIdentity(input) {
   const platform = process.platform === "darwin" ? "macos" : process.platform
-  const nodeMajor = Number(process.versions.node.split(".", 1)[0])
-  if (platform !== input.platform || nodeMajor !== input.nodeMajor) {
+  const nodeVersion = process.versions.node
+  const nodeMajor = nodeVersion.split(".", 1)[0]
+  const matchesNode = input.nodeMode === "exact"
+    ? nodeVersion === input.expectedNode
+    : nodeMajor === input.expectedNode
+  if (platform !== input.platform || !matchesNode) {
     throw new SupportSurfaceError("Support surface runtime identity does not match the matrix entry")
   }
+  return { nodeVersion }
+}
+
+function isSupportedRuntimeExpectation(expectedNode, nodeMode) {
+  if (nodeMode === "major") return expectedNode === "20" || expectedNode === "22" || expectedNode === "24"
+  return expectedNode === "20.17.0" || expectedNode === "20.19.0" || expectedNode === "22.9.0"
 }
 
 async function verifySourceSurface(input) {
@@ -84,22 +96,61 @@ async function verifySourceSurface(input) {
     throw new SupportSurfaceError("Source-built CLI is unavailable")
   }
   assertPackageTest(repositoryRoot, "source-built package")
+  await assertVerifierImports(repositoryRoot, "source-built")
   await assertCliSurface(
     (cwd, args) => runCommand(process.execPath, [cliPath, ...args], cwd),
     input.surface,
   )
-  return null
+  return { candidateTarballSha256: null, verifierImports: { source: "PASS" } }
 }
 
 async function verifyInstalledSurface(input) {
   const tarballPath = packLocalTarball()
+  await assertPackedVerifierImports(tarballPath)
   const installed = installLocalTarball(tarballPath)
   assertPackageTest(installed.packageRoot, "installed package")
+  await assertVerifierImports(installed.packageRoot, "installed")
   await assertCliSurface(
     (cwd, args) => runCommand(installed.binPath, args, cwd),
     input.surface,
   )
-  return sha256File(tarballPath)
+  return {
+    candidateTarballSha256: sha256File(tarballPath),
+    verifierImports: { installed: "PASS", packed: "PASS" },
+  }
+}
+
+async function assertPackedVerifierImports(tarballPath) {
+  const extractionRoot = join(temporaryRoot, "packed-import")
+  mkdirSync(extractionRoot)
+  const extraction = runCommand("tar", ["-xzf", tarballPath, "-C", extractionRoot], repositoryRoot)
+  requireSuccess(extraction, "Packed verifier extraction")
+  const packageRoot = join(extractionRoot, "package")
+  if (!existsSync(packageRoot)) throw new SupportSurfaceError("Packed verifier package root is unavailable")
+  await assertVerifierImports(packageRoot, "packed")
+}
+
+async function assertVerifierImports(packageRoot, label) {
+  const finishVerifierPath = join(packageRoot, "dist", "cli", "workflow-finish-attestation.js")
+  const projectVerifierPath = join(packageRoot, "dist", "cli", "project-finish-attestation-verifier.js")
+  if (!existsSync(finishVerifierPath) || !existsSync(projectVerifierPath)) {
+    throw new SupportSurfaceError(`${label} verifier import surface is unavailable`)
+  }
+  try {
+    const [finishVerifier, projectVerifier] = await Promise.all([
+      import(pathToFileURL(finishVerifierPath).href),
+      import(pathToFileURL(projectVerifierPath).href),
+    ])
+    if (
+      typeof finishVerifier.verifyExternalFinishAttestation !== "function"
+      || typeof projectVerifier.inspectProjectFinishAttestation !== "function"
+    ) {
+      throw new SupportSurfaceError(`${label} verifier import surface is invalid`)
+    }
+  } catch (error) {
+    if (error instanceof SupportSurfaceError) throw error
+    throw new SupportSurfaceError(`${label} verifier import surface failed`)
+  }
 }
 
 function packLocalTarball() {

@@ -1,6 +1,7 @@
 import { readdirSync, realpathSync } from "node:fs"
 import { join, resolve } from "node:path"
 
+import { assessSigstoreNodeRuntime } from "../../scripts/node-runtime-floor.mjs"
 import { personaHarnessVersion } from "./version.js"
 import {
   canonicalProjectFinishAttestationBytes,
@@ -47,6 +48,7 @@ const BLOCKED_SUMMARIES = {
   missing: "No safe project finish attestation evidence is present.",
   "network-unavailable": "Online Sigstore trust material is unavailable; project finish authority remains blocked.",
   replayed: "Project finish attestation has already been consumed.",
+  "runtime-unsupported": "Node.js does not meet the required Sigstore runtime range; project finish authority remains blocked.",
   "source-drift": "Current project source does not match the signed project finish attestation.",
   stale: "Project finish attestation is expired or outside the accepted clock skew.",
   "wrong-policy": "Project finish attestation does not match the enrolled product policy.",
@@ -123,6 +125,9 @@ function verifyProjectFinishAttestationInternal(
   consume: boolean,
   allowConsumed: boolean,
 ): ProjectFinishAttestationVerifierAssessment {
+  if (assessSigstoreNodeRuntime(process.versions.node).status !== "supported") {
+    return blocked("runtime-unsupported", "runtime")
+  }
   const projectRoot = resolveSafeProjectRoot(projectDir)
   if (projectRoot === undefined) return blocked("missing", "evidence")
   const evidence = readProjectFinishAttestationEvidence(projectRoot)

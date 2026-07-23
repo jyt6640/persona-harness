@@ -36,14 +36,21 @@ A reading map for people seeing Persona Harness (PH) for the first time.
 
 ## Platform and host support
 
+### Node runtime floor
+
+Sigstore-backed package verification requires Node.js ^20.17.0 || >=22.9.0;
+Node 21 is unsupported. `ph doctor` reports a bounded runtime block and
+authority verification does not run below that floor. Repository source tests
+use the separate Node 20.19.0 / 22.12.0+ Vite toolchain floor.
+
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
-| Linux + OpenCode | Required Node 20; manual Node 22/24 | Required Verify repository runs Linux Node 20 source-built and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains Linux Node 22 and 24 on demand. |
+| Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository runs Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
 | macOS + OpenCode | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
 | Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
 | Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
 
-Automatic CI boundary: Verify repository is the required Linux Node 20 PR/main gate. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
+Automatic CI boundary: Verify repository is the required Linux Node 20.19.0 PR/main gate. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
 
 ## I am confused by docs/current
 

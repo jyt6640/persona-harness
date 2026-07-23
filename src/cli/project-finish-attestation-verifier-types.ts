@@ -24,6 +24,7 @@ export type ProjectFinishAttestationVerifierState =
   | "missing"
   | "network-unavailable"
   | "replayed"
+  | "runtime-unsupported"
   | "source-drift"
   | "stale"
   | "trusted"
@@ -52,5 +53,5 @@ export type ProjectFinishAttestationWorkerResult =
     }
   | {
       readonly ok: false
-      readonly state: "crypto-failed" | "malformed" | "network-unavailable"
+      readonly state: "crypto-failed" | "malformed" | "network-unavailable" | "runtime-unsupported"
     }
