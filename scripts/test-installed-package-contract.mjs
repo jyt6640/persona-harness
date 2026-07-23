@@ -391,7 +391,7 @@ function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
 }
 
 function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
-  createCooperativeGradleFixture(fixtureRoot)
+  createCooperativeGradleFixture(fixtureRoot, phPath, label)
 
   const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
   if (defaultFinish.status === 0) {
@@ -431,7 +431,7 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
   }
 }
 
-function createCooperativeGradleFixture(projectDir) {
+function createCooperativeGradleFixture(projectDir, phPath, label) {
   mkdirSync(join(projectDir, ".persona", "custom-evidence", "phase0"), { recursive: true })
   mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
   mkdirSync(join(projectDir, "src", "main", "java", "example", "cooperative"), { recursive: true })
@@ -473,6 +473,7 @@ function createCooperativeGradleFixture(projectDir) {
       toolOutput: "BUILD SUCCESSFUL",
     })}\n`,
   )
+  writeCurrentLoopStates(projectDir, phPath, label)
   requireSuccess(
     "installed fixture Gradle wrapper",
     runCommand(projectDir, "gradle", ["wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
@@ -540,6 +541,35 @@ function createCooperativeGradleFixture(projectDir) {
   requireSuccess("installed fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
   requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
+}
+
+function writeCurrentLoopStates(projectDir, phPath, label) {
+  const preview = runNode(projectDir, [phPath, "workflow", "loop", "--dry-run", "--json"])
+  if (preview.status !== 1) {
+    throw new Error(`${label} lifecycle loop preview did not report the expected blocked state`)
+  }
+  const payload = JSON.parse(preview.stdout)
+  if (!isRecord(payload) || typeof payload.rulePackHash !== "string") {
+    throw new Error(`${label} lifecycle loop preview did not return a rule-pack hash`)
+  }
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: payload.rulePackHash,
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
 }
 
 function createProjectFinishProducerFixture(projectDir, profileMode) {
