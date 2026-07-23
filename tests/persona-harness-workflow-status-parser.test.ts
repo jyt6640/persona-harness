@@ -238,7 +238,7 @@ describe("workflow report status parser", () => {
     expect(finish.stderr).toContain("Blocker: trusted-authority-required")
   })
 
-  it("keeps legacy Status-line fallback when frontmatter would make finish stricter", () => {
+  it("fails closed when frontmatter and legacy report statuses conflict", () => {
     const projectDir = createPlannedBackendProject()
     writeConflictingReports(projectDir)
 
@@ -246,9 +246,10 @@ describe("workflow report status parser", () => {
     const finish = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(check.status).toBe(0)
-    expect(check.stdout).toContain(".persona/workflow/implementation-report.md: filled")
-    expect(check.stdout).toContain(".persona/workflow/review-report.md: filled")
+    expect(check.stdout).toContain(".persona/workflow/implementation-report.md: conflicting")
+    expect(check.stdout).toContain(".persona/workflow/review-report.md: conflicting")
+    expect(check.stdout).toContain("Workflow status: WARN")
     expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
+    expect(finish.stderr).toContain("Blocker: implementation-report-conflicting")
   })
 })

@@ -9,6 +9,7 @@ import type {
   ClosureTicket,
   WorkflowClosureState,
 } from "./workflow-closure.js"
+import type { WorkflowLifecycleProjection } from "../runtime/workflow-lifecycle-projection.js"
 
 const MAX_ARTIFACT_REFERENCES = 4
 const MAX_BLOCKERS = 16
@@ -20,17 +21,24 @@ const SAFE_PATH_PATTERN = /^[A-Za-z0-9._@+/-]+$/u
 const SAFE_DIAGNOSTIC_CODES: ReadonlySet<string> = new Set([
   "convention-diagnostic",
   "configured-path-unavailable",
+  "implementation-report-conflicting",
+  "implementation-report-malformed",
   "implementation-report-missing",
   "pending-ticket",
   "plan-not-accepted",
   "report-coverage-missing",
   "review-report-missing",
+  "review-report-conflicting",
+  "review-report-malformed",
   "stack-alignment-mismatch",
   "tdd-diagnostic-unavailable",
   "trusted-authority-required",
   "verification-failed",
   "verification-unknown",
   "workflow-diagnostic-unavailable",
+  "workflow-loop-state-malformed",
+  "workflow-loop-state-stale",
+  "ralph-loop-state-malformed",
 ] as const)
 const SAFE_FIXED_COMMANDS: ReadonlySet<string> = new Set([
   "npx ph plan",
@@ -83,11 +91,19 @@ export function safeWorkflowDiagnostic(value: string): string {
     return /failed|failure|error/iu.test(value) ? "verification-failed" : "verification-unknown"
   }
   if (/implementation report/iu.test(value)) {
+    if (/conflict/iu.test(value)) return "implementation-report-conflicting"
+    if (/malformed/iu.test(value)) return "implementation-report-malformed"
     return "implementation-report-missing"
   }
   if (/review report/iu.test(value)) {
+    if (/conflict/iu.test(value)) return "review-report-conflicting"
+    if (/malformed/iu.test(value)) return "review-report-malformed"
     return "review-report-missing"
   }
+  if (/workflow-loop/iu.test(value)) {
+    return /stale|different rule pack/iu.test(value) ? "workflow-loop-state-stale" : "workflow-loop-state-malformed"
+  }
+  if (/ralph-loop/iu.test(value)) return "ralph-loop-state-malformed"
   if (/report coverage|read coverage/iu.test(value)) {
     return "report-coverage-missing"
   }
@@ -240,6 +256,7 @@ export function safeWorkflowClosureNextPayload(payload: ClosureNextPayload) {
       evidence: payload.state.evidence,
       finish: payload.state.finish,
       implementationReport: payload.state.implementationReport,
+      lifecycle: safeWorkflowLifecycle(payload.state.lifecycle),
       pendingTickets: payload.state.pendingTickets
         .slice(0, MAX_TICKETS)
         .map((ticket) => safeWorkflowCode(ticket, "invalid-ticket-code")),
@@ -254,6 +271,34 @@ export function safeWorkflowClosureNextPayload(payload: ClosureNextPayload) {
       verification: payload.state.verification,
     },
     steps,
+  }
+}
+
+function safeWorkflowLifecycle(lifecycle: WorkflowLifecycleProjection) {
+  const evidenceSource = safeArtifactReference(lifecycle.evidence.source)
+  const authorityBlocker = lifecycle.finishAuthority.blocker
+  return {
+    blockers: lifecycle.blockers.slice(0, MAX_BLOCKERS).map((blocker) => {
+      const source = safeArtifactReference(blocker.source)
+      return {
+        id: safeWorkflowCode(blocker.id, "invalid-blocker-code"),
+        ...(source === undefined ? {} : { source }),
+      }
+    }),
+    evidence: {
+      ...(evidenceSource === undefined ? {} : { source: evidenceSource }),
+      status: lifecycle.evidence.status,
+    },
+    finishAuthority: {
+      ...(authorityBlocker === null ? {} : { blocker: safeClosureBlocker(authorityBlocker) }),
+      status: lifecycle.finishAuthority.status,
+    },
+    loops: lifecycle.loops,
+    paths: lifecycle.paths,
+    readiness: lifecycle.readiness,
+    reports: lifecycle.reports,
+    schemaVersion: lifecycle.schemaVersion,
+    tickets: lifecycle.tickets,
   }
 }
 

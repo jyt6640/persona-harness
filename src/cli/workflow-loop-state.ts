@@ -41,8 +41,18 @@ export type WorkflowLoopState = {
 }
 
 export type WorkflowLoopStateSnapshot = {
+  readonly integrity: "absent" | "malformed" | "valid"
   readonly state: WorkflowLoopState | null
   readonly token: FileChangeToken | null
+}
+
+type ParsedWorkflowLoopStateRecord = {
+  readonly completedAt?: string
+  readonly finalDecision: WorkflowLoopState["finalDecision"]
+  readonly iterations: readonly WorkflowLoopIterationRecord[]
+  readonly rulePackHash?: string
+  readonly schemaVersion?: string
+  readonly startedAt: string
 }
 
 export function workflowLoopDir(projectDir: string): string {
@@ -60,12 +70,7 @@ function parseWorkflowLoopState(source: string): WorkflowLoopState | null {
       return null
     }
     const record = parsed as Record<string, unknown>
-    if (
-      (record.schemaVersion !== undefined &&
-        record.schemaVersion !== WORKFLOW_LOOP_STATE_SCHEMA_VERSION &&
-        record.schemaVersion !== LEGACY_WORKFLOW_LOOP_STATE_SCHEMA_VERSION)
-      || !Array.isArray(record.iterations)
-    ) {
+    if (!isWorkflowLoopStateRecord(record)) {
       return null
     }
     return {
@@ -84,11 +89,17 @@ function parseWorkflowLoopState(source: string): WorkflowLoopState | null {
 export function readWorkflowLoopStateSnapshot(projectDir: string): WorkflowLoopStateSnapshot {
   const path = workflowLoopStatePath(projectDir)
   if (!existsSync(path)) {
-    return { state: null, token: null }
+    return { integrity: "absent", state: null, token: null }
   }
-  return {
-    state: parseWorkflowLoopState(readFileSync(path, "utf8")),
-    token: fileChangeToken(path),
+  try {
+    const state = parseWorkflowLoopState(readFileSync(path, "utf8"))
+    return {
+      integrity: state === null ? "malformed" : "valid",
+      state,
+      token: fileChangeToken(path),
+    }
+  } catch {
+    return { integrity: "malformed", state: null, token: fileChangeToken(path) }
   }
 }
 
@@ -107,22 +118,48 @@ export function writeWorkflowLoopState(
 }
 
 function readFinalDecision(value: unknown): WorkflowLoopState["finalDecision"] {
-  if (
-    value === "child-failure" ||
-    value === "finish-passed" ||
-    value === "iteration-cap" ||
-    value === "no-blockers" ||
-    value === "not-run" ||
-    value === "output-limit" ||
-    value === "signal" ||
-    value === "spawn-failure" ||
-    value === "state-conflict" ||
-    value === "timeout" ||
-    value === "unmapped-blocker"
-  ) {
+  if (isWorkflowLoopFinalDecision(value)) {
     return value
   }
   return "not-run"
+}
+
+function isWorkflowLoopStateRecord(record: Record<string, unknown>): record is Record<string, unknown> & ParsedWorkflowLoopStateRecord {
+  const iterations = record.iterations
+  if (
+    (record.schemaVersion !== undefined
+      && record.schemaVersion !== WORKFLOW_LOOP_STATE_SCHEMA_VERSION
+      && record.schemaVersion !== LEGACY_WORKFLOW_LOOP_STATE_SCHEMA_VERSION)
+    || !Array.isArray(iterations)
+    || !iterations.every(isIterationRecord)
+    || !isWorkflowLoopFinalDecision(record.finalDecision)
+    || !isNonEmptyString(record.startedAt)
+    || (record.completedAt !== undefined && !isNonEmptyString(record.completedAt))
+  ) {
+    return false
+  }
+  if (record.schemaVersion === WORKFLOW_LOOP_STATE_SCHEMA_VERSION) {
+    return isNonEmptyString(record.rulePackHash)
+  }
+  return record.rulePackHash === undefined || isNonEmptyString(record.rulePackHash)
+}
+
+function isWorkflowLoopFinalDecision(value: unknown): value is WorkflowLoopState["finalDecision"] {
+  return value === "child-failure"
+    || value === "finish-passed"
+    || value === "iteration-cap"
+    || value === "no-blockers"
+    || value === "not-run"
+    || value === "output-limit"
+    || value === "signal"
+    || value === "spawn-failure"
+    || value === "state-conflict"
+    || value === "timeout"
+    || value === "unmapped-blocker"
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== ""
 }
 
 function isIterationRecord(value: unknown): value is WorkflowLoopIterationRecord {

@@ -1,9 +1,18 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-export type WorkflowReportStatus = "missing" | "template" | "filled" | "unknown"
+export type WorkflowReportStatus = "conflicting" | "filled" | "malformed" | "missing" | "template" | "unknown"
 
-type ParsedWorkflowReportStatus = Exclude<WorkflowReportStatus, "missing">
+export type WorkflowReportStatusDetail = {
+  readonly source: "file" | "frontmatter" | "legacy" | "missing"
+  readonly status: WorkflowReportStatus
+}
+
+type ParsedWorkflowReportStatus = "filled" | "template" | "unknown"
+type ReportFrontmatter =
+  | { readonly kind: "absent" }
+  | { readonly end: number; readonly kind: "present" }
+  | { readonly kind: "unterminated" }
 
 function cleanScalar(value: string): string {
   const trimmed = value.trim()
@@ -26,15 +35,15 @@ function normalizeStatus(value: string | undefined): ParsedWorkflowReportStatus 
   return undefined
 }
 
-function frontmatterBounds(lines: readonly string[]): { readonly start: number; readonly end: number } | undefined {
+function reportFrontmatter(lines: readonly string[]): ReportFrontmatter {
   if (lines[0] !== "---") {
-    return undefined
+    return { kind: "absent" }
   }
   const closingOffset = lines.slice(1).findIndex((line) => line === "---")
   if (closingOffset === -1) {
-    return undefined
+    return { kind: "unterminated" }
   }
-  return { start: 0, end: closingOffset + 1 }
+  return { end: closingOffset + 1, kind: "present" }
 }
 
 function fieldValue(line: string, fieldName: string): string | undefined {
@@ -49,18 +58,25 @@ function fieldValue(line: string, fieldName: string): string | undefined {
   return line.slice(colonIndex + 1)
 }
 
-function frontmatterStatus(lines: readonly string[]): ParsedWorkflowReportStatus | undefined {
-  const bounds = frontmatterBounds(lines)
-  if (bounds === undefined) {
+function collapsedStatus(statuses: readonly ParsedWorkflowReportStatus[]): ParsedWorkflowReportStatus | "conflicting" | undefined {
+  const first = statuses[0]
+  if (first === undefined) {
     return undefined
   }
-  for (const line of lines.slice(bounds.start + 1, bounds.end)) {
-    const status = normalizeStatus(fieldValue(line, "status"))
-    if (status !== undefined) {
-      return status
-    }
+  return statuses.every((status) => status === first) ? first : "conflicting"
+}
+
+function frontmatterStatus(lines: readonly string[], frontmatter: ReportFrontmatter): ParsedWorkflowReportStatus | "conflicting" | undefined {
+  if (frontmatter.kind !== "present") {
+    return undefined
   }
-  return undefined
+  const statuses = lines
+    .slice(1, frontmatter.end)
+    .flatMap((line) => {
+      const status = normalizeStatus(fieldValue(line, "status"))
+      return status === undefined ? [] : [status]
+    })
+  return collapsedStatus(statuses)
 }
 
 function legacyStatusValue(line: string): string | undefined {
@@ -78,37 +94,63 @@ function legacyStatusValue(line: string): string | undefined {
   return undefined
 }
 
-function legacyStatus(lines: readonly string[]): ParsedWorkflowReportStatus | undefined {
-  const bounds = frontmatterBounds(lines)
-  const searchableLines = bounds === undefined
-    ? lines
-    : [...lines.slice(0, bounds.start), ...lines.slice(bounds.end + 1)]
-  for (const line of searchableLines) {
+function legacyStatus(lines: readonly string[], frontmatter: ReportFrontmatter): ParsedWorkflowReportStatus | "conflicting" | undefined {
+  const searchableLines = frontmatter.kind === "present"
+    ? lines.slice(frontmatter.end + 1)
+    : lines
+  const statuses = searchableLines.flatMap((line) => {
     const status = normalizeStatus(legacyStatusValue(line))
-    if (status !== undefined) {
-      return status
-    }
-  }
-  return undefined
+    return status === undefined ? [] : [status]
+  })
+  return collapsedStatus(statuses)
 }
 
-export function parseWorkflowReportStatusText(markdown: string): ParsedWorkflowReportStatus {
+export function parseWorkflowReportStatusDetail(markdown: string): WorkflowReportStatusDetail {
   const lines = markdown.split(/\r?\n/)
-  const frontmatter = frontmatterStatus(lines)
-  const fallback = legacyStatus(lines)
-
-  if (frontmatter !== undefined && fallback !== undefined && frontmatter !== fallback) {
-    return fallback
+  const frontmatter = reportFrontmatter(lines)
+  if (frontmatter.kind === "unterminated") {
+    return { source: "frontmatter", status: "malformed" }
   }
-  return frontmatter ?? fallback ?? "unknown"
+  const frontmatterStatusValue = frontmatterStatus(lines, frontmatter)
+  const legacyStatusValue = legacyStatus(lines, frontmatter)
+
+  if (frontmatterStatusValue === "conflicting" || legacyStatusValue === "conflicting") {
+    return { source: frontmatterStatusValue === "conflicting" ? "frontmatter" : "legacy", status: "conflicting" }
+  }
+  if (
+    frontmatterStatusValue !== undefined
+    && legacyStatusValue !== undefined
+    && frontmatterStatusValue !== legacyStatusValue
+  ) {
+    return { source: "frontmatter", status: "conflicting" }
+  }
+  if (frontmatterStatusValue !== undefined) {
+    return { source: "frontmatter", status: frontmatterStatusValue }
+  }
+  if (legacyStatusValue !== undefined) {
+    return { source: "legacy", status: legacyStatusValue }
+  }
+  return { source: "file", status: "unknown" }
+}
+
+export function parseWorkflowReportStatusText(markdown: string): WorkflowReportStatus {
+  return parseWorkflowReportStatusDetail(markdown).status
+}
+
+export function readWorkflowReportStatusDetail(projectDir: string, relativePath: string): WorkflowReportStatusDetail {
+  const reportPath = join(projectDir, relativePath)
+  if (!existsSync(reportPath)) {
+    return { source: "missing", status: "missing" }
+  }
+  try {
+    return parseWorkflowReportStatusDetail(readFileSync(reportPath, "utf8"))
+  } catch {
+    return { source: "file", status: "malformed" }
+  }
 }
 
 export function readWorkflowReportStatus(projectDir: string, relativePath: string): WorkflowReportStatus {
-  const reportPath = join(projectDir, relativePath)
-  if (!existsSync(reportPath)) {
-    return "missing"
-  }
-  return parseWorkflowReportStatusText(readFileSync(reportPath, "utf8"))
+  return readWorkflowReportStatusDetail(projectDir, relativePath).status
 }
 
 export function replaceWorkflowReportStatusText(
@@ -116,15 +158,18 @@ export function replaceWorkflowReportStatusText(
   status: Exclude<ParsedWorkflowReportStatus, "unknown">,
 ): string | undefined {
   const lines = markdown.split(/\r?\n/)
-  const bounds = frontmatterBounds(lines)
-  if (bounds !== undefined) {
-    for (let index = bounds.start + 1; index < bounds.end; index += 1) {
+  const frontmatter = reportFrontmatter(lines)
+  if (frontmatter.kind === "present") {
+    for (let index = 1; index < frontmatter.end; index += 1) {
       if (fieldValue(lines[index] ?? "", "status") !== undefined) {
         const indentationLength = (lines[index] ?? "").length - (lines[index] ?? "").trimStart().length
         lines[index] = `${" ".repeat(indentationLength)}status: ${status}`
         return lines.join("\n")
       }
     }
+  }
+  if (frontmatter.kind === "unterminated") {
+    return undefined
   }
 
   for (let index = 0; index < lines.length; index += 1) {
