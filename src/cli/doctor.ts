@@ -34,13 +34,19 @@ import {
   type VerificationAuthorityAssessment,
 } from "./workflow-verification-receipt.js"
 import { readDoctorRegistry, type DoctorRegistrySummary } from "./doctor-registry.js"
+import {
+  SIGSTORE_NODE_ENGINE_RANGE,
+  assessSigstoreNodeRuntime,
+  type SigstoreNodeRuntimeAssessment,
+} from "../../scripts/node-runtime-floor.mjs"
 
-type DoctorOptions = {
+export type DoctorOptions = {
   readonly projectDir?: string
   readonly env?: Readonly<Record<string, string | undefined>>
   readonly platform?: NodeJS.Platform
   readonly commandFinder?: DoctorCommandFinder
   readonly commandRunner?: DoctorCommandRunner
+  readonly nodeVersion?: string
 }
 
 export type StaleFixtureFinding = {
@@ -55,6 +61,7 @@ export type DoctorSummary = {
   readonly npx: string
   readonly opencode: string
   readonly runtimeReadiness: "PASS" | "WARN"
+  readonly nodeSupport: SigstoreNodeRuntimeAssessment
   readonly runtimeFindings: readonly string[]
   readonly reachability: DoctorReachabilitySummary
   readonly packageVersion: string
@@ -217,6 +224,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const packageVersionValue = packageVersion()
   const registryDetails = registrySummary(packageVersionValue, options)
   const verificationAuthority = assessVerificationAuthority(projectDir)
+  const nodeSupport = assessSigstoreNodeRuntime(options.nodeVersion ?? process.versions.node)
   const runtimeFindings = [
     ...platformFindings(options.platform ?? process.platform),
     ...(opencode === "missing"
@@ -228,6 +236,9 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     ...(registryDetails.status === "available"
       ? []
       : ["npm registry facts are unavailable or malformed; channel drift and deprecation are not verified."]),
+    ...(nodeSupport.status === "supported"
+      ? []
+      : [`Node.js does not satisfy the required Sigstore runtime range ${SIGSTORE_NODE_ENGINE_RANGE}; authority verification is blocked.`]),
   ]
   return {
     projectDir,
@@ -236,6 +247,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     npx: commandVersion("npx", ["--version"], options),
     opencode,
     runtimeReadiness: runtimeFindings.length === 0 ? "PASS" : "WARN",
+    nodeSupport,
     runtimeFindings,
     reachability,
     packageVersion: packageVersionValue,
@@ -353,6 +365,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `npm: ${summary.npm}`,
     `npx: ${summary.npx}`,
     `OpenCode: ${summary.opencode}`,
+    `Node support: ${summary.nodeSupport.status === "supported" ? "PASS" : "BLOCKED"} (${summary.nodeSupport.requiredRange})`,
     `Runtime readiness: ${summary.runtimeReadiness}`,
     ...summary.runtimeFindings.map((finding) => `- ${finding}`),
     `Session reachability: ${summary.reachability.level}`,
@@ -425,6 +438,9 @@ function doctorJson(summary: DoctorSummary): string {
       plugin: summary.reachability.projectPluginState,
     },
     registry: summary.registryDetails,
+    runtime: {
+      nodeSupport: summary.nodeSupport,
+    },
     runtimeReadiness: summary.runtimeReadiness,
     schemaVersion: "doctor.1",
   }, null, 2)}\n`

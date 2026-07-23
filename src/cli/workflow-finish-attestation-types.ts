@@ -144,6 +144,7 @@ export type FinishAttestationState =
   | "malformed"
   | "missing"
   | "replayed"
+  | "runtime-unsupported"
   | "source-drift"
   | "stale"
   | "trusted"
@@ -161,4 +162,8 @@ export type FinishAttestationAssessment = {
 
 export type FinishAttestationWorkerResult =
   | { readonly bundleDigest: string; readonly ok: true; readonly statement: unknown }
-  | { readonly message: string; readonly ok: false; readonly state: "crypto-failed" | "malformed" }
+  | {
+      readonly message: string
+      readonly ok: false
+      readonly state: "crypto-failed" | "malformed" | "runtime-unsupported"
+    }

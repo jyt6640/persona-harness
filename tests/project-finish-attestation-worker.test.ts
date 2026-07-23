@@ -42,6 +42,17 @@ describe("project finish attestation Sigstore worker boundary", () => {
     })
   })
 
+  it("preserves an unsupported runtime block without accepting evidence", () => {
+    childProcess.spawnSync.mockReturnValue({
+      stdout: JSON.stringify({ ok: false, state: "runtime-unsupported" }),
+    })
+
+    expect(runProjectFinishAttestationWorker(Buffer.from("{}"))).toEqual({
+      ok: false,
+      state: "runtime-unsupported",
+    })
+  })
+
   it("fails closed when the worker has no parseable result", () => {
     childProcess.spawnSync.mockReturnValue({ stdout: "" })
 

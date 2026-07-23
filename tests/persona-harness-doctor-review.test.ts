@@ -4,6 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
+import { formatDoctorSummary, readDoctorSummary, runDoctorCommand } from "../src/cli/doctor.js"
 import { runPersonaCli } from "../src/cli/index.js"
 
 const tempProjects: string[] = []
@@ -45,6 +46,35 @@ afterEach(() => {
 })
 
 describe("ph doctor", () => {
+  it("reports an unsupported Sigstore runtime in bounded plaintext and JSON diagnostics", () => {
+    const projectDir = createTempProject()
+    const options = {
+      projectDir,
+      nodeVersion: "20.16.9-sk-live-aaaaaaaaaaaaaaaaaaaaaaaa",
+      env: {
+        PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
+        PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ latest: "0.7.0" }),
+      },
+    }
+
+    const summary = readDoctorSummary(options)
+    const plaintext = formatDoctorSummary(summary)
+    const json: unknown = JSON.parse(runDoctorCommand(["--json"], options).stdout)
+
+    expect(summary.nodeSupport).toEqual({
+      requiredRange: "^20.17.0 || >=22.9.0",
+      status: "unsupported",
+    })
+    expect(summary.runtimeReadiness).toBe("WARN")
+    expect(plaintext).toContain("Node support: BLOCKED (^20.17.0 || >=22.9.0)")
+    expect(readNodeSupport(json)).toEqual({
+      requiredRange: "^20.17.0 || >=22.9.0",
+      status: "unsupported",
+    })
+    expect(plaintext).not.toContain("20.16.9")
+    expect(JSON.stringify(json)).not.toContain("sk-live-")
+  })
+
   it("reports local Persona Harness integration state", () => {
     const projectDir = createTempProject()
     writeLegacyAgents(projectDir)
@@ -253,6 +283,17 @@ describe("ph doctor", () => {
     expect(result.stdout).toContain("Pack diagnostics are report-only; they do not block existing workflow gates.")
   })
 })
+
+function readNodeSupport(value: unknown): { readonly requiredRange: string; readonly status: string } | undefined {
+  if (!isRecord(value) || !isRecord(value.runtime) || !isRecord(value.runtime.nodeSupport)) return undefined
+  const nodeSupport = value.runtime.nodeSupport
+  if (typeof nodeSupport.requiredRange !== "string" || typeof nodeSupport.status !== "string") return undefined
+  return { requiredRange: nodeSupport.requiredRange, status: nodeSupport.status }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
 
 describe("ph review backend-shape", () => {
   it("writes a report-only backend shape report for a clean layered Gradle project", () => {

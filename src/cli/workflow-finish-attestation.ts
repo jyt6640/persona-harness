@@ -1,6 +1,7 @@
 import { lstatSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
+import { assessSigstoreNodeRuntime } from "../../scripts/node-runtime-floor.mjs"
 import { personaHarnessVersion } from "./version.js"
 import { canonicalJson, sha256Digest } from "./workflow-finish-attestation-canonical.js"
 import {
@@ -65,6 +66,13 @@ function verifyExternalFinishAttestationInternal(
   options: { readonly consume?: boolean },
   allowConsumed: boolean,
 ): FinishAttestationAssessment {
+  if (assessSigstoreNodeRuntime(process.versions.node).status !== "supported") {
+    return blocked(
+      "runtime-unsupported",
+      "Node.js does not meet the required Sigstore runtime range; finish authority remains blocked.",
+      "runtime",
+    )
+  }
   const bundlePath = join(projectDir, FINISH_ATTESTATION_BUNDLE_PATH)
   const bundleBytes = readBundleBytes(projectDir, bundlePath)
   if (bundleBytes === undefined) {

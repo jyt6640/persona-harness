@@ -3,9 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import { bundleFromJSON } from "@sigstore/bundle"
-import { getTrustedRoot } from "@sigstore/tuf"
-import { toSignedEntity, toTrustMaterial, Verifier } from "@sigstore/verify"
+import { assessSigstoreNodeRuntime } from "./node-runtime-floor.mjs"
 
 const BUNDLE_PATH = ".persona/evidence/finish-attestation/bundle.json"
 const MAX_BUNDLE_BYTES = 16 * 1024 * 1024
@@ -14,6 +12,12 @@ const CERTIFICATE_ISSUER = "https://token.actions.githubusercontent.com"
 const CERTIFICATE_IDENTITY = "^https://github\\.com/jyt6640/persona-harness/\\.github/workflows/canonical-clean-ci-attestation-builder\\.yml@refs/heads/main$"
 
 async function main() {
+  if (assessSigstoreNodeRuntime(process.versions.node).status !== "supported") {
+    return failed("runtime-unsupported")
+  }
+  const { bundleFromJSON } = await import("@sigstore/bundle")
+  const { getTrustedRoot } = await import("@sigstore/tuf")
+  const { toSignedEntity, toTrustMaterial, Verifier } = await import("@sigstore/verify")
   const bundlePath = join(process.cwd(), BUNDLE_PATH)
   const stat = statSync(bundlePath)
   if (!stat.isFile() || stat.size > MAX_BUNDLE_BYTES) throw new Error("finish attestation bundle is unsafe or too large")
@@ -50,6 +54,13 @@ async function main() {
   }
 }
 
-main().catch(() => {
+function failed(state) {
+  process.stdout.write(JSON.stringify({ ok: false, state }))
+  process.exitCode = 1
+}
+
+main().then((result) => {
+  if (result !== undefined) return
+}).catch(() => {
   process.exitCode = 1
 })

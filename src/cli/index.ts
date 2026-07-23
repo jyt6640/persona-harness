@@ -27,6 +27,7 @@ import { runSmokeCommand } from "./smoke.js"
 import { decodeCliStdinText } from "./stdin-text.js"
 import { personaHarnessVersion } from "./version.js"
 import { runWorkflowCommand } from "./workflow-command.js"
+import { SIGSTORE_NODE_ENGINE_RANGE, assessSigstoreNodeRuntime } from "../../scripts/node-runtime-floor.mjs"
 
 type PersonaCliOptions = {
   readonly cwd?: string
@@ -50,6 +51,21 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
 
   if (command === "version" || command === "--version" || command === "-v") {
     return { status: 0, stdout: `${personaHarnessVersion()}\n`, stderr: "" }
+  }
+
+  if (
+    assessSigstoreNodeRuntime(process.versions.node).status !== "supported"
+    && command !== undefined
+    && command !== "help"
+    && command !== "--help"
+    && command !== "-h"
+    && command !== "doctor"
+  ) {
+    return {
+      status: 1,
+      stdout: "",
+      stderr: `Unsupported Node runtime. Persona Harness requires Node.js ${SIGSTORE_NODE_ENGINE_RANGE}; authority verification remains blocked.\n`,
+    }
   }
 
   if (command === "init") {

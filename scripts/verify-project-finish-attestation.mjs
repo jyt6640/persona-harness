@@ -3,9 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import { bundleFromJSON } from "@sigstore/bundle"
-import { getTrustedRoot } from "@sigstore/tuf"
-import { toSignedEntity, toTrustMaterial, Verifier } from "@sigstore/verify"
+import { assessSigstoreNodeRuntime } from "./node-runtime-floor.mjs"
 
 const CERTIFICATE_ISSUER = "https://token.actions.githubusercontent.com"
 const PRODUCER_REPOSITORY = "jyt6640/persona-harness"
@@ -13,6 +11,12 @@ const TRUST_ROOT_MIRROR = "https://tuf-repo-cdn.sigstore.dev"
 const WORKFLOW_PATH = ".github/workflows/persona-harness-project-finish.yml"
 
 async function verifyBundle() {
+  if (assessSigstoreNodeRuntime(process.versions.node).status !== "supported") {
+    return failed("runtime-unsupported")
+  }
+  const { bundleFromJSON } = await import("@sigstore/bundle")
+  const { getTrustedRoot } = await import("@sigstore/tuf")
+  const { toSignedEntity, toTrustMaterial, Verifier } = await import("@sigstore/verify")
   const bundleBytes = readFileSync(0)
   const bundleDigest = `sha256:${createHash("sha256").update(bundleBytes).digest("hex")}`
   let bundle

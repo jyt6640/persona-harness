@@ -300,6 +300,8 @@ describe("package files policy", () => {
       "dist/cli/project-finish-attestation-verifier.js",
       "dist/cli/project-finish-attestation-worker.js",
       "scripts/verify-project-finish-attestation.mjs",
+      "scripts/node-runtime-floor.mjs",
+      "scripts/node-runtime-floor.d.mts",
     ]
     const sourceOnlyPaths = [
       "tests/project-finish-attestation-consumption.test.ts",

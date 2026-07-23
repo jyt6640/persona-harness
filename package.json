@@ -94,6 +94,8 @@
     "docs/current/release",
     "docs/releases",
     "scripts/rail-entry-prompt-regression-gate.mjs",
+    "scripts/node-runtime-floor.mjs",
+    "scripts/node-runtime-floor.d.mts",
     "packages/codegraph-mcp/bin",
     "packages/codegraph-mcp/lib",
     "packages/lsp-mcp/package.json",
@@ -185,6 +187,6 @@
     "url": "https://github.com/jyt6640/persona-harness/issues"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.17.0 || >=22.9.0"
   }
 }
