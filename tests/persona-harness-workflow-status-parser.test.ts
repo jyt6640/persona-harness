@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { rulePackContentHash } from "../src/rules/rule-delivery.js"
 
 type ReportMarkdownCase = {
   readonly name: string
@@ -60,6 +61,27 @@ function writeStructuredVerificationSuccessEvidence(projectDir: string): void {
   )
 }
 
+function writeCurrentLoopStates(projectDir: string): void {
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
+    `${JSON.stringify({
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: rulePackContentHash(projectDir),
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
+    `${JSON.stringify({
+      schemaVersion: "workflow-ralph-loop-state.1",
+      sessions: {},
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    }, null, 2)}\n`,
+  )
+}
+
 function createPlannedBackendProject(): string {
   const projectDir = createTempProject()
   writeFileSync(join(projectDir, "README.md"), "# Equipment API\n\n- 장비 등록\n")
@@ -70,6 +92,7 @@ function createPlannedBackendProject(): string {
   writeJavaBackendMarkers(projectDir)
   mkdirSync(join(projectDir, ".persona", "evidence", "phase0"), { recursive: true })
   writeStructuredVerificationSuccessEvidence(projectDir)
+  writeCurrentLoopStates(projectDir)
   return projectDir
 }
 
