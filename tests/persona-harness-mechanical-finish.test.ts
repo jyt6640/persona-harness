@@ -6,6 +6,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
 const FINISH_REACHABLE_CHAIN_DEPTH = 6
@@ -266,6 +267,7 @@ describe("mechanical workflow finish reachability", () => {
       } else if (step.id === "fill-report-coverage") {
         writeImplementationReport(projectDir, true)
         writeReadEvidence(projectDir, javaRoleFiles)
+        writeCurrentWorkflowLifecycleLoopStates(projectDir)
       } else if (step.id === "record-workflow-evidence") {
         writeVerificationEvidence(projectDir)
       } else if (step.id === "trusted-authority-required") {

@@ -9,6 +9,8 @@ import {
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
+import { writeCurrentWorkflowLifecycleLoopStates } from "./workflow-lifecycle-loop-state.js"
+
 export type RealCooperativeGradleFixture = {
   readonly cleanup: () => void
   readonly projectDir: string
@@ -24,6 +26,7 @@ export function createRealCooperativeGradleFixture(): RealCooperativeGradleFixtu
       stdio: "pipe",
     })
     writeBuildFiles(projectDir)
+    writeCurrentWorkflowLifecycleLoopStates(projectDir)
     execFileSync("git", ["init", "-q"], { cwd: projectDir })
     execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
     execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })

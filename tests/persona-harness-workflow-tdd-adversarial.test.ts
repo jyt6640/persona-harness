@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
 
@@ -34,6 +35,7 @@ function createWorkflowProject(): string {
   writeFileSync(join(projectDir, "tdd-state.txt"), "green\n")
   writeFileSync(join(projectDir, "gradlew"), gradleScript())
   chmodSync(join(projectDir, "gradlew"), 0o755)
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
   return projectDir
 }
 

@@ -12,6 +12,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const projects: string[] = []
 
@@ -110,6 +111,7 @@ function createProject(): string {
     ].join("\n") + "\n",
   )
   chmodSync(join(projectDir, "gradlew"), 0o755)
+  writeCurrentWorkflowLifecycleLoopStates(projectDir)
   execFileSync("git", ["init", "-q"], { cwd: projectDir })
   execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
   execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
