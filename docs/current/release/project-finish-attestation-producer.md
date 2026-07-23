@@ -266,12 +266,47 @@ receipt, predicate, signed bundle, or authority result can exist. The
 content-aware source snapshot uses the same no-follow read discipline for
 caller source files and rejects unsafe replacement during capture.
 
-Receipt and predicate bytes are written privately into a freshly created,
-runner-owned staging directory and promoted only into the fixed artifact
-directory after caller and runner identity rechecks. A blocked caller or
-artifact-directory condition may leave only a bounded failure diagnostic in its
-separate runner-owned directory; no receipt, predicate, bundle, or signature is
-created. A caller-controlled `.ci` path is never used for producer artifacts.
+Before the caller's fixed Gradle commands run, the builder creates one private
+runner-owned output reservation and opens the empty fixed `receipt.json` and
+`predicate.json` leaves with no-follow descriptors. The reservation retains
+the runner, output-directory, and leaf identities. After the caller result it
+rechecks those identities before and after every write and writes bytes only
+through the already-open leaf descriptors. It deliberately performs no
+pathname staging-to-final rename.
+
+Replacing the reserved output parent, final output root, or either leaf blocks
+before the unsigned handoff. A replacement that races a final descriptor write
+cannot redirect bytes through an alias: the descriptor still addresses the
+original reserved inode and the post-write identity check rejects the handoff.
+Any such unlinked bytes are never visible through the caller-controlled alias
+and are never uploaded. A blocked caller or output condition can leave only an empty,
+unverified reservation or a bounded failure diagnostic under the runner-owned
+root; it creates no accepted receipt, predicate, bundle, signature, authority,
+or Finish result. A caller-controlled `.ci` path is never used for producer
+artifacts.
+
+## Signed Artifact Handoff
+
+The successful artifact directory is intentionally hidden from the caller
+checkout and has one fixed lifecycle. Before signing it contains exactly
+`receipt.json` and `predicate.json`; after the pinned attestation action it
+contains exactly those files plus `bundle.json`. The producer-owned handoff
+script opens every file with no-follow descriptor checks, verifies bounded
+nonempty regular files and directory identities before and after each phase,
+and copies the pinned attestation action's bundle output into a newly created
+private `bundle.json`. It treats the bundle as opaque bytes for upload only; it
+does not validate a signature or create any authority result.
+
+An empty, missing, stale, extra, aliased, symlinked, replaced, or oversized
+handoff file blocks before the successful upload step. A blocked handoff can
+write only the fixed bounded failure diagnostic when its runner-owned root is
+still safe; it never follows an artifact alias or exposes a source path,
+bundle, token, claim, raw log, Finish result, release result, or authority
+state. The workflow explicitly uploads the three fixed hidden success paths
+with `include-hidden-files: true`, then uploads the one fixed hidden failure
+diagnostic path with the same opt-in. The explicit files and upload
+postcondition prevent an empty directory match from being treated as an
+original signed-artifact handoff.
 
 This source boundary is not a signing result. The remaining hosted-only
 residual is one separately authorized GitHub public-push producer observation,

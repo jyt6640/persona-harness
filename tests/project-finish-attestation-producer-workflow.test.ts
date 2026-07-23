@@ -19,6 +19,7 @@ import { resolveProjectFinishAttestationCallerWorkspace } from "../scripts/build
 const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "persona-harness-project-finish.yml")
 const scriptPath = join(root, "scripts", "build-project-finish-attestation.mjs")
+const artifactOutputPath = join(root, "scripts", "project-finish-attestation-artifact-output.mjs")
 const contextPath = join(root, "scripts", "project-finish-attestation-producer-context.mjs")
 const oidcPath = join(root, "scripts", "project-finish-attestation-oidc.mjs")
 const callerFixturePath = join(root, "tests", "fixtures", "project-finish-attestation", "caller-workflow.yml")
@@ -46,6 +47,12 @@ describe("project finish attestation producer workflow contract", () => {
     expect(workflow).toContain("working-directory: .project-finish-caller")
     expect(workflow).toContain("subject-path: .project-finish-attestation-artifacts/receipt.json")
     expect(workflow).toContain("predicate-path: .project-finish-attestation-artifacts/predicate.json")
+    expect(workflow).toContain("include-hidden-files: true")
+    expect(workflow).toContain(".project-finish-attestation-artifacts/receipt.json")
+    expect(workflow).toContain(".project-finish-attestation-artifacts/predicate.json")
+    expect(workflow).toContain(".project-finish-attestation-artifacts/bundle.json")
+    expect(workflow).toContain("project-finish-attestation-artifact-handoff.mjs")
+    expect(workflow).not.toContain('run: cp "${{ steps.attest.outputs.bundle-path }}"')
     expect(workflow).toContain("project-finish-attestation.1")
     expect(workflow).toContain("if: always()")
     expect(workflow).toContain("failure-diagnostic.json")
@@ -104,6 +111,19 @@ describe("project finish attestation producer workflow contract", () => {
     expect(workflow).not.toContain("run: node scripts/build-project-finish-attestation.mjs")
   })
 
+  it("reserves the fixed output before caller execution and never promotes a pathname staging directory", () => {
+    const builder = readFileSync(scriptPath, "utf8")
+    const output = readFileSync(artifactOutputPath, "utf8")
+
+    expect(builder).toContain("reserveProjectFinishAttestationArtifactOutput(workspace.runner.realpath)")
+    expect(builder).toContain("materializeProjectFinishAttestationArtifactReservation")
+    expect(builder).not.toContain("renameSync(")
+    expect(builder).not.toContain("ARTIFACT_STAGING_DIRECTORY")
+    expect(output).toContain("constants.O_DIRECTORY")
+    expect(output).toContain("constants.O_NOFOLLOW")
+    expect(output).toContain("writeFileSync(file.descriptor, bytes)")
+  })
+
   it("documents the producer OIDC bridge as an in-memory, fail-closed source boundary", () => {
     const guide = readFileSync(producerGuidePath, "utf8")
 
@@ -130,7 +150,20 @@ describe("project finish attestation producer workflow contract", () => {
     expect(guide).toContain("`.persona-harness-producer`")
     expect(guide).toContain("`.project-finish-attestation-artifacts`")
     expect(guide).toMatch(/never broadens\s+the caller source exclusion list/u)
-    expect(guide).toMatch(/no receipt, predicate, bundle, or signature is\s+created/u)
+    expect(guide).toMatch(/creates no accepted receipt, predicate, bundle, signature, authority,\s+or Finish result/u)
+    expect(guide).toContain("no-follow descriptors")
+    expect(guide).toMatch(/performs no\s+pathname staging-to-final rename/u)
+    expect(guide).toContain("Replacing the reserved output parent")
+  })
+
+  it("documents the exact hidden signed-artifact handoff without granting authority", () => {
+    const guide = readFileSync(producerGuidePath, "utf8")
+
+    expect(guide).toContain("## Signed Artifact Handoff")
+    expect(guide).toContain("`receipt.json` and `predicate.json`")
+    expect(guide).toContain("`bundle.json`")
+    expect(guide).toContain("`include-hidden-files: true`")
+    expect(guide).toContain("does not validate a signature or create any authority result")
   })
 
   it("keeps the postmerge caller path pinned to an immutable reusable workflow SHA", () => {

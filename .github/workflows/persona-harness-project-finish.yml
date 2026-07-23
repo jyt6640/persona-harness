@@ -223,21 +223,33 @@ jobs:
           predicate-type: https://github.com/jyt6640/persona-harness/attestations/project-finish-attestation.1
           subject-path: .project-finish-attestation-artifacts/receipt.json
 
-      - name: Collect signed bundle
-        run: cp "${{ steps.attest.outputs.bundle-path }}" .project-finish-attestation-artifacts/bundle.json
+      - name: Collect signed project attestation bundle
+        working-directory: .persona-harness-producer
+        env:
+          PROJECT_FINISH_ATTESTATION_BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: node scripts/project-finish-attestation-artifact-handoff.mjs --collect
+
+      - name: Verify signed project attestation handoff
+        working-directory: .persona-harness-producer
+        run: node scripts/project-finish-attestation-artifact-handoff.mjs --verify-signed
 
       - name: Upload signed project finish attestation
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
+          include-hidden-files: true
           if-no-files-found: error
           name: project-finish-attestation
-          path: .project-finish-attestation-artifacts
+          path: |
+            .project-finish-attestation-artifacts/receipt.json
+            .project-finish-attestation-artifacts/predicate.json
+            .project-finish-attestation-artifacts/bundle.json
           retention-days: 7
 
       - name: Upload bounded project finish failure diagnostic
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
+          include-hidden-files: true
           if-no-files-found: ignore
           name: project-finish-attestation-failure
           path: .project-finish-attestation-failure/failure-diagnostic.json
