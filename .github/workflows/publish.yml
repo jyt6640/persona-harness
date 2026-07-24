@@ -21,6 +21,10 @@ on:
           - staging-only
           - next-promotion-approved
           - ga-approved
+      tag:
+        description: "Existing immutable tag exactly matching the selected package version and protected-main commit"
+        required: true
+        type: string
 
 concurrency:
   group: publish-${{ github.ref }}-${{ inputs.dist_tag }}
@@ -46,9 +50,10 @@ jobs:
         env:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_SHA: ${{ github.sha }}
+          TAG_NAME: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          git fetch origin main --no-tags
+          git fetch origin main --tags
           canonical_main_sha="$(git rev-parse refs/remotes/origin/main)"
           if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
             is_ancestor=true
@@ -58,6 +63,15 @@ jobs:
           node scripts/release-workflow-policy.mjs canonical-main \
             --ref "$GITHUB_REF" \
             --sha "$GITHUB_SHA" \
+            --canonical-main-sha "$canonical_main_sha" \
+            --is-ancestor "$is_ancestor"
+          package_version="$(node -p "require('./package.json').version")"
+          tag_commit="$(git rev-parse "refs/tags/${TAG_NAME}^{commit}")"
+          node scripts/release-workflow-policy.mjs tag-source \
+            --tag "$TAG_NAME" \
+            --version "$package_version" \
+            --sha "$GITHUB_SHA" \
+            --tag-commit "$tag_commit" \
             --canonical-main-sha "$canonical_main_sha" \
             --is-ancestor "$is_ancestor"
 
@@ -125,20 +139,18 @@ jobs:
           set -euo pipefail
 
           for attempt in {1..30}; do
-            if npm view "persona-harness@${PACKAGE_VERSION}" version gitHead dist.shasum dist.integrity --json > registry-package.json 2>/dev/null; then
+            if node scripts/release-registry-readback.mjs \
+              --dist-tag "$DIST_TAG" \
+              --source-head "$EXPECTED_GIT_HEAD" \
+              --version "$PACKAGE_VERSION" \
+              > registry-readback.json; then
               break
             fi
             echo "Waiting for npm registry package metadata, attempt $attempt..."
             sleep 10
           done
 
-          npm dist-tag ls persona-harness > dist-tags.txt
-          node scripts/release-workflow-policy.mjs registry \
-            --metadata registry-package.json \
-            --dist-tags dist-tags.txt \
-            --expected-version "$PACKAGE_VERSION" \
-            --expected-head "$EXPECTED_GIT_HEAD" \
-            --dist-tag "$DIST_TAG"
+          test -s registry-readback.json
 
       - name: Publish summary
         run: |
@@ -150,13 +162,8 @@ jobs:
             echo "- dist-tag: ${{ inputs.dist_tag }}"
             echo "- approval scope: ${{ inputs.approval_scope }}"
             echo
-            echo "### Registry package"
+            echo "### Sanitized registry package readback"
             echo '```json'
-            cat registry-package.json
-            echo '```'
-            echo
-            echo "### Dist-tags"
-            echo '```text'
-            cat dist-tags.txt
+            cat registry-readback.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

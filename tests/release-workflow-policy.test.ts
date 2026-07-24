@@ -17,6 +17,16 @@ const INTEGRITY = "sha512-" + "c".repeat(86)
 const repositoryRoot = resolve(process.cwd())
 
 describe("release workflow policy", () => {
+  it("requires the staging beta publish route to bind the immutable version tag and sanitized registry readback", () => {
+    const workflow = readFileSync(join(repositoryRoot, ".github", "workflows", "publish.yml"), "utf8")
+
+    expect(workflow).toContain("tag:")
+    expect(workflow).toContain("TAG_NAME: ${{ inputs.tag }}")
+    expect(workflow).toContain("tag-source")
+    expect(workflow).toContain("release-registry-readback.mjs")
+    expect(workflow).not.toContain("npm audit signatures")
+  })
+
   it("keeps the current stable source eligible only for GA-approved latest", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
