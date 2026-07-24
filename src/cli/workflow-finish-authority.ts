@@ -50,13 +50,11 @@ export function readWorkflowFinishAuthority(
   const assessment = assessVerificationAuthority(projectDir)
   const semanticTdd = assessSemanticTddChain(projectDir)
   const externalInspection = verifyExternalFinishAttestationForClosure(projectDir, now)
-  const projectRead = readEnrolledProjectFinishAttestations(projectDir, { storeRoot: options.authorityStoreRoot }, now)
-  const trustedProjects = projectRead.values.filter((candidate) => candidate.assessment.authorityEligible)
   const evidenceRoot = resolveSafeEvidenceRootResult(projectDir)
   const source = evidenceRoot.ok
     ? `${evidenceRoot.relativePath} (diagnostic only)`
     : ".persona/harness.jsonc (diagnostic only)"
-  if (externalInspection.authorityEligible && trustedProjects.length === 0) {
+  if (externalInspection.authorityEligible) {
     const externalAttestation = consume
       ? verifyExternalFinishAttestation(projectDir, now, { consume: true })
       : externalInspection
@@ -83,8 +81,34 @@ export function readWorkflowFinishAuthority(
         }
       }
     }
+    const decision = blockedVerificationDecision(
+      TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
+      [
+        "No trusted external authority receipt is available.",
+        "Unsigned project-local bearshell output, JUnit XML, TDD JSON, generatedBy markers, self-computed digests, arbitrary command/head/exit values, and stale attempt IDs are diagnostic only.",
+        `Receipt assessment: ${assessment.summary}.`,
+        `Semantic TDD assessment: ${semanticTdd.summary}.`,
+        `External finish attestation assessment: ${externalAttestation.summary}.`,
+        "An existing external attestation cannot fall through to user-scoped project authority after failed consumption.",
+        "Only a product-verified original external attestation matching its enrolled policy can provide trusted authority before finish can pass.",
+      ].join(" "),
+    )
+    return {
+      assessment,
+      decision,
+      blocker: {
+        id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
+        reason: decision.summary,
+        source,
+      },
+      externalAttestation,
+      semanticTdd,
+      status: "blocked",
+    }
   }
-  if (!externalInspection.authorityEligible && trustedProjects.length === 1) {
+  const projectRead = readEnrolledProjectFinishAttestations(projectDir, { storeRoot: options.authorityStoreRoot }, now)
+  const trustedProjects = projectRead.values.filter((candidate) => candidate.assessment.authorityEligible)
+  if (trustedProjects.length === 1) {
     const candidate = trustedProjects[0]
     if (candidate !== undefined) {
       const projectAttestation = consume

@@ -45,6 +45,19 @@ afterEach(() => {
 })
 
 describe("workflow Finish enrolled project attestation adapter", () => {
+  it("preserves trusted legacy external authority without reading user-scoped project artifacts", () => {
+    legacy.inspect.mockReturnValue(legacyTrusted())
+    projectAuthority.read.mockReturnValue({ enrollmentState: "missing", sourceState: "unavailable", values: [] })
+
+    const result = readWorkflowFinishAuthority(project(), { consumeExternalAttestation: false, now })
+
+    expect(result).toMatchObject({
+      decision: { authorityProvider: "external-attested", consumptionState: "unconsumed" },
+      status: "trusted",
+    })
+    expect(projectAuthority.read).not.toHaveBeenCalled()
+  })
+
   it("keeps a non-consuming preview trusted only for one verified enrolled project candidate", () => {
     const candidate = trustedCandidate()
     projectAuthority.read.mockReturnValue({ enrollmentState: "ready", sourceState: "ready", values: [candidate] })
@@ -108,6 +121,21 @@ function legacyBlocked() {
     diagnostics: [],
     state: "missing",
     summary: "missing",
+  }
+}
+
+function legacyTrusted() {
+  return {
+    authorityEligible: true,
+    consumptionState: "unconsumed",
+    decision: "trusted",
+    diagnostics: [],
+    receipt: {
+      finishId: "legacy-finish-1",
+      source: { identity: { contentDigest: `sha256:${"c".repeat(64)}` } },
+    },
+    state: "trusted",
+    summary: "trusted legacy external authority",
   }
 }
 
