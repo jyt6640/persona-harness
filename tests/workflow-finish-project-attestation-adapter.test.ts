@@ -166,6 +166,7 @@ function trustedCandidate() {
       enrolledAt: "2026-07-24T00:00:00.000Z",
       event: "push",
       policyMarker: "user-scoped-enrollment-v1",
+      protectionPolicy: "branch-protection-not-proven",
       ref: "refs/heads/main",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",

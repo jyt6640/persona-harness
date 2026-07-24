@@ -122,6 +122,14 @@ describe("consumer authority command boundary", () => {
         runId: "10",
         sourceHead: "a".repeat(40),
       }),
+      artifactInspector: () => ({
+        authorityEligible: true,
+        consumptionState: "unconsumed",
+        decision: "trusted",
+        diagnostics: [],
+        state: "trusted",
+        summary: "trusted",
+      }),
       projectDir,
       storeRoot,
     })
@@ -129,7 +137,7 @@ describe("consumer authority command boundary", () => {
     expect(result).toEqual({
       status: 0,
       stderr: "",
-      stdout: "Fetched matching original public evidence. No completion authority was consumed.\n",
+      stdout: "Fetched and verified matching original public evidence. No completion authority was consumed.\n",
     })
     expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("ready")
     expect(existsSync(join(projectDir, ".persona", "evidence", "project-finish-attestation", "bundle.json"))).toBe(false)

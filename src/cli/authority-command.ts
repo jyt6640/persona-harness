@@ -11,16 +11,26 @@ import {
 import { readGithubAuthorityEnrollment } from "./authority-github-readback-worker.js"
 import { fetchGithubAuthorityArtifact } from "./authority-fetch-worker.js"
 import { readEnrolledProjectFinishAttestations } from "./authority-project-attestation.js"
+import {
+  inspectProjectFinishAttestationArtifact,
+  type ProjectFinishAttestationVerifierAssessment,
+} from "./project-finish-attestation-verifier.js"
 import type { CliRunResult } from "./bearshell.js"
 
 type AuthorityCommandOptions = AuthorityEnrollmentStoreOptions & {
   readonly artifactFetch?: (projectDir: string, enrollment: AuthorityEnrollment) => AuthorityArtifact | undefined
+  readonly artifactInspector?: (
+    projectDir: string,
+    enrollment: AuthorityEnrollment,
+    archive: Buffer,
+    now: Date,
+  ) => ProjectFinishAttestationVerifierAssessment
   readonly confirmEnrollment?: boolean
   readonly enrollmentReadback?: (repositorySlug: string, workflowPath: string) => AuthorityEnrollmentReadback | undefined
   readonly projectDir?: string
 }
 
-type AuthorityStatus = {
+export type AuthorityStatus = {
   readonly authorityEligible: boolean
   readonly consumptionState: "consumed" | "not-applicable" | "unconsumed"
   readonly enrollment: "available" | "unavailable"
@@ -112,26 +122,37 @@ function runFetch(args: readonly string[], options: AuthorityCommandOptions, inv
     return parsed.json ? jsonStatus(summary) : textStatus(summary, false)
   }
   const enrollment = entries.value[0]
-  if (enrollment === undefined) return blockedFetch(parsed.json)
+  if (enrollment === undefined) return blockedFetch(parsed.json, "missing")
   const projectDir = options.projectDir ?? process.cwd()
   const artifact = (options.artifactFetch ?? fetchGithubAuthorityArtifact)(projectDir, enrollment)
-  if (artifact === undefined || !writeAuthorityArtifact(artifact, options)) return blockedFetch(parsed.json)
+  if (artifact === undefined || artifact.repositoryId !== enrollment.repositoryId) {
+    return blockedFetch(parsed.json, "missing")
+  }
+  const assessment = (options.artifactInspector ?? inspectProjectFinishAttestationArtifact)(
+    projectDir,
+    enrollment,
+    artifact.archive,
+    options.now ?? new Date(),
+  )
+  if (!assessment.authorityEligible || !writeAuthorityArtifact(artifact, options)) {
+    return blockedFetch(parsed.json, assessment.state)
+  }
   return {
     status: 0,
     stdout: parsed.json
       ? `${JSON.stringify({
-        authorityEligible: false,
-        consumptionState: "not-applicable",
-        next: "authority-status",
+        authorityEligible: true,
+        consumptionState: assessment.consumptionState,
+        next: "workflow-finish",
         schemaVersion: "consumer-authority-fetch.1",
-        state: "fetched",
+        state: "trusted",
       })}\n`
-      : "Fetched matching original public evidence. No completion authority was consumed.\n",
+      : "Fetched and verified matching original public evidence. No completion authority was consumed.\n",
     stderr: "",
   }
 }
 
-function readAuthorityStatus(options: AuthorityCommandOptions): AuthorityStatus {
+export function readAuthorityStatus(options: AuthorityCommandOptions = {}): AuthorityStatus {
   const projectDir = options.projectDir ?? process.cwd()
   const projectAttestations = readEnrolledProjectFinishAttestations(projectDir, options, options.now)
   if (projectAttestations.enrollmentState !== "ready") {
@@ -218,7 +239,7 @@ function invalid(invocationName: string): CliRunResult {
   return { status: 1, stdout: "", stderr: `${authorityUsage(invocationName)}\n` }
 }
 
-function blockedFetch(json: boolean): CliRunResult {
+function blockedFetch(json: boolean, state: string): CliRunResult {
   return {
     status: 1,
     stdout: json
@@ -227,9 +248,9 @@ function blockedFetch(json: boolean): CliRunResult {
         consumptionState: "not-applicable",
         next: "authority-fetch-github",
         schemaVersion: "consumer-authority-fetch.1",
-        state: "blocked",
+        state,
       })}\n`
-      : "Consumer authority fetch could not verify matching original public evidence.\n",
+      : `Consumer authority fetch: BLOCKED (${state}). No evidence was retained or consumed.\n`,
     stderr: "",
   }
 }

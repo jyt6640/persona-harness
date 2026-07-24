@@ -77,6 +77,8 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Verification receipt diagnostics: ${summary.verificationAuthority.summary}`,
     `Legacy evidence records: ${summary.verificationAuthority.legacyEvidence.files.length} (diagnostic-only; no automatic migration)`,
     `External assurance readiness: ${summary.externalTrust.availability.toUpperCase()} (${summary.externalTrust.state}; ${summary.externalTrust.consumption}; read-only)`,
+    `Consumer authority: ${summary.consumerAuthority.authorityEligible ? "TRUSTED" : "BLOCKED"} (${summary.consumerAuthority.state}; ${summary.consumerAuthority.consumptionState}; read-only)`,
+    `Consumer authority next: ${summary.consumerAuthority.next}`,
     ...summary.reachability.findings.map((finding) => `- [${finding.level}] ${finding.message}`),
     ...summary.reachability.followUpLines,
     `Persona package version: ${summary.packageVersion}`,
@@ -122,6 +124,7 @@ export function doctorJson(summary: DoctorSummary): string {
   const config = loadHarnessConfigResult(summary.projectDir)
   return `${JSON.stringify({
     authority: {
+      consumer: summary.consumerAuthority,
       external: summary.externalTrust,
       finish: summary.verificationAuthority.authorityEligible ? "eligible" : "blocked",
       receipt: "diagnostic-only",

@@ -10,6 +10,7 @@ import { walkBoundedFiles } from "../io/bounded-path-walker.js"
 import { readEntrySteeringStatusSummary } from "../runtime/entry-steering-status.js"
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
 import { summarizeConventionPackDiagnostics } from "./convention-pack-diagnostics.js"
+import { readAuthorityStatus } from "./authority-command.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   commandVersion,
@@ -80,6 +81,11 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const externalTrust = nodeSupport.status === "supported"
     ? summarizeDoctorExternalTrust((options.externalTrustInspector ?? verifyExternalFinishAttestationForClosure)(projectDir))
     : runtimeBlockedExternalTrust()
+  const consumerAuthority = (options.consumerAuthorityInspector ?? ((candidateProjectDir) =>
+    readAuthorityStatus({
+      projectDir: candidateProjectDir,
+      storeRoot: options.authorityStoreRoot,
+    })))(projectDir)
   const verificationAuthority = assessVerificationAuthority(projectDir)
   const runtimeFindings = [
     ...platformFindings(options.platform ?? process.platform),
@@ -135,6 +141,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     entrySteeringEnabled: harnessConfig.features.entrySteering,
     entrySteeringStatus: readEntrySteeringStatusSummary(projectDir, harnessConfig),
     externalTrust,
+    consumerAuthority,
     verificationAuthority,
     legacyDiffRulesPresent: rulesPath?.ok === true && existsSync(join(rulesPath.path, "diff-rules")),
     rulePackDiagnostics: rulePackDiagnostics.finding,

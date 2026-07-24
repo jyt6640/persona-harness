@@ -12,8 +12,11 @@ import type { DoctorRegistrySummary } from "./doctor-registry.js"
 import type { FinishAttestationAssessment } from "./workflow-finish-attestation.js"
 import type { VerificationAuthorityAssessment } from "./workflow-verification-receipt.js"
 import type { RuleDiagnosticReportItem } from "../rules/rule-diagnostics-report.js"
+import type { AuthorityStatus } from "./authority-command.js"
 
 export type DoctorOptions = {
+  readonly authorityStoreRoot?: string
+  readonly consumerAuthorityInspector?: (projectDir: string) => AuthorityStatus
   readonly projectDir?: string
   readonly env?: Readonly<Record<string, string | undefined>>
   readonly platform?: NodeJS.Platform
@@ -68,5 +71,6 @@ export type DoctorSummary = {
   readonly entrySteeringEnabled: boolean
   readonly entrySteeringStatus: EntrySteeringStatusSummary
   readonly externalTrust: DoctorExternalTrustSummary
+  readonly consumerAuthority: AuthorityStatus
   readonly verificationAuthority: VerificationAuthorityAssessment
 }

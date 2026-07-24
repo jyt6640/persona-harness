@@ -17,36 +17,43 @@ import {
   readNoFollowRegularFile,
   type NoFollowPathIdentity,
 } from "../io/no-follow-file.js"
-import type { ProjectFinishAttestationEnrolledPolicy } from "./project-finish-attestation-verifier.js"
+import {
+  AUTHORITY_STORE_SCHEMA,
+  MAX_AUTHORITY_AUDIT_RECORDS,
+  authorityAuditRecord,
+  authorityEnrollmentFromReadback,
+  isAuthorityEnrollment,
+  parseAuthorityStore,
+  type AuthorityEnrollment,
+  type AuthorityEnrollmentReadback,
+  type AuthorityStore,
+} from "./authority-enrollment-schema.js"
 
-const AUTHORITY_ENROLLMENT_SCHEMA = "consumer-authority-enrollment.1" as const
-const AUTHORITY_STORE_SCHEMA = "consumer-authority-store.1" as const
 const MAX_STORE_BYTES = 256 * 1024
-
-export type AuthorityEnrollment = ProjectFinishAttestationEnrolledPolicy & {
-  readonly enrolledAt: string
-  readonly event: "push"
-  readonly policyMarker: "user-scoped-enrollment-v1"
-  readonly ref: "refs/heads/main"
-  readonly schemaVersion: typeof AUTHORITY_ENROLLMENT_SCHEMA
-}
 
 export type AuthorityEnrollmentRead =
   | { readonly state: "invalid" }
   | { readonly state: "missing" }
   | { readonly state: "ready"; readonly value: readonly AuthorityEnrollment[] }
 
-export type AuthorityEnrollmentReadback = {
-  readonly callerWorkflowPath: string
-  readonly repositoryId: number
-  readonly repositorySlug: string
-  readonly reusableWorkflowSha: string
-}
-
 export type AuthorityEnrollmentStoreOptions = {
   readonly now?: Date
   readonly storeRoot?: string
 }
+
+type AuthorityStoreRead =
+  | { readonly state: "invalid" }
+  | { readonly state: "missing" }
+  | { readonly state: "ready"; readonly value: AuthorityStore }
+
+export {
+  authorityEnrollmentFromReadback,
+} from "./authority-enrollment-schema.js"
+export type {
+  AuthorityAuditRecord,
+  AuthorityEnrollment,
+  AuthorityEnrollmentReadback,
+} from "./authority-enrollment-schema.js"
 
 export function authorityStoreRoot(options: Pick<AuthorityEnrollmentStoreOptions, "storeRoot"> = {}): string {
   return resolve(options.storeRoot ?? join(homedir(), ".persona-harness"))
@@ -56,51 +63,13 @@ export function authorityStorePath(options: Pick<AuthorityEnrollmentStoreOptions
   return join(authorityStoreRoot(options), "consumer-authority-v1.json")
 }
 
-export function authorityEnrollmentFromReadback(
-  readback: AuthorityEnrollmentReadback,
-  now = new Date(),
-): AuthorityEnrollment | undefined {
-  const callerWorkflowPath = normalizeCallerWorkflowPath(readback.callerWorkflowPath)
-  if (
-    callerWorkflowPath === undefined
-    || !isPositiveInteger(readback.repositoryId)
-    || !isPublicRepositorySlug(readback.repositorySlug)
-    || !isCommit(readback.reusableWorkflowSha)
-    || !Number.isFinite(now.getTime())
-  ) {
-    return undefined
-  }
-  return {
-    callerWorkflowPath,
-    enrolledAt: now.toISOString(),
-    event: "push",
-    policyMarker: "user-scoped-enrollment-v1",
-    ref: "refs/heads/main",
-    repositoryId: readback.repositoryId,
-    repositorySlug: readback.repositorySlug,
-    reusableWorkflowSha: readback.reusableWorkflowSha.toLowerCase(),
-    schemaVersion: AUTHORITY_ENROLLMENT_SCHEMA,
-  }
-}
-
 export function readAuthorityEnrollments(
   options: Pick<AuthorityEnrollmentStoreOptions, "storeRoot"> = {},
 ): AuthorityEnrollmentRead {
-  const root = authorityStoreRoot(options)
-  const directory = captureNoFollowDirectory(root)
-  if (directory.kind === "absent") return { state: "missing" }
-  if (directory.kind !== "ready") return { state: "invalid" }
-
-  const source = readNoFollowRegularFile(authorityStorePath(options), MAX_STORE_BYTES, root)
-  if (source.kind === "absent") return { state: "missing" }
-  if (source.kind !== "ready") return { state: "invalid" }
-  try {
-    const parsed: unknown = JSON.parse(source.value.bytes.toString("utf8"))
-    const entries = parseAuthorityStore(parsed)
-    return entries === undefined ? { state: "invalid" } : { state: "ready", value: entries }
-  } catch {
-    return { state: "invalid" }
-  }
+  const store = readAuthorityStore(options)
+  return store.state === "ready"
+    ? { state: "ready", value: store.value.entries }
+    : { state: store.state }
 }
 
 export function readAuthorityEnrollment(
@@ -118,15 +87,44 @@ export function writeAuthorityEnrollment(
   const root = authorityStoreRoot(options)
   const before = preparePrivateStoreRoot(root)
   if (before === undefined) return false
-  const existing = readAuthorityEnrollments(options)
+  const existing = readAuthorityStore(options)
   if (existing.state === "invalid") return false
-  const entries = existing.state === "ready" ? [...existing.value] : []
-  const next = [
-    ...entries.filter((entry) => entry.repositoryId !== enrollment.repositoryId),
+  const store = existing.state === "ready"
+    ? existing.value
+    : { audit: [], entries: [], schemaVersion: AUTHORITY_STORE_SCHEMA }
+  if (store.audit.length >= MAX_AUTHORITY_AUDIT_RECORDS) return false
+  const action = store.entries.some((entry) => entry.repositoryId === enrollment.repositoryId)
+    ? "updated"
+    : "enrolled"
+  const entries = [
+    ...store.entries.filter((entry) => entry.repositoryId !== enrollment.repositoryId),
     enrollment,
   ].sort((left, right) => left.repositoryId - right.repositoryId)
-  const payload = `${JSON.stringify({ entries: next, schemaVersion: AUTHORITY_STORE_SCHEMA })}\n`
+  const payload = `${JSON.stringify({
+    audit: [...store.audit, authorityAuditRecord(enrollment, action)],
+    entries,
+    schemaVersion: AUTHORITY_STORE_SCHEMA,
+  })}\n`
   return writePrivateStoreFile(root, authorityStorePath(options), payload, before)
+}
+
+function readAuthorityStore(
+  options: Pick<AuthorityEnrollmentStoreOptions, "storeRoot">,
+): AuthorityStoreRead {
+  const root = authorityStoreRoot(options)
+  const directory = captureNoFollowDirectory(root)
+  if (directory.kind === "absent") return { state: "missing" }
+  if (directory.kind !== "ready") return { state: "invalid" }
+  const source = readNoFollowRegularFile(authorityStorePath(options), MAX_STORE_BYTES, root)
+  if (source.kind === "absent") return { state: "missing" }
+  if (source.kind !== "ready") return { state: "invalid" }
+  try {
+    const parsed: unknown = JSON.parse(source.value.bytes.toString("utf8"))
+    const store = parseAuthorityStore(parsed)
+    return store === undefined ? { state: "invalid" } : { state: "ready", value: store }
+  } catch {
+    return { state: "invalid" }
+  }
 }
 
 function preparePrivateStoreRoot(root: string): NoFollowPathIdentity | undefined {
@@ -166,92 +164,6 @@ function writePrivateStoreFile(
     if (descriptor !== undefined) closeSync(descriptor)
     rmSync(tempPath, { force: true })
   }
-}
-
-function parseAuthorityStore(value: unknown): readonly AuthorityEnrollment[] | undefined {
-  if (!isRecord(value) || !exactKeys(value, ["entries", "schemaVersion"]) || value.schemaVersion !== AUTHORITY_STORE_SCHEMA || !Array.isArray(value.entries) || value.entries.length > 128) {
-    return undefined
-  }
-  const entries = value.entries.map(parseAuthorityEnrollment)
-  if (entries.some((entry) => entry === undefined)) return undefined
-  const ready = entries as AuthorityEnrollment[]
-  const ids = new Set(ready.map((entry) => entry.repositoryId))
-  return ids.size === ready.length ? ready : undefined
-}
-
-function parseAuthorityEnrollment(value: unknown): AuthorityEnrollment | undefined {
-  if (!isRecord(value) || !exactKeys(value, [
-    "callerWorkflowPath",
-    "enrolledAt",
-    "event",
-    "policyMarker",
-    "ref",
-    "repositoryId",
-    "repositorySlug",
-    "reusableWorkflowSha",
-    "schemaVersion",
-  ])) {
-    return undefined
-  }
-  return isAuthorityEnrollment(value) ? value : undefined
-}
-
-function isAuthorityEnrollment(value: unknown): value is AuthorityEnrollment {
-  return isRecord(value)
-    && normalizeCallerWorkflowPath(value.callerWorkflowPath) === value.callerWorkflowPath
-    && isTimestamp(value.enrolledAt)
-    && value.event === "push"
-    && value.policyMarker === "user-scoped-enrollment-v1"
-    && value.ref === "refs/heads/main"
-    && isPositiveInteger(value.repositoryId)
-    && isPublicRepositorySlug(value.repositorySlug)
-    && isCommit(value.reusableWorkflowSha)
-    && value.schemaVersion === AUTHORITY_ENROLLMENT_SCHEMA
-}
-
-function normalizeCallerWorkflowPath(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined
-  const prefix = ".github/workflows/"
-  const path = value.startsWith(prefix) ? value.slice(prefix.length) : value
-  if (
-    path.length === 0
-    || path.length > 256
-    || path.includes("\\")
-    || !path.endsWith(".yml")
-    || path.split("/").some((part) => part === "" || part === "." || part === "..")
-  ) {
-    return undefined
-  }
-  return path
-}
-
-function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
-  const actual = Object.keys(value).sort()
-  return actual.length === keys.length && actual.every((key, index) => key === keys[index])
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-}
-
-function isPositiveInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
-}
-
-function isPublicRepositorySlug(value: unknown): value is string {
-  return typeof value === "string"
-    && value.length > 0
-    && value.length <= 256
-    && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(value)
-    && !value.split("/").some((part) => part === "." || part === "..")
-}
-
-function isCommit(value: unknown): value is string {
-  return typeof value === "string" && /^[a-f0-9]{40}$/iu.test(value)
-}
-
-function isTimestamp(value: unknown): value is string {
-  return typeof value === "string" && Number.isFinite(Date.parse(value))
 }
 
 function sameDirectory(
