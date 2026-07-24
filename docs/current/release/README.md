@@ -67,9 +67,11 @@ commit. Its release record is
 [`v0.7.0-rc.3-release-notes.md`](v0.7.0-rc.3-release-notes.md), and its durable
 capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 
-Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.3`.
-The completed publish does not move `latest` or broaden any product claim.
-`0.7.0-rc.2` remains the previous published `next` record.
+At the `0.8.0-beta.1` source-preparation readback, registry channels are
+`latest=0.7.0`, `next=0.7.0-rc.3`, and `staging=0.7.0-rc.8`. This is a
+historical baseline for the beta candidate, not beta publication, promotion,
+or authority evidence. `0.7.0-rc.2` remains an earlier published `next`
+record.
 
 The staged-package artifact producer is a controlled future-run source:
 [`staged-package-artifact-attestation-producer.md`](staged-package-artifact-attestation-producer.md).
@@ -108,10 +110,10 @@ nor creates its prerequisite tag. Local or caller-supplied staged-package facts
 remain `artifact-provenance-unavailable`; Finish and closure authority remain
 unchanged.
 
-Current stable package: `0.6.0` is published to npm `latest` after QA accepted
-the final External registry smoke. Current registry state is `latest=0.6.0`,
-`next=0.7.0-rc.3`, with no `alpha` dist-tag after the post-stable T0
-retirement. Registry verification confirmed
+Historical stable package: `0.6.0` was published to npm `latest` after QA
+accepted the final External registry smoke. This historical registry snapshot
+was `latest=0.6.0`, `next=0.7.0-rc.3`, with no `alpha` dist-tag after the
+post-stable T0 retirement. Registry verification then confirmed
 `persona-harness@latest=0.6.0`, gitHead
 `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
 `ffd77996263cffb858bd977edb73b03cf2820c75`, and integrity

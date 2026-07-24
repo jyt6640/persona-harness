@@ -97,12 +97,11 @@ not become current merely because they remain under `docs/current/`.
 
 ## Current Facts To Preserve
 
-- `0.6.0` is published as the stable npm `latest` package after QA accepted
-  the final External registry smoke. Current published channels are
-  `latest=0.6.0` and `next=0.7.0-rc.3`; the legacy `alpha` dist-tag has been
-  retired after stable. Explicit historical alpha versions remain available by
-  exact version. S-3 removed the failed-finish human `Summary:` header after
-  S-2 regated it as non-inferior=false.
+- At the `0.8.0-beta.1` source-preparation readback, npm reports
+  `latest=0.7.0`, `next=0.7.0-rc.3`, and `staging=0.7.0-rc.8`. These are
+  observed historical baseline facts, not evidence that the beta itself is
+  published, promoted, or authoritative. The legacy `alpha` channel remains
+  retired; exact historical versions remain separately addressable.
 - `0.7.0-rc.1` was published to npm `next` on 2026-07-11 with registry
   gitHead/tag/release-branch commit `d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`.
 - `0.7.0-rc.2` was published to npm `next` from exact main
@@ -114,14 +113,11 @@ not become current merely because they remain under `docs/current/`.
   and GitHub prerelease `v0.7.0-rc.3` target that commit; its package hashes,
   installed-registry smoke, and workflow provenance are recorded in its
   durable release facts.
-- `0.7.0` is a source-preparation candidate for the user-authorized GA path.
-  It does not claim a current package, tag, registry channel, GitHub release,
-  promotion, or audit completion. Those live facts are maintained in governed
-  registry and audit records. The no-input production-integrity audit
-  does not establish this stable lifecycle; a future durable protected stable
-  completion approval must be observed after the actual release path. The
-  packaged fixed-policy artifact verifier remains read-only/non-authoritative,
-  while local or caller-provided staged-package evidence remains
+- `0.7.0` is the current observed npm `latest` package at that readback. Its
+  earlier source-preparation note remains historical; current lifecycle facts
+  are maintained in governed registry and audit records. The packaged fixed
+  policy artifact verifier remains read-only/non-authoritative, while local or
+  caller-provided staged-package evidence remains
   `artifact-provenance-unavailable`.
 - `0.8.0-beta.1` is a Consumer Authority Beta source-preparation candidate.
   It does not claim a current package, tag, staging mapping, GitHub release,
