@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   authorityEnrollmentFromReadback,
@@ -11,7 +11,11 @@ import {
   runAuthorityCommand,
 } from "../src/cli/authority-command.js"
 import { readAuthorityArtifact } from "../src/cli/authority-artifact-store.js"
-import { writeAuthorityEnrollment } from "../src/cli/authority-enrollment.js"
+import { selectAuthorityGithubToken } from "../src/cli/authority-github-token.js"
+import {
+  writeAuthorityEnrollment,
+  type AuthorityEnrollment,
+} from "../src/cli/authority-enrollment.js"
 import { runPersonaCli } from "../src/cli/index.js"
 
 const projects: string[] = []
@@ -21,6 +25,16 @@ afterEach(() => {
 })
 
 describe("consumer authority command boundary", () => {
+  it("selects only a bounded standard GitHub transport credential", () => {
+    expect(selectAuthorityGithubToken({
+      GITHUB_TOKEN: "fallback-test-credential",
+      GH_TOKEN: "preferred-test-credential",
+    })).toBe("preferred-test-credential")
+    expect(selectAuthorityGithubToken({
+      GH_TOKEN: "unsafe\ncredential",
+    })).toBeUndefined()
+  })
+
   it("keeps noninteractive content from enrolling a repository", () => {
     const projectDir = project()
 
@@ -31,6 +45,7 @@ describe("consumer authority command boundary", () => {
       "--workflow",
       ".github/workflows/persona-harness.yml",
     ], {
+      githubToken: "github-test-credential",
       projectDir,
       storeRoot: join(projectDir, "user-store"),
     })
@@ -56,7 +71,7 @@ describe("consumer authority command boundary", () => {
       repositorySlug: "example/public-gradle-app",
     })
     expect(authorityEnrollmentFromReadback({
-      callerWorkflowPath: "../unsafe.yml",
+      callerWorkflowPath: "unsafe?ref=other.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
       reusableWorkflowSha: "a".repeat(40),
@@ -82,7 +97,9 @@ describe("consumer authority command boundary", () => {
       authorityEligible: false,
       consumptionState: "not-applicable",
       enrollment: "unavailable",
-      state: "enrollment-unavailable",
+      githubAuthentication: "unavailable",
+      next: "github-authenticate",
+      state: "authentication-unavailable",
     })
     expect(`${plain.stdout}${plain.stderr}${json.stdout}${json.stderr}`).not.toContain(projectDir)
   })
@@ -91,13 +108,35 @@ describe("consumer authority command boundary", () => {
     const projectDir = project()
     const result = runPersonaCli(["authority", "status"], {
       cwd: projectDir,
-      env: {},
+      env: { GH_TOKEN: "github-test-credential" },
       invocationName: "ph",
     })
 
     expect(result.status).toBe(1)
     expect(result.stdout).toContain("Enrollment: unavailable")
     expect(result.stdout).not.toContain(projectDir)
+  })
+
+  it("requires GitHub authentication only as transport authority before fixed readback", () => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+
+    const result = runAuthorityCommand([
+      "enroll",
+      "github",
+      "example/public-gradle-app",
+      "--workflow",
+      "persona-harness.yml",
+    ], {
+      confirmEnrollment: true,
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("GH_TOKEN or GITHUB_TOKEN")
+    expect(`${result.stdout}${result.stderr}`).not.toContain(projectDir)
+    expect(readAuthorityEnrollment(projectDir, { storeRoot }).state).toBe("missing")
   })
 
   it("fetches only a product-owned original archive into the user store without creating workspace authority", () => {
@@ -142,6 +181,73 @@ describe("consumer authority command boundary", () => {
     expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("ready")
     expect(existsSync(join(projectDir, ".persona", "evidence", "project-finish-attestation", "bundle.json"))).toBe(false)
     expect(`${result.stdout}${result.stderr}`).not.toContain(projectDir)
+  })
+
+  it("selects one explicit enrolled repository when the user store contains multiple entries", () => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+    for (const [repositoryId, repositorySlug] of [
+      [987654321, "example/public-gradle-app"],
+      [987654322, "example/second-gradle-app"],
+    ] as const) {
+      const enrollment = authorityEnrollmentFromReadback({
+        callerWorkflowPath: "persona-harness.yml",
+        repositoryId,
+        repositorySlug,
+        reusableWorkflowSha: "a".repeat(40),
+      }, new Date("2026-07-24T00:00:00.000Z"))
+      if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+        throw new Error("fixture enrollment must persist")
+      }
+    }
+    const archive = artifactArchive()
+    const artifactFetch = vi.fn((_candidateProjectDir: string, enrollment: AuthorityEnrollment) => ({
+      archive,
+      artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+      fetchedAt: "2026-07-24T00:00:00.000Z",
+      repositoryId: enrollment.repositoryId,
+      runId: "10",
+      sourceHead: "a".repeat(40),
+    }))
+    const artifactInspector = () => ({
+      authorityEligible: true as const,
+      consumptionState: "unconsumed" as const,
+      decision: "trusted" as const,
+      diagnostics: [],
+      state: "trusted" as const,
+      summary: "trusted",
+    })
+
+    const ambiguous = runAuthorityCommand(["fetch", "github", "--json"], {
+      artifactFetch,
+      artifactInspector,
+      projectDir,
+      storeRoot,
+    })
+    expect(ambiguous.status).toBe(1)
+    expect(JSON.parse(ambiguous.stdout)).toMatchObject({
+      next: "authority-fetch-github",
+      state: "selection-required",
+    })
+    expect(artifactFetch).not.toHaveBeenCalled()
+
+    const selected = runAuthorityCommand([
+      "fetch",
+      "github",
+      "example/second-gradle-app",
+      "--json",
+    ], {
+      artifactFetch,
+      artifactInspector,
+      projectDir,
+      storeRoot,
+    })
+    expect(selected.status).toBe(0)
+    expect(artifactFetch).toHaveBeenCalledOnce()
+    expect(artifactFetch.mock.calls[0]?.[1]).toMatchObject({
+      repositoryId: 987654322,
+      repositorySlug: "example/second-gradle-app",
+    })
   })
 })
 

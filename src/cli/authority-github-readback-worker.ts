@@ -2,6 +2,10 @@ import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 
 import type { AuthorityEnrollmentReadback } from "./authority-enrollment.js"
+import {
+  AUTHORITY_GITHUB_TOKEN_ENV,
+  isAuthorityGithubToken,
+} from "./authority-github-token.js"
 
 const WORKER_PATH = fileURLToPath(new URL("../../scripts/read-consumer-authority-github.mjs", import.meta.url))
 const MAX_OUTPUT_BYTES = 64 * 1024
@@ -11,11 +15,17 @@ export function readGithubAuthorityEnrollment(
   projectDir: string,
   repositorySlug: string,
   workflowPath: string,
+  githubToken: string | undefined,
 ): AuthorityEnrollmentReadback | undefined {
+  if (!isAuthorityGithubToken(githubToken)) return undefined
   const result = spawnSync(process.execPath, [WORKER_PATH], {
     cwd: projectDir,
     encoding: "utf8",
-    env: { LANG: "C", LC_ALL: "C" },
+    env: {
+      [AUTHORITY_GITHUB_TOKEN_ENV]: githubToken,
+      LANG: "C",
+      LC_ALL: "C",
+    },
     input: JSON.stringify({ repositorySlug, workflowPath }),
     maxBuffer: MAX_OUTPUT_BYTES,
     shell: false,

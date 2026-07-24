@@ -78,6 +78,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Legacy evidence records: ${summary.verificationAuthority.legacyEvidence.files.length} (diagnostic-only; no automatic migration)`,
     `External assurance readiness: ${summary.externalTrust.availability.toUpperCase()} (${summary.externalTrust.state}; ${summary.externalTrust.consumption}; read-only)`,
     `Consumer authority: ${summary.consumerAuthority.authorityEligible ? "TRUSTED" : "BLOCKED"} (${summary.consumerAuthority.state}; ${summary.consumerAuthority.consumptionState}; read-only)`,
+    `Consumer GitHub authentication: ${summary.consumerAuthority.githubAuthentication}`,
     `Consumer authority next: ${summary.consumerAuthority.next}`,
     `Sigstore network readiness: ${summary.sigstoreTrust.networkReadiness.toUpperCase()} (${summary.sigstoreTrust.state})`,
     `Sigstore trust-root readiness: ${summary.sigstoreTrust.trustRootReadiness.toUpperCase()} (${summary.sigstoreTrust.state}; live no-cache check)`,

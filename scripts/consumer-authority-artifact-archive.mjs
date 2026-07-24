@@ -7,6 +7,15 @@ const MAX_MEMBER_BYTES = 1024 * 1024
 const EXPECTED_MEMBERS = ["bundle.json", "predicate.json", "receipt.json"]
 
 export function extractOriginalArtifactMembers(archive) {
+  try {
+    return extractOriginalArtifactMembersUnchecked(archive)
+  } catch (error) {
+    if (error instanceof ConsumerAuthorityArtifactFetchError) throw error
+    throw archiveError()
+  }
+}
+
+function extractOriginalArtifactMembersUnchecked(archive) {
   if (!Buffer.isBuffer(archive) || archive.byteLength === 0 || archive.byteLength > MAX_ARCHIVE_BYTES) {
     throw archiveError()
   }
@@ -94,7 +103,9 @@ function readLocalMember(archive, entry) {
     throw archiveError()
   }
   try {
-    const decoded = entry.method === 0 ? archive.subarray(start, end) : inflateRawSync(archive.subarray(start, end))
+    const decoded = entry.method === 0
+      ? archive.subarray(start, end)
+      : inflateRawSync(archive.subarray(start, end), { maxOutputLength: MAX_MEMBER_BYTES + 1 })
     if (decoded.byteLength !== entry.uncompressedSize || decoded.byteLength === 0 || decoded.byteLength > MAX_MEMBER_BYTES) throw archiveError()
     return decoded
   } catch (error) {

@@ -11,6 +11,7 @@ import { readEntrySteeringStatusSummary } from "../runtime/entry-steering-status
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
 import { summarizeConventionPackDiagnostics } from "./convention-pack-diagnostics.js"
 import { readAuthorityStatus } from "./authority-command.js"
+import { selectAuthorityGithubToken } from "./authority-github-token.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   commandVersion,
@@ -87,6 +88,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     : runtimeBlockedExternalTrust()
   const consumerAuthority = (options.consumerAuthorityInspector ?? ((candidateProjectDir) =>
     readAuthorityStatus({
+      githubToken: selectAuthorityGithubToken(options.env ?? process.env),
       projectDir: candidateProjectDir,
       storeRoot: options.authorityStoreRoot,
     })))(projectDir)

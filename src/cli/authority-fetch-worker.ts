@@ -3,6 +3,10 @@ import { fileURLToPath } from "node:url"
 
 import type { AuthorityArtifact } from "./authority-artifact-store.js"
 import type { AuthorityEnrollment } from "./authority-enrollment.js"
+import {
+  AUTHORITY_GITHUB_TOKEN_ENV,
+  isAuthorityGithubToken,
+} from "./authority-github-token.js"
 import { captureGitIdentity, captureWorkspaceIdentity } from "./ci-reverification-identity.js"
 
 const WORKER_PATH = fileURLToPath(new URL("../../scripts/fetch-consumer-authority-artifact.mjs", import.meta.url))
@@ -13,8 +17,10 @@ const WORKER_TIMEOUT_MS = 30_000
 export function fetchGithubAuthorityArtifact(
   projectDir: string,
   enrollment: AuthorityEnrollment,
+  githubToken: string | undefined,
   now = new Date(),
 ): AuthorityArtifact | undefined {
+  if (!isAuthorityGithubToken(githubToken)) return undefined
   const workspace = captureWorkspaceIdentity(projectDir)
   if (workspace.status !== "available") return undefined
   const git = captureGitIdentity(projectDir, workspace.value)
@@ -22,7 +28,11 @@ export function fetchGithubAuthorityArtifact(
   const result = spawnSync(process.execPath, [WORKER_PATH], {
     cwd: workspace.value.realpath,
     encoding: "utf8",
-    env: { LANG: "C", LC_ALL: "C" },
+    env: {
+      [AUTHORITY_GITHUB_TOKEN_ENV]: githubToken,
+      LANG: "C",
+      LC_ALL: "C",
+    },
     input: JSON.stringify({
       callerWorkflowPath: enrollment.callerWorkflowPath,
       repositoryId: enrollment.repositoryId,

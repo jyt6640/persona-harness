@@ -9,6 +9,8 @@ const ARTIFACT_NAME = "project-finish-attestation"
 const MAX_ARCHIVE_BYTES = 8 * 1024 * 1024
 const MAX_JSON_BYTES = 512 * 1024
 const REQUEST_TIMEOUT_MS = 15_000
+const GITHUB_API_VERSION = "2022-11-28"
+const GITHUB_TOKEN_ENV = "PH_AUTHORITY_GITHUB_TOKEN"
 const REDIRECT_HOSTS = new Set([
   "pipelines.actions.githubusercontent.com",
   "results-receiver.actions.githubusercontent.com",
@@ -17,6 +19,20 @@ const REDIRECT_HOSTS = new Set([
 export { ConsumerAuthorityArtifactFetchError } from "./consumer-authority-artifact-error.mjs"
 export { extractOriginalArtifactMembers } from "./consumer-authority-artifact-archive.mjs"
 
+export function authorityGithubRequestHeaders(url, token) {
+  const credential = githubToken(token)
+  return {
+    Accept: "application/vnd.github+json, application/octet-stream",
+    "User-Agent": "persona-harness-consumer-authority",
+    ...(url instanceof URL && url.origin === API_ORIGIN
+      ? {
+          "X-GitHub-Api-Version": GITHUB_API_VERSION,
+          ...(credential === undefined ? {} : { Authorization: `Bearer ${credential}` }),
+        }
+      : {}),
+  }
+}
+
 export async function fetchConsumerAuthorityArtifact(input, transport = defaultTransport()) {
   const selection = parseSelection(input)
   if (selection === undefined) throw new ConsumerAuthorityArtifactFetchError("authority-fetch-invalid")
@@ -24,18 +40,22 @@ export async function fetchConsumerAuthorityArtifact(input, transport = defaultT
   if (!samePublicRepository(repository, selection)) throw new ConsumerAuthorityArtifactFetchError("authority-fetch-policy")
 
   const runs = await transport.json(api(`/repos/${selection.repositorySlug}/actions/workflows/${encodeURIComponent(`.github/workflows/${selection.callerWorkflowPath}`)}/runs?event=push&branch=main&head_sha=${selection.sourceHead}&per_page=100`))
-  const run = selectRun(runs, selection.sourceHead)
+  const run = selectRun(runs, selection)
   if (run === undefined) throw new ConsumerAuthorityArtifactFetchError("authority-fetch-evidence")
 
   const artifacts = await transport.json(api(`/repos/${selection.repositorySlug}/actions/runs/${run.id}/artifacts?per_page=100`))
-  const artifact = selectArtifact(artifacts)
+  const artifact = selectArtifact(artifacts, selection, run.id)
   if (artifact === undefined) throw new ConsumerAuthorityArtifactFetchError("authority-fetch-evidence")
 
   const archive = await transport.archive(api(`/repos/${selection.repositorySlug}/actions/artifacts/${artifact.id}/zip`))
+  const artifactDigest = digest(archive)
+  if (archive.byteLength !== artifact.size_in_bytes || artifact.digest !== artifactDigest) {
+    throw new ConsumerAuthorityArtifactFetchError("authority-fetch-evidence")
+  }
   const members = extractOriginalArtifactMembers(archive)
   return {
     archive,
-    artifactDigest: digest(archive),
+    artifactDigest,
     bundle: members.bundle,
     predicate: members.predicate,
     receipt: members.receipt,
@@ -47,7 +67,7 @@ function parseSelection(value) {
   if (!record(value) || !exactKeys(value, ["callerWorkflowPath", "repositoryId", "repositorySlug", "sourceHead"]) || !workflowPath(value.callerWorkflowPath) || !positiveInteger(value.repositoryId) || !repositorySlug(value.repositorySlug) || !commit(value.sourceHead)) {
     return undefined
   }
-  return value
+  return { ...value, sourceHead: value.sourceHead.toLowerCase() }
 }
 
 function api(path) {
@@ -66,35 +86,50 @@ function samePublicRepository(value, expected) {
     && value.visibility === "public"
 }
 
-function selectRun(value, sourceHead) {
-  if (!record(value) || !Array.isArray(value.workflow_runs) || value.workflow_runs.length > 100) return undefined
-  const matches = value.workflow_runs.filter((run) => record(run)
+function selectRun(value, expected) {
+  const runs = boundedCollection(value, "workflow_runs")
+  if (runs === undefined) return undefined
+  const matches = runs.filter((run) => record(run)
     && positiveInteger(run.id)
     && run.event === "push"
     && run.head_branch === "main"
-    && run.head_sha === sourceHead
+    && run.head_sha === expected.sourceHead
     && run.status === "completed"
-    && run.conclusion === "success")
+    && run.conclusion === "success"
+    && sameRepositoryIdentity(run.repository, expected)
+    && sameRepositoryIdentity(run.head_repository, expected))
   return matches.length === 1 ? matches[0] : undefined
 }
 
-function selectArtifact(value) {
-  if (!record(value) || !Array.isArray(value.artifacts) || value.artifacts.length > 100) return undefined
-  const matches = value.artifacts.filter((artifact) => record(artifact)
+function selectArtifact(value, expected, runId) {
+  const artifacts = boundedCollection(value, "artifacts")
+  if (artifacts === undefined) return undefined
+  const matches = artifacts.filter((artifact) => record(artifact)
     && positiveInteger(artifact.id)
     && artifact.name === ARTIFACT_NAME
     && artifact.expired === false
     && positiveInteger(artifact.size_in_bytes)
-    && artifact.size_in_bytes <= MAX_ARCHIVE_BYTES)
+    && artifact.size_in_bytes <= MAX_ARCHIVE_BYTES
+    && isDigest(artifact.digest)
+    && record(artifact.workflow_run)
+    && artifact.workflow_run.id === runId
+    && artifact.workflow_run.repository_id === expected.repositoryId
+    && artifact.workflow_run.head_repository_id === expected.repositoryId
+    && artifact.workflow_run.head_branch === "main"
+    && artifact.workflow_run.head_sha === expected.sourceHead)
   return matches.length === 1 ? matches[0] : undefined
 }
 
 function defaultTransport() {
-  return { archive: requestArchive, json: requestJson }
+  const token = githubToken(process.env[GITHUB_TOKEN_ENV])
+  return {
+    archive: (url) => requestArchive(url, token),
+    json: (url) => requestJson(url, token),
+  }
 }
 
-function requestJson(url) {
-  return request(url, MAX_JSON_BYTES, false).then((bytes) => {
+function requestJson(url, token) {
+  return requestBytes(url, MAX_JSON_BYTES, false, token).then((bytes) => {
     try {
       return JSON.parse(bytes.toString("utf8"))
     } catch {
@@ -103,26 +138,26 @@ function requestJson(url) {
   })
 }
 
-function requestArchive(url) {
-  return request(url, MAX_ARCHIVE_BYTES, true)
+function requestArchive(url, token) {
+  return requestBytes(url, MAX_ARCHIVE_BYTES, true, token)
 }
 
-function request(url, limit, allowArtifactRedirect) {
+function requestBytes(url, limit, allowArtifactRedirect, token) {
   if (
     !(url instanceof URL)
     || url.protocol !== "https:"
     || url.port !== ""
     || url.username !== ""
     || url.password !== ""
-    || (url.origin !== API_ORIGIN && !REDIRECT_HOSTS.has(url.hostname))
+    || (url.origin !== API_ORIGIN && !isArtifactRedirectHost(url.hostname))
   ) {
     return Promise.reject(new ConsumerAuthorityArtifactFetchError("authority-fetch-network"))
   }
   return new Promise((resolve, reject) => {
-    const request = https.get(url, {
+    const headers = authorityGithubRequestHeaders(url, token)
+    const clientRequest = https.get(url, {
       headers: {
-        Accept: "application/vnd.github+json, application/octet-stream",
-        "User-Agent": "persona-harness-consumer-authority",
+        ...headers,
       },
       timeout: REQUEST_TIMEOUT_MS,
     }, (response) => {
@@ -135,11 +170,11 @@ function request(url, limit, allowArtifactRedirect) {
         } catch {
           redirect = undefined
         }
-        if (redirect === undefined || redirect.protocol !== "https:" || !REDIRECT_HOSTS.has(redirect.hostname) || redirect.port !== "" || redirect.username !== "" || redirect.password !== "") {
+        if (redirect === undefined || redirect.protocol !== "https:" || !isArtifactRedirectHost(redirect.hostname) || redirect.port !== "" || redirect.username !== "" || redirect.password !== "") {
           reject(new ConsumerAuthorityArtifactFetchError("authority-fetch-network"))
           return
         }
-        request(redirect, limit, false).then(resolve, reject)
+        requestBytes(redirect, limit, false, undefined).then(resolve, reject)
         return
       }
       const length = Number(response.headers["content-length"] ?? "0")
@@ -153,7 +188,7 @@ function request(url, limit, allowArtifactRedirect) {
       response.on("data", (chunk) => {
         size += chunk.length
         if (size > limit) {
-          request.destroy()
+          clientRequest.destroy()
           reject(new ConsumerAuthorityArtifactFetchError("authority-fetch-network"))
           return
         }
@@ -162,9 +197,30 @@ function request(url, limit, allowArtifactRedirect) {
       response.on("end", () => resolve(Buffer.concat(chunks)))
       response.on("error", () => reject(new ConsumerAuthorityArtifactFetchError("authority-fetch-network")))
     })
-    request.on("timeout", () => request.destroy(new ConsumerAuthorityArtifactFetchError("authority-fetch-network")))
-    request.on("error", () => reject(new ConsumerAuthorityArtifactFetchError("authority-fetch-network")))
+    clientRequest.on("timeout", () => clientRequest.destroy(new ConsumerAuthorityArtifactFetchError("authority-fetch-network")))
+    clientRequest.on("error", () => reject(new ConsumerAuthorityArtifactFetchError("authority-fetch-network")))
   })
+}
+
+function boundedCollection(value, key) {
+  if (!record(value) || !nonNegativeInteger(value.total_count) || value.total_count > 100 || !Array.isArray(value[key])) {
+    return undefined
+  }
+  return value[key].length === value.total_count ? value[key] : undefined
+}
+
+function sameRepositoryIdentity(value, expected) {
+  return record(value)
+    && value.id === expected.repositoryId
+    && value.full_name === expected.repositorySlug
+}
+
+function isArtifactRedirectHost(hostname) {
+  if (REDIRECT_HOSTS.has(hostname)) return true
+  const labels = hostname.split(".")
+  return labels.length === 5
+    && /^[a-z0-9-]{1,63}$/u.test(labels[0] ?? "")
+    && labels.slice(1).join(".") === "blob.core.windows.net"
 }
 
 function record(value) {
@@ -180,12 +236,19 @@ function positiveInteger(value) {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0
 }
 
+function nonNegativeInteger(value) {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+}
+
 function repositorySlug(value) {
   return typeof value === "string" && value.length <= 256 && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(value) && !value.split("/").some((part) => part === "." || part === "..")
 }
 
 function workflowPath(value) {
-  return typeof value === "string" && value.length > 0 && value.length <= 256 && !value.includes("\\") && value.endsWith(".yml") && !value.split("/").some((part) => part === "" || part === "." || part === "..")
+  return typeof value === "string"
+    && value.length > 0
+    && value.length <= 256
+    && /^[A-Za-z0-9_.-]+\.yml$/u.test(value)
 }
 
 function commit(value) {
@@ -194,6 +257,14 @@ function commit(value) {
 
 function digest(value) {
   return `sha256:${createHash("sha256").update(value).digest("hex")}`
+}
+
+function isDigest(value) {
+  return typeof value === "string" && /^sha256:[a-f0-9]{64}$/u.test(value)
+}
+
+function githubToken(value) {
+  return typeof value === "string" && /^[A-Za-z0-9._-]{1,4096}$/u.test(value) ? value : undefined
 }
 
 async function main() {

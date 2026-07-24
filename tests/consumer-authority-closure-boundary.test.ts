@@ -126,6 +126,7 @@ describe("consumer authority closure-ready boundary", () => {
       authorityEligible: false,
       consumptionState: "not-applicable" as const,
       enrollment: "unavailable" as const,
+      githubAuthentication: "available" as const,
       next: "authority-enroll-github" as const,
       state: "enrollment-unavailable" as const,
     }
@@ -158,6 +159,7 @@ describe("consumer authority closure-ready boundary", () => {
 
     // Then
     expect(plaintext.stdout).toContain("Consumer authority: BLOCKED (enrollment-unavailable; not-applicable; read-only)")
+    expect(plaintext.stdout).toContain("Consumer GitHub authentication: available")
     expect(plaintext.stdout).toContain("Consumer authority next: authority-enroll-github")
     expect(plaintext.stdout).toContain("Sigstore network readiness: BLOCKED (dns-unavailable)")
     expect(plaintext.stdout).toContain("Sigstore trust-root readiness: BLOCKED (dns-unavailable; live no-cache check)")

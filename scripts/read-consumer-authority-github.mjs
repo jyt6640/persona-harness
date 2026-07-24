@@ -1,10 +1,13 @@
 import https from "node:https"
+import { pathToFileURL } from "node:url"
 
 const GITHUB_API_ORIGIN = "https://api.github.com"
 const MAX_RESPONSE_BYTES = 512 * 1024
 const PRODUCER_REPOSITORY = "jyt6640/persona-harness"
 const PRODUCER_WORKFLOW_PATH = ".github/workflows/persona-harness-project-finish.yml"
 const REQUEST_TIMEOUT_MS = 15_000
+const GITHUB_API_VERSION = "2022-11-28"
+const GITHUB_TOKEN_ENV = "PH_AUTHORITY_GITHUB_TOKEN"
 
 export async function readConsumerAuthorityGithubEnrollment(input, request = requestJson) {
   const selection = parseSelection(input)
@@ -13,13 +16,20 @@ export async function readConsumerAuthorityGithubEnrollment(input, request = req
   if (!isRepository(repository, selection.repositorySlug)) {
     throw new ConsumerAuthorityGithubReadbackError("authority-enrollment-repository")
   }
-  const contents = await request(githubApi(`/repos/${selection.repositorySlug}/contents/.github/workflows/${selection.workflowPath}`))
-  const reusableWorkflowSha = readReusableWorkflowSha(contents)
+  const workflowPath = `.github/workflows/${selection.workflowPath}`
+  const contentsUrl = githubApi(`/repos/${selection.repositorySlug}/contents/${workflowPath}`)
+  contentsUrl.searchParams.set("ref", "main")
+  const contents = await request(contentsUrl)
+  const reusableWorkflowSha = readReusableWorkflowSha(contents, workflowPath)
   if (reusableWorkflowSha === undefined) {
     throw new ConsumerAuthorityGithubReadbackError("authority-enrollment-workflow")
   }
+  const confirmedRepository = await request(githubApi(`/repos/${selection.repositorySlug}`))
+  if (!sameRepository(repository, confirmedRepository, selection.repositorySlug)) {
+    throw new ConsumerAuthorityGithubReadbackError("authority-enrollment-repository")
+  }
   return {
-    callerWorkflowPath: `.github/workflows/${selection.workflowPath}`,
+    callerWorkflowPath: workflowPath,
     repositoryId: repository.id,
     repositorySlug: selection.repositorySlug,
     reusableWorkflowSha,
@@ -56,31 +66,42 @@ function isRepository(value, expectedSlug) {
     && value.visibility === "public"
 }
 
-function readReusableWorkflowSha(value) {
-  if (!record(value) || value.encoding !== "base64" || typeof value.content !== "string" || value.content.length > MAX_RESPONSE_BYTES * 2) {
+function readReusableWorkflowSha(value, expectedPath) {
+  if (
+    !record(value)
+    || value.encoding !== "base64"
+    || value.path !== expectedPath
+    || value.type !== "file"
+    || !positiveInteger(value.size)
+    || value.size > MAX_RESPONSE_BYTES
+    || typeof value.sha !== "string"
+    || !/^[a-f0-9]{40}$/u.test(value.sha)
+    || typeof value.content !== "string"
+    || value.content.length > MAX_RESPONSE_BYTES * 2
+  ) {
     return undefined
   }
-  let text
-  try {
-    text = Buffer.from(value.content.replaceAll(/\s/gu, ""), "base64").toString("utf8")
-  } catch {
-    return undefined
-  }
-  if (text.length === 0 || Buffer.byteLength(text) > MAX_RESPONSE_BYTES) return undefined
-  const pattern = new RegExp(`^\\s*uses:\\s*${escapeRegExp(PRODUCER_REPOSITORY)}/${escapeRegExp(PRODUCER_WORKFLOW_PATH)}@([a-f0-9]{40})\\s*(?:#.*)?$`, "gimu")
-  const matches = [...text.matchAll(pattern)]
-  return matches.length === 1 && matches[0]?.[1] !== undefined ? matches[0][1].toLowerCase() : undefined
+  const encoded = value.content.replaceAll(/\s/gu, "")
+  if (!canonicalBase64(encoded)) return undefined
+  const bytes = Buffer.from(encoded, "base64")
+  if (bytes.byteLength !== value.size || bytes.byteLength > MAX_RESPONSE_BYTES) return undefined
+  const text = bytes.toString("utf8")
+  if (text.length === 0 || !Buffer.from(text, "utf8").equals(bytes)) return undefined
+  return reusableWorkflowShaFromJobs(text)
 }
 
 function requestJson(url) {
   if (!(url instanceof URL) || url.origin !== GITHUB_API_ORIGIN || url.protocol !== "https:") {
     return Promise.reject(new ConsumerAuthorityGithubReadbackError("authority-enrollment-network"))
   }
+  const token = githubToken(process.env[GITHUB_TOKEN_ENV])
   return new Promise((resolve, reject) => {
     const request = https.get(url, {
       headers: {
         Accept: "application/vnd.github+json",
-        "User-Agent": "persona-harness-consumer-authority",
+        ...(token === undefined ? {} : { Authorization: `Bearer ${token}` }),
+          "User-Agent": "persona-harness-consumer-authority",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
       },
       timeout: REQUEST_TIMEOUT_MS,
     }, (response) => {
@@ -133,11 +154,58 @@ function repositorySlug(value) {
 }
 
 function workflowPath(value) {
-  return typeof value === "string" && value.length > 0 && value.length <= 256 && !value.includes("\\") && value.endsWith(".yml") && !value.split("/").some((part) => part === "" || part === "." || part === "..")
+  return typeof value === "string"
+    && value.length > 0
+    && value.length <= 256
+    && /^[A-Za-z0-9_.-]+\.yml$/u.test(value)
+}
+
+function sameRepository(left, right, expectedSlug) {
+  return isRepository(left, expectedSlug)
+    && isRepository(right, expectedSlug)
+    && left.id === right.id
+}
+
+function reusableWorkflowShaFromJobs(source) {
+  const pattern = new RegExp(`^ {4}uses:\\s*${escapeRegExp(PRODUCER_REPOSITORY)}/${escapeRegExp(PRODUCER_WORKFLOW_PATH)}@([a-f0-9]{40})\\s*(?:#.*)?$`, "iu")
+  const matches = []
+  let inJobs = false
+  let currentJob = false
+  let jobsCount = 0
+  for (const line of source.split(/\r?\n/u)) {
+    if (/^jobs:\s*(?:#.*)?$/u.test(line)) {
+      jobsCount += 1
+      inJobs = true
+      currentJob = false
+      continue
+    }
+    if (inJobs && /^(?:\S| {0,1}\S)/u.test(line) && !/^\s*(?:#.*)?$/u.test(line)) {
+      inJobs = false
+      currentJob = false
+    }
+    if (!inJobs) continue
+    if (/^ {2}[A-Za-z_][A-Za-z0-9_-]*:\s*(?:#.*)?$/u.test(line)) {
+      currentJob = true
+      continue
+    }
+    const match = currentJob ? pattern.exec(line) : null
+    if (match?.[1] !== undefined) matches.push(match[1].toLowerCase())
+  }
+  return jobsCount === 1 && matches.length === 1 ? matches[0] : undefined
+}
+
+function canonicalBase64(value) {
+  return value.length > 0
+    && value.length % 4 === 0
+    && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(value)
 }
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
+}
+
+function githubToken(value) {
+  return typeof value === "string" && /^[A-Za-z0-9._-]{1,4096}$/u.test(value) ? value : undefined
 }
 
 async function main() {
@@ -158,6 +226,6 @@ async function main() {
   }
 }
 
-if (process.argv[1] !== undefined && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main()
 }

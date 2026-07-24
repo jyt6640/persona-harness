@@ -197,9 +197,7 @@ function normalizeCallerWorkflowPath(value: unknown): string | undefined {
   if (
     path.length === 0
     || path.length > 256
-    || path.includes("\\")
-    || !path.endsWith(".yml")
-    || path.split("/").some((part) => part === "" || part === "." || part === "..")
+    || !/^[A-Za-z0-9_.-]+\.yml$/u.test(path)
   ) {
     return undefined
   }

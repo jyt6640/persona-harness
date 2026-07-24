@@ -86,9 +86,7 @@ function isPublicRepositorySlug(value: string): boolean {
 function isCallerWorkflowPath(value: string): boolean {
   return value.length > 0
     && value.length <= 256
-    && value.endsWith(".yml")
-    && !value.includes("\\")
-    && !value.split("/").some((segment) => segment === "" || segment === "." || segment === "..")
+    && /^[A-Za-z0-9_.-]+\.yml$/u.test(value)
 }
 
 function wrongPolicy(path: string): EnrollmentMismatch {
