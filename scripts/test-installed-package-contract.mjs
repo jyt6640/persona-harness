@@ -195,6 +195,11 @@ function assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage
 
 function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory) {
   const workerPath = join(installedPackage, "scripts", "verify-project-finish-attestation.mjs")
+  const errorClassifierPath = join(
+    installedPackage,
+    "scripts",
+    "project-finish-attestation-sigstore-error.mjs",
+  )
   const modulePath = pathToFileURL(join(
     installedPackage,
     "dist",
@@ -203,7 +208,7 @@ function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(ins
   )).href
   const projectDir = join(consumerDirectory, "project-finish-verifier-local")
   const evidenceDirectory = join(projectDir, ".persona", "evidence", "project-finish-attestation")
-  if (!existsSync(workerPath)) {
+  if (!existsSync(workerPath) || !existsSync(errorClassifierPath)) {
     throw new Error("installed package is missing the project finish verifier worker")
   }
   mkdirSync(evidenceDirectory, { recursive: true })
@@ -222,7 +227,7 @@ function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(ins
       'const enrollment = { callerWorkflowPath: "project.yml", repositoryId: 123, repositorySlug: "example/public-project", reusableWorkflowSha: "b".repeat(40) };',
       'const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-23T02:45:00.000Z"));',
       'const consumption = join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json");',
-      'if (result.authorityEligible || result.state !== "malformed" || existsSync(consumption)) process.exit(1);',
+      'if (result.authorityEligible || result.state !== "malformed-bundle" || existsSync(consumption)) process.exit(1);',
     ].join("\n"),
   ])
   requireSuccess("installed project finish verifier no-source-fallback probe", probe)
@@ -448,7 +453,12 @@ function assertDoctorRegistryReadback(fixtureRoot, phPath, packageRoot, label) {
   )
   requireSuccess(`${label} doctor registry readback`, result)
   const payload = JSON.parse(result.stdout)
-  if (!isRecord(payload) || !isRecord(payload.registry) || !isRecord(payload.authority)) {
+  if (
+    !isRecord(payload)
+    || !isRecord(payload.registry)
+    || !isRecord(payload.authority)
+    || !isRecord(payload.sigstore)
+  ) {
     throw new Error(`${label} doctor registry readback did not return a bounded JSON object`)
   }
   const channels = payload.registry.channels
@@ -461,6 +471,9 @@ function assertDoctorRegistryReadback(fixtureRoot, phPath, packageRoot, label) {
     || channels["legacy"] !== "retired"
     || payload.registry.deprecation !== "present"
     || payload.authority.finish !== "blocked"
+    || !["blocked", "ready", "unverified"].includes(payload.sigstore.networkReadiness)
+    || !["blocked", "ready"].includes(payload.sigstore.trustRootReadiness)
+    || typeof payload.sigstore.state !== "string"
   ) {
     throw new Error(`${label} doctor registry readback violated the non-authoritative channel contract`)
   }
