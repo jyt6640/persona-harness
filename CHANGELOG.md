@@ -16,7 +16,9 @@ preparation alone does not establish stable support or channel state.
 - Adds the packaged public enrollment/fetch/status boundary for original public
   project finish artifacts. It stays user-scoped, fixed-origin, non-consuming,
   and fail-closed; local receipts, copied JSON, and package-release evidence
-  cannot supply consumer authority.
+  cannot supply consumer authority. GitHub credentials authenticate fixed
+  public Actions reads only; they are not identity inputs and are never sent to
+  artifact-storage redirects.
 - Makes live Sigstore trust availability observable without weakening
   authority: verification now distinguishes bounded DNS, network, trust-root,
   timeout, signature, certificate, transparency, and malformed-bundle states;
@@ -25,6 +27,7 @@ preparation alone does not establish stable support or channel state.
 - Requires the eventual manual staging publish to bind an existing immutable
   `v0.8.0-beta.1` tag to the exact protected-main commit, then records bounded
   registry version, gitHead, SHA-1, SRI, SHA-256, and selected-tag readback.
+  The sanitized readback is retained with its Actions artifact digest.
   Exact-artifact provenance remains a separate staged producer/audit gate.
 
 ## [0.7.0] - 2026-07-17

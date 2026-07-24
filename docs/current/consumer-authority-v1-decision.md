@@ -134,6 +134,13 @@ an enrolled artifact that independently passes the project verifier against the
 current project source. Registry/package provenance is a separate read-only
 release property and never substitutes for this consumer authority path.
 
+GitHub requires authentication to download even public Actions artifacts. V1
+therefore accepts `GH_TOKEN` or `GITHUB_TOKEN` only as an in-memory transport
+credential with Actions read access. It is never persisted, reflected, sent to
+artifact-storage redirects, or used to supply repository, workflow, ref,
+source, digest, or URL identity. The fixed GitHub API readback remains the
+identity source, and private repositories remain blocked.
+
 ## Evidence Reference Discipline
 
 The V1 reference fixture is for the public `jyt6640/persona-harness`

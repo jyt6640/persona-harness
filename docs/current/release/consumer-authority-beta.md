@@ -18,7 +18,9 @@ package or makes Finish pass.
 4. A fresh exact registry installation proves the packaged CLI boundaries. A
    public consumer separately enrolls its fixed workflow, fetches original
    signed bytes, verifies them against its current source, and only an explicit
-   Finish may consume a trusted result once.
+   Finish may consume a trusted result once. The fixture supplies `GH_TOKEN` or
+   `GITHUB_TOKEN` only as an in-memory Actions-read transport credential; fixed
+   GitHub readback, not the credential or project content, establishes identity.
 
 The final hosted evidence uses two fresh registry-installed fixtures, each
 installing the exact immutable version only from `https://registry.npmjs.org`:
@@ -39,6 +41,8 @@ authority artifact or Finish PASS.
 non-consuming. Missing enrollment, unavailable network, malformed records,
 copied artifacts, source drift, replay, expiry, or any identity mismatch stay
 blocked and never convert package provenance into Finish authority.
+Multiple enrollments require an explicit enrolled `owner/repository` argument
+to `fetch github`; ambiguous selection performs no network request.
 
 ## Live Trust Diagnostics
 
