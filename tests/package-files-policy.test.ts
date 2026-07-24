@@ -149,6 +149,25 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles(packagedContract, packageJson.files)).toBe(true)
   })
 
+  it("packages bounded doctor registry readback with the public CLI", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const sourcePaths = [
+      "src/cli/doctor-registry.ts",
+      "src/cli/doctor-registry-readback.ts",
+    ]
+    const runtimePaths = [
+      "dist/cli/doctor-registry.js",
+      "dist/cli/doctor-registry-readback.js",
+    ]
+
+    for (const filePath of sourcePaths) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+    }
+    for (const filePath of runtimePaths) {
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
+  })
+
   it("packages the fixed-policy artifact provenance verifier but excludes its signed fixture", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const packagedScripts = [

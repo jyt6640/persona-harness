@@ -43,6 +43,13 @@ Node 21 is unsupported. `ph doctor` reports a bounded runtime block and
 authority verification does not run below that floor. Repository source tests
 use the separate Node 20.19.0 / 22.12.0+ Vite toolchain floor.
 
+On a supported runtime, `ph doctor` reads only its fixed npm registry origin:
+the installed version's deprecation field plus `latest`, `next`, `staging`,
+and legacy (`legacy`/`alpha`) channel facts. Those facts are bounded
+diagnostics, not Finish authority. External assurance readiness is displayed
+through a separate read-only, non-consuming inspection; neither surface moves
+registry or trust state.
+
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
 | Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository runs Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |

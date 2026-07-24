@@ -7,7 +7,6 @@ import { isRecord } from "../config/jsonc.js"
 import { summarizeConventionPackDiagnostics } from "./convention-pack-diagnostics.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
-  detectCommandOutput,
   detectCommandVersion,
   type DoctorCommandFinder,
   type DoctorCommandRunner,
@@ -33,7 +32,19 @@ import {
   assessVerificationAuthority,
   type VerificationAuthorityAssessment,
 } from "./workflow-verification-receipt.js"
-import { readDoctorRegistry, type DoctorRegistrySummary } from "./doctor-registry.js"
+import {
+  readDoctorRegistry,
+  type DoctorRegistryResponse,
+  type DoctorRegistrySummary,
+} from "./doctor-registry.js"
+import {
+  readDoctorRegistryFromNpm,
+  type DoctorRegistryReader,
+} from "./doctor-registry-readback.js"
+import {
+  verifyExternalFinishAttestationForClosure,
+  type FinishAttestationAssessment,
+} from "./workflow-finish-attestation.js"
 import {
   SIGSTORE_NODE_ENGINE_RANGE,
   assessSigstoreNodeRuntime,
@@ -46,7 +57,9 @@ export type DoctorOptions = {
   readonly platform?: NodeJS.Platform
   readonly commandFinder?: DoctorCommandFinder
   readonly commandRunner?: DoctorCommandRunner
+  readonly externalTrustInspector?: (projectDir: string) => FinishAttestationAssessment
   readonly nodeVersion?: string
+  readonly registryReader?: DoctorRegistryReader
 }
 
 export type StaleFixtureFinding = {
@@ -86,7 +99,14 @@ export type DoctorSummary = {
   readonly legacyDiffRulesPresent: boolean
   readonly entrySteeringEnabled: boolean
   readonly entrySteeringStatus: EntrySteeringStatusSummary
+  readonly externalTrust: DoctorExternalTrustSummary
   readonly verificationAuthority: VerificationAuthorityAssessment
+}
+
+export type DoctorExternalTrustSummary = {
+  readonly availability: "missing" | "trusted" | "untrusted"
+  readonly consumption: FinishAttestationAssessment["consumptionState"]
+  readonly state: FinishAttestationAssessment["state"]
 }
 
 const STALE_FIXTURE_TOKENS = [
@@ -106,15 +126,6 @@ function commandVersion(command: string, args: readonly string[], options: Docto
 function opencodeVersion(options: DoctorOptions): string {
   const env = options.env ?? process.env
   return env.PH_DOCTOR_OPENCODE_VERSION ?? commandVersion("opencode", ["--version"], options)
-}
-
-function commandOutput(command: string, args: readonly string[], options: DoctorOptions): string | undefined {
-  return detectCommandOutput(command, args, {
-    env: options.env ?? process.env,
-    finder: options.commandFinder,
-    platform: options.platform,
-    runner: options.commandRunner,
-  })
 }
 
 function pathStatus(absolutePath: string): "present" | "missing" {
@@ -143,18 +154,86 @@ function packageVersion(): string {
 function registrySummary(installedVersion: string, options: DoctorOptions): DoctorRegistrySummary {
   const env = options.env ?? process.env
   const distTagOverride = env.PH_DOCTOR_REGISTRY_DIST_TAGS
-  const distTagsJson = distTagOverride
-    ?? commandOutput("npm", ["view", "persona-harness", "dist-tags", "--json"], options)
-  const deprecated = env.PH_DOCTOR_REGISTRY_DEPRECATED
-    ?? (distTagOverride === undefined
-      ? commandOutput("npm", ["view", "persona-harness", "deprecated", "--json"], options)
-      : undefined)
+  const forcedStatus = forcedRegistryStatus(env.PH_DOCTOR_REGISTRY_FAILURE)
+  const readback = forcedStatus === undefined && distTagOverride === undefined
+    ? readDoctorRegistryFromNpm(installedVersion, options.registryReader)
+    : {
+        deprecation: forcedStatus ?? registryResponseFromOverride(env.PH_DOCTOR_REGISTRY_DEPRECATED),
+        distTags: forcedStatus ?? registryResponseFromOverride(distTagOverride),
+      }
   return readDoctorRegistry({
-    deprecatedText: deprecated,
-    distTagsText: distTagsJson,
-    forcedStatus: env.PH_DOCTOR_REGISTRY_FAILURE,
+    deprecation: readback.deprecation,
+    distTags: readback.distTags,
     installedVersion,
   })
+}
+
+function forcedRegistryStatus(value: string | undefined): DoctorRegistryResponse | undefined {
+  switch (value) {
+    case "malformed":
+    case "timeout":
+    case "unavailable":
+      return { status: value }
+    case undefined:
+      return undefined
+    default:
+      return undefined
+  }
+}
+
+function registryResponseFromOverride(value: string | undefined): DoctorRegistryResponse {
+  switch (value) {
+    case "malformed":
+    case "timeout":
+    case "unavailable":
+      return { status: value }
+    case undefined:
+      return { status: "unavailable" }
+    default:
+      return { status: "available", text: value }
+  }
+}
+
+export function summarizeDoctorExternalTrust(
+  assessment: FinishAttestationAssessment,
+): DoctorExternalTrustSummary {
+  switch (assessment.state) {
+    case "trusted":
+      return {
+        availability: "trusted",
+        consumption: assessment.consumptionState,
+        state: assessment.state,
+      }
+    case "missing":
+      return {
+        availability: "missing",
+        consumption: assessment.consumptionState,
+        state: assessment.state,
+      }
+    case "binding-mismatch":
+    case "crypto-failed":
+    case "malformed":
+    case "replayed":
+    case "runtime-unsupported":
+    case "source-drift":
+    case "stale":
+    case "wrong-policy":
+      return {
+        availability: "untrusted",
+        consumption: assessment.consumptionState,
+        state: assessment.state,
+      }
+    default:
+      return assertNever(assessment.state)
+  }
+}
+
+function runtimeBlockedExternalTrust(): DoctorExternalTrustSummary {
+  return {
+    availability: "untrusted",
+    consumption: "not-applicable",
+    state: "runtime-unsupported",
+  }
 }
 
 function normalizeRelativePath(filePath: string, rootDir: string): string {
@@ -223,8 +302,11 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const reachability = readDoctorReachability(projectDir)
   const packageVersionValue = packageVersion()
   const registryDetails = registrySummary(packageVersionValue, options)
-  const verificationAuthority = assessVerificationAuthority(projectDir)
   const nodeSupport = assessSigstoreNodeRuntime(options.nodeVersion ?? process.versions.node)
+  const externalTrust = nodeSupport.status === "supported"
+    ? summarizeDoctorExternalTrust((options.externalTrustInspector ?? verifyExternalFinishAttestationForClosure)(projectDir))
+    : runtimeBlockedExternalTrust()
+  const verificationAuthority = assessVerificationAuthority(projectDir)
   const runtimeFindings = [
     ...platformFindings(options.platform ?? process.platform),
     ...(opencode === "missing"
@@ -278,6 +360,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     pathSafetyDiagnostics,
     entrySteeringEnabled: harnessConfig.features.entrySteering,
     entrySteeringStatus: readEntrySteeringStatusSummary(projectDir, harnessConfig),
+    externalTrust,
     verificationAuthority,
     legacyDiffRulesPresent: rulesPath?.ok === true && existsSync(join(rulesPath.path, "diff-rules")),
     rulePackDiagnostics: rulePackDiagnostics.finding,
@@ -379,6 +462,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Verification receipt authority: ${summary.verificationAuthority.state} (read-only; no receipt grants finish authority)`,
     `Verification receipt diagnostics: ${summary.verificationAuthority.summary}`,
     `Legacy evidence records: ${summary.verificationAuthority.legacyEvidence.files.length} (diagnostic-only; no automatic migration)`,
+    `External assurance readiness: ${summary.externalTrust.availability.toUpperCase()} (${summary.externalTrust.state}; ${summary.externalTrust.consumption}; read-only)`,
     ...summary.reachability.findings.map((finding) => `- [${finding.level}] ${finding.message}`),
     ...summary.reachability.followUpLines,
     `Persona package version: ${summary.packageVersion}`,
@@ -386,10 +470,12 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Installed channel: ${summary.registryDetails.channels.installed}`,
     `Latest channel: ${summary.registryDetails.channels.latest} (${summary.registryDetails.channelStates.latest})`,
     `Next channel: ${summary.registryDetails.channels.next} (${summary.registryDetails.channelStates.next})`,
-    `Legacy channel: ${summary.registryDetails.channels.legacy}`,
-    `Deprecation: ${summary.registryDetails.deprecation}`,
+    `Staging channel: ${summary.registryDetails.channels.staging} (${summary.registryDetails.channelStates.staging})`,
+    `Legacy channel: ${summary.registryDetails.channels.legacy} (${summary.registryDetails.channelStates.legacy})`,
+    `Installed deprecation: ${summary.registryDetails.deprecation}`,
+    `Registry diagnostics: ${summary.registryDetails.diagnostics.length === 0 ? "none" : summary.registryDetails.diagnostics.join(", ")}`,
     `Finish authority: ${summary.verificationAuthority.authorityEligible ? "ELIGIBLE" : "BLOCKED"}`,
-    `npm registry: ${summary.registry}`,
+    `npm registry: ${summary.registry} (read-only; channels are not authority)`,
     "",
     "Project integration:",
     `.opencode/opencode.json: ${summary.opencodeConfig}`,
@@ -421,6 +507,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
 function doctorJson(summary: DoctorSummary): string {
   return `${JSON.stringify({
     authority: {
+      external: summary.externalTrust,
       finish: summary.verificationAuthority.authorityEligible ? "eligible" : "blocked",
       receipt: "diagnostic-only",
     },
@@ -444,6 +531,10 @@ function doctorJson(summary: DoctorSummary): string {
     runtimeReadiness: summary.runtimeReadiness,
     schemaVersion: "doctor.1",
   }, null, 2)}\n`
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unknown doctor external trust state: ${String(value)}`)
 }
 
 export function runDoctorCommand(args: readonly string[], options: DoctorOptions = {}): CliRunResult {

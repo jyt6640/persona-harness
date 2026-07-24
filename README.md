@@ -160,6 +160,13 @@ before verification. Repository source tests use a stricter Vite toolchain
 floor (Node 20.19.0 or Node 22.12.0+), which is distinct from the published
 package engine.
 
+On a supported runtime, `ph doctor` makes fixed, read-only npm registry
+readbacks for this installed package version's deprecation field and the
+`latest`, `next`, `staging`, and legacy (`legacy`/`alpha`) channels. Missing,
+malformed, oversized, or unsafe registry data becomes a bounded diagnostic.
+Registry channels never grant Finish authority. External assurance readiness is
+a separate non-consuming inspection and does not move registry or trust state.
+
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
 | Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository runs Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
