@@ -322,10 +322,9 @@ describe("installed staged package verification CLI", () => {
     expect(existsSync(join(installed.packageRoot, "dist", "cli", "staged-package-verification-command.js"))).toBe(true)
     expect(existsSync(join(installed.packageRoot, "tests"))).toBe(false)
     expect(payload["verificationStatus"]).toBe("blocked")
-    expect(payload["diagnostics"]).toContain("artifact-provenance-unavailable")
-    expect(payload["diagnostics"]).toContain("staged-plan-invalid")
+    expect(payload["diagnostics"]).toEqual(["artifact-provenance-unavailable"])
     expect(payload["promotionAuthorized"]).toBe(false)
-    expect(payload["promotionDecision"]).toBe("blocked")
+    expect(payload["promotionDecision"]).toBe("release-approval-required")
     expect(payload["registryMutation"]).toBe("not-performed")
     expect(payload["installed"]).toMatchObject({
       authorityBlocked: "verified",
@@ -355,10 +354,9 @@ describe("installed staged package verification CLI", () => {
 
     expect(result.status).toBe(1)
     expect(payload["verificationStatus"]).toBe("blocked")
-    expect(payload["diagnostics"]).toContain("artifact-provenance-unavailable")
-    expect(payload["diagnostics"]).toContain("staged-plan-invalid")
+    expect(payload["diagnostics"]).toEqual(["artifact-provenance-unavailable"])
     expect(payload["promotionAuthorized"]).toBe(false)
-    expect(payload["promotionDecision"]).toBe("blocked")
+    expect(payload["promotionDecision"]).toBe("release-approval-required")
     expect(payload["registryMutation"]).toBe("not-performed")
   })
 
@@ -378,10 +376,9 @@ describe("installed staged package verification CLI", () => {
 
     expect(result.status).toBe(1)
     expect(payload["verificationStatus"]).toBe("blocked")
-    expect(payload["diagnostics"]).toContain("artifact-provenance-unavailable")
-    expect(payload["diagnostics"]).toContain("staged-plan-invalid")
+    expect(payload["diagnostics"]).toEqual(["artifact-provenance-unavailable"])
     expect(payload["promotionAuthorized"]).toBe(false)
-    expect(payload["promotionDecision"]).toBe("blocked")
+    expect(payload["promotionDecision"]).toBe("release-approval-required")
     expect(payload["registryMutation"]).toBe("not-performed")
     expect(existsSync(auditMarkerPath)).toBe(false)
   })
