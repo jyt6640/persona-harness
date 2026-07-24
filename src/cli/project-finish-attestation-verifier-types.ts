@@ -19,15 +19,22 @@ export type ProjectFinishAttestationEnrolledPolicy = {
 
 export type ProjectFinishAttestationVerifierState =
   | "binding-mismatch"
+  | "certificate-invalid"
   | "crypto-failed"
+  | "dns-unavailable"
   | "malformed"
+  | "malformed-bundle"
   | "missing"
   | "network-unavailable"
   | "replayed"
   | "runtime-unsupported"
+  | "signature-invalid"
   | "source-drift"
   | "stale"
+  | "transparency-invalid"
   | "trusted"
+  | "trust-root-unavailable"
+  | "verification-timeout"
   | "wrong-policy"
 
 export type ProjectFinishAttestationVerifierDiagnostic = {
@@ -53,5 +60,19 @@ export type ProjectFinishAttestationWorkerResult =
     }
   | {
       readonly ok: false
-      readonly state: "crypto-failed" | "malformed" | "network-unavailable" | "runtime-unsupported"
+      readonly state: Exclude<ProjectFinishAttestationVerifierState, "binding-mismatch" | "missing" | "replayed" | "source-drift" | "stale" | "trusted" | "wrong-policy">
+    }
+
+export type ProjectFinishTrustReadinessWorkerResult =
+  | {
+      readonly ok: true
+    }
+  | {
+      readonly ok: false
+      readonly state:
+        | "dns-unavailable"
+        | "network-unavailable"
+        | "runtime-unsupported"
+        | "trust-root-unavailable"
+        | "verification-timeout"
     }

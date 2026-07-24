@@ -13,6 +13,7 @@ import type { FinishAttestationAssessment } from "./workflow-finish-attestation.
 import type { VerificationAuthorityAssessment } from "./workflow-verification-receipt.js"
 import type { RuleDiagnosticReportItem } from "../rules/rule-diagnostics-report.js"
 import type { AuthorityStatus } from "./authority-command.js"
+import type { ProjectFinishTrustReadiness } from "./project-finish-trust-readiness.js"
 
 export type DoctorOptions = {
   readonly authorityStoreRoot?: string
@@ -25,6 +26,7 @@ export type DoctorOptions = {
   readonly externalTrustInspector?: (projectDir: string) => FinishAttestationAssessment
   readonly nodeVersion?: string
   readonly registryReader?: DoctorRegistryReader
+  readonly sigstoreTrustInspector?: () => ProjectFinishTrustReadiness
 }
 
 export type StaleFixtureFinding = {
@@ -72,5 +74,6 @@ export type DoctorSummary = {
   readonly entrySteeringStatus: EntrySteeringStatusSummary
   readonly externalTrust: DoctorExternalTrustSummary
   readonly consumerAuthority: AuthorityStatus
+  readonly sigstoreTrust: ProjectFinishTrustReadiness
   readonly verificationAuthority: VerificationAuthorityAssessment
 }

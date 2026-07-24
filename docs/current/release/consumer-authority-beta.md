@@ -40,6 +40,21 @@ non-consuming. Missing enrollment, unavailable network, malformed records,
 copied artifacts, source drift, replay, expiry, or any identity mismatch stay
 blocked and never convert package provenance into Finish authority.
 
+## Live Trust Diagnostics
+
+`ph doctor` performs a live, read-only Sigstore trust-root check with a
+30-second whole-worker deadline. Its plaintext and JSON output report network
+and trust-root readiness separately. The check uses a fresh product-owned
+temporary cache that the parent process removes even when the child times out;
+it never treats offline or previously cached material as a positive authority
+result.
+
+Consumer verification keeps these bounded, non-secret failure states distinct:
+`dns-unavailable`, `network-unavailable`, `trust-root-unavailable`,
+`verification-timeout`, `signature-invalid`, `certificate-invalid`,
+`transparency-invalid`, and `malformed-bundle`. Diagnostics do not include
+tokens, signed URLs, raw bundles, upstream error messages, or absolute paths.
+
 ## Promotion Boundary
 
 The beta starts at `staging`. Moving the exact immutable version to `next`

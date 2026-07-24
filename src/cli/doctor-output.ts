@@ -79,6 +79,8 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `External assurance readiness: ${summary.externalTrust.availability.toUpperCase()} (${summary.externalTrust.state}; ${summary.externalTrust.consumption}; read-only)`,
     `Consumer authority: ${summary.consumerAuthority.authorityEligible ? "TRUSTED" : "BLOCKED"} (${summary.consumerAuthority.state}; ${summary.consumerAuthority.consumptionState}; read-only)`,
     `Consumer authority next: ${summary.consumerAuthority.next}`,
+    `Sigstore network readiness: ${summary.sigstoreTrust.networkReadiness.toUpperCase()} (${summary.sigstoreTrust.state})`,
+    `Sigstore trust-root readiness: ${summary.sigstoreTrust.trustRootReadiness.toUpperCase()} (${summary.sigstoreTrust.state}; live no-cache check)`,
     ...summary.reachability.findings.map((finding) => `- [${finding.level}] ${finding.message}`),
     ...summary.reachability.followUpLines,
     `Persona package version: ${summary.packageVersion}`,
@@ -143,6 +145,7 @@ export function doctorJson(summary: DoctorSummary): string {
       plugin: summary.reachability.projectPluginState,
     },
     registry: summary.registryDetails,
+    sigstore: summary.sigstoreTrust,
     runtime: {
       nodeSupport: summary.nodeSupport,
     },

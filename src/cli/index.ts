@@ -17,7 +17,7 @@ import { runLanguageCommand } from "./language.js"
 import { runObserveCommand } from "./observe.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
-import { runDoctorCommand } from "./doctor.js"
+import { runDoctorCommand, type DoctorOptions } from "./doctor.js"
 import { runDevCommand } from "./dev-command.js"
 import { runEvidenceCommand } from "./evidence-summary.js"
 import { runAuthorityCommand } from "./authority-command.js"
@@ -32,6 +32,7 @@ import { SIGSTORE_NODE_ENGINE_RANGE, assessSigstoreNodeRuntime } from "../../scr
 
 type PersonaCliOptions = {
   readonly cwd?: string
+  readonly doctorSigstoreTrustInspector?: DoctorOptions["sigstoreTrustInspector"]
   readonly env?: Readonly<Record<string, string | undefined>>
   readonly invocationName?: string
   readonly onAfterAttachCommitFile?: (relativePath: string) => void
@@ -154,7 +155,11 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "doctor") {
-    return runDoctorCommand(args.slice(1), { projectDir: options.cwd, env: options.env })
+    return runDoctorCommand(args.slice(1), {
+      projectDir: options.cwd,
+      env: options.env,
+      sigstoreTrustInspector: options.doctorSigstoreTrustInspector,
+    })
   }
 
   if (command === "authority") {

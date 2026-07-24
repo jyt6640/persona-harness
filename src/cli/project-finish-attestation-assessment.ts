@@ -12,14 +12,21 @@ const CLOCK_SKEW_MS = 5 * 60 * 1000
 
 const BLOCKED_SUMMARIES = {
   "binding-mismatch": "Project finish attestation bindings do not match the verified evidence.",
+  "certificate-invalid": "Sigstore certificate or enrolled signer identity verification rejected the project finish attestation.",
   "crypto-failed": "Product-owned Sigstore verification rejected the project finish attestation.",
+  "dns-unavailable": "DNS resolution for live Sigstore trust material is unavailable; project finish authority remains blocked.",
   malformed: "Project finish attestation evidence is malformed.",
+  "malformed-bundle": "Project finish attestation Sigstore bundle is malformed.",
   missing: "No safe project finish attestation evidence is present.",
   "network-unavailable": "Online Sigstore trust material is unavailable; project finish authority remains blocked.",
   replayed: "Project finish attestation has already been consumed.",
   "runtime-unsupported": "Node.js does not meet the required Sigstore runtime range; project finish authority remains blocked.",
+  "signature-invalid": "Sigstore signature verification rejected the project finish attestation.",
   "source-drift": "Current project source does not match the signed project finish attestation.",
   stale: "Project finish attestation is expired or outside the accepted clock skew.",
+  "transparency-invalid": "Sigstore transparency evidence verification rejected the project finish attestation.",
+  "trust-root-unavailable": "Live Sigstore trust-root material is unavailable or invalid; project finish authority remains blocked.",
+  "verification-timeout": "Sigstore verification exceeded its fixed deadline; project finish authority remains blocked.",
   "wrong-policy": "Project finish attestation does not match the enrolled product policy.",
 } as const satisfies Record<Exclude<ProjectFinishAttestationVerifierState, "trusted">, string>
 

@@ -17,6 +17,11 @@ preparation alone does not establish stable support or channel state.
   project finish artifacts. It stays user-scoped, fixed-origin, non-consuming,
   and fail-closed; local receipts, copied JSON, and package-release evidence
   cannot supply consumer authority.
+- Makes live Sigstore trust availability observable without weakening
+  authority: verification now distinguishes bounded DNS, network, trust-root,
+  timeout, signature, certificate, transparency, and malformed-bundle states;
+  `ph doctor` reports live network/trust-root readiness through a fixed
+  whole-worker deadline and a parent-cleaned temporary cache.
 - Requires the eventual manual staging publish to bind an existing immutable
   `v0.8.0-beta.1` tag to the exact protected-main commit, then records bounded
   registry version, gitHead, SHA-1, SRI, SHA-256, and selected-tag readback.

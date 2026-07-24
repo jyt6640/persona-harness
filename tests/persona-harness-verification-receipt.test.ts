@@ -13,6 +13,7 @@ import {
   parseVerificationReceipt,
 } from "../src/cli/workflow-verification-receipt.js"
 import { SOURCE_IDENTITY_EXCLUSIONS } from "../src/cli/source-identity.js"
+import { inspectReadySigstoreTrust } from "./helpers/sigstore-trust-readiness.js"
 import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
@@ -277,7 +278,12 @@ describe("verification receipt and attempt contract", () => {
     writeJson(projectDir, ".persona/evidence/phase0/legacy.json", { generatedBy: "persona-harness", status: 0 })
     const before = readFileSync(legacyPath, "utf8")
 
-    const doctor = runPersonaCli(["doctor"], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const doctor = runPersonaCli(["doctor"], {
+      cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
+      env: {},
+      invocationName: "ph",
+    })
 
     expect(doctor.status).toBe(0)
     expect(doctor.stdout).toContain("Verification receipt authority: missing")

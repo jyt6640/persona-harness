@@ -144,6 +144,11 @@ describe("consumer authority closure-ready boundary", () => {
         summary: "missing",
       }),
       projectDir,
+      sigstoreTrustInspector: () => ({
+        networkReadiness: "blocked" as const,
+        state: "dns-unavailable" as const,
+        trustRootReadiness: "blocked" as const,
+      }),
     }
 
     // When
@@ -154,9 +159,16 @@ describe("consumer authority closure-ready boundary", () => {
     // Then
     expect(plaintext.stdout).toContain("Consumer authority: BLOCKED (enrollment-unavailable; not-applicable; read-only)")
     expect(plaintext.stdout).toContain("Consumer authority next: authority-enroll-github")
+    expect(plaintext.stdout).toContain("Sigstore network readiness: BLOCKED (dns-unavailable)")
+    expect(plaintext.stdout).toContain("Sigstore trust-root readiness: BLOCKED (dns-unavailable; live no-cache check)")
     expect(payload).toMatchObject({
       authority: {
         consumer: consumerAuthority,
+      },
+      sigstore: {
+        networkReadiness: "blocked",
+        state: "dns-unavailable",
+        trustRootReadiness: "blocked",
       },
     })
     expect(`${plaintext.stdout}${json.stdout}`).not.toContain(projectDir)

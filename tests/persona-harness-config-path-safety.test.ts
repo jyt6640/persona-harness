@@ -26,6 +26,7 @@ import { writeEvidenceSummary } from "../src/cli/evidence-summary.js"
 import { assessVerificationAuthority } from "../src/cli/workflow-verification-receipt.js"
 import { readExecutionEvidenceVerification } from "../src/cli/workflow-execution-evidence.js"
 import { formatWorkflowStatus, readWorkflowStatus } from "../src/cli/workflow-status.js"
+import { inspectReadySigstoreTrust } from "./helpers/sigstore-trust-readiness.js"
 import { loadRuleCatalog } from "../src/rules/rule-catalog.js"
 import { walkBoundedFiles } from "../src/io/bounded-path-walker.js"
 import { writeIntentEvidence } from "../src/runtime/evidence.js"
@@ -141,7 +142,11 @@ describe("P3-6 config/path safety", () => {
     writeWorkflow(projectDir)
 
     const status = formatWorkflowStatus(readWorkflowStatus(projectDir))
-    const doctor = formatDoctorSummary(readDoctorSummary({ projectDir, env: {} }))
+    const doctor = formatDoctorSummary(readDoctorSummary({
+      projectDir,
+      env: {},
+      sigstoreTrustInspector: inspectReadySigstoreTrust,
+    }))
     const closure = runPersonaCli(["workflow", "closure", "next", "--json"], {
       cwd: projectDir,
       env: {},
@@ -252,7 +257,11 @@ describe("P3-6 config/path safety", () => {
     )
 
     expect(loadRuleCatalog(projectDir).map((entry) => entry.path)).toEqual(["backend/custom.md"])
-    expect(readDoctorSummary({ projectDir, env: {} }).rulesFileCount).toBe(1)
+    expect(readDoctorSummary({
+      projectDir,
+      env: {},
+      sigstoreTrustInspector: inspectReadySigstoreTrust,
+    }).rulesFileCount).toBe(1)
   })
 
   it("rejects configured path escapes and symlink roots before traversal", () => {

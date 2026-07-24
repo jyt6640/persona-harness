@@ -111,6 +111,8 @@
     "packages/shared-skills/skills/workflow",
     "scripts/verify-finish-attestation.mjs",
     "scripts/verify-project-finish-attestation.mjs",
+    "scripts/project-finish-attestation-sigstore-error.mjs",
+    "scripts/project-finish-attestation-sigstore-error.d.mts",
     "scripts/consumer-authority-artifact-error.mjs",
     "scripts/consumer-authority-artifact-archive.mjs",
     "scripts/fetch-consumer-authority-artifact.mjs",

@@ -32,6 +32,10 @@ import {
 } from "../../scripts/node-runtime-floor.mjs"
 import { verifyExternalFinishAttestationForClosure } from "./workflow-finish-attestation.js"
 import { assessVerificationAuthority } from "./workflow-verification-receipt.js"
+import {
+  inspectProjectFinishTrustReadiness,
+  runtimeBlockedProjectFinishTrustReadiness,
+} from "./project-finish-trust-readiness.js"
 
 export { formatDoctorSummary } from "./doctor-output.js"
 export { summarizeDoctorExternalTrust } from "./doctor-inspection.js"
@@ -86,6 +90,9 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
       projectDir: candidateProjectDir,
       storeRoot: options.authorityStoreRoot,
     })))(projectDir)
+  const sigstoreTrust = nodeSupport.status === "supported"
+    ? (options.sigstoreTrustInspector ?? inspectProjectFinishTrustReadiness)()
+    : runtimeBlockedProjectFinishTrustReadiness()
   const verificationAuthority = assessVerificationAuthority(projectDir)
   const runtimeFindings = [
     ...platformFindings(options.platform ?? process.platform),
@@ -101,6 +108,9 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     ...(nodeSupport.status === "supported"
       ? []
       : [`Node.js does not satisfy the required Sigstore runtime range ${SIGSTORE_NODE_ENGINE_RANGE}; authority verification is blocked.`]),
+    ...(sigstoreTrust.trustRootReadiness === "ready"
+      ? []
+      : [`Live Sigstore trust readiness is blocked (${sigstoreTrust.state}); no offline authority is claimed.`]),
   ]
   return {
     projectDir,
@@ -142,6 +152,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     entrySteeringStatus: readEntrySteeringStatusSummary(projectDir, harnessConfig),
     externalTrust,
     consumerAuthority,
+    sigstoreTrust,
     verificationAuthority,
     legacyDiffRulesPresent: rulesPath?.ok === true && existsSync(join(rulesPath.path, "diff-rules")),
     rulePackDiagnostics: rulePackDiagnostics.finding,

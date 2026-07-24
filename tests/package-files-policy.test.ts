@@ -314,10 +314,16 @@ describe("package files policy", () => {
   it("packages the project finish verifier worker without packaging synthetic attestation evidence", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const runtimePaths = [
+      "dist/cli/project-finish-attestation-assessment.js",
+      "dist/cli/project-finish-attestation-evidence.js",
+      "dist/cli/project-finish-attestation-policy.js",
       "dist/cli/project-finish-attestation-source.js",
       "dist/cli/project-finish-attestation-verifier-types.js",
       "dist/cli/project-finish-attestation-verifier.js",
       "dist/cli/project-finish-attestation-worker.js",
+      "dist/cli/project-finish-trust-readiness.js",
+      "scripts/project-finish-attestation-sigstore-error.d.mts",
+      "scripts/project-finish-attestation-sigstore-error.mjs",
       "scripts/verify-project-finish-attestation.mjs",
       "scripts/node-runtime-floor.mjs",
       "scripts/node-runtime-floor.d.mts",
