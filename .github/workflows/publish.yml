@@ -38,6 +38,7 @@ jobs:
   publish:
     name: Verify and publish
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: npm-publish
 
     steps:
@@ -155,6 +156,15 @@ jobs:
           test "$registry_readback_verified" = true
           test -s registry-readback.json
 
+      - name: Upload sanitized registry readback
+        id: registry-evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: npm-registry-readback-${{ env.PACKAGE_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: registry-readback.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Publish summary
         run: |
           {
@@ -164,6 +174,8 @@ jobs:
             echo "- gitHead: ${EXPECTED_GIT_HEAD}"
             echo "- dist-tag: ${{ inputs.dist_tag }}"
             echo "- approval scope: ${{ inputs.approval_scope }}"
+            echo "- registry evidence artifact id: ${{ steps.registry-evidence.outputs.artifact-id }}"
+            echo "- registry evidence artifact digest: ${{ steps.registry-evidence.outputs.artifact-digest }}"
             echo
             echo "### Sanitized registry package readback"
             echo '```json'

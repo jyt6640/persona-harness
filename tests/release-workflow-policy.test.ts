@@ -26,6 +26,12 @@ describe("release workflow policy", () => {
     expect(workflow).toContain("release-registry-readback.mjs")
     expect(workflow).toContain("registry_readback_verified=false")
     expect(workflow).toContain('test "$registry_readback_verified" = true')
+    expect(workflow).toContain("timeout-minutes: 45")
+    expect(workflow).toContain("name: Upload sanitized registry readback")
+    expect(workflow).toContain("id: registry-evidence")
+    expect(workflow).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02")
+    expect(workflow).toContain("if-no-files-found: error")
+    expect(workflow).toContain("steps.registry-evidence.outputs.artifact-digest")
     expect(workflow).not.toContain("npm audit signatures")
   })
 

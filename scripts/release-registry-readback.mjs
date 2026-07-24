@@ -9,6 +9,7 @@ import { readStagedTarballFacts } from "./staged-package-artifact-tarball.mjs"
 const PACKAGE_NAME = "persona-harness"
 const REGISTRY = "https://registry.npmjs.org"
 const MAX_OUTPUT_BYTES = 2 * 1024 * 1024
+const REGISTRY_COMMAND_TIMEOUT_MS = 10_000
 const COMMIT = /^[a-f0-9]{40}$/u
 const INTEGRITY = /^sha512-[A-Za-z0-9+/=]+$/u
 const SHA1 = /^[a-f0-9]{40}$/u
@@ -140,8 +141,10 @@ function run(command, args, cwd) {
     cwd,
     encoding: "utf8",
     env: { LANG: "C", LC_ALL: "C", npm_config_registry: REGISTRY, PATH: process.env.PATH ?? "" },
+    killSignal: "SIGTERM",
     maxBuffer: MAX_OUTPUT_BYTES,
     stdio: ["ignore", "pipe", "ignore"],
+    timeout: REGISTRY_COMMAND_TIMEOUT_MS,
   })
   return { status: typeof result.status === "number" ? result.status : 1, stdout: result.stdout ?? "" }
 }
