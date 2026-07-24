@@ -92,30 +92,65 @@ function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
 
 function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
   mkdirSync(home, { recursive: true })
-  const environment = { HOME: home }
-  const help = runNode(cwd, [phPath, "authority", "--help"], environment)
+  const unauthenticatedEnvironment = { GH_TOKEN: "", GITHUB_TOKEN: "", HOME: home }
+  const help = runNode(cwd, [phPath, "authority", "--help"], unauthenticatedEnvironment)
   requireSuccess(`${label} authority help`, help)
   if (!help.stdout.includes("fetch github")) {
     throw new Error(`${label} authority help omitted the enrolled evidence route`)
   }
-  const status = runNode(cwd, [phPath, "authority", "status", "--json"], environment)
-  const fetch = runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], environment)
-  if (status.status === 0 || fetch.status === 0) {
-    throw new Error(`${label} authority unexpectedly trusted absent enrollment`)
+  assertBoundedAuthorityAbsence(
+    [
+      runNode(cwd, [phPath, "authority", "status", "--json"], unauthenticatedEnvironment),
+      runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], unauthenticatedEnvironment),
+    ],
+    home,
+    label,
+    {
+      githubAuthentication: "unavailable",
+      next: "github-authenticate",
+      state: "authentication-unavailable",
+    },
+  )
+  const authenticatedEnvironment = {
+    ...unauthenticatedEnvironment,
+    GH_TOKEN: "ghp_packaged_boundary_probe",
   }
-  for (const result of [status, fetch]) {
+  assertBoundedAuthorityAbsence(
+    [
+      runNode(cwd, [phPath, "authority", "status", "--json"], authenticatedEnvironment),
+      runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], authenticatedEnvironment),
+    ],
+    home,
+    label,
+    {
+      githubAuthentication: "available",
+      next: "authority-enroll-github",
+      state: "enrollment-unavailable",
+    },
+  )
+  if (existsSync(join(home, ".persona-harness"))) {
+    throw new Error(`${label} authority absence created local evidence`)
+  }
+}
+
+function assertBoundedAuthorityAbsence(results, home, label, expected) {
+  for (const result of results) {
+    if (result.status === 0) {
+      throw new Error(`${label} authority unexpectedly trusted absent enrollment`)
+    }
     const payload = JSON.parse(result.stdout)
     if (
       !isRecord(payload)
       || payload["authorityEligible"] !== false
-      || payload["state"] !== "enrollment-unavailable"
+      || payload["consumptionState"] !== "not-applicable"
+      || payload["enrollment"] !== "unavailable"
+      || payload["githubAuthentication"] !== expected.githubAuthentication
+      || payload["next"] !== expected.next
+      || payload["state"] !== expected.state
       || JSON.stringify(payload).includes(home)
     ) {
       throw new Error(`${label} authority absence did not remain bounded`)
     }
-  }
-  if (existsSync(join(home, ".persona-harness"))) {
-    throw new Error(`${label} authority absence created local evidence`)
   }
 }
 
