@@ -20,6 +20,21 @@ package or makes Finish pass.
    signed bytes, verifies them against its current source, and only an explicit
    Finish may consume a trusted result once.
 
+The final hosted evidence uses two fresh registry-installed fixtures, each
+installing the exact immutable version only from `https://registry.npmjs.org`:
+
+- the cooperative fixture runs `ph workflow finish implement --assurance
+  cooperative` and requires its explicit same-invocation PASS while default
+  Finish and later closure remain external-blocked; and
+- the public external fixture runs the user-scoped `ph authority` enrollment,
+  original-artifact fetch, independent verification, and explicit Finish
+  consumption path against its own signed public push evidence.
+
+Neither fixture can borrow the other fixture's evidence. Forged, copied,
+wrong-repository/workflow/ref, drifted, replayed, expired, zero/all-skipped,
+malformed/unsafe, or network-denied variants must remain nonzero with no
+authority artifact or Finish PASS.
+
 `ph authority status`, `ph authority fetch github`, and closure are
 non-consuming. Missing enrollment, unavailable network, malformed records,
 copied artifacts, source drift, replay, expiry, or any identity mismatch stay

@@ -29,6 +29,16 @@ describe("release workflow policy", () => {
     expect(workflow).not.toContain("npm audit signatures")
   })
 
+  it("keeps the beta's cooperative and external registry fixtures separate and non-authoritative", () => {
+    const lifecycle = readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta.md"), "utf8")
+
+    expect(lifecycle).toContain("two fresh registry-installed fixtures")
+    expect(lifecycle).toContain("--assurance\n  cooperative")
+    expect(lifecycle).toContain("user-scoped `ph authority`")
+    expect(lifecycle).toContain("Neither fixture can borrow the other fixture's evidence")
+    expect(lifecycle).toContain("no\nauthority artifact or Finish PASS")
+  })
+
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
