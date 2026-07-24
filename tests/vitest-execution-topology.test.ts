@@ -9,6 +9,7 @@ const RESOURCE_SENSITIVE_TEST_FILES = [
   "tests/staged-package-verification-runner.test.ts",
   "tests/persona-harness-staged-package-verification-installed.test.ts",
   "tests/persona-harness-workflow-loop.test.ts",
+  "tests/workflow-finish-attestation-parity.test.ts",
 ]
 
 function isRecord(value: unknown): value is JsonRecord {
