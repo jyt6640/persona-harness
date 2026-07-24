@@ -24,6 +24,8 @@ describe("release workflow policy", () => {
     expect(workflow).toContain("TAG_NAME: ${{ inputs.tag }}")
     expect(workflow).toContain("tag-source")
     expect(workflow).toContain("release-registry-readback.mjs")
+    expect(workflow).toContain("registry_readback_verified=false")
+    expect(workflow).toContain('test "$registry_readback_verified" = true')
     expect(workflow).not.toContain("npm audit signatures")
   })
 

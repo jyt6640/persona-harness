@@ -138,18 +138,21 @@ jobs:
         run: |
           set -euo pipefail
 
+          registry_readback_verified=false
           for attempt in {1..30}; do
             if node scripts/release-registry-readback.mjs \
               --dist-tag "$DIST_TAG" \
               --source-head "$EXPECTED_GIT_HEAD" \
               --version "$PACKAGE_VERSION" \
               > registry-readback.json; then
+              registry_readback_verified=true
               break
             fi
             echo "Waiting for npm registry package metadata, attempt $attempt..."
             sleep 10
           done
 
+          test "$registry_readback_verified" = true
           test -s registry-readback.json
 
       - name: Publish summary
