@@ -44,7 +44,7 @@ describe("enrolled project finish attestation selection", () => {
       fetchedAt: "2026-07-24T00:00:00.000Z",
       repositoryId: 987654321,
       runId: "10",
-      sourceHead: head.replace(/^./u, "b"),
+      sourceHead: `${head.startsWith("a") ? "b" : "a"}${head.slice(1)}`,
     }, { storeRoot })).toBe(true)
 
     const result = readEnrolledProjectFinishAttestations(projectDir, { storeRoot })
