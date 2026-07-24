@@ -20,6 +20,7 @@ import { runPolicyCommand } from "./policy.js"
 import { runDoctorCommand } from "./doctor.js"
 import { runDevCommand } from "./dev-command.js"
 import { runEvidenceCommand } from "./evidence-summary.js"
+import { runAuthorityCommand } from "./authority-command.js"
 import { runFeedbackCommand } from "./feedback.js"
 import { runGoCommand, type GoStep } from "./go-command.js"
 import { runReviewCommand } from "./review.js"
@@ -156,6 +157,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     return runDoctorCommand(args.slice(1), { projectDir: options.cwd, env: options.env })
   }
 
+  if (command === "authority") {
+    return runAuthorityCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+  }
+
   if (command === "dev") {
     return runDevCommand(args.slice(1), { env: options.env, projectDir: options.cwd }, invocationName)
   }
@@ -226,6 +231,20 @@ async function runCliEntrypoint(): Promise<void> {
         invocationName,
       )
       writeResult(result)
+    } finally {
+      readline.close()
+    }
+    return
+  }
+
+  if (args[0] === "authority" && args[1] === "enroll" && process.stdin.isTTY === true) {
+    const readline = createInterface({ input: process.stdin, output: process.stdout })
+    try {
+      const confirmation = await readline.question("Confirm public consumer-authority enrollment? [y/N] ")
+      writeResult(runAuthorityCommand(args.slice(1), {
+        confirmEnrollment: confirmation.trim().toLowerCase() === "y",
+        projectDir: process.cwd(),
+      }, invocationName))
     } finally {
       readline.close()
     }

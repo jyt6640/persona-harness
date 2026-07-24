@@ -8,6 +8,7 @@ import {
   type AuthorityEnrollmentReadback,
   type AuthorityEnrollmentStoreOptions,
 } from "./authority-enrollment.js"
+import { readGithubAuthorityEnrollment } from "./authority-github-readback-worker.js"
 import type { CliRunResult } from "./bearshell.js"
 
 type AuthorityCommandOptions = AuthorityEnrollmentStoreOptions & {
@@ -80,7 +81,11 @@ function runEnrollment(
       stderr: "Consumer authority enrollment requires interactive confirmation.\n",
     }
   }
-  const readback = options.enrollmentReadback?.(parsed.repositorySlug, parsed.workflowPath)
+  const readback = (options.enrollmentReadback ?? ((repositorySlug, workflowPath) =>
+    readGithubAuthorityEnrollment(options.projectDir ?? process.cwd(), repositorySlug, workflowPath)))(
+    parsed.repositorySlug,
+    parsed.workflowPath,
+  )
   const enrollment = readback === undefined ? undefined : authorityEnrollmentFromReadback(readback, options.now)
   if (enrollment === undefined || enrollment.repositorySlug !== parsed.repositorySlug || enrollment.callerWorkflowPath !== parsed.workflowPath) {
     return { status: 1, stdout: "", stderr: "Consumer authority enrollment could not verify the fixed public GitHub policy.\n" }

@@ -9,6 +9,7 @@ import {
   readAuthorityEnrollment,
   runAuthorityCommand,
 } from "../src/cli/authority-command.js"
+import { runPersonaCli } from "../src/cli/index.js"
 
 const projects: string[] = []
 
@@ -81,6 +82,19 @@ describe("consumer authority command boundary", () => {
       state: "enrollment-unavailable",
     })
     expect(`${plain.stdout}${plain.stderr}${json.stdout}${json.stderr}`).not.toContain(projectDir)
+  })
+
+  it("exposes the non-consuming authority status through the public root command", () => {
+    const projectDir = project()
+    const result = runPersonaCli(["authority", "status"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain("Enrollment: unavailable")
+    expect(result.stdout).not.toContain(projectDir)
   })
 })
 
