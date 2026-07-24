@@ -7,6 +7,7 @@ import {
   PROJECT_FINISH_ATTESTATION_PREDICATE_TYPE,
   PROJECT_FINISH_ATTESTATION_SCHEMA,
 } from "../../src/cli/project-finish-attestation-types.js"
+import { personaHarnessVersion } from "../../src/cli/version.js"
 
 export function createValidProjectFinishAttestationStatement(): Record<string, unknown> {
   const receipt = createValidProjectFinishAttestationReceipt()
@@ -58,7 +59,7 @@ export function createValidProjectFinishAttestationReceipt(): Record<string, unk
       runId: "1001",
       sessionId: "project-finish-session-1001-2",
     },
-    phVersion: "0.7.0",
+    phVersion: personaHarnessVersion(),
     policyMarker: PROJECT_FINISH_ATTESTATION_POLICY.policyMarker,
     project: {
       root: ".",

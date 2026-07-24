@@ -17,25 +17,53 @@ const INTEGRITY = "sha512-" + "c".repeat(86)
 const repositoryRoot = resolve(process.cwd())
 
 describe("release workflow policy", () => {
-  it("keeps the current stable source eligible only for GA-approved latest", () => {
+  it("requires the staging beta publish route to bind the immutable version tag and sanitized registry readback", () => {
+    const workflow = readFileSync(join(repositoryRoot, ".github", "workflows", "publish.yml"), "utf8")
+
+    expect(workflow).toContain("tag:")
+    expect(workflow).toContain("TAG_NAME: ${{ inputs.tag }}")
+    expect(workflow).toContain("tag-source")
+    expect(workflow).toContain("release-registry-readback.mjs")
+    expect(workflow).toContain("registry_readback_verified=false")
+    expect(workflow).toContain('test "$registry_readback_verified" = true')
+    expect(workflow).toContain("timeout-minutes: 45")
+    expect(workflow).toContain("name: Upload sanitized registry readback")
+    expect(workflow).toContain("id: registry-evidence")
+    expect(workflow).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02")
+    expect(workflow).toContain("if-no-files-found: error")
+    expect(workflow).toContain("steps.registry-evidence.outputs.artifact-digest")
+    expect(workflow).not.toContain("npm audit signatures")
+  })
+
+  it("keeps the beta's cooperative and external registry fixtures separate and non-authoritative", () => {
+    const lifecycle = readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta.md"), "utf8")
+
+    expect(lifecycle).toContain("two fresh registry-installed fixtures")
+    expect(lifecycle).toContain("--assurance\n  cooperative")
+    expect(lifecycle).toContain("user-scoped `ph authority`")
+    expect(lifecycle).toContain("Neither fixture can borrow the other fixture's evidence")
+    expect(lifecycle).toContain("no\nauthority artifact or Finish PASS")
+  })
+
+  it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.7.0")
-    expect(checkDistTagCompatibility({
-      approvalScope: "ga-approved",
-      distTag: "latest",
-      version: packageVersion,
-    })).toEqual({ ok: true })
+    expect(packageVersion).toBe("0.8.0-beta.1")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",
       version: packageVersion,
-    })).toMatchObject({ code: "dist-tag-staging-stable", ok: false })
+    })).toEqual({ ok: true })
     expect(checkDistTagCompatibility({
-      approvalScope: "next-promotion-approved",
+      approvalScope: "ga-approved",
+      distTag: "latest",
+      version: packageVersion,
+    })).toMatchObject({ code: "dist-tag-prerelease-latest", ok: false })
+    expect(checkDistTagCompatibility({
+      approvalScope: "staging-only",
       distTag: "next",
       version: packageVersion,
-    })).toMatchObject({ code: "dist-tag-stable-next", ok: false })
+    })).toMatchObject({ code: "dist-tag-next-approval", ok: false })
   })
 
   it("accepts an exact canonical main source", () => {

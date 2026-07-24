@@ -129,7 +129,7 @@ describe("project-finish-attestation.1 verifier core", () => {
     const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-18T01:30:00.000Z"))
 
     expect(result.authorityEligible).toBe(false)
-    expect(["crypto-failed", "malformed"]).toContain(result.state)
+    expect(result.state).toBe("malformed-bundle")
     expect(existsSync(join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json"))).toBe(false)
     expect(JSON.stringify(result)).not.toContain(marker)
   })
