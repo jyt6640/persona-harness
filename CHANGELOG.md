@@ -8,6 +8,20 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.8.0-beta.1] - 2026-07-24
+
+- Prepares the immutable Consumer Authority Beta source candidate for a
+  staging-only lifecycle. At candidate creation, no `0.8.0-beta.1` package,
+  tag, GitHub release, registry channel, or promotion fact is asserted.
+- Adds the packaged public enrollment/fetch/status boundary for original public
+  project finish artifacts. It stays user-scoped, fixed-origin, non-consuming,
+  and fail-closed; local receipts, copied JSON, and package-release evidence
+  cannot supply consumer authority.
+- Requires the eventual manual staging publish to bind an existing immutable
+  `v0.8.0-beta.1` tag to the exact protected-main commit, then records bounded
+  registry version, gitHead, SHA-1, SRI, SHA-256, and selected-tag readback.
+  Exact-artifact provenance remains a separate staged producer/audit gate.
+
 ## [0.7.0] - 2026-07-17
 
 - Prepares the immutable `0.7.0` stable source candidate. At candidate

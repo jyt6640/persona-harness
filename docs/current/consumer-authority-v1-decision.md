@@ -122,6 +122,18 @@ External-attestation consumption remains separate. When external authority is
 available, its lifecycle may use its exclusive terminal record and bindings;
 the cooperative path never writes or accepts that record.
 
+## Enrolled Public Artifact Retrieval
+
+The packaged `ph authority` route is deliberately split: interactive
+`enroll github <owner/repository> --workflow <path>` stores a user-scoped
+public enrollment only after fixed GitHub policy readback, while `fetch github`
+downloads matching original public artifact bytes only through fixed GitHub
+endpoints. Fetch stores an opaque original archive in the user store, not in a
+caller workspace, and does not consume authority. Status and Finish select only
+an enrolled artifact that independently passes the project verifier against the
+current project source. Registry/package provenance is a separate read-only
+release property and never substitutes for this consumer authority path.
+
 ## Evidence Reference Discipline
 
 The V1 reference fixture is for the public `jyt6640/persona-harness`

@@ -27,25 +27,25 @@ describe("release workflow policy", () => {
     expect(workflow).not.toContain("npm audit signatures")
   })
 
-  it("keeps the current stable source eligible only for GA-approved latest", () => {
+  it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.7.0")
-    expect(checkDistTagCompatibility({
-      approvalScope: "ga-approved",
-      distTag: "latest",
-      version: packageVersion,
-    })).toEqual({ ok: true })
+    expect(packageVersion).toBe("0.8.0-beta.1")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",
       version: packageVersion,
-    })).toMatchObject({ code: "dist-tag-staging-stable", ok: false })
+    })).toEqual({ ok: true })
     expect(checkDistTagCompatibility({
-      approvalScope: "next-promotion-approved",
+      approvalScope: "ga-approved",
+      distTag: "latest",
+      version: packageVersion,
+    })).toMatchObject({ code: "dist-tag-prerelease-latest", ok: false })
+    expect(checkDistTagCompatibility({
+      approvalScope: "staging-only",
       distTag: "next",
       version: packageVersion,
-    })).toMatchObject({ code: "dist-tag-stable-next", ok: false })
+    })).toMatchObject({ code: "dist-tag-next-approval", ok: false })
   })
 
   it("accepts an exact canonical main source", () => {

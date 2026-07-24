@@ -27,6 +27,7 @@ try {
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
     assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+    assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory)
     assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertDoctorRegistryReadback(
       join(consumerDirectory, "doctor-registry-fixture"),
@@ -44,6 +45,7 @@ try {
     assertInstalledPackageTestPasses(installedPackage)
     process.stdout.write("installed-package-test-contract: PASS\n")
   } else {
+    assertSourceConsumerAuthorityBoundary(sourceCli)
     assertSourceDoctorRegistryReadback(sourceCli)
     assertSourceCooperativeFinishWorks(sourceCli)
     assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
@@ -51,6 +53,68 @@ try {
   }
 } finally {
   rmSync(temporaryRoot, { force: true, recursive: true })
+}
+
+function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory) {
+  const scripts = [
+    "consumer-authority-artifact-archive.mjs",
+    "consumer-authority-artifact-error.mjs",
+    "fetch-consumer-authority-artifact.mjs",
+    "read-consumer-authority-github.mjs",
+  ]
+  for (const script of scripts) {
+    if (!existsSync(join(installedPackage, "scripts", script))) {
+      throw new Error("installed package is missing consumer authority transport")
+    }
+  }
+  assertConsumerAuthorityBoundary(
+    consumerDirectory,
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    join(consumerDirectory, "consumer-authority-home"),
+    "installed package",
+  )
+}
+
+function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertConsumerAuthorityBoundary(
+    temporaryRoot,
+    phPath,
+    join(temporaryRoot, "source-consumer-authority-home"),
+    "source CLI",
+  )
+}
+
+function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
+  mkdirSync(home, { recursive: true })
+  const environment = { HOME: home }
+  const help = runNode(cwd, [phPath, "authority", "--help"], environment)
+  requireSuccess(`${label} authority help`, help)
+  if (!help.stdout.includes("fetch github")) {
+    throw new Error(`${label} authority help omitted the enrolled evidence route`)
+  }
+  const status = runNode(cwd, [phPath, "authority", "status", "--json"], environment)
+  const fetch = runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], environment)
+  if (status.status === 0 || fetch.status === 0) {
+    throw new Error(`${label} authority unexpectedly trusted absent enrollment`)
+  }
+  for (const result of [status, fetch]) {
+    const payload = JSON.parse(result.stdout)
+    if (
+      !isRecord(payload)
+      || payload["authorityEligible"] !== false
+      || payload["state"] !== "enrollment-unavailable"
+      || JSON.stringify(payload).includes(home)
+    ) {
+      throw new Error(`${label} authority absence did not remain bounded`)
+    }
+  }
+  if (existsSync(join(home, ".persona-harness"))) {
+    throw new Error(`${label} authority absence created local evidence`)
+  }
 }
 
 function packCurrentRepository() {

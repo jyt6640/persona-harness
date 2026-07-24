@@ -890,6 +890,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.7.0-rc.2 release notes](v0.7.0-rc.2-release-notes.md)
 - [v0.7.0-rc.1 release notes](v0.7.0-rc.1-release-notes.md)
 - [v0.7.0 release notes](v0.7.0-release-notes.md)
+- [v0.8.0-beta.1 release notes](v0.8.0-beta.1-release-notes.md)
 - [v0.7.0-rc.8 release notes](v0.7.0-rc.8-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
@@ -904,7 +905,8 @@ Release verification and explicit manual GitHub release-note automation live in
   the explicit `ga-approved` scope and an existing stable tag that passes its
   fixed protected-main policy.
 - Publish npm packages from `.github/workflows/publish.yml` after QA release GO
-  with a fixed channel and matching approval scope.
+  with a fixed channel, matching approval scope, and an existing immutable tag
+  that exactly matches the protected-main package version.
 - Release-candidate packages first use `staging` with `staging-only`; moving a
   verified immutable prerelease to `next` requires a later separate
   `next-promotion-approved` dispatch.
@@ -918,9 +920,11 @@ Release verification and explicit manual GitHub release-note automation live in
   `package.json` version.
 - The manual workflow generates the GitHub Release body from
   `docs/current/release/v<version>-release-notes.md`.
-- The publish workflow verifies registry gitHead, dist.shasum, and dist-tag
-  state after publish.
-- Create/push the matching git tag only after registry verification succeeds.
+- The publish workflow verifies registry gitHead, dist.shasum, SRI, downloaded
+  tarball SHA-256, and dist-tag state after publish without claiming exact
+  artifact provenance before the separate staged producer/audit route.
+- The matching immutable git tag is a precondition for a publish; the workflow
+  never creates or moves it.
 - Tag pushes do not run real `npm publish` or create GitHub releases.
 - GitHub release notes are generated from repository release notes only for
   manually approved stable releases.

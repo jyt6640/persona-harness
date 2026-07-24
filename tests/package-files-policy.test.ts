@@ -340,6 +340,43 @@ describe("package files policy", () => {
     }
   })
 
+  it("packages the enrolled consumer-authority retrieval path without packaging its synthetic evidence", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const packagedScripts = [
+      "scripts/consumer-authority-artifact-archive.mjs",
+      "scripts/consumer-authority-artifact-error.mjs",
+      "scripts/fetch-consumer-authority-artifact.mjs",
+      "scripts/read-consumer-authority-github.mjs",
+    ]
+    const runtimePaths = [
+      "dist/cli/authority-artifact-store.js",
+      "dist/cli/authority-command.js",
+      "dist/cli/authority-enrollment.js",
+      "dist/cli/authority-fetch-worker.js",
+      "dist/cli/authority-github-readback-worker.js",
+      "dist/cli/authority-project-attestation.js",
+    ]
+    const sourceOnlyPaths = [
+      "tests/authority-artifact-fetch.test.ts",
+      "tests/authority-artifact-store.test.ts",
+      "tests/authority-command.test.ts",
+      "tests/authority-fetch-worker.test.ts",
+      "tests/authority-github-readback.test.ts",
+      "tests/authority-project-attestation.test.ts",
+    ]
+    const boundaryRecord = "docs/current/release/consumer-authority-beta.md"
+
+    for (const filePath of [...packagedScripts, ...runtimePaths]) {
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
+    for (const filePath of sourceOnlyPaths) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
+    }
+    expect(existsSync(path.join(packageRoot, boundaryRecord))).toBe(true)
+    expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
+  })
+
   it("keeps direct current README links covered by packaged files", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const currentReadmePath = path.join(packageRoot, "docs/current/README.md")
@@ -364,7 +401,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.7.0-release-notes.md",
+      "docs/current/release/v0.8.0-beta.1-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -390,6 +427,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
+      "docs/current/release/v0.8.0-beta.1-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

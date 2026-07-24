@@ -1,6 +1,7 @@
 import { access, readFile, writeFile } from "node:fs/promises"
 import { constants } from "node:fs"
 import { relative, resolve } from "node:path"
+import { pathToFileURL } from "node:url"
 
 function readArg(name) {
   const index = process.argv.indexOf(name)
@@ -14,12 +15,12 @@ function readArg(name) {
   return value
 }
 
-function inferDistTag(version) {
+export function inferDistTag(version) {
   if (version.includes("-alpha.")) {
     return "alpha"
   }
   if (version.includes("-beta.")) {
-    return "beta"
+    return "staging"
   }
   if (version.includes("-rc.")) {
     return "next"
@@ -125,7 +126,9 @@ async function main() {
   console.log(`GitHub release notes written: ${relative(projectDir, absoluteOutPath)}`)
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error))
-  process.exitCode = 1
-})
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error))
+    process.exitCode = 1
+  })
+}
