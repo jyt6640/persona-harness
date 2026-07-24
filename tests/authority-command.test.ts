@@ -1,4 +1,5 @@
-import { mkdtempSync, rmSync } from "node:fs"
+import { createHash } from "node:crypto"
+import { existsSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -9,6 +10,8 @@ import {
   readAuthorityEnrollment,
   runAuthorityCommand,
 } from "../src/cli/authority-command.js"
+import { readAuthorityArtifact } from "../src/cli/authority-artifact-store.js"
+import { writeAuthorityEnrollment } from "../src/cli/authority-enrollment.js"
 import { runPersonaCli } from "../src/cli/index.js"
 
 const projects: string[] = []
@@ -96,10 +99,85 @@ describe("consumer authority command boundary", () => {
     expect(result.stdout).toContain("Enrollment: unavailable")
     expect(result.stdout).not.toContain(projectDir)
   })
+
+  it("fetches only a product-owned original archive into the user store without creating workspace authority", () => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "persona-harness.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "a".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined) throw new Error("fixture enrollment must parse")
+    expect(writeAuthorityEnrollment(enrollment, { storeRoot })).toBe(true)
+    const archive = artifactArchive()
+
+    const result = runAuthorityCommand(["fetch", "github"], {
+      artifactFetch: () => ({
+        archive,
+        artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+        fetchedAt: "2026-07-24T00:00:00.000Z",
+        repositoryId: 987654321,
+        runId: "10",
+        sourceHead: "a".repeat(40),
+      }),
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result).toEqual({
+      status: 0,
+      stderr: "",
+      stdout: "Fetched matching original public evidence. No completion authority was consumed.\n",
+    })
+    expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("ready")
+    expect(existsSync(join(projectDir, ".persona", "evidence", "project-finish-attestation", "bundle.json"))).toBe(false)
+    expect(`${result.stdout}${result.stderr}`).not.toContain(projectDir)
+  })
 })
 
 function project(): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-authority-command-"))
   projects.push(projectDir)
   return projectDir
+}
+
+function artifactArchive(): Buffer {
+  const members = {
+    "bundle.json": Buffer.from("bundle", "utf8"),
+    "predicate.json": Buffer.from("predicate", "utf8"),
+    "receipt.json": Buffer.from("receipt", "utf8"),
+  }
+  const localParts: Buffer[] = []
+  const centralParts: Buffer[] = []
+  let offset = 0
+  for (const [name, bytes] of Object.entries(members)) {
+    const encodedName = Buffer.from(name, "utf8")
+    const local = Buffer.alloc(30)
+    local.writeUInt32LE(0x04034b50, 0)
+    local.writeUInt16LE(20, 4)
+    local.writeUInt32LE(bytes.byteLength, 18)
+    local.writeUInt32LE(bytes.byteLength, 22)
+    local.writeUInt16LE(encodedName.byteLength, 26)
+    localParts.push(local, encodedName, bytes)
+    const central = Buffer.alloc(46)
+    central.writeUInt32LE(0x02014b50, 0)
+    central.writeUInt16LE(20, 4)
+    central.writeUInt16LE(20, 6)
+    central.writeUInt32LE(bytes.byteLength, 20)
+    central.writeUInt32LE(bytes.byteLength, 24)
+    central.writeUInt16LE(encodedName.byteLength, 28)
+    central.writeUInt32LE(offset, 42)
+    centralParts.push(central, encodedName)
+    offset += local.byteLength + encodedName.byteLength + bytes.byteLength
+  }
+  const directory = Buffer.concat(centralParts)
+  const footer = Buffer.alloc(22)
+  footer.writeUInt32LE(0x06054b50, 0)
+  footer.writeUInt16LE(3, 8)
+  footer.writeUInt16LE(3, 10)
+  footer.writeUInt32LE(directory.byteLength, 12)
+  footer.writeUInt32LE(offset, 16)
+  return Buffer.concat([...localParts, directory, footer])
 }

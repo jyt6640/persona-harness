@@ -1,4 +1,4 @@
-import { inspectProjectFinishAttestation } from "./project-finish-attestation-verifier.js"
+import { writeAuthorityArtifact, type AuthorityArtifact } from "./authority-artifact-store.js"
 import {
   authorityEnrollmentFromReadback,
   readAuthorityEnrollment,
@@ -9,9 +9,12 @@ import {
   type AuthorityEnrollmentStoreOptions,
 } from "./authority-enrollment.js"
 import { readGithubAuthorityEnrollment } from "./authority-github-readback-worker.js"
+import { fetchGithubAuthorityArtifact } from "./authority-fetch-worker.js"
+import { readEnrolledProjectFinishAttestations } from "./authority-project-attestation.js"
 import type { CliRunResult } from "./bearshell.js"
 
 type AuthorityCommandOptions = AuthorityEnrollmentStoreOptions & {
+  readonly artifactFetch?: (projectDir: string, enrollment: AuthorityEnrollment) => AuthorityArtifact | undefined
   readonly confirmEnrollment?: boolean
   readonly enrollmentReadback?: (repositorySlug: string, workflowPath: string) => AuthorityEnrollmentReadback | undefined
   readonly projectDir?: string
@@ -101,25 +104,37 @@ function runEnrollment(
 }
 
 function runFetch(args: readonly string[], options: AuthorityCommandOptions, invocationName: string): CliRunResult {
-  const parsed = parseReadOnlyArgs(args)
+  const parsed = parseFetchArgs(args)
   if (parsed === undefined) return invalid(invocationName)
-  const summary = readAuthorityStatus(options)
-  if (summary.enrollment === "unavailable") {
+  const entries = readAuthorityEnrollments(options)
+  if (entries.state !== "ready" || entries.value.length !== 1) {
+    const summary = readAuthorityStatus(options)
     return parsed.json ? jsonStatus(summary) : textStatus(summary, false)
   }
+  const enrollment = entries.value[0]
+  if (enrollment === undefined) return blockedFetch(parsed.json)
+  const projectDir = options.projectDir ?? process.cwd()
+  const artifact = (options.artifactFetch ?? fetchGithubAuthorityArtifact)(projectDir, enrollment)
+  if (artifact === undefined || !writeAuthorityArtifact(artifact, options)) return blockedFetch(parsed.json)
   return {
-    status: 1,
+    status: 0,
     stdout: parsed.json
-      ? `${JSON.stringify({ ...summary, state: "fetch-unavailable" })}\n`
-      : "Consumer authority fetch is unavailable until the fixed original-artifact transport is present.\n",
+      ? `${JSON.stringify({
+        authorityEligible: false,
+        consumptionState: "not-applicable",
+        next: "authority-status",
+        schemaVersion: "consumer-authority-fetch.1",
+        state: "fetched",
+      })}\n`
+      : "Fetched matching original public evidence. No completion authority was consumed.\n",
     stderr: "",
   }
 }
 
 function readAuthorityStatus(options: AuthorityCommandOptions): AuthorityStatus {
   const projectDir = options.projectDir ?? process.cwd()
-  const entries = readAuthorityEnrollments(options)
-  if (entries.state !== "ready" || entries.value.length === 0) {
+  const projectAttestations = readEnrolledProjectFinishAttestations(projectDir, options, options.now)
+  if (projectAttestations.enrollmentState !== "ready") {
     return {
       authorityEligible: false,
       consumptionState: "not-applicable",
@@ -128,8 +143,7 @@ function readAuthorityStatus(options: AuthorityCommandOptions): AuthorityStatus 
       state: "enrollment-unavailable",
     }
   }
-  const assessments = entries.value.map((entry) => inspectProjectFinishAttestation(projectDir, entry, options.now))
-  const trusted = assessments.find((assessment) => assessment.authorityEligible)
+  const trusted = projectAttestations.values.find((candidate) => candidate.assessment.authorityEligible)?.assessment
   if (trusted !== undefined) {
     return {
       authorityEligible: true,
@@ -150,6 +164,11 @@ function readAuthorityStatus(options: AuthorityCommandOptions): AuthorityStatus 
 
 function parseReadOnlyArgs(args: readonly string[]): { readonly json: boolean } | undefined {
   return args.length === 0 ? { json: false } : args.length === 1 && args[0] === "--json" ? { json: true } : undefined
+}
+
+function parseFetchArgs(args: readonly string[]): { readonly json: boolean } | undefined {
+  if (args.length === 1 && args[0] === "github") return { json: false }
+  return args.length === 2 && args[0] === "github" && args[1] === "--json" ? { json: true } : undefined
 }
 
 function parseEnrollmentArgs(args: readonly string[]): { readonly repositorySlug: string; readonly workflowPath: string } | undefined {
@@ -197,4 +216,20 @@ function nextText(next: AuthorityStatus["next"], explain: boolean): string {
 
 function invalid(invocationName: string): CliRunResult {
   return { status: 1, stdout: "", stderr: `${authorityUsage(invocationName)}\n` }
+}
+
+function blockedFetch(json: boolean): CliRunResult {
+  return {
+    status: 1,
+    stdout: json
+      ? `${JSON.stringify({
+        authorityEligible: false,
+        consumptionState: "not-applicable",
+        next: "authority-fetch-github",
+        schemaVersion: "consumer-authority-fetch.1",
+        state: "blocked",
+      })}\n`
+      : "Consumer authority fetch could not verify matching original public evidence.\n",
+    stderr: "",
+  }
 }

@@ -2,6 +2,7 @@ import { readdirSync, realpathSync } from "node:fs"
 import { join, resolve } from "node:path"
 
 import { assessSigstoreNodeRuntime } from "../../scripts/node-runtime-floor.mjs"
+import { extractOriginalArtifactMembers } from "../../scripts/consumer-authority-artifact-archive.mjs"
 import { personaHarnessVersion } from "./version.js"
 import {
   canonicalProjectFinishAttestationBytes,
@@ -81,12 +82,36 @@ export function inspectProjectFinishAttestation(
   return verifyProjectFinishAttestationInternal(projectDir, enrollment, now, false, true)
 }
 
+export function inspectProjectFinishAttestationArtifact(
+  projectDir: string,
+  enrollment: ProjectFinishAttestationEnrolledPolicy,
+  archive: Buffer,
+  now = new Date(),
+): ProjectFinishAttestationVerifierAssessment {
+  const evidence = evidenceFromOriginalArtifact(archive)
+  return evidence === undefined
+    ? blocked("missing", "archive")
+    : verifyProjectFinishAttestationInternal(projectDir, enrollment, now, false, true, evidence)
+}
+
 export function consumeProjectFinishAttestation(
   projectDir: string,
   enrollment: ProjectFinishAttestationEnrolledPolicy,
   now = new Date(),
 ): ProjectFinishAttestationVerifierAssessment {
   return verifyProjectFinishAttestationInternal(projectDir, enrollment, now, true, false)
+}
+
+export function consumeProjectFinishAttestationArtifact(
+  projectDir: string,
+  enrollment: ProjectFinishAttestationEnrolledPolicy,
+  archive: Buffer,
+  now = new Date(),
+): ProjectFinishAttestationVerifierAssessment {
+  const evidence = evidenceFromOriginalArtifact(archive)
+  return evidence === undefined
+    ? blocked("missing", "archive")
+    : verifyProjectFinishAttestationInternal(projectDir, enrollment, now, true, false, evidence)
 }
 
 export function verifyProjectFinishAttestation(
@@ -124,13 +149,14 @@ function verifyProjectFinishAttestationInternal(
   now: Date,
   consume: boolean,
   allowConsumed: boolean,
+  suppliedEvidence?: ProjectFinishAttestationEvidence,
 ): ProjectFinishAttestationVerifierAssessment {
   if (assessSigstoreNodeRuntime(process.versions.node).status !== "supported") {
     return blocked("runtime-unsupported", "runtime")
   }
   const projectRoot = resolveSafeProjectRoot(projectDir)
   if (projectRoot === undefined) return blocked("missing", "evidence")
-  const evidence = readProjectFinishAttestationEvidence(projectRoot)
+  const evidence = suppliedEvidence ?? readProjectFinishAttestationEvidence(projectRoot)
   if (evidence === undefined) return blocked("missing", "evidence")
 
   const bundleDigest = sha256Digest(evidence.bundleBytes)
@@ -207,6 +233,19 @@ function verifyProjectFinishAttestationInternal(
     return blocked(consumed.code === "replayed-attestation" ? "replayed" : "binding-mismatch", "consumption")
   }
   return trusted(signedReceipt, "consumed")
+}
+
+function evidenceFromOriginalArtifact(archive: Buffer): ProjectFinishAttestationEvidence | undefined {
+  try {
+    const members = extractOriginalArtifactMembers(archive)
+    return {
+      bundleBytes: members.bundle,
+      predicateBytes: members.predicate,
+      receiptBytes: members.receipt,
+    }
+  } catch {
+    return undefined
+  }
 }
 
 function readProjectFinishAttestationEvidence(projectDir: string): ProjectFinishAttestationEvidence | undefined {

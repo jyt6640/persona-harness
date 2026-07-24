@@ -16,6 +16,7 @@ vi.mock("../src/cli/project-finish-attestation-source.js", () => source)
 
 import {
   consumeProjectFinishAttestation,
+  inspectProjectFinishAttestationArtifact,
   inspectProjectFinishAttestation,
   type ProjectFinishAttestationEnrolledPolicy,
 } from "../src/cli/project-finish-attestation-verifier.js"
@@ -48,6 +49,25 @@ afterEach(() => {
 })
 
 describe("project finish attestation inspection and consumption", () => {
+  it("fails closed for an original-artifact archive that cannot be parsed without consulting project-local evidence", () => {
+    const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-consumption-")))
+    const evidenceDir = join(projectDir, ".persona", "evidence", "project-finish-attestation")
+    mkdirSync(evidenceDir, { recursive: true })
+    writeVerifiedEvidence(projectDir)
+
+    const result = inspectProjectFinishAttestationArtifact(
+      projectDir,
+      enrollment,
+      Buffer.from("local-repacked-archive-marker", "utf8"),
+      now,
+    )
+
+    expect(result).toMatchObject({ authorityEligible: false, state: "missing" })
+    expect(worker.runProjectFinishAttestationWorker).not.toHaveBeenCalled()
+    expect(existsSync(join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json"))).toBe(false)
+    expect(JSON.stringify(result)).not.toContain("local-repacked-archive-marker")
+  })
+
   it("keeps inspection non-consuming and consumes a verified compatible terminal record exactly once", () => {
     const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-consumption-")))
     const consumptionPath = writeVerifiedEvidence(projectDir)

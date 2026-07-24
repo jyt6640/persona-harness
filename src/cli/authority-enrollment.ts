@@ -258,10 +258,5 @@ function sameDirectory(
   left: NoFollowPathIdentity,
   right: NoFollowPathIdentity,
 ): boolean {
-  return left.ctimeNs === right.ctimeNs
-    && left.dev === right.dev
-    && left.ino === right.ino
-    && left.mode === right.mode
-    && left.mtimeNs === right.mtimeNs
-    && left.size === right.size
+  return left.dev === right.dev && left.ino === right.ino && left.mode === right.mode
 }

@@ -21,6 +21,7 @@ export function fetchConsumerAuthorityArtifact(
   },
 ): Promise<{
   readonly artifactDigest: string
+  readonly archive: Buffer
   readonly bundle: Buffer
   readonly predicate: Buffer
   readonly receipt: Buffer

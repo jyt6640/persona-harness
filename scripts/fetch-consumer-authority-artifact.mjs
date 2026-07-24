@@ -34,6 +34,7 @@ export async function fetchConsumerAuthorityArtifact(input, transport = defaultT
   const archive = await transport.archive(api(`/repos/${selection.repositorySlug}/actions/artifacts/${artifact.id}/zip`))
   const members = extractOriginalArtifactMembers(archive)
   return {
+    archive,
     artifactDigest: digest(archive),
     bundle: members.bundle,
     predicate: members.predicate,
@@ -205,11 +206,9 @@ async function main() {
     })
     const value = await fetchConsumerAuthorityArtifact(JSON.parse(text))
     process.stdout.write(`${JSON.stringify({
+      archive: value.archive.toString("base64"),
       artifactDigest: value.artifactDigest,
-      bundle: value.bundle.toString("base64"),
       ok: true,
-      predicate: value.predicate.toString("base64"),
-      receipt: value.receipt.toString("base64"),
       runId: value.runId,
     })}\n`)
   } catch (error) {
