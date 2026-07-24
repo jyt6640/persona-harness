@@ -163,8 +163,10 @@ function parseAuthorityAuditRecord(value: unknown): AuthorityAuditRecord | undef
   ])) {
     return undefined
   }
+  const callerWorkflowPath = normalizeCallerWorkflowPath(value.callerWorkflowPath)
   return (value.action === "enrolled" || value.action === "updated")
-    && normalizeCallerWorkflowPath(value.callerWorkflowPath) === value.callerWorkflowPath
+    && callerWorkflowPath !== undefined
+    && callerWorkflowPath === value.callerWorkflowPath
     && value.event === "push"
     && isTimestamp(value.occurredAt)
     && value.protectionPolicy === "branch-protection-not-proven"
@@ -175,7 +177,7 @@ function parseAuthorityAuditRecord(value: unknown): AuthorityAuditRecord | undef
     && value.schemaVersion === AUTHORITY_AUDIT_SCHEMA
     ? {
         action: value.action,
-        callerWorkflowPath: value.callerWorkflowPath,
+        callerWorkflowPath,
         event: value.event,
         occurredAt: value.occurredAt,
         protectionPolicy: value.protectionPolicy,
