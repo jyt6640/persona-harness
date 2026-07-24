@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import {
   chmodSync,
   copyFileSync,
@@ -21,8 +22,8 @@ const sourceCli = sourceCliArgument(process.argv.slice(2))
 
 try {
   if (sourceCli === undefined) {
-    const tarballPath = packCurrentRepository()
-    const { consumerDirectory, installedPackage } = installFreshTarball(tarballPath)
+    const packed = packCurrentRepository()
+    const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
     assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
@@ -43,6 +44,7 @@ try {
       "installed package",
     )
     assertInstalledPackageTestPasses(installedPackage)
+    process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
     process.stdout.write("installed-package-test-contract: PASS\n")
   } else {
     assertSourceConsumerAuthorityBoundary(sourceCli)
@@ -122,7 +124,7 @@ function packCurrentRepository() {
   mkdirSync(packDirectory)
   const result = runNpm(repositoryRoot, ["pack", "--json", "--pack-destination", packDirectory])
   requireSuccess("package pack", result)
-  return resolvePackTarball(result.stdout, packDirectory)
+  return resolvePackResult(result.stdout, packDirectory)
 }
 
 function installFreshTarball(tarballPath) {
@@ -867,13 +869,14 @@ function requireSuccess(label, result) {
   }
 }
 
-function resolvePackTarball(output, packDirectory) {
+function resolvePackResult(output, packDirectory) {
   const parsed = JSON.parse(output)
   if (!Array.isArray(parsed) || parsed.length !== 1 || !isRecord(parsed[0]) || typeof parsed[0].filename !== "string") {
     throw new TypeError("npm pack did not return exactly one tarball")
   }
 
-  const filename = parsed[0].filename
+  const record = parsed[0]
+  const filename = record.filename
   const candidate = isAbsolute(filename)
     ? filename
     : join(packDirectory, basename(filename))
@@ -884,7 +887,33 @@ function resolvePackTarball(output, packDirectory) {
   if (!existsSync(candidate)) {
     throw new TypeError("npm pack tarball is missing")
   }
-  return candidate
+  if (!Array.isArray(record.files)) {
+    throw new TypeError("npm pack omitted the package path set")
+  }
+  const paths = record.files.map((file) => {
+    if (!isRecord(file) || typeof file.path !== "string" || file.path.length === 0) {
+      throw new TypeError("npm pack returned an invalid package path")
+    }
+    return file.path
+  }).sort()
+  const bytes = readFileSync(candidate)
+  return {
+    facts: {
+      filename: basename(candidate),
+      fileCount: paths.length,
+      integrity: typeof record.integrity === "string" ? record.integrity : "unavailable",
+      packagePathSetSha256: sha256(Buffer.from(`${paths.join("\n")}\n`, "utf8")),
+      shasum: typeof record.shasum === "string" ? record.shasum : "unavailable",
+      size: bytes.byteLength,
+      tarballSha256: sha256(bytes),
+      version: readPackageVersion(repositoryRoot),
+    },
+    tarballPath: candidate,
+  }
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex")
 }
 
 function isRecord(value) {
