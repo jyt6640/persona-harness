@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { readDoctorSummary } from "../src/cli/doctor.js"
+import { inspectReadySigstoreTrust } from "./helpers/sigstore-trust-readiness.js"
 
 const tempProjects: string[] = []
 
@@ -58,6 +59,7 @@ describe("ph doctor Windows command detection", () => {
       },
       platform: "win32",
       projectDir,
+      sigstoreTrustInspector: inspectReadySigstoreTrust,
     })
 
     expect(summary.npm).toBe("11.6.0")

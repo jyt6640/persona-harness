@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runDoctorCommand } from "../src/cli/doctor.js"
+import { inspectReadySigstoreTrust } from "./helpers/sigstore-trust-readiness.js"
 
 const projects: string[] = []
 
@@ -22,6 +23,7 @@ function doctor(projectDir: string, platform: NodeJS.Platform) {
     },
     platform,
     projectDir,
+    sigstoreTrustInspector: inspectReadySigstoreTrust,
   })
 }
 

@@ -21,6 +21,10 @@ on:
           - staging-only
           - next-promotion-approved
           - ga-approved
+      tag:
+        description: "Existing immutable tag exactly matching the selected package version and protected-main commit"
+        required: true
+        type: string
 
 concurrency:
   group: publish-${{ github.ref }}-${{ inputs.dist_tag }}
@@ -34,6 +38,7 @@ jobs:
   publish:
     name: Verify and publish
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: npm-publish
 
     steps:
@@ -46,9 +51,10 @@ jobs:
         env:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_SHA: ${{ github.sha }}
+          TAG_NAME: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          git fetch origin main --no-tags
+          git fetch origin main --tags
           canonical_main_sha="$(git rev-parse refs/remotes/origin/main)"
           if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
             is_ancestor=true
@@ -58,6 +64,15 @@ jobs:
           node scripts/release-workflow-policy.mjs canonical-main \
             --ref "$GITHUB_REF" \
             --sha "$GITHUB_SHA" \
+            --canonical-main-sha "$canonical_main_sha" \
+            --is-ancestor "$is_ancestor"
+          package_version="$(node -p "require('./package.json').version")"
+          tag_commit="$(git rev-parse "refs/tags/${TAG_NAME}^{commit}")"
+          node scripts/release-workflow-policy.mjs tag-source \
+            --tag "$TAG_NAME" \
+            --version "$package_version" \
+            --sha "$GITHUB_SHA" \
+            --tag-commit "$tag_commit" \
             --canonical-main-sha "$canonical_main_sha" \
             --is-ancestor "$is_ancestor"
 
@@ -124,21 +139,31 @@ jobs:
         run: |
           set -euo pipefail
 
+          registry_readback_verified=false
           for attempt in {1..30}; do
-            if npm view "persona-harness@${PACKAGE_VERSION}" version gitHead dist.shasum dist.integrity --json > registry-package.json 2>/dev/null; then
+            if node scripts/release-registry-readback.mjs \
+              --dist-tag "$DIST_TAG" \
+              --source-head "$EXPECTED_GIT_HEAD" \
+              --version "$PACKAGE_VERSION" \
+              > registry-readback.json; then
+              registry_readback_verified=true
               break
             fi
             echo "Waiting for npm registry package metadata, attempt $attempt..."
             sleep 10
           done
 
-          npm dist-tag ls persona-harness > dist-tags.txt
-          node scripts/release-workflow-policy.mjs registry \
-            --metadata registry-package.json \
-            --dist-tags dist-tags.txt \
-            --expected-version "$PACKAGE_VERSION" \
-            --expected-head "$EXPECTED_GIT_HEAD" \
-            --dist-tag "$DIST_TAG"
+          test "$registry_readback_verified" = true
+          test -s registry-readback.json
+
+      - name: Upload sanitized registry readback
+        id: registry-evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: npm-registry-readback-${{ env.PACKAGE_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: registry-readback.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Publish summary
         run: |
@@ -149,14 +174,11 @@ jobs:
             echo "- gitHead: ${EXPECTED_GIT_HEAD}"
             echo "- dist-tag: ${{ inputs.dist_tag }}"
             echo "- approval scope: ${{ inputs.approval_scope }}"
+            echo "- registry evidence artifact id: ${{ steps.registry-evidence.outputs.artifact-id }}"
+            echo "- registry evidence artifact digest: ${{ steps.registry-evidence.outputs.artifact-digest }}"
             echo
-            echo "### Registry package"
+            echo "### Sanitized registry package readback"
             echo '```json'
-            cat registry-package.json
-            echo '```'
-            echo
-            echo "### Dist-tags"
-            echo '```text'
-            cat dist-tags.txt
+            cat registry-readback.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

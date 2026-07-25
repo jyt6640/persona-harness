@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { inspectReadySigstoreTrust } from "./helpers/sigstore-trust-readiness.js"
 
 const projects: string[] = []
 
@@ -17,6 +18,7 @@ function project(): string {
 function doctor(projectDir: string) {
   return runPersonaCli(["doctor"], {
     cwd: projectDir,
+    doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
     env: {
       PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
       PH_DOCTOR_REGISTRY_DIST_TAGS: "{}",

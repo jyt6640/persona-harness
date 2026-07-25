@@ -67,9 +67,11 @@ commit. Its release record is
 [`v0.7.0-rc.3-release-notes.md`](v0.7.0-rc.3-release-notes.md), and its durable
 capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 
-Current registry channels are `latest=0.6.0` and `next=0.7.0-rc.3`.
-The completed publish does not move `latest` or broaden any product claim.
-`0.7.0-rc.2` remains the previous published `next` record.
+At the `0.8.0-beta.1` source-preparation readback, registry channels are
+`latest=0.7.0`, `next=0.7.0-rc.3`, and `staging=0.7.0-rc.8`. This is a
+historical baseline for the beta candidate, not beta publication, promotion,
+or authority evidence. `0.7.0-rc.2` remains an earlier published `next`
+record.
 
 The staged-package artifact producer is a controlled future-run source:
 [`staged-package-artifact-attestation-producer.md`](staged-package-artifact-attestation-producer.md).
@@ -108,10 +110,10 @@ nor creates its prerequisite tag. Local or caller-supplied staged-package facts
 remain `artifact-provenance-unavailable`; Finish and closure authority remain
 unchanged.
 
-Current stable package: `0.6.0` is published to npm `latest` after QA accepted
-the final External registry smoke. Current registry state is `latest=0.6.0`,
-`next=0.7.0-rc.3`, with no `alpha` dist-tag after the post-stable T0
-retirement. Registry verification confirmed
+Historical stable package: `0.6.0` was published to npm `latest` after QA
+accepted the final External registry smoke. This historical registry snapshot
+was `latest=0.6.0`, `next=0.7.0-rc.3`, with no `alpha` dist-tag after the
+post-stable T0 retirement. Registry verification then confirmed
 `persona-harness@latest=0.6.0`, gitHead
 `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
 `ffd77996263cffb858bd977edb73b03cf2820c75`, and integrity
@@ -890,6 +892,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.7.0-rc.2 release notes](v0.7.0-rc.2-release-notes.md)
 - [v0.7.0-rc.1 release notes](v0.7.0-rc.1-release-notes.md)
 - [v0.7.0 release notes](v0.7.0-release-notes.md)
+- [v0.8.0-beta.1 release notes](v0.8.0-beta.1-release-notes.md)
 - [v0.7.0-rc.8 release notes](v0.7.0-rc.8-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
@@ -904,7 +907,8 @@ Release verification and explicit manual GitHub release-note automation live in
   the explicit `ga-approved` scope and an existing stable tag that passes its
   fixed protected-main policy.
 - Publish npm packages from `.github/workflows/publish.yml` after QA release GO
-  with a fixed channel and matching approval scope.
+  with a fixed channel, matching approval scope, and an existing immutable tag
+  that exactly matches the protected-main package version.
 - Release-candidate packages first use `staging` with `staging-only`; moving a
   verified immutable prerelease to `next` requires a later separate
   `next-promotion-approved` dispatch.
@@ -918,9 +922,11 @@ Release verification and explicit manual GitHub release-note automation live in
   `package.json` version.
 - The manual workflow generates the GitHub Release body from
   `docs/current/release/v<version>-release-notes.md`.
-- The publish workflow verifies registry gitHead, dist.shasum, and dist-tag
-  state after publish.
-- Create/push the matching git tag only after registry verification succeeds.
+- The publish workflow verifies registry gitHead, dist.shasum, SRI, downloaded
+  tarball SHA-256, and dist-tag state after publish without claiming exact
+  artifact provenance before the separate staged producer/audit route.
+- The matching immutable git tag is a precondition for a publish; the workflow
+  never creates or moves it.
 - Tag pushes do not run real `npm publish` or create GitHub releases.
 - GitHub release notes are generated from repository release notes only for
   manually approved stable releases.

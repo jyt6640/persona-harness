@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { formatDoctorSummary, readDoctorSummary, runDoctorCommand } from "../src/cli/doctor.js"
 import { runPersonaCli } from "../src/cli/index.js"
+import { inspectReadySigstoreTrust } from "./helpers/sigstore-trust-readiness.js"
 
 const tempProjects: string[] = []
 
@@ -51,6 +52,7 @@ describe("ph doctor", () => {
     const options = {
       projectDir,
       nodeVersion: "20.16.9-sk-live-aaaaaaaaaaaaaaaaaaaaaaaa",
+      sigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
         PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ latest: "0.7.0" }),
@@ -85,6 +87,7 @@ describe("ph doctor", () => {
 
     const result = runPersonaCli(["doctor"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ alpha: "0.3.0-alpha.3", latest: "0.3.0-alpha.3" }),
       },
@@ -114,6 +117,7 @@ describe("ph doctor", () => {
 
     const result = runPersonaCli(["doctor"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ latest: "0.6.0" }),
       },
@@ -138,6 +142,7 @@ describe("ph doctor", () => {
 
     const result = runPersonaCli(["doctor"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_OPENCODE_VERSION: "missing",
         PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ alpha: "0.3.7-alpha.0", latest: "0.3.7-alpha.0" }),
@@ -165,6 +170,7 @@ describe("ph doctor", () => {
 
     const result = runPersonaCli(["doctor"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ alpha: "0.3.1-alpha.2", latest: "0.3.1-alpha.2" }),
       },
@@ -193,6 +199,7 @@ describe("ph doctor", () => {
 
     const result = runPersonaCli(["doctor"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ alpha: "0.3.1-alpha.2", latest: "0.3.1-alpha.2" }),
       },
@@ -265,6 +272,7 @@ describe("ph doctor", () => {
 
     const result = runPersonaCli(["doctor"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ latest: "0.6.0" }),
       },

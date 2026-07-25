@@ -183,10 +183,9 @@ describe("staged package verification runner", () => {
     const result = runStagedPackageVerification(options)
 
     expect(result.verificationStatus).toBe("blocked")
-    expect(result.diagnostics).toContain("artifact-provenance-unavailable")
-    expect(result.diagnostics).toContain("staged-plan-invalid")
+    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable"])
     expect(result.promotionAuthorized).toBe(false)
-    expect(result.promotionDecision).toBe("blocked")
+    expect(result.promotionDecision).toBe("release-approval-required")
     expect(result.installed).toMatchObject({
       authorityBlocked: "verified",
       cliHelp: "verified",
@@ -270,10 +269,9 @@ describe("staged package verification runner", () => {
     })
 
     expect(result.verificationStatus).toBe("blocked")
-    expect(result.diagnostics).toContain("artifact-provenance-unavailable")
-    expect(result.diagnostics).toContain("staged-plan-invalid")
+    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable"])
     expect(result.promotionAuthorized).toBe(false)
-    expect(result.promotionDecision).toBe("blocked")
+    expect(result.promotionDecision).toBe("release-approval-required")
     expect(result.registryMutation).toBe("not-performed")
     expect(genericAuditCalls).toBe(0)
   })

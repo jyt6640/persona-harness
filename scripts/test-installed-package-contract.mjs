@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import {
   chmodSync,
   copyFileSync,
@@ -21,12 +22,13 @@ const sourceCli = sourceCliArgument(process.argv.slice(2))
 
 try {
   if (sourceCli === undefined) {
-    const tarballPath = packCurrentRepository()
-    const { consumerDirectory, installedPackage } = installFreshTarball(tarballPath)
+    const packed = packCurrentRepository()
+    const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
     assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+    assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory)
     assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
     assertDoctorRegistryReadback(
       join(consumerDirectory, "doctor-registry-fixture"),
@@ -42,8 +44,10 @@ try {
       "installed package",
     )
     assertInstalledPackageTestPasses(installedPackage)
+    process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
     process.stdout.write("installed-package-test-contract: PASS\n")
   } else {
+    assertSourceConsumerAuthorityBoundary(sourceCli)
     assertSourceDoctorRegistryReadback(sourceCli)
     assertSourceCooperativeFinishWorks(sourceCli)
     assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
@@ -53,12 +57,109 @@ try {
   rmSync(temporaryRoot, { force: true, recursive: true })
 }
 
+function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory) {
+  const scripts = [
+    "consumer-authority-artifact-archive.mjs",
+    "consumer-authority-artifact-error.mjs",
+    "fetch-consumer-authority-artifact.mjs",
+    "read-consumer-authority-github.mjs",
+  ]
+  for (const script of scripts) {
+    if (!existsSync(join(installedPackage, "scripts", script))) {
+      throw new Error("installed package is missing consumer authority transport")
+    }
+  }
+  assertConsumerAuthorityBoundary(
+    consumerDirectory,
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    join(consumerDirectory, "consumer-authority-home"),
+    "installed package",
+  )
+}
+
+function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertConsumerAuthorityBoundary(
+    temporaryRoot,
+    phPath,
+    join(temporaryRoot, "source-consumer-authority-home"),
+    "source CLI",
+  )
+}
+
+function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
+  mkdirSync(home, { recursive: true })
+  const unauthenticatedEnvironment = { GH_TOKEN: "", GITHUB_TOKEN: "", HOME: home }
+  const help = runNode(cwd, [phPath, "authority", "--help"], unauthenticatedEnvironment)
+  requireSuccess(`${label} authority help`, help)
+  if (!help.stdout.includes("fetch github")) {
+    throw new Error(`${label} authority help omitted the enrolled evidence route`)
+  }
+  assertBoundedAuthorityAbsence(
+    [
+      runNode(cwd, [phPath, "authority", "status", "--json"], unauthenticatedEnvironment),
+      runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], unauthenticatedEnvironment),
+    ],
+    home,
+    label,
+    {
+      githubAuthentication: "unavailable",
+      next: "github-authenticate",
+      state: "authentication-unavailable",
+    },
+  )
+  const authenticatedEnvironment = {
+    ...unauthenticatedEnvironment,
+    GH_TOKEN: "ghp_packaged_boundary_probe",
+  }
+  assertBoundedAuthorityAbsence(
+    [
+      runNode(cwd, [phPath, "authority", "status", "--json"], authenticatedEnvironment),
+      runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], authenticatedEnvironment),
+    ],
+    home,
+    label,
+    {
+      githubAuthentication: "available",
+      next: "authority-enroll-github",
+      state: "enrollment-unavailable",
+    },
+  )
+  if (existsSync(join(home, ".persona-harness"))) {
+    throw new Error(`${label} authority absence created local evidence`)
+  }
+}
+
+function assertBoundedAuthorityAbsence(results, home, label, expected) {
+  for (const result of results) {
+    if (result.status === 0) {
+      throw new Error(`${label} authority unexpectedly trusted absent enrollment`)
+    }
+    const payload = JSON.parse(result.stdout)
+    if (
+      !isRecord(payload)
+      || payload["authorityEligible"] !== false
+      || payload["consumptionState"] !== "not-applicable"
+      || payload["enrollment"] !== "unavailable"
+      || payload["githubAuthentication"] !== expected.githubAuthentication
+      || payload["next"] !== expected.next
+      || payload["state"] !== expected.state
+      || JSON.stringify(payload).includes(home)
+    ) {
+      throw new Error(`${label} authority absence did not remain bounded`)
+    }
+  }
+}
+
 function packCurrentRepository() {
   const packDirectory = join(temporaryRoot, "pack")
   mkdirSync(packDirectory)
   const result = runNpm(repositoryRoot, ["pack", "--json", "--pack-destination", packDirectory])
   requireSuccess("package pack", result)
-  return resolvePackTarball(result.stdout, packDirectory)
+  return resolvePackResult(result.stdout, packDirectory)
 }
 
 function installFreshTarball(tarballPath) {
@@ -131,6 +232,11 @@ function assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage
 
 function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory) {
   const workerPath = join(installedPackage, "scripts", "verify-project-finish-attestation.mjs")
+  const errorClassifierPath = join(
+    installedPackage,
+    "scripts",
+    "project-finish-attestation-sigstore-error.mjs",
+  )
   const modulePath = pathToFileURL(join(
     installedPackage,
     "dist",
@@ -139,7 +245,7 @@ function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(ins
   )).href
   const projectDir = join(consumerDirectory, "project-finish-verifier-local")
   const evidenceDirectory = join(projectDir, ".persona", "evidence", "project-finish-attestation")
-  if (!existsSync(workerPath)) {
+  if (!existsSync(workerPath) || !existsSync(errorClassifierPath)) {
     throw new Error("installed package is missing the project finish verifier worker")
   }
   mkdirSync(evidenceDirectory, { recursive: true })
@@ -158,7 +264,7 @@ function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(ins
       'const enrollment = { callerWorkflowPath: "project.yml", repositoryId: 123, repositorySlug: "example/public-project", reusableWorkflowSha: "b".repeat(40) };',
       'const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-23T02:45:00.000Z"));',
       'const consumption = join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json");',
-      'if (result.authorityEligible || result.state !== "malformed" || existsSync(consumption)) process.exit(1);',
+      'if (result.authorityEligible || result.state !== "malformed-bundle" || existsSync(consumption)) process.exit(1);',
     ].join("\n"),
   ])
   requireSuccess("installed project finish verifier no-source-fallback probe", probe)
@@ -384,7 +490,12 @@ function assertDoctorRegistryReadback(fixtureRoot, phPath, packageRoot, label) {
   )
   requireSuccess(`${label} doctor registry readback`, result)
   const payload = JSON.parse(result.stdout)
-  if (!isRecord(payload) || !isRecord(payload.registry) || !isRecord(payload.authority)) {
+  if (
+    !isRecord(payload)
+    || !isRecord(payload.registry)
+    || !isRecord(payload.authority)
+    || !isRecord(payload.sigstore)
+  ) {
     throw new Error(`${label} doctor registry readback did not return a bounded JSON object`)
   }
   const channels = payload.registry.channels
@@ -397,6 +508,9 @@ function assertDoctorRegistryReadback(fixtureRoot, phPath, packageRoot, label) {
     || channels["legacy"] !== "retired"
     || payload.registry.deprecation !== "present"
     || payload.authority.finish !== "blocked"
+    || !["blocked", "ready", "unverified"].includes(payload.sigstore.networkReadiness)
+    || !["blocked", "ready"].includes(payload.sigstore.trustRootReadiness)
+    || typeof payload.sigstore.state !== "string"
   ) {
     throw new Error(`${label} doctor registry readback violated the non-authoritative channel contract`)
   }
@@ -790,13 +904,14 @@ function requireSuccess(label, result) {
   }
 }
 
-function resolvePackTarball(output, packDirectory) {
+function resolvePackResult(output, packDirectory) {
   const parsed = JSON.parse(output)
   if (!Array.isArray(parsed) || parsed.length !== 1 || !isRecord(parsed[0]) || typeof parsed[0].filename !== "string") {
     throw new TypeError("npm pack did not return exactly one tarball")
   }
 
-  const filename = parsed[0].filename
+  const record = parsed[0]
+  const filename = record.filename
   const candidate = isAbsolute(filename)
     ? filename
     : join(packDirectory, basename(filename))
@@ -807,7 +922,33 @@ function resolvePackTarball(output, packDirectory) {
   if (!existsSync(candidate)) {
     throw new TypeError("npm pack tarball is missing")
   }
-  return candidate
+  if (!Array.isArray(record.files)) {
+    throw new TypeError("npm pack omitted the package path set")
+  }
+  const paths = record.files.map((file) => {
+    if (!isRecord(file) || typeof file.path !== "string" || file.path.length === 0) {
+      throw new TypeError("npm pack returned an invalid package path")
+    }
+    return file.path
+  }).sort()
+  const bytes = readFileSync(candidate)
+  return {
+    facts: {
+      filename: basename(candidate),
+      fileCount: paths.length,
+      integrity: typeof record.integrity === "string" ? record.integrity : "unavailable",
+      packagePathSetSha256: sha256(Buffer.from(`${paths.join("\n")}\n`, "utf8")),
+      shasum: typeof record.shasum === "string" ? record.shasum : "unavailable",
+      size: bytes.byteLength,
+      tarballSha256: sha256(bytes),
+      version: readPackageVersion(repositoryRoot),
+    },
+    tarballPath: candidate,
+  }
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex")
 }
 
 function isRecord(value) {

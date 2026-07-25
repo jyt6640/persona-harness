@@ -13,10 +13,11 @@ const publicReleaseDocs = [
   "docs/current/release/v0.7.0-rc.7-release-notes.md",
   "docs/current/release/v0.7.0-rc.8-release-notes.md",
   "docs/current/release/v0.7.0-release-notes.md",
+  "docs/current/release/v0.8.0-beta.1-release-notes.md",
 ]
 
 describe("release docs temporal-state boundary", () => {
-  it("keeps the 0.7.0 GA source candidate free of publication claims", () => {
+  it("keeps the consumer authority beta source candidate free of beta publication claims", () => {
     const text = publicReleaseDocs
       .map((path) => readFileSync(join(root, path), "utf8"))
       .join("\n")
@@ -25,11 +26,12 @@ describe("release docs temporal-state boundary", () => {
     expect(text).not.toContain("is not published: no `v0.7.0-rc.7`")
     expect(text).not.toContain("RC7 npm package, Git tag, GitHub prerelease")
     expect(text).not.toContain("no `v0.7.0-rc.7` tag, GitHub prerelease, npm package")
-    expect(text).not.toContain("persona-harness@0.7.0 is published")
-    expect(text).not.toContain("GitHub release `v0.7.0` has been created")
-    expect(text).not.toContain("latest=0.7.0")
+    expect(text).not.toContain("persona-harness@0.8.0-beta.1 is published")
+    expect(text).not.toContain("GitHub release `v0.8.0-beta.1` has been created")
+    expect(text).not.toContain("staging=0.8.0-beta.1")
     expect(text).toContain("governed registry and audit records")
-    expect(text).toContain("source-preparation candidate for the user-authorized GA path")
+    expect(text).toContain("Consumer Authority Beta source-preparation candidate")
+    expect(text).toContain("latest=0.7.0")
     expect(text).toContain("expected non-authoritative block")
   })
 })

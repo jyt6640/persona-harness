@@ -8,6 +8,7 @@ import { runPersonaCli } from "../src/cli/index.js"
 import { readDoctorSummary, runDoctorCommand } from "../src/cli/doctor.js"
 import { readDoctorRegistryFromNpm } from "../src/cli/doctor-registry-readback.js"
 import { personaHarnessVersion } from "../src/cli/version.js"
+import { inspectReadySigstoreTrust } from "./helpers/sigstore-trust-readiness.js"
 
 const projects: string[] = []
 const PUBLISHED_NEXT_VERSION = "0.7.0-rc.3"
@@ -21,6 +22,7 @@ function project(): string {
 function doctor(projectDir: string, env: Record<string, string | undefined>) {
   return runPersonaCli(["doctor"], {
     cwd: projectDir,
+    doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
     env: {
       PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
       ...env,
@@ -102,6 +104,7 @@ describe("ph doctor registry diagnostics", () => {
     })
     const json = runPersonaCli(["doctor", "--json"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
         PH_DOCTOR_REGISTRY_DIST_TAGS: tags,
@@ -152,6 +155,7 @@ describe("ph doctor registry diagnostics", () => {
     })
     const json = runPersonaCli(["doctor", "--json"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
         PH_DOCTOR_REGISTRY_DIST_TAGS: tags,
@@ -181,6 +185,7 @@ describe("ph doctor registry diagnostics", () => {
     const projectDir = project()
     const result = runPersonaCli(["doctor", "--json"], {
       cwd: projectDir,
+      doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
       env: {
         PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
         PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ latest: "0.6.0", next: "0.7.0-rc.3" }),
@@ -232,6 +237,7 @@ describe("ph doctor registry diagnostics", () => {
       externalTrustInspector,
       projectDir,
       registryReader,
+      sigstoreTrustInspector: inspectReadySigstoreTrust,
     }
 
     const summary = readDoctorSummary(options)
@@ -345,6 +351,7 @@ describe("ph doctor registry diagnostics", () => {
             }),
           }
         : { status: "available" as const, text: `{${secret}` },
+      sigstoreTrustInspector: inspectReadySigstoreTrust,
     })
 
     expect(result.status).toBe(0)
@@ -374,6 +381,7 @@ describe("ph doctor registry diagnostics", () => {
       registryReader: (request: { readonly kind: string }) => request.kind === "dist-tags"
         ? distTags
         : { status: "available" as const, text: JSON.stringify(`deprecation ${secret}`) },
+      sigstoreTrustInspector: inspectReadySigstoreTrust,
     })
 
     expect(result.status).toBe(0)
@@ -407,6 +415,7 @@ describe("ph doctor registry diagnostics", () => {
       },
       nodeVersion: "21.0.0",
       projectDir: project(),
+      sigstoreTrustInspector: inspectReadySigstoreTrust,
     })
 
     expect(inspected).toBe(false)

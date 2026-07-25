@@ -137,6 +137,7 @@ npx ph workflow check | implement | finish implement | archive <ticket-id>
 npx ph workflow split README.md && npx ph workflow next   # multi-ticket
 npx ph bearshell --shell 'gradle test'                    # bounded execution
 npx ph evidence summary | metrics --json | ab-report --json | pminus-report --json
+npx ph authority status | enroll github <owner/repository> --workflow <path> | fetch github [owner/repository]
 npx ph review backend-shape
 ```
 
@@ -166,6 +167,15 @@ readbacks for this installed package version's deprecation field and the
 malformed, oversized, or unsafe registry data becomes a bounded diagnostic.
 Registry channels never grant Finish authority. External assurance readiness is
 a separate non-consuming inspection and does not move registry or trust state.
+For a public enrolled project, `ph authority enroll github ...` requires an
+interactive confirmation, and `ph authority fetch github` retrieves only a
+matching original public artifact through fixed GitHub policy. Set `GH_TOKEN`
+or `GITHUB_TOKEN` to a credential with Actions read access; the credential
+authenticates fixed GitHub API requests only and cannot supply repository,
+workflow, source, digest, or redirect identity. When more than one repository
+is enrolled, pass the selected enrolled `owner/repository` to `fetch github`.
+Neither command publishes a package, moves a channel, or consumes Finish
+authority.
 
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
