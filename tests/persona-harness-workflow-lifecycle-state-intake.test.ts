@@ -20,6 +20,32 @@ import { runPersonaCli } from "../src/cli/index.js"
 
 const projects: string[] = []
 const WORKFLOW_STATE_FILES = ["workflow-loop-state.json", "ralph-loop-state.json"] as const
+const WORKFLOW_DRAFT_FILES = [
+  "plan.md",
+  "roles.md",
+  "implementation-report.md",
+  "review-report.md",
+] as const
+const WORKFLOW_BOOTSTRAP_FILES = [
+  ...WORKFLOW_DRAFT_FILES,
+  ...WORKFLOW_STATE_FILES,
+] as const
+const PERSONA_BOOTSTRAP_FILES = [
+  "harness.jsonc",
+  "project-profile.jsonc",
+  "policies/overlay.jsonc",
+  "policies/company/backend.md",
+  "policies/personal/backend.md",
+] as const
+const BOOTSTRAP_ARTIFACT_PATHS = [
+  ...PERSONA_BOOTSTRAP_FILES,
+  "workflow/plan.md",
+  "workflow/roles.md",
+  "workflow/implementation-report.md",
+  "workflow/review-report.md",
+  "workflow/workflow-loop-state.json",
+  "workflow/ralph-loop-state.json",
+] as const
 
 afterEach(() => {
   for (const projectDir of projects.splice(0)) {
@@ -27,8 +53,8 @@ afterEach(() => {
   }
 })
 
-describe("workflow lifecycle state intake", () => {
-  it("blocks a symlinked workflow parent before strict bootstrap can write either loop state", () => {
+describe("bootstrap workspace intake", () => {
+  it("blocks a symlinked workflow parent before strict bootstrap can write any workflow artifact", () => {
     const projectDir = createProject()
     expect(runBootstrap(projectDir).status).toBe(0)
     const workflowDir = join(projectDir, ".persona", "workflow")
@@ -41,10 +67,86 @@ describe("workflow lifecycle state intake", () => {
     const rerun = runBootstrap(projectDir)
 
     expect(rerun.status).toBe(1)
-    expect(externalStateFiles(outside)).toEqual([])
+    expect(externalWorkflowBootstrapFiles(outside)).toEqual([])
     expect(`${rerun.stdout}${rerun.stderr}`).not.toContain(outside)
     expect(existsSync(join(preserved, "workflow-loop-state.json"))).toBe(true)
     expect(existsSync(join(preserved, "ralph-loop-state.json"))).toBe(true)
+    expect(authorityEvidenceExists(projectDir)).toBe(false)
+  })
+
+  it("blocks a symlinked .persona parent before strict bootstrap writes any persona artifact", () => {
+    const projectDir = createProject()
+    expect(runBootstrap(projectDir).status).toBe(0)
+    const personaDir = join(projectDir, ".persona")
+    const preserved = join(projectDir, ".persona-preserved")
+    const outside = join(projectDir, "outside-persona")
+    mkdirSync(outside)
+    renameSync(personaDir, preserved)
+    symlinkSync(outside, personaDir)
+
+    const rerun = runBootstrap(projectDir, ["--force"])
+
+    expect(rerun.status).toBe(1)
+    expect(externalPersonaBootstrapFiles(outside)).toEqual([])
+    expect(`${rerun.stdout}${rerun.stderr}`).not.toContain(outside)
+    expect(authorityEvidenceExists(projectDir)).toBe(false)
+  })
+
+  it("blocks a .persona parent replacement race before strict bootstrap opens any artifact", () => {
+    const projectDir = createProject()
+    expect(runBootstrap(projectDir).status).toBe(0)
+    const personaDir = join(projectDir, ".persona")
+    const canonicalPersonaDir = realpathSync(personaDir)
+    const preserved = join(projectDir, ".persona-preserved")
+    const outside = join(projectDir, "outside-persona-race")
+    mkdirSync(outside)
+    const originalOpen = fs.openSync
+    let swapped = false
+
+    fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+      if (!swapped && args[0] === canonicalPersonaDir) {
+        swapped = true
+        renameSync(personaDir, preserved)
+        symlinkSync(outside, personaDir)
+      }
+      return originalOpen(...args)
+    }) as typeof fs.openSync
+    syncBuiltinESMExports()
+    try {
+      const rerun = runBootstrap(projectDir, ["--force"])
+
+      expect(swapped).toBe(true)
+      expect(rerun.status).toBe(1)
+      expect(externalPersonaBootstrapFiles(outside)).toEqual([])
+      expect(`${rerun.stdout}${rerun.stderr}`).not.toContain(outside)
+      expect(authorityEvidenceExists(projectDir)).toBe(false)
+    } finally {
+      fs.openSync = originalOpen
+      syncBuiltinESMExports()
+      if (swapped) {
+        unlinkSync(personaDir)
+        renameSync(preserved, personaDir)
+      }
+    }
+  })
+
+  it("blocks every bootstrap-owned leaf alias before force bootstrap can write it", () => {
+    for (const relativePath of BOOTSTRAP_ARTIFACT_PATHS) {
+      const projectDir = createProject()
+      expect(runBootstrap(projectDir).status).toBe(0)
+      const target = join(projectDir, ".persona", relativePath)
+      const outside = join(projectDir, `outside-${relativePath.replaceAll("/", "-")}`)
+      unlinkSync(target)
+      symlinkSync(outside, target)
+
+      const rerun = runBootstrap(projectDir, ["--force"])
+
+      expect(rerun.status).toBe(1)
+      expect(existsSync(outside)).toBe(false)
+      expect(fs.lstatSync(target).isSymbolicLink()).toBe(true)
+      expect(`${rerun.stdout}${rerun.stderr}`).not.toContain(outside)
+      expect(authorityEvidenceExists(projectDir)).toBe(false)
+    }
   })
 
   it("blocks either symlinked loop-state leaf without replacing the alias", () => {
@@ -66,7 +168,7 @@ describe("workflow lifecycle state intake", () => {
     }
   })
 
-  it("blocks a workflow-parent replacement race before a state leaf is reserved", () => {
+  it("blocks a workflow-parent replacement race before any bootstrap artifact is opened", () => {
     const projectDir = createProject()
     expect(runBootstrap(projectDir).status).toBe(0)
     const workflowDir = join(projectDir, ".persona", "workflow")
@@ -91,8 +193,9 @@ describe("workflow lifecycle state intake", () => {
 
       expect(swapped).toBe(true)
       expect(rerun.status).toBe(1)
-      expect(externalStateFiles(outside)).toEqual([])
+      expect(externalWorkflowBootstrapFiles(outside)).toEqual([])
       expect(`${rerun.stdout}${rerun.stderr}`).not.toContain(outside)
+      expect(authorityEvidenceExists(projectDir)).toBe(false)
     } finally {
       fs.openSync = originalOpen
       syncBuiltinESMExports()
@@ -136,6 +239,75 @@ describe("workflow lifecycle state intake", () => {
       }
     }
   })
+
+  it("blocks every workflow draft replacement race before force bootstrap can write outside", () => {
+    for (const name of WORKFLOW_DRAFT_FILES) {
+      const projectDir = createProject()
+      expect(runBootstrap(projectDir).status).toBe(0)
+      const workflowDir = join(projectDir, ".persona", "workflow")
+      const target = join(realpathSync(workflowDir), name)
+      const outside = join(projectDir, `outside-race-${name}`)
+      const originalOpen = fs.openSync
+      let swapped = false
+
+      fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+        if (!swapped && args[0] === target) {
+          swapped = true
+          unlinkSync(target)
+          symlinkSync(outside, target)
+        }
+        return originalOpen(...args)
+      }) as typeof fs.openSync
+      syncBuiltinESMExports()
+      try {
+        const rerun = runBootstrap(projectDir, ["--force"])
+
+        expect(swapped).toBe(true)
+        expect(rerun.status).toBe(1)
+        expect(existsSync(outside)).toBe(false)
+        expect(fs.lstatSync(target).isSymbolicLink()).toBe(true)
+        expect(`${rerun.stdout}${rerun.stderr}`).not.toContain(outside)
+        expect(authorityEvidenceExists(projectDir)).toBe(false)
+      } finally {
+        fs.openSync = originalOpen
+        syncBuiltinESMExports()
+      }
+    }
+  })
+
+  it("blocks every persona bootstrap file replacement race before force bootstrap can write outside", () => {
+    for (const relativePath of PERSONA_BOOTSTRAP_FILES) {
+      const projectDir = createProject()
+      expect(runBootstrap(projectDir).status).toBe(0)
+      const target = join(realpathSync(join(projectDir, ".persona")), relativePath)
+      const outside = join(projectDir, `outside-race-${relativePath.replaceAll("/", "-")}`)
+      const originalOpen = fs.openSync
+      let swapped = false
+
+      fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+        if (!swapped && args[0] === target) {
+          swapped = true
+          unlinkSync(target)
+          symlinkSync(outside, target)
+        }
+        return originalOpen(...args)
+      }) as typeof fs.openSync
+      syncBuiltinESMExports()
+      try {
+        const rerun = runBootstrap(projectDir, ["--force"])
+
+        expect(swapped).toBe(true)
+        expect(rerun.status).toBe(1)
+        expect(existsSync(outside)).toBe(false)
+        expect(fs.lstatSync(target).isSymbolicLink()).toBe(true)
+        expect(`${rerun.stdout}${rerun.stderr}`).not.toContain(outside)
+        expect(authorityEvidenceExists(projectDir)).toBe(false)
+      } finally {
+        fs.openSync = originalOpen
+        syncBuiltinESMExports()
+      }
+    }
+  })
 })
 
 function createProject(): string {
@@ -151,14 +323,31 @@ function createProject(): string {
   return projectDir
 }
 
-function runBootstrap(projectDir: string) {
-  return runPersonaCli(["bootstrap", "backend", "--strict"], {
+function runBootstrap(projectDir: string, args: readonly string[] = []) {
+  return runPersonaCli(["bootstrap", "backend", "--strict", "--no-developer-mcp", ...args], {
     cwd: projectDir,
     env: {},
     invocationName: "ph",
   })
 }
 
+function externalWorkflowBootstrapFiles(directory: string): readonly string[] {
+  return WORKFLOW_BOOTSTRAP_FILES.filter((name) => existsSync(join(directory, name)))
+}
+
 function externalStateFiles(directory: string): readonly string[] {
   return WORKFLOW_STATE_FILES.filter((name) => existsSync(join(directory, name)))
+}
+
+function externalPersonaBootstrapFiles(directory: string): readonly string[] {
+  return [
+    ...PERSONA_BOOTSTRAP_FILES.filter((path) => existsSync(join(directory, path))),
+    ...WORKFLOW_BOOTSTRAP_FILES.filter((name) => existsSync(join(directory, "workflow", name))),
+  ]
+}
+
+function authorityEvidenceExists(projectDir: string): boolean {
+  return ["finish-attestation", "project-finish-attestation", "verification-receipts"].some((directory) =>
+    existsSync(join(projectDir, ".persona", "evidence", directory)),
+  )
 }
