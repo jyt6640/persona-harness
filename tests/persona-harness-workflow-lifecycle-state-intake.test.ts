@@ -54,6 +54,44 @@ afterEach(() => {
 })
 
 describe("bootstrap workspace intake", () => {
+  it("blocks a fresh .persona parent replacement before initialization writes any artifact", () => {
+    const projectDir = createProject()
+    const personaDir = join(projectDir, ".persona")
+    const canonicalPersonaDir = join(realpathSync(projectDir), ".persona")
+    const preserved = join(projectDir, ".persona-preserved")
+    const outside = join(projectDir, "outside-fresh-persona")
+    mkdirSync(outside)
+    const originalRename = fs.renameSync
+    let swapped = false
+
+    fs.renameSync = ((...args: Parameters<typeof fs.renameSync>) => {
+      const result = originalRename(...args)
+      if (!swapped && args[1] === canonicalPersonaDir) {
+        swapped = true
+        originalRename(canonicalPersonaDir, preserved)
+        symlinkSync(outside, personaDir)
+      }
+      return result
+    }) as typeof fs.renameSync
+    syncBuiltinESMExports()
+    try {
+      const result = runBootstrap(projectDir)
+
+      expect(swapped).toBe(true)
+      expect(result.status).toBe(1)
+      expect(fs.readdirSync(outside)).toEqual([])
+      expect(`${result.stdout}${result.stderr}`).not.toContain(outside)
+      expect(authorityEvidenceExists(projectDir)).toBe(false)
+    } finally {
+      fs.renameSync = originalRename
+      syncBuiltinESMExports()
+      if (swapped) {
+        unlinkSync(personaDir)
+        renameSync(preserved, personaDir)
+      }
+    }
+  })
+
   it("blocks a symlinked workflow parent before strict bootstrap can write any workflow artifact", () => {
     const projectDir = createProject()
     expect(runBootstrap(projectDir).status).toBe(0)

@@ -3,9 +3,13 @@ import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { formatInitResult } from "./init-output.js"
-import { INIT_MANIFEST_RELATIVE_PATH, InitManifestError } from "./init-manifest.js"
+import { INIT_MANIFEST_RELATIVE_PATH, InitManifestError, serializeInitManifest } from "./init-manifest.js"
 import { prepareInit } from "./init-plan.js"
 import { commitInitPlan, type InitTransactionOptions } from "./init-transaction.js"
+import {
+  materializeFreshBootstrapWriteBoundary,
+  type BootstrapWriteBoundary,
+} from "../io/bootstrap-write-boundary.js"
 
 export { formatInitNonInteractiveInterviewMessage, formatInitResult } from "./init-output.js"
 
@@ -29,6 +33,11 @@ export type InitResult = {
   readonly decision: InitDecision
   readonly changed: readonly string[]
   readonly conflicts: readonly string[]
+}
+
+export type FreshBootstrapInitResult = {
+  readonly boundary: BootstrapWriteBoundary
+  readonly result: InitResult
 }
 
 export function initUsage(invocationName: string): string {
@@ -107,6 +116,73 @@ export function initializePersonaHarness(options: InitOptions = {}): InitResult 
     decision: transaction.decision,
     changed: transaction.changed,
     conflicts: [],
+  }
+}
+
+export function initializeFreshBootstrapPersonaHarness(options: InitOptions = {}): FreshBootstrapInitResult {
+  if (options.dryRun) {
+    throw new PersonaInitError("Bootstrap initialization cannot run as a dry run.")
+  }
+  const prepared = prepareInit(options, defaultPackageRoot())
+  if (prepared.currentManifest !== null) {
+    throw new PersonaInitError("Bootstrap initialization requires a fresh Persona directory.")
+  }
+  const personaTargets = prepared.targets.filter((target) => target.relativePath.startsWith(".persona/"))
+  const rootTargets = prepared.targets.filter((target) => !target.relativePath.startsWith(".persona/"))
+  const personaFiles = [
+    ...personaTargets,
+    { relativePath: INIT_MANIFEST_RELATIVE_PATH, bytes: serializeInitManifest(prepared.manifest) },
+  ]
+  let boundary: BootstrapWriteBoundary | undefined
+  try {
+    options.onBeforeCommit?.()
+    boundary = materializeFreshBootstrapWriteBoundary(
+      prepared.projectDir,
+      personaFiles.map((target) => ({
+        bytes: "nextBytes" in target ? target.nextBytes : target.bytes,
+        relativePath: target.relativePath,
+      })),
+    )
+    const rootTransaction = commitInitPlan(
+      prepared.projectDir,
+      rootTargets,
+      prepared.manifest,
+      null,
+      {
+        includeManifest: false,
+        onAfterCommitFile: options.onAfterCommitFile,
+        writeBackups: false,
+      },
+    )
+    for (const target of personaFiles) options.onAfterCommitFile?.(target.relativePath)
+    return {
+      boundary,
+      result: {
+        projectDir: prepared.projectDir,
+        packageRoot: prepared.packageRoot,
+        pluginPath: prepared.pluginPath,
+        installed: [
+          ".persona/harness.jsonc",
+          ".persona/conventions/",
+          ".persona/rules/",
+          INIT_MANIFEST_RELATIVE_PATH,
+          ".opencode/opencode.json",
+          ".gitignore",
+        ],
+        backups: rootTransaction.backups,
+        evidenceCopied: false,
+        decision: "apply",
+        changed: [
+          ...personaFiles.map((target) => target.relativePath),
+          ...rootTransaction.changed,
+        ].sort((left, right) => left.localeCompare(right)),
+        conflicts: [],
+      },
+    }
+  } catch (error) {
+    boundary?.close()
+    if (error instanceof InitManifestError || error instanceof PersonaInitError) throw error
+    throw new PersonaInitError("Bootstrap initialization failed.")
   }
 }
 

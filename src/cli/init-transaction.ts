@@ -22,8 +22,10 @@ export type InitTarget = {
 
 export type InitTransactionOptions = {
   readonly dryRun?: boolean
+  readonly includeManifest?: boolean
   readonly onBeforeCommit?: () => void
   readonly onAfterCommitFile?: (relativePath: string) => void
+  readonly writeBackups?: boolean
 }
 
 export type InitTransactionResult = {
@@ -52,10 +54,12 @@ export function commitInitPlan(
   options: InitTransactionOptions = {},
 ): InitTransactionResult {
   const orderedTargets = [...targets].sort((left, right) => left.relativePath.localeCompare(right.relativePath))
-  const allTargets: readonly InitTarget[] = [
-    ...orderedTargets,
-    { relativePath: INIT_MANIFEST_RELATIVE_PATH, nextBytes: serializeInitManifest(manifest) },
-  ]
+  const allTargets: readonly InitTarget[] = options.includeManifest === false
+    ? orderedTargets
+    : [
+      ...orderedTargets,
+      { relativePath: INIT_MANIFEST_RELATIVE_PATH, nextBytes: serializeInitManifest(manifest) },
+    ]
   const snapshots = allTargets.map((target) => readSnapshot(projectDir, target.relativePath))
   const changes = changedTargets(allTargets, snapshots)
 
@@ -79,7 +83,9 @@ export function commitInitPlan(
       const target = allTargets[index]
       return target !== undefined && snapshot.bytes !== null && !snapshot.bytes.equals(target.nextBytes)
     })
-    backup = writeBackup(projectDir, changedExisting, sourceManifest, createdDirs)
+    backup = options.writeBackups === false
+      ? null
+      : writeBackup(projectDir, changedExisting, sourceManifest, createdDirs)
     for (const target of allTargets) {
       const snapshot = snapshots.find((entry) => entry.relativePath === target.relativePath)
       if (snapshot === undefined || (snapshot.bytes !== null && snapshot.bytes.equals(target.nextBytes))) {

@@ -17,7 +17,7 @@ import { enableLspMcpPreview } from "./bootstrap-lsp.js"
 import { enableMultiAgentPreview } from "./bootstrap-multi-agent.js"
 import { enableRuntimeInjectionPreview, enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
-import { initializePersonaHarness } from "./init.js"
+import { initializeFreshBootstrapPersonaHarness } from "./init.js"
 import { runIntakeCommand } from "./intake.js"
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH } from "./plan.js"
 import { runPlanCommand } from "./plan-command.js"
@@ -423,15 +423,19 @@ function runBackendBootstrap(
   const projectDir = projectDirFor(options)
   const actions: string[] = []
   const skipped: string[] = []
-
-  if (!existsSync(join(projectDir, PERSONA_DIR))) {
-    initializePersonaHarness({ projectDir, packageRoot: options.packageRoot })
-    actions.push("initialized .persona and OpenCode plugin config")
-  } else {
-    skipped.push(".persona already exists")
+  let bootstrapWriteBoundary: BootstrapWriteBoundary | undefined
+  try {
+    if (!existsSync(join(projectDir, PERSONA_DIR))) {
+      const initialized = initializeFreshBootstrapPersonaHarness({ projectDir, packageRoot: options.packageRoot })
+      bootstrapWriteBoundary = initialized.boundary
+      actions.push("initialized .persona and OpenCode plugin config")
+    } else {
+      skipped.push(".persona already exists")
+      bootstrapWriteBoundary = reserveBootstrapWriteBoundaryFor(projectDir)
+    }
+  } catch {
+    return bootstrapWriteBoundaryFailure()
   }
-
-  const bootstrapWriteBoundary = reserveBootstrapWriteBoundaryFor(projectDir)
   if (bootstrapWriteBoundary === undefined) return bootstrapWriteBoundaryFailure()
 
   try {
