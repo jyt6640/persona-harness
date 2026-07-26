@@ -42,11 +42,14 @@ ph workflow finish implement --assurance cooperative
 ```
 
 `bootstrap` initializes only absent empty current loop-state records; it does
-not repair malformed or stale state. Both loop-state readers and writers first
-reserve the canonical project-contained `.persona/workflow` path with no-follow
-identity checks. A parent or leaf alias, or a detected replacement, is an
-explicit unsafe lifecycle block and receives no state write or automatic
-recovery. `--stdin` accepts one bounded substantive
+not repair malformed or stale state. After the existing init transaction has
+established the harness, strict bootstrap reserves canonical project-contained
+`.persona` and `.persona/workflow` directories before modifying its harness
+config, profile, policy, plan, role boundary, reports, or loop states. Each
+bootstrap-owned leaf is checked with no-follow identity validation through its
+write. A parent or leaf alias, or a detected replacement, is an explicit unsafe
+lifecycle block: it writes no bootstrap artifact outside the project and does
+not perform automatic recovery. `--stdin` accepts one bounded substantive
 report while the corresponding report is still a template, then refuses a
 replacement. Its public report ingress enforces a streaming 65536-byte ceiling
 before decoding or collecting the input, so an oversized or continuously
