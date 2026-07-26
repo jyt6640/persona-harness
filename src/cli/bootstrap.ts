@@ -337,6 +337,10 @@ function initializeWorkflowLifecycleStates(projectDir: string, actions: string[]
   const ralphSnapshot = readRalphLoopStateSnapshot(projectDir)
   const now = new Date().toISOString()
 
+  if (workflowSnapshot.integrity === "unsafe" || ralphSnapshot.integrity === "unsafe") {
+    return lifecycleInitializationFailure()
+  }
+
   try {
     if (workflowSnapshot.integrity === "absent") {
       writeWorkflowLoopState(

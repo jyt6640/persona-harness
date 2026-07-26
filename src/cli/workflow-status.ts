@@ -395,11 +395,17 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   if (summary.lifecycle.loops.workflow === "malformed" || summary.lifecycle.loops.workflow === "stale") {
     return "review and repair the persisted workflow-loop state before continuing"
   }
+  if (summary.lifecycle.loops.workflow === "unsafe") {
+    return "repair the unsafe workflow-loop state path without following aliases before continuing"
+  }
   if (summary.lifecycle.loops.ralph === "absent") {
     return "establish persisted ralph-loop state through the approved bounded runtime before continuing"
   }
   if (summary.lifecycle.loops.ralph === "malformed") {
     return "review and repair the persisted ralph-loop state before continuing"
+  }
+  if (summary.lifecycle.loops.ralph === "unsafe") {
+    return "repair the unsafe ralph-loop state path without following aliases before continuing"
   }
   if (summary.stackAlignmentFinding === "WARN") return "review profile/generated stack mismatch before archiving workflow"
   if (summary.commandDisciplineFinding === "WARN") {
