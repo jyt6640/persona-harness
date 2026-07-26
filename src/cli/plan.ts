@@ -9,7 +9,10 @@ import { createImplementationReportTemplate, createReviewReportTemplate } from "
 import { createWorkflowRoleBoundaryTemplate, ROLE_BOUNDARY_PATH } from "./workflow-roles.js"
 import type { WorkflowStateWriteOptions } from "./workflow-state-conflict.js"
 
-export type PlanOptions = WorkflowStateWriteOptions & { readonly projectDir?: string }
+export type PlanOptions = WorkflowStateWriteOptions & {
+  readonly projectDir?: string
+  readonly stdin?: string
+}
 
 export class PlanDraftError extends Error {
   constructor(message: string) {
