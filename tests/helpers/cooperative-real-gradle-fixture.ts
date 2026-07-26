@@ -135,6 +135,22 @@ function writeBuildFiles(projectDir: string): void {
     ].join("\n"),
   )
   writeFileSync(
+    join(projectDir, "src", "main", "java", "example", "cooperative", "GreetingService.java"),
+    [
+      "package example.cooperative;",
+      "",
+      "import org.springframework.stereotype.Service;",
+      "",
+      "@Service",
+      "public class GreetingService {",
+      "  public String greeting() {",
+      "    return \"hello\";",
+      "  }",
+      "}",
+      "",
+    ].join("\n"),
+  )
+  writeFileSync(
     join(projectDir, "src", "test", "java", "example", "cooperative", "CooperativeApplicationTest.java"),
     [
       "package example.cooperative;",

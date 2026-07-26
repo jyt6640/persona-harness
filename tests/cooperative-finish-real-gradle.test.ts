@@ -44,11 +44,15 @@ describe("real Java/Spring Gradle cooperative Finish", () => {
     const fixture = track(createRealCooperativeGradleFixture())
 
     // When: the public source CLI runs explicit cooperative Finish.
+    const profileRead = run(fixture.projectDir, ["evidence", "read", ".persona/project-profile.jsonc"])
+    const roleRead = run(fixture.projectDir, ["evidence", "read", "src/main/java/example/cooperative/GreetingService.java"])
     const defaultFinish = run(fixture.projectDir, ["workflow", "finish", "implement"])
     const cooperativeFinish = run(fixture.projectDir, ["workflow", "finish", "implement", "--assurance", "cooperative"])
     const closure = run(fixture.projectDir, ["workflow", "closure", "next", "--json"])
 
     // Then: real JUnit exists, cooperative Finish passes, and later closure stays external-blocked.
+    expect(profileRead.status, profileRead.stderr).toBe(0)
+    expect(roleRead.status, roleRead.stderr).toBe(0)
     expect(defaultFinish.status).toBe(1)
     expect(cooperativeFinish.status, cooperativeFinish.stderr).toBe(0)
     expect(cooperativeFinish.stdout).toContain("Finish status: PASS")
@@ -79,6 +83,9 @@ describe("real Java/Spring Gradle cooperative Finish", () => {
     const test = run(consumer, ["bearshell", "./gradlew", "test"])
     const compile = run(consumer, ["bearshell", "./gradlew", "compileJava"])
     const clean = run(consumer, ["bearshell", "./gradlew", "clean"])
+    const readmeRead = run(consumer, ["evidence", "read", "README.md"])
+    const profileRead = run(consumer, ["evidence", "read", ".persona/project-profile.jsonc"])
+    const roleRead = run(consumer, ["evidence", "read", "src/main/java/example/cooperative/GreetingService.java"])
     const implementation = run(
       consumer,
       ["plan", "--report-filled", "implementation", "--stdin"],
@@ -100,12 +107,19 @@ describe("real Java/Spring Gradle cooperative Finish", () => {
     expect(test.status, test.stderr).toBe(0)
     expect(compile.status, compile.stderr).toBe(0)
     expect(clean.status, clean.stderr).toBe(0)
+    expect(readmeRead.status, readmeRead.stderr).toBe(0)
+    expect(profileRead.status, profileRead.stderr).toBe(0)
+    expect(roleRead.status, roleRead.stderr).toBe(0)
     expect(matchesProjectFinishAttestationSource(consumer, expected)).toBe(true)
     expect(implementation.status, implementation.stderr).toBe(0)
     expect(review.status, review.stderr).toBe(0)
     expect(matchesProjectFinishAttestationSource(consumer, expected)).toBe(true)
     expect(defaultFinish.status).toBe(1)
     expect(defaultFinish.stderr).toContain("trusted-authority-required")
+    expect(defaultFinish.stderr).not.toContain("evidence-missing")
+    expect(defaultFinish.stderr).not.toContain("report-coverage-missing")
+    expect(defaultFinish.stderr).not.toContain("profile-read-coverage-missing")
+    expect(defaultFinish.stderr).not.toContain("java-role-read-coverage-missing")
     expect(matchesProjectFinishAttestationSource(consumer, expected)).toBe(true)
     expect(cooperativeFinish.status, cooperativeFinish.stderr).toBe(0)
     expect(cooperativeFinish.stdout).toContain("Finish status: PASS")
