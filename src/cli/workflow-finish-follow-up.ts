@@ -90,7 +90,13 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
   }
   if (step.id === "repair-workflow-loop-state") {
     return {
-      action: "Review and repair the persisted workflow-loop state, canonical no-follow path, and rule-pack identity before continuing.",
+      action: "Review and repair the persisted workflow-loop state and rule-pack identity before continuing.",
+      blockerId,
+    }
+  }
+  if (step.id === "repair-unsafe-workflow-loop-state") {
+    return {
+      action: "Repair the unsafe workflow-loop state path without following aliases before continuing.",
       blockerId,
     }
   }
@@ -102,7 +108,13 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
   }
   if (step.id === "repair-ralph-loop-state") {
     return {
-      action: "Review and repair the persisted ralph-loop state and canonical no-follow path before continuing.",
+      action: "Review and repair the persisted ralph-loop state before continuing.",
+      blockerId,
+    }
+  }
+  if (step.id === "repair-unsafe-ralph-loop-state") {
+    return {
+      action: "Repair the unsafe ralph-loop state path without following aliases before continuing.",
       blockerId,
     }
   }

@@ -110,7 +110,7 @@ describe("public cooperative Finish", () => {
     expect(status.stdout).toContain("workflow-loop-state-unsafe")
     expect(next.status).toBe(0)
     expect(next.stdout).toContain("workflow-loop-state-unsafe")
-    expect(next.stdout).toContain("repair-workflow-loop-state")
+    expect(next.stdout).toContain("repair-unsafe-workflow-loop-state")
     expect(finish.status).toBe(1)
     expect(finish.stderr).toContain("workflow-loop-state-unsafe")
     expect(`${status.stdout}${next.stdout}${finish.stderr}`).not.toContain(outside)
