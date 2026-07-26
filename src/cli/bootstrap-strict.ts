@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import type { CliRunResult } from "./bearshell.js"
 
 const HARNESS_CONFIG_PATH = ".persona/harness.jsonc"
@@ -31,8 +32,17 @@ function readHarnessConfigObject(projectDir: string, step: string): Record<strin
   return parsed
 }
 
-function writeHarnessConfigObject(projectDir: string, config: Record<string, unknown>): void {
-  writeFileSync(join(projectDir, HARNESS_CONFIG_PATH), `${JSON.stringify(config, null, 2)}\n`, "utf8")
+function writeHarnessConfigObject(
+  projectDir: string,
+  config: Record<string, unknown>,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): void {
+  const text = `${JSON.stringify(config, null, 2)}\n`
+  if (bootstrapWriteBoundary !== undefined) {
+    bootstrapWriteBoundary.writePersonaFile("harness.jsonc", text)
+    return
+  }
+  writeFileSync(join(projectDir, HARNESS_CONFIG_PATH), text, "utf8")
 }
 
 function isCliRunResult(value: Record<string, unknown> | CliRunResult): value is CliRunResult {
@@ -50,16 +60,22 @@ function withRuntimeInjection(config: Record<string, unknown>): Record<string, u
   }
 }
 
-export function enableRuntimeInjectionPreview(projectDir: string): CliRunResult | undefined {
+export function enableRuntimeInjectionPreview(
+  projectDir: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): CliRunResult | undefined {
   const parsed = readHarnessConfigObject(projectDir, "runtime injection preview config")
   if (isCliRunResult(parsed)) {
     return parsed
   }
-  writeHarnessConfigObject(projectDir, withRuntimeInjection(parsed))
+  writeHarnessConfigObject(projectDir, withRuntimeInjection(parsed), bootstrapWriteBoundary)
   return undefined
 }
 
-export function enableStrictClosureVerification(projectDir: string): CliRunResult | undefined {
+export function enableStrictClosureVerification(
+  projectDir: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): CliRunResult | undefined {
   const parsed = readHarnessConfigObject(projectDir, "strict verification config")
   if (isCliRunResult(parsed)) {
     return parsed
@@ -72,6 +88,6 @@ export function enableStrictClosureVerification(projectDir: string): CliRunResul
       executeVerification: true,
     },
   }
-  writeHarnessConfigObject(projectDir, nextConfig)
+  writeHarnessConfigObject(projectDir, nextConfig, bootstrapWriteBoundary)
   return undefined
 }

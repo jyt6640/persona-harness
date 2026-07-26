@@ -4,12 +4,14 @@ import process from "node:process"
 
 import { loadBackendPolicyOverlay } from "../config/policy-overlay.js"
 import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from "../config/project-profile.js"
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import { createImplementationReportTemplate, createReviewReportTemplate } from "./workflow-templates.js"
 import { createWorkflowRoleBoundaryTemplate, ROLE_BOUNDARY_PATH } from "./workflow-roles.js"
 import type { WorkflowStateWriteOptions } from "./workflow-state-conflict.js"
 
 export type PlanOptions = WorkflowStateWriteOptions & {
+  readonly bootstrapWriteBoundary?: BootstrapWriteBoundary
   readonly projectDir?: string
   readonly stdin?: string
 }
@@ -246,11 +248,19 @@ export function initializeWorkflowPlan(options: PlanOptions = {}, force = false)
     throw new PlanDraftError(`${existingPaths.join(", ")} already exists. Re-run with --force to replace the drafts.`)
   }
 
-  mkdirSync(workflowDir, { recursive: true })
-  writeFileAtomic(planPath, createPlanDraft(projectDir))
+  if (options.bootstrapWriteBoundary === undefined) mkdirSync(workflowDir, { recursive: true })
+  writeWorkflowTemplate(options, "plan.md", planPath, createPlanDraft(projectDir))
   const inputLines = readmeLines(projectDir)
-  writeFileAtomic(implementationReportPath, createImplementationReportTemplate(inputLines))
-  writeFileAtomic(reviewReportPath, createReviewReportTemplate(inputLines))
-  writeFileAtomic(roleBoundaryPath, createWorkflowRoleBoundaryTemplate())
+  writeWorkflowTemplate(options, "implementation-report.md", implementationReportPath, createImplementationReportTemplate(inputLines))
+  writeWorkflowTemplate(options, "review-report.md", reviewReportPath, createReviewReportTemplate(inputLines))
+  writeWorkflowTemplate(options, "roles.md", roleBoundaryPath, createWorkflowRoleBoundaryTemplate())
   return planPath
+}
+
+function writeWorkflowTemplate(options: PlanOptions, name: string, path: string, text: string): void {
+  if (options.bootstrapWriteBoundary !== undefined) {
+    options.bootstrapWriteBoundary.writeWorkflowFile(name, text)
+    return
+  }
+  writeFileAtomic(path, text)
 }
