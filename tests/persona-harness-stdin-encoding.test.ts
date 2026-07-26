@@ -1,6 +1,8 @@
+import { Readable } from "node:stream"
+
 import { describe, expect, it } from "vitest"
 
-import { decodeCliStdinText, stdinEncodingError } from "../src/cli/stdin-text.js"
+import { decodeCliStdinText, readBoundedCliStdinText, stdinEncodingError } from "../src/cli/stdin-text.js"
 
 describe("CLI stdin encoding", () => {
   const koreanIdea = "TODO 웹 서비스 만들래"
@@ -30,5 +32,26 @@ describe("CLI stdin encoding", () => {
 
   it("does not reject ordinary ASCII questions with punctuation", () => {
     expect(stdinEncodingError("What is ???")).toBeUndefined()
+  })
+
+  it("stops an oversized stream before decoding or collecting it", async () => {
+    const result = await readBoundedCliStdinText(
+      Readable.from([Buffer.alloc(64 * 1024 + 1, 0x78)]),
+      64 * 1024,
+    )
+
+    expect(result).toEqual({ kind: "limit-exceeded" })
+  })
+
+  it("stops a continuous stream after the configured byte ceiling", async () => {
+    async function* chunks(): AsyncGenerator<Uint8Array> {
+      while (true) {
+        yield Buffer.alloc(8192, 0x78)
+      }
+    }
+
+    const result = await readBoundedCliStdinText(Readable.from(chunks()), 64 * 1024)
+
+    expect(result).toEqual({ kind: "limit-exceeded" })
   })
 })
