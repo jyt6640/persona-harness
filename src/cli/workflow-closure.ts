@@ -418,14 +418,20 @@ export function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState
   if (blocker.id === "workflow-loop-state-absent") {
     return { blockerId: blocker.id, id: "initialize-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
-  if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale" || blocker.id === "workflow-loop-state-unsafe") {
+  if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale") {
     return { blockerId: blocker.id, id: "repair-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "workflow-loop-state-unsafe") {
+    return { blockerId: blocker.id, id: "repair-unsafe-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "ralph-loop-state-absent") {
     return { blockerId: blocker.id, id: "initialize-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
-  if (blocker.id === "ralph-loop-state-malformed" || blocker.id === "ralph-loop-state-unsafe") {
+  if (blocker.id === "ralph-loop-state-malformed") {
     return { blockerId: blocker.id, id: "repair-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
+  }
+  if (blocker.id === "ralph-loop-state-unsafe") {
+    return { blockerId: blocker.id, id: "repair-unsafe-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "tdd-red-evidence-missing") {
     return { blockerId: blocker.id, command: "npx ph workflow test", evidenceRef: blocker.evidenceRef, id: "record-tdd-red", kind: "cli-command", reason: blocker.reason, source: blocker.source, status }
