@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto"
 import { isAbsolute, join, relative, resolve } from "node:path"
 
-import { reserveBootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
+import { reserveExistingBootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import { sanitizeEvidenceValue } from "../runtime/evidence-redaction.js"
 import { evidenceWriteContext } from "../runtime/evidence-file.js"
 import { readNoFollowProjectFile } from "../io/no-follow-file.js"
@@ -40,7 +40,7 @@ export function runEvidenceReadCommand(
   try {
     const relativeOutputPath = relative(projectDir, outputPath)
     if (!safeProjectRelativePath(relativeOutputPath)) return UNAVAILABLE_RESULT
-    const boundary = reserveBootstrapWriteBoundary(projectDir)
+    const boundary = reserveExistingBootstrapWriteBoundary(projectDir)
     try {
       boundary.writeProjectFileAtomically(
         relativeOutputPath,
