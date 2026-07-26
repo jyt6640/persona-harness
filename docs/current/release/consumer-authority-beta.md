@@ -51,8 +51,8 @@ and `.persona/workflow` directories before modifying its harness config,
 profile, policy, plan, role boundary, reports, or loop states. Each
 bootstrap-owned leaf is checked with no-follow identity validation through its
 write. A project-root, parent, or leaf alias, or a detected replacement, is an
-explicit unsafe lifecycle block: it writes no bootstrap artifact outside the
-project and does not perform automatic recovery. `--stdin` accepts one bounded substantive
+explicit unsafe lifecycle block: it writes no bootstrap artifact outside the project
+and does not perform automatic recovery. `--stdin` accepts one bounded substantive
 report while the corresponding report is still a template, then refuses a
 replacement. Its public report ingress enforces a streaming 65536-byte ceiling
 before decoding or collecting the input, so an oversized or continuously
