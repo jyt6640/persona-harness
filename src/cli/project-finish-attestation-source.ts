@@ -16,7 +16,26 @@ import type { SourceIdentity } from "./source-identity-types.js"
 import { runFixedGit } from "./fixed-git.js"
 import type { MutationEntry } from "./ci-reverification-mutation.js"
 
-const DIAGNOSTIC_ROOTS = [".persona/evidence", ".persona/workflow"] as const
+const PROJECT_FINISH_RUNTIME_ROOTS = [".persona/evidence", ".persona/workflow"] as const
+const PROJECT_FINISH_WORKFLOW_ROOT = ".persona/workflow"
+
+export function captureProjectFinishAttestationSourceIdentity(
+  projectDir: string,
+  git: GitIdentity,
+) {
+  return captureSourceIdentity(projectDir, git, ".persona/evidence", {
+    additionalExcludedRoots: [PROJECT_FINISH_WORKFLOW_ROOT],
+  })
+}
+
+export function captureProjectFinishAttestationSourceEntries(
+  projectDir: string,
+  git: GitIdentity,
+) {
+  return captureSourceIdentityEntries(projectDir, git, ".persona/evidence", {
+    additionalExcludedRoots: [PROJECT_FINISH_WORKFLOW_ROOT],
+  })
+}
 
 export function matchesProjectFinishAttestationSource(
   projectDir: string,
@@ -34,7 +53,7 @@ export function matchesProjectFinishAttestationSource(
     return false
   }
   if (captureProjectFinishAttestationInputSnapshot(projectDir).kind !== "ready") return false
-  const currentEntries = captureSourceIdentityEntries(projectDir, git, ".persona/evidence")
+  const currentEntries = captureProjectFinishAttestationSourceEntries(projectDir, git)
   if (currentEntries.status !== "available") return false
 
   const tempRoot = mkdtempSync(join(tmpdir(), "persona-harness-project-source-"))
@@ -48,8 +67,8 @@ export function matchesProjectFinishAttestationSource(
     const cleanWorkspace = captureWorkspaceIdentity(cleanRoot)
     if (cleanWorkspace.status !== "available") return false
     const cleanGit = captureGitIdentity(cleanRoot, cleanWorkspace.value)
-    const cleanSource = captureSourceIdentity(cleanRoot, cleanGit, ".persona/evidence")
-    const cleanEntries = captureSourceIdentityEntries(cleanRoot, cleanGit, ".persona/evidence")
+    const cleanSource = captureProjectFinishAttestationSourceIdentity(cleanRoot, cleanGit)
+    const cleanEntries = captureProjectFinishAttestationSourceEntries(cleanRoot, cleanGit)
     return cleanSource.status === "available"
       && cleanEntries.status === "available"
       && sameProjectFinishAttestationSourceEntries(currentEntries.value, cleanEntries.value)
@@ -91,5 +110,5 @@ function matchesPortableProjectFinishAttestationSourceIdentity(
 
 function isDiagnosticMutation(entry: MutationEntry): boolean {
   if (entry.kind !== "untracked") return false
-  return DIAGNOSTIC_ROOTS.some((root) => entry.path === root || entry.path.startsWith(`${root}/`))
+  return PROJECT_FINISH_RUNTIME_ROOTS.some((root) => entry.path === root || entry.path.startsWith(`${root}/`))
 }
