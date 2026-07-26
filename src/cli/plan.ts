@@ -30,13 +30,15 @@ const README_PATH = "README.md"
 const EXISTING_CODE_SCAN_ROOTS = ["src/main/java", "src/test/java"] as const
 const EXISTING_CODE_SCAN_LIMIT = 40
 
-function readReadmeHeading(projectDir: string): string | undefined {
+function readReadmeHeading(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): string | undefined {
   const readmePath = join(projectDir, README_PATH)
-  if (!existsSync(readmePath)) {
+  const bytes = bootstrapWriteBoundary?.readProjectFile(README_PATH)
+  if (bootstrapWriteBoundary === undefined && !existsSync(readmePath)) {
     return undefined
   }
+  if (bootstrapWriteBoundary !== undefined && bytes === undefined) return undefined
 
-  const readme = readFileSync(readmePath, "utf8")
+  const readme = bytes?.toString("utf8") ?? readFileSync(readmePath, "utf8")
   for (const line of readme.split(/\r?\n/)) {
     const heading = line.match(/^#\s+(.+)$/)
     if (heading?.[1] !== undefined) {
@@ -46,8 +48,8 @@ function readReadmeHeading(projectDir: string): string | undefined {
   return undefined
 }
 
-function profileSummaryLines(projectDir: string): readonly string[] {
-  const summary = loadBackendProjectProfileSummary(projectDir)
+function profileSummaryLines(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): readonly string[] {
+  const summary = loadBackendProjectProfileSummary(projectDir, bootstrapWriteBoundary)
   if (summary.length > 0) {
     return summary
   }
@@ -63,19 +65,26 @@ function profileSummaryLines(projectDir: string): readonly string[] {
   ]
 }
 
-function policyOverlayLines(projectDir: string): readonly string[] {
-  return loadBackendPolicyOverlay(projectDir).summaryLines
+function policyOverlayLines(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): readonly string[] {
+  return loadBackendPolicyOverlay(projectDir, bootstrapWriteBoundary).summaryLines
 }
 
-function readmeLines(projectDir: string): readonly string[] {
-  const heading = readReadmeHeading(projectDir)
+function readmeLines(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): readonly string[] {
+  const heading = readReadmeHeading(projectDir, bootstrapWriteBoundary)
   return [
     `Requirements source: \`${README_PATH}\``,
     heading === undefined ? "README status: missing" : `README heading: ${heading}`,
   ]
 }
 
-function collectJavaSourceFiles(projectDir: string): readonly string[] {
+function collectJavaSourceFiles(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): readonly string[] {
+  if (bootstrapWriteBoundary !== undefined) {
+    return bootstrapWriteBoundary.listProjectRegularFiles(
+      EXISTING_CODE_SCAN_ROOTS,
+      ".java",
+      EXISTING_CODE_SCAN_LIMIT,
+    )
+  }
   const javaFiles: string[] = []
   const visit = (relativeDir: string): void => {
     if (javaFiles.length >= EXISTING_CODE_SCAN_LIMIT) {
@@ -105,8 +114,13 @@ function collectJavaSourceFiles(projectDir: string): readonly string[] {
   return javaFiles
 }
 
-function packageNameFromJavaFile(projectDir: string, relativePath: string): string | undefined {
-  const match = /^package\s+([^;]+);/m.exec(readFileSync(join(projectDir, relativePath), "utf8"))
+function packageNameFromJavaFile(
+  projectDir: string,
+  relativePath: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): string | undefined {
+  const bytes = bootstrapWriteBoundary?.readProjectFile(relativePath)
+  const match = /^package\s+([^;]+);/m.exec(bytes?.toString("utf8") ?? readFileSync(join(projectDir, relativePath), "utf8"))
   return match?.[1]?.trim()
 }
 
@@ -137,8 +151,8 @@ function layerNamesFromJavaFiles(files: readonly string[]): readonly string[] {
   return [...layerCandidates].sort()
 }
 
-function projectModeLines(projectDir: string): readonly string[] {
-  const javaFiles = collectJavaSourceFiles(projectDir)
+function projectModeLines(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): readonly string[] {
+  const javaFiles = collectJavaSourceFiles(projectDir, bootstrapWriteBoundary)
   if (javaFiles.length === 0) {
     return [
       "## Project Mode",
@@ -152,7 +166,7 @@ function projectModeLines(projectDir: string): readonly string[] {
   }
 
   const packages = javaFiles
-    .map((file) => packageNameFromJavaFile(projectDir, file))
+    .map((file) => packageNameFromJavaFile(projectDir, file, bootstrapWriteBoundary))
     .filter((packageName): packageName is string => packageName !== undefined)
   const packageRoot = commonPackagePrefix(packages)
   const layers = layerNamesFromJavaFiles(javaFiles)
@@ -169,8 +183,8 @@ function projectModeLines(projectDir: string): readonly string[] {
   ]
 }
 
-function createPlanDraft(projectDir: string): string {
-  const policyOverlaySummary = policyOverlayLines(projectDir)
+function createPlanDraft(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): string {
+  const policyOverlaySummary = policyOverlayLines(projectDir, bootstrapWriteBoundary)
   return [
     "# Blackbear Architecture Plan",
     "",
@@ -179,12 +193,12 @@ function createPlanDraft(projectDir: string): string {
     "",
     "## Inputs",
     "",
-    ...readmeLines(projectDir),
+    ...readmeLines(projectDir, bootstrapWriteBoundary),
     "",
-    ...profileSummaryLines(projectDir),
+    ...profileSummaryLines(projectDir, bootstrapWriteBoundary),
     ...(policyOverlaySummary.length > 0 ? ["", ...policyOverlaySummary] : []),
     "",
-    ...projectModeLines(projectDir),
+    ...projectModeLines(projectDir, bootstrapWriteBoundary),
     "",
     "## Architecture / Technology Plan",
     "",
@@ -217,15 +231,15 @@ function createPlanDraft(projectDir: string): string {
   ].join("\n")
 }
 
-function existingWorkflowPaths(projectDir: string): readonly string[] {
+function existingWorkflowPaths(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): readonly string[] {
   return [PLAN_PATH, IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH, ROLE_BOUNDARY_PATH].filter((path) =>
-    existsSync(join(projectDir, path)),
+    bootstrapWriteBoundary?.projectFileExists(path) ?? existsSync(join(projectDir, path)),
   )
 }
 
 export function initializeWorkflowPlan(options: PlanOptions = {}, force = false): string {
-  const projectDir = resolve(options.projectDir ?? process.cwd())
-  const profileState = readBackendProjectProfileState(projectDir)
+  const projectDir = options.bootstrapWriteBoundary === undefined ? resolve(options.projectDir ?? process.cwd()) : "."
+  const profileState = readBackendProjectProfileState(projectDir, options.bootstrapWriteBoundary)
   if (profileState.status !== "ready") {
     throw new PlanDraftError(
       [
@@ -243,14 +257,14 @@ export function initializeWorkflowPlan(options: PlanOptions = {}, force = false)
   const reviewReportPath = join(projectDir, REVIEW_REPORT_PATH)
   const roleBoundaryPath = join(projectDir, ROLE_BOUNDARY_PATH)
 
-  const existingPaths = existingWorkflowPaths(projectDir)
+  const existingPaths = existingWorkflowPaths(projectDir, options.bootstrapWriteBoundary)
   if (existingPaths.length > 0 && !force) {
     throw new PlanDraftError(`${existingPaths.join(", ")} already exists. Re-run with --force to replace the drafts.`)
   }
 
   if (options.bootstrapWriteBoundary === undefined) mkdirSync(workflowDir, { recursive: true })
-  writeWorkflowTemplate(options, "plan.md", planPath, createPlanDraft(projectDir))
-  const inputLines = readmeLines(projectDir)
+  writeWorkflowTemplate(options, "plan.md", planPath, createPlanDraft(projectDir, options.bootstrapWriteBoundary))
+  const inputLines = readmeLines(projectDir, options.bootstrapWriteBoundary)
   writeWorkflowTemplate(options, "implementation-report.md", implementationReportPath, createImplementationReportTemplate(inputLines))
   writeWorkflowTemplate(options, "review-report.md", reviewReportPath, createReviewReportTemplate(inputLines))
   writeWorkflowTemplate(options, "roles.md", roleBoundaryPath, createWorkflowRoleBoundaryTemplate())

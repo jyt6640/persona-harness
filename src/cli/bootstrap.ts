@@ -1,8 +1,7 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
-import { writeFileAtomic } from "../io/atomic-file.js"
 import {
   BootstrapWriteBoundaryError,
   reserveBootstrapWriteBoundary,
@@ -78,6 +77,28 @@ const BOOTSTRAP_WORKFLOW_FILES = [
   "roles.md",
   "workflow-loop-state.json",
   "ralph-loop-state.json",
+] as const
+
+export const BOOTSTRAP_TRANSACTION_OUTPUT_MANIFEST = [
+  ".gitignore",
+  ".opencode/opencode.json",
+  "AGENTS.md",
+  ".persona/.init-manifest.json",
+  ".persona/harness.jsonc",
+  ".persona/conventions/**",
+  ".persona/rules/**",
+  ".persona/project-profile.jsonc",
+  ".persona/policies/overlay.jsonc",
+  ".persona/policies/company/backend.md",
+  ".persona/policies/personal/backend.md",
+  ".persona/workflow/plan.md",
+  ".persona/workflow/implementation-report.md",
+  ".persona/workflow/review-report.md",
+  ".persona/workflow/roles.md",
+  ".persona/workflow/workflow-loop-state.json",
+  ".persona/workflow/ralph-loop-state.json",
+  "temporary: .<leaf>.<uuid>.tmp",
+  "temporary: Persona staging directory",
 ] as const
 
 function strictModeSummaryLines(): readonly string[] {
@@ -324,15 +345,15 @@ function bootstrapAgentInstructions(includeMultiAgentRelayGuidance = false): str
 }
 
 function writeBackendAgentInstructions(
-  projectDir: string,
+  bootstrapWriteBoundary: BootstrapWriteBoundary,
   skipped: string[],
   force: boolean,
   includeMultiAgentRelayGuidance: boolean,
 ): string | undefined {
-  const targetPath = join(projectDir, ROOT_AGENT_INSTRUCTIONS_PATH)
-  if (existsSync(targetPath) && !force) {
+  const currentBytes = bootstrapWriteBoundary.readProjectFile(ROOT_AGENT_INSTRUCTIONS_PATH)
+  if (currentBytes !== undefined && !force) {
     if (includeMultiAgentRelayGuidance) {
-      const current = readFileSync(targetPath, "utf8")
+      const current = currentBytes.toString("utf8")
       if (
         current.includes(ROLE_CHECKLIST_RELAY_SECTION_TITLE) ||
         current.includes(LEGACY_MULTI_AGENT_RELAY_SECTION_TITLE)
@@ -340,15 +361,19 @@ function writeBackendAgentInstructions(
         skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} role checklist relay guidance already exists`)
         return undefined
       }
-      writeFileAtomic(targetPath, `${current.trimEnd()}\n\n${multiAgentRelayProcedureGuidance().join("\n")}`, {
-        encoding: "utf8",
-      })
+      bootstrapWriteBoundary.writeProjectFileAtomically(
+        ROOT_AGENT_INSTRUCTIONS_PATH,
+        `${current.trimEnd()}\n\n${multiAgentRelayProcedureGuidance().join("\n")}`,
+      )
       return `updated ${ROOT_AGENT_INSTRUCTIONS_PATH} with role checklist relay procedure guidance`
     }
     skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} already exists`)
     return undefined
   }
-  writeFileAtomic(targetPath, bootstrapAgentInstructions(includeMultiAgentRelayGuidance), { encoding: "utf8" })
+  bootstrapWriteBoundary.writeProjectFileAtomically(
+    ROOT_AGENT_INSTRUCTIONS_PATH,
+    bootstrapAgentInstructions(includeMultiAgentRelayGuidance),
+  )
   return `created ${ROOT_AGENT_INSTRUCTIONS_PATH} AI bootstrap instructions`
 }
 
@@ -438,10 +463,13 @@ function runBackendBootstrap(
   }
   if (bootstrapWriteBoundary === undefined) return bootstrapWriteBoundaryFailure()
 
+  const activeBoundary = bootstrapWriteBoundary
   try {
+    return activeBoundary.withCapturedProject(() => {
+      const capturedProjectDir = "."
 
     if (flags.strict) {
-      const strictFailure = enableStrictClosureVerification(projectDir, bootstrapWriteBoundary)
+      const strictFailure = enableStrictClosureVerification(capturedProjectDir, activeBoundary)
     if (strictFailure !== undefined) {
       return strictFailure
     }
@@ -449,7 +477,7 @@ function runBackendBootstrap(
   }
 
     if (flags.runtimeInjectionPreview) {
-      const injectionFailure = enableRuntimeInjectionPreview(projectDir, bootstrapWriteBoundary)
+      const injectionFailure = enableRuntimeInjectionPreview(capturedProjectDir, activeBoundary)
     if (injectionFailure !== undefined) {
       return injectionFailure
     }
@@ -457,7 +485,11 @@ function runBackendBootstrap(
   }
 
     if (flags.multiAgentPreview) {
-    const previewFailure = enableMultiAgentPreview(projectDir, loadHarnessConfig(projectDir).multiAgent)
+    const previewFailure = enableMultiAgentPreview(
+      capturedProjectDir,
+      loadHarnessConfig(capturedProjectDir, activeBoundary).multiAgent,
+      activeBoundary,
+    )
     if (previewFailure !== undefined) {
       return previewFailure
     }
@@ -465,7 +497,7 @@ function runBackendBootstrap(
   }
 
     if (flags.codeNavPreview) {
-    const codeNavFailure = enableCodeNavMcpPreview(projectDir, options.packageRoot)
+    const codeNavFailure = enableCodeNavMcpPreview(capturedProjectDir, options.packageRoot, activeBoundary)
     if (codeNavFailure !== undefined) {
       return codeNavFailure
     }
@@ -473,7 +505,7 @@ function runBackendBootstrap(
   }
 
     if (flags.lspPreview) {
-    const lspFailure = enableLspMcpPreview(projectDir, options.packageRoot)
+    const lspFailure = enableLspMcpPreview(capturedProjectDir, options.packageRoot, activeBoundary)
     if (lspFailure !== undefined) {
       return lspFailure
     }
@@ -481,7 +513,8 @@ function runBackendBootstrap(
   }
 
     if (flags.developerMcpEnabled) {
-    const developerMcpResult = enableDeveloperMcpBundle(projectDir, {
+    const developerMcpResult = enableDeveloperMcpBundle(capturedProjectDir, {
+      bootstrapWriteBoundary: activeBoundary,
       codeGraphEnabled: flags.codeGraphEnabled,
       packageRoot: options.packageRoot,
     })
@@ -495,9 +528,9 @@ function runBackendBootstrap(
     skipped.push("developer MCP bundle disabled by --no-developer-mcp")
   }
 
-    const profileState = readBackendProjectProfileState(projectDir)
+    const profileState = readBackendProjectProfileState(capturedProjectDir, activeBoundary)
     if (flags.force || profileState.status !== "ready") {
-      const result = runIntakeCommand(["--default", "backend", "--force"], { bootstrapWriteBoundary, projectDir }, "ph")
+      const result = runIntakeCommand(["--default", "backend", "--force"], { bootstrapWriteBoundary: activeBoundary, projectDir: capturedProjectDir }, "ph")
     const failure = runAndRecord(actions, "profile", result, "created default backend profile")
     if (failure !== undefined) {
       return failure
@@ -506,9 +539,9 @@ function runBackendBootstrap(
     skipped.push(`${PROFILE_PATH} already ready`)
   }
 
-    if (flags.force || !existsSync(join(projectDir, POLICY_OVERLAY_PATH))) {
+    if (flags.force || !activeBoundary.projectFileExists(POLICY_OVERLAY_PATH)) {
       const policyArgs = flags.force ? ["init", "--force"] : ["init"]
-      const result = runPolicyCommand(policyArgs, { bootstrapWriteBoundary, projectDir }, "ph")
+      const result = runPolicyCommand(policyArgs, { bootstrapWriteBoundary: activeBoundary, projectDir: capturedProjectDir }, "ph")
     const failure = runAndRecord(actions, "policy", result, "created backend policy overlay")
     if (failure !== undefined) {
       return failure
@@ -517,8 +550,8 @@ function runBackendBootstrap(
     skipped.push(`${POLICY_OVERLAY_PATH} already exists`)
   }
 
-    if (flags.force || !existsSync(join(projectDir, PLAN_PATH))) {
-      const result = runPlanCommand(["--auto-accept"], { bootstrapWriteBoundary, projectDir }, "ph")
+    if (flags.force || !activeBoundary.projectFileExists(PLAN_PATH)) {
+      const result = runPlanCommand(["--auto-accept"], { bootstrapWriteBoundary: activeBoundary, projectDir: capturedProjectDir }, "ph")
     const failure = runAndRecord(actions, "plan", result, "created and accepted backend workflow plan")
     if (failure !== undefined) {
       return failure
@@ -527,14 +560,14 @@ function runBackendBootstrap(
     skipped.push(`${PLAN_PATH} already exists`)
   }
 
-    bootstrapWriteBoundary.assert()
-    const lifecycleFailure = initializeWorkflowLifecycleStates(projectDir, actions)
+    activeBoundary.assert()
+    const lifecycleFailure = initializeWorkflowLifecycleStates(capturedProjectDir, actions)
     if (lifecycleFailure !== undefined) {
       return lifecycleFailure
     }
-    bootstrapWriteBoundary.assert()
+    activeBoundary.assert()
 
-    const agentInstructionAction = writeBackendAgentInstructions(projectDir, skipped, flags.force, flags.multiAgentPreview)
+    const agentInstructionAction = writeBackendAgentInstructions(activeBoundary, skipped, flags.force, flags.multiAgentPreview)
     if (agentInstructionAction !== undefined) {
       actions.push(agentInstructionAction)
     }
@@ -581,11 +614,12 @@ function runBackendBootstrap(
     ].join("\n") + "\n",
     stderr: "",
     }
+    })
   } catch (error) {
     if (error instanceof BootstrapWriteBoundaryError) return bootstrapWriteBoundaryFailure()
     throw error
   } finally {
-    bootstrapWriteBoundary.close()
+    activeBoundary.close()
   }
 }
 

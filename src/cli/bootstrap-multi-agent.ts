@@ -9,6 +9,7 @@ import {
 } from "../config/harness-config.js"
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import type { CliRunResult } from "./bearshell.js"
 
 const HARNESS_CONFIG_PATH = ".persona/harness.jsonc"
@@ -57,12 +58,20 @@ const ROLE_DEFINITIONS: Readonly<Record<MultiAgentRole, RoleDefinition>> = {
   },
 }
 
-function readJsonObject(path: string, label: string): JsonObject | CliRunResult {
-  if (!existsSync(path)) {
+function readJsonObject(
+  projectDir: string,
+  relativePath: string,
+  label: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): JsonObject | CliRunResult {
+  const bytes = bootstrapWriteBoundary?.readProjectFile(relativePath)
+  const path = join(projectDir, relativePath)
+  if (bootstrapWriteBoundary === undefined && !existsSync(path)) {
     return {}
   }
+  if (bootstrapWriteBoundary !== undefined && bytes === undefined) return {}
   try {
-    const parsed: unknown = JSON.parse(stripJsonComments(readFileSync(path, "utf8")))
+    const parsed: unknown = JSON.parse(stripJsonComments(bytes?.toString("utf8") ?? readFileSync(path, "utf8")))
     if (!isRecord(parsed)) {
       return {
         status: 1,
@@ -121,14 +130,28 @@ function modelForRole(
   return typeof model === "string" && model.trim() !== "" ? model : undefined
 }
 
-function writeJsonObject(path: string, value: JsonObject): void {
+function writeJsonObject(
+  projectDir: string,
+  relativePath: string,
+  value: JsonObject,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): void {
+  const text = `${JSON.stringify(value, null, 2)}\n`
+  if (bootstrapWriteBoundary !== undefined) {
+    bootstrapWriteBoundary.writeProjectFileAtomically(relativePath, text)
+    return
+  }
+  const path = join(projectDir, relativePath)
   mkdirSync(dirname(path), { recursive: true })
-  writeFileAtomic(path, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8" })
+  writeFileAtomic(path, text, { encoding: "utf8" })
 }
 
-function enableHarnessMultiAgent(projectDir: string, multiAgent: HarnessMultiAgentConfig): CliRunResult | undefined {
-  const harnessConfigPath = join(projectDir, HARNESS_CONFIG_PATH)
-  const parsed = readJsonObject(harnessConfigPath, HARNESS_CONFIG_PATH)
+function enableHarnessMultiAgent(
+  projectDir: string,
+  multiAgent: HarnessMultiAgentConfig,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): CliRunResult | undefined {
+  const parsed = readJsonObject(projectDir, HARNESS_CONFIG_PATH, HARNESS_CONFIG_PATH, bootstrapWriteBoundary)
   if (isCliRunResult(parsed)) {
     return parsed
   }
@@ -141,7 +164,7 @@ function enableHarnessMultiAgent(projectDir: string, multiAgent: HarnessMultiAge
       models[role] = model
     }
   }
-  writeJsonObject(harnessConfigPath, {
+  writeJsonObject(projectDir, HARNESS_CONFIG_PATH, {
     ...parsed,
     multiAgent: {
       ...existingMultiAgent,
@@ -149,13 +172,16 @@ function enableHarnessMultiAgent(projectDir: string, multiAgent: HarnessMultiAge
       roles: DEFAULT_MULTI_AGENT_ROLES,
       models,
     },
-  })
+  }, bootstrapWriteBoundary)
   return undefined
 }
 
-function enableOpenCodeAgents(projectDir: string, multiAgent: HarnessMultiAgentConfig): CliRunResult | undefined {
-  const opencodeConfigPath = join(projectDir, OPENCODE_CONFIG_PATH)
-  const parsed = readJsonObject(opencodeConfigPath, OPENCODE_CONFIG_PATH)
+function enableOpenCodeAgents(
+  projectDir: string,
+  multiAgent: HarnessMultiAgentConfig,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): CliRunResult | undefined {
+  const parsed = readJsonObject(projectDir, OPENCODE_CONFIG_PATH, OPENCODE_CONFIG_PATH, bootstrapWriteBoundary)
   if (isCliRunResult(parsed)) {
     return parsed
   }
@@ -164,17 +190,18 @@ function enableOpenCodeAgents(projectDir: string, multiAgent: HarnessMultiAgentC
   for (const role of DEFAULT_MULTI_AGENT_ROLES) {
     nextAgent[role] = roleAgentConfig(role, multiAgent.models[role], nextAgent[role])
   }
-  writeJsonObject(opencodeConfigPath, { ...parsed, agent: nextAgent })
+  writeJsonObject(projectDir, OPENCODE_CONFIG_PATH, { ...parsed, agent: nextAgent }, bootstrapWriteBoundary)
   return undefined
 }
 
 export function enableMultiAgentPreview(
   projectDir: string,
   multiAgent: HarnessMultiAgentConfig,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
 ): CliRunResult | undefined {
-  const harnessFailure = enableHarnessMultiAgent(projectDir, multiAgent)
+  const harnessFailure = enableHarnessMultiAgent(projectDir, multiAgent, bootstrapWriteBoundary)
   if (harnessFailure !== undefined) {
     return harnessFailure
   }
-  return enableOpenCodeAgents(projectDir, multiAgent)
+  return enableOpenCodeAgents(projectDir, multiAgent, bootstrapWriteBoundary)
 }

@@ -115,7 +115,9 @@ export function policyUsage(invocation = "ph"): string {
 }
 
 function writePolicyFiles(projectDir: string, force: boolean, bootstrapWriteBoundary?: BootstrapWriteBoundary): readonly string[] {
-  const existing = POLICY_FILES.filter((file) => existsSync(join(projectDir, file.path))).map((file) => file.path)
+  const existing = POLICY_FILES.filter((file) =>
+    bootstrapWriteBoundary?.projectFileExists(file.path) ?? existsSync(join(projectDir, file.path)),
+  ).map((file) => file.path)
   if (existing.length > 0 && !force) {
     throw new Error(`${existing.join(", ")} already exists. Re-run with --force to replace policy overlay files.`)
   }
@@ -123,7 +125,7 @@ function writePolicyFiles(projectDir: string, force: boolean, bootstrapWriteBoun
   for (const file of POLICY_FILES) {
     const targetPath = join(projectDir, file.path)
     if (bootstrapWriteBoundary !== undefined) {
-      bootstrapWriteBoundary.writePersonaFile(file.path.slice(".persona/".length), file.contents)
+      bootstrapWriteBoundary.writeProjectFileAtomically(file.path, file.contents)
       continue
     }
     mkdirSync(dirname(targetPath), { recursive: true })

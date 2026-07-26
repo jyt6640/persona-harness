@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { isRecord, stripJsonComments } from "./jsonc.js"
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 
 const POLICY_OVERLAY_PATH = ".persona/policies/overlay.jsonc"
 const SUPPORTED_SCHEMA = "persona.policy-overlay.v1"
@@ -87,18 +88,21 @@ function readPolicySource(
   name: PolicySourceName,
   heading: string,
   maxBullets: number,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
 ): { readonly source?: PolicyOverlaySource; readonly diagnostics: readonly string[] } {
   const sourcePath = readSourcePath(overlay, name)
   if (sourcePath === undefined) {
     return { diagnostics: [`missing ${name} policy source`] }
   }
 
+  const bytes = bootstrapWriteBoundary?.readProjectFile(sourcePath)
   const absolutePath = join(projectDir, sourcePath)
-  if (!existsSync(absolutePath)) {
+  if (bootstrapWriteBoundary === undefined && !existsSync(absolutePath)) {
     return { diagnostics: [`missing ${name} policy file: ${sourcePath}`] }
   }
+  if (bootstrapWriteBoundary !== undefined && bytes === undefined) return { diagnostics: [`missing ${name} policy file: ${sourcePath}`] }
 
-  const bullets = extractBullets(readFileSync(absolutePath, "utf8"), maxBullets)
+  const bullets = extractBullets(bytes?.toString("utf8") ?? readFileSync(absolutePath, "utf8"), maxBullets)
   return bullets.length > 0
     ? { source: { name, heading, path: sourcePath, bullets }, diagnostics: [] }
     : { diagnostics: [`empty ${name} policy file: ${sourcePath}`] }
@@ -117,15 +121,20 @@ function formatSummary(sources: readonly PolicyOverlaySource[]): readonly string
   ]
 }
 
-export function loadBackendPolicyOverlay(projectDir: string): BackendPolicyOverlay {
+export function loadBackendPolicyOverlay(
+  projectDir: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): BackendPolicyOverlay {
   const overlayPath = join(projectDir, POLICY_OVERLAY_PATH)
-  if (!existsSync(overlayPath)) {
+  const bytes = bootstrapWriteBoundary?.readProjectFile(POLICY_OVERLAY_PATH)
+  if (bootstrapWriteBoundary === undefined && !existsSync(overlayPath)) {
     return inactiveOverlay()
   }
+  if (bootstrapWriteBoundary !== undefined && bytes === undefined) return inactiveOverlay()
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(stripJsonComments(readFileSync(overlayPath, "utf8")))
+    parsed = JSON.parse(stripJsonComments(bytes?.toString("utf8") ?? readFileSync(overlayPath, "utf8")))
   } catch (error) {
     if (error instanceof SyntaxError) {
       return inactiveOverlay(["malformed overlay.jsonc"])
@@ -146,8 +155,8 @@ export function loadBackendPolicyOverlay(projectDir: string): BackendPolicyOverl
   }
 
   const maxBullets = maxBulletsPerSource(parsed)
-  const company = readPolicySource(projectDir, parsed, "company", "Company policy:", maxBullets)
-  const personal = readPolicySource(projectDir, parsed, "personal", "Personal philosophy:", maxBullets)
+  const company = readPolicySource(projectDir, parsed, "company", "Company policy:", maxBullets, bootstrapWriteBoundary)
+  const personal = readPolicySource(projectDir, parsed, "personal", "Personal philosophy:", maxBullets, bootstrapWriteBoundary)
   const sources = [company.source, personal.source].filter((source): source is PolicyOverlaySource => source !== undefined)
   const diagnostics = [...company.diagnostics, ...personal.diagnostics]
 

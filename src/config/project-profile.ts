@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { isRecord, stripJsonComments } from "./jsonc.js"
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 
 const PROFILE_PATH = ".persona/project-profile.jsonc"
 const SUPPORTED_SCHEMA = "persona.project-profile.v1"
@@ -100,15 +101,27 @@ function formatSummaryLines(answers: ReadonlyMap<string, string>, projectNote?: 
   ]
 }
 
-export function loadBackendProjectProfileSummary(projectDir: string): readonly string[] {
+function readProfileText(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): string | undefined {
+  if (bootstrapWriteBoundary !== undefined) {
+    return bootstrapWriteBoundary.readProjectFile(PROFILE_PATH)?.toString("utf8")
+  }
   const profilePath = join(projectDir, PROFILE_PATH)
   if (!existsSync(profilePath)) {
-    return []
+    return undefined
   }
+  return readFileSync(profilePath, "utf8")
+}
+
+export function loadBackendProjectProfileSummary(
+  projectDir: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): readonly string[] {
+  const text = readProfileText(projectDir, bootstrapWriteBoundary)
+  if (text === undefined) return []
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(stripJsonComments(readFileSync(profilePath, "utf8")))
+    parsed = JSON.parse(stripJsonComments(text))
   } catch (error) {
     if (error instanceof SyntaxError) {
       return []
@@ -123,9 +136,12 @@ export function loadBackendProjectProfileSummary(projectDir: string): readonly s
   return formatSummaryLines(answeredQuestionMap(readQuestions(parsed.questions)), readProjectNote(parsed))
 }
 
-export function readBackendProjectProfileState(projectDir: string): BackendProjectProfileState {
-  const profilePath = join(projectDir, PROFILE_PATH)
-  if (!existsSync(profilePath)) {
+export function readBackendProjectProfileState(
+  projectDir: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): BackendProjectProfileState {
+  const text = readProfileText(projectDir, bootstrapWriteBoundary)
+  if (text === undefined) {
     return {
       status: "missing",
       missingAnswers: [...SUMMARY_ORDER],
@@ -135,7 +151,7 @@ export function readBackendProjectProfileState(projectDir: string): BackendProje
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(stripJsonComments(readFileSync(profilePath, "utf8")))
+    parsed = JSON.parse(stripJsonComments(text))
   } catch (error) {
     if (error instanceof SyntaxError) {
       return {

@@ -82,13 +82,17 @@ function parseIntakeArgs(args: readonly string[]): ParsedIntakeArgs {
 }
 
 function resolveProfilePath(options: IntakeOptions): string {
+  if (options.bootstrapWriteBoundary !== undefined) {
+    return PROFILE_PATH
+  }
   const projectDir = resolve(options.projectDir ?? process.cwd())
   return join(projectDir, PROFILE_PATH)
 }
 
 function ensureWritableProfile(options: IntakeOptions, force: boolean): string {
   const profilePath = resolveProfilePath(options)
-  if (existsSync(profilePath) && !force) {
+  const exists = options.bootstrapWriteBoundary?.projectFileExists(PROFILE_PATH) ?? existsSync(profilePath)
+  if (exists && !force) {
     throw new Error(`${PROFILE_PATH} already exists. Re-run with --force to replace the draft.`)
   }
   return profilePath
@@ -102,7 +106,7 @@ function writeProfile(
 ): void {
   const text = `${JSON.stringify(createBackendProfile(answers, projectNote), null, 2)}\n`
   if (options.bootstrapWriteBoundary !== undefined) {
-    options.bootstrapWriteBoundary.writePersonaFile("project-profile.jsonc", text)
+    options.bootstrapWriteBoundary.writeProjectFileAtomically(PROFILE_PATH, text)
     return
   }
   mkdirSync(dirname(profilePath), { recursive: true })

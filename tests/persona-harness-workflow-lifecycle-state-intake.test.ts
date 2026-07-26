@@ -16,6 +16,7 @@ import { dirname, join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
+import { BOOTSTRAP_TRANSACTION_OUTPUT_MANIFEST } from "../src/cli/bootstrap.js"
 import { runPersonaCli } from "../src/cli/index.js"
 
 const projects: string[] = []
@@ -47,6 +48,19 @@ const BOOTSTRAP_ARTIFACT_PATHS = [
   "workflow/ralph-loop-state.json",
 ] as const
 const ROOT_INIT_FILES = [".gitignore", ".opencode/opencode.json"] as const
+const CAPTURED_BOOTSTRAP_WRITE_STAGES = [
+  { kind: "atomic", leaf: "harness.jsonc" },
+  { kind: "atomic", leaf: "project-profile.jsonc" },
+  { kind: "atomic", leaf: "overlay.jsonc" },
+  { kind: "atomic", leaf: "backend.md" },
+  { kind: "direct", leaf: "plan.md" },
+  { kind: "direct", leaf: "implementation-report.md" },
+  { kind: "direct", leaf: "review-report.md" },
+  { kind: "direct", leaf: "roles.md" },
+  { kind: "state", leaf: "workflow-loop-state.json" },
+  { kind: "state", leaf: "ralph-loop-state.json" },
+  { kind: "atomic", leaf: "AGENTS.md" },
+] as const
 
 afterEach(() => {
   for (const projectDir of projects.splice(0)) {
@@ -125,6 +139,119 @@ describe("bootstrap workspace intake", () => {
       if (swapped) {
         unlinkSync(projectDir)
         renameSync(preserved, projectDir)
+      }
+    }
+  })
+
+  it("blocks a captured project-root replacement during AGENTS staging without writing outside", () => {
+    const projectDir = createProject()
+    const canonicalProjectDir = realpathSync(projectDir)
+    const preserved = join(dirname(projectDir), `${projectDir.split("/").at(-1)}-preserved`)
+    const outside = join(dirname(projectDir), `${projectDir.split("/").at(-1)}-outside`)
+    mkdirSync(outside)
+    const originalWrite = fs.writeFileSync
+    const originalOpen = fs.openSync
+    let swapped = false
+
+    const swapProjectRoot = (): void => {
+      if (swapped) return
+      swapped = true
+      renameSync(canonicalProjectDir, preserved)
+      symlinkSync(outside, projectDir)
+    }
+
+    fs.writeFileSync = ((...args: Parameters<typeof fs.writeFileSync>) => {
+      const target = args[0]
+      const leaf = typeof target === "string" ? target.split("/").at(-1) : undefined
+      if (!swapped && leaf?.startsWith(".AGENTS.md.")) {
+        swapProjectRoot()
+      }
+      return originalWrite(...args)
+    }) as typeof fs.writeFileSync
+    fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+      const target = args[0]
+      const leaf = typeof target === "string" ? target.split("/").at(-1) : undefined
+      if (!swapped && leaf?.startsWith(".AGENTS.md.")) {
+        swapProjectRoot()
+      }
+      return originalOpen(...args)
+    }) as typeof fs.openSync
+    syncBuiltinESMExports()
+    try {
+      const result = runBootstrap(projectDir)
+
+      expect(swapped).toBe(true)
+      expect(result.status).toBe(1)
+      expect(fs.readdirSync(outside)).toEqual([])
+      expect(`${result.stdout}${result.stderr}`).not.toContain(outside)
+      expect(authorityEvidenceExists(projectDir)).toBe(false)
+    } finally {
+      fs.writeFileSync = originalWrite
+      fs.openSync = originalOpen
+      syncBuiltinESMExports()
+      if (swapped && fs.lstatSync(projectDir).isSymbolicLink()) {
+        unlinkSync(projectDir)
+        renameSync(preserved, projectDir)
+      }
+      rmSync(outside, { force: true, recursive: true })
+    }
+  })
+
+  it("keeps every captured bootstrap output stage inside the reserved project transaction", () => {
+    expect(BOOTSTRAP_TRANSACTION_OUTPUT_MANIFEST).toEqual(expect.arrayContaining([
+      ".gitignore",
+      ".opencode/opencode.json",
+      "AGENTS.md",
+      ".persona/harness.jsonc",
+      ".persona/project-profile.jsonc",
+      ".persona/policies/overlay.jsonc",
+      ".persona/workflow/plan.md",
+      ".persona/workflow/workflow-loop-state.json",
+      "temporary: .<leaf>.<uuid>.tmp",
+    ]))
+
+    for (const stage of CAPTURED_BOOTSTRAP_WRITE_STAGES) {
+      const projectDir = createProject()
+      expect(runBootstrap(projectDir).status).toBe(0)
+      if (stage.kind === "state") {
+        unlinkSync(join(projectDir, ".persona", "workflow", stage.leaf))
+      }
+      const canonicalProjectDir = realpathSync(projectDir)
+      const preserved = join(dirname(projectDir), `${projectDir.split("/").at(-1)}-${stage.leaf}-preserved`)
+      const outside = join(dirname(projectDir), `${projectDir.split("/").at(-1)}-${stage.leaf}-outside`)
+      mkdirSync(outside)
+      const originalOpen = fs.openSync
+      let swapped = false
+
+      fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+        const target = args[0]
+        const leaf = typeof target === "string" ? target.split("/").at(-1) : undefined
+        const matches = leaf === stage.leaf
+          || (stage.kind === "atomic" && leaf?.startsWith(`.${stage.leaf}.`) === true)
+        if (!swapped && matches) {
+          swapped = true
+          renameSync(canonicalProjectDir, preserved)
+          symlinkSync(outside, projectDir)
+        }
+        return originalOpen(...args)
+      }) as typeof fs.openSync
+      syncBuiltinESMExports()
+      try {
+        const result = runBootstrap(projectDir, ["--force"])
+
+        expect(swapped, stage.leaf).toBe(true)
+        expect(result.status, stage.leaf).toBe(1)
+        expect(fs.readdirSync(outside), stage.leaf).toEqual([])
+        expect(`${result.stdout}${result.stderr}`, stage.leaf).not.toContain(outside)
+        expect(authorityEvidenceExists(projectDir), stage.leaf).toBe(false)
+      } finally {
+        fs.openSync = originalOpen
+        syncBuiltinESMExports()
+        if (swapped && fs.lstatSync(projectDir).isSymbolicLink()) {
+          unlinkSync(projectDir)
+          renameSync(preserved, projectDir)
+        }
+        rmSync(outside, { force: true, recursive: true })
       }
     }
   })

@@ -8,12 +8,15 @@ import {
   mkdirSync,
   mkdtempSync,
   openSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   renameSync,
   rmSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs"
+import { randomUUID } from "node:crypto"
 import { tmpdir } from "node:os"
 import { isAbsolute, join, resolve } from "node:path"
 import process from "node:process"
@@ -74,6 +77,16 @@ export class BootstrapWriteBoundary {
     this.#assertActive()
   }
 
+  withCapturedProject<T>(operation: () => T): T {
+    this.#assertActive()
+    return withReservedProjectDirectory(this.#project, () => {
+      this.#assertActive()
+      const result = operation()
+      this.#assertActive()
+      return result
+    })
+  }
+
   assertSafePersonaFile(relativePath: string): void {
     this.#assertActive()
     const { directory, leaf, reservations } = this.#reserveExistingPersonaParent(relativePath)
@@ -104,6 +117,79 @@ export class BootstrapWriteBoundary {
 
   writeRootFile(relativePath: string, bytes: Buffer): boolean {
     return this.#writeProjectFile(relativePath, bytes, true)
+  }
+
+  writeProjectFile(relativePath: string, content: string | Buffer): boolean {
+    return this.#writeProjectFile(relativePath, content, false)
+  }
+
+  writeProjectFileAtomically(relativePath: string, content: string | Buffer): boolean {
+    return this.#writeProjectFileAtomically(relativePath, content, false)
+  }
+
+  readProjectFile(relativePath: string): Buffer | undefined {
+    this.#assertActive()
+    const segments = validatedRelativeSegments(relativePath)
+    const leaf = segments.pop()
+    if (leaf === undefined) throw new BootstrapWriteBoundaryError()
+    return withReservedProjectDirectory(this.#project, () => {
+      const reservations: DirectoryReservation[] = []
+      try {
+        let parent = this.#project
+        for (const segment of segments) {
+          const reservation = reserveExistingCurrentChildDirectory(parent, segment)
+          if (reservation === undefined) return undefined
+          reservations.push(reservation)
+          parent = reservation
+        }
+        const current = this.#readCurrentFile(leaf, reservations)
+        return current.kind === "ready" ? current.bytes : undefined
+      } finally {
+        leaveCurrentReservations(this.#project, reservations)
+      }
+    })
+  }
+
+  projectFileExists(relativePath: string): boolean {
+    return this.readProjectFile(relativePath) !== undefined
+  }
+
+  listProjectRegularFiles(
+    relativeRoots: readonly string[],
+    suffix: string,
+    maxEntries: number,
+  ): readonly string[] {
+    if (!Number.isInteger(maxEntries) || maxEntries <= 0 || suffix.length === 0) {
+      throw new BootstrapWriteBoundaryError()
+    }
+    this.#assertActive()
+    return withReservedProjectDirectory(this.#project, () => {
+      const files: string[] = []
+      for (const relativeRoot of relativeRoots) {
+        if (files.length >= maxEntries) break
+        const segments = validatedRelativeSegments(relativeRoot)
+        const reservations: DirectoryReservation[] = []
+        try {
+          let parent = this.#project
+          let absent = false
+          for (const segment of segments) {
+            const reservation = reserveExistingCurrentChildDirectory(parent, segment)
+            if (reservation === undefined) {
+              absent = true
+              break
+            }
+            reservations.push(reservation)
+            parent = reservation
+          }
+          if (!absent) {
+            this.#collectCurrentRegularFiles(relativeRoot, parent, reservations, suffix, maxEntries, files)
+          }
+        } finally {
+          leaveCurrentReservations(this.#project, reservations)
+        }
+      }
+      return files
+    })
   }
 
   #assertActive(): void {
@@ -155,6 +241,28 @@ export class BootstrapWriteBoundary {
     })
   }
 
+  #writeProjectFileAtomically(relativePath: string, content: string | Buffer, rootOnly: boolean): boolean {
+    this.#assertActive()
+    const segments = validatedRelativeSegments(relativePath)
+    if (rootOnly && segments[0] === ".persona") throw new BootstrapWriteBoundaryError()
+    const leaf = segments.pop()
+    if (leaf === undefined) throw new BootstrapWriteBoundaryError()
+    return withReservedProjectDirectory(this.#project, () => {
+      const reservations: DirectoryReservation[] = []
+      try {
+        let parent = this.#project
+        for (const segment of segments) {
+          const reservation = reserveOrCreateCurrentChildDirectory(parent, segment)
+          reservations.push(reservation)
+          parent = reservation
+        }
+        return this.#writeCurrentFileAtomically(leaf, content, reservations)
+      } finally {
+        leaveCurrentReservations(this.#project, reservations)
+      }
+    })
+  }
+
   #writeCurrentFile(name: string, content: string | Buffer, reservations: readonly DirectoryReservation[]): boolean {
     const expected = this.#readCurrentFile(name, reservations)
     const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
@@ -195,6 +303,62 @@ export class BootstrapWriteBoundary {
     }
   }
 
+  #writeCurrentFileAtomically(name: string, content: string | Buffer, reservations: readonly DirectoryReservation[]): boolean {
+    const expected = this.#readCurrentFile(name, reservations)
+    const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
+    if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) return false
+    const temporaryName = `.${name}.${randomUUID()}.tmp`
+    let descriptor: number | undefined
+    let temporaryIdentity: NoFollowPathIdentity | undefined
+    let renamed = false
+    try {
+      this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+      descriptor = openSync(
+        temporaryName,
+        constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+        0o600,
+      )
+      temporaryIdentity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      const temporaryPathIdentity = noFollowPathIdentityFromStat(lstatSync(temporaryName, { bigint: true }))
+      if (!sameNoFollowPathIdentity(temporaryIdentity, temporaryPathIdentity) || temporaryIdentity.size !== "0") {
+        throw new BootstrapWriteBoundaryError()
+      }
+      writeFileSync(descriptor, nextBytes)
+      fsyncSync(descriptor)
+      const afterWrite = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      const temporaryAfterWrite = noFollowPathIdentityFromStat(lstatSync(temporaryName, { bigint: true }))
+      if (!sameNoFollowPathIdentity(afterWrite, temporaryAfterWrite)) throw new BootstrapWriteBoundaryError()
+      const current = this.#readCurrentFile(name, reservations)
+      if (
+        (expected.kind === "absent" && current.kind !== "absent")
+        || (expected.kind === "ready" && (current.kind !== "ready" || !sameNoFollowPathIdentity(expected.identity, current.identity)))
+      ) {
+        throw new BootstrapWriteBoundaryError()
+      }
+      this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+      renameSync(temporaryName, name)
+      renamed = true
+      const promoted = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
+      const promotedDescriptor = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      if (!sameNoFollowPathIdentity(promotedDescriptor, promoted)) throw new BootstrapWriteBoundaryError()
+      this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+      return true
+    } catch (error) {
+      if (error instanceof BootstrapWriteBoundaryError) throw error
+      throw new BootstrapWriteBoundaryError()
+    } finally {
+      if (descriptor !== undefined) closeSync(descriptor)
+      if (!renamed && temporaryIdentity !== undefined) {
+        try {
+          const current = lstatSync(temporaryName, { bigint: true })
+          if (current.isFile() && !current.isSymbolicLink() && sameNoFollowPathIdentity(temporaryIdentity, noFollowPathIdentityFromStat(current))) {
+            unlinkSync(temporaryName)
+          }
+        } catch {}
+      }
+    }
+  }
+
   #readCurrentFile(name: string, reservations: readonly DirectoryReservation[]): CurrentFile {
     let descriptor: number | undefined
     try {
@@ -217,6 +381,45 @@ export class BootstrapWriteBoundary {
       throw new BootstrapWriteBoundaryError()
     } finally {
       if (descriptor !== undefined) closeSync(descriptor)
+    }
+  }
+
+  #collectCurrentRegularFiles(
+    relativeDirectory: string,
+    directory: DirectoryReservation,
+    reservations: DirectoryReservation[],
+    suffix: string,
+    maxEntries: number,
+    files: string[],
+  ): void {
+    this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+    for (const entry of readdirSync(".").sort()) {
+      if (files.length >= maxEntries) return
+      assertLeafName(entry)
+      const stat = lstatSync(entry, { bigint: true })
+      if (stat.isSymbolicLink()) throw new BootstrapWriteBoundaryError()
+      const relativePath = `${relativeDirectory}/${entry}`
+      if (stat.isDirectory()) {
+        const child = reserveExistingCurrentChildDirectory(directory, entry)
+        if (child === undefined) throw new BootstrapWriteBoundaryError()
+        reservations.push(child)
+        try {
+          this.#collectCurrentRegularFiles(relativePath, child, reservations, suffix, maxEntries, files)
+        } finally {
+          reservations.pop()
+          try {
+            process.chdir("..")
+            assertCurrentDirectory(directory)
+          } catch {
+            throw new BootstrapWriteBoundaryError()
+          } finally {
+            closeSync(child.descriptor)
+          }
+        }
+        continue
+      }
+      if (!stat.isFile()) throw new BootstrapWriteBoundaryError()
+      if (entry.endsWith(suffix)) files.push(relativePath)
     }
   }
 
@@ -413,6 +616,35 @@ function reserveOrCreateCurrentChildDirectory(parent: DirectoryReservation, name
     descriptor = undefined
     return reservation
   } catch (error) {
+    if (error instanceof BootstrapWriteBoundaryError) throw error
+    throw new BootstrapWriteBoundaryError()
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor)
+  }
+}
+
+function reserveExistingCurrentChildDirectory(parent: DirectoryReservation, name: string): DirectoryReservation | undefined {
+  assertLeafName(name)
+  assertCurrentDirectory(parent)
+  assertDirectoryReservation(parent)
+  let descriptor: number | undefined
+  try {
+    const beforeStat = lstatSync(name, { bigint: true })
+    if (!beforeStat.isDirectory() || beforeStat.isSymbolicLink()) throw new BootstrapWriteBoundaryError()
+    const before = noFollowPathIdentityFromStat(beforeStat)
+    descriptor = openSync(name, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+    const descriptorIdentity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+    const after = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
+    if (!sameNoFollowPathIdentity(before, after) || !sameNoFollowPathLocation(after, descriptorIdentity)) {
+      throw new BootstrapWriteBoundaryError()
+    }
+    const reservation = { descriptor, identity: after, path: join(parent.path, name) }
+    process.chdir(name)
+    assertCurrentDirectory(reservation)
+    descriptor = undefined
+    return reservation
+  } catch (error) {
+    if (errorCode(error) === "ENOENT") return undefined
     if (error instanceof BootstrapWriteBoundaryError) throw error
     throw new BootstrapWriteBoundaryError()
   } finally {

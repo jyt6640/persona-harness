@@ -15,6 +15,7 @@ import {
   type EvidenceMode,
 } from "./evidence-privacy.js"
 import { isRecord, stripJsonComments } from "./jsonc.js"
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 
 export type { ConventionLevel } from "./convention-registry.js"
 export type { EvidenceMode, EvidencePrivacyClass } from "./evidence-privacy.js"
@@ -497,23 +498,30 @@ export function resolveConfiguredPath(projectDir: string, configuredPath: string
   return result.ok ? result.path : join(projectDir, INVALID_CONFIG_PATH)
 }
 
-export function loadHarnessConfig(projectDir: string): HarnessConfig {
-  return loadHarnessConfigResult(projectDir).config
+export function loadHarnessConfig(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): HarnessConfig {
+  return loadHarnessConfigResult(projectDir, bootstrapWriteBoundary).config
 }
 
 export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
   return config.enabled && config.features.runtimeInjection
 }
 
-export function loadHarnessConfigResult(projectDir: string): HarnessConfigLoadResult {
+export function loadHarnessConfigResult(
+  projectDir: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): HarnessConfigLoadResult {
   const harnessPath = join(projectDir, ".persona", "harness.jsonc")
-  if (!existsSync(harnessPath)) {
+  const bytes = bootstrapWriteBoundary?.readProjectFile(".persona/harness.jsonc")
+  if (bootstrapWriteBoundary !== undefined && bytes === undefined) {
+    return { config: DEFAULT_CONFIG, diagnostics: [], safe: true }
+  }
+  if (bootstrapWriteBoundary === undefined && !existsSync(harnessPath)) {
     return { config: DEFAULT_CONFIG, diagnostics: [], safe: true }
   }
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(stripJsonComments(readFileSync(harnessPath, "utf8")))
+    parsed = JSON.parse(stripJsonComments(bytes?.toString("utf8") ?? readFileSync(harnessPath, "utf8")))
   } catch (error) {
     return {
       config: FAIL_CLOSED_CONFIG,
