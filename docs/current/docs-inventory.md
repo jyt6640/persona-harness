@@ -27,7 +27,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 59
 - versioned durable: 26
 
-Total indexed files: 334
+Total indexed files: 336
 
 ## File Inventory
 
