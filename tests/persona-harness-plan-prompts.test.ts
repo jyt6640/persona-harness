@@ -134,7 +134,7 @@ describe("ph plan prompt and usage output", () => {
 
     expect(help.status).toBe(0)
     expect(help.stdout).toContain(
-      "Usage: ph plan [--force | --auto-accept | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review>]",
+      "Usage: ph plan [--force | --auto-accept | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review> [--stdin]]",
     )
     expect(help.stdout).toContain("--auto-accept")
     expect(help.stdout).toContain("--accept")
