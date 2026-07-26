@@ -8,6 +8,7 @@ import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   realpathSync,
   renameSync,
   rmSync,
@@ -744,10 +745,56 @@ function assertSourceBootstrapWorkspaceIntake(sourceCliPath) {
 }
 
 function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
+  assertFreshPersonaParentRaceBlocks(join(fixtureRoot, "fresh-persona-race"), phPath, label)
   assertLifecycleStateParentAliasBlocks(join(fixtureRoot, "parent-alias"), phPath, label)
   assertLifecycleStateLeafAliasesBlock(join(fixtureRoot, "leaf-alias"), phPath, label)
   assertLifecycleStateParentRaceBlocks(join(fixtureRoot, "parent-race"), phPath, label)
   assertLifecycleStateLeafRacesBlock(join(fixtureRoot, "leaf-race"), phPath, label)
+}
+
+function assertFreshPersonaParentRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  const personaDir = join(projectDir, ".persona")
+  const canonicalPersonaDir = join(realpathSync(projectDir), ".persona")
+  const preserved = join(projectDir, ".persona-preserved")
+  const outside = join(projectDir, "outside-fresh-persona")
+  const hookPath = join(projectDir, "fresh-persona-race-hook.cjs")
+  mkdirSync(outside)
+  writeFileSync(
+    hookPath,
+    [
+      'const fs = require("node:fs")',
+      'const { syncBuiltinESMExports } = require("node:module")',
+      'const originalRename = fs.renameSync',
+      'let swapped = false',
+      'fs.renameSync = (...args) => {',
+      '  const result = originalRename(...args)',
+      '  if (!swapped && args[1] === process.env.PH_BOOTSTRAP_FRESH_PERSONA) {',
+      '    swapped = true',
+      '    originalRename(process.env.PH_BOOTSTRAP_FRESH_PERSONA_TEXT, process.env.PH_BOOTSTRAP_FRESH_PRESERVED)',
+      '    fs.symlinkSync(process.env.PH_BOOTSTRAP_FRESH_OUTSIDE, process.env.PH_BOOTSTRAP_FRESH_PERSONA_TEXT)',
+      '  }',
+      '  return result',
+      '}',
+      'syncBuiltinESMExports()',
+      '',
+    ].join("\n"),
+  )
+  const rerun = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"],
+    {
+      PH_BOOTSTRAP_FRESH_OUTSIDE: outside,
+      PH_BOOTSTRAP_FRESH_PERSONA: canonicalPersonaDir,
+      PH_BOOTSTRAP_FRESH_PERSONA_TEXT: personaDir,
+      PH_BOOTSTRAP_FRESH_PRESERVED: preserved,
+    },
+  )
+
+  requireLifecycleStateBlock(`${label} fresh persona parent race`, rerun, outside)
+  if (!lstatSync(personaDir).isSymbolicLink() || readdirSync(outside).length !== 0) {
+    throw new Error(`${label} fresh Persona parent race wrote outside its canonical root`)
+  }
 }
 
 function assertLifecycleStateParentAliasBlocks(projectDir, phPath, label) {
