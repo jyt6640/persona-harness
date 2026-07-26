@@ -143,17 +143,11 @@ export function initializeFreshBootstrapPersonaHarness(options: InitOptions = {}
         relativePath: target.relativePath,
       })),
     )
-    const rootTransaction = commitInitPlan(
-      prepared.projectDir,
-      rootTargets,
-      prepared.manifest,
-      null,
-      {
-        includeManifest: false,
-        onAfterCommitFile: options.onAfterCommitFile,
-        writeBackups: false,
-      },
-    )
+    const activeBoundary = boundary
+    const changedRootTargets = rootTargets
+      .filter((target) => activeBoundary.writeRootFile(target.relativePath, target.nextBytes))
+      .map((target) => target.relativePath)
+    for (const target of changedRootTargets) options.onAfterCommitFile?.(target)
     for (const target of personaFiles) options.onAfterCommitFile?.(target.relativePath)
     return {
       boundary,
@@ -169,12 +163,12 @@ export function initializeFreshBootstrapPersonaHarness(options: InitOptions = {}
           ".opencode/opencode.json",
           ".gitignore",
         ],
-        backups: rootTransaction.backups,
+        backups: [],
         evidenceCopied: false,
         decision: "apply",
         changed: [
           ...personaFiles.map((target) => target.relativePath),
-          ...rootTransaction.changed,
+          ...changedRootTargets,
         ].sort((left, right) => left.localeCompare(right)),
         conflicts: [],
       },
