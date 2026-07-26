@@ -22,6 +22,7 @@ import {
   sameSourceIdentity,
   type SourceIdentity,
 } from "./source-identity.js"
+import { captureProjectFinishAttestationSourceIdentity } from "./project-finish-attestation-source.js"
 
 export const COOPERATIVE_GRADLE_COMMAND_CATALOG = [
   {
@@ -120,7 +121,9 @@ function runGradleVerification(
   }
   const preGit = captureGitIdentity(projectDir, context.workspace)
   if (!preGit.available) return blocked(preGit.diagnosticCode)
-  const preSource = captureSourceIdentity(projectDir, preGit, context.evidenceRootRelativePath)
+  const preSource = inputSnapshot === undefined
+    ? captureSourceIdentity(projectDir, preGit, context.evidenceRootRelativePath)
+    : captureProjectFinishAttestationSourceIdentity(projectDir, preGit)
   if (preSource.status === "unavailable") return blocked(preSource.diagnosticCode)
   const boundPreSource = inputSnapshot === undefined
     ? preSource.value
@@ -160,7 +163,9 @@ function runGradleVerification(
     }
     postInputSnapshot = postInputs.value
   }
-  const postSource = captureSourceIdentity(projectDir, postGit, context.evidenceRootRelativePath)
+  const postSource = inputSnapshot === undefined
+    ? captureSourceIdentity(projectDir, postGit, context.evidenceRootRelativePath)
+    : captureProjectFinishAttestationSourceIdentity(projectDir, postGit)
   if (postSource.status === "unavailable") return blocked(postSource.diagnosticCode)
   const boundPostSource = postInputSnapshot === undefined
     ? postSource.value

@@ -10,8 +10,10 @@ import {
   bindProjectFinishAttestationInputSnapshot,
   captureProjectFinishAttestationInputSnapshot,
 } from "../src/cli/project-finish-attestation-inputs.js"
-import { matchesProjectFinishAttestationSource } from "../src/cli/project-finish-attestation-source.js"
-import { captureSourceIdentity } from "../src/cli/source-identity.js"
+import {
+  captureProjectFinishAttestationSourceIdentity,
+  matchesProjectFinishAttestationSource,
+} from "../src/cli/project-finish-attestation-source.js"
 import type { SourceIdentity } from "../src/cli/source-identity-types.js"
 
 const temporaryRoots: string[] = []
@@ -23,6 +25,25 @@ afterEach(() => {
 })
 
 describe("project finish attestation source binding", () => {
+  it("keeps runtime workflow and evidence state out of the signed source comparison", () => {
+    const primary = createProject()
+    const expected = captureBoundSourceIdentity(primary)
+    const worktreeParent = track(mkdtempSync(join(tmpdir(), "persona-project-finish-source-")))
+    const worktree = join(worktreeParent, "consumer")
+    execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: primary })
+
+    mkdirSync(join(worktree, ".persona", "evidence", "phase0"), { recursive: true })
+    mkdirSync(join(worktree, ".persona", "workflow"), { recursive: true })
+    writeFileSync(join(worktree, ".persona", "evidence", "phase0", "bearshell.json"), "evidence\n")
+    writeFileSync(join(worktree, ".persona", "workflow", "implementation-report.md"), "Status: filled\n")
+
+    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(true)
+
+    writeFileSync(join(worktree, ".persona", "project-profile.jsonc"), "unsafe profile drift\n")
+
+    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(false)
+  })
+
   it("accepts a portable signed binding in a clean worktree and blocks tracked source drift", () => {
     const primary = createProject()
     const expected = captureBoundSourceIdentity(primary)
@@ -65,7 +86,7 @@ function captureBoundSourceIdentity(projectDir: string): SourceIdentity {
   if (workspace.status !== "available") throw new Error("workspace identity must be available")
   const git = captureGitIdentity(projectDir, workspace.value)
   if (!git.available) throw new Error("Git identity must be available")
-  const source = captureSourceIdentity(projectDir, git, ".persona/evidence")
+  const source = captureProjectFinishAttestationSourceIdentity(projectDir, git)
   if (source.status !== "available") throw new Error("source identity must be available")
   const inputs = captureProjectFinishAttestationInputSnapshot(projectDir)
   if (inputs.kind !== "ready") throw new Error("project inputs must be available")

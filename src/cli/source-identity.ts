@@ -34,6 +34,7 @@ export type SourceIdentityEntry =
   | { readonly classification: "tracked" | "untracked"; readonly contentDigest: string; readonly kind: "file"; readonly mode: string; readonly path: string }
   | { readonly kind: "missing-tracked"; readonly path: string }
 type SourceIdentityLimits = {
+  readonly additionalExcludedRoots?: readonly string[]
   readonly maxEntries?: number
   readonly maxFileBytes?: number
   readonly maxTotalBytes?: number
@@ -65,17 +66,17 @@ export function captureSourceIdentity(
   const limits = { ...DEFAULT_LIMITS, ...overrides }
   try {
     const root = realpathSync(projectDir)
-    const evidenceRoot = normalizedRelativePath(evidenceRelativePath)
+    const exclusions = sourceExclusions(evidenceRelativePath, overrides.additionalExcludedRoots)
     const tracked = trackedIndex(projectDir, limits.maxEntries)
-    const scanned = scanWorkspace(root, evidenceRoot, tracked.paths, limits)
+    const scanned = scanWorkspace(root, exclusions, tracked.paths, limits)
     const missingTracked = [...tracked.paths]
-      .filter((path) => !isExcluded(path, evidenceRoot) && !scanned.paths.has(path))
+      .filter((path) => !isExcluded(path, exclusions) && !scanned.paths.has(path))
       .sort()
       .map((path) => ({ kind: "missing-tracked", path }) satisfies SourceIdentityEntry)
     const entries = [...scanned.entries, ...missingTracked].sort((left, right) => entryKey(left).localeCompare(entryKey(right)))
     if (entries.length > limits.maxEntries) throw new SourceIdentityError("source-identity-entry-limit")
     const trackedEntryCount = scanned.trackedEntryCount + missingTracked.length
-    const statusDigest = relevantStatusDigest(git.status.entries, evidenceRoot)
+    const statusDigest = relevantStatusDigest(git.status.entries, exclusions)
     const source = JSON.stringify({
       entries,
       exclusions: SOURCE_IDENTITY_EXCLUSIONS,
@@ -114,11 +115,11 @@ export function captureSourceIdentityEntries(
   const limits = { ...DEFAULT_LIMITS, ...overrides }
   try {
     const root = realpathSync(projectDir)
-    const evidenceRoot = normalizedRelativePath(evidenceRelativePath)
+    const exclusions = sourceExclusions(evidenceRelativePath, overrides.additionalExcludedRoots)
     const tracked = trackedIndex(projectDir, limits.maxEntries)
-    const scanned = scanWorkspace(root, evidenceRoot, tracked.paths, limits)
+    const scanned = scanWorkspace(root, exclusions, tracked.paths, limits)
     const missingTracked = [...tracked.paths]
-      .filter((path) => !isExcluded(path, evidenceRoot) && !scanned.paths.has(path))
+      .filter((path) => !isExcluded(path, exclusions) && !scanned.paths.has(path))
       .sort()
       .map((path) => ({ kind: "missing-tracked", path }) satisfies SourceIdentityEntry)
     return { status: "available", value: [...scanned.entries, ...missingTracked].sort((left, right) => entryKey(left).localeCompare(entryKey(right))) }
@@ -147,7 +148,7 @@ function trackedIndex(projectDir: string, maxEntries: number): { readonly digest
 
 function scanWorkspace(
   root: string,
-  evidenceRoot: string,
+  exclusions: readonly string[],
   trackedPaths: ReadonlySet<string>,
   limits: ResolvedSourceIdentityLimits,
 ): {
@@ -171,7 +172,7 @@ function scanWorkspace(
     }).sort()
     for (const name of names) {
       const path = parent === "" ? name : `${parent}/${name}`
-      if (isExcluded(path, evidenceRoot)) continue
+      if (isExcluded(path, exclusions)) continue
       const absolutePath = join(directory, name)
       const stat = lstatSync(absolutePath, { bigint: true })
       if (stat.isSymbolicLink()) throw new SourceIdentityError("source-identity-symlink")
@@ -228,20 +229,27 @@ function normalizedRelativePath(value: string): string {
   return path
 }
 
-function isExcluded(path: string, evidenceRoot: string): boolean {
+function sourceExclusions(evidenceRelativePath: string, additionalExcludedRoots: readonly string[] | undefined): readonly string[] {
+  return [
+    normalizedRelativePath(evidenceRelativePath),
+    ...(additionalExcludedRoots ?? []).map(normalizedRelativePath),
+  ]
+}
+
+function isExcluded(path: string, additionalExcludedRoots: readonly string[]): boolean {
   return path === ".git" || path.startsWith(".git/")
     || path === ".gradle" || path.startsWith(".gradle/")
     || path === "build" || path.startsWith("build/")
     || path === "node_modules" || path.startsWith("node_modules/")
-    || path === evidenceRoot || path.startsWith(`${evidenceRoot}/`)
+    || additionalExcludedRoots.some((root) => path === root || path.startsWith(`${root}/`))
 }
 
-function relevantStatusDigest(entries: readonly MutationEntry[], evidenceRoot: string): string {
+function relevantStatusDigest(entries: readonly MutationEntry[], exclusions: readonly string[]): string {
   const relevant = entries.filter((entry) => {
     if (entry.kind === "renamed") {
-      return !isExcluded(entry.oldPath, evidenceRoot) || !isExcluded(entry.newPath, evidenceRoot)
+      return !isExcluded(entry.oldPath, exclusions) || !isExcluded(entry.newPath, exclusions)
     }
-    return !isExcluded(entry.path, evidenceRoot)
+    return !isExcluded(entry.path, exclusions)
   })
   return digest(JSON.stringify(relevant))
 }
