@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import type { CliRunResult } from "./bearshell.js"
 import {
   INTAKE_QUESTIONS,
@@ -12,6 +13,7 @@ import {
 } from "./intake-profile.js"
 
 type IntakeOptions = {
+  readonly bootstrapWriteBoundary?: BootstrapWriteBoundary
   readonly projectDir?: string
 }
 
@@ -92,22 +94,32 @@ function ensureWritableProfile(options: IntakeOptions, force: boolean): string {
   return profilePath
 }
 
-function writeProfile(profilePath: string, answers: ReadonlyMap<string, string>, projectNote: string | null): void {
+function writeProfile(
+  options: IntakeOptions,
+  profilePath: string,
+  answers: ReadonlyMap<string, string>,
+  projectNote: string | null,
+): void {
+  const text = `${JSON.stringify(createBackendProfile(answers, projectNote), null, 2)}\n`
+  if (options.bootstrapWriteBoundary !== undefined) {
+    options.bootstrapWriteBoundary.writePersonaFile("project-profile.jsonc", text)
+    return
+  }
   mkdirSync(dirname(profilePath), { recursive: true })
-  writeFileSync(profilePath, `${JSON.stringify(createBackendProfile(answers, projectNote), null, 2)}\n`)
+  writeFileSync(profilePath, text)
 }
 
 export function initializeProjectIntake(options: IntakeOptions = {}, force = false): string {
   const profilePath = ensureWritableProfile(options, force)
 
-  writeProfile(profilePath, new Map<string, string>(), null)
+  writeProfile(options, profilePath, new Map<string, string>(), null)
   return profilePath
 }
 
 export function initializeDefaultBackendIntake(options: IntakeOptions = {}, force = false): string {
   const profilePath = ensureWritableProfile(options, force)
 
-  writeProfile(profilePath, createDefaultBackendAnswers(), "Default backend profile created by Persona Harness.")
+  writeProfile(options, profilePath, createDefaultBackendAnswers(), "Default backend profile created by Persona Harness.")
   return profilePath
 }
 
@@ -221,7 +233,7 @@ export async function runInteractiveIntakeCommand(
     }
     throw error
   }
-  writeProfile(profilePath, result.answers, result.projectNote)
+  writeProfile(options, profilePath, result.answers, result.projectNote)
   options.write(
     [
       "",

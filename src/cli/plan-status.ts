@@ -58,6 +58,10 @@ export function updateWorkflowPlanStatus(
   extractStatus(snapshot.text)
 
   const updatedPlan = snapshot.text.replace(/^Status:\s*.+?\s*$/m, `Status: ${status}`)
+  if (options.bootstrapWriteBoundary !== undefined) {
+    options.bootstrapWriteBoundary.writeWorkflowFile("plan.md", updatedPlan)
+    return { planPath, status }
+  }
   beforeWorkflowStateWrite(options, planPath)
   try {
     writeFileAtomicIfUnchanged(snapshot, updatedPlan)
