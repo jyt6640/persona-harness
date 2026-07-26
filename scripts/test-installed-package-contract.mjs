@@ -24,12 +24,17 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const sourceCli = sourceCliArgument(process.argv.slice(2))
-const BETA3_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta3-acceptance.json")
-const BETA3_COOPERATIVE_COMMANDS = new Map([
+const BETA4_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta4-acceptance.json")
+const BETA4_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
   ["ph bearshell ./gradlew clean", { args: ["bearshell", "./gradlew", "clean"] }],
+  ["ph evidence read README.md", { args: ["evidence", "read", "README.md"] }],
+  ["ph evidence read .persona/project-profile.jsonc", { args: ["evidence", "read", ".persona/project-profile.jsonc"] }],
+  ["ph evidence read src/main/java/example/cooperative/GreetingService.java", {
+    args: ["evidence", "read", "src/main/java/example/cooperative/GreetingService.java"],
+  }],
   ["ph plan --report-filled implementation --stdin", {
     args: ["plan", "--report-filled", "implementation", "--stdin"],
     stdin: [
@@ -68,6 +73,7 @@ try {
     )
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+    assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory)
     await assertPackagedBoundedReportStdin(installedPackage, consumerDirectory)
     assertWorkflowLifecycleAbsenceBlocks(
       join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
@@ -86,6 +92,7 @@ try {
     assertSourceConsumerAuthorityBoundary(sourceCli)
     assertSourceDoctorRegistryReadback(sourceCli)
     assertSourceCooperativeFinishWorks(sourceCli)
+    assertSourceEvidenceReadWriteBoundary(sourceCli)
     await assertSourceBoundedReportStdin(sourceCli)
     assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
     assertSourceBootstrapWorkspaceIntake(sourceCli)
@@ -385,7 +392,15 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     fixtureRoot,
     phPath,
     "installed package",
-    readBeta3CooperativeCommands(installedPackage),
+    readBeta4CooperativeCommands(installedPackage),
+  )
+}
+
+function assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory) {
+  assertEvidenceReadWriteBoundary(
+    join(consumerDirectory, "evidence-read-write-boundary"),
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    "installed package",
   )
 }
 
@@ -511,7 +526,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
-    readBeta3CooperativeCommands(repositoryRoot),
+    readBeta4CooperativeCommands(repositoryRoot),
   )
 }
 
@@ -801,6 +816,18 @@ function assertSourceBootstrapWorkspaceIntake(sourceCliPath) {
   )
 }
 
+function assertSourceEvidenceReadWriteBoundary(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertEvidenceReadWriteBoundary(
+    join(temporaryRoot, "source-cli-evidence-read-write-boundary"),
+    phPath,
+    "source CLI",
+  )
+}
+
 function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
   assertProjectRootRaceBlocks(join(fixtureRoot, "project-root-race"), phPath, label)
   assertCapturedProjectAgentStageRaceBlocks(join(fixtureRoot, "agent-stage-race"), phPath, label)
@@ -810,6 +837,81 @@ function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
   assertLifecycleStateLeafAliasesBlock(join(fixtureRoot, "leaf-alias"), phPath, label)
   assertLifecycleStateParentRaceBlocks(join(fixtureRoot, "parent-race"), phPath, label)
   assertLifecycleStateLeafRacesBlock(join(fixtureRoot, "leaf-race"), phPath, label)
+}
+
+function assertEvidenceReadWriteBoundary(fixtureRoot, phPath, label) {
+  assertEvidenceReadParentAliasBlocks(join(fixtureRoot, "parent-alias"), phPath, label)
+  assertEvidenceReadParentRaceBlocks(join(fixtureRoot, "parent-race"), phPath, label)
+}
+
+function assertEvidenceReadParentAliasBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read alias bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const evidenceRoot = join(projectDir, ".persona", "evidence")
+  const outside = join(projectDir, "outside-evidence")
+  rmSync(evidenceRoot, { force: true, recursive: true })
+  mkdirSync(join(outside, "phase0"), { recursive: true })
+  symlinkSync(outside, evidenceRoot)
+
+  const result = runNode(projectDir, [phPath, "evidence", "read", "README.md"])
+
+  requireEvidenceReadBlock(`${label} evidence read parent alias`, result, outside)
+  if (!lstatSync(evidenceRoot).isSymbolicLink() || readdirSync(join(outside, "phase0")).length !== 0) {
+    throw new Error(`${label} evidence read parent alias wrote outside its canonical root`)
+  }
+}
+
+function assertEvidenceReadParentRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const evidenceRoot = join(projectDir, ".persona", "evidence")
+  const preserved = join(projectDir, ".persona", "evidence-preserved")
+  const outside = join(projectDir, "outside-evidence")
+  const hookPath = join(projectDir, "evidence-read-race-hook.cjs")
+  mkdirSync(join(evidenceRoot, "phase0"), { recursive: true })
+  mkdirSync(join(outside, "phase0"), { recursive: true })
+  writeFileSync(
+    hookPath,
+    [
+      'const fs = require("node:fs")',
+      'const { basename } = require("node:path")',
+      'const { syncBuiltinESMExports } = require("node:module")',
+      'const originalOpen = fs.openSync',
+      'const originalWrite = fs.writeFileSync',
+      'let swapped = false',
+      'const swap = () => {',
+      '  if (swapped) return',
+      '  swapped = true',
+      '  fs.renameSync(process.env.PH_EVIDENCE_ROOT, process.env.PH_EVIDENCE_PRESERVED)',
+      '  fs.symlinkSync(process.env.PH_EVIDENCE_OUTSIDE, process.env.PH_EVIDENCE_ROOT)',
+      '}',
+      'fs.openSync = (...args) => {',
+      '  if (typeof args[0] === "string" && basename(args[0]).startsWith(".workflow-read-")) swap()',
+      '  return originalOpen(...args)',
+      '}',
+      'fs.writeFileSync = (...args) => {',
+      '  if (typeof args[0] === "string" && basename(args[0]).startsWith(".workflow-read-")) swap()',
+      '  return originalWrite(...args)',
+      '}',
+      'syncBuiltinESMExports()',
+      '',
+    ].join("\n"),
+  )
+
+  const result = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "evidence", "read", "README.md"],
+    {
+      PH_EVIDENCE_OUTSIDE: outside,
+      PH_EVIDENCE_PRESERVED: preserved,
+      PH_EVIDENCE_ROOT: evidenceRoot,
+    },
+  )
+
+  requireEvidenceReadBlock(`${label} evidence read parent race`, result, outside)
+  if (!lstatSync(evidenceRoot).isSymbolicLink() || readdirSync(join(outside, "phase0")).length !== 0) {
+    throw new Error(`${label} evidence read parent race wrote outside its canonical root`)
+  }
 }
 
 function assertCapturedProjectAgentStageRaceBlocks(projectDir, phPath, label) {
@@ -1144,6 +1246,17 @@ function requireLifecycleStateBlock(label, result, outside) {
   }
 }
 
+function requireEvidenceReadBlock(label, result, outside) {
+  if (result.status === 0 || `${result.stdout}${result.stderr}`.includes(outside)) {
+    throw new Error(`${label} did not block with bounded output`)
+  }
+  for (const authorityDirectory of ["finish-attestation", "project-finish-attestation", "verification-receipts"]) {
+    if (existsSync(join(dirname(outside), ".persona", "evidence", authorityDirectory))) {
+      throw new Error(`${label} created authority evidence while blocked`)
+    }
+  }
+}
+
 function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
   mkdirSync(fixtureRoot, { recursive: true })
   requireSuccess(`${label} lifecycle fixture intake`, runNode(fixtureRoot, [phPath, "intake", "--default", "backend"]))
@@ -1199,7 +1312,36 @@ function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
 }
 
 function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
-  createCooperativeGradleFixture(fixtureRoot, phPath, label, commands)
+  createCooperativeGradleFixture(fixtureRoot)
+  requireSuccess(
+    `${label} bootstrap checkpoint`,
+    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
+  )
+  commitBootstrapCheckpoint(fixtureRoot, label)
+  const consumerRoot = `${fixtureRoot}-consumer`
+  requireSuccess(`${label} clean consumer worktree`, runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]))
+
+  try {
+    runCooperativeLifecycle(consumerRoot, phPath, label, commands)
+  } finally {
+    if (existsSync(consumerRoot)) {
+      requireSuccess(`${label} clean consumer removal`, runCommand(fixtureRoot, "git", ["worktree", "remove", "--force", consumerRoot]))
+    }
+  }
+}
+
+function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
+  for (const command of commands) {
+    const step = BETA4_COOPERATIVE_COMMANDS.get(command)
+    if (step === undefined) {
+      throw new Error(`${label} beta.4 acceptance command is unsupported`)
+    }
+    requireSuccess(
+      `${label} lifecycle ${command}`,
+      runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin),
+    )
+  }
+  assertCooperativeLifecycleState(fixtureRoot, label)
 
   const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
   if (defaultFinish.status === 0) {
@@ -1239,10 +1381,11 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
   }
 }
 
-function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
+function createCooperativeGradleFixture(projectDir) {
   mkdirSync(join(projectDir, "src", "main", "java", "example", "cooperative"), { recursive: true })
   mkdirSync(join(projectDir, "src", "test", "java", "example", "cooperative"), { recursive: true })
   writeFileSync(join(projectDir, "README.md"), "# Installed cooperative Gradle fixture\n")
+  writeFileSync(join(projectDir, ".gitignore"), ".gradle/\nbuild/\n")
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'installed-cooperative-gradle'\n")
   writeFileSync(
     join(projectDir, "build.gradle"),
@@ -1272,6 +1415,7 @@ function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
     "installed fixture Gradle wrapper",
     runCommand(projectDir, "gradle", ["wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
   )
+  rmSync(join(projectDir, ".gradle"), { force: true, recursive: true })
   writeFileSync(
     join(projectDir, "src", "main", "java", "example", "cooperative", "CooperativeApplication.java"),
     [
@@ -1283,6 +1427,22 @@ function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
       "public class CooperativeApplication {",
       "  public static void main(String[] args) {",
       "    org.springframework.boot.SpringApplication.run(CooperativeApplication.class, args);",
+      "  }",
+      "}",
+      "",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "example", "cooperative", "GreetingService.java"),
+    [
+      "package example.cooperative;",
+      "",
+      "import org.springframework.stereotype.Service;",
+      "",
+      "@Service",
+      "public class GreetingService {",
+      "  public String greeting() {",
+      "    return \"hello\";",
       "  }",
       "}",
       "",
@@ -1309,18 +1469,29 @@ function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
   requireSuccess("installed fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
   requireSuccess("installed fixture Git config email", runCommand(projectDir, "git", ["config", "user.email", "ph@example.invalid"]))
   requireSuccess("installed fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
+  requireSuccess("installed fixture Git config autocrlf", runCommand(projectDir, "git", ["config", "core.autocrlf", "false"]))
   requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
-  for (const command of commands) {
-    const step = BETA3_COOPERATIVE_COMMANDS.get(command)
-    if (step === undefined) {
-      throw new Error(`${label} beta.3 acceptance command is unsupported`)
-    }
-    requireSuccess(
-      `${label} lifecycle ${command}`,
-      runNode(projectDir, [phPath, ...step.args], {}, step.stdin),
-    )
+}
+
+function commitBootstrapCheckpoint(projectDir, label) {
+  requireSuccess(`${label} checkpoint add`, runCommand(projectDir, "git", ["add", "--all"]))
+  requireSuccess(`${label} checkpoint reset dynamic records`, runCommand(projectDir, "git", ["reset", "--", ".persona/evidence", ".persona/workflow"]))
+  const staticPersonaPaths = [
+    ".persona/.ph-init-manifest.json",
+    ".persona/conventions",
+    ".persona/harness.jsonc",
+    ".persona/policies",
+    ".persona/project-profile.jsonc",
+    ".persona/rules",
+  ].filter((relativePath) => existsSync(join(projectDir, relativePath)))
+  if (staticPersonaPaths.length > 0) {
+    requireSuccess(`${label} checkpoint add static Persona records`, runCommand(projectDir, "git", ["add", "-f", "--", ...staticPersonaPaths]))
   }
+  requireSuccess(`${label} checkpoint commit`, runCommand(projectDir, "git", ["commit", "-qm", "public bootstrap checkpoint"]))
+}
+
+function assertCooperativeLifecycleState(projectDir, label) {
   for (const relativePath of [
     ".persona/workflow/workflow-loop-state.json",
     ".persona/workflow/ralph-loop-state.json",
@@ -1331,24 +1502,24 @@ function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
   }
 }
 
-function readBeta3CooperativeCommands(packageRoot) {
-  const manifestPath = join(packageRoot, BETA3_ACCEPTANCE_PATH)
+function readBeta4CooperativeCommands(packageRoot) {
+  const manifestPath = join(packageRoot, BETA4_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.3 acceptance manifest is unavailable")
+    throw new Error("beta.4 acceptance manifest is unavailable")
   }
   const commands = value?.cooperative?.commands
   const packageVersion = value?.package?.version
-  const expectedCommands = [...BETA3_COOPERATIVE_COMMANDS.keys()]
+  const expectedCommands = [...BETA4_COOPERATIVE_COMMANDS.keys()]
   if (
     packageVersion !== readPackageVersion(packageRoot)
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
   ) {
-    throw new Error("beta.3 acceptance manifest is invalid")
+    throw new Error("beta.4 acceptance manifest is invalid")
   }
   return commands
 }
