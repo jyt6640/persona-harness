@@ -4,11 +4,15 @@ import {
   chmodSync,
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
+  renameSync,
   rmSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
@@ -44,6 +48,11 @@ try {
       join(consumerDirectory, "node_modules", ".bin", "ph"),
       "installed package",
     )
+    assertWorkflowLifecycleStateIntake(
+      join(consumerDirectory, "workflow-lifecycle-state-intake-fixture"),
+      join(consumerDirectory, "node_modules", ".bin", "ph"),
+      "installed package",
+    )
     assertInstalledPackageTestPasses(installedPackage)
     process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
     process.stdout.write("installed-package-test-contract: PASS\n")
@@ -53,6 +62,7 @@ try {
     assertSourceCooperativeFinishWorks(sourceCli)
     await assertSourceBoundedReportStdin(sourceCli)
     assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
+    assertSourceWorkflowLifecycleStateIntake(sourceCli)
     process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
   }
 } finally {
@@ -719,6 +729,180 @@ function assertSourceWorkflowLifecycleAbsenceBlocks(sourceCliPath) {
     phPath,
     "source CLI",
   )
+}
+
+function assertSourceWorkflowLifecycleStateIntake(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertWorkflowLifecycleStateIntake(
+    join(temporaryRoot, "source-cli-workflow-lifecycle-state-intake-fixture"),
+    phPath,
+    "source CLI",
+  )
+}
+
+function assertWorkflowLifecycleStateIntake(fixtureRoot, phPath, label) {
+  assertLifecycleStateParentAliasBlocks(join(fixtureRoot, "parent-alias"), phPath, label)
+  assertLifecycleStateLeafAliasesBlock(join(fixtureRoot, "leaf-alias"), phPath, label)
+  assertLifecycleStateParentRaceBlocks(join(fixtureRoot, "parent-race"), phPath, label)
+  assertLifecycleStateLeafRacesBlock(join(fixtureRoot, "leaf-race"), phPath, label)
+}
+
+function assertLifecycleStateParentAliasBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} lifecycle state parent bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict"]))
+  const workflowDir = join(projectDir, ".persona", "workflow")
+  const preserved = join(projectDir, ".persona", "workflow-preserved")
+  const outside = join(projectDir, "outside-workflow")
+  mkdirSync(outside)
+  renameSync(workflowDir, preserved)
+  symlinkSync(outside, workflowDir)
+
+  const rerun = runNode(projectDir, [phPath, "bootstrap", "backend", "--strict"])
+
+  requireLifecycleStateBlock(`${label} lifecycle state parent alias`, rerun, outside)
+  if (lifecycleStateFiles(outside).length !== 0 || !existsSync(join(preserved, "workflow-loop-state.json")) || !existsSync(join(preserved, "ralph-loop-state.json"))) {
+    throw new Error(`${label} lifecycle state parent alias wrote outside its canonical root`)
+  }
+}
+
+function assertLifecycleStateLeafAliasesBlock(projectDir, phPath, label) {
+  for (const stateName of lifecycleStateFileNames()) {
+    const caseRoot = join(projectDir, stateName)
+    createLifecycleStateIntakeFixture(caseRoot)
+    requireSuccess(`${label} lifecycle state ${stateName} bootstrap`, runNode(caseRoot, [phPath, "bootstrap", "backend", "--strict"]))
+    const statePath = join(caseRoot, ".persona", "workflow", stateName)
+    const outside = join(caseRoot, `outside-${stateName}`)
+    unlinkSync(statePath)
+    symlinkSync(outside, statePath)
+
+    const rerun = runNode(caseRoot, [phPath, "bootstrap", "backend", "--strict"])
+
+    requireLifecycleStateBlock(`${label} lifecycle state ${stateName} alias`, rerun, outside)
+    if (existsSync(outside) || !lstatSync(statePath).isSymbolicLink()) {
+      throw new Error(`${label} lifecycle state ${stateName} alias was replaced or wrote outside`)
+    }
+  }
+}
+
+function assertLifecycleStateParentRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} lifecycle state race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict"]))
+  const workflowDir = join(projectDir, ".persona", "workflow")
+  const preserved = join(projectDir, ".persona", "workflow-preserved")
+  const outside = join(projectDir, "outside-workflow")
+  const hookPath = join(projectDir, "workflow-state-race-hook.cjs")
+  const canonicalWorkflowDir = realpathSync(workflowDir)
+  mkdirSync(outside)
+  writeFileSync(
+    hookPath,
+    [
+      'const fs = require("node:fs")',
+      'const { syncBuiltinESMExports } = require("node:module")',
+      'const originalOpen = fs.openSync',
+      'let swapped = false',
+      'fs.openSync = (...args) => {',
+      '  if (!swapped && args[0] === process.env.PH_LIFECYCLE_RACE_WORKFLOW) {',
+      '    swapped = true',
+      '    fs.renameSync(process.env.PH_LIFECYCLE_RACE_WORKFLOW_TEXT, process.env.PH_LIFECYCLE_RACE_PRESERVED)',
+      '    fs.symlinkSync(process.env.PH_LIFECYCLE_RACE_OUTSIDE, process.env.PH_LIFECYCLE_RACE_WORKFLOW_TEXT)',
+      '  }',
+      '  return originalOpen(...args)',
+      '}',
+      'syncBuiltinESMExports()',
+      '',
+    ].join("\n"),
+  )
+  const rerun = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "bootstrap", "backend", "--strict"],
+    {
+      PH_LIFECYCLE_RACE_OUTSIDE: outside,
+      PH_LIFECYCLE_RACE_PRESERVED: preserved,
+      PH_LIFECYCLE_RACE_WORKFLOW: canonicalWorkflowDir,
+      PH_LIFECYCLE_RACE_WORKFLOW_TEXT: workflowDir,
+    },
+  )
+
+  requireLifecycleStateBlock(`${label} lifecycle state parent race`, rerun, outside)
+  if (!lstatSync(workflowDir).isSymbolicLink() || lifecycleStateFiles(outside).length !== 0) {
+    throw new Error(`${label} lifecycle state parent race did not preserve canonical containment`)
+  }
+}
+
+function assertLifecycleStateLeafRacesBlock(projectDir, phPath, label) {
+  for (const stateName of lifecycleStateFileNames()) {
+    const caseRoot = join(projectDir, stateName)
+    createLifecycleStateIntakeFixture(caseRoot)
+    requireSuccess(`${label} lifecycle state ${stateName} race bootstrap`, runNode(caseRoot, [phPath, "bootstrap", "backend", "--strict"]))
+    const workflowDir = join(caseRoot, ".persona", "workflow")
+    const statePath = join(realpathSync(workflowDir), stateName)
+    const outside = join(caseRoot, `outside-race-${stateName}`)
+    const hookPath = join(caseRoot, `workflow-state-${stateName}-race-hook.cjs`)
+    writeFileSync(
+      hookPath,
+      [
+        'const fs = require("node:fs")',
+        'const { syncBuiltinESMExports } = require("node:module")',
+        'const originalOpen = fs.openSync',
+        'let swapped = false',
+        'fs.openSync = (...args) => {',
+        '  if (!swapped && args[0] === process.env.PH_LIFECYCLE_RACE_STATE) {',
+        '    swapped = true',
+        '    fs.unlinkSync(process.env.PH_LIFECYCLE_RACE_STATE)',
+        '    fs.symlinkSync(process.env.PH_LIFECYCLE_RACE_OUTSIDE, process.env.PH_LIFECYCLE_RACE_STATE)',
+        '  }',
+        '  return originalOpen(...args)',
+        '}',
+        'syncBuiltinESMExports()',
+        '',
+      ].join("\n"),
+    )
+    const rerun = runNode(
+      caseRoot,
+      ["--require", hookPath, phPath, "bootstrap", "backend", "--strict"],
+      {
+        PH_LIFECYCLE_RACE_OUTSIDE: outside,
+        PH_LIFECYCLE_RACE_STATE: statePath,
+      },
+    )
+
+    requireLifecycleStateBlock(`${label} lifecycle state ${stateName} race`, rerun, outside)
+    if (existsSync(outside) || !lstatSync(statePath).isSymbolicLink()) {
+      throw new Error(`${label} lifecycle state ${stateName} race did not preserve canonical containment`)
+    }
+  }
+}
+
+function createLifecycleStateIntakeFixture(projectDir) {
+  mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })
+  writeFileSync(join(projectDir, "README.md"), "# Lifecycle state intake fixture\n")
+  writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'lifecycle-state-intake'\n")
+  writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
+  writeFileSync(join(projectDir, "src", "main", "java", "App.java"), "class App {}\n")
+  writeFileSync(join(projectDir, "gradlew"), "#!/bin/sh\nprintf '%s\\n' 'BUILD SUCCESSFUL'\n")
+  chmodSync(join(projectDir, "gradlew"), 0o755)
+}
+
+function lifecycleStateFileNames() {
+  return ["workflow-loop-state.json", "ralph-loop-state.json"]
+}
+
+function lifecycleStateFiles(directory) {
+  return lifecycleStateFileNames().filter((name) => existsSync(join(directory, name)))
+}
+
+function requireLifecycleStateBlock(label, result, outside) {
+  if (result.status === 0 || `${result.stdout}${result.stderr}`.includes(outside)) {
+    throw new Error(`${label} did not block with bounded output`)
+  }
+  for (const authorityDirectory of ["finish-attestation", "project-finish-attestation", "verification-receipts"]) {
+    if (existsSync(join(dirname(outside), ".persona", "evidence", authorityDirectory))) {
+      throw new Error(`${label} created authority evidence while blocked`)
+    }
+  }
 }
 
 function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
