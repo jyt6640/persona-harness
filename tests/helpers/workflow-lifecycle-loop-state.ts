@@ -1,32 +1,25 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { join } from "node:path"
 
+import { writeWorkflowLoopState } from "../../src/cli/workflow-loop-state.js"
 import { rulePackContentHash } from "../../src/rules/rule-delivery.js"
+import { emptyRalphLoopState, writeRalphLoopState } from "../../src/runtime/ralph-loop-state.js"
 
 export function writeCurrentWorkflowLifecycleLoopStates(projectDir: string): void {
-  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
   const workflowStatePath = join(projectDir, ".persona", "workflow", "workflow-loop-state.json")
   if (!existsSync(workflowStatePath)) {
-    writeFileSync(
-      workflowStatePath,
-      `${JSON.stringify({
-        finalDecision: "not-run",
-        iterations: [],
-        rulePackHash: rulePackContentHash(projectDir),
-        schemaVersion: "workflow-loop-state.2",
-        startedAt: "2026-07-01T00:00:00.000Z",
-      }, null, 2)}\n`,
-    )
+    writeWorkflowLoopState(projectDir, {
+      finalDecision: "not-run",
+      iterations: [],
+      rulePackHash: rulePackContentHash(projectDir),
+      schemaVersion: "workflow-loop-state.2",
+      startedAt: "2026-07-01T00:00:00.000Z",
+    })
   }
   const ralphStatePath = join(projectDir, ".persona", "workflow", "ralph-loop-state.json")
   if (!existsSync(ralphStatePath)) {
-    writeFileSync(
-      ralphStatePath,
-      `${JSON.stringify({
-        schemaVersion: "workflow-ralph-loop-state.1",
-        sessions: {},
-        updatedAt: "2026-07-01T00:00:00.000Z",
-      }, null, 2)}\n`,
-    )
+    if (!writeRalphLoopState(projectDir, emptyRalphLoopState("2026-07-01T00:00:00.000Z"))) {
+      throw new Error("workflow lifecycle state fixture setup failed")
+    }
   }
 }

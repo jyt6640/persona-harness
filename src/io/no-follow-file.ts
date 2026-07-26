@@ -109,6 +109,17 @@ export function sameNoFollowPathIdentity(
     && left.size === right.size
 }
 
+export function sameNoFollowPathLocation(
+  left: NoFollowPathIdentity,
+  right: NoFollowPathIdentity,
+): boolean {
+  return left.dev === right.dev && left.ino === right.ino && left.mode === right.mode
+}
+
+export function noFollowPathIdentityFromStat(stat: BigIntStats): NoFollowPathIdentity {
+  return pathIdentity(stat)
+}
+
 export function noFollowPathIdentityDigest(identity: NoFollowPathIdentity): string {
   return `sha256:${createHash("sha256").update(JSON.stringify(identity)).digest("hex")}`
 }
