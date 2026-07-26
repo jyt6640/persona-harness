@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from "node:crypto"
-import { join, resolve } from "node:path"
+import { isAbsolute, join, relative, resolve } from "node:path"
 
-import { evidenceWriteContext, writePrivateEvidenceJson } from "../runtime/evidence-file.js"
+import { reserveBootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
+import { sanitizeEvidenceValue } from "../runtime/evidence-redaction.js"
+import { evidenceWriteContext } from "../runtime/evidence-file.js"
 import { readNoFollowProjectFile } from "../io/no-follow-file.js"
 import type { CliRunResult } from "./bearshell.js"
 
@@ -36,9 +38,26 @@ export function runEvidenceReadCommand(
     targetFile,
   } as const
   try {
-    writePrivateEvidenceJson(context.evidenceRoot, outputPath, payload, { projectDir })
+    const relativeOutputPath = relative(projectDir, outputPath)
+    if (!safeProjectRelativePath(relativeOutputPath)) return UNAVAILABLE_RESULT
+    const boundary = reserveBootstrapWriteBoundary(projectDir)
+    try {
+      boundary.writeProjectFileAtomically(
+        relativeOutputPath,
+        `${JSON.stringify(sanitizeEvidenceValue(payload, 4_096, { projectDir }), null, 2)}\n`,
+      )
+    } finally {
+      boundary.close()
+    }
   } catch {
     return UNAVAILABLE_RESULT
   }
   return { status: 0, stdout: "Evidence read recorded.\n", stderr: "" }
+}
+
+function safeProjectRelativePath(value: string): boolean {
+  return value.length > 0
+    && !isAbsolute(value)
+    && !value.includes("\\")
+    && value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..")
 }
