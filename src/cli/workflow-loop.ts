@@ -3,6 +3,7 @@ import { join, relative, resolve } from "node:path"
 import process from "node:process"
 
 import { AtomicWriteConflictError } from "../io/atomic-file.js"
+import { WorkflowLifecycleStateConflictError } from "../io/workflow-lifecycle-state.js"
 import { rulePackContentHash } from "../rules/rule-delivery.js"
 import type { CliRunResult } from "./bearshell.js"
 import { runBoundedProcess, type BoundedProcessOutcome } from "./bounded-process.js"
@@ -89,7 +90,7 @@ export function runWorkflowLoopCommand(options: WorkflowLoopOptions): CliRunResu
       options.json,
     )
   } catch (error) {
-    if (error instanceof AtomicWriteConflictError) {
+    if (error instanceof AtomicWriteConflictError || error instanceof WorkflowLifecycleStateConflictError) {
       return formatWorkflowLoopPayload(
         workflowLoopPayload({
           defaultOff: true,

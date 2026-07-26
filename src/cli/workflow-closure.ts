@@ -270,8 +270,10 @@ function closureBlockers(
     "workflow-loop-state-absent",
     "workflow-loop-state-malformed",
     "workflow-loop-state-stale",
+    "workflow-loop-state-unsafe",
     "ralph-loop-state-absent",
     "ralph-loop-state-malformed",
+    "ralph-loop-state-unsafe",
   )
   if (state.tdd.kind === "red-missing") {
     blockers.push({
@@ -416,13 +418,13 @@ export function blockerStep(blocker: ClosureBlocker, state: WorkflowClosureState
   if (blocker.id === "workflow-loop-state-absent") {
     return { blockerId: blocker.id, id: "initialize-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
-  if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale") {
+  if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale" || blocker.id === "workflow-loop-state-unsafe") {
     return { blockerId: blocker.id, id: "repair-workflow-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "ralph-loop-state-absent") {
     return { blockerId: blocker.id, id: "initialize-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
-  if (blocker.id === "ralph-loop-state-malformed") {
+  if (blocker.id === "ralph-loop-state-malformed" || blocker.id === "ralph-loop-state-unsafe") {
     return { blockerId: blocker.id, id: "repair-ralph-loop-state", kind: "human-or-model-content", reason: blocker.reason, source: blocker.source, status }
   }
   if (blocker.id === "tdd-red-evidence-missing") {
