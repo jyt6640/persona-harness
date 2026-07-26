@@ -3,6 +3,8 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { writeFileAtomic } from "../io/atomic-file.js"
+import { rulePackContentHash } from "../rules/rule-delivery.js"
+import { emptyRalphLoopState, readRalphLoopStateSnapshot, writeRalphLoopState } from "../runtime/ralph-loop-state.js"
 import type { CliRunResult } from "./bearshell.js"
 import { enableCodeNavMcpPreview } from "./bootstrap-code-nav.js"
 import { enableDeveloperMcpBundle } from "./bootstrap-codegraph.js"
@@ -15,6 +17,11 @@ import { runIntakeCommand } from "./intake.js"
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH } from "./plan.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
+import {
+  readWorkflowLoopStateSnapshot,
+  WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
+  writeWorkflowLoopState,
+} from "./workflow-loop-state.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { backendAgentInstructions } from "./agents-contract.js"
@@ -325,6 +332,47 @@ function writeBackendAgentInstructions(
   return `created ${ROOT_AGENT_INSTRUCTIONS_PATH} AI bootstrap instructions`
 }
 
+function initializeWorkflowLifecycleStates(projectDir: string, actions: string[]): CliRunResult | undefined {
+  const workflowSnapshot = readWorkflowLoopStateSnapshot(projectDir)
+  const ralphSnapshot = readRalphLoopStateSnapshot(projectDir)
+  const now = new Date().toISOString()
+
+  try {
+    if (workflowSnapshot.integrity === "absent") {
+      writeWorkflowLoopState(
+        projectDir,
+        {
+          finalDecision: "not-run",
+          iterations: [],
+          rulePackHash: rulePackContentHash(projectDir),
+          schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
+          startedAt: now,
+        },
+        workflowSnapshot.token,
+      )
+      actions.push("initialized empty workflow-loop state")
+    }
+    if (ralphSnapshot.integrity === "absent") {
+      if (!writeRalphLoopState(projectDir, emptyRalphLoopState(now), ralphSnapshot.token)) {
+        return lifecycleInitializationFailure()
+      }
+      actions.push("initialized empty ralph-loop state")
+    }
+  } catch {
+    return lifecycleInitializationFailure()
+  }
+
+  return undefined
+}
+
+function lifecycleInitializationFailure(): CliRunResult {
+  return {
+    status: 1,
+    stdout: "",
+    stderr: "Persona Harness backend bootstrap failed during workflow lifecycle initialization. Review the existing workflow state before retrying.\n",
+  }
+}
+
 function runBackendBootstrap(
   options: BootstrapOptions,
   flags: BackendBootstrapFlags,
@@ -427,6 +475,11 @@ function runBackendBootstrap(
     skipped.push(`${PLAN_PATH} already exists`)
   }
 
+  const lifecycleFailure = initializeWorkflowLifecycleStates(projectDir, actions)
+  if (lifecycleFailure !== undefined) {
+    return lifecycleFailure
+  }
+
   const agentInstructionAction = writeBackendAgentInstructions(projectDir, skipped, flags.force, flags.multiAgentPreview)
   if (agentInstructionAction !== undefined) {
     actions.push(agentInstructionAction)
@@ -461,6 +514,8 @@ function runBackendBootstrap(
       `- ${PLAN_PATH}`,
       `- ${IMPLEMENTATION_REPORT_PATH}`,
       `- ${REVIEW_REPORT_PATH}`,
+      "- .persona/workflow/workflow-loop-state.json",
+      "- .persona/workflow/ralph-loop-state.json",
       "",
       "Next:",
       "- Ask the AI agent to run `npx ph workflow implement` before implementation.",
