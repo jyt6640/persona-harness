@@ -17,7 +17,7 @@ current decision inputs.
 | --- | --- | --- |
 | Current docs pointer | `docs/current/README.md` | Short entrypoint for active status and versioned records. |
 | Workflow lifecycle projection | `docs/current/workflow-closure-state-machine-design.md` | Current `workflow-lifecycle.1` contract shared by workflow status, closure JSON, loop-state checks, and finish guidance. It is a fail-closed workflow projection, not release evidence. |
-| Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Current writer ownership plus read-only absent/malformed/stale-state handling for the lifecycle projection. |
+| Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Current writer ownership plus read-only absent/malformed/stale/unsafe-state handling for the lifecycle projection. |
 | P0-1 `ph go` acceptance | `docs/current/p0-go-acceptance-record.md` | Exact-main acceptance, provenance, cooperative recovery boundary, and item-7 package evidence. |
 | P0-2 finish next-action acceptance | `docs/current/p0-finish-next-action-acceptance-record.md` | Exact-main finish follow-up and report-transition acceptance with local-tarball package evidence. |
 | P0-3 public discovery acceptance | `docs/current/p0-public-discovery-acceptance-record.md` | Exact-main root/dev discovery and writer-safety acceptance with local-tarball package evidence. |
@@ -32,7 +32,8 @@ current decision inputs.
 | Entry steering status | `docs/current/entry-steering-status.md` | Default-off OpenCode first-message advisory, source-only bilingual corpus measurement, bounded status record, and no-claim boundary. |
 | AGENTS managed block contract | `docs/current/agents-managed-block-contract.md` | P1 STEP 2 doctor inspection plus P1 STEP 3 bounded managed-V1/project-local attach writer; no default, configuration/evidence-schema, measured-negative, version, or release-state change. |
 | 0.7.0 prepared release notes | `docs/current/release/v0.7.0-release-notes.md` | Immutable GA-source-preparation record. It makes no live registry, tag, release, `latest`, provenance, or audit-completion claim; the no-input audit selects `latest` for strict stable SemVer but cannot fabricate durable stable approval. |
-| 0.8.0-beta.1 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.1-release-notes.md` | Immutable staging-first source-preparation record. It makes no live package, tag, registry, provenance, promotion, Stable/GA, or Finish authority claim. |
+| 0.8.0-beta.1 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.1-release-notes.md` | Immutable staging-only package evidence; it does not prove current-version consumer authority, promotion, Stable/GA, or Finish authority. |
+| 0.8.0-beta.2 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.2-release-notes.md` | Current staging-first source-preparation record for the public lifecycle and current-version artifact boundary; it makes no live publish, tag, release, promotion, or Finish authority claim. |
 | Consumer Authority Beta lifecycle | `docs/current/release/consumer-authority-beta.md` | Fixed tag-bound staging, exact package readback, original-artifact consumer boundary, and separately approved `next` promotion sequence. |
 | 0.7.0-rc.3 published capsule | `docs/releases/v0.7.0-rc.3/README.md` | Current npm `next` candidate with matching registry gitHead, tag, GitHub prerelease, and workflow provenance. |
 | 0.7.0-rc.2 published capsule | `docs/releases/v0.7.0-rc.2/README.md` | Previous npm `next` candidate with registry gitHead/tag/workflow provenance. |

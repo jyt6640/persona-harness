@@ -2,9 +2,11 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import type { CliRunResult } from "./bearshell.js"
 
 type PolicyOptions = {
+  readonly bootstrapWriteBoundary?: BootstrapWriteBoundary
   readonly projectDir?: string
 }
 
@@ -112,14 +114,20 @@ export function policyUsage(invocation = "ph"): string {
   ].join("\n")
 }
 
-function writePolicyFiles(projectDir: string, force: boolean): readonly string[] {
-  const existing = POLICY_FILES.filter((file) => existsSync(join(projectDir, file.path))).map((file) => file.path)
+function writePolicyFiles(projectDir: string, force: boolean, bootstrapWriteBoundary?: BootstrapWriteBoundary): readonly string[] {
+  const existing = POLICY_FILES.filter((file) =>
+    bootstrapWriteBoundary?.projectFileExists(file.path) ?? existsSync(join(projectDir, file.path)),
+  ).map((file) => file.path)
   if (existing.length > 0 && !force) {
     throw new Error(`${existing.join(", ")} already exists. Re-run with --force to replace policy overlay files.`)
   }
 
   for (const file of POLICY_FILES) {
     const targetPath = join(projectDir, file.path)
+    if (bootstrapWriteBoundary !== undefined) {
+      bootstrapWriteBoundary.writeProjectFileAtomically(file.path, file.contents)
+      continue
+    }
     mkdirSync(dirname(targetPath), { recursive: true })
     writeFileSync(targetPath, file.contents)
   }
@@ -144,7 +152,7 @@ export function runPolicyCommand(
 
   try {
     const projectDir = resolve(options.projectDir ?? process.cwd())
-    const written = writePolicyFiles(projectDir, parsed.force)
+    const written = writePolicyFiles(projectDir, parsed.force, options.bootstrapWriteBoundary)
     return {
       status: 0,
       stdout: [

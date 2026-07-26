@@ -21,11 +21,19 @@ export class PlanStatusError extends Error {
 }
 
 function resolvePlanPath(options: PlanOptions): string {
+  if (options.bootstrapWriteBoundary !== undefined) return PLAN_PATH
   const projectDir = resolve(options.projectDir ?? process.cwd())
   return join(projectDir, PLAN_PATH)
 }
 
-function readPlanText(planPath: string): string {
+function readPlanText(planPath: string, options?: PlanOptions): string {
+  if (options?.bootstrapWriteBoundary !== undefined) {
+    const bytes = options.bootstrapWriteBoundary.readProjectFile(PLAN_PATH)
+    if (bytes === undefined) {
+      throw new PlanStatusError("No workflow plan found. Run npx ph plan first.")
+    }
+    return bytes.toString("utf8")
+  }
   if (!existsSync(planPath)) {
     throw new PlanStatusError("No workflow plan found. Run npx ph plan first.")
   }
@@ -42,7 +50,7 @@ function extractStatus(planText: string): string {
 
 export function readWorkflowPlanStatus(options: PlanOptions = {}): PlanStatusResult {
   const planPath = resolvePlanPath(options)
-  const planText = readPlanText(planPath)
+  const planText = readPlanText(planPath, options)
   return { planPath, status: extractStatus(planText) }
 }
 
@@ -51,6 +59,13 @@ export function updateWorkflowPlanStatus(
   options: PlanOptions = {},
 ): PlanStatusResult {
   const planPath = resolvePlanPath(options)
+  if (options.bootstrapWriteBoundary !== undefined) {
+    const current = readPlanText(planPath, options)
+    extractStatus(current)
+    const updatedPlan = current.replace(/^Status:\s*.+?\s*$/m, `Status: ${status}`)
+    options.bootstrapWriteBoundary.writeWorkflowFile("plan.md", updatedPlan)
+    return { planPath, status }
+  }
   if (!existsSync(planPath)) {
     throw new PlanStatusError("No workflow plan found. Run npx ph plan first.")
   }

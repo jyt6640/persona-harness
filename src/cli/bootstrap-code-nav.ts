@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
+import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import type { CliRunResult } from "./bearshell.js"
 
 const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
@@ -17,12 +18,20 @@ function defaultPackageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 }
 
-function readJsonObject(path: string, label: string): ReadConfigResult {
-  if (!existsSync(path)) {
+function readJsonObject(
+  projectDir: string,
+  relativePath: string,
+  label: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): ReadConfigResult {
+  const bytes = bootstrapWriteBoundary?.readProjectFile(relativePath)
+  const path = join(projectDir, relativePath)
+  if (bootstrapWriteBoundary === undefined && !existsSync(path)) {
     return { kind: "config", value: {} }
   }
+  if (bootstrapWriteBoundary !== undefined && bytes === undefined) return { kind: "config", value: {} }
   try {
-    const parsed: unknown = JSON.parse(stripJsonComments(readFileSync(path, "utf8")))
+    const parsed: unknown = JSON.parse(stripJsonComments(bytes?.toString("utf8") ?? readFileSync(path, "utf8")))
     if (!isRecord(parsed)) {
       return {
         kind: "failure",
@@ -49,23 +58,37 @@ function readJsonObject(path: string, label: string): ReadConfigResult {
   }
 }
 
-function writeJsonObject(path: string, value: JsonObject): void {
+function writeJsonObject(
+  projectDir: string,
+  relativePath: string,
+  value: JsonObject,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): void {
+  const text = `${JSON.stringify(value, null, 2)}\n`
+  if (bootstrapWriteBoundary !== undefined) {
+    bootstrapWriteBoundary.writeProjectFileAtomically(relativePath, text)
+    return
+  }
+  const path = join(projectDir, relativePath)
   mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8")
+  writeFileSync(path, text, "utf8")
 }
 
 function codeNavMcpCommand(packageRoot: string): readonly string[] {
   return ["node", join(packageRoot, "packages", "lsp-tools-mcp", "bin", "code-nav-mcp.mjs"), "mcp"]
 }
 
-export function enableCodeNavMcpPreview(projectDir: string, packageRoot?: string): CliRunResult | undefined {
-  const opencodeConfigPath = join(projectDir, OPENCODE_CONFIG_PATH)
-  const parsed = readJsonObject(opencodeConfigPath, OPENCODE_CONFIG_PATH)
+export function enableCodeNavMcpPreview(
+  projectDir: string,
+  packageRoot?: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): CliRunResult | undefined {
+  const parsed = readJsonObject(projectDir, OPENCODE_CONFIG_PATH, OPENCODE_CONFIG_PATH, bootstrapWriteBoundary)
   if (parsed.kind === "failure") {
     return parsed.result
   }
   const existingMcp = isRecord(parsed.value.mcp) ? parsed.value.mcp : {}
-  writeJsonObject(opencodeConfigPath, {
+  writeJsonObject(projectDir, OPENCODE_CONFIG_PATH, {
     ...parsed.value,
     mcp: {
       ...existingMcp,
@@ -75,6 +98,6 @@ export function enableCodeNavMcpPreview(projectDir: string, packageRoot?: string
         command: codeNavMcpCommand(resolve(packageRoot ?? defaultPackageRoot())),
       },
     },
-  })
+  }, bootstrapWriteBoundary)
   return undefined
 }

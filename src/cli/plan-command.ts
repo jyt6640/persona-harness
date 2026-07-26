@@ -23,9 +23,11 @@ import { workflowRequiredContextLines } from "./workflow-context-guidance.js"
 import {
   WorkflowReportStatusError,
   parseWorkflowReportKind,
+  submitWorkflowReport,
   updateWorkflowReportStatus,
   type WorkflowReportKind,
 } from "./report-status.js"
+import { stdinEncodingError } from "./stdin-text.js"
 import { WorkflowStateConflictError } from "./workflow-state-conflict.js"
 
 type ParsedPlanArgs =
@@ -38,13 +40,13 @@ type ParsedPlanArgs =
   | { readonly kind: "implement" }
   | { readonly kind: "next" }
   | { readonly kind: "resume" }
-  | { readonly kind: "report-filled"; readonly reportKind: WorkflowReportKind }
+  | { readonly kind: "report-filled"; readonly reportKind: WorkflowReportKind; readonly stdin: boolean }
   | { readonly kind: "help" }
   | { readonly kind: "invalid"; readonly message: string }
 
 export function planUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} plan [--force | --auto-accept | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review>]`,
+    `Usage: ${invocation} plan [--force | --auto-accept | --status | --accept | --revise | --prompt | --implement | --next | --resume | --report-filled <implementation|review> [--stdin]]`,
     "",
     "Creates and manages a blackbear architecture plan before implementation.",
     "",
@@ -60,8 +62,8 @@ export function planUsage(invocation = "ph"): string {
     "            Check the accepted workflow plan gate and print the implementation prompt.",
     "  --next   Print the next workflow action from plan/report status.",
     "  --resume Print an implementation continuation prompt from workflow report evidence.",
-    "  --report-filled <implementation|review>",
-    "            Mark a filled workflow report as filled.",
+    "  --report-filled <implementation|review> [--stdin]",
+    "            Mark an existing filled workflow report, or submit one bounded report through stdin.",
     "",
     "Output:",
     `- ${PLAN_PATH}`,
@@ -83,10 +85,11 @@ function parsePlanArgs(args: readonly string[]): ParsedPlanArgs {
 
   if (args[0] === "--report-filled") {
     const reportKind = parseWorkflowReportKind(args[1])
-    if (args.length !== 2 || reportKind === undefined) {
+    const stdin = args[2] === "--stdin"
+    if ((args.length !== 2 && (args.length !== 3 || !stdin)) || reportKind === undefined) {
       return { kind: "invalid", message: "Report kind must be implementation or review." }
     }
-    return { kind: "report-filled", reportKind }
+    return { kind: "report-filled", reportKind, stdin }
   }
 
   if (args.length > 1) {
@@ -232,7 +235,13 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
       return updateStatus("needs-revision", options)
     }
     if (parsed.kind === "report-filled") {
-      const result = updateWorkflowReportStatus(parsed.reportKind, "filled", options)
+      const encodingError = parsed.stdin && options.stdin !== undefined ? stdinEncodingError(options.stdin) : undefined
+      if (encodingError !== undefined) {
+        throw new WorkflowReportStatusError(encodingError)
+      }
+      const result = parsed.stdin
+        ? submitWorkflowReport(parsed.reportKind, options.stdin ?? "", options)
+        : updateWorkflowReportStatus(parsed.reportKind, "filled", options)
       return {
         status: 0,
         stdout: reportStatusOutput("workflow report filled", result.relativePath, result.reportPath, result.status),

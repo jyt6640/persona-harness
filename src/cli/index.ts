@@ -26,7 +26,8 @@ import { runFeedbackCommand } from "./feedback.js"
 import { runGoCommand, type GoStep } from "./go-command.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
-import { decodeCliStdinText } from "./stdin-text.js"
+import { decodeCliStdinText, readBoundedCliStdinText } from "./stdin-text.js"
+import { MAX_SUBMITTED_REPORT_BYTES, workflowReportStdinLimitMessage } from "./report-status.js"
 import { personaHarnessVersion } from "./version.js"
 import { runWorkflowCommand } from "./workflow-command.js"
 import { SIGSTORE_NODE_ENGINE_RANGE, assessSigstoreNodeRuntime } from "../../scripts/node-runtime-floor.mjs"
@@ -128,7 +129,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "plan") {
-    return runPlanCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+    return runPlanCommand(args.slice(1), { projectDir: options.cwd, stdin: options.stdin }, invocationName)
   }
 
   if (command === "policy") {
@@ -274,22 +275,35 @@ async function runCliEntrypoint(): Promise<void> {
       cwd: process.cwd(),
       env: process.env,
       invocationName,
-      stdin: cliStdin(args),
+      stdin: await cliStdin(args),
     }),
   )
 }
 
-function cliStdin(args: readonly string[]): string | undefined {
+async function cliStdin(args: readonly string[]): Promise<string | undefined> {
   const goStdin = args.length === 2 && args[0] === "go" && args[1] === "--stdin"
+  const planStdin =
+    args.length === 4
+    && args[0] === "plan"
+    && args[1] === "--report-filled"
+    && (args[2] === "implementation" || args[2] === "review")
+    && args[3] === "--stdin"
   const workflowStdin =
     args[0] === "workflow"
     && (args[1] === "capture" || args[1] === "draft")
     && args[2] === "--stdin"
-  if (!goStdin && !workflowStdin) {
+  if (!goStdin && !planStdin && !workflowStdin) {
     return undefined
   }
   if (process.stdin.isTTY === true) {
     return undefined
+  }
+  if (planStdin) {
+    const stdin = await readBoundedCliStdinText(process.stdin, MAX_SUBMITTED_REPORT_BYTES)
+    if (stdin.kind === "limit-exceeded") {
+      throw new Error(workflowReportStdinLimitMessage())
+    }
+    return stdin.text
   }
   return decodeCliStdinText(readFileSync(0))
 }

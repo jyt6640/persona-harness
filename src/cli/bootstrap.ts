@@ -1,8 +1,14 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import process from "node:process"
 
-import { writeFileAtomic } from "../io/atomic-file.js"
+import {
+  BootstrapWriteBoundaryError,
+  reserveBootstrapWriteBoundary,
+  type BootstrapWriteBoundary,
+} from "../io/bootstrap-write-boundary.js"
+import { rulePackContentHash } from "../rules/rule-delivery.js"
+import { emptyRalphLoopState, readRalphLoopStateSnapshot, writeRalphLoopState } from "../runtime/ralph-loop-state.js"
 import type { CliRunResult } from "./bearshell.js"
 import { enableCodeNavMcpPreview } from "./bootstrap-code-nav.js"
 import { enableDeveloperMcpBundle } from "./bootstrap-codegraph.js"
@@ -10,11 +16,16 @@ import { enableLspMcpPreview } from "./bootstrap-lsp.js"
 import { enableMultiAgentPreview } from "./bootstrap-multi-agent.js"
 import { enableRuntimeInjectionPreview, enableStrictClosureVerification } from "./bootstrap-strict.js"
 import { PROFILE_PATH } from "./intake-profile.js"
-import { initializePersonaHarness } from "./init.js"
+import { initializeFreshBootstrapPersonaHarness } from "./init.js"
 import { runIntakeCommand } from "./intake.js"
 import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH } from "./plan.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
+import {
+  readWorkflowLoopStateSnapshot,
+  WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
+  writeWorkflowLoopState,
+} from "./workflow-loop-state.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { backendAgentInstructions } from "./agents-contract.js"
@@ -52,6 +63,43 @@ const POLICY_OVERLAY_PATH = ".persona/policies/overlay.jsonc"
 const ROOT_AGENT_INSTRUCTIONS_PATH = "AGENTS.md"
 const ROLE_CHECKLIST_RELAY_SECTION_TITLE = "## Persona Harness Role Checklist Relay Preview"
 const LEGACY_MULTI_AGENT_RELAY_SECTION_TITLE = "## Persona Harness Multi-Agent Relay Preview"
+const BOOTSTRAP_PERSONA_FILES = [
+  "harness.jsonc",
+  "project-profile.jsonc",
+  "policies/overlay.jsonc",
+  "policies/company/backend.md",
+  "policies/personal/backend.md",
+] as const
+const BOOTSTRAP_WORKFLOW_FILES = [
+  "plan.md",
+  "implementation-report.md",
+  "review-report.md",
+  "roles.md",
+  "workflow-loop-state.json",
+  "ralph-loop-state.json",
+] as const
+
+export const BOOTSTRAP_TRANSACTION_OUTPUT_MANIFEST = [
+  ".gitignore",
+  ".opencode/opencode.json",
+  "AGENTS.md",
+  ".persona/.ph-init-manifest.json",
+  ".persona/harness.jsonc",
+  ".persona/conventions/**",
+  ".persona/rules/**",
+  ".persona/project-profile.jsonc",
+  ".persona/policies/overlay.jsonc",
+  ".persona/policies/company/backend.md",
+  ".persona/policies/personal/backend.md",
+  ".persona/workflow/plan.md",
+  ".persona/workflow/implementation-report.md",
+  ".persona/workflow/review-report.md",
+  ".persona/workflow/roles.md",
+  ".persona/workflow/workflow-loop-state.json",
+  ".persona/workflow/ralph-loop-state.json",
+  "temporary: .<leaf>.<uuid>.tmp",
+  "temporary: Persona staging directory",
+] as const
 
 function strictModeSummaryLines(): readonly string[] {
   return [
@@ -297,15 +345,15 @@ function bootstrapAgentInstructions(includeMultiAgentRelayGuidance = false): str
 }
 
 function writeBackendAgentInstructions(
-  projectDir: string,
+  bootstrapWriteBoundary: BootstrapWriteBoundary,
   skipped: string[],
   force: boolean,
   includeMultiAgentRelayGuidance: boolean,
 ): string | undefined {
-  const targetPath = join(projectDir, ROOT_AGENT_INSTRUCTIONS_PATH)
-  if (existsSync(targetPath) && !force) {
+  const currentBytes = bootstrapWriteBoundary.readProjectFile(ROOT_AGENT_INSTRUCTIONS_PATH)
+  if (currentBytes !== undefined && !force) {
     if (includeMultiAgentRelayGuidance) {
-      const current = readFileSync(targetPath, "utf8")
+      const current = currentBytes.toString("utf8")
       if (
         current.includes(ROLE_CHECKLIST_RELAY_SECTION_TITLE) ||
         current.includes(LEGACY_MULTI_AGENT_RELAY_SECTION_TITLE)
@@ -313,16 +361,84 @@ function writeBackendAgentInstructions(
         skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} role checklist relay guidance already exists`)
         return undefined
       }
-      writeFileAtomic(targetPath, `${current.trimEnd()}\n\n${multiAgentRelayProcedureGuidance().join("\n")}`, {
-        encoding: "utf8",
-      })
+      bootstrapWriteBoundary.writeProjectFileAtomically(
+        ROOT_AGENT_INSTRUCTIONS_PATH,
+        `${current.trimEnd()}\n\n${multiAgentRelayProcedureGuidance().join("\n")}`,
+      )
       return `updated ${ROOT_AGENT_INSTRUCTIONS_PATH} with role checklist relay procedure guidance`
     }
     skipped.push(`${ROOT_AGENT_INSTRUCTIONS_PATH} already exists`)
     return undefined
   }
-  writeFileAtomic(targetPath, bootstrapAgentInstructions(includeMultiAgentRelayGuidance), { encoding: "utf8" })
+  bootstrapWriteBoundary.writeProjectFileAtomically(
+    ROOT_AGENT_INSTRUCTIONS_PATH,
+    bootstrapAgentInstructions(includeMultiAgentRelayGuidance),
+  )
   return `created ${ROOT_AGENT_INSTRUCTIONS_PATH} AI bootstrap instructions`
+}
+
+function initializeWorkflowLifecycleStates(projectDir: string, actions: string[]): CliRunResult | undefined {
+  const workflowSnapshot = readWorkflowLoopStateSnapshot(projectDir)
+  const ralphSnapshot = readRalphLoopStateSnapshot(projectDir)
+  const now = new Date().toISOString()
+
+  if (workflowSnapshot.integrity === "unsafe" || ralphSnapshot.integrity === "unsafe") {
+    return lifecycleInitializationFailure()
+  }
+
+  try {
+    if (workflowSnapshot.integrity === "absent") {
+      writeWorkflowLoopState(
+        projectDir,
+        {
+          finalDecision: "not-run",
+          iterations: [],
+          rulePackHash: rulePackContentHash(projectDir),
+          schemaVersion: WORKFLOW_LOOP_STATE_SCHEMA_VERSION,
+          startedAt: now,
+        },
+        workflowSnapshot.token,
+      )
+      actions.push("initialized empty workflow-loop state")
+    }
+    if (ralphSnapshot.integrity === "absent") {
+      if (!writeRalphLoopState(projectDir, emptyRalphLoopState(now), ralphSnapshot.token)) {
+        return lifecycleInitializationFailure()
+      }
+      actions.push("initialized empty ralph-loop state")
+    }
+  } catch {
+    return lifecycleInitializationFailure()
+  }
+
+  return undefined
+}
+
+function lifecycleInitializationFailure(): CliRunResult {
+  return {
+    status: 1,
+    stdout: "",
+    stderr: "Persona Harness backend bootstrap failed during workflow lifecycle initialization. Review the existing workflow state before retrying.\n",
+  }
+}
+
+function bootstrapWriteBoundaryFailure(): CliRunResult {
+  return {
+    status: 1,
+    stdout: "",
+    stderr: "Persona Harness backend bootstrap failed during bootstrap workspace intake. Review the existing bootstrap workspace before retrying.\n",
+  }
+}
+
+function reserveBootstrapWriteBoundaryFor(projectDir: string): BootstrapWriteBoundary | undefined {
+  try {
+    const boundary = reserveBootstrapWriteBoundary(projectDir)
+    for (const path of BOOTSTRAP_PERSONA_FILES) boundary.assertSafePersonaFile(path)
+    for (const name of BOOTSTRAP_WORKFLOW_FILES) boundary.assertSafeWorkflowFile(name)
+    return boundary
+  } catch {
+    return undefined
+  }
 }
 
 function runBackendBootstrap(
@@ -332,56 +448,73 @@ function runBackendBootstrap(
   const projectDir = projectDirFor(options)
   const actions: string[] = []
   const skipped: string[] = []
-
-  if (!existsSync(join(projectDir, PERSONA_DIR))) {
-    initializePersonaHarness({ projectDir, packageRoot: options.packageRoot })
-    actions.push("initialized .persona and OpenCode plugin config")
-  } else {
-    skipped.push(".persona already exists")
+  let bootstrapWriteBoundary: BootstrapWriteBoundary | undefined
+  try {
+    if (!existsSync(join(projectDir, PERSONA_DIR))) {
+      const initialized = initializeFreshBootstrapPersonaHarness({ projectDir, packageRoot: options.packageRoot })
+      bootstrapWriteBoundary = initialized.boundary
+      actions.push("initialized .persona and OpenCode plugin config")
+    } else {
+      skipped.push(".persona already exists")
+      bootstrapWriteBoundary = reserveBootstrapWriteBoundaryFor(projectDir)
+    }
+  } catch {
+    return bootstrapWriteBoundaryFailure()
   }
+  if (bootstrapWriteBoundary === undefined) return bootstrapWriteBoundaryFailure()
 
-  if (flags.strict) {
-    const strictFailure = enableStrictClosureVerification(projectDir)
+  const activeBoundary = bootstrapWriteBoundary
+  try {
+    return activeBoundary.withCapturedProject(() => {
+      const capturedProjectDir = "."
+
+    if (flags.strict) {
+      const strictFailure = enableStrictClosureVerification(capturedProjectDir, activeBoundary)
     if (strictFailure !== undefined) {
       return strictFailure
     }
     actions.push("enabled strict closure verification")
   }
 
-  if (flags.runtimeInjectionPreview) {
-    const injectionFailure = enableRuntimeInjectionPreview(projectDir)
+    if (flags.runtimeInjectionPreview) {
+      const injectionFailure = enableRuntimeInjectionPreview(capturedProjectDir, activeBoundary)
     if (injectionFailure !== undefined) {
       return injectionFailure
     }
     actions.push("enabled runtime injection preview")
   }
 
-  if (flags.multiAgentPreview) {
-    const previewFailure = enableMultiAgentPreview(projectDir, loadHarnessConfig(projectDir).multiAgent)
+    if (flags.multiAgentPreview) {
+    const previewFailure = enableMultiAgentPreview(
+      capturedProjectDir,
+      loadHarnessConfig(capturedProjectDir, activeBoundary).multiAgent,
+      activeBoundary,
+    )
     if (previewFailure !== undefined) {
       return previewFailure
     }
     actions.push("enabled Role Checklist Relay preview for test-writer, implementer, and reviewer")
   }
 
-  if (flags.codeNavPreview) {
-    const codeNavFailure = enableCodeNavMcpPreview(projectDir, options.packageRoot)
+    if (flags.codeNavPreview) {
+    const codeNavFailure = enableCodeNavMcpPreview(capturedProjectDir, options.packageRoot, activeBoundary)
     if (codeNavFailure !== undefined) {
       return codeNavFailure
     }
     actions.push("enabled code-nav MCP preview")
   }
 
-  if (flags.lspPreview) {
-    const lspFailure = enableLspMcpPreview(projectDir, options.packageRoot)
+    if (flags.lspPreview) {
+    const lspFailure = enableLspMcpPreview(capturedProjectDir, options.packageRoot, activeBoundary)
     if (lspFailure !== undefined) {
       return lspFailure
     }
     actions.push("enabled LSP MCP preview")
   }
 
-  if (flags.developerMcpEnabled) {
-    const developerMcpResult = enableDeveloperMcpBundle(projectDir, {
+    if (flags.developerMcpEnabled) {
+    const developerMcpResult = enableDeveloperMcpBundle(capturedProjectDir, {
+      bootstrapWriteBoundary: activeBoundary,
       codeGraphEnabled: flags.codeGraphEnabled,
       packageRoot: options.packageRoot,
     })
@@ -395,9 +528,9 @@ function runBackendBootstrap(
     skipped.push("developer MCP bundle disabled by --no-developer-mcp")
   }
 
-  const profileState = readBackendProjectProfileState(projectDir)
-  if (flags.force || profileState.status !== "ready") {
-    const result = runIntakeCommand(["--default", "backend", "--force"], { projectDir }, "ph")
+    const profileState = readBackendProjectProfileState(capturedProjectDir, activeBoundary)
+    if (flags.force || profileState.status !== "ready") {
+      const result = runIntakeCommand(["--default", "backend", "--force"], { bootstrapWriteBoundary: activeBoundary, projectDir: capturedProjectDir }, "ph")
     const failure = runAndRecord(actions, "profile", result, "created default backend profile")
     if (failure !== undefined) {
       return failure
@@ -406,9 +539,9 @@ function runBackendBootstrap(
     skipped.push(`${PROFILE_PATH} already ready`)
   }
 
-  if (flags.force || !existsSync(join(projectDir, POLICY_OVERLAY_PATH))) {
-    const policyArgs = flags.force ? ["init", "--force"] : ["init"]
-    const result = runPolicyCommand(policyArgs, { projectDir }, "ph")
+    if (flags.force || !activeBoundary.projectFileExists(POLICY_OVERLAY_PATH)) {
+      const policyArgs = flags.force ? ["init", "--force"] : ["init"]
+      const result = runPolicyCommand(policyArgs, { bootstrapWriteBoundary: activeBoundary, projectDir: capturedProjectDir }, "ph")
     const failure = runAndRecord(actions, "policy", result, "created backend policy overlay")
     if (failure !== undefined) {
       return failure
@@ -417,8 +550,8 @@ function runBackendBootstrap(
     skipped.push(`${POLICY_OVERLAY_PATH} already exists`)
   }
 
-  if (flags.force || !existsSync(join(projectDir, PLAN_PATH))) {
-    const result = runPlanCommand(["--auto-accept"], { projectDir }, "ph")
+    if (flags.force || !activeBoundary.projectFileExists(PLAN_PATH)) {
+      const result = runPlanCommand(["--auto-accept"], { bootstrapWriteBoundary: activeBoundary, projectDir: capturedProjectDir }, "ph")
     const failure = runAndRecord(actions, "plan", result, "created and accepted backend workflow plan")
     if (failure !== undefined) {
       return failure
@@ -427,12 +560,19 @@ function runBackendBootstrap(
     skipped.push(`${PLAN_PATH} already exists`)
   }
 
-  const agentInstructionAction = writeBackendAgentInstructions(projectDir, skipped, flags.force, flags.multiAgentPreview)
-  if (agentInstructionAction !== undefined) {
-    actions.push(agentInstructionAction)
-  }
+    activeBoundary.assert()
+    const lifecycleFailure = initializeWorkflowLifecycleStates(capturedProjectDir, actions)
+    if (lifecycleFailure !== undefined) {
+      return lifecycleFailure
+    }
+    activeBoundary.assert()
 
-  return {
+    const agentInstructionAction = writeBackendAgentInstructions(activeBoundary, skipped, flags.force, flags.multiAgentPreview)
+    if (agentInstructionAction !== undefined) {
+      actions.push(agentInstructionAction)
+    }
+
+    return {
     status: 0,
     stdout: [
       "Persona Harness backend bootstrap complete.",
@@ -461,6 +601,8 @@ function runBackendBootstrap(
       `- ${PLAN_PATH}`,
       `- ${IMPLEMENTATION_REPORT_PATH}`,
       `- ${REVIEW_REPORT_PATH}`,
+      "- .persona/workflow/workflow-loop-state.json",
+      "- .persona/workflow/ralph-loop-state.json",
       "",
       "Next:",
       "- Ask the AI agent to run `npx ph workflow implement` before implementation.",
@@ -471,6 +613,13 @@ function runBackendBootstrap(
       "- no generated app product-quality certification",
     ].join("\n") + "\n",
     stderr: "",
+    }
+    })
+  } catch (error) {
+    if (error instanceof BootstrapWriteBoundaryError) return bootstrapWriteBoundaryFailure()
+    throw error
+  } finally {
+    activeBoundary.close()
   }
 }
 

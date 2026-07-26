@@ -203,7 +203,8 @@ Total indexed files: 334
 | `docs/current/release/v0.7.0-rc.7-release-notes.md` | version-specific release note | v0.7.0-rc.7 | Historical source-preparation record for the packaged read-only exact-artifact verifier; live lifecycle facts belong in governed registry and audit records. |
 | `docs/current/release/v0.7.0-rc.8-release-notes.md` | version-specific release note | v0.7.0-rc.8 | Immutable source-preparation record for manual-only release controls and the protected-main audit route; it makes no live lifecycle claim. |
 | `docs/current/release/v0.7.0-release-notes.md` | version-specific release note | v0.7.0 | Immutable GA-source-preparation record; no package, tag, registry, release, latest, or stable-completion fact is claimed before independently governed evidence. |
-| `docs/current/release/v0.8.0-beta.1-release-notes.md` | version-specific release note | v0.8.0-beta.1 | Immutable Consumer Authority Beta source-preparation record; it asserts no live package, tag, registry, provenance, promotion, Stable/GA, or Finish authority fact. |
+| `docs/current/release/v0.8.0-beta.1-release-notes.md` | version-specific release note | v0.8.0-beta.1 | Immutable staging-only Consumer Authority Beta package evidence; it is not current-version consumer authority, promotion, Stable/GA, or Finish authority evidence. |
+| `docs/current/release/v0.8.0-beta.2-release-notes.md` | version-specific release note | v0.8.0-beta.2 | Current Consumer Authority Beta source-preparation record for a strict staging-only prerelease; it makes no live publish, tag, release, promotion, or Finish authority claim. |
 | `docs/current/release/consumer-authority-beta.md` | operational stable | - | Staging-first Consumer Authority Beta lifecycle boundary with fixed tag/readback, original-artifact consumer verification, and separately approved next promotion. |
 | `docs/current/release/production-integrity-audit.md` | operational stable | - | Fixed protected-main read-only Actions audit contract with sanitized digest-bound durable output; it cannot mutate release state or grant authority. |
 | `docs/current/rule-curation.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
@@ -246,7 +247,7 @@ Total indexed files: 334
 | `docs/current/vendored-shared-skills-tarball-policy.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/workflow-closure-state-machine-design.md` | current active pointer/status | - | Canonical `workflow-lifecycle.1` contract for status, closure, loop-state, and finish projection; selected by the current docs index and README. |
 | `docs/current/workflow-string-gate-parsing-audit.md` | current active pointer/status | - | T4 report-status parsing migration and retained string-gate audit record. |
-| `docs/current/workflow-state-concurrency.md` | current active pointer/status | - | Current ownership, conflict detection, and read-only absent/malformed/stale-state handling for lifecycle inputs. |
+| `docs/current/workflow-state-concurrency.md` | current active pointer/status | - | Current ownership, conflict detection, and read-only absent/malformed/stale/unsafe-state handling for lifecycle inputs. |
 | `docs/current/workflow-transition-test-map.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/workflow.md` | operational stable | - | Stable non-versioned guide or index. |
 | `docs/evidence-reviews/README.md` | evidence review archive | - | Evidence/review record; durable but not the current status surface. |

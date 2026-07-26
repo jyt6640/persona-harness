@@ -94,6 +94,12 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
       blockerId,
     }
   }
+  if (step.id === "repair-unsafe-workflow-loop-state") {
+    return {
+      action: "Repair the unsafe workflow-loop state path without following aliases before continuing.",
+      blockerId,
+    }
+  }
   if (step.id === "initialize-ralph-loop-state") {
     return {
       action: "Establish persisted ralph-loop state through the approved bounded runtime before continuing.",
@@ -103,6 +109,12 @@ export function workflowFinishFollowUpForStep(step: ClosureStep): WorkflowFinish
   if (step.id === "repair-ralph-loop-state") {
     return {
       action: "Review and repair the persisted ralph-loop state before continuing.",
+      blockerId,
+    }
+  }
+  if (step.id === "repair-unsafe-ralph-loop-state") {
+    return {
+      action: "Repair the unsafe ralph-loop state path without following aliases before continuing.",
       blockerId,
     }
   }
