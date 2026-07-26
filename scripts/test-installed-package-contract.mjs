@@ -24,7 +24,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const sourceCli = sourceCliArgument(process.argv.slice(2))
-const BETA4_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta4-acceptance.json")
+const BETA4_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta5-acceptance.json")
 const BETA4_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
@@ -1334,7 +1334,7 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
   for (const command of commands) {
     const step = BETA4_COOPERATIVE_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.4 acceptance command is unsupported`)
+      throw new Error(`${label} beta.5 acceptance command is unsupported`)
     }
     requireSuccess(
       `${label} lifecycle ${command}`,
@@ -1508,7 +1508,7 @@ function readBeta4CooperativeCommands(packageRoot) {
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.4 acceptance manifest is unavailable")
+    throw new Error("beta.5 acceptance manifest is unavailable")
   }
   const commands = value?.cooperative?.commands
   const packageVersion = value?.package?.version
@@ -1519,7 +1519,7 @@ function readBeta4CooperativeCommands(packageRoot) {
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
   ) {
-    throw new Error("beta.4 acceptance manifest is invalid")
+    throw new Error("beta.5 acceptance manifest is invalid")
   }
   return commands
 }

@@ -7,7 +7,7 @@ package or makes Finish pass.
 
 `0.8.0-beta.1`, `0.8.0-beta.2`, and `0.8.0-beta.3` are immutable staging-only
 evidence. Their registry and provenance observations cannot be reused as
-current-version consumer authority evidence. The active `0.8.0-beta.4` source
+current-version consumer authority evidence. The active `0.8.0-beta.5` source
 candidate has no package, tag, channel movement, GitHub release, or signed
 consumer-project artifact at source preparation time.
 
@@ -96,11 +96,11 @@ authority artifact or Finish PASS.
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
 an original artifact from `0.8.0-beta.1`, `0.8.0-beta.2`, or `0.8.0-beta.3`
-is a bounded binding mismatch for `0.8.0-beta.4`; only a future original signed
+is a bounded binding mismatch for `0.8.0-beta.5`; only a future original signed
 artifact for the current immutable version can exercise enrollment, fetch,
 explicit consumption, and replay rejection. The complete source/packed
 acceptance contract is the structured
-[`consumer-authority-beta4-acceptance.json`](consumer-authority-beta4-acceptance.json)
+[`consumer-authority-beta5-acceptance.json`](consumer-authority-beta5-acceptance.json)
 record; it names the exact public Java/Spring route and the one hosted residual.
 
 `ph authority status`, `ph authority fetch github`, and closure are

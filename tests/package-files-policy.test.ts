@@ -372,7 +372,7 @@ describe("package files policy", () => {
     ]
     const boundaryRecords = [
       "docs/current/release/consumer-authority-beta.md",
-      "docs/current/release/consumer-authority-beta4-acceptance.json",
+      "docs/current/release/consumer-authority-beta5-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -412,7 +412,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.4-release-notes.md",
+      "docs/current/release/v0.8.0-beta.5-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -438,7 +438,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.4-release-notes.md",
+      "docs/current/release/v0.8.0-beta.5-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 
