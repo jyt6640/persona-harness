@@ -1,4 +1,5 @@
 import fs, { existsSync, mkdirSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import { syncBuiltinESMExports } from "node:module"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -22,6 +23,7 @@ describe("ph evidence read write boundary", () => {
     const projectDir = createProject()
     const target = join("src", "main", "java", "example", "GreetingService.java")
     writeFileSync(join(projectDir, target), "class GreetingService {}\n")
+    commitProject(projectDir)
     const evidenceRoot = join(projectDir, ".persona", "evidence")
     const preserved = join(projectDir, ".persona", "evidence-preserved")
     const outside = join(projectDir, "outside-evidence")
@@ -67,4 +69,12 @@ function createProject(): string {
   mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
   writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
   return projectDir
+}
+
+function commitProject(projectDir: string): void {
+  execFileSync("git", ["init", "-q"], { cwd: projectDir })
+  execFileSync("git", ["config", "user.email", "evidence@example.invalid"], { cwd: projectDir })
+  execFileSync("git", ["config", "user.name", "Evidence"], { cwd: projectDir })
+  execFileSync("git", ["add", "."], { cwd: projectDir })
+  execFileSync("git", ["commit", "-qm", "evidence fixture"], { cwd: projectDir })
 }

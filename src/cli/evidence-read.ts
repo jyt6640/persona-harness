@@ -4,7 +4,8 @@ import { isAbsolute, join, relative, resolve } from "node:path"
 import { reserveExistingBootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import { sanitizeEvidenceValue } from "../runtime/evidence-redaction.js"
 import { evidenceWriteContext } from "../runtime/evidence-file.js"
-import { readNoFollowProjectFile } from "../io/no-follow-file.js"
+import { captureNoFollowProjectFile, sameNoFollowPathIdentity } from "../io/no-follow-file.js"
+import { runFixedGitBytes } from "./fixed-git.js"
 import type { CliRunResult } from "./bearshell.js"
 
 const MAX_READ_BYTES = 256 * 1024
@@ -23,15 +24,23 @@ export function runEvidenceReadCommand(
   const projectDir = resolve(projectDirInput ?? process.cwd())
   const targetFile = args[0]
   if (targetFile === undefined) return UNAVAILABLE_RESULT
-  const file = readNoFollowProjectFile(projectDir, targetFile, MAX_READ_BYTES)
-  if (file.kind !== "ready") return UNAVAILABLE_RESULT
+  const before = captureNoFollowProjectFile(projectDir, targetFile)
+  if (before.kind !== "ready") return UNAVAILABLE_RESULT
+  const file = runFixedGitBytes(projectDir, ["show", `HEAD:${targetFile}`], MAX_READ_BYTES)
+  if (!file.available || file.status !== 0 || file.stdout.byteLength > MAX_READ_BYTES) return UNAVAILABLE_RESULT
+  const after = captureNoFollowProjectFile(projectDir, targetFile)
+  if (
+    after.kind !== "ready"
+    || after.value.length !== before.value.length
+    || after.value.some((entry, index) => !sameNoFollowPathIdentity(entry, before.value[index]!))
+  ) return UNAVAILABLE_RESULT
 
   const context = evidenceWriteContext(projectDir, {})
   if (context === undefined) return UNAVAILABLE_RESULT
   const outputPath = join(context.evidenceRoot, "phase0", `workflow-read-${randomUUID()}.json`)
   const payload = {
-    byteCount: file.value.bytes.byteLength,
-    contentDigest: `sha256:${createHash("sha256").update(file.value.bytes).digest("hex")}`,
+    byteCount: file.stdout.byteLength,
+    contentDigest: `sha256:${createHash("sha256").update(file.stdout).digest("hex")}`,
     evidenceKind: "workflow-read",
     fileRole: "source-read",
     schemaVersion: "workflow-read-evidence.1",

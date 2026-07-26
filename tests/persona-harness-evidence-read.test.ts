@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -21,6 +22,7 @@ describe("ph evidence read", () => {
     const projectDir = createProject()
     const target = join("src", "main", "java", "example", "GreetingService.java")
     writeFileSync(join(projectDir, target), "class GreetingService { String marker = \"sk-live-read-marker\"; }\n")
+    commitProject(projectDir)
 
     // When: the public CLI records the project-contained read.
     const result = runPersonaCli(["evidence", "read", target], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -45,6 +47,7 @@ describe("ph evidence read", () => {
     const projectDir = createProject()
     const target = join("src", "main", "java", "example", "GreetingService.java")
     writeFileSync(join(projectDir, target), "class GreetingService {}\n")
+    commitProject(projectDir)
     const outside = join(projectDir, "outside-secret.java")
     writeFileSync(outside, "sk-live-evidence-read-marker\n")
     symlinkSync(outside, join(projectDir, "src", "main", "java", "example", "LinkedService.java"))
@@ -71,6 +74,7 @@ describe("ph evidence read", () => {
     const projectDir = createProject()
     const target = join("src", "main", "java", "example", "GreetingService.java")
     writeFileSync(join(projectDir, target), "class GreetingService {}\n")
+    commitProject(projectDir)
     const outside = join(projectDir, "outside-evidence")
     mkdirSync(outside)
     symlinkSync(outside, join(projectDir, ".persona", "evidence"))
@@ -112,4 +116,12 @@ function createProject(options: { readonly workflow?: boolean } = {}): string {
 
 function readRecord(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf8"))
+}
+
+function commitProject(projectDir: string): void {
+  execFileSync("git", ["init", "-q"], { cwd: projectDir })
+  execFileSync("git", ["config", "user.email", "evidence@example.invalid"], { cwd: projectDir })
+  execFileSync("git", ["config", "user.name", "Evidence"], { cwd: projectDir })
+  execFileSync("git", ["add", "."], { cwd: projectDir })
+  execFileSync("git", ["commit", "-qm", "evidence fixture"], { cwd: projectDir })
 }
