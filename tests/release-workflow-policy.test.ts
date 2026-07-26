@@ -43,6 +43,7 @@ describe("release workflow policy", () => {
     expect(lifecycle).toContain("user-scoped `ph authority`")
     expect(lifecycle).toContain("Neither fixture can borrow the other fixture's evidence")
     expect(lifecycle).toContain("no\nauthority artifact or Finish PASS")
+    expect(lifecycle).toContain("no bootstrap artifact outside the project")
   })
 
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
