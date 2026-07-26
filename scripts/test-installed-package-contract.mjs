@@ -746,12 +746,63 @@ function assertSourceBootstrapWorkspaceIntake(sourceCliPath) {
 
 function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
   assertProjectRootRaceBlocks(join(fixtureRoot, "project-root-race"), phPath, label)
+  assertCapturedProjectAgentStageRaceBlocks(join(fixtureRoot, "agent-stage-race"), phPath, label)
   assertProjectRootAliasesBlock(join(fixtureRoot, "project-root-alias"), phPath, label)
   assertFreshPersonaParentRaceBlocks(join(fixtureRoot, "fresh-persona-race"), phPath, label)
   assertLifecycleStateParentAliasBlocks(join(fixtureRoot, "parent-alias"), phPath, label)
   assertLifecycleStateLeafAliasesBlock(join(fixtureRoot, "leaf-alias"), phPath, label)
   assertLifecycleStateParentRaceBlocks(join(fixtureRoot, "parent-race"), phPath, label)
   assertLifecycleStateLeafRacesBlock(join(fixtureRoot, "leaf-race"), phPath, label)
+}
+
+function assertCapturedProjectAgentStageRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  const canonicalProjectDir = realpathSync(projectDir)
+  const preserved = join(dirname(projectDir), `${basename(projectDir)}-preserved`)
+  const outside = join(dirname(projectDir), `${basename(projectDir)}-outside`)
+  const hookPath = join(projectDir, "agent-stage-race-hook.cjs")
+  mkdirSync(outside)
+  writeFileSync(
+    hookPath,
+    [
+      'const fs = require("node:fs")',
+      'const { basename } = require("node:path")',
+      'const { syncBuiltinESMExports } = require("node:module")',
+      'const originalOpen = fs.openSync',
+      'const originalWrite = fs.writeFileSync',
+      'let swapped = false',
+      'const swap = () => {',
+      '  if (swapped) return',
+      '  swapped = true',
+      '  fs.renameSync(process.env.PH_BOOTSTRAP_AGENT_PROJECT, process.env.PH_BOOTSTRAP_AGENT_PRESERVED)',
+      '  fs.symlinkSync(process.env.PH_BOOTSTRAP_AGENT_OUTSIDE, process.env.PH_BOOTSTRAP_AGENT_PROJECT)',
+      '}',
+      'fs.openSync = (...args) => {',
+      '  if (typeof args[0] === "string" && basename(args[0]).startsWith(".AGENTS.md.")) swap()',
+      '  return originalOpen(...args)',
+      '}',
+      'fs.writeFileSync = (...args) => {',
+      '  if (typeof args[0] === "string" && basename(args[0]).startsWith(".AGENTS.md.")) swap()',
+      '  return originalWrite(...args)',
+      '}',
+      'syncBuiltinESMExports()',
+      '',
+    ].join("\n"),
+  )
+  const rerun = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"],
+    {
+      PH_BOOTSTRAP_AGENT_OUTSIDE: outside,
+      PH_BOOTSTRAP_AGENT_PRESERVED: preserved,
+      PH_BOOTSTRAP_AGENT_PROJECT: canonicalProjectDir,
+    },
+  )
+
+  requireLifecycleStateBlock(`${label} AGENTS staging race`, rerun, outside)
+  if (!lstatSync(projectDir).isSymbolicLink() || readdirSync(outside).length !== 0) {
+    throw new Error(`${label} AGENTS staging race wrote outside its canonical root`)
+  }
 }
 
 function assertProjectRootAliasesBlock(projectDir, phPath, label) {
