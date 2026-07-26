@@ -95,4 +95,56 @@ describe("ph plan report status errors", () => {
     expect(updatedReport).toContain("status: filled")
     expect(updatedReport).not.toContain("Status: filled")
   })
+
+  it("submits one bounded substantive report through the public stdin surface", () => {
+    const projectDir = createTempProject()
+    const workflowDir = join(projectDir, ".persona", "workflow")
+    const reportPath = join(workflowDir, "implementation-report.md")
+    mkdirSync(workflowDir, { recursive: true })
+    writeFileSync(reportPath, "Status: template\n")
+
+    const result = runPersonaCli(["plan", "--report-filled", "implementation", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: [
+        "Status: filled",
+        "- README ranges read: 1-220",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell ./gradlew test`",
+      ].join("\n"),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("Workflow report: .persona/workflow/implementation-report.md")
+    expect(readFileSync(reportPath, "utf8")).toContain("Status: filled")
+  })
+
+  it("rejects malformed, oversized, and replacement stdin without changing a template report", () => {
+    const projectDir = createTempProject()
+    const workflowDir = join(projectDir, ".persona", "workflow")
+    const reportPath = join(workflowDir, "review-report.md")
+    const template = "Status: template\n"
+    mkdirSync(workflowDir, { recursive: true })
+    writeFileSync(reportPath, template)
+
+    const malformed = runPersonaCli(["plan", "--report-filled", "review", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: "Status: template\n- Manual QA reviewed the boundary.\n- `npx ph bearshell ./gradlew build`",
+    })
+    const oversized = runPersonaCli(["plan", "--report-filled", "review", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: `Status: filled\n${"x".repeat(64 * 1024)}`,
+    })
+
+    expect(malformed.status).toBe(1)
+    expect(malformed.stderr).toContain("must declare exactly one filled Status value")
+    expect(oversized.status).toBe(1)
+    expect(oversized.stderr).toContain("exceeds the 65536-byte limit")
+    expect(readFileSync(reportPath, "utf8")).toBe(template)
+  })
 })
