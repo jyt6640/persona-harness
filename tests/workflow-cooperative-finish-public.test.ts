@@ -27,7 +27,7 @@ describe("public cooperative Finish", () => {
     const projectDir = createProject()
     const bootstrap = run(projectDir, ["bootstrap", "backend", "--strict"])
     const testEvidence = run(projectDir, ["bearshell", "./gradlew", "test"])
-    const buildEvidence = run(projectDir, ["bearshell", "./gradlew", "build"])
+    const cleanEvidence = run(projectDir, ["bearshell", "./gradlew", "clean"])
     const implementation = run(
       projectDir,
       ["plan", "--report-filled", "implementation", "--stdin"],
@@ -43,7 +43,7 @@ describe("public cooperative Finish", () => {
     expect(existsSync(join(projectDir, ".persona", "workflow", "workflow-loop-state.json"))).toBe(true)
     expect(existsSync(join(projectDir, ".persona", "workflow", "ralph-loop-state.json"))).toBe(true)
     expect(testEvidence.status).toBe(0)
-    expect(buildEvidence.status).toBe(0)
+    expect(cleanEvidence.status).toBe(0)
     expect(implementation.status).toBe(0)
     expect(review.status).toBe(0)
 
@@ -132,6 +132,6 @@ function reviewReport(): string {
   return [
     "Status: filled",
     "- Manual QA reviewed the Java/Gradle fixture.",
-    "- `npx ph bearshell ./gradlew build`",
+    "- `npx ph bearshell ./gradlew clean`",
   ].join("\n")
 }
