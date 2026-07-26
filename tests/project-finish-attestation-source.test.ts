@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -14,6 +14,7 @@ import {
   captureProjectFinishAttestationSourceIdentity,
   matchesProjectFinishAttestationSource,
 } from "../src/cli/project-finish-attestation-source.js"
+import { runPersonaCli } from "../src/cli/index.js"
 import type { SourceIdentity } from "../src/cli/source-identity-types.js"
 
 const temporaryRoots: string[] = []
@@ -25,6 +26,26 @@ afterEach(() => {
 })
 
 describe("project finish attestation source binding", () => {
+  it("preserves a checkpointed source binding through the public bootstrap and workflow lifecycle", () => {
+    const primary = createPublicProject()
+    const bootstrap = run(primary, ["bootstrap", "backend", "--strict", "--no-developer-mcp"])
+    expect(bootstrap.status, bootstrap.stderr).toBe(0)
+    commitBootstrapCheckpoint(primary)
+    const expected = captureBoundSourceIdentity(primary)
+    const worktreeParent = track(mkdtempSync(join(tmpdir(), "persona-project-finish-source-")))
+    const worktree = join(worktreeParent, "consumer")
+    execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: primary })
+
+    expect(run(worktree, ["bootstrap", "backend", "--strict", "--no-developer-mcp"]).status).toBe(0)
+    expect(run(worktree, ["bearshell", "./gradlew", "test"]).status).toBe(0)
+    expect(run(worktree, ["bearshell", "./gradlew", "compileJava"]).status).toBe(0)
+    expect(run(worktree, ["bearshell", "./gradlew", "clean"]).status).toBe(0)
+    expect(run(worktree, ["plan", "--report-filled", "implementation", "--stdin"], implementationReport()).status).toBe(0)
+    expect(run(worktree, ["plan", "--report-filled", "review", "--stdin"], reviewReport()).status).toBe(0)
+
+    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(true)
+  })
+
   it("keeps runtime workflow and evidence state out of the signed source comparison", () => {
     const primary = createProject()
     const expected = captureBoundSourceIdentity(primary)
@@ -79,6 +100,74 @@ function createProject(): string {
   execFileSync("git", ["add", "."], { cwd: projectDir })
   execFileSync("git", ["commit", "-qm", "project source fixture"], { cwd: projectDir })
   return projectDir
+}
+
+function createPublicProject(): string {
+  const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-public-source-")))
+  writeFileSync(join(projectDir, "README.md"), "# Public project fixture\n")
+  writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
+  writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'public-fixture'\n")
+  writeFileSync(
+    join(projectDir, "gradlew"),
+    [
+      "#!/bin/sh",
+      "for arg in \"$@\"; do",
+      "  case \"$arg\" in",
+      "    test) echo '> Task :test' ;;",
+      "    compileJava) echo '> Task :compileJava' ;;",
+      "    clean) echo '> Task :clean' ;;",
+      "  esac",
+      "done",
+      "exit 0",
+      "",
+    ].join("\n"),
+  )
+  chmodSync(join(projectDir, "gradlew"), 0o755)
+  execFileSync("git", ["init", "-q"], { cwd: projectDir })
+  execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
+  execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
+  execFileSync("git", ["add", "."], { cwd: projectDir })
+  execFileSync("git", ["commit", "-qm", "public source fixture"], { cwd: projectDir })
+  return projectDir
+}
+
+function commitBootstrapCheckpoint(projectDir: string): void {
+  execFileSync("git", ["add", "--all"], { cwd: projectDir })
+  execFileSync("git", ["reset", "--", ".persona/evidence", ".persona/workflow"], { cwd: projectDir })
+  const staticPersonaPaths = [
+    ".persona/.ph-init-manifest.json",
+    ".persona/conventions",
+    ".persona/harness.jsonc",
+    ".persona/policies",
+    ".persona/project-profile.jsonc",
+    ".persona/rules",
+  ].filter((relativePath) => existsSync(join(projectDir, relativePath)))
+  if (staticPersonaPaths.length > 0) {
+    execFileSync("git", ["add", "-f", "--", ...staticPersonaPaths], { cwd: projectDir })
+  }
+  execFileSync("git", ["commit", "-qm", "public bootstrap checkpoint"], { cwd: projectDir })
+}
+
+function run(projectDir: string, args: readonly string[], stdin?: string) {
+  return runPersonaCli(args, { cwd: projectDir, env: {}, invocationName: "ph", stdin })
+}
+
+function implementationReport(): string {
+  return [
+    "Status: filled",
+    "- README ranges read: all",
+    "- Project profile ranges read: all",
+    "- `npx ph bearshell ./gradlew test`",
+    "- `npx ph bearshell ./gradlew compileJava`",
+  ].join("\n")
+}
+
+function reviewReport(): string {
+  return [
+    "Status: filled",
+    "- Manual QA reviewed the Java/Spring Gradle project.",
+    "- `npx ph bearshell ./gradlew clean`",
+  ].join("\n")
 }
 
 function captureBoundSourceIdentity(projectDir: string): SourceIdentity {
