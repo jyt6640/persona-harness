@@ -5,6 +5,7 @@ import { join } from "node:path"
 import {
   captureGitIdentity,
   captureWorkspaceIdentity,
+  type GitIdentity,
 } from "./ci-reverification-identity.js"
 import { captureProjectFinishAttestationInputSnapshot } from "./project-finish-attestation-inputs.js"
 import {
