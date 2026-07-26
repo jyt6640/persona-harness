@@ -39,8 +39,10 @@ const SAFE_DIAGNOSTIC_CODES: ReadonlySet<string> = new Set([
   "workflow-loop-state-absent",
   "workflow-loop-state-malformed",
   "workflow-loop-state-stale",
+  "workflow-loop-state-unsafe",
   "ralph-loop-state-absent",
   "ralph-loop-state-malformed",
+  "ralph-loop-state-unsafe",
 ] as const)
 const SAFE_FIXED_COMMANDS: ReadonlySet<string> = new Set([
   "npx ph plan",
@@ -104,9 +106,13 @@ export function safeWorkflowDiagnostic(value: string): string {
   }
   if (/workflow-loop/iu.test(value)) {
     if (/absent|missing/iu.test(value)) return "workflow-loop-state-absent"
+    if (/unsafe|replaced|no-follow|symlink/iu.test(value)) return "workflow-loop-state-unsafe"
     return /stale|different rule pack/iu.test(value) ? "workflow-loop-state-stale" : "workflow-loop-state-malformed"
   }
-  if (/ralph-loop/iu.test(value)) return /absent|missing/iu.test(value) ? "ralph-loop-state-absent" : "ralph-loop-state-malformed"
+  if (/ralph-loop/iu.test(value)) {
+    if (/absent|missing/iu.test(value)) return "ralph-loop-state-absent"
+    return /unsafe|replaced|no-follow|symlink/iu.test(value) ? "ralph-loop-state-unsafe" : "ralph-loop-state-malformed"
+  }
   if (/report coverage|read coverage/iu.test(value)) {
     return "report-coverage-missing"
   }

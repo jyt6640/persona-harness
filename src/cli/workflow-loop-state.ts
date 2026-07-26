@@ -1,7 +1,11 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { fileChangeToken, writeFileAtomicIfTokenUnchanged, type FileChangeToken } from "../io/atomic-file.js"
+import {
+  readWorkflowLifecycleStateFile,
+  WorkflowLifecycleStateError,
+  writeWorkflowLifecycleStateFile,
+  type WorkflowLifecycleStateToken,
+} from "../io/workflow-lifecycle-state.js"
 
 export type WorkflowLoopIterationRecord = {
   readonly blockerId: string
@@ -41,10 +45,12 @@ export type WorkflowLoopState = {
 }
 
 export type WorkflowLoopStateSnapshot = {
-  readonly integrity: "absent" | "malformed" | "valid"
+  readonly integrity: "absent" | "malformed" | "unsafe" | "valid"
   readonly state: WorkflowLoopState | null
-  readonly token: FileChangeToken | null
+  readonly token: WorkflowLifecycleStateToken
 }
+
+const MAX_WORKFLOW_LOOP_STATE_BYTES = 128 * 1024
 
 type ParsedWorkflowLoopStateRecord = {
   readonly completedAt?: string
@@ -87,19 +93,20 @@ function parseWorkflowLoopState(source: string): WorkflowLoopState | null {
 }
 
 export function readWorkflowLoopStateSnapshot(projectDir: string): WorkflowLoopStateSnapshot {
-  const path = workflowLoopStatePath(projectDir)
-  if (!existsSync(path)) {
+  const file = readWorkflowLifecycleStateFile(
+    projectDir,
+    "workflow-loop-state.json",
+    MAX_WORKFLOW_LOOP_STATE_BYTES,
+  )
+  if (file.kind === "absent") {
     return { integrity: "absent", state: null, token: null }
   }
-  try {
-    const state = parseWorkflowLoopState(readFileSync(path, "utf8"))
-    return {
-      integrity: state === null ? "malformed" : "valid",
-      state,
-      token: fileChangeToken(path),
-    }
-  } catch {
-    return { integrity: "malformed", state: null, token: fileChangeToken(path) }
+  if (file.kind === "blocked") return { integrity: "unsafe", state: null, token: null }
+  const state = parseWorkflowLoopState(file.value.bytes.toString("utf8"))
+  return {
+    integrity: state === null ? "malformed" : "valid",
+    state,
+    token: file.value.token,
   }
 }
 
@@ -110,11 +117,18 @@ export function readWorkflowLoopState(projectDir: string): WorkflowLoopState | n
 export function writeWorkflowLoopState(
   projectDir: string,
   state: WorkflowLoopState,
-  expectedToken: FileChangeToken | null = fileChangeToken(workflowLoopStatePath(projectDir)),
-): FileChangeToken {
-  const path = workflowLoopStatePath(projectDir)
-  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
-  return writeFileAtomicIfTokenUnchanged(path, expectedToken, `${JSON.stringify(state, null, 2)}\n`)
+  expectedToken?: WorkflowLifecycleStateToken,
+): WorkflowLifecycleStateToken {
+  const snapshot = expectedToken === undefined ? readWorkflowLoopStateSnapshot(projectDir) : undefined
+  if (snapshot?.integrity === "unsafe") {
+    throw new WorkflowLifecycleStateError()
+  }
+  return writeWorkflowLifecycleStateFile(
+    projectDir,
+    "workflow-loop-state.json",
+    expectedToken ?? snapshot?.token ?? null,
+    `${JSON.stringify(state, null, 2)}\n`,
+  )
 }
 
 function readFinalDecision(value: unknown): WorkflowLoopState["finalDecision"] {

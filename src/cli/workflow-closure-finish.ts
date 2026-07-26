@@ -119,7 +119,7 @@ function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): stri
       "Run the explicit bounded workflow loop to establish its state before continuing.",
     ].join("\n")
   }
-  if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale") {
+  if (blocker.id === "workflow-loop-state-malformed" || blocker.id === "workflow-loop-state-stale" || blocker.id === "workflow-loop-state-unsafe") {
     return [
       `Closure blocker: ${blocker.id}`,
       `Persisted workflow-loop state is not safe to continue: ${blocker.reason}`,
@@ -133,7 +133,7 @@ function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): stri
       "Establish it through the approved bounded runtime before continuing.",
     ].join("\n")
   }
-  if (blocker.id === "ralph-loop-state-malformed") {
+  if (blocker.id === "ralph-loop-state-malformed" || blocker.id === "ralph-loop-state-unsafe") {
     return [
       `Closure blocker: ${blocker.id}`,
       `Persisted ralph-loop state is not safe to continue: ${blocker.reason}`,

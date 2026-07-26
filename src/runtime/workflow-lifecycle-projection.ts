@@ -24,8 +24,8 @@ export type WorkflowLifecycleProjection = {
   readonly evidence: { readonly source: string; readonly status: "missing" | "present" }
   readonly finishAuthority: WorkflowLifecycleFinishAuthority
   readonly loops: {
-    readonly ralph: "absent" | "current" | "malformed"
-    readonly workflow: "absent" | "current" | "malformed" | "stale" | "unassessed"
+    readonly ralph: "absent" | "current" | "malformed" | "unsafe"
+    readonly workflow: "absent" | "current" | "malformed" | "stale" | "unassessed" | "unsafe"
   }
   readonly paths: {
     readonly evidence: LifecyclePathStatus
@@ -175,6 +175,12 @@ function workflowLoopBlockers(status: WorkflowLifecycleProjection["loops"]["work
         reason: "workflow-loop state is malformed; review the persisted state before retrying continuation.",
         source: ".persona/workflow/workflow-loop-state.json",
       }]
+    case "unsafe":
+      return [{
+        id: "workflow-loop-state-unsafe",
+        reason: "workflow-loop state path is unsafe or was replaced; read-only recovery is required before continuing.",
+        source: ".persona/workflow/workflow-loop-state.json",
+      }]
     case "stale":
       return [{
         id: "workflow-loop-state-stale",
@@ -202,6 +208,12 @@ function ralphLoopBlockers(status: WorkflowLifecycleProjection["loops"]["ralph"]
         reason: "ralph-loop state is malformed; review the persisted state before retrying continuation.",
         source: ".persona/workflow/ralph-loop-state.json",
       }]
+    case "unsafe":
+      return [{
+        id: "ralph-loop-state-unsafe",
+        reason: "ralph-loop state path is unsafe or was replaced; read-only recovery is required before continuing.",
+        source: ".persona/workflow/ralph-loop-state.json",
+      }]
     default:
       return assertNever(status)
   }
@@ -216,6 +228,8 @@ function workflowLoopStatus(
       return "absent"
     case "malformed":
       return "malformed"
+    case "unsafe":
+      return "unsafe"
     case "valid":
       if (snapshot.state === null) {
         return "malformed"
@@ -235,6 +249,8 @@ function ralphLoopStatus(snapshot: RalphLoopStateSnapshot): WorkflowLifecyclePro
       return "absent"
     case "malformed":
       return "malformed"
+    case "unsafe":
+      return "unsafe"
     case "valid":
       return "current"
     default:

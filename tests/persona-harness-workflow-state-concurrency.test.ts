@@ -183,6 +183,7 @@ describe("workflow state concurrent write protection", () => {
 
   it("preserves hook-owned ralph-loop state when another writer changes it after read", () => {
     const projectDir = createTempProject()
+    writeHarnessWorkflow(projectDir)
     const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined)
     const now = "2026-07-05T00:00:00.000Z"
     const snapshot = readRalphLoopStateSnapshot(projectDir, now)
