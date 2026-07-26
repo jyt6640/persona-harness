@@ -44,11 +44,13 @@ ph workflow finish implement --assurance cooperative
 `bootstrap` initializes only absent empty current loop-state records; it does
 not repair malformed or stale state. `--stdin` accepts one bounded substantive
 report while the corresponding report is still a template, then refuses a
-replacement. The cleanup observation prevents a prior ordinary build from
-making the fixed cooperative build task non-fresh. Deleting either loop-state
-record, submitting malformed or oversized report text, or copying a
-report/evidence record remains blocked. The default Finish and later closure
-remain external-blocked after a cooperative PASS.
+replacement. Its public report ingress enforces a streaming 65536-byte ceiling
+before decoding or collecting the input, so an oversized or continuously
+producing pipe is rejected without replacing a report. The cleanup observation
+prevents a prior ordinary build from making the fixed cooperative build task
+non-fresh. Deleting either loop-state record, submitting malformed or oversized
+report text, or copying a report/evidence record remains blocked. The default
+Finish and later closure remain external-blocked after a cooperative PASS.
 
 The final hosted evidence uses two fresh registry-installed fixtures, each
 installing the exact immutable version only from `https://registry.npmjs.org`:
