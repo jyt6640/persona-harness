@@ -34,6 +34,7 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("Consumer Authority Beta source-preparation candidate")
     expect(text).toContain("immutable staging-only Consumer Authority Beta")
     expect(text).toContain("0.8.0-beta.2")
+    expect(text).toContain("streaming 65536-byte ceiling before decoding")
     expect(text).toContain("expected non-authoritative block")
   })
 })
