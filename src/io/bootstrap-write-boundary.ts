@@ -6,10 +6,14 @@ import {
   ftruncateSync,
   lstatSync,
   mkdirSync,
+  mkdtempSync,
   openSync,
   realpathSync,
+  renameSync,
+  rmSync,
   writeFileSync,
 } from "node:fs"
+import { tmpdir } from "node:os"
 import { isAbsolute, join, relative, resolve } from "node:path"
 
 import {
@@ -27,6 +31,11 @@ type DirectoryReservation = {
 }
 
 type ExistingFile = { readonly kind: "absent" } | { readonly identity: NoFollowPathIdentity; readonly kind: "ready" }
+
+export type FreshBootstrapPersonaFile = {
+  readonly bytes: Buffer
+  readonly relativePath: string
+}
 
 export class BootstrapWriteBoundaryError extends Error {
   constructor() {
@@ -205,6 +214,70 @@ export function reserveBootstrapWriteBoundary(projectDir: string): BootstrapWrit
   const persona = reserveCanonicalDirectory(join(project.path, ".persona"))
   const workflow = reserveOrCreateChildDirectory(persona, "workflow")
   return new BootstrapWriteBoundary(project, persona, workflow)
+}
+
+export function materializeFreshBootstrapWriteBoundary(
+  projectDir: string,
+  files: readonly FreshBootstrapPersonaFile[],
+): BootstrapWriteBoundary {
+  const project = reserveProjectDirectory(resolve(projectDir))
+  const personaPath = join(project.path, ".persona")
+  let stagingPath: string | undefined
+  let persona: DirectoryReservation | undefined
+  let workflow: DirectoryReservation | undefined
+  try {
+    if (captureNoFollowDirectory(personaPath).kind !== "absent") throw new BootstrapWriteBoundaryError()
+    stagingPath = mkdtempSync(join(tmpdir(), "persona-bootstrap-staging-"))
+    for (const file of [...files].sort((left, right) => left.relativePath.localeCompare(right.relativePath))) {
+      writeFreshPersonaStagingFile(stagingPath, file)
+    }
+    assertDirectoryReservation(project)
+    if (captureNoFollowDirectory(personaPath).kind !== "absent") throw new BootstrapWriteBoundaryError()
+    renameSync(stagingPath, personaPath)
+    stagingPath = undefined
+    persona = reserveChildDirectory(project, ".persona")
+    workflow = reserveOrCreateChildDirectory(persona, "workflow")
+    const boundary = new BootstrapWriteBoundary(project, persona, workflow)
+    persona = undefined
+    workflow = undefined
+    return boundary
+  } catch (error) {
+    if (stagingPath !== undefined) {
+      try {
+        rmSync(stagingPath, { force: true, recursive: true })
+      } catch {}
+    }
+    if (workflow !== undefined) canonicalClose(workflow)
+    if (persona !== undefined) canonicalClose(persona)
+    canonicalClose(project)
+    if (error instanceof BootstrapWriteBoundaryError) throw error
+    throw new BootstrapWriteBoundaryError()
+  }
+}
+
+function writeFreshPersonaStagingFile(stagingPath: string, file: FreshBootstrapPersonaFile): void {
+  if (!file.relativePath.startsWith(".persona/")) throw new BootstrapWriteBoundaryError()
+  const segments = validatedRelativeSegments(file.relativePath.slice(".persona/".length))
+  const leaf = segments.pop()
+  if (leaf === undefined) throw new BootstrapWriteBoundaryError()
+  let parent = stagingPath
+  try {
+    for (const segment of segments) {
+      parent = join(parent, segment)
+      mkdirSync(parent, { mode: 0o700, recursive: true })
+    }
+    const path = join(parent, leaf)
+    const descriptor = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600)
+    try {
+      writeFileSync(descriptor, file.bytes)
+      fsyncSync(descriptor)
+    } finally {
+      closeSync(descriptor)
+    }
+  } catch (error) {
+    if (error instanceof BootstrapWriteBoundaryError) throw error
+    throw new BootstrapWriteBoundaryError()
+  }
 }
 
 function reserveProjectDirectory(path: string): DirectoryReservation {
