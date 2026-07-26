@@ -42,10 +42,12 @@ ph workflow finish implement --assurance cooperative
 ```
 
 `bootstrap` initializes only absent empty current loop-state records; it does
-not repair malformed or stale state. After the existing init transaction has
-established the harness, strict bootstrap reserves canonical project-contained
-`.persona` and `.persona/workflow` directories before modifying its harness
-config, profile, policy, plan, role boundary, reports, or loop states. Each
+not repair malformed or stale state. In a fresh project, bootstrap holds a
+project-root reservation while it assembles the initial `.persona` tree outside
+the caller workspace, then promotes that tree only when `.persona` is still
+absent. Strict bootstrap then reserves canonical project-contained `.persona`
+and `.persona/workflow` directories before modifying its harness config,
+profile, policy, plan, role boundary, reports, or loop states. Each
 bootstrap-owned leaf is checked with no-follow identity validation through its
 write. A parent or leaf alias, or a detected replacement, is an explicit unsafe
 lifecycle block: it writes no bootstrap artifact outside the project and does
