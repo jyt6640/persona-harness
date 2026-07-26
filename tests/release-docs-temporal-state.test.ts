@@ -35,6 +35,7 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("immutable staging-only Consumer Authority Beta")
     expect(text).toContain("0.8.0-beta.2")
     expect(text).toContain("streaming 65536-byte ceiling before decoding")
+    expect(text).toContain("canonical project-contained `.persona/workflow` path with no-follow")
     expect(text).toContain("expected non-authoritative block")
   })
 })

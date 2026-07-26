@@ -35,7 +35,7 @@ type WorkflowLifecycleProjection = {
   }
   readonly evidence: { readonly source: string; readonly status: "missing" | "present" }
   readonly paths: { readonly harness: "invalid" | "safe"; readonly rules: PathStatus; readonly evidence: PathStatus }
-  readonly loops: { readonly workflow: "absent" | "current" | "malformed" | "stale" | "unassessed"; readonly ralph: "absent" | "current" | "malformed" }
+  readonly loops: { readonly workflow: "absent" | "current" | "malformed" | "stale" | "unassessed" | "unsafe"; readonly ralph: "absent" | "current" | "malformed" | "unsafe" }
   readonly tickets: { readonly status: "clear" | "pending" }
   readonly finishAuthority: { readonly status: "blocked" | "trusted"; readonly blocker: LifecycleBlocker | null }
   readonly readiness: "blocked" | "ready-for-closure"
@@ -63,12 +63,13 @@ silently converted into local lifecycle readiness.
    a fallback winner.
 3. Missing evidence blocks lifecycle progression. Evidence presence alone does
    not create trusted authority.
-4. An absent or malformed workflow-loop or ralph-loop state blocks
+4. An absent, malformed, or unsafe workflow-loop or ralph-loop state blocks
    continuation. Absence maps to a bounded initialization step; a malformed
    state maps to a distinct review-and-repair step. A valid workflow-loop state
    whose rule-pack hash differs from the current rule pack is `stale` and also
-   blocks continuation. The reader never creates, rewrites, or repairs state
-   while reporting it.
+   blocks continuation. An unsafe state includes a parent/leaf alias or
+   replacement detected by the canonical no-follow reservation. The reader
+   never creates, rewrites, or repairs state while reporting it.
 5. Pending tickets block closure; history-only backlog state remains a repair
    case instead of an implicit archive.
 6. Workflow status and normal closure planning call the existing authority
@@ -101,8 +102,8 @@ boundary.
 Closure maps invalid report states to `repair-implementation-report-status` or
 `repair-review-report-status`, requiring the markers to be corrected before a
 fresh `npx ph workflow check`. Absent persisted state maps to
-`initialize-workflow-loop-state` or `initialize-ralph-loop-state`; stale or
-malformed state maps to `repair-workflow-loop-state` or
+`initialize-workflow-loop-state` or `initialize-ralph-loop-state`; unsafe,
+stale, or malformed state maps to `repair-workflow-loop-state` or
 `repair-ralph-loop-state`. These are explicit human-or-runtime actions, not
 automatic recovery commands.
 

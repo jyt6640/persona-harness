@@ -42,7 +42,11 @@ ph workflow finish implement --assurance cooperative
 ```
 
 `bootstrap` initializes only absent empty current loop-state records; it does
-not repair malformed or stale state. `--stdin` accepts one bounded substantive
+not repair malformed or stale state. Both loop-state readers and writers first
+reserve the canonical project-contained `.persona/workflow` path with no-follow
+identity checks. A parent or leaf alias, or a detected replacement, is an
+explicit unsafe lifecycle block and receives no state write or automatic
+recovery. `--stdin` accepts one bounded substantive
 report while the corresponding report is still a template, then refuses a
 replacement. Its public report ingress enforces a streaming 65536-byte ceiling
 before decoding or collecting the input, so an oversized or continuously
