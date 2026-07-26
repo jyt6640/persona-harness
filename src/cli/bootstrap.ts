@@ -83,7 +83,7 @@ export const BOOTSTRAP_TRANSACTION_OUTPUT_MANIFEST = [
   ".gitignore",
   ".opencode/opencode.json",
   "AGENTS.md",
-  ".persona/.init-manifest.json",
+  ".persona/.ph-init-manifest.json",
   ".persona/harness.jsonc",
   ".persona/conventions/**",
   ".persona/rules/**",

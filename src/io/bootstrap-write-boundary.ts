@@ -328,6 +328,7 @@ export class BootstrapWriteBoundary {
       const afterWrite = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
       const temporaryAfterWrite = noFollowPathIdentityFromStat(lstatSync(temporaryName, { bigint: true }))
       if (!sameNoFollowPathIdentity(afterWrite, temporaryAfterWrite)) throw new BootstrapWriteBoundaryError()
+      temporaryIdentity = afterWrite
       const current = this.#readCurrentFile(name, reservations)
       if (
         (expected.kind === "absent" && current.kind !== "absent")

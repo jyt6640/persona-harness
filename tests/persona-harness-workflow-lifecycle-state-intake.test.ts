@@ -183,6 +183,7 @@ describe("bootstrap workspace intake", () => {
       expect(swapped).toBe(true)
       expect(result.status).toBe(1)
       expect(fs.readdirSync(outside)).toEqual([])
+      expect(fs.readdirSync(preserved).some((entry) => entry.startsWith(".AGENTS.md."))).toBe(false)
       expect(`${result.stdout}${result.stderr}`).not.toContain(outside)
       expect(authorityEvidenceExists(projectDir)).toBe(false)
     } finally {
@@ -202,6 +203,7 @@ describe("bootstrap workspace intake", () => {
       ".gitignore",
       ".opencode/opencode.json",
       "AGENTS.md",
+      ".persona/.ph-init-manifest.json",
       ".persona/harness.jsonc",
       ".persona/project-profile.jsonc",
       ".persona/policies/overlay.jsonc",
