@@ -745,6 +745,8 @@ function assertSourceBootstrapWorkspaceIntake(sourceCliPath) {
 }
 
 function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
+  assertProjectRootRaceBlocks(join(fixtureRoot, "project-root-race"), phPath, label)
+  assertProjectRootAliasesBlock(join(fixtureRoot, "project-root-alias"), phPath, label)
   assertFreshPersonaParentRaceBlocks(join(fixtureRoot, "fresh-persona-race"), phPath, label)
   assertLifecycleStateParentAliasBlocks(join(fixtureRoot, "parent-alias"), phPath, label)
   assertLifecycleStateLeafAliasesBlock(join(fixtureRoot, "leaf-alias"), phPath, label)
@@ -752,10 +754,83 @@ function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
   assertLifecycleStateLeafRacesBlock(join(fixtureRoot, "leaf-race"), phPath, label)
 }
 
+function assertProjectRootAliasesBlock(projectDir, phPath, label) {
+  for (const relativePath of [".gitignore", ".opencode/opencode.json"]) {
+    const caseRoot = join(projectDir, relativePath.replaceAll("/", "-"))
+    createLifecycleStateIntakeFixture(caseRoot)
+    const target = join(caseRoot, relativePath)
+    const outside = join(caseRoot, `outside-${relativePath.replaceAll("/", "-")}`)
+    mkdirSync(dirname(target), { recursive: true })
+    symlinkSync(outside, target)
+
+    const rerun = runNode(caseRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"])
+
+    requireLifecycleStateBlock(`${label} root ${relativePath} alias`, rerun, outside)
+    if (existsSync(outside) || !lstatSync(target).isSymbolicLink()) {
+      throw new Error(`${label} root ${relativePath} alias was replaced or wrote outside`)
+    }
+  }
+
+  const parentRoot = join(projectDir, "opencode-parent")
+  createLifecycleStateIntakeFixture(parentRoot)
+  const parent = join(parentRoot, ".opencode")
+  const outside = join(parentRoot, "outside-opencode-parent")
+  mkdirSync(outside)
+  symlinkSync(outside, parent)
+
+  const rerun = runNode(parentRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"])
+
+  requireLifecycleStateBlock(`${label} root .opencode parent alias`, rerun, outside)
+  if (readdirSync(outside).length !== 0 || !lstatSync(parent).isSymbolicLink()) {
+    throw new Error(`${label} root .opencode parent alias wrote outside`)
+  }
+}
+
+function assertProjectRootRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  const canonicalProjectDir = realpathSync(projectDir)
+  const preserved = join(dirname(projectDir), `${basename(projectDir)}-preserved`)
+  const outside = join(dirname(projectDir), `${basename(projectDir)}-outside`)
+  const hookPath = join(projectDir, "project-root-race-hook.cjs")
+  mkdirSync(outside)
+  writeFileSync(
+    hookPath,
+    [
+      'const fs = require("node:fs")',
+      'const { syncBuiltinESMExports } = require("node:module")',
+      'const originalOpen = fs.openSync',
+      'let swapped = false',
+      'fs.openSync = (...args) => {',
+      '  if (!swapped && args[0] === ".gitignore") {',
+      '    swapped = true',
+      '    fs.renameSync(process.env.PH_BOOTSTRAP_ROOT_PROJECT, process.env.PH_BOOTSTRAP_ROOT_PRESERVED)',
+      '    fs.symlinkSync(process.env.PH_BOOTSTRAP_ROOT_OUTSIDE, process.env.PH_BOOTSTRAP_ROOT_PROJECT)',
+      '  }',
+      '  return originalOpen(...args)',
+      '}',
+      'syncBuiltinESMExports()',
+      '',
+    ].join("\n"),
+  )
+  const rerun = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"],
+    {
+      PH_BOOTSTRAP_ROOT_OUTSIDE: outside,
+      PH_BOOTSTRAP_ROOT_PRESERVED: preserved,
+      PH_BOOTSTRAP_ROOT_PROJECT: canonicalProjectDir,
+    },
+  )
+
+  requireLifecycleStateBlock(`${label} project root race`, rerun, outside)
+  if (!lstatSync(projectDir).isSymbolicLink() || readdirSync(outside).length !== 0) {
+    throw new Error(`${label} project root race wrote outside its canonical root`)
+  }
+}
+
 function assertFreshPersonaParentRaceBlocks(projectDir, phPath, label) {
   createLifecycleStateIntakeFixture(projectDir)
   const personaDir = join(projectDir, ".persona")
-  const canonicalPersonaDir = join(realpathSync(projectDir), ".persona")
   const preserved = join(projectDir, ".persona-preserved")
   const outside = join(projectDir, "outside-fresh-persona")
   const hookPath = join(projectDir, "fresh-persona-race-hook.cjs")
@@ -769,7 +844,7 @@ function assertFreshPersonaParentRaceBlocks(projectDir, phPath, label) {
       'let swapped = false',
       'fs.renameSync = (...args) => {',
       '  const result = originalRename(...args)',
-      '  if (!swapped && args[1] === process.env.PH_BOOTSTRAP_FRESH_PERSONA) {',
+      '  if (!swapped && args[1] === ".persona") {',
       '    swapped = true',
       '    originalRename(process.env.PH_BOOTSTRAP_FRESH_PERSONA_TEXT, process.env.PH_BOOTSTRAP_FRESH_PRESERVED)',
       '    fs.symlinkSync(process.env.PH_BOOTSTRAP_FRESH_OUTSIDE, process.env.PH_BOOTSTRAP_FRESH_PERSONA_TEXT)',
@@ -785,7 +860,6 @@ function assertFreshPersonaParentRaceBlocks(projectDir, phPath, label) {
     ["--require", hookPath, phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"],
     {
       PH_BOOTSTRAP_FRESH_OUTSIDE: outside,
-      PH_BOOTSTRAP_FRESH_PERSONA: canonicalPersonaDir,
       PH_BOOTSTRAP_FRESH_PERSONA_TEXT: personaDir,
       PH_BOOTSTRAP_FRESH_PRESERVED: preserved,
     },
