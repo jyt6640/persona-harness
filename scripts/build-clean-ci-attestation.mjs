@@ -24,6 +24,11 @@ const COMMAND_MAX_STDERR_BYTES = 1024 * 1024
 const COMMAND_MAX_TOTAL_OUTPUT_BYTES = 1024 * 1024
 const OUTPUT_DIRECTORY = ".ci/canonical-clean-ci-attestation-builder"
 const TEST_REPORT_PATH = `${OUTPUT_DIRECTORY}/test-results.json`
+const RESOURCE_SENSITIVE_TEST_REPORT_PATH = `${OUTPUT_DIRECTORY}/test-results-resource-sensitive.json`
+const TEST_REPORTS = [
+  { commandId: "tests", path: TEST_REPORT_PATH },
+  { commandId: "tests-resource-sensitive", path: RESOURCE_SENSITIVE_TEST_REPORT_PATH },
+]
 
 export const FIXED_COMMANDS = [
   { id: "scope", executable: "npm", args: ["run", "check:scope:strict"] },
@@ -34,7 +39,26 @@ export const FIXED_COMMANDS = [
   {
     id: "tests",
     executable: "node",
-    args: ["node_modules/vitest/vitest.mjs", "run", "--reporter=json", `--outputFile=${TEST_REPORT_PATH}`, "--testTimeout=15000"],
+    args: [
+      "node_modules/vitest/vitest.mjs",
+      "run",
+      "--project=parallel",
+      "--reporter=json",
+      `--outputFile=${TEST_REPORT_PATH}`,
+      "--testTimeout=15000",
+    ],
+  },
+  {
+    id: "tests-resource-sensitive",
+    executable: "node",
+    args: [
+      "node_modules/vitest/vitest.mjs",
+      "run",
+      "--project=resource-sensitive",
+      "--reporter=json",
+      `--outputFile=${RESOURCE_SENSITIVE_TEST_REPORT_PATH}`,
+      "--testTimeout=15000",
+    ],
   },
   { id: "build", executable: "npm", args: ["run", "build"] },
   { id: "pack", executable: "npm", args: ["pack", "--dry-run", "--json"] },
@@ -53,9 +77,10 @@ async function main() {
     for (const command of FIXED_COMMANDS) {
       commandResults.push(await runBoundedBuilderCommand(command, context.workspaceRoot))
     }
-    const testReportPath = join(context.workspaceRoot, TEST_REPORT_PATH)
-    const testReport = readJson(testReportPath)
-    const testFacts = readTestFacts(testReport, testReportPath)
+    const testFacts = readTestFacts(TEST_REPORTS.map((report) => ({
+      ...report,
+      path: join(context.workspaceRoot, report.path),
+    })))
     const packFacts = readPackFacts(commandResults.find((result) => result.id === "pack")?.stdout ?? "")
     const packageJson = readJson(join(context.workspaceRoot, "package.json"))
     const receipt = createReceipt(context, commandResults, testFacts, packFacts, packageJson.version)
@@ -74,7 +99,7 @@ async function main() {
   } catch (error) {
     if (context !== undefined && outputDir !== undefined && error instanceof BuilderCommandFailure) {
       try {
-        writeFailureDiagnostic(outputDir, error.details, join(context.workspaceRoot, TEST_REPORT_PATH), context.workspaceRoot)
+        writeFailureDiagnostic(outputDir, error.details, context.workspaceRoot)
       } catch {
         process.stderr.write("failed to persist builder failure diagnostic\n")
       }
@@ -322,26 +347,54 @@ function createReceipt(context, commandResults, testFacts, packFacts, phVersion)
   }
 }
 
-function readTestFacts(value, reportPath) {
+export function readTestFacts(reports) {
+  const facts = reports.map((report) => readTestReport(report))
+  return {
+    artifactDigest: `sha256:${sha256(canonicalJson(facts.map((report) => ({
+      commandId: report.commandId,
+      digest: `sha256:${sha256(report.bytes)}`,
+    }))))}`,
+    count: facts.reduce((total, report) => total + report.total, 0),
+    failed: facts.reduce((total, report) => total + report.failed, 0),
+    identity: "vitest:repository",
+    passed: facts.reduce((total, report) => total + report.passed, 0),
+    skipped: facts.reduce((total, report) => total + report.skipped, 0),
+  }
+}
+
+function readTestReport(report) {
+  let bytes
+  let value
+  try {
+    bytes = readFileSync(report.path)
+    value = JSON.parse(bytes.toString("utf8"))
+  } catch {
+    throw new BuilderCommandFailure({
+      commandId: report.commandId,
+      exitCode: 0,
+      exitState: "invalid-test-report",
+    })
+  }
+
   const total = numberField(value, "numTotalTests")
   const passed = numberField(value, "numPassedTests")
   const failed = numberField(value, "numFailedTests")
   const skipped = numberField(value, "numPendingTests") + numberField(value, "numTodoTests") + numberField(value, "numSkippedTests")
   if (total < 1 || passed < 1 || failed !== 0) {
     throw new BuilderCommandFailure({
-      commandId: "tests",
+      commandId: report.commandId,
       exitCode: 0,
       exitState: "invalid-test-report",
     })
   }
 
   return {
-    artifactDigest: `sha256:${sha256(readFileSync(reportPath))}`,
-    count: total,
+    bytes,
+    commandId: report.commandId,
     failed,
-    identity: "vitest:repository",
     passed,
     skipped,
+    total,
   }
 }
 
@@ -455,8 +508,8 @@ function signalExitCode(signal) {
   return signal === null ? null : 128 + (signalCodes[signal] ?? 1)
 }
 
-function createFailureDiagnostic(failure, reportPath, workspaceRoot) {
-  const report = readFailureReportSummary(reportPath, workspaceRoot)
+function createFailureDiagnostic(failure, reportPath, workspaceRoot, reportRelativePath = TEST_REPORT_PATH) {
+  const report = readFailureReportSummary(reportPath, workspaceRoot, reportRelativePath)
   return {
     authorityBoundary: "builder-output-is-non-authoritative",
     authorityEligible: false,
@@ -472,12 +525,12 @@ function createFailureDiagnostic(failure, reportPath, workspaceRoot) {
 
 export { createFailureDiagnostic }
 
-function readFailureReportSummary(reportPath, workspaceRoot) {
+function readFailureReportSummary(reportPath, workspaceRoot, reportRelativePath) {
   const report = {
     available: existsSync(reportPath),
     digest: null,
     failedTestFiles: [],
-    path: TEST_REPORT_PATH,
+    path: reportRelativePath,
     summary: null,
   }
   if (!report.available) return report
@@ -505,8 +558,9 @@ function readFailureReportSummary(reportPath, workspaceRoot) {
   return report
 }
 
-function writeFailureDiagnostic(outputDir, failure, reportPath, workspaceRoot) {
-  const diagnostic = createFailureDiagnostic(failure, reportPath, workspaceRoot)
+function writeFailureDiagnostic(outputDir, failure, workspaceRoot) {
+  const report = TEST_REPORTS.find((candidate) => candidate.commandId === failure.commandId) ?? TEST_REPORTS[0]
+  const diagnostic = createFailureDiagnostic(failure, join(workspaceRoot, report.path), workspaceRoot, report.path)
   writeFileSync(join(outputDir, "failure-diagnostic.json"), `${canonicalJson(diagnostic)}\n`, { flag: "wx" })
 }
 

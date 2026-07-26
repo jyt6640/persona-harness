@@ -24,6 +24,20 @@ export type BuilderCommandResult = {
   readonly stdoutDigest: string
 }
 
+export type BuilderTestReport = {
+  readonly commandId: string
+  readonly path: string
+}
+
+export type BuilderTestFacts = {
+  readonly artifactDigest: string
+  readonly count: number
+  readonly failed: number
+  readonly identity: "vitest:repository"
+  readonly passed: number
+  readonly skipped: number
+}
+
 export type CanonicalRunnerContext = {
   readonly environment: "github-hosted"
   readonly label: "ubuntu-latest"
@@ -66,6 +80,8 @@ export function createFailureDiagnostic(failure: BuilderFailure, reportPath: str
 export function readCanonicalRunnerContext(
   env?: Readonly<Record<string, string | undefined>>,
 ): CanonicalRunnerContext
+
+export function readTestFacts(reports: readonly BuilderTestReport[]): BuilderTestFacts
 
 export function runBoundedBuilderCommand(
   command: BuilderCommand,
