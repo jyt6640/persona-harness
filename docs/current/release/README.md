@@ -70,10 +70,11 @@ capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 `0.8.0-beta.1` is immutable staging-only Consumer Authority Beta evidence:
 its exact registry installation and staged provenance boundary passed, without
 granting consumer Finish authority or any promotion/Stable/GA claim.
-`0.8.0-beta.2` is the next strict-prerelease source preparation candidate; it
-has no source-level claim of a tag, publish, channel movement, GitHub release,
-or original signed consumer artifact. `0.7.0-rc.2` remains an earlier
-published `next` record.
+`0.8.0-beta.1` and `0.8.0-beta.2` are immutable staging-only Consumer
+Authority Beta evidence. `0.8.0-beta.3` is the next strict-prerelease source
+preparation candidate; it has no source-level claim of a tag, publish, channel
+movement, GitHub release, or original signed consumer artifact. `0.7.0-rc.2`
+remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:
 [`staged-package-artifact-attestation-producer.md`](staged-package-artifact-attestation-producer.md).
@@ -896,6 +897,7 @@ tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
 - [v0.7.0 release notes](v0.7.0-release-notes.md)
 - [v0.8.0-beta.1 release notes](v0.8.0-beta.1-release-notes.md)
 - [v0.8.0-beta.2 release notes](v0.8.0-beta.2-release-notes.md)
+- [v0.8.0-beta.3 release notes](v0.8.0-beta.3-release-notes.md)
 - [v0.7.0-rc.8 release notes](v0.7.0-rc.8-release-notes.md)
 - [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
 - [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)

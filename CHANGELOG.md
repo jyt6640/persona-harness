@@ -8,6 +8,19 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.8.0-beta.3] - 2026-07-26
+
+- Prepares the next immutable Consumer Authority Beta source candidate for a
+  staging-only lifecycle. It makes no package, tag, registry, release,
+  promotion, Stable/GA, or Finish authority claim.
+- Adds the package-visible beta.3 acceptance record for the complete public
+  Java/Spring lifecycle: strict bootstrap, real Gradle test and compile,
+  bounded reports, explicit cooperative Finish, and external-only later
+  closure.
+- Retains beta.1 and beta.2 as immutable staging-only evidence. A future
+  current-version public artifact must still be independently fetched,
+  verified, consumed explicitly once, and replay-blocked.
+
 ## [0.8.0-beta.1] - 2026-07-24
 
 - Prepares the immutable Consumer Authority Beta source candidate for a

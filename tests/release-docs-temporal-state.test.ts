@@ -13,8 +13,9 @@ const publicReleaseDocs = [
   "docs/current/release/v0.7.0-rc.7-release-notes.md",
   "docs/current/release/v0.7.0-rc.8-release-notes.md",
   "docs/current/release/v0.7.0-release-notes.md",
-    "docs/current/release/v0.8.0-beta.1-release-notes.md",
-    "docs/current/release/v0.8.0-beta.2-release-notes.md",
+  "docs/current/release/v0.8.0-beta.1-release-notes.md",
+  "docs/current/release/v0.8.0-beta.2-release-notes.md",
+  "docs/current/release/v0.8.0-beta.3-release-notes.md",
 ]
 
 describe("release docs temporal-state boundary", () => {
@@ -33,7 +34,8 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("governed registry and audit records")
     expect(text).toContain("Consumer Authority Beta source-preparation candidate")
     expect(text).toContain("immutable staging-only Consumer Authority Beta")
-    expect(text).toContain("0.8.0-beta.2")
+    expect(text).toContain("0.8.0-beta.3")
+    expect(text).toContain("consumer-authority-beta3-acceptance.json")
     expect(text).toContain("streaming 65536-byte ceiling before decoding")
     expect(text).toContain("assembled outside the caller workspace")
     expect(text).toContain("project-root transaction")
