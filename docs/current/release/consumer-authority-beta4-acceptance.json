@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "consumer-authority-beta4-acceptance.1",
+  "package": {
+    "version": "0.8.0-beta.4",
+    "channel": "staging",
+    "scope": "staging-only"
+  },
+  "cooperative": {
+    "commands": [
+      "ph bootstrap backend --strict --no-developer-mcp",
+      "ph bearshell ./gradlew test",
+      "ph bearshell ./gradlew compileJava",
+      "ph bearshell ./gradlew clean",
+      "ph evidence read README.md",
+      "ph evidence read .persona/project-profile.jsonc",
+      "ph evidence read src/main/java/example/cooperative/GreetingService.java",
+      "ph plan --report-filled implementation --stdin",
+      "ph plan --report-filled review --stdin"
+    ],
+    "defaultFinish": "trusted-authority-required",
+    "explicitFinish": "cooperative-pass",
+    "laterClosure": "trusted-authority-required",
+    "evidence": {
+      "recordSchema": "workflow-read-evidence.1",
+      "sourceReads": [
+        "README.md",
+        ".persona/project-profile.jsonc",
+        "src/main/java/example/cooperative/GreetingService.java"
+      ]
+    }
+  },
+  "authority": {
+    "commands": [
+      "ph authority enroll github <owner/repository> --workflow <caller-workflow>",
+      "ph authority status --json",
+      "ph authority fetch github --json",
+      "ph authority explain --json",
+      "ph workflow finish implement"
+    ],
+    "hostedFixture": {
+      "repository": "jyt6640/persona-harness-attestation-claim-fixture",
+      "callerWorkflowPath": ".github/workflows/persona-harness.yml",
+      "reusableWorkflowPath": ".github/workflows/persona-harness-project-finish.yml",
+      "event": "push",
+      "ref": "refs/heads/main",
+      "revision": "postmerge-persona-harness-main-sha"
+    },
+    "fixturePlan": {
+      "artifact": "project-finish-attestation",
+      "consumer": "public-java-spring-gradle",
+      "postmergeAction": "normal-push-to-main",
+      "registryInstall": "npm install persona-harness@0.8.0-beta.4 --registry https://registry.npmjs.org"
+    },
+    "verification": {
+      "predicate": "project-finish-attestation.1",
+      "route": "fixed-product-owned-online",
+      "unavailable": "bounded-non-authoritative"
+    }
+  },
+  "negativeCases": [
+    { "id": "gradle-test-or-compile-failure", "proof": "cooperative-source-and-packed" },
+    { "id": "junit-malformed-stale-or-unsafe", "proof": "cooperative-source-and-packed" },
+    { "id": "report-malformed-repeated-control-or-oversized", "proof": "report-ingress-source-and-packed" },
+    { "id": "workflow-or-ralph-loop-missing-malformed-or-unsafe", "proof": "bootstrap-containment-source-and-packed" },
+    { "id": "source-read-evidence-missing-or-unsafe", "proof": "source-read-source-and-packed" },
+    { "id": "default-finish-authority-negative", "proof": "cooperative-source-and-packed" },
+    { "id": "artifact-identity-or-version-mismatch", "proof": "project-consumption-source" },
+    { "id": "external-trust-unavailable", "proof": "doctor-source-and-packed" },
+    { "id": "explicit-consumption-replay", "proof": "project-consumption-source" }
+  ],
+  "deterministicProofs": [
+    { "id": "cooperative-source-and-packed", "surface": "source-built-and-packed-installed" },
+    { "id": "report-ingress-source-and-packed", "surface": "source-built-and-packed-installed" },
+    { "id": "bootstrap-containment-source-and-packed", "surface": "source-built-and-packed-installed" },
+    { "id": "source-read-source-and-packed", "surface": "source-built-and-packed-installed" },
+    { "id": "project-consumption-source", "surface": "source-built-worker-seam" },
+    { "id": "doctor-source-and-packed", "surface": "source-built-and-packed-installed" }
+  ],
+  "hostedResidual": {
+    "id": "beta4-postmerge-registry-current-artifact-and-independent-verification",
+    "evidence": [
+      "staging-only-publish-and-registry-readback",
+      "registry-installed-cooperative-finish",
+      "current-version-original-signed-project-artifact",
+      "independent-online-custom-predicate-verification-within-certificate-window",
+      "explicit-consumption-and-replay-block"
+    ]
+  }
+}
