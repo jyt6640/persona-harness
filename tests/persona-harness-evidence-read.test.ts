@@ -65,13 +65,30 @@ describe("ph evidence read", () => {
     }
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
   })
+
+  it("rejects an aliased evidence destination without writing outside the project", () => {
+    // Given: an otherwise valid source read and a replaced configured evidence parent.
+    const projectDir = createProject()
+    const target = join("src", "main", "java", "example", "GreetingService.java")
+    writeFileSync(join(projectDir, target), "class GreetingService {}\n")
+    const outside = join(projectDir, "outside-evidence")
+    mkdirSync(outside)
+    symlinkSync(outside, join(projectDir, ".persona", "evidence"))
+
+    // When: the public CLI attempts to record the bounded read.
+    const result = runPersonaCli(["evidence", "read", target], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    // Then: the unsafe output boundary blocks before any external record is created.
+    expect(result).toEqual({ status: 1, stdout: "", stderr: "Evidence read unavailable.\n" })
+    expect(readdirSync(outside)).toEqual([])
+  })
 })
 
 function createProject(): string {
   const projectDir = join(tmpdir(), `persona-evidence-read-${randomUUID()}`)
   projects.push(projectDir)
   mkdirSync(join(projectDir, "src", "main", "java", "example"), { recursive: true })
-  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
   writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
   return projectDir
 }
