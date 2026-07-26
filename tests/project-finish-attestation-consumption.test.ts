@@ -20,7 +20,10 @@ import {
   inspectProjectFinishAttestation,
   type ProjectFinishAttestationEnrolledPolicy,
 } from "../src/cli/project-finish-attestation-verifier.js"
-import { canonicalProjectFinishAttestationBytes } from "../src/cli/project-finish-attestation-canonical.js"
+import {
+  canonicalProjectFinishAttestationBytes,
+  canonicalProjectFinishAttestationReceiptDigest,
+} from "../src/cli/project-finish-attestation-canonical.js"
 import { sha256Digest } from "../src/cli/workflow-finish-attestation-canonical.js"
 import { createValidProjectFinishAttestationStatement } from "./helpers/project-finish-attestation-fixture.js"
 
@@ -109,6 +112,18 @@ describe("project finish attestation inspection and consumption", () => {
     })
     expect(existsSync(consumptionPath)).toBe(false)
   })
+
+  it("blocks an otherwise verified original artifact from a different Persona Harness version", () => {
+    const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-consumption-")))
+    const consumptionPath = writeVerifiedEvidence(projectDir, statementForVersion("0.8.0-beta.1"))
+
+    expect(inspectProjectFinishAttestation(projectDir, enrollment, now)).toMatchObject({
+      authorityEligible: false,
+      consumptionState: "not-applicable",
+      state: "binding-mismatch",
+    })
+    expect(existsSync(consumptionPath)).toBe(false)
+  })
 })
 
 function track(projectDir: string): string {
@@ -128,8 +143,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
 }
 
-function writeVerifiedEvidence(projectDir: string): string {
-  const statement = createValidProjectFinishAttestationStatement()
+function writeVerifiedEvidence(projectDir: string, statement = createValidProjectFinishAttestationStatement()): string {
   const predicate = requireRecord(statement, "predicate")
   const receipt = requireRecord(predicate, "receipt")
   const evidenceDir = join(projectDir, ".persona", "evidence", "project-finish-attestation")
@@ -144,4 +158,21 @@ function writeVerifiedEvidence(projectDir: string): string {
     statement,
   })
   return join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json")
+}
+
+function statementForVersion(phVersion: string): Record<string, unknown> {
+  const statement = createValidProjectFinishAttestationStatement()
+  const predicate = requireRecord(statement, "predicate")
+  const receipt = requireRecord(predicate, "receipt")
+  const subject = statement["subject"]
+  if (!Array.isArray(subject) || subject.length !== 1 || !isRecord(subject[0])) {
+    throw new TypeError("fixture subject must contain one record")
+  }
+  const digest = requireRecord(subject[0], "digest")
+
+  receipt["phVersion"] = phVersion
+  const receiptDigest = canonicalProjectFinishAttestationReceiptDigest(receipt)
+  predicate["receiptDigest"] = receiptDigest
+  digest["sha256"] = receiptDigest.slice("sha256:".length)
+  return statement
 }
