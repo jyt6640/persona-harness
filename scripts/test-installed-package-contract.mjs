@@ -632,59 +632,17 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
     throw new Error(`${label} cooperative Finish did not produce real JUnit XML`)
   }
   for (const directory of ["verification-attempts", "verification-receipts", "finish-attestation"]) {
-    if (existsSync(join(fixtureRoot, ".persona", "custom-evidence", directory))) {
+    if (existsSync(join(fixtureRoot, ".persona", "evidence", directory))) {
       throw new Error(`${label} cooperative Finish wrote forgeable authority directory ${directory}`)
     }
   }
 }
 
 function createCooperativeGradleFixture(projectDir, phPath, label) {
-  mkdirSync(join(projectDir, ".persona", "custom-evidence", "phase0"), { recursive: true })
-  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
   mkdirSync(join(projectDir, "src", "main", "java", "example", "cooperative"), { recursive: true })
   mkdirSync(join(projectDir, "src", "test", "java", "example", "cooperative"), { recursive: true })
   writeFileSync(join(projectDir, "README.md"), "# Installed cooperative Gradle fixture\n")
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'installed-cooperative-gradle'\n")
-  writeFileSync(
-    join(projectDir, ".persona", "harness.jsonc"),
-    `${JSON.stringify({
-      enforce: { executeVerification: false },
-      evidenceDir: ".persona/custom-evidence",
-    })}\n`,
-  )
-  writeFileSync(join(projectDir, ".persona", "project-profile.jsonc"), `${JSON.stringify(cooperativeProfile())}\n`)
-  writeFileSync(join(projectDir, ".persona", "workflow", "plan.md"), "Status: accepted\n")
-  writeFileSync(
-    join(projectDir, ".persona", "workflow", "implementation-report.md"),
-    [
-      "Status: filled",
-      "- README ranges read: all",
-      "- Project profile ranges read: all",
-      "- `npx ph bearshell --shell './gradlew test'`",
-    ].join("\n"),
-  )
-  writeFileSync(
-    join(projectDir, ".persona", "workflow", "review-report.md"),
-    [
-      "Status: filled",
-      "- Manual QA reviewed the Java/Spring Gradle fixture.",
-      "- `npx ph bearshell --shell './gradlew build'`",
-    ].join("\n"),
-  )
-  writeFileSync(
-    join(projectDir, ".persona", "custom-evidence", "phase0", "verification.json"),
-    `${JSON.stringify({
-      command: "npx ph bearshell --shell './gradlew test'",
-      status: 0,
-      tool: "bearshell",
-      toolOutput: "BUILD SUCCESSFUL",
-    })}\n`,
-  )
-  writeCurrentLoopStates(projectDir, phPath, label)
-  requireSuccess(
-    "installed fixture Gradle wrapper",
-    runCommand(projectDir, "gradle", ["wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
-  )
   writeFileSync(
     join(projectDir, "build.gradle"),
     [
@@ -708,6 +666,10 @@ function createCooperativeGradleFixture(projectDir, phPath, label) {
       "tasks.named('test') { useJUnitPlatform() }",
       "",
     ].join("\n"),
+  )
+  requireSuccess(
+    "installed fixture Gradle wrapper",
+    runCommand(projectDir, "gradle", ["wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
   )
   writeFileSync(
     join(projectDir, "src", "main", "java", "example", "cooperative", "CooperativeApplication.java"),
@@ -748,35 +710,44 @@ function createCooperativeGradleFixture(projectDir, phPath, label) {
   requireSuccess("installed fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
   requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
-}
-
-function writeCurrentLoopStates(projectDir, phPath, label) {
-  const preview = runNode(projectDir, [phPath, "workflow", "loop", "--dry-run", "--json"])
-  if (preview.status !== 1) {
-    throw new Error(`${label} lifecycle loop preview did not report the expected blocked state`)
-  }
-  const payload = JSON.parse(preview.stdout)
-  if (!isRecord(payload) || typeof payload.rulePackHash !== "string") {
-    throw new Error(`${label} lifecycle loop preview did not return a rule-pack hash`)
-  }
-  writeFileSync(
-    join(projectDir, ".persona", "workflow", "workflow-loop-state.json"),
-    `${JSON.stringify({
-      finalDecision: "not-run",
-      iterations: [],
-      rulePackHash: payload.rulePackHash,
-      schemaVersion: "workflow-loop-state.2",
-      startedAt: "2026-07-01T00:00:00.000Z",
-    }, null, 2)}\n`,
+  requireSuccess(`${label} lifecycle bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict"]))
+  requireSuccess(`${label} lifecycle test evidence`, runNode(projectDir, [phPath, "bearshell", "./gradlew", "test"]))
+  requireSuccess(`${label} lifecycle clean evidence`, runNode(projectDir, [phPath, "bearshell", "./gradlew", "clean"]))
+  requireSuccess(
+    `${label} lifecycle implementation report`,
+    runNode(
+      projectDir,
+      [phPath, "plan", "--report-filled", "implementation", "--stdin"],
+      {},
+      [
+        "Status: filled",
+        "- README ranges read: all",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell ./gradlew test`",
+      ].join("\n"),
+    ),
   )
-  writeFileSync(
-    join(projectDir, ".persona", "workflow", "ralph-loop-state.json"),
-    `${JSON.stringify({
-      schemaVersion: "workflow-ralph-loop-state.1",
-      sessions: {},
-      updatedAt: "2026-07-01T00:00:00.000Z",
-    }, null, 2)}\n`,
+  requireSuccess(
+    `${label} lifecycle review report`,
+    runNode(
+      projectDir,
+      [phPath, "plan", "--report-filled", "review", "--stdin"],
+      {},
+      [
+        "Status: filled",
+        "- Manual QA reviewed the Java/Spring Gradle fixture.",
+        "- `npx ph bearshell ./gradlew clean`",
+      ].join("\n"),
+    ),
   )
+  for (const relativePath of [
+    ".persona/workflow/workflow-loop-state.json",
+    ".persona/workflow/ralph-loop-state.json",
+  ]) {
+    if (!existsSync(join(projectDir, relativePath))) {
+      throw new Error(`${label} lifecycle bootstrap did not create canonical loop state`)
+    }
+  }
 }
 
 function createProjectFinishProducerFixture(projectDir, profileMode) {
@@ -882,11 +853,12 @@ function runCommand(cwd, command, args) {
   }
 }
 
-function runNode(cwd, args, environment = {}) {
+function runNode(cwd, args, environment = {}, input) {
   const result = spawnSync(process.execPath, args, {
     cwd,
     encoding: "utf8",
     env: { ...process.env, ...environment },
+    input,
     maxBuffer: 4 * 1024 * 1024,
   })
   if (result.error) {
