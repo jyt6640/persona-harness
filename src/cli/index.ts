@@ -128,7 +128,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "plan") {
-    return runPlanCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+    return runPlanCommand(args.slice(1), { projectDir: options.cwd, stdin: options.stdin }, invocationName)
   }
 
   if (command === "policy") {
@@ -281,11 +281,17 @@ async function runCliEntrypoint(): Promise<void> {
 
 function cliStdin(args: readonly string[]): string | undefined {
   const goStdin = args.length === 2 && args[0] === "go" && args[1] === "--stdin"
+  const planStdin =
+    args.length === 4
+    && args[0] === "plan"
+    && args[1] === "--report-filled"
+    && (args[2] === "implementation" || args[2] === "review")
+    && args[3] === "--stdin"
   const workflowStdin =
     args[0] === "workflow"
     && (args[1] === "capture" || args[1] === "draft")
     && args[2] === "--stdin"
-  if (!goStdin && !workflowStdin) {
+  if (!goStdin && !planStdin && !workflowStdin) {
     return undefined
   }
   if (process.stdin.isTTY === true) {
