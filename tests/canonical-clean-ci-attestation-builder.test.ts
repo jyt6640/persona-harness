@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { createFailureDiagnostic, FIXED_COMMANDS, readCanonicalRunnerContext } from "../scripts/build-clean-ci-attestation.mjs"
+import { createFailureDiagnostic, FIXED_COMMANDS, readCanonicalRunnerContext, readTestFacts } from "../scripts/build-clean-ci-attestation.mjs"
 
 const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "canonical-clean-ci-attestation-builder.yml")
@@ -124,6 +124,87 @@ describe("canonical clean CI attestation builder contract", () => {
     const testCommand = FIXED_COMMANDS.find((command) => command.id === "tests")
 
     expect(testCommand?.args ?? []).toContain("--testTimeout=15000")
+  })
+
+  it("runs each configured Vitest project through its own bounded fixed command", () => {
+    const testCommands = FIXED_COMMANDS.filter((command) => command.id === "tests" || command.id === "tests-resource-sensitive")
+
+    expect(testCommands).toEqual([
+      expect.objectContaining({
+        args: expect.arrayContaining([
+          "--project=parallel",
+          "--reporter=json",
+          "--outputFile=.ci/canonical-clean-ci-attestation-builder/test-results.json",
+          "--testTimeout=15000",
+        ]),
+        executable: "node",
+        id: "tests",
+      }),
+      expect.objectContaining({
+        args: expect.arrayContaining([
+          "--project=resource-sensitive",
+          "--reporter=json",
+          "--outputFile=.ci/canonical-clean-ci-attestation-builder/test-results-resource-sensitive.json",
+          "--testTimeout=15000",
+        ]),
+        executable: "node",
+        id: "tests-resource-sensitive",
+      }),
+    ])
+  })
+
+  it("binds both fixed test reports and blocks a missing resource-sensitive report", () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "canonical-builder-test-reports-"))
+    const parallelReport = join(fixtureRoot, "parallel.json")
+    const resourceSensitiveReport = join(fixtureRoot, "resource-sensitive.json")
+    const reports = [
+      { commandId: "tests", path: parallelReport },
+      { commandId: "tests-resource-sensitive", path: resourceSensitiveReport },
+    ]
+    try {
+      writeFileSync(parallelReport, JSON.stringify({
+        numFailedTests: 0,
+        numPassedTests: 2,
+        numPendingTests: 0,
+        numSkippedTests: 0,
+        numTodoTests: 0,
+        numTotalTests: 2,
+      }))
+      writeFileSync(resourceSensitiveReport, JSON.stringify({
+        numFailedTests: 0,
+        numPassedTests: 1,
+        numPendingTests: 0,
+        numSkippedTests: 0,
+        numTodoTests: 0,
+        numTotalTests: 1,
+      }))
+
+      const facts = readTestFacts(reports)
+      expect(facts).toMatchObject({
+        count: 3,
+        failed: 0,
+        identity: "vitest:repository",
+        passed: 3,
+        skipped: 0,
+      })
+      expect(facts.artifactDigest).toMatch(/^sha256:/)
+
+      writeFileSync(resourceSensitiveReport, JSON.stringify({
+        numFailedTests: 0,
+        numPassedTests: 1,
+        numPendingTests: 0,
+        numSkippedTests: 0,
+        numTodoTests: 0,
+        numTotalTests: 1,
+        reportIdentity: "changed-but-valid",
+      }))
+      expect(readTestFacts(reports).artifactDigest).not.toBe(facts.artifactDigest)
+
+      rmSync(resourceSensitiveReport)
+      expect(() => readTestFacts(reports)).toThrow("fixed command failed: tests-resource-sensitive")
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true })
+    }
   })
 
   it("uploads only a bounded sanitized failure diagnostic after any builder outcome", () => {
