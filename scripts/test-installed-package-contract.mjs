@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import {
   chmodSync,
@@ -38,6 +38,7 @@ try {
     )
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+    await assertPackagedBoundedReportStdin(installedPackage, consumerDirectory)
     assertWorkflowLifecycleAbsenceBlocks(
       join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
       join(consumerDirectory, "node_modules", ".bin", "ph"),
@@ -50,6 +51,7 @@ try {
     assertSourceConsumerAuthorityBoundary(sourceCli)
     assertSourceDoctorRegistryReadback(sourceCli)
     assertSourceCooperativeFinishWorks(sourceCli)
+    await assertSourceBoundedReportStdin(sourceCli)
     assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
     process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
   }
@@ -324,6 +326,14 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
   assertCooperativeFinishWorks(fixtureRoot, phPath, "installed package")
 }
 
+async function assertPackagedBoundedReportStdin(installedPackage, consumerDirectory) {
+  await assertBoundedReportStdin(
+    join(consumerDirectory, "bounded-report-stdin"),
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    "installed package",
+  )
+}
+
 function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory) {
   const modulePath = pathToFileURL(join(
     installedPackage,
@@ -435,6 +445,174 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
   assertCooperativeFinishWorks(join(temporaryRoot, "source-cli-cooperative-gradle-fixture"), phPath, "source CLI")
+}
+
+async function assertSourceBoundedReportStdin(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  await assertBoundedReportStdin(
+    join(temporaryRoot, "source-cli-bounded-report-stdin"),
+    phPath,
+    "source CLI",
+  )
+}
+
+async function assertBoundedReportStdin(fixtureRoot, phPath, label) {
+  const workflowDirectory = join(fixtureRoot, ".persona", "workflow")
+  const reportPath = join(workflowDirectory, "implementation-report.md")
+  const template = "Status: template\n"
+  const report = [
+    "Status: filled",
+    "- README ranges read: all",
+    "- Project profile ranges read: all",
+    "- `npx ph bearshell ./gradlew test`",
+  ].join("\n")
+  const writeTemplate = () => {
+    mkdirSync(workflowDirectory, { recursive: true })
+    writeFileSync(reportPath, template)
+  }
+  const assertUnchanged = (scenario) => {
+    if (readFileSync(reportPath, "utf8") !== template) {
+      throw new Error(`${label} ${scenario} unexpectedly wrote the workflow report`)
+    }
+  }
+
+  writeTemplate()
+  const success = runNode(
+    fixtureRoot,
+    [phPath, "plan", "--report-filled", "implementation", "--stdin"],
+    {},
+    report,
+  )
+  requireSuccess(`${label} bounded report stdin success`, success)
+  if (!readFileSync(reportPath, "utf8").includes("Status: filled")) {
+    throw new Error(`${label} bounded report stdin did not write the valid report`)
+  }
+  const repeated = runNode(
+    fixtureRoot,
+    [phPath, "plan", "--report-filled", "implementation", "--stdin"],
+    {},
+    report,
+  )
+  if (repeated.status === 0 || !repeated.stderr.includes("after it has left template status")) {
+    throw new Error(`${label} repeated bounded report stdin did not fail closed`)
+  }
+
+  writeTemplate()
+  const malformed = runNode(
+    fixtureRoot,
+    [phPath, "plan", "--report-filled", "implementation", "--stdin"],
+    {},
+    report.replace("Status: filled", "Status: template"),
+  )
+  if (malformed.status === 0 || !malformed.stderr.includes("must declare exactly one filled Status value")) {
+    throw new Error(`${label} malformed bounded report stdin did not fail closed`)
+  }
+  assertUnchanged("malformed stdin")
+
+  writeTemplate()
+  const control = runNode(
+    fixtureRoot,
+    [phPath, "plan", "--report-filled", "implementation", "--stdin"],
+    {},
+    `${report}\u0000`,
+  )
+  if (control.status === 0 || !control.stderr.includes("contains unsupported control characters")) {
+    throw new Error(`${label} control-character report stdin did not fail closed`)
+  }
+  assertUnchanged("control-character stdin")
+
+  writeTemplate()
+  const oversized = runNode(
+    fixtureRoot,
+    [phPath, "plan", "--report-filled", "implementation", "--stdin"],
+    {},
+    `${report}\n${"x".repeat(64 * 1024)}`,
+  )
+  if (oversized.status === 0 || !oversized.stderr.includes("exceeds the 65536-byte limit")) {
+    throw new Error(`${label} finite oversized report stdin did not fail closed`)
+  }
+  assertUnchanged("finite oversized stdin")
+
+  writeTemplate()
+  const continuous = await runContinuousReportPipe(fixtureRoot, phPath)
+  if (
+    continuous.status === 0
+    || continuous.timedOut
+    || !continuous.stderr.includes("exceeds the 65536-byte limit")
+    || continuous.stdout.includes("stdin-boundary-marker")
+    || continuous.stderr.includes("stdin-boundary-marker")
+  ) {
+    throw new Error(`${label} continuous oversized report stdin did not fail closed promptly`)
+  }
+  assertUnchanged("continuous oversized stdin")
+}
+
+function runContinuousReportPipe(cwd, phPath) {
+  const marker = "stdin-boundary-marker"
+  const producerScript = [
+    `const chunk = Buffer.from(${JSON.stringify(`${marker}\n`.repeat(512))});`,
+    "function write() {",
+    "  if (process.stdout.write(chunk)) { setImmediate(write); return; }",
+    "  process.stdout.once('drain', write);",
+    "}",
+    "write();",
+  ].join("\n")
+  const startedAt = Date.now()
+  const cli = spawn(process.execPath, [phPath, "plan", "--report-filled", "implementation", "--stdin"], {
+    cwd,
+    env: process.env,
+    stdio: ["pipe", "pipe", "pipe"],
+  })
+  const producer = spawn(process.execPath, ["-e", producerScript], {
+    cwd,
+    stdio: ["ignore", "pipe", "ignore"],
+  })
+  cli.stdin.on("error", () => {})
+  producer.stdout.on("error", () => {})
+
+  let stdout = ""
+  let stderr = ""
+  cli.stdout.on("data", (chunk) => {
+    if (stdout.length < 4096) {
+      stdout += chunk.toString("utf8").slice(0, 4096 - stdout.length)
+    }
+  })
+  cli.stderr.on("data", (chunk) => {
+    if (stderr.length < 4096) {
+      stderr += chunk.toString("utf8").slice(0, 4096 - stderr.length)
+    }
+  })
+
+  return new Promise((resolve) => {
+    let settled = false
+    const settle = (result) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timeout)
+      producer.kill("SIGKILL")
+      if (!cli.killed) {
+        cli.kill("SIGKILL")
+      }
+      resolve({ ...result, stderr, stdout })
+    }
+    const timeout = setTimeout(() => {
+      settle({ elapsedMs: Date.now() - startedAt, status: null, timedOut: true })
+    }, 3000)
+    cli.once("close", (status) => {
+      settle({ elapsedMs: Date.now() - startedAt, status, timedOut: false })
+    })
+    producer.stdout.once("data", (chunk) => {
+      if (!cli.stdin.destroyed) {
+        cli.stdin.write(chunk)
+        producer.stdout.pipe(cli.stdin)
+      }
+    })
+  })
 }
 
 function assertSourceDoctorRegistryReadback(sourceCliPath) {
@@ -866,6 +1044,7 @@ function runNode(cwd, args, environment = {}, input) {
   }
   return {
     status: result.status,
+    stderr: result.stderr ?? "",
     stdout: result.stdout ?? "",
   }
 }
