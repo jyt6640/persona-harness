@@ -35,7 +35,7 @@ following sequence only with reports that describe its own observed work:
 ```text
 ph bootstrap backend --strict
 ph bearshell ./gradlew test
-ph bearshell ./gradlew build
+ph bearshell ./gradlew clean
 <substantive implementation report> | ph plan --report-filled implementation --stdin
 <substantive review report> | ph plan --report-filled review --stdin
 ph workflow finish implement --assurance cooperative
@@ -44,10 +44,11 @@ ph workflow finish implement --assurance cooperative
 `bootstrap` initializes only absent empty current loop-state records; it does
 not repair malformed or stale state. `--stdin` accepts one bounded substantive
 report while the corresponding report is still a template, then refuses a
-replacement. Deleting either loop-state record, submitting malformed or
-oversized report text, or copying a report/evidence record remains blocked.
-The default Finish and later closure remain external-blocked after a
-cooperative PASS.
+replacement. The cleanup observation prevents a prior ordinary build from
+making the fixed cooperative build task non-fresh. Deleting either loop-state
+record, submitting malformed or oversized report text, or copying a
+report/evidence record remains blocked. The default Finish and later closure
+remain external-blocked after a cooperative PASS.
 
 The final hosted evidence uses two fresh registry-installed fixtures, each
 installing the exact immutable version only from `https://registry.npmjs.org`:
