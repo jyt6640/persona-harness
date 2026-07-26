@@ -12,7 +12,7 @@ import fs, {
 } from "node:fs"
 import { syncBuiltinESMExports } from "node:module"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -46,6 +46,7 @@ const BOOTSTRAP_ARTIFACT_PATHS = [
   "workflow/workflow-loop-state.json",
   "workflow/ralph-loop-state.json",
 ] as const
+const ROOT_INIT_FILES = [".gitignore", ".opencode/opencode.json"] as const
 
 afterEach(() => {
   for (const projectDir of projects.splice(0)) {
@@ -66,7 +67,7 @@ describe("bootstrap workspace intake", () => {
 
     fs.renameSync = ((...args: Parameters<typeof fs.renameSync>) => {
       const result = originalRename(...args)
-      if (!swapped && args[1] === canonicalPersonaDir) {
+      if (!swapped && args[1] === ".persona") {
         swapped = true
         originalRename(canonicalPersonaDir, preserved)
         symlinkSync(outside, personaDir)
@@ -90,6 +91,73 @@ describe("bootstrap workspace intake", () => {
         renameSync(preserved, personaDir)
       }
     }
+  })
+
+  it("blocks a project-root replacement before fresh initialization writes any root artifact", () => {
+    const projectDir = createProject()
+    const canonicalProjectDir = realpathSync(projectDir)
+    const preserved = join(dirname(projectDir), `${projectDir.split("/").at(-1)}-preserved`)
+    const outside = join(dirname(projectDir), `${projectDir.split("/").at(-1)}-outside`)
+    mkdirSync(outside)
+    const originalOpen = fs.openSync
+    let swapped = false
+
+    fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+      if (!swapped && args[0] === ".gitignore") {
+        swapped = true
+        renameSync(canonicalProjectDir, preserved)
+        symlinkSync(outside, projectDir)
+      }
+      return originalOpen(...args)
+    }) as typeof fs.openSync
+    syncBuiltinESMExports()
+    try {
+      const result = runBootstrap(projectDir)
+
+      expect(swapped).toBe(true)
+      expect(result.status).toBe(1)
+      expect(fs.readdirSync(outside)).toEqual([])
+      expect(`${result.stdout}${result.stderr}`).not.toContain(outside)
+      expect(authorityEvidenceExists(projectDir)).toBe(false)
+    } finally {
+      fs.openSync = originalOpen
+      syncBuiltinESMExports()
+      if (swapped) {
+        unlinkSync(projectDir)
+        renameSync(preserved, projectDir)
+      }
+    }
+  })
+
+  it("blocks root init parent and leaf aliases before fresh bootstrap writes them", () => {
+    for (const relativePath of ROOT_INIT_FILES) {
+      const projectDir = createProject()
+      const target = join(projectDir, relativePath)
+      const outside = join(projectDir, `outside-root-${relativePath.replaceAll("/", "-")}`)
+      mkdirSync(dirname(target), { recursive: true })
+      symlinkSync(outside, target)
+
+      const result = runBootstrap(projectDir)
+
+      expect(result.status).toBe(1)
+      expect(existsSync(outside)).toBe(false)
+      expect(fs.lstatSync(target).isSymbolicLink()).toBe(true)
+      expect(`${result.stdout}${result.stderr}`).not.toContain(outside)
+      expect(authorityEvidenceExists(projectDir)).toBe(false)
+    }
+
+    const projectDir = createProject()
+    const parent = join(projectDir, ".opencode")
+    const outside = join(projectDir, "outside-opencode-parent")
+    mkdirSync(outside)
+    symlinkSync(outside, parent)
+
+    const result = runBootstrap(projectDir)
+
+    expect(result.status).toBe(1)
+    expect(fs.readdirSync(outside)).toEqual([])
+    expect(`${result.stdout}${result.stderr}`).not.toContain(outside)
+    expect(authorityEvidenceExists(projectDir)).toBe(false)
   })
 
   it("blocks a symlinked workflow parent before strict bootstrap can write any workflow artifact", () => {
@@ -289,7 +357,7 @@ describe("bootstrap workspace intake", () => {
       let swapped = false
 
       fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
-        if (!swapped && args[0] === target) {
+        if (!swapped && args[0] === name) {
           swapped = true
           unlinkSync(target)
           symlinkSync(outside, target)
@@ -321,9 +389,10 @@ describe("bootstrap workspace intake", () => {
       const outside = join(projectDir, `outside-race-${relativePath.replaceAll("/", "-")}`)
       const originalOpen = fs.openSync
       let swapped = false
+      const leaf = relativePath.split("/").at(-1)
 
       fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
-        if (!swapped && args[0] === target) {
+        if (!swapped && args[0] === leaf) {
           swapped = true
           unlinkSync(target)
           symlinkSync(outside, target)
