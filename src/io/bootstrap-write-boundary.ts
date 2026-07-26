@@ -448,6 +448,26 @@ export function reserveBootstrapWriteBoundary(projectDir: string): BootstrapWrit
   return new BootstrapWriteBoundary(project, persona, workflow)
 }
 
+export function reserveExistingBootstrapWriteBoundary(projectDir: string): BootstrapWriteBoundary {
+  const project = reserveProjectDirectory(resolve(projectDir))
+  let persona: DirectoryReservation | undefined
+  let workflow: DirectoryReservation | undefined
+  try {
+    persona = reserveCanonicalDirectory(join(project.path, ".persona"))
+    workflow = reserveCanonicalDirectory(join(persona.path, "workflow"))
+    const boundary = new BootstrapWriteBoundary(project, persona, workflow)
+    persona = undefined
+    workflow = undefined
+    return boundary
+  } catch (error) {
+    if (workflow !== undefined) canonicalClose(workflow)
+    if (persona !== undefined) canonicalClose(persona)
+    canonicalClose(project)
+    if (error instanceof BootstrapWriteBoundaryError) throw error
+    throw new BootstrapWriteBoundaryError()
+  }
+}
+
 export function materializeFreshBootstrapWriteBoundary(
   projectDir: string,
   files: readonly FreshBootstrapPersonaFile[],
