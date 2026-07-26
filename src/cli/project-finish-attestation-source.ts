@@ -16,7 +16,13 @@ import type { SourceIdentity } from "./source-identity-types.js"
 import { runFixedGit } from "./fixed-git.js"
 import type { MutationEntry } from "./ci-reverification-mutation.js"
 
-const PROJECT_FINISH_RUNTIME_ROOTS = [".persona/evidence", ".persona/workflow"] as const
+const PROJECT_FINISH_PERMITTED_MUTATION_ROOTS = [
+  ".gradle",
+  "build",
+  "node_modules",
+  ".persona/evidence",
+  ".persona/workflow",
+] as const
 const PROJECT_FINISH_WORKFLOW_ROOT = ".persona/workflow"
 
 export function captureProjectFinishAttestationSourceIdentity(
@@ -110,5 +116,5 @@ function matchesPortableProjectFinishAttestationSourceIdentity(
 
 function isDiagnosticMutation(entry: MutationEntry): boolean {
   if (entry.kind !== "untracked") return false
-  return PROJECT_FINISH_RUNTIME_ROOTS.some((root) => entry.path === root || entry.path.startsWith(`${root}/`))
+  return PROJECT_FINISH_PERMITTED_MUTATION_ROOTS.some((root) => entry.path === root || entry.path.startsWith(`${root}/`))
 }
