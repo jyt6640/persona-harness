@@ -27,7 +27,11 @@ export class WorkflowReportStatusError extends Error {
   }
 }
 
-const MAX_SUBMITTED_REPORT_BYTES = 64 * 1024
+export const MAX_SUBMITTED_REPORT_BYTES = 64 * 1024
+
+export function workflowReportStdinLimitMessage(): string {
+  return `Workflow report stdin exceeds the ${MAX_SUBMITTED_REPORT_BYTES}-byte limit.`
+}
 
 function reportPathForKind(kind: WorkflowReportKind): string {
   if (kind === "implementation") {
@@ -92,7 +96,7 @@ export function submitWorkflowReport(
     throw new WorkflowReportStatusError("Workflow report stdin is empty.")
   }
   if (Buffer.byteLength(submittedText, "utf8") > MAX_SUBMITTED_REPORT_BYTES) {
-    throw new WorkflowReportStatusError(`Workflow report stdin exceeds the ${MAX_SUBMITTED_REPORT_BYTES}-byte limit.`)
+    throw new WorkflowReportStatusError(workflowReportStdinLimitMessage())
   }
   if (hasUnsafeControlCharacter(submittedText)) {
     throw new WorkflowReportStatusError("Workflow report stdin contains unsupported control characters.")

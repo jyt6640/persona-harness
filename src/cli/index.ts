@@ -26,7 +26,8 @@ import { runFeedbackCommand } from "./feedback.js"
 import { runGoCommand, type GoStep } from "./go-command.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
-import { decodeCliStdinText } from "./stdin-text.js"
+import { decodeCliStdinText, readBoundedCliStdinText } from "./stdin-text.js"
+import { MAX_SUBMITTED_REPORT_BYTES, workflowReportStdinLimitMessage } from "./report-status.js"
 import { personaHarnessVersion } from "./version.js"
 import { runWorkflowCommand } from "./workflow-command.js"
 import { SIGSTORE_NODE_ENGINE_RANGE, assessSigstoreNodeRuntime } from "../../scripts/node-runtime-floor.mjs"
@@ -274,12 +275,12 @@ async function runCliEntrypoint(): Promise<void> {
       cwd: process.cwd(),
       env: process.env,
       invocationName,
-      stdin: cliStdin(args),
+      stdin: await cliStdin(args),
     }),
   )
 }
 
-function cliStdin(args: readonly string[]): string | undefined {
+async function cliStdin(args: readonly string[]): Promise<string | undefined> {
   const goStdin = args.length === 2 && args[0] === "go" && args[1] === "--stdin"
   const planStdin =
     args.length === 4
@@ -296,6 +297,13 @@ function cliStdin(args: readonly string[]): string | undefined {
   }
   if (process.stdin.isTTY === true) {
     return undefined
+  }
+  if (planStdin) {
+    const stdin = await readBoundedCliStdinText(process.stdin, MAX_SUBMITTED_REPORT_BYTES)
+    if (stdin.kind === "limit-exceeded") {
+      throw new Error(workflowReportStdinLimitMessage())
+    }
+    return stdin.text
   }
   return decodeCliStdinText(readFileSync(0))
 }
