@@ -5,6 +5,8 @@ import {
   mkdirSync,
   mkdtempSync,
   rmSync,
+  symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
@@ -82,6 +84,37 @@ describe("public cooperative Finish", () => {
     expect(closure.status).toBe(0)
     expect(closure.stdout).toContain("workflow-loop-state-malformed")
     expect(existsSync(workflowStatePath)).toBe(true)
+  })
+
+  it("keeps an unsafe loop-state path blocked across bootstrap, closure, and Finish", () => {
+    const projectDir = createProject()
+    expect(run(projectDir, ["bootstrap", "backend", "--strict"]).status).toBe(0)
+    const workflowStatePath = join(projectDir, ".persona", "workflow", "workflow-loop-state.json")
+    const outside = join(projectDir, "outside-workflow-loop-state.json")
+    unlinkSync(workflowStatePath)
+    symlinkSync(outside, workflowStatePath)
+
+    const bootstrap = run(projectDir, ["bootstrap", "backend", "--strict"])
+    const status = run(projectDir, ["workflow", "closure", "status", "--json"])
+    const next = run(projectDir, ["workflow", "closure", "next", "--json"])
+    const finish = run(projectDir, ["workflow", "finish", "implement"])
+
+    expect(bootstrap.status).toBe(1)
+    expect(status.status).toBe(0)
+    expect(JSON.parse(status.stdout)).toMatchObject({
+      state: {
+        finish: "blocked",
+        lifecycle: { loops: { workflow: "unsafe" }, readiness: "blocked" },
+      },
+    })
+    expect(status.stdout).toContain("workflow-loop-state-unsafe")
+    expect(next.status).toBe(0)
+    expect(next.stdout).toContain("workflow-loop-state-unsafe")
+    expect(next.stdout).toContain("repair-workflow-loop-state")
+    expect(finish.status).toBe(1)
+    expect(finish.stderr).toContain("workflow-loop-state-unsafe")
+    expect(`${status.stdout}${next.stdout}${finish.stderr}`).not.toContain(outside)
+    expect(existsSync(outside)).toBe(false)
   })
 })
 
