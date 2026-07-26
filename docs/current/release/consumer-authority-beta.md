@@ -5,11 +5,16 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` is immutable staging evidence: its exact registry installation
-and staged-package provenance boundary passed, but it cannot be reused as
-current-version consumer authority evidence. The active `0.8.0-beta.2` source
-candidate has no package, tag, channel movement, GitHub release, or signed
-consumer-project artifact at source preparation time.
+`0.8.0-beta.1` and `0.8.0-beta.2` are immutable staging-only evidence. Their
+registry and provenance observations cannot be reused as current-version
+consumer authority evidence. The active `0.8.0-beta.3` source candidate has no
+package, tag, channel movement, GitHub release, or signed consumer-project
+artifact at source preparation time.
+
+Beta.2 is retained as staging-only NO-GO evidence: it does not qualify for
+promotion or issue closure because a fresh registry consumer did not complete
+the full public Java/Spring lifecycle. Beta.3 must establish that complete
+route independently; it cannot inherit beta.2 lifecycle or authority results.
 
 ## Fixed Sequence
 
@@ -33,8 +38,9 @@ lifecycle records through supported public commands. The fixture may use the
 following sequence only with reports that describe its own observed work:
 
 ```text
-ph bootstrap backend --strict
+ph bootstrap backend --strict --no-developer-mcp
 ph bearshell ./gradlew test
+ph bearshell ./gradlew compileJava
 ph bearshell ./gradlew clean
 <substantive implementation report> | ph plan --report-filled implementation --stdin
 <substantive review report> | ph plan --report-filled review --stdin
@@ -80,10 +86,12 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` is a bounded binding mismatch for
-`0.8.0-beta.2`; only a future original signed artifact for the current
-immutable version can exercise enrollment, fetch, explicit consumption, and
-replay rejection.
+an original artifact from `0.8.0-beta.1` or `0.8.0-beta.2` is a bounded binding
+mismatch for `0.8.0-beta.3`; only a future original signed artifact for the
+current immutable version can exercise enrollment, fetch, explicit consumption,
+and replay rejection. The complete source/packed acceptance contract is the
+structured [`consumer-authority-beta3-acceptance.json`](consumer-authority-beta3-acceptance.json)
+record; it names the exact public Java/Spring route and the one hosted residual.
 
 `ph authority status`, `ph authority fetch github`, and closure are
 non-consuming. Missing enrollment, unavailable network, malformed records,

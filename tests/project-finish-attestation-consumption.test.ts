@@ -113,9 +113,9 @@ describe("project finish attestation inspection and consumption", () => {
     expect(existsSync(consumptionPath)).toBe(false)
   })
 
-  it("blocks an otherwise verified original artifact from a different Persona Harness version", () => {
+  it.each(["0.8.0-beta.1", "0.8.0-beta.2"])("blocks an otherwise verified original artifact from %s", (phVersion) => {
     const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-consumption-")))
-    const consumptionPath = writeVerifiedEvidence(projectDir, statementForVersion("0.8.0-beta.1"))
+    const consumptionPath = writeVerifiedEvidence(projectDir, statementForVersion(phVersion))
 
     expect(inspectProjectFinishAttestation(projectDir, enrollment, now)).toMatchObject({
       authorityEligible: false,

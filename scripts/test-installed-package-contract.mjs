@@ -24,6 +24,31 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const sourceCli = sourceCliArgument(process.argv.slice(2))
+const BETA3_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta3-acceptance.json")
+const BETA3_COOPERATIVE_COMMANDS = new Map([
+  ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
+  ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
+  ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
+  ["ph bearshell ./gradlew clean", { args: ["bearshell", "./gradlew", "clean"] }],
+  ["ph plan --report-filled implementation --stdin", {
+    args: ["plan", "--report-filled", "implementation", "--stdin"],
+    stdin: [
+      "Status: filled",
+      "- README ranges read: all",
+      "- Project profile ranges read: all",
+      "- `npx ph bearshell ./gradlew test`",
+      "- `npx ph bearshell ./gradlew compileJava`",
+    ].join("\n"),
+  }],
+  ["ph plan --report-filled review --stdin", {
+    args: ["plan", "--report-filled", "review", "--stdin"],
+    stdin: [
+      "Status: filled",
+      "- Manual QA reviewed the Java/Spring Gradle fixture.",
+      "- `npx ph bearshell ./gradlew clean`",
+    ].join("\n"),
+  }],
+])
 
 try {
   if (sourceCli === undefined) {
@@ -111,10 +136,31 @@ function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
   if (!help.stdout.includes("fetch github")) {
     throw new Error(`${label} authority help omitted the enrolled evidence route`)
   }
+  const nonInteractiveEnrollment = runNode(
+    cwd,
+    [
+      phPath,
+      "authority",
+      "enroll",
+      "github",
+      "jyt6640/persona-harness-attestation-claim-fixture",
+      "--workflow",
+      ".github/workflows/persona-harness.yml",
+    ],
+    { ...unauthenticatedEnvironment, GH_TOKEN: "ghp_packaged_boundary_probe" },
+  )
+  if (
+    nonInteractiveEnrollment.status === 0
+    || !nonInteractiveEnrollment.stderr.includes("interactive confirmation")
+    || `${nonInteractiveEnrollment.stdout}${nonInteractiveEnrollment.stderr}`.includes(home)
+  ) {
+    throw new Error(`${label} authority enrollment did not preserve the interactive boundary`)
+  }
   assertBoundedAuthorityAbsence(
     [
       runNode(cwd, [phPath, "authority", "status", "--json"], unauthenticatedEnvironment),
       runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], unauthenticatedEnvironment),
+      runNode(cwd, [phPath, "authority", "explain", "--json"], unauthenticatedEnvironment),
     ],
     home,
     label,
@@ -132,6 +178,7 @@ function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
     [
       runNode(cwd, [phPath, "authority", "status", "--json"], authenticatedEnvironment),
       runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], authenticatedEnvironment),
+      runNode(cwd, [phPath, "authority", "explain", "--json"], authenticatedEnvironment),
     ],
     home,
     label,
@@ -334,7 +381,12 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  assertCooperativeFinishWorks(fixtureRoot, phPath, "installed package")
+  assertCooperativeFinishWorks(
+    fixtureRoot,
+    phPath,
+    "installed package",
+    readBeta3CooperativeCommands(installedPackage),
+  )
 }
 
 async function assertPackagedBoundedReportStdin(installedPackage, consumerDirectory) {
@@ -455,7 +507,12 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  assertCooperativeFinishWorks(join(temporaryRoot, "source-cli-cooperative-gradle-fixture"), phPath, "source CLI")
+  assertCooperativeFinishWorks(
+    join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
+    phPath,
+    "source CLI",
+    readBeta3CooperativeCommands(repositoryRoot),
+  )
 }
 
 async function assertSourceBoundedReportStdin(sourceCliPath) {
@@ -1141,8 +1198,8 @@ function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
   }
 }
 
-function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
-  createCooperativeGradleFixture(fixtureRoot, phPath, label)
+function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
+  createCooperativeGradleFixture(fixtureRoot, phPath, label, commands)
 
   const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
   if (defaultFinish.status === 0) {
@@ -1182,7 +1239,7 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label) {
   }
 }
 
-function createCooperativeGradleFixture(projectDir, phPath, label) {
+function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
   mkdirSync(join(projectDir, "src", "main", "java", "example", "cooperative"), { recursive: true })
   mkdirSync(join(projectDir, "src", "test", "java", "example", "cooperative"), { recursive: true })
   writeFileSync(join(projectDir, "README.md"), "# Installed cooperative Gradle fixture\n")
@@ -1254,36 +1311,16 @@ function createCooperativeGradleFixture(projectDir, phPath, label) {
   requireSuccess("installed fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
   requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
-  requireSuccess(`${label} lifecycle bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict"]))
-  requireSuccess(`${label} lifecycle test evidence`, runNode(projectDir, [phPath, "bearshell", "./gradlew", "test"]))
-  requireSuccess(`${label} lifecycle clean evidence`, runNode(projectDir, [phPath, "bearshell", "./gradlew", "clean"]))
-  requireSuccess(
-    `${label} lifecycle implementation report`,
-    runNode(
-      projectDir,
-      [phPath, "plan", "--report-filled", "implementation", "--stdin"],
-      {},
-      [
-        "Status: filled",
-        "- README ranges read: all",
-        "- Project profile ranges read: all",
-        "- `npx ph bearshell ./gradlew test`",
-      ].join("\n"),
-    ),
-  )
-  requireSuccess(
-    `${label} lifecycle review report`,
-    runNode(
-      projectDir,
-      [phPath, "plan", "--report-filled", "review", "--stdin"],
-      {},
-      [
-        "Status: filled",
-        "- Manual QA reviewed the Java/Spring Gradle fixture.",
-        "- `npx ph bearshell ./gradlew clean`",
-      ].join("\n"),
-    ),
-  )
+  for (const command of commands) {
+    const step = BETA3_COOPERATIVE_COMMANDS.get(command)
+    if (step === undefined) {
+      throw new Error(`${label} beta.3 acceptance command is unsupported`)
+    }
+    requireSuccess(
+      `${label} lifecycle ${command}`,
+      runNode(projectDir, [phPath, ...step.args], {}, step.stdin),
+    )
+  }
   for (const relativePath of [
     ".persona/workflow/workflow-loop-state.json",
     ".persona/workflow/ralph-loop-state.json",
@@ -1292,6 +1329,28 @@ function createCooperativeGradleFixture(projectDir, phPath, label) {
       throw new Error(`${label} lifecycle bootstrap did not create canonical loop state`)
     }
   }
+}
+
+function readBeta3CooperativeCommands(packageRoot) {
+  const manifestPath = join(packageRoot, BETA3_ACCEPTANCE_PATH)
+  let value
+  try {
+    value = JSON.parse(readFileSync(manifestPath, "utf8"))
+  } catch {
+    throw new Error("beta.3 acceptance manifest is unavailable")
+  }
+  const commands = value?.cooperative?.commands
+  const packageVersion = value?.package?.version
+  const expectedCommands = [...BETA3_COOPERATIVE_COMMANDS.keys()]
+  if (
+    packageVersion !== readPackageVersion(packageRoot)
+    || !Array.isArray(commands)
+    || commands.length !== expectedCommands.length
+    || commands.some((command, index) => command !== expectedCommands[index])
+  ) {
+    throw new Error("beta.3 acceptance manifest is invalid")
+  }
+  return commands
 }
 
 function createProjectFinishProducerFixture(projectDir, profileMode) {

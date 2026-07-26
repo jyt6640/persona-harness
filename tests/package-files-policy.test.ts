@@ -370,7 +370,10 @@ describe("package files policy", () => {
       "tests/authority-github-readback.test.ts",
       "tests/authority-project-attestation.test.ts",
     ]
-    const boundaryRecord = "docs/current/release/consumer-authority-beta.md"
+    const boundaryRecords = [
+      "docs/current/release/consumer-authority-beta.md",
+      "docs/current/release/consumer-authority-beta3-acceptance.json",
+    ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
       expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
@@ -379,8 +382,10 @@ describe("package files policy", () => {
       expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
       expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
     }
-    expect(existsSync(path.join(packageRoot, boundaryRecord))).toBe(true)
-    expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
+    for (const boundaryRecord of boundaryRecords) {
+      expect(existsSync(path.join(packageRoot, boundaryRecord))).toBe(true)
+      expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
+    }
   })
 
   it("keeps direct current README links covered by packaged files", () => {
@@ -407,7 +412,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.2-release-notes.md",
+      "docs/current/release/v0.8.0-beta.3-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -433,7 +438,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.2-release-notes.md",
+      "docs/current/release/v0.8.0-beta.3-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 
