@@ -82,13 +82,30 @@ describe("ph evidence read", () => {
     expect(result).toEqual({ status: 1, stdout: "", stderr: "Evidence read unavailable.\n" })
     expect(readdirSync(outside)).toEqual([])
   })
+
+  it("requires an initialized workflow boundary without creating one", () => {
+    // Given: a partial Persona directory that has not completed strict bootstrap.
+    const projectDir = createProject({ workflow: false })
+    const target = join("src", "main", "java", "example", "GreetingService.java")
+    writeFileSync(join(projectDir, target), "class GreetingService {}\n")
+
+    // When: a public source-read record is requested before the lifecycle boundary exists.
+    const result = runPersonaCli(["evidence", "read", target], { cwd: projectDir, env: {}, invocationName: "ph" })
+
+    // Then: the command blocks without materializing workflow state as a side effect.
+    expect(result).toEqual({ status: 1, stdout: "", stderr: "Evidence read unavailable.\n" })
+    expect(existsSync(join(projectDir, ".persona", "workflow"))).toBe(false)
+  })
 })
 
-function createProject(): string {
+function createProject(options: { readonly workflow?: boolean } = {}): string {
   const projectDir = join(tmpdir(), `persona-evidence-read-${randomUUID()}`)
   projects.push(projectDir)
   mkdirSync(join(projectDir, "src", "main", "java", "example"), { recursive: true })
-  mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  mkdirSync(join(projectDir, ".persona"), { recursive: true })
+  if (options.workflow !== false) {
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  }
   writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
   return projectDir
 }
