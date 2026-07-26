@@ -57,6 +57,8 @@ describe("project finish attestation source binding", () => {
     mkdirSync(join(worktree, ".persona", "workflow"), { recursive: true })
     writeFileSync(join(worktree, ".persona", "evidence", "phase0", "bearshell.json"), "evidence\n")
     writeFileSync(join(worktree, ".persona", "workflow", "implementation-report.md"), "Status: filled\n")
+    mkdirSync(join(worktree, ".gradle"), { recursive: true })
+    writeFileSync(join(worktree, ".gradle", "execution-cache.bin"), "cache\n")
 
     expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(true)
 
