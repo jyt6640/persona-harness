@@ -148,6 +148,12 @@ const FINISH_BLOCKER_MATRIX: readonly FinishMatrixRow[] = [
     stepId: "repair-workflow-loop-state",
   },
   {
+    action: "Repair the unsafe workflow-loop state path without following aliases before continuing.",
+    blockerId: "workflow-loop-state-unsafe",
+    priority: 1,
+    stepId: "repair-unsafe-workflow-loop-state",
+  },
+  {
     action: "Establish persisted ralph-loop state through the approved bounded runtime before continuing.",
     blockerId: "ralph-loop-state-absent",
     priority: 1,
@@ -158,6 +164,12 @@ const FINISH_BLOCKER_MATRIX: readonly FinishMatrixRow[] = [
     blockerId: "ralph-loop-state-malformed",
     priority: 1,
     stepId: "repair-ralph-loop-state",
+  },
+  {
+    action: "Repair the unsafe ralph-loop state path without following aliases before continuing.",
+    blockerId: "ralph-loop-state-unsafe",
+    priority: 1,
+    stepId: "repair-unsafe-ralph-loop-state",
   },
   {
     action: "Review the current ticket and confirm it is complete before archiving it.",
