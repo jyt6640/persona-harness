@@ -8,6 +8,24 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.8.0-beta.4] - 2026-07-27
+
+- Prepares the next immutable Consumer Authority Beta source candidate for a
+  staging-only lifecycle. It makes no package, tag, registry, release,
+  promotion, Stable/GA, or Finish authority claim.
+- Adds a bounded public `ph evidence read <relative-file>` route so a clean
+  Java/Spring Gradle consumer can record required README, profile, and source
+  read coverage without retaining source bytes. The record write is bound to
+  the canonical project containment transaction and rejects unsafe aliases or
+  replacements.
+- Adds the package-visible beta.4 acceptance record for the complete public
+  source/packed cooperative route. Default Finish and later closure remain
+  external-blocked; a current original artifact remains required for the
+  separately user-scoped authority path.
+- Retains beta.1, beta.2, and beta.3 as immutable staging-only evidence. A
+  beta.3 package or artifact result cannot satisfy beta.4 binding, current
+  online custom-predicate verification, explicit consumption, or replay proof.
+
 ## [0.8.0-beta.3] - 2026-07-26
 
 - Prepares the next immutable Consumer Authority Beta source candidate for a

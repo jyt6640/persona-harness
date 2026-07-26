@@ -5,16 +5,17 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` and `0.8.0-beta.2` are immutable staging-only evidence. Their
-registry and provenance observations cannot be reused as current-version
-consumer authority evidence. The active `0.8.0-beta.3` source candidate has no
-package, tag, channel movement, GitHub release, or signed consumer-project
-artifact at source preparation time.
+`0.8.0-beta.1`, `0.8.0-beta.2`, and `0.8.0-beta.3` are immutable staging-only
+evidence. Their registry and provenance observations cannot be reused as
+current-version consumer authority evidence. The active `0.8.0-beta.4` source
+candidate has no package, tag, channel movement, GitHub release, or signed
+consumer-project artifact at source preparation time.
 
-Beta.2 is retained as staging-only NO-GO evidence: it does not qualify for
-promotion or issue closure because a fresh registry consumer did not complete
-the full public Java/Spring lifecycle. Beta.3 must establish that complete
-route independently; it cannot inherit beta.2 lifecycle or authority results.
+Beta.2 and beta.3 are retained as staging-only NO-GO evidence: neither
+qualifies for promotion or issue closure because its observed public consumer
+route did not complete the full required lifecycle. Beta.4 must establish that
+complete route independently; it cannot inherit beta.2 or beta.3 lifecycle or
+authority results.
 
 ## Fixed Sequence
 
@@ -42,6 +43,9 @@ ph bootstrap backend --strict --no-developer-mcp
 ph bearshell ./gradlew test
 ph bearshell ./gradlew compileJava
 ph bearshell ./gradlew clean
+ph evidence read README.md
+ph evidence read .persona/project-profile.jsonc
+ph evidence read src/main/java/<package>/<role>.java
 <substantive implementation report> | ph plan --report-filled implementation --stdin
 <substantive review report> | ph plan --report-filled review --stdin
 ph workflow finish implement --assurance cooperative
@@ -68,6 +72,11 @@ prevents a prior ordinary build from making the fixed cooperative build task
 non-fresh. Deleting either loop-state record, submitting malformed or oversized
 report text, or copying a report/evidence record remains blocked. The default
 Finish and later closure remain external-blocked after a cooperative PASS.
+Each `ph evidence read` record stores only a bounded digest and metadata for a
+project-contained regular source file. The command uses the same captured
+project containment transaction for its evidence write, so a target, evidence
+parent, leaf, temporary, or replacement alias blocks without writing outside
+the consumer workspace or reflecting source contents.
 
 The final hosted evidence uses two fresh registry-installed fixtures, each
 installing the exact immutable version only from `https://registry.npmjs.org`:
@@ -86,11 +95,12 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` or `0.8.0-beta.2` is a bounded binding
-mismatch for `0.8.0-beta.3`; only a future original signed artifact for the
-current immutable version can exercise enrollment, fetch, explicit consumption,
-and replay rejection. The complete source/packed acceptance contract is the
-structured [`consumer-authority-beta3-acceptance.json`](consumer-authority-beta3-acceptance.json)
+an original artifact from `0.8.0-beta.1`, `0.8.0-beta.2`, or `0.8.0-beta.3`
+is a bounded binding mismatch for `0.8.0-beta.4`; only a future original signed
+artifact for the current immutable version can exercise enrollment, fetch,
+explicit consumption, and replay rejection. The complete source/packed
+acceptance contract is the structured
+[`consumer-authority-beta4-acceptance.json`](consumer-authority-beta4-acceptance.json)
 record; it names the exact public Java/Spring route and the one hosted residual.
 
 `ph authority status`, `ph authority fetch github`, and closure are
