@@ -5,6 +5,12 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
+`0.8.0-beta.1` is immutable staging evidence: its exact registry installation
+and staged-package provenance boundary passed, but it cannot be reused as
+current-version consumer authority evidence. The active `0.8.0-beta.2` source
+candidate has no package, tag, channel movement, GitHub release, or signed
+consumer-project artifact at source preparation time.
+
 ## Fixed Sequence
 
 1. An approved protected-main source candidate has strict prerelease SemVer
@@ -20,7 +26,28 @@ package or makes Finish pass.
    signed bytes, verifies them against its current source, and only an explicit
    Finish may consume a trusted result once. The fixture supplies `GH_TOKEN` or
    `GITHUB_TOKEN` only as an in-memory Actions-read transport credential; fixed
-   GitHub readback, not the credential or project content, establishes identity.
+  GitHub readback, not the credential or project content, establishes identity.
+
+Before an explicit cooperative Finish, a fresh consumer must establish normal
+lifecycle records through supported public commands. The fixture may use the
+following sequence only with reports that describe its own observed work:
+
+```text
+ph bootstrap backend --strict
+ph bearshell ./gradlew test
+ph bearshell ./gradlew build
+<substantive implementation report> | ph plan --report-filled implementation --stdin
+<substantive review report> | ph plan --report-filled review --stdin
+ph workflow finish implement --assurance cooperative
+```
+
+`bootstrap` initializes only absent empty current loop-state records; it does
+not repair malformed or stale state. `--stdin` accepts one bounded substantive
+report while the corresponding report is still a template, then refuses a
+replacement. Deleting either loop-state record, submitting malformed or
+oversized report text, or copying a report/evidence record remains blocked.
+The default Finish and later closure remain external-blocked after a
+cooperative PASS.
 
 The final hosted evidence uses two fresh registry-installed fixtures, each
 installing the exact immutable version only from `https://registry.npmjs.org`:
@@ -36,6 +63,13 @@ Neither fixture can borrow the other fixture's evidence. Forged, copied,
 wrong-repository/workflow/ref, drifted, replayed, expired, zero/all-skipped,
 malformed/unsafe, or network-denied variants must remain nonzero with no
 authority artifact or Finish PASS.
+
+The external-attested fixture must pin the exact current package revision. The
+verifier binds the signed receipt `phVersion` to its installed CLI version, so
+an original artifact from `0.8.0-beta.1` is a bounded binding mismatch for
+`0.8.0-beta.2`; only a future original signed artifact for the current
+immutable version can exercise enrollment, fetch, explicit consumption, and
+replay rejection.
 
 `ph authority status`, `ph authority fetch github`, and closure are
 non-consuming. Missing enrollment, unavailable network, malformed records,

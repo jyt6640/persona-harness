@@ -41,7 +41,7 @@ not become current merely because they remain under `docs/current/`.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.8.0-beta.1-release-notes.md`](release/v0.8.0-beta.1-release-notes.md).
+  [`release/v0.8.0-beta.2-release-notes.md`](release/v0.8.0-beta.2-release-notes.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -97,11 +97,10 @@ not become current merely because they remain under `docs/current/`.
 
 ## Current Facts To Preserve
 
-- At the `0.8.0-beta.1` source-preparation readback, npm reports
-  `latest=0.7.0`, `next=0.7.0-rc.3`, and `staging=0.7.0-rc.8`. These are
-  observed historical baseline facts, not evidence that the beta itself is
-  published, promoted, or authoritative. The legacy `alpha` channel remains
-  retired; exact historical versions remain separately addressable.
+- `0.8.0-beta.1` is an immutable staging-only Consumer Authority Beta package.
+  Its exact registry install and staged provenance boundary are historical
+  package evidence only; they do not prove current-version consumer authority,
+  Finish authority, promotion, Stable/GA, or `latest` movement.
 - `0.7.0-rc.1` was published to npm `next` on 2026-07-11 with registry
   gitHead/tag/release-branch commit `d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`.
 - `0.7.0-rc.2` was published to npm `next` from exact main
@@ -119,12 +118,12 @@ not become current merely because they remain under `docs/current/`.
   policy artifact verifier remains read-only/non-authoritative, while local or
   caller-provided staged-package evidence remains
   `artifact-provenance-unavailable`.
-- `0.8.0-beta.1` is a Consumer Authority Beta source-preparation candidate.
-  It does not claim a current package, tag, staging mapping, GitHub release,
-  provenance artifact, promotion, Stable/GA state, or Finish authority. The
-  future lifecycle is staging-first, tag-bound, and independently audited;
-  its source boundary is recorded in
-  [`release/v0.8.0-beta.1-release-notes.md`](release/v0.8.0-beta.1-release-notes.md).
+- `0.8.0-beta.2` is the current Consumer Authority Beta source-preparation
+  candidate. It makes no package, tag, staging mapping, GitHub release,
+  original signed consumer artifact, promotion, Stable/GA, or Finish authority
+  claim. Its required lifecycle is staging-first, tag-bound, independently
+  audited, and recorded in
+  [`release/v0.8.0-beta.2-release-notes.md`](release/v0.8.0-beta.2-release-notes.md).
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)
