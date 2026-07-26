@@ -9,6 +9,32 @@ const WINDOWS_KOREAN_ENCODINGS = ["windows-949", "euc-kr", "ks_c_5601-1987"] as 
 const POWERSHELL_UTF8_AS_ANSI_MARKERS = /[媛留][\u0080-\u009f\uFFFD?꾨뚮]|[꾨떒뚮뱾ㅻ]{2,}/u
 const REPLACEMENT_QUESTION_MARK_RUN = /\?{2,}/gu
 
+export type BoundedCliStdinRead =
+  | { readonly kind: "text"; readonly text: string }
+  | { readonly kind: "limit-exceeded" }
+
+type BoundedCliStdinSource = AsyncIterable<Uint8Array> & {
+  destroy(): void
+}
+
+export async function readBoundedCliStdinText(
+  input: BoundedCliStdinSource,
+  maxBytes: number,
+): Promise<BoundedCliStdinRead> {
+  const chunks: Buffer[] = []
+  let byteLength = 0
+  for await (const chunk of input) {
+    const bytes = Buffer.from(chunk)
+    if (bytes.byteLength > maxBytes - byteLength) {
+      input.destroy()
+      return { kind: "limit-exceeded" }
+    }
+    chunks.push(bytes)
+    byteLength += bytes.byteLength
+  }
+  return { kind: "text", text: decodeCliStdinText(Buffer.concat(chunks, byteLength)) }
+}
+
 export function decodeCliStdinText(input: Buffer): string {
   const utf8 = decodeText("utf-8", input)
   if (utf8 === undefined) {
