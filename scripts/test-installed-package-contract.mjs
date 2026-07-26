@@ -1215,6 +1215,11 @@ function createLifecycleStateIntakeFixture(projectDir) {
   writeFileSync(join(projectDir, "src", "main", "java", "App.java"), "class App {}\n")
   writeFileSync(join(projectDir, "gradlew"), "#!/bin/sh\nprintf '%s\\n' 'BUILD SUCCESSFUL'\n")
   chmodSync(join(projectDir, "gradlew"), 0o755)
+  requireSuccess("lifecycle fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
+  requireSuccess("lifecycle fixture Git email", runCommand(projectDir, "git", ["config", "user.email", "fixture@example.invalid"]))
+  requireSuccess("lifecycle fixture Git name", runCommand(projectDir, "git", ["config", "user.name", "Fixture"]))
+  requireSuccess("lifecycle fixture Git add", runCommand(projectDir, "git", ["add", "."]))
+  requireSuccess("lifecycle fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "lifecycle fixture"]))
 }
 
 function lifecycleStateFileNames() {
