@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta4-acceptance.json")
+const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta5-acceptance.json")
 
 type AcceptanceManifest = {
   readonly authority: {
@@ -45,17 +45,17 @@ function readManifest(): AcceptanceManifest {
   return JSON.parse(readFileSync(manifestPath, "utf8")) as AcceptanceManifest
 }
 
-describe("consumer authority beta.4 acceptance manifest", () => {
+describe("consumer authority beta.5 acceptance manifest", () => {
   it("fixes the public source and packed cooperative lifecycle with bounded source-read evidence", () => {
-    // Given: the package-visible beta.4 public lifecycle contract.
+    // Given: the package-visible beta.5 public lifecycle contract.
     const manifest = readManifest()
 
     // When: a clean Java/Spring consumer follows the supported command sequence.
     const commands = manifest.cooperative.commands
 
     // Then: every report and coverage input is explicit while authority defaults remain blocked.
-    expect(manifest.schemaVersion).toBe("consumer-authority-beta4-acceptance.1")
-    expect(manifest.package).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.4" })
+    expect(manifest.schemaVersion).toBe("consumer-authority-beta5-acceptance.1")
+    expect(manifest.package).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.5" })
     expect(commands).toEqual([
       "ph bootstrap backend --strict --no-developer-mcp",
       "ph bearshell ./gradlew test",
@@ -98,7 +98,7 @@ describe("consumer authority beta.4 acceptance manifest", () => {
       "ph workflow finish implement",
     ])
     expect(manifest.authority.fixturePlan.registryInstall).toBe(
-      "npm install persona-harness@0.8.0-beta.4 --registry https://registry.npmjs.org",
+      "npm install persona-harness@0.8.0-beta.5 --registry https://registry.npmjs.org",
     )
     expect(manifest.authority.verification).toEqual({
       predicate: "project-finish-attestation.1",
