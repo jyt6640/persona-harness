@@ -54,52 +54,82 @@ export function runProjectFinishAttestationProducer(
   ) {
     return blocked("project-finish-producer-binding")
   }
+  if (options.prepareContext !== undefined || options.verify !== undefined) {
+    return runWithInjectedDependencies(projectDir, context, phVersion, options)
+  }
   try {
     const projectReadBoundary = reserveProjectReadBoundary(projectDir)
     try {
-      const prepared = options.prepareContext === undefined
-        ? prepareCooperativeFinishContext(projectDir, projectReadBoundary)
-        : options.prepareContext(projectDir)
+      const prepared = prepareCooperativeFinishContext(projectDir, projectReadBoundary)
       if (prepared.kind === "blocked") return blocked(prepared.code)
 
-      const verification = options.verify === undefined
-        ? runProjectFinishAttestationGradleVerificationWithinBoundary(projectDir, prepared.value, projectReadBoundary)
-        : options.verify(projectDir, prepared.value)
-      if (verification.kind === "blocked") return blocked(verification.code)
-      if (verification.value.sourceIdentity.repositoryHead !== context.sourceHead) {
-        return blocked("project-finish-producer-binding")
-      }
-      return {
-        kind: "passed",
-        value: createProjectFinishAttestationProducerArtifacts({
-          buildArtifactDigest: verification.value.buildOutputDigest,
-          callerWorkflowRef: context.callerWorkflowRef,
-          callerWorkflowSha: context.callerWorkflowSha,
-          issuedAt: context.issuedAt,
-          phVersion,
-          repository: {
-            id: context.repository.id,
-            slug: context.repository.slug,
-            visibility: "public",
-          },
-          reusableWorkflowSha: context.reusableWorkflowSha,
-          runAttempt: context.runAttempt,
-          runId: context.runId,
-          source: {
-            head: context.sourceHead,
-            identity: verification.value.sourceIdentity,
-            root: ".",
-          },
-          test: {
-            count: verification.value.testCount,
-            junitDigest: verification.value.junitDigest,
-            passed: verification.value.passedTestCount,
-            skipped: verification.value.skippedTestCount,
-          },
-        }),
-      }
+      const verification = runProjectFinishAttestationGradleVerificationWithinBoundary(
+        projectDir,
+        prepared.value,
+        projectReadBoundary,
+      )
+      return resultFromVerification(context, phVersion, verification)
     } finally {
       projectReadBoundary.close()
+    }
+  } catch (error) {
+    if (error instanceof ProjectFinishAttestationProducerError) {
+      return blocked(error.code)
+    }
+    return blocked("project-finish-producer-profile")
+  }
+}
+
+function runWithInjectedDependencies(
+  projectDir: string,
+  context: ProjectFinishAttestationProducerContext,
+  phVersion: string,
+  options: ProjectFinishAttestationProducerOptions,
+): ProjectFinishAttestationProducerResult {
+  const prepared = (options.prepareContext ?? prepareCooperativeFinishContext)(projectDir)
+  if (prepared.kind === "blocked") return blocked(prepared.code)
+  const verification = (options.verify ?? runProjectFinishAttestationGradleVerification)(projectDir, prepared.value)
+  return resultFromVerification(context, phVersion, verification)
+}
+
+function resultFromVerification(
+  context: ProjectFinishAttestationProducerContext,
+  phVersion: string,
+  verification: CooperativeGradleVerification,
+): ProjectFinishAttestationProducerResult {
+  if (verification.kind === "blocked") return blocked(verification.code)
+  if (verification.value.sourceIdentity.repositoryHead !== context.sourceHead) {
+    return blocked("project-finish-producer-binding")
+  }
+  try {
+    return {
+      kind: "passed",
+      value: createProjectFinishAttestationProducerArtifacts({
+        buildArtifactDigest: verification.value.buildOutputDigest,
+        callerWorkflowRef: context.callerWorkflowRef,
+        callerWorkflowSha: context.callerWorkflowSha,
+        issuedAt: context.issuedAt,
+        phVersion,
+        repository: {
+          id: context.repository.id,
+          slug: context.repository.slug,
+          visibility: "public",
+        },
+        reusableWorkflowSha: context.reusableWorkflowSha,
+        runAttempt: context.runAttempt,
+        runId: context.runId,
+        source: {
+          head: context.sourceHead,
+          identity: verification.value.sourceIdentity,
+          root: ".",
+        },
+        test: {
+          count: verification.value.testCount,
+          junitDigest: verification.value.junitDigest,
+          passed: verification.value.passedTestCount,
+          skipped: verification.value.skippedTestCount,
+        },
+      }),
     }
   } catch (error) {
     if (error instanceof ProjectFinishAttestationProducerError) {
