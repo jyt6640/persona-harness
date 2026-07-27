@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta5-acceptance.json")
+const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta6-acceptance.json")
 
 type AcceptanceManifest = {
   readonly authority: {
@@ -42,6 +42,13 @@ type AcceptanceManifest = {
   }
   readonly deterministicProofs: readonly { readonly id: string; readonly surface: string }[]
   readonly negativeCases: readonly { readonly id: string; readonly proof: string }[]
+  readonly nativeProjectRead: {
+    readonly manifest: string
+    readonly node: string
+    readonly platforms: readonly string[]
+    readonly source: string
+    readonly unavailable: string
+  }
   readonly package: { readonly channel: string; readonly scope: string; readonly version: string }
   readonly schemaVersion: string
 }
@@ -50,17 +57,17 @@ function readManifest(): AcceptanceManifest {
   return JSON.parse(readFileSync(manifestPath, "utf8")) as AcceptanceManifest
 }
 
-describe("consumer authority beta.5 acceptance manifest", () => {
+describe("consumer authority beta.6 acceptance manifest", () => {
   it("fixes the public source and packed cooperative lifecycle with bounded source-read evidence", () => {
-    // Given: the package-visible beta.5 public lifecycle contract.
+    // Given: the package-visible beta.6 public lifecycle contract.
     const manifest = readManifest()
 
     // When: a clean Java/Spring consumer follows the supported command sequence.
     const commands = manifest.cooperative.commands
 
     // Then: every report and coverage input is explicit while authority defaults remain blocked.
-    expect(manifest.schemaVersion).toBe("consumer-authority-beta5-acceptance.1")
-    expect(manifest.package).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.5" })
+    expect(manifest.schemaVersion).toBe("consumer-authority-beta6-acceptance.1")
+    expect(manifest.package).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.6" })
     expect(commands).toEqual([
       "ph bootstrap backend --strict --no-developer-mcp",
       "ph bearshell ./gradlew test",
@@ -84,13 +91,20 @@ describe("consumer authority beta.5 acceptance manifest", () => {
       "src/main/java/example/cooperative/GreetingService.java",
     ])
     expect(manifest.cooperative.evidence.sourceReadManifest).toEqual([
-      { boundary: "captured-directory-identity", id: "project-root", surface: "producer-and-source-match" },
-      { boundary: "descriptor-relative-regular-file", id: "harness-config-and-profile", surface: ".persona/harness.jsonc-and-project-profile.jsonc" },
-      { boundary: "descriptor-relative-exactly-one", id: "gradle-descriptors", surface: "build.gradle-or-build.gradle.kts-and-settings.gradle-or-settings.gradle.kts" },
-      { boundary: "descriptor-relative-tree-and-captured-cwd", id: "source-tree-and-git", surface: "tracked-and-included-untracked-source-plus-fixed-git" },
+      { boundary: "native-directory-fd-root-capability", id: "project-root", surface: "producer-and-source-match" },
+      { boundary: "native-openat-regular-file", id: "harness-config-and-profile", surface: ".persona/harness.jsonc-and-project-profile.jsonc" },
+      { boundary: "native-openat-exactly-one", id: "gradle-descriptors", surface: "build.gradle-or-build.gradle.kts-and-settings.gradle-or-settings.gradle.kts" },
+      { boundary: "native-openat-tree-and-captured-cwd", id: "source-tree-and-git", surface: "tracked-and-included-untracked-source-plus-fixed-git" },
       { boundary: "captured-project-read-and-canonical-evidence-write", id: "evidence-read-input-and-output", surface: "public-ph-evidence-read" },
     ])
-    expect(manifest.cooperative.evidence.unsafeResult).toBe("bounded-block-no-external-bytes-record-or-artifact")
+    expect(manifest.cooperative.evidence.unsafeResult).toBe("bounded-block-no-external-descriptor-bytes-record-or-artifact")
+    expect(manifest.nativeProjectRead).toEqual({
+      manifest: "native/project-read/manifest.json",
+      node: "^20.17.0 || >=22.9.0",
+      platforms: ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
+      source: "native/project-read/ph_native_project_read.c",
+      unavailable: "source-read-runtime-unavailable",
+    })
   })
 
   it("keeps current artifact verification and explicit consumption as a single future hosted residual", () => {
@@ -109,7 +123,7 @@ describe("consumer authority beta.5 acceptance manifest", () => {
       "ph workflow finish implement",
     ])
     expect(manifest.authority.fixturePlan.registryInstall).toBe(
-      "npm install persona-harness@0.8.0-beta.5 --registry https://registry.npmjs.org",
+      "npm install persona-harness@0.8.0-beta.6 --registry https://registry.npmjs.org",
     )
     expect(manifest.authority.verification).toEqual({
       predicate: "project-finish-attestation.1",
@@ -119,7 +133,9 @@ describe("consumer authority beta.5 acceptance manifest", () => {
     for (const negativeCase of manifest.negativeCases) {
       expect(proofs.has(negativeCase.proof)).toBe(true)
     }
-    expect(proofs.get("source-read-source-and-packed")).toBe("source-built-and-packed-installed")
+    expect(proofs.get("native-source-read-source-and-packed")).toBe(
+      "source-built-and-packed-installed-with-native-descriptor-open-audit",
+    )
     expect(proofs.get("project-consumption-source")).toBe("source-built-worker-seam")
   })
 })

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
 
@@ -5,6 +6,20 @@ import { describe, expect, it } from "vitest"
 
 type PackageJson = {
   readonly files: readonly string[]
+}
+
+type NativeProjectReadManifest = {
+  readonly artifacts: readonly {
+    readonly architecture: "arm64" | "x64"
+    readonly path: string
+    readonly platform: "darwin" | "linux"
+    readonly sha256: string
+  }[]
+  readonly schemaVersion: "persona-harness-native-project-read.1"
+  readonly source: {
+    readonly path: "native/project-read/ph_native_project_read.c"
+    readonly sha256: string
+  }
 }
 
 type MarkdownLink = {
@@ -372,7 +387,7 @@ describe("package files policy", () => {
     ]
     const boundaryRecords = [
       "docs/current/release/consumer-authority-beta.md",
-      "docs/current/release/consumer-authority-beta5-acceptance.json",
+      "docs/current/release/consumer-authority-beta6-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -412,7 +427,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.5-release-notes.md",
+      "docs/current/release/v0.8.0-beta.6-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -438,13 +453,38 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.5-release-notes.md",
+      "docs/current/release/v0.8.0-beta.6-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 
     for (const linkedFile of linkedFiles) {
       expect(existsSync(path.join(packageRoot, linkedFile))).toBe(true)
       expect(isCoveredByPackageFiles(linkedFile, packageJson.files)).toBe(true)
+    }
+  })
+
+  it("ships the checksum-bound native descriptor traversal runtime without an install-time build", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const manifestPath = "native/project-read/manifest.json"
+    const buildRecordPath = "native/project-read/BUILD.md"
+    const manifest = JSON.parse(readFileSync(path.join(packageRoot, manifestPath), "utf8")) as NativeProjectReadManifest
+
+    expect(packageJson.files).toContain("native/project-read")
+    expect(manifest.schemaVersion).toBe("persona-harness-native-project-read.1")
+    expect(isCoveredByPackageFiles(manifestPath, packageJson.files)).toBe(true)
+    expect(isCoveredByPackageFiles(buildRecordPath, packageJson.files)).toBe(true)
+    expect(existsSync(path.join(packageRoot, buildRecordPath))).toBe(true)
+    expect(digestFile(manifest.source.path)).toBe(manifest.source.sha256)
+
+    expect(manifest.artifacts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ architecture: "arm64", platform: "darwin" }),
+      expect.objectContaining({ architecture: "x64", platform: "darwin" }),
+      expect.objectContaining({ architecture: "arm64", platform: "linux" }),
+      expect.objectContaining({ architecture: "x64", platform: "linux" }),
+    ]))
+    for (const artifact of manifest.artifacts) {
+      expect(isCoveredByPackageFiles(artifact.path, packageJson.files)).toBe(true)
+      expect(digestFile(artifact.path)).toBe(artifact.sha256)
     }
   })
 })
@@ -517,6 +557,10 @@ function packageFileEntryCoversPath(entry: string, filePath: string): boolean {
 
 function toPackagePath(filePath: string): string {
   return filePath.split(path.sep).join("/")
+}
+
+function digestFile(relativePath: string): string {
+  return `sha256:${createHash("sha256").update(readFileSync(path.join(packageRoot, relativePath))).digest("hex")}`
 }
 
 function isPackageJson(value: unknown): value is PackageJson {

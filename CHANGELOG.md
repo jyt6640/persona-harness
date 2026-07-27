@@ -8,6 +8,21 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.8.0-beta.6] - 2026-07-27
+
+- Prepares a new immutable Consumer Authority Beta source candidate for the
+  staging-only lifecycle. It makes no package, tag, registry, release,
+  promotion, Stable/GA, or Finish authority claim.
+- Ships an audited native descriptor-traversal runtime for macOS and Linux
+  supported architectures. It verifies the packaged C source and selected
+  binary checksums, opens every source-read segment through a captured project
+  directory capability, and fails closed with
+  `source-read-runtime-unavailable` rather than reopening caller paths.
+- Retains beta.1 through beta.5 as immutable prior evidence. No earlier
+  package or signed project artifact can satisfy beta.6 current-version
+  binding, independent online verification, explicit consumption, or replay
+  proof.
+
 ## [0.8.0-beta.5] - 2026-07-27
 
 - Prepares the next immutable Consumer Authority Beta source candidate for a

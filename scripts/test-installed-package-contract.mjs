@@ -24,8 +24,8 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const sourceCli = sourceCliArgument(process.argv.slice(2))
-const BETA4_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta5-acceptance.json")
-const BETA4_COOPERATIVE_COMMANDS = new Map([
+const BETA6_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta6-acceptance.json")
+const BETA6_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -393,7 +393,7 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     fixtureRoot,
     phPath,
     "installed package",
-    readBeta4CooperativeCommands(installedPackage),
+    readBeta6CooperativeCommands(installedPackage),
   )
 }
 
@@ -578,7 +578,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
-    readBeta4CooperativeCommands(repositoryRoot),
+    readBeta6CooperativeCommands(repositoryRoot),
   )
 }
 
@@ -1539,9 +1539,9 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
 
 function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
   for (const command of commands) {
-    const step = BETA4_COOPERATIVE_COMMANDS.get(command)
+    const step = BETA6_COOPERATIVE_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.5 acceptance command is unsupported`)
+      throw new Error(`${label} beta.6 acceptance command is unsupported`)
     }
     requireSuccess(
       `${label} lifecycle ${command}`,
@@ -1709,24 +1709,24 @@ function assertCooperativeLifecycleState(projectDir, label) {
   }
 }
 
-function readBeta4CooperativeCommands(packageRoot) {
-  const manifestPath = join(packageRoot, BETA4_ACCEPTANCE_PATH)
+function readBeta6CooperativeCommands(packageRoot) {
+  const manifestPath = join(packageRoot, BETA6_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.5 acceptance manifest is unavailable")
+    throw new Error("beta.6 acceptance manifest is unavailable")
   }
   const commands = value?.cooperative?.commands
   const packageVersion = value?.package?.version
-  const expectedCommands = [...BETA4_COOPERATIVE_COMMANDS.keys()]
+  const expectedCommands = [...BETA6_COOPERATIVE_COMMANDS.keys()]
   if (
     packageVersion !== readPackageVersion(packageRoot)
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
   ) {
-    throw new Error("beta.5 acceptance manifest is invalid")
+    throw new Error("beta.6 acceptance manifest is invalid")
   }
   return commands
 }
