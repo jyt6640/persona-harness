@@ -4,7 +4,6 @@ import fs, {
   mkdirSync,
   mkdtempSync,
   renameSync,
-  realpathSync,
   rmSync,
   symlinkSync,
   unlinkSync,
@@ -182,7 +181,7 @@ describe("project finish producer input readiness", () => {
     expect(result).toEqual({ code: "source-identity-drift", kind: "blocked" })
   })
 
-  it("rejects a regular profile replaced with an external symlink at the real producer input boundary", () => {
+  it("rejects a regular profile replacement before opening external bytes at the real producer input boundary", () => {
     const projectDir = createProject("canonical")
     const profilePath = join(projectDir, ".persona", "project-profile.jsonc")
     const draftPath = join(projectDir, ".persona", "project-profile.draft.jsonc")
@@ -190,15 +189,119 @@ describe("project finish producer input readiness", () => {
     writeFileSync(profilePath, `${JSON.stringify({ ...canonicalProfile(), status: "draft" })}\n`)
     writeFileSync(outsidePath, `${JSON.stringify(canonicalProfile())}\n`)
 
-    const swapped = swapAtNoFollowOpen(realpathSync(profilePath), draftPath, outsidePath, () => (
+    const swapped = swapAtCapturedLeafLookup(profilePath, draftPath, outsidePath, "project-profile.jsonc", () => (
       runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
     ))
 
     expect(swapped.didSwap).toBe(true)
+    expect(swapped.openedExternal).toBe(false)
     expect(swapped.value).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
     expect(swapped.value).not.toHaveProperty("value")
     expect(JSON.stringify(swapped.value)).not.toContain(outsidePath)
     expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+  })
+
+  it("rejects a harness config leaf replacement before opening external bytes", () => {
+    const projectDir = createProject("canonical")
+    const configPath = join(projectDir, ".persona", "harness.jsonc")
+    const draftPath = join(projectDir, ".persona", "harness.draft.jsonc")
+    const outsidePath = join(projectDir, "outside-harness.jsonc")
+    writeFileSync(configPath, "{}\n")
+    writeFileSync(outsidePath, '{"evidenceDir":"../../outside","token":"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"}\n')
+
+    const swapped = swapAtCapturedLeafLookup(configPath, draftPath, outsidePath, "harness.jsonc", () => (
+      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
+    ))
+
+    expect(swapped.didSwap).toBe(true)
+    expect(swapped.openedExternal).toBe(false)
+    expect(swapped.value).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
+    expect(swapped.value).not.toHaveProperty("value")
+    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
+  })
+
+  it("rejects a Gradle descriptor leaf replacement before opening external bytes", () => {
+    const projectDir = createProject("canonical")
+    const settingsPath = join(projectDir, "settings.gradle")
+    const draftPath = join(projectDir, "settings.draft.gradle")
+    const outsidePath = join(projectDir, "outside-settings.gradle")
+    writeFileSync(outsidePath, "rootProject.name = 'sk-live-aaaaaaaaaaaaaaaaaaaaaaaa'\n")
+
+    const swapped = swapAtCapturedLeafLookup(settingsPath, draftPath, outsidePath, "settings.gradle", () => (
+      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
+    ))
+
+    expect(swapped.didSwap).toBe(true)
+    expect(swapped.openedExternal).toBe(false)
+    expect(swapped.value).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
+    expect(swapped.value).not.toHaveProperty("value")
+    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
+  })
+
+  it("rejects a source leaf replacement before opening external source bytes", () => {
+    const projectDir = createProject("canonical")
+    const sourcePath = join(projectDir, "src", "main", "java", "App.java")
+    const draftPath = join(projectDir, "src", "main", "java", "App.draft.java")
+    const outsidePath = join(projectDir, "outside-App.java")
+    writeFileSync(outsidePath, "class App { String token = \"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\"; }\n")
+
+    const swapped = swapAtCapturedLeafLookup(sourcePath, draftPath, outsidePath, "App.java", () => (
+      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
+    ))
+
+    expect(swapped.didSwap).toBe(true)
+    expect(swapped.openedExternal).toBe(false)
+    expect(swapped.value).toEqual({ code: "source-identity-unavailable", kind: "blocked" })
+    expect(swapped.value).not.toHaveProperty("value")
+    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
+  })
+
+  it("rejects a source parent replacement before opening external source bytes", () => {
+    const projectDir = createProject("canonical")
+    const sourceDirectory = join(projectDir, "src", "main", "java")
+    const draftDirectory = join(projectDir, "src", "main", "java.draft")
+    const outsideDirectory = join(projectDir, "outside-source")
+    const outsideSource = join(outsideDirectory, "App.java")
+    mkdirSync(outsideDirectory)
+    writeFileSync(outsideSource, "class App { String token = \"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\"; }\n")
+
+    const swapped = swapParentAtCapturedLeafLookup(
+      sourceDirectory,
+      draftDirectory,
+      outsideDirectory,
+      outsideSource,
+      "App.java",
+      () => runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0"),
+    )
+
+    expect(swapped.didSwap).toBe(true)
+    expect(swapped.openedExternal).toBe(false)
+    expect(swapped.value).toEqual({ code: "source-identity-unavailable", kind: "blocked" })
+    expect(swapped.value).not.toHaveProperty("value")
+    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
+  })
+
+  it("rejects a captured project root replacement before opening external source bytes", () => {
+    const projectDir = createProject("canonical")
+    const draftPath = `${projectDir}.draft`
+    const outsidePath = mkdtempSync(join(tmpdir(), "project-finish-producer-outside-root-"))
+    projects.push(outsidePath)
+    writeFileSync(join(outsidePath, "build.gradle"), "// sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\n")
+
+    const swapped = swapProjectRootAtCapturedLeafLookup(projectDir, draftPath, outsidePath, "build.gradle", () => (
+      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
+    ))
+
+    expect(swapped.didSwap).toBe(true)
+    expect(swapped.openedExternal).toBe(false)
+    expect(swapped.value).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
+    expect(swapped.value).not.toHaveProperty("value")
+    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
   })
 })
 
@@ -311,32 +414,128 @@ function passed(stdout: string): BoundedProcessResult {
   }
 }
 
-function swapAtNoFollowOpen<T>(
+function swapAtCapturedLeafLookup<T>(
   profilePath: string,
   draftPath: string,
   outsidePath: string,
+  leafName: string,
   action: () => T,
-): { readonly didSwap: boolean; readonly value: T } {
+): { readonly didSwap: boolean; readonly openedExternal: boolean; readonly value: T } {
+  const originalLstat = fs.lstatSync
   const originalOpen = fs.openSync
+  let openedExternal = false
   let swapped = false
-  fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
-    if (!swapped && args[0] === profilePath) {
+  const replacementLstat = (...args: Parameters<typeof fs.lstatSync>) => {
+    if (!swapped && args[0] === leafName) {
       swapped = true
       renameSync(profilePath, draftPath)
       symlinkSync(outsidePath, profilePath)
     }
+    return originalLstat(...args)
+  }
+  Object.defineProperty(fs, "lstatSync", { configurable: true, value: replacementLstat, writable: true })
+  fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+    if (args[0] === outsidePath) openedExternal = true
     return originalOpen(...args)
   }) as typeof fs.openSync
   syncBuiltinESMExports()
   try {
     const value = action()
-    return { didSwap: swapped, value }
+    return { didSwap: swapped, openedExternal, value }
   } finally {
+    Object.defineProperty(fs, "lstatSync", { configurable: true, value: originalLstat, writable: true })
     fs.openSync = originalOpen
     syncBuiltinESMExports()
     if (swapped) {
       unlinkSync(profilePath)
       renameSync(draftPath, profilePath)
     }
+  }
+}
+
+function swapParentAtCapturedLeafLookup<T>(
+  sourceDirectory: string,
+  draftDirectory: string,
+  outsideDirectory: string,
+  outsideSource: string,
+  leafName: string,
+  action: () => T,
+): { readonly didSwap: boolean; readonly openedExternal: boolean; readonly value: T } {
+  const originalLstat = fs.lstatSync
+  const originalOpen = fs.openSync
+  let openedExternal = false
+  let swapped = false
+  const replacementLstat = (...args: Parameters<typeof fs.lstatSync>) => {
+    if (!swapped && args[0] === leafName) {
+      swapped = true
+      renameSync(sourceDirectory, draftDirectory)
+      symlinkSync(outsideDirectory, sourceDirectory)
+    }
+    return originalLstat(...args)
+  }
+  Object.defineProperty(fs, "lstatSync", { configurable: true, value: replacementLstat, writable: true })
+  fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+    if (args[0] === outsideSource) openedExternal = true
+    return originalOpen(...args)
+  }) as typeof fs.openSync
+  syncBuiltinESMExports()
+  try {
+    const value = action()
+    return { didSwap: swapped, openedExternal, value }
+  } finally {
+    Object.defineProperty(fs, "lstatSync", { configurable: true, value: originalLstat, writable: true })
+    fs.openSync = originalOpen
+    syncBuiltinESMExports()
+    if (swapped) {
+      unlinkSync(sourceDirectory)
+      renameSync(draftDirectory, sourceDirectory)
+    }
+  }
+}
+
+function swapProjectRootAtCapturedLeafLookup<T>(
+  projectDir: string,
+  draftPath: string,
+  outsidePath: string,
+  leafName: string,
+  action: () => T,
+): { readonly didSwap: boolean; readonly openedExternal: boolean; readonly value: T } {
+  const originalLstat = fs.lstatSync
+  const originalOpen = fs.openSync
+  let openedExternal = false
+  let swapped = false
+  const replacementLstat = (...args: Parameters<typeof fs.lstatSync>) => {
+    if (!swapped && args[0] === leafName) {
+      swapped = true
+      renameSync(projectDir, draftPath)
+      symlinkSync(outsidePath, projectDir)
+    }
+    return originalLstat(...args)
+  }
+  Object.defineProperty(fs, "lstatSync", { configurable: true, value: replacementLstat, writable: true })
+  fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+    if (args[0] === join(outsidePath, leafName)) openedExternal = true
+    return originalOpen(...args)
+  }) as typeof fs.openSync
+  syncBuiltinESMExports()
+  try {
+    const value = action()
+    return { didSwap: swapped, openedExternal, value }
+  } finally {
+    Object.defineProperty(fs, "lstatSync", { configurable: true, value: originalLstat, writable: true })
+    fs.openSync = originalOpen
+    syncBuiltinESMExports()
+    if (swapped) {
+      unlinkSync(projectDir)
+      renameSync(draftPath, projectDir)
+    }
+  }
+}
+
+function projectArtifactDirectoryExists(projectDir: string): boolean {
+  try {
+    return fs.existsSync(join(projectDir, ".ci", "project-finish-attestation"))
+  } catch {
+    return false
   }
 }

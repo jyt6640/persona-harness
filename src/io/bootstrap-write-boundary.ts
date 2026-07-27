@@ -41,15 +41,54 @@ type CurrentFile =
   | { readonly kind: "absent" }
   | { readonly bytes: Buffer; readonly identity: NoFollowPathIdentity; readonly kind: "ready" }
 
+export type ProjectReadFile = {
+  readonly bytes: Buffer
+  readonly identity: NoFollowPathIdentity
+}
+
 export type FreshBootstrapPersonaFile = {
   readonly bytes: Buffer
   readonly relativePath: string
+}
+
+export type ProjectReadTreeEntry =
+  | {
+      readonly identity: NoFollowPathIdentity
+      readonly kind: "directory"
+      readonly path: string
+    }
+  | {
+      readonly bytes: Buffer
+      readonly identity: NoFollowPathIdentity
+      readonly kind: "file"
+      readonly path: string
+    }
+
+export type ProjectReadTreeOptions = {
+  readonly isExcluded: (relativePath: string) => boolean
+  readonly maxEntries: number
+  readonly maxFileBytes: number
+  readonly maxTotalBytes: number
 }
 
 export class BootstrapWriteBoundaryError extends Error {
   constructor() {
     super("bootstrap workspace is unsafe")
     this.name = "BootstrapWriteBoundaryError"
+  }
+}
+
+export class ProjectReadBoundaryError extends Error {
+  constructor() {
+    super("project source read boundary is unsafe")
+    this.name = "ProjectReadBoundaryError"
+  }
+}
+
+export class ProjectReadBoundaryLimitError extends Error {
+  constructor() {
+    super("bootstrap project read exceeds a bounded limit")
+    this.name = "ProjectReadBoundaryLimitError"
   }
 }
 
@@ -459,6 +498,219 @@ export class BootstrapWriteBoundary {
   #assertAll(reservations: readonly DirectoryReservation[]): void {
     for (const reservation of reservations) assertDirectoryReservation(reservation)
   }
+}
+
+export class ProjectReadBoundary {
+  readonly #project: DirectoryReservation
+  #closed = false
+
+  constructor(project: DirectoryReservation) {
+    this.#project = project
+  }
+
+  close(): void {
+    if (this.#closed) return
+    this.#closed = true
+    closeSync(this.#project.descriptor)
+  }
+
+  assert(): void {
+    this.#assertActive()
+  }
+
+  projectIdentity(): NoFollowPathIdentity {
+    this.#assertActive()
+    return this.#project.identity
+  }
+
+  withCapturedProject<T>(operation: () => T): T {
+    this.#assertActive()
+    return withReservedProjectDirectory(this.#project, () => {
+      this.#assertActive()
+      const result = operation()
+      this.#assertActive()
+      return result
+    })
+  }
+
+  readProjectFile(relativePath: string, maxBytes?: number): Buffer | undefined {
+    return this.readProjectFileWithIdentity(relativePath, maxBytes)?.bytes
+  }
+
+  readProjectFileWithIdentity(relativePath: string, maxBytes?: number): ProjectReadFile | undefined {
+    this.#assertActive()
+    const segments = validatedRelativeSegments(relativePath)
+    const leaf = segments.pop()
+    if (leaf === undefined) throw new ProjectReadBoundaryError()
+    return withReservedProjectDirectory(this.#project, () => {
+      const reservations: DirectoryReservation[] = []
+      try {
+        let parent = this.#project
+        for (const segment of segments) {
+          const reservation = reserveExistingCurrentChildDirectory(parent, segment)
+          if (reservation === undefined) return undefined
+          reservations.push(reservation)
+          parent = reservation
+        }
+        const current = this.#readCurrentFile(leaf, reservations, maxBytes)
+        return current.kind === "ready"
+          ? { bytes: current.bytes, identity: current.identity }
+          : undefined
+      } finally {
+        leaveCurrentReservations(this.#project, reservations)
+      }
+    })
+  }
+
+  readProjectDirectoryIdentity(relativePath: string): NoFollowPathIdentity | undefined {
+    this.#assertActive()
+    const segments = validatedRelativeSegments(relativePath)
+    return withReservedProjectDirectory(this.#project, () => {
+      const reservations: DirectoryReservation[] = []
+      try {
+        let parent = this.#project
+        for (const segment of segments) {
+          const reservation = reserveExistingCurrentChildDirectory(parent, segment)
+          if (reservation === undefined) return undefined
+          reservations.push(reservation)
+          parent = reservation
+        }
+        this.#assertAll(reservations)
+        return parent.identity
+      } finally {
+        leaveCurrentReservations(this.#project, reservations)
+      }
+    })
+  }
+
+  readProjectTree(options: ProjectReadTreeOptions): readonly ProjectReadTreeEntry[] {
+    if (
+      !Number.isInteger(options.maxEntries)
+      || !Number.isInteger(options.maxFileBytes)
+      || !Number.isInteger(options.maxTotalBytes)
+      || options.maxEntries <= 0
+      || options.maxFileBytes <= 0
+      || options.maxTotalBytes <= 0
+    ) {
+      throw new ProjectReadBoundaryError()
+    }
+    this.#assertActive()
+    return withReservedProjectDirectory(this.#project, () => {
+      const entries: ProjectReadTreeEntry[] = []
+      let totalBytes = 0
+      const visit = (directory: DirectoryReservation, relativeDirectory: string, reservations: DirectoryReservation[]): void => {
+        this.#assertAll(reservations)
+        for (const name of readdirSync(".").sort()) {
+          assertLeafName(name)
+          const relativePath = relativeDirectory === "" ? name : `${relativeDirectory}/${name}`
+          if (options.isExcluded(relativePath)) continue
+          const stat = lstatSync(name, { bigint: true })
+          if (stat.isSymbolicLink()) throw new ProjectReadBoundaryError()
+          if (stat.isDirectory()) {
+            if (entries.length >= options.maxEntries) throw new ProjectReadBoundaryLimitError()
+            const child = reserveExistingCurrentChildDirectory(directory, name)
+            if (child === undefined) throw new ProjectReadBoundaryError()
+            entries.push({ identity: child.identity, kind: "directory", path: relativePath })
+            reservations.push(child)
+            try {
+              visit(child, relativePath, reservations)
+            } finally {
+              reservations.pop()
+              try {
+                process.chdir("..")
+                assertCurrentDirectory(directory)
+              } catch {
+                throw new ProjectReadBoundaryError()
+              } finally {
+                closeSync(child.descriptor)
+              }
+            }
+            continue
+          }
+          if (!stat.isFile()) throw new ProjectReadBoundaryError()
+          if (stat.size > BigInt(options.maxFileBytes) || entries.length >= options.maxEntries) {
+            throw new ProjectReadBoundaryLimitError()
+          }
+          const file = this.#readCurrentFile(name, reservations, options.maxFileBytes)
+          if (file.kind !== "ready") throw new ProjectReadBoundaryError()
+          totalBytes += file.bytes.byteLength
+          if (totalBytes > options.maxTotalBytes) throw new ProjectReadBoundaryLimitError()
+          entries.push({ bytes: file.bytes, identity: file.identity, kind: "file", path: relativePath })
+        }
+        this.#assertAll(reservations)
+      }
+      visit(this.#project, "", [])
+      return entries
+    })
+  }
+
+  assertSafeProjectDirectoryPath(relativePath: string): void {
+    this.#assertActive()
+    const segments = validatedRelativeSegments(relativePath)
+    withReservedProjectDirectory(this.#project, () => {
+      const reservations: DirectoryReservation[] = []
+      try {
+        let parent = this.#project
+        for (const segment of segments) {
+          const reservation = reserveExistingCurrentChildDirectory(parent, segment)
+          if (reservation === undefined) return
+          reservations.push(reservation)
+          parent = reservation
+        }
+        this.#assertAll(reservations)
+      } finally {
+        leaveCurrentReservations(this.#project, reservations)
+      }
+    })
+  }
+
+  #assertActive(): void {
+    if (this.#closed) throw new ProjectReadBoundaryError()
+    assertDirectoryReservation(this.#project)
+  }
+
+  #assertAll(reservations: readonly DirectoryReservation[]): void {
+    this.#assertActive()
+    for (const reservation of reservations) assertDirectoryReservation(reservation)
+  }
+
+  #readCurrentFile(
+    name: string,
+    reservations: readonly DirectoryReservation[],
+    maxBytes?: number,
+  ): CurrentFile {
+    let descriptor: number | undefined
+    try {
+      const currentStat = lstatSync(name, { bigint: true })
+      if (!currentStat.isFile() || currentStat.isSymbolicLink()) throw new ProjectReadBoundaryError()
+      if (maxBytes !== undefined && currentStat.size > BigInt(maxBytes)) throw new ProjectReadBoundaryLimitError()
+      const current = noFollowPathIdentityFromStat(currentStat)
+      this.#assertAll(reservations)
+      descriptor = openSync(name, constants.O_RDONLY | constants.O_NOFOLLOW)
+      const descriptorIdentity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      if (maxBytes !== undefined && BigInt(descriptorIdentity.size) > BigInt(maxBytes)) {
+        throw new ProjectReadBoundaryLimitError()
+      }
+      const afterOpen = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
+      if (!sameNoFollowPathIdentity(current, descriptorIdentity) || !sameNoFollowPathIdentity(current, afterOpen)) {
+        throw new ProjectReadBoundaryError()
+      }
+      const bytes = readFileSync(descriptor)
+      if (maxBytes !== undefined && bytes.byteLength > maxBytes) throw new ProjectReadBoundaryLimitError()
+      this.#assertAll(reservations)
+      return { bytes, identity: descriptorIdentity, kind: "ready" }
+    } catch (error) {
+      if (errorCode(error) === "ENOENT") return { kind: "absent" }
+      if (error instanceof ProjectReadBoundaryLimitError || error instanceof ProjectReadBoundaryError) throw error
+      throw new ProjectReadBoundaryError()
+    } finally {
+      if (descriptor !== undefined) closeSync(descriptor)
+    }
+  }
+}
+
+export function reserveProjectReadBoundary(projectDir: string): ProjectReadBoundary {
+  return new ProjectReadBoundary(reserveProjectDirectory(resolve(projectDir)))
 }
 
 export function reserveBootstrapWriteBoundary(projectDir: string): BootstrapWriteBoundary {

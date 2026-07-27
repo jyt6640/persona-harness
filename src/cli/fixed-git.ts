@@ -21,18 +21,28 @@ export type FixedGitResult = {
   readonly stdout: string
 }
 
+export type FixedGitRunner = (args: readonly string[]) => FixedGitResult
+
 export function runFixedGit(projectDir: string, args: readonly string[]): FixedGitResult {
+  return runFixedGitAt(args, projectDir)
+}
+
+export function runFixedGitFromCurrentDirectory(args: readonly string[]): FixedGitResult {
+  return runFixedGitAt(args)
+}
+
+function runFixedGitAt(args: readonly string[], cwd?: string): FixedGitResult {
   const executable = resolveFixedGitExecutable()
   if (executable === undefined) return unavailable("git-executable-unavailable")
   try {
     const result = spawnSync(executable, [...FIXED_GIT_OPTIONS, ...args], {
-      cwd: projectDir,
       encoding: "utf8",
       env: fixedGitEnvironment(executable),
       maxBuffer: MAX_OUTPUT_BYTES,
       shell: false,
       stdio: ["ignore", "pipe", "ignore"],
       timeout: GIT_TIMEOUT_MS,
+      ...(cwd === undefined ? {} : { cwd }),
     })
     if (result.error !== undefined) return unavailable("git-execution-failed")
     return {

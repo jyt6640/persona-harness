@@ -15,7 +15,10 @@ import {
   type EvidenceMode,
 } from "./evidence-privacy.js"
 import { isRecord, stripJsonComments } from "./jsonc.js"
-import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
+import type {
+  BootstrapWriteBoundary,
+  ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
 
 export type { ConventionLevel } from "./convention-registry.js"
 export type { EvidenceMode, EvidencePrivacyClass } from "./evidence-privacy.js"
@@ -498,8 +501,10 @@ export function resolveConfiguredPath(projectDir: string, configuredPath: string
   return result.ok ? result.path : join(projectDir, INVALID_CONFIG_PATH)
 }
 
-export function loadHarnessConfig(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): HarnessConfig {
-  return loadHarnessConfigResult(projectDir, bootstrapWriteBoundary).config
+type HarnessConfigReadBoundary = BootstrapWriteBoundary | ProjectReadBoundary
+
+export function loadHarnessConfig(projectDir: string, projectReadBoundary?: HarnessConfigReadBoundary): HarnessConfig {
+  return loadHarnessConfigResult(projectDir, projectReadBoundary).config
 }
 
 export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
@@ -508,14 +513,14 @@ export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
 
 export function loadHarnessConfigResult(
   projectDir: string,
-  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+  projectReadBoundary?: HarnessConfigReadBoundary,
 ): HarnessConfigLoadResult {
   const harnessPath = join(projectDir, ".persona", "harness.jsonc")
-  const bytes = bootstrapWriteBoundary?.readProjectFile(".persona/harness.jsonc")
-  if (bootstrapWriteBoundary !== undefined && bytes === undefined) {
+  const bytes = projectReadBoundary?.readProjectFile(".persona/harness.jsonc")
+  if (projectReadBoundary !== undefined && bytes === undefined) {
     return { config: DEFAULT_CONFIG, diagnostics: [], safe: true }
   }
-  if (bootstrapWriteBoundary === undefined && !existsSync(harnessPath)) {
+  if (projectReadBoundary === undefined && !existsSync(harnessPath)) {
     return { config: DEFAULT_CONFIG, diagnostics: [], safe: true }
   }
 
@@ -576,8 +581,8 @@ export function loadHarnessConfigResult(
     ["evidenceDir", config.evidenceDir],
   ].flatMap(([name, configuredPath]) => {
     try {
-      if (bootstrapWriteBoundary !== undefined) {
-        bootstrapWriteBoundary.assertSafeProjectDirectoryPath(configuredPath)
+      if (projectReadBoundary !== undefined) {
+        projectReadBoundary.assertSafeProjectDirectoryPath(configuredPath)
         return []
       }
       const resolution = resolveConfiguredPathResult(projectDir, configuredPath)
