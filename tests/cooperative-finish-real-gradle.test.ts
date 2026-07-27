@@ -38,7 +38,7 @@ afterEach(() => {
   }
 })
 
-describe("real Java/Spring Gradle cooperative Finish", () => {
+describe.sequential("real Java/Spring Gradle cooperative Finish", () => {
   it("passes a fresh project through the public source CLI without disk authority", () => {
     // Given: a fresh Git-backed Java/Spring project with a genuine Gradle wrapper.
     const fixture = track(createRealCooperativeGradleFixture())
@@ -103,34 +103,34 @@ describe("real Java/Spring Gradle cooperative Finish", () => {
     // Then: only explicit same-invocation cooperative Finish may pass.
     expect(bootstrap.status, bootstrap.stderr).toBe(0)
     expect(unexpectedSourceMutations(consumer)).toEqual([])
-    expect(matchesProjectFinishAttestationSource(consumer, expected), sourceBindingDiagnostic(consumer, expected, fixture.projectDir)).toBe(true)
+    expect(matchesAt(consumer, expected), sourceBindingDiagnostic(consumer, expected, fixture.projectDir)).toBe(true)
     expect(test.status, test.stderr).toBe(0)
     expect(compile.status, compile.stderr).toBe(0)
     expect(clean.status, clean.stderr).toBe(0)
     expect(readmeRead.status, readmeRead.stderr).toBe(0)
     expect(profileRead.status, profileRead.stderr).toBe(0)
     expect(roleRead.status, roleRead.stderr).toBe(0)
-    expect(matchesProjectFinishAttestationSource(consumer, expected)).toBe(true)
+    expect(matchesAt(consumer, expected)).toBe(true)
     expect(implementation.status, implementation.stderr).toBe(0)
     expect(review.status, review.stderr).toBe(0)
-    expect(matchesProjectFinishAttestationSource(consumer, expected)).toBe(true)
+    expect(matchesAt(consumer, expected)).toBe(true)
     expect(defaultFinish.status).toBe(1)
     expect(defaultFinish.stderr).toContain("trusted-authority-required")
     expect(defaultFinish.stderr).not.toContain("evidence-missing")
     expect(defaultFinish.stderr).not.toContain("report-coverage-missing")
     expect(defaultFinish.stderr).not.toContain("profile-read-coverage-missing")
     expect(defaultFinish.stderr).not.toContain("java-role-read-coverage-missing")
-    expect(matchesProjectFinishAttestationSource(consumer, expected)).toBe(true)
+    expect(matchesAt(consumer, expected)).toBe(true)
     expect(cooperativeFinish.status, cooperativeFinish.stderr).toBe(0)
     expect(cooperativeFinish.stdout).toContain("Finish status: PASS")
-    expect(matchesProjectFinishAttestationSource(consumer, expected)).toBe(true)
+    expect(matchesAt(consumer, expected)).toBe(true)
     expect(JSON.parse(closure.stdout)).toMatchObject({ state: { finish: "blocked" } })
     expect(closure.stdout).toContain("trusted-authority-required")
   }, 300_000)
 })
 
 function run(projectDir: string, args: readonly string[], stdin?: string) {
-  return runPersonaCli(args, { cwd: projectDir, env: {}, invocationName: "ph", stdin })
+  return withCurrentDirectory(projectDir, () => runPersonaCli(args, { cwd: ".", env: {}, invocationName: "ph", stdin }))
 }
 
 function track(fixture: RealCooperativeGradleFixture): RealCooperativeGradleFixture {
@@ -162,15 +162,21 @@ function commitBootstrapCheckpoint(projectDir: string): void {
 }
 
 function captureBoundSourceIdentity(projectDir: string): SourceIdentity {
-  const workspace = captureWorkspaceIdentity(projectDir)
-  if (workspace.status !== "available") throw new Error("workspace identity must be available")
-  const git = captureGitIdentity(projectDir, workspace.value)
-  if (!git.available) throw new Error("Git identity must be available")
-  const source = captureProjectFinishAttestationSourceIdentity(projectDir, git)
-  if (source.status !== "available") throw new Error("source identity must be available")
-  const inputs = captureProjectFinishAttestationInputSnapshot(projectDir)
-  if (inputs.kind !== "ready") throw new Error("project inputs must be available")
-  return bindProjectFinishAttestationInputSnapshot(source.value, inputs.value)
+  return withCurrentDirectory(projectDir, () => {
+    const workspace = captureWorkspaceIdentity(".")
+    if (workspace.status !== "available") throw new Error("workspace identity must be available")
+    const git = captureGitIdentity(".", workspace.value)
+    if (!git.available) throw new Error("Git identity must be available")
+    const source = captureProjectFinishAttestationSourceIdentity(".", git)
+    if (source.status !== "available") throw new Error("source identity must be available")
+    const inputs = captureProjectFinishAttestationInputSnapshot(".")
+    if (inputs.kind !== "ready") throw new Error("project inputs must be available")
+    return bindProjectFinishAttestationInputSnapshot(source.value, inputs.value)
+  })
+}
+
+function matchesAt(projectDir: string, expected: SourceIdentity): boolean {
+  return withCurrentDirectory(projectDir, () => matchesProjectFinishAttestationSource(".", expected))
 }
 
 function unexpectedSourceMutations(projectDir: string): readonly string[] {
@@ -188,30 +194,44 @@ function unexpectedSourceMutations(projectDir: string): readonly string[] {
 }
 
 function sourceBindingDiagnostic(projectDir: string, expected: SourceIdentity, producerDir: string): string {
-  const workspace = captureWorkspaceIdentity(projectDir)
-  if (workspace.status !== "available") return "workspace unavailable"
-  const git = captureGitIdentity(projectDir, workspace.value)
-  const source = captureProjectFinishAttestationSourceIdentity(projectDir, git)
-  const entries = captureProjectFinishAttestationSourceEntries(projectDir, git)
-  const producerWorkspace = captureWorkspaceIdentity(producerDir)
-  const producerGit = producerWorkspace.status === "available"
-    ? captureGitIdentity(producerDir, producerWorkspace.value)
-    : undefined
-  const summary = source.status === "available"
-    ? {
-      counts: [source.value.entryCount, source.value.trackedEntryCount, source.value.untrackedEntryCount],
-      expectedCounts: [expected.entryCount, expected.trackedEntryCount, expected.untrackedEntryCount],
-      headMatches: source.value.repositoryHead === expected.repositoryHead,
-      statusMatches: source.value.gitStatusDigest === expected.gitStatusDigest,
-      trackedIndexMatches: source.value.trackedIndexDigest === expected.trackedIndexDigest,
-    }
-    : { source: source.diagnosticCode }
-  return JSON.stringify({
-    entryCount: entries.status === "available" ? entries.value.length : entries.diagnosticCode,
-    producerStatus: producerGit?.available ? summarizeStatus(producerGit.status?.entries ?? []) : "unavailable",
-    status: git.available ? summarizeStatus(git.status?.entries ?? []) : "unavailable",
-    summary,
+  return withCurrentDirectory(projectDir, () => {
+    const workspace = captureWorkspaceIdentity(".")
+    if (workspace.status !== "available") return "workspace unavailable"
+    const git = captureGitIdentity(".", workspace.value)
+    const source = captureProjectFinishAttestationSourceIdentity(".", git)
+    const entries = captureProjectFinishAttestationSourceEntries(".", git)
+    const producerGit = withCurrentDirectory(producerDir, () => {
+      const producerWorkspace = captureWorkspaceIdentity(".")
+      return producerWorkspace.status === "available"
+        ? captureGitIdentity(".", producerWorkspace.value)
+        : undefined
+    })
+    const summary = source.status === "available"
+      ? {
+        counts: [source.value.entryCount, source.value.trackedEntryCount, source.value.untrackedEntryCount],
+        expectedCounts: [expected.entryCount, expected.trackedEntryCount, expected.untrackedEntryCount],
+        headMatches: source.value.repositoryHead === expected.repositoryHead,
+        statusMatches: source.value.gitStatusDigest === expected.gitStatusDigest,
+        trackedIndexMatches: source.value.trackedIndexDigest === expected.trackedIndexDigest,
+      }
+      : { source: source.diagnosticCode }
+    return JSON.stringify({
+      entryCount: entries.status === "available" ? entries.value.length : entries.diagnosticCode,
+      producerStatus: producerGit?.available ? summarizeStatus(producerGit.status?.entries ?? []) : "unavailable",
+      status: git.available ? summarizeStatus(git.status?.entries ?? []) : "unavailable",
+      summary,
+    })
   })
+}
+
+function withCurrentDirectory<T>(projectDir: string, operation: () => T): T {
+  const original = process.cwd()
+  process.chdir(projectDir)
+  try {
+    return operation()
+  } finally {
+    process.chdir(original)
+  }
 }
 
 function summarizeStatus(entries: readonly { readonly kind: string; readonly path?: string }[]): Readonly<Record<string, number>> {

@@ -334,6 +334,72 @@ describe.sequential("native project read runtime", () => {
     }
   })
 
+  it("rejects a captured evidence subtree replacement before opening its external descriptor", () => {
+    const runner = mkdtempSync(join(tmpdir(), "persona-native-subtree-context-"))
+    const project = join(runner, "project")
+    const evidenceRoot = join(project, ".persona", "evidence", "project-finish-attestation")
+    const preserved = `${evidenceRoot}-preserved`
+    const outside = join(runner, "outside")
+    mkdirSync(evidenceRoot, { recursive: true })
+    mkdirSync(outside)
+    writeFileSync(join(evidenceRoot, "bundle.json"), "{}\n")
+    writeFileSync(join(outside, "bundle.json"), "external\n")
+    const parentIdentity = lstatSync(runner, { bigint: true })
+    const outsideIdentity = lstatSync(outside, { bigint: true })
+    const expectations = [
+      { kind: "directory" as const, path: ".", stat: lstatSync(evidenceRoot, { bigint: true }) },
+      { kind: "directory" as const, path: ".persona", stat: lstatSync(join(project, ".persona"), { bigint: true }) },
+      { kind: "directory" as const, path: ".persona/evidence", stat: lstatSync(join(project, ".persona", "evidence"), { bigint: true }) },
+      { kind: "directory" as const, path: ".persona/evidence/project-finish-attestation", stat: lstatSync(evidenceRoot, { bigint: true }) },
+      { kind: "file" as const, path: "bundle.json", stat: lstatSync(join(evidenceRoot, "bundle.json"), { bigint: true }) },
+    ]
+    let rootDescriptor: number | undefined
+    let parentDescriptor: number | undefined
+
+    try {
+      rootDescriptor = openSync(project, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+      parentDescriptor = openSync(runner, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+      renameSync(evidenceRoot, preserved)
+      renameSync(outside, evidenceRoot)
+      const result = spawnSync(
+        nativeExecutable(),
+        [
+          "tree",
+          "4",
+          "4096",
+          "8192",
+          "--expect-stdin",
+          "--root-fds",
+          "3",
+          "4",
+          basename(project),
+          parentIdentity.dev.toString(),
+          parentIdentity.ino.toString(),
+          "--root",
+          ".persona/evidence/project-finish-attestation",
+          "--audit",
+          outsideIdentity.dev.toString(),
+          outsideIdentity.ino.toString(),
+        ],
+        {
+          cwd: project,
+          encoding: "buffer",
+          env: {},
+          input: manifestInput(expectations),
+          shell: false,
+          stdio: ["pipe", "pipe", "ignore", rootDescriptor, parentDescriptor],
+        },
+      )
+
+      expect(result.status).toBe(0)
+      expect(result.stdout).toEqual(Buffer.from([2, 0]))
+    } finally {
+      if (parentDescriptor !== undefined) closeSync(parentDescriptor)
+      if (rootDescriptor !== undefined) closeSync(rootDescriptor)
+      rmSync(runner, { force: true, recursive: true })
+    }
+  })
+
   it("rejects a generated JUnit root replacement before opening its external descriptor", () => {
     // Given: a generated-report manifest captured before build output is replaced by an external directory.
     const project = mkdtempSync(join(tmpdir(), "persona-native-junit-manifest-"))

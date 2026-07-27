@@ -91,6 +91,7 @@ try {
   } else {
     assertSourceConsumerAuthorityBoundary(sourceCli)
     assertSourceDoctorRegistryReadback(sourceCli)
+    assertSourceProjectFinishProducerIntake(sourceCli)
     assertSourceCooperativeFinishWorks(sourceCli)
     assertSourceEvidenceReadWriteBoundary(sourceCli)
     await assertSourceBoundedReportStdin(sourceCli)
@@ -413,18 +414,32 @@ async function assertPackagedBoundedReportStdin(installedPackage, consumerDirect
 }
 
 function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory) {
-  const modulePath = pathToFileURL(join(
-    installedPackage,
-    "dist",
-    "cli",
-    "project-finish-attestation-producer-runner.js",
-  )).href
-  const validProject = join(consumerDirectory, "project-finish-producer-valid")
-  const hostileProject = join(consumerDirectory, "project-finish-producer-hostile")
-  const replacementProject = join(consumerDirectory, "project-finish-producer-replacement")
-  const sourceReplacementProject = join(consumerDirectory, "project-finish-producer-source-replacement")
-  const symlinkProject = join(consumerDirectory, "project-finish-producer-symlink")
-  const producerBin = join(consumerDirectory, ".persona-harness-producer", "node_modules", ".bin")
+  assertProjectFinishProducerIntake(
+    pathToFileURL(join(installedPackage, "dist", "cli", "project-finish-attestation-producer-runner.js")).href,
+    consumerDirectory,
+    "installed package",
+  )
+}
+
+function assertSourceProjectFinishProducerIntake(sourceCliPath) {
+  const sourceModule = resolve(repositoryRoot, "dist", "cli", "project-finish-attestation-producer-runner.js")
+  if (!existsSync(sourceModule) || !existsSync(resolve(repositoryRoot, sourceCliPath))) {
+    throw new Error("source project finish producer runtime is missing")
+  }
+  assertProjectFinishProducerIntake(
+    pathToFileURL(sourceModule).href,
+    join(temporaryRoot, "source-cli-project-finish-producer-intake"),
+    "source CLI",
+  )
+}
+
+function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
+  const validProject = join(fixtureRoot, "project-finish-producer-valid")
+  const hostileProject = join(fixtureRoot, "project-finish-producer-hostile")
+  const replacementProject = join(fixtureRoot, "project-finish-producer-replacement")
+  const sourceReplacementProject = join(fixtureRoot, "project-finish-producer-source-replacement")
+  const symlinkProject = join(fixtureRoot, "project-finish-producer-symlink")
+  const producerBin = join(fixtureRoot, ".persona-harness-producer", "node_modules", ".bin")
   createProjectFinishProducerFixture(validProject, "absent")
   createProjectFinishProducerFixture(hostileProject, "symlink-profile")
   createProjectFinishProducerFixture(replacementProject, "replace-profile")
@@ -433,149 +448,116 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
   symlinkSync("../outside", join(producerBin, "node"))
   symlinkSync("project-finish-producer-valid", symlinkProject)
 
-  const probe = runNode(consumerDirectory, [
+  const probe = runNode(fixtureRoot, [
     "--input-type=module",
     "-e",
     [
       'import { execFileSync } from "node:child_process";',
       `import { runProjectFinishAttestationProducer } from ${JSON.stringify(modulePath)};`,
-      'const context = (projectDir) => {',
-      '  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
-      '  return {',
+      'const runAt = (projectDir, runId) => {',
+      '  const original = process.cwd();',
+      '  process.chdir(projectDir);',
+      '  try {',
+      '    const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();',
+      '    return runProjectFinishAttestationProducer(".", {',
       '    callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
       '    callerWorkflowSha: head,',
       '    issuedAt: "2026-07-22T01:00:00.000Z",',
       '    repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" },',
       '    reusableWorkflowSha: "b".repeat(40),',
       '    runAttempt: 1,',
-      '    runId: "42",',
+      '    runId,',
       '    sourceHead: head,',
-      '  };',
+      '    }, "0.8.0-beta.6");',
+      '  } finally { process.chdir(original); }',
       '};',
-      'const valid = runProjectFinishAttestationProducer("./project-finish-producer-valid", context("./project-finish-producer-valid"), "0.7.0");',
-      'const hostile = runProjectFinishAttestationProducer("./project-finish-producer-hostile", context("./project-finish-producer-hostile"), "0.7.0");',
-      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", context("./project-finish-producer-symlink"), "0.7.0");',
-      'if (valid.kind !== "passed" || hostile.kind !== "blocked" || hostile.code !== "project-finish-producer-profile" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") process.exit(1);',
+      'const valid = runAt("./project-finish-producer-valid", "42");',
+      'const hostile = runAt("./project-finish-producer-hostile", "43");',
+      'const directHead = execFileSync("git", ["rev-parse", "HEAD"], { cwd: "./project-finish-producer-valid", encoding: "utf8" }).trim();',
+      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "44", sourceHead: directHead }, "0.8.0-beta.6");',
+      'if (valid.kind !== "passed" || hostile.kind !== "blocked" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") process.exit(1);',
       'if (valid.value.receipt.source.root !== "." || hostile.value !== undefined) process.exit(1);',
       'if (JSON.stringify(hostile).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
   ])
   requireSuccess("installed project finish producer no-follow intake probe", probe)
-  const replacementProbe = runNode(consumerDirectory, [
+  const replacementProbe = runNode(fixtureRoot, [
     "--input-type=module",
     "-e",
     [
-      'import { execFileSync } from "node:child_process";',
-      'import fs, { renameSync, symlinkSync, unlinkSync } from "node:fs";',
+      'import childProcess, { execFileSync } from "node:child_process";',
+      'import { renameSync } from "node:fs";',
       'import { syncBuiltinESMExports } from "node:module";',
       'import { join, resolve } from "node:path";',
       `const modulePath = ${JSON.stringify(modulePath)};`,
-      'const projectDir = "./project-finish-producer-replacement";',
-      'const profilePath = resolve(join(projectDir, ".persona", "project-profile.jsonc"));',
-      'const draftPath = resolve(join(projectDir, ".persona", "project-profile.draft.jsonc"));',
-      'const outsidePath = resolve(join(projectDir, "outside-profile.jsonc"));',
-      'const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
-      'const context = {',
-      '  callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
-      '  callerWorkflowSha: head,',
-      '  issuedAt: "2026-07-22T01:00:00.000Z",',
-      '  repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" },',
-      '  reusableWorkflowSha: "b".repeat(40),',
-      '  runAttempt: 1,',
-      '  runId: "43",',
-      '  sourceHead: head,',
-      '};',
-      'const originalLstat = fs.lstatSync;',
-      'const originalOpen = fs.openSync;',
-      'let openedExternal = false;',
+      'const projectDir = resolve("./project-finish-producer-replacement");',
+      'const profilePath = join(projectDir, ".persona", "project-profile.jsonc");',
+      'const draftPath = join(projectDir, ".persona", "project-profile.draft.jsonc");',
+      'const outsidePath = join(projectDir, "outside-profile.jsonc");',
+      'const originalSpawnSync = childProcess.spawnSync;',
       'let swapped = false;',
-      'fs.lstatSync = (...args) => {',
-      '  if (!swapped && args[0] === "project-profile.jsonc") {',
+      'childProcess.spawnSync = (command, args, options) => {',
+      '  const result = originalSpawnSync(command, args, options);',
+      '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
       '    swapped = true;',
       '    renameSync(profilePath, draftPath);',
-      '    symlinkSync(outsidePath, profilePath);',
+      '    renameSync(outsidePath, profilePath);',
       '  }',
-      '  return originalLstat(...args);',
-      '};',
-      'fs.openSync = (...args) => {',
-      '  if (args[0] === outsidePath) openedExternal = true;',
-      '  return originalOpen(...args);',
+      '  return result;',
       '};',
       'syncBuiltinESMExports();',
       'try {',
       '  const { runProjectFinishAttestationProducer } = await import(modulePath);',
-      '  const result = runProjectFinishAttestationProducer(projectDir, context, "0.7.0");',
-      '  if (!swapped || openedExternal || result.kind !== "blocked" || result.code !== "project-finish-producer-profile") process.exit(1);',
+      '  const original = process.cwd(); process.chdir(projectDir);',
+      '  let result;',
+      '  try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
+      '  if (!swapped || result.kind !== "blocked") process.exit(1);',
       '  if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
       '} finally {',
-      '  fs.lstatSync = originalLstat;',
-      '  fs.openSync = originalOpen;',
+      '  childProcess.spawnSync = originalSpawnSync;',
       '  syncBuiltinESMExports();',
-      '  if (swapped) {',
-      '    unlinkSync(profilePath);',
-      '    renameSync(draftPath, profilePath);',
-      '  }',
       '}',
     ].join("\n"),
   ])
   requireSuccess("installed project finish producer replacement probe", replacementProbe)
-  const sourceReplacementProbe = runNode(consumerDirectory, [
+  const sourceReplacementProbe = runNode(fixtureRoot, [
     "--input-type=module",
     "-e",
     [
-      'import { execFileSync } from "node:child_process";',
-      'import fs, { mkdirSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";',
+      'import childProcess, { execFileSync } from "node:child_process";',
+      'import { mkdirSync, renameSync, writeFileSync } from "node:fs";',
       'import { syncBuiltinESMExports } from "node:module";',
       'import { join, resolve } from "node:path";',
       `const modulePath = ${JSON.stringify(modulePath)};`,
-      'const projectDir = "./project-finish-producer-source-replacement";',
-      'const sourceDirectory = resolve(join(projectDir, "src", "main", "java"));',
-      'const draftDirectory = resolve(join(projectDir, "src", "main", "java.draft"));',
+      'const projectDir = resolve("./project-finish-producer-source-replacement");',
+      'const sourceDirectory = join(projectDir, "src", "main", "java");',
+      'const draftDirectory = join(projectDir, "src", "main", "java.draft");',
       'const outsideDirectory = resolve("./project-finish-producer-outside-source");',
       'const outsideSource = join(outsideDirectory, "App.java");',
       'mkdirSync(outsideDirectory);',
       'writeFileSync(outsideSource, "class App { String token = \\\"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\\\"; }\\n");',
-      'const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
-      'const context = {',
-      '  callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
-      '  callerWorkflowSha: head,',
-      '  issuedAt: "2026-07-22T01:00:00.000Z",',
-      '  repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" },',
-      '  reusableWorkflowSha: "b".repeat(40),',
-      '  runAttempt: 1,',
-      '  runId: "44",',
-      '  sourceHead: head,',
-      '};',
-      'const originalLstat = fs.lstatSync;',
-      'const originalOpen = fs.openSync;',
-      'let openedExternal = false;',
+      'const originalSpawnSync = childProcess.spawnSync;',
       'let swapped = false;',
-      'fs.lstatSync = (...args) => {',
-      '  if (!swapped && args[0] === "App.java") {',
+      'childProcess.spawnSync = (command, args, options) => {',
+      '  const result = originalSpawnSync(command, args, options);',
+      '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
       '    swapped = true;',
       '    renameSync(sourceDirectory, draftDirectory);',
-      '    symlinkSync(outsideDirectory, sourceDirectory);',
+      '    renameSync(outsideDirectory, sourceDirectory);',
       '  }',
-      '  return originalLstat(...args);',
-      '};',
-      'fs.openSync = (...args) => {',
-      '  if (args[0] === outsideSource) openedExternal = true;',
-      '  return originalOpen(...args);',
+      '  return result;',
       '};',
       'syncBuiltinESMExports();',
       'try {',
       '  const { runProjectFinishAttestationProducer } = await import(modulePath);',
-      '  const result = runProjectFinishAttestationProducer(projectDir, context, "0.7.0");',
-      '  if (!swapped || openedExternal || result.kind !== "blocked" || result.code !== "source-identity-unavailable") process.exit(1);',
+      '  const original = process.cwd(); process.chdir(projectDir);',
+      '  let result;',
+      '  try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
+      '  if (!swapped || result.kind !== "blocked") process.exit(1);',
       '  if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
       '} finally {',
-      '  fs.lstatSync = originalLstat;',
-      '  fs.openSync = originalOpen;',
+      '  childProcess.spawnSync = originalSpawnSync;',
       '  syncBuiltinESMExports();',
-      '  if (swapped) {',
-      '    unlinkSync(sourceDirectory);',
-      '    renameSync(draftDirectory, sourceDirectory);',
-      '  }',
       '}',
     ].join("\n"),
   ])
@@ -947,23 +929,18 @@ function assertEvidenceReadSourceParentRaceBlocks(projectDir, phPath, label) {
   mkdirSync(outside)
   writeFileSync(join(outside, "App.java"), "class ExternalApp {}\n")
   writeFileSync(hookPath, [
-    'const fs = require("node:fs")',
+    'const childProcess = require("node:child_process")',
     'const { syncBuiltinESMExports } = require("node:module")',
-    'const originalLstat = fs.lstatSync',
-    'const originalOpen = fs.openSync',
+    'const originalSpawnSync = childProcess.spawnSync',
     'let swapped = false',
-    'fs.lstatSync = (path, ...rest) => {',
-    '  const result = originalLstat(path, ...rest)',
-    '  if (!swapped && path === "App.java") {',
+    'childProcess.spawnSync = (command, args, options) => {',
+    '  const result = originalSpawnSync(command, args, options)',
+    '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
     '    swapped = true',
-    '    fs.renameSync(process.env.PH_SOURCE_PARENT, process.env.PH_SOURCE_PRESERVED)',
-    '    fs.symlinkSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PARENT)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_PARENT, process.env.PH_SOURCE_PRESERVED)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PARENT)',
     '  }',
     '  return result',
-    '}',
-    'fs.openSync = (path, ...rest) => {',
-    '  if (swapped && typeof path === "string" && path.includes("outside-source")) process.stderr.write("OPENED_EXTERNAL=1\\n")',
-    '  return originalOpen(path, ...rest)',
     '}',
     'syncBuiltinESMExports()',
     '',
@@ -974,7 +951,7 @@ function assertEvidenceReadSourceParentRaceBlocks(projectDir, phPath, label) {
     PH_SOURCE_PRESERVED: preserved,
   })
   requireEvidenceReadBlock(`${label} evidence read source parent race`, result, outside)
-  if (!lstatSync(sourceParent).isSymbolicLink() || `${result.stdout}${result.stderr}`.includes("OPENED_EXTERNAL=1")) {
+  if (!existsSync(preserved) || !lstatSync(sourceParent).isDirectory() || !readFileSync(join(sourceParent, "App.java"), "utf8").includes("ExternalApp")) {
     throw new Error(`${label} evidence read source parent race opened external bytes`)
   }
 }
@@ -1005,23 +982,18 @@ function assertEvidenceReadSourceLeafRaceBlocks(projectDir, phPath, label) {
   const hookPath = join(projectDir, "evidence-read-source-leaf-race-hook.cjs")
   writeFileSync(outside, "class ExternalApp {}\n")
   writeFileSync(hookPath, [
-    'const fs = require("node:fs")',
+    'const childProcess = require("node:child_process")',
     'const { syncBuiltinESMExports } = require("node:module")',
-    'const originalLstat = fs.lstatSync',
-    'const originalOpen = fs.openSync',
+    'const originalSpawnSync = childProcess.spawnSync',
     'let swapped = false',
-    'fs.lstatSync = (path, ...rest) => {',
-    '  const result = originalLstat(path, ...rest)',
-    '  if (!swapped && path === "App.java") {',
+    'childProcess.spawnSync = (command, args, options) => {',
+    '  const result = originalSpawnSync(command, args, options)',
+    '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
     '    swapped = true',
-    '    fs.renameSync(process.env.PH_SOURCE_FILE, process.env.PH_SOURCE_PRESERVED)',
-    '    fs.symlinkSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_FILE)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_FILE, process.env.PH_SOURCE_PRESERVED)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_FILE)',
     '  }',
     '  return result',
-    '}',
-    'fs.openSync = (path, ...rest) => {',
-    '  if (swapped && typeof path === "string" && path.includes("outside-source")) process.stderr.write("OPENED_EXTERNAL=1\\n")',
-    '  return originalOpen(path, ...rest)',
     '}',
     'syncBuiltinESMExports()',
     '',
@@ -1032,7 +1004,7 @@ function assertEvidenceReadSourceLeafRaceBlocks(projectDir, phPath, label) {
     PH_SOURCE_PRESERVED: preserved,
   })
   requireEvidenceReadBlock(`${label} evidence read source leaf race`, result, outside)
-  if (!lstatSync(source).isSymbolicLink() || `${result.stdout}${result.stderr}`.includes("OPENED_EXTERNAL=1")) {
+  if (!existsSync(preserved) || !lstatSync(source).isFile() || !readFileSync(source, "utf8").includes("ExternalApp")) {
     throw new Error(`${label} evidence read source leaf race opened external bytes`)
   }
 }
@@ -1047,23 +1019,18 @@ function assertEvidenceReadProjectRootRaceBlocks(projectDir, phPath, label) {
   mkdirSync(join(outside, "src", "main", "java"), { recursive: true })
   writeFileSync(join(outside, "src", "main", "java", "App.java"), "class ExternalApp {}\n")
   writeFileSync(hookPath, [
-    'const fs = require("node:fs")',
+    'const childProcess = require("node:child_process")',
     'const { syncBuiltinESMExports } = require("node:module")',
-    'const originalLstat = fs.lstatSync',
-    'const originalOpen = fs.openSync',
+    'const originalSpawnSync = childProcess.spawnSync',
     'let swapped = false',
-    'fs.lstatSync = (path, ...rest) => {',
-    '  const result = originalLstat(path, ...rest)',
-    '  if (!swapped && path === "App.java") {',
+    'childProcess.spawnSync = (command, args, options) => {',
+    '  const result = originalSpawnSync(command, args, options)',
+    '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
     '    swapped = true',
-    '    fs.renameSync(process.env.PH_SOURCE_PROJECT, process.env.PH_SOURCE_PRESERVED)',
-    '    fs.symlinkSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PROJECT)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_PROJECT, process.env.PH_SOURCE_PRESERVED)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PROJECT)',
     '  }',
     '  return result',
-    '}',
-    'fs.openSync = (path, ...rest) => {',
-    '  if (swapped && typeof path === "string" && path.includes("outside")) process.stderr.write("OPENED_EXTERNAL=1\\n")',
-    '  return originalOpen(path, ...rest)',
     '}',
     'syncBuiltinESMExports()',
     '',
@@ -1074,7 +1041,7 @@ function assertEvidenceReadProjectRootRaceBlocks(projectDir, phPath, label) {
     PH_SOURCE_PROJECT: projectDir,
   })
   requireEvidenceReadBlock(`${label} evidence read root race`, result, outside)
-  if (!lstatSync(projectDir).isSymbolicLink() || `${result.stdout}${result.stderr}`.includes("OPENED_EXTERNAL=1")) {
+  if (!existsSync(preserved) || !lstatSync(projectDir).isDirectory() || !readFileSync(join(projectDir, "src", "main", "java", "App.java"), "utf8").includes("ExternalApp")) {
     throw new Error(`${label} evidence read root race opened external bytes`)
   }
 }
