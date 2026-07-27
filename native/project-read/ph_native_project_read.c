@@ -99,6 +99,15 @@ typedef struct {
 } ph_audit;
 
 typedef struct {
+  dev_t parent_dev;
+  int enabled;
+  int parent_fd;
+  ino_t parent_ino;
+  int root_fd;
+  const char *root_name;
+} ph_root_context;
+
+typedef struct {
   dev_t dev;
   ino_t ino;
   unsigned char kind;
@@ -330,9 +339,99 @@ static int open_root(
   const char *relative,
   struct stat *stat,
   ph_audit *audit,
-  const ph_expectations *expectations
+  const ph_expectations *expectations,
+  const ph_root_context *context
 ) {
   if (!valid_relative_path(relative, 1)) return -1;
+  if (context != NULL && context->enabled) {
+    if (context->root_fd != 3 || context->parent_fd != 4
+      || !valid_segment(context->root_name, strlen(context->root_name))) return -1;
+    int root = fcntl(context->root_fd, F_DUPFD_CLOEXEC, 5);
+    int parent = fcntl(context->parent_fd, F_DUPFD_CLOEXEC, 5);
+    if (root < 0 || parent < 0) {
+      if (root >= 0) close(root);
+      if (parent >= 0) close(parent);
+      return -1;
+    }
+    struct stat root_stat;
+    struct stat parent_stat;
+    struct stat named;
+    int valid = fstat(root, &root_stat) == 0
+      && fstat(parent, &parent_stat) == 0
+      && S_ISDIR(root_stat.st_mode)
+      && S_ISDIR(parent_stat.st_mode)
+      && parent_stat.st_dev == context->parent_dev
+      && parent_stat.st_ino == context->parent_ino
+      && fstatat(parent, context->root_name, &named, AT_SYMLINK_NOFOLLOW) == 0
+      && S_ISDIR(named.st_mode)
+      && same_location(&root_stat, &named)
+      && (strcmp(relative, ".") != 0 || expected_identity_matches(expectations, ".", &named))
+      && audit_descriptor(audit, root);
+    close(parent);
+    if (!valid) {
+      close(root);
+      return -1;
+    }
+    if (strcmp(relative, ".") == 0) {
+      if (!expected_identity_matches(expectations, ".", &root_stat)) {
+        close(root);
+        return -1;
+      }
+      *stat = root_stat;
+      return root;
+    }
+    int current = root;
+    struct stat current_stat = root_stat;
+    const char *start = relative;
+    char path[1024] = {0};
+    size_t path_length = 0;
+    for (const char *cursor = relative;; cursor += 1) {
+      if (*cursor != '/' && *cursor != '\0') continue;
+      size_t length = (size_t)(cursor - start);
+      char name[256];
+      if (!valid_segment(start, length)) {
+        close(current);
+        return -1;
+      }
+      memcpy(name, start, length);
+      name[length] = '\0';
+      if (path_length > 0) {
+        if (path_length + 1 >= sizeof(path)) {
+          close(current);
+          return -1;
+        }
+        path[path_length] = '/';
+        path_length += 1;
+      }
+      if (path_length + length >= sizeof(path)) {
+        close(current);
+        return -1;
+      }
+      memcpy(path + path_length, name, length);
+      path_length += length;
+      path[path_length] = '\0';
+      int next = -1;
+      struct stat next_stat;
+      const char *expected_path = *cursor == '\0' ? "." : path;
+      enum ph_status status = open_child_directory(
+        current,
+        name,
+        expected_path,
+        &next,
+        &next_stat,
+        audit,
+        expectations
+      );
+      close(current);
+      if (status != PH_READY) return -1;
+      current = next;
+      current_stat = next_stat;
+      if (*cursor == '\0') break;
+      start = cursor + 1;
+    }
+    *stat = current_stat;
+    return current;
+  }
   if (strcmp(relative, ".") != 0 && expected_identity_for(expectations, ".") == NULL) {
     return -1;
   }
@@ -1004,9 +1103,11 @@ static int parse_root_audit_suffix(
   int minimum_count,
   int *body_count,
   const char **root,
-  ph_audit *audit
+  ph_audit *audit,
+  ph_root_context *context
 ) {
   *audit = (ph_audit){0};
+  *context = (ph_root_context){0};
   *body_count = argc;
   *root = ".";
   if (argc >= minimum_count + 3 && strcmp(argv[argc - 3], "--audit") == 0) {
@@ -1021,6 +1122,25 @@ static int parse_root_audit_suffix(
   if (*body_count >= minimum_count + 2 && strcmp(argv[*body_count - 2], "--root") == 0) {
     *root = argv[*body_count - 1];
     *body_count -= 2;
+  }
+  if (*body_count >= minimum_count + 6 && strcmp(argv[*body_count - 6], "--root-fds") == 0) {
+    uint64_t parent_dev;
+    uint64_t parent_ino;
+    uint64_t parent_fd;
+    uint64_t root_fd;
+    const char *name = argv[*body_count - 3];
+    if (!parse_u64(argv[*body_count - 5], &root_fd)
+      || !parse_u64(argv[*body_count - 4], &parent_fd)
+      || !parse_u64(argv[*body_count - 2], &parent_dev)
+      || !parse_u64(argv[*body_count - 1], &parent_ino)
+      || root_fd != 3 || parent_fd != 4 || !valid_segment(name, strlen(name))) return 0;
+    context->enabled = 1;
+    context->root_fd = (int)root_fd;
+    context->parent_fd = (int)parent_fd;
+    context->root_name = name;
+    context->parent_dev = (dev_t)parent_dev;
+    context->parent_ino = (ino_t)parent_ino;
+    *body_count -= 6;
   }
   if (*body_count < minimum_count || !valid_relative_path(*root, 1)) return 0;
   return 1;
@@ -1638,7 +1758,8 @@ static int run_read(int argc, char **argv) {
   int body_count;
   const char *root_relative;
   ph_audit audit;
-  if (!parse_root_audit_suffix(argc, argv, 4, &body_count, &root_relative, &audit)) return emit_status(PH_INVALID) ? 0 : 1;
+  ph_root_context root_context;
+  if (!parse_root_audit_suffix(argc, argv, 4, &body_count, &root_relative, &audit, &root_context)) return emit_status(PH_INVALID) ? 0 : 1;
   ph_expectations expectations;
   if (!parse_expectation_input(4, body_count, argv, &expectations)) return emit_status(PH_INVALID) ? 0 : 1;
   const ph_audit *audit_result = audit.enabled ? &audit : NULL;
@@ -1650,7 +1771,7 @@ static int run_read(int argc, char **argv) {
     return emit_status(PH_INVALID) ? 0 : 1;
   }
   struct stat root_stat;
-  int root = open_root(root_relative, &root_stat, &audit, &expectations);
+  int root = open_root(root_relative, &root_stat, &audit, &expectations, &root_context);
   if (root < 0) {
     free_expectations(&expectations);
     return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
@@ -1670,7 +1791,8 @@ static int run_directory(int argc, char **argv) {
   int body_count;
   const char *root_relative;
   ph_audit audit;
-  if (!parse_root_audit_suffix(argc, argv, 3, &body_count, &root_relative, &audit)) return emit_status(PH_INVALID) ? 0 : 1;
+  ph_root_context root_context;
+  if (!parse_root_audit_suffix(argc, argv, 3, &body_count, &root_relative, &audit, &root_context)) return emit_status(PH_INVALID) ? 0 : 1;
   ph_expectations expectations;
   if (!parse_expectation_input(3, body_count, argv, &expectations)) return emit_status(PH_INVALID) ? 0 : 1;
   const ph_audit *audit_result = audit.enabled ? &audit : NULL;
@@ -1680,7 +1802,7 @@ static int run_directory(int argc, char **argv) {
     return emit_status(PH_INVALID) ? 0 : 1;
   }
   struct stat root_stat;
-  int root = open_root(root_relative, &root_stat, &audit, &expectations);
+  int root = open_root(root_relative, &root_stat, &audit, &expectations, &root_context);
   if (root < 0) {
     free_expectations(&expectations);
     return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
@@ -1700,7 +1822,8 @@ static int run_tree(int argc, char **argv) {
   int body_count;
   const char *root_relative;
   ph_audit audit;
-  if (!parse_root_audit_suffix(argc, argv, 5, &body_count, &root_relative, &audit) || body_count < 5) return emit_status(PH_INVALID) ? 0 : 1;
+  ph_root_context root_context;
+  if (!parse_root_audit_suffix(argc, argv, 5, &body_count, &root_relative, &audit, &root_context) || body_count < 5) return emit_status(PH_INVALID) ? 0 : 1;
   int expectation_start = 5;
   while (
     expectation_start < body_count
@@ -1738,7 +1861,7 @@ static int run_tree(int argc, char **argv) {
     }
   }
   struct stat root_stat;
-  int root = open_root(root_relative, &root_stat, &audit, tree.expectations);
+  int root = open_root(root_relative, &root_stat, &audit, tree.expectations, &root_context);
   if (root < 0) {
     free_expectations(&expectations);
     return emit_status_with_audit(PH_UNSAFE, tree.audit) ? 0 : 1;
@@ -1756,7 +1879,8 @@ static int run_generated_manifest(int argc, char **argv) {
   int body_count;
   const char *root_relative;
   ph_audit audit;
-  if (!parse_root_audit_suffix(argc, argv, 3, &body_count, &root_relative, &audit) || body_count < 3) {
+  ph_root_context root_context;
+  if (!parse_root_audit_suffix(argc, argv, 3, &body_count, &root_relative, &audit, &root_context) || body_count < 3) {
     return emit_status(PH_INVALID) ? 0 : 1;
   }
   const char *generated_root = argv[2];
@@ -1782,7 +1906,7 @@ static int run_generated_manifest(int argc, char **argv) {
     .status = PH_READY,
   };
   struct stat root_stat;
-  int root = open_root(root_relative, &root_stat, &audit, tree.expectations);
+  int root = open_root(root_relative, &root_stat, &audit, tree.expectations, &root_context);
   if (root < 0) {
     free_expectations(&expectations);
     return emit_status_with_audit(PH_UNSAFE, tree.audit) ? 0 : 1;
@@ -1806,14 +1930,15 @@ static int run_git(int argc, char **argv) {
   int body_count;
   const char *root_relative;
   ph_audit audit;
-  if (!parse_root_audit_suffix(argc, argv, 3, &body_count, &root_relative, &audit)) {
+  ph_root_context root_context;
+  if (!parse_root_audit_suffix(argc, argv, 3, &body_count, &root_relative, &audit, &root_context)) {
     return emit_status(PH_INVALID) ? 0 : 1;
   }
   ph_expectations expectations;
   if (!parse_expectation_input(3, body_count, argv, &expectations)) return emit_status(PH_INVALID) ? 0 : 1;
   const ph_audit *audit_result = audit.enabled ? &audit : NULL;
   struct stat root_stat;
-  int root = open_root(root_relative, &root_stat, &audit, &expectations);
+  int root = open_root(root_relative, &root_stat, &audit, &expectations, &root_context);
   if (root < 0) {
     free_expectations(&expectations);
     return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
@@ -1831,7 +1956,8 @@ static int run_gradle(int argc, char **argv) {
   int body_count;
   const char *root_relative;
   ph_audit audit;
-  if (!parse_root_audit_suffix(argc, argv, 4, &body_count, &root_relative, &audit)) {
+  ph_root_context root_context;
+  if (!parse_root_audit_suffix(argc, argv, 4, &body_count, &root_relative, &audit, &root_context)) {
     return emit_status(PH_INVALID) ? 0 : 1;
   }
   ph_expectations expectations;
@@ -1843,7 +1969,7 @@ static int run_gradle(int argc, char **argv) {
     return emit_status_with_audit(PH_INVALID, audit_result) ? 0 : 1;
   }
   struct stat root_stat;
-  int root = open_root(root_relative, &root_stat, &audit, &expectations);
+  int root = open_root(root_relative, &root_stat, &audit, &expectations, &root_context);
   if (root < 0) {
     free_expectations(&expectations);
     return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;

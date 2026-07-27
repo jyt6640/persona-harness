@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { lstatSync, readFileSync } from "node:fs"
-import { isAbsolute, relative, resolve, sep } from "node:path"
+import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, type BigIntStats } from "node:fs"
+import { basename, isAbsolute, relative, resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
@@ -39,6 +39,10 @@ type NativeArtifact = {
 type NativeManifest = {
   readonly artifacts: readonly NativeArtifact[]
   readonly schemaVersion: "persona-harness-native-project-read.1"
+  readonly source: {
+    readonly path: "native/project-read/ph_native_project_read.c"
+    readonly sha256: string
+  }
 }
 
 export class NativeProjectReadRuntimeError extends Error {
@@ -81,6 +85,12 @@ export type NativeProjectReadExpectedPath = {
   readonly path: string
 }
 
+export type NativeProjectReadRootContext = {
+  readonly parent: NativeProjectReadIdentity
+  readonly root: NativeProjectReadIdentity
+  readonly rootName: string
+}
+
 export type NativeProjectGitCommand = "head" | "index" | "prefix" | "status"
 export type NativeProjectGradleCommand = "build" | "test"
 
@@ -99,17 +109,48 @@ export function inspectNativeProjectReadRuntime(): {
   }
 }
 
+export function captureNativeProjectReadRootContext(
+  projectDir: string,
+  expectedRoot: NativeProjectReadIdentity,
+): NativeProjectReadRootContext {
+  const current = resolve(process.cwd())
+  if (resolve(projectDir) !== current) throw new NativeProjectReadRuntimeError()
+  const rootName = basename(current)
+  if (!validNativeRelativeRoot(rootName)) throw new NativeProjectReadRuntimeError()
+  let parentDescriptor: number | undefined
+  let rootDescriptor: number | undefined
+  try {
+    rootDescriptor = openSync(".", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+    parentDescriptor = openSync("..", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+    const rootStat = fstatSync(rootDescriptor, { bigint: true })
+    const parentStat = fstatSync(parentDescriptor, { bigint: true })
+    const root = nativeIdentity(rootStat)
+    const parent = nativeIdentity(parentStat)
+    if (!rootStat.isDirectory() || !parentStat.isDirectory() || !sameNativeLocation(root, expectedRoot)) {
+      throw new NativeProjectReadUnsafeError()
+    }
+    return { parent, root, rootName }
+  } catch (error) {
+    if (error instanceof NativeProjectReadUnsafeError) throw error
+    throw new NativeProjectReadRuntimeError()
+  } finally {
+    if (parentDescriptor !== undefined) closeSync(parentDescriptor)
+    if (rootDescriptor !== undefined) closeSync(rootDescriptor)
+  }
+}
+
 export function readNativeProjectFile(
   relativePath: string,
   maxBytes: number,
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
+  rootContext?: NativeProjectReadRootContext,
 ): Buffer {
   const root = nativeProjectRoot(projectDir, ".", expectations)
   assertReadLimit(maxBytes)
   try {
-    const invocation = nativeInvocation(["read", relativePath, String(maxBytes)], root, expectations)
-    return parseNativeReadResponse(runNative(invocation.args, maxBytes + 128, {}, invocation.input)).bytes
+    const invocation = nativeInvocation(["read", relativePath, String(maxBytes)], root, expectations, rootContext)
+    return parseNativeReadResponse(runNative(invocation.args, maxBytes + 128, {}, invocation.input, rootContext)).bytes
   } catch (error) {
     throw nativeError(error)
   }
@@ -120,8 +161,9 @@ export function readNativeProjectFileWithIdentity(
   maxBytes: number,
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
+  rootContext?: NativeProjectReadRootContext,
 ): { readonly bytes: Buffer; readonly identity: NativeProjectReadIdentity } {
-  const result = readNativeProjectFileWithIdentityResult(relativePath, maxBytes, projectDir, expectations)
+  const result = readNativeProjectFileWithIdentityResult(relativePath, maxBytes, projectDir, expectations, rootContext)
   if (result.kind === "absent") throw new NativeProjectReadRuntimeError()
   return result.value
 }
@@ -131,14 +173,15 @@ export function readNativeProjectFileWithIdentityResult(
   maxBytes: number,
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
+  rootContext?: NativeProjectReadRootContext,
 ): NativeProjectReadFileResult {
   const root = nativeProjectRoot(projectDir, ".", expectations)
   assertReadLimit(maxBytes)
   try {
-    const invocation = nativeInvocation(["read", relativePath, String(maxBytes)], root, expectations)
+    const invocation = nativeInvocation(["read", relativePath, String(maxBytes)], root, expectations, rootContext)
     return {
       kind: "ready",
-      value: parseNativeReadResponse(runNative(invocation.args, maxBytes + 128, {}, invocation.input)),
+      value: parseNativeReadResponse(runNative(invocation.args, maxBytes + 128, {}, invocation.input, rootContext)),
     }
   } catch (error) {
     if (error instanceof NativeProjectReadProtocolError && error.code === "absent") return { kind: "absent" }
@@ -150,11 +193,12 @@ export function readNativeProjectDirectoryIdentity(
   relativePath: string,
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
+  rootContext?: NativeProjectReadRootContext,
 ): NativeProjectReadIdentity | undefined {
   const root = nativeProjectRoot(projectDir, ".", expectations)
   try {
-    const invocation = nativeInvocation(["directory", relativePath], root, expectations)
-    return parseNativeDirectoryResponse(runNative(invocation.args, 128, {}, invocation.input))
+    const invocation = nativeInvocation(["directory", relativePath], root, expectations, rootContext)
+    return parseNativeDirectoryResponse(runNative(invocation.args, 128, {}, invocation.input, rootContext))
   } catch (error) {
     if (error instanceof NativeProjectReadProtocolError && error.code === "absent") return undefined
     throw nativeError(error)
@@ -170,8 +214,9 @@ export function readNativeProjectTree(
   },
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
+  rootContext?: NativeProjectReadRootContext,
 ): readonly NativeProjectReadTreeEntry[] {
-  return readNativeProjectTreeAt(".", options, projectDir, expectations)
+  return readNativeProjectTreeAt(".", options, projectDir, expectations, rootContext)
 }
 
 export function readNativeProjectTreeAt(
@@ -184,6 +229,7 @@ export function readNativeProjectTreeAt(
   },
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
+  rootContext?: NativeProjectReadRootContext,
 ): readonly NativeProjectReadTreeEntry[] {
   const root = nativeProjectRoot(projectDir, relativeRoot, expectations)
   assertReadLimit(options.maxFileBytes)
@@ -198,8 +244,8 @@ export function readNativeProjectTreeAt(
       String(options.maxFileBytes),
       String(options.maxTotalBytes),
       ...options.excludedRoots,
-    ], root, expectations)
-    return parseNativeTreeResponse(runNative(invocation.args, outputLimit, {}, invocation.input))
+    ], root, expectations, rootContext)
+    return parseNativeTreeResponse(runNative(invocation.args, outputLimit, {}, invocation.input, rootContext))
   } catch (error) {
     throw nativeError(error)
   }
@@ -209,6 +255,7 @@ export function captureNativeGeneratedProjectTreeManifest(
   relativeRoot: "build/test-results/test" | "target/surefire-reports",
   projectDir: string,
   expectations: readonly NativeProjectReadExpectedPath[],
+  rootContext?: NativeProjectReadRootContext,
 ): readonly NativeProjectReadTreeEntry[] | undefined {
   const root = nativeProjectRoot(projectDir, ".", expectations)
   if (
@@ -219,8 +266,8 @@ export function captureNativeGeneratedProjectTreeManifest(
     throw new NativeProjectReadRuntimeError()
   }
   try {
-    const invocation = nativeInvocation(["generated-manifest", relativeRoot], root, expectations)
-    return parseNativeTreeResponse(runNative(invocation.args, 2 * 1024 * 1024, {}, invocation.input))
+    const invocation = nativeInvocation(["generated-manifest", relativeRoot], root, expectations, rootContext)
+    return parseNativeTreeResponse(runNative(invocation.args, 2 * 1024 * 1024, {}, invocation.input, rootContext))
   } catch (error) {
     if (error instanceof NativeProjectReadProtocolError && error.code === "absent") return undefined
     throw nativeError(error)
@@ -231,11 +278,12 @@ export function runNativeProjectGit(
   command: NativeProjectGitCommand,
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
+  rootContext?: NativeProjectReadRootContext,
 ): Buffer {
   const root = nativeProjectRoot(projectDir, ".", expectations)
   try {
-    const invocation = nativeInvocation(["git", command], root, expectations)
-    return parseNativeTextResponse(runNative(invocation.args, 4 * 1024 * 1024 + 128, {}, invocation.input))
+    const invocation = nativeInvocation(["git", command], root, expectations, rootContext)
+    return parseNativeTextResponse(runNative(invocation.args, 4 * 1024 * 1024 + 128, {}, invocation.input, rootContext))
   } catch (error) {
     throw nativeError(error)
   }
@@ -246,18 +294,20 @@ export function runNativeProjectGradle(
   timeoutMs: number,
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
+  rootContext?: NativeProjectReadRootContext,
 ): NativeProjectReadCommandResult {
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > 120_000) {
     throw new NativeProjectReadRuntimeError()
   }
   const root = nativeProjectRoot(projectDir, ".", expectations)
   try {
-    const invocation = nativeInvocation(["gradle", command, String(timeoutMs)], root, expectations)
+    const invocation = nativeInvocation(["gradle", command, String(timeoutMs)], root, expectations, rootContext)
     return parseNativeCommandResponse(runNative(
       invocation.args,
       2 * 1024 * 1024 + 256,
       nativeGradleEnvironment(),
       invocation.input,
+      rootContext,
     ))
   } catch (error) {
     throw nativeError(error)
@@ -307,33 +357,90 @@ function runNative(
   maxBuffer: number,
   environment: Readonly<Record<string, string>> = {},
   input?: Buffer,
+  rootContext?: NativeProjectReadRootContext,
 ): Buffer {
   const artifact = nativeArtifact()
-  const result = spawnSync(artifact.path, args, {
-    encoding: "buffer",
-    env: environment,
-    ...(input === undefined ? {} : { input }),
-    maxBuffer,
-    shell: false,
-    stdio: input === undefined ? ["ignore", "pipe", "ignore"] : ["pipe", "pipe", "ignore"],
-    timeout: NATIVE_RUNTIME_TIMEOUT_MS,
-  })
-  if (result.error !== undefined || result.status !== 0 || !Buffer.isBuffer(result.stdout)) {
-    throw new NativeProjectReadRuntimeError()
+  let parentDescriptor: number | undefined
+  let rootDescriptor: number | undefined
+  try {
+    const stdio: Array<"ignore" | "pipe" | number> = input === undefined
+      ? ["ignore", "pipe", "ignore"]
+      : ["pipe", "pipe", "ignore"]
+    if (rootContext !== undefined) {
+      rootDescriptor = openSync(".", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+      parentDescriptor = openSync("..", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+      const rootStat = fstatSync(rootDescriptor, { bigint: true })
+      const parentStat = fstatSync(parentDescriptor, { bigint: true })
+      const root = nativeIdentity(rootStat)
+      const parent = nativeIdentity(parentStat)
+      if (
+        !rootStat.isDirectory()
+        || !parentStat.isDirectory()
+        || !sameNativeLocation(root, rootContext.root)
+        || !sameNativeLocation(parent, rootContext.parent)
+      ) {
+        throw new NativeProjectReadUnsafeError()
+      }
+      stdio.push(rootDescriptor, parentDescriptor)
+    }
+    const result = spawnSync(artifact.path, args, {
+      encoding: "buffer",
+      env: environment,
+      ...(input === undefined ? {} : { input }),
+      maxBuffer,
+      shell: false,
+      stdio,
+      timeout: NATIVE_RUNTIME_TIMEOUT_MS,
+    })
+    if (result.error !== undefined || result.status !== 0 || !Buffer.isBuffer(result.stdout)) {
+      throw new NativeProjectReadRuntimeError()
+    }
+    return result.stdout
+  } finally {
+    if (parentDescriptor !== undefined) closeSync(parentDescriptor)
+    if (rootDescriptor !== undefined) closeSync(rootDescriptor)
   }
-  return result.stdout
 }
 
 function nativeInvocation(
   body: readonly string[],
   root: string,
   expectations: readonly NativeProjectReadExpectedPath[],
+  rootContext?: NativeProjectReadRootContext,
 ): { readonly args: readonly string[]; readonly input?: Buffer } {
   const input = nativeExpectationInput(expectations)
   return {
-    args: [...body, ...(input === undefined ? [] : ["--expect-stdin"]), "--root", root],
+    args: [
+      ...body,
+      ...(input === undefined ? [] : ["--expect-stdin"]),
+      ...(rootContext === undefined ? [] : [
+        "--root-fds",
+        "3",
+        "4",
+        rootContext.rootName,
+        rootContext.parent.dev,
+        rootContext.parent.ino,
+      ]),
+      "--root",
+      root,
+    ],
     ...(input === undefined ? {} : { input }),
   }
+}
+
+function nativeIdentity(stat: BigIntStats): NativeProjectReadIdentity {
+  return {
+    ctimeNs: stat.ctimeNs.toString(),
+    dev: stat.dev.toString(),
+    ino: stat.ino.toString(),
+    mode: Number(stat.mode & 0o777n).toString(8).padStart(4, "0"),
+    mtimeNs: stat.mtimeNs.toString(),
+    size: stat.size.toString(),
+  }
+}
+
+function sameNativeLocation(left: NativeProjectReadIdentity, right: NativeProjectReadIdentity): boolean {
+  return left.dev === right.dev && left.ino === right.ino && left.mode === right.mode
 }
 
 function nativeExpectationInput(
@@ -403,6 +510,12 @@ function nativeGradleEnvironment(): Readonly<Record<string, string>> {
 
 function nativeArtifact(): NativeArtifact {
   const manifest = parseManifest(readTrustedFile(MANIFEST_PATH))
+  const sourcePath = resolve(PACKAGE_ROOT, manifest.source.path)
+  if (!sourcePath.startsWith(PACKAGE_ROOT + sep)) throw new NativeProjectReadRuntimeError()
+  const source = readTrustedFile(sourcePath)
+  if ("sha256:" + createHash("sha256").update(source).digest("hex") !== manifest.source.sha256) {
+    throw new NativeProjectReadRuntimeError()
+  }
   const artifact = manifest.artifacts.find((candidate) => candidate.platform === process.platform && candidate.architecture === process.arch)
   if (artifact === undefined) throw new NativeProjectReadRuntimeError()
   const artifactPath = resolve(PACKAGE_ROOT, artifact.path)
@@ -431,6 +544,8 @@ function parseManifest(bytes: Buffer): NativeManifest {
     if (!isRecord(parsed) || parsed["schemaVersion"] !== "persona-harness-native-project-read.1" || !Array.isArray(parsed["artifacts"])) {
       throw new NativeProjectReadRuntimeError()
     }
+    const source = parseNativeSource(parsed["source"])
+    if (source === undefined) throw new NativeProjectReadRuntimeError()
     const artifacts: NativeArtifact[] = []
     for (const candidate of parsed["artifacts"]) {
       const artifact = parseArtifact(candidate)
@@ -439,11 +554,25 @@ function parseManifest(bytes: Buffer): NativeManifest {
     }
     const labels = new Set(artifacts.map((artifact) => artifact.platform + "-" + artifact.architecture))
     if (artifacts.length !== 4 || labels.size !== artifacts.length) throw new NativeProjectReadRuntimeError()
-    return { artifacts, schemaVersion: "persona-harness-native-project-read.1" }
+    return { artifacts, schemaVersion: "persona-harness-native-project-read.1", source }
   } catch (error) {
     if (error instanceof NativeProjectReadRuntimeError) throw error
     throw new NativeProjectReadRuntimeError()
   }
+}
+
+function parseNativeSource(value: unknown): NativeManifest["source"] | undefined {
+  if (!isRecord(value)) return undefined
+  const path = value["path"]
+  const sha256 = value["sha256"]
+  if (
+    path !== "native/project-read/ph_native_project_read.c"
+    || typeof sha256 !== "string"
+    || !/^sha256:[a-f0-9]{64}$/u.test(sha256)
+  ) {
+    return undefined
+  }
+  return { path, sha256 }
 }
 
 function parseArtifact(value: unknown): NativeArtifact | undefined {

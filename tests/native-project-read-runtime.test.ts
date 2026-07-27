@@ -1,9 +1,12 @@
 import { spawnSync } from "node:child_process"
 import {
+  closeSync,
   chmodSync,
+  constants,
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readFileSync,
   realpathSync,
   renameSync,
@@ -14,7 +17,7 @@ import {
   type BigIntStats,
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { join, resolve } from "node:path"
+import { basename, join, resolve } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
@@ -262,6 +265,72 @@ describe.sequential("native project read runtime", () => {
     } finally {
       boundary.close()
       rmSync(project, { force: true, recursive: true })
+    }
+  })
+
+  it("rejects a captured project-root replacement before opening its external descriptor", () => {
+    const runner = mkdtempSync(join(tmpdir(), "persona-native-root-context-"))
+    const project = join(runner, "project")
+    const preserved = join(runner, "project-preserved")
+    const outside = join(runner, "outside")
+    const source = join(project, "src", "main", "java", "App.java")
+    mkdirSync(join(project, "src", "main", "java"), { recursive: true })
+    mkdirSync(join(outside, "src", "main", "java"), { recursive: true })
+    writeFileSync(source, "class App {}\n")
+    writeFileSync(join(outside, "src", "main", "java", "App.java"), "class External {}\n")
+    const expectations = expectedManifest(project, ["src", "src/main", "src/main/java", "src/main/java/App.java"])
+    const outsideIdentity = lstatSync(outside, { bigint: true })
+    const parentIdentity = lstatSync(runner, { bigint: true })
+    let boundary: ReturnType<typeof reserveProjectReadBoundary> | undefined
+    let rootDescriptor: number | undefined
+    let parentDescriptor: number | undefined
+
+    try {
+      boundary = withCurrentDirectory(project, () => reserveProjectReadBoundary("."))
+      rootDescriptor = openSync(project, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+      parentDescriptor = openSync(runner, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+      renameSync(project, preserved)
+      renameSync(outside, project)
+
+      const result = spawnSync(
+        nativeExecutable(),
+        [
+          "read",
+          "src/main/java/App.java",
+          "4096",
+          "--expect-stdin",
+          "--root-fds",
+          "3",
+          "4",
+          basename(project),
+          parentIdentity.dev.toString(),
+          parentIdentity.ino.toString(),
+          "--root",
+          ".",
+          "--audit",
+          outsideIdentity.dev.toString(),
+          outsideIdentity.ino.toString(),
+        ],
+        {
+          cwd: preserved,
+          encoding: "buffer",
+          env: {},
+          input: manifestInput(expectations),
+          shell: false,
+          stdio: ["pipe", "pipe", "ignore", rootDescriptor, parentDescriptor],
+        },
+      )
+
+      expect(result.status).toBe(0)
+      expect(result.stdout).toEqual(Buffer.from([2, 0]))
+      expect(() => withCurrentDirectory(preserved, () => boundary?.readProjectFile("src/main/java/App.java"))).toThrow(
+        "source-read-unsafe",
+      )
+    } finally {
+      boundary?.close()
+      if (parentDescriptor !== undefined) closeSync(parentDescriptor)
+      if (rootDescriptor !== undefined) closeSync(rootDescriptor)
+      rmSync(runner, { force: true, recursive: true })
     }
   })
 

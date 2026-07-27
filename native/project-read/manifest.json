@@ -2,32 +2,32 @@
   "schemaVersion": "persona-harness-native-project-read.1",
   "source": {
     "path": "native/project-read/ph_native_project_read.c",
-    "sha256": "sha256:0452aacadad842f7883f304b13bb73b15f94c74f7eaf0dd955dd52100c38e42f"
+    "sha256": "sha256:152e677faacf1d2907eeb6c01a911c40f3469f82d230aa1397e54340ebe3626d"
   },
   "artifacts": [
     {
       "platform": "darwin",
       "architecture": "arm64",
       "path": "native/project-read/bin/darwin-arm64/ph-native-project-read",
-      "sha256": "sha256:01e8f01d7664b353be2ff7db8103eb0f971cf4b02355d3661d00b8f169db4c8a"
+      "sha256": "sha256:2d32cf055dd3d1ed73600a969092a4a2e04af5eb03c525688e2c98fa50761b3e"
     },
     {
       "platform": "darwin",
       "architecture": "x64",
       "path": "native/project-read/bin/darwin-x64/ph-native-project-read",
-      "sha256": "sha256:182a18839115e8a0fbf28cf6f0fbe4063383ec4ede5e1491b4c6d99dcffef08c"
+      "sha256": "sha256:d85cd39973a20141e4f4553cdfad629cea1825b151eae2f9ec24d8ef67c8b7b2"
     },
     {
       "platform": "linux",
       "architecture": "x64",
       "path": "native/project-read/bin/linux-x64/ph-native-project-read",
-      "sha256": "sha256:8b53236dde17b836a62a805eb8ae33db5ea2295612353911d3658b84018d1f00"
+      "sha256": "sha256:a22e755a0f931627741a780db6520d6513b0dcade83bf32d09e30d66047e2b67"
     },
     {
       "platform": "linux",
       "architecture": "arm64",
       "path": "native/project-read/bin/linux-arm64/ph-native-project-read",
-      "sha256": "sha256:6aa22151cee123ab3b2ef924c1f1b129b2b1cb47898de798781f9d9c6a2966da"
+      "sha256": "sha256:faac41062082c13c543dbc315c62fad134ac7c1a22133ba211acf343f6ac77ea"
     }
   ]
 }
