@@ -575,15 +575,28 @@ export function loadHarnessConfigResult(
     ["rulesDir", config.rulesDir],
     ["evidenceDir", config.evidenceDir],
   ].flatMap(([name, configuredPath]) => {
-    const resolution = resolveConfiguredPathResult(projectDir, configuredPath)
-    return resolution.ok
-      ? []
-      : [
-          configDiagnostic(
-            "unsafe_config_path",
-            `${name} is outside the project root or traverses a symlink; read-only recovery is required.`,
-          ),
-        ]
+    try {
+      if (bootstrapWriteBoundary !== undefined) {
+        bootstrapWriteBoundary.assertSafeProjectDirectoryPath(configuredPath)
+        return []
+      }
+      const resolution = resolveConfiguredPathResult(projectDir, configuredPath)
+      return resolution.ok
+        ? []
+        : [
+            configDiagnostic(
+              "unsafe_config_path",
+              `${name} is outside the project root or traverses a symlink; read-only recovery is required.`,
+            ),
+          ]
+    } catch {
+      return [
+        configDiagnostic(
+          "unsafe_config_path",
+          `${name} is outside the project root or traverses a symlink; read-only recovery is required.`,
+        ),
+      ]
+    }
   })
   if (pathDiagnostics.length > 0) {
     return { config: FAIL_CLOSED_CONFIG, diagnostics: pathDiagnostics, safe: false }

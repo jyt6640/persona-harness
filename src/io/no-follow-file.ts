@@ -45,11 +45,6 @@ export function captureNoFollowDirectory(path: string): NoFollowDirectoryCapture
   }
 }
 
-export type NoFollowProjectFileCapture =
-  | { readonly kind: "absent" }
-  | { readonly code: "replaced" | "unsafe" | "unreadable"; readonly kind: "blocked" }
-  | { readonly kind: "ready"; readonly value: readonly NoFollowPathIdentity[] }
-
 export function readNoFollowRegularFile(
   path: string,
   maxBytes: number,
@@ -138,31 +133,6 @@ export function readNoFollowProjectFile(
     }
   }
   return file
-}
-
-export function captureNoFollowProjectFile(projectDir: string, relativePath: string): NoFollowProjectFileCapture {
-  const segments = safeRelativeSegments(relativePath)
-  if (segments === undefined) return { code: "unsafe", kind: "blocked" }
-  const rootPath = resolve(projectDir)
-  const identities: NoFollowPathIdentity[] = []
-  let currentPath = rootPath
-  for (const segment of segments) {
-    const directory = segment === segments.at(-1) ? undefined : captureNoFollowDirectory(currentPath)
-    if (directory !== undefined) {
-      if (directory.kind === "absent") return { kind: "absent" }
-      if (directory.kind === "blocked") return directory
-      identities.push(directory.value)
-    }
-    currentPath = join(currentPath, segment)
-  }
-  try {
-    const leaf = lstatSync(currentPath, { bigint: true })
-    if (leaf.isSymbolicLink() || !leaf.isFile()) return { code: "unsafe", kind: "blocked" }
-    identities.push(pathIdentity(leaf))
-    return { kind: "ready", value: identities }
-  } catch (error) {
-    return errno(error) === "ENOENT" ? { kind: "absent" } : { code: "unreadable", kind: "blocked" }
-  }
 }
 
 export function sameNoFollowPathIdentity(

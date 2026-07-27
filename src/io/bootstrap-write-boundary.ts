@@ -154,6 +154,26 @@ export class BootstrapWriteBoundary {
     return this.readProjectFile(relativePath) !== undefined
   }
 
+  assertSafeProjectDirectoryPath(relativePath: string): void {
+    this.#assertActive()
+    const segments = validatedRelativeSegments(relativePath)
+    withReservedProjectDirectory(this.#project, () => {
+      const reservations: DirectoryReservation[] = []
+      try {
+        let parent = this.#project
+        for (const segment of segments) {
+          const reservation = reserveExistingCurrentChildDirectory(parent, segment)
+          if (reservation === undefined) return
+          reservations.push(reservation)
+          parent = reservation
+        }
+        this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+      } finally {
+        leaveCurrentReservations(this.#project, reservations)
+      }
+    })
+  }
+
   listProjectRegularFiles(
     relativeRoots: readonly string[],
     suffix: string,
