@@ -115,6 +115,17 @@ describe("project finish producer input readiness", () => {
     expect(calls).toBe(0)
   })
 
+  it("preserves the public producer root blocker for a symlinked caller root", () => {
+    const projectDir = createProject("absent")
+    const alias = join(projectDir, "..", `${basename(projectDir)}-producer-alias`)
+    symlinkSync(projectDir, alias)
+
+    expect(runProjectFinishAttestationProducer(alias, producerContext(alias), "0.7.0")).toEqual({
+      code: "workspace-root-unavailable",
+      kind: "blocked",
+    })
+  })
+
   it("keeps ordinary cooperative Finish profile-less callers blocked", () => {
     const projectDir = createProject("absent")
 

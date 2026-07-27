@@ -57,26 +57,29 @@ export function runProjectFinishAttestationProducer(
   if (options.prepareContext !== undefined || options.verify !== undefined) {
     return runWithInjectedDependencies(projectDir, context, phVersion, options)
   }
+  let projectReadBoundary: ReturnType<typeof reserveProjectReadBoundary>
   try {
-    const projectReadBoundary = reserveProjectReadBoundary(projectDir)
-    try {
-      const prepared = prepareCooperativeFinishContext(projectDir, projectReadBoundary)
-      if (prepared.kind === "blocked") return blocked(prepared.code)
+    projectReadBoundary = reserveProjectReadBoundary(projectDir)
+  } catch {
+    return blocked("workspace-root-unavailable")
+  }
+  try {
+    const prepared = prepareCooperativeFinishContext(projectDir, projectReadBoundary)
+    if (prepared.kind === "blocked") return blocked(prepared.code)
 
-      const verification = runProjectFinishAttestationGradleVerificationWithinBoundary(
-        projectDir,
-        prepared.value,
-        projectReadBoundary,
-      )
-      return resultFromVerification(context, phVersion, verification)
-    } finally {
-      projectReadBoundary.close()
-    }
+    const verification = runProjectFinishAttestationGradleVerificationWithinBoundary(
+      projectDir,
+      prepared.value,
+      projectReadBoundary,
+    )
+    return resultFromVerification(context, phVersion, verification)
   } catch (error) {
     if (error instanceof ProjectFinishAttestationProducerError) {
       return blocked(error.code)
     }
     return blocked("project-finish-producer-profile")
+  } finally {
+    projectReadBoundary.close()
   }
 }
 
