@@ -422,11 +422,13 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
   const validProject = join(consumerDirectory, "project-finish-producer-valid")
   const hostileProject = join(consumerDirectory, "project-finish-producer-hostile")
   const replacementProject = join(consumerDirectory, "project-finish-producer-replacement")
+  const sourceReplacementProject = join(consumerDirectory, "project-finish-producer-source-replacement")
   const symlinkProject = join(consumerDirectory, "project-finish-producer-symlink")
   const producerBin = join(consumerDirectory, ".persona-harness-producer", "node_modules", ".bin")
   createProjectFinishProducerFixture(validProject, "absent")
   createProjectFinishProducerFixture(hostileProject, "symlink-profile")
   createProjectFinishProducerFixture(replacementProject, "replace-profile")
+  createProjectFinishProducerFixture(sourceReplacementProject, "absent")
   mkdirSync(producerBin, { recursive: true })
   symlinkSync("../outside", join(producerBin, "node"))
   symlinkSync("project-finish-producer-valid", symlinkProject)
@@ -464,14 +466,14 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
     "-e",
     [
       'import { execFileSync } from "node:child_process";',
-      'import fs, { realpathSync, renameSync, symlinkSync, unlinkSync } from "node:fs";',
+      'import fs, { renameSync, symlinkSync, unlinkSync } from "node:fs";',
       'import { syncBuiltinESMExports } from "node:module";',
-      'import { join } from "node:path";',
+      'import { join, resolve } from "node:path";',
       `const modulePath = ${JSON.stringify(modulePath)};`,
       'const projectDir = "./project-finish-producer-replacement";',
-      'const profilePath = realpathSync(join(projectDir, ".persona", "project-profile.jsonc"));',
+      'const profilePath = resolve(join(projectDir, ".persona", "project-profile.jsonc"));',
       'const draftPath = join(projectDir, ".persona", "project-profile.draft.jsonc");',
-      'const outsidePath = join(projectDir, "outside-profile.jsonc");',
+      'const outsidePath = resolve(join(projectDir, "outside-profile.jsonc"));',
       'const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
       'const context = {',
       '  callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
@@ -483,23 +485,30 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
       '  runId: "43",',
       '  sourceHead: head,',
       '};',
+      'const originalLstat = fs.lstatSync;',
       'const originalOpen = fs.openSync;',
+      'let openedExternal = false;',
       'let swapped = false;',
-      'fs.openSync = (...args) => {',
-      '  if (!swapped && args[0] === profilePath) {',
+      'fs.lstatSync = (...args) => {',
+      '  if (!swapped && args[0] === "project-profile.jsonc") {',
       '    swapped = true;',
       '    renameSync(profilePath, draftPath);',
       '    symlinkSync(outsidePath, profilePath);',
       '  }',
+      '  return originalLstat(...args);',
+      '};',
+      'fs.openSync = (...args) => {',
+      '  if (args[0] === outsidePath) openedExternal = true;',
       '  return originalOpen(...args);',
       '};',
       'syncBuiltinESMExports();',
       'try {',
       '  const { runProjectFinishAttestationProducer } = await import(modulePath);',
       '  const result = runProjectFinishAttestationProducer(projectDir, context, "0.7.0");',
-      '  if (!swapped || result.kind !== "blocked" || result.code !== "project-finish-producer-profile") process.exit(1);',
+      '  if (!swapped || openedExternal || result.kind !== "blocked" || result.code !== "project-finish-producer-profile") process.exit(1);',
       '  if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
       '} finally {',
+      '  fs.lstatSync = originalLstat;',
       '  fs.openSync = originalOpen;',
       '  syncBuiltinESMExports();',
       '  if (swapped) {',
@@ -510,7 +519,68 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
     ].join("\n"),
   ])
   requireSuccess("installed project finish producer replacement probe", replacementProbe)
-  for (const projectDir of [validProject, hostileProject, replacementProject, symlinkProject]) {
+  const sourceReplacementProbe = runNode(consumerDirectory, [
+    "--input-type=module",
+    "-e",
+    [
+      'import { execFileSync } from "node:child_process";',
+      'import fs, { mkdirSync, renameSync, resolve, symlinkSync, unlinkSync, writeFileSync } from "node:fs";',
+      'import { syncBuiltinESMExports } from "node:module";',
+      'import { join } from "node:path";',
+      `const modulePath = ${JSON.stringify(modulePath)};`,
+      'const projectDir = "./project-finish-producer-source-replacement";',
+      'const sourceDirectory = resolve(join(projectDir, "src", "main", "java"));',
+      'const draftDirectory = resolve(join(projectDir, "src", "main", "java.draft"));',
+      'const outsideDirectory = resolve("./project-finish-producer-outside-source");',
+      'const outsideSource = join(outsideDirectory, "App.java");',
+      'mkdirSync(outsideDirectory);',
+      'writeFileSync(outsideSource, "class App { String token = \\\"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\\\"; }\\n");',
+      'const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
+      'const context = {',
+      '  callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
+      '  callerWorkflowSha: head,',
+      '  issuedAt: "2026-07-22T01:00:00.000Z",',
+      '  repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" },',
+      '  reusableWorkflowSha: "b".repeat(40),',
+      '  runAttempt: 1,',
+      '  runId: "44",',
+      '  sourceHead: head,',
+      '};',
+      'const originalLstat = fs.lstatSync;',
+      'const originalOpen = fs.openSync;',
+      'let openedExternal = false;',
+      'let swapped = false;',
+      'fs.lstatSync = (...args) => {',
+      '  if (!swapped && args[0] === "App.java") {',
+      '    swapped = true;',
+      '    renameSync(sourceDirectory, draftDirectory);',
+      '    symlinkSync(outsideDirectory, sourceDirectory);',
+      '  }',
+      '  return originalLstat(...args);',
+      '};',
+      'fs.openSync = (...args) => {',
+      '  if (args[0] === outsideSource) openedExternal = true;',
+      '  return originalOpen(...args);',
+      '};',
+      'syncBuiltinESMExports();',
+      'try {',
+      '  const { runProjectFinishAttestationProducer } = await import(modulePath);',
+      '  const result = runProjectFinishAttestationProducer(projectDir, context, "0.7.0");',
+      '  if (!swapped || openedExternal || result.kind !== "blocked" || result.code !== "source-identity-unavailable") process.exit(1);',
+      '  if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
+      '} finally {',
+      '  fs.lstatSync = originalLstat;',
+      '  fs.openSync = originalOpen;',
+      '  syncBuiltinESMExports();',
+      '  if (swapped) {',
+      '    unlinkSync(sourceDirectory);',
+      '    renameSync(draftDirectory, sourceDirectory);',
+      '  }',
+      '}',
+    ].join("\n"),
+  ])
+  requireSuccess("installed project finish producer source replacement probe", sourceReplacementProbe)
+  for (const projectDir of [validProject, hostileProject, replacementProject, sourceReplacementProject, symlinkProject]) {
     if (existsSync(join(projectDir, ".ci", "project-finish-attestation"))) {
       throw new Error("installed project finish producer created an artifact for a local intake probe")
     }
