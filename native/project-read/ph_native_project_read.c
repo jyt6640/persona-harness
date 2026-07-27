@@ -8,13 +8,19 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <poll.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
+
+extern char **environ;
 
 #ifndef O_DIRECTORY
 #define O_DIRECTORY 0
@@ -46,11 +52,36 @@ enum ph_entry_kind {
   PH_FILE = 2,
 };
 
+enum {
+  PH_FIXED_GIT_MAX_OUTPUT = 4 * 1024 * 1024,
+  PH_FIXED_GIT_TIMEOUT_MS = 5000,
+  PH_FIXED_GRADLE_MAX_STREAM_OUTPUT = 1024 * 1024,
+  PH_FIXED_GRADLE_MAX_TOTAL_OUTPUT = 2 * 1024 * 1024,
+};
+
+enum ph_command_outcome {
+  PH_COMMAND_PASSED = 0,
+  PH_COMMAND_FAILED = 1,
+  PH_COMMAND_SIGNAL = 2,
+  PH_COMMAND_TIMEOUT = 3,
+  PH_COMMAND_OUTPUT_LIMIT = 4,
+};
+
 typedef struct {
   unsigned char *bytes;
   size_t capacity;
   size_t length;
 } ph_buffer;
+
+typedef struct {
+  ph_buffer error_output;
+  int killed;
+  enum ph_command_outcome outcome;
+  int signal;
+  int status;
+  ph_buffer standard_output;
+  int timed_out;
+} ph_command_result;
 
 typedef struct {
   unsigned char *bytes;
@@ -68,7 +99,21 @@ typedef struct {
 } ph_audit;
 
 typedef struct {
+  dev_t dev;
+  ino_t ino;
+  unsigned char kind;
+  char *path;
+} ph_expected_identity;
+
+typedef struct {
+  int enabled;
+  ph_expected_identity *values;
+  size_t count;
+} ph_expectations;
+
+typedef struct {
   ph_audit *audit;
+  const ph_expectations *expectations;
   char **exclusions;
   size_t exclusion_count;
   ph_tree_entry *entries;
@@ -176,6 +221,44 @@ static int same_location(const struct stat *left, const struct stat *right) {
     && (left->st_mode & S_IFMT) == (right->st_mode & S_IFMT);
 }
 
+static int expected_kind_matches(unsigned char kind, const struct stat *stat) {
+  return (kind == PH_DIRECTORY && S_ISDIR(stat->st_mode))
+    || (kind == PH_FILE && S_ISREG(stat->st_mode));
+}
+
+static const ph_expected_identity *expected_identity_for(
+  const ph_expectations *expectations,
+  const char *path
+) {
+  if (expectations == NULL || !expectations->enabled) return NULL;
+  for (size_t index = 0; index < expectations->count; index += 1) {
+    if (strcmp(expectations->values[index].path, path) == 0) return &expectations->values[index];
+  }
+  return NULL;
+}
+
+static int expected_identity_matches(
+  const ph_expectations *expectations,
+  const char *path,
+  const struct stat *stat
+) {
+  if (expectations == NULL || !expectations->enabled) return 1;
+  const ph_expected_identity *expected = expected_identity_for(expectations, path);
+  return expected != NULL
+    && expected->dev == stat->st_dev
+    && expected->ino == stat->st_ino
+    && expected_kind_matches(expected->kind, stat);
+}
+
+static void free_expectations(ph_expectations *expectations) {
+  if (expectations == NULL) return;
+  for (size_t index = 0; index < expectations->count; index += 1) {
+    free(expectations->values[index].path);
+  }
+  free(expectations->values);
+  *expectations = (ph_expectations){0};
+}
+
 static int audit_descriptor(ph_audit *audit, int descriptor) {
   if (audit == NULL || !audit->enabled) return 1;
   struct stat stat;
@@ -210,33 +293,29 @@ static int valid_relative_path(const char *path, int allow_root) {
   }
 }
 
-static int open_root(struct stat *stat, ph_audit *audit) {
-  int descriptor = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
-  if (descriptor < 0) return -1;
-  if (fstat(descriptor, stat) != 0 || !S_ISDIR(stat->st_mode) || !audit_descriptor(audit, descriptor)) {
-    close(descriptor);
-    return -1;
-  }
-  return descriptor;
-}
-
 static enum ph_status open_child_directory(
   int parent,
   const char *name,
+  const char *relative_path,
   int *child,
   struct stat *child_stat,
-  ph_audit *audit
+  ph_audit *audit,
+  const ph_expectations *expectations
 ) {
   struct stat before;
   if (fstatat(parent, name, &before, AT_SYMLINK_NOFOLLOW) != 0) return errno_status();
-  if (!S_ISDIR(before.st_mode)) return PH_UNSAFE;
+  if (!S_ISDIR(before.st_mode) || !expected_identity_matches(expectations, relative_path, &before)) {
+    return PH_UNSAFE;
+  }
   int descriptor = openat(parent, name, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
   if (descriptor < 0) return errno_status();
   struct stat opened;
   struct stat after;
   if (fstat(descriptor, &opened) != 0 || !audit_descriptor(audit, descriptor)
     || fstatat(parent, name, &after, AT_SYMLINK_NOFOLLOW) != 0
-    || !S_ISDIR(opened.st_mode) || !same_location(&before, &opened) || !same_location(&opened, &after)) {
+    || !S_ISDIR(opened.st_mode) || !same_location(&before, &opened) || !same_location(&opened, &after)
+    || !expected_identity_matches(expectations, relative_path, &opened)
+    || !expected_identity_matches(expectations, relative_path, &after)) {
     close(descriptor);
     return PH_UNSAFE;
   }
@@ -245,12 +324,70 @@ static enum ph_status open_child_directory(
   return PH_READY;
 }
 
+static int open_root(
+  const char *relative,
+  struct stat *stat,
+  ph_audit *audit,
+  const ph_expectations *expectations
+) {
+  if (!valid_relative_path(relative, 1)) return -1;
+  int current = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+  if (current < 0) return -1;
+  struct stat current_stat;
+  if (fstat(current, &current_stat) != 0 || !S_ISDIR(current_stat.st_mode) || !audit_descriptor(audit, current)) {
+    close(current);
+    return -1;
+  }
+  if (strcmp(relative, ".") == 0) {
+    if (!expected_identity_matches(expectations, ".", &current_stat)) {
+      close(current);
+      return -1;
+    }
+    *stat = current_stat;
+    return current;
+  }
+
+  const char *start = relative;
+  for (const char *cursor = relative;; cursor += 1) {
+    if (*cursor != '/' && *cursor != '\0') continue;
+    size_t length = (size_t)(cursor - start);
+    char name[256];
+    if (!valid_segment(start, length)) {
+      close(current);
+      return -1;
+    }
+    memcpy(name, start, length);
+    name[length] = '\0';
+    int next = -1;
+    struct stat next_stat;
+    const char *expected_path = *cursor == '\0' ? "." : NULL;
+    enum ph_status status = open_child_directory(
+      current,
+      name,
+      expected_path,
+      &next,
+      &next_stat,
+      audit,
+      expected_path == NULL ? NULL : expectations
+    );
+    close(current);
+    if (status != PH_READY) return -1;
+    current = next;
+    current_stat = next_stat;
+    if (*cursor == '\0') break;
+    start = cursor + 1;
+  }
+  *stat = current_stat;
+  return current;
+}
+
 static enum ph_status open_directory_relative(
   int root,
   const char *relative,
   int *directory,
   struct stat *directory_stat,
-  ph_audit *audit
+  ph_audit *audit,
+  const ph_expectations *expectations
 ) {
   if (!valid_relative_path(relative, 1)) return PH_INVALID;
   int current = dup(root);
@@ -261,11 +398,17 @@ static enum ph_status open_directory_relative(
     return PH_IO;
   }
   if (strcmp(relative, ".") == 0) {
+    if (!expected_identity_matches(expectations, ".", &current_stat)) {
+      close(current);
+      return PH_UNSAFE;
+    }
     *directory = current;
     *directory_stat = current_stat;
     return PH_READY;
   }
 
+  char path[1024] = {0};
+  size_t path_length = 0;
   const char *start = relative;
   for (const char *cursor = relative;; cursor += 1) {
     if (*cursor != '/' && *cursor != '\0') continue;
@@ -277,9 +420,24 @@ static enum ph_status open_directory_relative(
     }
     memcpy(name, start, length);
     name[length] = '\0';
+    if (path_length > 0) {
+      if (path_length + 1 >= sizeof(path)) {
+        close(current);
+        return PH_INVALID;
+      }
+      path[path_length] = '/';
+      path_length += 1;
+    }
+    if (path_length + length >= sizeof(path)) {
+      close(current);
+      return PH_INVALID;
+    }
+    memcpy(path + path_length, name, length);
+    path_length += length;
+    path[path_length] = '\0';
     int next = -1;
     struct stat next_stat;
-    enum ph_status status = open_child_directory(current, name, &next, &next_stat, audit);
+    enum ph_status status = open_child_directory(current, name, path, &next, &next_stat, audit, expectations);
     close(current);
     if (status != PH_READY) return status;
     current = next;
@@ -295,15 +453,19 @@ static enum ph_status open_directory_relative(
 static enum ph_status read_regular_from_parent(
   int parent,
   const char *name,
+  const char *relative_path,
   size_t max_bytes,
   unsigned char **bytes,
   size_t *length,
   struct stat *identity,
-  ph_audit *audit
+  ph_audit *audit,
+  const ph_expectations *expectations
 ) {
   struct stat before;
   if (fstatat(parent, name, &before, AT_SYMLINK_NOFOLLOW) != 0) return errno_status();
-  if (!S_ISREG(before.st_mode)) return PH_UNSAFE;
+  if (!S_ISREG(before.st_mode) || !expected_identity_matches(expectations, relative_path, &before)) {
+    return PH_UNSAFE;
+  }
   if (before.st_size < 0 || (uintmax_t)before.st_size > (uintmax_t)max_bytes) return PH_LIMIT;
 
   int descriptor = openat(parent, name, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
@@ -313,6 +475,8 @@ static enum ph_status read_regular_from_parent(
   if (fstat(descriptor, &opened) != 0 || !audit_descriptor(audit, descriptor)
     || fstatat(parent, name, &after_open, AT_SYMLINK_NOFOLLOW) != 0
     || !S_ISREG(opened.st_mode) || !same_location(&before, &opened) || !same_location(&opened, &after_open)
+    || !expected_identity_matches(expectations, relative_path, &opened)
+    || !expected_identity_matches(expectations, relative_path, &after_open)
     || opened.st_size < 0 || (uintmax_t)opened.st_size > (uintmax_t)max_bytes) {
     close(descriptor);
     return PH_UNSAFE;
@@ -339,6 +503,8 @@ static enum ph_status read_regular_from_parent(
   struct stat after_path;
   if (fstat(descriptor, &after_read) != 0 || fstatat(parent, name, &after_path, AT_SYMLINK_NOFOLLOW) != 0
     || !same_location(&opened, &after_read) || !same_location(&after_read, &after_path)
+    || !expected_identity_matches(expectations, relative_path, &after_read)
+    || !expected_identity_matches(expectations, relative_path, &after_path)
     || after_read.st_size != opened.st_size) {
     free(content);
     close(descriptor);
@@ -358,7 +524,8 @@ static enum ph_status read_relative_file(
   unsigned char **bytes,
   size_t *length,
   struct stat *identity,
-  ph_audit *audit
+  ph_audit *audit,
+  const ph_expectations *expectations
 ) {
   if (!valid_relative_path(relative, 0)) return PH_INVALID;
   const char *slash = strrchr(relative, '/');
@@ -378,11 +545,12 @@ static enum ph_status read_relative_file(
     parent_path == NULL ? "." : parent_path,
     &parent,
     &parent_stat,
-    audit
+    audit,
+    expectations
   );
   free(parent_path);
   if (status != PH_READY) return status;
-  status = read_regular_from_parent(parent, leaf, max_bytes, bytes, length, identity, audit);
+  status = read_regular_from_parent(parent, leaf, relative, max_bytes, bytes, length, identity, audit, expectations);
   close(parent);
   return status;
 }
@@ -541,7 +709,7 @@ static void collect_tree(ph_tree *tree, int directory, const char *prefix) {
       free(relative);
       break;
     }
-    if (S_ISLNK(before.st_mode)) {
+    if (S_ISLNK(before.st_mode) || !expected_identity_matches(tree->expectations, relative, &before)) {
       tree->status = PH_UNSAFE;
       free(relative);
       break;
@@ -549,7 +717,15 @@ static void collect_tree(ph_tree *tree, int directory, const char *prefix) {
     if (S_ISDIR(before.st_mode)) {
       int child = -1;
       struct stat child_stat;
-      enum ph_status status = open_child_directory(directory, name, &child, &child_stat, tree->audit);
+      enum ph_status status = open_child_directory(
+        directory,
+        name,
+        relative,
+        &child,
+        &child_stat,
+        tree->audit,
+        tree->expectations
+      );
       if (status != PH_READY) {
         tree->status = status;
         free(relative);
@@ -575,11 +751,13 @@ static void collect_tree(ph_tree *tree, int directory, const char *prefix) {
     enum ph_status status = read_regular_from_parent(
       directory,
       name,
+      relative,
       tree->max_file_bytes,
       &bytes,
       &length,
       &identity,
-      tree->audit
+      tree->audit,
+      tree->expectations
     );
     if (status != PH_READY) {
       tree->status = status;
@@ -615,31 +793,539 @@ static int parse_u64(const char *text, uint64_t *value) {
   return 1;
 }
 
-static int parse_audit_suffix(int argc, char **argv, int base_count, ph_audit *audit) {
+static int parse_root_audit_suffix(
+  int argc,
+  char **argv,
+  int minimum_count,
+  int *body_count,
+  const char **root,
+  ph_audit *audit
+) {
   *audit = (ph_audit){0};
-  if (argc == base_count) return 1;
-  if (argc != base_count + 3 || strcmp(argv[base_count], "--audit") != 0) return 0;
-  uint64_t dev;
-  uint64_t ino;
-  if (!parse_u64(argv[base_count + 1], &dev) || !parse_u64(argv[base_count + 2], &ino)) return 0;
-  audit->dev = (dev_t)dev;
-  audit->enabled = 1;
-  audit->ino = (ino_t)ino;
+  *body_count = argc;
+  *root = ".";
+  if (argc >= minimum_count + 3 && strcmp(argv[argc - 3], "--audit") == 0) {
+    uint64_t dev;
+    uint64_t ino;
+    if (!parse_u64(argv[argc - 2], &dev) || !parse_u64(argv[argc - 1], &ino)) return 0;
+    audit->dev = (dev_t)dev;
+    audit->enabled = 1;
+    audit->ino = (ino_t)ino;
+    *body_count = argc - 3;
+  }
+  if (*body_count >= minimum_count + 2 && strcmp(argv[*body_count - 2], "--root") == 0) {
+    *root = argv[*body_count - 1];
+    *body_count -= 2;
+  }
+  if (*body_count < minimum_count || !valid_relative_path(*root, 1)) return 0;
   return 1;
 }
 
-static int parse_tree_audit_suffix(int argc, char **argv, int *body_count, ph_audit *audit) {
-  *audit = (ph_audit){0};
-  *body_count = argc;
-  if (argc < 8 || strcmp(argv[argc - 3], "--audit") != 0) return 1;
-  uint64_t dev;
-  uint64_t ino;
-  if (!parse_u64(argv[argc - 2], &dev) || !parse_u64(argv[argc - 1], &ino)) return 0;
-  audit->dev = (dev_t)dev;
-  audit->enabled = 1;
-  audit->ino = (ino_t)ino;
-  *body_count = argc - 3;
+static int parse_expected_arguments(
+  int start,
+  int end,
+  char **argv,
+  ph_expectations *expectations
+) {
+  *expectations = (ph_expectations){0};
+  if (start == end) return 1;
+  if (start > end || (end - start) % 5 != 0) return 0;
+  size_t count = (size_t)((end - start) / 5);
+  if (count == 0 || count > 20000) return 0;
+  ph_expected_identity *values = calloc(count, sizeof(*values));
+  if (values == NULL) return 0;
+  for (size_t index = 0; index < count; index += 1) {
+    int offset = start + (int)(index * 5);
+    if (strcmp(argv[offset], "--expect") != 0 || !valid_relative_path(argv[offset + 1], 1)) {
+      free_expectations(&(ph_expectations){ .values = values, .count = count });
+      return 0;
+    }
+    unsigned char kind;
+    if (strcmp(argv[offset + 2], "d") == 0) {
+      kind = PH_DIRECTORY;
+    } else if (strcmp(argv[offset + 2], "f") == 0) {
+      kind = PH_FILE;
+    } else {
+      free_expectations(&(ph_expectations){ .values = values, .count = count });
+      return 0;
+    }
+    uint64_t dev;
+    uint64_t ino;
+    if (!parse_u64(argv[offset + 3], &dev) || !parse_u64(argv[offset + 4], &ino)) {
+      free_expectations(&(ph_expectations){ .values = values, .count = count });
+      return 0;
+    }
+    values[index].path = strdup(argv[offset + 1]);
+    if (values[index].path == NULL) {
+      free_expectations(&(ph_expectations){ .values = values, .count = count });
+      return 0;
+    }
+    values[index].dev = (dev_t)dev;
+    values[index].ino = (ino_t)ino;
+    values[index].kind = kind;
+    for (size_t prior = 0; prior < index; prior += 1) {
+      if (strcmp(values[prior].path, values[index].path) == 0) {
+        free_expectations(&(ph_expectations){ .values = values, .count = count });
+        return 0;
+      }
+    }
+  }
+  *expectations = (ph_expectations){ .enabled = 1, .values = values, .count = count };
   return 1;
+}
+
+static int read_stdin_exact(unsigned char *bytes, size_t length) {
+  size_t received = 0;
+  while (received < length) {
+    ssize_t result = read(STDIN_FILENO, bytes + received, length - received);
+    if (result <= 0) return 0;
+    received += (size_t)result;
+  }
+  return 1;
+}
+
+static int read_u16_stdin(uint16_t *value) {
+  unsigned char bytes[2];
+  if (!read_stdin_exact(bytes, sizeof(bytes))) return 0;
+  *value = (uint16_t)bytes[0] | ((uint16_t)bytes[1] << 8u);
+  return 1;
+}
+
+static int read_u32_stdin(uint32_t *value) {
+  unsigned char bytes[4];
+  if (!read_stdin_exact(bytes, sizeof(bytes))) return 0;
+  *value = (uint32_t)bytes[0]
+    | ((uint32_t)bytes[1] << 8u)
+    | ((uint32_t)bytes[2] << 16u)
+    | ((uint32_t)bytes[3] << 24u);
+  return 1;
+}
+
+static int read_u64_stdin(uint64_t *value) {
+  unsigned char bytes[8];
+  if (!read_stdin_exact(bytes, sizeof(bytes))) return 0;
+  uint64_t parsed = 0;
+  for (size_t index = 0; index < sizeof(bytes); index += 1) {
+    parsed |= ((uint64_t)bytes[index]) << (index * 8u);
+  }
+  *value = parsed;
+  return 1;
+}
+
+static int parse_expected_stdin(ph_expectations *expectations) {
+  *expectations = (ph_expectations){0};
+  uint32_t count32;
+  if (!read_u32_stdin(&count32) || count32 == 0 || count32 > 20000) return 0;
+  size_t count = (size_t)count32;
+  ph_expected_identity *values = calloc(count, sizeof(*values));
+  if (values == NULL) return 0;
+  for (size_t index = 0; index < count; index += 1) {
+    uint16_t path_length;
+    if (!read_u16_stdin(&path_length) || path_length == 0 || path_length > 1024) {
+      free_expectations(&(ph_expectations){ .values = values, .count = count });
+      return 0;
+    }
+    char *path = malloc((size_t)path_length + 1);
+    if (path == NULL || !read_stdin_exact((unsigned char *)path, path_length)) {
+      free(path);
+      free_expectations(&(ph_expectations){ .values = values, .count = count });
+      return 0;
+    }
+    path[path_length] = '\0';
+    unsigned char kind;
+    uint64_t dev;
+    uint64_t ino;
+    if (!read_stdin_exact(&kind, sizeof(kind))
+      || (kind != PH_DIRECTORY && kind != PH_FILE)
+      || !read_u64_stdin(&dev)
+      || !read_u64_stdin(&ino)
+      || !valid_relative_path(path, 1)) {
+      free(path);
+      free_expectations(&(ph_expectations){ .values = values, .count = count });
+      return 0;
+    }
+    values[index] = (ph_expected_identity){
+      .dev = (dev_t)dev,
+      .ino = (ino_t)ino,
+      .kind = kind,
+      .path = path,
+    };
+    for (size_t prior = 0; prior < index; prior += 1) {
+      if (strcmp(values[prior].path, path) == 0) {
+        free_expectations(&(ph_expectations){ .values = values, .count = count });
+        return 0;
+      }
+    }
+  }
+  unsigned char trailing;
+  if (read(STDIN_FILENO, &trailing, sizeof(trailing)) != 0) {
+    free_expectations(&(ph_expectations){ .values = values, .count = count });
+    return 0;
+  }
+  *expectations = (ph_expectations){ .enabled = 1, .values = values, .count = count };
+  return 1;
+}
+
+static int parse_expectation_input(
+  int start,
+  int end,
+  char **argv,
+  ph_expectations *expectations
+) {
+  if (end - start == 1 && strcmp(argv[start], "--expect-stdin") == 0) {
+    return parse_expected_stdin(expectations);
+  }
+  return parse_expected_arguments(start, end, argv, expectations);
+}
+
+static int monotonic_milliseconds(uint64_t *value) {
+  struct timespec time;
+  if (clock_gettime(CLOCK_MONOTONIC, &time) != 0) return 0;
+  *value = ((uint64_t)time.tv_sec * 1000ull) + ((uint64_t)time.tv_nsec / 1000000ull);
+  return 1;
+}
+
+static void terminate_process_group(pid_t child) {
+  if (kill(-child, SIGTERM) != 0) kill(child, SIGTERM);
+  struct timespec pause = { .tv_sec = 0, .tv_nsec = 100000000 };
+  nanosleep(&pause, NULL);
+  int status;
+  if (waitpid(child, &status, WNOHANG) == 0) {
+    if (kill(-child, SIGKILL) != 0) kill(child, SIGKILL);
+  }
+  while (waitpid(child, &status, 0) < 0 && errno == EINTR) {}
+}
+
+static int fixed_git_arguments(const char *command, char *argv[16]) {
+  size_t index = 0;
+  argv[index++] = "/usr/bin/git";
+  argv[index++] = "--no-optional-locks";
+  argv[index++] = "-c";
+  argv[index++] = "core.filemode=true";
+  argv[index++] = "-c";
+  argv[index++] = "core.fsmonitor=false";
+  argv[index++] = "-c";
+  argv[index++] = "core.untrackedCache=false";
+  if (strcmp(command, "prefix") == 0) {
+    argv[index++] = "rev-parse";
+    argv[index++] = "--show-prefix";
+  } else if (strcmp(command, "head") == 0) {
+    argv[index++] = "rev-parse";
+    argv[index++] = "--verify";
+    argv[index++] = "HEAD^{commit}";
+  } else if (strcmp(command, "status") == 0) {
+    argv[index++] = "status";
+    argv[index++] = "--porcelain=v1";
+    argv[index++] = "-z";
+    argv[index++] = "--untracked-files=all";
+  } else if (strcmp(command, "index") == 0) {
+    argv[index++] = "ls-files";
+    argv[index++] = "--stage";
+    argv[index++] = "-z";
+  } else {
+    return 0;
+  }
+  argv[index] = NULL;
+  return 1;
+}
+
+static enum ph_status run_fixed_git(int root, const char *command, ph_buffer *output) {
+  char *argv[16];
+  if (!fixed_git_arguments(command, argv)) return PH_INVALID;
+  int pipefd[2];
+  if (pipe(pipefd) != 0) return PH_IO;
+  pid_t child = fork();
+  if (child < 0) {
+    close(pipefd[0]);
+    close(pipefd[1]);
+    return PH_IO;
+  }
+  if (child == 0) {
+    static char *const environment[] = {
+      "GIT_CONFIG_GLOBAL=/dev/null",
+      "GIT_CONFIG_NOSYSTEM=1",
+      "GIT_CONFIG_SYSTEM=/dev/null",
+      "GIT_OPTIONAL_LOCKS=0",
+      "GIT_PAGER=cat",
+      "GIT_TERMINAL_PROMPT=0",
+      "LANG=C",
+      "LC_ALL=C",
+      "PATH=/usr/bin",
+      NULL,
+    };
+    setpgid(0, 0);
+    close(pipefd[0]);
+    int nullfd = open("/dev/null", O_WRONLY | O_CLOEXEC);
+    if (nullfd < 0 || fchdir(root) != 0 || dup2(pipefd[1], STDOUT_FILENO) < 0 || dup2(nullfd, STDERR_FILENO) < 0) _exit(127);
+    close(root);
+    close(pipefd[1]);
+    close(nullfd);
+    execve(argv[0], argv, environment);
+    _exit(127);
+  }
+  close(pipefd[1]);
+  int flags = fcntl(pipefd[0], F_GETFL);
+  if (flags < 0 || fcntl(pipefd[0], F_SETFL, flags | O_NONBLOCK) != 0) {
+    close(pipefd[0]);
+    terminate_process_group(child);
+    return PH_IO;
+  }
+  uint64_t started;
+  if (!monotonic_milliseconds(&started)) {
+    close(pipefd[0]);
+    terminate_process_group(child);
+    return PH_IO;
+  }
+  int child_done = 0;
+  int pipe_closed = 0;
+  int child_status = 1;
+  while (!child_done || !pipe_closed) {
+    struct pollfd descriptor = { .fd = pipefd[0], .events = POLLIN, .revents = 0 };
+    int polled = poll(&descriptor, 1, 50);
+    if (polled < 0 && errno != EINTR) {
+      close(pipefd[0]);
+      terminate_process_group(child);
+      return PH_IO;
+    }
+    if (polled > 0 && (descriptor.revents & (POLLIN | POLLHUP)) != 0) {
+      for (;;) {
+        unsigned char bytes[8192];
+        ssize_t received = read(pipefd[0], bytes, sizeof(bytes));
+        if (received > 0) {
+          if (output->length > PH_FIXED_GIT_MAX_OUTPUT - (size_t)received || !append_bytes(output, bytes, (size_t)received)) {
+            close(pipefd[0]);
+            terminate_process_group(child);
+            return PH_LIMIT;
+          }
+          continue;
+        }
+        if (received == 0) pipe_closed = 1;
+        if (received < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+          close(pipefd[0]);
+          terminate_process_group(child);
+          return PH_IO;
+        }
+        break;
+      }
+    }
+    pid_t waited = waitpid(child, &child_status, WNOHANG);
+    if (waited == child) child_done = 1;
+    if (waited < 0 && errno != EINTR) {
+      close(pipefd[0]);
+      return PH_IO;
+    }
+    uint64_t now;
+    if (!monotonic_milliseconds(&now) || now - started > PH_FIXED_GIT_TIMEOUT_MS) {
+      close(pipefd[0]);
+      terminate_process_group(child);
+      return PH_IO;
+    }
+  }
+  close(pipefd[0]);
+  if (!WIFEXITED(child_status) || WEXITSTATUS(child_status) != 0) return PH_IO;
+  return PH_READY;
+}
+
+static enum ph_status verify_fixed_gradle_wrapper(int root) {
+  struct stat before;
+  if (fstatat(root, "gradlew", &before, AT_SYMLINK_NOFOLLOW) != 0) return errno_status();
+  if (!S_ISREG(before.st_mode) || (before.st_mode & 0111) == 0) return PH_UNSAFE;
+  int descriptor = openat(root, "gradlew", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+  if (descriptor < 0) return errno_status();
+  struct stat opened;
+  struct stat after;
+  if (fstat(descriptor, &opened) != 0
+    || fstatat(root, "gradlew", &after, AT_SYMLINK_NOFOLLOW) != 0
+    || !S_ISREG(opened.st_mode)
+    || (opened.st_mode & 0111) == 0
+    || !same_location(&before, &opened)
+    || !same_location(&opened, &after)) {
+    close(descriptor);
+    return PH_UNSAFE;
+  }
+  close(descriptor);
+  return PH_READY;
+}
+
+static int fixed_gradle_arguments(const char *command, char *argv[16]) {
+  size_t index = 0;
+  argv[index++] = "./gradlew";
+  argv[index++] = "--no-daemon";
+  argv[index++] = "--no-build-cache";
+  if (strcmp(command, "test") == 0) {
+    argv[index++] = "cleanTest";
+    argv[index++] = "test";
+  } else if (strcmp(command, "build") == 0) {
+    argv[index++] = "build";
+  } else {
+    return 0;
+  }
+  argv[index++] = "--console=plain";
+  argv[index] = NULL;
+  return 1;
+}
+
+static int set_nonblocking(int descriptor) {
+  int flags = fcntl(descriptor, F_GETFL);
+  return flags >= 0 && fcntl(descriptor, F_SETFL, flags | O_NONBLOCK) == 0;
+}
+
+static void close_descriptor(int *descriptor) {
+  if (*descriptor < 0) return;
+  close(*descriptor);
+  *descriptor = -1;
+}
+
+static int consume_command_output(
+  int *descriptor,
+  ph_buffer *capture,
+  size_t other_bytes,
+  int *open
+) {
+  for (;;) {
+    unsigned char bytes[8192];
+    ssize_t received = read(*descriptor, bytes, sizeof(bytes));
+    if (received > 0) {
+      size_t length = (size_t)received;
+      if (capture->length > PH_FIXED_GRADLE_MAX_STREAM_OUTPUT - length
+        || other_bytes > PH_FIXED_GRADLE_MAX_TOTAL_OUTPUT - capture->length - length
+        || !append_bytes(capture, bytes, length)) {
+        return -1;
+      }
+      continue;
+    }
+    if (received == 0) {
+      close_descriptor(descriptor);
+      *open = 0;
+      return 1;
+    }
+    if (errno == EINTR) continue;
+    if (errno == EAGAIN || errno == EWOULDBLOCK) return 1;
+    return 0;
+  }
+}
+
+static enum ph_status run_fixed_gradle(
+  int root,
+  const char *command,
+  uint64_t timeout_ms,
+  ph_command_result *result
+) {
+  char *argv[16];
+  if (!fixed_gradle_arguments(command, argv) || timeout_ms == 0 || timeout_ms > 120000) return PH_INVALID;
+  enum ph_status wrapper = verify_fixed_gradle_wrapper(root);
+  if (wrapper != PH_READY) return wrapper;
+  int stdout_pipe[2] = { -1, -1 };
+  int stderr_pipe[2] = { -1, -1 };
+  if (pipe(stdout_pipe) != 0 || pipe(stderr_pipe) != 0) {
+    close_descriptor(&stdout_pipe[0]);
+    close_descriptor(&stdout_pipe[1]);
+    close_descriptor(&stderr_pipe[0]);
+    close_descriptor(&stderr_pipe[1]);
+    return PH_IO;
+  }
+  pid_t child = fork();
+  if (child < 0) {
+    close_descriptor(&stdout_pipe[0]);
+    close_descriptor(&stdout_pipe[1]);
+    close_descriptor(&stderr_pipe[0]);
+    close_descriptor(&stderr_pipe[1]);
+    return PH_IO;
+  }
+  if (child == 0) {
+    setpgid(0, 0);
+    close_descriptor(&stdout_pipe[0]);
+    close_descriptor(&stderr_pipe[0]);
+    if (fchdir(root) != 0
+      || dup2(stdout_pipe[1], STDOUT_FILENO) < 0
+      || dup2(stderr_pipe[1], STDERR_FILENO) < 0) {
+      _exit(127);
+    }
+    close_descriptor(&stdout_pipe[1]);
+    close_descriptor(&stderr_pipe[1]);
+    execve("./gradlew", argv, environ);
+    _exit(127);
+  }
+  close_descriptor(&stdout_pipe[1]);
+  close_descriptor(&stderr_pipe[1]);
+  if (!set_nonblocking(stdout_pipe[0]) || !set_nonblocking(stderr_pipe[0])) {
+    close_descriptor(&stdout_pipe[0]);
+    close_descriptor(&stderr_pipe[0]);
+    terminate_process_group(child);
+    return PH_IO;
+  }
+  uint64_t started;
+  if (!monotonic_milliseconds(&started)) {
+    close_descriptor(&stdout_pipe[0]);
+    close_descriptor(&stderr_pipe[0]);
+    terminate_process_group(child);
+    return PH_IO;
+  }
+  int stdout_open = 1;
+  int stderr_open = 1;
+  int child_done = 0;
+  int child_status = 1;
+  while (!child_done || stdout_open || stderr_open) {
+    struct pollfd descriptors[2];
+    nfds_t count = 0;
+    if (stdout_open) descriptors[count++] = (struct pollfd){ .fd = stdout_pipe[0], .events = POLLIN, .revents = 0 };
+    if (stderr_open) descriptors[count++] = (struct pollfd){ .fd = stderr_pipe[0], .events = POLLIN, .revents = 0 };
+    int polled = poll(descriptors, count, 50);
+    if (polled < 0 && errno != EINTR) {
+      close_descriptor(&stdout_pipe[0]);
+      close_descriptor(&stderr_pipe[0]);
+      if (!child_done) terminate_process_group(child);
+      return PH_IO;
+    }
+    if (polled > 0) {
+      for (nfds_t index = 0; index < count; index += 1) {
+        if ((descriptors[index].revents & (POLLIN | POLLHUP)) == 0) continue;
+        int consumed = descriptors[index].fd == stdout_pipe[0]
+          ? consume_command_output(&stdout_pipe[0], &result->standard_output, result->error_output.length, &stdout_open)
+          : consume_command_output(&stderr_pipe[0], &result->error_output, result->standard_output.length, &stderr_open);
+        if (consumed < 0) {
+          close_descriptor(&stdout_pipe[0]);
+          close_descriptor(&stderr_pipe[0]);
+          if (!child_done) terminate_process_group(child);
+          result->killed = 1;
+          result->outcome = PH_COMMAND_OUTPUT_LIMIT;
+          return PH_READY;
+        }
+        if (consumed == 0) {
+          close_descriptor(&stdout_pipe[0]);
+          close_descriptor(&stderr_pipe[0]);
+          if (!child_done) terminate_process_group(child);
+          return PH_IO;
+        }
+      }
+    }
+    pid_t waited = waitpid(child, &child_status, WNOHANG);
+    if (waited == child) child_done = 1;
+    if (waited < 0 && errno != EINTR) {
+      close_descriptor(&stdout_pipe[0]);
+      close_descriptor(&stderr_pipe[0]);
+      return PH_IO;
+    }
+    uint64_t now;
+    if (!monotonic_milliseconds(&now) || now - started > timeout_ms) {
+      close_descriptor(&stdout_pipe[0]);
+      close_descriptor(&stderr_pipe[0]);
+      if (!child_done) terminate_process_group(child);
+      result->killed = 1;
+      result->outcome = PH_COMMAND_TIMEOUT;
+      result->timed_out = 1;
+      return PH_READY;
+    }
+  }
+  if (WIFSIGNALED(child_status)) {
+    result->outcome = PH_COMMAND_SIGNAL;
+    result->signal = WTERMSIG(child_status);
+    result->status = 128 + result->signal;
+    return PH_READY;
+  }
+  result->status = WIFEXITED(child_status) ? WEXITSTATUS(child_status) : 1;
+  result->outcome = result->status == 0 ? PH_COMMAND_PASSED : PH_COMMAND_FAILED;
+  return PH_READY;
 }
 
 static int append_audit(ph_buffer *output, const ph_audit *audit) {
@@ -685,6 +1371,41 @@ static int emit_directory(enum ph_status status, const struct stat *identity, co
   return ok;
 }
 
+static int emit_git(enum ph_status status, const ph_buffer *output, const ph_audit *audit) {
+  if (status != PH_READY) return emit_status_with_audit(status, audit);
+  if (output->length > UINT32_MAX) return emit_status_with_audit(PH_LIMIT, audit);
+  ph_buffer response = {0};
+  int ok = append_u8(&response, PH_READY)
+    && append_u32(&response, (uint32_t)output->length)
+    && append_bytes(&response, output->bytes, output->length)
+    && append_audit(&response, audit)
+    && write_all(response.bytes, response.length);
+  free(response.bytes);
+  return ok;
+}
+
+static int emit_command(enum ph_status status, const ph_command_result *command, const ph_audit *audit) {
+  if (status != PH_READY) return emit_status_with_audit(status, audit);
+  if (command->standard_output.length > UINT32_MAX || command->error_output.length > UINT32_MAX) {
+    return emit_status_with_audit(PH_LIMIT, audit);
+  }
+  ph_buffer response = {0};
+  int ok = append_u8(&response, PH_READY)
+    && append_u8(&response, (uint8_t)command->outcome)
+    && append_u32(&response, (uint32_t)command->status)
+    && append_u32(&response, (uint32_t)command->signal)
+    && append_u8(&response, command->timed_out ? 1u : 0u)
+    && append_u8(&response, command->killed ? 1u : 0u)
+    && append_u32(&response, (uint32_t)command->standard_output.length)
+    && append_bytes(&response, command->standard_output.bytes, command->standard_output.length)
+    && append_u32(&response, (uint32_t)command->error_output.length)
+    && append_bytes(&response, command->error_output.bytes, command->error_output.length)
+    && append_audit(&response, audit)
+    && write_all(response.bytes, response.length);
+  free(response.bytes);
+  return ok;
+}
+
 static int emit_tree(ph_tree *tree) {
   if (tree->status != PH_READY) return emit_status_with_audit(tree->status, tree->audit);
   if (tree->entry_count > UINT32_MAX) return emit_status_with_audit(PH_LIMIT, tree->audit);
@@ -709,65 +1430,154 @@ static int emit_tree(ph_tree *tree) {
 }
 
 static int run_read(int argc, char **argv) {
+  int body_count;
+  const char *root_relative;
   ph_audit audit;
-  if (!parse_audit_suffix(argc, argv, 4, &audit)) return emit_status(PH_INVALID) ? 0 : 1;
+  if (!parse_root_audit_suffix(argc, argv, 4, &body_count, &root_relative, &audit)) return emit_status(PH_INVALID) ? 0 : 1;
+  ph_expectations expectations;
+  if (!parse_expectation_input(4, body_count, argv, &expectations)) return emit_status(PH_INVALID) ? 0 : 1;
   const ph_audit *audit_result = audit.enabled ? &audit : NULL;
   const char *relative = argv[2];
   const char *max_text = argv[3];
   size_t max_bytes;
-  if (!parse_size(max_text, &max_bytes) || !valid_relative_path(relative, 0)) return emit_status(PH_INVALID) ? 0 : 1;
+  if (!parse_size(max_text, &max_bytes) || !valid_relative_path(relative, 0)) {
+    free_expectations(&expectations);
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
   struct stat root_stat;
-  int root = open_root(&root_stat, &audit);
-  if (root < 0) return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
+  int root = open_root(root_relative, &root_stat, &audit, &expectations);
+  if (root < 0) {
+    free_expectations(&expectations);
+    return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
+  }
   unsigned char *bytes = NULL;
   size_t length = 0;
   struct stat identity;
-  enum ph_status status = read_relative_file(root, relative, max_bytes, &bytes, &length, &identity, &audit);
+  enum ph_status status = read_relative_file(root, relative, max_bytes, &bytes, &length, &identity, &audit, &expectations);
   close(root);
   int result = emit_read(status, &identity, bytes, length, audit_result) ? 0 : 1;
   free(bytes);
+  free_expectations(&expectations);
   return result;
 }
 
 static int run_directory(int argc, char **argv) {
+  int body_count;
+  const char *root_relative;
   ph_audit audit;
-  if (!parse_audit_suffix(argc, argv, 3, &audit)) return emit_status(PH_INVALID) ? 0 : 1;
+  if (!parse_root_audit_suffix(argc, argv, 3, &body_count, &root_relative, &audit)) return emit_status(PH_INVALID) ? 0 : 1;
+  ph_expectations expectations;
+  if (!parse_expectation_input(3, body_count, argv, &expectations)) return emit_status(PH_INVALID) ? 0 : 1;
   const ph_audit *audit_result = audit.enabled ? &audit : NULL;
   const char *relative = argv[2];
-  if (!valid_relative_path(relative, 1)) return emit_status(PH_INVALID) ? 0 : 1;
+  if (!valid_relative_path(relative, 1)) {
+    free_expectations(&expectations);
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
   struct stat root_stat;
-  int root = open_root(&root_stat, &audit);
-  if (root < 0) return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
+  int root = open_root(root_relative, &root_stat, &audit, &expectations);
+  if (root < 0) {
+    free_expectations(&expectations);
+    return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
+  }
   int directory = -1;
   struct stat identity;
-  enum ph_status status = open_directory_relative(root, relative, &directory, &identity, &audit);
+  enum ph_status status = open_directory_relative(root, relative, &directory, &identity, &audit, &expectations);
   close(root);
   if (directory >= 0) close(directory);
-  return emit_directory(status, &identity, audit_result) ? 0 : 1;
+  int result = emit_directory(status, &identity, audit_result) ? 0 : 1;
+  free_expectations(&expectations);
+  return result;
 }
 
 static int run_tree(int argc, char **argv) {
   if (argc < 5) return emit_status(PH_INVALID) ? 0 : 1;
   int body_count;
+  const char *root_relative;
   ph_audit audit;
-  if (!parse_tree_audit_suffix(argc, argv, &body_count, &audit) || body_count < 5) return emit_status(PH_INVALID) ? 0 : 1;
-  ph_tree tree = { .audit = audit.enabled ? &audit : NULL, .status = PH_READY };
-  if (!parse_size(argv[2], &tree.max_entries) || !parse_size(argv[3], &tree.max_file_bytes) || !parse_size(argv[4], &tree.max_total_bytes)) {
+  if (!parse_root_audit_suffix(argc, argv, 5, &body_count, &root_relative, &audit) || body_count < 5) return emit_status(PH_INVALID) ? 0 : 1;
+  int expectation_start = 5;
+  while (
+    expectation_start < body_count
+    && strcmp(argv[expectation_start], "--expect") != 0
+    && strcmp(argv[expectation_start], "--expect-stdin") != 0
+  ) {
+    expectation_start += 1;
+  }
+  ph_expectations expectations;
+  if (!parse_expectation_input(expectation_start, body_count, argv, &expectations)) {
     return emit_status(PH_INVALID) ? 0 : 1;
   }
-  tree.exclusions = body_count == 5 ? NULL : &argv[5];
-  tree.exclusion_count = body_count <= 5 ? 0 : (size_t)(body_count - 5);
+  ph_tree tree = {
+    .audit = audit.enabled ? &audit : NULL,
+    .expectations = expectations.enabled ? &expectations : NULL,
+    .status = PH_READY,
+  };
+  if (!parse_size(argv[2], &tree.max_entries) || !parse_size(argv[3], &tree.max_file_bytes) || !parse_size(argv[4], &tree.max_total_bytes)) {
+    free_expectations(&expectations);
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
+  tree.exclusions = expectation_start == 5 ? NULL : &argv[5];
+  tree.exclusion_count = expectation_start <= 5 ? 0 : (size_t)(expectation_start - 5);
   for (size_t index = 0; index < tree.exclusion_count; index += 1) {
-    if (!valid_relative_path(tree.exclusions[index], 0)) return emit_status(PH_INVALID) ? 0 : 1;
+    if (!valid_relative_path(tree.exclusions[index], 0)) {
+      free_expectations(&expectations);
+      return emit_status(PH_INVALID) ? 0 : 1;
+    }
   }
   struct stat root_stat;
-  int root = open_root(&root_stat, &audit);
-  if (root < 0) return emit_status_with_audit(PH_UNSAFE, tree.audit) ? 0 : 1;
+  int root = open_root(root_relative, &root_stat, &audit, tree.expectations);
+  if (root < 0) {
+    free_expectations(&expectations);
+    return emit_status_with_audit(PH_UNSAFE, tree.audit) ? 0 : 1;
+  }
   collect_tree(&tree, root, "");
   close(root);
   int result = emit_tree(&tree) ? 0 : 1;
   free_tree(&tree);
+  free_expectations(&expectations);
   return result;
+}
+
+static int run_git(int argc, char **argv) {
+  int body_count;
+  const char *root_relative;
+  ph_audit audit;
+  if (!parse_root_audit_suffix(argc, argv, 3, &body_count, &root_relative, &audit) || body_count != 3) {
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
+  const ph_audit *audit_result = audit.enabled ? &audit : NULL;
+  struct stat root_stat;
+  int root = open_root(root_relative, &root_stat, &audit, NULL);
+  if (root < 0) return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
+  ph_buffer output = {0};
+  enum ph_status status = run_fixed_git(root, argv[2], &output);
+  close(root);
+  int result = emit_git(status, &output, audit_result) ? 0 : 1;
+  free(output.bytes);
+  return result;
+}
+
+static int run_gradle(int argc, char **argv) {
+  int body_count;
+  const char *root_relative;
+  ph_audit audit;
+  if (!parse_root_audit_suffix(argc, argv, 4, &body_count, &root_relative, &audit) || body_count != 4) {
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
+  const ph_audit *audit_result = audit.enabled ? &audit : NULL;
+  uint64_t timeout_ms;
+  if (!parse_u64(argv[3], &timeout_ms)) return emit_status_with_audit(PH_INVALID, audit_result) ? 0 : 1;
+  struct stat root_stat;
+  int root = open_root(root_relative, &root_stat, &audit, NULL);
+  if (root < 0) return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
+  ph_command_result result = {0};
+  enum ph_status status = run_fixed_gradle(root, argv[2], timeout_ms, &result);
+  close(root);
+  int emitted = emit_command(status, &result, audit_result);
+  free(result.standard_output.bytes);
+  free(result.error_output.bytes);
+  return emitted ? 0 : 1;
 }
 
 int main(int argc, char **argv) {
@@ -778,5 +1588,7 @@ int main(int argc, char **argv) {
   if (argc >= 4 && strcmp(argv[1], "read") == 0) return run_read(argc, argv);
   if (argc >= 3 && strcmp(argv[1], "directory") == 0) return run_directory(argc, argv);
   if (argc >= 5 && strcmp(argv[1], "tree") == 0) return run_tree(argc, argv);
+  if (argc >= 3 && strcmp(argv[1], "git") == 0) return run_git(argc, argv);
+  if (argc >= 4 && strcmp(argv[1], "gradle") == 0) return run_gradle(argc, argv);
   return emit_status(PH_INVALID) ? 0 : 1;
 }

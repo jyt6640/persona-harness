@@ -11,7 +11,7 @@ import fs, {
 } from "node:fs"
 import { syncBuiltinESMExports } from "node:module"
 import { tmpdir } from "node:os"
-import { basename, join, relative } from "node:path"
+import { basename, dirname, join, relative } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -36,7 +36,7 @@ describe("project finish producer input readiness", () => {
   it("constructs a receipt for a profile-less public Gradle caller through the default producer runner", () => {
     const projectDir = createProject("absent")
 
-    const result = runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
+    const result = runProducer(projectDir)
 
     expect(result).toMatchObject({
       kind: "passed",
@@ -51,9 +51,11 @@ describe("project finish producer input readiness", () => {
 
   it("accepts a relative public caller root through the producer verification boundary", () => {
     const projectDir = createProject("absent")
-    const callerRoot = relative(process.cwd(), projectDir)
+    const callerRoot = basename(projectDir)
 
-    const result = runProjectFinishAttestationProducer(callerRoot, producerContext(callerRoot), "0.7.0")
+    const result = withProjectCapability(dirname(projectDir), () => (
+      runProjectFinishAttestationProducer(callerRoot, producerContext(projectDir), "0.7.0")
+    ))
 
     expect(result).toMatchObject({
       kind: "passed",
@@ -74,7 +76,9 @@ describe("project finish producer input readiness", () => {
     mkdirSync(producerBin, { recursive: true })
     symlinkSync("../outside", join(producerBin, "node"))
 
-    const result = runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
+    const result = withProjectCapability(runnerRoot, () => (
+      runProjectFinishAttestationProducer(".project-finish-caller", producerContext(projectDir), "0.7.0")
+    ))
 
     expect(result).toMatchObject({
       kind: "passed",
@@ -87,12 +91,12 @@ describe("project finish producer input readiness", () => {
     const suppliedProject = createProject("absent")
     let calls = 0
 
-    const result = runProjectFinishAttestationGradleVerification(suppliedProject, readyContext(preparedProject), {
+    const result = withProjectCapability(suppliedProject, () => runProjectFinishAttestationGradleVerification(".", readyContext(preparedProject), {
       runProcess: () => {
         calls += 1
         return passed("")
       },
-    })
+    }))
 
     expect(result).toEqual({ code: "workspace-identity-drift", kind: "blocked" })
     expect(calls).toBe(0)
@@ -104,12 +108,12 @@ describe("project finish producer input readiness", () => {
     symlinkSync(projectDir, alias)
     let calls = 0
 
-    const result = runProjectFinishAttestationGradleVerification(alias, readyContext(alias), {
+    const result = withProjectCapability(dirname(projectDir), () => runProjectFinishAttestationGradleVerification(alias, readyContext(projectDir), {
       runProcess: () => {
         calls += 1
         return passed("")
       },
-    })
+    }))
 
     expect(result).toEqual({ code: "workspace-root-unavailable", kind: "blocked" })
     expect(calls).toBe(0)
@@ -120,7 +124,7 @@ describe("project finish producer input readiness", () => {
     const alias = join(projectDir, "..", `${basename(projectDir)}-producer-alias`)
     symlinkSync(projectDir, alias)
 
-    expect(runProjectFinishAttestationProducer(alias, producerContext(alias), "0.7.0")).toEqual({
+    expect(withProjectCapability(dirname(projectDir), () => runProjectFinishAttestationProducer(alias, producerContext(projectDir), "0.7.0"))).toEqual({
       code: "workspace-root-unavailable",
       kind: "blocked",
     })
@@ -129,36 +133,51 @@ describe("project finish producer input readiness", () => {
   it("keeps ordinary cooperative Finish profile-less callers blocked", () => {
     const projectDir = createProject("absent")
 
-    expect(runCooperativeGradleVerification(projectDir, readyContext(projectDir))).toEqual({
+    expect(withProjectCapability(projectDir, () => runCooperativeGradleVerification(".", readyContext(projectDir)))).toEqual({
       code: "profile-unready",
       kind: "blocked",
     })
   })
 
   it.each([
-    ["malformed profile", "malformed" as const],
-    ["symlink profile", "symlink-profile" as const],
-    ["missing settings descriptor", "missing-settings" as const],
-    ["symlink settings descriptor", "symlink-settings" as const],
-  ])("blocks a %s before fixed Gradle commands", (_name, mode) => {
-    const projectDir = createProject(mode)
+    ["malformed profile", "malformed" as const, "project-finish-producer-profile"],
+    ["symlink profile", "symlink-profile" as const, "workspace-root-unavailable"],
+    ["missing settings descriptor", "missing-settings" as const, "project-finish-producer-profile"],
+    ["symlink settings descriptor", "symlink-settings" as const, "workspace-root-unavailable"],
+  ])("blocks a %s before fixed Gradle commands", (_name, mode, code) => {
+    const projectDir = createProject(mode === "symlink-profile" || mode === "symlink-settings" ? "canonical" : mode)
+    const context = readyContext(projectDir)
+    if (mode === "symlink-profile") {
+      const profile = join(projectDir, ".persona", "project-profile.jsonc")
+      const outside = join(projectDir, "outside-profile.jsonc")
+      writeFileSync(outside, JSON.stringify(canonicalProfile()))
+      unlinkSync(profile)
+      symlinkSync(outside, profile)
+    }
+    if (mode === "symlink-settings") {
+      const settings = join(projectDir, "settings.gradle")
+      const outside = join(projectDir, "outside-settings.gradle")
+      writeFileSync(outside, "rootProject.name = 'outside'\n")
+      unlinkSync(settings)
+      symlinkSync(outside, settings)
+    }
     let calls = 0
 
-    const result = runProjectFinishAttestationGradleVerification(projectDir, readyContext(projectDir), {
+    const result = withProjectCapability(projectDir, () => runProjectFinishAttestationGradleVerification(".", context, {
       runProcess: () => {
         calls += 1
         return passed("")
       },
-    })
+    }))
 
-    expect(result).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
+    expect(result).toEqual({ code, kind: "blocked" })
     expect(calls).toBe(0)
   })
 
   it("binds root Gradle descriptor bytes and identity through the fixed attempt", () => {
     const projectDir = createProject("canonical")
 
-    const result = runProjectFinishAttestationGradleVerification(projectDir, readyContext(projectDir), {
+    const result = withProjectCapability(projectDir, () => runProjectFinishAttestationGradleVerification(".", readyContext(projectDir), {
       runProcess: (options) => {
         if (options.args.includes("test")) {
           writeJUnit(projectDir)
@@ -167,7 +186,7 @@ describe("project finish producer input readiness", () => {
         }
         return passed("> Task :build\nBUILD SUCCESSFUL\n")
       },
-    })
+    }))
 
     expect(result).toEqual({ code: "source-identity-drift", kind: "blocked" })
   })
@@ -175,7 +194,7 @@ describe("project finish producer input readiness", () => {
   it("binds optional profile bytes and descriptor identity through the fixed attempt", () => {
     const projectDir = createProject("canonical")
 
-    const result = runProjectFinishAttestationGradleVerification(projectDir, readyContext(projectDir), {
+    const result = withProjectCapability(projectDir, () => runProjectFinishAttestationGradleVerification(".", readyContext(projectDir), {
       runProcess: (options) => {
         if (options.args.includes("test")) {
           writeJUnit(projectDir)
@@ -187,131 +206,75 @@ describe("project finish producer input readiness", () => {
         }
         return passed("> Task :build\nBUILD SUCCESSFUL\n")
       },
-    })
+    }))
 
     expect(result).toEqual({ code: "source-identity-drift", kind: "blocked" })
   })
 
-  it("rejects a regular profile replacement before opening external bytes at the real producer input boundary", () => {
+  it.each([
+    ["profile leaf", (projectDir: string) => {
+      const outside = join(projectDir, "outside-profile.jsonc")
+      writeFileSync(outside, '{"token":"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"}\n')
+      unlinkSync(join(projectDir, ".persona", "project-profile.jsonc"))
+      symlinkSync(outside, join(projectDir, ".persona", "project-profile.jsonc"))
+      return () => runProducer(projectDir)
+    }],
+    ["harness config leaf", (projectDir: string) => {
+      const outside = join(projectDir, "outside-harness.jsonc")
+      writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{}\n")
+      writeFileSync(outside, '{"token":"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"}\n')
+      unlinkSync(join(projectDir, ".persona", "harness.jsonc"))
+      symlinkSync(outside, join(projectDir, ".persona", "harness.jsonc"))
+      return () => runProducer(projectDir)
+    }],
+    ["Gradle settings leaf", (projectDir: string) => {
+      const outside = join(projectDir, "outside-settings.gradle")
+      writeFileSync(outside, "rootProject.name = 'sk-live-aaaaaaaaaaaaaaaaaaaaaaaa'\n")
+      unlinkSync(join(projectDir, "settings.gradle"))
+      symlinkSync(outside, join(projectDir, "settings.gradle"))
+      return () => runProducer(projectDir)
+    }],
+    ["source leaf", (projectDir: string) => {
+      const outside = join(projectDir, "outside-App.java")
+      writeFileSync(outside, "class App { String token = \"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\"; }\n")
+      unlinkSync(join(projectDir, "src", "main", "java", "App.java"))
+      symlinkSync(outside, join(projectDir, "src", "main", "java", "App.java"))
+      return () => runProducer(projectDir)
+    }],
+    ["source parent", (projectDir: string) => {
+      const source = join(projectDir, "src", "main", "java")
+      const outside = join(projectDir, "outside-source")
+      mkdirSync(outside)
+      writeFileSync(join(outside, "App.java"), "class App { String token = \"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\"; }\n")
+      renameSync(source, `${source}.draft`)
+      symlinkSync(outside, source)
+      return () => runProducer(projectDir)
+    }],
+    ["selected project root", (projectDir: string) => {
+      const context = producerContext(projectDir)
+      const parent = dirname(projectDir)
+      const name = basename(projectDir)
+      const outside = `${projectDir}.outside`
+      renameSync(projectDir, `${projectDir}.draft`)
+      mkdirSync(outside)
+      writeFileSync(join(outside, "build.gradle"), "// sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\n")
+      symlinkSync(outside, projectDir)
+      return () => {
+        try {
+          return withProjectCapability(parent, () => runProjectFinishAttestationProducer(name, context, "0.7.0"))
+        } finally {
+          unlinkSync(projectDir)
+          renameSync(`${projectDir}.draft`, projectDir)
+        }
+      }
+    }],
+  ])("rejects a native %s alias before a producer artifact can exist", (_name, createAlias) => {
     const projectDir = createProject("canonical")
-    const profilePath = join(projectDir, ".persona", "project-profile.jsonc")
-    const draftPath = join(projectDir, ".persona", "project-profile.draft.jsonc")
-    const outsidePath = join(projectDir, "outside-profile.jsonc")
-    writeFileSync(profilePath, `${JSON.stringify({ ...canonicalProfile(), status: "draft" })}\n`)
-    writeFileSync(outsidePath, `${JSON.stringify(canonicalProfile())}\n`)
+    const result = createAlias(projectDir)()
 
-    const swapped = swapAtCapturedLeafLookup(profilePath, draftPath, outsidePath, "project-profile.jsonc", () => (
-      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
-    ))
-
-    expect(swapped.didSwap).toBe(true)
-    expect(swapped.openedExternal).toBe(false)
-    expect(swapped.value).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
-    expect(swapped.value).not.toHaveProperty("value")
-    expect(JSON.stringify(swapped.value)).not.toContain(outsidePath)
-    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
-  })
-
-  it("rejects a harness config leaf replacement before opening external bytes", () => {
-    const projectDir = createProject("canonical")
-    const configPath = join(projectDir, ".persona", "harness.jsonc")
-    const draftPath = join(projectDir, ".persona", "harness.draft.jsonc")
-    const outsidePath = join(projectDir, "outside-harness.jsonc")
-    writeFileSync(configPath, "{}\n")
-    writeFileSync(outsidePath, '{"evidenceDir":"../../outside","token":"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"}\n')
-
-    const swapped = swapAtCapturedLeafLookup(configPath, draftPath, outsidePath, "harness.jsonc", () => (
-      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
-    ))
-
-    expect(swapped.didSwap).toBe(true)
-    expect(swapped.openedExternal).toBe(false)
-    expect(swapped.value).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
-    expect(swapped.value).not.toHaveProperty("value")
-    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
-    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
-  })
-
-  it("rejects a Gradle descriptor leaf replacement before opening external bytes", () => {
-    const projectDir = createProject("canonical")
-    const settingsPath = join(projectDir, "settings.gradle")
-    const draftPath = join(projectDir, "settings.draft.gradle")
-    const outsidePath = join(projectDir, "outside-settings.gradle")
-    writeFileSync(outsidePath, "rootProject.name = 'sk-live-aaaaaaaaaaaaaaaaaaaaaaaa'\n")
-
-    const swapped = swapAtCapturedLeafLookup(settingsPath, draftPath, outsidePath, "settings.gradle", () => (
-      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
-    ))
-
-    expect(swapped.didSwap).toBe(true)
-    expect(swapped.openedExternal).toBe(false)
-    expect(swapped.value).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
-    expect(swapped.value).not.toHaveProperty("value")
-    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
-    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
-  })
-
-  it("rejects a source leaf replacement before opening external source bytes", () => {
-    const projectDir = createProject("canonical")
-    const sourcePath = join(projectDir, "src", "main", "java", "App.java")
-    const draftPath = join(projectDir, "src", "main", "java", "App.draft.java")
-    const outsidePath = join(projectDir, "outside-App.java")
-    writeFileSync(outsidePath, "class App { String token = \"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\"; }\n")
-
-    const swapped = swapAtCapturedLeafLookup(sourcePath, draftPath, outsidePath, "App.java", () => (
-      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
-    ))
-
-    expect(swapped.didSwap).toBe(true)
-    expect(swapped.openedExternal).toBe(false)
-    expect(swapped.value).toEqual({ code: "source-identity-unavailable", kind: "blocked" })
-    expect(swapped.value).not.toHaveProperty("value")
-    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
-    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
-  })
-
-  it("rejects a source parent replacement before opening external source bytes", () => {
-    const projectDir = createProject("canonical")
-    const sourceDirectory = join(projectDir, "src", "main", "java")
-    const draftDirectory = join(projectDir, "src", "main", "java.draft")
-    const outsideDirectory = join(projectDir, "outside-source")
-    const outsideSource = join(outsideDirectory, "App.java")
-    mkdirSync(outsideDirectory)
-    writeFileSync(outsideSource, "class App { String token = \"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\"; }\n")
-
-    const swapped = swapParentAtCapturedLeafLookup(
-      sourceDirectory,
-      draftDirectory,
-      outsideDirectory,
-      outsideSource,
-      "App.java",
-      () => runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0"),
-    )
-
-    expect(swapped.didSwap).toBe(true)
-    expect(swapped.openedExternal).toBe(false)
-    expect(swapped.value).toEqual({ code: "source-identity-unavailable", kind: "blocked" })
-    expect(swapped.value).not.toHaveProperty("value")
-    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
-    expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
-  })
-
-  it("rejects a captured project root replacement before opening external source bytes", () => {
-    const projectDir = createProject("canonical")
-    const draftPath = `${projectDir}.draft`
-    const outsidePath = mkdtempSync(join(tmpdir(), "project-finish-producer-outside-root-"))
-    projects.push(outsidePath)
-    writeFileSync(join(outsidePath, "build.gradle"), "// sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\n")
-
-    const swapped = swapProjectRootAtCapturedLeafLookup(projectDir, draftPath, outsidePath, "build.gradle", () => (
-      runProjectFinishAttestationProducer(projectDir, producerContext(projectDir), "0.7.0")
-    ))
-
-    expect(swapped.didSwap).toBe(true)
-    expect(swapped.openedExternal).toBe(false)
-    expect(swapped.value).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
-    expect(swapped.value).not.toHaveProperty("value")
-    expect(JSON.stringify(swapped.value)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(result).toMatchObject({ kind: "blocked" })
+    expect(result).not.toHaveProperty("value")
+    expect(JSON.stringify(result)).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
     expect(projectArtifactDirectoryExists(projectDir)).toBe(false)
   })
 })
@@ -367,9 +330,25 @@ function createProject(
 }
 
 function readyContext(projectDir: string) {
-  const result = prepareCooperativeFinishContext(projectDir)
+  const result = withProjectCapability(projectDir, () => prepareCooperativeFinishContext("."))
   if (result.kind !== "ready") throw new Error(`expected ready context, received ${result.code}`)
   return result.value
+}
+
+function runProducer(projectDir: string) {
+  return withProjectCapability(projectDir, () => (
+    runProjectFinishAttestationProducer(".", producerContext(projectDir), "0.7.0")
+  ))
+}
+
+function withProjectCapability<T>(projectDir: string, operation: () => T): T {
+  const original = process.cwd()
+  process.chdir(projectDir)
+  try {
+    return operation()
+  } finally {
+    process.chdir(original)
+  }
 }
 
 function producerContext(projectDir: string): ProjectFinishAttestationProducerContext {

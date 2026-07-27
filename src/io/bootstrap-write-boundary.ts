@@ -28,6 +28,19 @@ import {
   sameNoFollowPathLocation,
   type NoFollowPathIdentity,
 } from "./no-follow-file.js"
+import {
+  NativeProjectReadLimitError,
+  NativeProjectReadRuntimeError,
+  NativeProjectReadUnsafeError,
+  readNativeProjectDirectoryIdentity,
+  readNativeProjectFileWithIdentityResult,
+  readNativeProjectTree,
+  readNativeProjectTreeAt,
+  runNativeProjectGradle,
+  runNativeProjectGit,
+  type NativeProjectReadExpectedPath,
+  type NativeProjectReadTreeEntry,
+} from "./native-project-read.js"
 
 type DirectoryReservation = {
   readonly descriptor: number
@@ -65,11 +78,19 @@ export type ProjectReadTreeEntry =
     }
 
 export type ProjectReadTreeOptions = {
-  readonly isExcluded: (relativePath: string) => boolean
+  readonly excludedRoots: readonly string[]
   readonly maxEntries: number
   readonly maxFileBytes: number
   readonly maxTotalBytes: number
 }
+
+const DEFAULT_PROJECT_READ_BYTES = 8 * 1024 * 1024
+const PROJECT_READ_MANIFEST_OPTIONS = {
+  excludedRoots: [".git", ".gradle", "build", "node_modules"],
+  maxEntries: 20_000,
+  maxFileBytes: 8 * 1024 * 1024,
+  maxTotalBytes: 64 * 1024 * 1024,
+} as const satisfies ProjectReadTreeOptions
 
 export class BootstrapWriteBoundaryError extends Error {
   constructor() {
@@ -79,8 +100,8 @@ export class BootstrapWriteBoundaryError extends Error {
 }
 
 export class ProjectReadBoundaryError extends Error {
-  constructor() {
-    super("project source read boundary is unsafe")
+  constructor(readonly code = "source-read-unsafe") {
+    super(code)
     this.name = "ProjectReadBoundaryError"
   }
 }
@@ -501,31 +522,88 @@ export class BootstrapWriteBoundary {
 }
 
 export class ProjectReadBoundary {
-  readonly #project: DirectoryReservation
+  readonly #manifest: ReadonlyMap<string, ProjectReadTreeEntry>
+  readonly #project: NoFollowPathIdentity
+  readonly #projectPath: string
   #closed = false
 
-  constructor(project: DirectoryReservation) {
+  constructor(
+    projectPath: string,
+    project: NoFollowPathIdentity,
+    entries: readonly NativeProjectReadTreeEntry[],
+  ) {
+    this.#projectPath = projectPath
     this.#project = project
+    this.#manifest = new Map([
+      [".", { identity: project, kind: "directory", path: "." }],
+      ...entries.map((entry) => [entry.path, entry] as const),
+    ])
   }
 
   close(): void {
     if (this.#closed) return
     this.#closed = true
-    closeSync(this.#project.descriptor)
   }
 
   assert(): void {
-    this.#assertActive()
+    this.#native(() => this.#assertActive())
   }
 
   projectIdentity(): NoFollowPathIdentity {
-    this.#assertActive()
-    return this.#project.identity
+    return this.#native(() => {
+      this.#assertActive()
+      return this.#project
+    })
+  }
+
+  workspaceIdentity(): { readonly dev: string; readonly ino: string; readonly realpath: string } {
+    return this.#native(() => {
+      this.#assertActive()
+      return {
+        dev: this.#project.dev,
+        ino: this.#project.ino,
+        realpath: this.#projectPath,
+      }
+    })
+  }
+
+  runFixedGit(args: readonly string[]): {
+    readonly available: boolean
+    readonly diagnosticCode: string
+    readonly status: number
+    readonly stdout: string
+  } {
+    const command = fixedGitCommand(args)
+    if (command === undefined) {
+      return { available: false, diagnosticCode: "git-command-unavailable", status: 1, stdout: "" }
+    }
+    try {
+      const stdout = this.#native(() => {
+        this.#assertActive()
+        const result = runNativeProjectGit(command, this.#projectPath).toString("utf8")
+        this.#assertActive()
+        return result
+      })
+      return { available: true, diagnosticCode: "git-execution-complete", status: 0, stdout }
+    } catch {
+      return { available: false, diagnosticCode: "git-execution-failed", status: 1, stdout: "" }
+    }
+  }
+
+  runFixedGradle(
+    command: "build" | "test",
+    timeoutMs: number,
+  ) {
+    return this.#native(() => {
+      this.#assertActive()
+      const result = runNativeProjectGradle(command, timeoutMs, this.#projectPath)
+      this.#assertActive()
+      return result
+    })
   }
 
   withCapturedProject<T>(operation: () => T): T {
-    this.#assertActive()
-    return withReservedProjectDirectory(this.#project, () => {
+    return this.#native(() => {
       this.#assertActive()
       const result = operation()
       this.#assertActive()
@@ -538,48 +616,35 @@ export class ProjectReadBoundary {
   }
 
   readProjectFileWithIdentity(relativePath: string, maxBytes?: number): ProjectReadFile | undefined {
-    this.#assertActive()
-    const segments = validatedRelativeSegments(relativePath)
-    const leaf = segments.pop()
-    if (leaf === undefined) throw new ProjectReadBoundaryError()
-    return withReservedProjectDirectory(this.#project, () => {
-      const reservations: DirectoryReservation[] = []
-      try {
-        let parent = this.#project
-        for (const segment of segments) {
-          const reservation = reserveExistingCurrentChildDirectory(parent, segment)
-          if (reservation === undefined) return undefined
-          reservations.push(reservation)
-          parent = reservation
-        }
-        const current = this.#readCurrentFile(leaf, reservations, maxBytes)
-        return current.kind === "ready"
-          ? { bytes: current.bytes, identity: current.identity }
-          : undefined
-      } finally {
-        leaveCurrentReservations(this.#project, reservations)
+    return this.#native(() => {
+      this.#assertActive()
+      const expected = this.#expectedPath(relativePath, "file")
+      if (expected === undefined) return undefined
+      const result = readNativeProjectFileWithIdentityResult(
+        relativePath,
+        maxBytes ?? DEFAULT_PROJECT_READ_BYTES,
+        this.#projectPath,
+        expected,
+      )
+      this.#assertActive()
+      if (result.kind === "absent" || !sameNoFollowPathLocation(expected.at(-1)?.identity ?? this.#project, result.value.identity)) {
+        throw new ProjectReadBoundaryError()
       }
+      return result.value
     })
   }
 
   readProjectDirectoryIdentity(relativePath: string): NoFollowPathIdentity | undefined {
-    this.#assertActive()
-    const segments = validatedRelativeSegments(relativePath)
-    return withReservedProjectDirectory(this.#project, () => {
-      const reservations: DirectoryReservation[] = []
-      try {
-        let parent = this.#project
-        for (const segment of segments) {
-          const reservation = reserveExistingCurrentChildDirectory(parent, segment)
-          if (reservation === undefined) return undefined
-          reservations.push(reservation)
-          parent = reservation
-        }
-        this.#assertAll(reservations)
-        return parent.identity
-      } finally {
-        leaveCurrentReservations(this.#project, reservations)
+    return this.#native(() => {
+      this.#assertActive()
+      const expected = this.#expectedPath(relativePath, "directory")
+      if (expected === undefined) return undefined
+      const identity = readNativeProjectDirectoryIdentity(relativePath, this.#projectPath, expected)
+      this.#assertActive()
+      if (identity === undefined || !sameNoFollowPathLocation(expected.at(-1)?.identity ?? this.#project, identity)) {
+        throw new ProjectReadBoundaryError()
       }
+      return identity
     })
   }
 
@@ -594,123 +659,220 @@ export class ProjectReadBoundary {
     ) {
       throw new ProjectReadBoundaryError()
     }
-    this.#assertActive()
-    return withReservedProjectDirectory(this.#project, () => {
-      const entries: ProjectReadTreeEntry[] = []
-      let totalBytes = 0
-      const visit = (directory: DirectoryReservation, relativeDirectory: string, reservations: DirectoryReservation[]): void => {
-        this.#assertAll(reservations)
-        for (const name of readdirSync(".").sort()) {
-          assertLeafName(name)
-          const relativePath = relativeDirectory === "" ? name : `${relativeDirectory}/${name}`
-          if (options.isExcluded(relativePath)) continue
-          const stat = lstatSync(name, { bigint: true })
-          if (stat.isSymbolicLink()) throw new ProjectReadBoundaryError()
-          if (stat.isDirectory()) {
-            if (entries.length >= options.maxEntries) throw new ProjectReadBoundaryLimitError()
-            const child = reserveExistingCurrentChildDirectory(directory, name)
-            if (child === undefined) throw new ProjectReadBoundaryError()
-            entries.push({ identity: child.identity, kind: "directory", path: relativePath })
-            reservations.push(child)
-            try {
-              visit(child, relativePath, reservations)
-            } finally {
-              reservations.pop()
-              try {
-                process.chdir("..")
-                assertCurrentDirectory(directory)
-              } catch {
-                throw new ProjectReadBoundaryError()
-              } finally {
-                closeSync(child.descriptor)
-              }
-            }
-            continue
-          }
-          if (!stat.isFile()) throw new ProjectReadBoundaryError()
-          if (stat.size > BigInt(options.maxFileBytes) || entries.length >= options.maxEntries) {
-            throw new ProjectReadBoundaryLimitError()
-          }
-          const file = this.#readCurrentFile(name, reservations, options.maxFileBytes)
-          if (file.kind !== "ready") throw new ProjectReadBoundaryError()
-          totalBytes += file.bytes.byteLength
-          if (totalBytes > options.maxTotalBytes) throw new ProjectReadBoundaryLimitError()
-          entries.push({ bytes: file.bytes, identity: file.identity, kind: "file", path: relativePath })
-        }
-        this.#assertAll(reservations)
+    return this.#native(() => {
+      this.#assertActive()
+      const entries = readNativeProjectTree(
+        options,
+        this.#projectPath,
+        this.#expectationsForTree(".", options.excludedRoots),
+      )
+      this.#assertActive()
+      this.#assertManifestParity(entries, ".", options.excludedRoots)
+      return entries
+    })
+  }
+
+  readProjectTreeAt(
+    relativePath: string,
+    options: ProjectReadTreeOptions,
+  ): readonly ProjectReadTreeEntry[] | undefined {
+    if (
+      !Number.isInteger(options.maxEntries)
+      || !Number.isInteger(options.maxFileBytes)
+      || !Number.isInteger(options.maxTotalBytes)
+      || options.maxEntries <= 0
+      || options.maxFileBytes <= 0
+      || options.maxTotalBytes <= 0
+    ) {
+      throw new ProjectReadBoundaryError()
+    }
+    return this.#native(() => {
+      this.#assertActive()
+      const expected = this.#expectedPath(relativePath, "directory")
+      if (expected === undefined) return undefined
+      const directory = readNativeProjectDirectoryIdentity(relativePath, this.#projectPath, expected)
+      if (directory === undefined || !sameNoFollowPathLocation(expected.at(-1)?.identity ?? this.#project, directory)) {
+        throw new ProjectReadBoundaryError()
       }
-      visit(this.#project, "", [])
+      const entries = readNativeProjectTreeAt(
+        relativePath,
+        options,
+        this.#projectPath,
+        this.#expectationsForTree(relativePath, options.excludedRoots),
+      )
+      this.#assertActive()
+      this.#assertManifestParity(entries, relativePath, options.excludedRoots)
+      return entries
+    })
+  }
+
+  readGeneratedProjectTreeAt(
+    relativePath: string,
+    options: ProjectReadTreeOptions,
+  ): readonly ProjectReadTreeEntry[] | undefined {
+    if (relativePath !== "build/test-results/test" && relativePath !== "target/surefire-reports") {
+      throw new ProjectReadBoundaryError()
+    }
+    if (
+      !Number.isInteger(options.maxEntries)
+      || !Number.isInteger(options.maxFileBytes)
+      || !Number.isInteger(options.maxTotalBytes)
+      || options.maxEntries <= 0
+      || options.maxFileBytes <= 0
+      || options.maxTotalBytes <= 0
+    ) {
+      throw new ProjectReadBoundaryError()
+    }
+    return this.#native(() => {
+      this.#assertActive()
+      const directory = readNativeProjectDirectoryIdentity(relativePath, this.#projectPath)
+      if (directory === undefined) return undefined
+      const entries = readNativeProjectTreeAt(relativePath, options, this.#projectPath)
+      this.#assertActive()
       return entries
     })
   }
 
   assertSafeProjectDirectoryPath(relativePath: string): void {
-    this.#assertActive()
-    const segments = validatedRelativeSegments(relativePath)
-    withReservedProjectDirectory(this.#project, () => {
-      const reservations: DirectoryReservation[] = []
-      try {
-        let parent = this.#project
-        for (const segment of segments) {
-          const reservation = reserveExistingCurrentChildDirectory(parent, segment)
-          if (reservation === undefined) return
-          reservations.push(reservation)
-          parent = reservation
-        }
-        this.#assertAll(reservations)
-      } finally {
-        leaveCurrentReservations(this.#project, reservations)
+    this.#native(() => {
+      this.#assertActive()
+      const segments = validatedRelativeSegments(relativePath)
+      const existing = ["."]
+      for (let index = 0; index < segments.length; index += 1) {
+        const path = segments.slice(0, index + 1).join("/")
+        const entry = this.#manifest.get(path)
+        if (entry === undefined) break
+        if (entry.kind !== "directory") throw new ProjectReadBoundaryError()
+        existing.push(path)
       }
+      const last = existing.at(-1)
+      if (last === undefined) throw new ProjectReadBoundaryError()
+      const expected = this.#expectedPath(last, "directory")
+      if (expected === undefined) throw new ProjectReadBoundaryError()
+      const identity = readNativeProjectDirectoryIdentity(last, this.#projectPath, expected)
+      if (identity === undefined || !sameNoFollowPathLocation(expected.at(-1)?.identity ?? this.#project, identity)) {
+        throw new ProjectReadBoundaryError()
+      }
+      this.#assertActive()
     })
   }
 
   #assertActive(): void {
     if (this.#closed) throw new ProjectReadBoundaryError()
-    assertDirectoryReservation(this.#project)
-  }
-
-  #assertAll(reservations: readonly DirectoryReservation[]): void {
-    this.#assertActive()
-    for (const reservation of reservations) assertDirectoryReservation(reservation)
-  }
-
-  #readCurrentFile(
-    name: string,
-    reservations: readonly DirectoryReservation[],
-    maxBytes?: number,
-  ): CurrentFile {
-    let descriptor: number | undefined
-    try {
-      const currentStat = lstatSync(name, { bigint: true })
-      if (!currentStat.isFile() || currentStat.isSymbolicLink()) throw new ProjectReadBoundaryError()
-      if (maxBytes !== undefined && currentStat.size > BigInt(maxBytes)) throw new ProjectReadBoundaryLimitError()
-      const current = noFollowPathIdentityFromStat(currentStat)
-      this.#assertAll(reservations)
-      descriptor = openSync(name, constants.O_RDONLY | constants.O_NOFOLLOW)
-      const descriptorIdentity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
-      if (maxBytes !== undefined && BigInt(descriptorIdentity.size) > BigInt(maxBytes)) {
-        throw new ProjectReadBoundaryLimitError()
-      }
-      const afterOpen = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
-      if (!sameNoFollowPathIdentity(current, descriptorIdentity) || !sameNoFollowPathIdentity(current, afterOpen)) {
-        throw new ProjectReadBoundaryError()
-      }
-      const bytes = readFileSync(descriptor)
-      if (maxBytes !== undefined && bytes.byteLength > maxBytes) throw new ProjectReadBoundaryLimitError()
-      this.#assertAll(reservations)
-      return { bytes, identity: descriptorIdentity, kind: "ready" }
-    } catch (error) {
-      if (errorCode(error) === "ENOENT") return { kind: "absent" }
-      if (error instanceof ProjectReadBoundaryLimitError || error instanceof ProjectReadBoundaryError) throw error
+    const path = captureNoFollowDirectory(this.#projectPath)
+    if (path.kind !== "ready" || !sameNoFollowPathLocation(this.#project, path.value)) {
       throw new ProjectReadBoundaryError()
-    } finally {
-      if (descriptor !== undefined) closeSync(descriptor)
+    }
+    const current = readNativeProjectDirectoryIdentity(".", this.#projectPath, this.#expectedPath(".", "directory") ?? [])
+    if (current === undefined || !sameNoFollowPathLocation(this.#project, current)) {
+      throw new ProjectReadBoundaryError()
+    }
+  }
+
+  #native<T>(operation: () => T): T {
+    try {
+      return operation()
+    } catch (error) {
+      if (error instanceof ProjectReadBoundaryLimitError || error instanceof ProjectReadBoundaryError) throw error
+      if (error instanceof NativeProjectReadLimitError) throw new ProjectReadBoundaryLimitError()
+      if (error instanceof NativeProjectReadUnsafeError) throw new ProjectReadBoundaryError()
+      if (error instanceof NativeProjectReadRuntimeError) throw new ProjectReadBoundaryError()
+      throw error
+    }
+  }
+
+  #expectedPath(
+    relativePath: string,
+    expectedKind: NativeProjectReadExpectedPath["kind"],
+  ): readonly NativeProjectReadExpectedPath[] | undefined {
+    const segments = relativePath === "." ? [] : validatedRelativeSegments(relativePath)
+    const paths = ["."]
+    for (let index = 0; index < segments.length; index += 1) {
+      paths.push(segments.slice(0, index + 1).join("/"))
+    }
+    const expected = paths.map((path) => this.#manifest.get(path))
+    if (expected.some((entry) => entry === undefined)) return undefined
+    const leaf = expected.at(-1)
+    if (leaf === undefined || leaf.kind !== expectedKind) throw new ProjectReadBoundaryError()
+    return expected.flatMap((entry) => entry === undefined ? [] : [{
+      identity: entry.identity,
+      kind: entry.kind,
+      path: entry.path,
+    }])
+  }
+
+  #expectationsForTree(
+    relativePath: string,
+    excludedRoots: readonly string[] = [],
+  ): readonly NativeProjectReadExpectedPath[] {
+    const prefix = relativePath === "." ? "" : `${relativePath}/`
+    const root = this.#manifest.get(relativePath)
+    if (root?.kind !== "directory") throw new ProjectReadBoundaryError()
+    return [
+      { identity: root.identity, kind: "directory", path: "." },
+      ...[...this.#manifest.values()].flatMap((entry) => {
+        if (
+          !entry.path.startsWith(prefix)
+          || entry.path === relativePath
+          || excludedRoots.some((excluded) => entry.path === excluded || entry.path.startsWith(`${excluded}/`))
+        ) return []
+        return [{
+          identity: entry.identity,
+          kind: entry.kind,
+          path: entry.path.slice(prefix.length),
+        }]
+      }),
+    ]
+  }
+
+  #assertManifestParity(
+    entries: readonly NativeProjectReadTreeEntry[],
+    relativePath: string,
+    excludedRoots: readonly string[] = [],
+  ): void {
+    const expected = this.#expectationsForTree(relativePath, excludedRoots)
+      .filter((entry) => entry.path !== ".")
+      .map((entry) => `${entry.kind}:${entry.path}:${entry.identity.dev}:${entry.identity.ino}`)
+      .sort()
+    const actual = entries
+      .map((entry) => `${entry.kind}:${entry.path}:${entry.identity.dev}:${entry.identity.ino}`)
+      .sort()
+    if (expected.length !== actual.length || expected.some((entry, index) => entry !== actual[index])) {
+      throw new ProjectReadBoundaryError()
     }
   }
 }
 
 export function reserveProjectReadBoundary(projectDir: string): ProjectReadBoundary {
-  return new ProjectReadBoundary(reserveProjectDirectory(resolve(projectDir)))
+  const projectPath = resolve(projectDir)
+  const path = captureNoFollowDirectory(projectPath)
+  if (path.kind !== "ready") throw new ProjectReadBoundaryError()
+  try {
+    const identity = readNativeProjectDirectoryIdentity(".", projectPath)
+    if (identity === undefined || !sameNoFollowPathLocation(path.value, identity)) {
+      throw new ProjectReadBoundaryError()
+    }
+    const entries = readNativeProjectTree(PROJECT_READ_MANIFEST_OPTIONS, projectPath)
+    return new ProjectReadBoundary(projectPath, identity, entries)
+  } catch (error) {
+    if (
+      error instanceof ProjectReadBoundaryError
+      || error instanceof NativeProjectReadRuntimeError
+      || error instanceof NativeProjectReadUnsafeError
+    ) {
+      throw new ProjectReadBoundaryError()
+    }
+    throw error
+  }
+}
+
+function fixedGitCommand(args: readonly string[]): "head" | "index" | "prefix" | "status" | undefined {
+  const joined = args.join("\0")
+  if (joined === "rev-parse\0--show-prefix") return "prefix"
+  if (joined === "rev-parse\0--verify\0HEAD^{commit}") return "head"
+  if (joined === "status\0--porcelain=v1\0-z\0--untracked-files=all") return "status"
+  if (joined === "ls-files\0--stage\0-z") return "index"
+  return undefined
 }
 
 export function reserveBootstrapWriteBoundary(projectDir: string): BootstrapWriteBoundary {

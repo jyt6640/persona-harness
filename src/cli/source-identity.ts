@@ -1,17 +1,12 @@
 import { createHash } from "node:crypto"
-import { lstatSync, readdirSync, realpathSync } from "node:fs"
-import { join } from "node:path"
 
 import {
+  ProjectReadBoundaryError,
   ProjectReadBoundaryLimitError,
+  reserveProjectReadBoundary,
   type ProjectReadBoundary,
 } from "../io/bootstrap-write-boundary.js"
-import { runFixedGit, type FixedGitRunner } from "./fixed-git.js"
-import {
-  captureNoFollowDirectory,
-  readNoFollowRegularFile,
-  sameNoFollowPathIdentity,
-} from "../io/no-follow-file.js"
+import type { FixedGitRunner } from "./fixed-git.js"
 import type { GitIdentity } from "./ci-reverification-identity.js"
 import type { MutationEntry } from "./ci-reverification-mutation.js"
 import {
@@ -46,14 +41,17 @@ type SourceIdentityLimits = {
   readonly maxTotalBytes?: number
 }
 type ResolvedSourceIdentityLimits = {
+  readonly additionalExcludedRoots: readonly string[]
   readonly gitRunner?: FixedGitRunner
   readonly projectReadBoundary?: ProjectReadBoundary
   readonly maxEntries: number
   readonly maxFileBytes: number
   readonly maxTotalBytes: number
 }
+type UnavailableSourceIdentity = { readonly diagnosticCode: string; readonly status: "unavailable" }
+
 type SourceIdentityCapture =
-  | { readonly diagnosticCode: string; readonly status: "unavailable" }
+  | UnavailableSourceIdentity
   | { readonly status: "available"; readonly value: SourceIdentity }
 
 class SourceIdentityError extends Error {
@@ -69,15 +67,49 @@ export function captureSourceIdentity(
   overrides: SourceIdentityLimits = {},
 ): SourceIdentityCapture {
   if (!git.available || git.head === undefined || git.status === undefined) {
-    return unavailable("source-identity-git-unavailable")
+    return { diagnosticCode: "source-identity-git-unavailable", status: "unavailable" }
   }
-  const limits = { ...DEFAULT_LIMITS, ...overrides }
+  let exclusions: readonly string[]
   try {
-    const exclusions = sourceExclusions(evidenceRelativePath, overrides.additionalExcludedRoots)
+    exclusions = sourceExclusions(evidenceRelativePath, overrides.additionalExcludedRoots)
+  } catch (error) {
+    if (error instanceof SourceIdentityError) return unavailable(error.code)
+    return unavailable("source-identity-path-invalid")
+  }
+  const suppliedBoundary = overrides.projectReadBoundary
+  let boundary = suppliedBoundary
+  try {
+    if (boundary === undefined) boundary = reserveProjectReadBoundary(projectDir)
+    return captureSourceIdentityWithinBoundary(
+      projectDir,
+      git,
+      exclusions,
+      resolvedLimits(overrides, boundary),
+    )
+  } catch (error) {
+    if (error instanceof ProjectReadBoundaryError && error.code === "source-read-unsafe") {
+      return unavailable("source-identity-symlink")
+    }
+    return unavailable("source-read-runtime-unavailable")
+  } finally {
+    if (suppliedBoundary === undefined) boundary?.close()
+  }
+}
+
+function captureSourceIdentityWithinBoundary(
+  projectDir: string,
+  git: GitIdentity,
+  exclusions: readonly string[],
+  limits: ResolvedSourceIdentityLimits,
+): SourceIdentityCapture {
+  try {
+    if (!git.available || git.head === undefined || git.status === undefined) {
+      return unavailable("source-identity-git-unavailable")
+    }
     const tracked = trackedIndex(projectDir, limits.maxEntries, limits.gitRunner)
-    const scanned = limits.projectReadBoundary === undefined
-      ? scanWorkspace(realpathSync(projectDir), exclusions, tracked.paths, limits)
-      : scanCapturedWorkspace(limits.projectReadBoundary, exclusions, tracked.paths, limits)
+    const boundary = limits.projectReadBoundary
+    if (boundary === undefined) return { diagnosticCode: "source-read-runtime-unavailable", status: "unavailable" }
+    const scanned = scanCapturedWorkspace(boundary, exclusions, tracked.paths, limits)
     const missingTracked = [...tracked.paths]
       .filter((path) => !isExcluded(path, exclusions) && !scanned.paths.has(path))
       .sort()
@@ -111,6 +143,9 @@ export function captureSourceIdentity(
     }
   } catch (error) {
     if (error instanceof SourceIdentityError) return { diagnosticCode: error.code, status: "unavailable" }
+    if (error instanceof ProjectReadBoundaryError && error.code === "source-read-unsafe") {
+      return unavailable("source-identity-symlink")
+    }
     return { diagnosticCode: "source-identity-unavailable", status: "unavailable" }
   }
 }
@@ -121,13 +156,50 @@ export function captureSourceIdentityEntries(
   evidenceRelativePath: string,
   overrides: SourceIdentityLimits = {},
 ): { readonly diagnosticCode: string; readonly status: "unavailable" } | { readonly status: "available"; readonly value: readonly SourceIdentityEntry[] } {
-  const limits = { ...DEFAULT_LIMITS, ...overrides }
+  if (!git.available || git.head === undefined || git.status === undefined) {
+    return { diagnosticCode: "source-identity-git-unavailable", status: "unavailable" }
+  }
+  let exclusions: readonly string[]
   try {
-    const exclusions = sourceExclusions(evidenceRelativePath, overrides.additionalExcludedRoots)
+    exclusions = sourceExclusions(evidenceRelativePath, overrides.additionalExcludedRoots)
+  } catch (error) {
+    if (error instanceof SourceIdentityError) return unavailable(error.code)
+    return unavailable("source-identity-path-invalid")
+  }
+  const suppliedBoundary = overrides.projectReadBoundary
+  let boundary = suppliedBoundary
+  try {
+    if (boundary === undefined) boundary = reserveProjectReadBoundary(projectDir)
+    return captureSourceIdentityEntriesWithinBoundary(
+      projectDir,
+      git,
+      exclusions,
+      resolvedLimits(overrides, boundary),
+    )
+  } catch (error) {
+    if (error instanceof ProjectReadBoundaryError && error.code === "source-read-unsafe") {
+      return unavailable("source-identity-symlink")
+    }
+    return { diagnosticCode: "source-read-runtime-unavailable", status: "unavailable" }
+  } finally {
+    if (suppliedBoundary === undefined) boundary?.close()
+  }
+}
+
+function captureSourceIdentityEntriesWithinBoundary(
+  projectDir: string,
+  git: GitIdentity,
+  exclusions: readonly string[],
+  limits: ResolvedSourceIdentityLimits,
+): { readonly diagnosticCode: string; readonly status: "unavailable" } | { readonly status: "available"; readonly value: readonly SourceIdentityEntry[] } {
+  try {
+    if (!git.available || git.head === undefined || git.status === undefined) {
+      return { diagnosticCode: "source-identity-git-unavailable", status: "unavailable" }
+    }
     const tracked = trackedIndex(projectDir, limits.maxEntries, limits.gitRunner)
-    const scanned = limits.projectReadBoundary === undefined
-      ? scanWorkspace(realpathSync(projectDir), exclusions, tracked.paths, limits)
-      : scanCapturedWorkspace(limits.projectReadBoundary, exclusions, tracked.paths, limits)
+    const boundary = limits.projectReadBoundary
+    if (boundary === undefined) return { diagnosticCode: "source-read-runtime-unavailable", status: "unavailable" }
+    const scanned = scanCapturedWorkspace(boundary, exclusions, tracked.paths, limits)
     const missingTracked = [...tracked.paths]
       .filter((path) => !isExcluded(path, exclusions) && !scanned.paths.has(path))
       .sort()
@@ -135,6 +207,9 @@ export function captureSourceIdentityEntries(
     return { status: "available", value: [...scanned.entries, ...missingTracked].sort((left, right) => entryKey(left).localeCompare(entryKey(right))) }
   } catch (error) {
     if (error instanceof SourceIdentityError) return { diagnosticCode: error.code, status: "unavailable" }
+    if (error instanceof ProjectReadBoundaryError && error.code === "source-read-unsafe") {
+      return unavailable("source-identity-symlink")
+    }
     return { diagnosticCode: "source-identity-unavailable", status: "unavailable" }
   }
 }
@@ -144,9 +219,8 @@ function trackedIndex(
   maxEntries: number,
   runner?: FixedGitRunner,
 ): { readonly digest: string; readonly paths: ReadonlySet<string> } {
-  const result = runner === undefined
-    ? runFixedGit(projectDir, ["ls-files", "--stage", "-z"])
-    : runner(["ls-files", "--stage", "-z"])
+  if (runner === undefined) throw new SourceIdentityError("source-read-runtime-unavailable")
+  const result = runner(["ls-files", "--stage", "-z"])
   if (!result.available || result.status !== 0) {
     throw new SourceIdentityError("source-identity-index-unavailable")
   }
@@ -162,79 +236,19 @@ function trackedIndex(
   return { digest: digest([...records].sort().join("\0")), paths }
 }
 
-function scanWorkspace(
-  root: string,
-  exclusions: readonly string[],
-  trackedPaths: ReadonlySet<string>,
-  limits: ResolvedSourceIdentityLimits,
-): {
-  readonly entries: readonly SourceIdentityEntry[]
-  readonly paths: ReadonlySet<string>
-  readonly trackedEntryCount: number
-  readonly untrackedEntryCount: number
-} {
-  const entries: SourceIdentityEntry[] = []
-  const paths = new Set<string>()
-  let totalBytes = 0
-  let trackedEntryCount = 0
-  let untrackedEntryCount = 0
-
-  const visit = (directory: string, parent: string): void => {
-    const beforeDirectory = captureNoFollowDirectory(directory)
-    if (beforeDirectory.kind !== "ready") throw new SourceIdentityError("source-identity-unavailable")
-    const names = readdirSync(directory).map((entry) => {
-      if (entry.includes("\\") || entry.includes("\0")) throw new SourceIdentityError("source-identity-path-invalid")
-      return entry
-    }).sort()
-    for (const name of names) {
-      const path = parent === "" ? name : `${parent}/${name}`
-      if (isExcluded(path, exclusions)) continue
-      const absolutePath = join(directory, name)
-      const stat = lstatSync(absolutePath, { bigint: true })
-      if (stat.isSymbolicLink()) throw new SourceIdentityError("source-identity-symlink")
-      if (stat.isDirectory()) {
-        paths.add(path)
-        entries.push({ kind: "directory", mode: mode(stat.mode), path })
-        if (entries.length > limits.maxEntries) throw new SourceIdentityError("source-identity-entry-limit")
-        visit(absolutePath, path)
-        continue
-      }
-      if (!stat.isFile()) throw new SourceIdentityError("source-identity-special-file")
-      const file = readNoFollowRegularFile(absolutePath, limits.maxFileBytes, directory)
-      if (file.kind === "blocked") {
-        throw new SourceIdentityError(file.code === "limit" ? "source-identity-file-limit" : "source-identity-unavailable")
-      }
-      if (file.kind === "absent") throw new SourceIdentityError("source-identity-unavailable")
-      const size = file.value.bytes.byteLength
-      if (!Number.isSafeInteger(size) || size > limits.maxFileBytes) {
-        throw new SourceIdentityError("source-identity-file-limit")
-      }
-      totalBytes += size
-      if (totalBytes > limits.maxTotalBytes) throw new SourceIdentityError("source-identity-total-limit")
-      const classification = trackedPaths.has(path) ? "tracked" : "untracked"
-      if (classification === "tracked") trackedEntryCount += 1
-      else untrackedEntryCount += 1
-      paths.add(path)
-      entries.push({
-        classification,
-        contentDigest: digest(file.value.bytes),
-        kind: "file",
-        mode: file.value.identity.mode,
-        path,
-      })
-      if (entries.length > limits.maxEntries) throw new SourceIdentityError("source-identity-entry-limit")
-    }
-    const afterDirectory = captureNoFollowDirectory(directory)
-    if (
-      afterDirectory.kind !== "ready"
-      || !sameNoFollowPathIdentity(beforeDirectory.value, afterDirectory.value)
-    ) {
-      throw new SourceIdentityError("source-identity-unavailable")
-    }
+function resolvedLimits(
+  overrides: SourceIdentityLimits,
+  projectReadBoundary: ProjectReadBoundary,
+): ResolvedSourceIdentityLimits {
+  return {
+    ...DEFAULT_LIMITS,
+    additionalExcludedRoots: overrides.additionalExcludedRoots ?? [],
+    gitRunner: overrides.gitRunner ?? ((args) => projectReadBoundary.runFixedGit(args)),
+    maxEntries: overrides.maxEntries ?? DEFAULT_LIMITS.maxEntries,
+    maxFileBytes: overrides.maxFileBytes ?? DEFAULT_LIMITS.maxFileBytes,
+    maxTotalBytes: overrides.maxTotalBytes ?? DEFAULT_LIMITS.maxTotalBytes,
+    projectReadBoundary,
   }
-
-  visit(root, "")
-  return { entries, paths, trackedEntryCount, untrackedEntryCount }
 }
 
 function scanCapturedWorkspace(
@@ -250,7 +264,13 @@ function scanCapturedWorkspace(
 } {
   try {
     const captured = boundary.readProjectTree({
-      isExcluded: (path) => isExcluded(path, exclusions),
+      excludedRoots: [
+        ".git",
+        ".gradle",
+        "build",
+        "node_modules",
+        ...exclusions,
+      ],
       maxEntries: limits.maxEntries,
       maxFileBytes: limits.maxFileBytes,
       maxTotalBytes: limits.maxTotalBytes,
@@ -280,6 +300,9 @@ function scanCapturedWorkspace(
   } catch (error) {
     if (error instanceof ProjectReadBoundaryLimitError) {
       throw new SourceIdentityError("source-identity-file-limit")
+    }
+    if (error instanceof ProjectReadBoundaryError && error.code === "source-read-unsafe") {
+      throw new SourceIdentityError("source-identity-symlink")
     }
     throw new SourceIdentityError("source-identity-unavailable")
   }
@@ -334,6 +357,6 @@ function digest(value: string | Buffer): string {
   return `sha256:${createHash("sha256").update(value).digest("hex")}`
 }
 
-function unavailable(diagnosticCode: string): SourceIdentityCapture {
+function unavailable(diagnosticCode: string): UnavailableSourceIdentity {
   return { diagnosticCode, status: "unavailable" }
 }

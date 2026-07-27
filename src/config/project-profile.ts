@@ -2,7 +2,10 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { isRecord, stripJsonComments } from "./jsonc.js"
-import type { BootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
+import type {
+  BootstrapWriteBoundary,
+  ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
 
 const PROFILE_PATH = ".persona/project-profile.jsonc"
 const SUPPORTED_SCHEMA = "persona.project-profile.v1"
@@ -101,9 +104,11 @@ function formatSummaryLines(answers: ReadonlyMap<string, string>, projectNote?: 
   ]
 }
 
-function readProfileText(projectDir: string, bootstrapWriteBoundary?: BootstrapWriteBoundary): string | undefined {
-  if (bootstrapWriteBoundary !== undefined) {
-    return bootstrapWriteBoundary.readProjectFile(PROFILE_PATH)?.toString("utf8")
+type ProfileReadBoundary = BootstrapWriteBoundary | ProjectReadBoundary
+
+function readProfileText(projectDir: string, projectBoundary?: ProfileReadBoundary): string | undefined {
+  if (projectBoundary !== undefined) {
+    return projectBoundary.readProjectFile(PROFILE_PATH)?.toString("utf8")
   }
   const profilePath = join(projectDir, PROFILE_PATH)
   if (!existsSync(profilePath)) {
@@ -114,9 +119,9 @@ function readProfileText(projectDir: string, bootstrapWriteBoundary?: BootstrapW
 
 export function loadBackendProjectProfileSummary(
   projectDir: string,
-  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+  projectBoundary?: ProfileReadBoundary,
 ): readonly string[] {
-  const text = readProfileText(projectDir, bootstrapWriteBoundary)
+  const text = readProfileText(projectDir, projectBoundary)
   if (text === undefined) return []
 
   let parsed: unknown
@@ -138,9 +143,9 @@ export function loadBackendProjectProfileSummary(
 
 export function readBackendProjectProfileState(
   projectDir: string,
-  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+  projectBoundary?: ProfileReadBoundary,
 ): BackendProjectProfileState {
-  const text = readProfileText(projectDir, bootstrapWriteBoundary)
+  const text = readProfileText(projectDir, projectBoundary)
   if (text === undefined) {
     return {
       status: "missing",

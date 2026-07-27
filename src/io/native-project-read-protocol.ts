@@ -20,6 +20,16 @@ export type NativeProjectReadTreeEntry =
       readonly path: string
     }
 
+export type NativeProjectReadCommandResult = {
+  readonly killed: boolean
+  readonly outcome: "failed" | "output-limit" | "passed" | "signal" | "timeout"
+  readonly signal: number
+  readonly status: number
+  readonly stderr: Buffer
+  readonly stdout: Buffer
+  readonly timedOut: boolean
+}
+
 const STATUS = {
   absent: 1,
   invalid: 5,
@@ -56,6 +66,28 @@ export function parseNativeDirectoryResponse(response: Buffer): NativeProjectRea
   const identity = cursor.identity()
   cursor.assertComplete()
   return identity
+}
+
+export function parseNativeTextResponse(response: Buffer): Buffer {
+  const cursor = new ProtocolCursor(response)
+  assertReady(cursor)
+  const bytes = cursor.bytes(cursor.u32())
+  cursor.assertComplete()
+  return bytes
+}
+
+export function parseNativeCommandResponse(response: Buffer): NativeProjectReadCommandResult {
+  const cursor = new ProtocolCursor(response)
+  assertReady(cursor)
+  const outcome = commandOutcome(cursor.u8())
+  const status = cursor.u32()
+  const signal = cursor.u32()
+  const timedOut = cursor.u8() === 1
+  const killed = cursor.u8() === 1
+  const stdout = cursor.bytes(cursor.u32())
+  const stderr = cursor.bytes(cursor.u32())
+  cursor.assertComplete()
+  return { killed, outcome, signal, status, stderr, stdout, timedOut }
 }
 
 export function parseNativeTreeResponse(response: Buffer): readonly NativeProjectReadTreeEntry[] {
@@ -99,6 +131,23 @@ function assertReady(cursor: ProtocolCursor): void {
       throw new NativeProjectReadProtocolError("io")
     case STATUS.invalid:
       throw new NativeProjectReadProtocolError("invalid")
+    default:
+      throw new NativeProjectReadProtocolError("invalid")
+  }
+}
+
+function commandOutcome(value: number): NativeProjectReadCommandResult["outcome"] {
+  switch (value) {
+    case 0:
+      return "passed"
+    case 1:
+      return "failed"
+    case 2:
+      return "signal"
+    case 3:
+      return "timeout"
+    case 4:
+      return "output-limit"
     default:
       throw new NativeProjectReadProtocolError("invalid")
   }

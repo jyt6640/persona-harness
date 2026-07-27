@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 
 export type ProfileIntent = {
   readonly applicationType: string
@@ -20,10 +21,15 @@ function readString(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : ""
 }
 
-export function readProfileIntent(projectDir: string): ProfileIntent | undefined {
-  const profilePath = join(projectDir, PROFILE_PATH)
-  if (!existsSync(profilePath)) return undefined
-  const parsed: unknown = JSON.parse(stripJsonComments(readFileSync(profilePath, "utf8")))
+export function readProfileIntent(
+  projectDir: string,
+  projectReadBoundary?: ProjectReadBoundary,
+): ProfileIntent | undefined {
+  const text = projectReadBoundary === undefined
+    ? readProfileText(projectDir)
+    : projectReadBoundary.readProjectFile(PROFILE_PATH)?.toString("utf8")
+  if (text === undefined) return undefined
+  const parsed: unknown = JSON.parse(stripJsonComments(text))
   if (!isRecord(parsed) || parsed.schema !== "persona.project-profile.v1" || !isRecord(parsed.scope) || !isRecord(parsed.defaults)) {
     return undefined
   }
@@ -46,4 +52,9 @@ export function readProfileIntent(projectDir: string): ProfileIntent | undefined
     persistenceTechnology: answers.get("persistence-technology") ?? "",
     storage: answers.get("storage") ?? "",
   }
+}
+
+function readProfileText(projectDir: string): string | undefined {
+  const profilePath = join(projectDir, PROFILE_PATH)
+  return existsSync(profilePath) ? readFileSync(profilePath, "utf8") : undefined
 }

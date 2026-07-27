@@ -1,10 +1,7 @@
 import { createHash } from "node:crypto"
-import { join } from "node:path"
-
-import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 import {
-  JUNIT_RESULT_DIRS,
-  JUNIT_RESULT_DISCOVERY_LIMITS,
+  discoverJUnitResults,
   type JunitResultSnapshot,
 } from "./junit-result-discovery.js"
 
@@ -36,21 +33,16 @@ const MAX_XML_DEPTH = 128
 export function assessCooperativeJUnit(
   projectDir: string,
   baseline: JunitResultSnapshot,
+  projectReadBoundary?: ProjectReadBoundary,
 ): CooperativeJUnitAssessment {
   if (!baseline.safe) return { code: "junit-unsafe-report", kind: "blocked" }
 
-  const walked = JUNIT_RESULT_DIRS.map((root) => walkBoundedFiles(join(projectDir, root), projectDir, {
-    ...JUNIT_RESULT_DISCOVERY_LIMITS,
-    displayRoot: root,
-    extensions: [".xml"],
-    includeText: true,
-  }))
-  if (walked.some((result) => !result.safe)) return { code: "junit-unsafe-report", kind: "blocked" }
-
-  const files = walked.flatMap((result, index) => result.files.flatMap((file) => file.text === undefined
-    ? []
-    : [{ ref: `${JUNIT_RESULT_DIRS[index]}/${file.relativePath}`, text: file.text }]))
-    .sort((left, right) => left.ref.localeCompare(right.ref))
+  const discovered = discoverJUnitResults(projectDir, {
+    ...(projectReadBoundary === undefined ? {} : { projectReadBoundary }),
+    validateXml: false,
+  })
+  if (!discovered.safe) return { code: "junit-unsafe-report", kind: "blocked" }
+  const files = [...discovered.files].sort((left, right) => left.ref.localeCompare(right.ref))
   if (files.length === 0) return { code: "junit-missing-report", kind: "blocked" }
   if (!files.some((file) => baseline.files.get(file.ref)?.sha256 !== sha256(file.text))) {
     return { code: "junit-stale-report", kind: "blocked" }

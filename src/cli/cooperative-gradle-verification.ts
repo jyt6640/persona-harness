@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto"
-import { lstatSync } from "node:fs"
-
 import {
+  ProjectReadBoundaryError,
   reserveProjectReadBoundary,
   type ProjectReadBoundary,
 } from "../io/bootstrap-write-boundary.js"
@@ -10,7 +9,6 @@ import { preflightDiagnostic, safeGradleWrapper } from "./ci-reverification-cata
 import {
   captureGitIdentity,
   captureGitIdentityFromCapturedProject,
-  captureWorkspaceIdentity,
   samePathIdentity,
 } from "./ci-reverification-identity.js"
 import { type CooperativeFinishContext } from "./cooperative-finish-context.js"
@@ -28,7 +26,6 @@ import {
   type SourceIdentity,
 } from "./source-identity.js"
 import { captureProjectFinishAttestationSourceIdentity } from "./project-finish-attestation-source.js"
-import { runFixedGitFromCurrentDirectory } from "./fixed-git.js"
 
 export const COOPERATIVE_GRADLE_COMMAND_CATALOG = [
   {
@@ -71,10 +68,18 @@ export function runCooperativeGradleVerification(
   context: CooperativeFinishContext,
   options: CooperativeGradleVerificationOptions = {},
 ): CooperativeGradleVerification {
-  const projectRoot = canonicalProjectRoot(projectDir, context)
-  if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
-  const preflight = preflightDiagnostic(projectRoot.value, "local", process.platform)
-  return runGradleVerification(projectRoot.value, context, preflight, options)
+  let boundary: ProjectReadBoundary | undefined
+  try {
+    boundary = reserveProjectReadBoundary(projectDir)
+    const projectRoot = canonicalProjectRoot(projectDir, context, boundary)
+    if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
+    const preflight = preflightDiagnostic(projectRoot.value, "local", process.platform, boundary)
+    return runGradleVerification(projectRoot.value, context, preflight, options, undefined, boundary)
+  } catch {
+    return blocked("source-read-runtime-unavailable")
+  } finally {
+    boundary?.close()
+  }
 }
 
 export function runProjectFinishAttestationGradleVerification(
@@ -82,16 +87,15 @@ export function runProjectFinishAttestationGradleVerification(
   context: CooperativeFinishContext,
   options: CooperativeGradleVerificationOptions = {},
 ): CooperativeGradleVerification {
-  const projectRoot = canonicalProjectRoot(projectDir, context)
-  if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
   try {
-    const boundary = reserveProjectReadBoundary(projectRoot.value)
+    const boundary = reserveProjectReadBoundary(projectDir)
     try {
-      return runProjectFinishAttestationGradleVerificationWithinBoundary(projectRoot.value, context, boundary, options)
+      return runProjectFinishAttestationGradleVerificationWithinBoundary(projectDir, context, boundary, options)
     } finally {
       boundary.close()
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof ProjectReadBoundaryError) return blocked("workspace-root-unavailable")
     return blocked("project-finish-producer-profile")
   }
 }
@@ -126,33 +130,17 @@ function canonicalProjectRoot(
   context: CooperativeFinishContext,
   projectReadBoundary?: ProjectReadBoundary,
 ): { readonly code: string; readonly kind: "blocked" } | { readonly kind: "ready"; readonly value: string } {
-  if (projectReadBoundary !== undefined) {
-    try {
-      projectReadBoundary.assert()
-      const workspace = projectReadBoundary.withCapturedProject(() => captureWorkspaceIdentity("."))
-      if (workspace.status === "unavailable") return { code: workspace.diagnosticCode, kind: "blocked" }
-      if (!samePathIdentity(context.workspace, workspace.value)) {
-        return { code: "workspace-identity-drift", kind: "blocked" }
-      }
-      return { kind: "ready", value: "." }
-    } catch {
-      return { code: "workspace-root-unavailable", kind: "blocked" }
-    }
-  }
   try {
-    const supplied = lstatSync(projectDir, { bigint: true })
-    if (supplied.isSymbolicLink() || !supplied.isDirectory()) {
-      return { code: "workspace-root-unavailable", kind: "blocked" }
+    if (projectReadBoundary === undefined) return { code: "source-read-runtime-unavailable", kind: "blocked" }
+    projectReadBoundary.assert()
+    const workspace = projectReadBoundary.workspaceIdentity()
+    if (!samePathIdentity(context.workspace, workspace)) {
+      return { code: "workspace-identity-drift", kind: "blocked" }
     }
+    return { kind: "ready", value: "." }
   } catch {
     return { code: "workspace-root-unavailable", kind: "blocked" }
   }
-  const workspace = captureWorkspaceIdentity(projectDir)
-  if (workspace.status === "unavailable") return { code: workspace.diagnosticCode, kind: "blocked" }
-  if (!samePathIdentity(context.workspace, workspace.value)) {
-    return { code: "workspace-identity-drift", kind: "blocked" }
-  }
-  return { kind: "ready", value: workspace.value.realpath }
 }
 
 function runGradleVerification(
@@ -164,8 +152,8 @@ function runGradleVerification(
   projectReadBoundary?: ProjectReadBoundary,
 ): CooperativeGradleVerification {
   const gradleWrapper = projectReadBoundary === undefined
-    ? safeGradleWrapper(projectDir)
-    : projectReadBoundary.withCapturedProject(() => safeGradleWrapper("."))
+    ? undefined
+    : safeGradleWrapper(projectDir, projectReadBoundary)
   if (preflight !== undefined || gradleWrapper === undefined) {
     return blocked(preflight ?? "gradle-wrapper-unavailable")
   }
@@ -178,13 +166,12 @@ function runGradleVerification(
   const boundPreSource = inputSnapshot === undefined
     ? preSource.value
     : bindProjectFinishAttestationInputSnapshot(preSource.value, inputSnapshot)
-  const baseline = projectReadBoundary === undefined
-    ? snapshotJUnitResults(projectDir)
-    : projectReadBoundary.withCapturedProject(() => snapshotJUnitResults("."))
+  const baseline = snapshotJUnitResults(projectDir, projectReadBoundary)
   if (!baseline.safe) return blocked("junit-unsafe-report")
 
   const now = options.now ?? Date.now
   const runProcess = options.runProcess ?? runBoundedProcess
+  const useNativeProjectCommand = options.runProcess === undefined
   const attemptStartedAt = now()
   const test = runFixedCommandWithinBoundary(
     projectDir,
@@ -193,14 +180,13 @@ function runGradleVerification(
     now,
     runProcess,
     projectReadBoundary,
+    useNativeProjectCommand,
   )
   const testCode = testDiagnostic(test)
   if (testCode !== undefined) return blocked(testCode)
   const testOutputCode = testExecutionDiagnostic(test.result, ["cleanTest", "test"])
   if (testOutputCode !== undefined) return blocked(testOutputCode)
-  const junit = projectReadBoundary === undefined
-    ? assessCooperativeJUnit(projectDir, baseline)
-    : projectReadBoundary.withCapturedProject(() => assessCooperativeJUnit(".", baseline))
+  const junit = assessCooperativeJUnit(projectDir, baseline, projectReadBoundary)
   if (junit.kind === "blocked") return junit
 
   const build = runFixedCommandWithinBoundary(
@@ -210,6 +196,7 @@ function runGradleVerification(
     now,
     runProcess,
     projectReadBoundary,
+    useNativeProjectCommand,
   )
   const buildCode = testDiagnostic(build)
   if (buildCode !== undefined) return blocked(buildCode.replace(/^test-/u, "build-"))
@@ -218,12 +205,12 @@ function runGradleVerification(
 
   projectReadBoundary?.assert()
   const postWorkspace = projectReadBoundary === undefined
-    ? captureWorkspaceIdentity(projectDir)
-    : projectReadBoundary.withCapturedProject(() => captureWorkspaceIdentity("."))
-  if (postWorkspace.status === "unavailable" || !samePathIdentity(context.workspace, postWorkspace.value)) {
-    return blocked(postWorkspace.status === "unavailable" ? postWorkspace.diagnosticCode : "workspace-identity-drift")
+    ? undefined
+    : projectReadBoundary.workspaceIdentity()
+  if (postWorkspace === undefined || !samePathIdentity(context.workspace, postWorkspace)) {
+    return blocked("workspace-identity-drift")
   }
-  const postGit = captureVerificationGitIdentity(projectDir, postWorkspace.value, projectReadBoundary)
+  const postGit = captureVerificationGitIdentity(projectDir, postWorkspace, projectReadBoundary)
   if (!postGit.available) return blocked(postGit.diagnosticCode)
   let postInputSnapshot: ProjectFinishAttestationInputSnapshot | undefined
   if (inputSnapshot !== undefined) {
@@ -303,10 +290,57 @@ function runFixedCommandWithinBoundary(
   now: () => number,
   runProcess: (options: BoundedProcessOptions) => BoundedProcessResult,
   projectReadBoundary?: ProjectReadBoundary,
+  useNativeProjectCommand = false,
 ): { readonly result: BoundedProcessResult; readonly timedOutBeforeStart: boolean } {
-  return projectReadBoundary === undefined
-    ? runFixedCommand(projectDir, command, attemptStartedAt, now, runProcess)
-    : projectReadBoundary.withCapturedProject(() => runFixedCommand(".", command, attemptStartedAt, now, runProcess))
+  const remaining = COOPERATIVE_ATTEMPT_TIMEOUT_MS - (now() - attemptStartedAt)
+  if (remaining <= 0) {
+    return {
+      result: {
+        killed: false,
+        outcome: "timeout",
+        outputLimited: false,
+        signal: null,
+        status: 1,
+        stderr: "",
+        stdout: "",
+        timedOut: true,
+      },
+      timedOutBeforeStart: true,
+    }
+  }
+  if (projectReadBoundary !== undefined && useNativeProjectCommand) {
+    const native = projectReadBoundary.runFixedGradle(
+      command.id,
+      Math.min(COOPERATIVE_COMMAND_TIMEOUT_MS, remaining),
+    )
+    return {
+      result: {
+        killed: native.killed,
+        outcome: native.outcome,
+        outputLimited: native.outcome === "output-limit",
+        signal: nativeSignal(native.signal),
+        status: native.status,
+        stderr: native.stderr.toString("utf8"),
+        stdout: native.stdout.toString("utf8"),
+        timedOut: native.timedOut,
+      },
+      timedOutBeforeStart: false,
+    }
+  }
+  return runFixedCommand(projectDir, command, attemptStartedAt, now, runProcess)
+}
+
+function nativeSignal(value: number): NodeJS.Signals | null {
+  switch (value) {
+    case 0:
+      return null
+    case 9:
+      return "SIGKILL"
+    case 15:
+      return "SIGTERM"
+    default:
+      return "SIGTERM"
+  }
 }
 
 function captureVerificationGitIdentity(
@@ -316,9 +350,7 @@ function captureVerificationGitIdentity(
 ) {
   return projectReadBoundary === undefined
     ? captureGitIdentity(projectDir, workspace)
-    : projectReadBoundary.withCapturedProject(() => captureGitIdentityFromCapturedProject(
-        (args) => runFixedGitFromCurrentDirectory(args),
-      ))
+    : captureGitIdentityFromCapturedProject((args) => projectReadBoundary.runFixedGit(args))
 }
 
 function testDiagnostic(command: { readonly result: BoundedProcessResult; readonly timedOutBeforeStart: boolean }): string | undefined {

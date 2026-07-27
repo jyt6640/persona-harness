@@ -2,7 +2,10 @@ import { createHash, randomUUID } from "node:crypto"
 import { isAbsolute, resolve } from "node:path"
 
 import { loadHarnessConfigResult } from "../config/harness-config.js"
-import { reserveExistingBootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
+import {
+  reserveExistingBootstrapWriteBoundary,
+  reserveProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
 import { sanitizeEvidenceValue } from "../runtime/evidence-redaction.js"
 import type { CliRunResult } from "./bearshell.js"
 
@@ -23,11 +26,11 @@ export function runEvidenceReadCommand(
   const targetFile = args[0]
   if (targetFile === undefined) return UNAVAILABLE_RESULT
   try {
-    const boundary = reserveExistingBootstrapWriteBoundary(projectDir)
+    const readBoundary = reserveProjectReadBoundary(projectDir)
     try {
-      const file = boundary.readProjectFile(targetFile)
+      const file = readBoundary.readProjectFile(targetFile, MAX_READ_BYTES)
       if (file === undefined || file.byteLength > MAX_READ_BYTES) return UNAVAILABLE_RESULT
-      const config = loadHarnessConfigResult(projectDir, boundary)
+      const config = loadHarnessConfigResult(projectDir, readBoundary)
       if (!config.safe || !safeProjectRelativePath(config.config.evidenceDir)) return UNAVAILABLE_RESULT
       const relativeOutputPath = `${config.config.evidenceDir}/phase0/workflow-read-${randomUUID()}.json`
       if (!safeProjectRelativePath(relativeOutputPath)) return UNAVAILABLE_RESULT
@@ -39,12 +42,19 @@ export function runEvidenceReadCommand(
         schemaVersion: "workflow-read-evidence.1",
         targetFile,
       } as const
-      boundary.writeProjectFileAtomically(
-        relativeOutputPath,
-        `${JSON.stringify(sanitizeEvidenceValue(payload, 4_096, { projectDir }), null, 2)}\n`,
-      )
+      readBoundary.assert()
+      const writeBoundary = reserveExistingBootstrapWriteBoundary(projectDir)
+      try {
+        writeBoundary.writeProjectFileAtomically(
+          relativeOutputPath,
+          `${JSON.stringify(sanitizeEvidenceValue(payload, 4_096, { projectDir }), null, 2)}\n`,
+        )
+      } finally {
+        writeBoundary.close()
+      }
+      readBoundary.assert()
     } finally {
-      boundary.close()
+      readBoundary.close()
     }
   } catch {
     return UNAVAILABLE_RESULT
