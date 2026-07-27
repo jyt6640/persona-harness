@@ -59,6 +59,7 @@ export async function runProjectFinishAttestationBuilder({
       workspace.caller.realpath,
       context.value,
       readProducerVersion(producerRoot),
+      { projectRootIdentity: workspace.caller },
     )
     if (result.kind === "blocked") return recordBlocked(workspace, result.code)
     if (!sameWorkspace(workspace)) return recordBlocked(workspace, "project-finish-producer-workspace")
@@ -226,7 +227,15 @@ function captureCanonicalDirectory(path) {
     ) {
       throw new ProducerScriptError("project-finish-producer-workspace")
     }
-    return { dev: before.dev.toString(), ino: before.ino.toString(), realpath }
+    return {
+      ctimeNs: before.ctimeNs.toString(),
+      dev: before.dev.toString(),
+      ino: before.ino.toString(),
+      mode: before.mode.toString(),
+      mtimeNs: before.mtimeNs.toString(),
+      realpath,
+      size: before.size.toString(),
+    }
   } catch (error) {
     if (error instanceof ProducerScriptError) throw error
     throw new ProducerScriptError("project-finish-producer-workspace")

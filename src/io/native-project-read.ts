@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { lstatSync, readFileSync } from "node:fs"
-import { resolve, sep } from "node:path"
+import { isAbsolute, relative, resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
@@ -105,7 +105,7 @@ export function readNativeProjectFile(
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
 ): Buffer {
-  const root = nativeProjectRoot(projectDir)
+  const root = nativeProjectRoot(projectDir, ".", expectations)
   assertReadLimit(maxBytes)
   try {
     const invocation = nativeInvocation(["read", relativePath, String(maxBytes)], root, expectations)
@@ -132,7 +132,7 @@ export function readNativeProjectFileWithIdentityResult(
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
 ): NativeProjectReadFileResult {
-  const root = nativeProjectRoot(projectDir)
+  const root = nativeProjectRoot(projectDir, ".", expectations)
   assertReadLimit(maxBytes)
   try {
     const invocation = nativeInvocation(["read", relativePath, String(maxBytes)], root, expectations)
@@ -151,7 +151,7 @@ export function readNativeProjectDirectoryIdentity(
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
 ): NativeProjectReadIdentity | undefined {
-  const root = nativeProjectRoot(projectDir)
+  const root = nativeProjectRoot(projectDir, ".", expectations)
   try {
     const invocation = nativeInvocation(["directory", relativePath], root, expectations)
     return parseNativeDirectoryResponse(runNative(invocation.args, 128, {}, invocation.input))
@@ -185,7 +185,7 @@ export function readNativeProjectTreeAt(
   projectDir = process.cwd(),
   expectations: readonly NativeProjectReadExpectedPath[] = [],
 ): readonly NativeProjectReadTreeEntry[] {
-  const root = nativeProjectRoot(projectDir, relativeRoot)
+  const root = nativeProjectRoot(projectDir, relativeRoot, expectations)
   assertReadLimit(options.maxFileBytes)
   assertReadLimit(options.maxTotalBytes)
   if (!Number.isSafeInteger(options.maxEntries) || options.maxEntries <= 0) throw new NativeProjectReadRuntimeError()
@@ -205,13 +205,37 @@ export function readNativeProjectTreeAt(
   }
 }
 
+export function captureNativeGeneratedProjectTreeManifest(
+  relativeRoot: "build/test-results/test" | "target/surefire-reports",
+  projectDir: string,
+  expectations: readonly NativeProjectReadExpectedPath[],
+): readonly NativeProjectReadTreeEntry[] | undefined {
+  const root = nativeProjectRoot(projectDir, ".", expectations)
+  if (
+    expectations.length !== 1
+    || expectations[0]?.path !== "."
+    || expectations[0]?.kind !== "directory"
+  ) {
+    throw new NativeProjectReadRuntimeError()
+  }
+  try {
+    const invocation = nativeInvocation(["generated-manifest", relativeRoot], root, expectations)
+    return parseNativeTreeResponse(runNative(invocation.args, 2 * 1024 * 1024, {}, invocation.input))
+  } catch (error) {
+    if (error instanceof NativeProjectReadProtocolError && error.code === "absent") return undefined
+    throw nativeError(error)
+  }
+}
+
 export function runNativeProjectGit(
   command: NativeProjectGitCommand,
   projectDir = process.cwd(),
+  expectations: readonly NativeProjectReadExpectedPath[] = [],
 ): Buffer {
-  const root = nativeProjectRoot(projectDir)
+  const root = nativeProjectRoot(projectDir, ".", expectations)
   try {
-    return parseNativeTextResponse(runNative(["git", command, "--root", root], 4 * 1024 * 1024 + 128))
+    const invocation = nativeInvocation(["git", command], root, expectations)
+    return parseNativeTextResponse(runNative(invocation.args, 4 * 1024 * 1024 + 128, {}, invocation.input))
   } catch (error) {
     throw nativeError(error)
   }
@@ -221,28 +245,46 @@ export function runNativeProjectGradle(
   command: NativeProjectGradleCommand,
   timeoutMs: number,
   projectDir = process.cwd(),
+  expectations: readonly NativeProjectReadExpectedPath[] = [],
 ): NativeProjectReadCommandResult {
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > 120_000) {
     throw new NativeProjectReadRuntimeError()
   }
-  const root = nativeProjectRoot(projectDir)
+  const root = nativeProjectRoot(projectDir, ".", expectations)
   try {
+    const invocation = nativeInvocation(["gradle", command, String(timeoutMs)], root, expectations)
     return parseNativeCommandResponse(runNative(
-      ["gradle", command, String(timeoutMs), "--root", root],
+      invocation.args,
       2 * 1024 * 1024 + 256,
       nativeGradleEnvironment(),
+      invocation.input,
     ))
   } catch (error) {
     throw nativeError(error)
   }
 }
 
-function nativeProjectRoot(projectDir: string, relativeRoot = "."): string {
+function nativeProjectRoot(
+  projectDir: string,
+  relativeRoot: string,
+  expectations: readonly NativeProjectReadExpectedPath[],
+): string {
   const current = resolve(process.cwd())
   const requested = resolve(projectDir)
   if (!validNativeRelativeRoot(relativeRoot)) throw new NativeProjectReadUnsafeError()
-  if (requested !== current) throw new NativeProjectReadRuntimeError()
-  return relativeRoot
+  if (requested === current) return relativeRoot
+  const selected = relative(current, requested)
+  if (
+    relativeRoot !== "."
+    || isAbsolute(selected)
+    || selected.includes("\\")
+    || selected.includes(sep)
+    || !validNativeRelativeRoot(selected)
+    || !expectations.some((entry) => entry.path === "." && entry.kind === "directory")
+  ) {
+    throw new NativeProjectReadRuntimeError()
+  }
+  return selected
 }
 
 function validNativeRelativeRoot(value: string): boolean {

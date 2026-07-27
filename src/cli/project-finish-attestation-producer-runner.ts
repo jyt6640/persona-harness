@@ -14,6 +14,7 @@ import {
   type ProjectFinishAttestationProducerArtifacts,
 } from "./project-finish-attestation-producer.js"
 import type { ProjectFinishAttestationReceipt } from "./project-finish-attestation-types.js"
+import type { NativeProjectReadIdentity } from "../io/native-project-read.js"
 
 export type ProjectFinishAttestationProducerContext = {
   readonly callerWorkflowRef: string
@@ -35,6 +36,7 @@ export type ProjectFinishAttestationProducerResult =
   | { readonly kind: "passed"; readonly value: ProjectFinishAttestationProducerArtifacts }
 
 type ProjectFinishAttestationProducerOptions = {
+  readonly projectRootIdentity?: NativeProjectReadIdentity
   readonly prepareContext?: (projectDir: string) => CooperativeFinishContextResult
   readonly verify?: (
     projectDir: string,
@@ -59,7 +61,7 @@ export function runProjectFinishAttestationProducer(
   }
   let projectReadBoundary: ReturnType<typeof reserveProjectReadBoundary>
   try {
-    projectReadBoundary = reserveProjectReadBoundary(projectDir)
+    projectReadBoundary = reserveProjectReadBoundary(projectDir, options.projectRootIdentity)
   } catch {
     return blocked("workspace-root-unavailable")
   }

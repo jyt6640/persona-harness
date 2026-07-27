@@ -155,6 +155,63 @@ describe.sequential("native project read runtime", () => {
     }
   })
 
+  it("opens one captured direct child through the inherited runner capability", () => {
+    // Given: a runner capability, a direct caller checkout, and its captured directory identity.
+    const runner = realpathSync(mkdtempSync(join(tmpdir(), "persona-native-captured-root-")))
+    const project = join(runner, "project")
+    mkdirSync(project)
+    writeFileSync(join(project, "package.json"), "{}\n")
+    const expectations = expectedRuntimeManifest(project, ["package.json"])
+
+    try {
+      // When: the native runtime receives the direct child with an expected root descriptor identity.
+      const actual = withCurrentDirectory(runner, () => readNativeProjectFile("package.json", 4096, project, expectations))
+
+      // Then: it reads only through the held runner-to-caller descriptor transition.
+      expect(actual).toEqual(Buffer.from("{}\n"))
+    } finally {
+      rmSync(runner, { force: true, recursive: true })
+    }
+  })
+
+  it("rejects an unbound direct child replacement before opening its external directory", () => {
+    // Given: a runner path whose direct child is replaced by an external regular directory.
+    const runner = realpathSync(mkdtempSync(join(tmpdir(), "persona-native-unbound-root-")))
+    const project = join(runner, "project")
+    const outside = join(runner, "outside")
+    mkdirSync(join(project, "src", "main", "java"), { recursive: true })
+    mkdirSync(join(outside, "src", "main", "java"), { recursive: true })
+    writeFileSync(join(project, "src", "main", "java", "App.java"), "class App {}\n")
+    writeFileSync(join(outside, "src", "main", "java", "App.java"), "class External {}\n")
+    const outsideIdentity = lstatSync(outside, { bigint: true })
+    renameSync(project, `${project}.draft`)
+    renameSync(outside, project)
+
+    try {
+      // When: the native binary receives an unbound selected root under the held runner descriptor.
+      const result = spawnSync(
+        nativeExecutable(),
+        [
+          "read",
+          "src/main/java/App.java",
+          "4096",
+          "--root",
+          "project",
+          "--audit",
+          outsideIdentity.dev.toString(),
+          outsideIdentity.ino.toString(),
+        ],
+        { cwd: runner, encoding: "buffer", env: {}, shell: false, stdio: ["ignore", "pipe", "ignore"] },
+      )
+
+      // Then: native traversal rejects before any descriptor from the external directory is opened.
+      expect(result.status).toBe(0)
+      expect(result.stdout).toEqual(Buffer.from([2, 0]))
+    } finally {
+      rmSync(runner, { force: true, recursive: true })
+    }
+  })
+
   it("rejects a captured regular source-parent replacement before opening its external descriptor", () => {
     // Given: a source identity manifest captured before an external regular directory replaces src/main.
     const project = mkdtempSync(join(tmpdir(), "persona-native-manifest-"))
@@ -208,6 +265,59 @@ describe.sequential("native project read runtime", () => {
     }
   })
 
+  it("rejects a generated JUnit root replacement before opening its external descriptor", () => {
+    // Given: a generated-report manifest captured before build output is replaced by an external directory.
+    const project = mkdtempSync(join(tmpdir(), "persona-native-junit-manifest-"))
+    const generatedRoot = join(project, "build", "test-results", "test")
+    const outside = join(project, "outside")
+    mkdirSync(generatedRoot, { recursive: true })
+    mkdirSync(join(outside, "test-results", "test"), { recursive: true })
+    writeFileSync(join(generatedRoot, "TEST-App.xml"), "<testsuite tests=\"1\"/>\n")
+    writeFileSync(join(outside, "test-results", "test", "TEST-App.xml"), "<testsuite tests=\"1\"/>\n")
+    const expectations = expectedManifest(project, [
+      "build",
+      "build/test-results",
+      "build/test-results/test",
+      "build/test-results/test/TEST-App.xml",
+    ])
+    const outsideIdentity = lstatSync(outside, { bigint: true })
+    renameSync(join(project, "build"), join(project, "build.draft"))
+    renameSync(outside, join(project, "build"))
+
+    try {
+      // When: the bounded report reader traverses every captured generated-output segment.
+      const result = spawnSync(
+        nativeExecutable(),
+        [
+          "tree",
+          "128",
+          "65536",
+          "262144",
+          "--expect-stdin",
+          "--root",
+          "build/test-results/test",
+          "--audit",
+          outsideIdentity.dev.toString(),
+          outsideIdentity.ino.toString(),
+        ],
+        {
+          cwd: project,
+          encoding: "buffer",
+          env: {},
+          input: manifestInput(expectations),
+          shell: false,
+          stdio: ["pipe", "pipe", "ignore"],
+        },
+      )
+
+      // Then: a replaced build parent blocks before an external report directory or leaf is opened.
+      expect(result.status).toBe(0)
+      expect(result.stdout).toEqual(Buffer.from([2, 0]))
+    } finally {
+      rmSync(project, { force: true, recursive: true })
+    }
+  })
+
   it("runs only the fixed Gradle test catalog from the held project root", () => {
     // Given: a selected child project with a regular executable wrapper.
     const runner = mkdtempSync(join(tmpdir(), "persona-native-gradle-runtime-"))
@@ -253,12 +363,26 @@ function withCurrentDirectory<T>(directory: string, operation: () => T): T {
 function expectedManifest(project: string, paths: readonly string[]) {
   return [
     { kind: "directory" as const, path: ".", stat: lstatSync(project, { bigint: true }) },
-    ...paths.map((path) => ({
-      kind: path.endsWith(".java") ? "file" as const : "directory" as const,
-      path,
-      stat: lstatSync(join(project, path), { bigint: true }),
-    })),
+    ...paths.map((path) => {
+      const stat = lstatSync(join(project, path), { bigint: true })
+      return { kind: stat.isFile() ? "file" as const : "directory" as const, path, stat }
+    }),
   ]
+}
+
+function expectedRuntimeManifest(project: string, paths: readonly string[]) {
+  return expectedManifest(project, paths).map((entry) => ({
+    identity: {
+      ctimeNs: entry.stat.ctimeNs.toString(),
+      dev: entry.stat.dev.toString(),
+      ino: entry.stat.ino.toString(),
+      mode: entry.stat.mode.toString(),
+      mtimeNs: entry.stat.mtimeNs.toString(),
+      size: entry.stat.size.toString(),
+    },
+    kind: entry.kind,
+    path: entry.path,
+  }))
 }
 
 function manifestInput(entries: readonly { readonly kind: "directory" | "file"; readonly path: string; readonly stat: BigIntStats }[]): Buffer {
