@@ -26,7 +26,35 @@
         "README.md",
         ".persona/project-profile.jsonc",
         "src/main/java/example/cooperative/GreetingService.java"
-      ]
+      ],
+      "sourceReadManifest": [
+        {
+          "id": "project-root",
+          "surface": "producer-and-source-match",
+          "boundary": "captured-directory-identity"
+        },
+        {
+          "id": "harness-config-and-profile",
+          "surface": ".persona/harness.jsonc-and-project-profile.jsonc",
+          "boundary": "descriptor-relative-regular-file"
+        },
+        {
+          "id": "gradle-descriptors",
+          "surface": "build.gradle-or-build.gradle.kts-and-settings.gradle-or-settings.gradle.kts",
+          "boundary": "descriptor-relative-exactly-one"
+        },
+        {
+          "id": "source-tree-and-git",
+          "surface": "tracked-and-included-untracked-source-plus-fixed-git",
+          "boundary": "descriptor-relative-tree-and-captured-cwd"
+        },
+        {
+          "id": "evidence-read-input-and-output",
+          "surface": "public-ph-evidence-read",
+          "boundary": "captured-project-read-and-canonical-evidence-write"
+        }
+      ],
+      "unsafeResult": "bounded-block-no-external-bytes-record-or-artifact"
     }
   },
   "authority": {
