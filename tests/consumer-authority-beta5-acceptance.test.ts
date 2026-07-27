@@ -31,7 +31,12 @@ type AcceptanceManifest = {
   readonly cooperative: {
     readonly commands: readonly string[]
     readonly defaultFinish: string
-    readonly evidence: { readonly recordSchema: string; readonly sourceReads: readonly string[] }
+    readonly evidence: {
+      readonly recordSchema: string
+      readonly sourceReadManifest: readonly { readonly boundary: string; readonly id: string; readonly surface: string }[]
+      readonly sourceReads: readonly string[]
+      readonly unsafeResult: string
+    }
     readonly explicitFinish: string
     readonly laterClosure: string
   }
@@ -72,14 +77,20 @@ describe("consumer authority beta.5 acceptance manifest", () => {
       explicitFinish: "cooperative-pass",
       laterClosure: "trusted-authority-required",
     })
-    expect(manifest.cooperative.evidence).toEqual({
-      recordSchema: "workflow-read-evidence.1",
-      sourceReads: [
-        "README.md",
-        ".persona/project-profile.jsonc",
-        "src/main/java/example/cooperative/GreetingService.java",
-      ],
-    })
+    expect(manifest.cooperative.evidence.recordSchema).toBe("workflow-read-evidence.1")
+    expect(manifest.cooperative.evidence.sourceReads).toEqual([
+      "README.md",
+      ".persona/project-profile.jsonc",
+      "src/main/java/example/cooperative/GreetingService.java",
+    ])
+    expect(manifest.cooperative.evidence.sourceReadManifest).toEqual([
+      { boundary: "captured-directory-identity", id: "project-root", surface: "producer-and-source-match" },
+      { boundary: "descriptor-relative-regular-file", id: "harness-config-and-profile", surface: ".persona/harness.jsonc-and-project-profile.jsonc" },
+      { boundary: "descriptor-relative-exactly-one", id: "gradle-descriptors", surface: "build.gradle-or-build.gradle.kts-and-settings.gradle-or-settings.gradle.kts" },
+      { boundary: "descriptor-relative-tree-and-captured-cwd", id: "source-tree-and-git", surface: "tracked-and-included-untracked-source-plus-fixed-git" },
+      { boundary: "captured-project-read-and-canonical-evidence-write", id: "evidence-read-input-and-output", surface: "public-ph-evidence-read" },
+    ])
+    expect(manifest.cooperative.evidence.unsafeResult).toBe("bounded-block-no-external-bytes-record-or-artifact")
   })
 
   it("keeps current artifact verification and explicit consumption as a single future hosted residual", () => {
