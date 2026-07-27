@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { lstatSync, readFileSync } from "node:fs"
-import { isAbsolute, relative, resolve, sep } from "node:path"
+import { resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
@@ -240,20 +240,9 @@ export function runNativeProjectGradle(
 function nativeProjectRoot(projectDir: string, relativeRoot = "."): string {
   const current = resolve(process.cwd())
   const requested = resolve(projectDir)
-  const root = relative(current, requested)
   if (!validNativeRelativeRoot(relativeRoot)) throw new NativeProjectReadUnsafeError()
-  if (root === "") return relativeRoot
-  if (
-    isAbsolute(root)
-    || root === ".."
-    || root.startsWith(`..${sep}`)
-    || root.includes("\\")
-    || root.split(sep).some((segment) => segment.length === 0 || segment === "." || segment === "..")
-  ) {
-    throw new NativeProjectReadRuntimeError()
-  }
-  const selected = root.split(sep).join("/")
-  return relativeRoot === "." ? selected : `${selected}/${relativeRoot}`
+  if (requested !== current) throw new NativeProjectReadRuntimeError()
+  return relativeRoot
 }
 
 function validNativeRelativeRoot(value: string): boolean {

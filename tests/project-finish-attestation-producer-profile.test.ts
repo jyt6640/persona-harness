@@ -49,12 +49,11 @@ describe("project finish producer input readiness", () => {
     })
   })
 
-  it("accepts a relative public caller root through the producer verification boundary", () => {
+  it("accepts an inherited public caller root through the producer verification boundary", () => {
     const projectDir = createProject("absent")
-    const callerRoot = basename(projectDir)
 
-    const result = withProjectCapability(dirname(projectDir), () => (
-      runProjectFinishAttestationProducer(callerRoot, producerContext(projectDir), "0.7.0")
+    const result = withProjectCapability(projectDir, () => (
+      runProjectFinishAttestationProducer(".", producerContext(projectDir), "0.7.0")
     ))
 
     expect(result).toMatchObject({
@@ -76,8 +75,8 @@ describe("project finish producer input readiness", () => {
     mkdirSync(producerBin, { recursive: true })
     symlinkSync("../outside", join(producerBin, "node"))
 
-    const result = withProjectCapability(runnerRoot, () => (
-      runProjectFinishAttestationProducer(".project-finish-caller", producerContext(projectDir), "0.7.0")
+    const result = withProjectCapability(projectDir, () => (
+      runProjectFinishAttestationProducer(".", producerContext(projectDir), "0.7.0")
     ))
 
     expect(result).toMatchObject({

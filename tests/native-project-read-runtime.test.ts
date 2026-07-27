@@ -5,6 +5,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   symlinkSync,
@@ -24,7 +25,7 @@ import {
 } from "../src/io/native-project-read.js"
 import { reserveProjectReadBoundary } from "../src/io/bootstrap-write-boundary.js"
 
-describe("native project read runtime", () => {
+describe.sequential("native project read runtime", () => {
   it("reads a bounded regular file through the packaged native runtime", () => {
     // Given: the repository root is the inherited project capability.
     const expected = readFileSync("package.json")
@@ -136,6 +137,24 @@ describe("native project read runtime", () => {
     }
   })
 
+  it("rejects a caller-selected project root outside the inherited capability", () => {
+    // Given: an inherited runner directory and a distinct child project path.
+    const runner = realpathSync(mkdtempSync(join(tmpdir(), "persona-native-root-selection-")))
+    const project = join(runner, "project")
+    mkdirSync(project)
+    writeFileSync(join(project, "package.json"), "{}\n")
+
+    try {
+      // When: TypeScript asks the native runtime to reopen that child as a project root.
+      const invoke = () => withCurrentDirectory(runner, () => readNativeProjectFile("package.json", 4096, project))
+
+      // Then: only the inherited canonical project capability is accepted.
+      expect(invoke).toThrow("source-read-runtime-unavailable")
+    } finally {
+      rmSync(runner, { force: true, recursive: true })
+    }
+  })
+
   it("rejects a captured regular source-parent replacement before opening its external descriptor", () => {
     // Given: a source identity manifest captured before an external regular directory replaces src/main.
     const project = mkdtempSync(join(tmpdir(), "persona-native-manifest-"))
@@ -201,8 +220,8 @@ describe("native project read runtime", () => {
     chmodSync(join(project, "gradlew"), 0o755)
 
     try {
-      // When: the fixed native command is executed through the selected root descriptor.
-      const result = withCurrentDirectory(runner, () => runNativeProjectGradle("test", 1_000, "project"))
+      // When: the fixed native command is executed from the inherited project capability.
+      const result = withCurrentDirectory(project, () => runNativeProjectGradle("test", 1_000, "."))
 
       // Then: it completes with the fixed task output and no shell-selected command path.
       expect(result).toMatchObject({ outcome: "passed", status: 0, timedOut: false })
