@@ -1,4 +1,5 @@
-import fs, {
+import childProcess from "node:child_process"
+import {
   mkdirSync,
   mkdtempSync,
   renameSync,
@@ -25,11 +26,11 @@ afterEach(() => {
   }
 })
 
-describe("project finish producer input snapshot", () => {
+describe.sequential("project finish producer input snapshot", () => {
   it("accepts a profile-less public Gradle root and binds its fixed descriptors", () => {
     const projectDir = createProject()
 
-    const snapshot = captureProjectFinishAttestationInputSnapshot(projectDir)
+    const snapshot = withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))
 
     expect(snapshot).toMatchObject({
       kind: "ready",
@@ -41,7 +42,7 @@ describe("project finish producer input snapshot", () => {
     const projectDir = createProject()
     writeFileSync(join(projectDir, ".persona", "project-profile.jsonc"), `${JSON.stringify(canonicalProfile())}\n`)
 
-    expect(captureProjectFinishAttestationInputSnapshot(projectDir)).toMatchObject({
+    expect(withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))).toMatchObject({
       kind: "ready",
       value: { profile: "ready" },
     })
@@ -73,7 +74,7 @@ describe("project finish producer input snapshot", () => {
     const projectDir = createProject()
     arrange(projectDir)
 
-    expect(captureProjectFinishAttestationInputSnapshot(projectDir)).toEqual({
+    expect(withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))).toEqual({
       code: "project-finish-producer-profile",
       kind: "blocked",
     })
@@ -86,8 +87,8 @@ describe("project finish producer input snapshot", () => {
     const outsidePath = join(projectDir, "outside-build.gradle")
     writeFileSync(outsidePath, "plugins { id 'outside' }\n")
 
-    const swapped = swapAtNoFollowOpen(buildPath, draftPath, outsidePath, () => (
-      captureProjectFinishAttestationInputSnapshot(projectDir)
+    const swapped = swapAfterNativeTree(buildPath, draftPath, outsidePath, () => (
+      withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))
     ))
 
     expect(swapped.didSwap).toBe(true)
@@ -107,8 +108,8 @@ describe("project finish producer input snapshot", () => {
     writeFileSync(profilePath, `${JSON.stringify({ ...canonicalProfile(), status: "draft" })}\n`)
     writeFileSync(outsidePath, `${JSON.stringify({ marker, ...canonicalProfile() })}\n`)
 
-    const swapped = swapAtNoFollowOpen(profilePath, draftPath, outsidePath, () => (
-      captureProjectFinishAttestationInputSnapshot(projectDir)
+    const swapped = swapAfterNativeTree(profilePath, draftPath, outsidePath, () => (
+      withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))
     ))
 
     expect(swapped.didSwap).toBe(true)
@@ -130,8 +131,8 @@ describe("project finish producer input snapshot", () => {
     writeFileSync(profilePath, `${JSON.stringify(canonicalProfile())}\n`)
     writeFileSync(join(outsideDirectory, "project-profile.jsonc"), `${JSON.stringify({ marker, ...canonicalProfile() })}\n`)
 
-    const swapped = swapParentAtNoFollowOpen(profilePath, profileDirectory, draftDirectory, outsideDirectory, () => (
-      captureProjectFinishAttestationInputSnapshot(projectDir)
+    const swapped = swapParentAfterNativeTree(profileDirectory, draftDirectory, outsideDirectory, () => (
+      withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))
     ))
 
     expect(swapped.didSwap).toBe(true)
@@ -161,28 +162,39 @@ function canonicalProfile(): Readonly<Record<string, unknown>> {
   }
 }
 
-function swapAtNoFollowOpen<T>(
+function withProjectCapability<T>(projectDir: string, action: () => T): T {
+  const original = process.cwd()
+  process.chdir(projectDir)
+  try {
+    return action()
+  } finally {
+    process.chdir(original)
+  }
+}
+
+function swapAfterNativeTree<T>(
   sourcePath: string,
   draftPath: string,
   outsidePath: string,
   action: () => T,
 ): { readonly didSwap: boolean; readonly value: T } {
-  const originalOpen = fs.openSync
+  const originalSpawnSync = childProcess.spawnSync
   let swapped = false
-  fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
-    if (!swapped && args[0] === sourcePath) {
+  childProcess.spawnSync = ((...args: Parameters<typeof childProcess.spawnSync>) => {
+    const result = originalSpawnSync(...args)
+    if (!swapped && Array.isArray(args[1]) && args[1][0] === "tree") {
       swapped = true
       renameSync(sourcePath, draftPath)
       symlinkSync(outsidePath, sourcePath)
     }
-    return originalOpen(...args)
-  }) as typeof fs.openSync
+    return result
+  }) as typeof childProcess.spawnSync
   syncBuiltinESMExports()
   try {
     const value = action()
     return { didSwap: swapped, value }
   } finally {
-    fs.openSync = originalOpen
+    childProcess.spawnSync = originalSpawnSync
     syncBuiltinESMExports()
     if (swapped) {
       unlinkSync(sourcePath)
@@ -191,29 +203,29 @@ function swapAtNoFollowOpen<T>(
   }
 }
 
-function swapParentAtNoFollowOpen<T>(
-  sourcePath: string,
+function swapParentAfterNativeTree<T>(
   sourceDirectory: string,
   draftDirectory: string,
   outsideDirectory: string,
   action: () => T,
 ): { readonly didSwap: boolean; readonly value: T } {
-  const originalOpen = fs.openSync
+  const originalSpawnSync = childProcess.spawnSync
   let swapped = false
-  fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
-    if (!swapped && args[0] === sourcePath) {
+  childProcess.spawnSync = ((...args: Parameters<typeof childProcess.spawnSync>) => {
+    const result = originalSpawnSync(...args)
+    if (!swapped && Array.isArray(args[1]) && args[1][0] === "tree") {
       swapped = true
       renameSync(sourceDirectory, draftDirectory)
       symlinkSync(outsideDirectory, sourceDirectory)
     }
-    return originalOpen(...args)
-  }) as typeof fs.openSync
+    return result
+  }) as typeof childProcess.spawnSync
   syncBuiltinESMExports()
   try {
     const value = action()
     return { didSwap: swapped, value }
   } finally {
-    fs.openSync = originalOpen
+    childProcess.spawnSync = originalSpawnSync
     syncBuiltinESMExports()
     if (swapped) {
       unlinkSync(sourceDirectory)
