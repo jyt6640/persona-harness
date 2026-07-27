@@ -842,6 +842,171 @@ function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
 function assertEvidenceReadWriteBoundary(fixtureRoot, phPath, label) {
   assertEvidenceReadParentAliasBlocks(join(fixtureRoot, "parent-alias"), phPath, label)
   assertEvidenceReadParentRaceBlocks(join(fixtureRoot, "parent-race"), phPath, label)
+  assertEvidenceReadSourceParentAliasBlocks(join(fixtureRoot, "source-parent-alias"), phPath, label)
+  assertEvidenceReadSourceParentRaceBlocks(join(fixtureRoot, "source-parent-race"), phPath, label)
+  assertEvidenceReadSourceLeafAliasBlocks(join(fixtureRoot, "source-leaf-alias"), phPath, label)
+  assertEvidenceReadSourceLeafRaceBlocks(join(fixtureRoot, "source-leaf-race"), phPath, label)
+  assertEvidenceReadProjectRootRaceBlocks(join(fixtureRoot, "source-root-race"), phPath, label)
+}
+
+function assertEvidenceReadSourceParentAliasBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read source parent alias bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const sourceParent = join(projectDir, "src", "main", "java")
+  const outside = join(projectDir, "outside-source")
+  rmSync(sourceParent, { force: true, recursive: true })
+  mkdirSync(outside)
+  writeFileSync(join(outside, "App.java"), "class ExternalApp {}\n")
+  symlinkSync(outside, sourceParent)
+
+  const result = runNode(projectDir, [phPath, "evidence", "read", "src/main/java/App.java"])
+
+  requireEvidenceReadBlock(`${label} evidence read source parent alias`, result, outside)
+  if (!lstatSync(sourceParent).isSymbolicLink()) {
+    throw new Error(`${label} evidence read source parent alias lost its containment probe`)
+  }
+}
+
+function assertEvidenceReadSourceParentRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read source race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const sourceParent = join(projectDir, "src", "main", "java")
+  const preserved = join(projectDir, "src", "main", "java-preserved")
+  const outside = join(projectDir, "outside-source")
+  const hookPath = join(projectDir, "evidence-read-source-race-hook.cjs")
+  mkdirSync(outside)
+  writeFileSync(join(outside, "App.java"), "class ExternalApp {}\n")
+  writeFileSync(hookPath, [
+    'const fs = require("node:fs")',
+    'const { syncBuiltinESMExports } = require("node:module")',
+    'const originalLstat = fs.lstatSync',
+    'const originalOpen = fs.openSync',
+    'let swapped = false',
+    'fs.lstatSync = (path, ...rest) => {',
+    '  const result = originalLstat(path, ...rest)',
+    '  if (!swapped && path === "App.java") {',
+    '    swapped = true',
+    '    fs.renameSync(process.env.PH_SOURCE_PARENT, process.env.PH_SOURCE_PRESERVED)',
+    '    fs.symlinkSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PARENT)',
+    '  }',
+    '  return result',
+    '}',
+    'fs.openSync = (path, ...rest) => {',
+    '  if (swapped && typeof path === "string" && path.includes("outside-source")) process.stderr.write("OPENED_EXTERNAL=1\\n")',
+    '  return originalOpen(path, ...rest)',
+    '}',
+    'syncBuiltinESMExports()',
+    '',
+  ].join("\n"))
+  const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    PH_SOURCE_OUTSIDE: outside,
+    PH_SOURCE_PARENT: sourceParent,
+    PH_SOURCE_PRESERVED: preserved,
+  })
+  requireEvidenceReadBlock(`${label} evidence read source parent race`, result, outside)
+  if (!lstatSync(sourceParent).isSymbolicLink() || `${result.stdout}${result.stderr}`.includes("OPENED_EXTERNAL=1")) {
+    throw new Error(`${label} evidence read source parent race opened external bytes`)
+  }
+}
+
+function assertEvidenceReadSourceLeafAliasBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read source leaf alias bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const source = join(projectDir, "src", "main", "java", "App.java")
+  const outside = join(projectDir, "outside-source.java")
+  writeFileSync(outside, "class ExternalApp {}\n")
+  rmSync(source)
+  symlinkSync(outside, source)
+
+  const result = runNode(projectDir, [phPath, "evidence", "read", "src/main/java/App.java"])
+
+  requireEvidenceReadBlock(`${label} evidence read source leaf alias`, result, outside)
+  if (!lstatSync(source).isSymbolicLink()) {
+    throw new Error(`${label} evidence read source leaf alias lost its containment probe`)
+  }
+}
+
+function assertEvidenceReadSourceLeafRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read source leaf race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const source = join(projectDir, "src", "main", "java", "App.java")
+  const preserved = join(projectDir, "src", "main", "java", "App.draft.java")
+  const outside = join(projectDir, "outside-source.java")
+  const hookPath = join(projectDir, "evidence-read-source-leaf-race-hook.cjs")
+  writeFileSync(outside, "class ExternalApp {}\n")
+  writeFileSync(hookPath, [
+    'const fs = require("node:fs")',
+    'const { syncBuiltinESMExports } = require("node:module")',
+    'const originalLstat = fs.lstatSync',
+    'const originalOpen = fs.openSync',
+    'let swapped = false',
+    'fs.lstatSync = (path, ...rest) => {',
+    '  const result = originalLstat(path, ...rest)',
+    '  if (!swapped && path === "App.java") {',
+    '    swapped = true',
+    '    fs.renameSync(process.env.PH_SOURCE_FILE, process.env.PH_SOURCE_PRESERVED)',
+    '    fs.symlinkSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_FILE)',
+    '  }',
+    '  return result',
+    '}',
+    'fs.openSync = (path, ...rest) => {',
+    '  if (swapped && typeof path === "string" && path.includes("outside-source")) process.stderr.write("OPENED_EXTERNAL=1\\n")',
+    '  return originalOpen(path, ...rest)',
+    '}',
+    'syncBuiltinESMExports()',
+    '',
+  ].join("\n"))
+  const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    PH_SOURCE_FILE: source,
+    PH_SOURCE_OUTSIDE: outside,
+    PH_SOURCE_PRESERVED: preserved,
+  })
+  requireEvidenceReadBlock(`${label} evidence read source leaf race`, result, outside)
+  if (!lstatSync(source).isSymbolicLink() || `${result.stdout}${result.stderr}`.includes("OPENED_EXTERNAL=1")) {
+    throw new Error(`${label} evidence read source leaf race opened external bytes`)
+  }
+}
+
+function assertEvidenceReadProjectRootRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read root race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const preserved = `${projectDir}-preserved`
+  const outside = `${projectDir}-outside`
+  const hookPath = join(projectDir, "evidence-read-project-root-race-hook.cjs")
+  mkdirSync(outside)
+  mkdirSync(join(outside, "src", "main", "java"), { recursive: true })
+  writeFileSync(join(outside, "src", "main", "java", "App.java"), "class ExternalApp {}\n")
+  writeFileSync(hookPath, [
+    'const fs = require("node:fs")',
+    'const { syncBuiltinESMExports } = require("node:module")',
+    'const originalLstat = fs.lstatSync',
+    'const originalOpen = fs.openSync',
+    'let swapped = false',
+    'fs.lstatSync = (path, ...rest) => {',
+    '  const result = originalLstat(path, ...rest)',
+    '  if (!swapped && path === "App.java") {',
+    '    swapped = true',
+    '    fs.renameSync(process.env.PH_SOURCE_PROJECT, process.env.PH_SOURCE_PRESERVED)',
+    '    fs.symlinkSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PROJECT)',
+    '  }',
+    '  return result',
+    '}',
+    'fs.openSync = (path, ...rest) => {',
+    '  if (swapped && typeof path === "string" && path.includes("outside")) process.stderr.write("OPENED_EXTERNAL=1\\n")',
+    '  return originalOpen(path, ...rest)',
+    '}',
+    'syncBuiltinESMExports()',
+    '',
+  ].join("\n"))
+  const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    PH_SOURCE_OUTSIDE: outside,
+    PH_SOURCE_PRESERVED: preserved,
+    PH_SOURCE_PROJECT: projectDir,
+  })
+  requireEvidenceReadBlock(`${label} evidence read root race`, result, outside)
+  if (!lstatSync(projectDir).isSymbolicLink() || `${result.stdout}${result.stderr}`.includes("OPENED_EXTERNAL=1")) {
+    throw new Error(`${label} evidence read root race opened external bytes`)
+  }
 }
 
 function assertEvidenceReadParentAliasBlocks(projectDir, phPath, label) {

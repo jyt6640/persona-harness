@@ -1,11 +1,9 @@
 import { createHash, randomUUID } from "node:crypto"
-import { isAbsolute, join, relative, resolve } from "node:path"
+import { isAbsolute, resolve } from "node:path"
 
+import { loadHarnessConfigResult } from "../config/harness-config.js"
 import { reserveExistingBootstrapWriteBoundary } from "../io/bootstrap-write-boundary.js"
 import { sanitizeEvidenceValue } from "../runtime/evidence-redaction.js"
-import { evidenceWriteContext } from "../runtime/evidence-file.js"
-import { captureNoFollowProjectFile, sameNoFollowPathIdentity } from "../io/no-follow-file.js"
-import { runFixedGitBytes } from "./fixed-git.js"
 import type { CliRunResult } from "./bearshell.js"
 
 const MAX_READ_BYTES = 256 * 1024
@@ -24,33 +22,23 @@ export function runEvidenceReadCommand(
   const projectDir = resolve(projectDirInput ?? process.cwd())
   const targetFile = args[0]
   if (targetFile === undefined) return UNAVAILABLE_RESULT
-  const before = captureNoFollowProjectFile(projectDir, targetFile)
-  if (before.kind !== "ready") return UNAVAILABLE_RESULT
-  const file = runFixedGitBytes(projectDir, ["show", `HEAD:${targetFile}`], MAX_READ_BYTES)
-  if (!file.available || file.status !== 0 || file.stdout.byteLength > MAX_READ_BYTES) return UNAVAILABLE_RESULT
-  const after = captureNoFollowProjectFile(projectDir, targetFile)
-  if (
-    after.kind !== "ready"
-    || after.value.length !== before.value.length
-    || after.value.some((entry, index) => !sameNoFollowPathIdentity(entry, before.value[index]!))
-  ) return UNAVAILABLE_RESULT
-
-  const context = evidenceWriteContext(projectDir, {})
-  if (context === undefined) return UNAVAILABLE_RESULT
-  const outputPath = join(context.evidenceRoot, "phase0", `workflow-read-${randomUUID()}.json`)
-  const payload = {
-    byteCount: file.stdout.byteLength,
-    contentDigest: `sha256:${createHash("sha256").update(file.stdout).digest("hex")}`,
-    evidenceKind: "workflow-read",
-    fileRole: "source-read",
-    schemaVersion: "workflow-read-evidence.1",
-    targetFile,
-  } as const
   try {
-    const relativeOutputPath = relative(projectDir, outputPath)
-    if (!safeProjectRelativePath(relativeOutputPath)) return UNAVAILABLE_RESULT
     const boundary = reserveExistingBootstrapWriteBoundary(projectDir)
     try {
+      const file = boundary.readProjectFile(targetFile)
+      if (file === undefined || file.byteLength > MAX_READ_BYTES) return UNAVAILABLE_RESULT
+      const config = loadHarnessConfigResult(projectDir, boundary)
+      if (!config.safe || !safeProjectRelativePath(config.config.evidenceDir)) return UNAVAILABLE_RESULT
+      const relativeOutputPath = `${config.config.evidenceDir}/phase0/workflow-read-${randomUUID()}.json`
+      if (!safeProjectRelativePath(relativeOutputPath)) return UNAVAILABLE_RESULT
+      const payload = {
+        byteCount: file.byteLength,
+        contentDigest: `sha256:${createHash("sha256").update(file).digest("hex")}`,
+        evidenceKind: "workflow-read",
+        fileRole: "source-read",
+        schemaVersion: "workflow-read-evidence.1",
+        targetFile,
+      } as const
       boundary.writeProjectFileAtomically(
         relativeOutputPath,
         `${JSON.stringify(sanitizeEvidenceValue(payload, 4_096, { projectDir }), null, 2)}\n`,

@@ -21,13 +21,6 @@ export type FixedGitResult = {
   readonly stdout: string
 }
 
-export type FixedGitBytesResult = {
-  readonly available: boolean
-  readonly diagnosticCode: string
-  readonly status: number
-  readonly stdout: Buffer
-}
-
 export function runFixedGit(projectDir: string, args: readonly string[]): FixedGitResult {
   const executable = resolveFixedGitExecutable()
   if (executable === undefined) return unavailable("git-executable-unavailable")
@@ -50,31 +43,6 @@ export function runFixedGit(projectDir: string, args: readonly string[]): FixedG
     }
   } catch {
     return unavailable("git-execution-failed")
-  }
-}
-
-export function runFixedGitBytes(projectDir: string, args: readonly string[], maxBytes: number): FixedGitBytesResult {
-  const executable = resolveFixedGitExecutable()
-  if (executable === undefined) return unavailableBytes("git-executable-unavailable")
-  try {
-    const result = spawnSync(executable, [...FIXED_GIT_OPTIONS, ...args], {
-      cwd: projectDir,
-      encoding: "buffer",
-      env: fixedGitEnvironment(executable),
-      maxBuffer: maxBytes,
-      shell: false,
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: GIT_TIMEOUT_MS,
-    })
-    if (result.error !== undefined) return unavailableBytes("git-execution-failed")
-    return {
-      available: true,
-      diagnosticCode: "git-execution-complete",
-      status: result.status ?? 1,
-      stdout: Buffer.isBuffer(result.stdout) ? result.stdout : Buffer.alloc(0),
-    }
-  } catch {
-    return unavailableBytes("git-execution-failed")
   }
 }
 
@@ -129,8 +97,4 @@ function fixedGitEnvironment(executable: string): NodeJS.ProcessEnv {
 
 function unavailable(diagnosticCode: string): FixedGitResult {
   return { available: false, diagnosticCode, status: 1, stdout: "" }
-}
-
-function unavailableBytes(diagnosticCode: string): FixedGitBytesResult {
-  return { available: false, diagnosticCode, status: 1, stdout: Buffer.alloc(0) }
 }
