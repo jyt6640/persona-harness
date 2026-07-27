@@ -5,10 +5,6 @@ import {
   type ProjectReadBoundary,
 } from "../io/bootstrap-write-boundary.js"
 import { isRecord, stripJsonComments } from "../config/jsonc.js"
-import {
-  noFollowPathIdentityDigest,
-  noFollowPathLocationDigest,
-} from "../io/no-follow-file.js"
 import type { SourceIdentity } from "./source-identity.js"
 
 const PROFILE_DIRECTORY = ".persona"
@@ -51,8 +47,6 @@ function captureProjectFinishAttestationInputSnapshotWithinBoundary(
 ): ProjectFinishAttestationInputSnapshotResult {
   try {
     projectReadBoundary.assert()
-    const root = projectReadBoundary.projectIdentity()
-
     const profile = captureProfileWithinBoundary(projectReadBoundary)
     if (profile.kind === "blocked") return profile
     const build = captureExactlyOneRootFileWithinBoundary(BUILD_FILES, projectReadBoundary)
@@ -68,7 +62,6 @@ function captureProjectFinishAttestationInputSnapshotWithinBoundary(
         digest: digest(JSON.stringify({
           build,
           profile,
-          root: noFollowPathLocationDigest(root),
           settings,
         })),
         profile: profile.kind,
@@ -110,7 +103,7 @@ function captureProfileWithinBoundary(
   )
   if (profile === undefined) {
     return {
-      digest: digest(JSON.stringify({ directory: noFollowPathIdentityDigest(directory) })),
+      digest: "absent",
       kind: "absent",
     }
   }
@@ -121,8 +114,6 @@ function captureProfileWithinBoundary(
     return {
       digest: digest(JSON.stringify({
         bytes: digest(profile.bytes),
-        directory: noFollowPathIdentityDigest(directory),
-        identity: noFollowPathIdentityDigest(profile.identity),
       })),
       kind: "ready",
     }
@@ -145,7 +136,6 @@ function captureExactlyOneRootFileWithinBoundary(
   return {
     digest: digest(JSON.stringify({
       bytes: digest(file.bytes),
-      identity: noFollowPathIdentityDigest(file.identity),
       name: file.name,
     })),
     file: file.name,

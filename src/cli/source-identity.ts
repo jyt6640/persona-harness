@@ -279,12 +279,9 @@ function scanCapturedWorkspace(
     const paths = new Set<string>()
     let trackedEntryCount = 0
     let untrackedEntryCount = 0
-    for (const entry of captured) {
+    const files = captured.filter((entry) => entry.kind === "file")
+    for (const entry of files) {
       paths.add(entry.path)
-      if (entry.kind === "directory") {
-        entries.push({ kind: "directory", mode: entry.identity.mode, path: entry.path })
-        continue
-      }
       const classification = trackedPaths.has(entry.path) ? "tracked" : "untracked"
       if (classification === "tracked") trackedEntryCount += 1
       else untrackedEntryCount += 1
@@ -292,9 +289,15 @@ function scanCapturedWorkspace(
         classification,
         contentDigest: digest(entry.bytes),
         kind: "file",
-        mode: entry.identity.mode,
+        mode: canonicalSourceMode(entry.identity.mode),
         path: entry.path,
       })
+    }
+    for (const entry of captured) {
+      if (entry.kind !== "directory") continue
+      if (!files.some((file) => file.path.startsWith(`${entry.path}/`))) continue
+      paths.add(entry.path)
+      entries.push({ kind: "directory", mode: "0755", path: entry.path })
     }
     return { entries, paths, trackedEntryCount, untrackedEntryCount }
   } catch (error) {
@@ -349,8 +352,10 @@ function entryKey(entry: SourceIdentityEntry): string {
       : `${entry.path}\0${entry.kind}`
 }
 
-function mode(value: bigint): string {
-  return Number(value & 0o777n).toString(8).padStart(4, "0")
+function canonicalSourceMode(value: string): string {
+  const parsed = Number.parseInt(value, 8)
+  if (!Number.isSafeInteger(parsed)) throw new SourceIdentityError("source-identity-unavailable")
+  return (parsed & 0o111) === 0 ? "0644" : "0755"
 }
 
 function digest(value: string | Buffer): string {

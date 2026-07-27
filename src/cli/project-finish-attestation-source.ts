@@ -51,15 +51,16 @@ function currentProjectGit(projectReadBoundary: ProjectReadBoundary) {
 export function matchesProjectFinishAttestationSource(
   projectDir: string,
   expected: SourceIdentity,
+  suppliedBoundary?: ProjectReadBoundary,
 ): boolean {
-  let projectReadBoundary: ProjectReadBoundary | undefined
+  let projectReadBoundary = suppliedBoundary
   try {
-    projectReadBoundary = reserveProjectReadBoundary(projectDir)
+    if (projectReadBoundary === undefined) projectReadBoundary = reserveProjectReadBoundary(projectDir)
     return matchesProjectFinishAttestationSourceWithinBoundary(projectReadBoundary, expected)
   } catch {
     return false
   } finally {
-    projectReadBoundary?.close()
+    if (suppliedBoundary === undefined) projectReadBoundary?.close()
   }
 }
 

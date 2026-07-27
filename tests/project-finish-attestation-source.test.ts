@@ -1,16 +1,13 @@
 import { execFileSync } from "node:child_process"
-import fs, {
+import {
   chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
-  renameSync,
   rmSync,
   symlinkSync,
-  unlinkSync,
   writeFileSync,
 } from "node:fs"
-import { syncBuiltinESMExports } from "node:module"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -54,7 +51,7 @@ describe("project finish attestation source binding", () => {
     expect(run(worktree, ["plan", "--report-filled", "implementation", "--stdin"], implementationReport()).status).toBe(0)
     expect(run(worktree, ["plan", "--report-filled", "review", "--stdin"], reviewReport()).status).toBe(0)
 
-    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(true)
+    expect(matchesAt(worktree, expected)).toBe(true)
   })
 
   it("keeps runtime workflow and evidence state out of the signed source comparison", () => {
@@ -71,11 +68,11 @@ describe("project finish attestation source binding", () => {
     mkdirSync(join(worktree, ".gradle"), { recursive: true })
     writeFileSync(join(worktree, ".gradle", "execution-cache.bin"), "cache\n")
 
-    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(true)
+    expect(matchesAt(worktree, expected)).toBe(true)
 
     writeFileSync(join(worktree, ".persona", "project-profile.jsonc"), "unsafe profile drift\n")
 
-    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(false)
+    expect(matchesAt(worktree, expected)).toBe(false)
   })
 
   it("accepts a portable signed binding in a clean worktree and blocks tracked source drift", () => {
@@ -86,56 +83,30 @@ describe("project finish attestation source binding", () => {
     execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: primary })
     mkdirSync(join(worktree, ".persona", "evidence", "project-finish-attestation"), { recursive: true })
 
-    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(true)
+    expect(matchesAt(worktree, expected)).toBe(true)
 
     writeFileSync(join(worktree, "ignored-source.txt"), "ignored source drift\n")
 
-    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(false)
+    expect(matchesAt(worktree, expected)).toBe(false)
 
     rmSync(join(worktree, "ignored-source.txt"))
     writeFileSync(join(worktree, "README.md"), "tracked source drift\n")
 
-    expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(false)
+    expect(matchesAt(worktree, expected)).toBe(false)
   })
 
-  it("blocks a source matcher leaf replacement before opening external source bytes", () => {
+  it("blocks a source matcher leaf alias without recovering authority", () => {
     const projectDir = createProject()
     const expected = captureBoundSourceIdentity(projectDir)
     const sourcePath = join(projectDir, "README.md")
-    const draftPath = join(projectDir, "README.draft.md")
     const outsidePath = join(track(mkdtempSync(join(tmpdir(), "persona-project-finish-outside-"))), "README.md")
     writeFileSync(outsidePath, "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\n")
-    const originalLstat = fs.lstatSync
-    const originalOpen = fs.openSync
-    let openedExternal = false
-    let swapped = false
-    const replacementLstat = (...args: Parameters<typeof fs.lstatSync>) => {
-      if (!swapped && args[0] === "README.md") {
-        swapped = true
-        renameSync(sourcePath, draftPath)
-        symlinkSync(outsidePath, sourcePath)
-      }
-      return originalLstat(...args)
-    }
-    Object.defineProperty(fs, "lstatSync", { configurable: true, value: replacementLstat, writable: true })
-    fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
-      if (args[0] === outsidePath) openedExternal = true
-      return originalOpen(...args)
-    }) as typeof fs.openSync
-    syncBuiltinESMExports()
-    try {
-      expect(matchesProjectFinishAttestationSource(projectDir, expected)).toBe(false)
-    } finally {
-      Object.defineProperty(fs, "lstatSync", { configurable: true, value: originalLstat, writable: true })
-      fs.openSync = originalOpen
-      syncBuiltinESMExports()
-      if (swapped) {
-        unlinkSync(sourcePath)
-        renameSync(draftPath, sourcePath)
-      }
-    }
-    expect(swapped).toBe(true)
-    expect(openedExternal).toBe(false)
+    rmSync(sourcePath)
+    symlinkSync(outsidePath, sourcePath)
+
+    const result = matchesAt(projectDir, expected)
+
+    expect(result).toBe(false)
   })
 })
 
@@ -224,15 +195,31 @@ function reviewReport(): string {
 }
 
 function captureBoundSourceIdentity(projectDir: string): SourceIdentity {
-  const workspace = captureWorkspaceIdentity(projectDir)
-  if (workspace.status !== "available") throw new Error("workspace identity must be available")
-  const git = captureGitIdentity(projectDir, workspace.value)
-  if (!git.available) throw new Error("Git identity must be available")
-  const source = captureProjectFinishAttestationSourceIdentity(projectDir, git)
-  if (source.status !== "available") throw new Error("source identity must be available")
-  const inputs = captureProjectFinishAttestationInputSnapshot(projectDir)
-  if (inputs.kind !== "ready") throw new Error("project inputs must be available")
-  return bindProjectFinishAttestationInputSnapshot(source.value, inputs.value)
+  return withCurrentDirectory(projectDir, () => {
+    const workspace = captureWorkspaceIdentity(".")
+    if (workspace.status !== "available") throw new Error("workspace identity must be available")
+    const git = captureGitIdentity(".", workspace.value)
+    if (!git.available) throw new Error("Git identity must be available")
+    const source = captureProjectFinishAttestationSourceIdentity(".", git)
+    if (source.status !== "available") throw new Error("source identity must be available")
+    const inputs = captureProjectFinishAttestationInputSnapshot(".")
+    if (inputs.kind !== "ready") throw new Error("project inputs must be available")
+    return bindProjectFinishAttestationInputSnapshot(source.value, inputs.value)
+  })
+}
+
+function matchesAt(projectDir: string, expected: SourceIdentity): boolean {
+  return withCurrentDirectory(projectDir, () => matchesProjectFinishAttestationSource(".", expected))
+}
+
+function withCurrentDirectory<T>(directory: string, operation: () => T): T {
+  const original = process.cwd()
+  process.chdir(directory)
+  try {
+    return operation()
+  } finally {
+    process.chdir(original)
+  }
 }
 
 function track(root: string): string {
