@@ -3,7 +3,11 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import {
-  captureGitIdentity,
+  reserveProjectReadBoundary,
+  type ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
+import {
+  captureGitIdentityFromCapturedProject,
   captureWorkspaceIdentity,
   type GitIdentity,
 } from "./ci-reverification-identity.js"
@@ -14,7 +18,7 @@ import {
   type SourceIdentityEntry,
 } from "./source-identity.js"
 import type { SourceIdentity } from "./source-identity-types.js"
-import { runFixedGit } from "./fixed-git.js"
+import { runFixedGitFromCurrentDirectory } from "./fixed-git.js"
 import type { MutationEntry } from "./ci-reverification-mutation.js"
 
 const PROJECT_FINISH_PERMITTED_MUTATION_ROOTS = [
@@ -29,28 +33,53 @@ const PROJECT_FINISH_WORKFLOW_ROOT = ".persona/workflow"
 export function captureProjectFinishAttestationSourceIdentity(
   projectDir: string,
   git: GitIdentity,
+  projectReadBoundary?: ProjectReadBoundary,
 ) {
   return captureSourceIdentity(projectDir, git, ".persona/evidence", {
     additionalExcludedRoots: [PROJECT_FINISH_WORKFLOW_ROOT],
+    ...(projectReadBoundary === undefined ? {} : { gitRunner: currentProjectGit(projectReadBoundary) }),
+    projectReadBoundary,
   })
 }
 
 export function captureProjectFinishAttestationSourceEntries(
   projectDir: string,
   git: GitIdentity,
+  projectReadBoundary?: ProjectReadBoundary,
 ) {
   return captureSourceIdentityEntries(projectDir, git, ".persona/evidence", {
     additionalExcludedRoots: [PROJECT_FINISH_WORKFLOW_ROOT],
+    ...(projectReadBoundary === undefined ? {} : { gitRunner: currentProjectGit(projectReadBoundary) }),
+    projectReadBoundary,
   })
+}
+
+function currentProjectGit(projectReadBoundary: ProjectReadBoundary) {
+  return (args: readonly string[]) => projectReadBoundary.withCapturedProject(() => runFixedGitFromCurrentDirectory(args))
 }
 
 export function matchesProjectFinishAttestationSource(
   projectDir: string,
   expected: SourceIdentity,
 ): boolean {
-  const workspace = captureWorkspaceIdentity(projectDir)
+  let projectReadBoundary: ProjectReadBoundary | undefined
+  try {
+    projectReadBoundary = reserveProjectReadBoundary(projectDir)
+    return matchesProjectFinishAttestationSourceWithinBoundary(projectReadBoundary, expected)
+  } catch {
+    return false
+  } finally {
+    projectReadBoundary?.close()
+  }
+}
+
+function matchesProjectFinishAttestationSourceWithinBoundary(
+  projectReadBoundary: ProjectReadBoundary,
+  expected: SourceIdentity,
+): boolean {
+  const workspace = projectReadBoundary.withCapturedProject(() => captureWorkspaceIdentity("."))
   if (workspace.status !== "available") return false
-  const git = captureGitIdentity(projectDir, workspace.value)
+  const git = captureGitIdentityFromCapturedProject(currentProjectGit(projectReadBoundary))
   if (
     !git.available
     || git.head !== expected.repositoryHead
@@ -59,29 +88,44 @@ export function matchesProjectFinishAttestationSource(
   ) {
     return false
   }
-  if (captureProjectFinishAttestationInputSnapshot(projectDir).kind !== "ready") return false
-  const currentEntries = captureProjectFinishAttestationSourceEntries(projectDir, git)
+  if (captureProjectFinishAttestationInputSnapshot(".", projectReadBoundary).kind !== "ready") return false
+  const currentEntries = captureProjectFinishAttestationSourceEntries(".", git, projectReadBoundary)
   if (currentEntries.status !== "available") return false
 
   const tempRoot = mkdtempSync(join(tmpdir(), "persona-harness-project-source-"))
   const cleanRoot = join(tempRoot, "source")
-  const added = runFixedGit(projectDir, ["worktree", "add", "--detach", cleanRoot, expected.repositoryHead])
+  const added = projectReadBoundary.withCapturedProject(() => runFixedGitFromCurrentDirectory([
+    "worktree",
+    "add",
+    "--detach",
+    cleanRoot,
+    expected.repositoryHead,
+  ]))
   if (added.status !== 0) {
     rmSync(tempRoot, { force: true, recursive: true })
     return false
   }
+
+  let cleanReadBoundary: ProjectReadBoundary | undefined
   try {
-    const cleanWorkspace = captureWorkspaceIdentity(cleanRoot)
+    cleanReadBoundary = reserveProjectReadBoundary(cleanRoot)
+    const cleanWorkspace = cleanReadBoundary.withCapturedProject(() => captureWorkspaceIdentity("."))
     if (cleanWorkspace.status !== "available") return false
-    const cleanGit = captureGitIdentity(cleanRoot, cleanWorkspace.value)
-    const cleanSource = captureProjectFinishAttestationSourceIdentity(cleanRoot, cleanGit)
-    const cleanEntries = captureProjectFinishAttestationSourceEntries(cleanRoot, cleanGit)
+    const cleanGit = captureGitIdentityFromCapturedProject(currentProjectGit(cleanReadBoundary))
+    const cleanSource = captureProjectFinishAttestationSourceIdentity(".", cleanGit, cleanReadBoundary)
+    const cleanEntries = captureProjectFinishAttestationSourceEntries(".", cleanGit, cleanReadBoundary)
     return cleanSource.status === "available"
       && cleanEntries.status === "available"
       && sameProjectFinishAttestationSourceEntries(currentEntries.value, cleanEntries.value)
       && matchesPortableProjectFinishAttestationSourceIdentity(cleanSource.value, expected)
   } finally {
-    runFixedGit(projectDir, ["worktree", "remove", "--force", cleanRoot])
+    cleanReadBoundary?.close()
+    projectReadBoundary.withCapturedProject(() => runFixedGitFromCurrentDirectory([
+      "worktree",
+      "remove",
+      "--force",
+      cleanRoot,
+    ]))
     rmSync(tempRoot, { force: true, recursive: true })
   }
 }

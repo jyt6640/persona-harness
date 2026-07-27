@@ -1,4 +1,5 @@
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 import { captureWorkspaceIdentity, type PosixPathIdentity } from "./ci-reverification-identity.js"
 
 export type CooperativeFinishContext = {
@@ -11,11 +12,16 @@ export type CooperativeFinishContextResult =
   | { readonly code: string; readonly kind: "blocked" }
   | { readonly kind: "ready"; readonly value: CooperativeFinishContext }
 
-export function prepareCooperativeFinishContext(projectDir: string): CooperativeFinishContextResult {
-  const config = loadHarnessConfigResult(projectDir)
+export function prepareCooperativeFinishContext(
+  projectDir: string,
+  projectReadBoundary?: ProjectReadBoundary,
+): CooperativeFinishContextResult {
+  const config = loadHarnessConfigResult(projectDir, projectReadBoundary)
   if (!config.safe) return { code: "harness-config-invalid", kind: "blocked" }
 
-  const workspace = captureWorkspaceIdentity(projectDir)
+  const workspace = projectReadBoundary === undefined
+    ? captureWorkspaceIdentity(projectDir)
+    : projectReadBoundary.withCapturedProject(() => captureWorkspaceIdentity("."))
   if (workspace.status === "unavailable") {
     return { code: workspace.diagnosticCode, kind: "blocked" }
   }

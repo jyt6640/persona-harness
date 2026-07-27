@@ -1,10 +1,15 @@
 import { createHash } from "node:crypto"
 import { lstatSync } from "node:fs"
 
+import {
+  reserveProjectReadBoundary,
+  type ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
 import { runBoundedProcess, type BoundedProcessOptions, type BoundedProcessResult } from "./bounded-process.js"
 import { preflightDiagnostic, safeGradleWrapper } from "./ci-reverification-catalog.js"
 import {
   captureGitIdentity,
+  captureGitIdentityFromCapturedProject,
   captureWorkspaceIdentity,
   samePathIdentity,
 } from "./ci-reverification-identity.js"
@@ -23,6 +28,7 @@ import {
   type SourceIdentity,
 } from "./source-identity.js"
 import { captureProjectFinishAttestationSourceIdentity } from "./project-finish-attestation-source.js"
+import { runFixedGitFromCurrentDirectory } from "./fixed-git.js"
 
 export const COOPERATIVE_GRADLE_COMMAND_CATALOG = [
   {
@@ -78,21 +84,61 @@ export function runProjectFinishAttestationGradleVerification(
 ): CooperativeGradleVerification {
   const projectRoot = canonicalProjectRoot(projectDir, context)
   if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
-  const inputSnapshot = captureProjectFinishAttestationInputSnapshot(projectRoot.value)
-  if (inputSnapshot.kind === "blocked") return blocked(inputSnapshot.code)
-  return runGradleVerification(
-    projectRoot.value,
-    context,
-    process.platform === "win32" ? "platform-windows-unavailable" : undefined,
-    options,
-    inputSnapshot.value,
-  )
+  try {
+    const boundary = reserveProjectReadBoundary(projectRoot.value)
+    try {
+      return runProjectFinishAttestationGradleVerificationWithinBoundary(projectRoot.value, context, boundary, options)
+    } finally {
+      boundary.close()
+    }
+  } catch {
+    return blocked("project-finish-producer-profile")
+  }
+}
+
+export function runProjectFinishAttestationGradleVerificationWithinBoundary(
+  projectDir: string,
+  context: CooperativeFinishContext,
+  projectReadBoundary: ProjectReadBoundary,
+  options: CooperativeGradleVerificationOptions = {},
+): CooperativeGradleVerification {
+  const projectRoot = canonicalProjectRoot(projectDir, context, projectReadBoundary)
+  if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
+  try {
+    projectReadBoundary.assert()
+    const inputSnapshot = captureProjectFinishAttestationInputSnapshot(projectRoot.value, projectReadBoundary)
+    if (inputSnapshot.kind === "blocked") return blocked(inputSnapshot.code)
+    return runGradleVerification(
+      projectRoot.value,
+      context,
+      process.platform === "win32" ? "platform-windows-unavailable" : undefined,
+      options,
+      inputSnapshot.value,
+      projectReadBoundary,
+    )
+  } catch {
+    return blocked("project-finish-producer-profile")
+  }
 }
 
 function canonicalProjectRoot(
   projectDir: string,
   context: CooperativeFinishContext,
+  projectReadBoundary?: ProjectReadBoundary,
 ): { readonly code: string; readonly kind: "blocked" } | { readonly kind: "ready"; readonly value: string } {
+  if (projectReadBoundary !== undefined) {
+    try {
+      projectReadBoundary.assert()
+      const workspace = projectReadBoundary.withCapturedProject(() => captureWorkspaceIdentity("."))
+      if (workspace.status === "unavailable") return { code: workspace.diagnosticCode, kind: "blocked" }
+      if (!samePathIdentity(context.workspace, workspace.value)) {
+        return { code: "workspace-identity-drift", kind: "blocked" }
+      }
+      return { kind: "ready", value: "." }
+    } catch {
+      return { code: "workspace-root-unavailable", kind: "blocked" }
+    }
+  }
   try {
     const supplied = lstatSync(projectDir, { bigint: true })
     if (supplied.isSymbolicLink() || !supplied.isDirectory()) {
@@ -115,48 +161,73 @@ function runGradleVerification(
   preflight: string | undefined,
   options: CooperativeGradleVerificationOptions,
   inputSnapshot?: ProjectFinishAttestationInputSnapshot,
+  projectReadBoundary?: ProjectReadBoundary,
 ): CooperativeGradleVerification {
-  if (preflight !== undefined || safeGradleWrapper(projectDir) === undefined) {
+  const gradleWrapper = projectReadBoundary === undefined
+    ? safeGradleWrapper(projectDir)
+    : projectReadBoundary.withCapturedProject(() => safeGradleWrapper("."))
+  if (preflight !== undefined || gradleWrapper === undefined) {
     return blocked(preflight ?? "gradle-wrapper-unavailable")
   }
-  const preGit = captureGitIdentity(projectDir, context.workspace)
+  const preGit = captureVerificationGitIdentity(projectDir, context.workspace, projectReadBoundary)
   if (!preGit.available) return blocked(preGit.diagnosticCode)
   const preSource = inputSnapshot === undefined
     ? captureSourceIdentity(projectDir, preGit, context.evidenceRootRelativePath)
-    : captureProjectFinishAttestationSourceIdentity(projectDir, preGit)
+    : captureProjectFinishAttestationSourceIdentity(projectDir, preGit, projectReadBoundary)
   if (preSource.status === "unavailable") return blocked(preSource.diagnosticCode)
   const boundPreSource = inputSnapshot === undefined
     ? preSource.value
     : bindProjectFinishAttestationInputSnapshot(preSource.value, inputSnapshot)
-  const baseline = snapshotJUnitResults(projectDir)
+  const baseline = projectReadBoundary === undefined
+    ? snapshotJUnitResults(projectDir)
+    : projectReadBoundary.withCapturedProject(() => snapshotJUnitResults("."))
   if (!baseline.safe) return blocked("junit-unsafe-report")
 
   const now = options.now ?? Date.now
   const runProcess = options.runProcess ?? runBoundedProcess
   const attemptStartedAt = now()
-  const test = runFixedCommand(projectDir, COOPERATIVE_GRADLE_COMMAND_CATALOG[0], attemptStartedAt, now, runProcess)
+  const test = runFixedCommandWithinBoundary(
+    projectDir,
+    COOPERATIVE_GRADLE_COMMAND_CATALOG[0],
+    attemptStartedAt,
+    now,
+    runProcess,
+    projectReadBoundary,
+  )
   const testCode = testDiagnostic(test)
   if (testCode !== undefined) return blocked(testCode)
   const testOutputCode = testExecutionDiagnostic(test.result, ["cleanTest", "test"])
   if (testOutputCode !== undefined) return blocked(testOutputCode)
-  const junit = assessCooperativeJUnit(projectDir, baseline)
+  const junit = projectReadBoundary === undefined
+    ? assessCooperativeJUnit(projectDir, baseline)
+    : projectReadBoundary.withCapturedProject(() => assessCooperativeJUnit(".", baseline))
   if (junit.kind === "blocked") return junit
 
-  const build = runFixedCommand(projectDir, COOPERATIVE_GRADLE_COMMAND_CATALOG[1], attemptStartedAt, now, runProcess)
+  const build = runFixedCommandWithinBoundary(
+    projectDir,
+    COOPERATIVE_GRADLE_COMMAND_CATALOG[1],
+    attemptStartedAt,
+    now,
+    runProcess,
+    projectReadBoundary,
+  )
   const buildCode = testDiagnostic(build)
   if (buildCode !== undefined) return blocked(buildCode.replace(/^test-/u, "build-"))
   const buildOutputCode = buildExecutionDiagnostic(build.result)
   if (buildOutputCode !== undefined) return blocked(buildOutputCode)
 
-  const postWorkspace = captureWorkspaceIdentity(projectDir)
+  projectReadBoundary?.assert()
+  const postWorkspace = projectReadBoundary === undefined
+    ? captureWorkspaceIdentity(projectDir)
+    : projectReadBoundary.withCapturedProject(() => captureWorkspaceIdentity("."))
   if (postWorkspace.status === "unavailable" || !samePathIdentity(context.workspace, postWorkspace.value)) {
     return blocked(postWorkspace.status === "unavailable" ? postWorkspace.diagnosticCode : "workspace-identity-drift")
   }
-  const postGit = captureGitIdentity(projectDir, postWorkspace.value)
+  const postGit = captureVerificationGitIdentity(projectDir, postWorkspace.value, projectReadBoundary)
   if (!postGit.available) return blocked(postGit.diagnosticCode)
   let postInputSnapshot: ProjectFinishAttestationInputSnapshot | undefined
   if (inputSnapshot !== undefined) {
-    const postInputs = captureProjectFinishAttestationInputSnapshot(projectDir)
+    const postInputs = captureProjectFinishAttestationInputSnapshot(projectDir, projectReadBoundary)
     if (postInputs.kind === "blocked") return blocked(postInputs.code)
     if (!sameProjectFinishAttestationInputSnapshot(inputSnapshot, postInputs.value)) {
       return blocked("source-identity-drift")
@@ -165,7 +236,7 @@ function runGradleVerification(
   }
   const postSource = inputSnapshot === undefined
     ? captureSourceIdentity(projectDir, postGit, context.evidenceRootRelativePath)
-    : captureProjectFinishAttestationSourceIdentity(projectDir, postGit)
+    : captureProjectFinishAttestationSourceIdentity(projectDir, postGit, projectReadBoundary)
   if (postSource.status === "unavailable") return blocked(postSource.diagnosticCode)
   const boundPostSource = postInputSnapshot === undefined
     ? postSource.value
@@ -223,6 +294,31 @@ function runFixedCommand(
     }),
     timedOutBeforeStart: false,
   }
+}
+
+function runFixedCommandWithinBoundary(
+  projectDir: string,
+  command: (typeof COOPERATIVE_GRADLE_COMMAND_CATALOG)[number],
+  attemptStartedAt: number,
+  now: () => number,
+  runProcess: (options: BoundedProcessOptions) => BoundedProcessResult,
+  projectReadBoundary?: ProjectReadBoundary,
+): { readonly result: BoundedProcessResult; readonly timedOutBeforeStart: boolean } {
+  return projectReadBoundary === undefined
+    ? runFixedCommand(projectDir, command, attemptStartedAt, now, runProcess)
+    : projectReadBoundary.withCapturedProject(() => runFixedCommand(".", command, attemptStartedAt, now, runProcess))
+}
+
+function captureVerificationGitIdentity(
+  projectDir: string,
+  workspace: Parameters<typeof captureGitIdentity>[1],
+  projectReadBoundary?: ProjectReadBoundary,
+) {
+  return projectReadBoundary === undefined
+    ? captureGitIdentity(projectDir, workspace)
+    : projectReadBoundary.withCapturedProject(() => captureGitIdentityFromCapturedProject(
+        (args) => runFixedGitFromCurrentDirectory(args),
+      ))
 }
 
 function testDiagnostic(command: { readonly result: BoundedProcessResult; readonly timedOutBeforeStart: boolean }): string | undefined {

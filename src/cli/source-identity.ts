@@ -3,13 +3,17 @@ import { lstatSync, readdirSync, realpathSync } from "node:fs"
 import { join } from "node:path"
 
 import {
+  ProjectReadBoundaryLimitError,
+  type ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
+import { runFixedGit, type FixedGitRunner } from "./fixed-git.js"
+import {
   captureNoFollowDirectory,
   readNoFollowRegularFile,
   sameNoFollowPathIdentity,
 } from "../io/no-follow-file.js"
 import type { GitIdentity } from "./ci-reverification-identity.js"
 import type { MutationEntry } from "./ci-reverification-mutation.js"
-import { runFixedGit } from "./fixed-git.js"
 import {
   SOURCE_IDENTITY_EXCLUSIONS,
   SOURCE_IDENTITY_SCHEMA,
@@ -35,11 +39,15 @@ export type SourceIdentityEntry =
   | { readonly kind: "missing-tracked"; readonly path: string }
 type SourceIdentityLimits = {
   readonly additionalExcludedRoots?: readonly string[]
+  readonly gitRunner?: FixedGitRunner
+  readonly projectReadBoundary?: ProjectReadBoundary
   readonly maxEntries?: number
   readonly maxFileBytes?: number
   readonly maxTotalBytes?: number
 }
 type ResolvedSourceIdentityLimits = {
+  readonly gitRunner?: FixedGitRunner
+  readonly projectReadBoundary?: ProjectReadBoundary
   readonly maxEntries: number
   readonly maxFileBytes: number
   readonly maxTotalBytes: number
@@ -65,10 +73,11 @@ export function captureSourceIdentity(
   }
   const limits = { ...DEFAULT_LIMITS, ...overrides }
   try {
-    const root = realpathSync(projectDir)
     const exclusions = sourceExclusions(evidenceRelativePath, overrides.additionalExcludedRoots)
-    const tracked = trackedIndex(projectDir, limits.maxEntries)
-    const scanned = scanWorkspace(root, exclusions, tracked.paths, limits)
+    const tracked = trackedIndex(projectDir, limits.maxEntries, limits.gitRunner)
+    const scanned = limits.projectReadBoundary === undefined
+      ? scanWorkspace(realpathSync(projectDir), exclusions, tracked.paths, limits)
+      : scanCapturedWorkspace(limits.projectReadBoundary, exclusions, tracked.paths, limits)
     const missingTracked = [...tracked.paths]
       .filter((path) => !isExcluded(path, exclusions) && !scanned.paths.has(path))
       .sort()
@@ -114,10 +123,11 @@ export function captureSourceIdentityEntries(
 ): { readonly diagnosticCode: string; readonly status: "unavailable" } | { readonly status: "available"; readonly value: readonly SourceIdentityEntry[] } {
   const limits = { ...DEFAULT_LIMITS, ...overrides }
   try {
-    const root = realpathSync(projectDir)
     const exclusions = sourceExclusions(evidenceRelativePath, overrides.additionalExcludedRoots)
-    const tracked = trackedIndex(projectDir, limits.maxEntries)
-    const scanned = scanWorkspace(root, exclusions, tracked.paths, limits)
+    const tracked = trackedIndex(projectDir, limits.maxEntries, limits.gitRunner)
+    const scanned = limits.projectReadBoundary === undefined
+      ? scanWorkspace(realpathSync(projectDir), exclusions, tracked.paths, limits)
+      : scanCapturedWorkspace(limits.projectReadBoundary, exclusions, tracked.paths, limits)
     const missingTracked = [...tracked.paths]
       .filter((path) => !isExcluded(path, exclusions) && !scanned.paths.has(path))
       .sort()
@@ -129,8 +139,14 @@ export function captureSourceIdentityEntries(
   }
 }
 
-function trackedIndex(projectDir: string, maxEntries: number): { readonly digest: string; readonly paths: ReadonlySet<string> } {
-  const result = runFixedGit(projectDir, ["ls-files", "--stage", "-z"])
+function trackedIndex(
+  projectDir: string,
+  maxEntries: number,
+  runner?: FixedGitRunner,
+): { readonly digest: string; readonly paths: ReadonlySet<string> } {
+  const result = runner === undefined
+    ? runFixedGit(projectDir, ["ls-files", "--stage", "-z"])
+    : runner(["ls-files", "--stage", "-z"])
   if (!result.available || result.status !== 0) {
     throw new SourceIdentityError("source-identity-index-unavailable")
   }
@@ -219,6 +235,54 @@ function scanWorkspace(
 
   visit(root, "")
   return { entries, paths, trackedEntryCount, untrackedEntryCount }
+}
+
+function scanCapturedWorkspace(
+  boundary: ProjectReadBoundary,
+  exclusions: readonly string[],
+  trackedPaths: ReadonlySet<string>,
+  limits: ResolvedSourceIdentityLimits,
+): {
+  readonly entries: readonly SourceIdentityEntry[]
+  readonly paths: ReadonlySet<string>
+  readonly trackedEntryCount: number
+  readonly untrackedEntryCount: number
+} {
+  try {
+    const captured = boundary.readProjectTree({
+      isExcluded: (path) => isExcluded(path, exclusions),
+      maxEntries: limits.maxEntries,
+      maxFileBytes: limits.maxFileBytes,
+      maxTotalBytes: limits.maxTotalBytes,
+    })
+    const entries: SourceIdentityEntry[] = []
+    const paths = new Set<string>()
+    let trackedEntryCount = 0
+    let untrackedEntryCount = 0
+    for (const entry of captured) {
+      paths.add(entry.path)
+      if (entry.kind === "directory") {
+        entries.push({ kind: "directory", mode: entry.identity.mode, path: entry.path })
+        continue
+      }
+      const classification = trackedPaths.has(entry.path) ? "tracked" : "untracked"
+      if (classification === "tracked") trackedEntryCount += 1
+      else untrackedEntryCount += 1
+      entries.push({
+        classification,
+        contentDigest: digest(entry.bytes),
+        kind: "file",
+        mode: entry.identity.mode,
+        path: entry.path,
+      })
+    }
+    return { entries, paths, trackedEntryCount, untrackedEntryCount }
+  } catch (error) {
+    if (error instanceof ProjectReadBoundaryLimitError) {
+      throw new SourceIdentityError("source-identity-file-limit")
+    }
+    throw new SourceIdentityError("source-identity-unavailable")
+  }
 }
 
 function normalizedRelativePath(value: string): string {

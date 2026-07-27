@@ -2,7 +2,7 @@ import { lstatSync, realpathSync, statSync } from "node:fs"
 import { isAbsolute, join, relative } from "node:path"
 
 import { parseGitStatusPorcelain, type GitStatusSnapshot } from "./ci-reverification-mutation.js"
-import { runFixedGit } from "./fixed-git.js"
+import { runFixedGit, type FixedGitRunner } from "./fixed-git.js"
 
 export type PosixPathIdentity = {
   readonly dev: string
@@ -92,13 +92,21 @@ export function captureEvidenceParentIdentity(
   }
 }
 
-function runGit(projectDir: string, args: readonly string[]): { readonly status: number; readonly stdout: string } {
-  const result = runFixedGit(projectDir, args)
+function runGit(
+  projectDir: string,
+  args: readonly string[],
+  runner?: FixedGitRunner,
+): { readonly status: number; readonly stdout: string } {
+  const result = runner === undefined ? runFixedGit(projectDir, args) : runner(args)
   return { status: result.status, stdout: result.stdout }
 }
 
-export function captureGitIdentity(projectDir: string, workspaceRoot: PosixPathIdentity): GitIdentity {
-  const root = runGit(projectDir, ["rev-parse", "--show-toplevel"])
+export function captureGitIdentity(
+  projectDir: string,
+  workspaceRoot: PosixPathIdentity,
+  runner?: FixedGitRunner,
+): GitIdentity {
+  const root = runGit(projectDir, ["rev-parse", "--show-toplevel"], runner)
   if (root.status !== 0) {
     return { available: false, diagnosticCode: "git-worktree-unavailable" }
   }
@@ -109,12 +117,36 @@ export function captureGitIdentity(projectDir: string, workspaceRoot: PosixPathI
   } catch {
     return { available: false, diagnosticCode: "git-worktree-root-unavailable" }
   }
-  const head = runGit(projectDir, ["rev-parse", "--verify", "HEAD^{commit}"])
+  const head = runGit(projectDir, ["rev-parse", "--verify", "HEAD^{commit}"], runner)
   const commitId = head.stdout.trim().toLowerCase()
   if (head.status !== 0 || !COMMIT_ID_PATTERN.test(commitId)) {
     return { available: false, diagnosticCode: "git-head-unavailable" }
   }
-  const status = runGit(projectDir, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+  const status = runGit(projectDir, ["status", "--porcelain=v1", "-z", "--untracked-files=all"], runner)
+  if (status.status !== 0) {
+    return { available: false, diagnosticCode: "git-status-unavailable" }
+  }
+  return {
+    available: true,
+    diagnosticCode: "git-identity-available",
+    head: commitId,
+    status: parseGitStatusPorcelain(status.stdout),
+  }
+}
+
+export function captureGitIdentityFromCapturedProject(
+  runner: FixedGitRunner,
+): GitIdentity {
+  const prefix = runGit(".", ["rev-parse", "--show-prefix"], runner)
+  if (prefix.status !== 0 || prefix.stdout.trim() !== "") {
+    return { available: false, diagnosticCode: "git-worktree-root-mismatch" }
+  }
+  const head = runGit(".", ["rev-parse", "--verify", "HEAD^{commit}"], runner)
+  const commitId = head.stdout.trim().toLowerCase()
+  if (head.status !== 0 || !COMMIT_ID_PATTERN.test(commitId)) {
+    return { available: false, diagnosticCode: "git-head-unavailable" }
+  }
+  const status = runGit(".", ["status", "--porcelain=v1", "-z", "--untracked-files=all"], runner)
   if (status.status !== 0) {
     return { available: false, diagnosticCode: "git-status-unavailable" }
   }

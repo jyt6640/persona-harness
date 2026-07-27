@@ -1,5 +1,16 @@
 import { execFileSync } from "node:child_process"
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import fs, {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  renameSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs"
+import { syncBuiltinESMExports } from "node:module"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -85,6 +96,46 @@ describe("project finish attestation source binding", () => {
     writeFileSync(join(worktree, "README.md"), "tracked source drift\n")
 
     expect(matchesProjectFinishAttestationSource(worktree, expected)).toBe(false)
+  })
+
+  it("blocks a source matcher leaf replacement before opening external source bytes", () => {
+    const projectDir = createProject()
+    const expected = captureBoundSourceIdentity(projectDir)
+    const sourcePath = join(projectDir, "README.md")
+    const draftPath = join(projectDir, "README.draft.md")
+    const outsidePath = join(track(mkdtempSync(join(tmpdir(), "persona-project-finish-outside-"))), "README.md")
+    writeFileSync(outsidePath, "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\n")
+    const originalLstat = fs.lstatSync
+    const originalOpen = fs.openSync
+    let openedExternal = false
+    let swapped = false
+    const replacementLstat = (...args: Parameters<typeof fs.lstatSync>) => {
+      if (!swapped && args[0] === "README.md") {
+        swapped = true
+        renameSync(sourcePath, draftPath)
+        symlinkSync(outsidePath, sourcePath)
+      }
+      return originalLstat(...args)
+    }
+    Object.defineProperty(fs, "lstatSync", { configurable: true, value: replacementLstat, writable: true })
+    fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
+      if (args[0] === outsidePath) openedExternal = true
+      return originalOpen(...args)
+    }) as typeof fs.openSync
+    syncBuiltinESMExports()
+    try {
+      expect(matchesProjectFinishAttestationSource(projectDir, expected)).toBe(false)
+    } finally {
+      Object.defineProperty(fs, "lstatSync", { configurable: true, value: originalLstat, writable: true })
+      fs.openSync = originalOpen
+      syncBuiltinESMExports()
+      if (swapped) {
+        unlinkSync(sourcePath)
+        renameSync(draftPath, sourcePath)
+      }
+    }
+    expect(swapped).toBe(true)
+    expect(openedExternal).toBe(false)
   })
 })
 
