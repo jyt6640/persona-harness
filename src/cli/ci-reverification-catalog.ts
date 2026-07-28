@@ -149,7 +149,14 @@ export function overflowArtifact(artifact: CiReverificationArtifact): CiReverifi
   }
 }
 
-export function profileSha256(projectDir: string): string {
+export function profileSha256(projectDir: string, projectReadBoundary?: ProjectReadBoundary): string {
+  if (projectReadBoundary !== undefined) {
+    try {
+      return sha256(projectReadBoundary.readProjectFile(".persona/project-profile.jsonc", 512 * 1024) ?? Buffer.alloc(0))
+    } catch {
+      return sha256("")
+    }
+  }
   const path = join(projectDir, ".persona", "project-profile.jsonc")
   return existsSync(path) ? sha256(readFileSync(path)) : sha256("")
 }

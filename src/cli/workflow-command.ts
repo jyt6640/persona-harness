@@ -196,12 +196,9 @@ function runWorkflowFinishAtProject(
     return uninitializedHarnessOutput()
   }
   if (reverify) {
-    if (projectRead !== undefined) {
-      return failedRunnerOutput("finish", runnerKind, [
-        "Evidence reverification blocked; diagnostics: source-read-runtime-unavailable.",
-      ])
-    }
-    const result = runFreshFixedVerification(summary.projectDir, ci ? "ci" : "local")
+    const result = runFreshFixedVerification(summary.projectDir, ci ? "ci" : "local", {
+      projectReadBoundary: projectRead?.boundary,
+    })
     if (result.finalStatus !== "passed") {
       const artifactReference = safeProjectArtifactReference(summary.projectDir, result.artifactPath)
       const diagnostics = result.diagnosticCodes

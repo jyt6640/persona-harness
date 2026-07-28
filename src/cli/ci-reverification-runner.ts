@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 import { runBoundedProcess, type BoundedProcessOptions, type BoundedProcessResult } from "./bounded-process.js"
 import {
   serializeCiReverificationArtifact,
@@ -22,8 +23,10 @@ import {
 import {
   captureEvidenceParentIdentity,
   captureGitIdentity,
+  captureGitIdentityFromCapturedProject,
   captureWorkspaceIdentity,
   samePathIdentity,
+  type GitIdentity,
 } from "./ci-reverification-identity.js"
 import { captureSourceIdentity, sameSourceIdentity } from "./source-identity.js"
 import { determineCiReverificationFinalStatus, type CiReverificationFinalStatus } from "./ci-reverification-model.js"
@@ -48,6 +51,7 @@ export type CiReverificationRunnerOptions = {
   readonly commandTimeoutMs?: number
   readonly now?: () => number
   readonly platform?: NodeJS.Platform
+  readonly projectReadBoundary?: ProjectReadBoundary
   readonly runProcess?: (options: BoundedProcessOptions) => BoundedProcessResult
   readonly writeArtifact?: typeof writeAndRereadCiReverificationArtifact
 }
@@ -59,9 +63,13 @@ export function runCiReverification(
 ): CiReverificationResult {
   const now = options.now ?? Date.now
   const platform = options.platform ?? process.platform
+  const projectReadBoundary = options.projectReadBoundary
   const runProcess = options.runProcess ?? runBoundedProcess
-  const captureWorkspace = options.captureWorkspace ?? captureWorkspaceIdentity
-  const configResult = loadHarnessConfigResult(projectDir)
+  const captureWorkspace = options.captureWorkspace
+    ?? (projectReadBoundary === undefined
+      ? captureWorkspaceIdentity
+      : (_projectDir: string) => capturedWorkspaceIdentity(projectReadBoundary))
+  const configResult = loadHarnessConfigResult(projectDir, projectReadBoundary)
   if (!configResult.safe) {
     return { diagnosticCodes: ["harness-config-invalid"], finalStatus: "unavailable" }
   }
@@ -71,14 +79,28 @@ export function runCiReverification(
   }
   const captureEvidenceParent = options.captureEvidenceParent
     ?? ((workspaceRoot) => captureEvidenceParentIdentity(workspaceRoot, evidencePath.relativePath))
-  const captureGit = options.captureGit ?? captureGitIdentity
-  const captureSource = options.captureSource ?? captureSourceIdentity
+  const captureGit = options.captureGit
+    ?? (projectReadBoundary === undefined
+      ? captureGitIdentity
+      : (_projectDir: string) => captureGitIdentityFromCapturedProject((args) => runCapturedGit(projectReadBoundary, args)))
+  const captureSource = options.captureSource
+    ?? ((sourceProjectDir: string, git: GitIdentity, evidenceRelativePath: string) => captureSourceIdentity(
+      sourceProjectDir,
+      git,
+      evidenceRelativePath,
+      projectReadBoundary === undefined
+        ? {}
+        : {
+            gitRunner: (args: readonly string[]) => runCapturedGit(projectReadBoundary, args),
+            projectReadBoundary,
+          },
+    ))
   const writeArtifact = options.writeArtifact ?? writeAndRereadCiReverificationArtifact
   const commandTimeoutMs = options.commandTimeoutMs ?? 120_000
   const attemptBudgetMs = options.attemptBudgetMs ?? 300_000
   const diagnostics: string[] = []
   const attemptId = `${new Date(now()).toISOString().replace(/[:.]/gu, "-")}-${randomUUID()}`
-  const profileDigest = profileSha256(projectDir)
+  const profileDigest = profileSha256(projectDir, projectReadBoundary)
 
   const preRootResult = captureWorkspace(projectDir)
   if (preRootResult.status === "unavailable") {
@@ -97,14 +119,14 @@ export function runCiReverification(
   if (preSourceResult.status === "unavailable") {
     return { diagnosticCodes: [preSourceResult.diagnosticCode], finalStatus: "unavailable" }
   }
-  const preflight = preflightDiagnostic(projectDir, mode, platform)
+  const preflight = preflightDiagnostic(projectDir, mode, platform, projectReadBoundary)
     ?? (mode === "ci" && !preGit.available ? preGit.diagnosticCode : undefined)
   if (preflight !== undefined) diagnostics.push(preflight)
 
   const commandRecords: CiReverificationCommandRecord[] = []
   const attemptStartedAt = now()
   if (preflight === undefined) {
-    const wrapper = safeGradleWrapper(projectDir)
+    const wrapper = safeGradleWrapper(projectDir, projectReadBoundary)
     if (wrapper !== undefined) {
       for (const [index, command] of REVERIFICATION_COMMANDS.entries()) {
         const remaining = attemptBudgetMs - (now() - attemptStartedAt)
@@ -125,14 +147,17 @@ export function runCiReverification(
           break
         }
         const startedAt = now()
-        const baseline = snapshotJUnitResults(projectDir)
-        const result = runProcess({
-          args: [command.task],
-          command: wrapper,
-          cwd: projectDir,
-          graceMs: 5_000,
-          timeoutMs: Math.min(commandTimeoutMs, remaining),
-        })
+        const timeoutMs = Math.min(commandTimeoutMs, remaining)
+        const baseline = snapshotJUnitResults(projectDir, projectReadBoundary)
+        const result = projectReadBoundary === undefined
+          ? runProcess({
+              args: [command.task],
+              command: wrapper,
+              cwd: projectDir,
+              graceMs: 5_000,
+              timeoutMs,
+            })
+          : boundedNativeResult(projectReadBoundary.runFixedGradle(command.task, timeoutMs))
         if (result.outcome === "output-limit") diagnostics.push("verification-output-limit")
         if (result.outcome === "signal") diagnostics.push("verification-signal")
         if (result.outcome === "spawn-failure") diagnostics.push("verification-spawn-failure")
@@ -140,6 +165,7 @@ export function runCiReverification(
         const junitDiscovery = discoverJUnitResults(projectDir, {
           baseline: baseline.files,
           minimumMtimeMs: startedAt,
+          projectReadBoundary,
         })
         diagnostics.push(...junitDiscovery.diagnostics)
         const record = createCommandRecord(
@@ -249,4 +275,36 @@ export function runCiReverification(
     }
   }
   return { artifactPath: written.path, diagnosticCodes: artifact.diagnosticCodes, finalStatus }
+}
+
+function capturedWorkspaceIdentity(projectReadBoundary: ProjectReadBoundary) {
+  try {
+    return { status: "available" as const, value: projectReadBoundary.workspaceIdentity() }
+  } catch {
+    return { diagnosticCode: "workspace-root-unavailable", status: "unavailable" as const }
+  }
+}
+
+function runCapturedGit(projectReadBoundary: ProjectReadBoundary, args: readonly string[]) {
+  const result = projectReadBoundary.runFixedGit(args)
+  return { available: result.available, status: result.status, stdout: result.stdout }
+}
+
+function boundedNativeResult(native: ReturnType<ProjectReadBoundary["runFixedGradle"]>): BoundedProcessResult {
+  return {
+    killed: native.killed,
+    outcome: native.outcome,
+    outputLimited: native.outcome === "output-limit",
+    signal: nativeSignal(native.signal),
+    status: native.status,
+    stderr: native.stderr.toString("utf8"),
+    stdout: native.stdout.toString("utf8"),
+    timedOut: native.timedOut,
+  }
+}
+
+function nativeSignal(signal: number): NodeJS.Signals | null {
+  if (signal === 0) return null
+  if (signal === 9) return "SIGKILL"
+  return "SIGTERM"
 }
