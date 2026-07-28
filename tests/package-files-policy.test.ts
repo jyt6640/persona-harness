@@ -254,7 +254,7 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
   })
 
-  it("keeps the project finish attestation producer source-only while packaging its boundary record", () => {
+  it("packages the fixed reusable producer runtime while keeping workflow and diagnostic source material out", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const sourceOnlyPaths = [
       ".github/workflows/persona-harness-project-finish.yml",
@@ -277,17 +277,11 @@ describe("package files policy", () => {
       ".github/actions/project-finish-context-diagnostic-native-selftest/action.yml",
       ".github/actions/project-finish-context-diagnostic-native-selftest/index.mjs",
       ".github/actions/project-finish-context-diagnostic-native-selftest/native-selftest.mjs",
-      "scripts/build-project-finish-attestation.mjs",
       "scripts/build-project-finish-attestation.d.mts",
-      "scripts/project-finish-attestation-artifact-output.mjs",
       "scripts/project-finish-attestation-artifact-output.d.mts",
-      "scripts/project-finish-attestation-artifact-handoff.mjs",
       "scripts/project-finish-attestation-artifact-handoff.d.mts",
-      "scripts/project-finish-attestation-producer-context.mjs",
       "scripts/project-finish-attestation-producer-context-diagnostic.mjs",
       "scripts/project-finish-attestation-producer-context-diagnostic.d.mts",
-      "scripts/project-finish-attestation-oidc.mjs",
-      "scripts/project-finish-attestation-producer-oidc-capability-bridge.cjs",
       "scripts/project-finish-attestation-producer-oidc-capability-bridge.d.cts",
       "scripts/diagnose-project-finish-producer-context.mjs",
       "tests/fixtures/project-finish-attestation/caller-workflow.yml",
@@ -310,6 +304,13 @@ describe("package files policy", () => {
       "dist/cli/project-finish-attestation-producer.js",
       "dist/cli/project-finish-attestation-producer-runner.js",
       "dist/io/no-follow-file.js",
+      "scripts/build-project-finish-attestation.mjs",
+      "scripts/project-finish-attestation-artifact-output.mjs",
+      "scripts/project-finish-attestation-artifact-handoff.mjs",
+      "scripts/project-finish-attestation-producer-context.mjs",
+      "scripts/project-finish-attestation-producer-oidc-capability-bridge.cjs",
+      "scripts/project-finish-attestation-oidc.mjs",
+      "scripts/verify-project-finish-producer-checkout.mjs",
     ]
     const boundaryRecord = "docs/current/release/project-finish-attestation-producer.md"
 
@@ -395,7 +396,7 @@ describe("package files policy", () => {
     ]
     const boundaryRecords = [
       "docs/current/release/consumer-authority-beta.md",
-      "docs/current/release/consumer-authority-beta6-acceptance.json",
+      "docs/current/release/consumer-authority-beta7-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -435,7 +436,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.6-release-notes.md",
+      "docs/current/release/v0.8.0-beta.7-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -461,7 +462,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.6-release-notes.md",
+      "docs/current/release/v0.8.0-beta.7-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 
