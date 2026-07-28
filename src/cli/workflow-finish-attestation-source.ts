@@ -6,6 +6,7 @@ import type { SourceIdentity } from "./source-identity-types.js"
 import type { FinishAttestationDiagnostic } from "./workflow-finish-attestation-types.js"
 
 const DIAGNOSTIC_ROOTS = [".persona/evidence", ".persona/workflow"] as const
+const SOURCE_IDENTITY_DIAGNOSTIC_ROOTS = [".persona/workflow"] as const
 
 export function compareCurrentSource(
   projectDir: string,
@@ -24,6 +25,7 @@ export function compareCurrentSource(
       return { code: "source-drift", message: "Tracked source or non-diagnostic files are dirty.", path: "source" }
     }
     const currentSource = captureSourceIdentity(projectDir, git, ".persona/evidence", {
+      additionalExcludedRoots: SOURCE_IDENTITY_DIAGNOSTIC_ROOTS,
       gitRunner: (args) => capturedBoundary.runFixedGit(args),
       projectReadBoundary: capturedBoundary,
     })
