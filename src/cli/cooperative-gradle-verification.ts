@@ -137,7 +137,7 @@ function canonicalProjectRoot(
     if (!samePathIdentity(context.workspace, workspace)) {
       return { code: "workspace-identity-drift", kind: "blocked" }
     }
-    return { kind: "ready", value: "." }
+    return { kind: "ready", value: projectDir }
   } catch {
     return { code: "workspace-root-unavailable", kind: "blocked" }
   }

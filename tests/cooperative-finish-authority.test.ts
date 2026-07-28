@@ -3,11 +3,9 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   rmSync,
   writeFileSync,
 } from "node:fs"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
@@ -17,6 +15,7 @@ import {
   runCurrentProcessCooperativeFinish,
 } from "../src/cli/cooperative-finish-authority.js"
 import { readWorkflowFinishAuthority } from "../src/cli/workflow-finish-authority.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -26,7 +25,7 @@ afterEach(() => {
   }
 })
 
-describe("cooperative current-process authority", () => {
+describe.sequential("cooperative current-process authority", () => {
   it("consumes in memory without creating a receipt or terminal record", () => {
     // Given: a custom evidence root and a project whose wrapper produces a fresh report.
     const projectDir = createProject()
@@ -63,7 +62,7 @@ describe("cooperative current-process authority", () => {
 })
 
 function createProject(): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-cooperative-authority-"))
+  const projectDir = createDirectProjectRoot("persona-cooperative-authority")
   projects.push(projectDir)
   mkdirSync(join(projectDir, ".persona"), { recursive: true })
   mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })
