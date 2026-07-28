@@ -2,6 +2,11 @@ import { isAbsolute, relative } from "node:path"
 
 import type { FileRole } from "../runtime/types.js"
 import { loadHarnessConfigResult, resolveConfiguredPath } from "../config/harness-config.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import {
+  containedProjectRelativePath,
+  type ProjectReadSnapshot,
+} from "../io/project-read-snapshot.js"
 import {
   walkBoundedFiles,
   type BoundedWalkResult,
@@ -61,10 +66,37 @@ function unsafeRuleCatalogResult(): BoundedWalkResult {
   }
 }
 
-export function inspectRuleCatalogPaths(projectDir: string): BoundedWalkResult {
-  const configResult = loadHarnessConfigResult(projectDir)
+export function inspectRuleCatalogPaths(
+  projectDir: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): BoundedWalkResult {
+  const configResult = loadHarnessConfigResult(projectDir, boundary)
   if (!configResult.safe) {
     return unsafeRuleCatalogResult()
+  }
+  if (snapshot !== undefined) {
+    const rulesRoot = containedProjectRelativePath(projectDir, configResult.config.rulesDir)
+    const files = rulesRoot === undefined
+      ? undefined
+      : snapshot.filesUnder(rulesRoot, {
+          extensions: [".md"],
+          maxEntries: 512,
+          maxFileBytes: 256 * 1024,
+          maxTotalBytes: 2 * 1024 * 1024,
+        })
+    if (files === undefined) return unsafeRuleCatalogResult()
+    return {
+      diagnostics: [],
+      files: files.map((file) => ({
+        absolutePath: file.absolutePath,
+        bytes: file.bytes.length,
+        relativePath: file.relativePath,
+        text: file.text,
+      })),
+      present: files.length > 0,
+      safe: true,
+    }
   }
   const rulesDir = resolveConfiguredPath(projectDir, configResult.config.rulesDir)
   return walkBoundedFiles(rulesDir, projectDir, {
@@ -74,14 +106,18 @@ export function inspectRuleCatalogPaths(projectDir: string): BoundedWalkResult {
   })
 }
 
-export function loadRuleCatalog(projectDir: string): RuleCatalogEntry[] {
-  const configResult = loadHarnessConfigResult(projectDir)
+export function loadRuleCatalog(
+  projectDir: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): RuleCatalogEntry[] {
+  const configResult = loadHarnessConfigResult(projectDir, boundary)
   if (!configResult.safe) {
     return []
   }
   const config = configResult.config
-  const rulesDir = resolveConfiguredPath(projectDir, config.rulesDir)
-  const walked = inspectRuleCatalogPaths(projectDir)
+  const rulesDir = snapshot === undefined ? resolveConfiguredPath(projectDir, config.rulesDir) : undefined
+  const walked = inspectRuleCatalogPaths(projectDir, boundary, snapshot)
   if (!walked.safe) {
     return []
   }
@@ -91,7 +127,9 @@ export function loadRuleCatalog(projectDir: string): RuleCatalogEntry[] {
       if (file.text === undefined) {
         return undefined
       }
-      const rulePath = normalizePath(relative(rulesDir, file.absolutePath))
+      const rulePath = snapshot === undefined
+        ? normalizePath(relative(rulesDir ?? projectDir, file.absolutePath))
+        : normalizePath(file.relativePath)
       const markdown = file.text
       const frontmatter = parseRuleFrontmatter(rulePath, markdown)
       return {

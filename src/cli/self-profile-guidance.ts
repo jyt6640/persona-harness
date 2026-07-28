@@ -2,22 +2,38 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { isRecord } from "../config/jsonc.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 
-export function isPersonaHarnessPackageRepo(projectDir: string): boolean {
+export function isPersonaHarnessPackageRepo(projectDir: string, snapshot?: ProjectReadSnapshot): boolean {
+  if (snapshot !== undefined) {
+    const text = snapshot.readText("package.json", 1024 * 1024)
+    return text === undefined ? false : isPersonaHarnessPackageText(text)
+  }
   const packageJsonPath = join(projectDir, "package.json")
   if (!existsSync(packageJsonPath)) {
     return false
   }
   try {
-    const parsed: unknown = JSON.parse(readFileSync(packageJsonPath, "utf8"))
+    return isPersonaHarnessPackageText(readFileSync(packageJsonPath, "utf8"))
+  } catch {
+    return false
+  }
+}
+
+function isPersonaHarnessPackageText(text: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(text)
     return isRecord(parsed) && parsed.name === "persona-harness"
   } catch {
     return false
   }
 }
 
-export function personaHarnessSelfProfileGuidance(projectDir: string | undefined): readonly string[] {
-  if (projectDir === undefined || !isPersonaHarnessPackageRepo(projectDir)) {
+export function personaHarnessSelfProfileGuidance(
+  projectDir: string | undefined,
+  snapshot?: ProjectReadSnapshot,
+): readonly string[] {
+  if (projectDir === undefined || !isPersonaHarnessPackageRepo(projectDir, snapshot)) {
     return []
   }
   return [

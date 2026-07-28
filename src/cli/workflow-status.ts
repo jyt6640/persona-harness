@@ -3,8 +3,13 @@ import { join, resolve } from "node:path"
 import process from "node:process"
 
 import { findConventionByBlockerId } from "../config/convention-registry.js"
-import { loadHarnessConfigResult, resolveConfiguredPathResult, resolveSafeEvidenceRootResult } from "../config/harness-config.js"
+import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { walkBoundedFiles, type BoundedWalkResult } from "../io/bounded-path-walker.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import {
+  containedProjectRelativePath,
+  type ProjectReadSnapshot,
+} from "../io/project-read-snapshot.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { readRalphLoopStateSnapshot } from "../runtime/ralph-loop-state.js"
 import { projectWorkflowLifecycle, type WorkflowLifecycleProjection } from "../runtime/workflow-lifecycle-projection.js"
@@ -29,6 +34,8 @@ import {
 
 export type WorkflowStatusSummary = {
   readonly projectDir: string
+  readonly backendShapeReport: string
+  readonly displayEvidenceRoot: string
   readonly finding: "PASS" | "WARN"
   readonly plan: string
   readonly implementation: string
@@ -63,11 +70,14 @@ export type WorkflowStatusSummary = {
   readonly pendingTickets: readonly WorkflowPendingTicket[]
   readonly pendingTicketsFinding: "PASS" | "WARN"
   readonly next: string
+  readonly selfProfileGuidance: readonly string[]
 }
 
 export type WorkflowStatusOptions = {
   readonly finishAuthority?: WorkflowFinishAuthority
   readonly now?: Date
+  readonly projectReadBoundary?: ProjectReadBoundary
+  readonly projectReadSnapshot?: ProjectReadSnapshot
 }
 
 const PLAN_PATH = ".persona/workflow/plan.md"
@@ -77,11 +87,23 @@ const README_PATH = "README.md"
 const PROFILE_PATH = ".persona/project-profile.jsonc"
 const DEFAULT_EVIDENCE_DIR = ".persona/evidence"
 
-function readStatusLine(filePath: string): string {
+function readStatusLine(
+  filePath: string,
+  relativePath?: string,
+  snapshot?: ProjectReadSnapshot,
+): string {
+  if (snapshot !== undefined && relativePath !== undefined) {
+    const text = snapshot.readText(relativePath)
+    return text === undefined ? "missing" : statusLineFromText(text)
+  }
   if (!existsSync(filePath)) {
     return "missing"
   }
-  const match = readFileSync(filePath, "utf8").split(/\r?\n/).map((line) => line.trim()).find((line) =>
+  return statusLineFromText(readFileSync(filePath, "utf8"))
+}
+
+function statusLineFromText(text: string): string {
+  const match = text.split(/\r?\n/).map((line) => line.trim()).find((line) =>
     /^Status:\s*(.+)$/i.test(line)
     || /^[-*]\s*(?:\*\*)?Status(?:\*\*)?:\s*(.+)$/i.test(line)
     || /^(?:\*\*)?Status(?:\*\*)?:\s*(.+)$/i.test(line)
@@ -96,8 +118,13 @@ function readStatusLine(filePath: string): string {
   return value?.replace(/\*\*/g, "").trim() ?? "unknown"
 }
 
-function stackAlignment(projectDir: string, implementationStatus: string): StackAlignmentSummary {
-  const profileState = readBackendProjectProfileState(projectDir)
+function stackAlignment(
+  projectDir: string,
+  implementationStatus: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): StackAlignmentSummary {
+  const profileState = readBackendProjectProfileState(projectDir, boundary)
   if (profileState.status !== "ready") {
     return {
       stackAlignment: "not checked until backend project profile is ready",
@@ -105,11 +132,20 @@ function stackAlignment(projectDir: string, implementationStatus: string): Stack
       stackAlignmentFinding: "PASS",
     }
   }
-  return readStackAlignment(projectDir, implementationStatus)
+  return readStackAlignment(projectDir, implementationStatus, boundary, snapshot)
 }
 
-function readExistingFiles(filePaths: readonly string[]): string {
-  return filePaths.filter((filePath) => existsSync(filePath)).map((filePath) => readFileSync(filePath, "utf8")).join("\n")
+function readExistingFiles(
+  filePaths: readonly string[],
+  relativePaths: readonly string[],
+  snapshot?: ProjectReadSnapshot,
+): string {
+  return snapshot === undefined
+    ? filePaths.filter((filePath) => existsSync(filePath)).map((filePath) => readFileSync(filePath, "utf8")).join("\n")
+    : relativePaths
+        .map((path) => snapshot.readText(path))
+        .filter((text): text is string => text !== undefined)
+        .join("\n")
 }
 
 function hasEvidenceTarget(
@@ -189,6 +225,7 @@ function readCoverage(
   projectDir: string,
   implementationStatus: string,
   evidence: BoundedWalkResult,
+  snapshot?: ProjectReadSnapshot,
 ): ReadCoverageSummary {
   if (implementationStatus !== "filled") {
     return {
@@ -204,7 +241,7 @@ function readCoverage(
       readCoverageFinding: "WARN",
     }
   }
-  if (!existsSync(join(projectDir, README_PATH))) {
+  if (!(snapshot?.hasFile(README_PATH) ?? existsSync(join(projectDir, README_PATH)))) {
     return {
       readCoverage: "README.md missing; range coverage not required",
       readCoverageBlocking: false,
@@ -213,7 +250,9 @@ function readCoverage(
   }
 
   const implementationReportPath = join(projectDir, IMPLEMENTATION_REPORT_PATH)
-  const reportText = existsSync(implementationReportPath) ? readFileSync(implementationReportPath, "utf8") : ""
+  const reportText = snapshot === undefined
+    ? existsSync(implementationReportPath) ? readFileSync(implementationReportPath, "utf8") : ""
+    : snapshot.readText(IMPLEMENTATION_REPORT_PATH) ?? ""
   if (hasReadmeRangeCoverage(reportText)) {
     return {
       readCoverage: "README ranges observed",
@@ -239,6 +278,8 @@ function profileReadCoverage(
   projectDir: string,
   implementationStatus: string,
   evidence: BoundedWalkResult,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
 ): ProfileReadCoverageSummary {
   if (implementationStatus !== "filled") {
     return {
@@ -254,7 +295,7 @@ function profileReadCoverage(
       profileReadCoverageFinding: "WARN",
     }
   }
-  const profileState = readBackendProjectProfileState(projectDir)
+  const profileState = readBackendProjectProfileState(projectDir, boundary)
   if (profileState.status !== "ready") {
     return {
       profileReadCoverage: "not checked until backend project profile is ready",
@@ -264,7 +305,9 @@ function profileReadCoverage(
   }
 
   const implementationReportPath = join(projectDir, IMPLEMENTATION_REPORT_PATH)
-  const reportText = existsSync(implementationReportPath) ? readFileSync(implementationReportPath, "utf8") : ""
+  const reportText = snapshot === undefined
+    ? existsSync(implementationReportPath) ? readFileSync(implementationReportPath, "utf8") : ""
+    : snapshot.readText(IMPLEMENTATION_REPORT_PATH) ?? ""
   if (hasProjectProfileRangeCoverage(reportText)) {
     return {
       profileReadCoverage: "project profile ranges observed",
@@ -286,7 +329,12 @@ function profileReadCoverage(
   }
 }
 
-function commandDiscipline(projectDir: string, implementationStatus: string, reviewStatus: string): CommandDisciplineSummary {
+function commandDiscipline(
+  projectDir: string,
+  implementationStatus: string,
+  reviewStatus: string,
+  snapshot?: ProjectReadSnapshot,
+): CommandDisciplineSummary {
   if (implementationStatus !== "filled") {
     return {
       commandDiscipline: "not checked until implementation report is filled",
@@ -297,7 +345,7 @@ function commandDiscipline(projectDir: string, implementationStatus: string, rev
   const reportText = readExistingFiles([
     join(projectDir, IMPLEMENTATION_REPORT_PATH),
     join(projectDir, REVIEW_REPORT_PATH),
-  ])
+  ], [IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH], snapshot)
   const hasBearshell = reportText.includes("npx ph bearshell")
   const hasRawShell = RAW_SHELL_PATTERN.test(reportText)
   const hasDirectRulesRead = DIRECT_RULES_READ_PATTERN.test(reportText)
@@ -417,50 +465,105 @@ function nextAction(summary: Omit<WorkflowStatusSummary, "finding" | "next">): s
   return "archive completed workflow with `npx ph history --id <run-id>`"
 }
 
+function snapshotWalk(
+  projectDir: string,
+  relativeRoot: string | undefined,
+  snapshot: ProjectReadSnapshot,
+): BoundedWalkResult {
+  const files = relativeRoot === undefined
+    ? undefined
+    : snapshot.filesUnder(relativeRoot, {
+        maxEntries: 512,
+        maxFileBytes: 256 * 1024,
+        maxTotalBytes: 2 * 1024 * 1024,
+      })
+  if (files === undefined) {
+    return {
+      diagnostics: [{
+        code: "config.path_invalid",
+        message: "Configured path could not be inspected safely.",
+        path: "[UNAVAILABLE]",
+      }],
+      files: [],
+      present: false,
+      safe: false,
+    }
+  }
+  return {
+    diagnostics: [],
+    files: files.map((file) => ({
+      absolutePath: file.absolutePath,
+      bytes: file.bytes.length,
+      relativePath: file.relativePath,
+      text: file.text,
+    })),
+    present: files.length > 0,
+    safe: true,
+  }
+}
+
 export function readWorkflowStatus(projectDirInput?: string, options: WorkflowStatusOptions = {}): WorkflowStatusSummary {
   const projectDir = resolve(projectDirInput ?? process.cwd())
+  const boundary = options.projectReadBoundary
+  const snapshot = options.projectReadSnapshot
   const finishAuthority = options.finishAuthority ?? readWorkflowFinishAuthority(projectDir, {
     consumeExternalAttestation: false,
     now: options.now,
+    projectReadBoundary: options.projectReadBoundary,
   })
-  const configResult = loadHarnessConfigResult(projectDir)
-  const evidencePath = configResult.safe
+  const configResult = loadHarnessConfigResult(projectDir, boundary)
+  const evidenceRelativePath = configResult.safe
+    ? snapshot === undefined
+      ? undefined
+      : containedProjectRelativePath(projectDir, configResult.config.evidenceDir)
+    : undefined
+  const evidencePath = configResult.safe && snapshot === undefined
     ? resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
     : undefined
-  const evidence = evidencePath?.ok === true
-    ? walkBoundedFiles(evidencePath.path, projectDir, {
-        displayRoot: evidencePath.relativePath || configResult.config.evidenceDir,
-        includeText: true,
-      })
-    : {
-        diagnostics: [],
-        files: [],
-        present: false,
-        safe: false,
-      }
+  const evidence = snapshot !== undefined
+    ? snapshotWalk(projectDir, evidenceRelativePath, snapshot)
+    : evidencePath?.ok === true
+      ? walkBoundedFiles(evidencePath.path, projectDir, {
+          displayRoot: evidencePath.relativePath || configResult.config.evidenceDir,
+          includeText: true,
+        })
+      : {
+          diagnostics: [],
+          files: [],
+          present: false,
+          safe: false,
+        }
   const reports = {
-    implementation: readWorkflowReportStatusDetail(projectDir, IMPLEMENTATION_REPORT_PATH),
-    review: readWorkflowReportStatusDetail(projectDir, REVIEW_REPORT_PATH),
+    implementation: readWorkflowReportStatusDetail(projectDir, IMPLEMENTATION_REPORT_PATH, snapshot),
+    review: readWorkflowReportStatusDetail(projectDir, REVIEW_REPORT_PATH, snapshot),
   }
+  const displayEvidenceRoot = snapshot === undefined
+    ? evidencePath?.ok === true
+      ? evidencePath.relativePath || configResult.config.evidenceDir
+      : DEFAULT_EVIDENCE_DIR
+    : evidenceRelativePath ?? DEFAULT_EVIDENCE_DIR
   const summary = {
+    backendShapeReport: backendShapeReportStatus(projectDir, snapshot),
+    displayEvidenceRoot,
     projectDir,
-    plan: readStatusLine(join(projectDir, PLAN_PATH)),
+    plan: readStatusLine(join(projectDir, PLAN_PATH), PLAN_PATH, snapshot),
     implementation: reports.implementation.status,
     review: reports.review.status,
     evidence: evidence.files.length > 0 ? "present" : "missing",
+    selfProfileGuidance: personaHarnessSelfProfileGuidance(projectDir, snapshot),
   } as const
-  const rules = configResult.safe ? inspectRuleCatalogPaths(projectDir) : undefined
-  const displayEvidenceRoot = evidencePath?.ok === true
-    ? evidencePath.relativePath || configResult.config.evidenceDir
-    : DEFAULT_EVIDENCE_DIR
-  const workflowLoop = readWorkflowLoopStateSnapshot(projectDir)
-  const ralphLoop = readRalphLoopStateSnapshot(projectDir)
+  const rules = configResult.safe ? inspectRuleCatalogPaths(projectDir, boundary, snapshot) : undefined
+  const workflowLoop = readWorkflowLoopStateSnapshot(projectDir, snapshot)
+  const ralphLoop = readRalphLoopStateSnapshot(projectDir, (options.now ?? new Date()).toISOString(), snapshot)
   const currentRulePackHash = configResult.safe && rules?.safe === true && workflowLoop.integrity === "valid"
-    ? rulePackContentHash(projectDir)
+    ? rulePackContentHash(projectDir, boundary, snapshot)
     : undefined
-  const coverage = readCoverage(projectDir, summary.implementation, evidence)
-  const profileCoverage = profileReadCoverage(projectDir, summary.implementation, evidence)
-  const javaRoleCoverage: JavaRoleReadCoverageSummary = readJavaRoleReadCoverage(projectDir, summary.implementation)
+  const coverage = readCoverage(projectDir, summary.implementation, evidence, snapshot)
+  const profileCoverage = profileReadCoverage(projectDir, summary.implementation, evidence, boundary, snapshot)
+  const javaRoleCoverage: JavaRoleReadCoverageSummary = readJavaRoleReadCoverage(projectDir, summary.implementation, {
+    boundary,
+    snapshot,
+  })
   const reportCoverageSummary: WorkflowReportCoverageSummary = readWorkflowReportCoverage({
     projectDir,
     implementationStatus: summary.implementation,
@@ -468,12 +571,13 @@ export function readWorkflowStatus(projectDirInput?: string, options: WorkflowSt
     readCoverageBlocking: coverage.readCoverageBlocking,
     profileReadCoverageBlocking: profileCoverage.profileReadCoverageBlocking,
     javaRoleReadCoverageBlocking: javaRoleCoverage.javaRoleReadCoverageBlocking,
+    projectReadSnapshot: snapshot,
   })
-  const command = commandDiscipline(projectDir, summary.implementation, summary.review)
-  const verificationFailure: WorkflowVerificationFailureSummary = readVerificationFailure(projectDir, summary.implementation)
-  const stack = stackAlignment(projectDir, summary.implementation)
-  const architectureConventions: ArchitectureConventionSummary = readArchitectureConventions(projectDir, summary.implementation)
-  const pendingTickets = workflowPendingTicketStatus(projectDir)
+  const command = commandDiscipline(projectDir, summary.implementation, summary.review, snapshot)
+  const verificationFailure: WorkflowVerificationFailureSummary = readVerificationFailure(projectDir, summary.implementation, snapshot)
+  const stack = stackAlignment(projectDir, summary.implementation, boundary, snapshot)
+  const architectureConventions: ArchitectureConventionSummary = readArchitectureConventions(projectDir, summary.implementation, boundary, snapshot)
+  const pendingTickets = workflowPendingTicketStatus(projectDir, snapshot)
   const pendingTicketsFinding = pendingTickets.length > 0 ? "WARN" : "PASS"
   const completedLifecycle = projectWorkflowLifecycle({
     currentRulePackHash,
@@ -514,9 +618,8 @@ export function readWorkflowStatus(projectDirInput?: string, options: WorkflowSt
 }
 
 export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
-  const selfProfileGuidance = summary.stackAlignmentFinding === "WARN" ? personaHarnessSelfProfileGuidance(summary.projectDir) : []
-  const evidenceRoot = resolveSafeEvidenceRootResult(summary.projectDir)
-  const displayEvidenceRoot = evidenceRoot.ok ? evidenceRoot.relativePath : "unavailable"
+  const selfProfileGuidance = summary.stackAlignmentFinding === "WARN" ? summary.selfProfileGuidance : []
+  const displayEvidenceRoot = summary.displayEvidenceRoot
   return [
     "Persona Harness Workflow Check",
     "",
@@ -543,7 +646,7 @@ export function formatWorkflowStatus(summary: WorkflowStatusSummary): string {
     `- verification failure: ${summary.verificationFailure}`,
     `- stack alignment: ${summary.stackAlignment}`,
     `- architecture conventions: ${summary.architectureConventions}`,
-    `- backend shape report: ${backendShapeReportStatus(summary.projectDir)}`,
+    `- backend shape report: ${summary.backendShapeReport}`,
     ...formatPendingWorkflowTicketStatusLines(summary.pendingTickets),
     ...(selfProfileGuidance.length === 0
       ? []

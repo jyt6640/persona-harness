@@ -4,10 +4,13 @@ import { join } from "node:path"
 import { runBoundedProcess } from "./bounded-process.js"
 import {
   discoverJUnitResults,
+  snapshotJUnitResults,
   type JunitResultFile,
 } from "./junit-result-discovery.js"
+import { assessCooperativeJUnit } from "./cooperative-junit.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
 import type { ClosureVerificationSummary } from "./workflow-closure-verification.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 
 const DIRECT_VERIFICATION_TIMEOUT_MS = 120_000
 
@@ -68,6 +71,65 @@ export function runDirectClosureVerification(projectDir: string): ClosureVerific
     evidenceRef: result.evidenceRef,
     reason: result.reason,
     verification: "unknown",
+  }
+}
+
+export function runCapabilityBoundClosureVerification(
+  projectDir: string,
+  projectReadBoundary: ProjectReadBoundary,
+): ClosureVerificationSummary {
+  const evidenceRef = "PH direct verification: ./gradlew --no-daemon --no-build-cache cleanTest test --console=plain"
+  try {
+    const baseline = snapshotJUnitResults(projectDir, projectReadBoundary)
+    if (!baseline.safe) {
+      return {
+        evidenceRef,
+        reason: "PH direct verification could not establish a safe pre-execution JUnit boundary",
+        verification: "failed",
+      }
+    }
+    const result = projectReadBoundary.runFixedGradle("test", DIRECT_VERIFICATION_TIMEOUT_MS)
+    if (result.outcome !== "passed" || result.status !== 0) {
+      return {
+        evidenceRef,
+        reason: capabilityCommandFailureReason(result.outcome),
+        verification: "failed",
+      }
+    }
+    const output = Buffer.concat([result.stdout, Buffer.from("\n"), result.stderr]).toString("utf8")
+    if (!taskExecuted(output, "cleanTest") || !taskExecuted(output, "test")) {
+      return {
+        evidenceRef,
+        reason: "PH direct verification failed closed because the fixed Gradle test tasks were not both observed",
+        verification: "failed",
+      }
+    }
+    if (taskNonFresh(output, "test")) {
+      return {
+        evidenceRef,
+        reason: "PH direct verification failed closed because the Gradle test task was not fresh",
+        verification: "failed",
+      }
+    }
+    const junit = assessCooperativeJUnit(projectDir, baseline, projectReadBoundary, true)
+    if (junit.kind === "blocked") {
+      return {
+        evidenceRef,
+        reason: `PH direct verification failed closed (${junit.code})`,
+        verification: "failed",
+      }
+    }
+    return {
+      evidenceRef,
+      reason: `JUnit XML verification success evidence observed (${junit.testCount} tests)`,
+      verification: "passed",
+    }
+  } catch {
+    return {
+      evidenceRef,
+      reason: "PH direct verification could not complete the capability-bound verification transaction",
+      verification: "unknown",
+    }
   }
 }
 
@@ -173,6 +235,28 @@ export function runDirectTestVerification(projectDir: string): DirectTestVerific
       : `PH direct verification passed (${verificationCommand.display}, exit 0)`,
     verification: "passed",
   }
+}
+
+function capabilityCommandFailureReason(outcome: "failed" | "output-limit" | "passed" | "signal" | "timeout"): string {
+  switch (outcome) {
+    case "output-limit":
+      return "PH direct verification failed closed because bounded Gradle output was exceeded"
+    case "signal":
+      return "PH direct verification failed closed because the Gradle process terminated by signal"
+    case "timeout":
+      return "PH direct verification failed closed because the fixed Gradle test command timed out"
+    case "failed":
+    case "passed":
+      return "PH direct verification failed closed because the fixed Gradle test command failed"
+  }
+}
+
+function taskExecuted(output: string, task: "cleanTest" | "test"): boolean {
+  return new RegExp(`^> Task :${task}(?:\\s|$)`, "mu").test(output)
+}
+
+function taskNonFresh(output: string, task: "test"): boolean {
+  return new RegExp(`^> Task :${task}\\s+(?:UP-TO-DATE|FROM-CACHE|NO-SOURCE)\\b`, "mu").test(output)
 }
 
 function resolveVerificationCommand(projectDir: string): VerificationCommand | undefined {

@@ -3,6 +3,8 @@ import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 
 import { readProfileIntent, type ProfileIntent } from "./stack-alignment-profile.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 
 type StackFinding = "PASS" | "WARN"
 
@@ -22,6 +24,7 @@ type GeneratedStackEvidence = {
   readonly hasJavaSource: boolean
   readonly hasJpaDependency: boolean
   readonly hasMaven: boolean
+  readonly hasNodeMarkers: boolean
   readonly hasSettingsGradle: boolean
   readonly hasSpringBootApplication: boolean
   readonly hasSpringBootBuild: boolean
@@ -144,6 +147,8 @@ function generatedStackEvidence(projectDir: string): GeneratedStackEvidence {
     hasJavaSource: hasFileDeep(join(projectDir, "src", "main", "java"), (filePath) => filePath.endsWith(".java")),
     hasJpaDependency: JPA_DEPENDENCY_PATTERN.test(buildText),
     hasMaven: hasAny(projectDir, ["pom.xml"]),
+    hasNodeMarkers: hasAny(projectDir, ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"])
+      || hasFileDeep(join(projectDir, "src"), (filePath) => /\.(?:js|cjs|mjs|ts|tsx)$/.test(filePath)),
     hasSettingsGradle: hasAny(projectDir, ["settings.gradle", "settings.gradle.kts"]),
     hasSpringBootApplication: /@SpringBootApplication\b/.test(javaText),
     hasSpringBootBuild: SPRING_BOOT_PATTERN.test(buildText),
@@ -151,6 +156,48 @@ function generatedStackEvidence(projectDir: string): GeneratedStackEvidence {
     javaText,
     migrationEvidence: migrationEvidence(projectDir, buildText),
     sourceFilesPresent: hasFileDeep(join(projectDir, "src"), () => true),
+  }
+}
+
+function generatedStackEvidenceFromSnapshot(snapshot: ProjectReadSnapshot): GeneratedStackEvidence | undefined {
+  const files = snapshot.filesUnder(".")
+  if (files === undefined) return undefined
+  const paths = new Set(files.map((file) => file.relativePath))
+  const texts = new Map(files.map((file) => [file.relativePath, file.text]))
+  const buildText = `${texts.get("build.gradle") ?? ""}\n${texts.get("build.gradle.kts") ?? ""}`
+  const javaFiles = files.filter((file) => file.relativePath.startsWith("src/main/java/") && file.relativePath.endsWith(".java"))
+  const javaText = javaFiles.map((file) => file.text).join("\n")
+  const gradlewText = `${texts.get("gradlew") ?? ""}\n${texts.get("gradlew.bat") ?? ""}`
+  const migrationPaths = files.filter((file) =>
+    file.relativePath === "schema.sql"
+    || file.relativePath === "src/main/resources/schema.sql"
+    || file.relativePath.startsWith("src/main/resources/db/migration/")
+    || file.relativePath.startsWith("src/main/resources/db/changelog/"),
+  )
+  const migrationEvidence = [
+    ...(migrationPaths.some((file) => file.relativePath.endsWith("schema.sql")) ? ["schema.sql"] : []),
+    ...(migrationPaths.some((file) => file.relativePath.startsWith("src/main/resources/db/migration/")) || buildText.includes("org.flywaydb") ? ["flyway"] : []),
+    ...(migrationPaths.some((file) => file.relativePath.startsWith("src/main/resources/db/changelog/")) || buildText.includes("liquibase") ? ["liquibase"] : []),
+  ]
+  return {
+    buildText,
+    hasBuildGradle: paths.has("build.gradle") || paths.has("build.gradle.kts"),
+    hasController: /@(RestController|Controller)\b/.test(javaText),
+    hasDbDependency: DB_DEPENDENCY_PATTERN.test(buildText),
+    hasFakeGradleShim: paths.has("gradle-shim.js") || paths.has("tools/gradle-shim.js") || FAKE_GRADLE_PATTERN.test(`${buildText}\n${gradlewText}`),
+    hasGradleWrapper: paths.has("gradlew") || paths.has("gradlew.bat"),
+    hasJavaSource: javaFiles.length > 0,
+    hasJpaDependency: JPA_DEPENDENCY_PATTERN.test(buildText),
+    hasMaven: paths.has("pom.xml"),
+    hasNodeMarkers: ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"].some((path) => paths.has(path))
+      || files.some((file) => file.relativePath.startsWith("src/") && /\.(?:js|cjs|mjs|ts|tsx)$/u.test(file.relativePath)),
+    hasSettingsGradle: paths.has("settings.gradle") || paths.has("settings.gradle.kts"),
+    hasSpringBootApplication: /@SpringBootApplication\b/.test(javaText),
+    hasSpringBootBuild: SPRING_BOOT_PATTERN.test(buildText),
+    hasWebStarter: WEB_STARTER_PATTERN.test(buildText),
+    javaText,
+    migrationEvidence,
+    sourceFilesPresent: files.some((file) => file.relativePath.startsWith("src/")),
   }
 }
 
@@ -169,8 +216,12 @@ function migrationDetail(intent: ProfileIntent, evidence: GeneratedStackEvidence
   return evidence.migrationEvidence.length > 0 ? [] : ["missing schema/migration evidence"]
 }
 
-function jpaDatabaseStackAlignment(intent: ProfileIntent, evidence: GeneratedStackEvidence): StackAlignmentSummary {
-  const hasUsableGradle = evidence.hasGradleWrapper || (!evidence.hasFakeGradleShim && canRunSystemGradle())
+function jpaDatabaseStackAlignment(
+  intent: ProfileIntent,
+  evidence: GeneratedStackEvidence,
+  allowSystemGradle: boolean,
+): StackAlignmentSummary {
+  const hasUsableGradle = evidence.hasGradleWrapper || (allowSystemGradle && !evidence.hasFakeGradleShim && canRunSystemGradle())
   const details = [
     ...(evidence.hasBuildGradle ? [] : ["missing build.gradle/build.gradle.kts"]),
     ...(evidence.hasSettingsGradle ? [] : ["missing settings.gradle/settings.gradle.kts"]),
@@ -192,33 +243,37 @@ function jpaDatabaseStackAlignment(intent: ProfileIntent, evidence: GeneratedSta
   return warn(`STACK_MISMATCH: profile/generated stack mismatch; ${details.join("; ")}`, false)
 }
 
-function baselineJavaSpringGradleAlignment(projectDir: string, evidence: GeneratedStackEvidence): StackAlignmentSummary {
+function baselineJavaSpringGradleAlignment(evidence: GeneratedStackEvidence): StackAlignmentSummary {
   const hasGradle = evidence.hasBuildGradle || evidence.hasSettingsGradle || evidence.hasGradleWrapper
   if (hasGradle && evidence.hasJavaSource) {
     return pass("profile expects Java/Spring/Gradle and generated project has Gradle + src/main/java")
   }
-  const hasNodeMarkers = hasAny(projectDir, ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"])
-    || hasFileDeep(join(projectDir, "src"), (filePath) => /\.(?:js|cjs|mjs|ts|tsx)$/.test(filePath))
-  if (!hasGradle && !evidence.hasJavaSource && !evidence.hasMaven && !hasNodeMarkers && !evidence.sourceFilesPresent) {
+  if (!hasGradle && !evidence.hasJavaSource && !evidence.hasMaven && !evidence.hasNodeMarkers && !evidence.sourceFilesPresent) {
     return pass("not checked; no generated project stack markers observed")
   }
   const mismatchDetails = [
     ...(hasGradle ? [] : ["missing build.gradle/settings.gradle/gradlew"]),
     ...(evidence.hasJavaSource ? [] : ["missing src/main/java Java source"]),
     ...(evidence.hasMaven ? ["Maven pom.xml observed"] : []),
-    ...(hasNodeMarkers ? ["Node/CommonJS markers observed"] : []),
+    ...(evidence.hasNodeMarkers ? ["Node/CommonJS markers observed"] : []),
   ]
   return warn(`STACK_MISMATCH: profile expects Java/Spring/Gradle; ${mismatchDetails.join("; ")}`, true)
 }
 
-export function readStackAlignment(projectDir: string, implementationStatus: string): StackAlignmentSummary {
+export function readStackAlignment(
+  projectDir: string,
+  implementationStatus: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): StackAlignmentSummary {
   if (implementationStatus !== "filled") {
     return pass("not checked until implementation report is filled")
   }
-  const intent = readProfileIntent(projectDir)
-  const evidence = generatedStackEvidence(projectDir)
+  const intent = readProfileIntent(projectDir, boundary)
+  const evidence = snapshot === undefined ? generatedStackEvidence(projectDir) : generatedStackEvidenceFromSnapshot(snapshot)
+  if (evidence === undefined) return warn("generated project discovery is unavailable; read-only recovery is required", true)
   if (intent !== undefined && expectsJpaDatabase(intent)) {
-    return jpaDatabaseStackAlignment(intent, evidence)
+    return jpaDatabaseStackAlignment(intent, evidence, snapshot === undefined)
   }
-  return baselineJavaSpringGradleAlignment(projectDir, evidence)
+  return baselineJavaSpringGradleAlignment(evidence)
 }

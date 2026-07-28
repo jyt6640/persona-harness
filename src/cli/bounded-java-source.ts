@@ -1,6 +1,7 @@
 import { join } from "node:path"
 
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 
 const JAVA_MAIN_DIR = join("src", "main", "java")
 const JAVA_SOURCE_MAX_DEPTH = 64
@@ -17,7 +18,28 @@ export type BoundedJavaSourceResult = {
   readonly safe: boolean
 }
 
-export function readBoundedJavaSources(projectDir: string): BoundedJavaSourceResult {
+export function readBoundedJavaSources(
+  projectDir: string,
+  snapshot?: ProjectReadSnapshot,
+): BoundedJavaSourceResult {
+  if (snapshot !== undefined) {
+    const files = snapshot.filesUnder("src/main/java", {
+      extensions: [".java"],
+      maxEntries: JAVA_SOURCE_MAX_ENTRIES,
+      maxFileBytes: 256 * 1024,
+      maxTotalBytes: 8 * 1024 * 1024,
+    })
+    return files === undefined
+      ? { files: [], safe: false }
+      : {
+          files: files.map((file) => ({
+            absolutePath: file.absolutePath,
+            relativePath: `${JAVA_MAIN_DIR.replaceAll("\\", "/")}/${file.relativePath}`,
+            text: file.text,
+          })),
+          safe: true,
+        }
+  }
   const walked = walkBoundedFiles(join(projectDir, JAVA_MAIN_DIR), projectDir, {
     extensions: [".java"],
     includeText: true,

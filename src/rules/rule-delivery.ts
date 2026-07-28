@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto"
 
 import { loadHarnessConfig } from "../config/harness-config.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 import type { FileRole } from "../runtime/types.js"
 import {
   isRuleEligibleForTarget,
@@ -87,8 +89,12 @@ export function takePoliciesForDelivery(rulePath: string, policies: readonly str
   return policies.slice(0, limit)
 }
 
-export function rulePackContentHash(projectDir: string): string {
-  const catalog = loadRuleCatalog(projectDir)
+export function rulePackContentHash(
+  projectDir: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): string {
+  const catalog = loadRuleCatalog(projectDir, boundary, snapshot)
   const payload = catalog.map((entry) => ({
     metadata: entry.metadata,
     path: entry.path,

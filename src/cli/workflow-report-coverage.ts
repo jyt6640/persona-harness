@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
+
 export type WorkflowReportCoverageFinding = "PASS" | "WARN"
 
 export type WorkflowReportCoverageSummary = {
@@ -16,6 +18,7 @@ export type WorkflowReportCoverageInputs = {
   readonly readCoverageBlocking: boolean
   readonly profileReadCoverageBlocking: boolean
   readonly javaRoleReadCoverageBlocking: boolean
+  readonly projectReadSnapshot?: ProjectReadSnapshot
 }
 
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
@@ -60,8 +63,9 @@ export function readWorkflowReportCoverage(inputs: WorkflowReportCoverageInputs)
     }
   }
 
-  const reviewReportPath = join(inputs.projectDir, REVIEW_REPORT_PATH)
-  const reviewText = existsSync(reviewReportPath) ? readFileSync(reviewReportPath, "utf8") : ""
+  const reviewText = inputs.projectReadSnapshot === undefined
+    ? readReviewReportText(inputs.projectDir)
+    : inputs.projectReadSnapshot.readText(REVIEW_REPORT_PATH) ?? ""
   const issues = [
     ...(inputs.readCoverageBlocking ? ["README coverage missing"] : []),
     ...(inputs.profileReadCoverageBlocking ? ["profile read coverage missing"] : []),
@@ -80,4 +84,9 @@ export function readWorkflowReportCoverage(inputs: WorkflowReportCoverageInputs)
     reportCoverageBlocking: true,
     reportCoverageFinding: "WARN",
   }
+}
+
+function readReviewReportText(projectDir: string): string {
+  const reviewReportPath = join(projectDir, REVIEW_REPORT_PATH)
+  return existsSync(reviewReportPath) ? readFileSync(reviewReportPath, "utf8") : ""
 }

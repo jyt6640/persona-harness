@@ -34,6 +34,7 @@ export function assessCooperativeJUnit(
   projectDir: string,
   baseline: JunitResultSnapshot,
   projectReadBoundary?: ProjectReadBoundary,
+  ownedByFreshTestExecution = false,
 ): CooperativeJUnitAssessment {
   if (!baseline.safe) return { code: "junit-unsafe-report", kind: "blocked" }
 
@@ -44,7 +45,10 @@ export function assessCooperativeJUnit(
   if (!discovered.safe) return { code: "junit-unsafe-report", kind: "blocked" }
   const files = [...discovered.files].sort((left, right) => left.ref.localeCompare(right.ref))
   if (files.length === 0) return { code: "junit-missing-report", kind: "blocked" }
-  if (!files.some((file) => baseline.files.get(file.ref)?.sha256 !== sha256(file.text))) {
+  if (
+    !ownedByFreshTestExecution
+    && !files.some((file) => baseline.files.get(file.ref)?.sha256 !== sha256(file.text))
+  ) {
     return { code: "junit-stale-report", kind: "blocked" }
   }
 

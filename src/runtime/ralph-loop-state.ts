@@ -6,6 +6,7 @@ import {
   writeWorkflowLifecycleStateFile,
   type WorkflowLifecycleStateToken,
 } from "../io/workflow-lifecycle-state.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
 
 export type RalphLoopStopReason = "finish-passed" | "max-attempts" | "no-blockers" | "unmapped-blocker"
@@ -179,7 +180,38 @@ function isNullableStopReason(value: unknown): value is RalphLoopStopReason | nu
   return value === null || readStopReason(value) !== null
 }
 
-export function readRalphLoopStateSnapshot(projectDir: string, now = new Date().toISOString()): RalphLoopStateSnapshot {
+export function readRalphLoopStateSnapshot(
+  projectDir: string,
+  now = new Date().toISOString(),
+  snapshot?: ProjectReadSnapshot,
+): RalphLoopStateSnapshot {
+  if (snapshot !== undefined) {
+    const relativePath = ".persona/workflow/ralph-loop-state.json"
+    if (!snapshot.hasFile(relativePath)) {
+      return { integrity: "absent", state: emptyRalphLoopState(now), token: null }
+    }
+    const source = snapshot.readText(relativePath, MAX_RALPH_LOOP_STATE_BYTES)
+    if (source === undefined) {
+      return { integrity: "unsafe", state: emptyRalphLoopState(now), token: null }
+    }
+    try {
+      const parsed: unknown = JSON.parse(source)
+      if (!isRalphLoopStateFile(parsed)) {
+        return { integrity: "malformed", state: emptyRalphLoopState(now), token: null }
+      }
+      return {
+        integrity: "valid",
+        state: {
+          schemaVersion: SCHEMA_VERSION,
+          sessions: readSessions(parsed.sessions),
+          updatedAt: readNullableString(parsed.updatedAt) ?? now,
+        },
+        token: null,
+      }
+    } catch {
+      return { integrity: "malformed", state: emptyRalphLoopState(now), token: null }
+    }
+  }
   const file = readWorkflowLifecycleStateFile(
     projectDir,
     "ralph-loop-state.json",

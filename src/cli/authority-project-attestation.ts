@@ -9,8 +9,10 @@ import {
 } from "./authority-enrollment.js"
 import {
   captureGitIdentity,
+  captureGitIdentityFromCapturedProject,
   captureWorkspaceIdentity,
 } from "./ci-reverification-identity.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 import {
   inspectProjectFinishAttestationArtifact,
   type ProjectFinishAttestationVerifierAssessment,
@@ -32,6 +34,7 @@ export function readEnrolledProjectFinishAttestations(
   projectDir: string,
   options: Pick<AuthorityEnrollmentStoreOptions, "storeRoot"> = {},
   now = new Date(),
+  projectReadBoundary?: ProjectReadBoundary,
 ): EnrolledProjectFinishAttestationRead {
   const enrollments = readAuthorityEnrollments(options)
   if (enrollments.state !== "ready") {
@@ -41,11 +44,15 @@ export function readEnrolledProjectFinishAttestations(
       values: [],
     }
   }
-  const workspace = captureWorkspaceIdentity(projectDir)
+  const workspace = projectReadBoundary === undefined
+    ? captureWorkspaceIdentity(projectDir)
+    : { status: "available" as const, value: projectReadBoundary.workspaceIdentity() }
   if (workspace.status !== "available") {
     return { enrollmentState: "ready", sourceState: "unavailable", values: [] }
   }
-  const git = captureGitIdentity(projectDir, workspace.value)
+  const git = projectReadBoundary === undefined
+    ? captureGitIdentity(projectDir, workspace.value)
+    : captureGitIdentityFromCapturedProject((args) => projectReadBoundary.runFixedGit(args))
   if (!git.available || git.head === undefined) {
     return { enrollmentState: "ready", sourceState: "unavailable", values: [] }
   }
@@ -61,7 +68,13 @@ export function readEnrolledProjectFinishAttestations(
     }
     values.push({
       artifact: artifact.value,
-      assessment: inspectProjectFinishAttestationArtifact(projectDir, enrollment, artifact.value.archive, now),
+      assessment: inspectProjectFinishAttestationArtifact(
+        projectDir,
+        enrollment,
+        artifact.value.archive,
+        now,
+        projectReadBoundary,
+      ),
       enrollment,
     })
   }

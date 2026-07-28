@@ -82,6 +82,22 @@ export function runCooperativeGradleVerification(
   }
 }
 
+export function runCooperativeGradleVerificationWithinBoundary(
+  projectDir: string,
+  context: CooperativeFinishContext,
+  boundary: ProjectReadBoundary,
+  options: CooperativeGradleVerificationOptions = {},
+): CooperativeGradleVerification {
+  try {
+    const projectRoot = canonicalProjectRoot(projectDir, context, boundary)
+    if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
+    const preflight = preflightDiagnostic(projectRoot.value, "local", process.platform, boundary)
+    return runGradleVerification(projectRoot.value, context, preflight, options, undefined, boundary)
+  } catch {
+    return blocked("source-read-runtime-unavailable")
+  }
+}
+
 export function runProjectFinishAttestationGradleVerification(
   projectDir: string,
   context: CooperativeFinishContext,
@@ -186,7 +202,7 @@ function runGradleVerification(
   if (testCode !== undefined) return blocked(testCode)
   const testOutputCode = testExecutionDiagnostic(test.result, ["cleanTest", "test"])
   if (testOutputCode !== undefined) return blocked(testOutputCode)
-  const junit = assessCooperativeJUnit(projectDir, baseline, projectReadBoundary)
+  const junit = assessCooperativeJUnit(projectDir, baseline, projectReadBoundary, true)
   if (junit.kind === "blocked") return junit
 
   const build = runFixedCommandWithinBoundary(

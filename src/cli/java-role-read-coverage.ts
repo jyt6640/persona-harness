@@ -3,6 +3,11 @@ import { join, relative } from "node:path"
 
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import {
+  containedProjectRelativePath,
+  type ProjectReadSnapshot,
+} from "../io/project-read-snapshot.js"
 import { redactEvidenceText } from "../runtime/evidence-redaction.js"
 export type JavaRoleReadCoverageFinding = "PASS" | "WARN"
 
@@ -61,7 +66,27 @@ function javaRoleFor(relativePath: string): JavaGeneratedRole | undefined {
   return undefined
 }
 
-function collectJavaRoleFiles(projectDir: string): { readonly files: readonly JavaRoleFile[]; readonly safe: boolean } {
+function collectJavaRoleFiles(
+  projectDir: string,
+  snapshot?: ProjectReadSnapshot,
+): { readonly files: readonly JavaRoleFile[]; readonly safe: boolean } {
+  if (snapshot !== undefined) {
+    const entries = snapshot.filesUnder(JAVA_MAIN_DIR, {
+      extensions: [".java"],
+      maxEntries: JAVA_ROLE_MAX_ENTRIES,
+      maxFileBytes: 256 * 1024,
+      maxTotalBytes: 8 * 1024 * 1024,
+    })
+    if (entries === undefined) return { files: [], safe: false }
+    return {
+      files: entries.flatMap((entry) => {
+        const relativePath = safeJavaRelativePath(`${JAVA_MAIN_DIR.replaceAll("\\", "/")}/${entry.relativePath}`)
+        const role = javaRoleFor(relativePath)
+        return role === undefined ? [] : [{ path: relativePath, role }]
+      }),
+      safe: true,
+    }
+  }
   const rootDir = join(projectDir, JAVA_MAIN_DIR)
   const files: JavaRoleFile[] = []
   let entryCount = 0
@@ -129,10 +154,31 @@ function collectJavaRoleFiles(projectDir: string): { readonly files: readonly Ja
   return { files, safe }
 }
 
-function collectEvidenceTexts(projectDir: string): { readonly safe: boolean; readonly texts: readonly string[] } {
-  const configResult = loadHarnessConfigResult(projectDir)
+function collectEvidenceTexts(
+  projectDir: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): { readonly safe: boolean; readonly texts: readonly string[] } {
+  const configResult = loadHarnessConfigResult(projectDir, boundary)
   if (!configResult.safe) {
     return { safe: false, texts: [] }
+  }
+  if (snapshot !== undefined) {
+    const evidenceRoot = containedProjectRelativePath(projectDir, configResult.config.evidenceDir)
+    const files = evidenceRoot === undefined
+      ? undefined
+      : snapshot.filesUnder(evidenceRoot, {
+          extensions: [".json"],
+          maxEntries: 512,
+          maxFileBytes: 256 * 1024,
+          maxTotalBytes: 2 * 1024 * 1024,
+        })
+    return files === undefined
+      ? { safe: false, texts: [] }
+      : {
+          safe: true,
+          texts: files.map((file) => normalizePath(file.text)),
+        }
   }
   const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
   if (!evidencePath.ok) {
@@ -181,7 +227,14 @@ function formatMissingFiles(missingFiles: readonly JavaRoleFile[]): string {
   return missingFiles.map((file) => `${file.role}: ${file.path}`).join("; ")
 }
 
-export function readJavaRoleReadCoverage(projectDir: string, implementationStatus: string): JavaRoleReadCoverageSummary {
+export function readJavaRoleReadCoverage(
+  projectDir: string,
+  implementationStatus: string,
+  options: {
+    readonly boundary?: ProjectReadBoundary
+    readonly snapshot?: ProjectReadSnapshot
+  } = {},
+): JavaRoleReadCoverageSummary {
   if (implementationStatus !== "filled") {
     return {
       javaRoleReadCoverage: "not checked until implementation report is filled",
@@ -190,7 +243,7 @@ export function readJavaRoleReadCoverage(projectDir: string, implementationStatu
     }
   }
 
-  const javaResult = collectJavaRoleFiles(projectDir)
+  const javaResult = collectJavaRoleFiles(projectDir, options.snapshot)
   if (!javaResult.safe) {
     return {
       javaRoleReadCoverage: "Java role discovery is unavailable; read-only recovery is required.",
@@ -207,7 +260,7 @@ export function readJavaRoleReadCoverage(projectDir: string, implementationStatu
     }
   }
 
-  const evidenceTextsResult = collectEvidenceTexts(projectDir)
+  const evidenceTextsResult = collectEvidenceTexts(projectDir, options.boundary, options.snapshot)
   if (!evidenceTextsResult.safe) {
     return {
       javaRoleReadCoverage: "configured evidence traversal is unsafe; read-only recovery is required",

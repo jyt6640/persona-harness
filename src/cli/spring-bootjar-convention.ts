@@ -2,12 +2,14 @@ import { existsSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 
 import { SPRING_BOOTJAR_ENABLED_CONVENTION } from "../config/convention-registry.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 import { readBoundedJavaSources } from "./bounded-java-source.js"
 import { readProfileIntent } from "./stack-alignment-profile.js"
 
 const EXECUTABLE_SPRING_APPLICATION_TYPES = ["batch", "mvc-web", "rest-api"] as const
-function executableSpringBootAppApplies(projectDir: string): boolean {
-  const intent = readProfileIntent(projectDir)
+function executableSpringBootAppApplies(projectDir: string, boundary?: ProjectReadBoundary): boolean {
+  const intent = readProfileIntent(projectDir, boundary)
   return intent?.language === "java"
     && intent.framework === "spring"
     && intent.buildTool === "gradle"
@@ -54,17 +56,29 @@ function disabledBootJarLine(source: string): number | undefined {
   return namedMatch?.index === undefined ? undefined : lineNumberAt(commentsOnly, namedMatch.index)
 }
 
-export function springBootJarEnabledConventionFindings(projectDir: string): readonly string[] {
-  if (!executableSpringBootAppApplies(projectDir)) {
+export function springBootJarEnabledConventionFindings(
+  projectDir: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): readonly string[] {
+  if (!executableSpringBootAppApplies(projectDir, boundary)) {
     return []
   }
-  const sources = readBoundedJavaSources(projectDir)
+  const sources = readBoundedJavaSources(projectDir, snapshot)
   if (!sources.safe) {
     return ["Java convention discovery is unavailable; read-only recovery is required."]
   }
   if (!sources.files.some((file) => file.text.includes("@SpringBootApplication"))) return []
-  return buildFilePaths(projectDir).flatMap((filePath) => {
-    const source = readFileSync(filePath, "utf8")
+  const buildSources = snapshot === undefined
+    ? buildFilePaths(projectDir).map((filePath) => ({
+        path: relative(projectDir, filePath),
+        source: readFileSync(filePath, "utf8"),
+      }))
+    : ["build.gradle", "build.gradle.kts"].flatMap((path) => {
+        const source = snapshot.readText(path)
+        return source === undefined ? [] : [{ path, source }]
+      })
+  return buildSources.flatMap(({ path, source }) => {
     if (!springBootBuildSignal(source)) {
       return []
     }
@@ -73,7 +87,7 @@ export function springBootJarEnabledConventionFindings(projectDir: string): read
       return []
     }
     return [
-      `Executable Spring Boot app disables bootJar; ${SPRING_BOOTJAR_ENABLED_CONVENTION.actionableMessage} Source: ${relative(projectDir, filePath)}:${line}`,
+      `Executable Spring Boot app disables bootJar; ${SPRING_BOOTJAR_ENABLED_CONVENTION.actionableMessage} Source: ${path}:${line}`,
     ]
   })
 }

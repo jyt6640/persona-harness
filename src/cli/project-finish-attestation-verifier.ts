@@ -1,7 +1,10 @@
 import { join } from "node:path"
 
 import { assessSigstoreNodeRuntime } from "../../scripts/node-runtime-floor.mjs"
-import { reserveProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import {
+  reserveProjectReadBoundary,
+  type ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
 import { captureNoFollowDirectory } from "../io/no-follow-file.js"
 import { personaHarnessVersion } from "./version.js"
 import {
@@ -65,11 +68,20 @@ export function inspectProjectFinishAttestationArtifact(
   enrollment: ProjectFinishAttestationEnrolledPolicy,
   archive: Buffer,
   now = new Date(),
+  projectReadBoundary?: ProjectReadBoundary,
 ): ProjectFinishAttestationVerifierAssessment {
   const evidence = evidenceFromOriginalArtifact(archive)
   return evidence === undefined
     ? blocked("missing", "archive")
-    : verifyProjectFinishAttestationInternal(projectDir, enrollment, now, false, true, evidence)
+    : verifyProjectFinishAttestationInternal(
+      projectDir,
+      enrollment,
+      now,
+      false,
+      true,
+      evidence,
+      projectReadBoundary,
+    )
 }
 
 export function consumeProjectFinishAttestation(
@@ -85,11 +97,20 @@ export function consumeProjectFinishAttestationArtifact(
   enrollment: ProjectFinishAttestationEnrolledPolicy,
   archive: Buffer,
   now = new Date(),
+  projectReadBoundary?: ProjectReadBoundary,
 ): ProjectFinishAttestationVerifierAssessment {
   const evidence = evidenceFromOriginalArtifact(archive)
   return evidence === undefined
     ? blocked("missing", "archive")
-    : verifyProjectFinishAttestationInternal(projectDir, enrollment, now, true, false, evidence)
+    : verifyProjectFinishAttestationInternal(
+      projectDir,
+      enrollment,
+      now,
+      true,
+      false,
+      evidence,
+      projectReadBoundary,
+    )
 }
 
 export function verifyProjectFinishAttestation(
@@ -109,13 +130,16 @@ function verifyProjectFinishAttestationInternal(
   consume: boolean,
   allowConsumed: boolean,
   suppliedEvidence?: ProjectFinishAttestationEvidence,
+  suppliedProjectReadBoundary?: ProjectReadBoundary,
 ): ProjectFinishAttestationVerifierAssessment {
   if (assessSigstoreNodeRuntime(process.versions.node).status !== "supported") {
     return blocked("runtime-unsupported", "runtime")
   }
-  let projectReadBoundary: ReturnType<typeof reserveProjectReadBoundary> | undefined
+  let projectReadBoundary = suppliedProjectReadBoundary
   try {
-    projectReadBoundary = reserveProjectReadBoundary(projectDir)
+    if (projectReadBoundary === undefined) {
+      projectReadBoundary = reserveProjectReadBoundary(projectDir)
+    }
   } catch {
     return blocked("missing", "evidence")
   }
@@ -162,7 +186,10 @@ function verifyProjectFinishAttestationInternal(
       return blocked("stale", "predicate.receipt.lifecycle")
     }
 
-    const workspaceIdentityDigest = captureFinishAttestationWorkspaceDigest(projectRoot)
+    const workspaceIdentityDigest = captureFinishAttestationWorkspaceDigest(
+      projectRoot,
+      projectReadBoundary.workspaceIdentity(),
+    )
     if (workspaceIdentityDigest === undefined) return blocked("source-drift", "workspace")
     const terminalBinding = {
     attestationId: signedReceipt.lifecycle.finishId,
@@ -207,7 +234,9 @@ function verifyProjectFinishAttestationInternal(
     }
     return trusted(signedReceipt, "consumed")
   } finally {
-    projectReadBoundary.close()
+    if (suppliedProjectReadBoundary === undefined) {
+      projectReadBoundary.close()
+    }
   }
 }
 

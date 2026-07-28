@@ -1,5 +1,13 @@
-import { cooperativeWorkspaceKey, prepareCooperativeFinishContext } from "./cooperative-finish-context.js"
-import { runCooperativeGradleVerification } from "./cooperative-gradle-verification.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import {
+  cooperativeWorkspaceKey,
+  prepareCooperativeFinishContext,
+  type CooperativeFinishContext,
+} from "./cooperative-finish-context.js"
+import {
+  runCooperativeGradleVerification,
+  runCooperativeGradleVerificationWithinBoundary,
+} from "./cooperative-gradle-verification.js"
 
 export type CooperativeCurrentProcessVerificationDecision = {
   readonly assurance: "cooperative"
@@ -33,8 +41,14 @@ type CooperativeTransaction = {
 const activeTransactions = new Map<string, CooperativeTransaction>()
 const decisionTransactions = new WeakMap<object, CooperativeTransaction>()
 
-export function runCurrentProcessCooperativeFinish(projectDir: string): CooperativeFinishAuthorityResult {
-  const context = prepareCooperativeFinishContext(projectDir)
+export function runCurrentProcessCooperativeFinish(
+  projectDir: string,
+  boundary?: ProjectReadBoundary,
+  suppliedContext?: CooperativeFinishContext,
+): CooperativeFinishAuthorityResult {
+  const context = suppliedContext === undefined
+    ? prepareCooperativeFinishContext(projectDir, boundary)
+    : { kind: "ready" as const, value: suppliedContext }
   if (context.kind === "blocked") return context
   const key = cooperativeWorkspaceKey(context.value.workspace)
   if (activeTransactions.has(key)) return { code: "cooperative-session-active", kind: "blocked" }
@@ -46,7 +60,9 @@ export function runCurrentProcessCooperativeFinish(projectDir: string): Cooperat
   }
   activeTransactions.set(key, transaction)
   try {
-    const verification = runCooperativeGradleVerification(projectDir, context.value)
+    const verification = boundary === undefined
+      ? runCooperativeGradleVerification(projectDir, context.value)
+      : runCooperativeGradleVerificationWithinBoundary(projectDir, context.value, boundary)
     if (verification.kind === "blocked") return verification
     const decision = createDecision(transaction, verification.value)
     if (!isLiveCooperativeDecision(decision) || !consumeDecision(decision)) {

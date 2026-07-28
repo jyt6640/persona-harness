@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
+
 export type WorkflowReportStatus = "conflicting" | "filled" | "malformed" | "missing" | "template" | "unknown"
 
 export type WorkflowReportStatusDetail = {
@@ -137,7 +139,17 @@ export function parseWorkflowReportStatusText(markdown: string): WorkflowReportS
   return parseWorkflowReportStatusDetail(markdown).status
 }
 
-export function readWorkflowReportStatusDetail(projectDir: string, relativePath: string): WorkflowReportStatusDetail {
+export function readWorkflowReportStatusDetail(
+  projectDir: string,
+  relativePath: string,
+  snapshot?: ProjectReadSnapshot,
+): WorkflowReportStatusDetail {
+  if (snapshot !== undefined) {
+    const text = snapshot.readText(relativePath, 1024 * 1024)
+    return text === undefined
+      ? { source: "missing", status: "missing" }
+      : parseWorkflowReportStatusDetail(text)
+  }
   const reportPath = join(projectDir, relativePath)
   if (!existsSync(reportPath)) {
     return { source: "missing", status: "missing" }
@@ -149,8 +161,12 @@ export function readWorkflowReportStatusDetail(projectDir: string, relativePath:
   }
 }
 
-export function readWorkflowReportStatus(projectDir: string, relativePath: string): WorkflowReportStatus {
-  return readWorkflowReportStatusDetail(projectDir, relativePath).status
+export function readWorkflowReportStatus(
+  projectDir: string,
+  relativePath: string,
+  snapshot?: ProjectReadSnapshot,
+): WorkflowReportStatus {
+  return readWorkflowReportStatusDetail(projectDir, relativePath, snapshot).status
 }
 
 export function replaceWorkflowReportStatusText(
