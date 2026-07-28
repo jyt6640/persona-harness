@@ -136,8 +136,11 @@ export function runProjectFinishAttestationGradleVerificationWithinBoundary(
       inputSnapshot.value,
       projectReadBoundary,
     )
-  } catch {
-    return blocked("project-finish-producer-profile")
+  } catch (error) {
+    if (error instanceof ProjectReadBoundaryError) {
+      return blocked(error.code === "source-read-unsafe" ? "source-read-runtime-unavailable" : error.code)
+    }
+    return blocked("source-read-runtime-unavailable")
   }
 }
 

@@ -63,6 +63,17 @@ describe("project finish attestation producer runner", () => {
 
     expect(result).toEqual({ code: "junit-malformed-xml", kind: "blocked" })
   })
+
+  it("preserves a direct verification runtime block without relabeling it as profile intake", () => {
+    const result = runProjectFinishAttestationProducer(
+      "/fixture/project",
+      context(),
+      "0.7.0",
+      options(() => ({ code: "source-read-runtime-unavailable", kind: "blocked" })),
+    )
+
+    expect(result).toEqual({ code: "source-read-runtime-unavailable", kind: "blocked" })
+  })
 })
 
 function context() {

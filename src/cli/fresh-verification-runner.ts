@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs"
 import { isAbsolute, join, relative } from "node:path"
 
 import { readBoundedTextFile } from "../io/bounded-path-walker.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import { JUNIT_RESULT_DISCOVERY_LIMITS } from "./junit-result-discovery.js"
 import { parseCiReverificationArtifact, type CiReverificationArtifact } from "./ci-reverification-artifact.js"
 import {
   runCiReverification,
@@ -34,6 +36,7 @@ export type FreshVerificationRunnerOptions = {
   readonly finishId?: string
   readonly idFactory?: () => string
   readonly now?: () => number
+  readonly projectReadBoundary?: ProjectReadBoundary
   readonly reverificationOptions?: CiReverificationRunnerOptions
   readonly runReverification?: typeof runCiReverification
 }
@@ -46,10 +49,13 @@ export function runFreshFixedVerification(
   const now = options.now ?? Date.now
   const runReverification = options.runReverification ?? runCiReverification
   const sourceSnapshotCapturedAt = new Date(now()).toISOString()
-  const sourceSnapshot = captureSemanticTddSourceSnapshot(projectDir, sourceSnapshotCapturedAt)
+  const sourceSnapshot = captureSemanticTddSourceSnapshot(projectDir, sourceSnapshotCapturedAt, {
+    projectReadBoundary: options.projectReadBoundary,
+  })
   const result = runReverification(projectDir, mode, {
     ...options.reverificationOptions,
     now,
+    projectReadBoundary: options.projectReadBoundary,
   })
   if (result.artifactPath === undefined) {
     const diagnosticCodes = [...result.diagnosticCodes, "fresh-receipt-unavailable"]
@@ -73,7 +79,7 @@ export function runFreshFixedVerification(
       testCount: 0,
     }
   }
-  const testCountResult = countFreshTests(projectDir, artifact)
+  const testCountResult = countFreshTests(projectDir, artifact, options.projectReadBoundary)
   const diagnosticCodes = [...result.diagnosticCodes, ...testCountResult.diagnosticCodes]
   const finalStatus = result.finalStatus === "passed" && testCountResult.testCount === 0
     ? "failed"
@@ -181,26 +187,68 @@ export function runFreshFixedVerification(
   }
 }
 
-function countFreshTests(projectDir: string, artifact: CiReverificationArtifact): { readonly diagnosticCodes: readonly string[]; readonly testCount: number } {
+function countFreshTests(
+  projectDir: string,
+  artifact: CiReverificationArtifact,
+  projectReadBoundary?: ProjectReadBoundary,
+): { readonly diagnosticCodes: readonly string[]; readonly testCount: number } {
   const refs = [...new Set(artifact.commands.flatMap((command) => command.junitRefs))]
   let testCount = 0
   const diagnosticCodes: string[] = []
   for (const ref of refs) {
-    const target = join(projectDir, ref)
-    const path = relative(projectDir, target)
-    if (isAbsolute(ref) || path.startsWith("../") || path === "..") {
+    if (!safeFreshJUnitReference(projectDir, ref)) {
       diagnosticCodes.push("junit-ref-outside-workspace")
       continue
     }
-    const read = readBoundedTextFile(target, projectDir, ref)
-    if (!read.ok) {
+    const text = readFreshJUnit(projectDir, ref, projectReadBoundary)
+    if (text === undefined) {
       diagnosticCodes.push("junit-read-failed")
       continue
     }
-    testCount += [...read.text.matchAll(/<testcase\b/gu)].length
+    testCount += [...text.matchAll(/<testcase\b/gu)].length
   }
   if (testCount === 0) diagnosticCodes.push("zero-test-count")
   return { diagnosticCodes: [...new Set(diagnosticCodes)].sort(), testCount }
+}
+
+function safeFreshJUnitReference(projectDir: string, ref: string): boolean {
+  if (isAbsolute(ref) || ref.split("/").some((segment) => segment.length === 0 || segment === "." || segment === "..")) {
+    return false
+  }
+  const target = join(projectDir, ref)
+  const path = relative(projectDir, target)
+  return path !== ".." && !path.startsWith("../")
+}
+
+function readFreshJUnit(
+  projectDir: string,
+  ref: string,
+  projectReadBoundary?: ProjectReadBoundary,
+): string | undefined {
+  const root = ["build/test-results/test", "target/surefire-reports"].find((candidate) => ref.startsWith(`${candidate}/`))
+  if (root === undefined) return undefined
+  const relativeRef = ref.slice(root.length + 1)
+  if (relativeRef.length === 0) return undefined
+  if (projectReadBoundary === undefined) {
+    const target = join(projectDir, ref)
+    const path = relative(projectDir, target)
+    if (path.startsWith("../") || path === "..") return undefined
+    const read = readBoundedTextFile(target, projectDir, ref)
+    return read.ok ? read.text : undefined
+  }
+  try {
+    const entries = projectReadBoundary.readGeneratedProjectTreeAt(root, {
+      excludedRoots: [],
+      maxEntries: JUNIT_RESULT_DISCOVERY_LIMITS.maxEntries,
+      maxFileBytes: JUNIT_RESULT_DISCOVERY_LIMITS.maxFileBytes,
+      maxTotalBytes: JUNIT_RESULT_DISCOVERY_LIMITS.maxTotalBytes,
+    })
+    const entry = entries?.find((candidate) => candidate.path === relativeRef)
+    if (entry === undefined || entry.kind !== "file" || entry.bytes.includes(0)) return undefined
+    return new TextDecoder("utf-8", { fatal: true }).decode(entry.bytes)
+  } catch {
+    return undefined
+  }
 }
 
 function freshDiagnosticDecision(

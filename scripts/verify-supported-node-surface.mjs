@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto"
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -101,6 +102,7 @@ async function verifySourceSurface(input) {
   await assertCliSurface(
     (cwd, args) => runCommand(process.execPath, [cliPath, ...args], cwd),
     input.surface,
+    repositoryRoot,
   )
   return {
     candidateTarballSha256: null,
@@ -119,6 +121,7 @@ async function verifyInstalledSurface(input) {
   await assertCliSurface(
     (cwd, args) => runCommand(installed.binPath, args, cwd),
     input.surface,
+    installed.packageRoot,
   )
   return {
     candidateTarballSha256: sha256File(tarballPath),
@@ -224,13 +227,13 @@ function assertPackageTest(packageRoot, label) {
   }
 }
 
-async function assertCliSurface(runCli, surface) {
+async function assertCliSurface(runCli, surface, packageRoot) {
   requireSuccess(runCli(repositoryRoot, ["--help"]), `${surface} ph --help`)
   requireSuccess(runCli(repositoryRoot, ["version"]), `${surface} ph version`)
   requireSuccess(runCli(repositoryRoot, ["workflow", "--help"]), `${surface} ph workflow --help`)
 
   const fixtureRoot = join(temporaryRoot, `${surface}-authority-negative`)
-  if (!await writeAuthorityNegativeFixture(fixtureRoot)) {
+  if (!await writeAuthorityNegativeFixture(fixtureRoot, packageRoot)) {
     throw new SupportSurfaceError(`${surface} authority-negative fixture setup failed`)
   }
   const finish = runCli(fixtureRoot, ["workflow", "finish", "implement"])
@@ -238,9 +241,31 @@ async function assertCliSurface(runCli, surface) {
   if (finish.status === 0 || !output.includes("trusted-authority-required") || output.includes("Finish status: PASS")) {
     throw new SupportSurfaceError(`${surface} authority-negative finish boundary failed`)
   }
+
+  const reverifyRoot = join(temporaryRoot, `${surface}-reverify-authority-negative`)
+  if (!await writeReverificationAuthorityNegativeFixture(reverifyRoot, packageRoot)) {
+    throw new SupportSurfaceError(`${surface} reverification authority-negative fixture setup failed`)
+  }
+  const reverified = runCli(reverifyRoot, ["workflow", "finish", "implement", "--reverify", "--ci"])
+  const reverifiedFailure = classifyReverificationAuthorityNegativeResult(reverified)
+  if (reverifiedFailure !== undefined) {
+    throw new SupportSurfaceError(`${surface} reverification authority-negative finish boundary failed: ${reverifiedFailure}`)
+  }
 }
 
-async function writeAuthorityNegativeFixture(projectRoot) {
+function classifyReverificationAuthorityNegativeResult(result) {
+  const output = `${result.stdout}\n${result.stderr}`
+  if (result.status === 0) return "unexpected-success"
+  if (output.includes("Finish status: PASS")) return "unexpected-finish-pass"
+  if (output.includes("artifact-unavailable")) return "artifact-unavailable"
+  if (output.includes("fresh-receipt-unavailable")) return "fresh-receipt-unavailable"
+  if (output.includes("source-identity-symlink")) return "source-identity-symlink"
+  if (output.includes("source-read-runtime-unavailable")) return "source-read-runtime-unavailable"
+  if (!output.includes("trusted-authority-required")) return "trusted-authority-required-missing"
+  return undefined
+}
+
+async function writeAuthorityNegativeFixture(projectRoot, packageRoot) {
   mkdirSync(join(projectRoot, ".persona", "evidence", "phase0"), { recursive: true })
   mkdirSync(join(projectRoot, ".persona", "workflow"), { recursive: true })
   writeFileSync(join(projectRoot, ".persona", "workflow", "plan.md"), "Status: accepted\n")
@@ -266,15 +291,137 @@ async function writeAuthorityNegativeFixture(projectRoot) {
       toolOutput: "BUILD SUCCESSFUL",
     })}\n`,
   )
-  return writeCurrentLifecycleStates(projectRoot)
+  return writeCurrentLifecycleStates(projectRoot, packageRoot)
 }
 
-async function writeCurrentLifecycleStates(projectRoot) {
+async function writeReverificationAuthorityNegativeFixture(projectRoot, packageRoot) {
+  if (!await writeAuthorityNegativeFixture(projectRoot, packageRoot)) return false
+  const roleFiles = [
+    ["src/main/java/example/SupportSurfaceApplication.java", "package example;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n@SpringBootApplication\nclass SupportSurfaceApplication {}\n"],
+    ["src/main/java/example/presentation/SupportSurfaceController.java", "package example.presentation;\nimport org.springframework.web.bind.annotation.RestController;\n@RestController\nclass SupportSurfaceController {}\n"],
+    ["src/main/java/example/application/SupportSurfaceService.java", "package example.application;\nclass SupportSurfaceService {}\n"],
+    ["src/main/java/example/domain/SupportSurfaceRecord.java", "package example.domain;\nclass SupportSurfaceRecord {}\n"],
+    ["src/main/java/example/domain/SupportSurfaceRepository.java", "package example.domain;\ninterface SupportSurfaceRepository {}\n"],
+    ["src/main/java/example/infrastructure/JpaSupportSurfaceRepository.java", "package example.infrastructure;\nclass JpaSupportSurfaceRepository implements example.domain.SupportSurfaceRepository {}\n"],
+    ["src/main/java/example/presentation/dto/request/CreateSupportSurfaceRequest.java", "package example.presentation.dto.request;\nrecord CreateSupportSurfaceRequest(String value) {}\n"],
+    ["src/main/java/example/presentation/dto/response/SupportSurfaceResponse.java", "package example.presentation.dto.response;\nrecord SupportSurfaceResponse(String value) {}\n"],
+  ]
+  for (const [relativePath, source] of roleFiles) {
+    mkdirSync(dirname(join(projectRoot, relativePath)), { recursive: true })
+    writeFileSync(join(projectRoot, relativePath), source)
+  }
+  writeFileSync(join(projectRoot, "README.md"), "# Support surface fixture\n")
+  writeFileSync(join(projectRoot, "settings.gradle"), "rootProject.name = 'support-surface'\n")
+  writeFileSync(
+    join(projectRoot, "build.gradle"),
+    [
+      "plugins { id 'org.springframework.boot' version '3.5.0' }",
+      "dependencies {",
+      "  implementation 'org.springframework.boot:spring-boot-starter-web'",
+      "  implementation 'org.springframework.boot:spring-boot-starter-data-jpa'",
+      "  runtimeOnly 'com.h2database:h2'",
+      "}",
+    ].join("\n") + "\n",
+  )
+  mkdirSync(join(projectRoot, "src", "main", "resources"), { recursive: true })
+  writeFileSync(join(projectRoot, "src", "main", "resources", "schema.sql"), "create table support_surface(id bigint primary key);\n")
+  const wrapper = join(projectRoot, "gradlew")
+  writeFileSync(
+    wrapper,
+    [
+      "#!/bin/sh",
+      "mkdir -p build/test-results/test",
+      "printf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase classname=\"SupportSurfaceTest\" name=\"works\"/></testsuite>' > build/test-results/test/TEST-support-surface.xml",
+      "for argument in \"$@\"; do",
+      "  if [ \"$argument\" = build ]; then printf '%s\\n' '> Task :build'; exit 0; fi",
+      "done",
+      "printf '%s\\n' '> Task :cleanTest' '> Task :test' 'BUILD SUCCESSFUL'",
+    ].join("\n") + "\n",
+  )
+  chmodSync(wrapper, 0o755)
+  writeFileSync(
+    join(projectRoot, ".persona", "harness.jsonc"),
+    `${JSON.stringify({ enforce: { executeVerification: true, tdd: false } })}\n`,
+  )
+  writeFileSync(
+    join(projectRoot, ".persona", "project-profile.jsonc"),
+    `${JSON.stringify({
+      defaults: { buildTool: "gradle", framework: "spring", language: "java" },
+      questions: [
+        { answer: "ko", id: "user-language" },
+        { answer: "team", id: "project-context" },
+        { answer: "production-service", id: "project-goal" },
+        { answer: "long-lived", id: "project-scale" },
+        { answer: "rest-api", id: "application-type" },
+        { answer: "clean-architecture-light", id: "architecture-style" },
+        { answer: "database", id: "storage" },
+        { answer: "jpa", id: "persistence-technology" },
+        { answer: "schema.sql", id: "migration-style" },
+        { answer: "domain-first", id: "package-style" },
+        { answer: "strict", id: "boundary-strictness" },
+      ],
+      schema: "persona.project-profile.v1",
+      scope: { mvp: "java-spring-clean-code", role: "backend" },
+      status: "ready",
+    })}\n`,
+  )
+  writeFileSync(
+    join(projectRoot, ".persona", "workflow", "implementation-report.md"),
+    [
+      "Status: filled",
+      "- README ranges read: all",
+      "- Project profile ranges read: all",
+      "- Java role discovery method: workflow evidence",
+      "- Java role files read: controller, service, domain, repository, request DTO, response DTO",
+      "- `npx ph bearshell --shell './gradlew test'`",
+      "- Direct verification observed BUILD SUCCESSFUL.",
+    ].join("\n") + "\n",
+  )
+  writeFileSync(
+    join(projectRoot, ".persona", "workflow", "review-report.md"),
+    [
+      "Status: filled",
+      "- [x] README/plan read method and ranges are recorded in the implementation report.",
+      "- [x] Project profile read method and ranges are recorded in the implementation report.",
+      "- [x] Generated Java role files have read evidence before finish.",
+      "- `npx ph bearshell --shell './gradlew test'`",
+    ].join("\n") + "\n",
+  )
+  writeFileSync(
+    join(projectRoot, ".persona", "evidence", "phase0", "read-coverage.json"),
+    `${JSON.stringify({
+      injectedInto: "model-input",
+      targetFile: ".persona/project-profile.jsonc",
+      toolOutput: ["README.md", ".persona/project-profile.jsonc", ...roleFiles.map(([relativePath]) => relativePath), "BUILD SUCCESSFUL"].join("\n"),
+    })}\n`,
+  )
+  writeFileSync(
+    join(projectRoot, ".persona", "evidence", "phase0", "local-verification.json"),
+    `${JSON.stringify({
+      command: "npx ph bearshell --shell './gradlew test'",
+      status: 0,
+      tool: "bearshell",
+      toolOutput: "BUILD SUCCESSFUL",
+    })}\n`,
+  )
+  for (const args of [
+    ["init", "-q"],
+    ["config", "user.email", "ph@example.invalid"],
+    ["config", "user.name", "PH Support Surface"],
+    ["add", "."],
+    ["commit", "-qm", "support surface fixture"],
+  ]) {
+    if (runCommand("git", args, projectRoot).status !== 0) return false
+  }
+  return writeCurrentLifecycleStates(projectRoot, packageRoot)
+}
+
+async function writeCurrentLifecycleStates(projectRoot, packageRoot) {
   try {
     const [workflowLoopState, ralphLoopState, ruleDelivery] = await Promise.all([
-      import(pathToFileURL(join(repositoryRoot, "dist", "cli", "workflow-loop-state.js")).href),
-      import(pathToFileURL(join(repositoryRoot, "dist", "runtime", "ralph-loop-state.js")).href),
-      import(pathToFileURL(join(repositoryRoot, "dist", "rules", "rule-delivery.js")).href),
+      import(pathToFileURL(join(packageRoot, "dist", "cli", "workflow-loop-state.js")).href),
+      import(pathToFileURL(join(packageRoot, "dist", "runtime", "ralph-loop-state.js")).href),
+      import(pathToFileURL(join(packageRoot, "dist", "rules", "rule-delivery.js")).href),
     ])
     workflowLoopState.writeWorkflowLoopState(projectRoot, {
       finalDecision: "not-run",

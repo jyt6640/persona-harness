@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { readFileSync } from "node:fs"
 import process from "node:process"
+import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
@@ -12,7 +14,7 @@ type SupportRuntime = {
   readonly platform: "linux" | "macos"
 }
 
-const repositoryRoot = process.cwd()
+const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..")
 
 function currentSupportRuntime(): SupportRuntime {
   const nodeMajor = Number(process.versions.node.split(".", 1)[0])
@@ -42,6 +44,14 @@ function run(command: string, args: readonly string[]) {
 }
 
 describe("source-built and packed installed supported Node authority-negative surfaces", () => {
+  it("constructs lifecycle fixtures through the package surface under test", () => {
+    const supportScript = readFileSync(join(repositoryRoot, "scripts", "verify-supported-node-surface.mjs"), "utf8")
+
+    expect(supportScript).toContain("writeCurrentLifecycleStates(projectRoot, packageRoot)")
+    expect(supportScript).toContain('join(packageRoot, "dist", "cli", "workflow-loop-state.js")')
+    expect(supportScript).not.toContain('join(repositoryRoot, "dist", "cli", "workflow-loop-state.js")')
+  })
+
   it("keeps both support commands at trusted-authority-required with verifier imports", { timeout: 120_000 }, () => {
     const runtime = currentSupportRuntime()
     const result = withPackagePackLock(() => {
@@ -63,13 +73,13 @@ describe("source-built and packed installed supported Node authority-negative su
       installedArgs[2] = "installed"
       const installed = run(process.execPath, installedArgs)
       return { installed, source }
-    })
+    }, repositoryRoot)
 
-    expect(result.source.status).toBe(0)
+    expect(result.source.status, result.source.output).toBe(0)
     expect(result.source.output).toContain('"surface":"source"')
     expect(result.source.output).toContain('"verifierImports":{"source":"PASS"}')
     expect(result.source.output).toContain('"nativeProjectRead":{"source":"PASS"}')
-    expect(result.installed.status).toBe(0)
+    expect(result.installed.status, result.installed.output).toBe(0)
     expect(result.installed.output).toContain('"surface":"installed"')
     expect(result.installed.output).toContain('"verifierImports":{"installed":"PASS","packed":"PASS"}')
     expect(result.installed.output).toContain('"nativeProjectRead":{"installed":"PASS","packed":"PASS"}')

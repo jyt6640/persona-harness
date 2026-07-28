@@ -1373,10 +1373,10 @@ static void terminate_process_group(pid_t child) {
   if (kill(-child, SIGTERM) != 0) kill(child, SIGTERM);
   struct timespec pause = { .tv_sec = 0, .tv_nsec = 100000000 };
   nanosleep(&pause, NULL);
-  int status;
-  if (waitpid(child, &status, WNOHANG) == 0) {
+  if (kill(-child, 0) == 0 || errno == EPERM) {
     if (kill(-child, SIGKILL) != 0) kill(child, SIGKILL);
   }
+  int status;
   while (waitpid(child, &status, 0) < 0 && errno == EINTR) {}
 }
 
@@ -1492,11 +1492,13 @@ static enum ph_status run_fixed_git(int root, const char *command, ph_buffer *ou
         break;
       }
     }
-    pid_t waited = waitpid(child, &child_status, WNOHANG);
-    if (waited == child) child_done = 1;
-    if (waited < 0 && errno != EINTR) {
-      close(pipefd[0]);
-      return PH_IO;
+    if (!child_done) {
+      pid_t waited = waitpid(child, &child_status, WNOHANG);
+      if (waited == child) child_done = 1;
+      if (waited < 0 && errno != EINTR) {
+        close(pipefd[0]);
+        return PH_IO;
+      }
     }
     uint64_t now;
     if (!monotonic_milliseconds(&now) || now - started > PH_FIXED_GIT_TIMEOUT_MS) {
@@ -1681,7 +1683,7 @@ static enum ph_status run_fixed_gradle(
     if (polled < 0 && errno != EINTR) {
       close_descriptor(&stdout_pipe[0]);
       close_descriptor(&stderr_pipe[0]);
-      if (!child_done) terminate_process_group(child);
+      terminate_process_group(child);
       return PH_IO;
     }
     if (polled > 0) {
@@ -1693,7 +1695,7 @@ static enum ph_status run_fixed_gradle(
         if (consumed < 0) {
           close_descriptor(&stdout_pipe[0]);
           close_descriptor(&stderr_pipe[0]);
-          if (!child_done) terminate_process_group(child);
+          terminate_process_group(child);
           result->killed = 1;
           result->outcome = PH_COMMAND_OUTPUT_LIMIT;
           return PH_READY;
@@ -1701,23 +1703,26 @@ static enum ph_status run_fixed_gradle(
         if (consumed == 0) {
           close_descriptor(&stdout_pipe[0]);
           close_descriptor(&stderr_pipe[0]);
-          if (!child_done) terminate_process_group(child);
+          terminate_process_group(child);
           return PH_IO;
         }
       }
     }
-    pid_t waited = waitpid(child, &child_status, WNOHANG);
-    if (waited == child) child_done = 1;
-    if (waited < 0 && errno != EINTR) {
-      close_descriptor(&stdout_pipe[0]);
-      close_descriptor(&stderr_pipe[0]);
-      return PH_IO;
+    if (!child_done) {
+      pid_t waited = waitpid(child, &child_status, WNOHANG);
+      if (waited == child) child_done = 1;
+      if (waited < 0 && errno != EINTR) {
+        close_descriptor(&stdout_pipe[0]);
+        close_descriptor(&stderr_pipe[0]);
+        terminate_process_group(child);
+        return PH_IO;
+      }
     }
     uint64_t now;
     if (!monotonic_milliseconds(&now) || now - started > timeout_ms) {
       close_descriptor(&stdout_pipe[0]);
       close_descriptor(&stderr_pipe[0]);
-      if (!child_done) terminate_process_group(child);
+      terminate_process_group(child);
       result->killed = 1;
       result->outcome = PH_COMMAND_TIMEOUT;
       result->timed_out = 1;

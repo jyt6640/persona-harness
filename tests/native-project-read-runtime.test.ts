@@ -3,6 +3,7 @@ import {
   closeSync,
   chmodSync,
   constants,
+  existsSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
@@ -516,6 +517,54 @@ describe.sequential("native project read runtime", () => {
       expect(result.stdout.toString("utf8")).toContain("> Task :cleanTest")
       expect(result.stdout.toString("utf8")).toContain("> Task :test")
     } finally {
+      rmSync(project, { force: true, recursive: true })
+    }
+  })
+
+  it("drains inherited fixed Gradle output after its launcher exits", () => {
+    // Given: a fixed wrapper whose short-lived child keeps the inherited output pipe open.
+    const project = createDirectProjectRoot("persona-native-gradle-pipe-drain")
+    writeFileSync(
+      join(project, "gradlew"),
+      "#!/bin/sh\n(sleep 0.2) &\nprintf '%s\\n' '> Task :cleanTest' '> Task :test' 'BUILD SUCCESSFUL'\n",
+    )
+    chmodSync(join(project, "gradlew"), 0o755)
+
+    try {
+      // When: the native command reaps the launcher before the inherited pipes close.
+      const result = runNativeProjectGradle("test", 1_000, project, expectedRuntimeManifest(project, ["gradlew"]))
+
+      // Then: it drains the owned pipes without a second waitpid on an already reaped child.
+      expect(result).toMatchObject({ outcome: "passed", status: 0, timedOut: false })
+    } finally {
+      rmSync(project, { force: true, recursive: true })
+    }
+  })
+
+  it("terminates a fixed Gradle process group that keeps output open after launcher exit", () => {
+    // Given: an owned background child that would write after the bounded command deadline.
+    const project = createDirectProjectRoot("persona-native-gradle-process-group")
+    const marker = join(project, "native-project-read-child-survived")
+    const priorTmpdir = process.env.TMPDIR
+    writeFileSync(
+      join(project, "gradlew"),
+      "#!/bin/sh\n(sleep 1; : > \"$TMPDIR/native-project-read-child-survived\") &\nprintf '%s\\n' '> Task :cleanTest' '> Task :test' 'BUILD SUCCESSFUL'\n",
+    )
+    chmodSync(join(project, "gradlew"), 0o755)
+
+    try {
+      process.env.TMPDIR = project
+
+      // When: the owned command reaches its timeout while a descendant retains output pipes.
+      const result = runNativeProjectGradle("test", 50, project, expectedRuntimeManifest(project, ["gradlew"]))
+
+      // Then: the whole process group is terminated, including descendants after the launcher has exited.
+      expect(result).toMatchObject({ killed: true, outcome: "timeout", timedOut: true })
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1_200)
+      expect(existsSync(marker)).toBe(false)
+    } finally {
+      if (priorTmpdir === undefined) delete process.env.TMPDIR
+      else process.env.TMPDIR = priorTmpdir
       rmSync(project, { force: true, recursive: true })
     }
   })

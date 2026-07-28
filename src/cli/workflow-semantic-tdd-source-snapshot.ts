@@ -4,8 +4,10 @@ import { join } from "node:path"
 
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 import {
   captureGitIdentity,
+  captureGitIdentityFromCapturedProject,
   captureWorkspaceIdentity,
 } from "./ci-reverification-identity.js"
 import { verificationWorkspaceBinding } from "./ci-reverification-mutation-snapshot.js"
@@ -31,20 +33,33 @@ export type SourceSnapshotRead = {
   readonly present: boolean
 }
 
+export type SemanticTddSourceSnapshotOptions = {
+  readonly projectReadBoundary?: ProjectReadBoundary
+}
+
 export function captureSemanticTddSourceSnapshot(
   projectDir: string,
   capturedAt: string,
+  options: SemanticTddSourceSnapshotOptions = {},
 ): SemanticTddSourceSnapshotCapture {
-  const config = loadHarnessConfigResult(projectDir)
+  const boundary = options.projectReadBoundary
+  const config = loadHarnessConfigResult(projectDir, boundary)
   if (!config.safe) return unavailable("harness-config-invalid")
   const evidence = resolveConfiguredPathResult(projectDir, config.config.evidenceDir)
   if (!evidence.ok) return unavailable("evidence-path-unsafe")
-  const workspace = captureWorkspaceIdentity(projectDir)
+  const workspace = boundary === undefined
+    ? captureWorkspaceIdentity(projectDir)
+    : capturedWorkspaceIdentity(boundary)
   if (workspace.status === "unavailable") return workspace
-  const git = captureGitIdentity(projectDir, workspace.value)
-  const entries = captureSourceIdentityEntries(projectDir, git, evidence.relativePath || config.config.evidenceDir)
+  const git = boundary === undefined
+    ? captureGitIdentity(projectDir, workspace.value)
+    : captureGitIdentityFromCapturedProject((args) => boundary.runFixedGit(args))
+  const sourceOptions = boundary === undefined
+    ? undefined
+    : { gitRunner: (args: readonly string[]) => boundary.runFixedGit(args), projectReadBoundary: boundary }
+  const entries = captureSourceIdentityEntries(projectDir, git, evidence.relativePath || config.config.evidenceDir, sourceOptions)
   if (entries.status === "unavailable") return entries
-  const identity = captureSourceIdentity(projectDir, git, evidence.relativePath || config.config.evidenceDir)
+  const identity = captureSourceIdentity(projectDir, git, evidence.relativePath || config.config.evidenceDir, sourceOptions)
   if (identity.status === "unavailable") return identity
   if (!git.available || git.status === undefined) return unavailable(git.diagnosticCode)
   const snapshotEntries = entries.value.map(snapshotEntry)
@@ -61,6 +76,14 @@ export function captureSemanticTddSourceSnapshot(
       dirtyWorktreeDigest: `sha256:${git.status.digest}`,
       workspaceIdentity: workspaceBinding(workspace.value),
     },
+  }
+}
+
+function capturedWorkspaceIdentity(projectReadBoundary: ProjectReadBoundary) {
+  try {
+    return { status: "available" as const, value: projectReadBoundary.workspaceIdentity() }
+  } catch {
+    return unavailable("workspace-root-unavailable")
   }
 }
 

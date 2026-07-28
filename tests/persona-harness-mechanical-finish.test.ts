@@ -1,10 +1,12 @@
 import { execFileSync } from "node:child_process"
-import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { runCapabilityBoundClosureVerification } from "../src/cli/closure-verification-runner.js"
+import { reserveProjectReadBoundary } from "../src/io/bootstrap-write-boundary.js"
 import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
@@ -93,7 +95,11 @@ function writeSpringFixture(projectDir: string): readonly string[] {
     [
       "#!/bin/sh",
       "mkdir -p build/test-results/test",
-      "printf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\"><testcase classname=\"MechanicalTest\" name=\"works\"/></testsuite>' > build/test-results/test/TEST-mechanical.xml",
+      "printf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase classname=\"MechanicalTest\" name=\"works\"/></testsuite>' > build/test-results/test/TEST-mechanical.xml",
+      "for argument in \"$@\"; do",
+      "  if [ \"$argument\" = build ]; then printf '%s\\n' '> Task :build'; exit 0; fi",
+      "done",
+      "printf '%s\\n' '> Task :cleanTest' '> Task :test'",
       "echo 'BUILD SUCCESSFUL'",
       "exit 0",
     ].join("\n") + "\n",
@@ -242,52 +248,7 @@ afterEach(() => {
 describe("mechanical workflow finish reachability", () => {
   it("walks closure next steps to the trusted-authority boundary within the chain-depth contract", () => {
     const projectDir = createTempProject()
-    writeBaseWorkflow(projectDir)
-    writeHarnessConfig(projectDir)
-    writeReadyProfile(projectDir)
-    const javaRoleFiles = writeSpringFixture(projectDir)
-
-    const visitedSteps: string[] = []
-    const seenStepIds = new Set<string>()
-    for (let stepIndex = 0; stepIndex < FINISH_REACHABLE_CHAIN_DEPTH; stepIndex += 1) {
-      const payload = closureNext(projectDir)
-      if (payload.state.finish === "passed") break
-
-      const step = payload.nextStep
-      expect(step.id).not.toBe("unmapped-blocker")
-      expect(seenStepIds.has(step.id), `closure step repeated without progress: ${step.id}`).toBe(false)
-      expect(step.command === "npx ph workflow finish implement" || step.command === "npx ph workflow check").toBe(false)
-      seenStepIds.add(step.id)
-      visitedSteps.push(step.id)
-
-      if (step.id === "fill-implementation-report") {
-        writeImplementationReport(projectDir, false)
-      } else if (step.id === "fill-review-report") {
-        writeReviewReport(projectDir)
-      } else if (step.id === "fill-report-coverage") {
-        writeImplementationReport(projectDir, true)
-        writeReadEvidence(projectDir, javaRoleFiles)
-        writeCurrentWorkflowLifecycleLoopStates(projectDir)
-      } else if (step.id === "record-workflow-evidence") {
-        writeVerificationEvidence(projectDir)
-      } else if (step.id === "trusted-authority-required") {
-        break
-      } else {
-        throw new Error(`mechanical finish fixture does not know how to walk ${step.id}`)
-      }
-      runCommandAfterContent(projectDir, step.commandAfterContent)
-    }
-
-    const finish = runPh(projectDir, ["workflow", "finish", "implement"])
-    expect(finish.status).toBe(1)
-    expect(finish.stderr).toContain("Blocker: trusted-authority-required")
-    expect(finish.stderr).not.toContain("Finish status: PASS")
-
-    execFileSync("git", ["init", "-q"], { cwd: projectDir })
-    execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
-    execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
-    execFileSync("git", ["add", "."], { cwd: projectDir })
-    execFileSync("git", ["commit", "-qm", "finish-ready fixture"], { cwd: projectDir })
+    const visitedSteps = prepareReverificationFixture(projectDir)
     const reverifiedFinish = runPh(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
     expect(reverifiedFinish.status, reverifiedFinish.stderr).toBe(1)
     expect(reverifiedFinish.stderr).toContain("Blocker: trusted-authority-required")
@@ -296,4 +257,117 @@ describe("mechanical workflow finish reachability", () => {
     expect(visitedSteps).toEqual(["fill-implementation-report", "fill-review-report", "record-workflow-evidence", "fill-report-coverage", "trusted-authority-required"])
     expect(visitedSteps.length).toBeLessThanOrEqual(FINISH_REACHABLE_CHAIN_DEPTH)
   })
+
+  it("keeps public reverification bound to the captured project capability before authority", () => {
+    const projectDir = createTempProject()
+    prepareReverificationFixture(projectDir)
+    const boundary = withProjectRoot(projectDir, () => reserveProjectReadBoundary(projectDir))
+    try {
+      const verification = withProjectRoot(projectDir, () => runCapabilityBoundClosureVerification(projectDir, boundary))
+      expect(verification).toMatchObject({
+        verification: "passed",
+      })
+    } finally {
+      boundary.close()
+    }
+    const reverifiedFinish = runPhAtProjectRoot(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
+
+    expect(reverifiedFinish.status, reverifiedFinish.stderr).toBe(1)
+    expect(reverifiedFinish.stderr).toContain("Blocker: trusted-authority-required")
+    expect(reverifiedFinish.stderr).not.toContain("artifact-unavailable")
+    expect(reverifiedFinish.stderr).not.toContain("fresh-receipt-unavailable")
+    expect(reverifiedFinish.stderr).not.toContain("source-identity-symlink")
+    expect(reverifiedFinish.stderr).not.toContain("source-read-runtime-unavailable")
+    expect(reverifiedFinish.stdout).not.toContain("Finish status: PASS")
+  })
+
+  it("blocks public reverification before any fresh record when a source directory is replaced", () => {
+    const projectDir = createTempProject()
+    prepareReverificationFixture(projectDir)
+    const source = join(projectDir, "src")
+    const preserved = join(projectDir, "src-preserved")
+    const outside = join(projectDir, "outside-source")
+    mkdirSync(outside)
+    renameSync(source, preserved)
+    symlinkSync(outside, source)
+    try {
+      const reverifiedFinish = runPhAtProjectRoot(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
+      const output = `${reverifiedFinish.stdout}\n${reverifiedFinish.stderr}`
+
+      expect(reverifiedFinish.status).toBe(1)
+      expect(output).toContain("source-read-runtime-unavailable")
+      expect(output).not.toContain("trusted-authority-required")
+      expect(output).not.toContain("Finish status: PASS")
+      expect(existsSync(join(projectDir, ".persona", "evidence", "ci-reverification"))).toBe(false)
+      expect(existsSync(join(projectDir, ".persona", "evidence", "verification-attempts"))).toBe(false)
+      expect(existsSync(join(projectDir, ".persona", "evidence", "verification-receipts"))).toBe(false)
+    } finally {
+      unlinkSync(source)
+      renameSync(preserved, source)
+    }
+  })
 })
+
+function prepareReverificationFixture(projectDir: string): readonly string[] {
+  writeBaseWorkflow(projectDir)
+  writeHarnessConfig(projectDir)
+  writeReadyProfile(projectDir)
+  const javaRoleFiles = writeSpringFixture(projectDir)
+
+  const visitedSteps: string[] = []
+  const seenStepIds = new Set<string>()
+  for (let stepIndex = 0; stepIndex < FINISH_REACHABLE_CHAIN_DEPTH; stepIndex += 1) {
+    const payload = closureNext(projectDir)
+    if (payload.state.finish === "passed") break
+
+    const step = payload.nextStep
+    expect(step.id).not.toBe("unmapped-blocker")
+    expect(seenStepIds.has(step.id), `closure step repeated without progress: ${step.id}`).toBe(false)
+    expect(step.command === "npx ph workflow finish implement" || step.command === "npx ph workflow check").toBe(false)
+    seenStepIds.add(step.id)
+    visitedSteps.push(step.id)
+
+    if (step.id === "fill-implementation-report") {
+      writeImplementationReport(projectDir, false)
+    } else if (step.id === "fill-review-report") {
+      writeReviewReport(projectDir)
+    } else if (step.id === "fill-report-coverage") {
+      writeImplementationReport(projectDir, true)
+      writeReadEvidence(projectDir, javaRoleFiles)
+      writeCurrentWorkflowLifecycleLoopStates(projectDir)
+    } else if (step.id === "record-workflow-evidence") {
+      writeVerificationEvidence(projectDir)
+    } else if (step.id === "trusted-authority-required") {
+      break
+    } else {
+      throw new Error(`mechanical finish fixture does not know how to walk ${step.id}`)
+    }
+    runCommandAfterContent(projectDir, step.commandAfterContent)
+  }
+
+  const finish = runPh(projectDir, ["workflow", "finish", "implement"])
+  expect(finish.status).toBe(1)
+  expect(finish.stderr).toContain("Blocker: trusted-authority-required")
+  expect(finish.stderr).not.toContain("Finish status: PASS")
+
+  execFileSync("git", ["init", "-q"], { cwd: projectDir })
+  execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
+  execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
+  execFileSync("git", ["add", "."], { cwd: projectDir })
+  execFileSync("git", ["commit", "-qm", "finish-ready fixture"], { cwd: projectDir })
+  return visitedSteps
+}
+
+function runPhAtProjectRoot(projectDir: string, args: readonly string[]) {
+  return withProjectRoot(projectDir, () => runPersonaCli(args, { cwd: process.cwd(), env: {}, invocationName: "ph" }))
+}
+
+function withProjectRoot<T>(projectDir: string, operation: () => T): T {
+  const originalDirectory = process.cwd()
+  process.chdir(projectDir)
+  try {
+    return operation()
+  } finally {
+    process.chdir(originalDirectory)
+  }
+}

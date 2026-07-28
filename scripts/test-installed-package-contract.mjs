@@ -506,12 +506,16 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       'const hostile = runAt("./project-finish-producer-hostile", "44");',
       'const directHead = execFileSync("git", ["rev-parse", "HEAD"], { cwd: "./project-finish-producer-valid", encoding: "utf8" }).trim();',
       'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: directHead }, "0.8.0-beta.6");',
-      'if (valid.kind !== "passed" || canonical.kind !== "passed" || hostile.kind !== "blocked" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") process.exit(1);',
+      'const resultCode = (result) => result.kind === "passed" ? "passed" : result.kind === "blocked" ? result.code : "invalid";',
+      'const resultVector = [valid, canonical, hostile, symlinked].map(resultCode).join(",");',
+      'if (valid.kind !== "passed" || canonical.kind !== "passed" || hostile.kind !== "blocked" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") { process.stdout.write(`project-finish-producer-intake:${resultVector}\\n`); process.exit(1); }',
       'if (valid.value.receipt.source.root !== "." || canonical.value.receipt.source.root !== "." || hostile.value !== undefined) process.exit(1);',
       'if (JSON.stringify(hostile).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
   ])
-  requireSuccess("installed project finish producer no-follow intake probe", probe)
+  if (probe.status !== 0) {
+    throw new Error(`installed project finish producer no-follow intake probe failed: ${boundedProducerIntakeDiagnostic(probe.stdout)}`)
+  }
   const profileHook = join(fixtureRoot, "project-finish-producer-profile-audit-hook.cjs")
   const profileSentinel = join(fixtureRoot, "project-finish-producer-profile-audit")
   const profileOutside = `${replacementProject}-outside-profile.jsonc`
@@ -2077,6 +2081,22 @@ function requireSuccess(label, result) {
   if (result.status !== 0) {
     throw new Error(`${label} failed`)
   }
+}
+
+function boundedProducerIntakeDiagnostic(output) {
+  const match = /^project-finish-producer-intake:([a-z-]+(?:,[a-z-]+){3})$/mu.exec(output)
+  const allowed = new Set([
+    "passed",
+    "project-finish-producer-binding",
+    "project-finish-producer-profile",
+    "source-identity-symlink",
+    "source-read-runtime-unavailable",
+    "workspace-root-unavailable",
+  ])
+  if (match === null || !match[1].split(",").every((code) => allowed.has(code))) {
+    return "unavailable"
+  }
+  return `project-finish-producer-intake:${match[1]}`
 }
 
 function resolvePackResult(output, packDirectory) {
