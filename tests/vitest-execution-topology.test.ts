@@ -15,6 +15,7 @@ const RESOURCE_SENSITIVE_TEST_FILES = [
   "tests/persona-harness-fresh-verification-runner.test.ts",
   "tests/persona-harness-mechanical-finish.test.ts",
   "tests/staged-package-verification-runner.test.ts",
+  "tests/supported-node-surface-source-authority.test.ts",
   "tests/project-finish-attestation-consumption.test.ts",
   "tests/project-finish-attestation-producer-inputs.test.ts",
   "tests/project-finish-attestation-producer-profile.test.ts",

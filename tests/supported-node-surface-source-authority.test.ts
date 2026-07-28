@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { readFileSync } from "node:fs"
 import process from "node:process"
+import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
@@ -13,7 +14,7 @@ type SupportRuntime = {
   readonly platform: "linux" | "macos"
 }
 
-const repositoryRoot = process.cwd()
+const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..")
 
 function currentSupportRuntime(): SupportRuntime {
   const nodeMajor = Number(process.versions.node.split(".", 1)[0])
@@ -72,7 +73,7 @@ describe("source-built and packed installed supported Node authority-negative su
       installedArgs[2] = "installed"
       const installed = run(process.execPath, installedArgs)
       return { installed, source }
-    })
+    }, repositoryRoot)
 
     expect(result.source.status, result.source.output).toBe(0)
     expect(result.source.output).toContain('"surface":"source"')

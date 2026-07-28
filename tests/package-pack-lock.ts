@@ -7,8 +7,8 @@ import process from "node:process"
 const LOCK_WAIT_MS = 25
 const LOCK_TIMEOUT_MS = 120_000
 
-function lockPath(): string {
-  const projectDigest = createHash("sha256").update(process.cwd()).digest("hex").slice(0, 16)
+function lockPath(projectRoot: string): string {
+  const projectDigest = createHash("sha256").update(projectRoot).digest("hex").slice(0, 16)
   return join(tmpdir(), `persona-harness-pack-${projectDigest}.lock`)
 }
 
@@ -23,8 +23,8 @@ function waitForLock(): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, LOCK_WAIT_MS)
 }
 
-export function withPackagePackLock<T>(operation: () => T): T {
-  const path = lockPath()
+export function withPackagePackLock<T>(operation: () => T, projectRoot = process.cwd()): T {
+  const path = lockPath(projectRoot)
   const deadline = Date.now() + LOCK_TIMEOUT_MS
   let descriptor: number | undefined
   while (descriptor === undefined) {
