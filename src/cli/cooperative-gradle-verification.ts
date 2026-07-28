@@ -231,7 +231,7 @@ function runGradleVerification(
   let postInputSnapshot: ProjectFinishAttestationInputSnapshot | undefined
   if (inputSnapshot !== undefined) {
     const postInputs = captureProjectFinishAttestationInputSnapshot(projectDir, projectReadBoundary)
-    if (postInputs.kind === "blocked") return blocked(postInputs.code)
+    if (postInputs.kind === "blocked") return blocked("source-identity-drift")
     if (!sameProjectFinishAttestationInputSnapshot(inputSnapshot, postInputs.value)) {
       return blocked("source-identity-drift")
     }
