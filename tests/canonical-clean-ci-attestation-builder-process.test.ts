@@ -186,14 +186,14 @@ describe("canonical builder bounded process contract", () => {
     const fixtureRoot = createTempDir()
     const heartbeatPath = join(fixtureRoot, "escaped-pipe-descendant.heartbeat")
     const descendantScript = [
-      "import { appendFileSync, writeFileSync } from 'node:fs'",
+      "const { appendFileSync, writeFileSync } = require('node:fs')",
       `const heartbeatPath = ${JSON.stringify(heartbeatPath)}`,
       "process.on('SIGTERM', () => {})",
       "writeFileSync(heartbeatPath, 'started\\n')",
       "setInterval(() => { appendFileSync(heartbeatPath, 'tick\\n'); process.stdout.write('held-pipe\\n') }, 10)",
     ].join(";")
     const parentScript = [
-      "import { spawn } from 'node:child_process'",
+      "const { spawn } = require('node:child_process')",
       `const child = spawn(process.execPath, ['-e', ${JSON.stringify(descendantScript)}], { detached: true, stdio: ['ignore', 'inherit', 'inherit'] })`,
       "child.unref()",
       "setTimeout(() => process.exit(0), 600)",
@@ -202,9 +202,9 @@ describe("canonical builder bounded process contract", () => {
     await expect(runBoundedBuilderCommand(
       fixedNodeCommand("escaped-pipe-descendant", parentScript),
       fixtureRoot,
-      { graceMs: 50, timeoutMs: 100 },
+      { graceMs: 50, timeoutMs: 1_000 },
     )).rejects.toMatchObject({
-      details: { commandId: "escaped-pipe-descendant", exitState: "timeout" },
+      details: { commandId: "escaped-pipe-descendant", exitState: "process-lifecycle" },
     })
 
     expect(existsSync(heartbeatPath)).toBe(true)
