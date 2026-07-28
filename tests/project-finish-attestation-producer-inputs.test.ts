@@ -1,4 +1,3 @@
-import childProcess from "node:child_process"
 import {
   mkdirSync,
   renameSync,
@@ -7,10 +6,9 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs"
-import { syncBuiltinESMExports } from "node:module"
 import { join } from "node:path"
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, describe, expect, it } from "vitest"
 
 import {
   captureProjectFinishAttestationInputSnapshot,
@@ -18,6 +16,41 @@ import {
 import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
+type NativeRun = (
+  args: readonly string[],
+  input: Buffer | null,
+  environment: readonly string[],
+  maxBuffer: number,
+  timeoutMs: number,
+  rootDescriptor: number,
+  parentDescriptor: number,
+) => Buffer
+
+const originalDlopen = process.dlopen
+let afterNativeTree: (() => void) | undefined
+
+process.dlopen = (nativeModule, filename, flags): void => {
+  originalDlopen(nativeModule, filename, flags)
+  const exportsDescriptor = Object.getOwnPropertyDescriptor(nativeModule, "exports")
+  const nativeExports = exportsDescriptor?.value
+  if (!isRecord(nativeExports)) return
+  const run = nativeExports["run"]
+  if (!isNativeRun(run)) return
+  Object.defineProperty(nativeExports, "run", {
+    configurable: true,
+    enumerable: true,
+    value: (...args: Parameters<NativeRun>): Buffer => {
+      const result = run(...args)
+      if (args[0][1] === "tree") afterNativeTree?.()
+      return result
+    },
+    writable: true,
+  })
+}
+
+afterAll(() => {
+  process.dlopen = originalDlopen
+})
 
 afterEach(() => {
   for (const project of projects.splice(0)) {
@@ -167,24 +200,19 @@ function swapAfterNativeTree<T>(
   outsidePath: string,
   action: () => T,
 ): { readonly didSwap: boolean; readonly value: T } {
-  const originalSpawnSync = childProcess.spawnSync
   let swapped = false
-  childProcess.spawnSync = ((...args: Parameters<typeof childProcess.spawnSync>) => {
-    const result = originalSpawnSync(...args)
-    if (!swapped && Array.isArray(args[1]) && args[1][0] === "tree") {
+  afterNativeTree = () => {
+    if (!swapped) {
       swapped = true
       renameSync(sourcePath, draftPath)
       symlinkSync(outsidePath, sourcePath)
     }
-    return result
-  }) as typeof childProcess.spawnSync
-  syncBuiltinESMExports()
+  }
   try {
     const value = action()
     return { didSwap: swapped, value }
   } finally {
-    childProcess.spawnSync = originalSpawnSync
-    syncBuiltinESMExports()
+    afterNativeTree = undefined
     if (swapped) {
       unlinkSync(sourcePath)
       renameSync(draftPath, sourcePath)
@@ -198,27 +226,30 @@ function swapParentAfterNativeTree<T>(
   outsideDirectory: string,
   action: () => T,
 ): { readonly didSwap: boolean; readonly value: T } {
-  const originalSpawnSync = childProcess.spawnSync
   let swapped = false
-  childProcess.spawnSync = ((...args: Parameters<typeof childProcess.spawnSync>) => {
-    const result = originalSpawnSync(...args)
-    if (!swapped && Array.isArray(args[1]) && args[1][0] === "tree") {
+  afterNativeTree = () => {
+    if (!swapped) {
       swapped = true
       renameSync(sourceDirectory, draftDirectory)
       symlinkSync(outsideDirectory, sourceDirectory)
     }
-    return result
-  }) as typeof childProcess.spawnSync
-  syncBuiltinESMExports()
+  }
   try {
     const value = action()
     return { didSwap: swapped, value }
   } finally {
-    childProcess.spawnSync = originalSpawnSync
-    syncBuiltinESMExports()
+    afterNativeTree = undefined
     if (swapped) {
       unlinkSync(sourceDirectory)
       renameSync(draftDirectory, sourceDirectory)
     }
   }
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isNativeRun(value: unknown): value is NativeRun {
+  return typeof value === "function"
 }
