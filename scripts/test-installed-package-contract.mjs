@@ -321,14 +321,14 @@ function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(ins
   writeFileSync(join(evidenceDirectory, "predicate.json"), '{}\n')
   writeFileSync(join(evidenceDirectory, "receipt.json"), '{}\n')
 
-  const probe = runNode(consumerDirectory, [
+  const probe = runNode(projectDir, [
     "--input-type=module",
     "-e",
     [
       "import { inspectProjectFinishAttestation } from " + JSON.stringify(modulePath) + ";",
       'import { existsSync } from "node:fs";',
       'import { join } from "node:path";',
-      'const projectDir = join(process.cwd(), "project-finish-verifier-local");',
+      "const projectDir = process.cwd();",
       'const enrollment = { callerWorkflowPath: "project.yml", repositoryId: 123, repositorySlug: "example/public-project", reusableWorkflowSha: "b".repeat(40) };',
       'const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-23T02:45:00.000Z"));',
       'const consumption = join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json");',
