@@ -88,19 +88,19 @@ static void wait_for_exit(pid_t child) {
   if (!monotonic_milliseconds(&started)) started = 0;
   for (;;) {
     pid_t waited = waitpid(child, NULL, WNOHANG);
-    if (waited == child || (waited < 0 && errno == ECHILD)) return;
+    if (waited < 0 && errno != EINTR && errno != ECHILD) break;
+    if (kill(-child, 0) != 0 && errno != EPERM) return;
     uint64_t now;
-    if (waited < 0 && errno != EINTR) break;
     if (!monotonic_milliseconds(&now) || (started != 0 && now - started >= PH_ADDON_TERMINATION_GRACE_MS)) break;
     struct timespec pause = { .tv_sec = 0, .tv_nsec = 10000000 };
     nanosleep(&pause, NULL);
   }
-  kill(-child, SIGKILL);
+  if (kill(-child, SIGKILL) != 0) kill(child, SIGKILL);
   while (waitpid(child, NULL, 0) < 0 && errno == EINTR) {}
 }
 
 static void terminate_child(pid_t child) {
-  kill(-child, SIGTERM);
+  if (kill(-child, SIGTERM) != 0) kill(child, SIGTERM);
   wait_for_exit(child);
 }
 
@@ -287,14 +287,16 @@ static int collect_child(
         break;
       }
     }
-    pid_t waited = waitpid(child, &child_status, WNOHANG);
-    if (waited == child) {
-      child_done = 1;
-      *child_reaped = 1;
-    }
-    if (waited < 0 && errno != EINTR) {
-      *pipe_open_after = pipe_open;
-      return 0;
+    if (!child_done) {
+      pid_t waited = waitpid(child, &child_status, WNOHANG);
+      if (waited == child) {
+        child_done = 1;
+        *child_reaped = 1;
+      }
+      if (waited < 0 && errno != EINTR) {
+        *pipe_open_after = pipe_open;
+        return 0;
+      }
     }
     uint64_t now;
     if (!monotonic_milliseconds(&now) || now - started > timeout_ms) {
