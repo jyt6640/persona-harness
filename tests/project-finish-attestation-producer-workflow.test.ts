@@ -98,6 +98,10 @@ describe("project finish attestation producer workflow contract", () => {
     expect(source).toContain("verifyProjectFinishProducerCheckout")
     expect(source).not.toContain('requiredEnv("GITHUB_WORKFLOW_SHA")')
     expect(source).toContain("runProjectFinishAttestationProducer")
+    expect(source).toContain("captureProjectFinishAttestationCallerRootCapability")
+    expect(source).toContain("callerRootCapability")
+    expect(source).toContain("callerRoot")
+    expect(source).toContain("runnerRoot")
     expect(source).not.toContain("--repository")
     expect(source).not.toContain("--workflow")
     expect(source).not.toContain("--command")
@@ -154,6 +158,10 @@ describe("project finish attestation producer workflow contract", () => {
     expect(guide).toContain("no-follow descriptors")
     expect(guide).toMatch(/performs no\s+pathname staging-to-final rename/u)
     expect(guide).toContain("Replacing the reserved output parent")
+    expect(guide).toContain("## Nested Caller Capability Boundary")
+    expect(guide).toMatch(/outer platform-owned\s+`GITHUB_WORKSPACE`/u)
+    expect(guide).toContain("ambient `process.cwd()`")
+    expect(guide).toMatch(/external descriptor\s+open, read, write/u)
   })
 
   it("documents the exact hidden signed-artifact handoff without granting authority", () => {

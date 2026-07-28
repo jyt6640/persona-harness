@@ -5,16 +5,16 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` through `0.8.0-beta.5` are immutable staging-only evidence.
+`0.8.0-beta.1` through `0.8.0-beta.6` are immutable staging-only evidence.
 Their registry and provenance observations cannot be reused as current-version
-consumer authority evidence. The active `0.8.0-beta.6` source
+consumer authority evidence. The active `0.8.0-beta.7` source
 candidate has no package, tag, channel movement, GitHub release, or signed
 consumer-project artifact at source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.6 must establish that route independently and cannot inherit an earlier
+Beta.7 must establish that route independently and cannot inherit an earlier
 lifecycle or authority result.
 
 ## Fixed Sequence
@@ -100,12 +100,12 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1`, `0.8.0-beta.2`, or `0.8.0-beta.3`
-is a bounded binding mismatch for `0.8.0-beta.6`; only a future original signed
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.6`
+is a bounded binding mismatch for `0.8.0-beta.7`; only a future original signed
 artifact for the current immutable version can exercise enrollment, fetch,
 explicit consumption, and replay rejection. The complete source/packed
 acceptance contract is the structured
-[`consumer-authority-beta6-acceptance.json`](consumer-authority-beta6-acceptance.json)
+[`consumer-authority-beta7-acceptance.json`](consumer-authority-beta7-acceptance.json)
 record; it names the exact public Java/Spring route and the one hosted residual.
 
 `ph authority status`, `ph authority fetch github`, and closure are

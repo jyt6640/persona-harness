@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta6-acceptance.json")
+const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta7-acceptance.json")
 
 type AcceptanceManifest = {
   readonly authority: {
@@ -56,6 +56,17 @@ type AcceptanceManifest = {
     readonly unavailable: string
   }
   readonly package: { readonly channel: string; readonly scope: string; readonly version: string }
+  readonly producerWorkspace: {
+    readonly blocked: string
+    readonly manifest: readonly {
+      readonly capability: string
+      readonly id: string
+      readonly operation: string
+      readonly relativePath: string
+      readonly root: "caller" | "runner"
+    }[]
+    readonly proof: string
+  }
   readonly schemaVersion: string
 }
 
@@ -63,17 +74,17 @@ function readManifest(): AcceptanceManifest {
   return JSON.parse(readFileSync(manifestPath, "utf8")) as AcceptanceManifest
 }
 
-describe("consumer authority beta.6 acceptance manifest", () => {
+describe("consumer authority beta.7 acceptance manifest", () => {
   it("fixes the public source and packed cooperative lifecycle with bounded source-read evidence", () => {
-    // Given: the package-visible beta.6 public lifecycle contract.
+    // Given: the package-visible beta.7 public lifecycle contract.
     const manifest = readManifest()
 
     // When: a clean Java/Spring consumer follows the supported command sequence.
     const commands = manifest.cooperative.commands
 
     // Then: every report and coverage input is explicit while authority defaults remain blocked.
-    expect(manifest.schemaVersion).toBe("consumer-authority-beta6-acceptance.1")
-    expect(manifest.package).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.6" })
+    expect(manifest.schemaVersion).toBe("consumer-authority-beta7-acceptance.1")
+    expect(manifest.package).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.7" })
     expect(commands).toEqual([
       "ph bootstrap backend --strict --no-developer-mcp",
       "ph bearshell ./gradlew test",
@@ -127,6 +138,18 @@ describe("consumer authority beta.6 acceptance manifest", () => {
       source: "native/project-read/ph_native_project_read.c",
       unavailable: "source-read-runtime-unavailable",
     })
+    expect(manifest.producerWorkspace).toEqual({
+      blocked: "bounded-block-no-external-descriptor-open-read-write-or-artifact",
+      proof: "source-built-and-packed-installed-github-script-outer-runner-nested-caller-native-audit",
+      manifest: [
+        { capability: "outer-runner-directory-fd", id: "runner-root-capture", operation: "canonical-no-follow-identity-bind", relativePath: ".", root: "runner" },
+        { capability: "outer-runner-directory-fd", id: "nested-caller-capture", operation: "openat-nofollow-direct-child-identity-bind", relativePath: ".project-finish-caller", root: "caller" },
+        { capability: "nested-caller-directory-fd", id: "caller-input-read", operation: "descriptor-relative-no-follow-bounded-read-tree-and-fixed-command", relativePath: "<profile-gradle-git-source-junit-evidence>", root: "caller" },
+        { capability: "outer-runner-output-reservation", id: "failure-output", operation: "canonical-contained-nofollow-private-write", relativePath: ".project-finish-attestation-failure/failure-diagnostic.json", root: "runner" },
+        { capability: "outer-runner-output-reservation", id: "unsigned-artifact-output", operation: "reserved-nofollow-private-write-and-handoff", relativePath: ".project-finish-attestation-artifacts/<receipt-predicate-bundle>", root: "runner" },
+        { capability: "held-native-descriptors", id: "caller-cleanup", operation: "close-only-no-caller-path-reopen", relativePath: "<caller-root-and-parent-fds>", root: "caller" },
+      ],
+    })
   })
 
   it("keeps current artifact verification and explicit consumption as a single future hosted residual", () => {
@@ -145,7 +168,7 @@ describe("consumer authority beta.6 acceptance manifest", () => {
       "ph workflow finish implement",
     ])
     expect(manifest.authority.fixturePlan.registryInstall).toBe(
-      "npm install persona-harness@0.8.0-beta.6 --registry https://registry.npmjs.org",
+      "npm install persona-harness@0.8.0-beta.7 --registry https://registry.npmjs.org",
     )
     expect(manifest.authority.verification).toEqual({
       predicate: "project-finish-attestation.1",
@@ -159,5 +182,8 @@ describe("consumer authority beta.6 acceptance manifest", () => {
       "source-built-and-packed-installed-with-native-descriptor-open-audit",
     )
     expect(proofs.get("project-consumption-source")).toBe("source-built-worker-seam")
+    expect(proofs.get("producer-workspace-topology-source-and-packed")).toBe(
+      "source-built-and-packed-installed-github-script-outer-runner-nested-caller-native-audit",
+    )
   })
 })
