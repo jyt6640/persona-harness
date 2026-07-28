@@ -28,9 +28,16 @@ type NativeRun = (
 
 const originalDlopen = process.dlopen
 let afterNativeTree: (() => void) | undefined
+const nativeDlopenArgumentCounts: number[] = []
+let nativeTreeInvocationCount = 0
 
-process.dlopen = (nativeModule, filename, flags): void => {
-  originalDlopen(nativeModule, filename, flags)
+process.dlopen = function patchedNativeDlopen(nativeModule, filename, flags): void {
+  nativeDlopenArgumentCounts.push(arguments.length)
+  if (arguments.length === 2) {
+    originalDlopen(nativeModule, filename)
+  } else {
+    originalDlopen(nativeModule, filename, flags)
+  }
   const exportsDescriptor = Object.getOwnPropertyDescriptor(nativeModule, "exports")
   const nativeExports = exportsDescriptor?.value
   if (!isRecord(nativeExports)) return
@@ -41,7 +48,10 @@ process.dlopen = (nativeModule, filename, flags): void => {
     enumerable: true,
     value: (...args: Parameters<NativeRun>): Buffer => {
       const result = run(...args)
-      if (args[0][1] === "tree") afterNativeTree?.()
+      if (args[0][1] === "tree") {
+        nativeTreeInvocationCount += 1
+        afterNativeTree?.()
+      }
       return result
     },
     writable: true,
@@ -68,6 +78,7 @@ describe.sequential("project finish producer input snapshot", () => {
       kind: "ready",
       value: { profile: "absent" },
     })
+    expect(nativeDlopenArgumentCounts).toContain(2)
   })
 
   it("accepts a canonical optional profile without invoking the local intake completeness gate", () => {
@@ -123,7 +134,7 @@ describe.sequential("project finish producer input snapshot", () => {
       captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
-    expect(swapped.didSwap).toBe(true)
+    expect(swapped.didSwap).toEqual({ didSwap: true, nativeTreeReached: true })
     expect(swapped.value).toEqual({
       code: "project-finish-producer-profile",
       kind: "blocked",
@@ -144,7 +155,7 @@ describe.sequential("project finish producer input snapshot", () => {
       captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
-    expect(swapped.didSwap).toBe(true)
+    expect(swapped.didSwap).toEqual({ didSwap: true, nativeTreeReached: true })
     expect(swapped.value).toEqual({
       code: "project-finish-producer-profile",
       kind: "blocked",
@@ -167,7 +178,7 @@ describe.sequential("project finish producer input snapshot", () => {
       captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
-    expect(swapped.didSwap).toBe(true)
+    expect(swapped.didSwap).toEqual({ didSwap: true, nativeTreeReached: true })
     expect(swapped.value).toEqual({
       code: "project-finish-producer-profile",
       kind: "blocked",
@@ -199,8 +210,9 @@ function swapAfterNativeTree<T>(
   draftPath: string,
   outsidePath: string,
   action: () => T,
-): { readonly didSwap: boolean; readonly value: T } {
+): { readonly didSwap: { readonly didSwap: boolean; readonly nativeTreeReached: boolean }; readonly value: T } {
   let swapped = false
+  const nativeTreeCount = nativeTreeInvocationCount
   afterNativeTree = () => {
     if (!swapped) {
       swapped = true
@@ -210,7 +222,7 @@ function swapAfterNativeTree<T>(
   }
   try {
     const value = action()
-    return { didSwap: swapped, value }
+    return { didSwap: { didSwap: swapped, nativeTreeReached: nativeTreeInvocationCount > nativeTreeCount }, value }
   } finally {
     afterNativeTree = undefined
     if (swapped) {
@@ -225,8 +237,9 @@ function swapParentAfterNativeTree<T>(
   draftDirectory: string,
   outsideDirectory: string,
   action: () => T,
-): { readonly didSwap: boolean; readonly value: T } {
+): { readonly didSwap: { readonly didSwap: boolean; readonly nativeTreeReached: boolean }; readonly value: T } {
   let swapped = false
+  const nativeTreeCount = nativeTreeInvocationCount
   afterNativeTree = () => {
     if (!swapped) {
       swapped = true
@@ -236,7 +249,7 @@ function swapParentAfterNativeTree<T>(
   }
   try {
     const value = action()
-    return { didSwap: swapped, value }
+    return { didSwap: { didSwap: swapped, nativeTreeReached: nativeTreeInvocationCount > nativeTreeCount }, value }
   } finally {
     afterNativeTree = undefined
     if (swapped) {
