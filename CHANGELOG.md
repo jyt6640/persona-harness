@@ -8,6 +8,10 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Keep process-only evaluation cleanup in the normal CI lane while reserving
+  the single-worker resource-sensitive lane for fixtures that own mutable
+  package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
+
 ## [0.8.0-beta.7] - 2026-07-29
 
 - Prepares the next immutable Consumer Authority Beta source candidate for the

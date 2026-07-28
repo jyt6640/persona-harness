@@ -9,7 +9,6 @@ const DEFAULT_EXCLUDE = [
 
 const RESOURCE_SENSITIVE_TEST_FILES = [
   "tests/cooperative-finish-real-gradle.test.ts",
-  "tests/eval-runner.test.ts",
   "tests/project-finish-attestation-producer-oidc-bridge.test.ts",
   "tests/staged-package-verification-runner.test.ts",
   "tests/persona-harness-staged-package-verification-installed.test.ts",

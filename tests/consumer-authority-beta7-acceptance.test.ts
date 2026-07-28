@@ -12,6 +12,10 @@ type AcceptanceManifest = {
       readonly maxWorkers: number
       readonly normalMaxWorkers: number
     }
+    readonly parallelProcessCleanup: {
+      readonly files: readonly string[]
+      readonly proof: string
+    }
     readonly proof: string
     readonly sourceFallback: string
   }
@@ -153,7 +157,6 @@ describe("consumer authority beta.7 acceptance manifest", () => {
       physicalResourceLane: {
         files: [
           "tests/cooperative-finish-real-gradle.test.ts",
-          "tests/eval-runner.test.ts",
           "tests/project-finish-attestation-producer-oidc-bridge.test.ts",
           "tests/staged-package-verification-runner.test.ts",
           "tests/persona-harness-staged-package-verification-installed.test.ts",
@@ -161,6 +164,10 @@ describe("consumer authority beta.7 acceptance manifest", () => {
         ],
         maxWorkers: 1,
         normalMaxWorkers: 4,
+      },
+      parallelProcessCleanup: {
+        files: ["tests/eval-runner.test.ts"],
+        proof: "unique-temporary-process-groups",
       },
     })
     expect(manifest.producerWorkspace).toEqual({

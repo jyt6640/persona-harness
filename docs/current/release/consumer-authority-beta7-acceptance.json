@@ -18,7 +18,6 @@
     "physicalResourceLane": {
       "files": [
         "tests/cooperative-finish-real-gradle.test.ts",
-        "tests/eval-runner.test.ts",
         "tests/project-finish-attestation-producer-oidc-bridge.test.ts",
         "tests/staged-package-verification-runner.test.ts",
         "tests/persona-harness-staged-package-verification-installed.test.ts",
@@ -26,6 +25,10 @@
       ],
       "maxWorkers": 1,
       "normalMaxWorkers": 4
+    },
+    "parallelProcessCleanup": {
+      "files": ["tests/eval-runner.test.ts"],
+      "proof": "unique-temporary-process-groups"
     }
   },
   "producerWorkspace": {
