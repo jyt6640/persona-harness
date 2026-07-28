@@ -23,6 +23,8 @@ export default defineConfig({
           name: "parallel",
           include: ["tests/**/*.test.ts"],
           exclude: [...DEFAULT_EXCLUDE, ...RESOURCE_SENSITIVE_TEST_FILES],
+          maxWorkers: 4,
+          minWorkers: 2,
           sequence: { groupOrder: 0 },
         },
       },
