@@ -513,7 +513,9 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       'if (JSON.stringify(hostile).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
   ])
-  requireSuccess("installed project finish producer no-follow intake probe", probe)
+  if (probe.status !== 0) {
+    throw new Error(`installed project finish producer no-follow intake probe failed: ${boundedProducerIntakeDiagnostic(probe.stdout)}`)
+  }
   const profileHook = join(fixtureRoot, "project-finish-producer-profile-audit-hook.cjs")
   const profileSentinel = join(fixtureRoot, "project-finish-producer-profile-audit")
   const profileOutside = `${replacementProject}-outside-profile.jsonc`
@@ -2079,6 +2081,22 @@ function requireSuccess(label, result) {
   if (result.status !== 0) {
     throw new Error(`${label} failed`)
   }
+}
+
+function boundedProducerIntakeDiagnostic(output) {
+  const match = /^project-finish-producer-intake:([a-z-]+(?:,[a-z-]+){3})$/mu.exec(output)
+  const allowed = new Set([
+    "passed",
+    "project-finish-producer-binding",
+    "project-finish-producer-profile",
+    "source-identity-symlink",
+    "source-read-runtime-unavailable",
+    "workspace-root-unavailable",
+  ])
+  if (match === null || !match[1].split(",").every((code) => allowed.has(code))) {
+    return "unavailable"
+  }
+  return `project-finish-producer-intake:${match[1]}`
 }
 
 function resolvePackResult(output, packDirectory) {
