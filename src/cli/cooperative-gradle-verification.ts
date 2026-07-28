@@ -176,7 +176,7 @@ function runGradleVerification(
   const preGit = captureVerificationGitIdentity(projectDir, context.workspace, projectReadBoundary)
   if (!preGit.available) return blocked(preGit.diagnosticCode)
   const preSource = inputSnapshot === undefined
-    ? captureSourceIdentity(projectDir, preGit, context.evidenceRootRelativePath)
+    ? captureSourceIdentity(projectDir, preGit, context.evidenceRootRelativePath, { projectReadBoundary })
     : captureProjectFinishAttestationSourceIdentity(projectDir, preGit, projectReadBoundary)
   if (preSource.status === "unavailable") return blocked(preSource.diagnosticCode)
   const boundPreSource = inputSnapshot === undefined
@@ -202,7 +202,7 @@ function runGradleVerification(
   if (testCode !== undefined) return blocked(testCode)
   const testOutputCode = testExecutionDiagnostic(test.result, ["cleanTest", "test"])
   if (testOutputCode !== undefined) return blocked(testOutputCode)
-  const junit = assessCooperativeJUnit(projectDir, baseline, projectReadBoundary, true)
+  const junit = assessCooperativeJUnit(projectDir, baseline, projectReadBoundary)
   if (junit.kind === "blocked") return junit
 
   const build = runFixedCommandWithinBoundary(
@@ -238,9 +238,13 @@ function runGradleVerification(
     postInputSnapshot = postInputs.value
   }
   const postSource = inputSnapshot === undefined
-    ? captureSourceIdentity(projectDir, postGit, context.evidenceRootRelativePath)
+    ? captureSourceIdentity(projectDir, postGit, context.evidenceRootRelativePath, { projectReadBoundary })
     : captureProjectFinishAttestationSourceIdentity(projectDir, postGit, projectReadBoundary)
-  if (postSource.status === "unavailable") return blocked(postSource.diagnosticCode)
+  if (postSource.status === "unavailable") {
+    return blocked(postSource.diagnosticCode === "source-identity-symlink"
+      ? "source-identity-drift"
+      : postSource.diagnosticCode)
+  }
   const boundPostSource = postInputSnapshot === undefined
     ? postSource.value
     : bindProjectFinishAttestationInputSnapshot(postSource.value, postInputSnapshot)
