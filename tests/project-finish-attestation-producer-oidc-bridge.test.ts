@@ -20,7 +20,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest"
 
 import {
   projectFinishAttestationBuilderRoots,
@@ -30,6 +30,10 @@ import {
 import {
   runProjectFinishAttestationProducerWithCore,
 } from "../scripts/project-finish-attestation-producer-oidc-capability-bridge.cjs"
+import {
+  stageProjectFinishProducerRuntime,
+  type ProjectFinishProducerRuntimeStaging,
+} from "./helpers/project-finish-producer-runtime-staging.js"
 
 const temporaryDirectories: string[] = []
 const AUDIENCE = "persona-harness-project-finish-attestation"
@@ -39,6 +43,16 @@ const AUTHENTIC_CALLER_SHA = "7a4b8ab207711b48a3fbf166157bb15b5f9260d0"
 const AUTHENTIC_PRODUCER_SHA = "a41e8977325895279ad2d379f94954451281c231"
 const AUTHENTIC_REPOSITORY = "jyt6640/persona-harness-attestation-claim-fixture"
 const AUTHENTIC_REPOSITORY_ID = "1304576182"
+let stagedProducerRuntime: ProjectFinishProducerRuntimeStaging | undefined
+
+beforeAll(() => {
+  stagedProducerRuntime = stageProjectFinishProducerRuntime()
+})
+
+afterAll(() => {
+  stagedProducerRuntime?.cleanup()
+  stagedProducerRuntime = undefined
+})
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -166,6 +180,8 @@ describe.sequential("project finish producer OIDC capability bridge", () => {
     })
 
     expect(result).toEqual({ kind: "passed" })
+    expect(runtime().startedWithoutDist).toBe(true)
+    expect(existsSync(join(fixture.producerRoot, "src"))).toBe(false)
     expect(existsSync(join(fixture.runner, ".project-finish-attestation-artifacts", "receipt.json"))).toBe(true)
     expect(existsSync(join(fixture.runner, ".project-finish-attestation-artifacts", "predicate.json"))).toBe(true)
     expect(existsSync(join(fixture.caller, ".project-finish-attestation-artifacts"))).toBe(false)
@@ -469,8 +485,15 @@ function createNestedCaller(caller: string): void {
 
 function copyProducerRuntime(producerRoot: string): void {
   for (const path of ["dist", "native", "scripts", "package.json"] as const) {
-    cpSync(join(process.cwd(), path), join(producerRoot, path), { recursive: true })
+    cpSync(join(runtime().root, path), join(producerRoot, path), { recursive: true })
   }
+}
+
+function runtime(): ProjectFinishProducerRuntimeStaging {
+  if (stagedProducerRuntime === undefined) {
+    throw new Error("project-finish-producer-runtime-unavailable")
+  }
+  return stagedProducerRuntime
 }
 
 function initializeProducerCheckout(producerRoot: string): string {
