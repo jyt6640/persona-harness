@@ -19,7 +19,7 @@ import {
 import { tmpdir } from "node:os"
 import { basename, join, resolve } from "node:path"
 
-import { describe, expect, it } from "vitest"
+import { afterAll, describe, expect, it } from "vitest"
 
 import {
   inspectNativeProjectReadRuntime,
@@ -28,6 +28,13 @@ import {
 } from "../src/io/native-project-read.js"
 import { reserveProjectReadBoundary } from "../src/io/bootstrap-write-boundary.js"
 import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
+
+let nativeTestExecutable: string | undefined
+let nativeTestRoot: string | undefined
+
+afterAll(() => {
+  if (nativeTestRoot !== undefined) rmSync(nativeTestRoot, { force: true, recursive: true })
+})
 
 describe.sequential("native project read runtime", () => {
   it("reads a bounded regular file through the packaged native runtime", () => {
@@ -287,6 +294,25 @@ describe.sequential("native project read runtime", () => {
     }
   })
 
+  it("rejects same-inode source-byte drift after the project capability is captured", () => {
+    const project = createDirectProjectRoot("persona-native-in-place-drift")
+    const source = join(project, "src", "main", "java", "App.java")
+    mkdirSync(join(project, "src", "main", "java"), { recursive: true })
+    writeFileSync(source, "class AppOne {}\n")
+    const boundary = reserveProjectReadBoundary(project)
+
+    try {
+      writeFileSync(source, "class AppTwo {}\n")
+
+      expect(() => boundary.readProjectFile("src/main/java/App.java")).toThrow(
+        "source-read-unsafe",
+      )
+    } finally {
+      boundary.close()
+      rmSync(project, { force: true, recursive: true })
+    }
+  })
+
   it("rejects a captured project-root replacement before opening its external descriptor", () => {
     const project = createDirectProjectRoot("persona-native-root-context")
     const preserved = `${project}-preserved`
@@ -535,7 +561,31 @@ function nativeExecutable(): string {
   if ((process.platform !== "darwin" && process.platform !== "linux") || (process.arch !== "arm64" && process.arch !== "x64")) {
     throw new Error("native test platform unavailable")
   }
-  return resolve(`native/project-read/bin/${process.platform}-${process.arch}/ph-native-project-read`)
+  if (nativeTestExecutable !== undefined) return nativeTestExecutable
+  nativeTestRoot = mkdtempSync(join(tmpdir(), "persona-native-source-probe-"))
+  nativeTestExecutable = join(nativeTestRoot, "ph-native-project-read")
+  const compile = spawnSync(
+    "cc",
+    [
+      "-std=c17",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      resolve("native/project-read/ph_native_project_read.c"),
+      "-o",
+      nativeTestExecutable,
+    ],
+    {
+      encoding: "utf8",
+      env: process.env,
+      maxBuffer: 1024 * 1024,
+      shell: false,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  )
+  if (compile.status !== 0) throw new Error("native source probe compile failed")
+  return nativeTestExecutable
 }
 
 function expectedManifest(project: string, paths: readonly string[]) {
@@ -554,7 +604,7 @@ function expectedRuntimeManifest(project: string, paths: readonly string[]) {
       ctimeNs: entry.stat.ctimeNs.toString(),
       dev: entry.stat.dev.toString(),
       ino: entry.stat.ino.toString(),
-      mode: entry.stat.mode.toString(),
+      mode: Number(entry.stat.mode & 0o777n).toString(8).padStart(4, "0"),
       mtimeNs: entry.stat.mtimeNs.toString(),
       size: entry.stat.size.toString(),
     },
@@ -565,7 +615,7 @@ function expectedRuntimeManifest(project: string, paths: readonly string[]) {
 
 function manifestInput(entries: readonly { readonly kind: "directory" | "file"; readonly path: string; readonly stat: BigIntStats }[]): Buffer {
   const pathBytes = entries.map((entry) => Buffer.from(entry.path, "utf8"))
-  const output = Buffer.allocUnsafe(4 + entries.reduce((size, entry, index) => size + 2 + pathBytes[index].byteLength + 1 + 8 + 8, 0))
+  const output = Buffer.allocUnsafe(4 + entries.reduce((size, entry, index) => size + 2 + pathBytes[index].byteLength + 1 + (8 * 6), 0))
   output.writeUInt32LE(entries.length, 0)
   let offset = 4
   for (const [index, entry] of entries.entries()) {
@@ -580,6 +630,14 @@ function manifestInput(entries: readonly { readonly kind: "directory" | "file"; 
     output.writeBigUInt64LE(BigInt(entry.stat.dev), offset)
     offset += 8
     output.writeBigUInt64LE(BigInt(entry.stat.ino), offset)
+    offset += 8
+    output.writeBigUInt64LE(BigInt(entry.stat.mode & 0o7777n), offset)
+    offset += 8
+    output.writeBigUInt64LE(BigInt(entry.stat.size), offset)
+    offset += 8
+    output.writeBigUInt64LE(BigInt(entry.stat.mtimeNs), offset)
+    offset += 8
+    output.writeBigUInt64LE(BigInt(entry.stat.ctimeNs), offset)
     offset += 8
   }
   return output

@@ -20,6 +20,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "ph_native_project_read.h"
+
 extern char **environ;
 
 #ifndef O_DIRECTORY
@@ -108,10 +110,15 @@ typedef struct {
 } ph_root_context;
 
 typedef struct {
+  uint64_t ctime_ns;
   dev_t dev;
   ino_t ino;
   unsigned char kind;
+  uint64_t mode;
+  uint64_t mtime_ns;
   char *path;
+  uint64_t size;
+  int content_bound;
 } ph_expected_identity;
 
 typedef struct {
@@ -231,6 +238,14 @@ static int same_location(const struct stat *left, const struct stat *right) {
     && (left->st_mode & S_IFMT) == (right->st_mode & S_IFMT);
 }
 
+static int same_file_identity(const struct stat *left, const struct stat *right) {
+  return same_location(left, right)
+    && left->st_mode == right->st_mode
+    && left->st_size == right->st_size
+    && stat_mtime_ns(left) == stat_mtime_ns(right)
+    && stat_ctime_ns(left) == stat_ctime_ns(right);
+}
+
 static int expected_kind_matches(unsigned char kind, const struct stat *stat) {
   return (kind == PH_DIRECTORY && S_ISDIR(stat->st_mode))
     || (kind == PH_FILE && S_ISREG(stat->st_mode));
@@ -258,7 +273,18 @@ static int expected_identity_matches(
   return expected != NULL
     && expected->dev == stat->st_dev
     && expected->ino == stat->st_ino
-    && expected_kind_matches(expected->kind, stat);
+    && expected_kind_matches(expected->kind, stat)
+    && (
+      expected->kind != PH_FILE
+      || !expected->content_bound
+      || (
+        stat->st_size >= 0
+        && expected->mode == (uint64_t)(stat->st_mode & 07777)
+        && expected->size == (uint64_t)stat->st_size
+        && expected->mtime_ns == stat_mtime_ns(stat)
+        && expected->ctime_ns == stat_ctime_ns(stat)
+      )
+    );
 }
 
 static void free_expectations(ph_expectations *expectations) {
@@ -617,7 +643,7 @@ static enum ph_status read_regular_from_parent(
   struct stat after_open;
   if (fstat(descriptor, &opened) != 0 || !audit_descriptor(audit, descriptor)
     || fstatat(parent, name, &after_open, AT_SYMLINK_NOFOLLOW) != 0
-    || !S_ISREG(opened.st_mode) || !same_location(&before, &opened) || !same_location(&opened, &after_open)
+    || !S_ISREG(opened.st_mode) || !same_file_identity(&before, &opened) || !same_file_identity(&opened, &after_open)
     || !expected_identity_matches(expectations, relative_path, &opened)
     || !expected_identity_matches(expectations, relative_path, &after_open)
     || opened.st_size < 0 || (uintmax_t)opened.st_size > (uintmax_t)max_bytes) {
@@ -645,10 +671,10 @@ static enum ph_status read_regular_from_parent(
   struct stat after_read;
   struct stat after_path;
   if (fstat(descriptor, &after_read) != 0 || fstatat(parent, name, &after_path, AT_SYMLINK_NOFOLLOW) != 0
-    || !same_location(&opened, &after_read) || !same_location(&after_read, &after_path)
+    || !same_file_identity(&opened, &after_read) || !same_file_identity(&after_read, &after_path)
     || !expected_identity_matches(expectations, relative_path, &after_read)
     || !expected_identity_matches(expectations, relative_path, &after_path)
-    || after_read.st_size != opened.st_size) {
+  ) {
     free(content);
     close(descriptor);
     return PH_UNSAFE;
@@ -679,7 +705,7 @@ static enum ph_status capture_regular_identity_from_parent(
   struct stat after;
   if (fstat(descriptor, &opened) != 0 || !audit_descriptor(audit, descriptor)
     || fstatat(parent, name, &after, AT_SYMLINK_NOFOLLOW) != 0
-    || !S_ISREG(opened.st_mode) || !same_location(&before, &opened) || !same_location(&opened, &after)
+    || !S_ISREG(opened.st_mode) || !same_file_identity(&before, &opened) || !same_file_identity(&opened, &after)
     || !expected_identity_matches(expectations, relative_path, &opened)
     || !expected_identity_matches(expectations, relative_path, &after)) {
     close(descriptor);
@@ -1280,10 +1306,18 @@ static int parse_expected_stdin(ph_expectations *expectations) {
     unsigned char kind;
     uint64_t dev;
     uint64_t ino;
+    uint64_t mode;
+    uint64_t size;
+    uint64_t mtime_ns;
+    uint64_t ctime_ns;
     if (!read_stdin_exact(&kind, sizeof(kind))
       || (kind != PH_DIRECTORY && kind != PH_FILE)
       || !read_u64_stdin(&dev)
       || !read_u64_stdin(&ino)
+      || !read_u64_stdin(&mode)
+      || !read_u64_stdin(&size)
+      || !read_u64_stdin(&mtime_ns)
+      || !read_u64_stdin(&ctime_ns)
       || !valid_relative_path(path, 1)) {
       free(path);
       free_expectations(&(ph_expectations){ .values = values, .count = count });
@@ -1293,6 +1327,11 @@ static int parse_expected_stdin(ph_expectations *expectations) {
       .dev = (dev_t)dev,
       .ino = (ino_t)ino,
       .kind = kind,
+      .mode = mode,
+      .size = size,
+      .mtime_ns = mtime_ns,
+      .ctime_ns = ctime_ns,
+      .content_bound = 1,
       .path = path,
     };
     for (size_t prior = 0; prior < index; prior += 1) {
@@ -1471,30 +1510,45 @@ static enum ph_status run_fixed_git(int root, const char *command, ph_buffer *ou
   return PH_READY;
 }
 
-static enum ph_status verify_fixed_gradle_wrapper(int root) {
+static enum ph_status open_fixed_gradle_wrapper(
+  int root,
+  const ph_expectations *expectations,
+  int *wrapper_descriptor
+) {
   struct stat before;
   if (fstatat(root, "gradlew", &before, AT_SYMLINK_NOFOLLOW) != 0) return errno_status();
-  if (!S_ISREG(before.st_mode) || (before.st_mode & 0111) == 0) return PH_UNSAFE;
+  if (!S_ISREG(before.st_mode)
+    || (before.st_mode & 0111) == 0
+    || !expected_identity_matches(expectations, "gradlew", &before)) {
+    return PH_UNSAFE;
+  }
   int descriptor = openat(root, "gradlew", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
   if (descriptor < 0) return errno_status();
   struct stat opened;
   struct stat after;
+  unsigned char prefix[10];
   if (fstat(descriptor, &opened) != 0
     || fstatat(root, "gradlew", &after, AT_SYMLINK_NOFOLLOW) != 0
     || !S_ISREG(opened.st_mode)
     || (opened.st_mode & 0111) == 0
-    || !same_location(&before, &opened)
-    || !same_location(&opened, &after)) {
+    || !same_file_identity(&before, &opened)
+    || !same_file_identity(&opened, &after)
+    || !expected_identity_matches(expectations, "gradlew", &opened)
+    || !expected_identity_matches(expectations, "gradlew", &after)
+    || pread(descriptor, prefix, sizeof(prefix), 0) != (ssize_t)sizeof(prefix)
+    || memcmp(prefix, "#!/bin/sh\n", sizeof(prefix)) != 0) {
     close(descriptor);
     return PH_UNSAFE;
   }
-  close(descriptor);
+  *wrapper_descriptor = descriptor;
   return PH_READY;
 }
 
-static int fixed_gradle_arguments(const char *command, char *argv[16]) {
+static int fixed_gradle_arguments(const char *command, char *argv[20]) {
   size_t index = 0;
   argv[index++] = "./gradlew";
+  argv[index++] = "-s";
+  argv[index++] = "--";
   argv[index++] = "--no-daemon";
   argv[index++] = "--no-build-cache";
   if (strcmp(command, "test") == 0) {
@@ -1554,15 +1608,18 @@ static enum ph_status run_fixed_gradle(
   int root,
   const char *command,
   uint64_t timeout_ms,
+  const ph_expectations *expectations,
   ph_command_result *result
 ) {
-  char *argv[16];
+  char *argv[20];
   if (!fixed_gradle_arguments(command, argv) || timeout_ms == 0 || timeout_ms > 120000) return PH_INVALID;
-  enum ph_status wrapper = verify_fixed_gradle_wrapper(root);
+  int wrapper_descriptor = -1;
+  enum ph_status wrapper = open_fixed_gradle_wrapper(root, expectations, &wrapper_descriptor);
   if (wrapper != PH_READY) return wrapper;
   int stdout_pipe[2] = { -1, -1 };
   int stderr_pipe[2] = { -1, -1 };
   if (pipe(stdout_pipe) != 0 || pipe(stderr_pipe) != 0) {
+    close_descriptor(&wrapper_descriptor);
     close_descriptor(&stdout_pipe[0]);
     close_descriptor(&stdout_pipe[1]);
     close_descriptor(&stderr_pipe[0]);
@@ -1571,6 +1628,7 @@ static enum ph_status run_fixed_gradle(
   }
   pid_t child = fork();
   if (child < 0) {
+    close_descriptor(&wrapper_descriptor);
     close_descriptor(&stdout_pipe[0]);
     close_descriptor(&stdout_pipe[1]);
     close_descriptor(&stderr_pipe[0]);
@@ -1582,15 +1640,19 @@ static enum ph_status run_fixed_gradle(
     close_descriptor(&stdout_pipe[0]);
     close_descriptor(&stderr_pipe[0]);
     if (fchdir(root) != 0
+      || lseek(wrapper_descriptor, 0, SEEK_SET) < 0
+      || dup2(wrapper_descriptor, STDIN_FILENO) < 0
       || dup2(stdout_pipe[1], STDOUT_FILENO) < 0
       || dup2(stderr_pipe[1], STDERR_FILENO) < 0) {
       _exit(127);
     }
+    close_descriptor(&wrapper_descriptor);
     close_descriptor(&stdout_pipe[1]);
     close_descriptor(&stderr_pipe[1]);
-    execve("./gradlew", argv, environ);
+    execve("/bin/sh", argv, environ);
     _exit(127);
   }
+  close_descriptor(&wrapper_descriptor);
   close_descriptor(&stdout_pipe[1]);
   close_descriptor(&stderr_pipe[1]);
   if (!set_nonblocking(stdout_pipe[0]) || !set_nonblocking(stderr_pipe[0])) {
@@ -2065,7 +2127,7 @@ static int run_gradle(int argc, char **argv) {
     return emit_status_with_audit(PH_UNSAFE, audit_result) ? 0 : 1;
   }
   ph_command_result result = {0};
-  enum ph_status status = run_fixed_gradle(root, argv[2], timeout_ms, &result);
+  enum ph_status status = run_fixed_gradle(root, argv[2], timeout_ms, &expectations, &result);
   close(root);
   int emitted = emit_command(status, &result, audit_result);
   free(result.standard_output.bytes);
@@ -2074,7 +2136,7 @@ static int run_gradle(int argc, char **argv) {
   return emitted ? 0 : 1;
 }
 
-int main(int argc, char **argv) {
+int ph_native_project_read_main(int argc, char **argv) {
   if (argc == 2 && strcmp(argv[1], "self-test") == 0) {
     static const unsigned char response[] = "ph-native-project-read.1\n";
     return write_all(response, sizeof(response) - 1) ? 0 : 1;
@@ -2089,3 +2151,9 @@ int main(int argc, char **argv) {
   if (argc >= 4 && strcmp(argv[1], "gradle") == 0) return run_gradle(argc, argv);
   return emit_status(PH_INVALID) ? 0 : 1;
 }
+
+#if !defined(PH_NATIVE_PROJECT_READ_ADDON)
+int main(int argc, char **argv) {
+  return ph_native_project_read_main(argc, argv);
+}
+#endif

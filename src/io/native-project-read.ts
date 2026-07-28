@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, type BigIntStats } from "node:fs"
 import { basename, isAbsolute, relative, resolve, sep } from "node:path"
@@ -29,21 +28,52 @@ const PACKAGE_ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)))
 const NATIVE_RUNTIME_TIMEOUT_MS = 10_000
 const NATIVE_PROTOCOL_OVERHEAD_BYTES = 32 * 1024 * 1024
 
-type NativeArtifact = {
+type NativeArtifactRecord = {
   readonly architecture: "arm64" | "x64"
   readonly path: string
   readonly platform: "darwin" | "linux"
   readonly sha256: string
 }
 
+type NativeArtifact = NativeArtifactRecord & {
+  readonly descriptor: number
+}
+
 type NativeManifest = {
-  readonly artifacts: readonly NativeArtifact[]
+  readonly artifacts: readonly NativeArtifactRecord[]
+  readonly bridge: {
+    readonly path: "native/project-read/ph_native_project_read_addon.c"
+    readonly sha256: string
+  }
+  readonly header: {
+    readonly path: "native/project-read/ph_native_project_read.h"
+    readonly sha256: string
+  }
   readonly schemaVersion: "persona-harness-native-project-read.1"
   readonly source: {
     readonly path: "native/project-read/ph_native_project_read.c"
     readonly sha256: string
   }
 }
+
+type NativeAddonRun = (
+  args: readonly string[],
+  input: Buffer | null,
+  environment: readonly string[],
+  maxBuffer: number,
+  timeoutMs: number,
+  rootDescriptor: number,
+  parentDescriptor: number,
+) => Buffer
+
+type NativeRuntime = {
+  readonly architecture: "arm64" | "x64"
+  readonly platform: "darwin" | "linux"
+  readonly run: NativeAddonRun
+  readonly sha256: string
+}
+
+let loadedNativeRuntime: NativeRuntime | undefined
 
 export class NativeProjectReadRuntimeError extends Error {
   readonly name = "NativeProjectReadRuntimeError"
@@ -100,10 +130,10 @@ export function inspectNativeProjectReadRuntime(): {
   readonly availability: "ready"
   readonly platform: string
 } {
-  const artifact = nativeArtifact()
+  const runtime = nativeRuntime()
   return {
     architecture: process.arch,
-    artifactSha256: artifact.sha256,
+    artifactSha256: runtime.sha256,
     availability: "ready",
     platform: process.platform,
   }
@@ -361,6 +391,7 @@ export function runNativeProjectGradle(
       nativeGradleEnvironment(),
       invocation.input,
       rootContext,
+      timeoutMs + NATIVE_RUNTIME_TIMEOUT_MS,
     ))
   } catch (error) {
     throw nativeError(error)
@@ -411,14 +442,12 @@ function runNative(
   environment: Readonly<Record<string, string>> = {},
   input?: Buffer,
   rootContext?: NativeProjectReadRootContext,
+  timeoutMs = NATIVE_RUNTIME_TIMEOUT_MS,
 ): Buffer {
-  const artifact = nativeArtifact()
+  const runtime = nativeRuntime()
   let parentDescriptor: number | undefined
   let rootDescriptor: number | undefined
   try {
-    const stdio: Array<"ignore" | "pipe" | number> = input === undefined
-      ? ["ignore", "pipe", "ignore"]
-      : ["pipe", "pipe", "ignore"]
     if (rootContext !== undefined) {
       rootDescriptor = openSync(".", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
       parentDescriptor = openSync("..", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
@@ -434,21 +463,18 @@ function runNative(
       ) {
         throw new NativeProjectReadUnsafeError()
       }
-      stdio.push(rootDescriptor, parentDescriptor)
     }
-    const result = spawnSync(artifact.path, args, {
-      encoding: "buffer",
-      env: environment,
-      ...(input === undefined ? {} : { input }),
+    const result = runtime.run(
+      ["ph-native-project-read", ...args],
+      input ?? null,
+      Object.entries(environment).map(([key, value]) => `${key}=${value}`),
       maxBuffer,
-      shell: false,
-      stdio,
-      timeout: NATIVE_RUNTIME_TIMEOUT_MS,
-    })
-    if (result.error !== undefined || result.status !== 0 || !Buffer.isBuffer(result.stdout)) {
-      throw new NativeProjectReadRuntimeError()
-    }
-    return result.stdout
+      timeoutMs,
+      rootDescriptor ?? -1,
+      parentDescriptor ?? -1,
+    )
+    if (!Buffer.isBuffer(result)) throw new NativeProjectReadRuntimeError()
+    return result
   } finally {
     if (parentDescriptor !== undefined) closeSync(parentDescriptor)
     if (rootDescriptor !== undefined) closeSync(rootDescriptor)
@@ -509,9 +535,13 @@ function nativeExpectationInput(
     if (bytes.byteLength === 0 || bytes.byteLength > 1024) throw new NativeProjectReadRuntimeError()
     const dev = parseNativeIdentityInteger(entry.identity.dev)
     const ino = parseNativeIdentityInteger(entry.identity.ino)
-    return { bytes, dev, ino, kind: entry.kind === "directory" ? 1 : 2 }
+    const mode = parseNativeMode(entry.identity.mode)
+    const size = parseNativeIdentityInteger(entry.identity.size)
+    const mtimeNs = parseNativeIdentityInteger(entry.identity.mtimeNs)
+    const ctimeNs = parseNativeIdentityInteger(entry.identity.ctimeNs)
+    return { bytes, ctimeNs, dev, ino, kind: entry.kind === "directory" ? 1 : 2, mode, mtimeNs, size }
   })
-  const size = 4 + entries.reduce((total, entry) => total + 2 + entry.bytes.byteLength + 1 + 8 + 8, 0)
+  const size = 4 + entries.reduce((total, entry) => total + 2 + entry.bytes.byteLength + 1 + (8 * 6), 0)
   if (!Number.isSafeInteger(size) || size > 4 * 1024 * 1024) throw new NativeProjectReadRuntimeError()
   const input = Buffer.allocUnsafe(size)
   let offset = 0
@@ -527,6 +557,14 @@ function nativeExpectationInput(
     input.writeBigUInt64LE(entry.dev, offset)
     offset += 8
     input.writeBigUInt64LE(entry.ino, offset)
+    offset += 8
+    input.writeBigUInt64LE(entry.mode, offset)
+    offset += 8
+    input.writeBigUInt64LE(entry.size, offset)
+    offset += 8
+    input.writeBigUInt64LE(entry.mtimeNs, offset)
+    offset += 8
+    input.writeBigUInt64LE(entry.ctimeNs, offset)
     offset += 8
   }
   return input
@@ -550,6 +588,11 @@ function parseNativeIdentityInteger(value: string): bigint {
   }
 }
 
+function parseNativeMode(value: string): bigint {
+  if (!/^[0-7]{4}$/u.test(value)) throw new NativeProjectReadRuntimeError()
+  return BigInt(`0o${value}`)
+}
+
 function nativeGradleEnvironment(): Readonly<Record<string, string>> {
   const environment: Record<string, string> = {}
   for (const key of ["HOME", "JAVA_HOME", "PATH", "TMPDIR"] as const) {
@@ -569,26 +612,100 @@ function nativeArtifact(): NativeArtifact {
   if ("sha256:" + createHash("sha256").update(source).digest("hex") !== manifest.source.sha256) {
     throw new NativeProjectReadRuntimeError()
   }
+  const bridgePath = resolve(PACKAGE_ROOT, manifest.bridge.path)
+  if (!bridgePath.startsWith(PACKAGE_ROOT + sep)) throw new NativeProjectReadRuntimeError()
+  const bridge = readTrustedFile(bridgePath)
+  if ("sha256:" + createHash("sha256").update(bridge).digest("hex") !== manifest.bridge.sha256) {
+    throw new NativeProjectReadRuntimeError()
+  }
+  const headerPath = resolve(PACKAGE_ROOT, manifest.header.path)
+  if (!headerPath.startsWith(PACKAGE_ROOT + sep)) throw new NativeProjectReadRuntimeError()
+  const header = readTrustedFile(headerPath)
+  if ("sha256:" + createHash("sha256").update(header).digest("hex") !== manifest.header.sha256) {
+    throw new NativeProjectReadRuntimeError()
+  }
   const artifact = manifest.artifacts.find((candidate) => candidate.platform === process.platform && candidate.architecture === process.arch)
   if (artifact === undefined) throw new NativeProjectReadRuntimeError()
   const artifactPath = resolve(PACKAGE_ROOT, artifact.path)
   if (!artifactPath.startsWith(PACKAGE_ROOT + sep)) throw new NativeProjectReadRuntimeError()
-  const bytes = readTrustedFile(artifactPath)
-  if ("sha256:" + createHash("sha256").update(bytes).digest("hex") !== artifact.sha256) {
+  const opened = openTrustedFile(artifactPath)
+  if ("sha256:" + createHash("sha256").update(opened.bytes).digest("hex") !== artifact.sha256) {
+    closeSync(opened.descriptor)
     throw new NativeProjectReadRuntimeError()
   }
-  return { ...artifact, path: artifactPath }
+  return { ...artifact, descriptor: opened.descriptor, path: artifactPath }
 }
 
-function readTrustedFile(path: string): Buffer {
+function nativeRuntime(): NativeRuntime {
+  if (loadedNativeRuntime !== undefined) return loadedNativeRuntime
+  const artifact = nativeArtifact()
   try {
-    const stat = lstatSync(path, { bigint: true })
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new NativeProjectReadRuntimeError()
-    return readFileSync(path)
+    const nativeModule: { exports: unknown } = { exports: {} }
+    process.dlopen(nativeModule, nativeAddonDescriptorPath(artifact.descriptor))
+    const run = parseNativeAddonRun(nativeModule.exports)
+    loadedNativeRuntime = {
+      architecture: artifact.architecture,
+      platform: artifact.platform,
+      run,
+      sha256: artifact.sha256,
+    }
+    return loadedNativeRuntime
   } catch (error) {
     if (error instanceof NativeProjectReadRuntimeError) throw error
     throw new NativeProjectReadRuntimeError()
+  } finally {
+    closeSync(artifact.descriptor)
   }
+}
+
+function nativeAddonDescriptorPath(descriptor: number): string {
+  if (process.platform === "darwin") return `/dev/fd/${descriptor}`
+  if (process.platform === "linux") return `/proc/self/fd/${descriptor}`
+  throw new NativeProjectReadRuntimeError()
+}
+
+function readTrustedFile(path: string): Buffer {
+  const opened = openTrustedFile(path)
+  try {
+    return opened.bytes
+  } finally {
+    closeSync(opened.descriptor)
+  }
+}
+
+function openTrustedFile(path: string): { readonly bytes: Buffer; readonly descriptor: number } {
+  let descriptor: number | undefined
+  try {
+    const before = lstatSync(path, { bigint: true })
+    if (!before.isFile() || before.isSymbolicLink()) throw new NativeProjectReadRuntimeError()
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW)
+    const opened = fstatSync(descriptor, { bigint: true })
+    const bytes = readFileSync(descriptor)
+    const afterRead = fstatSync(descriptor, { bigint: true })
+    const afterPath = lstatSync(path, { bigint: true })
+    if (
+      !opened.isFile()
+      || !sameTrustedFileIdentity(before, opened)
+      || !sameTrustedFileIdentity(opened, afterRead)
+      || !sameTrustedFileIdentity(afterRead, afterPath)
+    ) {
+      throw new NativeProjectReadRuntimeError()
+    }
+    return { bytes, descriptor }
+  } catch (error) {
+    if (descriptor !== undefined) closeSync(descriptor)
+    if (error instanceof NativeProjectReadRuntimeError) throw error
+    throw new NativeProjectReadRuntimeError()
+  }
+}
+
+function sameTrustedFileIdentity(left: BigIntStats, right: BigIntStats): boolean {
+  return left.dev === right.dev
+    && left.ino === right.ino
+    && left.mode === right.mode
+    && left.size === right.size
+    && left.mtimeNs === right.mtimeNs
+    && left.ctimeNs === right.ctimeNs
 }
 
 function parseManifest(bytes: Buffer): NativeManifest {
@@ -598,8 +715,12 @@ function parseManifest(bytes: Buffer): NativeManifest {
       throw new NativeProjectReadRuntimeError()
     }
     const source = parseNativeSource(parsed["source"])
-    if (source === undefined) throw new NativeProjectReadRuntimeError()
-    const artifacts: NativeArtifact[] = []
+    const bridge = parseNativeBridge(parsed["bridge"])
+    const header = parseNativeHeader(parsed["header"])
+    if (source === undefined || bridge === undefined || header === undefined) {
+      throw new NativeProjectReadRuntimeError()
+    }
+    const artifacts: NativeArtifactRecord[] = []
     for (const candidate of parsed["artifacts"]) {
       const artifact = parseArtifact(candidate)
       if (artifact === undefined) throw new NativeProjectReadRuntimeError()
@@ -607,11 +728,66 @@ function parseManifest(bytes: Buffer): NativeManifest {
     }
     const labels = new Set(artifacts.map((artifact) => artifact.platform + "-" + artifact.architecture))
     if (artifacts.length !== 4 || labels.size !== artifacts.length) throw new NativeProjectReadRuntimeError()
-    return { artifacts, schemaVersion: "persona-harness-native-project-read.1", source }
+    return { artifacts, bridge, header, schemaVersion: "persona-harness-native-project-read.1", source }
   } catch (error) {
     if (error instanceof NativeProjectReadRuntimeError) throw error
     throw new NativeProjectReadRuntimeError()
   }
+}
+
+function parseNativeAddonRun(value: unknown): NativeAddonRun {
+  if (!isRecord(value)) throw new NativeProjectReadRuntimeError()
+  const run = value["run"]
+  if (typeof run !== "function") throw new NativeProjectReadRuntimeError()
+  return (
+    args,
+    input,
+    environment,
+    maxBuffer,
+    timeoutMs,
+    rootDescriptor,
+    parentDescriptor,
+  ) => {
+    const result: unknown = Reflect.apply(run, value, [
+      args,
+      input,
+      environment,
+      maxBuffer,
+      timeoutMs,
+      rootDescriptor,
+      parentDescriptor,
+    ])
+    if (!Buffer.isBuffer(result)) throw new NativeProjectReadRuntimeError()
+    return result
+  }
+}
+
+function parseNativeBridge(value: unknown): NativeManifest["bridge"] | undefined {
+  if (!isRecord(value)) return undefined
+  const path = value["path"]
+  const sha256 = value["sha256"]
+  if (
+    path !== "native/project-read/ph_native_project_read_addon.c"
+    || typeof sha256 !== "string"
+    || !/^sha256:[a-f0-9]{64}$/u.test(sha256)
+  ) {
+    return undefined
+  }
+  return { path, sha256 }
+}
+
+function parseNativeHeader(value: unknown): NativeManifest["header"] | undefined {
+  if (!isRecord(value)) return undefined
+  const path = value["path"]
+  const sha256 = value["sha256"]
+  if (
+    path !== "native/project-read/ph_native_project_read.h"
+    || typeof sha256 !== "string"
+    || !/^sha256:[a-f0-9]{64}$/u.test(sha256)
+  ) {
+    return undefined
+  }
+  return { path, sha256 }
 }
 
 function parseNativeSource(value: unknown): NativeManifest["source"] | undefined {
@@ -628,7 +804,7 @@ function parseNativeSource(value: unknown): NativeManifest["source"] | undefined
   return { path, sha256 }
 }
 
-function parseArtifact(value: unknown): NativeArtifact | undefined {
+function parseArtifact(value: unknown): NativeArtifactRecord | undefined {
   if (!isRecord(value)) return undefined
   const platform = value["platform"]
   const architecture = value["architecture"]
@@ -638,7 +814,7 @@ function parseArtifact(value: unknown): NativeArtifact | undefined {
     (platform !== "darwin" && platform !== "linux")
     || (architecture !== "arm64" && architecture !== "x64")
     || typeof path !== "string"
-    || !validArtifactPath(path)
+    || !validArtifactPath(path, platform, architecture)
     || typeof sha256 !== "string"
     || !/^sha256:[a-f0-9]{64}$/u.test(sha256)
   ) {
@@ -647,10 +823,12 @@ function parseArtifact(value: unknown): NativeArtifact | undefined {
   return { architecture, path, platform, sha256 }
 }
 
-function validArtifactPath(value: string): boolean {
-  return value.startsWith("native/project-read/bin/")
-    && !value.includes("\\")
-    && value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..")
+function validArtifactPath(
+  value: string,
+  platform: NativeArtifactRecord["platform"],
+  architecture: NativeArtifactRecord["architecture"],
+): boolean {
+  return value === `native/project-read/bin/${platform}-${architecture}/ph-native-project-read.node`
 }
 
 function nativeError(

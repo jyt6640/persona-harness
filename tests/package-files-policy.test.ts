@@ -16,6 +16,14 @@ type NativeProjectReadManifest = {
     readonly sha256: string
   }[]
   readonly schemaVersion: "persona-harness-native-project-read.1"
+  readonly bridge: {
+    readonly path: "native/project-read/ph_native_project_read_addon.c"
+    readonly sha256: string
+  }
+  readonly header: {
+    readonly path: "native/project-read/ph_native_project_read.h"
+    readonly sha256: string
+  }
   readonly source: {
     readonly path: "native/project-read/ph_native_project_read.c"
     readonly sha256: string
@@ -475,6 +483,8 @@ describe("package files policy", () => {
     expect(isCoveredByPackageFiles(buildRecordPath, packageJson.files)).toBe(true)
     expect(existsSync(path.join(packageRoot, buildRecordPath))).toBe(true)
     expect(digestFile(manifest.source.path)).toBe(manifest.source.sha256)
+    expect(digestFile(manifest.header.path)).toBe(manifest.header.sha256)
+    expect(digestFile(manifest.bridge.path)).toBe(manifest.bridge.sha256)
 
     expect(manifest.artifacts).toEqual(expect.arrayContaining([
       expect.objectContaining({ architecture: "arm64", platform: "darwin" }),
@@ -486,6 +496,18 @@ describe("package files policy", () => {
       expect(isCoveredByPackageFiles(artifact.path, packageJson.files)).toBe(true)
       expect(digestFile(artifact.path)).toBe(artifact.sha256)
     }
+  })
+
+  it("executes only the held native and Gradle wrapper descriptors after verification", () => {
+    const nativeBridge = readFileSync(path.join(packageRoot, "src/io/native-project-read.ts"), "utf8")
+    const nativeRuntime = readFileSync(path.join(packageRoot, "native/project-read/ph_native_project_read.c"), "utf8")
+
+    expect(nativeBridge).toContain("process.dlopen")
+    expect(nativeBridge).toContain("artifact.descriptor")
+    expect(nativeBridge).not.toContain("spawnSync(artifact.path")
+    expect(nativeRuntime).toContain("dup2(wrapper_descriptor, STDIN_FILENO)")
+    expect(nativeRuntime).toContain('execve("/bin/sh",')
+    expect(nativeRuntime).not.toContain('execve("./gradlew",')
   })
 })
 

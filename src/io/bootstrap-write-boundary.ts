@@ -609,13 +609,13 @@ export class ProjectReadBoundary {
   ) {
     return this.#native(() => {
       this.#assertActive()
-      const result = runNativeProjectGradle(
-        command,
-        timeoutMs,
-        this.#projectPath,
-        this.#expectedPath(".", "directory") ?? [],
-        this.#rootContext,
-      )
+        const result = runNativeProjectGradle(
+          command,
+          timeoutMs,
+          this.#projectPath,
+          this.#expectedPath("gradlew", "file") ?? [],
+          this.#rootContext,
+        )
       this.#assertActive()
       return result
     })
