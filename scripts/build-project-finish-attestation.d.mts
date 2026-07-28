@@ -23,10 +23,16 @@ export type ProjectFinishAttestationProducerContextResult =
     }
 
 export function runProjectFinishAttestationBuilder(input?: {
+  readonly callerRoot?: string
   readonly environment?: NodeJS.ProcessEnv
   readonly oidcToken?: unknown
   readonly producerRoot?: string
+  readonly runnerRoot?: string
 }): Promise<ProjectFinishAttestationBuilderResult>
+
+export function projectFinishAttestationBuilderRoots(
+  environment?: NodeJS.ProcessEnv,
+): { readonly callerRoot: string; readonly runnerRoot: string }
 
 export function resolveProjectFinishAttestationCallerWorkspace(
   environment?: NodeJS.ProcessEnv,

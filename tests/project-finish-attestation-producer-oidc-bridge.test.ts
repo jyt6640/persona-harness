@@ -1,13 +1,21 @@
 import {
+  chmodSync,
   copyFileSync,
+  cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
+  renameSync,
   rmSync,
   symlinkSync,
+  unlinkSync,
+  writeFileSync,
 } from "node:fs"
+import { execFileSync } from "node:child_process"
+import { createRequire } from "node:module"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -15,6 +23,7 @@ import { pathToFileURL } from "node:url"
 import { afterEach, describe, expect, it } from "vitest"
 
 import {
+  projectFinishAttestationBuilderRoots,
   runProjectFinishAttestationBuilder,
   readProjectFinishAttestationProducerContextFromToken,
 } from "../scripts/build-project-finish-attestation.mjs"
@@ -37,12 +46,15 @@ afterEach(() => {
   }
 })
 
-describe("project finish producer OIDC capability bridge", () => {
+describe.sequential("project finish producer OIDC capability bridge", () => {
   it("blocks a raw-env-free builder before it can create receipt or predicate bytes", async () => {
     const workspace = createWorkspace()
+    const roots = projectFinishAttestationBuilderRoots(producerEnvironment(workspace))
     const result = await runProjectFinishAttestationBuilder({
+      callerRoot: roots.callerRoot,
       environment: producerEnvironment(workspace),
       oidcToken: undefined,
+      runnerRoot: roots.runnerRoot,
     })
 
     expect(result).toEqual({ code: "project-finish-producer-oidc", kind: "blocked" })
@@ -59,10 +71,13 @@ describe("project finish producer OIDC capability bridge", () => {
     const outside = join(workspace, "outside")
     mkdirSync(outside)
     symlinkSync("outside", join(workspace, ".project-finish-attestation-failure"))
+    const roots = projectFinishAttestationBuilderRoots(producerEnvironment(workspace))
 
     const result = await runProjectFinishAttestationBuilder({
+      callerRoot: roots.callerRoot,
       environment: producerEnvironment(workspace),
       oidcToken: undefined,
+      runnerRoot: roots.runnerRoot,
     })
 
     expect(result).toEqual({ code: "project-finish-producer-oidc", kind: "blocked" })
@@ -130,6 +145,69 @@ describe("project finish producer OIDC capability bridge", () => {
     })
     expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "receipt.json"))).toBe(false)
     expect(existsSync(join(workspace, ".project-finish-attestation-artifacts", "predicate.json"))).toBe(false)
+  })
+
+  it("runs the real github-script outer workspace against its nested caller checkout", async () => {
+    const fixture = createReusableActionTopology()
+    const result = await withRunnerCwd(fixture, async () => {
+      const runner = await import(pathToFileURL(
+        join(fixture.producerRoot, "dist", "cli", "project-finish-attestation-producer-runner.js"),
+      ).href)
+      const identity = (path: string) => {
+        const stat = lstatSync(path, { bigint: true })
+        return { dev: stat.dev.toString(), ino: stat.ino.toString() }
+      }
+      expect(runner.captureProjectFinishAttestationCallerRootCapability(
+        fixture.caller,
+        identity(fixture.caller),
+        identity(fixture.runner),
+      ).rootContext.anchor).toBe("direct-child")
+      return runActionTopology(fixture)
+    })
+
+    expect(result).toEqual({ kind: "passed" })
+    expect(existsSync(join(fixture.runner, ".project-finish-attestation-artifacts", "receipt.json"))).toBe(true)
+    expect(existsSync(join(fixture.runner, ".project-finish-attestation-artifacts", "predicate.json"))).toBe(true)
+    expect(existsSync(join(fixture.caller, ".project-finish-attestation-artifacts"))).toBe(false)
+  })
+
+  it("does not infer the nested caller root from the github-script current directory", async () => {
+    const fixture = createReusableActionTopology()
+    const result = await withRunnerCwd(fixture, () => runProjectFinishAttestationBuilder({
+      environment: actionEnvironment(fixture),
+      oidcToken: oidcToken(actionClaims(fixture)),
+      producerRoot: fixture.producerRoot,
+    }))
+
+    expect(result).toEqual({ code: "project-finish-producer-workspace", kind: "blocked" })
+    expect(existsSync(join(fixture.runner, ".project-finish-attestation-artifacts"))).toBe(false)
+  })
+
+  it.each([
+    ["caller root alias", "caller" as const],
+    ["runner root alias", "runner" as const],
+  ])("blocks a nested %s before receipt or predicate output", async (_label, target) => {
+    const fixture = createReusableActionTopology()
+    const bridge = target === "runner" ? actionBridge(fixture) : undefined
+
+    const result = await withRunnerCwd(fixture, async () => {
+      const path = target === "caller" ? fixture.caller : fixture.runner
+      const draft = `${path}.draft`
+      renameSync(path, draft)
+      symlinkSync(fixture.outside, path)
+      try {
+        return await (bridge === undefined
+          ? runActionTopology(fixture)
+          : runActionBridge(fixture, bridge))
+      } finally {
+        unlinkSync(path)
+        renameSync(draft, path)
+      }
+    })
+
+    expect(result).toEqual(expect.objectContaining({ kind: "blocked" }))
+    expect(existsSync(join(fixture.outside, "receipt.json"))).toBe(false)
+    expect(existsSync(join(fixture.outside, "predicate.json"))).toBe(false)
   })
 
   it("keeps invalid audience or issuer tokens blocked and accepts the authentic distinct caller and producer shape", () => {
@@ -307,4 +385,139 @@ function createWorkspace(): string {
   const workspace = realpathSync(directory)
   mkdirSync(join(workspace, ".project-finish-caller"))
   return workspace
+}
+
+function createReusableActionTopology() {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "project-finish-producer-action-topology-")))
+  const runner = join(root, "runner")
+  const caller = join(runner, ".project-finish-caller")
+  const producerRoot = join(runner, ".persona-harness-producer")
+  const outside = join(root, "outside")
+  temporaryDirectories.push(root)
+  mkdirSync(runner)
+  mkdirSync(outside)
+  createNestedCaller(caller)
+  copyProducerRuntime(producerRoot)
+  const producerSha = initializeProducerCheckout(producerRoot)
+  const callerSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: caller, encoding: "utf8" }).trim()
+  return { caller, callerSha, outside, producerRoot, producerSha, runner }
+}
+
+async function withRunnerCwd<T>(
+  fixture: ReturnType<typeof createReusableActionTopology>,
+  action: () => Promise<T>,
+): Promise<T> {
+  const original = process.cwd()
+  process.chdir(fixture.runner)
+  try {
+    return await action()
+  } finally {
+    process.chdir(original)
+  }
+}
+
+async function runActionTopology(fixture: ReturnType<typeof createReusableActionTopology>) {
+  const bridge = actionBridge(fixture)
+  return runActionBridge(fixture, bridge)
+}
+
+async function runActionBridge(
+  fixture: ReturnType<typeof createReusableActionTopology>,
+  bridge: typeof import("../scripts/project-finish-attestation-producer-oidc-capability-bridge.cjs"),
+) {
+  return bridge.runProjectFinishAttestationProducerWithCore({
+    core: { getIDToken: async () => oidcToken(actionClaims(fixture)) },
+    environment: actionEnvironment(fixture),
+  })
+}
+
+function actionBridge(fixture: ReturnType<typeof createReusableActionTopology>) {
+  return createRequire(join(fixture.runner, "github-script.cjs"))(
+    "./.persona-harness-producer/scripts/project-finish-attestation-producer-oidc-capability-bridge.cjs",
+  ) as typeof import("../scripts/project-finish-attestation-producer-oidc-capability-bridge.cjs")
+}
+
+function createNestedCaller(caller: string): void {
+  mkdirSync(join(caller, "src", "main", "java"), { recursive: true })
+  writeFileSync(join(caller, "build.gradle"), "plugins { id 'java' }\n")
+  writeFileSync(join(caller, "settings.gradle"), "rootProject.name = 'nested-caller'\n")
+  writeFileSync(join(caller, "src", "main", "java", "App.java"), "class App {}\n")
+  writeFileSync(
+    join(caller, "gradlew"),
+    [
+      "#!/bin/sh",
+      "case \"$*\" in",
+      "  *cleanTest*)",
+      "    mkdir -p build/test-results/test",
+      "    printf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"works\"/></testsuite>' > build/test-results/test/TEST-action.xml",
+      "    printf '%s\\n' '> Task :cleanTest' '> Task :test' 'BUILD SUCCESSFUL'",
+      "    ;;",
+      "  *)",
+      "    printf '%s\\n' '> Task :build' 'BUILD SUCCESSFUL'",
+      "    ;;",
+      "esac",
+      "",
+    ].join("\n"),
+  )
+  chmodSync(join(caller, "gradlew"), 0o755)
+  execFileSync("git", ["init", "-q"], { cwd: caller })
+  execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: caller })
+  execFileSync("git", ["config", "user.name", "PH Test"], { cwd: caller })
+  execFileSync("git", ["add", "."], { cwd: caller })
+  execFileSync("git", ["commit", "-qm", "nested caller"], { cwd: caller })
+}
+
+function copyProducerRuntime(producerRoot: string): void {
+  for (const path of ["dist", "native", "scripts", "package.json"] as const) {
+    cpSync(join(process.cwd(), path), join(producerRoot, path), { recursive: true })
+  }
+}
+
+function initializeProducerCheckout(producerRoot: string): string {
+  execFileSync("git", ["init", "-q"], { cwd: producerRoot })
+  execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: producerRoot })
+  execFileSync("git", ["config", "user.name", "PH Test"], { cwd: producerRoot })
+  execFileSync("git", ["add", "."], { cwd: producerRoot })
+  execFileSync("git", ["commit", "-qm", "immutable producer"], { cwd: producerRoot })
+  execFileSync("git", ["remote", "add", "origin", "https://github.com/jyt6640/persona-harness.git"], { cwd: producerRoot })
+  return execFileSync("git", ["rev-parse", "HEAD"], { cwd: producerRoot, encoding: "utf8" }).trim()
+}
+
+function actionEnvironment(fixture: ReturnType<typeof createReusableActionTopology>): NodeJS.ProcessEnv {
+  return {
+    GITHUB_ACTIONS: "true",
+    GITHUB_EVENT_NAME: "push",
+    GITHUB_REF: "refs/heads/main",
+    GITHUB_REPOSITORY: "example/public-gradle-app",
+    GITHUB_REPOSITORY_ID: "123",
+    GITHUB_RUN_ATTEMPT: "1",
+    GITHUB_RUN_ID: "42",
+    GITHUB_SHA: fixture.callerSha,
+    GITHUB_WORKFLOW_REF: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
+    GITHUB_WORKFLOW_SHA: fixture.callerSha,
+    GITHUB_WORKSPACE: fixture.runner,
+    PERSONA_HARNESS_CALLER_VISIBILITY: "public",
+    PERSONA_HARNESS_PRODUCER_SHA: fixture.producerSha,
+    RUNNER_ENVIRONMENT: "github-hosted",
+    RUNNER_OS: "Linux",
+  }
+}
+
+function actionClaims(fixture: ReturnType<typeof createReusableActionTopology>): Record<string, string> {
+  return {
+    aud: AUDIENCE,
+    event_name: "push",
+    iss: "https://token.actions.githubusercontent.com",
+    job_workflow_ref: `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@${fixture.producerSha}`,
+    job_workflow_sha: fixture.producerSha,
+    ref: "refs/heads/main",
+    repository: "example/public-gradle-app",
+    repository_id: "123",
+    repository_visibility: "public",
+    run_attempt: "1",
+    run_id: "42",
+    runner_environment: "github-hosted",
+    workflow_ref: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
+    workflow_sha: fixture.callerSha,
+  }
 }
