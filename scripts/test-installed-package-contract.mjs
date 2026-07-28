@@ -395,6 +395,12 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     "installed package",
     readBeta6CooperativeCommands(installedPackage),
   )
+  assertCooperativeSourceReadRaceBlocks(
+    `${fixtureRoot}-source-read-race`,
+    phPath,
+    "installed package",
+    readBeta6CooperativeCommands(installedPackage),
+  )
 }
 
 function assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory) {
@@ -564,6 +570,12 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   }
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
+    phPath,
+    "source CLI",
+    readBeta6CooperativeCommands(repositoryRoot),
+  )
+  assertCooperativeSourceReadRaceBlocks(
+    join(temporaryRoot, "source-cli-cooperative-gradle-source-read-race"),
     phPath,
     "source CLI",
     readBeta6CooperativeCommands(repositoryRoot),
@@ -1600,22 +1612,8 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
 }
 
 function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
-  for (const command of commands) {
-    const step = BETA6_COOPERATIVE_COMMANDS.get(command)
-    if (step === undefined) {
-      throw new Error(`${label} beta.6 acceptance command is unsupported`)
-    }
-    requireSuccess(
-      `${label} lifecycle ${command}`,
-      runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin),
-    )
-  }
-  assertCooperativeLifecycleState(fixtureRoot, label)
+  runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands)
 
-  const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
-  if (defaultFinish.status === 0) {
-    throw new Error(`${label} default Finish unexpectedly accepted local cooperative evidence`)
-  }
   const cooperativeFinish = runNode(fixtureRoot, [
     phPath,
     "workflow",
@@ -1647,6 +1645,82 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
     if (existsSync(join(fixtureRoot, ".persona", "evidence", directory))) {
       throw new Error(`${label} cooperative Finish wrote forgeable authority directory ${directory}`)
     }
+  }
+}
+
+function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands) {
+  for (const command of commands) {
+    const step = BETA6_COOPERATIVE_COMMANDS.get(command)
+    if (step === undefined) {
+      throw new Error(`${label} beta.6 acceptance command is unsupported`)
+    }
+    requireSuccess(
+      `${label} lifecycle ${command}`,
+      runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin),
+    )
+  }
+  assertCooperativeLifecycleState(fixtureRoot, label)
+
+  const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
+  if (defaultFinish.status === 0) {
+    throw new Error(`${label} default Finish unexpectedly accepted local cooperative evidence`)
+  }
+}
+
+function assertCooperativeSourceReadRaceBlocks(fixtureRoot, phPath, label, commands) {
+  createCooperativeGradleFixture(fixtureRoot)
+  requireSuccess(
+    `${label} cooperative source-read race bootstrap`,
+    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
+  )
+  commitBootstrapCheckpoint(fixtureRoot, `${label} cooperative source-read race`)
+  const consumerRoot = `${fixtureRoot}-consumer`
+  requireSuccess(
+    `${label} cooperative source-read race worktree`,
+    runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]),
+  )
+  try {
+    runCooperativeLifecyclePreparation(consumerRoot, phPath, `${label} cooperative source-read race`, commands)
+    const sourceParent = join(consumerRoot, "src", "main", "java")
+    const sourceDraft = `${sourceParent}.draft`
+    const outside = `${consumerRoot}-outside-source`
+    const hookPath = join(fixtureRoot, "cooperative-source-read-race-hook.cjs")
+    const sentinel = `${fixtureRoot}-cooperative-source-read-race-audit`
+    mkdirSync(outside)
+    writeFileSync(join(outside, "External.java"), "class External { String marker = \"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\"; }\n")
+    writeNativeReadAuditHook(hookPath, "tree", "tree", [
+      '    require("node:fs").renameSync(process.env.PH_COOPERATIVE_SOURCE_PARENT, process.env.PH_COOPERATIVE_SOURCE_DRAFT)',
+      '    require("node:fs").renameSync(process.env.PH_COOPERATIVE_SOURCE_OUTSIDE, process.env.PH_COOPERATIVE_SOURCE_PARENT)',
+    ])
+    const result = runNode(
+      consumerRoot,
+      ["--require", hookPath, phPath, "workflow", "finish", "implement", "--assurance", "cooperative"],
+      {
+        ...nativeReadAuditEnvironment(outside, sentinel),
+        PH_COOPERATIVE_SOURCE_DRAFT: sourceDraft,
+        PH_COOPERATIVE_SOURCE_OUTSIDE: outside,
+        PH_COOPERATIVE_SOURCE_PARENT: sourceParent,
+      },
+    )
+    if (
+      result.status === 0
+      || `${result.stdout}${result.stderr}`.includes(outside)
+      || `${result.stdout}${result.stderr}`.includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+    ) {
+      throw new Error(`${label} cooperative source-read race did not fail closed`)
+    }
+    requireNativeAuditZero(`${label} cooperative source-read race`, sentinel)
+    for (const directory of ["finish-attestation", "project-finish-attestation", "verification-receipts"]) {
+      if (existsSync(join(consumerRoot, ".persona", "evidence", directory))) {
+        throw new Error(`${label} cooperative source-read race created authority evidence`)
+      }
+    }
+  } finally {
+    if (existsSync(consumerRoot)) {
+      requireSuccess(`${label} cooperative source-read race removal`, runCommand(fixtureRoot, "git", ["worktree", "remove", "--force", consumerRoot]))
+    }
+    rmSync(fixtureRoot, { force: true, recursive: true })
+    rmSync(`${fixtureRoot}-outside-source`, { force: true, recursive: true })
   }
 }
 
