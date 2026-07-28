@@ -29,6 +29,7 @@ import {
   type NoFollowPathIdentity,
 } from "./no-follow-file.js"
 import {
+  captureNativeProjectReadDirectChildIdentity,
   captureNativeProjectReadRootContext,
   captureNativeGeneratedProjectTreeManifest,
   NativeProjectReadLimitError,
@@ -36,6 +37,7 @@ import {
   NativeProjectReadUnsafeError,
   readNativeProjectDirectoryIdentity,
   readNativeProjectFileWithIdentityResult,
+  readNativeGeneratedProjectTree,
   readNativeProjectTree,
   readNativeProjectTreeAt,
   runNativeProjectGradle,
@@ -750,7 +752,8 @@ export class ProjectReadBoundary {
       const manifest = captureNativeGeneratedProjectTreeManifest(relativePath, this.#projectPath, rootExpectation, this.#rootContext)
       if (manifest === undefined) return undefined
       const expectations = this.#expectationsForGeneratedTree(relativePath, manifest)
-      const entries = readNativeProjectTreeAt(relativePath, options, this.#projectPath, expectations, this.#rootContext)
+      const entries = readNativeGeneratedProjectTree(relativePath, options, this.#projectPath, expectations, this.#rootContext)
+      if (entries === undefined) throw new ProjectReadBoundaryError()
       this.#assertActive()
       this.#assertGeneratedManifestParity(entries, relativePath, expectations)
       return entries
@@ -861,25 +864,14 @@ export class ProjectReadBoundary {
     relativePath: string,
     manifest: readonly NativeProjectReadTreeEntry[],
   ): readonly NativeProjectReadExpectedPath[] {
-    const segments = validatedRelativeSegments(relativePath)
-    const ancestors = segments.map((_, index) => {
-      const path = segments.slice(0, index + 1).join("/")
-      const entry = manifest.find((candidate) => candidate.path === path)
-      if (entry?.kind !== "directory") throw new ProjectReadBoundaryError()
-      return entry
-    })
-    const root = ancestors.at(-1)
-    if (root === undefined) throw new ProjectReadBoundaryError()
+    const project = this.#expectedPath(".", "directory")?.at(0)
+    if (project === undefined) throw new ProjectReadBoundaryError()
+    const root = manifest.find((entry) => entry.path === relativePath)
+    if (root?.kind !== "directory") throw new ProjectReadBoundaryError()
     const prefix = `${relativePath}/`
-    const descendants = manifest.flatMap((entry) => {
-      if (!entry.path.startsWith(prefix)) return []
-      return [{ identity: entry.identity, kind: entry.kind, path: entry.path.slice(prefix.length) }]
-    })
-    if (descendants.some((entry) => entry.path === ".")) throw new ProjectReadBoundaryError()
     return [
-      { identity: root.identity, kind: "directory", path: "." },
-      ...ancestors.map((entry) => ({ identity: entry.identity, kind: "directory" as const, path: entry.path })),
-      ...descendants,
+      { identity: project.identity, kind: "directory", path: "." },
+      ...manifest.map((entry) => ({ identity: entry.identity, kind: entry.kind, path: entry.path })),
     ]
   }
 
@@ -888,11 +880,11 @@ export class ProjectReadBoundary {
     relativePath: string,
     expectations: readonly NativeProjectReadExpectedPath[],
   ): void {
-    const segments = validatedRelativeSegments(relativePath)
-    const ancestorPaths = new Set(segments.map((_, index) => segments.slice(0, index + 1).join("/")))
+    const prefix = `${relativePath}/`
     const expected = expectations
-      .filter((entry) => entry.path !== "." && !ancestorPaths.has(entry.path))
-      .map((entry) => `${entry.kind}:${entry.path}:${entry.identity.dev}:${entry.identity.ino}`)
+      .flatMap((entry) => entry.path.startsWith(prefix)
+        ? [`${entry.kind}:${entry.path.slice(prefix.length)}:${entry.identity.dev}:${entry.identity.ino}`]
+        : [])
       .sort()
     const actual = entries
       .map((entry) => `${entry.kind}:${entry.path}:${entry.identity.dev}:${entry.identity.ino}`)
@@ -925,17 +917,19 @@ export function reserveProjectReadBoundary(
 ): ProjectReadBoundary {
   const projectPath = resolve(projectDir)
   const inheritedProject = projectPath === resolve(process.cwd())
-  if (!inheritedProject && selectedProjectIdentity === undefined) throw new ProjectReadBoundaryError()
   try {
-    const selectedExpectation: readonly NativeProjectReadExpectedPath[] = selectedProjectIdentity === undefined ? [] : [{
-      identity: selectedProjectIdentity,
+    const selectedIdentity = selectedProjectIdentity ?? (
+      inheritedProject ? undefined : captureNativeProjectReadDirectChildIdentity(projectPath)
+    )
+    const selectedExpectation: readonly NativeProjectReadExpectedPath[] = selectedIdentity === undefined ? [] : [{
+      identity: selectedIdentity,
       kind: "directory",
       path: ".",
     }]
     const identity = readNativeProjectDirectoryIdentity(".", projectPath, selectedExpectation)
     if (
       identity === undefined
-      || (selectedProjectIdentity !== undefined && !sameNoFollowPathLocation(selectedProjectIdentity, identity))
+      || (selectedIdentity !== undefined && !sameNoFollowPathLocation(selectedIdentity, identity))
     ) {
       throw new ProjectReadBoundaryError()
     }

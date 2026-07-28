@@ -27,6 +27,7 @@ import {
   runNativeProjectGradle,
 } from "../src/io/native-project-read.js"
 import { reserveProjectReadBoundary } from "../src/io/bootstrap-write-boundary.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 describe.sequential("native project read runtime", () => {
   it("reads a bounded regular file through the packaged native runtime", () => {
@@ -140,18 +141,18 @@ describe.sequential("native project read runtime", () => {
     }
   })
 
-  it("rejects a caller-selected project root outside the inherited capability", () => {
-    // Given: an inherited runner directory and a distinct child project path.
-    const runner = realpathSync(mkdtempSync(join(tmpdir(), "persona-native-root-selection-")))
+  it("rejects a nested project root outside the inherited direct-child capability", () => {
+    // Given: a direct runner child and a nested caller-selected project.
+    const runner = createDirectProjectRoot("persona-native-root-selection")
     const project = join(runner, "project")
     mkdirSync(project)
     writeFileSync(join(project, "package.json"), "{}\n")
 
     try {
-      // When: TypeScript asks the native runtime to reopen that child as a project root.
-      const invoke = () => withCurrentDirectory(runner, () => readNativeProjectFile("package.json", 4096, project))
+      // When: TypeScript asks the native runtime to reopen the nested project root.
+      const invoke = () => readNativeProjectFile("package.json", 4096, project)
 
-      // Then: only the inherited canonical project capability is accepted.
+      // Then: only one native-captured direct child can become a project capability.
       expect(invoke).toThrow("source-read-runtime-unavailable")
     } finally {
       rmSync(runner, { force: true, recursive: true })
@@ -159,21 +160,39 @@ describe.sequential("native project read runtime", () => {
   })
 
   it("opens one captured direct child through the inherited runner capability", () => {
-    // Given: a runner capability, a direct caller checkout, and its captured directory identity.
-    const runner = realpathSync(mkdtempSync(join(tmpdir(), "persona-native-captured-root-")))
-    const project = join(runner, "project")
-    mkdirSync(project)
+    // Given: a direct caller checkout and its captured directory identity.
+    const project = createDirectProjectRoot("persona-native-captured-root")
     writeFileSync(join(project, "package.json"), "{}\n")
     const expectations = expectedRuntimeManifest(project, ["package.json"])
 
     try {
       // When: the native runtime receives the direct child with an expected root descriptor identity.
-      const actual = withCurrentDirectory(runner, () => readNativeProjectFile("package.json", 4096, project, expectations))
+      const actual = readNativeProjectFile("package.json", 4096, project, expectations)
 
       // Then: it reads only through the held runner-to-caller descriptor transition.
       expect(actual).toEqual(Buffer.from("{}\n"))
     } finally {
-      rmSync(runner, { force: true, recursive: true })
+      rmSync(project, { force: true, recursive: true })
+    }
+  })
+
+  it("reserves a direct child project without reopening its caller path", () => {
+    // Given: a direct regular child project.
+    const project = createDirectProjectRoot("persona-native-boundary-child")
+    writeFileSync(join(project, "package.json"), "{}\n")
+
+    try {
+      // When: the product boundary captures the direct child through native descriptor traversal.
+      const boundary = reserveProjectReadBoundary(project)
+
+      // Then: the selected root is readable only through the captured child identity.
+      try {
+        expect(boundary.readProjectFile("package.json")?.toString("utf8")).toBe("{}\n")
+      } finally {
+        boundary.close()
+      }
+    } finally {
+      rmSync(project, { force: true, recursive: true })
     }
   })
 
@@ -217,7 +236,7 @@ describe.sequential("native project read runtime", () => {
 
   it("rejects a captured regular source-parent replacement before opening its external descriptor", () => {
     // Given: a source identity manifest captured before an external regular directory replaces src/main.
-    const project = mkdtempSync(join(tmpdir(), "persona-native-manifest-"))
+    const project = createDirectProjectRoot("persona-native-manifest")
     const sourceParent = join(project, "src", "main")
     const source = join(sourceParent, "java", "App.java")
     const outside = join(project, "outside")
@@ -227,7 +246,7 @@ describe.sequential("native project read runtime", () => {
     writeFileSync(join(outside, "java", "App.java"), "class External {}\n")
     const expectations = expectedManifest(project, ["src", "src/main", "src/main/java", "src/main/java/App.java"])
     const outsideIdentity = lstatSync(outside, { bigint: true })
-    const boundary = withCurrentDirectory(project, () => reserveProjectReadBoundary("."))
+    const boundary = reserveProjectReadBoundary(project)
     renameSync(sourceParent, `${sourceParent}.draft`)
     renameSync(outside, sourceParent)
 
@@ -259,7 +278,7 @@ describe.sequential("native project read runtime", () => {
       // Then: identity mismatch blocks before either the external parent or leaf descriptor is opened.
       expect(result.status).toBe(0)
       expect(result.stdout).toEqual(Buffer.from([2, 0]))
-      expect(() => withCurrentDirectory(project, () => boundary.readProjectFile("src/main/java/App.java"))).toThrow(
+      expect(() => boundary.readProjectFile("src/main/java/App.java")).toThrow(
         "source-read-unsafe",
       )
     } finally {
@@ -269,10 +288,9 @@ describe.sequential("native project read runtime", () => {
   })
 
   it("rejects a captured project-root replacement before opening its external descriptor", () => {
-    const runner = mkdtempSync(join(tmpdir(), "persona-native-root-context-"))
-    const project = join(runner, "project")
-    const preserved = join(runner, "project-preserved")
-    const outside = join(runner, "outside")
+    const project = createDirectProjectRoot("persona-native-root-context")
+    const preserved = `${project}-preserved`
+    const outside = createDirectProjectRoot("persona-native-root-context-outside")
     const source = join(project, "src", "main", "java", "App.java")
     mkdirSync(join(project, "src", "main", "java"), { recursive: true })
     mkdirSync(join(outside, "src", "main", "java"), { recursive: true })
@@ -280,15 +298,15 @@ describe.sequential("native project read runtime", () => {
     writeFileSync(join(outside, "src", "main", "java", "App.java"), "class External {}\n")
     const expectations = expectedManifest(project, ["src", "src/main", "src/main/java", "src/main/java/App.java"])
     const outsideIdentity = lstatSync(outside, { bigint: true })
-    const parentIdentity = lstatSync(runner, { bigint: true })
+    const parentIdentity = lstatSync(process.cwd(), { bigint: true })
     let boundary: ReturnType<typeof reserveProjectReadBoundary> | undefined
     let rootDescriptor: number | undefined
     let parentDescriptor: number | undefined
 
     try {
-      boundary = withCurrentDirectory(project, () => reserveProjectReadBoundary("."))
+      boundary = reserveProjectReadBoundary(project)
       rootDescriptor = openSync(project, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
-      parentDescriptor = openSync(runner, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+      parentDescriptor = openSync(process.cwd(), constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
       renameSync(project, preserved)
       renameSync(outside, project)
 
@@ -323,14 +341,15 @@ describe.sequential("native project read runtime", () => {
 
       expect(result.status).toBe(0)
       expect(result.stdout).toEqual(Buffer.from([2, 0]))
-      expect(() => withCurrentDirectory(preserved, () => boundary?.readProjectFile("src/main/java/App.java"))).toThrow(
+      expect(() => boundary?.readProjectFile("src/main/java/App.java")).toThrow(
         "source-read-unsafe",
       )
     } finally {
       boundary?.close()
       if (parentDescriptor !== undefined) closeSync(parentDescriptor)
       if (rootDescriptor !== undefined) closeSync(rootDescriptor)
-      rmSync(runner, { force: true, recursive: true })
+      rmSync(preserved, { force: true, recursive: true })
+      rmSync(project, { force: true, recursive: true })
     }
   })
 
@@ -454,10 +473,8 @@ describe.sequential("native project read runtime", () => {
   })
 
   it("runs only the fixed Gradle test catalog from the held project root", () => {
-    // Given: a selected child project with a regular executable wrapper.
-    const runner = mkdtempSync(join(tmpdir(), "persona-native-gradle-runtime-"))
-    const project = join(runner, "project")
-    mkdirSync(project)
+    // Given: a selected direct child project with a regular executable wrapper.
+    const project = createDirectProjectRoot("persona-native-gradle-runtime")
     writeFileSync(
       join(project, "gradlew"),
       "#!/bin/sh\nprintf '%s\\n' '> Task :cleanTest' '> Task :test'\n",
@@ -466,14 +483,49 @@ describe.sequential("native project read runtime", () => {
 
     try {
       // When: the fixed native command is executed from the inherited project capability.
-      const result = withCurrentDirectory(project, () => runNativeProjectGradle("test", 1_000, "."))
+      const result = runNativeProjectGradle("test", 1_000, project, expectedRuntimeManifest(project, ["gradlew"]))
 
       // Then: it completes with the fixed task output and no shell-selected command path.
       expect(result).toMatchObject({ outcome: "passed", status: 0, timedOut: false })
       expect(result.stdout.toString("utf8")).toContain("> Task :cleanTest")
       expect(result.stdout.toString("utf8")).toContain("> Task :test")
     } finally {
-      rmSync(runner, { force: true, recursive: true })
+      rmSync(project, { force: true, recursive: true })
+    }
+  })
+
+  it("captures fresh generated JUnit output through the direct-child project capability", () => {
+    // Given: a direct child Gradle project whose fixed test command creates a JUnit report.
+    const project = createDirectProjectRoot("persona-native-generated-junit")
+    writeFileSync(
+      join(project, "gradlew"),
+      "#!/bin/sh\nmkdir -p build/test-results/test\nprintf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"ok\"/></testsuite>' > build/test-results/test/TEST-App.xml\nprintf '%s\\n' '> Task :cleanTest' '> Task :test'\n",
+    )
+    chmodSync(join(project, "gradlew"), 0o755)
+    let boundary: ReturnType<typeof reserveProjectReadBoundary> | undefined
+
+    try {
+      // When: the same held capability snapshots before and after its fixed Gradle test command.
+      boundary = reserveProjectReadBoundary(project)
+      expect(boundary.readGeneratedProjectTreeAt("build/test-results/test", {
+        excludedRoots: [],
+        maxEntries: 128,
+        maxFileBytes: 64 * 1024,
+        maxTotalBytes: 256 * 1024,
+      })).toBeUndefined()
+      expect(boundary.runFixedGradle("test", 1_000)).toMatchObject({ outcome: "passed", status: 0, timedOut: false })
+      const generated = boundary.readGeneratedProjectTreeAt("build/test-results/test", {
+        excludedRoots: [],
+        maxEntries: 128,
+        maxFileBytes: 64 * 1024,
+        maxTotalBytes: 256 * 1024,
+      })
+
+      // Then: generated bytes are read through the native boundary instead of a pathname reopen.
+      expect(generated?.some((entry) => entry.kind === "file" && entry.path === "TEST-App.xml")).toBe(true)
+    } finally {
+      boundary?.close()
+      rmSync(project, { force: true, recursive: true })
     }
   })
 })
@@ -483,16 +535,6 @@ function nativeExecutable(): string {
     throw new Error("native test platform unavailable")
   }
   return resolve(`native/project-read/bin/${process.platform}-${process.arch}/ph-native-project-read`)
-}
-
-function withCurrentDirectory<T>(directory: string, operation: () => T): T {
-  const original = process.cwd()
-  process.chdir(directory)
-  try {
-    return operation()
-  } finally {
-    process.chdir(original)
-  }
 }
 
 function expectedManifest(project: string, paths: readonly string[]) {

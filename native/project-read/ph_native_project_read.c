@@ -454,6 +454,22 @@ static int open_root(
   const char *start = relative;
   char path[1024] = {0};
   size_t path_length = 0;
+  const char *separator = strchr(relative, '/');
+  size_t direct_child_length = separator == NULL ? strlen(relative) : (size_t)(separator - relative);
+  int direct_child = 0;
+  if (
+    expectations != NULL
+    && expectations->enabled
+    && expected_identity_for(expectations, ".") != NULL
+    && direct_child_length > 0
+    && direct_child_length < 256
+  ) {
+    char selected[256];
+    memcpy(selected, relative, direct_child_length);
+    selected[direct_child_length] = '\0';
+    direct_child = valid_segment(selected, direct_child_length)
+      && expected_identity_for(expectations, selected) == NULL;
+  }
   for (const char *cursor = relative;; cursor += 1) {
     if (*cursor != '/' && *cursor != '\0') continue;
     size_t length = (size_t)(cursor - start);
@@ -481,9 +497,13 @@ static int open_root(
     path[path_length] = '\0';
     int next = -1;
     struct stat next_stat;
-    const ph_expected_identity *named_expected = expected_identity_for(expectations, path);
     const char *expected_path = path;
-    if (*cursor == '\0' && named_expected == NULL) expected_path = ".";
+    if (direct_child) {
+      expected_path = path_length == direct_child_length ? "." : path + direct_child_length + 1;
+    } else {
+      const ph_expected_identity *named_expected = expected_identity_for(expectations, path);
+      if (*cursor == '\0' && named_expected == NULL) expected_path = ".";
+    }
     enum ph_status status = open_child_directory(
       current,
       name,
@@ -1817,6 +1837,21 @@ static int run_directory(int argc, char **argv) {
   return result;
 }
 
+static int run_capture_root(int argc, char **argv) {
+  if (argc != 3 || !valid_segment(argv[2], strlen(argv[2]))) return emit_status(PH_INVALID) ? 0 : 1;
+  int parent = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+  if (parent < 0) return emit_status(errno_status()) ? 0 : 1;
+  struct stat parent_stat;
+  int child = -1;
+  struct stat identity;
+  enum ph_status status = fstat(parent, &parent_stat) != 0 || !S_ISDIR(parent_stat.st_mode)
+    ? PH_UNSAFE
+    : open_child_directory(parent, argv[2], ".", &child, &identity, NULL, NULL);
+  close(parent);
+  if (child >= 0) close(child);
+  return emit_directory(status, &identity, NULL) ? 0 : 1;
+}
+
 static int run_tree(int argc, char **argv) {
   if (argc < 5) return emit_status(PH_INVALID) ? 0 : 1;
   int body_count;
@@ -1884,7 +1919,7 @@ static int run_generated_manifest(int argc, char **argv) {
     return emit_status(PH_INVALID) ? 0 : 1;
   }
   const char *generated_root = argv[2];
-  if (strcmp(root_relative, ".") != 0 || !valid_generated_root(generated_root)) {
+  if (!valid_generated_root(generated_root)) {
     return emit_status(PH_INVALID) ? 0 : 1;
   }
   int expectation_start = 3;
@@ -1918,6 +1953,61 @@ static int run_generated_manifest(int argc, char **argv) {
     tree.status = status;
   } else {
     collect_tree_manifest(&tree, selected, generated_root);
+  }
+  if (selected >= 0) close(selected);
+  int result = emit_tree(&tree) ? 0 : 1;
+  free_tree(&tree);
+  free_expectations(&expectations);
+  return result;
+}
+
+static int run_generated_tree(int argc, char **argv) {
+  if (argc < 6) return emit_status(PH_INVALID) ? 0 : 1;
+  int body_count;
+  const char *root_relative;
+  ph_audit audit;
+  ph_root_context root_context;
+  if (!parse_root_audit_suffix(argc, argv, 6, &body_count, &root_relative, &audit, &root_context) || body_count < 6) {
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
+  const char *generated_root = argv[2];
+  if (!valid_generated_root(generated_root)) return emit_status(PH_INVALID) ? 0 : 1;
+  ph_expectations expectations;
+  if (!parse_expectation_input(6, body_count, argv, &expectations)) {
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
+  const ph_expected_identity *project = expected_identity_for(&expectations, ".");
+  if (project == NULL || project->kind != PH_DIRECTORY) {
+    free_expectations(&expectations);
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
+  ph_tree tree = {
+    .audit = audit.enabled ? &audit : NULL,
+    .expectations = &expectations,
+    .max_entries = 0,
+    .max_file_bytes = 0,
+    .max_total_bytes = 0,
+    .status = PH_READY,
+  };
+  if (!parse_size(argv[3], &tree.max_entries)
+    || !parse_size(argv[4], &tree.max_file_bytes)
+    || !parse_size(argv[5], &tree.max_total_bytes)) {
+    free_expectations(&expectations);
+    return emit_status(PH_INVALID) ? 0 : 1;
+  }
+  struct stat root_stat;
+  int root = open_root(root_relative, &root_stat, &audit, tree.expectations, &root_context);
+  if (root < 0) {
+    free_expectations(&expectations);
+    return emit_status_with_audit(PH_UNSAFE, tree.audit) ? 0 : 1;
+  }
+  int selected = -1;
+  enum ph_status status = capture_generated_root(&tree, root, generated_root, &selected);
+  close(root);
+  if (status != PH_READY) {
+    tree.status = status;
+  } else {
+    collect_tree(&tree, selected, generated_root);
   }
   if (selected >= 0) close(selected);
   int result = emit_tree(&tree) ? 0 : 1;
@@ -1990,9 +2080,11 @@ int main(int argc, char **argv) {
     return write_all(response, sizeof(response) - 1) ? 0 : 1;
   }
   if (argc >= 4 && strcmp(argv[1], "read") == 0) return run_read(argc, argv);
+  if (argc == 3 && strcmp(argv[1], "capture-root") == 0) return run_capture_root(argc, argv);
   if (argc >= 3 && strcmp(argv[1], "directory") == 0) return run_directory(argc, argv);
   if (argc >= 5 && strcmp(argv[1], "tree") == 0) return run_tree(argc, argv);
   if (argc >= 3 && strcmp(argv[1], "generated-manifest") == 0) return run_generated_manifest(argc, argv);
+  if (argc >= 6 && strcmp(argv[1], "generated-tree") == 0) return run_generated_tree(argc, argv);
   if (argc >= 3 && strcmp(argv[1], "git") == 0) return run_git(argc, argv);
   if (argc >= 4 && strcmp(argv[1], "gradle") == 0) return run_gradle(argc, argv);
   return emit_status(PH_INVALID) ? 0 : 1;

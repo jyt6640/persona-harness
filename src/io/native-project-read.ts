@@ -139,6 +139,23 @@ export function captureNativeProjectReadRootContext(
   }
 }
 
+export function captureNativeProjectReadDirectChildIdentity(projectDir: string): NativeProjectReadIdentity {
+  const selected = relative(resolve(process.cwd()), resolve(projectDir))
+  if (
+    !validNativeRelativeRoot(selected)
+    || selected === "."
+    || isAbsolute(selected)
+    || selected.includes(sep)
+  ) {
+    throw new NativeProjectReadRuntimeError()
+  }
+  try {
+    return parseNativeDirectoryResponse(runNative(["capture-root", selected], 128))
+  } catch (error) {
+    throw nativeError(error)
+  }
+}
+
 export function readNativeProjectFile(
   relativePath: string,
   maxBytes: number,
@@ -268,6 +285,42 @@ export function captureNativeGeneratedProjectTreeManifest(
   try {
     const invocation = nativeInvocation(["generated-manifest", relativeRoot], root, expectations, rootContext)
     return parseNativeTreeResponse(runNative(invocation.args, 2 * 1024 * 1024, {}, invocation.input, rootContext))
+  } catch (error) {
+    if (error instanceof NativeProjectReadProtocolError && error.code === "absent") return undefined
+    throw nativeError(error)
+  }
+}
+
+export function readNativeGeneratedProjectTree(
+  relativeRoot: "build/test-results/test" | "target/surefire-reports",
+  options: {
+    readonly maxEntries: number
+    readonly maxFileBytes: number
+    readonly maxTotalBytes: number
+  },
+  projectDir: string,
+  expectations: readonly NativeProjectReadExpectedPath[],
+  rootContext?: NativeProjectReadRootContext,
+): readonly NativeProjectReadTreeEntry[] | undefined {
+  const root = nativeProjectRoot(projectDir, ".", expectations)
+  assertReadLimit(options.maxFileBytes)
+  assertReadLimit(options.maxTotalBytes)
+  if (!Number.isSafeInteger(options.maxEntries) || options.maxEntries <= 0) throw new NativeProjectReadRuntimeError()
+  const outputLimit = options.maxTotalBytes + NATIVE_PROTOCOL_OVERHEAD_BYTES
+  if (!Number.isSafeInteger(outputLimit) || outputLimit <= options.maxTotalBytes) throw new NativeProjectReadRuntimeError()
+  try {
+    const invocation = nativeInvocation([
+      "generated-tree",
+      relativeRoot,
+      String(options.maxEntries),
+      String(options.maxFileBytes),
+      String(options.maxTotalBytes),
+    ], root, expectations, rootContext)
+    const prefix = `${relativeRoot}/`
+    return parseNativeTreeResponse(runNative(invocation.args, outputLimit, {}, invocation.input, rootContext)).flatMap((entry) => {
+      if (!entry.path.startsWith(prefix)) return []
+      return [{ ...entry, path: entry.path.slice(prefix.length) }]
+    })
   } catch (error) {
     if (error instanceof NativeProjectReadProtocolError && error.code === "absent") return undefined
     throw nativeError(error)
