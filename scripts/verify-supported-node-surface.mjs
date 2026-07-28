@@ -247,18 +247,22 @@ async function assertCliSurface(runCli, surface, packageRoot) {
     throw new SupportSurfaceError(`${surface} reverification authority-negative fixture setup failed`)
   }
   const reverified = runCli(reverifyRoot, ["workflow", "finish", "implement", "--reverify", "--ci"])
-  const reverifiedOutput = `${reverified.stdout}\n${reverified.stderr}`
-  if (
-    reverified.status === 0
-    || !reverifiedOutput.includes("trusted-authority-required")
-    || reverifiedOutput.includes("artifact-unavailable")
-    || reverifiedOutput.includes("fresh-receipt-unavailable")
-    || reverifiedOutput.includes("source-identity-symlink")
-    || reverifiedOutput.includes("source-read-runtime-unavailable")
-    || reverifiedOutput.includes("Finish status: PASS")
-  ) {
-    throw new SupportSurfaceError(`${surface} reverification authority-negative finish boundary failed`)
+  const reverifiedFailure = classifyReverificationAuthorityNegativeResult(reverified)
+  if (reverifiedFailure !== undefined) {
+    throw new SupportSurfaceError(`${surface} reverification authority-negative finish boundary failed: ${reverifiedFailure}`)
   }
+}
+
+function classifyReverificationAuthorityNegativeResult(result) {
+  const output = `${result.stdout}\n${result.stderr}`
+  if (result.status === 0) return "unexpected-success"
+  if (output.includes("Finish status: PASS")) return "unexpected-finish-pass"
+  if (output.includes("artifact-unavailable")) return "artifact-unavailable"
+  if (output.includes("fresh-receipt-unavailable")) return "fresh-receipt-unavailable"
+  if (output.includes("source-identity-symlink")) return "source-identity-symlink"
+  if (output.includes("source-read-runtime-unavailable")) return "source-read-runtime-unavailable"
+  if (!output.includes("trusted-authority-required")) return "trusted-authority-required-missing"
+  return undefined
 }
 
 async function writeAuthorityNegativeFixture(projectRoot, packageRoot) {
