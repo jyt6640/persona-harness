@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
+import { readFileSync } from "node:fs"
 import process from "node:process"
 
 import { describe, expect, it } from "vitest"
@@ -42,6 +43,14 @@ function run(command: string, args: readonly string[]) {
 }
 
 describe("source-built and packed installed supported Node authority-negative surfaces", () => {
+  it("constructs lifecycle fixtures through the package surface under test", () => {
+    const supportScript = readFileSync(join(repositoryRoot, "scripts", "verify-supported-node-surface.mjs"), "utf8")
+
+    expect(supportScript).toContain("writeCurrentLifecycleStates(projectRoot, packageRoot)")
+    expect(supportScript).toContain('join(packageRoot, "dist", "cli", "workflow-loop-state.js")')
+    expect(supportScript).not.toContain('join(repositoryRoot, "dist", "cli", "workflow-loop-state.js")')
+  })
+
   it("keeps both support commands at trusted-authority-required with verifier imports", { timeout: 120_000 }, () => {
     const runtime = currentSupportRuntime()
     const result = withPackagePackLock(() => {
