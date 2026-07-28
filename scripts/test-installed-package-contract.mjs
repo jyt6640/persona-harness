@@ -23,7 +23,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
-const sourceCli = sourceCliArgument(process.argv.slice(2))
+const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
 const BETA6_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta6-acceptance.json")
 const BETA6_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
@@ -61,43 +61,53 @@ try {
     const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
-    assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
-    assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
-    assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory)
-    assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
-    assertDoctorRegistryReadback(
-      join(consumerDirectory, "doctor-registry-fixture"),
-      join(consumerDirectory, "node_modules", ".bin", "ph"),
-      installedPackage,
-      "installed package",
-    )
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
-    assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
-    assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory)
-    await assertPackagedBoundedReportStdin(installedPackage, consumerDirectory)
-    assertWorkflowLifecycleAbsenceBlocks(
-      join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
-      join(consumerDirectory, "node_modules", ".bin", "ph"),
-      "installed package",
-    )
-    assertBootstrapWorkspaceIntake(
-      join(consumerDirectory, "workflow-lifecycle-state-intake-fixture"),
-      join(consumerDirectory, "node_modules", ".bin", "ph"),
-      "installed package",
-    )
-    assertInstalledPackageTestPasses(installedPackage)
-    process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
-    process.stdout.write("installed-package-test-contract: PASS\n")
+    if (producerIntakeOnly) {
+      assertNativeProducerInputSurface(installedPackage, consumerDirectory, "installed package")
+      process.stdout.write("installed-project-finish-producer-intake-contract: PASS\n")
+    } else {
+      assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+      assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+      assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory)
+      assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
+      assertDoctorRegistryReadback(
+        join(consumerDirectory, "doctor-registry-fixture"),
+        join(consumerDirectory, "node_modules", ".bin", "ph"),
+        installedPackage,
+        "installed package",
+      )
+      assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+      assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory)
+      await assertPackagedBoundedReportStdin(installedPackage, consumerDirectory)
+      assertWorkflowLifecycleAbsenceBlocks(
+        join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
+        join(consumerDirectory, "node_modules", ".bin", "ph"),
+        "installed package",
+      )
+      assertBootstrapWorkspaceIntake(
+        join(consumerDirectory, "workflow-lifecycle-state-intake-fixture"),
+        join(consumerDirectory, "node_modules", ".bin", "ph"),
+        "installed package",
+      )
+      assertInstalledPackageTestPasses(installedPackage)
+      process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
+      process.stdout.write("installed-package-test-contract: PASS\n")
+    }
   } else {
-    assertSourceConsumerAuthorityBoundary(sourceCli)
-    assertSourceDoctorRegistryReadback(sourceCli)
     assertSourceProjectFinishProducerIntake(sourceCli)
-    assertSourceCooperativeFinishWorks(sourceCli)
-    assertSourceEvidenceReadWriteBoundary(sourceCli)
-    await assertSourceBoundedReportStdin(sourceCli)
-    assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
-    assertSourceBootstrapWorkspaceIntake(sourceCli)
-    process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
+    if (producerIntakeOnly) {
+      assertNativeProducerInputSurface(repositoryRoot, repositoryRoot, "source CLI")
+      process.stdout.write("source-cli-project-finish-producer-intake-contract: PASS\n")
+    } else {
+      assertSourceConsumerAuthorityBoundary(sourceCli)
+      assertSourceDoctorRegistryReadback(sourceCli)
+      assertSourceCooperativeFinishWorks(sourceCli)
+      assertSourceEvidenceReadWriteBoundary(sourceCli)
+      await assertSourceBoundedReportStdin(sourceCli)
+      assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
+      assertSourceBootstrapWorkspaceIntake(sourceCli)
+      process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
+    }
   }
 } finally {
   rmSync(temporaryRoot, { force: true, recursive: true })
@@ -439,16 +449,30 @@ function assertSourceProjectFinishProducerIntake(sourceCliPath) {
   )
 }
 
+function assertNativeProducerInputSurface(packageRoot, cwd, label) {
+  const verifier = join(repositoryRoot, "scripts", "verify-supported-node-native-inputs.mjs")
+  if (!existsSync(verifier)) throw new Error(`${label} native producer input verifier is missing`)
+  const result = runNode(cwd, [verifier], { PH_SUPPORT_PACKAGE_ROOT: packageRoot })
+  requireSuccess(`${label} native producer input verifier`, result)
+  if (!result.stdout.includes('"nativeProjectRead":"PASS"')) {
+    throw new Error(`${label} native producer input verifier did not report pass`)
+  }
+}
+
 function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
   const validProject = join(fixtureRoot, "project-finish-producer-valid")
+  const canonicalProfileProject = join(fixtureRoot, "project-finish-producer-canonical-profile")
   const hostileProject = join(fixtureRoot, "project-finish-producer-hostile")
   const replacementProject = join(fixtureRoot, "project-finish-producer-replacement")
+  const profileParentReplacementProject = join(fixtureRoot, "project-finish-producer-profile-parent")
   const sourceReplacementProject = join(fixtureRoot, "project-finish-producer-source-replacement")
   const symlinkProject = join(fixtureRoot, "project-finish-producer-symlink")
   const producerBin = join(fixtureRoot, ".persona-harness-producer", "node_modules", ".bin")
   createProjectFinishProducerFixture(validProject, "absent")
+  createProjectFinishProducerFixture(canonicalProfileProject, "canonical-profile")
   createProjectFinishProducerFixture(hostileProject, "symlink-profile")
   createProjectFinishProducerFixture(replacementProject, "replace-profile")
+  createProjectFinishProducerFixture(profileParentReplacementProject, "replace-profile-parent")
   createProjectFinishProducerFixture(sourceReplacementProject, "absent")
   mkdirSync(producerBin, { recursive: true })
   symlinkSync("../outside", join(producerBin, "node"))
@@ -478,11 +502,12 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       '  } finally { process.chdir(original); }',
       '};',
       'const valid = runAt("./project-finish-producer-valid", "42");',
-      'const hostile = runAt("./project-finish-producer-hostile", "43");',
+      'const canonical = runAt("./project-finish-producer-canonical-profile", "43");',
+      'const hostile = runAt("./project-finish-producer-hostile", "44");',
       'const directHead = execFileSync("git", ["rev-parse", "HEAD"], { cwd: "./project-finish-producer-valid", encoding: "utf8" }).trim();',
-      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "44", sourceHead: directHead }, "0.8.0-beta.6");',
-      'if (valid.kind !== "passed" || hostile.kind !== "blocked" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") process.exit(1);',
-      'if (valid.value.receipt.source.root !== "." || hostile.value !== undefined) process.exit(1);',
+      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: directHead }, "0.8.0-beta.6");',
+      'if (valid.kind !== "passed" || canonical.kind !== "passed" || hostile.kind !== "blocked" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") process.exit(1);',
+      'if (valid.value.receipt.source.root !== "." || canonical.value.receipt.source.root !== "." || hostile.value !== undefined) process.exit(1);',
       'if (JSON.stringify(hostile).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
   ])
@@ -493,7 +518,7 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
   writeNativeReadAuditHook(profileHook, "read", "tree", [
     '    require("node:fs").renameSync(process.env.PH_PROFILE_PATH, process.env.PH_PROFILE_DRAFT)',
     '    require("node:fs").renameSync(process.env.PH_PROFILE_OUTSIDE, process.env.PH_PROFILE_PATH)',
-  ], true)
+  ])
   const replacementProbe = runNode(fixtureRoot, [
     "--require",
     profileHook,
@@ -518,7 +543,39 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
     PH_PROFILE_PATH: join(replacementProject, ".persona", "project-profile.jsonc"),
   })
   requireSuccess("installed project finish producer replacement probe", replacementProbe)
-  requireNativeAuditZero(`${label} project finish producer profile replacement`, profileSentinel)
+  requireNativeAuditZero(`${label} project finish producer profile replacement`, profileSentinel, "read")
+  const profileParentHook = join(fixtureRoot, "project-finish-producer-profile-parent-audit-hook.cjs")
+  const profileParentSentinel = join(fixtureRoot, "project-finish-producer-profile-parent-audit")
+  const profileParentOutside = `${profileParentReplacementProject}-outside-persona`
+  writeNativeReadAuditHook(profileParentHook, "directory", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_PROFILE_PARENT, process.env.PH_PROFILE_PARENT_DRAFT)',
+    '    require("node:fs").renameSync(process.env.PH_PROFILE_PARENT_OUTSIDE, process.env.PH_PROFILE_PARENT)',
+  ])
+  const profileParentReplacementProbe = runNode(fixtureRoot, [
+    "--require",
+    profileParentHook,
+    "--input-type=module",
+    "-e",
+    [
+      'import { execFileSync } from "node:child_process";',
+      'import { resolve } from "node:path";',
+      `const modulePath = ${JSON.stringify(modulePath)};`,
+      'const projectDir = resolve("./project-finish-producer-profile-parent");',
+      'const { runProjectFinishAttestationProducer } = await import(modulePath);',
+      'const original = process.cwd(); process.chdir(projectDir);',
+      'let result;',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
+      'if (result.kind !== "blocked") process.exit(1);',
+      'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
+    ].join("\n"),
+  ], {
+    ...nativeReadAuditEnvironment(profileParentOutside, profileParentSentinel),
+    PH_PROFILE_PARENT: join(profileParentReplacementProject, ".persona"),
+    PH_PROFILE_PARENT_DRAFT: join(profileParentReplacementProject, ".persona.draft"),
+    PH_PROFILE_PARENT_OUTSIDE: profileParentOutside,
+  })
+  requireSuccess("installed project finish producer profile parent replacement probe", profileParentReplacementProbe)
+  requireNativeAuditZero(`${label} project finish producer profile parent replacement`, profileParentSentinel, "directory")
   const sourceHook = join(fixtureRoot, "project-finish-producer-source-audit-hook.cjs")
   const sourceSentinel = join(fixtureRoot, "project-finish-producer-source-audit")
   const sourceOutside = join(fixtureRoot, "project-finish-producer-outside-source")
@@ -556,7 +613,7 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
   })
   requireSuccess("installed project finish producer source replacement probe", sourceReplacementProbe)
   requireNativeAuditZero(`${label} project finish producer source replacement`, sourceSentinel)
-  for (const projectDir of [validProject, hostileProject, replacementProject, sourceReplacementProject, symlinkProject]) {
+  for (const projectDir of [validProject, canonicalProfileProject, hostileProject, replacementProject, profileParentReplacementProject, sourceReplacementProject, symlinkProject]) {
     if (existsSync(join(projectDir, ".ci", "project-finish-attestation"))) {
       throw new Error("installed project finish producer created an artifact for a local intake probe")
     }
@@ -1450,8 +1507,15 @@ function requireEvidenceReadBlock(label, result, outside) {
   }
 }
 
-function requireNativeAuditZero(label, sentinel) {
-  if (!existsSync(sentinel) || readFileSync(sentinel, "utf8") !== "opened-external=0\n") {
+function requireNativeAuditZero(label, sentinel, expectedStage) {
+  if (!existsSync(sentinel)) {
+    throw new Error(`${label} did not prove zero external descriptor opens`)
+  }
+  const result = readFileSync(sentinel, "utf8")
+  const expected = expectedStage === undefined
+    ? /^native-stage=(?:[a-z-]+)\nopened-external=0\n$/u
+    : `native-stage=${expectedStage}\nopened-external=0\n`
+  if (typeof expected === "string" ? result !== expected : !expected.test(result)) {
     throw new Error(`${label} did not prove zero external descriptor opens`)
   }
 }
@@ -1482,7 +1546,7 @@ function writeNativeReadAuditHook(
     `const auditCommand = ${JSON.stringify(auditCommand)}`,
     `const swapAfterCommand = ${JSON.stringify(swapAfterCommand)}`,
     `const allowNoNativeAfterSwap = ${JSON.stringify(allowNoNativeAfterSwap)}`,
-    'let auditPassed = false',
+    'let auditObservedWithoutExternal = false',
     'let nativeInvoked = false',
     'let openedExternal = false',
     `let swapped = ${swapAfterCommand === undefined ? "true" : "false"}`,
@@ -1498,8 +1562,9 @@ function writeNativeReadAuditHook(
     '  }',
     '  return descriptor',
     '}',
-    'process.dlopen = (nativeModule, filename, flags) => {',
-    '  originalDlopen(nativeModule, filename, flags)',
+    'process.dlopen = function patchedNativeDlopen(nativeModule, filename, flags) {',
+    '  if (arguments.length === 2) originalDlopen(nativeModule, filename)',
+    '  else originalDlopen(nativeModule, filename, flags)',
     '  const loaded = nativeModule.exports',
     '  if (loaded === null || typeof loaded !== "object" || typeof loaded.run !== "function") return',
     '  const originalRun = loaded.run',
@@ -1517,7 +1582,7 @@ function writeNativeReadAuditHook(
     '      )',
     '      if (Buffer.isBuffer(audited) && audited.byteLength >= 2) {',
     '        if (audited.at(-1) === 1) openedExternal = true',
-    '        auditPassed = audited[0] === 2 && audited.at(-1) === 0',
+    '        auditObservedWithoutExternal = audited.at(-1) === 0',
     '        return audited.subarray(0, -1)',
     '      }',
     '      return audited',
@@ -1530,8 +1595,9 @@ function writeNativeReadAuditHook(
     '  }',
     '}',
     'process.once("exit", () => {',
-    '  if (!openedExternal && (auditPassed || (allowNoNativeAfterSwap && swapped && !nativeInvoked))) {',
-    '    originalWriteFileSync(process.env.PH_NATIVE_AUDIT_SENTINEL, "opened-external=0\\n")',
+    '  if (!openedExternal && (auditObservedWithoutExternal || (allowNoNativeAfterSwap && swapped && !nativeInvoked))) {',
+    '    const stage = auditObservedWithoutExternal ? auditCommand : "not-reached"',
+    '    originalWriteFileSync(process.env.PH_NATIVE_AUDIT_SENTINEL, `native-stage=${stage}\\nopened-external=0\\n`)',
     '  }',
     '})',
     '',
@@ -1909,6 +1975,25 @@ function createProjectFinishProducerFixture(projectDir, profileMode) {
       `${JSON.stringify({ marker: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa", ...cooperativeProfile() })}\n`,
     )
   }
+  if (profileMode === "canonical-profile") {
+    const profileDirectory = join(projectDir, ".persona")
+    mkdirSync(profileDirectory)
+    writeFileSync(join(profileDirectory, "project-profile.jsonc"), `${JSON.stringify(cooperativeProfile())}\n`)
+  }
+  if (profileMode === "replace-profile-parent") {
+    const profileDirectory = join(projectDir, ".persona")
+    const outside = `${projectDir}-outside-persona`
+    mkdirSync(profileDirectory)
+    mkdirSync(outside)
+    writeFileSync(
+      join(profileDirectory, "project-profile.jsonc"),
+      `${JSON.stringify(cooperativeProfile())}\n`,
+    )
+    writeFileSync(
+      join(outside, "project-profile.jsonc"),
+      `${JSON.stringify({ marker: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa", ...cooperativeProfile() })}\n`,
+    )
+  }
   requireSuccess("installed producer fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
   requireSuccess("installed producer fixture Git config email", runCommand(projectDir, "git", ["config", "user.email", "ph@example.invalid"]))
   requireSuccess("installed producer fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
@@ -2045,8 +2130,21 @@ function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-function sourceCliArgument(args) {
-  if (args.length === 0) return undefined
-  if (args.length === 2 && args[0] === "--source-cli" && args[1].trim() !== "") return args[1]
-  throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--source-cli dist/cli/index.js]")
+function parseContractOptions(args) {
+  let producerIntakeOnly = false
+  let sourceCli
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index]
+    if (argument === "--producer-intake-only" && !producerIntakeOnly) {
+      producerIntakeOnly = true
+      continue
+    }
+    if (argument === "--source-cli" && sourceCli === undefined && typeof args[index + 1] === "string" && args[index + 1].trim() !== "") {
+      sourceCli = args[index + 1]
+      index += 1
+      continue
+    }
+    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--producer-intake-only] [--source-cli dist/cli/index.js]")
+  }
+  return { producerIntakeOnly, sourceCli }
 }
