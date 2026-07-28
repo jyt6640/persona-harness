@@ -145,6 +145,8 @@ describe.sequential("finish-attestation.1 product authority", () => {
 
     expect(authority.status).toBe("trusted")
     expect(closure.state.finish).toBe("passed")
+    expect(closure.action).toBe("next")
+    if (closure.action !== "next") throw new Error("expected next closure payload")
     expect(closure.nextStep?.id).toBe("terminal")
   })
 
