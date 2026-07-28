@@ -243,8 +243,8 @@ function readFreshJUnit(
       maxFileBytes: JUNIT_RESULT_DISCOVERY_LIMITS.maxFileBytes,
       maxTotalBytes: JUNIT_RESULT_DISCOVERY_LIMITS.maxTotalBytes,
     })
-    const entry = entries?.find((candidate) => candidate.kind === "file" && candidate.path === relativeRef)
-    if (entry === undefined || entry.bytes.includes(0)) return undefined
+    const entry = entries?.find((candidate) => candidate.path === relativeRef)
+    if (entry === undefined || entry.kind !== "file" || entry.bytes.includes(0)) return undefined
     return new TextDecoder("utf-8", { fatal: true }).decode(entry.bytes)
   } catch {
     return undefined

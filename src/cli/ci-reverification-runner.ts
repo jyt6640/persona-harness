@@ -28,6 +28,7 @@ import {
   samePathIdentity,
   type GitIdentity,
 } from "./ci-reverification-identity.js"
+import type { FixedGitResult } from "./fixed-git.js"
 import { captureSourceIdentity, sameSourceIdentity } from "./source-identity.js"
 import { determineCiReverificationFinalStatus, type CiReverificationFinalStatus } from "./ci-reverification-model.js"
 import { discoverJUnitResults, snapshotJUnitResults } from "./junit-result-discovery.js"
@@ -285,9 +286,12 @@ function capturedWorkspaceIdentity(projectReadBoundary: ProjectReadBoundary) {
   }
 }
 
-function runCapturedGit(projectReadBoundary: ProjectReadBoundary, args: readonly string[]) {
-  const result = projectReadBoundary.runFixedGit(args)
-  return { available: result.available, status: result.status, stdout: result.stdout }
+function runCapturedGit(projectReadBoundary: ProjectReadBoundary, args: readonly string[]): FixedGitResult {
+  try {
+    return projectReadBoundary.runFixedGit(args)
+  } catch {
+    return { available: false, diagnosticCode: "git-execution-failed", status: 1, stdout: "" }
+  }
 }
 
 function boundedNativeResult(native: ReturnType<ProjectReadBoundary["runFixedGradle"]>): BoundedProcessResult {
