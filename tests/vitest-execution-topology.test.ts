@@ -34,7 +34,7 @@ function stringList(value: unknown): readonly string[] {
 }
 
 describe("Vitest execution topology", () => {
-  it("keeps normal files parallel and runs resource-sensitive files after them", () => {
+  it("keeps normal files parallel and bounds physical resource fixtures to two workers", () => {
     const rootConfig: unknown = config
     expect(isRecord(rootConfig)).toBe(true)
     if (!isRecord(rootConfig) || !isRecord(rootConfig["test"])) {
@@ -54,7 +54,9 @@ describe("Vitest execution topology", () => {
 
     expect(parallel["fileParallelism"]).not.toBe(false)
     expect(parallel["sequence"]).toEqual({ groupOrder: 0 })
-    expect(resourceSensitive["fileParallelism"]).toBe(false)
+    expect(resourceSensitive["fileParallelism"]).not.toBe(false)
+    expect(resourceSensitive["maxWorkers"]).toBe(2)
+    expect(resourceSensitive["minWorkers"]).toBe(2)
     expect(resourceSensitive["sequence"]).toEqual({ groupOrder: 1 })
     expect(parallelExclude).toEqual(expect.arrayContaining(RESOURCE_SENSITIVE_TEST_FILES))
     expect(serialInclude).toEqual(RESOURCE_SENSITIVE_TEST_FILES)
