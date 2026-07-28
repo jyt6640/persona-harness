@@ -5,9 +5,13 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { readWorkflowFinishAuthority } from "../src/cli/workflow-finish-authority.js"
-import { runFreshFixedVerification } from "../src/cli/fresh-verification-runner.js"
-import { assessSemanticTddChain } from "../src/cli/workflow-semantic-tdd.js"
+import { readWorkflowFinishAuthority as readWorkflowFinishAuthorityAtProject } from "../src/cli/workflow-finish-authority.js"
+import {
+  runFreshFixedVerification as runFreshFixedVerificationAtProject,
+  type FreshVerificationRunnerOptions,
+} from "../src/cli/fresh-verification-runner.js"
+import { assessSemanticTddChain as assessSemanticTddChainAtProject } from "../src/cli/workflow-semantic-tdd.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -16,7 +20,7 @@ afterEach(() => {
   projects.length = 0
 })
 
-describe("semantic TDD red-to-green evidence", () => {
+describe.sequential("semantic TDD red-to-green evidence", () => {
   it("accepts a fresh red-to-green chain as structurally valid but untrusted", () => {
     const projectDir = createProject(semanticScript(matchingTestcase()))
     runChain(projectDir)
@@ -308,6 +312,22 @@ describe("semantic TDD red-to-green evidence", () => {
   })
 })
 
+function runFreshFixedVerification(
+  projectDir: string,
+  mode: "ci" | "local",
+  options: FreshVerificationRunnerOptions = {},
+) {
+  return runFreshFixedVerificationAtProject(projectDir, mode, options)
+}
+
+function assessSemanticTddChain(projectDir: string) {
+  return assessSemanticTddChainAtProject(projectDir)
+}
+
+function readWorkflowFinishAuthority(projectDir: string) {
+  return readWorkflowFinishAuthorityAtProject(projectDir)
+}
+
 type TestcaseSpec = {
   readonly classname: string
   readonly name: string
@@ -330,7 +350,7 @@ function matchingTestcase(): ScriptOptions {
 }
 
 function createProject(script: string): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-semantic-tdd-"))
+  const projectDir = createDirectProjectRoot("persona-semantic-tdd")
   projects.push(projectDir)
   mkdirSync(join(projectDir, ".persona", "evidence"), { recursive: true })
   mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })

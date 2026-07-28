@@ -1,12 +1,11 @@
-import { randomUUID } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -16,7 +15,7 @@ afterEach(() => {
   }
 })
 
-describe("ph evidence read", () => {
+describe.sequential("ph evidence read", () => {
   it("records a bounded public read without retaining source content", () => {
     // Given: a project with a generated Java service that contains sensitive-looking text.
     const projectDir = createProject()
@@ -25,7 +24,7 @@ describe("ph evidence read", () => {
     commitProject(projectDir)
 
     // When: the public CLI records the project-contained read.
-    const result = runPersonaCli(["evidence", "read", target], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const result = runPh(projectDir, ["evidence", "read", target])
 
     // Then: the bounded record identifies the file and role but never includes its bytes.
     expect(result).toEqual({ status: 0, stdout: "Evidence read recorded.\n", stderr: "" })
@@ -55,9 +54,9 @@ describe("ph evidence read", () => {
 
     // When: each unsafe public target is submitted.
     const results = [
-      runPersonaCli(["evidence", "read", "../../outside-secret.java"], { cwd: projectDir, env: {}, invocationName: "ph" }),
-      runPersonaCli(["evidence", "read", "src/main/java/example/LinkedService.java"], { cwd: projectDir, env: {}, invocationName: "ph" }),
-      runPersonaCli(["evidence", "read", "too-large.java"], { cwd: projectDir, env: {}, invocationName: "ph" }),
+      runPh(projectDir, ["evidence", "read", "../../outside-secret.java"]),
+      runPh(projectDir, ["evidence", "read", "src/main/java/example/LinkedService.java"]),
+      runPh(projectDir, ["evidence", "read", "too-large.java"]),
     ]
 
     // Then: every block is bounded, non-reflective, and leaves no evidence write.
@@ -80,7 +79,7 @@ describe("ph evidence read", () => {
     symlinkSync(outside, join(projectDir, ".persona", "evidence"))
 
     // When: the public CLI attempts to record the bounded read.
-    const result = runPersonaCli(["evidence", "read", target], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const result = runPh(projectDir, ["evidence", "read", target])
 
     // Then: the unsafe output boundary blocks before any external record is created.
     expect(result).toEqual({ status: 1, stdout: "", stderr: "Evidence read unavailable.\n" })
@@ -94,7 +93,7 @@ describe("ph evidence read", () => {
     writeFileSync(join(projectDir, target), "class GreetingService {}\n")
 
     // When: a public source-read record is requested before the lifecycle boundary exists.
-    const result = runPersonaCli(["evidence", "read", target], { cwd: projectDir, env: {}, invocationName: "ph" })
+    const result = runPh(projectDir, ["evidence", "read", target])
 
     // Then: the command blocks without materializing workflow state as a side effect.
     expect(result).toEqual({ status: 1, stdout: "", stderr: "Evidence read unavailable.\n" })
@@ -102,8 +101,12 @@ describe("ph evidence read", () => {
   })
 })
 
+function runPh(projectDir: string, args: readonly string[]) {
+  return runPersonaCli(args, { cwd: projectDir, env: {}, invocationName: "ph" })
+}
+
 function createProject(options: { readonly workflow?: boolean } = {}): string {
-  const projectDir = join(tmpdir(), `persona-evidence-read-${randomUUID()}`)
+  const projectDir = createDirectProjectRoot("persona-evidence-read")
   projects.push(projectDir)
   mkdirSync(join(projectDir, "src", "main", "java", "example"), { recursive: true })
   mkdirSync(join(projectDir, ".persona"), { recursive: true })

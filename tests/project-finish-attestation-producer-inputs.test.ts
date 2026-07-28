@@ -1,7 +1,6 @@
 import childProcess from "node:child_process"
 import {
   mkdirSync,
-  mkdtempSync,
   renameSync,
   rmSync,
   symlinkSync,
@@ -9,7 +8,6 @@ import {
   writeFileSync,
 } from "node:fs"
 import { syncBuiltinESMExports } from "node:module"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
@@ -17,6 +15,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import {
   captureProjectFinishAttestationInputSnapshot,
 } from "../src/cli/project-finish-attestation-inputs.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -30,7 +29,7 @@ describe.sequential("project finish producer input snapshot", () => {
   it("accepts a profile-less public Gradle root and binds its fixed descriptors", () => {
     const projectDir = createProject()
 
-    const snapshot = withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))
+    const snapshot = captureProjectFinishAttestationInputSnapshot(projectDir)
 
     expect(snapshot).toMatchObject({
       kind: "ready",
@@ -42,7 +41,7 @@ describe.sequential("project finish producer input snapshot", () => {
     const projectDir = createProject()
     writeFileSync(join(projectDir, ".persona", "project-profile.jsonc"), `${JSON.stringify(canonicalProfile())}\n`)
 
-    expect(withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))).toMatchObject({
+    expect(captureProjectFinishAttestationInputSnapshot(projectDir)).toMatchObject({
       kind: "ready",
       value: { profile: "ready" },
     })
@@ -74,7 +73,7 @@ describe.sequential("project finish producer input snapshot", () => {
     const projectDir = createProject()
     arrange(projectDir)
 
-    expect(withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))).toEqual({
+    expect(captureProjectFinishAttestationInputSnapshot(projectDir)).toEqual({
       code: "project-finish-producer-profile",
       kind: "blocked",
     })
@@ -88,7 +87,7 @@ describe.sequential("project finish producer input snapshot", () => {
     writeFileSync(outsidePath, "plugins { id 'outside' }\n")
 
     const swapped = swapAfterNativeTree(buildPath, draftPath, outsidePath, () => (
-      withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))
+      captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
     expect(swapped.didSwap).toBe(true)
@@ -109,7 +108,7 @@ describe.sequential("project finish producer input snapshot", () => {
     writeFileSync(outsidePath, `${JSON.stringify({ marker, ...canonicalProfile() })}\n`)
 
     const swapped = swapAfterNativeTree(profilePath, draftPath, outsidePath, () => (
-      withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))
+      captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
     expect(swapped.didSwap).toBe(true)
@@ -132,7 +131,7 @@ describe.sequential("project finish producer input snapshot", () => {
     writeFileSync(join(outsideDirectory, "project-profile.jsonc"), `${JSON.stringify({ marker, ...canonicalProfile() })}\n`)
 
     const swapped = swapParentAfterNativeTree(profileDirectory, draftDirectory, outsideDirectory, () => (
-      withProjectCapability(projectDir, () => captureProjectFinishAttestationInputSnapshot("."))
+      captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
     expect(swapped.didSwap).toBe(true)
@@ -145,7 +144,7 @@ describe.sequential("project finish producer input snapshot", () => {
 })
 
 function createProject(): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "project-finish-inputs-"))
+  const projectDir = createDirectProjectRoot("project-finish-inputs")
   projects.push(projectDir)
   mkdirSync(join(projectDir, ".persona"), { recursive: true })
   writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
@@ -159,16 +158,6 @@ function canonicalProfile(): Readonly<Record<string, unknown>> {
     schema: "persona.project-profile.v1",
     scope: { mvp: "java-spring-clean-code", role: "backend" },
     status: "ready",
-  }
-}
-
-function withProjectCapability<T>(projectDir: string, action: () => T): T {
-  const original = process.cwd()
-  process.chdir(projectDir)
-  try {
-    return action()
-  } finally {
-    process.chdir(original)
   }
 }
 

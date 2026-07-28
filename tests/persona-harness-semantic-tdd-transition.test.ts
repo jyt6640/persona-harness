@@ -5,13 +5,17 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { runFreshFixedVerification } from "../src/cli/fresh-verification-runner.js"
-import { readWorkflowFinishAuthority } from "../src/cli/workflow-finish-authority.js"
-import { assessSemanticTddChain } from "../src/cli/workflow-semantic-tdd.js"
 import {
-  assessSemanticTddTransition,
+  runFreshFixedVerification as runFreshFixedVerificationAtProject,
+  type FreshVerificationRunnerOptions,
+} from "../src/cli/fresh-verification-runner.js"
+import { readWorkflowFinishAuthority as readWorkflowFinishAuthorityAtProject } from "../src/cli/workflow-finish-authority.js"
+import { assessSemanticTddChain as assessSemanticTddChainAtProject } from "../src/cli/workflow-semantic-tdd.js"
+import {
+  assessSemanticTddTransition as assessSemanticTddTransitionAtProject,
   parseSemanticTddTransition,
 } from "../src/cli/workflow-semantic-tdd-transition.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -20,7 +24,7 @@ afterEach(() => {
   projects.length = 0
 })
 
-describe("source-aware semantic TDD transition", () => {
+describe.sequential("source-aware semantic TDD transition", () => {
   it("accepts exactly one declared source edit as diagnostic-only", () => {
     const projectDir = createProject()
     expect(runFreshFixedVerification(projectDir, "ci", fixedOptions()).finalStatus).toBe("failed")
@@ -113,6 +117,26 @@ describe("source-aware semantic TDD transition", () => {
   })
 })
 
+function runFreshFixedVerification(
+  projectDir: string,
+  mode: "ci" | "local",
+  options: FreshVerificationRunnerOptions = {},
+) {
+  return runFreshFixedVerificationAtProject(projectDir, mode, options)
+}
+
+function assessSemanticTddTransition(projectDir: string) {
+  return assessSemanticTddTransitionAtProject(projectDir)
+}
+
+function assessSemanticTddChain(projectDir: string) {
+  return assessSemanticTddChainAtProject(projectDir)
+}
+
+function readWorkflowFinishAuthority(projectDir: string) {
+  return readWorkflowFinishAuthorityAtProject(projectDir)
+}
+
 type FixedOptions = {
   readonly finishId: string
   readonly idFactory: () => string
@@ -135,7 +159,7 @@ function fixedOptions(): FixedOptions {
 }
 
 function createProject(): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-semantic-transition-"))
+  const projectDir = createDirectProjectRoot("persona-semantic-transition")
   projects.push(projectDir)
   mkdirSync(join(projectDir, ".persona", "evidence"), { recursive: true })
   mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })

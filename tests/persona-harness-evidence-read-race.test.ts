@@ -1,10 +1,11 @@
 import fs, { existsSync, mkdirSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { syncBuiltinESMExports } from "node:module"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it, vi } from "vitest"
+
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -17,7 +18,7 @@ afterEach(() => {
   }
 })
 
-describe("ph evidence read write boundary", () => {
+describe.sequential("ph evidence read write boundary", () => {
   it("rejects a replaced evidence parent before an external record can be written", async () => {
     // Given: a canonical evidence root that changes precisely when the public command opens its record.
     const projectDir = createProject()
@@ -63,7 +64,7 @@ describe("ph evidence read write boundary", () => {
 })
 
 function createProject(): string {
-  const projectDir = join(tmpdir(), `persona-evidence-read-race-${crypto.randomUUID()}`)
+  const projectDir = createDirectProjectRoot("persona-evidence-read-race")
   projects.push(projectDir)
   mkdirSync(join(projectDir, "src", "main", "java", "example"), { recursive: true })
   mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })

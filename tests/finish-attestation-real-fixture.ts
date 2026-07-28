@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process"
 import { copyFileSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
@@ -32,15 +31,14 @@ function createArtifactProject(
   bundleFixture: string,
   workflowReady: boolean,
 ): RealArtifactProject {
-  const tempRoot = mkdtempSync(join(tmpdir(), "persona-finish-attestation-real-"))
-  const projectDir = join(tempRoot, "project")
+  const projectDir = mkdtempSync(join(process.cwd(), ".persona-finish-attestation-real-"))
   const worktree = spawnSync("git", ["worktree", "add", "--detach", projectDir, protectedMainHead], {
     cwd: process.cwd(),
     encoding: "utf8",
     shell: false,
   })
   if (worktree.status !== 0) {
-    rmSync(tempRoot, { force: true, recursive: true })
+    rmSync(projectDir, { force: true, recursive: true })
     throw new Error(`could not create protected-main fixture worktree: ${worktree.stderr}`)
   }
 
@@ -56,7 +54,7 @@ function createArtifactProject(
         encoding: "utf8",
         shell: false,
       })
-      rmSync(tempRoot, { force: true, recursive: true })
+      rmSync(projectDir, { force: true, recursive: true })
     },
     projectDir,
   }
