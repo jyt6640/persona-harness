@@ -497,9 +497,10 @@ describe.sequential("native project read runtime", () => {
   it("captures fresh generated JUnit output through the direct-child project capability", () => {
     // Given: a direct child Gradle project whose fixed test command creates a JUnit report.
     const project = createDirectProjectRoot("persona-native-generated-junit")
+    mkdirSync(join(project, "build", "test-results", "test"), { recursive: true })
     writeFileSync(
       join(project, "gradlew"),
-      "#!/bin/sh\nmkdir -p build/test-results/test\nprintf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"ok\"/></testsuite>' > build/test-results/test/TEST-App.xml\nprintf '%s\\n' '> Task :cleanTest' '> Task :test'\n",
+      "#!/bin/sh\nprintf '%s\\n' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\" skipped=\"0\"><testcase name=\"ok\"/></testsuite>' > build/test-results/test/TEST-App.xml\nprintf '%s\\n' '> Task :cleanTest' '> Task :test'\n",
     )
     chmodSync(join(project, "gradlew"), 0o755)
     let boundary: ReturnType<typeof reserveProjectReadBoundary> | undefined
@@ -512,7 +513,7 @@ describe.sequential("native project read runtime", () => {
         maxEntries: 128,
         maxFileBytes: 64 * 1024,
         maxTotalBytes: 256 * 1024,
-      })).toBeUndefined()
+      })).toEqual([])
       expect(boundary.runFixedGradle("test", 1_000)).toMatchObject({ outcome: "passed", status: 0, timedOut: false })
       const generated = boundary.readGeneratedProjectTreeAt("build/test-results/test", {
         excludedRoots: [],
