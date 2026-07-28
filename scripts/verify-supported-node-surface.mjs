@@ -292,11 +292,35 @@ async function writeAuthorityNegativeFixture(projectRoot, packageRoot) {
 
 async function writeReverificationAuthorityNegativeFixture(projectRoot, packageRoot) {
   if (!await writeAuthorityNegativeFixture(projectRoot, packageRoot)) return false
-  const roleFile = "src/main/java/example/SupportSurfaceApplication.java"
-  mkdirSync(join(projectRoot, "src", "main", "java", "example"), { recursive: true })
-  writeFileSync(join(projectRoot, roleFile), "package example; class SupportSurfaceApplication {}\n")
+  const roleFiles = [
+    ["src/main/java/example/SupportSurfaceApplication.java", "package example;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n@SpringBootApplication\nclass SupportSurfaceApplication {}\n"],
+    ["src/main/java/example/presentation/SupportSurfaceController.java", "package example.presentation;\nimport org.springframework.web.bind.annotation.RestController;\n@RestController\nclass SupportSurfaceController {}\n"],
+    ["src/main/java/example/application/SupportSurfaceService.java", "package example.application;\nclass SupportSurfaceService {}\n"],
+    ["src/main/java/example/domain/SupportSurfaceRecord.java", "package example.domain;\nclass SupportSurfaceRecord {}\n"],
+    ["src/main/java/example/domain/SupportSurfaceRepository.java", "package example.domain;\ninterface SupportSurfaceRepository {}\n"],
+    ["src/main/java/example/infrastructure/JpaSupportSurfaceRepository.java", "package example.infrastructure;\nclass JpaSupportSurfaceRepository implements example.domain.SupportSurfaceRepository {}\n"],
+    ["src/main/java/example/presentation/dto/request/CreateSupportSurfaceRequest.java", "package example.presentation.dto.request;\nrecord CreateSupportSurfaceRequest(String value) {}\n"],
+    ["src/main/java/example/presentation/dto/response/SupportSurfaceResponse.java", "package example.presentation.dto.response;\nrecord SupportSurfaceResponse(String value) {}\n"],
+  ]
+  for (const [relativePath, source] of roleFiles) {
+    mkdirSync(dirname(join(projectRoot, relativePath)), { recursive: true })
+    writeFileSync(join(projectRoot, relativePath), source)
+  }
+  writeFileSync(join(projectRoot, "README.md"), "# Support surface fixture\n")
   writeFileSync(join(projectRoot, "settings.gradle"), "rootProject.name = 'support-surface'\n")
-  writeFileSync(join(projectRoot, "build.gradle"), "plugins { id 'java' }\n")
+  writeFileSync(
+    join(projectRoot, "build.gradle"),
+    [
+      "plugins { id 'org.springframework.boot' version '3.5.0' }",
+      "dependencies {",
+      "  implementation 'org.springframework.boot:spring-boot-starter-web'",
+      "  implementation 'org.springframework.boot:spring-boot-starter-data-jpa'",
+      "  runtimeOnly 'com.h2database:h2'",
+      "}",
+    ].join("\n") + "\n",
+  )
+  mkdirSync(join(projectRoot, "src", "main", "resources"), { recursive: true })
+  writeFileSync(join(projectRoot, "src", "main", "resources", "schema.sql"), "create table support_surface(id bigint primary key);\n")
   const wrapper = join(projectRoot, "gradlew")
   writeFileSync(
     wrapper,
@@ -364,7 +388,7 @@ async function writeReverificationAuthorityNegativeFixture(projectRoot, packageR
     `${JSON.stringify({
       injectedInto: "model-input",
       targetFile: ".persona/project-profile.jsonc",
-      toolOutput: [".persona/project-profile.jsonc", roleFile, "BUILD SUCCESSFUL"].join("\n"),
+      toolOutput: ["README.md", ".persona/project-profile.jsonc", ...roleFiles.map(([relativePath]) => relativePath), "BUILD SUCCESSFUL"].join("\n"),
     })}\n`,
   )
   writeFileSync(

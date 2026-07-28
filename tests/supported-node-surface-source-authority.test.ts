@@ -74,11 +74,11 @@ describe("source-built and packed installed supported Node authority-negative su
       return { installed, source }
     })
 
-    expect(result.source.status).toBe(0)
+    expect(result.source.status, result.source.output).toBe(0)
     expect(result.source.output).toContain('"surface":"source"')
     expect(result.source.output).toContain('"verifierImports":{"source":"PASS"}')
     expect(result.source.output).toContain('"nativeProjectRead":{"source":"PASS"}')
-    expect(result.installed.status).toBe(0)
+    expect(result.installed.status, result.installed.output).toBe(0)
     expect(result.installed.output).toContain('"surface":"installed"')
     expect(result.installed.output).toContain('"verifierImports":{"installed":"PASS","packed":"PASS"}')
     expect(result.installed.output).toContain('"nativeProjectRead":{"installed":"PASS","packed":"PASS"}')
