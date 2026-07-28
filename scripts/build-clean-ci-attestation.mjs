@@ -184,8 +184,12 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
     let closeSignal = null
     let closeStatus = null
     let directChildClosed = false
+    let directChildExited = false
+    let exitDrainTimer
     let graceTimer
+    let processLifecycleBlocked = false
     let outputLimited = false
+    let ownedProcessTree = emptyProcessTree()
     let settled = false
     let terminationEscalated = false
     let terminationStarted = false
@@ -197,13 +201,19 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
 
     const clearTimers = () => {
       clearTimeout(timeoutTimer)
+      if (exitDrainTimer !== undefined) clearTimeout(exitDrainTimer)
       if (graceTimer !== undefined) clearTimeout(graceTimer)
     }
     const failCommand = (exitCode, exitState) => {
       reject(new BuilderCommandFailure({ commandId: command.id, exitCode, exitState }))
     }
     const complete = () => {
-      if (settled || !directChildClosed || (terminationStarted && !terminationEscalated)) return
+      if (settled) return
+      if (terminationStarted) {
+        if (!terminationEscalated || !directChildExited) return
+      } else if (!directChildClosed) {
+        return
+      }
       settled = true
       clearTimers()
       const exitCode = typeof closeStatus === "number" ? closeStatus : signalExitCode(closeSignal)
@@ -213,6 +223,10 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
       }
       if (timedOut) {
         failCommand(exitCode, "timeout")
+        return
+      }
+      if (processLifecycleBlocked) {
+        failCommand(exitCode, "process-lifecycle")
         return
       }
       if (exitCode !== 0) {
@@ -229,14 +243,20 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
         stdoutDigest: stdout.digest(),
       })
     }
-    const terminate = () => {
+    const observeProcessTree = () => {
+      if (child === undefined) return
+      ownedProcessTree = mergeProcessTrees(ownedProcessTree, discoverOwnedProcessTree(child.pid))
+    }
+    const terminate = (reason) => {
       if (terminationStarted || child === undefined) return
       terminationStarted = true
-      terminateProcessTree(child.pid, "SIGTERM")
+      if (reason === "process-lifecycle") processLifecycleBlocked = true
+      observeProcessTree()
+      terminateProcessTree(child.pid, "SIGTERM", ownedProcessTree)
       graceTimer = setTimeout(() => {
         terminationEscalated = true
         graceTimer = undefined
-        terminateProcessTree(child.pid, "SIGKILL")
+        terminateProcessTree(child.pid, "SIGKILL", ownedProcessTree)
         complete()
       }, graceMs)
     }
@@ -245,9 +265,10 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
       const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
       totalOutputBytes += bytes.byteLength
       const streamExceeded = stream.append(bytes)
+      observeProcessTree()
       if (streamExceeded || totalOutputBytes > COMMAND_MAX_TOTAL_OUTPUT_BYTES) {
         outputLimited = true
-        terminate()
+        terminate("output-limit")
       }
     }
 
@@ -268,7 +289,7 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
 
     timeoutTimer = setTimeout(() => {
       timedOut = true
-      terminate()
+      terminate("timeout")
     }, timeoutMs)
     child.stdout.on("data", (chunk) => capture(stdout, chunk))
     child.stderr.on("data", (chunk) => capture(stderr, chunk))
@@ -277,6 +298,19 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
       settled = true
       clearTimers()
       failCommand(null, "spawn-failure")
+    })
+    child.on("exit", (status, signal) => {
+      if (settled) return
+      closeSignal = signal
+      closeStatus = status
+      directChildExited = true
+      if (!terminationStarted) {
+        observeProcessTree()
+        exitDrainTimer = setTimeout(() => {
+          if (!settled && !directChildClosed) terminate("process-lifecycle")
+        }, graceMs)
+      }
+      complete()
     })
     child.on("close", (status, signal) => {
       if (settled) return
@@ -476,15 +510,80 @@ function createBoundedOutputCapture(limit) {
   }
 }
 
-function terminateProcessTree(pid, signal) {
-  if (pid === undefined) return
+function emptyProcessTree() {
+  return { groups: new Set(), pids: new Set() }
+}
+
+function mergeProcessTrees(left, right) {
+  return {
+    groups: new Set([...left.groups, ...right.groups]),
+    pids: new Set([...left.pids, ...right.pids]),
+  }
+}
+
+function discoverOwnedProcessTree(rootPid) {
+  if (process.platform === "win32" || !Number.isSafeInteger(rootPid) || rootPid <= 0) return emptyProcessTree()
+  let output
   try {
-    if (process.platform === "win32") process.kill(pid, signal)
-    else process.kill(-pid, signal)
+    output = execFileSync("ps", ["-axo", "pid=,ppid=,pgid="], {
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
   } catch {
-    try {
+    return emptyProcessTree()
+  }
+
+  const processes = output.split("\n").flatMap((line) => {
+    const fields = line.trim().split(/\s+/u)
+    if (fields.length !== 3) return []
+    const [pid, parentPid, groupId] = fields.map(Number)
+    return Number.isSafeInteger(pid) && pid > 0
+      && Number.isSafeInteger(parentPid) && parentPid >= 0
+      && Number.isSafeInteger(groupId) && groupId > 0
+      ? [{ groupId, parentPid, pid }]
+      : []
+  })
+  const pids = new Set([rootPid])
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const processInfo of processes) {
+      if (!pids.has(processInfo.pid) && pids.has(processInfo.parentPid)) {
+        pids.add(processInfo.pid)
+        changed = true
+      }
+    }
+  }
+  return {
+    groups: new Set(processes.filter((processInfo) => pids.has(processInfo.pid)).map((processInfo) => processInfo.groupId)),
+    pids,
+  }
+}
+
+function terminateProcessTree(pid, signal, ownedProcessTree = emptyProcessTree()) {
+  if (pid === undefined) return
+  const groups = new Set([pid, ...ownedProcessTree.groups])
+  let groupKilled = false
+  try {
+    if (process.platform === "win32") {
       process.kill(pid, signal)
-    } catch {}
+      return
+    }
+    for (const groupId of groups) {
+      try {
+        process.kill(-groupId, signal)
+        groupKilled = true
+      } catch {}
+    }
+  } finally {
+    if (!groupKilled) {
+      for (const processId of new Set([pid, ...ownedProcessTree.pids])) {
+        try {
+          process.kill(processId, signal)
+        } catch {}
+      }
+    }
   }
 }
 

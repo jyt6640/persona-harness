@@ -43,8 +43,9 @@ describe("canonical builder bounded process contract", () => {
     expect(builder).toContain("const COMMAND_MAX_STDERR_BYTES = 1024 * 1024")
     expect(builder).toContain("const COMMAND_MAX_TOTAL_OUTPUT_BYTES = 1024 * 1024")
     expect(builder).toContain("const COMMAND_TERMINATION_GRACE_MS = 5_000")
-    expect(builder).toContain('terminateProcessTree(child.pid, "SIGTERM")')
-    expect(builder).toContain('terminateProcessTree(child.pid, "SIGKILL")')
+    expect(builder).toContain('terminateProcessTree(child.pid, "SIGTERM", ownedProcessTree)')
+    expect(builder).toContain('terminateProcessTree(child.pid, "SIGKILL", ownedProcessTree)')
+    expect(builder).toContain("discoverOwnedProcessTree")
     expect(builder).not.toContain("stdout += chunk")
     expect(builder).not.toContain("stderr += chunk")
   })
@@ -173,6 +174,37 @@ describe("canonical builder bounded process contract", () => {
       { graceMs: 50, timeoutMs: 1_000 },
     )).rejects.toMatchObject({
       details: { commandId: "timeout-descendant", exitState: "timeout" },
+    })
+
+    expect(existsSync(heartbeatPath)).toBe(true)
+    const heartbeatBefore = readFileSync(heartbeatPath, "utf8")
+    await new Promise<void>((resolve) => setTimeout(resolve, 150))
+    expect(readFileSync(heartbeatPath, "utf8")).toBe(heartbeatBefore)
+  })
+
+  it.runIf(process.platform !== "win32")("terminates an escaped descendant that keeps the builder pipes open", async () => {
+    const fixtureRoot = createTempDir()
+    const heartbeatPath = join(fixtureRoot, "escaped-pipe-descendant.heartbeat")
+    const descendantScript = [
+      "const { appendFileSync, writeFileSync } = require('node:fs')",
+      `const heartbeatPath = ${JSON.stringify(heartbeatPath)}`,
+      "process.on('SIGTERM', () => {})",
+      "writeFileSync(heartbeatPath, 'started\\n')",
+      "setInterval(() => { appendFileSync(heartbeatPath, 'tick\\n'); process.stdout.write('held-pipe\\n') }, 10)",
+    ].join(";")
+    const parentScript = [
+      "const { spawn } = require('node:child_process')",
+      `const child = spawn(process.execPath, ['-e', ${JSON.stringify(descendantScript)}], { detached: true, stdio: ['ignore', 'inherit', 'inherit'] })`,
+      "child.unref()",
+      "setTimeout(() => process.exit(0), 600)",
+    ].join(";")
+
+    await expect(runBoundedBuilderCommand(
+      fixedNodeCommand("escaped-pipe-descendant", parentScript),
+      fixtureRoot,
+      { graceMs: 50, timeoutMs: 1_000 },
+    )).rejects.toMatchObject({
+      details: { commandId: "escaped-pipe-descendant", exitState: "process-lifecycle" },
     })
 
     expect(existsSync(heartbeatPath)).toBe(true)

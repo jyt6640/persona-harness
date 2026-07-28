@@ -5,30 +5,11 @@ import config from "../vitest.config.js"
 type JsonRecord = Readonly<Record<string, unknown>>
 
 const RESOURCE_SENSITIVE_TEST_FILES = [
-  "tests/cooperative-finish-authority.test.ts",
   "tests/cooperative-finish-real-gradle.test.ts",
-  "tests/cooperative-gradle-verification.test.ts",
   "tests/eval-runner.test.ts",
-  "tests/persona-harness-ci-reverification-adversarial.test.ts",
-  "tests/persona-harness-ci-reverification-runner.test.ts",
-  "tests/persona-harness-ci-reverification-surface.test.ts",
-  "tests/persona-harness-fresh-verification-runner.test.ts",
-  "tests/persona-harness-mechanical-finish.test.ts",
   "tests/staged-package-verification-runner.test.ts",
-  "tests/supported-node-surface-source-authority.test.ts",
-  "tests/project-finish-attestation-consumption.test.ts",
-  "tests/project-finish-attestation-producer-inputs.test.ts",
-  "tests/project-finish-attestation-producer-profile.test.ts",
-  "tests/project-finish-attestation-source.test.ts",
-  "tests/project-finish-attestation-verifier.test.ts",
-  "tests/persona-harness-semantic-tdd-transition.test.ts",
-  "tests/persona-harness-source-identity.test.ts",
   "tests/persona-harness-staged-package-verification-installed.test.ts",
   "tests/persona-harness-workflow-loop.test.ts",
-  "tests/native-project-read-runtime.test.ts",
-  "tests/persona-harness-semantic-tdd.test.ts",
-  "tests/workflow-cooperative-finish-public.test.ts",
-  "tests/workflow-finish-attestation-parity.test.ts",
 ]
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -53,7 +34,7 @@ function stringList(value: unknown): readonly string[] {
 }
 
 describe("Vitest execution topology", () => {
-  it("keeps normal files parallel and runs resource-sensitive files after them", () => {
+  it("keeps normal files parallel and bounds physical resource fixtures to two workers", () => {
     const rootConfig: unknown = config
     expect(isRecord(rootConfig)).toBe(true)
     if (!isRecord(rootConfig) || !isRecord(rootConfig["test"])) {
@@ -72,8 +53,10 @@ describe("Vitest execution topology", () => {
     const serialInclude = stringList(resourceSensitive["include"])
 
     expect(parallel["fileParallelism"]).not.toBe(false)
+    expect(parallel["maxWorkers"]).toBe(4)
     expect(parallel["sequence"]).toEqual({ groupOrder: 0 })
-    expect(resourceSensitive["fileParallelism"]).toBe(false)
+    expect(resourceSensitive["fileParallelism"]).not.toBe(false)
+    expect(resourceSensitive["maxWorkers"]).toBe(2)
     expect(resourceSensitive["sequence"]).toEqual({ groupOrder: 1 })
     expect(parallelExclude).toEqual(expect.arrayContaining(RESOURCE_SENSITIVE_TEST_FILES))
     expect(serialInclude).toEqual(RESOURCE_SENSITIVE_TEST_FILES)
