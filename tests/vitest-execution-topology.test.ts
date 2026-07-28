@@ -6,7 +6,7 @@ type JsonRecord = Readonly<Record<string, unknown>>
 
 const RESOURCE_SENSITIVE_TEST_FILES = [
   "tests/cooperative-finish-real-gradle.test.ts",
-  "tests/eval-runner.test.ts",
+  "tests/project-finish-attestation-producer-oidc-bridge.test.ts",
   "tests/staged-package-verification-runner.test.ts",
   "tests/persona-harness-staged-package-verification-installed.test.ts",
   "tests/persona-harness-workflow-loop.test.ts",
@@ -34,7 +34,7 @@ function stringList(value: unknown): readonly string[] {
 }
 
 describe("Vitest execution topology", () => {
-  it("keeps normal files parallel and bounds physical resource fixtures to two workers", () => {
+  it("keeps process-only cleanup parallel and gives physical runtime fixtures one owned worker", () => {
     const rootConfig: unknown = config
     expect(isRecord(rootConfig)).toBe(true)
     if (!isRecord(rootConfig) || !isRecord(rootConfig["test"])) {
@@ -55,10 +55,11 @@ describe("Vitest execution topology", () => {
     expect(parallel["fileParallelism"]).not.toBe(false)
     expect(parallel["maxWorkers"]).toBe(4)
     expect(parallel["sequence"]).toEqual({ groupOrder: 0 })
-    expect(resourceSensitive["fileParallelism"]).not.toBe(false)
-    expect(resourceSensitive["maxWorkers"]).toBe(2)
+    expect(resourceSensitive["fileParallelism"]).toBe(false)
+    expect(resourceSensitive["maxWorkers"]).toBe(1)
     expect(resourceSensitive["sequence"]).toEqual({ groupOrder: 1 })
     expect(parallelExclude).toEqual(expect.arrayContaining(RESOURCE_SENSITIVE_TEST_FILES))
+    expect(parallelExclude).not.toContain("tests/eval-runner.test.ts")
     expect(serialInclude).toEqual(RESOURCE_SENSITIVE_TEST_FILES)
   })
 })

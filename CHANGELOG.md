@@ -8,6 +8,29 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Keep process-only evaluation cleanup in the normal CI lane while reserving
+  the single-worker resource-sensitive lane for fixtures that own mutable
+  package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
+
+## [0.8.0-beta.7] - 2026-07-29
+
+- Prepares the next immutable Consumer Authority Beta source candidate for the
+  staging-only lifecycle. It makes no package, tag, registry, release,
+  promotion, Stable/GA, or Finish authority claim.
+- Binds the real reusable Action topology: the outer GitHub runner workspace
+  retains its output reservation while the fixed nested caller checkout is
+  captured through a native no-follow direct-child capability. The bridge does
+  not infer caller identity from its current directory, and caller or runner
+  alias/replacement cases create no external descriptor read, write, receipt,
+  predicate, or bundle.
+- Ships the fixed reusable Action helper scripts needed for a fresh installed
+  package to prove the exact outer-runner/nested-caller path. Workflows,
+  diagnostics, fixtures, and synthetic evidence remain source-only.
+- Makes the clean repository test path materialize its reusable-Action runtime
+  from a forced clean build under the package lock and schedule only physical
+  Gradle/package/native/action fixtures in a dedicated worker. Ordinary tests
+  remain parallel; this prevents test-order dependence on a prior Build job.
+
 ## [0.8.0-beta.6] - 2026-07-27
 
 - Prepares a new immutable Consumer Authority Beta source candidate for the

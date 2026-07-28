@@ -116,7 +116,9 @@ export type NativeProjectReadExpectedPath = {
 }
 
 export type NativeProjectReadRootContext = {
+  readonly anchor: "current" | "direct-child"
   readonly parent: NativeProjectReadIdentity
+  readonly projectPath: string
   readonly root: NativeProjectReadIdentity
   readonly rootName: string
 }
@@ -142,24 +144,44 @@ export function inspectNativeProjectReadRuntime(): {
 export function captureNativeProjectReadRootContext(
   projectDir: string,
   expectedRoot: NativeProjectReadIdentity,
+  expectedParent?: NativeProjectReadIdentity,
 ): NativeProjectReadRootContext {
   const current = resolve(process.cwd())
-  if (resolve(projectDir) !== current) throw new NativeProjectReadRuntimeError()
-  const rootName = basename(current)
+  const projectPath = resolve(projectDir)
+  const directChild = projectPath === current ? undefined : relative(current, projectPath)
+  if (
+    directChild !== undefined
+    && (!validNativeRelativeRoot(directChild) || directChild.includes(sep) || directChild.includes("\\"))
+  ) {
+    throw new NativeProjectReadRuntimeError()
+  }
+  const anchor = directChild === undefined ? "current" : "direct-child"
+  const rootName = directChild ?? basename(current)
   if (!validNativeRelativeRoot(rootName)) throw new NativeProjectReadRuntimeError()
   let parentDescriptor: number | undefined
   let rootDescriptor: number | undefined
   try {
-    rootDescriptor = openSync(".", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
-    parentDescriptor = openSync("..", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+    parentDescriptor = openSync(
+      anchor === "current" ? ".." : ".",
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+    )
+    rootDescriptor = openSync(
+      anchor === "current" ? "." : rootName,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+    )
     const rootStat = fstatSync(rootDescriptor, { bigint: true })
     const parentStat = fstatSync(parentDescriptor, { bigint: true })
     const root = nativeIdentity(rootStat)
     const parent = nativeIdentity(parentStat)
-    if (!rootStat.isDirectory() || !parentStat.isDirectory() || !sameNativeLocation(root, expectedRoot)) {
+    if (
+      !rootStat.isDirectory()
+      || !parentStat.isDirectory()
+      || !sameNativeLocation(root, expectedRoot)
+      || (expectedParent !== undefined && !sameNativeLocation(parent, expectedParent))
+    ) {
       throw new NativeProjectReadUnsafeError()
     }
-    return { parent, root, rootName }
+    return { anchor, parent, projectPath, root, rootName }
   } catch (error) {
     if (error instanceof NativeProjectReadUnsafeError) throw error
     throw new NativeProjectReadRuntimeError()
@@ -193,7 +215,7 @@ export function readNativeProjectFile(
   expectations: readonly NativeProjectReadExpectedPath[] = [],
   rootContext?: NativeProjectReadRootContext,
 ): Buffer {
-  const root = nativeProjectRoot(projectDir, ".", expectations)
+  const root = nativeProjectRoot(projectDir, ".", expectations, rootContext)
   assertReadLimit(maxBytes)
   try {
     const invocation = nativeInvocation(["read", relativePath, String(maxBytes)], root, expectations, rootContext)
@@ -222,7 +244,7 @@ export function readNativeProjectFileWithIdentityResult(
   expectations: readonly NativeProjectReadExpectedPath[] = [],
   rootContext?: NativeProjectReadRootContext,
 ): NativeProjectReadFileResult {
-  const root = nativeProjectRoot(projectDir, ".", expectations)
+  const root = nativeProjectRoot(projectDir, ".", expectations, rootContext)
   assertReadLimit(maxBytes)
   try {
     const invocation = nativeInvocation(["read", relativePath, String(maxBytes)], root, expectations, rootContext)
@@ -242,7 +264,7 @@ export function readNativeProjectDirectoryIdentity(
   expectations: readonly NativeProjectReadExpectedPath[] = [],
   rootContext?: NativeProjectReadRootContext,
 ): NativeProjectReadIdentity | undefined {
-  const root = nativeProjectRoot(projectDir, ".", expectations)
+  const root = nativeProjectRoot(projectDir, ".", expectations, rootContext)
   try {
     const invocation = nativeInvocation(["directory", relativePath], root, expectations, rootContext)
     return parseNativeDirectoryResponse(runNative(invocation.args, 128, {}, invocation.input, rootContext))
@@ -278,7 +300,7 @@ export function readNativeProjectTreeAt(
   expectations: readonly NativeProjectReadExpectedPath[] = [],
   rootContext?: NativeProjectReadRootContext,
 ): readonly NativeProjectReadTreeEntry[] {
-  const root = nativeProjectRoot(projectDir, relativeRoot, expectations)
+  const root = nativeProjectRoot(projectDir, relativeRoot, expectations, rootContext)
   assertReadLimit(options.maxFileBytes)
   assertReadLimit(options.maxTotalBytes)
   if (!Number.isSafeInteger(options.maxEntries) || options.maxEntries <= 0) throw new NativeProjectReadRuntimeError()
@@ -304,7 +326,7 @@ export function captureNativeGeneratedProjectTreeManifest(
   expectations: readonly NativeProjectReadExpectedPath[],
   rootContext?: NativeProjectReadRootContext,
 ): readonly NativeProjectReadTreeEntry[] | undefined {
-  const root = nativeProjectRoot(projectDir, ".", expectations)
+  const root = nativeProjectRoot(projectDir, ".", expectations, rootContext)
   if (
     expectations.length !== 1
     || expectations[0]?.path !== "."
@@ -332,7 +354,7 @@ export function readNativeGeneratedProjectTree(
   expectations: readonly NativeProjectReadExpectedPath[],
   rootContext?: NativeProjectReadRootContext,
 ): readonly NativeProjectReadTreeEntry[] | undefined {
-  const root = nativeProjectRoot(projectDir, ".", expectations)
+  const root = nativeProjectRoot(projectDir, ".", expectations, rootContext)
   assertReadLimit(options.maxFileBytes)
   assertReadLimit(options.maxTotalBytes)
   if (!Number.isSafeInteger(options.maxEntries) || options.maxEntries <= 0) throw new NativeProjectReadRuntimeError()
@@ -363,7 +385,7 @@ export function runNativeProjectGit(
   expectations: readonly NativeProjectReadExpectedPath[] = [],
   rootContext?: NativeProjectReadRootContext,
 ): Buffer {
-  const root = nativeProjectRoot(projectDir, ".", expectations)
+  const root = nativeProjectRoot(projectDir, ".", expectations, rootContext)
   try {
     const invocation = nativeInvocation(["git", command], root, expectations, rootContext)
     return parseNativeTextResponse(runNative(invocation.args, 4 * 1024 * 1024 + 128, {}, invocation.input, rootContext))
@@ -382,7 +404,7 @@ export function runNativeProjectGradle(
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > 120_000) {
     throw new NativeProjectReadRuntimeError()
   }
-  const root = nativeProjectRoot(projectDir, ".", expectations)
+  const root = nativeProjectRoot(projectDir, ".", expectations, rootContext)
   try {
     const invocation = nativeInvocation(["gradle", command, String(timeoutMs)], root, expectations, rootContext)
     return parseNativeCommandResponse(runNative(
@@ -402,10 +424,27 @@ function nativeProjectRoot(
   projectDir: string,
   relativeRoot: string,
   expectations: readonly NativeProjectReadExpectedPath[],
+  rootContext?: NativeProjectReadRootContext,
 ): string {
   const current = resolve(process.cwd())
   const requested = resolve(projectDir)
   if (!validNativeRelativeRoot(relativeRoot)) throw new NativeProjectReadUnsafeError()
+  if (rootContext !== undefined) {
+    const selected = relative(current, requested)
+    if (
+      requested !== rootContext.projectPath
+      || (rootContext.anchor === "current" && requested !== current)
+      || (rootContext.anchor === "direct-child" && (
+        selected !== rootContext.rootName
+        || !validNativeRelativeRoot(selected)
+        || selected.includes(sep)
+        || selected.includes("\\")
+      ))
+    ) {
+      throw new NativeProjectReadRuntimeError()
+    }
+    return relativeRoot
+  }
   if (requested === current) return relativeRoot
   const selected = relative(current, requested)
   if (
@@ -449,8 +488,14 @@ function runNative(
   let rootDescriptor: number | undefined
   try {
     if (rootContext !== undefined) {
-      rootDescriptor = openSync(".", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
-      parentDescriptor = openSync("..", constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+      parentDescriptor = openSync(
+        rootContext.anchor === "current" ? ".." : ".",
+        constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+      )
+      rootDescriptor = openSync(
+        rootContext.anchor === "current" ? "." : rootContext.rootName,
+        constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+      )
       const rootStat = fstatSync(rootDescriptor, { bigint: true })
       const parentStat = fstatSync(parentDescriptor, { bigint: true })
       const root = nativeIdentity(rootStat)

@@ -35,14 +35,16 @@ const CALLER_CHECKOUT_DIRECTORY = ".project-finish-caller"
 const FAILURE_DIRECTORY = ".project-finish-attestation-failure"
 
 export async function runProjectFinishAttestationBuilder({
+  callerRoot,
   environment = process.env,
   oidcToken,
   producerRoot = process.cwd(),
+  runnerRoot,
 } = {}) {
   let workspace
   let artifactReservation
   try {
-    workspace = resolveProjectFinishAttestationWorkspace(environment)
+    workspace = resolveProjectFinishAttestationWorkspace(environment, { callerRoot, runnerRoot })
   } catch (error) {
     return { code: diagnosticCode(error), kind: "blocked" }
   }
@@ -51,15 +53,28 @@ export async function runProjectFinishAttestationBuilder({
   try {
     if (!sameWorkspace(workspace)) return recordBlocked(workspace, "project-finish-producer-workspace")
     verifyProducerCheckout(producerRoot, context.value.reusableWorkflowSha)
-    const { runProjectFinishAttestationProducer } = await import(
+    const {
+      captureProjectFinishAttestationCallerRootCapability,
+      runProjectFinishAttestationProducer,
+    } = await import(
       pathToFileURL(join(producerRoot, "dist", "cli", "project-finish-attestation-producer-runner.js")).href,
     )
+    let callerRootCapability
+    try {
+      callerRootCapability = captureProjectFinishAttestationCallerRootCapability(
+        workspace.caller.realpath,
+        workspace.caller,
+        workspace.runner,
+      )
+    } catch {
+      return recordBlocked(workspace, "project-finish-producer-workspace")
+    }
     artifactReservation = reserveProjectFinishAttestationArtifactOutput(workspace.runner.realpath)
     const result = runProjectFinishAttestationProducer(
       workspace.caller.realpath,
       context.value,
       readProducerVersion(producerRoot),
-      { projectRootIdentity: workspace.caller },
+      { callerRootCapability },
     )
     if (result.kind === "blocked") return recordBlocked(workspace, result.code)
     if (!sameWorkspace(workspace)) return recordBlocked(workspace, "project-finish-producer-workspace")
@@ -90,7 +105,11 @@ export function readProjectFinishAttestationProducerContextFromToken(oidcToken, 
 async function main() {
   let result
   try {
-    result = await runProjectFinishAttestationBuilder()
+    const roots = projectFinishAttestationBuilderRoots()
+    result = await runProjectFinishAttestationBuilder({
+      callerRoot: roots.callerRoot,
+      runnerRoot: roots.runnerRoot,
+    })
   } catch (error) {
     process.stderr.write(`${diagnosticCode(error)}\n`)
     process.exitCode = 1
@@ -124,14 +143,33 @@ function readProducerVersion(producerRoot) {
 }
 
 export function resolveProjectFinishAttestationCallerWorkspace(environment = process.env) {
-  return resolveProjectFinishAttestationWorkspace(environment).caller.realpath
+  return resolveProjectFinishAttestationWorkspace(
+    environment,
+    projectFinishAttestationBuilderRoots(environment),
+  ).caller.realpath
 }
 
-function resolveProjectFinishAttestationWorkspace(environment) {
+export function projectFinishAttestationBuilderRoots(environment = process.env) {
   const workspace = requiredEnvironment(environment, "GITHUB_WORKSPACE")
+  const callerRoot = join(workspace, CALLER_CHECKOUT_DIRECTORY)
+  if (!isContained(workspace, callerRoot)) throw new ProducerScriptError("project-finish-producer-workspace")
+  return { callerRoot, runnerRoot: workspace }
+}
+
+function resolveProjectFinishAttestationWorkspace(environment, roots) {
+  const workspace = requiredEnvironment(environment, "GITHUB_WORKSPACE")
+  if (
+    !isRecord(roots)
+    || typeof roots.runnerRoot !== "string"
+    || typeof roots.callerRoot !== "string"
+    || roots.runnerRoot !== workspace
+    || roots.callerRoot !== join(workspace, CALLER_CHECKOUT_DIRECTORY)
+  ) {
+    throw new ProducerScriptError("project-finish-producer-workspace")
+  }
   if (!isAbsolute(workspace)) throw new ProducerScriptError("project-finish-producer-workspace")
   const runner = captureCanonicalDirectory(workspace)
-  const callerPath = join(runner.realpath, CALLER_CHECKOUT_DIRECTORY)
+  const callerPath = roots.callerRoot
   if (!isContained(runner.realpath, callerPath)) throw new ProducerScriptError("project-finish-producer-workspace")
   const caller = captureCanonicalDirectory(callerPath)
   return { caller, runner }

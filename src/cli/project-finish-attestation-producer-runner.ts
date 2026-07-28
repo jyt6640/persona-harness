@@ -14,7 +14,18 @@ import {
   type ProjectFinishAttestationProducerArtifacts,
 } from "./project-finish-attestation-producer.js"
 import type { ProjectFinishAttestationReceipt } from "./project-finish-attestation-types.js"
-import type { NativeProjectReadIdentity } from "../io/native-project-read.js"
+import {
+  captureNativeProjectReadDirectChildIdentity,
+  captureNativeProjectReadRootContext,
+  readNativeProjectDirectoryIdentity,
+  type NativeProjectReadIdentity,
+  type NativeProjectReadRootContext,
+} from "../io/native-project-read.js"
+
+export type ProjectFinishAttestationCallerRootCapability = {
+  readonly projectRootIdentity: NativeProjectReadIdentity
+  readonly rootContext: NativeProjectReadRootContext
+}
 
 export type ProjectFinishAttestationProducerContext = {
   readonly callerWorkflowRef: string
@@ -36,12 +47,33 @@ export type ProjectFinishAttestationProducerResult =
   | { readonly kind: "passed"; readonly value: ProjectFinishAttestationProducerArtifacts }
 
 type ProjectFinishAttestationProducerOptions = {
+  readonly callerRootCapability?: ProjectFinishAttestationCallerRootCapability
   readonly projectRootIdentity?: NativeProjectReadIdentity
   readonly prepareContext?: (projectDir: string) => CooperativeFinishContextResult
   readonly verify?: (
     projectDir: string,
     context: Extract<CooperativeFinishContextResult, { readonly kind: "ready" }>["value"],
   ) => CooperativeGradleVerification
+}
+
+export function captureProjectFinishAttestationCallerRootCapability(
+  projectDir: string,
+  projectRootIdentity: { readonly dev: string; readonly ino: string },
+  runnerRootIdentity: { readonly dev: string; readonly ino: string },
+): ProjectFinishAttestationCallerRootCapability {
+  const nativeRunnerIdentity = readNativeProjectDirectoryIdentity(".")
+  const nativeCallerIdentity = captureNativeProjectReadDirectChildIdentity(projectDir)
+  if (
+    nativeRunnerIdentity === undefined
+    || !sameNativeLocation(nativeRunnerIdentity, runnerRootIdentity)
+    || !sameNativeLocation(nativeCallerIdentity, projectRootIdentity)
+  ) {
+    throw new Error("workspace-root-unavailable")
+  }
+  return {
+    projectRootIdentity: nativeCallerIdentity,
+    rootContext: captureNativeProjectReadRootContext(projectDir, nativeCallerIdentity, nativeRunnerIdentity),
+  }
 }
 
 export function runProjectFinishAttestationProducer(
@@ -61,7 +93,11 @@ export function runProjectFinishAttestationProducer(
   }
   let projectReadBoundary: ReturnType<typeof reserveProjectReadBoundary>
   try {
-    projectReadBoundary = reserveProjectReadBoundary(projectDir, options.projectRootIdentity)
+    projectReadBoundary = reserveProjectReadBoundary(
+      projectDir,
+      options.callerRootCapability?.projectRootIdentity ?? options.projectRootIdentity,
+      options.callerRootCapability?.rootContext,
+    )
   } catch {
     return blocked("workspace-root-unavailable")
   }
@@ -146,4 +182,11 @@ function resultFromVerification(
 
 function blocked(code: string): ProjectFinishAttestationProducerResult {
   return { code, kind: "blocked" }
+}
+
+function sameNativeLocation(
+  left: { readonly dev: string; readonly ino: string },
+  right: { readonly dev: string; readonly ino: string },
+): boolean {
+  return left.dev === right.dev && left.ino === right.ino
 }

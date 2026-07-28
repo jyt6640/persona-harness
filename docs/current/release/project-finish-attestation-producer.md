@@ -30,6 +30,27 @@ facts itself:
 - PH version; and
 - run, attempt, finish, session, nonce, issuance, and expiry values.
 
+## Nested Caller Capability Boundary
+
+`actions/github-script` executes from the outer platform-owned
+`GITHUB_WORKSPACE`, while the checked-out caller is the fixed direct child
+`.project-finish-caller`. The bridge derives those two roots only from the
+fixed workspace and passes both explicitly to the builder. The builder captures
+the outer runner identity, opens the caller through that held runner capability
+with native no-follow direct-child traversal, and carries the resulting caller
+descriptor capability through producer intake, profile/configuration, Gradle,
+Git, source, JUnit, and evidence reads. It never infers a caller root from
+ambient `process.cwd()` or reopens a caller-derived root pathname.
+
+Runner failure and unsigned-artifact outputs remain separately reserved below
+the captured outer runner root. Caller input and runner output capabilities are
+not interchangeable. A caller or runner root, intermediate parent, or leaf
+alias/replacement blocks before an external descriptor open, read, write,
+receipt, predicate, bundle, signature, or authority result. The package ships
+the fixed builder, bridge, context, OIDC, checkout, and artifact helper scripts
+needed to exercise this exact topology from a fresh installed package; it does
+not ship workflows, fixtures, synthetic evidence, or an authority artifact.
+
 Before checking out Persona Harness, the workflow reads the already checked-out
 caller workflow inside `.project-finish-caller` at GitHub's bounded
 caller-workflow identity. A bounded
@@ -316,9 +337,11 @@ followed by independent verification of its original signed artifact.
 
 ## Distribution Boundary
 
-The workflow, builder, and caller fixture are repository-only source material.
-The package ships this boundary record and compiled structural modules, but no
-signed fixture, caller workflow, producer script, or public success command.
+The workflow and caller fixture are repository-only source material. The
+package ships this boundary record, compiled structural modules, and the fixed
+builder, bridge, context, OIDC, checkout, and artifact helper scripts needed
+for the installed reusable Action topology. It ships no signed fixture, caller
+workflow, synthetic evidence, or public authority-success command.
 Because this boundary record is package-visible, a candidate that changes it
 can retain the same package path set but content-different package bytes. It
 must not claim byte-identical package output or waive installed-package review

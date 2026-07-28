@@ -24,14 +24,23 @@ async function runProjectFinishAttestationProducerWithCore({ core, environment =
   const builder = await loadBuilder()
   if (builder === undefined) return { code: "project-finish-producer-oidc", kind: "blocked" }
   const token = await requestFixedAudienceToken(core)
+  const fixed = fixedProducerEnvironment(environment)
+  let roots
+  try {
+    roots = builder.projectFinishAttestationBuilderRoots(fixed)
+  } catch {
+    return { code: "project-finish-producer-workspace", kind: "blocked" }
+  }
   try {
     return await builder.runProjectFinishAttestationBuilder({
-      environment: fixedProducerEnvironment(environment),
+      environment: fixed,
       oidcToken: token,
       producerRoot: join(__dirname, ".."),
+      callerRoot: roots.callerRoot,
+      runnerRoot: roots.runnerRoot,
     })
   } catch {
-    return { code: "project-finish-producer-oidc", kind: "blocked" }
+    return { code: "project-finish-producer-workspace", kind: "blocked" }
   }
 }
 

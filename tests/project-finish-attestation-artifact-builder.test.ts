@@ -35,11 +35,7 @@ describe("project finish attestation builder output lifecycle", () => {
   it("materializes an unsigned handoff only through the real builder's reserved output path", async () => {
     const fixture = createFixture()
 
-    const result = await runProjectFinishAttestationBuilder({
-      environment: fixture.environment,
-      oidcToken: fixture.oidcToken,
-      producerRoot: fixture.producerRoot,
-    })
+    const result = await runProjectFinishAttestationBuilder(builderInput(fixture))
 
     expect(result).toEqual({ kind: "passed" })
     expect(existsSync(join(fixture.output, "receipt.json"))).toBe(true)
@@ -51,11 +47,7 @@ describe("project finish attestation builder output lifecycle", () => {
     const legacyStaging = join(fixture.runner, ".project-finish-attestation-artifacts-staging")
     symlinkSync(fixture.outside, legacyStaging)
 
-    const result = await runProjectFinishAttestationBuilder({
-      environment: fixture.environment,
-      oidcToken: fixture.oidcToken,
-      producerRoot: fixture.producerRoot,
-    })
+    const result = await runProjectFinishAttestationBuilder(builderInput(fixture))
 
     expect(result).toEqual({ kind: "passed" })
     expect(existsSync(join(fixture.outside, "receipt.json"))).toBe(false)
@@ -65,11 +57,7 @@ describe("project finish attestation builder output lifecycle", () => {
   it("leaves a blocked producer with no accepted artifact, bundle, or authority-bearing handoff", async () => {
     const fixture = createFixture("blocked")
 
-    const result = await runProjectFinishAttestationBuilder({
-      environment: fixture.environment,
-      oidcToken: fixture.oidcToken,
-      producerRoot: fixture.producerRoot,
-    })
+    const result = await runProjectFinishAttestationBuilder(builderInput(fixture))
 
     expect(result).toEqual({ code: "project-finish-producer-profile", kind: "blocked" })
     expect(lstatSync(join(fixture.output, "receipt.json")).size).toBe(0)
@@ -88,11 +76,11 @@ describe("project finish attestation builder output lifecycle", () => {
   ] as const)("blocks a replaced %s without external receipt or predicate bytes", async (_label, replacement) => {
     const fixture = createFixture()
 
-    const result = await withOutputReplacement(fixture, replacement, () => runProjectFinishAttestationBuilder({
-      environment: fixture.environment,
-      oidcToken: fixture.oidcToken,
-      producerRoot: fixture.producerRoot,
-    }))
+    const result = await withOutputReplacement(
+      fixture,
+      replacement,
+      () => runProjectFinishAttestationBuilder(builderInput(fixture)),
+    )
 
     expect(result).toEqual({ code: "project-finish-producer-workspace", kind: "blocked" })
     expect(existsSync(join(fixture.outside, "receipt.json"))).toBe(false)
@@ -164,6 +152,7 @@ function createFixture(mode: "blocked" | "passed" = "passed") {
   const callerSha = "a".repeat(40)
   temporaryDirectories.push(root)
   return {
+    caller,
     environment: {
       GITHUB_ACTIONS: "true",
       GITHUB_EVENT_NAME: "push",
@@ -204,6 +193,16 @@ function createFixture(mode: "blocked" | "passed" = "passed") {
   }
 }
 
+function builderInput(fixture: ReturnType<typeof createFixture>) {
+  return {
+    callerRoot: fixture.caller,
+    environment: fixture.environment,
+    oidcToken: fixture.oidcToken,
+    producerRoot: fixture.producerRoot,
+    runnerRoot: fixture.runner,
+  }
+}
+
 function createProducerRoot(producerRoot: string, mode: "blocked" | "passed"): void {
   mkdirSync(join(producerRoot, "dist", "cli"), { recursive: true })
   writeFileSync(join(producerRoot, "package.json"), '{"version":"0.7.0"}\n')
@@ -211,12 +210,18 @@ function createProducerRoot(producerRoot: string, mode: "blocked" | "passed"): v
     join(producerRoot, "dist", "cli", "project-finish-attestation-producer-runner.js"),
     mode === "blocked"
       ? [
+        "export function captureProjectFinishAttestationCallerRootCapability(_projectDir, projectRootIdentity) {",
+        "  return { projectRootIdentity, rootContext: {} }",
+        "}",
         "export function runProjectFinishAttestationProducer() {",
         "  return { code: 'project-finish-producer-profile', kind: 'blocked' }",
         "}",
         "",
       ].join("\n")
       : [
+      "export function captureProjectFinishAttestationCallerRootCapability(_projectDir, projectRootIdentity) {",
+      "  return { projectRootIdentity, rootContext: {} }",
+      "}",
       "export function runProjectFinishAttestationProducer() {",
       "  return {",
       "    kind: 'passed',",

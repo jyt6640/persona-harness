@@ -49,7 +49,7 @@ describe("release workflow policy", () => {
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.8.0-beta.6")
+    expect(packageVersion).toBe("0.8.0-beta.7")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",
