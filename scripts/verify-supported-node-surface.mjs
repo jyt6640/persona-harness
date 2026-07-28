@@ -251,6 +251,9 @@ async function assertCliSurface(runCli, surface, packageRoot) {
   if (
     reverified.status === 0
     || !reverifiedOutput.includes("trusted-authority-required")
+    || reverifiedOutput.includes("artifact-unavailable")
+    || reverifiedOutput.includes("fresh-receipt-unavailable")
+    || reverifiedOutput.includes("source-identity-symlink")
     || reverifiedOutput.includes("source-read-runtime-unavailable")
     || reverifiedOutput.includes("Finish status: PASS")
   ) {

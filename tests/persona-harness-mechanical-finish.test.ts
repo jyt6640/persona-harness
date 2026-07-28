@@ -274,6 +274,9 @@ describe("mechanical workflow finish reachability", () => {
 
     expect(reverifiedFinish.status, reverifiedFinish.stderr).toBe(1)
     expect(reverifiedFinish.stderr).toContain("Blocker: trusted-authority-required")
+    expect(reverifiedFinish.stderr).not.toContain("artifact-unavailable")
+    expect(reverifiedFinish.stderr).not.toContain("fresh-receipt-unavailable")
+    expect(reverifiedFinish.stderr).not.toContain("source-identity-symlink")
     expect(reverifiedFinish.stderr).not.toContain("source-read-runtime-unavailable")
     expect(reverifiedFinish.stdout).not.toContain("Finish status: PASS")
   })
