@@ -481,87 +481,75 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
     ].join("\n"),
   ])
   requireSuccess("installed project finish producer no-follow intake probe", probe)
+  const profileHook = join(fixtureRoot, "project-finish-producer-profile-audit-hook.cjs")
+  const profileSentinel = join(fixtureRoot, "project-finish-producer-profile-audit")
+  const profileOutside = `${replacementProject}-outside-profile.jsonc`
+  writeNativeReadAuditHook(profileHook, "read", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_PROFILE_PATH, process.env.PH_PROFILE_DRAFT)',
+    '    require("node:fs").renameSync(process.env.PH_PROFILE_OUTSIDE, process.env.PH_PROFILE_PATH)',
+  ])
   const replacementProbe = runNode(fixtureRoot, [
+    "--require",
+    profileHook,
     "--input-type=module",
     "-e",
     [
-      'import childProcess, { execFileSync } from "node:child_process";',
-      'import { renameSync } from "node:fs";',
-      'import { syncBuiltinESMExports } from "node:module";',
+      'import { execFileSync } from "node:child_process";',
       'import { join, resolve } from "node:path";',
       `const modulePath = ${JSON.stringify(modulePath)};`,
       'const projectDir = resolve("./project-finish-producer-replacement");',
-      'const profilePath = join(projectDir, ".persona", "project-profile.jsonc");',
-      'const draftPath = join(projectDir, ".persona", "project-profile.draft.jsonc");',
-      'const outsidePath = join(projectDir, "outside-profile.jsonc");',
-      'const originalSpawnSync = childProcess.spawnSync;',
-      'let swapped = false;',
-      'childProcess.spawnSync = (command, args, options) => {',
-      '  const result = originalSpawnSync(command, args, options);',
-      '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
-      '    swapped = true;',
-      '    renameSync(profilePath, draftPath);',
-      '    renameSync(outsidePath, profilePath);',
-      '  }',
-      '  return result;',
-      '};',
-      'syncBuiltinESMExports();',
-      'try {',
-      '  const { runProjectFinishAttestationProducer } = await import(modulePath);',
-      '  const original = process.cwd(); process.chdir(projectDir);',
-      '  let result;',
-      '  try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
-      '  if (!swapped || result.kind !== "blocked") process.exit(1);',
-      '  if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
-      '} finally {',
-      '  childProcess.spawnSync = originalSpawnSync;',
-      '  syncBuiltinESMExports();',
-      '}',
+      'const { runProjectFinishAttestationProducer } = await import(modulePath);',
+      'const original = process.cwd(); process.chdir(projectDir);',
+      'let result;',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
+      'if (result.kind !== "blocked") process.exit(1);',
+      'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
-  ])
+  ], {
+    ...nativeReadAuditEnvironment(profileOutside, profileSentinel),
+    PH_PROFILE_DRAFT: join(replacementProject, ".persona", "project-profile.draft.jsonc"),
+    PH_PROFILE_OUTSIDE: profileOutside,
+    PH_PROFILE_PATH: join(replacementProject, ".persona", "project-profile.jsonc"),
+  })
   requireSuccess("installed project finish producer replacement probe", replacementProbe)
+  requireNativeAuditZero(`${label} project finish producer profile replacement`, profileSentinel)
+  const sourceHook = join(fixtureRoot, "project-finish-producer-source-audit-hook.cjs")
+  const sourceSentinel = join(fixtureRoot, "project-finish-producer-source-audit")
+  const sourceOutside = join(fixtureRoot, "project-finish-producer-outside-source")
+  mkdirSync(sourceOutside)
+  writeFileSync(
+    join(sourceOutside, "App.java"),
+    'class App { String token = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"; }\n',
+  )
+  writeNativeReadAuditHook(sourceHook, "tree", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_DIRECTORY, process.env.PH_SOURCE_DRAFT)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_DIRECTORY)',
+  ])
   const sourceReplacementProbe = runNode(fixtureRoot, [
+    "--require",
+    sourceHook,
     "--input-type=module",
     "-e",
     [
-      'import childProcess, { execFileSync } from "node:child_process";',
-      'import { mkdirSync, renameSync, writeFileSync } from "node:fs";',
-      'import { syncBuiltinESMExports } from "node:module";',
-      'import { join, resolve } from "node:path";',
+      'import { execFileSync } from "node:child_process";',
+      'import { resolve } from "node:path";',
       `const modulePath = ${JSON.stringify(modulePath)};`,
       'const projectDir = resolve("./project-finish-producer-source-replacement");',
-      'const sourceDirectory = join(projectDir, "src", "main", "java");',
-      'const draftDirectory = join(projectDir, "src", "main", "java.draft");',
-      'const outsideDirectory = resolve("./project-finish-producer-outside-source");',
-      'const outsideSource = join(outsideDirectory, "App.java");',
-      'mkdirSync(outsideDirectory);',
-      'writeFileSync(outsideSource, "class App { String token = \\\"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\\\"; }\\n");',
-      'const originalSpawnSync = childProcess.spawnSync;',
-      'let swapped = false;',
-      'childProcess.spawnSync = (command, args, options) => {',
-      '  const result = originalSpawnSync(command, args, options);',
-      '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
-      '    swapped = true;',
-      '    renameSync(sourceDirectory, draftDirectory);',
-      '    renameSync(outsideDirectory, sourceDirectory);',
-      '  }',
-      '  return result;',
-      '};',
-      'syncBuiltinESMExports();',
-      'try {',
-      '  const { runProjectFinishAttestationProducer } = await import(modulePath);',
-      '  const original = process.cwd(); process.chdir(projectDir);',
-      '  let result;',
-      '  try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
-      '  if (!swapped || result.kind !== "blocked") process.exit(1);',
-      '  if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
-      '} finally {',
-      '  childProcess.spawnSync = originalSpawnSync;',
-      '  syncBuiltinESMExports();',
-      '}',
+      'const { runProjectFinishAttestationProducer } = await import(modulePath);',
+      'const original = process.cwd(); process.chdir(projectDir);',
+      'let result;',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
+      'if (result.kind !== "blocked") process.exit(1);',
+      'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
-  ])
+  ], {
+    ...nativeReadAuditEnvironment(sourceOutside, sourceSentinel),
+    PH_SOURCE_DIRECTORY: join(sourceReplacementProject, "src", "main", "java"),
+    PH_SOURCE_DRAFT: join(sourceReplacementProject, "src", "main", "java.draft"),
+    PH_SOURCE_OUTSIDE: sourceOutside,
+  })
   requireSuccess("installed project finish producer source replacement probe", sourceReplacementProbe)
+  requireNativeAuditZero(`${label} project finish producer source replacement`, sourceSentinel)
   for (const projectDir of [validProject, hostileProject, replacementProject, sourceReplacementProject, symlinkProject]) {
     if (existsSync(join(projectDir, ".ci", "project-finish-attestation"))) {
       throw new Error("installed project finish producer created an artifact for a local intake probe")
@@ -905,15 +893,23 @@ function assertEvidenceReadSourceParentAliasBlocks(projectDir, phPath, label) {
   createLifecycleStateIntakeFixture(projectDir)
   requireSuccess(`${label} evidence read source parent alias bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
   const sourceParent = join(projectDir, "src", "main", "java")
-  const outside = join(projectDir, "outside-source")
+  const outside = `${projectDir}-outside-source`
+  const hookPath = join(projectDir, "evidence-read-source-parent-alias-hook.cjs")
+  const auditSentinel = `${projectDir}-source-parent-alias-audit`
   rmSync(sourceParent, { force: true, recursive: true })
   mkdirSync(outside)
   writeFileSync(join(outside, "App.java"), "class ExternalApp {}\n")
   symlinkSync(outside, sourceParent)
+  writeNativeReadAuditHook(hookPath, "tree")
 
-  const result = runNode(projectDir, [phPath, "evidence", "read", "src/main/java/App.java"])
+  const result = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"],
+    nativeReadAuditEnvironment(outside, auditSentinel),
+  )
 
   requireEvidenceReadBlock(`${label} evidence read source parent alias`, result, outside)
+  requireNativeAuditZero(`${label} evidence read source parent alias`, auditSentinel)
   if (!lstatSync(sourceParent).isSymbolicLink()) {
     throw new Error(`${label} evidence read source parent alias lost its containment probe`)
   }
@@ -924,33 +920,23 @@ function assertEvidenceReadSourceParentRaceBlocks(projectDir, phPath, label) {
   requireSuccess(`${label} evidence read source race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
   const sourceParent = join(projectDir, "src", "main", "java")
   const preserved = join(projectDir, "src", "main", "java-preserved")
-  const outside = join(projectDir, "outside-source")
+  const outside = `${projectDir}-outside-source`
   const hookPath = join(projectDir, "evidence-read-source-race-hook.cjs")
+  const auditSentinel = `${projectDir}-source-parent-race-audit`
   mkdirSync(outside)
   writeFileSync(join(outside, "App.java"), "class ExternalApp {}\n")
-  writeFileSync(hookPath, [
-    'const childProcess = require("node:child_process")',
-    'const { syncBuiltinESMExports } = require("node:module")',
-    'const originalSpawnSync = childProcess.spawnSync',
-    'let swapped = false',
-    'childProcess.spawnSync = (command, args, options) => {',
-    '  const result = originalSpawnSync(command, args, options)',
-    '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
-    '    swapped = true',
+  writeNativeReadAuditHook(hookPath, "read", "tree", [
     '    require("node:fs").renameSync(process.env.PH_SOURCE_PARENT, process.env.PH_SOURCE_PRESERVED)',
     '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PARENT)',
-    '  }',
-    '  return result',
-    '}',
-    'syncBuiltinESMExports()',
-    '',
-  ].join("\n"))
+  ])
   const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    ...nativeReadAuditEnvironment(outside, auditSentinel),
     PH_SOURCE_OUTSIDE: outside,
     PH_SOURCE_PARENT: sourceParent,
     PH_SOURCE_PRESERVED: preserved,
   })
   requireEvidenceReadBlock(`${label} evidence read source parent race`, result, outside)
+  requireNativeAuditZero(`${label} evidence read source parent race`, auditSentinel)
   if (!existsSync(preserved) || !lstatSync(sourceParent).isDirectory() || !readFileSync(join(sourceParent, "App.java"), "utf8").includes("ExternalApp")) {
     throw new Error(`${label} evidence read source parent race opened external bytes`)
   }
@@ -960,14 +946,22 @@ function assertEvidenceReadSourceLeafAliasBlocks(projectDir, phPath, label) {
   createLifecycleStateIntakeFixture(projectDir)
   requireSuccess(`${label} evidence read source leaf alias bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
   const source = join(projectDir, "src", "main", "java", "App.java")
-  const outside = join(projectDir, "outside-source.java")
+  const outside = `${projectDir}-outside-source.java`
+  const hookPath = join(projectDir, "evidence-read-source-leaf-alias-hook.cjs")
+  const auditSentinel = `${projectDir}-source-leaf-alias-audit`
   writeFileSync(outside, "class ExternalApp {}\n")
   rmSync(source)
   symlinkSync(outside, source)
+  writeNativeReadAuditHook(hookPath, "tree")
 
-  const result = runNode(projectDir, [phPath, "evidence", "read", "src/main/java/App.java"])
+  const result = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"],
+    nativeReadAuditEnvironment(outside, auditSentinel),
+  )
 
   requireEvidenceReadBlock(`${label} evidence read source leaf alias`, result, outside)
+  requireNativeAuditZero(`${label} evidence read source leaf alias`, auditSentinel)
   if (!lstatSync(source).isSymbolicLink()) {
     throw new Error(`${label} evidence read source leaf alias lost its containment probe`)
   }
@@ -978,32 +972,22 @@ function assertEvidenceReadSourceLeafRaceBlocks(projectDir, phPath, label) {
   requireSuccess(`${label} evidence read source leaf race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
   const source = join(projectDir, "src", "main", "java", "App.java")
   const preserved = join(projectDir, "src", "main", "java", "App.draft.java")
-  const outside = join(projectDir, "outside-source.java")
+  const outside = `${projectDir}-outside-source.java`
   const hookPath = join(projectDir, "evidence-read-source-leaf-race-hook.cjs")
+  const auditSentinel = `${projectDir}-source-leaf-race-audit`
   writeFileSync(outside, "class ExternalApp {}\n")
-  writeFileSync(hookPath, [
-    'const childProcess = require("node:child_process")',
-    'const { syncBuiltinESMExports } = require("node:module")',
-    'const originalSpawnSync = childProcess.spawnSync',
-    'let swapped = false',
-    'childProcess.spawnSync = (command, args, options) => {',
-    '  const result = originalSpawnSync(command, args, options)',
-    '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
-    '    swapped = true',
+  writeNativeReadAuditHook(hookPath, "read", "tree", [
     '    require("node:fs").renameSync(process.env.PH_SOURCE_FILE, process.env.PH_SOURCE_PRESERVED)',
     '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_FILE)',
-    '  }',
-    '  return result',
-    '}',
-    'syncBuiltinESMExports()',
-    '',
-  ].join("\n"))
+  ])
   const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    ...nativeReadAuditEnvironment(outside, auditSentinel),
     PH_SOURCE_FILE: source,
     PH_SOURCE_OUTSIDE: outside,
     PH_SOURCE_PRESERVED: preserved,
   })
   requireEvidenceReadBlock(`${label} evidence read source leaf race`, result, outside)
+  requireNativeAuditZero(`${label} evidence read source leaf race`, auditSentinel)
   if (!existsSync(preserved) || !lstatSync(source).isFile() || !readFileSync(source, "utf8").includes("ExternalApp")) {
     throw new Error(`${label} evidence read source leaf race opened external bytes`)
   }
@@ -1015,32 +999,22 @@ function assertEvidenceReadProjectRootRaceBlocks(projectDir, phPath, label) {
   const preserved = `${projectDir}-preserved`
   const outside = `${projectDir}-outside`
   const hookPath = join(projectDir, "evidence-read-project-root-race-hook.cjs")
+  const auditSentinel = `${projectDir}-source-root-race-audit`
   mkdirSync(outside)
   mkdirSync(join(outside, "src", "main", "java"), { recursive: true })
   writeFileSync(join(outside, "src", "main", "java", "App.java"), "class ExternalApp {}\n")
-  writeFileSync(hookPath, [
-    'const childProcess = require("node:child_process")',
-    'const { syncBuiltinESMExports } = require("node:module")',
-    'const originalSpawnSync = childProcess.spawnSync',
-    'let swapped = false',
-    'childProcess.spawnSync = (command, args, options) => {',
-    '  const result = originalSpawnSync(command, args, options)',
-    '  if (!swapped && Array.isArray(args) && args[0] === "tree") {',
-    '    swapped = true',
+  writeNativeReadAuditHook(hookPath, "read", "tree", [
     '    require("node:fs").renameSync(process.env.PH_SOURCE_PROJECT, process.env.PH_SOURCE_PRESERVED)',
     '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PROJECT)',
-    '  }',
-    '  return result',
-    '}',
-    'syncBuiltinESMExports()',
-    '',
-  ].join("\n"))
+  ], true)
   const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    ...nativeReadAuditEnvironment(outside, auditSentinel),
     PH_SOURCE_OUTSIDE: outside,
     PH_SOURCE_PRESERVED: preserved,
     PH_SOURCE_PROJECT: projectDir,
   })
   requireEvidenceReadBlock(`${label} evidence read root race`, result, outside)
+  requireNativeAuditZero(`${label} evidence read root race`, auditSentinel)
   if (!existsSync(preserved) || !lstatSync(projectDir).isDirectory() || !readFileSync(join(projectDir, "src", "main", "java", "App.java"), "utf8").includes("ExternalApp")) {
     throw new Error(`${label} evidence read root race opened external bytes`)
   }
@@ -1464,6 +1438,79 @@ function requireEvidenceReadBlock(label, result, outside) {
   }
 }
 
+function requireNativeAuditZero(label, sentinel) {
+  if (!existsSync(sentinel) || readFileSync(sentinel, "utf8") !== "opened-external=0\n") {
+    throw new Error(`${label} did not prove zero external descriptor opens`)
+  }
+}
+
+function nativeReadAuditEnvironment(target, sentinel) {
+  const identity = lstatSync(target, { bigint: true })
+  return {
+    PH_NATIVE_AUDIT_DEV: identity.dev.toString(),
+    PH_NATIVE_AUDIT_INO: identity.ino.toString(),
+    PH_NATIVE_AUDIT_SENTINEL: sentinel,
+  }
+}
+
+function writeNativeReadAuditHook(
+  hookPath,
+  auditCommand,
+  swapAfterCommand,
+  swapLines = [],
+  allowNoNativeAfterSwap = false,
+) {
+  writeFileSync(hookPath, [
+    'const childProcess = require("node:child_process")',
+    'const fs = require("node:fs")',
+    'const { syncBuiltinESMExports } = require("node:module")',
+    'const auditDev = BigInt(process.env.PH_NATIVE_AUDIT_DEV)',
+    'const auditIno = BigInt(process.env.PH_NATIVE_AUDIT_INO)',
+    'const originalOpenSync = fs.openSync',
+    'const originalSpawnSync = childProcess.spawnSync',
+    'const originalWriteFileSync = fs.writeFileSync',
+    `const auditCommand = ${JSON.stringify(auditCommand)}`,
+    `const swapAfterCommand = ${JSON.stringify(swapAfterCommand)}`,
+    `const allowNoNativeAfterSwap = ${JSON.stringify(allowNoNativeAfterSwap)}`,
+    'let auditPassed = false',
+    'let nativeInvoked = false',
+    'let openedExternal = false',
+    `let swapped = ${swapAfterCommand === undefined ? "true" : "false"}`,
+    'fs.openSync = (...args) => {',
+    '  const descriptor = originalOpenSync(...args)',
+    '  if (swapped) {',
+    '    const identity = fs.fstatSync(descriptor, { bigint: true })',
+    '    if (identity.dev === auditDev && identity.ino === auditIno) openedExternal = true',
+    '  }',
+    '  return descriptor',
+    '}',
+    'childProcess.spawnSync = (command, args, options) => {',
+    '  if (swapped && Array.isArray(args) && args[0] === auditCommand) {',
+    '    nativeInvoked = true',
+    '    const audited = originalSpawnSync(command, [...args, "--audit", process.env.PH_NATIVE_AUDIT_DEV, process.env.PH_NATIVE_AUDIT_INO], options)',
+    '    if (audited.status === 0 && Buffer.isBuffer(audited.stdout)) {',
+    '      if (audited.stdout.at(-1) === 1) openedExternal = true',
+    '      auditPassed = audited.stdout.equals(Buffer.from([2, 0]))',
+    '    }',
+    '    return audited',
+    '  }',
+    '  const result = originalSpawnSync(command, args, options)',
+    '  if (!swapped && Array.isArray(args) && args[0] === swapAfterCommand) {',
+    ...swapLines,
+    '    swapped = true',
+    '  }',
+    '  return result',
+    '}',
+    'process.once("exit", () => {',
+    '  if (!openedExternal && (auditPassed || (allowNoNativeAfterSwap && swapped && !nativeInvoked))) {',
+    '    originalWriteFileSync(process.env.PH_NATIVE_AUDIT_SENTINEL, "opened-external=0\\n")',
+    '  }',
+    '})',
+    'syncBuiltinESMExports()',
+    '',
+  ].join("\n"))
+}
+
 function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
   mkdirSync(fixtureRoot, { recursive: true })
   requireSuccess(`${label} lifecycle fixture intake`, runNode(fixtureRoot, [phPath, "intake", "--default", "backend"]))
@@ -1769,7 +1816,7 @@ function createProjectFinishProducerFixture(projectDir, profileMode) {
       `${JSON.stringify({ ...cooperativeProfile(), status: "draft" })}\n`,
     )
     writeFileSync(
-      join(projectDir, "outside-profile.jsonc"),
+      `${projectDir}-outside-profile.jsonc`,
       `${JSON.stringify({ marker: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa", ...cooperativeProfile() })}\n`,
     )
   }
