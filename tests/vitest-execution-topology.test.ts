@@ -9,6 +9,8 @@ const RESOURCE_SENSITIVE_TEST_FILES = [
   "tests/staged-package-verification-runner.test.ts",
   "tests/persona-harness-staged-package-verification-installed.test.ts",
   "tests/persona-harness-workflow-loop.test.ts",
+  "tests/native-project-read-runtime.test.ts",
+  "tests/persona-harness-semantic-tdd.test.ts",
   "tests/workflow-finish-attestation-parity.test.ts",
 ]
 
