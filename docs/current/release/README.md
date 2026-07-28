@@ -70,10 +70,13 @@ capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 `0.8.0-beta.1` is immutable staging-only Consumer Authority Beta evidence:
 its exact registry installation and staged provenance boundary passed, without
 granting consumer Finish authority or any promotion/Stable/GA claim.
-`0.8.0-beta.1` through `0.8.0-beta.6` are immutable staging-only Consumer
-Authority Beta evidence. `0.8.0-beta.7` is the next strict-prerelease
-source-preparation candidate; it has no source-level claim of a tag, publish,
-channel movement, GitHub release, or original signed consumer artifact.
+`0.8.0-beta.1` through `0.8.0-beta.7` are immutable staging-only Consumer
+Authority Beta evidence. Beta.7's original artifact missed independent online
+verification inside its leaf certificate window and cannot satisfy a later
+version. `0.8.0-beta.8` is the next strict-prerelease source-preparation
+candidate; it has no source-level claim of a tag, publish, channel movement,
+GitHub release, or original signed consumer artifact. Its release contract
+pre-arms an isolated observer before the one natural current-version artifact.
 `0.7.0-rc.2` remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:
