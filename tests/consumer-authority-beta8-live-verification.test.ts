@@ -5,8 +5,12 @@ import { describe, expect, it } from "vitest"
 
 const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta8-acceptance.json")
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
 function readRecord(value: unknown, label: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  if (!isRecord(value)) {
     throw new TypeError(`${label} must be an object`)
   }
   return value
