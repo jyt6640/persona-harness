@@ -5,12 +5,25 @@ import config from "../vitest.config.js"
 type JsonRecord = Readonly<Record<string, unknown>>
 
 const RESOURCE_SENSITIVE_TEST_FILES = [
+  "tests/cooperative-finish-authority.test.ts",
+  "tests/cooperative-finish-real-gradle.test.ts",
+  "tests/cooperative-gradle-verification.test.ts",
   "tests/eval-runner.test.ts",
+  "tests/persona-harness-ci-reverification-adversarial.test.ts",
+  "tests/persona-harness-ci-reverification-runner.test.ts",
+  "tests/persona-harness-ci-reverification-surface.test.ts",
+  "tests/persona-harness-fresh-verification-runner.test.ts",
   "tests/staged-package-verification-runner.test.ts",
+  "tests/project-finish-attestation-producer-inputs.test.ts",
+  "tests/project-finish-attestation-producer-profile.test.ts",
+  "tests/project-finish-attestation-source.test.ts",
+  "tests/persona-harness-semantic-tdd-transition.test.ts",
+  "tests/persona-harness-source-identity.test.ts",
   "tests/persona-harness-staged-package-verification-installed.test.ts",
   "tests/persona-harness-workflow-loop.test.ts",
   "tests/native-project-read-runtime.test.ts",
   "tests/persona-harness-semantic-tdd.test.ts",
+  "tests/workflow-cooperative-finish-public.test.ts",
   "tests/workflow-finish-attestation-parity.test.ts",
 ]
 
