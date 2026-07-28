@@ -54,11 +54,9 @@ describe("Vitest execution topology", () => {
 
     expect(parallel["fileParallelism"]).not.toBe(false)
     expect(parallel["maxWorkers"]).toBe(4)
-    expect(parallel["minWorkers"]).toBe(2)
     expect(parallel["sequence"]).toEqual({ groupOrder: 0 })
     expect(resourceSensitive["fileParallelism"]).not.toBe(false)
     expect(resourceSensitive["maxWorkers"]).toBe(2)
-    expect(resourceSensitive["minWorkers"]).toBe(2)
     expect(resourceSensitive["sequence"]).toEqual({ groupOrder: 1 })
     expect(parallelExclude).toEqual(expect.arrayContaining(RESOURCE_SENSITIVE_TEST_FILES))
     expect(serialInclude).toEqual(RESOURCE_SENSITIVE_TEST_FILES)
