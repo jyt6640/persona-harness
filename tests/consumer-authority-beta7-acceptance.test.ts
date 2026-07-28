@@ -6,6 +6,15 @@ import { describe, expect, it } from "vitest"
 const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta7-acceptance.json")
 
 type AcceptanceManifest = {
+  readonly ciRuntime: {
+    readonly physicalResourceLane: {
+      readonly files: readonly string[]
+      readonly maxWorkers: number
+      readonly normalMaxWorkers: number
+    }
+    readonly proof: string
+    readonly sourceFallback: string
+  }
   readonly authority: {
     readonly commands: readonly string[]
     readonly fixturePlan: {
@@ -137,6 +146,22 @@ describe("consumer authority beta.7 acceptance manifest", () => {
       platforms: ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
       source: "native/project-read/ph_native_project_read.c",
       unavailable: "source-read-runtime-unavailable",
+    })
+    expect(manifest.ciRuntime).toEqual({
+      proof: "clean-checkout-forced-dist-build-private-runtime-stage",
+      sourceFallback: "forbidden",
+      physicalResourceLane: {
+        files: [
+          "tests/cooperative-finish-real-gradle.test.ts",
+          "tests/eval-runner.test.ts",
+          "tests/project-finish-attestation-producer-oidc-bridge.test.ts",
+          "tests/staged-package-verification-runner.test.ts",
+          "tests/persona-harness-staged-package-verification-installed.test.ts",
+          "tests/persona-harness-workflow-loop.test.ts",
+        ],
+        maxWorkers: 1,
+        normalMaxWorkers: 4,
+      },
     })
     expect(manifest.producerWorkspace).toEqual({
       blocked: "bounded-block-no-external-descriptor-open-read-write-or-artifact",

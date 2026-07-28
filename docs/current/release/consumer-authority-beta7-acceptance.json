@@ -12,6 +12,22 @@
     "node": "^20.17.0 || >=22.9.0",
     "unavailable": "source-read-runtime-unavailable"
   },
+  "ciRuntime": {
+    "proof": "clean-checkout-forced-dist-build-private-runtime-stage",
+    "sourceFallback": "forbidden",
+    "physicalResourceLane": {
+      "files": [
+        "tests/cooperative-finish-real-gradle.test.ts",
+        "tests/eval-runner.test.ts",
+        "tests/project-finish-attestation-producer-oidc-bridge.test.ts",
+        "tests/staged-package-verification-runner.test.ts",
+        "tests/persona-harness-staged-package-verification-installed.test.ts",
+        "tests/persona-harness-workflow-loop.test.ts"
+      ],
+      "maxWorkers": 1,
+      "normalMaxWorkers": 4
+    }
+  },
   "producerWorkspace": {
     "proof": "source-built-and-packed-installed-github-script-outer-runner-nested-caller-native-audit",
     "blocked": "bounded-block-no-external-descriptor-open-read-write-or-artifact",

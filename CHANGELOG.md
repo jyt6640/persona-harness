@@ -22,6 +22,10 @@ preparation alone does not establish stable support or channel state.
 - Ships the fixed reusable Action helper scripts needed for a fresh installed
   package to prove the exact outer-runner/nested-caller path. Workflows,
   diagnostics, fixtures, and synthetic evidence remain source-only.
+- Makes the clean repository test path materialize its reusable-Action runtime
+  from a forced clean build under the package lock and schedule only physical
+  Gradle/package/native/action fixtures in a dedicated worker. Ordinary tests
+  remain parallel; this prevents test-order dependence on a prior Build job.
 
 ## [0.8.0-beta.6] - 2026-07-27
 
