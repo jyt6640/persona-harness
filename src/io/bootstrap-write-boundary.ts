@@ -914,6 +914,7 @@ export class ProjectReadBoundary {
 export function reserveProjectReadBoundary(
   projectDir: string,
   selectedProjectIdentity?: NoFollowPathIdentity,
+  suppliedRootContext?: NativeProjectReadRootContext,
 ): ProjectReadBoundary {
   const projectPath = resolve(projectDir)
   const inheritedProject = projectPath === resolve(process.cwd())
@@ -921,14 +922,18 @@ export function reserveProjectReadBoundary(
     const selectedIdentity = selectedProjectIdentity ?? (
       inheritedProject ? undefined : captureNativeProjectReadDirectChildIdentity(projectPath)
     )
+    const initialIdentity = selectedIdentity ?? readNativeProjectDirectoryIdentity(".", projectPath)
+    if (initialIdentity === undefined) throw new ProjectReadBoundaryError()
+    const rootContext = suppliedRootContext ?? captureNativeProjectReadRootContext(projectPath, initialIdentity)
     const selectedExpectation: readonly NativeProjectReadExpectedPath[] = selectedIdentity === undefined ? [] : [{
       identity: selectedIdentity,
       kind: "directory",
       path: ".",
     }]
-    const identity = readNativeProjectDirectoryIdentity(".", projectPath, selectedExpectation)
+    const identity = readNativeProjectDirectoryIdentity(".", projectPath, selectedExpectation, rootContext)
     if (
       identity === undefined
+      || !sameNoFollowPathLocation(initialIdentity, identity)
       || (selectedIdentity !== undefined && !sameNoFollowPathLocation(selectedIdentity, identity))
     ) {
       throw new ProjectReadBoundaryError()
@@ -938,9 +943,6 @@ export function reserveProjectReadBoundary(
       kind: "directory",
       path: ".",
     }]
-    const rootContext = inheritedProject
-      ? captureNativeProjectReadRootContext(projectPath, identity)
-      : undefined
     const entries = readNativeProjectTree(PROJECT_READ_MANIFEST_OPTIONS, projectPath, rootExpectation, rootContext)
     return new ProjectReadBoundary(projectPath, identity, entries, rootContext)
   } catch (error) {
