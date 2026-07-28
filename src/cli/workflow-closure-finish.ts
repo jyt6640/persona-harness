@@ -5,10 +5,15 @@ import { TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID } from "./workflow-finish-authori
 import { personaHarnessSelfProfileGuidance } from "./self-profile-guidance.js"
 import { UNMAPPED_BLOCKER_STEP_ID, type ClosureBlocker, type ClosurePayload, type ClosureStep, type ClosureTicket } from "./workflow-closure.js"
 import type { StructuredWorkflowRequiredFix } from "./workflow-required-fix.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 
 export { workflowFinishFollowUp } from "./workflow-finish-follow-up.js"
 
-export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir?: string): readonly StructuredWorkflowRequiredFix[] {
+export function workflowClosureFinishReasons(
+  payload: ClosurePayload,
+  projectDir?: string,
+  snapshot?: ProjectReadSnapshot,
+): readonly StructuredWorkflowRequiredFix[] {
   if (payload.state.finish === "passed" && payload.state.blockers.length === 0) {
     return []
   }
@@ -16,7 +21,7 @@ export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir
     const step = payload.steps.find((candidate) => candidate.blockerId === blocker.id) ?? null
     return {
       blockerId: blocker.id,
-      detail: blockerFinishReason(blocker, projectDir),
+      detail: blockerFinishReason(blocker, projectDir, snapshot),
       nextAction: step === null ? null : workflowFinishFollowUpForStep(step).action,
       reason: blocker.reason,
       source: blocker.source,
@@ -32,7 +37,11 @@ export function workflowClosureFinishReasons(payload: ClosurePayload, projectDir
   })
 }
 
-function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): string {
+function blockerFinishReason(
+  blocker: ClosureBlocker,
+  projectDir?: string,
+  snapshot?: ProjectReadSnapshot,
+): string {
   if (blocker.id === TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID) {
     return [
       `Closure blocker: ${blocker.id}`,
@@ -182,7 +191,7 @@ function blockerFinishReason(blocker: ClosureBlocker, projectDir?: string): stri
       "This is a workflow/profile alignment gate, not generated app product-quality certification.",
       "Required next actions:",
       "- Re-read `.persona/project-profile.jsonc`.",
-      ...personaHarnessSelfProfileGuidance(projectDir).map((line) => `- ${line}`),
+      ...personaHarnessSelfProfileGuidance(projectDir, snapshot).map((line) => `- ${line}`),
       "- Change the generated project to Spring Boot/Gradle/JPA/database structure.",
       "- Remove fake `gradle-shim.js`/Node shim files.",
       "- Re-run `npx ph workflow check`.",

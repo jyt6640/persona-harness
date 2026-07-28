@@ -23,13 +23,18 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
-const sourceCli = sourceCliArgument(process.argv.slice(2))
-const BETA3_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta3-acceptance.json")
-const BETA3_COOPERATIVE_COMMANDS = new Map([
+const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
+const BETA6_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta6-acceptance.json")
+const BETA6_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
   ["ph bearshell ./gradlew clean", { args: ["bearshell", "./gradlew", "clean"] }],
+  ["ph evidence read README.md", { args: ["evidence", "read", "README.md"] }],
+  ["ph evidence read .persona/project-profile.jsonc", { args: ["evidence", "read", ".persona/project-profile.jsonc"] }],
+  ["ph evidence read src/main/java/example/cooperative/GreetingService.java", {
+    args: ["evidence", "read", "src/main/java/example/cooperative/GreetingService.java"],
+  }],
   ["ph plan --report-filled implementation --stdin", {
     args: ["plan", "--report-filled", "implementation", "--stdin"],
     stdin: [
@@ -56,40 +61,53 @@ try {
     const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
-    assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
-    assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
-    assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory)
-    assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
-    assertDoctorRegistryReadback(
-      join(consumerDirectory, "doctor-registry-fixture"),
-      join(consumerDirectory, "node_modules", ".bin", "ph"),
-      installedPackage,
-      "installed package",
-    )
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
-    assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
-    await assertPackagedBoundedReportStdin(installedPackage, consumerDirectory)
-    assertWorkflowLifecycleAbsenceBlocks(
-      join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
-      join(consumerDirectory, "node_modules", ".bin", "ph"),
-      "installed package",
-    )
-    assertBootstrapWorkspaceIntake(
-      join(consumerDirectory, "workflow-lifecycle-state-intake-fixture"),
-      join(consumerDirectory, "node_modules", ".bin", "ph"),
-      "installed package",
-    )
-    assertInstalledPackageTestPasses(installedPackage)
-    process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
-    process.stdout.write("installed-package-test-contract: PASS\n")
+    if (producerIntakeOnly) {
+      assertNativeProducerInputSurface(installedPackage, consumerDirectory, "installed package")
+      process.stdout.write("installed-project-finish-producer-intake-contract: PASS\n")
+    } else {
+      assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+      assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
+      assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory)
+      assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
+      assertDoctorRegistryReadback(
+        join(consumerDirectory, "doctor-registry-fixture"),
+        join(consumerDirectory, "node_modules", ".bin", "ph"),
+        installedPackage,
+        "installed package",
+      )
+      assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+      assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory)
+      await assertPackagedBoundedReportStdin(installedPackage, consumerDirectory)
+      assertWorkflowLifecycleAbsenceBlocks(
+        join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
+        join(consumerDirectory, "node_modules", ".bin", "ph"),
+        "installed package",
+      )
+      assertBootstrapWorkspaceIntake(
+        join(consumerDirectory, "workflow-lifecycle-state-intake-fixture"),
+        join(consumerDirectory, "node_modules", ".bin", "ph"),
+        "installed package",
+      )
+      assertInstalledPackageTestPasses(installedPackage)
+      process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
+      process.stdout.write("installed-package-test-contract: PASS\n")
+    }
   } else {
-    assertSourceConsumerAuthorityBoundary(sourceCli)
-    assertSourceDoctorRegistryReadback(sourceCli)
-    assertSourceCooperativeFinishWorks(sourceCli)
-    await assertSourceBoundedReportStdin(sourceCli)
-    assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
-    assertSourceBootstrapWorkspaceIntake(sourceCli)
-    process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
+    assertSourceProjectFinishProducerIntake(sourceCli)
+    if (producerIntakeOnly) {
+      assertNativeProducerInputSurface(repositoryRoot, repositoryRoot, "source CLI")
+      process.stdout.write("source-cli-project-finish-producer-intake-contract: PASS\n")
+    } else {
+      assertSourceConsumerAuthorityBoundary(sourceCli)
+      assertSourceDoctorRegistryReadback(sourceCli)
+      assertSourceCooperativeFinishWorks(sourceCli)
+      assertSourceEvidenceReadWriteBoundary(sourceCli)
+      await assertSourceBoundedReportStdin(sourceCli)
+      assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
+      assertSourceBootstrapWorkspaceIntake(sourceCli)
+      process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
+    }
   }
 } finally {
   rmSync(temporaryRoot, { force: true, recursive: true })
@@ -313,14 +331,14 @@ function assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(ins
   writeFileSync(join(evidenceDirectory, "predicate.json"), '{}\n')
   writeFileSync(join(evidenceDirectory, "receipt.json"), '{}\n')
 
-  const probe = runNode(consumerDirectory, [
+  const probe = runNode(projectDir, [
     "--input-type=module",
     "-e",
     [
       "import { inspectProjectFinishAttestation } from " + JSON.stringify(modulePath) + ";",
       'import { existsSync } from "node:fs";',
       'import { join } from "node:path";',
-      'const projectDir = join(process.cwd(), "project-finish-verifier-local");',
+      "const projectDir = process.cwd();",
       'const enrollment = { callerWorkflowPath: "project.yml", repositoryId: 123, repositorySlug: "example/public-project", reusableWorkflowSha: "b".repeat(40) };',
       'const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-23T02:45:00.000Z"));',
       'const consumption = join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json");',
@@ -385,7 +403,21 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     fixtureRoot,
     phPath,
     "installed package",
-    readBeta3CooperativeCommands(installedPackage),
+    readBeta6CooperativeCommands(installedPackage),
+  )
+  assertCooperativeSourceReadRaceBlocks(
+    `${fixtureRoot}-source-read-race`,
+    phPath,
+    "installed package",
+    readBeta6CooperativeCommands(installedPackage),
+  )
+}
+
+function assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory) {
+  assertEvidenceReadWriteBoundary(
+    join(consumerDirectory, "evidence-read-write-boundary"),
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    "installed package",
   )
 }
 
@@ -398,104 +430,190 @@ async function assertPackagedBoundedReportStdin(installedPackage, consumerDirect
 }
 
 function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory) {
-  const modulePath = pathToFileURL(join(
-    installedPackage,
-    "dist",
-    "cli",
-    "project-finish-attestation-producer-runner.js",
-  )).href
-  const validProject = join(consumerDirectory, "project-finish-producer-valid")
-  const hostileProject = join(consumerDirectory, "project-finish-producer-hostile")
-  const replacementProject = join(consumerDirectory, "project-finish-producer-replacement")
-  const symlinkProject = join(consumerDirectory, "project-finish-producer-symlink")
-  const producerBin = join(consumerDirectory, ".persona-harness-producer", "node_modules", ".bin")
+  assertProjectFinishProducerIntake(
+    pathToFileURL(join(installedPackage, "dist", "cli", "project-finish-attestation-producer-runner.js")).href,
+    consumerDirectory,
+    "installed package",
+  )
+}
+
+function assertSourceProjectFinishProducerIntake(sourceCliPath) {
+  const sourceModule = resolve(repositoryRoot, "dist", "cli", "project-finish-attestation-producer-runner.js")
+  if (!existsSync(sourceModule) || !existsSync(resolve(repositoryRoot, sourceCliPath))) {
+    throw new Error("source project finish producer runtime is missing")
+  }
+  assertProjectFinishProducerIntake(
+    pathToFileURL(sourceModule).href,
+    join(temporaryRoot, "source-cli-project-finish-producer-intake"),
+    "source CLI",
+  )
+}
+
+function assertNativeProducerInputSurface(packageRoot, cwd, label) {
+  const verifier = join(repositoryRoot, "scripts", "verify-supported-node-native-inputs.mjs")
+  if (!existsSync(verifier)) throw new Error(`${label} native producer input verifier is missing`)
+  const result = runNode(cwd, [verifier], { PH_SUPPORT_PACKAGE_ROOT: packageRoot })
+  requireSuccess(`${label} native producer input verifier`, result)
+  if (!result.stdout.includes('"nativeProjectRead":"PASS"')) {
+    throw new Error(`${label} native producer input verifier did not report pass`)
+  }
+}
+
+function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
+  const validProject = join(fixtureRoot, "project-finish-producer-valid")
+  const canonicalProfileProject = join(fixtureRoot, "project-finish-producer-canonical-profile")
+  const hostileProject = join(fixtureRoot, "project-finish-producer-hostile")
+  const replacementProject = join(fixtureRoot, "project-finish-producer-replacement")
+  const profileParentReplacementProject = join(fixtureRoot, "project-finish-producer-profile-parent")
+  const sourceReplacementProject = join(fixtureRoot, "project-finish-producer-source-replacement")
+  const symlinkProject = join(fixtureRoot, "project-finish-producer-symlink")
+  const producerBin = join(fixtureRoot, ".persona-harness-producer", "node_modules", ".bin")
   createProjectFinishProducerFixture(validProject, "absent")
+  createProjectFinishProducerFixture(canonicalProfileProject, "canonical-profile")
   createProjectFinishProducerFixture(hostileProject, "symlink-profile")
   createProjectFinishProducerFixture(replacementProject, "replace-profile")
+  createProjectFinishProducerFixture(profileParentReplacementProject, "replace-profile-parent")
+  createProjectFinishProducerFixture(sourceReplacementProject, "absent")
   mkdirSync(producerBin, { recursive: true })
   symlinkSync("../outside", join(producerBin, "node"))
   symlinkSync("project-finish-producer-valid", symlinkProject)
 
-  const probe = runNode(consumerDirectory, [
+  const probe = runNode(fixtureRoot, [
     "--input-type=module",
     "-e",
     [
       'import { execFileSync } from "node:child_process";',
       `import { runProjectFinishAttestationProducer } from ${JSON.stringify(modulePath)};`,
-      'const context = (projectDir) => {',
-      '  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
-      '  return {',
+      'const runAt = (projectDir, runId) => {',
+      '  const original = process.cwd();',
+      '  process.chdir(projectDir);',
+      '  try {',
+      '    const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();',
+      '    return runProjectFinishAttestationProducer(".", {',
       '    callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
       '    callerWorkflowSha: head,',
       '    issuedAt: "2026-07-22T01:00:00.000Z",',
       '    repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" },',
       '    reusableWorkflowSha: "b".repeat(40),',
       '    runAttempt: 1,',
-      '    runId: "42",',
+      '    runId,',
       '    sourceHead: head,',
-      '  };',
+      '    }, "0.8.0-beta.6");',
+      '  } finally { process.chdir(original); }',
       '};',
-      'const valid = runProjectFinishAttestationProducer("./project-finish-producer-valid", context("./project-finish-producer-valid"), "0.7.0");',
-      'const hostile = runProjectFinishAttestationProducer("./project-finish-producer-hostile", context("./project-finish-producer-hostile"), "0.7.0");',
-      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", context("./project-finish-producer-symlink"), "0.7.0");',
-      'if (valid.kind !== "passed" || hostile.kind !== "blocked" || hostile.code !== "project-finish-producer-profile" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") process.exit(1);',
-      'if (valid.value.receipt.source.root !== "." || hostile.value !== undefined) process.exit(1);',
+      'const valid = runAt("./project-finish-producer-valid", "42");',
+      'const canonical = runAt("./project-finish-producer-canonical-profile", "43");',
+      'const hostile = runAt("./project-finish-producer-hostile", "44");',
+      'const directHead = execFileSync("git", ["rev-parse", "HEAD"], { cwd: "./project-finish-producer-valid", encoding: "utf8" }).trim();',
+      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: directHead }, "0.8.0-beta.6");',
+      'if (valid.kind !== "passed" || canonical.kind !== "passed" || hostile.kind !== "blocked" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") process.exit(1);',
+      'if (valid.value.receipt.source.root !== "." || canonical.value.receipt.source.root !== "." || hostile.value !== undefined) process.exit(1);',
       'if (JSON.stringify(hostile).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
   ])
   requireSuccess("installed project finish producer no-follow intake probe", probe)
-  const replacementProbe = runNode(consumerDirectory, [
+  const profileHook = join(fixtureRoot, "project-finish-producer-profile-audit-hook.cjs")
+  const profileSentinel = join(fixtureRoot, "project-finish-producer-profile-audit")
+  const profileOutside = `${replacementProject}-outside-profile.jsonc`
+  writeNativeReadAuditHook(profileHook, "read", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_PROFILE_PATH, process.env.PH_PROFILE_DRAFT)',
+    '    require("node:fs").renameSync(process.env.PH_PROFILE_OUTSIDE, process.env.PH_PROFILE_PATH)',
+  ])
+  const replacementProbe = runNode(fixtureRoot, [
+    "--require",
+    profileHook,
     "--input-type=module",
     "-e",
     [
       'import { execFileSync } from "node:child_process";',
-      'import fs, { realpathSync, renameSync, symlinkSync, unlinkSync } from "node:fs";',
-      'import { syncBuiltinESMExports } from "node:module";',
-      'import { join } from "node:path";',
+      'import { join, resolve } from "node:path";',
       `const modulePath = ${JSON.stringify(modulePath)};`,
-      'const projectDir = "./project-finish-producer-replacement";',
-      'const profilePath = realpathSync(join(projectDir, ".persona", "project-profile.jsonc"));',
-      'const draftPath = join(projectDir, ".persona", "project-profile.draft.jsonc");',
-      'const outsidePath = join(projectDir, "outside-profile.jsonc");',
-      'const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectDir, encoding: "utf8" }).trim();',
-      'const context = {',
-      '  callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",',
-      '  callerWorkflowSha: head,',
-      '  issuedAt: "2026-07-22T01:00:00.000Z",',
-      '  repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" },',
-      '  reusableWorkflowSha: "b".repeat(40),',
-      '  runAttempt: 1,',
-      '  runId: "43",',
-      '  sourceHead: head,',
-      '};',
-      'const originalOpen = fs.openSync;',
-      'let swapped = false;',
-      'fs.openSync = (...args) => {',
-      '  if (!swapped && args[0] === profilePath) {',
-      '    swapped = true;',
-      '    renameSync(profilePath, draftPath);',
-      '    symlinkSync(outsidePath, profilePath);',
-      '  }',
-      '  return originalOpen(...args);',
-      '};',
-      'syncBuiltinESMExports();',
-      'try {',
-      '  const { runProjectFinishAttestationProducer } = await import(modulePath);',
-      '  const result = runProjectFinishAttestationProducer(projectDir, context, "0.7.0");',
-      '  if (!swapped || result.kind !== "blocked" || result.code !== "project-finish-producer-profile") process.exit(1);',
-      '  if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
-      '} finally {',
-      '  fs.openSync = originalOpen;',
-      '  syncBuiltinESMExports();',
-      '  if (swapped) {',
-      '    unlinkSync(profilePath);',
-      '    renameSync(draftPath, profilePath);',
-      '  }',
-      '}',
+      'const projectDir = resolve("./project-finish-producer-replacement");',
+      'const { runProjectFinishAttestationProducer } = await import(modulePath);',
+      'const original = process.cwd(); process.chdir(projectDir);',
+      'let result;',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
+      'if (result.kind !== "blocked") process.exit(1);',
+      'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
-  ])
+  ], {
+    ...nativeReadAuditEnvironment(profileOutside, profileSentinel),
+    PH_PROFILE_DRAFT: join(replacementProject, ".persona", "project-profile.draft.jsonc"),
+    PH_PROFILE_OUTSIDE: profileOutside,
+    PH_PROFILE_PATH: join(replacementProject, ".persona", "project-profile.jsonc"),
+  })
   requireSuccess("installed project finish producer replacement probe", replacementProbe)
-  for (const projectDir of [validProject, hostileProject, replacementProject, symlinkProject]) {
+  requireNativeAuditZero(`${label} project finish producer profile replacement`, profileSentinel, "read")
+  const profileParentHook = join(fixtureRoot, "project-finish-producer-profile-parent-audit-hook.cjs")
+  const profileParentSentinel = join(fixtureRoot, "project-finish-producer-profile-parent-audit")
+  const profileParentOutside = `${profileParentReplacementProject}-outside-persona`
+  writeNativeReadAuditHook(profileParentHook, "directory", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_PROFILE_PARENT, process.env.PH_PROFILE_PARENT_DRAFT)',
+    '    require("node:fs").renameSync(process.env.PH_PROFILE_PARENT_OUTSIDE, process.env.PH_PROFILE_PARENT)',
+  ])
+  const profileParentReplacementProbe = runNode(fixtureRoot, [
+    "--require",
+    profileParentHook,
+    "--input-type=module",
+    "-e",
+    [
+      'import { execFileSync } from "node:child_process";',
+      'import { resolve } from "node:path";',
+      `const modulePath = ${JSON.stringify(modulePath)};`,
+      'const projectDir = resolve("./project-finish-producer-profile-parent");',
+      'const { runProjectFinishAttestationProducer } = await import(modulePath);',
+      'const original = process.cwd(); process.chdir(projectDir);',
+      'let result;',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
+      'if (result.kind !== "blocked") process.exit(1);',
+      'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
+    ].join("\n"),
+  ], {
+    ...nativeReadAuditEnvironment(profileParentOutside, profileParentSentinel),
+    PH_PROFILE_PARENT: join(profileParentReplacementProject, ".persona"),
+    PH_PROFILE_PARENT_DRAFT: join(profileParentReplacementProject, ".persona.draft"),
+    PH_PROFILE_PARENT_OUTSIDE: profileParentOutside,
+  })
+  requireSuccess("installed project finish producer profile parent replacement probe", profileParentReplacementProbe)
+  requireNativeAuditZero(`${label} project finish producer profile parent replacement`, profileParentSentinel, "directory")
+  const sourceHook = join(fixtureRoot, "project-finish-producer-source-audit-hook.cjs")
+  const sourceSentinel = join(fixtureRoot, "project-finish-producer-source-audit")
+  const sourceOutside = join(fixtureRoot, "project-finish-producer-outside-source")
+  mkdirSync(sourceOutside)
+  writeFileSync(
+    join(sourceOutside, "App.java"),
+    'class App { String token = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"; }\n',
+  )
+  writeNativeReadAuditHook(sourceHook, "tree", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_DIRECTORY, process.env.PH_SOURCE_DRAFT)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_DIRECTORY)',
+  ])
+  const sourceReplacementProbe = runNode(fixtureRoot, [
+    "--require",
+    sourceHook,
+    "--input-type=module",
+    "-e",
+    [
+      'import { execFileSync } from "node:child_process";',
+      'import { resolve } from "node:path";',
+      `const modulePath = ${JSON.stringify(modulePath)};`,
+      'const projectDir = resolve("./project-finish-producer-source-replacement");',
+      'const { runProjectFinishAttestationProducer } = await import(modulePath);',
+      'const original = process.cwd(); process.chdir(projectDir);',
+      'let result;',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.6"); } finally { process.chdir(original); }',
+      'if (result.kind !== "blocked") process.exit(1);',
+      'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
+    ].join("\n"),
+  ], {
+    ...nativeReadAuditEnvironment(sourceOutside, sourceSentinel),
+    PH_SOURCE_DIRECTORY: join(sourceReplacementProject, "src", "main", "java"),
+    PH_SOURCE_DRAFT: join(sourceReplacementProject, "src", "main", "java.draft"),
+    PH_SOURCE_OUTSIDE: sourceOutside,
+  })
+  requireSuccess("installed project finish producer source replacement probe", sourceReplacementProbe)
+  requireNativeAuditZero(`${label} project finish producer source replacement`, sourceSentinel)
+  for (const projectDir of [validProject, canonicalProfileProject, hostileProject, replacementProject, profileParentReplacementProject, sourceReplacementProject, symlinkProject]) {
     if (existsSync(join(projectDir, ".ci", "project-finish-attestation"))) {
       throw new Error("installed project finish producer created an artifact for a local intake probe")
     }
@@ -511,7 +629,13 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
-    readBeta3CooperativeCommands(repositoryRoot),
+    readBeta6CooperativeCommands(repositoryRoot),
+  )
+  assertCooperativeSourceReadRaceBlocks(
+    join(temporaryRoot, "source-cli-cooperative-gradle-source-read-race"),
+    phPath,
+    "source CLI",
+    readBeta6CooperativeCommands(repositoryRoot),
   )
 }
 
@@ -801,6 +925,18 @@ function assertSourceBootstrapWorkspaceIntake(sourceCliPath) {
   )
 }
 
+function assertSourceEvidenceReadWriteBoundary(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertEvidenceReadWriteBoundary(
+    join(temporaryRoot, "source-cli-evidence-read-write-boundary"),
+    phPath,
+    "source CLI",
+  )
+}
+
 function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
   assertProjectRootRaceBlocks(join(fixtureRoot, "project-root-race"), phPath, label)
   assertCapturedProjectAgentStageRaceBlocks(join(fixtureRoot, "agent-stage-race"), phPath, label)
@@ -810,6 +946,217 @@ function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
   assertLifecycleStateLeafAliasesBlock(join(fixtureRoot, "leaf-alias"), phPath, label)
   assertLifecycleStateParentRaceBlocks(join(fixtureRoot, "parent-race"), phPath, label)
   assertLifecycleStateLeafRacesBlock(join(fixtureRoot, "leaf-race"), phPath, label)
+}
+
+function assertEvidenceReadWriteBoundary(fixtureRoot, phPath, label) {
+  assertEvidenceReadParentAliasBlocks(join(fixtureRoot, "parent-alias"), phPath, label)
+  assertEvidenceReadParentRaceBlocks(join(fixtureRoot, "parent-race"), phPath, label)
+  assertEvidenceReadSourceParentAliasBlocks(join(fixtureRoot, "source-parent-alias"), phPath, label)
+  assertEvidenceReadSourceParentRaceBlocks(join(fixtureRoot, "source-parent-race"), phPath, label)
+  assertEvidenceReadSourceLeafAliasBlocks(join(fixtureRoot, "source-leaf-alias"), phPath, label)
+  assertEvidenceReadSourceLeafRaceBlocks(join(fixtureRoot, "source-leaf-race"), phPath, label)
+  assertEvidenceReadProjectRootRaceBlocks(join(fixtureRoot, "source-root-race"), phPath, label)
+}
+
+function assertEvidenceReadSourceParentAliasBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read source parent alias bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const sourceParent = join(projectDir, "src", "main", "java")
+  const outside = `${projectDir}-outside-source`
+  const hookPath = join(projectDir, "evidence-read-source-parent-alias-hook.cjs")
+  const auditSentinel = `${projectDir}-source-parent-alias-audit`
+  rmSync(sourceParent, { force: true, recursive: true })
+  mkdirSync(outside)
+  writeFileSync(join(outside, "App.java"), "class ExternalApp {}\n")
+  symlinkSync(outside, sourceParent)
+  writeNativeReadAuditHook(hookPath, "tree")
+
+  const result = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"],
+    nativeReadAuditEnvironment(outside, auditSentinel),
+  )
+
+  requireEvidenceReadBlock(`${label} evidence read source parent alias`, result, outside)
+  requireNativeAuditZero(`${label} evidence read source parent alias`, auditSentinel)
+  if (!lstatSync(sourceParent).isSymbolicLink()) {
+    throw new Error(`${label} evidence read source parent alias lost its containment probe`)
+  }
+}
+
+function assertEvidenceReadSourceParentRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read source race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const sourceParent = join(projectDir, "src", "main", "java")
+  const preserved = join(projectDir, "src", "main", "java-preserved")
+  const outside = `${projectDir}-outside-source`
+  const hookPath = join(projectDir, "evidence-read-source-race-hook.cjs")
+  const auditSentinel = `${projectDir}-source-parent-race-audit`
+  mkdirSync(outside)
+  writeFileSync(join(outside, "App.java"), "class ExternalApp {}\n")
+  writeNativeReadAuditHook(hookPath, "read", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_PARENT, process.env.PH_SOURCE_PRESERVED)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PARENT)',
+  ])
+  const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    ...nativeReadAuditEnvironment(outside, auditSentinel),
+    PH_SOURCE_OUTSIDE: outside,
+    PH_SOURCE_PARENT: sourceParent,
+    PH_SOURCE_PRESERVED: preserved,
+  })
+  requireEvidenceReadBlock(`${label} evidence read source parent race`, result, outside)
+  requireNativeAuditZero(`${label} evidence read source parent race`, auditSentinel)
+  if (!existsSync(preserved) || !lstatSync(sourceParent).isDirectory() || !readFileSync(join(sourceParent, "App.java"), "utf8").includes("ExternalApp")) {
+    throw new Error(`${label} evidence read source parent race opened external bytes`)
+  }
+}
+
+function assertEvidenceReadSourceLeafAliasBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read source leaf alias bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const source = join(projectDir, "src", "main", "java", "App.java")
+  const outside = `${projectDir}-outside-source.java`
+  const hookPath = join(projectDir, "evidence-read-source-leaf-alias-hook.cjs")
+  const auditSentinel = `${projectDir}-source-leaf-alias-audit`
+  writeFileSync(outside, "class ExternalApp {}\n")
+  rmSync(source)
+  symlinkSync(outside, source)
+  writeNativeReadAuditHook(hookPath, "tree")
+
+  const result = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"],
+    nativeReadAuditEnvironment(outside, auditSentinel),
+  )
+
+  requireEvidenceReadBlock(`${label} evidence read source leaf alias`, result, outside)
+  requireNativeAuditZero(`${label} evidence read source leaf alias`, auditSentinel)
+  if (!lstatSync(source).isSymbolicLink()) {
+    throw new Error(`${label} evidence read source leaf alias lost its containment probe`)
+  }
+}
+
+function assertEvidenceReadSourceLeafRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read source leaf race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const source = join(projectDir, "src", "main", "java", "App.java")
+  const preserved = join(projectDir, "src", "main", "java", "App.draft.java")
+  const outside = `${projectDir}-outside-source.java`
+  const hookPath = join(projectDir, "evidence-read-source-leaf-race-hook.cjs")
+  const auditSentinel = `${projectDir}-source-leaf-race-audit`
+  writeFileSync(outside, "class ExternalApp {}\n")
+  writeNativeReadAuditHook(hookPath, "read", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_FILE, process.env.PH_SOURCE_PRESERVED)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_FILE)',
+  ])
+  const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    ...nativeReadAuditEnvironment(outside, auditSentinel),
+    PH_SOURCE_FILE: source,
+    PH_SOURCE_OUTSIDE: outside,
+    PH_SOURCE_PRESERVED: preserved,
+  })
+  requireEvidenceReadBlock(`${label} evidence read source leaf race`, result, outside)
+  requireNativeAuditZero(`${label} evidence read source leaf race`, auditSentinel)
+  if (!existsSync(preserved) || !lstatSync(source).isFile() || !readFileSync(source, "utf8").includes("ExternalApp")) {
+    throw new Error(`${label} evidence read source leaf race opened external bytes`)
+  }
+}
+
+function assertEvidenceReadProjectRootRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read root race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const preserved = `${projectDir}-preserved`
+  const outside = `${projectDir}-outside`
+  const hookPath = join(projectDir, "evidence-read-project-root-race-hook.cjs")
+  const auditSentinel = `${projectDir}-source-root-race-audit`
+  mkdirSync(outside)
+  mkdirSync(join(outside, "src", "main", "java"), { recursive: true })
+  writeFileSync(join(outside, "src", "main", "java", "App.java"), "class ExternalApp {}\n")
+  writeNativeReadAuditHook(hookPath, "read", "tree", [
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_PROJECT, process.env.PH_SOURCE_PRESERVED)',
+    '    require("node:fs").renameSync(process.env.PH_SOURCE_OUTSIDE, process.env.PH_SOURCE_PROJECT)',
+  ], true)
+  const result = runNode(projectDir, ["--require", hookPath, phPath, "evidence", "read", "src/main/java/App.java"], {
+    ...nativeReadAuditEnvironment(outside, auditSentinel),
+    PH_SOURCE_OUTSIDE: outside,
+    PH_SOURCE_PRESERVED: preserved,
+    PH_SOURCE_PROJECT: projectDir,
+  })
+  requireEvidenceReadBlock(`${label} evidence read root race`, result, outside)
+  requireNativeAuditZero(`${label} evidence read root race`, auditSentinel)
+  if (!existsSync(preserved) || !lstatSync(projectDir).isDirectory() || !readFileSync(join(projectDir, "src", "main", "java", "App.java"), "utf8").includes("ExternalApp")) {
+    throw new Error(`${label} evidence read root race opened external bytes`)
+  }
+}
+
+function assertEvidenceReadParentAliasBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read alias bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const evidenceRoot = join(projectDir, ".persona", "evidence")
+  const outside = join(projectDir, "outside-evidence")
+  rmSync(evidenceRoot, { force: true, recursive: true })
+  mkdirSync(join(outside, "phase0"), { recursive: true })
+  symlinkSync(outside, evidenceRoot)
+
+  const result = runNode(projectDir, [phPath, "evidence", "read", "README.md"])
+
+  requireEvidenceReadBlock(`${label} evidence read parent alias`, result, outside)
+  if (!lstatSync(evidenceRoot).isSymbolicLink() || readdirSync(join(outside, "phase0")).length !== 0) {
+    throw new Error(`${label} evidence read parent alias wrote outside its canonical root`)
+  }
+}
+
+function assertEvidenceReadParentRaceBlocks(projectDir, phPath, label) {
+  createLifecycleStateIntakeFixture(projectDir)
+  requireSuccess(`${label} evidence read race bootstrap`, runNode(projectDir, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]))
+  const evidenceRoot = join(projectDir, ".persona", "evidence")
+  const preserved = join(projectDir, ".persona", "evidence-preserved")
+  const outside = join(projectDir, "outside-evidence")
+  const hookPath = join(projectDir, "evidence-read-race-hook.cjs")
+  mkdirSync(join(evidenceRoot, "phase0"), { recursive: true })
+  mkdirSync(join(outside, "phase0"), { recursive: true })
+  writeFileSync(
+    hookPath,
+    [
+      'const fs = require("node:fs")',
+      'const { basename } = require("node:path")',
+      'const { syncBuiltinESMExports } = require("node:module")',
+      'const originalOpen = fs.openSync',
+      'const originalWrite = fs.writeFileSync',
+      'let swapped = false',
+      'const swap = () => {',
+      '  if (swapped) return',
+      '  swapped = true',
+      '  fs.renameSync(process.env.PH_EVIDENCE_ROOT, process.env.PH_EVIDENCE_PRESERVED)',
+      '  fs.symlinkSync(process.env.PH_EVIDENCE_OUTSIDE, process.env.PH_EVIDENCE_ROOT)',
+      '}',
+      'fs.openSync = (...args) => {',
+      '  if (typeof args[0] === "string" && basename(args[0]).startsWith(".workflow-read-")) swap()',
+      '  return originalOpen(...args)',
+      '}',
+      'fs.writeFileSync = (...args) => {',
+      '  if (typeof args[0] === "string" && basename(args[0]).startsWith(".workflow-read-")) swap()',
+      '  return originalWrite(...args)',
+      '}',
+      'syncBuiltinESMExports()',
+      '',
+    ].join("\n"),
+  )
+
+  const result = runNode(
+    projectDir,
+    ["--require", hookPath, phPath, "evidence", "read", "README.md"],
+    {
+      PH_EVIDENCE_OUTSIDE: outside,
+      PH_EVIDENCE_PRESERVED: preserved,
+      PH_EVIDENCE_ROOT: evidenceRoot,
+    },
+  )
+
+  requireEvidenceReadBlock(`${label} evidence read parent race`, result, outside)
+  if (!lstatSync(evidenceRoot).isSymbolicLink() || readdirSync(join(outside, "phase0")).length !== 0) {
+    throw new Error(`${label} evidence read parent race wrote outside its canonical root`)
+  }
 }
 
 function assertCapturedProjectAgentStageRaceBlocks(projectDir, phPath, label) {
@@ -1113,6 +1460,11 @@ function createLifecycleStateIntakeFixture(projectDir) {
   writeFileSync(join(projectDir, "src", "main", "java", "App.java"), "class App {}\n")
   writeFileSync(join(projectDir, "gradlew"), "#!/bin/sh\nprintf '%s\\n' 'BUILD SUCCESSFUL'\n")
   chmodSync(join(projectDir, "gradlew"), 0o755)
+  requireSuccess("lifecycle fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
+  requireSuccess("lifecycle fixture Git email", runCommand(projectDir, "git", ["config", "user.email", "fixture@example.invalid"]))
+  requireSuccess("lifecycle fixture Git name", runCommand(projectDir, "git", ["config", "user.name", "Fixture"]))
+  requireSuccess("lifecycle fixture Git add", runCommand(projectDir, "git", ["add", "."]))
+  requireSuccess("lifecycle fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "lifecycle fixture"]))
 }
 
 function lifecycleStateFileNames() {
@@ -1142,6 +1494,114 @@ function requireLifecycleStateBlock(label, result, outside) {
       throw new Error(`${label} created authority evidence while blocked`)
     }
   }
+}
+
+function requireEvidenceReadBlock(label, result, outside) {
+  if (result.status === 0 || `${result.stdout}${result.stderr}`.includes(outside)) {
+    throw new Error(`${label} did not block with bounded output`)
+  }
+  for (const authorityDirectory of ["finish-attestation", "project-finish-attestation", "verification-receipts"]) {
+    if (existsSync(join(dirname(outside), ".persona", "evidence", authorityDirectory))) {
+      throw new Error(`${label} created authority evidence while blocked`)
+    }
+  }
+}
+
+function requireNativeAuditZero(label, sentinel, expectedStage) {
+  if (!existsSync(sentinel)) {
+    throw new Error(`${label} did not prove zero external descriptor opens`)
+  }
+  const result = readFileSync(sentinel, "utf8")
+  const expected = expectedStage === undefined
+    ? /^native-stage=(?:[a-z-]+)\nopened-external=0\n$/u
+    : `native-stage=${expectedStage}\nopened-external=0\n`
+  if (typeof expected === "string" ? result !== expected : !expected.test(result)) {
+    throw new Error(`${label} did not prove zero external descriptor opens`)
+  }
+}
+
+function nativeReadAuditEnvironment(target, sentinel) {
+  const identity = lstatSync(target, { bigint: true })
+  return {
+    PH_NATIVE_AUDIT_DEV: identity.dev.toString(),
+    PH_NATIVE_AUDIT_INO: identity.ino.toString(),
+    PH_NATIVE_AUDIT_SENTINEL: sentinel,
+  }
+}
+
+function writeNativeReadAuditHook(
+  hookPath,
+  auditCommand,
+  swapAfterCommand,
+  swapLines = [],
+  allowNoNativeAfterSwap = false,
+) {
+  writeFileSync(hookPath, [
+    'const fs = require("node:fs")',
+    'const auditDev = BigInt(process.env.PH_NATIVE_AUDIT_DEV)',
+    'const auditIno = BigInt(process.env.PH_NATIVE_AUDIT_INO)',
+    'const originalOpenSync = fs.openSync',
+    'const originalDlopen = process.dlopen',
+    'const originalWriteFileSync = fs.writeFileSync',
+    `const auditCommand = ${JSON.stringify(auditCommand)}`,
+    `const swapAfterCommand = ${JSON.stringify(swapAfterCommand)}`,
+    `const allowNoNativeAfterSwap = ${JSON.stringify(allowNoNativeAfterSwap)}`,
+    'let auditObservedWithoutExternal = false',
+    'let nativeInvoked = false',
+    'let openedExternal = false',
+    `let swapped = ${swapAfterCommand === undefined ? "true" : "false"}`,
+    'const performSwap = () => {',
+    ...swapLines,
+    '  swapped = true',
+    '}',
+    'fs.openSync = (...args) => {',
+    '  const descriptor = originalOpenSync(...args)',
+    '  if (swapped) {',
+    '    const identity = fs.fstatSync(descriptor, { bigint: true })',
+    '    if (identity.dev === auditDev && identity.ino === auditIno) openedExternal = true',
+    '  }',
+    '  return descriptor',
+    '}',
+    'process.dlopen = function patchedNativeDlopen(nativeModule, filename, flags) {',
+    '  if (arguments.length === 2) originalDlopen(nativeModule, filename)',
+    '  else originalDlopen(nativeModule, filename, flags)',
+    '  const loaded = nativeModule.exports',
+    '  if (loaded === null || typeof loaded !== "object" || typeof loaded.run !== "function") return',
+    '  const originalRun = loaded.run',
+    '  loaded.run = (args, input, environment, maxBuffer, timeoutMs, rootDescriptor, parentDescriptor) => {',
+    '    if (swapped && Array.isArray(args) && args[1] === auditCommand) {',
+    '      nativeInvoked = true',
+    '      const audited = originalRun(',
+    '        [...args, "--audit", process.env.PH_NATIVE_AUDIT_DEV, process.env.PH_NATIVE_AUDIT_INO],',
+    '        input,',
+    '        environment,',
+    '        maxBuffer,',
+    '        timeoutMs,',
+    '        rootDescriptor,',
+    '        parentDescriptor,',
+    '      )',
+    '      if (Buffer.isBuffer(audited) && audited.byteLength >= 2) {',
+    '        if (audited.at(-1) === 1) openedExternal = true',
+    '        auditObservedWithoutExternal = audited.at(-1) === 0',
+    '        return audited.subarray(0, -1)',
+    '      }',
+    '      return audited',
+    '    }',
+    '    const result = originalRun(args, input, environment, maxBuffer, timeoutMs, rootDescriptor, parentDescriptor)',
+    '    if (!swapped && Array.isArray(args) && args[1] === swapAfterCommand) {',
+    '      performSwap()',
+    '    }',
+    '    return result',
+    '  }',
+    '}',
+    'process.once("exit", () => {',
+    '  if (!openedExternal && (auditObservedWithoutExternal || (allowNoNativeAfterSwap && swapped && !nativeInvoked))) {',
+    '    const stage = auditObservedWithoutExternal ? auditCommand : "not-reached"',
+    '    originalWriteFileSync(process.env.PH_NATIVE_AUDIT_SENTINEL, `native-stage=${stage}\\nopened-external=0\\n`)',
+    '  }',
+    '})',
+    '',
+  ].join("\n"))
 }
 
 function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
@@ -1199,12 +1659,27 @@ function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
 }
 
 function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
-  createCooperativeGradleFixture(fixtureRoot, phPath, label, commands)
+  createCooperativeGradleFixture(fixtureRoot)
+  requireSuccess(
+    `${label} bootstrap checkpoint`,
+    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
+  )
+  commitBootstrapCheckpoint(fixtureRoot, label)
+  const consumerRoot = `${fixtureRoot}-consumer`
+  requireSuccess(`${label} clean consumer worktree`, runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]))
 
-  const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
-  if (defaultFinish.status === 0) {
-    throw new Error(`${label} default Finish unexpectedly accepted local cooperative evidence`)
+  try {
+    runCooperativeLifecycle(consumerRoot, phPath, label, commands)
+  } finally {
+    if (existsSync(consumerRoot)) {
+      requireSuccess(`${label} clean consumer removal`, runCommand(fixtureRoot, "git", ["worktree", "remove", "--force", consumerRoot]))
+    }
   }
+}
+
+function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
+  runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands)
+
   const cooperativeFinish = runNode(fixtureRoot, [
     phPath,
     "workflow",
@@ -1239,10 +1714,87 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
   }
 }
 
-function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
+function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands) {
+  for (const command of commands) {
+    const step = BETA6_COOPERATIVE_COMMANDS.get(command)
+    if (step === undefined) {
+      throw new Error(`${label} beta.6 acceptance command is unsupported`)
+    }
+    requireSuccess(
+      `${label} lifecycle ${command}`,
+      runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin),
+    )
+  }
+  assertCooperativeLifecycleState(fixtureRoot, label)
+
+  const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
+  if (defaultFinish.status === 0) {
+    throw new Error(`${label} default Finish unexpectedly accepted local cooperative evidence`)
+  }
+}
+
+function assertCooperativeSourceReadRaceBlocks(fixtureRoot, phPath, label, commands) {
+  createCooperativeGradleFixture(fixtureRoot)
+  requireSuccess(
+    `${label} cooperative source-read race bootstrap`,
+    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
+  )
+  commitBootstrapCheckpoint(fixtureRoot, `${label} cooperative source-read race`)
+  const consumerRoot = `${fixtureRoot}-consumer`
+  requireSuccess(
+    `${label} cooperative source-read race worktree`,
+    runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]),
+  )
+  try {
+    runCooperativeLifecyclePreparation(consumerRoot, phPath, `${label} cooperative source-read race`, commands)
+    const sourceParent = join(consumerRoot, "src", "main", "java")
+    const sourceDraft = `${sourceParent}.draft`
+    const outside = `${consumerRoot}-outside-source`
+    const hookPath = join(fixtureRoot, "cooperative-source-read-race-hook.cjs")
+    const sentinel = `${fixtureRoot}-cooperative-source-read-race-audit`
+    mkdirSync(outside)
+    writeFileSync(join(outside, "External.java"), "class External { String marker = \"sk-live-aaaaaaaaaaaaaaaaaaaaaaaa\"; }\n")
+    writeNativeReadAuditHook(hookPath, "tree", "tree", [
+      '    require("node:fs").renameSync(process.env.PH_COOPERATIVE_SOURCE_PARENT, process.env.PH_COOPERATIVE_SOURCE_DRAFT)',
+      '    require("node:fs").renameSync(process.env.PH_COOPERATIVE_SOURCE_OUTSIDE, process.env.PH_COOPERATIVE_SOURCE_PARENT)',
+    ])
+    const result = runNode(
+      consumerRoot,
+      ["--require", hookPath, phPath, "workflow", "finish", "implement", "--assurance", "cooperative"],
+      {
+        ...nativeReadAuditEnvironment(outside, sentinel),
+        PH_COOPERATIVE_SOURCE_DRAFT: sourceDraft,
+        PH_COOPERATIVE_SOURCE_OUTSIDE: outside,
+        PH_COOPERATIVE_SOURCE_PARENT: sourceParent,
+      },
+    )
+    if (
+      result.status === 0
+      || `${result.stdout}${result.stderr}`.includes(outside)
+      || `${result.stdout}${result.stderr}`.includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")
+    ) {
+      throw new Error(`${label} cooperative source-read race did not fail closed`)
+    }
+    requireNativeAuditZero(`${label} cooperative source-read race`, sentinel)
+    for (const directory of ["finish-attestation", "project-finish-attestation", "verification-receipts"]) {
+      if (existsSync(join(consumerRoot, ".persona", "evidence", directory))) {
+        throw new Error(`${label} cooperative source-read race created authority evidence`)
+      }
+    }
+  } finally {
+    if (existsSync(consumerRoot)) {
+      requireSuccess(`${label} cooperative source-read race removal`, runCommand(fixtureRoot, "git", ["worktree", "remove", "--force", consumerRoot]))
+    }
+    rmSync(fixtureRoot, { force: true, recursive: true })
+    rmSync(`${fixtureRoot}-outside-source`, { force: true, recursive: true })
+  }
+}
+
+function createCooperativeGradleFixture(projectDir) {
   mkdirSync(join(projectDir, "src", "main", "java", "example", "cooperative"), { recursive: true })
   mkdirSync(join(projectDir, "src", "test", "java", "example", "cooperative"), { recursive: true })
   writeFileSync(join(projectDir, "README.md"), "# Installed cooperative Gradle fixture\n")
+  writeFileSync(join(projectDir, ".gitignore"), ".gradle/\nbuild/\n")
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'installed-cooperative-gradle'\n")
   writeFileSync(
     join(projectDir, "build.gradle"),
@@ -1272,6 +1824,7 @@ function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
     "installed fixture Gradle wrapper",
     runCommand(projectDir, "gradle", ["wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
   )
+  rmSync(join(projectDir, ".gradle"), { force: true, recursive: true })
   writeFileSync(
     join(projectDir, "src", "main", "java", "example", "cooperative", "CooperativeApplication.java"),
     [
@@ -1283,6 +1836,22 @@ function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
       "public class CooperativeApplication {",
       "  public static void main(String[] args) {",
       "    org.springframework.boot.SpringApplication.run(CooperativeApplication.class, args);",
+      "  }",
+      "}",
+      "",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "example", "cooperative", "GreetingService.java"),
+    [
+      "package example.cooperative;",
+      "",
+      "import org.springframework.stereotype.Service;",
+      "",
+      "@Service",
+      "public class GreetingService {",
+      "  public String greeting() {",
+      "    return \"hello\";",
       "  }",
       "}",
       "",
@@ -1309,18 +1878,29 @@ function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
   requireSuccess("installed fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
   requireSuccess("installed fixture Git config email", runCommand(projectDir, "git", ["config", "user.email", "ph@example.invalid"]))
   requireSuccess("installed fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
+  requireSuccess("installed fixture Git config autocrlf", runCommand(projectDir, "git", ["config", "core.autocrlf", "false"]))
   requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
-  for (const command of commands) {
-    const step = BETA3_COOPERATIVE_COMMANDS.get(command)
-    if (step === undefined) {
-      throw new Error(`${label} beta.3 acceptance command is unsupported`)
-    }
-    requireSuccess(
-      `${label} lifecycle ${command}`,
-      runNode(projectDir, [phPath, ...step.args], {}, step.stdin),
-    )
+}
+
+function commitBootstrapCheckpoint(projectDir, label) {
+  requireSuccess(`${label} checkpoint add`, runCommand(projectDir, "git", ["add", "--all"]))
+  requireSuccess(`${label} checkpoint reset dynamic records`, runCommand(projectDir, "git", ["reset", "--", ".persona/evidence", ".persona/workflow"]))
+  const staticPersonaPaths = [
+    ".persona/.ph-init-manifest.json",
+    ".persona/conventions",
+    ".persona/harness.jsonc",
+    ".persona/policies",
+    ".persona/project-profile.jsonc",
+    ".persona/rules",
+  ].filter((relativePath) => existsSync(join(projectDir, relativePath)))
+  if (staticPersonaPaths.length > 0) {
+    requireSuccess(`${label} checkpoint add static Persona records`, runCommand(projectDir, "git", ["add", "-f", "--", ...staticPersonaPaths]))
   }
+  requireSuccess(`${label} checkpoint commit`, runCommand(projectDir, "git", ["commit", "-qm", "public bootstrap checkpoint"]))
+}
+
+function assertCooperativeLifecycleState(projectDir, label) {
   for (const relativePath of [
     ".persona/workflow/workflow-loop-state.json",
     ".persona/workflow/ralph-loop-state.json",
@@ -1331,24 +1911,24 @@ function createCooperativeGradleFixture(projectDir, phPath, label, commands) {
   }
 }
 
-function readBeta3CooperativeCommands(packageRoot) {
-  const manifestPath = join(packageRoot, BETA3_ACCEPTANCE_PATH)
+function readBeta6CooperativeCommands(packageRoot) {
+  const manifestPath = join(packageRoot, BETA6_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.3 acceptance manifest is unavailable")
+    throw new Error("beta.6 acceptance manifest is unavailable")
   }
   const commands = value?.cooperative?.commands
   const packageVersion = value?.package?.version
-  const expectedCommands = [...BETA3_COOPERATIVE_COMMANDS.keys()]
+  const expectedCommands = [...BETA6_COOPERATIVE_COMMANDS.keys()]
   if (
     packageVersion !== readPackageVersion(packageRoot)
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
   ) {
-    throw new Error("beta.3 acceptance manifest is invalid")
+    throw new Error("beta.6 acceptance manifest is invalid")
   }
   return commands
 }
@@ -1391,7 +1971,26 @@ function createProjectFinishProducerFixture(projectDir, profileMode) {
       `${JSON.stringify({ ...cooperativeProfile(), status: "draft" })}\n`,
     )
     writeFileSync(
-      join(projectDir, "outside-profile.jsonc"),
+      `${projectDir}-outside-profile.jsonc`,
+      `${JSON.stringify({ marker: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa", ...cooperativeProfile() })}\n`,
+    )
+  }
+  if (profileMode === "canonical-profile") {
+    const profileDirectory = join(projectDir, ".persona")
+    mkdirSync(profileDirectory)
+    writeFileSync(join(profileDirectory, "project-profile.jsonc"), `${JSON.stringify(cooperativeProfile())}\n`)
+  }
+  if (profileMode === "replace-profile-parent") {
+    const profileDirectory = join(projectDir, ".persona")
+    const outside = `${projectDir}-outside-persona`
+    mkdirSync(profileDirectory)
+    mkdirSync(outside)
+    writeFileSync(
+      join(profileDirectory, "project-profile.jsonc"),
+      `${JSON.stringify(cooperativeProfile())}\n`,
+    )
+    writeFileSync(
+      join(outside, "project-profile.jsonc"),
       `${JSON.stringify({ marker: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa", ...cooperativeProfile() })}\n`,
     )
   }
@@ -1531,8 +2130,21 @@ function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-function sourceCliArgument(args) {
-  if (args.length === 0) return undefined
-  if (args.length === 2 && args[0] === "--source-cli" && args[1].trim() !== "") return args[1]
-  throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--source-cli dist/cli/index.js]")
+function parseContractOptions(args) {
+  let producerIntakeOnly = false
+  let sourceCli
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index]
+    if (argument === "--producer-intake-only" && !producerIntakeOnly) {
+      producerIntakeOnly = true
+      continue
+    }
+    if (argument === "--source-cli" && sourceCli === undefined && typeof args[index + 1] === "string" && args[index + 1].trim() !== "") {
+      sourceCli = args[index + 1]
+      index += 1
+      continue
+    }
+    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--producer-intake-only] [--source-cli dist/cli/index.js]")
+  }
+  return { producerIntakeOnly, sourceCli }
 }

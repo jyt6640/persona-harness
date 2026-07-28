@@ -2,8 +2,10 @@ import {
   prepareCooperativeFinishContext,
   type CooperativeFinishContextResult,
 } from "./cooperative-finish-context.js"
+import { reserveProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 import {
   runProjectFinishAttestationGradleVerification,
+  runProjectFinishAttestationGradleVerificationWithinBoundary,
   type CooperativeGradleVerification,
 } from "./cooperative-gradle-verification.js"
 import {
@@ -12,6 +14,7 @@ import {
   type ProjectFinishAttestationProducerArtifacts,
 } from "./project-finish-attestation-producer.js"
 import type { ProjectFinishAttestationReceipt } from "./project-finish-attestation-types.js"
+import type { NativeProjectReadIdentity } from "../io/native-project-read.js"
 
 export type ProjectFinishAttestationProducerContext = {
   readonly callerWorkflowRef: string
@@ -33,6 +36,7 @@ export type ProjectFinishAttestationProducerResult =
   | { readonly kind: "passed"; readonly value: ProjectFinishAttestationProducerArtifacts }
 
 type ProjectFinishAttestationProducerOptions = {
+  readonly projectRootIdentity?: NativeProjectReadIdentity
   readonly prepareContext?: (projectDir: string) => CooperativeFinishContextResult
   readonly verify?: (
     projectDir: string,
@@ -52,10 +56,52 @@ export function runProjectFinishAttestationProducer(
   ) {
     return blocked("project-finish-producer-binding")
   }
+  if (options.prepareContext !== undefined || options.verify !== undefined) {
+    return runWithInjectedDependencies(projectDir, context, phVersion, options)
+  }
+  let projectReadBoundary: ReturnType<typeof reserveProjectReadBoundary>
+  try {
+    projectReadBoundary = reserveProjectReadBoundary(projectDir, options.projectRootIdentity)
+  } catch {
+    return blocked("workspace-root-unavailable")
+  }
+  try {
+    const prepared = prepareCooperativeFinishContext(projectDir, projectReadBoundary)
+    if (prepared.kind === "blocked") return blocked(prepared.code)
+
+    const verification = runProjectFinishAttestationGradleVerificationWithinBoundary(
+      projectDir,
+      prepared.value,
+      projectReadBoundary,
+    )
+    return resultFromVerification(context, phVersion, verification)
+  } catch (error) {
+    if (error instanceof ProjectFinishAttestationProducerError) {
+      return blocked(error.code)
+    }
+    return blocked("project-finish-producer-profile")
+  } finally {
+    projectReadBoundary.close()
+  }
+}
+
+function runWithInjectedDependencies(
+  projectDir: string,
+  context: ProjectFinishAttestationProducerContext,
+  phVersion: string,
+  options: ProjectFinishAttestationProducerOptions,
+): ProjectFinishAttestationProducerResult {
   const prepared = (options.prepareContext ?? prepareCooperativeFinishContext)(projectDir)
   if (prepared.kind === "blocked") return blocked(prepared.code)
-
   const verification = (options.verify ?? runProjectFinishAttestationGradleVerification)(projectDir, prepared.value)
+  return resultFromVerification(context, phVersion, verification)
+}
+
+function resultFromVerification(
+  context: ProjectFinishAttestationProducerContext,
+  phVersion: string,
+  verification: CooperativeGradleVerification,
+): ProjectFinishAttestationProducerResult {
   if (verification.kind === "blocked") return blocked(verification.code)
   if (verification.value.sourceIdentity.repositoryHead !== context.sourceHead) {
     return blocked("project-finish-producer-binding")
@@ -94,7 +140,7 @@ export function runProjectFinishAttestationProducer(
     if (error instanceof ProjectFinishAttestationProducerError) {
       return blocked(error.code)
     }
-    throw error
+    return blocked("project-finish-producer-profile")
   }
 }
 

@@ -104,8 +104,8 @@ describe("content-aware source identity", () => {
     unlinkSync(source)
     symlinkSync("../package.json", source)
 
-    const symlink = captureSourceIdentity(projectDir, git(projectDir), ".persona/evidence")
-    const unsafePath = captureSourceIdentity(projectDir, git(projectDir), "../evidence")
+    const symlink = captureResult(projectDir, ".persona/evidence")
+    const unsafePath = captureResult(projectDir, "../evidence")
     const nonGit = captureSourceIdentity(projectDir, { available: false, diagnosticCode: "git-worktree-unavailable" }, ".persona/evidence")
 
     expect(symlink).toEqual({ diagnosticCode: "source-identity-symlink", status: "unavailable" })
@@ -114,7 +114,7 @@ describe("content-aware source identity", () => {
 
     rmSync(source)
     writeFileSync(source, "class App { int bounded; }\n")
-    const bounded = captureSourceIdentity(projectDir, git(projectDir), ".persona/evidence", { maxFileBytes: 1 })
+    const bounded = captureResult(projectDir, ".persona/evidence", { maxFileBytes: 1 })
     expect(bounded).toEqual({ diagnosticCode: "source-identity-file-limit", status: "unavailable" })
   })
 
@@ -133,8 +133,8 @@ describe("content-aware source identity", () => {
     mkdirSync(producerBin, { recursive: true })
     symlinkSync("../outside", join(producerBin, "node"))
 
-    expect(captureSourceIdentity(callerRoot, git(callerRoot), ".persona/evidence").status).toBe("available")
-    expect(captureSourceIdentity(runnerRoot, git(runnerRoot), ".persona/evidence")).toEqual({
+    expect(captureResult(callerRoot).status).toBe("available")
+    expect(captureResult(runnerRoot)).toEqual({
       diagnosticCode: "source-identity-symlink",
       status: "unavailable",
     })
@@ -147,10 +147,10 @@ describe("content-aware source identity", () => {
     projects.push(worktreeParent)
     execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: primary })
 
-    expect(captureSourceIdentity(worktree, git(worktree), ".persona/evidence").status).toBe("available")
+    expect(captureResult(worktree).status).toBe("available")
     unlinkSync(join(worktree, "src", "App.java"))
     symlinkSync("../package.json", join(worktree, "src", "App.java"))
-    expect(captureSourceIdentity(worktree, git(worktree), ".persona/evidence")).toEqual({
+    expect(captureResult(worktree)).toEqual({
       diagnosticCode: "source-identity-symlink",
       status: "unavailable",
     })
@@ -179,11 +179,34 @@ function createProjectAt(projectDir: string): void {
 }
 
 function capture(projectDir: string): SourceIdentity {
-  const result = captureSourceIdentity(projectDir, git(projectDir), ".persona/evidence")
+  const result = captureResult(projectDir)
   if (result.status !== "available") {
     throw new Error(`expected source identity, received ${result.diagnosticCode}`)
   }
   return result.value
+}
+
+function captureResult(
+  projectDir: string,
+  evidenceRelativePath = ".persona/evidence",
+  limits: { readonly maxFileBytes?: number } = {},
+) {
+  return withProjectCapability(projectDir, () => captureSourceIdentity(
+    ".",
+    git("."),
+    evidenceRelativePath,
+    limits,
+  ))
+}
+
+function withProjectCapability<T>(projectDir: string, operation: () => T): T {
+  const original = process.cwd()
+  process.chdir(projectDir)
+  try {
+    return operation()
+  } finally {
+    process.chdir(original)
+  }
 }
 
 function git(projectDir: string) {

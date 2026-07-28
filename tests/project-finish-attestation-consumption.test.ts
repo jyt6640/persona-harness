@@ -51,18 +51,16 @@ afterEach(() => {
   }
 })
 
-describe("project finish attestation inspection and consumption", () => {
+describe.sequential("project finish attestation inspection and consumption", () => {
   it("fails closed for an original-artifact archive that cannot be parsed without consulting project-local evidence", () => {
     const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-consumption-")))
     const evidenceDir = join(projectDir, ".persona", "evidence", "project-finish-attestation")
     mkdirSync(evidenceDir, { recursive: true })
     writeVerifiedEvidence(projectDir)
 
-    const result = inspectProjectFinishAttestationArtifact(
+    const result = inspectArtifactAt(
       projectDir,
-      enrollment,
       Buffer.from("local-repacked-archive-marker", "utf8"),
-      now,
     )
 
     expect(result).toMatchObject({ authorityEligible: false, state: "missing" })
@@ -75,26 +73,26 @@ describe("project finish attestation inspection and consumption", () => {
     const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-consumption-")))
     const consumptionPath = writeVerifiedEvidence(projectDir)
 
-    expect(inspectProjectFinishAttestation(projectDir, enrollment, now)).toMatchObject({
+    expect(inspectAt(projectDir)).toMatchObject({
       authorityEligible: true,
       consumptionState: "unconsumed",
       state: "trusted",
     })
     expect(existsSync(consumptionPath)).toBe(false)
 
-    expect(consumeProjectFinishAttestation(projectDir, enrollment, now)).toMatchObject({
+    expect(consumeAt(projectDir)).toMatchObject({
       authorityEligible: true,
       consumptionState: "consumed",
       state: "trusted",
     })
     expect(existsSync(consumptionPath)).toBe(true)
 
-    expect(consumeProjectFinishAttestation(projectDir, enrollment, now)).toMatchObject({
+    expect(consumeAt(projectDir)).toMatchObject({
       authorityEligible: false,
       consumptionState: "not-applicable",
       state: "replayed",
     })
-    expect(inspectProjectFinishAttestation(projectDir, enrollment, now)).toMatchObject({
+    expect(inspectAt(projectDir)).toMatchObject({
       authorityEligible: true,
       consumptionState: "consumed",
       state: "trusted",
@@ -105,7 +103,7 @@ describe("project finish attestation inspection and consumption", () => {
     const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-consumption-")))
     const consumptionPath = writeVerifiedEvidence(projectDir)
 
-    expect(consumeProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-18T02:00:00.000Z"))).toMatchObject({
+    expect(consumeAt(projectDir, new Date("2026-07-18T02:00:00.000Z"))).toMatchObject({
       authorityEligible: false,
       consumptionState: "not-applicable",
       state: "stale",
@@ -113,11 +111,17 @@ describe("project finish attestation inspection and consumption", () => {
     expect(existsSync(consumptionPath)).toBe(false)
   })
 
-  it.each(["0.8.0-beta.1", "0.8.0-beta.2"])("blocks an otherwise verified original artifact from %s", (phVersion) => {
+  it.each([
+    "0.8.0-beta.1",
+    "0.8.0-beta.2",
+    "0.8.0-beta.3",
+    "0.8.0-beta.4",
+    "0.8.0-beta.5",
+  ])("blocks an otherwise verified original artifact from %s", (phVersion) => {
     const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-consumption-")))
     const consumptionPath = writeVerifiedEvidence(projectDir, statementForVersion(phVersion))
 
-    expect(inspectProjectFinishAttestation(projectDir, enrollment, now)).toMatchObject({
+    expect(inspectAt(projectDir)).toMatchObject({
       authorityEligible: false,
       consumptionState: "not-applicable",
       state: "binding-mismatch",
@@ -129,6 +133,31 @@ describe("project finish attestation inspection and consumption", () => {
 function track(projectDir: string): string {
   projects.push(projectDir)
   return projectDir
+}
+
+function inspectAt(projectDir: string) {
+  return withCurrentDirectory(projectDir, () => inspectProjectFinishAttestation(".", enrollment, now))
+}
+
+function inspectArtifactAt(projectDir: string, archive: Buffer) {
+  return withCurrentDirectory(
+    projectDir,
+    () => inspectProjectFinishAttestationArtifact(".", enrollment, archive, now),
+  )
+}
+
+function consumeAt(projectDir: string, at = now) {
+  return withCurrentDirectory(projectDir, () => consumeProjectFinishAttestation(".", enrollment, at))
+}
+
+function withCurrentDirectory<T>(projectDir: string, operation: () => T): T {
+  const original = process.cwd()
+  process.chdir(projectDir)
+  try {
+    return operation()
+  } finally {
+    process.chdir(original)
+  }
 }
 
 function requireRecord(value: Record<string, unknown>, key: string): Record<string, unknown> {

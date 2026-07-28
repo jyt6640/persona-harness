@@ -8,6 +8,39 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.8.0-beta.6] - 2026-07-27
+
+- Prepares a new immutable Consumer Authority Beta source candidate for the
+  staging-only lifecycle. It makes no package, tag, registry, release,
+  promotion, Stable/GA, or Finish authority claim.
+- Ships an audited native descriptor-traversal runtime for macOS and Linux
+  supported architectures. It verifies the packaged C source and selected
+  binary checksums, opens every source-read segment through a captured project
+  directory capability, and fails closed with
+  `source-read-runtime-unavailable` rather than reopening caller paths.
+- Retains beta.1 through beta.5 as immutable prior evidence. No earlier
+  package or signed project artifact can satisfy beta.6 current-version
+  binding, independent online verification, explicit consumption, or replay
+  proof.
+
+## [0.8.0-beta.5] - 2026-07-27
+
+- Prepares the next immutable Consumer Authority Beta source candidate for a
+  staging-only lifecycle. It makes no package, tag, registry, release,
+  promotion, Stable/GA, or Finish authority claim.
+- Adds a bounded public `ph evidence read <relative-file>` route so a clean
+  Java/Spring Gradle consumer can record required README, profile, and source
+  read coverage without retaining source bytes. The record write is bound to
+  the canonical project containment transaction and rejects unsafe aliases or
+  replacements.
+- Adds the package-visible beta.5 acceptance record for the complete public
+  source/packed cooperative route. Default Finish and later closure remain
+  external-blocked; a current original artifact remains required for the
+  separately user-scoped authority path.
+- Retains beta.1, beta.2, and beta.3 as immutable staging-only evidence. A
+  beta.3 package or artifact result cannot satisfy beta.5 binding, current
+  online custom-predicate verification, explicit consumption, or replay proof.
+
 ## [0.8.0-beta.3] - 2026-07-26
 
 - Prepares the next immutable Consumer Authority Beta source candidate for a

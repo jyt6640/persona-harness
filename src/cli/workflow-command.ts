@@ -1,8 +1,17 @@
 import { existsSync } from "node:fs"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
+import process from "node:process"
 
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
+import {
+  reserveProjectReadBoundary,
+  type ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
+import {
+  captureProjectReadSnapshot,
+  type ProjectReadSnapshot,
+} from "../io/project-read-snapshot.js"
 import { runFreshFixedVerification } from "./fresh-verification-runner.js"
 import { runResumeCommand } from "./plan-next.js"
 import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
@@ -89,8 +98,8 @@ function requiredFixDetails(fixes: readonly WorkflowRequiredFix[]): readonly str
   return fixes.map((fix) => isStructuredWorkflowRequiredFix(fix) ? fix.detail : fix)
 }
 
-function hasPersonaHarness(summary: WorkflowStatus): boolean {
-  return existsSync(join(summary.projectDir, ".persona"))
+function hasPersonaHarness(summary: WorkflowStatus, snapshot?: ProjectReadSnapshot): boolean {
+  return snapshot?.hasDirectory(".persona") ?? existsSync(join(summary.projectDir, ".persona"))
 }
 
 function stdinEncodingFailure(options: WorkflowOptions): CliRunResult | undefined {
@@ -145,11 +154,53 @@ function runWorkflowFinish(
   assurance: FinishAssuranceRequirement,
   options: WorkflowOptions,
 ): CliRunResult {
-  const summary = readWorkflowStatus(options.projectDir)
-  if (!hasPersonaHarness(summary)) {
+  const projectDir = resolve(options.projectDir ?? process.cwd())
+  if (projectDir !== resolve(process.cwd())) {
+    return runWorkflowFinishAtProject(runnerKind, reverify, ci, assurance, projectDir)
+  }
+  let boundary: ProjectReadBoundary | undefined
+  try {
+    boundary = reserveProjectReadBoundary(projectDir)
+    const snapshot = captureProjectReadSnapshot(projectDir, boundary)
+    return runWorkflowFinishAtProject(
+      runnerKind,
+      reverify,
+      ci,
+      assurance,
+      projectDir,
+      { boundary, snapshot },
+    )
+  } catch {
+    return failedRunnerOutput("finish", runnerKind, ["Cooperative verification blocked: source-read-runtime-unavailable."])
+  } finally {
+    boundary?.close()
+  }
+}
+
+function runWorkflowFinishAtProject(
+  runnerKind: WorkflowRunnerKind,
+  reverify: boolean,
+  ci: boolean,
+  assurance: FinishAssuranceRequirement,
+  projectDir: string,
+  projectRead?: {
+    readonly boundary: ProjectReadBoundary
+    readonly snapshot: ProjectReadSnapshot
+  },
+): CliRunResult {
+  const summary = readWorkflowStatus(projectDir, {
+    projectReadBoundary: projectRead?.boundary,
+    projectReadSnapshot: projectRead?.snapshot,
+  })
+  if (!hasPersonaHarness(summary, projectRead?.snapshot)) {
     return uninitializedHarnessOutput()
   }
   if (reverify) {
+    if (projectRead !== undefined) {
+      return failedRunnerOutput("finish", runnerKind, [
+        "Evidence reverification blocked; diagnostics: source-read-runtime-unavailable.",
+      ])
+    }
     const result = runFreshFixedVerification(summary.projectDir, ci ? "ci" : "local")
     if (result.finalStatus !== "passed") {
       const artifactReference = safeProjectArtifactReference(summary.projectDir, result.artifactPath)
@@ -161,7 +212,12 @@ function runWorkflowFinish(
       ])
     }
   }
-  return runWorkflowFinishResult(runnerKind, summary.projectDir, assurance)
+  return runWorkflowFinishResult(
+    runnerKind,
+    summary.projectDir,
+    assurance,
+    projectRead,
+  )
 }
 
 function runWorkflowCheck(options: WorkflowOptions): CliRunResult {

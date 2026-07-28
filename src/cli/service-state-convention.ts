@@ -1,4 +1,5 @@
 import { SERVICE_STATE_OWNERSHIP_CONVENTION } from "../config/convention-registry.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 import { readBoundedJavaSources } from "./bounded-java-source.js"
 
 type ServiceStateField = {
@@ -68,8 +69,11 @@ function javaPrivateFields(source: string): readonly ServiceStateField[] {
   return fields
 }
 
-export function serviceStateOwnershipConventionFindings(projectDir: string): readonly string[] {
-  const sources = readBoundedJavaSources(projectDir)
+export function serviceStateOwnershipConventionFindings(
+  projectDir: string,
+  snapshot?: ProjectReadSnapshot,
+): readonly string[] {
+  const sources = readBoundedJavaSources(projectDir, snapshot)
   if (!sources.safe) {
     return ["Java convention discovery is unavailable; read-only recovery is required."]
   }

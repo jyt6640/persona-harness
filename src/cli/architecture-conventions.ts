@@ -1,4 +1,5 @@
 import {
+  CONVENTION_REGISTRY,
   CONTROLLER_REPOSITORY_CONVENTION,
   SERVICE_STATE_OWNERSHIP_CONVENTION,
   SPRING_BOOTJAR_ENABLED_CONVENTION,
@@ -6,6 +7,8 @@ import {
 import type { ConventionDefinition } from "../config/convention-registry.js"
 import { loadHarnessConfig } from "../config/harness-config.js"
 import type { ConventionLevel } from "../config/harness-config.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryEvidence } from "../observer/controller-repository-observer.js"
 import { runAstGrepConvention } from "./ast-grep-convention-runner.js"
@@ -39,8 +42,8 @@ const SERVICE_ARCHITECTURE_STYLES = [
 ] as const
 export const CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID = "convention-toolchain-missing"
 
-function serviceArchitectureApplies(projectDir: string): boolean {
-  const intent = readProfileIntent(projectDir)
+function serviceArchitectureApplies(projectDir: string, boundary?: ProjectReadBoundary): boolean {
+  const intent = readProfileIntent(projectDir, boundary)
   return intent?.language === "java"
     && intent.framework === "spring"
     && SERVICE_ARCHITECTURE_STYLES.some((style) => style === intent.architectureStyle)
@@ -74,16 +77,23 @@ function directDependencyFinding(file: BoundedJavaSourceFile): string | undefine
   return `${className(file.relativePath)} directly depends on ${dependency}; ${CONTROLLER_REPOSITORY_CONVENTION.actionableMessage} Source: ${file.relativePath}`
 }
 
-function configuredConventionLevel(projectDir: string, definition: ConventionDefinition): ConventionLevel {
-  return loadHarnessConfig(projectDir).conventions[definition.id] ?? definition.defaultLevel
+function configuredConventionLevel(
+  projectDir: string,
+  definition: ConventionDefinition,
+  boundary?: ProjectReadBoundary,
+): ConventionLevel {
+  return loadHarnessConfig(projectDir, boundary).conventions[definition.id] ?? definition.defaultLevel
 }
 
 function effectiveConventionLevel(definition: ConventionDefinition, level: ConventionLevel): ConventionLevel {
   return level === "block" && (!definition.blockAllowed || !definition.highPrecision || definition.fixPath.trim() === "") ? "warn" : level
 }
 
-function controllerRepositoryConventionFindings(projectDir: string): ConventionEvaluation {
-  const sources = readBoundedJavaSources(projectDir)
+function controllerRepositoryConventionFindings(
+  projectDir: string,
+  snapshot?: ProjectReadSnapshot,
+): ConventionEvaluation {
+  const sources = readBoundedJavaSources(projectDir, snapshot)
   if (!sources.safe) {
     return {
       findings: [],
@@ -106,17 +116,28 @@ type ConventionEvaluation = {
   readonly warnings: readonly string[]
 }
 
-function conventionFindings(projectDir: string, definition: ConventionDefinition): ConventionEvaluation {
+function conventionFindings(
+  projectDir: string,
+  definition: ConventionDefinition,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): ConventionEvaluation {
   if (definition.check.kind === "observer" && definition.id === CONTROLLER_REPOSITORY_CONVENTION.id) {
-    return controllerRepositoryConventionFindings(projectDir)
+    return controllerRepositoryConventionFindings(projectDir, snapshot)
   }
   if (definition.check.kind === "observer" && definition.id === SERVICE_STATE_OWNERSHIP_CONVENTION.id) {
-    return { findings: serviceStateOwnershipConventionFindings(projectDir), warnings: [] }
+    return { findings: serviceStateOwnershipConventionFindings(projectDir, snapshot), warnings: [] }
   }
   if (definition.check.kind === "observer" && definition.id === SPRING_BOOTJAR_ENABLED_CONVENTION.id) {
-    return { findings: springBootJarEnabledConventionFindings(projectDir), warnings: [] }
+    return { findings: springBootJarEnabledConventionFindings(projectDir, boundary, snapshot), warnings: [] }
   }
   if (definition.check.kind === "ast-grep") {
+    if (snapshot !== undefined) {
+      return {
+        findings: [],
+        warnings: ["ast-grep convention evaluation is unavailable inside the capability-bound status transaction."],
+      }
+    }
     const result = runAstGrepConvention(projectDir, definition)
     if (result.status === "skipped") {
       return { findings: [], warnings: [result.warning] }
@@ -131,7 +152,12 @@ function conventionFindings(projectDir: string, definition: ConventionDefinition
   return { findings: [], warnings: [] }
 }
 
-export function readArchitectureConventions(projectDir: string, implementationStatus: string): ArchitectureConventionSummary {
+export function readArchitectureConventions(
+  projectDir: string,
+  implementationStatus: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): ArchitectureConventionSummary {
   if (implementationStatus !== "filled") {
     return {
       architectureConventionBlockers: [],
@@ -140,7 +166,7 @@ export function readArchitectureConventions(projectDir: string, implementationSt
       architectureConventionsFinding: "PASS",
     }
   }
-  if (!serviceArchitectureApplies(projectDir)) {
+  if (!serviceArchitectureApplies(projectDir, boundary)) {
     return {
       architectureConventionBlockers: [],
       architectureConventions: "not checked; Java/Spring service-layer profile not active",
@@ -152,9 +178,15 @@ export function readArchitectureConventions(projectDir: string, implementationSt
   const summaries: string[] = []
   const blockers: ArchitectureConventionBlocker[] = []
   let hasWarnFinding = false
-  for (const definition of readConventionDefinitions(projectDir)) {
-    const level = effectiveConventionLevel(definition, configuredConventionLevel(projectDir, definition))
-    const result = conventionFindings(projectDir, definition)
+  const dynamicDefinitions = snapshot?.filesUnder(".persona/conventions")
+  if (dynamicDefinitions !== undefined && dynamicDefinitions.length > 0) {
+    summaries.push("caller convention files are not executed inside the capability-bound status transaction")
+    hasWarnFinding = true
+  }
+  const definitions = snapshot === undefined ? readConventionDefinitions(projectDir) : CONVENTION_REGISTRY
+  for (const definition of definitions) {
+    const level = effectiveConventionLevel(definition, configuredConventionLevel(projectDir, definition, boundary))
+    const result = conventionFindings(projectDir, definition, boundary, snapshot)
     for (const warning of result.warnings) {
       summaries.push(warning)
       hasWarnFinding = true

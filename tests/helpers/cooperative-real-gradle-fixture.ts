@@ -25,11 +25,13 @@ export function createRealCooperativeGradleFixture(): RealCooperativeGradleFixtu
       encoding: "utf8",
       stdio: "pipe",
     })
+    rmSync(join(projectDir, ".gradle"), { force: true, recursive: true })
     writeBuildFiles(projectDir)
     writeCurrentWorkflowLifecycleLoopStates(projectDir)
     execFileSync("git", ["init", "-q"], { cwd: projectDir })
     execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
     execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
+    execFileSync("git", ["config", "core.autocrlf", "false"], { cwd: projectDir })
     execFileSync("git", ["add", "."], { cwd: projectDir })
     execFileSync("git", ["commit", "-qm", "real cooperative Gradle fixture"], { cwd: projectDir })
   } catch (error) {
@@ -52,6 +54,7 @@ function writeFixtureFiles(projectDir: string): void {
   mkdirSync(join(projectDir, "src", "main", "java", "example", "cooperative"), { recursive: true })
   mkdirSync(join(projectDir, "src", "test", "java", "example", "cooperative"), { recursive: true })
   writeFileSync(join(projectDir, "README.md"), "# Real cooperative Gradle fixture\n")
+  writeFileSync(join(projectDir, ".gitignore"), ".gradle/\nbuild/\n")
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'real-cooperative-gradle'\n")
   writeFileSync(
     join(projectDir, ".persona", "harness.jsonc"),
@@ -126,6 +129,22 @@ function writeBuildFiles(projectDir: string): void {
       "public class CooperativeApplication {",
       "  public static void main(String[] args) {",
       "    org.springframework.boot.SpringApplication.run(CooperativeApplication.class, args);",
+      "  }",
+      "}",
+      "",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(projectDir, "src", "main", "java", "example", "cooperative", "GreetingService.java"),
+    [
+      "package example.cooperative;",
+      "",
+      "import org.springframework.stereotype.Service;",
+      "",
+      "@Service",
+      "public class GreetingService {",
+      "  public String greeting() {",
+      "    return \"hello\";",
       "  }",
       "}",
       "",

@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
+
 export type VerificationFailureSummary = {
   readonly verificationFailure: string
   readonly verificationFailureBlocking: boolean
@@ -59,7 +61,11 @@ function failureEvidenceLines(reportText: string): readonly string[] {
   return evidence
 }
 
-export function readVerificationFailure(projectDir: string, implementationStatus: string): VerificationFailureSummary {
+export function readVerificationFailure(
+  projectDir: string,
+  implementationStatus: string,
+  snapshot?: ProjectReadSnapshot,
+): VerificationFailureSummary {
   if (implementationStatus !== "filled") {
     return {
       verificationFailure: "not checked until implementation report is filled",
@@ -68,10 +74,15 @@ export function readVerificationFailure(projectDir: string, implementationStatus
     }
   }
 
-  const reportText = readExistingFiles([
-    join(projectDir, IMPLEMENTATION_REPORT_PATH),
-    join(projectDir, REVIEW_REPORT_PATH),
-  ])
+  const reportText = snapshot === undefined
+    ? readExistingFiles([
+        join(projectDir, IMPLEMENTATION_REPORT_PATH),
+        join(projectDir, REVIEW_REPORT_PATH),
+      ])
+    : [IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH]
+        .map((path) => snapshot.readText(path))
+        .filter((text): text is string => text !== undefined)
+        .join("\n")
   const evidence = failureEvidenceLines(reportText)
   if (evidence.length === 0) {
     return {

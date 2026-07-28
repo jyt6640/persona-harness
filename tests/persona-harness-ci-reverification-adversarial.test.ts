@@ -18,7 +18,12 @@ import { afterEach, describe, expect, it } from "vitest"
 import { createCommandRecord } from "../src/cli/ci-reverification-catalog.js"
 import { captureGitIdentity } from "../src/cli/ci-reverification-identity.js"
 import { parseGitStatusPorcelain } from "../src/cli/ci-reverification-mutation.js"
-import { runCiReverification } from "../src/cli/ci-reverification-runner.js"
+import {
+  runCiReverification as runCiReverificationAtProject,
+  type CiReverificationMode,
+  type CiReverificationRunnerOptions,
+} from "../src/cli/ci-reverification-runner.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const roots: string[] = []
 
@@ -27,7 +32,7 @@ function git(projectDir: string, args: readonly string[]): string {
 }
 
 function createProject(script = "#!/bin/sh\nexit 0\n"): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-ci-adversarial-"))
+  const projectDir = createDirectProjectRoot("persona-ci-adversarial")
   roots.push(projectDir)
   mkdirSync(join(projectDir, ".persona", "evidence"), { recursive: true })
   mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })
@@ -67,7 +72,7 @@ afterEach(() => {
   roots.length = 0
 })
 
-describe("CI reverification adversarial boundaries", () => {
+describe.sequential("CI reverification adversarial boundaries", () => {
   it("uses only fixed direct argv with 120s command and 300s attempt budgets", () => {
     const projectDir = createProject()
     const profilePath = join(projectDir, ".persona", "project-profile.jsonc")
@@ -325,3 +330,11 @@ describe("CI reverification adversarial boundaries", () => {
     expect(runCiReverification(ci, "ci", { captureGit: unavailableGit }).finalStatus).toBe("unavailable")
   })
 })
+
+function runCiReverification(
+  projectDir: string,
+  mode: CiReverificationMode,
+  options: CiReverificationRunnerOptions = {},
+) {
+  return runCiReverificationAtProject(projectDir, mode, options)
+}

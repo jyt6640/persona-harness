@@ -1,15 +1,10 @@
 import { createHash } from "node:crypto"
-import { join } from "node:path"
 
-import { isRecord, stripJsonComments } from "../config/jsonc.js"
 import {
-  captureNoFollowDirectory,
-  noFollowPathIdentityDigest,
-  noFollowPathLocationDigest,
-  readNoFollowRegularFile,
-  sameNoFollowPathIdentity,
-  type NoFollowPathIdentity,
-} from "../io/no-follow-file.js"
+  reserveProjectReadBoundary,
+  type ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
+import { isRecord, stripJsonComments } from "../config/jsonc.js"
 import type { SourceIdentity } from "./source-identity.js"
 
 const PROFILE_DIRECTORY = ".persona"
@@ -30,31 +25,50 @@ export type ProjectFinishAttestationInputSnapshotResult =
 
 export function captureProjectFinishAttestationInputSnapshot(
   projectDir: string,
+  projectReadBoundary?: ProjectReadBoundary,
 ): ProjectFinishAttestationInputSnapshotResult {
-  const root = captureNoFollowDirectory(projectDir)
-  if (root.kind !== "ready") return blocked()
+  if (projectReadBoundary === undefined) {
+    let boundary: ProjectReadBoundary | undefined
+    try {
+      boundary = reserveProjectReadBoundary(projectDir)
+      return captureProjectFinishAttestationInputSnapshotWithinBoundary(projectDir, boundary)
+    } catch {
+      return blocked()
+    } finally {
+      boundary?.close()
+    }
+  }
+  return captureProjectFinishAttestationInputSnapshotWithinBoundary(projectDir, projectReadBoundary)
+}
 
-  const profile = captureProfile(projectDir, root.value)
-  if (profile.kind === "blocked") return profile
-  const build = captureExactlyOneRootFile(projectDir, BUILD_FILES, root.value)
-  if (build.kind === "blocked") return build
-  const settings = captureExactlyOneRootFile(projectDir, SETTINGS_FILES, root.value)
-  if (settings.kind === "blocked") return settings
+function captureProjectFinishAttestationInputSnapshotWithinBoundary(
+  _projectDir: string,
+  projectReadBoundary: ProjectReadBoundary,
+): ProjectFinishAttestationInputSnapshotResult {
+  try {
+    projectReadBoundary.assert()
+    const profile = captureProfileWithinBoundary(projectReadBoundary)
+    if (profile.kind === "blocked") return profile
+    const build = captureExactlyOneRootFileWithinBoundary(BUILD_FILES, projectReadBoundary)
+    if (build.kind === "blocked") return build
+    const settings = captureExactlyOneRootFileWithinBoundary(SETTINGS_FILES, projectReadBoundary)
+    if (settings.kind === "blocked") return settings
 
-  const postRoot = captureNoFollowDirectory(projectDir)
-  if (postRoot.kind !== "ready" || !sameNoFollowPathIdentity(root.value, postRoot.value)) return blocked()
+    projectReadBoundary.assert()
 
-  return {
-    kind: "ready",
-    value: {
-      digest: digest(JSON.stringify({
-        build,
-        profile,
-        root: noFollowPathLocationDigest(root.value),
-        settings,
-      })),
-      profile: profile.kind,
-    },
+    return {
+      kind: "ready",
+      value: {
+        digest: digest(JSON.stringify({
+          build,
+          profile,
+          settings,
+        })),
+        profile: profile.kind,
+      },
+    }
+  } catch {
+    return blocked()
   }
 }
 
@@ -78,42 +92,28 @@ export function bindProjectFinishAttestationInputSnapshot(
   }
 }
 
-function captureProfile(
-  projectDir: string,
-  root: NoFollowPathIdentity,
+function captureProfileWithinBoundary(
+  projectReadBoundary: ProjectReadBoundary,
 ): { readonly digest: string; readonly kind: "absent" | "ready" } | ProjectFinishAttestationInputSnapshotResult {
-  const directoryPath = join(projectDir, PROFILE_DIRECTORY)
-  const directory = captureNoFollowDirectory(directoryPath)
-  if (directory.kind === "absent") return { digest: "absent", kind: "absent" }
-  if (directory.kind !== "ready") return blocked()
-
-  const profile = readNoFollowRegularFile(
-    join(directoryPath, PROFILE_FILENAME),
+  const directory = projectReadBoundary.readProjectDirectoryIdentity(PROFILE_DIRECTORY)
+  if (directory === undefined) return { digest: "absent", kind: "absent" }
+  const profile = projectReadBoundary.readProjectFileWithIdentity(
+    `${PROFILE_DIRECTORY}/${PROFILE_FILENAME}`,
     MAX_PROFILE_BYTES,
-    directoryPath,
   )
-  if (profile.kind === "absent") return stableAbsentProfile(projectDir, root, directoryPath, directory.value)
-  if (profile.kind !== "ready") return blocked()
-
-  const postDirectory = captureNoFollowDirectory(directoryPath)
-  const postRoot = captureNoFollowDirectory(projectDir)
-  if (
-    postDirectory.kind !== "ready"
-    || postRoot.kind !== "ready"
-    || !sameNoFollowPathIdentity(directory.value, postDirectory.value)
-    || !sameNoFollowPathIdentity(root, postRoot.value)
-  ) {
-    return blocked()
+  if (profile === undefined) {
+    return {
+      digest: "absent",
+      kind: "absent",
+    }
   }
 
   try {
-    const value: unknown = JSON.parse(stripJsonComments(profile.value.bytes.toString("utf8")))
+    const value: unknown = JSON.parse(stripJsonComments(profile.bytes.toString("utf8")))
     if (!isCanonicalProfile(value)) return blocked()
     return {
       digest: digest(JSON.stringify({
-        bytes: digest(profile.value.bytes),
-        directory: noFollowPathIdentityDigest(directory.value),
-        identity: noFollowPathIdentityDigest(profile.value.identity),
+        bytes: digest(profile.bytes),
       })),
       kind: "ready",
     }
@@ -122,50 +122,20 @@ function captureProfile(
   }
 }
 
-function stableAbsentProfile(
-  projectDir: string,
-  root: NoFollowPathIdentity,
-  directoryPath: string,
-  directory: NoFollowPathIdentity,
-): { readonly digest: string; readonly kind: "absent" } | ProjectFinishAttestationInputSnapshotResult {
-  const postDirectory = captureNoFollowDirectory(directoryPath)
-  const postRoot = captureNoFollowDirectory(projectDir)
-  if (
-    postDirectory.kind !== "ready"
-    || postRoot.kind !== "ready"
-    || !sameNoFollowPathIdentity(directory, postDirectory.value)
-    || !sameNoFollowPathIdentity(root, postRoot.value)
-  ) {
-    return blocked()
-  }
-  return {
-    digest: digest(JSON.stringify({ directory: noFollowPathIdentityDigest(directory) })),
-    kind: "absent",
-  }
-}
-
-function captureExactlyOneRootFile(
-  projectDir: string,
+function captureExactlyOneRootFileWithinBoundary(
   names: readonly string[],
-  root: NoFollowPathIdentity,
+  projectReadBoundary: ProjectReadBoundary,
 ): { readonly digest: string; readonly file: string; readonly kind: "ready" } | ProjectFinishAttestationInputSnapshotResult {
-  const captures = names.map((name) => ({
-    name,
-    value: readNoFollowRegularFile(join(projectDir, name), MAX_GRADLE_ROOT_FILE_BYTES, projectDir),
-  }))
-  if (captures.some(({ value }) => value.kind === "blocked")) return blocked()
-  const files = captures.filter((capture) => capture.value.kind === "ready")
+  const files = names.flatMap((name) => {
+    const file = projectReadBoundary.readProjectFileWithIdentity(name, MAX_GRADLE_ROOT_FILE_BYTES)
+    return file === undefined ? [] : [{ ...file, name }]
+  })
   if (files.length !== 1) return blocked()
-
-  const postRoot = captureNoFollowDirectory(projectDir)
   const file = files[0]
-  if (file === undefined || file.value.kind !== "ready" || postRoot.kind !== "ready" || !sameNoFollowPathIdentity(root, postRoot.value)) {
-    return blocked()
-  }
+  if (file === undefined) return blocked()
   return {
     digest: digest(JSON.stringify({
-      bytes: digest(file.value.value.bytes),
-      identity: noFollowPathIdentityDigest(file.value.value.identity),
+      bytes: digest(file.bytes),
       name: file.name,
     })),
     file: file.name,

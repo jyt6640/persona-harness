@@ -1,11 +1,11 @@
 import { execFileSync } from "node:child_process"
-import { chmodSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
+import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 import { writeCurrentWorkflowLifecycleLoopStates } from "./helpers/workflow-lifecycle-loop-state.js"
 
 const tempProjects: string[] = []
@@ -26,7 +26,7 @@ type ClosurePayload = {
 }
 
 function createTempProject(): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-mechanical-finish-test-"))
+  const projectDir = createDirectProjectRoot("persona-mechanical-finish-test")
   tempProjects.push(projectDir)
   return projectDir
 }

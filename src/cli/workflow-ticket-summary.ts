@@ -3,6 +3,7 @@ import { join } from "node:path"
 
 import { BACKLOG_PATH, HISTORY_DIR, parseBacklogState, TASK_CARD_NAME, type BacklogTicket, WORK_DIR } from "./workflow-ticket-model.js"
 import { safeArtifactReference, safeWorkflowCode, safeWorkflowTitle } from "./workflow-safe-rendering.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 
 export type WorkflowPendingTicket = {
   readonly ticket: string
@@ -21,12 +22,24 @@ export const TIMEBOXED_SCOPE_GUIDANCE =
   "For time-boxed or eval runs, split a smaller requirements source so every pending ticket can be honestly finished."
 const PENDING_TICKET_COMPLETION_GUIDANCE = "Do not claim overall completion while this ticket remains pending."
 
-export function pendingWorkflowTickets(projectDir: string): readonly BacklogTicket[] {
+export function pendingWorkflowTickets(
+  projectDir: string,
+  snapshot?: ProjectReadSnapshot,
+): readonly BacklogTicket[] {
+  if (snapshot !== undefined) {
+    const text = snapshot.readText(BACKLOG_PATH)
+    if (text === undefined) return []
+    return pendingTicketsFromText(text)
+  }
   const backlogAbsolutePath = join(projectDir, BACKLOG_PATH)
   if (!existsSync(backlogAbsolutePath)) {
     return []
   }
-  const state = parseBacklogState(readFileSync(backlogAbsolutePath, "utf8"))
+  return pendingTicketsFromText(readFileSync(backlogAbsolutePath, "utf8"))
+}
+
+function pendingTicketsFromText(text: string): readonly BacklogTicket[] {
+  const state = parseBacklogState(text)
   if (state.kind === "malformed") {
     return [{
       order: 0,
@@ -47,11 +60,17 @@ function archiveCandidateLabel(ticketId: string): string {
   return /^req[-_]?/i.test(ticketId) ? "this req ticket" : "this ticket"
 }
 
-export function pendingTicketArchiveState(projectDir: string, ticketId: string): PendingTicketArchiveState {
-  if (existsSync(join(projectDir, WORK_DIR, ticketId, TASK_CARD_NAME))) {
+export function pendingTicketArchiveState(
+  projectDir: string,
+  ticketId: string,
+  snapshot?: ProjectReadSnapshot,
+): PendingTicketArchiveState {
+  const workPath = join(WORK_DIR, ticketId, TASK_CARD_NAME)
+  const historyPath = join(HISTORY_DIR, ticketId, TASK_CARD_NAME)
+  if (snapshot?.hasFile(workPath) ?? existsSync(join(projectDir, workPath))) {
     return "active-work"
   }
-  if (existsSync(join(projectDir, HISTORY_DIR, ticketId, TASK_CARD_NAME))) {
+  if (snapshot?.hasFile(historyPath) ?? existsSync(join(projectDir, historyPath))) {
     return "history-only"
   }
   return "missing-work"
@@ -95,13 +114,16 @@ function taskCardContextLines(ticket: BacklogTicket, projectDir: string | undefi
   return contextLines.length === 0 ? [] : ["Task card context:", ...contextLines.map((line) => `- ${line}`)]
 }
 
-export function workflowPendingTicketStatus(projectDir: string): readonly WorkflowPendingTicket[] {
-  return pendingWorkflowTickets(projectDir).map((ticket) => ({
+export function workflowPendingTicketStatus(
+  projectDir: string,
+  snapshot?: ProjectReadSnapshot,
+): readonly WorkflowPendingTicket[] {
+  return pendingWorkflowTickets(projectDir, snapshot).map((ticket) => ({
     ticket: ticket.ticket,
     title: ticket.title,
     path: ticket.path,
     reviewArchiveCandidate: looksLikeTechnicalConstraints(ticket),
-    archiveState: pendingTicketArchiveState(projectDir, ticket.ticket),
+    archiveState: pendingTicketArchiveState(projectDir, ticket.ticket, snapshot),
   }))
 }
 

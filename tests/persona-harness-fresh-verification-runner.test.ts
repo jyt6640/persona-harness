@@ -1,11 +1,14 @@
 import { execFileSync } from "node:child_process"
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { runFreshFixedVerification } from "../src/cli/fresh-verification-runner.js"
+import {
+  runFreshFixedVerification as runFreshFixedVerificationAtProject,
+  type FreshVerificationRunnerOptions,
+} from "../src/cli/fresh-verification-runner.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 import {
   assessVerificationAuthority,
   parseVerificationAttempt,
@@ -21,7 +24,7 @@ afterEach(() => {
   projects.length = 0
 })
 
-describe("fresh fixed-command verification runner", () => {
+describe.sequential("fresh fixed-command verification runner", () => {
   it("writes a bound completed attempt and local receipt only after fresh tests run", () => {
     const projectDir = createProject(successScript())
     const token = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
@@ -115,8 +118,16 @@ describe("fresh fixed-command verification runner", () => {
   })
 })
 
+function runFreshFixedVerification(
+  projectDir: string,
+  mode: "ci" | "local",
+  options: FreshVerificationRunnerOptions = {},
+) {
+  return runFreshFixedVerificationAtProject(projectDir, mode, options)
+}
+
 function createProject(gradleWrapper: string): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-fresh-verification-"))
+  const projectDir = createDirectProjectRoot("persona-fresh-verification")
   projects.push(projectDir)
   mkdirSync(join(projectDir, ".persona", "evidence"), { recursive: true })
   writeFileSync(join(projectDir, ".persona", "harness.jsonc"), `${JSON.stringify({

@@ -3,6 +3,14 @@ import process from "node:process"
 
 import { findConventionByBlockerId } from "../config/convention-registry.js"
 import type { WorkflowLifecycleProjection } from "../runtime/workflow-lifecycle-projection.js"
+import {
+  reserveProjectReadBoundary,
+  type ProjectReadBoundary,
+} from "../io/bootstrap-write-boundary.js"
+import {
+  captureProjectReadSnapshot,
+  type ProjectReadSnapshot,
+} from "../io/project-read-snapshot.js"
 import { CONVENTION_TOOLCHAIN_MISSING_BLOCKER_ID } from "./architecture-conventions.js"
 import type { CliRunResult } from "./bearshell.js"
 import { readClosureVerification, type ClosureVerification } from "./workflow-closure-verification.js"
@@ -88,9 +96,35 @@ const IMPLEMENTATION_REPORT_PATH = ".persona/workflow/implementation-report.md"
 const REVIEW_REPORT_PATH = ".persona/workflow/review-report.md"
 const PLAN_PATH = ".persona/workflow/plan.md"
 
+type WorkflowClosureReadOptions = {
+  readonly consumeExternalAttestation?: boolean
+  readonly now?: Date
+  readonly projectReadBoundary?: ProjectReadBoundary
+  readonly projectReadSnapshot?: ProjectReadSnapshot
+  readonly recordTddGreenEvidence?: boolean
+}
+
 export function runWorkflowClosureCommand(action: ClosureAction, options: { readonly projectDir?: string }): CliRunResult {
   const projectDir = resolve(options.projectDir ?? process.cwd())
-  const payload = readWorkflowClosurePayload(action, projectDir)
+  if (projectDir !== resolve(process.cwd())) {
+    return renderWorkflowClosurePayload(readWorkflowClosurePayload(action, projectDir))
+  }
+  let boundary: ProjectReadBoundary | undefined
+  try {
+    boundary = reserveProjectReadBoundary(projectDir)
+    const snapshot = captureProjectReadSnapshot(projectDir, boundary)
+    return renderWorkflowClosurePayload(readWorkflowClosurePayload(action, projectDir, {
+      projectReadBoundary: boundary,
+      projectReadSnapshot: snapshot,
+    }))
+  } catch {
+    return { status: 1, stdout: "", stderr: "source-read-runtime-unavailable\n" }
+  } finally {
+    boundary?.close()
+  }
+}
+
+function renderWorkflowClosurePayload(payload: ClosurePayload): CliRunResult {
   const output = payload.action === "next"
     ? safeWorkflowClosureNextPayload(payload)
     : safeWorkflowClosureStatusPayload(payload)
@@ -104,38 +138,22 @@ export function runWorkflowClosureCommand(action: ClosureAction, options: { read
 export function readWorkflowClosurePayload(
   action: "next",
   projectDir: string,
-  options?: {
-    readonly consumeExternalAttestation?: boolean
-    readonly now?: Date
-    readonly recordTddGreenEvidence?: boolean
-  },
+  options?: WorkflowClosureReadOptions,
 ): ClosureNextPayload
 export function readWorkflowClosurePayload(
   action: "status",
   projectDir: string,
-  options?: {
-    readonly consumeExternalAttestation?: boolean
-    readonly now?: Date
-    readonly recordTddGreenEvidence?: boolean
-  },
+  options?: WorkflowClosureReadOptions,
 ): ClosureStatusPayload
 export function readWorkflowClosurePayload(
   action: ClosureAction,
   projectDir: string,
-  options?: {
-    readonly consumeExternalAttestation?: boolean
-    readonly now?: Date
-    readonly recordTddGreenEvidence?: boolean
-  },
+  options?: WorkflowClosureReadOptions,
 ): ClosurePayload
 export function readWorkflowClosurePayload(
   action: ClosureAction,
   projectDir: string,
-  options: {
-    readonly consumeExternalAttestation?: boolean
-    readonly now?: Date
-    readonly recordTddGreenEvidence?: boolean
-  } = {},
+  options: WorkflowClosureReadOptions = {},
 ): ClosurePayload {
   const state = readWorkflowClosureState(projectDir, options)
   const steps = closureSteps(state)
@@ -147,20 +165,30 @@ export function readWorkflowClosurePayload(
 
 function readWorkflowClosureState(
   projectDir: string,
-  options: {
-    readonly consumeExternalAttestation?: boolean
-    readonly now?: Date
-    readonly recordTddGreenEvidence?: boolean
-  },
+  options: WorkflowClosureReadOptions,
 ): WorkflowClosureState {
-  const verification = readClosureVerification(projectDir)
-  const initialTicket = workflowPendingTicketStatus(projectDir)[0]?.ticket ?? null
-  const tdd = readTddClosureFinding(projectDir, initialTicket, { recordGreenEvidence: options.recordTddGreenEvidence })
+  const verification = readClosureVerification(
+    projectDir,
+    options.projectReadBoundary,
+    options.projectReadSnapshot,
+  )
+  const initialTicket = workflowPendingTicketStatus(projectDir, options.projectReadSnapshot)[0]?.ticket ?? null
+  const tdd = readTddClosureFinding(projectDir, initialTicket, {
+    projectReadBoundary: options.projectReadBoundary,
+    projectReadSnapshot: options.projectReadSnapshot,
+    recordGreenEvidence: options.recordTddGreenEvidence,
+  })
   const authority = readWorkflowFinishAuthority(projectDir, {
     consumeExternalAttestation: options.consumeExternalAttestation ?? false,
     now: options.now,
+    projectReadBoundary: options.projectReadBoundary,
   })
-  const summary = readWorkflowStatus(projectDir, { finishAuthority: authority, now: options.now })
+  const summary = readWorkflowStatus(projectDir, {
+    finishAuthority: authority,
+    now: options.now,
+    projectReadBoundary: options.projectReadBoundary,
+    projectReadSnapshot: options.projectReadSnapshot,
+  })
   const pendingTickets = summary.pendingTickets.map((ticket) => ticket.ticket)
   const currentTicket = closureTickets(summary)[0] ?? null
   const partialState = {

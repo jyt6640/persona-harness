@@ -1,0 +1,211 @@
+{
+  "schemaVersion": "consumer-authority-beta6-acceptance.1",
+  "package": {
+    "version": "0.8.0-beta.6",
+    "channel": "staging",
+    "scope": "staging-only"
+  },
+  "nativeProjectRead": {
+    "manifest": "native/project-read/manifest.json",
+    "source": "native/project-read/ph_native_project_read.c",
+    "platforms": ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
+    "node": "^20.17.0 || >=22.9.0",
+    "unavailable": "source-read-runtime-unavailable"
+  },
+  "cooperative": {
+    "commands": [
+      "ph bootstrap backend --strict --no-developer-mcp",
+      "ph bearshell ./gradlew test",
+      "ph bearshell ./gradlew compileJava",
+      "ph bearshell ./gradlew clean",
+      "ph evidence read README.md",
+      "ph evidence read .persona/project-profile.jsonc",
+      "ph evidence read src/main/java/example/cooperative/GreetingService.java",
+      "ph plan --report-filled implementation --stdin",
+      "ph plan --report-filled review --stdin"
+    ],
+    "defaultFinish": "trusted-authority-required",
+    "explicitFinish": "cooperative-pass",
+    "laterClosure": "trusted-authority-required",
+    "evidence": {
+      "recordSchema": "workflow-read-evidence.1",
+      "sourceReads": [
+        "README.md",
+        ".persona/project-profile.jsonc",
+        "src/main/java/example/cooperative/GreetingService.java"
+      ],
+      "sourceReadManifest": [
+        {
+          "id": "project-root",
+          "surface": "producer-and-source-match",
+          "boundary": "native-directory-fd-root-capability"
+        },
+        {
+          "id": "harness-config-and-profile",
+          "surface": ".persona/harness.jsonc-and-project-profile.jsonc",
+          "boundary": "native-openat-regular-file"
+        },
+        {
+          "id": "gradle-descriptors",
+          "surface": "build.gradle-or-build.gradle.kts-and-settings.gradle-or-settings.gradle.kts",
+          "boundary": "native-openat-exactly-one"
+        },
+        {
+          "id": "source-tree-and-git",
+          "surface": "tracked-and-included-untracked-source-plus-fixed-git",
+          "boundary": "native-openat-tree-and-captured-cwd"
+        },
+        {
+          "id": "evidence-read-input-and-output",
+          "surface": "public-ph-evidence-read",
+          "boundary": "captured-project-read-and-canonical-evidence-write"
+        }
+      ],
+      "sourceReadStages": [
+        {
+          "id": "project-root-capture",
+          "capability": "runner-directory-fd",
+          "relativePath": "<direct-child-project>",
+          "operation": "openat-nofollow-and-identity-bind"
+        },
+        {
+          "id": "intermediate-segment-traversal",
+          "capability": "project-root-fd",
+          "relativePath": "<each-relative-parent-segment>",
+          "operation": "fstatat-openat-nofollow-fstatat"
+        },
+        {
+          "id": "regular-leaf-read",
+          "capability": "held-parent-fd",
+          "relativePath": "<selected-regular-leaf>",
+          "operation": "openat-nofollow-bounded-read-post-identity"
+        },
+        {
+          "id": "harness-config-profile",
+          "capability": "project-root-fd",
+          "relativePath": ".persona/harness.jsonc|.persona/project-profile.jsonc",
+          "operation": "bounded-regular-read"
+        },
+        {
+          "id": "gradle-descriptors",
+          "capability": "project-root-fd",
+          "relativePath": "build.gradle|build.gradle.kts|settings.gradle|settings.gradle.kts",
+          "operation": "exactly-one-bounded-regular-read"
+        },
+        {
+          "id": "gradle-wrapper-execution",
+          "capability": "project-root-fd",
+          "relativePath": "gradlew",
+          "operation": "nofollow-wrapper-check-and-fixed-exec"
+        },
+        {
+          "id": "source-identity-tree",
+          "capability": "project-root-fd",
+          "relativePath": "<tracked-staged-unstaged-included-untracked>",
+          "operation": "bounded-descriptor-relative-tree"
+        },
+        {
+          "id": "git-identity",
+          "capability": "project-root-fd",
+          "relativePath": ".git",
+          "operation": "fixed-catalog-fchdir-exec"
+        },
+        {
+          "id": "junit-baseline",
+          "capability": "project-root-fd",
+          "relativePath": "build/test-results/test|target/surefire-reports",
+          "operation": "descriptor-relative-generated-manifest"
+        },
+        {
+          "id": "junit-fresh-read",
+          "capability": "project-root-fd",
+          "relativePath": "build/test-results/test|target/surefire-reports",
+          "operation": "descriptor-relative-generated-tree"
+        },
+        {
+          "id": "public-evidence-source-read",
+          "capability": "project-root-fd",
+          "relativePath": "<validated-public-relative-path>",
+          "operation": "manifest-bound-regular-read"
+        },
+        {
+          "id": "public-evidence-record-write",
+          "capability": "bootstrap-write-boundary",
+          "relativePath": ".persona/evidence/phase0/<digest>.json",
+          "operation": "canonical-contained-atomic-write"
+        },
+        {
+          "id": "producer-post-verification-recheck",
+          "capability": "project-root-fd",
+          "relativePath": "<same-captured-project>",
+          "operation": "repeat-input-source-git-and-junit-bindings"
+        },
+        {
+          "id": "boundary-cleanup",
+          "capability": "held-native-descriptors",
+          "relativePath": "<all-held-fds>",
+          "operation": "close-only-no-path-reopen"
+        }
+      ],
+      "unsafeResult": "bounded-block-no-external-descriptor-bytes-record-or-artifact"
+    }
+  },
+  "authority": {
+    "commands": [
+      "ph authority enroll github <owner/repository> --workflow <caller-workflow>",
+      "ph authority status --json",
+      "ph authority fetch github --json",
+      "ph authority explain --json",
+      "ph workflow finish implement"
+    ],
+    "hostedFixture": {
+      "repository": "jyt6640/persona-harness-attestation-claim-fixture",
+      "callerWorkflowPath": ".github/workflows/persona-harness.yml",
+      "reusableWorkflowPath": ".github/workflows/persona-harness-project-finish.yml",
+      "event": "push",
+      "ref": "refs/heads/main",
+      "revision": "postmerge-persona-harness-main-sha"
+    },
+    "fixturePlan": {
+      "artifact": "project-finish-attestation",
+      "consumer": "public-java-spring-gradle",
+      "postmergeAction": "normal-push-to-main",
+      "registryInstall": "npm install persona-harness@0.8.0-beta.6 --registry https://registry.npmjs.org"
+    },
+    "verification": {
+      "predicate": "project-finish-attestation.1",
+      "route": "fixed-product-owned-online",
+      "unavailable": "bounded-non-authoritative"
+    }
+  },
+  "negativeCases": [
+    { "id": "gradle-test-or-compile-failure", "proof": "cooperative-source-and-packed" },
+    { "id": "junit-malformed-stale-or-unsafe", "proof": "cooperative-source-and-packed" },
+    { "id": "report-malformed-repeated-control-or-oversized", "proof": "report-ingress-source-and-packed" },
+    { "id": "workflow-or-ralph-loop-missing-malformed-or-unsafe", "proof": "bootstrap-containment-source-and-packed" },
+    { "id": "source-read-root-parent-leaf-alias-or-replacement", "proof": "native-source-read-source-and-packed" },
+    { "id": "source-read-runtime-missing-invalid-or-unsupported", "proof": "native-source-read-source-and-packed" },
+    { "id": "default-finish-authority-negative", "proof": "cooperative-source-and-packed" },
+    { "id": "artifact-identity-or-version-mismatch", "proof": "project-consumption-source" },
+    { "id": "external-trust-unavailable", "proof": "doctor-source-and-packed" },
+    { "id": "explicit-consumption-replay", "proof": "project-consumption-source" }
+  ],
+  "deterministicProofs": [
+    { "id": "cooperative-source-and-packed", "surface": "source-built-and-packed-installed" },
+    { "id": "report-ingress-source-and-packed", "surface": "source-built-and-packed-installed" },
+    { "id": "bootstrap-containment-source-and-packed", "surface": "source-built-and-packed-installed" },
+    { "id": "native-source-read-source-and-packed", "surface": "source-built-and-packed-installed-with-native-descriptor-open-audit" },
+    { "id": "project-consumption-source", "surface": "source-built-worker-seam" },
+    { "id": "doctor-source-and-packed", "surface": "source-built-and-packed-installed" }
+  ],
+  "hostedResidual": {
+    "id": "beta6-postmerge-registry-current-artifact-and-independent-verification",
+    "evidence": [
+      "staging-only-publish-and-registry-readback",
+      "registry-installed-cooperative-finish",
+      "current-version-original-signed-project-artifact",
+      "independent-online-custom-predicate-verification-within-certificate-window",
+      "explicit-consumption-and-replay-block"
+    ]
+  }
+}

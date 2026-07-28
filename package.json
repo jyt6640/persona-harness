@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.8.0-beta.3",
+  "version": "0.8.0-beta.6",
   "private": false,
   "type": "module",
   "description": "Gate-first CLI for Java/Spring backend workflow evidence, completion checks, and optional OpenCode runtime guidance.",
@@ -122,7 +122,8 @@
     "scripts/staged-package-artifact-provenance-network.mjs",
     "scripts/staged-package-artifact-provenance-policy.mjs",
     "scripts/staged-package-artifact-tarball.mjs",
-    "scripts/verify-staged-package-artifact-attestation.mjs"
+    "scripts/verify-staged-package-artifact-attestation.mjs",
+    "native/project-read"
   ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",

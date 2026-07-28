@@ -1,4 +1,5 @@
 import type { ClosureBlocker } from "./workflow-closure.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 import { resolveSafeEvidenceRootResult } from "../config/harness-config.js"
 import {
   assessVerificationAuthority,
@@ -11,6 +12,7 @@ import {
 import {
   blockedVerificationDecision,
   completionEligibleForAssurance,
+  diagnosticVerificationDecision,
   externalAttestedVerificationDecision,
   type VerificationDecision,
 } from "./workflow-verification-decision.js"
@@ -43,8 +45,12 @@ export function readWorkflowFinishAuthority(
     readonly authorityStoreRoot?: string
     readonly consumeExternalAttestation?: boolean
     readonly now?: Date
+    readonly projectReadBoundary?: ProjectReadBoundary
   } = {},
 ): WorkflowFinishAuthority {
+  if (options.projectReadBoundary !== undefined) {
+    return readCapabilityBoundWorkflowFinishAuthority(projectDir, options.projectReadBoundary, options)
+  }
   const now = options.now ?? new Date()
   const consume = options.consumeExternalAttestation !== false
   const assessment = assessVerificationAuthority(projectDir)
@@ -167,6 +173,118 @@ export function readWorkflowFinishAuthority(
     projectAttestation: projectRead.values[0]?.assessment,
     semanticTdd,
     externalAttestation,
+    status: "blocked",
+  }
+}
+
+function readCapabilityBoundWorkflowFinishAuthority(
+  projectDir: string,
+  projectReadBoundary: ProjectReadBoundary,
+  options: {
+    readonly authorityStoreRoot?: string
+    readonly consumeExternalAttestation?: boolean
+    readonly now?: Date
+  },
+): WorkflowFinishAuthority {
+  const now = options.now ?? new Date()
+  const consume = options.consumeExternalAttestation !== false
+  const assessment: VerificationAuthorityAssessment = {
+    authorityEligible: false,
+    decision: diagnosticVerificationDecision(
+      "capability-bound-local-authority-unavailable",
+      "Project-local verification receipts remain diagnostic-only.",
+    ),
+    diagnostics: [],
+    legacyEvidence: { diagnosticOnly: true, files: [] },
+    state: "missing",
+    summary: "Project-local verification receipts remain diagnostic-only.",
+  }
+  const semanticTdd: SemanticTddAssessment = {
+    authorityEligible: false,
+    decision: diagnosticVerificationDecision(
+      "capability-bound-semantic-tdd-unavailable",
+      "Project-local semantic TDD evidence remains diagnostic-only.",
+    ),
+    diagnosticCodes: [],
+    diagnostics: [],
+    state: "missing-red",
+    summary: "Project-local semantic TDD evidence remains diagnostic-only.",
+  }
+  const externalAttestation: FinishAttestationAssessment = {
+    authorityEligible: false,
+    consumptionState: "not-applicable",
+    decision: "blocked",
+    diagnostics: [],
+    state: "missing",
+    summary: "No legacy repository finish attestation is selected by the consumer authority path.",
+  }
+  const projectRead = readEnrolledProjectFinishAttestations(
+    projectDir,
+    { storeRoot: options.authorityStoreRoot },
+    now,
+    projectReadBoundary,
+  )
+  const trustedProjects = projectRead.values.filter((candidate) => candidate.assessment.authorityEligible)
+  if (trustedProjects.length === 1) {
+    const candidate = trustedProjects[0]
+    if (candidate !== undefined) {
+      const projectAttestation = consume
+        ? consumeProjectFinishAttestationArtifact(
+          projectDir,
+          candidate.enrollment,
+          candidate.artifact.archive,
+          now,
+          projectReadBoundary,
+        )
+        : candidate.assessment
+      if (projectAttestation.authorityEligible && projectAttestation.receipt !== undefined) {
+        const decision = externalAttestedVerificationDecision({
+          attestationId: projectAttestation.receipt.lifecycle.finishId,
+          consumptionState: projectAttestation.consumptionState === "consumed" ? "consumed" : "unconsumed",
+          decisionId: `external-project-finish-${projectAttestation.receipt.lifecycle.finishId}`,
+          sourceSnapshotDigest: projectAttestation.receipt.source.identity.contentDigest,
+          verifiedAt: now.toISOString(),
+        })
+        if (completionEligibleForAssurance(decision)) {
+          return {
+            assessment,
+            blocker: {
+              id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
+              reason: projectAttestation.summary,
+              source: ".persona/evidence (capability-bound consumer authority)",
+            },
+            decision,
+            externalAttestation,
+            projectAttestation,
+            semanticTdd,
+            status: "trusted",
+          }
+        }
+      }
+    }
+  }
+  const projectSummary = trustedProjects.length > 1
+    ? "Multiple enrolled project finish attestations are trusted; finish remains blocked until the ambiguity is resolved."
+    : projectRead.values[0]?.assessment.summary ?? "No enrolled original project finish attestation is available."
+  const decision = blockedVerificationDecision(
+    TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
+    [
+      "No trusted external authority receipt is available.",
+      `Enrolled project attestation assessment: ${projectSummary}.`,
+      "Only a product-verified original external attestation matching its enrolled policy can provide trusted authority before finish can pass.",
+    ].join(" "),
+  )
+  return {
+    assessment,
+    blocker: {
+      id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
+      reason: decision.summary,
+      source: ".persona/evidence (capability-bound consumer authority)",
+    },
+    decision,
+    externalAttestation,
+    projectAttestation: projectRead.values[0]?.assessment,
+    semanticTdd,
     status: "blocked",
   }
 }

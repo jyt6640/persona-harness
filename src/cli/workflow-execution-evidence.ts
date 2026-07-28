@@ -3,6 +3,11 @@ import { join } from "node:path"
 import { isRecord } from "../config/jsonc.js"
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import {
+  containedProjectRelativePath,
+  type ProjectReadSnapshot,
+} from "../io/project-read-snapshot.js"
 import { discoverJUnitResults, JUNIT_RESULT_DIRS } from "./junit-result-discovery.js"
 import type { ClosureVerification } from "./workflow-closure-verification.js"
 
@@ -37,8 +42,12 @@ export function hasVerificationSuccessText(text: string): boolean {
   return SUCCESS_PATTERNS.some((pattern) => pattern.test(text))
 }
 
-export function readExecutionEvidenceVerification(projectDir: string): ExecutionEvidenceVerification {
-  const configResult = loadHarnessConfigResult(projectDir)
+export function readExecutionEvidenceVerification(
+  projectDir: string,
+  boundary?: ProjectReadBoundary,
+  snapshot?: ProjectReadSnapshot,
+): ExecutionEvidenceVerification {
+  const configResult = loadHarnessConfigResult(projectDir, boundary)
   if (!configResult.safe) {
     return {
       evidenceRef: ".persona/harness.jsonc",
@@ -47,8 +56,13 @@ export function readExecutionEvidenceVerification(projectDir: string): Execution
       verification: "unknown",
     }
   }
-  const evidencePath = resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
-  if (!evidencePath.ok) {
+  const evidencePath = snapshot === undefined
+    ? resolveConfiguredPathResult(projectDir, configResult.config.evidenceDir)
+    : undefined
+  const evidenceRelative = snapshot === undefined
+    ? evidencePath?.ok === true ? evidencePath.relativePath || configResult.config.evidenceDir : undefined
+    : containedProjectRelativePath(projectDir, configResult.config.evidenceDir)
+  if (evidenceRelative === undefined) {
     return {
       evidenceRef: ".persona/harness.jsonc",
       observed: true,
@@ -56,9 +70,10 @@ export function readExecutionEvidenceVerification(projectDir: string): Execution
       verification: "unknown",
     }
   }
-  const evidenceRoot = evidencePath.path
-  const evidenceRef = evidencePath.relativePath || configResult.config.evidenceDir
-  const evidenceRead = readEvidenceEntries(evidenceRoot, evidenceRef, projectDir)
+  const evidenceRef = evidenceRelative
+  const evidenceRead = snapshot === undefined && evidencePath?.ok === true
+    ? readEvidenceEntries(evidencePath.path, evidenceRef, projectDir)
+    : readSnapshotEvidenceEntries(snapshot, evidenceRef)
   if (!evidenceRead.safe) {
     return {
       evidenceRef,
@@ -69,7 +84,9 @@ export function readExecutionEvidenceVerification(projectDir: string): Execution
   }
   const entries = evidenceRead.entries
   const evidenceText = entries.map((entry) => entry.text).join("\n")
-  const junit = junitVerification(projectDir)
+  const junit = snapshot === undefined
+    ? junitVerification(projectDir)
+    : { observed: false, reason: "generated JUnit is outside the immutable status snapshot", verification: "unknown" as const }
   if (junit.verification !== "unknown" || junit.observed) {
     return junit
   }
@@ -87,6 +104,26 @@ export function readExecutionEvidenceVerification(projectDir: string): Execution
     return { evidenceRef, observed: true, reason: "verification commands mentioned without structured success/failure evidence", verification: "unknown" }
   }
   return { evidenceRef, observed: true, reason: "verification evidence is present but inconclusive", verification: "unknown" }
+}
+
+function readSnapshotEvidenceEntries(
+  snapshot: ProjectReadSnapshot | undefined,
+  evidenceRef: string,
+): { readonly entries: readonly EvidenceEntry[]; readonly safe: boolean } {
+  if (snapshot === undefined) return { entries: [], safe: false }
+  const files = snapshot.filesUnder(evidenceRef, {
+    maxEntries: 512,
+    maxFileBytes: 256 * 1024,
+    maxTotalBytes: 2 * 1024 * 1024,
+  })
+  if (files === undefined) return { entries: [], safe: false }
+  const entries = files.flatMap((file) => {
+    if (file.text.length === 0) return []
+    const parsed = parseJson(file.text)
+    if (isCiReverificationArtifact(parsed)) return []
+    return [{ parsed, ref: `${evidenceRef}/${file.relativePath}`, text: file.text }]
+  })
+  return { entries, safe: true }
 }
 
 type EvidenceEntry = {

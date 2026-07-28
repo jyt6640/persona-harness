@@ -4,6 +4,8 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "
 import { join } from "node:path"
 
 import { loadHarnessConfigResult, resolveSafeEvidenceRootResult } from "../config/harness-config.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 import { isRecord } from "../config/jsonc.js"
 import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
@@ -113,9 +115,13 @@ export function recordTddGreenForCurrentTicket(projectDir: string): void {
 export function readTddClosureFinding(
   projectDir: string,
   ticketId: string | null,
-  options: { readonly recordGreenEvidence?: boolean } = {},
+  options: {
+    readonly projectReadBoundary?: ProjectReadBoundary
+    readonly projectReadSnapshot?: ProjectReadSnapshot
+    readonly recordGreenEvidence?: boolean
+  } = {},
 ): TddClosureFinding {
-  const configResult = loadHarnessConfigResult(projectDir)
+  const configResult = loadHarnessConfigResult(projectDir, options.projectReadBoundary)
   if (!configResult.safe) {
     return {
       kind: "unavailable",
@@ -130,6 +136,12 @@ export function readTddClosureFinding(
     return {
       kind: "unavailable",
       reason: "enforce.tdd requires enforce.executeVerification; TDD closure is advisory without strict PH-run verification",
+    }
+  }
+  if (options.projectReadSnapshot !== undefined) {
+    return {
+      kind: "unavailable",
+      reason: "strict TDD evidence requires a separate capability-bound verification transaction",
     }
   }
   if (ticketId === null) {

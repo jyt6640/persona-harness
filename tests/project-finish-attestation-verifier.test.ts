@@ -31,7 +31,7 @@ describe("project-finish-attestation.1 verifier core", () => {
   it("fails closed when the fixed evidence directory is absent", () => {
     const projectDir = track(mkdtempSync(join(tmpdir(), "persona-project-finish-verifier-")))
 
-    const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-18T01:30:00.000Z"))
+    const result = inspectAt(projectDir)
 
     expect(result).toMatchObject({
       authorityEligible: false,
@@ -47,7 +47,7 @@ describe("project-finish-attestation.1 verifier core", () => {
     mkdirSync(evidenceRoot, { recursive: true })
     symlinkSync(join(projectDir, "outside"), join(evidenceRoot, "project-finish-attestation"), "dir")
 
-    const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-18T01:30:00.000Z"))
+    const result = inspectAt(projectDir)
 
     expect(result).toMatchObject({ authorityEligible: false, state: "missing" })
     expect(JSON.stringify(result)).not.toContain(projectDir)
@@ -95,7 +95,7 @@ describe("project-finish-attestation.1 verifier core", () => {
     mkdirSync(evidenceDir, { recursive: true })
     arrange(evidenceDir, projectDir)
 
-    const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-18T01:30:00.000Z"))
+    const result = inspectAt(projectDir)
 
     expect(result).toMatchObject({ authorityEligible: false, state: "missing" })
     expect(existsSync(join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json"))).toBe(false)
@@ -126,7 +126,7 @@ describe("project-finish-attestation.1 verifier core", () => {
     const marker = "sk-live-local-bundle-marker"
     writeFileSync(join(evidenceDir, "bundle.json"), `${JSON.stringify({ marker, statement })}\n`)
 
-    const result = inspectProjectFinishAttestation(projectDir, enrollment, new Date("2026-07-18T01:30:00.000Z"))
+    const result = inspectAt(projectDir)
 
     expect(result.authorityEligible).toBe(false)
     expect(result.state).toBe("malformed-bundle")
@@ -156,4 +156,14 @@ function writeMinimalEvidence(evidenceDir: string): void {
   writeFileSync(join(evidenceDir, "bundle.json"), "{}\n")
   writeFileSync(join(evidenceDir, "predicate.json"), "{}\n")
   writeFileSync(join(evidenceDir, "receipt.json"), "{}\n")
+}
+
+function inspectAt(projectDir: string) {
+  const original = process.cwd()
+  process.chdir(projectDir)
+  try {
+    return inspectProjectFinishAttestation(".", enrollment, new Date("2026-07-18T01:30:00.000Z"))
+  } finally {
+    process.chdir(original)
+  }
 }

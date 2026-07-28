@@ -4,6 +4,7 @@ import { join } from "node:path"
 
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import { isRecord } from "../config/jsonc.js"
+import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
 import type { BoundedProcessResult } from "./bounded-process.js"
 import type { CiReverificationArtifact, CiReverificationCommandRecord } from "./ci-reverification-artifact.js"
 import type { EvidenceParentIdentity, GitIdentity, PosixPathIdentity } from "./ci-reverification-identity.js"
@@ -32,7 +33,15 @@ export function commandPlanSha256(): string {
   return sha256(JSON.stringify(REVERIFICATION_COMMANDS))
 }
 
-export function safeGradleWrapper(projectDir: string): string | undefined {
+export function safeGradleWrapper(
+  projectDir: string,
+  projectReadBoundary?: ProjectReadBoundary,
+): string | undefined {
+  if (projectReadBoundary !== undefined) {
+    const wrapper = projectReadBoundary.readProjectFileWithIdentity("gradlew", 512 * 1024)
+    if (wrapper === undefined || (Number.parseInt(wrapper.identity.mode, 8) & 0o111) === 0) return undefined
+    return "./gradlew"
+  }
   const path = join(projectDir, "gradlew")
   try {
     const expectedPath = join(realpathSync(projectDir), "gradlew")
@@ -79,13 +88,14 @@ export function preflightDiagnostic(
   projectDir: string,
   mode: "ci" | "local",
   platform: NodeJS.Platform,
+  projectReadBoundary?: ProjectReadBoundary,
 ): string | undefined {
   if (platform === "win32") return "platform-windows-unavailable"
   let profileState: ReturnType<typeof readBackendProjectProfileState>
   let intent: ReturnType<typeof readProfileIntent>
   try {
-    profileState = readBackendProjectProfileState(projectDir)
-    intent = readProfileIntent(projectDir)
+    profileState = readBackendProjectProfileState(projectDir, projectReadBoundary)
+    intent = readProfileIntent(projectDir, projectReadBoundary)
   } catch {
     return "profile-unready"
   }
@@ -93,7 +103,7 @@ export function preflightDiagnostic(
   if (intent.language !== "java" || intent.framework !== "spring" || intent.buildTool !== "gradle") {
     return "profile-catalog-unavailable"
   }
-  return safeGradleWrapper(projectDir) === undefined ? "gradle-wrapper-unavailable" : undefined
+  return safeGradleWrapper(projectDir, projectReadBoundary) === undefined ? "gradle-wrapper-unavailable" : undefined
 }
 
 export function mutationSnapshotData(

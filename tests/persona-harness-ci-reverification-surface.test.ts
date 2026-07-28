@@ -1,11 +1,11 @@
 import { execFileSync } from "node:child_process"
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
+import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -14,7 +14,7 @@ function git(projectDir: string, args: readonly string[]): void {
 }
 
 function createBootstrappedProject(gradlew?: string): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-ci-surface-"))
+  const projectDir = createDirectProjectRoot("persona-ci-surface")
   projects.push(projectDir)
   const bootstrap = runPersonaCli(["bootstrap", "backend", "--no-developer-mcp"], {
     cwd: projectDir,
@@ -70,26 +70,14 @@ afterEach(() => {
   projects.length = 0
 })
 
-describe("CI reverification public surface", () => {
+describe.sequential("CI reverification public surface", () => {
   it("keeps plaintext finish and closure-next JSON unchanged after a passing reverify attempt", () => {
     const projectDir = createBootstrappedProject()
-    const plain = runPersonaCli(["workflow", "finish", "implement"], { cwd: projectDir, env: {}, invocationName: "ph" })
-    const closureBefore = runPersonaCli(["workflow", "closure", "next", "--json"], {
-      cwd: projectDir,
-      env: {},
-      invocationName: "ph",
-    })
+    const plain = runPh(projectDir, ["workflow", "finish", "implement"])
+    const closureBefore = runPh(projectDir, ["workflow", "closure", "next", "--json"])
 
-    const reverified = runPersonaCli(["workflow", "finish", "implement", "--reverify", "--ci"], {
-      cwd: projectDir,
-      env: {},
-      invocationName: "ph",
-    })
-    const closureAfter = runPersonaCli(["workflow", "closure", "next", "--json"], {
-      cwd: projectDir,
-      env: {},
-      invocationName: "ph",
-    })
+    const reverified = runPh(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
+    const closureAfter = runPh(projectDir, ["workflow", "closure", "next", "--json"])
 
     expect(reverified).toEqual(plain)
     expect(JSON.parse(closureAfter.stdout)).toEqual(JSON.parse(closureBefore.stdout))
@@ -98,11 +86,7 @@ describe("CI reverification public surface", () => {
 
   it("rejects bare CI before creating reverification evidence", () => {
     const projectDir = createBootstrappedProject()
-    const result = runPersonaCli(["workflow", "finish", "implement", "--ci"], {
-      cwd: projectDir,
-      env: { CI: "true" },
-      invocationName: "ph",
-    })
+    const result = runPh(projectDir, ["workflow", "finish", "implement", "--ci"], { CI: "true" })
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("workflow finish --ci requires --reverify")
@@ -111,16 +95,8 @@ describe("CI reverification public surface", () => {
 
   it("does not let an ambient CI environment select reverification", () => {
     const projectDir = createBootstrappedProject()
-    const plain = runPersonaCli(["workflow", "finish", "implement"], {
-      cwd: projectDir,
-      env: {},
-      invocationName: "ph",
-    })
-    const ambientCi = runPersonaCli(["workflow", "finish", "implement"], {
-      cwd: projectDir,
-      env: { CI: "true" },
-      invocationName: "ph",
-    })
+    const plain = runPh(projectDir, ["workflow", "finish", "implement"])
+    const ambientCi = runPh(projectDir, ["workflow", "finish", "implement"], { CI: "true" })
 
     expect(ambientCi).toEqual(plain)
   })
@@ -132,11 +108,7 @@ describe("CI reverification public surface", () => {
       "printf '%s\\n' '<testsuite' > build/test-results/test/TEST-surface.xml",
       "exit 0",
     ].join("\n") + "\n")
-    const result = runPersonaCli(["workflow", "finish", "implement", "--reverify", "--ci"], {
-      cwd: projectDir,
-      env: {},
-      invocationName: "ph",
-    })
+    const result = runPh(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
 
     expect(result.status).toBe(1)
     expect(result.stdout).not.toContain(projectDir)
@@ -145,3 +117,7 @@ describe("CI reverification public surface", () => {
     expect(result.stderr).toContain("junit-malformed-xml")
   })
 })
+
+function runPh(projectDir: string, args: readonly string[], env: Readonly<Record<string, string>> = {}) {
+  return runPersonaCli(args, { cwd: projectDir, env, invocationName: "ph" })
+}

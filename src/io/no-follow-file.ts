@@ -8,6 +8,7 @@ import {
   readFileSync,
   type BigIntStats,
 } from "node:fs"
+import { isAbsolute, join, resolve } from "node:path"
 
 export type NoFollowPathIdentity = {
   readonly ctimeNs: string
@@ -97,6 +98,43 @@ export function readNoFollowRegularFile(
   }
 }
 
+export function readNoFollowProjectFile(
+  projectDir: string,
+  relativePath: string,
+  maxBytes: number,
+): NoFollowRegularFileRead {
+  const segments = safeRelativeSegments(relativePath)
+  if (segments === undefined) return { code: "unsafe", kind: "blocked" }
+
+  const rootPath = resolve(projectDir)
+  const root = captureNoFollowDirectory(rootPath)
+  if (root.kind !== "ready") return root.kind === "absent" ? { kind: "absent" } : root
+
+  const reservations: Array<{ readonly identity: NoFollowPathIdentity; readonly path: string }> = [
+    { identity: root.value, path: rootPath },
+  ]
+  let parentPath = rootPath
+  for (const segment of segments.slice(0, -1)) {
+    parentPath = join(parentPath, segment)
+    const directory = captureNoFollowDirectory(parentPath)
+    if (directory.kind !== "ready") return directory.kind === "absent" ? { kind: "absent" } : directory
+    reservations.push({ identity: directory.value, path: parentPath })
+  }
+
+  const leaf = segments.at(-1)
+  if (leaf === undefined) return { code: "unsafe", kind: "blocked" }
+  const file = readNoFollowRegularFile(join(parentPath, leaf), maxBytes, parentPath)
+  if (file.kind !== "ready") return file
+
+  for (const reservation of reservations) {
+    const current = captureNoFollowDirectory(reservation.path)
+    if (current.kind !== "ready" || !sameNoFollowPathIdentity(reservation.identity, current.value)) {
+      return { code: "replaced", kind: "blocked" }
+    }
+  }
+  return file
+}
+
 export function sameNoFollowPathIdentity(
   left: NoFollowPathIdentity,
   right: NoFollowPathIdentity,
@@ -150,4 +188,21 @@ function errno(error: unknown): string | undefined {
     && typeof error.code === "string"
     ? error.code
     : undefined
+}
+
+function safeRelativeSegments(relativePath: string): readonly string[] | undefined {
+  if (
+    relativePath.length === 0
+    || relativePath.length > 240
+    || relativePath.includes("\\0")
+    || relativePath.includes("\\")
+    || isAbsolute(relativePath)
+  ) {
+    return undefined
+  }
+  const segments = relativePath.split("/")
+  return segments.length === 0
+    || segments.some((segment) => segment === "" || segment === "." || segment === ".." || !/^[A-Za-z0-9._@+-]+$/u.test(segment))
+    ? undefined
+    : segments
 }

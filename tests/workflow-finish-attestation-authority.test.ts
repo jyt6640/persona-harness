@@ -17,10 +17,10 @@ import {
   FINISH_ATTESTATION_BUNDLE_PATH,
   FINISH_ATTESTATION_CONSUMPTION_PATH,
   consumeFinishAttestation,
-  verifyExternalFinishAttestation,
+  verifyExternalFinishAttestation as verifyExternalFinishAttestationAtProject,
 } from "../src/cli/workflow-finish-attestation.js"
-import { readWorkflowFinishAuthority } from "../src/cli/workflow-finish-authority.js"
-import { readWorkflowClosurePayload } from "../src/cli/workflow-closure.js"
+import { readWorkflowFinishAuthority as readWorkflowFinishAuthorityAtProject } from "../src/cli/workflow-finish-authority.js"
+import { readWorkflowClosurePayload as readWorkflowClosurePayloadAtProject } from "../src/cli/workflow-closure.js"
 import {
   createRealArtifactProject,
   EXPIRED_ATTESTATION_NOW,
@@ -36,7 +36,7 @@ afterEach(() => {
   for (const project of projects.splice(0)) project.cleanup()
 })
 
-describe("finish-attestation.1 product authority", () => {
+describe.sequential("finish-attestation.1 product authority", () => {
   it("trusts the original signed artifact under its signed product version after product-owned verification", () => {
     const project = track(createRealArtifactProject())
     const result = verifyExternalFinishAttestation(project.projectDir, REAL_ATTESTATION_NOW, { consume: false })
@@ -145,6 +145,8 @@ describe("finish-attestation.1 product authority", () => {
 
     expect(authority.status).toBe("trusted")
     expect(closure.state.finish).toBe("passed")
+    expect(closure.action).toBe("next")
+    if (closure.action !== "next") throw new Error("expected next closure payload")
     expect(closure.nextStep?.id).toBe("terminal")
   })
 
@@ -189,6 +191,29 @@ describe("finish-attestation.1 product authority", () => {
     expect(result).toMatchObject({ authorityEligible: false, state: "missing" })
   })
 })
+
+function verifyExternalFinishAttestation(
+  projectDir: string,
+  now: Date,
+  options: { readonly consume?: boolean } = {},
+) {
+  return verifyExternalFinishAttestationAtProject(projectDir, now, options)
+}
+
+function readWorkflowFinishAuthority(
+  projectDir: string,
+  options: { readonly consumeExternalAttestation?: boolean; readonly now?: Date } = {},
+) {
+  return readWorkflowFinishAuthorityAtProject(projectDir, options)
+}
+
+function readWorkflowClosurePayload(
+  action: "next" | "status",
+  projectDir: string,
+  options: { readonly consumeExternalAttestation?: boolean; readonly now?: Date } = {},
+) {
+  return readWorkflowClosurePayloadAtProject(action, projectDir, options)
+}
 
 function track(project: RealArtifactProject): RealArtifactProject {
   projects.push(project)

@@ -6,6 +6,7 @@ import {
   writeWorkflowLifecycleStateFile,
   type WorkflowLifecycleStateToken,
 } from "../io/workflow-lifecycle-state.js"
+import type { ProjectReadSnapshot } from "../io/project-read-snapshot.js"
 
 export type WorkflowLoopIterationRecord = {
   readonly blockerId: string
@@ -92,7 +93,18 @@ function parseWorkflowLoopState(source: string): WorkflowLoopState | null {
   }
 }
 
-export function readWorkflowLoopStateSnapshot(projectDir: string): WorkflowLoopStateSnapshot {
+export function readWorkflowLoopStateSnapshot(
+  projectDir: string,
+  snapshot?: ProjectReadSnapshot,
+): WorkflowLoopStateSnapshot {
+  if (snapshot !== undefined) {
+    const relativePath = ".persona/workflow/workflow-loop-state.json"
+    if (!snapshot.hasFile(relativePath)) return { integrity: "absent", state: null, token: null }
+    const source = snapshot.readText(relativePath, MAX_WORKFLOW_LOOP_STATE_BYTES)
+    if (source === undefined) return { integrity: "unsafe", state: null, token: null }
+    const state = parseWorkflowLoopState(source)
+    return { integrity: state === null ? "malformed" : "valid", state, token: null }
+  }
   const file = readWorkflowLifecycleStateFile(
     projectDir,
     "workflow-loop-state.json",

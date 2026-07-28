@@ -107,8 +107,17 @@ export function isSafeFinishAttestationDirectory(projectDir: string): boolean {
   }
 }
 
-export function captureFinishAttestationWorkspaceDigest(projectDir: string): string | undefined {
-  const workspace = captureWorkspaceIdentity(projectDir)
+export function captureFinishAttestationWorkspaceDigest(
+  projectDir: string,
+  suppliedWorkspaceIdentity?: {
+    readonly dev: string
+    readonly ino: string
+    readonly realpath: string
+  },
+): string | undefined {
+  const workspace = suppliedWorkspaceIdentity === undefined
+    ? captureWorkspaceIdentity(projectDir)
+    : { status: "available" as const, value: suppliedWorkspaceIdentity }
   return workspace.status === "available" ? sha256Digest(canonicalJson(workspace.value)) : undefined
 }
 

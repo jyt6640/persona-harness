@@ -1,23 +1,66 @@
-import fs, {
+import {
   mkdirSync,
-  mkdtempSync,
   renameSync,
   rmSync,
   symlinkSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs"
-import { syncBuiltinESMExports } from "node:module"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, describe, expect, it } from "vitest"
 
 import {
   captureProjectFinishAttestationInputSnapshot,
 } from "../src/cli/project-finish-attestation-inputs.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
+type NativeRun = (
+  args: readonly string[],
+  input: Buffer | null,
+  environment: readonly string[],
+  maxBuffer: number,
+  timeoutMs: number,
+  rootDescriptor: number,
+  parentDescriptor: number,
+) => Buffer
+
+const originalDlopen = process.dlopen
+let afterNativeTree: (() => void) | undefined
+const nativeDlopenArgumentCounts: number[] = []
+let nativeTreeInvocationCount = 0
+
+process.dlopen = function patchedNativeDlopen(nativeModule, filename, flags): void {
+  nativeDlopenArgumentCounts.push(arguments.length)
+  if (arguments.length === 2) {
+    originalDlopen(nativeModule, filename)
+  } else {
+    originalDlopen(nativeModule, filename, flags)
+  }
+  const exportsDescriptor = Object.getOwnPropertyDescriptor(nativeModule, "exports")
+  const nativeExports = exportsDescriptor?.value
+  if (!isRecord(nativeExports)) return
+  const run = nativeExports["run"]
+  if (!isNativeRun(run)) return
+  Object.defineProperty(nativeExports, "run", {
+    configurable: true,
+    enumerable: true,
+    value: (...args: Parameters<NativeRun>): Buffer => {
+      const result = run(...args)
+      if (args[0][1] === "tree") {
+        nativeTreeInvocationCount += 1
+        afterNativeTree?.()
+      }
+      return result
+    },
+    writable: true,
+  })
+}
+
+afterAll(() => {
+  process.dlopen = originalDlopen
+})
 
 afterEach(() => {
   for (const project of projects.splice(0)) {
@@ -25,7 +68,7 @@ afterEach(() => {
   }
 })
 
-describe("project finish producer input snapshot", () => {
+describe.sequential("project finish producer input snapshot", () => {
   it("accepts a profile-less public Gradle root and binds its fixed descriptors", () => {
     const projectDir = createProject()
 
@@ -35,6 +78,7 @@ describe("project finish producer input snapshot", () => {
       kind: "ready",
       value: { profile: "absent" },
     })
+    expect(nativeDlopenArgumentCounts).toContain(2)
   })
 
   it("accepts a canonical optional profile without invoking the local intake completeness gate", () => {
@@ -86,11 +130,11 @@ describe("project finish producer input snapshot", () => {
     const outsidePath = join(projectDir, "outside-build.gradle")
     writeFileSync(outsidePath, "plugins { id 'outside' }\n")
 
-    const swapped = swapAtNoFollowOpen(buildPath, draftPath, outsidePath, () => (
+    const swapped = swapAfterNativeTree(buildPath, draftPath, outsidePath, () => (
       captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
-    expect(swapped.didSwap).toBe(true)
+    expect(swapped.didSwap).toEqual({ didSwap: true, nativeTreeReached: true })
     expect(swapped.value).toEqual({
       code: "project-finish-producer-profile",
       kind: "blocked",
@@ -107,11 +151,11 @@ describe("project finish producer input snapshot", () => {
     writeFileSync(profilePath, `${JSON.stringify({ ...canonicalProfile(), status: "draft" })}\n`)
     writeFileSync(outsidePath, `${JSON.stringify({ marker, ...canonicalProfile() })}\n`)
 
-    const swapped = swapAtNoFollowOpen(profilePath, draftPath, outsidePath, () => (
+    const swapped = swapAfterNativeTree(profilePath, draftPath, outsidePath, () => (
       captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
-    expect(swapped.didSwap).toBe(true)
+    expect(swapped.didSwap).toEqual({ didSwap: true, nativeTreeReached: true })
     expect(swapped.value).toEqual({
       code: "project-finish-producer-profile",
       kind: "blocked",
@@ -130,11 +174,11 @@ describe("project finish producer input snapshot", () => {
     writeFileSync(profilePath, `${JSON.stringify(canonicalProfile())}\n`)
     writeFileSync(join(outsideDirectory, "project-profile.jsonc"), `${JSON.stringify({ marker, ...canonicalProfile() })}\n`)
 
-    const swapped = swapParentAtNoFollowOpen(profilePath, profileDirectory, draftDirectory, outsideDirectory, () => (
+    const swapped = swapParentAfterNativeTree(profileDirectory, draftDirectory, outsideDirectory, () => (
       captureProjectFinishAttestationInputSnapshot(projectDir)
     ))
 
-    expect(swapped.didSwap).toBe(true)
+    expect(swapped.didSwap).toEqual({ didSwap: true, nativeTreeReached: true })
     expect(swapped.value).toEqual({
       code: "project-finish-producer-profile",
       kind: "blocked",
@@ -144,7 +188,7 @@ describe("project finish producer input snapshot", () => {
 })
 
 function createProject(): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "project-finish-inputs-"))
+  const projectDir = createDirectProjectRoot("project-finish-inputs")
   projects.push(projectDir)
   mkdirSync(join(projectDir, ".persona"), { recursive: true })
   writeFileSync(join(projectDir, "build.gradle"), "plugins { id 'java' }\n")
@@ -161,29 +205,26 @@ function canonicalProfile(): Readonly<Record<string, unknown>> {
   }
 }
 
-function swapAtNoFollowOpen<T>(
+function swapAfterNativeTree<T>(
   sourcePath: string,
   draftPath: string,
   outsidePath: string,
   action: () => T,
-): { readonly didSwap: boolean; readonly value: T } {
-  const originalOpen = fs.openSync
+): { readonly didSwap: { readonly didSwap: boolean; readonly nativeTreeReached: boolean }; readonly value: T } {
   let swapped = false
-  fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
-    if (!swapped && args[0] === sourcePath) {
+  const nativeTreeCount = nativeTreeInvocationCount
+  afterNativeTree = () => {
+    if (!swapped) {
       swapped = true
       renameSync(sourcePath, draftPath)
       symlinkSync(outsidePath, sourcePath)
     }
-    return originalOpen(...args)
-  }) as typeof fs.openSync
-  syncBuiltinESMExports()
+  }
   try {
     const value = action()
-    return { didSwap: swapped, value }
+    return { didSwap: { didSwap: swapped, nativeTreeReached: nativeTreeInvocationCount > nativeTreeCount }, value }
   } finally {
-    fs.openSync = originalOpen
-    syncBuiltinESMExports()
+    afterNativeTree = undefined
     if (swapped) {
       unlinkSync(sourcePath)
       renameSync(draftPath, sourcePath)
@@ -191,33 +232,37 @@ function swapAtNoFollowOpen<T>(
   }
 }
 
-function swapParentAtNoFollowOpen<T>(
-  sourcePath: string,
+function swapParentAfterNativeTree<T>(
   sourceDirectory: string,
   draftDirectory: string,
   outsideDirectory: string,
   action: () => T,
-): { readonly didSwap: boolean; readonly value: T } {
-  const originalOpen = fs.openSync
+): { readonly didSwap: { readonly didSwap: boolean; readonly nativeTreeReached: boolean }; readonly value: T } {
   let swapped = false
-  fs.openSync = ((...args: Parameters<typeof fs.openSync>) => {
-    if (!swapped && args[0] === sourcePath) {
+  const nativeTreeCount = nativeTreeInvocationCount
+  afterNativeTree = () => {
+    if (!swapped) {
       swapped = true
       renameSync(sourceDirectory, draftDirectory)
       symlinkSync(outsideDirectory, sourceDirectory)
     }
-    return originalOpen(...args)
-  }) as typeof fs.openSync
-  syncBuiltinESMExports()
+  }
   try {
     const value = action()
-    return { didSwap: swapped, value }
+    return { didSwap: { didSwap: swapped, nativeTreeReached: nativeTreeInvocationCount > nativeTreeCount }, value }
   } finally {
-    fs.openSync = originalOpen
-    syncBuiltinESMExports()
+    afterNativeTree = undefined
     if (swapped) {
       unlinkSync(sourceDirectory)
       renameSync(draftDirectory, sourceDirectory)
     }
   }
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isNativeRun(value: unknown): value is NativeRun {
+  return typeof value === "function"
 }

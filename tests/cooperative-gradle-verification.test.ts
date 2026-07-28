@@ -34,7 +34,7 @@ describe("cooperative Gradle verification", () => {
     const calls: { readonly args: readonly string[]; readonly command: string }[] = []
 
     // When: the cooperative verifier runs both fixed commands.
-    const result = runCooperativeGradleVerification(projectDir, context, {
+    const result = withProjectCapability(projectDir, () => runCooperativeGradleVerification(".", context, {
       now: () => 0,
       runProcess: (options) => {
         calls.push({ args: options.args, command: options.command })
@@ -43,7 +43,7 @@ describe("cooperative Gradle verification", () => {
           ? "> Task :cleanTest UP-TO-DATE\n> Task :test\nBUILD SUCCESSFUL\n"
           : "> Task :test UP-TO-DATE\n> Task :build\nBUILD SUCCESSFUL\n")
       },
-    })
+    }))
 
     // Then: exact argv, semantic JUnit, and dirty source binding all pass.
     expect(calls).toEqual([
@@ -86,7 +86,7 @@ describe("cooperative Gradle verification", () => {
     let command = 0
 
     // When: the fixed verification is attempted.
-    const result = runCooperativeGradleVerification(projectDir, context, {
+    const result = withProjectCapability(projectDir, () => runCooperativeGradleVerification(".", context, {
       now: () => 0,
       runProcess: (options) => {
         command += 1
@@ -98,7 +98,7 @@ describe("cooperative Gradle verification", () => {
         }
         return passed("> Task :build\nBUILD SUCCESSFUL\n")
       },
-    })
+    }))
 
     // Then: no failing condition can produce cooperative facts.
     expect(result).toEqual({ code, kind: "blocked" })
@@ -111,10 +111,10 @@ describe("cooperative Gradle verification", () => {
     const context = readyContext(projectDir)
 
     // When: cooperative verification observes the fixed test output.
-    const result = runCooperativeGradleVerification(projectDir, context, {
+    const result = withProjectCapability(projectDir, () => runCooperativeGradleVerification(".", context, {
       now: () => 0,
       runProcess: () => passed("> Task :cleanTest\n> Task :test UP-TO-DATE\nBUILD SUCCESSFUL\n"),
-    })
+    }))
 
     // Then: the nonexecuted test task blocks before JUnit can be trusted.
     expect(result).toEqual({ code: "test-task-nonfresh", kind: "blocked" })
@@ -142,9 +142,19 @@ function createProject(initialReport?: "stale JUnit"): string {
 }
 
 function readyContext(projectDir: string) {
-  const result = prepareCooperativeFinishContext(projectDir)
+  const result = withProjectCapability(projectDir, () => prepareCooperativeFinishContext("."))
   if (result.kind !== "ready") throw new Error(`expected ready context, received ${result.code}`)
   return result.value
+}
+
+function withProjectCapability<T>(projectDir: string, operation: () => T): T {
+  const original = process.cwd()
+  process.chdir(projectDir)
+  try {
+    return operation()
+  } finally {
+    process.chdir(original)
+  }
 }
 
 function writeReport(projectDir: string, name: string): void {

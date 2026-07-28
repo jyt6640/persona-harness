@@ -3,18 +3,17 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   rmSync,
   symlinkSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -123,7 +122,7 @@ function run(projectDir: string, args: readonly string[], stdin?: string) {
 }
 
 function createProject(): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-cooperative-public-"))
+  const projectDir = createDirectProjectRoot("persona-cooperative-public")
   projects.push(projectDir)
   mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })
   writeFileSync(join(projectDir, "README.md"), "# Cooperative fixture\n")

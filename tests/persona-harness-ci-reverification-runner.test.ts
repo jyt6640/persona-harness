@@ -3,13 +3,11 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
@@ -18,9 +16,14 @@ import type { BoundedProcessResult } from "../src/cli/bounded-process.js"
 import { parseCiReverificationArtifact } from "../src/cli/ci-reverification-artifact.js"
 import { captureGitIdentity, captureWorkspaceIdentity } from "../src/cli/ci-reverification-identity.js"
 import { writeAndRereadCiReverificationArtifact } from "../src/cli/ci-reverification-artifact.js"
-import { runCiReverification } from "../src/cli/ci-reverification-runner.js"
+import {
+  runCiReverification as runCiReverificationAtProject,
+  type CiReverificationMode,
+  type CiReverificationRunnerOptions,
+} from "../src/cli/ci-reverification-runner.js"
 import { verificationWorkspaceBinding } from "../src/cli/ci-reverification-mutation-snapshot.js"
 import { buildFreshArtifactBinding } from "../src/cli/fresh-verification-lifecycle.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -51,7 +54,7 @@ function readyProfile(): string {
 }
 
 function createProject(gradlew: string): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-ci-reverify-"))
+  const projectDir = createDirectProjectRoot("persona-ci-reverify")
   projects.push(projectDir)
   mkdirSync(join(projectDir, ".persona", "evidence"), { recursive: true })
   mkdirSync(join(projectDir, "src", "main", "java"), { recursive: true })
@@ -77,7 +80,7 @@ afterEach(() => {
   projects.length = 0
 })
 
-describe("CI reverification runner", () => {
+describe.sequential("CI reverification runner", () => {
   it("runs fixed test/build argv and writes a digest-only strict artifact", () => {
     const projectDir = createProject(successScript())
     const result = runCiReverification(projectDir, "ci")
@@ -309,3 +312,11 @@ describe("CI reverification runner", () => {
     }).finalStatus).toBe("partial")
   })
 })
+
+function runCiReverification(
+  projectDir: string,
+  mode: CiReverificationMode,
+  options: CiReverificationRunnerOptions = {},
+) {
+  return runCiReverificationAtProject(projectDir, mode, options)
+}

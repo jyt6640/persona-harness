@@ -97,11 +97,16 @@ async function verifySourceSurface(input) {
   }
   assertPackageTest(repositoryRoot, "source-built package")
   await assertVerifierImports(repositoryRoot, "source-built")
+  assertNativeProjectReadInputs(repositoryRoot, "source-built")
   await assertCliSurface(
     (cwd, args) => runCommand(process.execPath, [cliPath, ...args], cwd),
     input.surface,
   )
-  return { candidateTarballSha256: null, verifierImports: { source: "PASS" } }
+  return {
+    candidateTarballSha256: null,
+    nativeProjectRead: { source: "PASS" },
+    verifierImports: { source: "PASS" },
+  }
 }
 
 async function verifyInstalledSurface(input) {
@@ -110,14 +115,26 @@ async function verifyInstalledSurface(input) {
   const installed = installLocalTarball(tarballPath)
   assertPackageTest(installed.packageRoot, "installed package")
   await assertVerifierImports(installed.packageRoot, "installed")
+  assertNativeProjectReadInputs(installed.packageRoot, "installed")
   await assertCliSurface(
     (cwd, args) => runCommand(installed.binPath, args, cwd),
     input.surface,
   )
   return {
     candidateTarballSha256: sha256File(tarballPath),
+    nativeProjectRead: { installed: "PASS", packed: "PASS" },
     verifierImports: { installed: "PASS", packed: "PASS" },
   }
+}
+
+function assertNativeProjectReadInputs(packageRoot, label) {
+  const result = runCommand(
+    process.execPath,
+    [join(repositoryRoot, "scripts", "verify-supported-node-native-inputs.mjs")],
+    repositoryRoot,
+    { ...process.env, PH_SUPPORT_PACKAGE_ROOT: packageRoot },
+  )
+  requireSuccess(result, `${label} native project read producer inputs`)
 }
 
 async function assertPackedVerifierImports(tarballPath) {
@@ -275,11 +292,11 @@ async function writeCurrentLifecycleStates(projectRoot) {
   }
 }
 
-function runCommand(command, args, cwd) {
+function runCommand(command, args, cwd, environment = process.env) {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
-    env: process.env,
+    env: environment,
     maxBuffer: 4 * 1024 * 1024,
   })
   return {

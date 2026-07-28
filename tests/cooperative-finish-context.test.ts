@@ -1,12 +1,10 @@
 import {
   existsSync,
   mkdirSync,
-  mkdtempSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
@@ -15,6 +13,7 @@ import {
   cooperativeWorkspaceKey,
   prepareCooperativeFinishContext,
 } from "../src/cli/cooperative-finish-context.js"
+import { createDirectProjectRoot } from "./helpers/direct-project-root.js"
 
 const projects: string[] = []
 
@@ -24,7 +23,7 @@ afterEach(() => {
   }
 })
 
-describe("cooperative Finish context", () => {
+describe.sequential("cooperative Finish context", () => {
   it("uses a custom configured evidence root without creating the default root", () => {
     // Given: a workspace configured with an absent custom evidence root.
     const projectDir = createProject({ evidenceDir: ".persona/cooperative-evidence" })
@@ -42,7 +41,7 @@ describe("cooperative Finish context", () => {
     expect(existsSync(join(projectDir, ".persona", "cooperative-evidence"))).toBe(false)
   })
 
-  it("returns the configured evidence root under the canonical workspace identity", () => {
+  it("blocks a workspace symlink before source-read capability capture", () => {
     // Given: a project opened through a workspace symlink.
     const projectDir = createProject({ evidenceDir: ".persona/cooperative-evidence" })
     const alias = `${projectDir}-alias`
@@ -52,11 +51,8 @@ describe("cooperative Finish context", () => {
     // When: cooperative Finish resolves the configured root through that alias.
     const result = prepareCooperativeFinishContext(alias)
 
-    // Then: the selected root is anchored to the actual workspace directory.
-    expect(result.kind).toBe("ready")
-    if (result.kind === "ready") {
-      expect(result.value.evidenceRoot).toBe(join(result.value.workspace.realpath, ".persona", "cooperative-evidence"))
-    }
+    // Then: a caller alias cannot become a native source-read capability.
+    expect(result).toEqual({ code: "source-read-runtime-unavailable", kind: "blocked" })
   })
 
   it("blocks malformed configuration without creating evidence paths", () => {
@@ -85,14 +81,14 @@ describe("cooperative Finish context", () => {
 
     // Then: neither unsafe root can advance to source snapshots.
     expect(escapedResult).toEqual({ code: "harness-config-invalid", kind: "blocked" })
-    expect(linkedResult).toEqual({ code: "harness-config-invalid", kind: "blocked" })
+    expect(linkedResult).toEqual({ code: "source-read-runtime-unavailable", kind: "blocked" })
     expect(existsSync(join(escaping, ".persona", "evidence"))).toBe(false)
     expect(existsSync(join(linked, ".persona", "evidence"))).toBe(false)
   })
 })
 
 function createProject(config: string | { readonly evidenceDir: string }): string {
-  const projectDir = mkdtempSync(join(tmpdir(), "persona-cooperative-context-"))
+  const projectDir = createDirectProjectRoot("persona-cooperative-context")
   projects.push(projectDir)
   mkdirSync(join(projectDir, ".persona"), { recursive: true })
   writeFileSync(
