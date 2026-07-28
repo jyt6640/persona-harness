@@ -25,8 +25,8 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
-const BETA7_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta7-acceptance.json")
-const BETA7_COOPERATIVE_COMMANDS = new Map([
+const BETA8_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta8-acceptance.json")
+const BETA8_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -128,6 +128,7 @@ function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirec
       throw new Error("installed package is missing consumer authority transport")
     }
   }
+  assertPrearmedObserverHandoff(installedPackage, "installed package")
   assertConsumerAuthorityBoundary(
     consumerDirectory,
     join(consumerDirectory, "node_modules", ".bin", "ph"),
@@ -141,6 +142,7 @@ function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
+  assertPrearmedObserverHandoff(repositoryRoot, "source CLI")
   assertConsumerAuthorityBoundary(
     temporaryRoot,
     phPath,
@@ -406,13 +408,13 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     fixtureRoot,
     phPath,
     "installed package",
-    readBeta6CooperativeCommands(installedPackage),
+    readBeta8CooperativeCommands(installedPackage),
   )
   assertCooperativeSourceReadRaceBlocks(
     `${fixtureRoot}-source-read-race`,
     phPath,
     "installed package",
-    readBeta6CooperativeCommands(installedPackage),
+    readBeta8CooperativeCommands(installedPackage),
   )
 }
 
@@ -612,14 +614,14 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       '    runAttempt: 1,',
       '    runId,',
       '    sourceHead: head,',
-      '    }, "0.8.0-beta.7");',
+      '    }, "0.8.0-beta.8");',
       '  } finally { process.chdir(original); }',
       '};',
       'const valid = runAt("./project-finish-producer-valid", "42");',
       'const canonical = runAt("./project-finish-producer-canonical-profile", "43");',
       'const hostile = runAt("./project-finish-producer-hostile", "44");',
       'const directHead = execFileSync("git", ["rev-parse", "HEAD"], { cwd: "./project-finish-producer-valid", encoding: "utf8" }).trim();',
-      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: directHead }, "0.8.0-beta.7");',
+      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: directHead }, "0.8.0-beta.8");',
       'const resultCode = (result) => result.kind === "passed" ? "passed" : result.kind === "blocked" ? result.code : "invalid";',
       'const resultVector = [valid, canonical, hostile, symlinked].map(resultCode).join(",");',
       'if (valid.kind !== "passed" || canonical.kind !== "passed" || hostile.kind !== "blocked" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") { process.stdout.write(`project-finish-producer-intake:${resultVector}\\n`); process.exit(1); }',
@@ -650,7 +652,7 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       'const { runProjectFinishAttestationProducer } = await import(modulePath);',
       'const original = process.cwd(); process.chdir(projectDir);',
       'let result;',
-      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: head }, "0.8.0-beta.7"); } finally { process.chdir(original); }',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: head }, "0.8.0-beta.8"); } finally { process.chdir(original); }',
       'if (result.kind !== "blocked") process.exit(1);',
       'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
@@ -682,7 +684,7 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       'const { runProjectFinishAttestationProducer } = await import(modulePath);',
       'const original = process.cwd(); process.chdir(projectDir);',
       'let result;',
-      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.7"); } finally { process.chdir(original); }',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.8"); } finally { process.chdir(original); }',
       'if (result.kind !== "blocked") process.exit(1);',
       'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
@@ -719,7 +721,7 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       'const { runProjectFinishAttestationProducer } = await import(modulePath);',
       'const original = process.cwd(); process.chdir(projectDir);',
       'let result;',
-      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.7"); } finally { process.chdir(original); }',
+      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.8"); } finally { process.chdir(original); }',
       'if (result.kind !== "blocked") process.exit(1);',
       'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
@@ -747,13 +749,13 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
-    readBeta6CooperativeCommands(repositoryRoot),
+    readBeta8CooperativeCommands(repositoryRoot),
   )
   assertCooperativeSourceReadRaceBlocks(
     join(temporaryRoot, "source-cli-cooperative-gradle-source-read-race"),
     phPath,
     "source CLI",
-    readBeta6CooperativeCommands(repositoryRoot),
+    readBeta8CooperativeCommands(repositoryRoot),
   )
 }
 
@@ -1834,9 +1836,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands) {
   for (const command of commands) {
-    const step = BETA7_COOPERATIVE_COMMANDS.get(command)
+    const step = BETA8_COOPERATIVE_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.7 acceptance command is unsupported`)
+      throw new Error(`${label} beta.8 acceptance command is unsupported`)
     }
     requireSuccess(
       `${label} lifecycle ${command}`,
@@ -2029,26 +2031,82 @@ function assertCooperativeLifecycleState(projectDir, label) {
   }
 }
 
-function readBeta6CooperativeCommands(packageRoot) {
-  const manifestPath = join(packageRoot, BETA7_ACCEPTANCE_PATH)
+function readBeta8CooperativeCommands(packageRoot) {
+  const manifestPath = join(packageRoot, BETA8_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.7 acceptance manifest is unavailable")
+    throw new Error("beta.8 acceptance manifest is unavailable")
   }
   const commands = value?.cooperative?.commands
   const packageVersion = value?.package?.version
-  const expectedCommands = [...BETA7_COOPERATIVE_COMMANDS.keys()]
+  const expectedCommands = [...BETA8_COOPERATIVE_COMMANDS.keys()]
   if (
     packageVersion !== readPackageVersion(packageRoot)
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
   ) {
-    throw new Error("beta.7 acceptance manifest is invalid")
+    throw new Error("beta.8 acceptance manifest is invalid")
   }
   return commands
+}
+
+function assertPrearmedObserverHandoff(packageRoot, label) {
+  const manifestPath = join(packageRoot, BETA8_ACCEPTANCE_PATH)
+  let manifest
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
+  } catch {
+    throw new Error(`${label} beta.8 observer handoff contract is unavailable`)
+  }
+  const handoff = manifest?.prearmedExternalHandoff
+  const prepare = handoff?.prepare
+  const trigger = handoff?.trigger
+  const expiration = trigger?.expiration
+  const expectedPrepare = ["enroll", "status", "explain"]
+  const expectedProhibited = [
+    "artifact-download",
+    "online-crypto-validation",
+    "finish-consumption",
+    "replay-observation",
+  ]
+  const expectedSteps = [
+    "download-original-bytes-once",
+    "verify-online-before-leaf-certificate-notAfter",
+    "finish-consume-once",
+    "finish-replay-blocked",
+  ]
+  const expectedNonAuthority = [
+    "prearm-does-not-self-validate",
+    "prearm-does-not-grant-authority",
+    "prearm-does-not-reuse-beta7-artifact",
+  ]
+  if (
+    manifest?.package?.version !== readPackageVersion(packageRoot)
+    || manifest?.beta7HistoricalArtifact?.version !== "0.8.0-beta.7"
+    || manifest?.beta7HistoricalArtifact?.outcome !== "certificate-window-expired-no-trusted-positive"
+    || manifest?.beta7HistoricalArtifact?.reusableForBeta8 !== false
+    || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
+    || prepare?.consumer !== "isolated-exact-registry-install"
+    || !sameStrings(prepare?.allowedBeforeFixture, expectedPrepare)
+    || !sameStrings(prepare?.prohibitedBeforeArtifact, expectedProhibited)
+    || trigger?.onlyAfter !== "natural-current-version-original-artifact"
+    || !sameStrings(trigger?.steps, expectedSteps)
+    || expiration?.source !== "leaf-certificate-notAfter"
+    || expiration?.code !== "certificate-window-expired"
+    || expiration?.outcome !== "blocked-no-fetch-finish-or-replay"
+    || !sameStrings(handoff?.nonAuthority, expectedNonAuthority)
+  ) {
+    throw new Error(`${label} beta.8 observer handoff contract is invalid`)
+  }
+}
+
+function sameStrings(value, expected) {
+  return Array.isArray(value)
+    && value.length === expected.length
+    && value.every((entry, index) => entry === expected[index])
 }
 
 function createProjectFinishProducerFixture(projectDir, profileMode) {

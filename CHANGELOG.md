@@ -12,6 +12,18 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.8] - 2026-07-29
+
+- Prepares the next immutable Consumer Authority Beta source candidate after
+  beta.7's original artifact missed independent online verification inside its
+  live leaf-certificate window. The package-visible acceptance record preserves
+  the current source/packed boundary and fixes a pre-armed, one-shot observer
+  order: fresh current-version download, online verification before expiry,
+  one explicit consumption, then replay rejection.
+- Keeps beta.7 as immutable staging-only historical evidence. It does not
+  authorize a stale cryptographic positive, fetch, Finish consumption, replay,
+  promotion, Stable/GA, `latest`, or release action.
+
 ## [0.8.0-beta.7] - 2026-07-29
 
 - Prepares the next immutable Consumer Authority Beta source candidate for the
