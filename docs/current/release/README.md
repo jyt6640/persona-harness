@@ -77,7 +77,9 @@ into a repository path, so no bound authority artifact was retained.
 `0.8.0-beta.10` is the next strict-prerelease source-preparation candidate; it
 has no source-level claim of a tag, publish, channel movement, GitHub release, or original signed
 consumer artifact. Its release contract
-pre-arms an isolated observer before the one natural current-version artifact.
+pre-arms an isolated observer before the one natural current-version artifact
+and requires a cloneable exact-HEAD bundle plus clean source, tarball, and
+installed CLI version binding before any package evidence is accepted.
 `0.7.0-rc.2` remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:

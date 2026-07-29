@@ -55,6 +55,27 @@ describe("consumer authority beta.10 artifact-discovery acceptance manifest", ()
       id: "beta10-prearmed-external-live-original-artifact-verification",
     })
   })
+
+  it("requires a cloneable exact-head bundle and matching clean package surfaces", () => {
+    const manifest = readManifest()
+    const boundary = record(manifest["packageBoundary"])
+
+    expect(boundary).toEqual({
+      bundle: {
+        candidateRef: "HEAD",
+        mainRef: "refs/remotes/origin/main",
+      },
+      cleanCheckout: {
+        builtCliVersion: "same-as-package-version",
+        installedCliVersion: "same-as-package-version",
+        sourceFallback: "forbidden",
+      },
+      pack: {
+        metadata: "name-version-filename-bind-source-package-lock",
+        source: "npm-ci-ignore-scripts-then-npm-pack",
+      },
+    })
+  })
 })
 
 function readManifest(): Record<string, unknown> {

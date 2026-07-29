@@ -2102,6 +2102,10 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     throw new Error(`${label} beta.10 observer handoff contract is unavailable`)
   }
   const handoff = manifest?.prearmedExternalHandoff
+  const packageBoundary = manifest?.packageBoundary
+  const bundleBoundary = packageBoundary?.bundle
+  const cleanCheckoutBoundary = packageBoundary?.cleanCheckout
+  const packBoundary = packageBoundary?.pack
   const prepare = handoff?.prepare
   const trigger = handoff?.trigger
   const expectedPrepare = ["enroll", "status", "explain"]
@@ -2132,6 +2136,13 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
     || manifest?.authority?.hostedFixture?.callerWorkflowPath !== ".github/workflows/research-attestation.yml"
     || manifest?.authority?.hostedFixture?.certificateSanIdentity !== "reusable-producer-workflow"
+    || bundleBoundary?.candidateRef !== "HEAD"
+    || bundleBoundary?.mainRef !== "refs/remotes/origin/main"
+    || cleanCheckoutBoundary?.builtCliVersion !== "same-as-package-version"
+    || cleanCheckoutBoundary?.installedCliVersion !== "same-as-package-version"
+    || cleanCheckoutBoundary?.sourceFallback !== "forbidden"
+    || packBoundary?.metadata !== "name-version-filename-bind-source-package-lock"
+    || packBoundary?.source !== "npm-ci-ignore-scripts-then-npm-pack"
     || prepare?.consumer !== "isolated-exact-registry-install"
     || !sameStrings(prepare?.allowedBeforeFixture, expectedPrepare)
     || !sameStrings(prepare?.prohibitedBeforeArtifact, expectedProhibited)

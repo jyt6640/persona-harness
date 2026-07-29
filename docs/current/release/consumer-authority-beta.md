@@ -115,7 +115,9 @@ source/packed acceptance contract is the structured
 [`consumer-authority-beta10-acceptance.json`](consumer-authority-beta10-acceptance.json)
 record; it names the exact public Java/Spring route, the separate caller and
 reusable certificate identities, the pre-armed independent observer, the
-live certificate observation order, and the one hosted residual.
+live certificate observation order, the cloneable candidate `HEAD` and
+`refs/remotes/origin/main` bundle refs, clean-checkout package binding, and the
+one hosted residual.
 
 For that observer, the authenticated product discovery route sends the enrolled
 caller workflow filename directly to the fixed GitHub workflow-runs endpoint.

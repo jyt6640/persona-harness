@@ -5,6 +5,21 @@
     "scope": "staging-only",
     "version": "0.8.0-beta.10"
   },
+  "packageBoundary": {
+    "bundle": {
+      "candidateRef": "HEAD",
+      "mainRef": "refs/remotes/origin/main"
+    },
+    "cleanCheckout": {
+      "builtCliVersion": "same-as-package-version",
+      "installedCliVersion": "same-as-package-version",
+      "sourceFallback": "forbidden"
+    },
+    "pack": {
+      "metadata": "name-version-filename-bind-source-package-lock",
+      "source": "npm-ci-ignore-scripts-then-npm-pack"
+    }
+  },
   "beta9HistoricalArtifact": {
     "archiveZipSha256": "sha256:df0e18d68a6b0161b95680b2aa06042818c32708e65c5040e2628798bd28438c",
     "artifactId": 8712218259,
