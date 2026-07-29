@@ -58,6 +58,39 @@ describe("consumer authority original artifact fetch", () => {
     })
   })
 
+  it("requires the enrolled caller workflow filename before it can select an original artifact", async () => {
+    const archive = archiveFor({
+      "bundle.json": Buffer.from("bundle", "utf8"),
+      "predicate.json": Buffer.from("predicate", "utf8"),
+      "receipt.json": Buffer.from("receipt", "utf8"),
+    })
+    const selection = {
+      callerWorkflowPath: "research-attestation.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      sourceHead: SOURCE_HEAD,
+    }
+    const archiveRead = vi.fn(async () => archive)
+
+    await expect(fetchConsumerAuthorityArtifact(selection, {
+      archive: archiveRead,
+      json: async (url) => {
+        const pathname = decodeURIComponent(url.pathname)
+        return pathname.includes("/actions/workflows/") && !pathname.includes("research-attestation.yml")
+          ? { total_count: 0, workflow_runs: [] }
+          : responseFor(url, archive)
+      },
+    })).resolves.toMatchObject({ artifactId: 11, runId: "10" })
+    expect(archiveRead).toHaveBeenCalledOnce()
+
+    await expect(fetchConsumerAuthorityArtifact({ ...selection, callerWorkflowPath: "persona-harness.yml" }, {
+      archive: archiveRead,
+      json: async (url) => url.pathname.includes("/runs")
+        ? { total_count: 0, workflow_runs: [] }
+        : responseFor(url, archive),
+    })).rejects.toMatchObject({ code: "authority-fetch-evidence" })
+  })
+
   it("rejects a central-directory entry whose local header names a different artifact member", () => {
     const archive = archiveFor({
       "bundle.json": Buffer.from("bundle", "utf8"),
