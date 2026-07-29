@@ -379,15 +379,18 @@ describe("package files policy", () => {
       "scripts/read-consumer-authority-github.mjs",
     ]
     const runtimePaths = [
+      "dist/cli/authority-artifact-binding.js",
       "dist/cli/authority-artifact-store.js",
       "dist/cli/authority-command.js",
       "dist/cli/authority-enrollment.js",
       "dist/cli/authority-fetch-worker.js",
       "dist/cli/authority-github-readback-worker.js",
       "dist/cli/authority-project-attestation.js",
+      "dist/cli/project-finish-attestation-workflow-identity.js",
     ]
     const sourceOnlyPaths = [
       "tests/authority-artifact-fetch.test.ts",
+      "tests/authority-artifact-binding.test.ts",
       "tests/authority-artifact-store.test.ts",
       "tests/authority-command.test.ts",
       "tests/authority-fetch-worker.test.ts",
@@ -398,6 +401,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta.md",
       "docs/current/release/consumer-authority-beta7-acceptance.json",
       "docs/current/release/consumer-authority-beta8-acceptance.json",
+      "docs/current/release/consumer-authority-beta9-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -437,7 +441,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.8-release-notes.md",
+      "docs/current/release/v0.8.0-beta.9-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -463,7 +467,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.8-release-notes.md",
+      "docs/current/release/v0.8.0-beta.9-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

@@ -18,10 +18,11 @@ const publicReleaseDocs = [
   "docs/current/release/v0.8.0-beta.3-release-notes.md",
   "docs/current/release/v0.8.0-beta.7-release-notes.md",
   "docs/current/release/v0.8.0-beta.8-release-notes.md",
+  "docs/current/release/v0.8.0-beta.9-release-notes.md",
 ]
 
 describe("release docs temporal-state boundary", () => {
-  it("keeps the consumer authority beta.8 source candidate free of beta publication claims", () => {
+  it("keeps the consumer authority beta.9 source candidate free of beta publication claims", () => {
     const text = publicReleaseDocs
       .map((path) => readFileSync(join(root, path), "utf8"))
       .join("\n")
@@ -36,9 +37,9 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("governed registry and audit records")
     expect(text).toContain("Consumer Authority Beta source-preparation candidate")
     expect(text).toContain("immutable staging-only Consumer Authority Beta")
-    expect(text).toContain("0.8.0-beta.8")
-    expect(text).toContain("consumer-authority-beta8-acceptance.json")
-    expect(text).toContain("certificate-window-expired")
+    expect(text).toContain("0.8.0-beta.9")
+    expect(text).toContain("consumer-authority-beta9-acceptance.json")
+    expect(text).toContain("verified-original-artifact-fetch-binding-unavailable")
     expect(text).toContain("streaming 65536-byte ceiling before decoding")
     expect(text).toContain("assembled outside the caller workspace")
     expect(text).toContain("project-root transaction")
