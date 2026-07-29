@@ -21,6 +21,11 @@ import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
+import {
+  assertPackRecordBinding,
+  assertSourcePackageIdentity,
+} from "./clean-package-boundary-core.mjs"
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
@@ -242,26 +247,26 @@ function assertBoundedAuthorityAbsence(results, home, label, expected) {
 }
 
 function packCurrentRepository() {
+  const identity = readSourcePackIdentity()
+  assertSourcePackManifest()
   const packDirectory = join(temporaryRoot, "pack")
   mkdirSync(packDirectory)
-  const result = runNpm(repositoryRoot, ["pack", "--json", "--pack-destination", packDirectory])
+  const result = runBoundNpm(repositoryRoot, ["pack", "--json", "--pack-destination", packDirectory])
   requireSuccess("package pack", result)
-  return resolvePackResult(result.stdout, packDirectory)
+  assertSourcePackManifest()
+  return resolvePackResult(result.stdout, packDirectory, identity)
 }
 
 function installFreshTarball(tarballPath) {
   const consumerDirectory = join(temporaryRoot, "consumer")
   mkdirSync(consumerDirectory)
-  mkdirSync(consumerNpmCache)
   writeFileSync(
     join(consumerDirectory, "package.json"),
     `${JSON.stringify({ private: true }, null, 2)}\n`,
   )
 
-  const result = runNpm(consumerDirectory, [
+  const result = runBoundNpm(consumerDirectory, [
     "install",
-    "--cache",
-    consumerNpmCache,
     "--ignore-scripts",
     "--no-audit",
     "--no-fund",
@@ -2472,6 +2477,47 @@ function runNpm(cwd, args) {
   }
 }
 
+function runBoundNpm(cwd, args) {
+  const result = spawnSync("npm", ["--prefix", cwd, ...args], {
+    cwd,
+    encoding: "utf8",
+    env: boundNpmEnvironment(),
+    maxBuffer: 4 * 1024 * 1024,
+  })
+  if (result.error) {
+    throw new Error("bound npm process could not start")
+  }
+  return {
+    status: result.status,
+    stdout: result.stdout ?? "",
+  }
+}
+
+function boundNpmEnvironment() {
+  const home = join(temporaryRoot, "bound-npm-home")
+  const userConfig = join(temporaryRoot, "bound-npm-userconfig")
+  const globalConfig = join(temporaryRoot, "bound-npm-globalconfig")
+  if (!existsSync(home)) mkdirSync(home)
+  if (!existsSync(consumerNpmCache)) mkdirSync(consumerNpmCache)
+  if (!existsSync(userConfig)) writeFileSync(userConfig, "")
+  if (!existsSync(globalConfig)) writeFileSync(globalConfig, "")
+  return {
+    HOME: home,
+    NPM_CONFIG_AUDIT: "false",
+    NPM_CONFIG_CACHE: consumerNpmCache,
+    NPM_CONFIG_FUND: "false",
+    NPM_CONFIG_GLOBALCONFIG: globalConfig,
+    NPM_CONFIG_IGNORE_SCRIPTS: "false",
+    NPM_CONFIG_INCLUDE_WORKSPACE_ROOT: "false",
+    NPM_CONFIG_UPDATE_NOTIFIER: "false",
+    NPM_CONFIG_USERCONFIG: userConfig,
+    NPM_CONFIG_WORKSPACES: "false",
+    PATH: process.env.PATH ?? "",
+    TMPDIR: temporaryRoot,
+    USER: "persona",
+  }
+}
+
 function runCommand(cwd, command, args) {
   const result = spawnSync(command, args, {
     cwd,
@@ -2545,13 +2591,14 @@ function boundedActionTopologyDiagnostic(result) {
   return `exit-${String(result.status)}`
 }
 
-function resolvePackResult(output, packDirectory) {
+function resolvePackResult(output, packDirectory, identity) {
   const parsed = JSON.parse(output)
   if (!Array.isArray(parsed) || parsed.length !== 1 || !isRecord(parsed[0]) || typeof parsed[0].filename !== "string") {
     throw new TypeError("npm pack did not return exactly one tarball")
   }
 
   const record = parsed[0]
+  assertPackRecordBinding(record, identity)
   const filename = record.filename
   const candidate = isAbsolute(filename)
     ? filename
@@ -2582,9 +2629,31 @@ function resolvePackResult(output, packDirectory) {
       shasum: typeof record.shasum === "string" ? record.shasum : "unavailable",
       size: bytes.byteLength,
       tarballSha256: sha256(bytes),
-      version: readPackageVersion(repositoryRoot),
+      version: identity.version,
     },
     tarballPath: candidate,
+  }
+}
+
+function readSourcePackIdentity() {
+  return assertSourcePackageIdentity(
+    JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")),
+    JSON.parse(readFileSync(join(repositoryRoot, "package-lock.json"), "utf8")),
+  )
+}
+
+function assertSourcePackManifest() {
+  const packageBytes = readFileSync(join(repositoryRoot, "package.json"))
+  const lockBytes = readFileSync(join(repositoryRoot, "package-lock.json"))
+  const headPackage = runCommand(repositoryRoot, "git", ["show", "HEAD:package.json"])
+  const headLock = runCommand(repositoryRoot, "git", ["show", "HEAD:package-lock.json"])
+  requireSuccess("source package manifest Git binding", headPackage)
+  requireSuccess("source package lock Git binding", headLock)
+  if (
+    sha256(packageBytes) !== sha256(Buffer.from(headPackage.stdout, "utf8"))
+    || sha256(lockBytes) !== sha256(Buffer.from(headLock.stdout, "utf8"))
+  ) {
+    throw new Error("source package manifest differs from HEAD")
   }
 }
 
