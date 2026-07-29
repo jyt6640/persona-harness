@@ -13,6 +13,7 @@ import {
   isRecord,
   isString,
 } from "./workflow-finish-attestation-receipt-fields.js"
+import { projectFinishAttestationReusableCertificateSan } from "./project-finish-attestation-workflow-identity.js"
 
 export function readProjectFinishAttestationRepository(
   value: unknown,
@@ -131,7 +132,7 @@ export function readProjectFinishAttestationWorkflow(
   if (
     caller === undefined
     || reusable === undefined
-    || value.certificateSan !== `https://github.com/${caller.ref}`
+    || value.certificateSan !== projectFinishAttestationReusableCertificateSan(reusable.sha)
   ) {
     diagnostics.push(wrong("predicate.receipt.workflow"))
     return undefined

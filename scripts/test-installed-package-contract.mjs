@@ -25,8 +25,8 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
-const BETA8_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta8-acceptance.json")
-const BETA8_COOPERATIVE_COMMANDS = new Map([
+const BETA9_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta9-acceptance.json")
+const BETA9_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -70,7 +70,7 @@ try {
     } else {
       assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
       assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
-      assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory)
+      await assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory)
       assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
       assertDoctorRegistryReadback(
         join(consumerDirectory, "doctor-registry-fixture"),
@@ -102,7 +102,7 @@ try {
       assertNativeProducerInputSurface(repositoryRoot, repositoryRoot, "source CLI")
       process.stdout.write("source-cli-project-finish-producer-intake-contract: PASS\n")
     } else {
-      assertSourceConsumerAuthorityBoundary(sourceCli)
+      await assertSourceConsumerAuthorityBoundary(sourceCli)
       assertSourceDoctorRegistryReadback(sourceCli)
       assertSourceCooperativeFinishWorks(sourceCli)
       assertSourceEvidenceReadWriteBoundary(sourceCli)
@@ -116,7 +116,7 @@ try {
   rmSync(temporaryRoot, { force: true, recursive: true })
 }
 
-function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory) {
+async function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory) {
   const scripts = [
     "consumer-authority-artifact-archive.mjs",
     "consumer-authority-artifact-error.mjs",
@@ -129,6 +129,7 @@ function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirec
     }
   }
   assertPrearmedObserverHandoff(installedPackage, "installed package")
+  await assertBoundAuthorityDiscovery(installedPackage, "installed package")
   assertConsumerAuthorityBoundary(
     consumerDirectory,
     join(consumerDirectory, "node_modules", ".bin", "ph"),
@@ -137,12 +138,13 @@ function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirec
   )
 }
 
-function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
+async function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
   const phPath = resolve(repositoryRoot, sourceCliPath)
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
   assertPrearmedObserverHandoff(repositoryRoot, "source CLI")
+  await assertBoundAuthorityDiscovery(repositoryRoot, "source CLI")
   assertConsumerAuthorityBoundary(
     temporaryRoot,
     phPath,
@@ -408,13 +410,13 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     fixtureRoot,
     phPath,
     "installed package",
-    readBeta8CooperativeCommands(installedPackage),
+    readBeta9CooperativeCommands(installedPackage),
   )
   assertCooperativeSourceReadRaceBlocks(
     `${fixtureRoot}-source-read-race`,
     phPath,
     "installed package",
-    readBeta8CooperativeCommands(installedPackage),
+    readBeta9CooperativeCommands(installedPackage),
   )
 }
 
@@ -439,6 +441,7 @@ function assertPackagedProjectFinishProducerIntake(installedPackage, consumerDir
     pathToFileURL(join(installedPackage, "dist", "cli", "project-finish-attestation-producer-runner.js")).href,
     consumerDirectory,
     "installed package",
+    readPackageVersion(installedPackage),
   )
 }
 
@@ -459,6 +462,7 @@ function assertSourceProjectFinishProducerIntake(sourceCliPath) {
     pathToFileURL(sourceModule).href,
     join(temporaryRoot, "source-cli-project-finish-producer-intake"),
     "source CLI",
+    readPackageVersion(repositoryRoot),
   )
 }
 
@@ -575,7 +579,7 @@ function assertNativeProducerInputSurface(packageRoot, cwd, label) {
   }
 }
 
-function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
+function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label, packageVersion) {
   const validProject = join(fixtureRoot, "project-finish-producer-valid")
   const canonicalProfileProject = join(fixtureRoot, "project-finish-producer-canonical-profile")
   const hostileProject = join(fixtureRoot, "project-finish-producer-hostile")
@@ -614,14 +618,14 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       '    runAttempt: 1,',
       '    runId,',
       '    sourceHead: head,',
-      '    }, "0.8.0-beta.8");',
+      `    }, ${JSON.stringify(packageVersion)});`,
       '  } finally { process.chdir(original); }',
       '};',
       'const valid = runAt("./project-finish-producer-valid", "42");',
       'const canonical = runAt("./project-finish-producer-canonical-profile", "43");',
       'const hostile = runAt("./project-finish-producer-hostile", "44");',
       'const directHead = execFileSync("git", ["rev-parse", "HEAD"], { cwd: "./project-finish-producer-valid", encoding: "utf8" }).trim();',
-      'const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: directHead }, "0.8.0-beta.8");',
+      `const symlinked = runProjectFinishAttestationProducer("./project-finish-producer-symlink", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: directHead, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: directHead }, ${JSON.stringify(packageVersion)});`,
       'const resultCode = (result) => result.kind === "passed" ? "passed" : result.kind === "blocked" ? result.code : "invalid";',
       'const resultVector = [valid, canonical, hostile, symlinked].map(resultCode).join(",");',
       'if (valid.kind !== "passed" || canonical.kind !== "passed" || hostile.kind !== "blocked" || symlinked.kind !== "blocked" || symlinked.code !== "workspace-root-unavailable") { process.stdout.write(`project-finish-producer-intake:${resultVector}\\n`); process.exit(1); }',
@@ -652,7 +656,7 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       'const { runProjectFinishAttestationProducer } = await import(modulePath);',
       'const original = process.cwd(); process.chdir(projectDir);',
       'let result;',
-      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: head }, "0.8.0-beta.8"); } finally { process.chdir(original); }',
+      `try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "45", sourceHead: head }, ${JSON.stringify(packageVersion)}); } finally { process.chdir(original); }`,
       'if (result.kind !== "blocked") process.exit(1);',
       'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
@@ -684,7 +688,7 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       'const { runProjectFinishAttestationProducer } = await import(modulePath);',
       'const original = process.cwd(); process.chdir(projectDir);',
       'let result;',
-      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.8"); } finally { process.chdir(original); }',
+      `try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, ${JSON.stringify(packageVersion)}); } finally { process.chdir(original); }`,
       'if (result.kind !== "blocked") process.exit(1);',
       'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
@@ -721,7 +725,7 @@ function assertProjectFinishProducerIntake(modulePath, fixtureRoot, label) {
       'const { runProjectFinishAttestationProducer } = await import(modulePath);',
       'const original = process.cwd(); process.chdir(projectDir);',
       'let result;',
-      'try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, "0.8.0-beta.8"); } finally { process.chdir(original); }',
+      `try { const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); result = runProjectFinishAttestationProducer(".", { callerWorkflowRef: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main", callerWorkflowSha: head, issuedAt: "2026-07-22T01:00:00.000Z", repository: { id: 123, slug: "example/public-gradle-app", visibility: "public" }, reusableWorkflowSha: "b".repeat(40), runAttempt: 1, runId: "46", sourceHead: head }, ${JSON.stringify(packageVersion)}); } finally { process.chdir(original); }`,
       'if (result.kind !== "blocked") process.exit(1);',
       'if ("value" in result || JSON.stringify(result).includes("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa")) process.exit(1);',
     ].join("\n"),
@@ -749,13 +753,13 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
-    readBeta8CooperativeCommands(repositoryRoot),
+    readBeta9CooperativeCommands(repositoryRoot),
   )
   assertCooperativeSourceReadRaceBlocks(
     join(temporaryRoot, "source-cli-cooperative-gradle-source-read-race"),
     phPath,
     "source CLI",
-    readBeta8CooperativeCommands(repositoryRoot),
+    readBeta9CooperativeCommands(repositoryRoot),
   )
 }
 
@@ -1836,9 +1840,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands) {
   for (const command of commands) {
-    const step = BETA8_COOPERATIVE_COMMANDS.get(command)
+    const step = BETA9_COOPERATIVE_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.8 acceptance command is unsupported`)
+      throw new Error(`${label} beta.9 acceptance command is unsupported`)
     }
     requireSuccess(
       `${label} lifecycle ${command}`,
@@ -2031,35 +2035,35 @@ function assertCooperativeLifecycleState(projectDir, label) {
   }
 }
 
-function readBeta8CooperativeCommands(packageRoot) {
-  const manifestPath = join(packageRoot, BETA8_ACCEPTANCE_PATH)
+function readBeta9CooperativeCommands(packageRoot) {
+  const manifestPath = join(packageRoot, BETA9_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.8 acceptance manifest is unavailable")
+    throw new Error("beta.9 acceptance manifest is unavailable")
   }
   const commands = value?.cooperative?.commands
   const packageVersion = value?.package?.version
-  const expectedCommands = [...BETA8_COOPERATIVE_COMMANDS.keys()]
+  const expectedCommands = [...BETA9_COOPERATIVE_COMMANDS.keys()]
   if (
     packageVersion !== readPackageVersion(packageRoot)
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
   ) {
-    throw new Error("beta.8 acceptance manifest is invalid")
+    throw new Error("beta.9 acceptance manifest is invalid")
   }
   return commands
 }
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
-  const manifestPath = join(packageRoot, BETA8_ACCEPTANCE_PATH)
+  const manifestPath = join(packageRoot, BETA9_ACCEPTANCE_PATH)
   let manifest
   try {
     manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error(`${label} beta.8 observer handoff contract is unavailable`)
+    throw new Error(`${label} beta.9 observer handoff contract is unavailable`)
   }
   const handoff = manifest?.prearmedExternalHandoff
   const prepare = handoff?.prepare
@@ -2075,20 +2079,23 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
   const expectedSteps = [
     "download-original-bytes-once",
     "verify-online-before-leaf-certificate-notAfter",
+    "authority-fetch-binds-original-artifact-identity",
     "finish-consume-once",
     "finish-replay-blocked",
   ]
   const expectedNonAuthority = [
     "prearm-does-not-self-validate",
     "prearm-does-not-grant-authority",
-    "prearm-does-not-reuse-beta7-artifact",
+    "prearm-does-not-reuse-beta8-artifact",
   ]
   if (
     manifest?.package?.version !== readPackageVersion(packageRoot)
-    || manifest?.beta7HistoricalArtifact?.version !== "0.8.0-beta.7"
-    || manifest?.beta7HistoricalArtifact?.outcome !== "certificate-window-expired-no-trusted-positive"
-    || manifest?.beta7HistoricalArtifact?.reusableForBeta8 !== false
+    || manifest?.beta8HistoricalArtifact?.version !== "0.8.0-beta.8"
+    || manifest?.beta8HistoricalArtifact?.outcome !== "verified-original-artifact-fetch-binding-unavailable"
+    || manifest?.beta8HistoricalArtifact?.reusableForBeta9 !== false
     || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
+    || manifest?.authority?.hostedFixture?.callerWorkflowPath !== ".github/workflows/research-attestation.yml"
+    || manifest?.authority?.hostedFixture?.certificateSanIdentity !== "reusable-producer-workflow"
     || prepare?.consumer !== "isolated-exact-registry-install"
     || !sameStrings(prepare?.allowedBeforeFixture, expectedPrepare)
     || !sameStrings(prepare?.prohibitedBeforeArtifact, expectedProhibited)
@@ -2099,8 +2106,185 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     || expiration?.outcome !== "blocked-no-fetch-finish-or-replay"
     || !sameStrings(handoff?.nonAuthority, expectedNonAuthority)
   ) {
-    throw new Error(`${label} beta.8 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.9 observer handoff contract is invalid`)
   }
+}
+
+async function assertBoundAuthorityDiscovery(packageRoot, label) {
+  const moduleRoot = join(packageRoot, "dist", "cli")
+  const [
+    command,
+    enrollmentStore,
+    artifactStore,
+    producer,
+    version,
+  ] = await Promise.all([
+    import(pathToFileURL(join(moduleRoot, "authority-command.js")).href),
+    import(pathToFileURL(join(moduleRoot, "authority-enrollment.js")).href),
+    import(pathToFileURL(join(moduleRoot, "authority-artifact-store.js")).href),
+    import(pathToFileURL(join(moduleRoot, "project-finish-attestation-producer.js")).href),
+    import(pathToFileURL(join(moduleRoot, "version.js")).href),
+  ])
+  const sourceHead = "a".repeat(40)
+  const enrollment = enrollmentStore.authorityEnrollmentFromReadback({
+    callerWorkflowPath: "research-attestation.yml",
+    repositoryId: 987654321,
+    repositorySlug: "example/public-gradle-app",
+    reusableWorkflowSha: "b".repeat(40),
+  })
+  if (enrollment === undefined) throw new Error(`${label} authority enrollment fixture did not parse`)
+  const produced = producer.createProjectFinishAttestationProducerArtifacts({
+    buildArtifactDigest: `sha256:${"b".repeat(64)}`,
+    callerWorkflowRef: `${enrollment.repositorySlug}/.github/workflows/${enrollment.callerWorkflowPath}@refs/heads/main`,
+    callerWorkflowSha: sourceHead,
+    issuedAt: "2026-07-29T00:00:00.000Z",
+    phVersion: version.personaHarnessVersion(),
+    repository: { id: enrollment.repositoryId, slug: enrollment.repositorySlug, visibility: "public" },
+    reusableWorkflowSha: enrollment.reusableWorkflowSha,
+    runAttempt: 2,
+    runId: "1001",
+    source: {
+      head: sourceHead,
+      identity: {
+        contentDigest: `sha256:${"c".repeat(64)}`,
+        entryCount: 5,
+        exclusions: [".git/**", ".gradle/**", "build/**", "node_modules/**", "<configured-evidence>/**"],
+        gitStatusDigest: `sha256:${"d".repeat(64)}`,
+        repositoryHead: sourceHead,
+        schemaVersion: "source-identity.1",
+        trackedEntryCount: 5,
+        trackedIndexDigest: `sha256:${"e".repeat(64)}`,
+        untrackedEntryCount: 0,
+      },
+      root: ".",
+    },
+    test: {
+      count: 4,
+      junitDigest: `sha256:${"f".repeat(64)}`,
+      passed: 3,
+      skipped: 1,
+    },
+  })
+  const archive = authorityArtifactArchive({
+    "bundle.json": Buffer.from(JSON.stringify(produced.statement), "utf8"),
+    "predicate.json": Buffer.from(JSON.stringify(produced.predicate), "utf8"),
+    "receipt.json": produced.receiptBytes,
+  })
+  const artifact = {
+    archive,
+    artifactId: 11,
+    artifactDigest: `sha256:${sha256(archive)}`,
+    fetchedAt: "2026-07-29T00:00:00.000Z",
+    repositoryId: enrollment.repositoryId,
+    runId: "1001",
+    sourceHead,
+  }
+  const assessment = {
+    authorityEligible: true,
+    consumptionState: "unconsumed",
+    decision: "trusted",
+    diagnostics: [],
+    receipt: produced.receipt,
+    state: "trusted",
+    summary: "deterministic-binding-only",
+  }
+  const cases = [
+    { id: "run", artifact: { ...artifact, runId: "10" }, enrollment },
+    { id: "source", artifact: { ...artifact, sourceHead: "c".repeat(40) }, enrollment },
+    {
+      id: "caller",
+      artifact,
+      enrollment: {
+        ...enrollment,
+        callerWorkflowPath: "other.yml",
+      },
+    },
+    {
+      id: "reusable",
+      artifact,
+      enrollment: {
+        ...enrollment,
+        reusableWorkflowSha: "c".repeat(40),
+      },
+    },
+    { id: "artifact-id", artifact: { ...artifact, artifactId: 0 }, enrollment },
+  ]
+  const successRoot = mkdtempSync(join(temporaryRoot, "persona-authority-binding-success-"))
+  if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot: successRoot })) {
+    throw new Error(`${label} authority enrollment setup failed`)
+  }
+  const success = command.runAuthorityCommand(["fetch", "github", "--json"], {
+    artifactFetch: () => artifact,
+    artifactInspector: () => assessment,
+    projectDir: temporaryRoot,
+    storeRoot: successRoot,
+  })
+  const successPayload = JSON.parse(success.stdout)
+  const stored = artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot: successRoot })
+  if (
+    success.status !== 0
+    || successPayload?.artifact?.id !== artifact.artifactId
+    || successPayload?.artifact?.runId !== artifact.runId
+    || stored?.state !== "ready"
+    || stored.value.artifactId !== artifact.artifactId
+  ) {
+    throw new Error(`${label} authority discovery did not retain the verified artifact identity`)
+  }
+  for (const candidate of cases) {
+    const storeRoot = mkdtempSync(join(temporaryRoot, `persona-authority-binding-${candidate.id}-`))
+    if (!enrollmentStore.writeAuthorityEnrollment(candidate.enrollment, { storeRoot })) {
+      throw new Error(`${label} authority ${candidate.id} enrollment setup failed`)
+    }
+    const blocked = command.runAuthorityCommand(["fetch", "github", "--json"], {
+      artifactFetch: () => candidate.artifact,
+      artifactInspector: () => assessment,
+      projectDir: temporaryRoot,
+      storeRoot,
+    })
+    const result = artifactStore.readAuthorityArtifact(candidate.enrollment.repositoryId, { storeRoot })
+    if (
+      blocked.status === 0
+      || !blocked.stdout.includes("binding-mismatch")
+      || result.state !== "missing"
+      || `${blocked.stdout}${blocked.stderr}`.includes("deterministic-binding-only")
+    ) {
+      throw new Error(`${label} authority ${candidate.id} mismatch retained evidence or reflected fixture state`)
+    }
+  }
+}
+
+function authorityArtifactArchive(members) {
+  const localParts = []
+  const centralParts = []
+  let offset = 0
+  for (const [name, bytes] of Object.entries(members)) {
+    const encodedName = Buffer.from(name, "utf8")
+    const local = Buffer.alloc(30)
+    local.writeUInt32LE(0x04034b50, 0)
+    local.writeUInt16LE(20, 4)
+    local.writeUInt32LE(bytes.byteLength, 18)
+    local.writeUInt32LE(bytes.byteLength, 22)
+    local.writeUInt16LE(encodedName.byteLength, 26)
+    localParts.push(local, encodedName, bytes)
+    const central = Buffer.alloc(46)
+    central.writeUInt32LE(0x02014b50, 0)
+    central.writeUInt16LE(20, 4)
+    central.writeUInt16LE(20, 6)
+    central.writeUInt32LE(bytes.byteLength, 20)
+    central.writeUInt32LE(bytes.byteLength, 24)
+    central.writeUInt16LE(encodedName.byteLength, 28)
+    central.writeUInt32LE(offset, 42)
+    centralParts.push(central, encodedName)
+    offset += local.byteLength + encodedName.byteLength + bytes.byteLength
+  }
+  const directory = Buffer.concat(centralParts)
+  const footer = Buffer.alloc(22)
+  footer.writeUInt32LE(0x06054b50, 0)
+  footer.writeUInt16LE(Object.keys(members).length, 8)
+  footer.writeUInt16LE(Object.keys(members).length, 10)
+  footer.writeUInt32LE(directory.byteLength, 12)
+  footer.writeUInt32LE(offset, 16)
+  return Buffer.concat([...localParts, directory, footer])
 }
 
 function sameStrings(value, expected) {

@@ -5,21 +5,23 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` through `0.8.0-beta.7` are immutable staging-only evidence.
+`0.8.0-beta.1` through `0.8.0-beta.8` are immutable staging-only evidence.
 Their registry and provenance observations cannot be reused as current-version
-consumer authority evidence. Beta.7 did produce a structurally bound original
-artifact, but its leaf certificate expired at `2026-07-28T21:46:50Z` before
-the independent decision at `2026-07-28T21:52:38Z`; that outcome is a
-fail-closed non-positive and permits no fetch, Finish consumption, or replay
-observation. The active `0.8.0-beta.8` source candidate has no package, tag,
+consumer authority evidence. Beta.8 did produce an independently verified
+original artifact, but its authenticated installed fetch retained no artifact
+identity because the observer used an obsolete caller workflow filename. Its
+certificate SAN identifies the Persona reusable producer workflow while its
+receipt identifies the fixture caller workflow; those identities remain
+separate. The active `0.8.0-beta.9` source candidate has no package, tag,
 channel movement, GitHub release, or signed consumer-project artifact at
 source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.8 must establish that route independently and cannot inherit beta.7's
-expired artifact, an earlier lifecycle, or an earlier authority result.
+Beta.9 must establish that route independently and cannot inherit beta.8's
+verified-but-unretained artifact, an earlier lifecycle, or an earlier authority
+result.
 
 ## Fixed Sequence
 
@@ -104,18 +106,19 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.7` is a bounded
-binding mismatch or expired-evidence block for `0.8.0-beta.8`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.8` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.9`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta8-acceptance.json`](consumer-authority-beta8-acceptance.json)
-record; it names the exact public Java/Spring route, the pre-armed independent
-observer, the leaf-certificate deadline, and the one hosted residual.
+[`consumer-authority-beta9-acceptance.json`](consumer-authority-beta9-acceptance.json)
+record; it names the exact public Java/Spring route, the separate caller and
+reusable certificate identities, the pre-armed independent observer, the
+leaf-certificate deadline, and the one hosted residual.
 
 ## Live Verification Deadline
 
-Before the one natural beta.8 fixture push, an independent observer may prepare
+Before the one natural beta.9 fixture push, an independent observer may prepare
 only an isolated exact registry installation, enrollment, status, and explain.
 It must not download artifact bytes, validate online crypto, consume Finish, or
 observe replay. Once the current-version original artifact exists, that observer
@@ -124,7 +127,9 @@ certificate `notAfter` deadline, consumes exactly once, and immediately checks
 the replay-negative result. A missed deadline is
 `certificate-window-expired`: it blocks without fetch, Finish, or replay and
 never becomes a trusted result through local self-validation or older beta
-evidence.
+evidence. A successful current-version fetch retains only the verified
+artifact ID, digest, run, source, caller, and reusable/SAN binding; any
+mismatch remains non-authoritative and is not stored.
 
 `ph authority status`, `ph authority fetch github`, and closure are
 non-consuming. Missing enrollment, unavailable network, malformed records,

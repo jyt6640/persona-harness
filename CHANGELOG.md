@@ -12,6 +12,20 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.9] - 2026-07-29
+
+- Prepares the next immutable Consumer Authority Beta source candidate after
+  beta.8 independently verified an original current-version artifact but its
+  installed observer had been prearmed with an obsolete caller workflow
+  filename and retained no bound authority artifact.
+- Separates the caller workflow identity in the signed receipt from the
+  reusable Persona producer workflow certificate SAN, and retains an artifact
+  only when repository, source, run, caller, reusable/SAN, numeric artifact ID,
+  and archive digest all agree with verified signed evidence.
+- Keeps beta.8 immutable staging-only historical evidence. It does not
+  authorize a beta.9 fetch, Finish consumption, replay, promotion, Stable/GA,
+  `latest`, or release action.
+
 ## [0.8.0-beta.8] - 2026-07-29
 
 - Prepares the next immutable Consumer Authority Beta source candidate after

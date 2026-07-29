@@ -8,11 +8,13 @@ describe("consumer authority fetch worker output", () => {
 
     expect(parseFetchedArtifact(JSON.stringify({
       archive: archive.toString("base64"),
+      artifactId: 11,
       artifactDigest: `sha256:${"a".repeat(64)}`,
       ok: true,
       runId: "10",
     }))).toEqual({
       archive,
+      artifactId: 11,
       artifactDigest: `sha256:${"a".repeat(64)}`,
       runId: "10",
     })
@@ -21,6 +23,7 @@ describe("consumer authority fetch worker output", () => {
   it.each([
     "not-json",
     JSON.stringify({ archive: "not-base64", artifactDigest: `sha256:${"a".repeat(64)}`, ok: true, runId: "10" }),
+    JSON.stringify({ archive: Buffer.from("archive").toString("base64"), artifactId: 0, artifactDigest: `sha256:${"a".repeat(64)}`, ok: true, runId: "10" }),
     JSON.stringify({ archive: Buffer.from("archive").toString("base64"), artifactDigest: "bad", ok: true, runId: "10" }),
     JSON.stringify({ archive: Buffer.from("archive").toString("base64"), artifactDigest: `sha256:${"a".repeat(64)}`, ok: false, runId: "10", secret: "secret-marker" }),
   ])("blocks malformed child output without carrying supplied fields", (value) => {

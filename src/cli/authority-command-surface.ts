@@ -99,7 +99,7 @@ export function blockedFetch(
         authorityEligible: false,
         consumptionState: "not-applicable",
         next,
-        schemaVersion: "consumer-authority-fetch.1",
+        schemaVersion: "consumer-authority-fetch.2",
         state,
       })}\n`
       : `Consumer authority fetch: BLOCKED (${state}). No evidence was retained or consumed.\n`,

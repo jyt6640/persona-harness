@@ -8,6 +8,7 @@ import {
   PROJECT_FINISH_ATTESTATION_SCHEMA,
 } from "../../src/cli/project-finish-attestation-types.js"
 import { personaHarnessVersion } from "../../src/cli/version.js"
+import { projectFinishAttestationReusableCertificateSan } from "../../src/cli/project-finish-attestation-workflow-identity.js"
 
 export function createValidProjectFinishAttestationStatement(): Record<string, unknown> {
   const receipt = createValidProjectFinishAttestationReceipt()
@@ -100,7 +101,7 @@ export function createValidProjectFinishAttestationReceipt(): Record<string, unk
         ref: callerWorkflowRef,
         sha: sourceHead,
       },
-      certificateSan: `https://github.com/${callerWorkflowRef}`,
+      certificateSan: projectFinishAttestationReusableCertificateSan(reusableWorkflowSha),
       reusable: {
         path: PROJECT_FINISH_ATTESTATION_POLICY.workflowPath,
         ref: reusableWorkflowRef,

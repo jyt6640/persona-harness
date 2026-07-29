@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "consumer-authority-beta9-acceptance.1",
+  "package": {
+    "channel": "staging",
+    "scope": "staging-only",
+    "version": "0.8.0-beta.9"
+  },
+  "beta8HistoricalArtifact": {
+    "artifactId": 8708284716,
+    "archiveZipSha256": "sha256:1dbb2862aa4a8983b1dc79ff5d7e3e74321121b5bc86b432bff93909d476d9ea",
+    "callerWorkflowPath": ".github/workflows/research-attestation.yml",
+    "certificateNotAfter": "2026-07-29T00:29:38Z",
+    "certificateSanIdentity": "reusable-producer-workflow",
+    "cryptoOutcome": "independently-verified-before-expiry",
+    "outcome": "verified-original-artifact-fetch-binding-unavailable",
+    "reusableForBeta9": false,
+    "version": "0.8.0-beta.8"
+  },
+  "cooperative": {
+    "commands": [
+      "ph bootstrap backend --strict --no-developer-mcp",
+      "ph bearshell ./gradlew test",
+      "ph bearshell ./gradlew compileJava",
+      "ph bearshell ./gradlew clean",
+      "ph evidence read README.md",
+      "ph evidence read .persona/project-profile.jsonc",
+      "ph evidence read src/main/java/example/cooperative/GreetingService.java",
+      "ph plan --report-filled implementation --stdin",
+      "ph plan --report-filled review --stdin"
+    ],
+    "defaultFinish": "trusted-authority-required",
+    "explicitFinish": "cooperative-pass",
+    "laterClosure": "trusted-authority-required"
+  },
+  "authority": {
+    "hostedFixture": {
+      "callerWorkflowPath": ".github/workflows/research-attestation.yml",
+      "certificateSanIdentity": "reusable-producer-workflow",
+      "event": "push",
+      "ref": "refs/heads/main",
+      "repository": "jyt6640/persona-harness-attestation-claim-fixture",
+      "reusableWorkflowPath": ".github/workflows/persona-harness-project-finish.yml",
+      "revision": "postmerge-persona-harness-beta9-main-sha"
+    },
+    "fixturePlan": {
+      "artifact": "project-finish-attestation",
+      "consumer": "public-java-spring-gradle",
+      "postmergeAction": "normal-push-to-main",
+      "registryInstall": "npm install persona-harness@0.8.0-beta.9 --registry https://registry.npmjs.org"
+    },
+    "discoveryBinding": {
+      "failureMode": "mismatch-or-malformed-evidence-is-not-retained",
+      "required": [
+        "caller-workflow-path",
+        "reusable-workflow-sha-and-certificate-SAN",
+        "repository-id",
+        "source-head",
+        "workflow-run-id",
+        "artifact-id-and-sha256"
+      ],
+      "storeSchema": "consumer-authority-original-artifact.2"
+    },
+    "verification": {
+      "predicate": "project-finish-attestation.1",
+      "route": "fixed-product-owned-online",
+      "unavailable": "bounded-non-authoritative"
+    }
+  },
+  "prearmedExternalHandoff": {
+    "prepare": {
+      "allowedBeforeFixture": ["enroll", "status", "explain"],
+      "consumer": "isolated-exact-registry-install",
+      "prohibitedBeforeArtifact": [
+        "artifact-download",
+        "online-crypto-validation",
+        "finish-consumption",
+        "replay-observation"
+      ]
+    },
+    "trigger": {
+      "expiration": {
+        "code": "certificate-window-expired",
+        "outcome": "blocked-no-fetch-finish-or-replay",
+        "source": "leaf-certificate-notAfter"
+      },
+      "onlyAfter": "natural-current-version-original-artifact",
+      "steps": [
+        "download-original-bytes-once",
+        "verify-online-before-leaf-certificate-notAfter",
+        "authority-fetch-binds-original-artifact-identity",
+        "finish-consume-once",
+        "finish-replay-blocked"
+      ]
+    },
+    "nonAuthority": [
+      "prearm-does-not-self-validate",
+      "prearm-does-not-grant-authority",
+      "prearm-does-not-reuse-beta8-artifact"
+    ]
+  },
+  "hostedResidual": {
+    "id": "beta9-prearmed-external-live-original-artifact-verification",
+    "requiredEvidence": "one natural current-version public fixture artifact, online verification inside its live certificate window, one explicit Finish consumption, and immediate replay rejection",
+    "whyLocalCannotClose": "GitHub Actions must mint the original current-version signed artifact and independent online Sigstore verification must observe its live certificate evidence."
+  },
+  "mutationBoundary": {
+    "performed": false,
+    "prohibited": [
+      "npm-publish",
+      "tag-or-dist-tag-mutation",
+      "release-creation",
+      "artifact-download-or-live-verification",
+      "Finish-consumption",
+      "fixture-push-or-workflow-dispatch"
+    ]
+  }
+}

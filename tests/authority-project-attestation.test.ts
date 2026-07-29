@@ -40,6 +40,7 @@ describe("enrolled project finish attestation selection", () => {
     expect(writeAuthorityEnrollment(enrollment, { storeRoot })).toBe(true)
     expect(writeAuthorityArtifact({
       archive,
+      artifactId: 11,
       artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
       fetchedAt: "2026-07-24T00:00:00.000Z",
       repositoryId: 987654321,

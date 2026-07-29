@@ -3,6 +3,7 @@ import {
   canonicalProjectFinishAttestationReceiptDigest,
 } from "./project-finish-attestation-canonical.js"
 import { parseProjectFinishAttestationStatement } from "./project-finish-attestation-parser.js"
+import { projectFinishAttestationReusableCertificateSan } from "./project-finish-attestation-workflow-identity.js"
 import {
   PROJECT_FINISH_ATTESTATION_COMMAND_CATALOG,
   PROJECT_FINISH_ATTESTATION_MAX_FRESHNESS_MS,
@@ -99,7 +100,7 @@ export function createProjectFinishAttestationProducerArtifacts(
         ref: facts.callerWorkflowRef,
         sha: facts.callerWorkflowSha,
       },
-      certificateSan: `https://github.com/${facts.callerWorkflowRef}`,
+      certificateSan: projectFinishAttestationReusableCertificateSan(facts.reusableWorkflowSha),
       reusable: {
         path: PROJECT_FINISH_ATTESTATION_POLICY.workflowPath,
         ref: `${PROJECT_FINISH_ATTESTATION_POLICY.producerRepository}/${PROJECT_FINISH_ATTESTATION_POLICY.workflowPath}@${facts.reusableWorkflowSha}`,
