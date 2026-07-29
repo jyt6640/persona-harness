@@ -78,6 +78,10 @@ into a repository path, so no bound authority artifact was retained.
 has no source-level claim of a tag, publish, channel movement, GitHub release, or original signed
 consumer artifact. Its release contract
 pre-arms an isolated observer before the one natural current-version artifact.
+Its package evidence also starts from the exact complete-history bundle, not an
+ambient working directory: detached checkout, Git/manifest/lock/npm-prefix
+binding, normal prepack, and fresh installed CLI identity must all agree before
+the tarball is eligible for independent package review.
 `0.7.0-rc.2` remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:

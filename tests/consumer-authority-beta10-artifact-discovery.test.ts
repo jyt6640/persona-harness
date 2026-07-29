@@ -55,6 +55,38 @@ describe("consumer authority beta.10 artifact-discovery acceptance manifest", ()
       id: "beta10-prearmed-external-live-original-artifact-verification",
     })
   })
+
+  it("requires an exact bundle checkout rather than ambient package-root selection", () => {
+    const manifest = readManifest()
+    const boundary = record(manifest["packageBoundary"])
+    const bundle = record(boundary["bundle"])
+    const checkout = record(boundary["cleanCheckout"])
+    const npm = record(boundary["npm"])
+    const pack = record(boundary["pack"])
+
+    expect(bundle).toEqual({
+      requiredRefs: ["HEAD", "refs/remotes/origin/main"],
+      verification: "git-bundle-verify-and-exact-ref-binding",
+    })
+    expect(checkout["requiredBindings"]).toEqual([
+      "checkout-cwd",
+      "git-toplevel",
+      "npm-prefix",
+      "HEAD-package-json-bytes",
+      "HEAD-package-lock-bytes",
+    ])
+    expect(checkout["sourceFallback"]).toBe("forbidden")
+    expect(npm).toEqual({
+      global: false,
+      ignoreScriptsBeforePack: false,
+      install: "npm-ci-ignore-scripts",
+      workspaces: false,
+    })
+    expect(pack).toEqual({
+      metadata: "name-version-filename-must-match-frozen-package-and-lock",
+      postcondition: "fresh-installed-cli-version-must-match-tarball-version",
+    })
+  })
 })
 
 function readManifest(): Record<string, unknown> {

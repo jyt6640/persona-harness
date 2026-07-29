@@ -5,6 +5,32 @@
     "scope": "staging-only",
     "version": "0.8.0-beta.10"
   },
+  "packageBoundary": {
+    "bundle": {
+      "requiredRefs": ["HEAD", "refs/remotes/origin/main"],
+      "verification": "git-bundle-verify-and-exact-ref-binding"
+    },
+    "cleanCheckout": {
+      "requiredBindings": [
+        "checkout-cwd",
+        "git-toplevel",
+        "npm-prefix",
+        "HEAD-package-json-bytes",
+        "HEAD-package-lock-bytes"
+      ],
+      "sourceFallback": "forbidden"
+    },
+    "npm": {
+      "global": false,
+      "ignoreScriptsBeforePack": false,
+      "install": "npm-ci-ignore-scripts",
+      "workspaces": false
+    },
+    "pack": {
+      "metadata": "name-version-filename-must-match-frozen-package-and-lock",
+      "postcondition": "fresh-installed-cli-version-must-match-tarball-version"
+    }
+  },
   "beta9HistoricalArtifact": {
     "archiveZipSha256": "sha256:df0e18d68a6b0161b95680b2aa06042818c32708e65c5040e2628798bd28438c",
     "artifactId": 8712218259,
