@@ -155,7 +155,7 @@ describe("consumer authority command boundary", () => {
     expect(writeAuthorityEnrollment(enrollment, { storeRoot })).toBe(true)
     const archive = artifactArchive()
 
-    const result = runAuthorityCommand(["fetch", "github"], {
+    const result = runAuthorityCommand(["fetch", "github", "--json"], {
       artifactFetch: () => ({
         archive,
         artifactId: 11,
@@ -178,10 +178,20 @@ describe("consumer authority command boundary", () => {
       storeRoot,
     })
 
-    expect(result).toEqual({
-      status: 0,
-      stderr: "",
-      stdout: "Fetched and verified matching original public evidence. No completion authority was consumed.\n",
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe("")
+    expect(JSON.parse(result.stdout)).toEqual({
+      artifact: {
+        digest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+        id: 11,
+        runId: "1001",
+        sourceHead: "a".repeat(40),
+      },
+      authorityEligible: true,
+      consumptionState: "unconsumed",
+      next: "workflow-finish",
+      schemaVersion: "consumer-authority-fetch.2",
+      state: "trusted",
     })
     expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("ready")
     expect(existsSync(join(projectDir, ".persona", "evidence", "project-finish-attestation", "bundle.json"))).toBe(false)

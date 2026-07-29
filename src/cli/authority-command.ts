@@ -152,19 +152,25 @@ function runFetch(args: readonly string[], options: AuthorityCommandOptions, inv
     return blockedFetch(parsed.json, "binding-mismatch")
   }
   if (!writeAuthorityArtifact(artifact, options)) {
-    return blockedFetch(parsed.json, assessment.state)
+    return blockedFetch(parsed.json, "binding-mismatch")
   }
   return {
     status: 0,
     stdout: parsed.json
       ? `${JSON.stringify({
         authorityEligible: true,
+        artifact: {
+          digest: artifact.artifactDigest,
+          id: artifact.artifactId,
+          runId: artifact.runId,
+          sourceHead: artifact.sourceHead,
+        },
         consumptionState: assessment.consumptionState,
         next: "workflow-finish",
-        schemaVersion: "consumer-authority-fetch.1",
+        schemaVersion: "consumer-authority-fetch.2",
         state: "trusted",
       })}\n`
-      : "Fetched and verified matching original public evidence. No completion authority was consumed.\n",
+      : "Fetched and verified matching original public evidence. Artifact identity was retained. No completion authority was consumed.\n",
     stderr: "",
   }
 }
