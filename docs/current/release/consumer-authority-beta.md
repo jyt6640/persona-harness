@@ -5,21 +5,22 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` through `0.8.0-beta.8` are immutable staging-only evidence.
+`0.8.0-beta.1` through `0.8.0-beta.9` are immutable staging-only evidence.
 Their registry and provenance observations cannot be reused as current-version
-consumer authority evidence. Beta.8 did produce an independently verified
+consumer authority evidence. Beta.9 did produce an independently verified
 original artifact, but its authenticated installed fetch retained no artifact
-identity because the observer used an obsolete caller workflow filename. Its
+identity because it sent the enrolled workflow filename as a repository path.
+Its
 certificate SAN identifies the Persona reusable producer workflow while its
 receipt identifies the fixture caller workflow; those identities remain
-separate. The active `0.8.0-beta.9` source candidate has no package, tag,
+separate. The active `0.8.0-beta.10` source candidate has no package, tag,
 channel movement, GitHub release, or signed consumer-project artifact at
 source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.9 must establish that route independently and cannot inherit beta.8's
+Beta.10 must establish that route independently and cannot inherit beta.9's
 verified-but-unretained artifact, an earlier lifecycle, or an earlier authority
 result.
 
@@ -106,19 +107,26 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.8` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.9`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.9` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.10`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta9-acceptance.json`](consumer-authority-beta9-acceptance.json)
+[`consumer-authority-beta10-acceptance.json`](consumer-authority-beta10-acceptance.json)
 record; it names the exact public Java/Spring route, the separate caller and
 reusable certificate identities, the pre-armed independent observer, the
-leaf-certificate deadline, and the one hosted residual.
+live certificate observation order, and the one hosted residual.
+
+For that observer, the authenticated product discovery route sends the enrolled
+caller workflow filename directly to the fixed GitHub workflow-runs endpoint.
+It does not reconstruct a second `.github/workflows/` prefix. The caller
+workflow selects the run; the separate reusable producer SHA and certificate
+SAN bind the signer. A missing, malformed, stale, mismatched, or expired result
+is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.9 fixture push, an independent observer may prepare
+Before the one natural beta.10 fixture push, an independent observer may prepare
 only an isolated exact registry installation, enrollment, status, and explain.
 It must not download artifact bytes, validate online crypto, consume Finish, or
 observe replay. Once the current-version original artifact exists, that observer

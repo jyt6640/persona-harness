@@ -12,6 +12,20 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.10] - 2026-07-29
+
+- Prepares the next immutable Consumer Authority Beta source candidate after
+  beta.9 independently verified a current original artifact but the installed
+  authenticated fetch selected the enrolled workflow filename as a repository
+  path and retained no bound authority artifact.
+- Uses the canonical enrolled workflow filename at the fixed GitHub
+  workflow-runs endpoint, then retains an original artifact only after the
+  existing repository, source, run, caller, reusable/SAN, artifact ID, and
+  digest bindings all agree.
+- Keeps beta.9 immutable staging-only evidence. This source preparation does
+  not authorize a beta.10 fetch, Finish consumption, replay, promotion,
+  Stable/GA, `latest`, or release action.
+
 ## [0.8.0-beta.9] - 2026-07-29
 
 - Prepares the next immutable Consumer Authority Beta source candidate after
