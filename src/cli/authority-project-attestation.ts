@@ -2,6 +2,7 @@ import {
   readAuthorityArtifact,
   type AuthorityArtifact,
 } from "./authority-artifact-store.js"
+import { matchesAuthorityArtifactBinding } from "./authority-artifact-binding.js"
 import {
   readAuthorityEnrollments,
   type AuthorityEnrollment,
@@ -66,15 +67,17 @@ export function readEnrolledProjectFinishAttestations(
     ) {
       continue
     }
+    const assessment = inspectProjectFinishAttestationArtifact(
+      projectDir,
+      enrollment,
+      artifact.value.archive,
+      now,
+      projectReadBoundary,
+    )
+    if (!matchesAuthorityArtifactBinding(artifact.value, enrollment, assessment)) continue
     values.push({
       artifact: artifact.value,
-      assessment: inspectProjectFinishAttestationArtifact(
-        projectDir,
-        enrollment,
-        artifact.value.archive,
-        now,
-        projectReadBoundary,
-      ),
+      assessment,
       enrollment,
     })
   }

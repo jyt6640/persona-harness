@@ -1,4 +1,5 @@
 import { writeAuthorityArtifact, type AuthorityArtifact } from "./authority-artifact-store.js"
+import { matchesAuthorityArtifactBinding } from "./authority-artifact-binding.js"
 import {
   authorityEnrollmentFromReadback,
   readAuthorityEnrollment,
@@ -147,7 +148,10 @@ function runFetch(args: readonly string[], options: AuthorityCommandOptions, inv
     artifact.archive,
     options.now ?? new Date(),
   )
-  if (!assessment.authorityEligible || !writeAuthorityArtifact(artifact, options)) {
+  if (!matchesAuthorityArtifactBinding(artifact, enrollment, assessment)) {
+    return blockedFetch(parsed.json, "binding-mismatch")
+  }
+  if (!writeAuthorityArtifact(artifact, options)) {
     return blockedFetch(parsed.json, assessment.state)
   }
   return {

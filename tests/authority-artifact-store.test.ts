@@ -27,6 +27,7 @@ describe("consumer authority original artifact store", () => {
 
     const written = writeAuthorityArtifact({
       archive,
+      artifactId: 11,
       artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
       fetchedAt: "2026-07-24T00:00:00.000Z",
       repositoryId: 987654321,
@@ -38,6 +39,7 @@ describe("consumer authority original artifact store", () => {
     expect(readAuthorityArtifact(987654321, { storeRoot })).toMatchObject({
       state: "ready",
       value: {
+        artifactId: 11,
         artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
         repositoryId: 987654321,
         runId: "10",
@@ -52,6 +54,7 @@ describe("consumer authority original artifact store", () => {
 
     expect(writeAuthorityArtifact({
       archive,
+      artifactId: 11,
       artifactDigest: "sha256:0".repeat(1),
       fetchedAt: "2026-07-24T00:00:00.000Z",
       repositoryId: 987654321,
@@ -74,6 +77,7 @@ describe("consumer authority original artifact store", () => {
 
     expect(writeAuthorityArtifact({
       archive,
+      artifactId: 11,
       artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
       fetchedAt: "2026-07-24T00:00:00.000Z",
       repositoryId: 987654321,

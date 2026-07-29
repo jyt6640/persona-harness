@@ -71,7 +71,7 @@ describe("project-finish-attestation.1 parser and policy", () => {
       ref: "example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main",
       sha: callerSha,
     }
-    workflow["certificateSan"] = "https://github.com/example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main"
+    workflow["certificateSan"] = `https://github.com/jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@${reusableSha}`
     workflow["reusable"] = {
       path: ".github/workflows/persona-harness-project-finish.yml",
       ref: `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@${reusableSha}`,
@@ -82,6 +82,11 @@ describe("project-finish-attestation.1 parser and policy", () => {
     const parsed = parseProjectFinishAttestationStatement(statement)
 
     expect(parsed.ok).toBe(true)
+
+    workflow["certificateSan"] = "https://github.com/example/public-gradle-app/.github/workflows/project-finish.yml@refs/heads/main"
+    recomputeReceiptDigest(statement)
+
+    expect(parseProjectFinishAttestationStatement(statement).ok).toBe(false)
   })
 
   it.each([

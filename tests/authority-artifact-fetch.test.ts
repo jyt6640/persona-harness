@@ -49,6 +49,7 @@ describe("consumer authority original artifact fetch", () => {
     })
 
     expect(result).toMatchObject({
+      artifactId: 11,
       artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
       bundle: Buffer.from("bundle", "utf8"),
       predicate: Buffer.from("predicate", "utf8"),

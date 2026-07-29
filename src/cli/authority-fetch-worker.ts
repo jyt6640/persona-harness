@@ -50,6 +50,7 @@ export function fetchGithubAuthorityArtifact(
     ? undefined
     : {
         archive: fetched.archive,
+        artifactId: fetched.artifactId,
         artifactDigest: fetched.artifactDigest,
         fetchedAt: now.toISOString(),
         repositoryId: enrollment.repositoryId,
@@ -60,20 +61,21 @@ export function fetchGithubAuthorityArtifact(
 
 export function parseFetchedArtifact(value: string): {
   readonly archive: Buffer
+  readonly artifactId: number
   readonly artifactDigest: string
   readonly runId: string
 } | undefined {
   try {
     const output: unknown = JSON.parse(value)
-    if (!isRecord(output) || !exactKeys(output, ["archive", "artifactDigest", "ok", "runId"]) || output.ok !== true) {
+    if (!isRecord(output) || !exactKeys(output, ["archive", "artifactDigest", "artifactId", "ok", "runId"]) || output.ok !== true) {
       return undefined
     }
-    if (typeof output.archive !== "string" || !isDigest(output.artifactDigest) || !isRunId(output.runId)) return undefined
+    if (typeof output.archive !== "string" || !isPositiveInteger(output.artifactId) || !isDigest(output.artifactDigest) || !isRunId(output.runId)) return undefined
     const archive = Buffer.from(output.archive, "base64")
     return archive.byteLength > 0
       && archive.byteLength <= MAX_ARCHIVE_BYTES
       && archive.toString("base64") === output.archive
-      ? { archive, artifactDigest: output.artifactDigest, runId: output.runId }
+      ? { archive, artifactId: output.artifactId, artifactDigest: output.artifactDigest, runId: output.runId }
       : undefined
   } catch {
     return undefined
@@ -95,4 +97,8 @@ function isDigest(value: unknown): value is string {
 
 function isRunId(value: unknown): value is string {
   return typeof value === "string" && /^[1-9][0-9]{0,18}$/u.test(value)
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
 }

@@ -22,12 +22,13 @@ import {
   type NoFollowPathIdentity,
 } from "../io/no-follow-file.js"
 
-const AUTHORITY_ARTIFACT_SCHEMA = "consumer-authority-original-artifact.1" as const
+const AUTHORITY_ARTIFACT_SCHEMA = "consumer-authority-original-artifact.2" as const
 const MAX_ARCHIVE_BYTES = 8 * 1024 * 1024
 const MAX_STORE_BYTES = 12 * 1024 * 1024
 
 export type AuthorityArtifact = {
   readonly archive: Buffer
+  readonly artifactId: number
   readonly artifactDigest: string
   readonly fetchedAt: string
   readonly repositoryId: number
@@ -77,6 +78,7 @@ export function writeAuthorityArtifact(
   if (directory === undefined) return false
   const payload = `${JSON.stringify({
     archiveBase64: artifact.archive.toString("base64"),
+    artifactId: artifact.artifactId,
     artifactDigest: artifact.artifactDigest,
     fetchedAt: artifact.fetchedAt,
     repositoryId: artifact.repositoryId,
@@ -93,6 +95,7 @@ function parseStoredArtifact(bytes: Buffer): AuthorityArtifactRead | undefined {
     if (!isRecord(value) || !exactKeys(value, [
       "archiveBase64",
       "artifactDigest",
+      "artifactId",
       "fetchedAt",
       "repositoryId",
       "runId",
@@ -104,6 +107,7 @@ function parseStoredArtifact(bytes: Buffer): AuthorityArtifactRead | undefined {
     if (
       value.schemaVersion !== AUTHORITY_ARTIFACT_SCHEMA
       || typeof value.archiveBase64 !== "string"
+      || !isPositiveInteger(value.artifactId)
       || typeof value.artifactDigest !== "string"
       || typeof value.fetchedAt !== "string"
       || !isPositiveInteger(value.repositoryId)
@@ -115,6 +119,7 @@ function parseStoredArtifact(bytes: Buffer): AuthorityArtifactRead | undefined {
     const archive = Buffer.from(value.archiveBase64, "base64")
     const artifact: AuthorityArtifact = {
       archive,
+      artifactId: value.artifactId,
       artifactDigest: value.artifactDigest,
       fetchedAt: value.fetchedAt,
       repositoryId: value.repositoryId,
@@ -131,6 +136,7 @@ function isAuthorityArtifact(value: AuthorityArtifact): boolean {
   if (
     value.archive.byteLength === 0
     || value.archive.byteLength > MAX_ARCHIVE_BYTES
+    || !isPositiveInteger(value.artifactId)
     || !isDigest(value.artifactDigest)
     || value.artifactDigest !== digest(value.archive)
     || !isTimestamp(value.fetchedAt)

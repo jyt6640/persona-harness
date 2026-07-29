@@ -17,6 +17,9 @@ import {
   type AuthorityEnrollment,
 } from "../src/cli/authority-enrollment.js"
 import { runPersonaCli } from "../src/cli/index.js"
+import { parseProjectFinishAttestationStatement } from "../src/cli/project-finish-attestation-parser.js"
+import { projectFinishAttestationReusableCertificateSan } from "../src/cli/project-finish-attestation-workflow-identity.js"
+import { createValidProjectFinishAttestationStatement } from "./helpers/project-finish-attestation-fixture.js"
 
 const projects: string[] = []
 
@@ -143,10 +146,10 @@ describe("consumer authority command boundary", () => {
     const projectDir = project()
     const storeRoot = join(projectDir, "user-store")
     const enrollment = authorityEnrollmentFromReadback({
-      callerWorkflowPath: "persona-harness.yml",
+      callerWorkflowPath: "project-finish.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
-      reusableWorkflowSha: "a".repeat(40),
+      reusableWorkflowSha: "b".repeat(40),
     }, new Date("2026-07-24T00:00:00.000Z"))
     if (enrollment === undefined) throw new Error("fixture enrollment must parse")
     expect(writeAuthorityEnrollment(enrollment, { storeRoot })).toBe(true)
@@ -155,10 +158,11 @@ describe("consumer authority command boundary", () => {
     const result = runAuthorityCommand(["fetch", "github"], {
       artifactFetch: () => ({
         archive,
+        artifactId: 11,
         artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
         fetchedAt: "2026-07-24T00:00:00.000Z",
         repositoryId: 987654321,
-        runId: "10",
+        runId: "1001",
         sourceHead: "a".repeat(40),
       }),
       artifactInspector: () => ({
@@ -166,6 +170,7 @@ describe("consumer authority command boundary", () => {
         consumptionState: "unconsumed",
         decision: "trusted",
         diagnostics: [],
+        receipt: trustedReceiptFor(enrollment, "1001"),
         state: "trusted",
         summary: "trusted",
       }),
@@ -183,6 +188,48 @@ describe("consumer authority command boundary", () => {
     expect(`${result.stdout}${result.stderr}`).not.toContain(projectDir)
   })
 
+  it("does not retain a verified-shaped archive when fetched run identity differs from the signed receipt", () => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+
+    const result = runAuthorityCommand(["fetch", "github", "--json"], {
+      artifactFetch: () => ({
+        archive,
+        artifactId: 11,
+        artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+        fetchedAt: "2026-07-24T00:00:00.000Z",
+        repositoryId: 987654321,
+        runId: "10",
+        sourceHead: "a".repeat(40),
+      }),
+      artifactInspector: () => ({
+        authorityEligible: true,
+        consumptionState: "unconsumed",
+        decision: "trusted",
+        diagnostics: [],
+        receipt: trustedReceiptFor(enrollment, "1001"),
+        state: "trusted",
+        summary: "trusted",
+      }),
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({ state: "binding-mismatch" })
+    expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("missing")
+  })
+
   it("selects one explicit enrolled repository when the user store contains multiple entries", () => {
     const projectDir = project()
     const storeRoot = join(projectDir, "user-store")
@@ -191,10 +238,10 @@ describe("consumer authority command boundary", () => {
       [987654322, "example/second-gradle-app"],
     ] as const) {
       const enrollment = authorityEnrollmentFromReadback({
-        callerWorkflowPath: "persona-harness.yml",
+        callerWorkflowPath: "project-finish.yml",
         repositoryId,
         repositorySlug,
-        reusableWorkflowSha: "a".repeat(40),
+        reusableWorkflowSha: "b".repeat(40),
       }, new Date("2026-07-24T00:00:00.000Z"))
       if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
         throw new Error("fixture enrollment must persist")
@@ -203,17 +250,19 @@ describe("consumer authority command boundary", () => {
     const archive = artifactArchive()
     const artifactFetch = vi.fn((_candidateProjectDir: string, enrollment: AuthorityEnrollment) => ({
       archive,
+      artifactId: 11,
       artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
       fetchedAt: "2026-07-24T00:00:00.000Z",
       repositoryId: enrollment.repositoryId,
       runId: "10",
       sourceHead: "a".repeat(40),
     }))
-    const artifactInspector = () => ({
+    const artifactInspector = (_candidateProjectDir: string, enrollment: AuthorityEnrollment) => ({
       authorityEligible: true as const,
       consumptionState: "unconsumed" as const,
       decision: "trusted" as const,
       diagnostics: [],
+      receipt: trustedReceiptFor(enrollment, "10"),
       state: "trusted" as const,
       summary: "trusted",
     })
@@ -255,6 +304,51 @@ function project(): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-authority-command-"))
   projects.push(projectDir)
   return projectDir
+}
+
+function trustedReceiptFor(enrollment: AuthorityEnrollment, runId: string) {
+  const parsed = parseProjectFinishAttestationStatement(createValidProjectFinishAttestationStatement())
+  if (!parsed.ok) throw new Error("fixture receipt must parse")
+  const receipt = parsed.value.predicate.receipt
+  const sourceHead = "a".repeat(40)
+  return {
+    ...receipt,
+    lifecycle: {
+      ...receipt.lifecycle,
+      attemptId: `project-finish-attempt-${runId}-2`,
+      finishId: `project-finish-finish-${runId}-2`,
+      nonce: `project-finish-${runId}-2`,
+      runId,
+      sessionId: `project-finish-session-${runId}-2`,
+    },
+    repository: {
+      id: enrollment.repositoryId,
+      slug: enrollment.repositorySlug,
+      visibility: "public" as const,
+    },
+    source: {
+      ...receipt.source,
+      head: sourceHead,
+      identity: {
+        ...receipt.source.identity,
+        repositoryHead: sourceHead,
+      },
+    },
+    workflow: {
+      ...receipt.workflow,
+      caller: {
+        ref: `${enrollment.repositorySlug}/.github/workflows/${enrollment.callerWorkflowPath}@refs/heads/main`,
+        sha: sourceHead,
+      },
+      certificateSan: projectFinishAttestationReusableCertificateSan(enrollment.reusableWorkflowSha),
+      reusable: {
+        ...receipt.workflow.reusable,
+        ref: `jyt6640/persona-harness/.github/workflows/persona-harness-project-finish.yml@${enrollment.reusableWorkflowSha}`,
+        sha: enrollment.reusableWorkflowSha,
+      },
+      runId,
+    },
+  }
 }
 
 function artifactArchive(): Buffer {

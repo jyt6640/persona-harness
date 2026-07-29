@@ -94,6 +94,7 @@ describe("consumer authority closure-ready boundary", () => {
     const result = runAuthorityCommand(["fetch", "github"], {
       artifactFetch: () => ({
         archive,
+        artifactId: 11,
         artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
         fetchedAt: "2026-07-24T00:00:00.000Z",
         repositoryId: 987654321,
