@@ -2173,7 +2173,7 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
   const artifact = {
     archive,
     artifactId: 11,
-    artifactDigest: sha256(archive),
+    artifactDigest: `sha256:${sha256(archive)}`,
     fetchedAt: "2026-07-29T00:00:00.000Z",
     repositoryId: enrollment.repositoryId,
     runId: "1001",
