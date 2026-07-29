@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.8.0-beta.9",
+  "version": "0.8.0-beta.10",
   "private": false,
   "type": "module",
   "description": "Gate-first CLI for Java/Spring backend workflow evidence, completion checks, and optional OpenCode runtime guidance.",
@@ -160,8 +160,9 @@
     "report:rules": "npm run build && node scripts/report-rule-diagnostics.mjs",
     "test": "npm run test:package",
     "test:package": "node dist/cli/index.js --help",
+    "test:clean-package-boundary": "node scripts/verify-clean-package-boundary.mjs",
     "test:installed-package-contract": "node scripts/test-installed-package-contract.mjs",
-    "test:repository": "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:installed-package-contract",
+    "test:repository": "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:installed-package-contract && npm run test:clean-package-boundary",
     "test:unit": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

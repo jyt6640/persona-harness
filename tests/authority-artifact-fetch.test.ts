@@ -91,6 +91,31 @@ describe("consumer authority original artifact fetch", () => {
     })).rejects.toMatchObject({ code: "authority-fetch-evidence" })
   })
 
+  it("uses the enrolled workflow filename as the fixed GitHub workflow identifier", async () => {
+    const archive = archiveFor({
+      "bundle.json": Buffer.from("bundle", "utf8"),
+      "predicate.json": Buffer.from("predicate", "utf8"),
+      "receipt.json": Buffer.from("receipt", "utf8"),
+    })
+
+    await expect(fetchConsumerAuthorityArtifact({
+      callerWorkflowPath: "research-attestation.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      sourceHead: SOURCE_HEAD,
+    }, {
+      archive: async () => archive,
+      json: async (url) => {
+        if (url.pathname.includes("/actions/workflows/")) {
+          expect(url.pathname).toBe(
+            "/repos/example/public-gradle-app/actions/workflows/research-attestation.yml/runs",
+          )
+        }
+        return responseFor(url, archive)
+      },
+    })).resolves.toMatchObject({ artifactId: 11, runId: "10" })
+  })
+
   it("rejects a central-directory entry whose local header names a different artifact member", () => {
     const archive = archiveFor({
       "bundle.json": Buffer.from("bundle", "utf8"),
@@ -200,6 +225,65 @@ describe("consumer authority original artifact fetch", () => {
         }
       },
     })).rejects.toMatchObject({ code: "authority-fetch-evidence" })
+  })
+
+  it.each([
+    ["an expired artifact", "/artifacts", (response: Record<string, unknown>) => ({
+      ...response,
+      artifacts: (response.artifacts as readonly Record<string, unknown>[]).map((artifact) => ({
+        ...artifact,
+        expired: true,
+      })),
+    })],
+    ["a completed run for another source", "/runs", (response: Record<string, unknown>) => ({
+      ...response,
+      workflow_runs: (response.workflow_runs as readonly Record<string, unknown>[]).map((run) => ({
+        ...run,
+        head_sha: "b".repeat(40),
+      })),
+    })],
+  ])("rejects %s without requesting original bytes", async (_label, targetPath, mutate) => {
+    const archive = archiveFor({
+      "bundle.json": Buffer.from("bundle", "utf8"),
+      "predicate.json": Buffer.from("predicate", "utf8"),
+      "receipt.json": Buffer.from("receipt", "utf8"),
+    })
+    const archiveRead = vi.fn(async () => archive)
+    const selection = {
+      callerWorkflowPath: "persona-harness.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      sourceHead: SOURCE_HEAD,
+    }
+
+    await expect(fetchConsumerAuthorityArtifact(selection, {
+      archive: archiveRead,
+      json: async (url) => {
+        const response = responseFor(url, archive)
+        if (!url.pathname.endsWith(targetPath)) return response
+        return mutate(response as Record<string, unknown>)
+      },
+    })).rejects.toMatchObject({ code: "authority-fetch-evidence" })
+
+    expect(archiveRead).not.toHaveBeenCalled()
+  })
+
+  it("propagates a bounded transport failure before it can request or retain original bytes", async () => {
+    const archiveRead = vi.fn(async () => Buffer.from("unexpected", "utf8"))
+
+    await expect(fetchConsumerAuthorityArtifact({
+      callerWorkflowPath: "persona-harness.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      sourceHead: SOURCE_HEAD,
+    }, {
+      archive: archiveRead,
+      json: async () => {
+        throw new ConsumerAuthorityArtifactFetchError("authority-fetch-network")
+      },
+    })).rejects.toMatchObject({ code: "authority-fetch-network" })
+
+    expect(archiveRead).not.toHaveBeenCalled()
   })
 
   it("blocks duplicate, unsafe, and unbound evidence without reflecting supplied content", async () => {

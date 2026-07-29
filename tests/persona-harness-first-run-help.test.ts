@@ -1,10 +1,10 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { runPersonaCli } from "../src/cli/index.js"
+import { isCliEntrypoint, runPersonaCli } from "../src/cli/index.js"
 import { personaHarnessVersion } from "../src/cli/version.js"
 
 const tempProjects: string[] = []
@@ -23,6 +23,16 @@ afterEach(() => {
 })
 
 describe("first-run command help", () => {
+  it("recognizes a canonicalized absolute CLI entrypoint path", () => {
+    const projectDir = createTempProject()
+    const modulePath = resolve("src", "cli", "index.ts")
+    const aliasedEntrypoint = join(projectDir, "persona-harness")
+    symlinkSync(modulePath, aliasedEntrypoint)
+
+    expect(isCliEntrypoint(aliasedEntrypoint, modulePath)).toBe(true)
+    expect(isCliEntrypoint(join(projectDir, "other-cli"), modulePath)).toBe(false)
+  })
+
   it("prints the packaged Persona Harness version", () => {
     const projectDir = createTempProject()
     const packageJson = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as { readonly version?: unknown }

@@ -21,12 +21,19 @@ import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
+import {
+  assertPackRecordBinding,
+  assertSourcePackageIdentity,
+} from "./clean-package-boundary-core.mjs"
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
-const BETA9_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta9-acceptance.json")
-const BETA9_COOPERATIVE_COMMANDS = new Map([
+const BETA10_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta10-acceptance.json")
+const MODELED_CURRENT_ARTIFACT_ID = 8712218259
+const MODELED_CURRENT_RUN_ID = 30421869946
+const BETA10_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -240,26 +247,26 @@ function assertBoundedAuthorityAbsence(results, home, label, expected) {
 }
 
 function packCurrentRepository() {
+  const identity = readSourcePackIdentity()
+  assertSourcePackManifest()
   const packDirectory = join(temporaryRoot, "pack")
   mkdirSync(packDirectory)
-  const result = runNpm(repositoryRoot, ["pack", "--json", "--pack-destination", packDirectory])
+  const result = runBoundNpm(repositoryRoot, ["pack", "--json", "--pack-destination", packDirectory])
   requireSuccess("package pack", result)
-  return resolvePackResult(result.stdout, packDirectory)
+  assertSourcePackManifest()
+  return resolvePackResult(result.stdout, packDirectory, identity)
 }
 
 function installFreshTarball(tarballPath) {
   const consumerDirectory = join(temporaryRoot, "consumer")
   mkdirSync(consumerDirectory)
-  mkdirSync(consumerNpmCache)
   writeFileSync(
     join(consumerDirectory, "package.json"),
     `${JSON.stringify({ private: true }, null, 2)}\n`,
   )
 
-  const result = runNpm(consumerDirectory, [
+  const result = runBoundNpm(consumerDirectory, [
     "install",
-    "--cache",
-    consumerNpmCache,
     "--ignore-scripts",
     "--no-audit",
     "--no-fund",
@@ -410,13 +417,13 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     fixtureRoot,
     phPath,
     "installed package",
-    readBeta9CooperativeCommands(installedPackage),
+    readBeta10CooperativeCommands(installedPackage),
   )
   assertCooperativeSourceReadRaceBlocks(
     `${fixtureRoot}-source-read-race`,
     phPath,
     "installed package",
-    readBeta9CooperativeCommands(installedPackage),
+    readBeta10CooperativeCommands(installedPackage),
   )
 }
 
@@ -753,13 +760,13 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
-    readBeta9CooperativeCommands(repositoryRoot),
+    readBeta10CooperativeCommands(repositoryRoot),
   )
   assertCooperativeSourceReadRaceBlocks(
     join(temporaryRoot, "source-cli-cooperative-gradle-source-read-race"),
     phPath,
     "source CLI",
-    readBeta9CooperativeCommands(repositoryRoot),
+    readBeta10CooperativeCommands(repositoryRoot),
   )
 }
 
@@ -1840,9 +1847,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands) {
   for (const command of commands) {
-    const step = BETA9_COOPERATIVE_COMMANDS.get(command)
+    const step = BETA10_COOPERATIVE_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.9 acceptance command is unsupported`)
+      throw new Error(`${label} beta.10 acceptance command is unsupported`)
     }
     requireSuccess(
       `${label} lifecycle ${command}`,
@@ -2035,40 +2042,39 @@ function assertCooperativeLifecycleState(projectDir, label) {
   }
 }
 
-function readBeta9CooperativeCommands(packageRoot) {
-  const manifestPath = join(packageRoot, BETA9_ACCEPTANCE_PATH)
+function readBeta10CooperativeCommands(packageRoot) {
+  const manifestPath = join(packageRoot, BETA10_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.9 acceptance manifest is unavailable")
+    throw new Error("beta.10 acceptance manifest is unavailable")
   }
   const commands = value?.cooperative?.commands
   const packageVersion = value?.package?.version
-  const expectedCommands = [...BETA9_COOPERATIVE_COMMANDS.keys()]
+  const expectedCommands = [...BETA10_COOPERATIVE_COMMANDS.keys()]
   if (
     packageVersion !== readPackageVersion(packageRoot)
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
   ) {
-    throw new Error("beta.9 acceptance manifest is invalid")
+    throw new Error("beta.10 acceptance manifest is invalid")
   }
   return commands
 }
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
-  const manifestPath = join(packageRoot, BETA9_ACCEPTANCE_PATH)
+  const manifestPath = join(packageRoot, BETA10_ACCEPTANCE_PATH)
   let manifest
   try {
     manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error(`${label} beta.9 observer handoff contract is unavailable`)
+    throw new Error(`${label} beta.10 observer handoff contract is unavailable`)
   }
   const handoff = manifest?.prearmedExternalHandoff
   const prepare = handoff?.prepare
   const trigger = handoff?.trigger
-  const expiration = trigger?.expiration
   const expectedPrepare = ["enroll", "status", "explain"]
   const expectedProhibited = [
     "artifact-download",
@@ -2077,22 +2083,23 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     "replay-observation",
   ]
   const expectedSteps = [
-    "download-original-bytes-once",
+    "download-original-bytes-for-independent-online-verification",
     "verify-online-before-leaf-certificate-notAfter",
-    "authority-fetch-binds-original-artifact-identity",
+    "authority-fetch-discovers-and-binds-original-artifact",
     "finish-consume-once",
     "finish-replay-blocked",
   ]
   const expectedNonAuthority = [
     "prearm-does-not-self-validate",
     "prearm-does-not-grant-authority",
-    "prearm-does-not-reuse-beta8-artifact",
+    "prearm-does-not-reuse-beta9-artifact",
   ]
   if (
     manifest?.package?.version !== readPackageVersion(packageRoot)
-    || manifest?.beta8HistoricalArtifact?.version !== "0.8.0-beta.8"
-    || manifest?.beta8HistoricalArtifact?.outcome !== "verified-original-artifact-fetch-binding-unavailable"
-    || manifest?.beta8HistoricalArtifact?.reusableForBeta9 !== false
+    || manifest?.schemaVersion !== "consumer-authority-beta10-acceptance.1"
+    || manifest?.beta9HistoricalArtifact?.version !== "0.8.0-beta.9"
+    || manifest?.beta9HistoricalArtifact?.outcome !== "verified-original-artifact-discovery-unavailable"
+    || manifest?.beta9HistoricalArtifact?.reusableForBeta10 !== false
     || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
     || manifest?.authority?.hostedFixture?.callerWorkflowPath !== ".github/workflows/research-attestation.yml"
     || manifest?.authority?.hostedFixture?.certificateSanIdentity !== "reusable-producer-workflow"
@@ -2101,12 +2108,9 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     || !sameStrings(prepare?.prohibitedBeforeArtifact, expectedProhibited)
     || trigger?.onlyAfter !== "natural-current-version-original-artifact"
     || !sameStrings(trigger?.steps, expectedSteps)
-    || expiration?.source !== "leaf-certificate-notAfter"
-    || expiration?.code !== "certificate-window-expired"
-    || expiration?.outcome !== "blocked-no-fetch-finish-or-replay"
     || !sameStrings(handoff?.nonAuthority, expectedNonAuthority)
   ) {
-    throw new Error(`${label} beta.9 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.10 observer handoff contract is invalid`)
   }
 }
 
@@ -2116,12 +2120,14 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
     command,
     enrollmentStore,
     artifactStore,
+    fetcher,
     producer,
     version,
   ] = await Promise.all([
     import(pathToFileURL(join(moduleRoot, "authority-command.js")).href),
     import(pathToFileURL(join(moduleRoot, "authority-enrollment.js")).href),
     import(pathToFileURL(join(moduleRoot, "authority-artifact-store.js")).href),
+    import(pathToFileURL(join(packageRoot, "scripts", "fetch-consumer-authority-artifact.mjs")).href),
     import(pathToFileURL(join(moduleRoot, "project-finish-attestation-producer.js")).href),
     import(pathToFileURL(join(moduleRoot, "version.js")).href),
   ])
@@ -2142,7 +2148,7 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
     repository: { id: enrollment.repositoryId, slug: enrollment.repositorySlug, visibility: "public" },
     reusableWorkflowSha: enrollment.reusableWorkflowSha,
     runAttempt: 2,
-    runId: "1001",
+    runId: String(MODELED_CURRENT_RUN_ID),
     source: {
       head: sourceHead,
       identity: {
@@ -2170,13 +2176,39 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
     "predicate.json": Buffer.from(JSON.stringify(produced.predicate), "utf8"),
     "receipt.json": produced.receiptBytes,
   })
+  const requestedUrls = []
+  const fetched = await fetcher.fetchConsumerAuthorityArtifact({
+    callerWorkflowPath: enrollment.callerWorkflowPath,
+    repositoryId: enrollment.repositoryId,
+    repositorySlug: enrollment.repositorySlug,
+    sourceHead,
+  }, {
+    archive: async (url) => {
+      requestedUrls.push(url)
+      return archive
+    },
+    json: async (url) => {
+      requestedUrls.push(url)
+      return modeledAuthorityDiscoveryResponse(url, archive, enrollment, sourceHead)
+    },
+  })
+  const expectedWorkflowEndpoint = `/repos/${enrollment.repositorySlug}/actions/workflows/${enrollment.callerWorkflowPath}/runs`
+  if (
+    !requestedUrls.some((url) => url.pathname === expectedWorkflowEndpoint)
+    || requestedUrls.some((url) => decodeURIComponent(url.pathname).includes(".github/workflows/"))
+    || fetched.artifactId !== MODELED_CURRENT_ARTIFACT_ID
+    || fetched.runId !== String(MODELED_CURRENT_RUN_ID)
+    || fetched.artifactDigest !== `sha256:${sha256(archive)}`
+  ) {
+    throw new Error(`${label} authority discovery did not use the enrolled workflow identifier`)
+  }
   const artifact = {
-    archive,
-    artifactId: 11,
-    artifactDigest: `sha256:${sha256(archive)}`,
+    archive: fetched.archive,
+    artifactId: fetched.artifactId,
+    artifactDigest: fetched.artifactDigest,
     fetchedAt: "2026-07-29T00:00:00.000Z",
     repositoryId: enrollment.repositoryId,
-    runId: "1001",
+    runId: fetched.runId,
     sourceHead,
   }
   const assessment = {
@@ -2251,6 +2283,52 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
       throw new Error(`${label} authority ${candidate.id} mismatch retained evidence or reflected fixture state`)
     }
   }
+}
+
+function modeledAuthorityDiscoveryResponse(url, archive, enrollment, sourceHead) {
+  if (url.pathname === `/repositories/${enrollment.repositoryId}`) {
+    return {
+      full_name: enrollment.repositorySlug,
+      id: enrollment.repositoryId,
+      private: false,
+      visibility: "public",
+    }
+  }
+  if (url.pathname.endsWith("/runs")) {
+    return {
+      total_count: 1,
+      workflow_runs: [{
+        conclusion: "success",
+        event: "push",
+        head_branch: "main",
+        head_repository: { full_name: enrollment.repositorySlug, id: enrollment.repositoryId },
+        head_sha: sourceHead,
+        id: MODELED_CURRENT_RUN_ID,
+        repository: { full_name: enrollment.repositorySlug, id: enrollment.repositoryId },
+        status: "completed",
+      }],
+    }
+  }
+  if (url.pathname.endsWith("/artifacts")) {
+    return {
+      artifacts: [{
+        digest: `sha256:${sha256(archive)}`,
+        expired: false,
+        id: MODELED_CURRENT_ARTIFACT_ID,
+        name: "project-finish-attestation",
+        size_in_bytes: archive.byteLength,
+        workflow_run: {
+          head_branch: "main",
+          head_repository_id: enrollment.repositoryId,
+          head_sha: sourceHead,
+          id: MODELED_CURRENT_RUN_ID,
+          repository_id: enrollment.repositoryId,
+        },
+      }],
+      total_count: 1,
+    }
+  }
+  throw new Error("modeled authority discovery requested an unexpected endpoint")
 }
 
 function authorityArtifactArchive(members) {
@@ -2399,6 +2477,47 @@ function runNpm(cwd, args) {
   }
 }
 
+function runBoundNpm(cwd, args) {
+  const result = spawnSync("npm", ["--prefix", cwd, ...args], {
+    cwd,
+    encoding: "utf8",
+    env: boundNpmEnvironment(),
+    maxBuffer: 4 * 1024 * 1024,
+  })
+  if (result.error) {
+    throw new Error("bound npm process could not start")
+  }
+  return {
+    status: result.status,
+    stdout: result.stdout ?? "",
+  }
+}
+
+function boundNpmEnvironment() {
+  const home = join(temporaryRoot, "bound-npm-home")
+  const userConfig = join(temporaryRoot, "bound-npm-userconfig")
+  const globalConfig = join(temporaryRoot, "bound-npm-globalconfig")
+  if (!existsSync(home)) mkdirSync(home)
+  if (!existsSync(consumerNpmCache)) mkdirSync(consumerNpmCache)
+  if (!existsSync(userConfig)) writeFileSync(userConfig, "")
+  if (!existsSync(globalConfig)) writeFileSync(globalConfig, "")
+  return {
+    HOME: home,
+    NPM_CONFIG_AUDIT: "false",
+    NPM_CONFIG_CACHE: consumerNpmCache,
+    NPM_CONFIG_FUND: "false",
+    NPM_CONFIG_GLOBALCONFIG: globalConfig,
+    NPM_CONFIG_IGNORE_SCRIPTS: "false",
+    NPM_CONFIG_INCLUDE_WORKSPACE_ROOT: "false",
+    NPM_CONFIG_UPDATE_NOTIFIER: "false",
+    NPM_CONFIG_USERCONFIG: userConfig,
+    NPM_CONFIG_WORKSPACES: "false",
+    PATH: process.env.PATH ?? "",
+    TMPDIR: temporaryRoot,
+    USER: "persona",
+  }
+}
+
 function runCommand(cwd, command, args) {
   const result = spawnSync(command, args, {
     cwd,
@@ -2472,13 +2591,14 @@ function boundedActionTopologyDiagnostic(result) {
   return `exit-${String(result.status)}`
 }
 
-function resolvePackResult(output, packDirectory) {
+function resolvePackResult(output, packDirectory, identity) {
   const parsed = JSON.parse(output)
   if (!Array.isArray(parsed) || parsed.length !== 1 || !isRecord(parsed[0]) || typeof parsed[0].filename !== "string") {
     throw new TypeError("npm pack did not return exactly one tarball")
   }
 
   const record = parsed[0]
+  assertPackRecordBinding(record, identity)
   const filename = record.filename
   const candidate = isAbsolute(filename)
     ? filename
@@ -2509,9 +2629,31 @@ function resolvePackResult(output, packDirectory) {
       shasum: typeof record.shasum === "string" ? record.shasum : "unavailable",
       size: bytes.byteLength,
       tarballSha256: sha256(bytes),
-      version: readPackageVersion(repositoryRoot),
+      version: identity.version,
     },
     tarballPath: candidate,
+  }
+}
+
+function readSourcePackIdentity() {
+  return assertSourcePackageIdentity(
+    JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")),
+    JSON.parse(readFileSync(join(repositoryRoot, "package-lock.json"), "utf8")),
+  )
+}
+
+function assertSourcePackManifest() {
+  const packageBytes = readFileSync(join(repositoryRoot, "package.json"))
+  const lockBytes = readFileSync(join(repositoryRoot, "package-lock.json"))
+  const headPackage = runCommand(repositoryRoot, "git", ["show", "HEAD:package.json"])
+  const headLock = runCommand(repositoryRoot, "git", ["show", "HEAD:package-lock.json"])
+  requireSuccess("source package manifest Git binding", headPackage)
+  requireSuccess("source package lock Git binding", headLock)
+  if (
+    sha256(packageBytes) !== sha256(Buffer.from(headPackage.stdout, "utf8"))
+    || sha256(lockBytes) !== sha256(Buffer.from(headLock.stdout, "utf8"))
+  ) {
+    throw new Error("source package manifest differs from HEAD")
   }
 }
 
