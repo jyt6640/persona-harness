@@ -39,7 +39,7 @@ export async function fetchConsumerAuthorityArtifact(input, transport = defaultT
   const repository = await transport.json(api(`/repositories/${selection.repositoryId}`))
   if (!samePublicRepository(repository, selection)) throw new ConsumerAuthorityArtifactFetchError("authority-fetch-policy")
 
-  const runs = await transport.json(api(`/repos/${selection.repositorySlug}/actions/workflows/${encodeURIComponent(`.github/workflows/${selection.callerWorkflowPath}`)}/runs?event=push&branch=main&head_sha=${selection.sourceHead}&per_page=100`))
+  const runs = await transport.json(api(`/repos/${selection.repositorySlug}/actions/workflows/${encodeURIComponent(selection.callerWorkflowPath)}/runs?event=push&branch=main&head_sha=${selection.sourceHead}&per_page=100`))
   const run = selectRun(runs, selection)
   if (run === undefined) throw new ConsumerAuthorityArtifactFetchError("authority-fetch-evidence")
 
