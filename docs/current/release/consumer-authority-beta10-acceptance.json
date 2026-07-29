@@ -8,7 +8,8 @@
   "packageBoundary": {
     "bundle": {
       "requiredRefs": ["HEAD", "refs/remotes/origin/main"],
-      "verification": "git-bundle-verify-and-exact-ref-binding"
+      "verification": "git-bundle-verify-and-exact-ref-binding",
+      "baseComparison": "independent-no-local-base-checkout-under-the-same-npm-policy"
     },
     "cleanCheckout": {
       "requiredBindings": [

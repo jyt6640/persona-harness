@@ -65,6 +65,7 @@ describe("consumer authority beta.10 artifact-discovery acceptance manifest", ()
     const pack = record(boundary["pack"])
 
     expect(bundle).toEqual({
+      baseComparison: "independent-no-local-base-checkout-under-the-same-npm-policy",
       requiredRefs: ["HEAD", "refs/remotes/origin/main"],
       verification: "git-bundle-verify-and-exact-ref-binding",
     })

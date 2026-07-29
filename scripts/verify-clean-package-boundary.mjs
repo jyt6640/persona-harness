@@ -34,22 +34,38 @@ try {
   const bundle = input.mode === "source"
     ? createSourceBundle(sourceRoot)
     : verifySuppliedBundle(input)
-  const checkout = materializeCheckout(bundle)
+  const checkout = materializeCheckout(bundle, bundle.head, "target")
   const source = readSourceIdentity(checkout)
-  const npm = createNpmEnvironment(temporaryRoot)
+  const npm = createNpmEnvironment(temporaryRoot, "target")
 
   assertCheckoutIntegrity(checkout, source, npm)
   requireSuccess(runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], checkout, npm), "clean-package-install")
   if (existsSync(join(checkout, "dist"))) throw new CleanPackageBoundaryError("clean-package-prepack-dist")
 
   assertCheckoutIntegrity(checkout, source, npm)
-  const packed = packCheckout(checkout, source, npm)
+  const packed = packCheckout(checkout, source, npm, "target")
   assertCheckoutIntegrity(checkout, source, npm)
   assertCliVersion(checkout, join(checkout, "dist", "cli", "index.js"), source.identity.version, npm, "clean-package-built-cli")
 
   const consumer = installFreshTarball(packed.tarballPath, source.identity, npm)
+  const baseCheckout = materializeCheckout(bundle, bundle.base, "base")
+  const baseSource = readSourceIdentity(baseCheckout)
+  const baseNpm = createNpmEnvironment(temporaryRoot, "base")
+  assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
+  requireSuccess(runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], baseCheckout, baseNpm), "clean-package-base-install")
+  if (existsSync(join(baseCheckout, "dist"))) throw new CleanPackageBoundaryError("clean-package-base-prepack-dist")
+  assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
+  const basePacked = packCheckout(baseCheckout, baseSource, baseNpm, "base")
+  assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
   process.stdout.write(`${JSON.stringify({
     base: bundle.base,
+    basePackage: {
+      fileCount: basePacked.facts.fileCount,
+      name: baseSource.identity.name,
+      pathSetSha256: basePacked.facts.pathSetSha256,
+      tarballSha256: basePacked.facts.tarballSha256,
+      version: baseSource.identity.version,
+    },
     head: bundle.head,
     package: {
       fileCount: packed.facts.fileCount,
@@ -123,12 +139,12 @@ function verifyBundle(bundlePath, expected) {
   return { ...binding, bundlePath }
 }
 
-function materializeCheckout(bundle) {
-  const checkout = join(temporaryRoot, "checkout")
+function materializeCheckout(bundle, revision, label) {
+  const checkout = join(temporaryRoot, `checkout-${label}`)
   requireSuccess(run("git", ["clone", "--no-local", "--no-checkout", bundle.bundlePath, checkout], temporaryRoot), "clean-package-bundle-clone")
-  requireSuccess(run("git", ["checkout", "--detach", bundle.head], checkout), "clean-package-checkout-head")
+  requireSuccess(run("git", ["checkout", "--detach", revision], checkout), "clean-package-checkout-head")
   assertDirectory(checkout, "clean-package-checkout-root")
-  if (gitText(checkout, ["rev-parse", "HEAD"]) !== bundle.head) throw new CleanPackageBoundaryError("clean-package-checkout-head")
+  if (gitText(checkout, ["rev-parse", "HEAD"]) !== revision) throw new CleanPackageBoundaryError("clean-package-checkout-head")
   assertCleanGit(checkout)
   return realpathSync(checkout)
 }
@@ -171,8 +187,8 @@ function assertCheckoutIntegrity(root, source, npm) {
   })
 }
 
-function packCheckout(root, source, npm) {
-  const packDirectory = join(temporaryRoot, "pack")
+function packCheckout(root, source, npm, label) {
+  const packDirectory = join(temporaryRoot, `pack-${label}`)
   mkdirSync(packDirectory)
   const packed = runNpm(["pack", "--json", "--pack-destination", packDirectory], root, npm)
   requireSuccess(packed, "clean-package-pack")
@@ -239,11 +255,11 @@ function resolvePackResult(output, packDirectory, identity) {
   }
 }
 
-function createNpmEnvironment(root) {
-  const home = join(root, "npm-home")
-  const cache = join(root, "npm-cache")
-  const userConfig = join(root, "npm-userconfig")
-  const globalConfig = join(root, "npm-globalconfig")
+function createNpmEnvironment(root, label) {
+  const home = join(root, `npm-home-${label}`)
+  const cache = join(root, `npm-cache-${label}`)
+  const userConfig = join(root, `npm-userconfig-${label}`)
+  const globalConfig = join(root, `npm-globalconfig-${label}`)
   mkdirSync(home)
   mkdirSync(cache)
   writeFileSync(userConfig, "")

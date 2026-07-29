@@ -124,7 +124,9 @@ npm prefix, and the byte-identical `package.json` and lock from `HEAD`. It then
 runs isolated non-global, non-workspace npm setup, a normal prepack, and a
 fresh installed CLI check. An ambient workspace, stale `dist`, alternate npm
 prefix, cache selection, or older package cannot stand in for the frozen
-tarball.
+tarball. The exact base is materialized separately from the same bundle and
+packed under the same policy, so package comparison cannot borrow either
+checkout's working directory or generated output.
 
 For that observer, the authenticated product discovery route sends the enrolled
 caller workflow filename directly to the fixed GitHub workflow-runs endpoint.
