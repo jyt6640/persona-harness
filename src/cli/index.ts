@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs"
+import { readFileSync, realpathSync } from "node:fs"
 import process from "node:process"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
@@ -308,13 +308,18 @@ async function cliStdin(args: readonly string[]): Promise<string | undefined> {
   return decodeCliStdinText(readFileSync(0))
 }
 
-function isCliEntrypoint(): boolean {
-  const entrypoint = process.argv[1]
+export function isCliEntrypoint(
+  entrypoint: string | undefined = process.argv[1],
+  modulePath: string = fileURLToPath(import.meta.url),
+): boolean {
   if (entrypoint === undefined) {
     return false
   }
-  const normalized = entrypoint.replace(/\\/g, "/")
-  return entrypoint === fileURLToPath(import.meta.url) || normalized.endsWith("/persona-harness") || normalized.endsWith("/ph")
+  try {
+    return realpathSync(entrypoint) === realpathSync(modulePath)
+  } catch {
+    return false
+  }
 }
 
 if (isCliEntrypoint()) {

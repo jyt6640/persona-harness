@@ -59,11 +59,13 @@ const BETA10_COOPERATIVE_COMMANDS = new Map([
 ])
 
 try {
+  const sourcePackageIdentity = readSourcePackageIdentity(repositoryRoot)
   if (sourceCli === undefined) {
-    const packed = packCurrentRepository()
+    const packed = packCurrentRepository(sourcePackageIdentity)
     const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
+    assertInstalledPackageVersionBinding(installedPackage, consumerDirectory, sourcePackageIdentity)
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackagedProjectFinishProducerActionTopology(installedPackage, consumerDirectory)
     if (producerIntakeOnly) {
@@ -241,12 +243,12 @@ function assertBoundedAuthorityAbsence(results, home, label, expected) {
   }
 }
 
-function packCurrentRepository() {
+function packCurrentRepository(sourcePackageIdentity) {
   const packDirectory = join(temporaryRoot, "pack")
   mkdirSync(packDirectory)
   const result = runNpm(repositoryRoot, ["pack", "--json", "--pack-destination", packDirectory])
   requireSuccess("package pack", result)
-  return resolvePackResult(result.stdout, packDirectory)
+  return resolvePackResult(result.stdout, packDirectory, sourcePackageIdentity)
 }
 
 function installFreshTarball(tarballPath) {
@@ -286,6 +288,20 @@ function assertRepositoryOnlyFilesAreAbsent(installedPackage) {
   }
   if (existsSync(join(installedPackage, "scripts", "check-mvp-scope.mjs"))) {
     throw new Error("installed package unexpectedly contains repository scope checks")
+  }
+}
+
+function assertInstalledPackageVersionBinding(installedPackage, consumerDirectory, sourcePackageIdentity) {
+  const installedIdentity = readPackageJsonIdentity(installedPackage)
+  if (
+    installedIdentity.name !== sourcePackageIdentity.name
+    || installedIdentity.version !== sourcePackageIdentity.version
+  ) {
+    throw new Error("installed package version does not bind the source package identity")
+  }
+  const cli = runNode(consumerDirectory, [join(installedPackage, "dist", "cli", "index.js"), "--version"])
+  if (cli.status !== 0 || cli.stdout.trim() !== sourcePackageIdentity.version || cli.stderr !== "") {
+    throw new Error("installed package CLI version does not bind the source package identity")
   }
 }
 
@@ -1025,6 +1041,24 @@ function readPackageVersion(packageRoot) {
     throw new Error("doctor registry package version is unavailable")
   }
   return parsed.version
+}
+
+function readPackageJsonIdentity(packageRoot) {
+  const parsed = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
+  if (!isRecord(parsed) || typeof parsed.name !== "string" || typeof parsed.version !== "string") {
+    throw new Error("installed package identity is unavailable")
+  }
+  return { name: parsed.name, version: parsed.version }
+}
+
+function readSourcePackageIdentity(packageRoot) {
+  const packageIdentity = readPackageJsonIdentity(packageRoot)
+  const lock = JSON.parse(readFileSync(join(packageRoot, "package-lock.json"), "utf8"))
+  const lockRoot = isRecord(lock) && isRecord(lock.packages) ? lock.packages[""] : undefined
+  if (!isRecord(lockRoot) || lockRoot.name !== packageIdentity.name || lockRoot.version !== packageIdentity.version) {
+    throw new Error("source package lock does not bind the source package identity")
+  }
+  return packageIdentity
 }
 
 function assertSourceWorkflowLifecycleAbsenceBlocks(sourceCliPath) {
@@ -2545,14 +2579,23 @@ function boundedActionTopologyDiagnostic(result) {
   return `exit-${String(result.status)}`
 }
 
-function resolvePackResult(output, packDirectory) {
+function resolvePackResult(output, packDirectory, sourcePackageIdentity) {
   const parsed = JSON.parse(output)
   if (!Array.isArray(parsed) || parsed.length !== 1 || !isRecord(parsed[0]) || typeof parsed[0].filename !== "string") {
     throw new TypeError("npm pack did not return exactly one tarball")
   }
 
   const record = parsed[0]
+  if (record.name !== sourcePackageIdentity.name) {
+    throw new TypeError("npm pack package name does not bind the source package identity")
+  }
+  if (record.version !== sourcePackageIdentity.version) {
+    throw new TypeError("npm pack version does not bind the source package identity")
+  }
   const filename = record.filename
+  if (filename !== `${sourcePackageIdentity.name}-${sourcePackageIdentity.version}.tgz`) {
+    throw new TypeError("npm pack filename does not bind the source package identity")
+  }
   const candidate = isAbsolute(filename)
     ? filename
     : join(packDirectory, basename(filename))
@@ -2582,7 +2625,7 @@ function resolvePackResult(output, packDirectory) {
       shasum: typeof record.shasum === "string" ? record.shasum : "unavailable",
       size: bytes.byteLength,
       tarballSha256: sha256(bytes),
-      version: readPackageVersion(repositoryRoot),
+      version: sourcePackageIdentity.version,
     },
     tarballPath: candidate,
   }
