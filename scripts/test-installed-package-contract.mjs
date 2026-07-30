@@ -1959,7 +1959,6 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness) {
     `${label} bootstrap checkpoint`,
     runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
   )
-  commitBootstrapCheckpoint(fixtureRoot, label)
   const consumerRoot = `${fixtureRoot}-consumer`
   requireSuccess(`${label} clean consumer worktree`, runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]))
 
@@ -2045,7 +2044,6 @@ function assertCooperativeSourceReadRaceBlocks(fixtureRoot, phPath, label, readi
     `${label} cooperative source-read race bootstrap`,
     runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
   )
-  commitBootstrapCheckpoint(fixtureRoot, `${label} cooperative source-read race`)
   const consumerRoot = `${fixtureRoot}-consumer`
   requireSuccess(
     `${label} cooperative source-read race worktree`,
@@ -2187,23 +2185,6 @@ function createCooperativeGradleFixture(projectDir) {
   requireSuccess("installed fixture Git config autocrlf", runCommand(projectDir, "git", ["config", "core.autocrlf", "false"]))
   requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
-}
-
-function commitBootstrapCheckpoint(projectDir, label) {
-  requireSuccess(`${label} checkpoint add`, runCommand(projectDir, "git", ["add", "--all"]))
-  requireSuccess(`${label} checkpoint reset dynamic records`, runCommand(projectDir, "git", ["reset", "--", ".persona/evidence", ".persona/workflow"]))
-  const staticPersonaPaths = [
-    ".persona/.ph-init-manifest.json",
-    ".persona/conventions",
-    ".persona/harness.jsonc",
-    ".persona/policies",
-    ".persona/project-profile.jsonc",
-    ".persona/rules",
-  ].filter((relativePath) => existsSync(join(projectDir, relativePath)))
-  if (staticPersonaPaths.length > 0) {
-    requireSuccess(`${label} checkpoint add static Persona records`, runCommand(projectDir, "git", ["add", "-f", "--", ...staticPersonaPaths]))
-  }
-  requireSuccess(`${label} checkpoint commit`, runCommand(projectDir, "git", ["commit", "-qm", "public bootstrap checkpoint"]))
 }
 
 function assertCooperativeLifecycleState(projectDir, label) {
