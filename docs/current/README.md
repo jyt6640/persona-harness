@@ -41,7 +41,7 @@ not become current merely because they remain under `docs/current/`.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.8.0-beta.12-release-notes.md`](release/v0.8.0-beta.12-release-notes.md).
+  [`release/v0.8.0-beta.13-release-notes.md`](release/v0.8.0-beta.13-release-notes.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -118,17 +118,17 @@ not become current merely because they remain under `docs/current/`.
   policy artifact verifier remains read-only/non-authoritative, while local or
   caller-provided staged-package evidence remains
   `artifact-provenance-unavailable`.
-- `0.8.0-beta.1` through `0.8.0-beta.11` are historical staging-only Consumer
-  Authority Beta evidence. Beta.11 stopped before fixture authorization because
-  its observer credential pre-arm did not establish a verified isolated observer
-  condition; it provides no reusable artifact, fetch, Finish, or replay fact.
-  That does not establish authority. `0.8.0-beta.12` is the current
-  source-preparation candidate. It makes no package, tag, staging mapping,
-  GitHub release, original signed consumer artifact, promotion, Stable/GA, or
-  Finish authority claim. Its required lifecycle is staging-first, tag-bound,
-  independently audited, and requires a package-visible isolated observer
-  credential-preflight before any fixture authorization in
-  [`release/v0.8.0-beta.12-release-notes.md`](release/v0.8.0-beta.12-release-notes.md).
+- `0.8.0-beta.1` through `0.8.0-beta.12` are historical staging-only Consumer
+  Authority Beta evidence. Beta.12 established original-artifact crypto and
+  installed fetch preparation, but public Finish still retained lifecycle
+  readiness blockers; it provides no reusable beta.13 Finish, consumption, or
+  replay fact. `0.8.0-beta.13` is the current source-preparation candidate. It
+  makes no package, tag, staging mapping, GitHub release, original signed
+  consumer artifact, promotion, Stable/GA, or Finish authority claim. Its
+  pre-fixture gate requires a package-visible observer credential-preflight and
+  the complete public Java/Spring lifecycle to reach only
+  `trusted-authority-required` in
+  [`release/v0.8.0-beta.13-release-notes.md`](release/v0.8.0-beta.13-release-notes.md).
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)

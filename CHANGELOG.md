@@ -12,6 +12,20 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.13] - 2026-07-30
+
+- Adds the package-visible Consumer Authority pre-authority readiness contract
+  for a fresh Java/Spring Gradle consumer. Its public bootstrap, Gradle,
+  evidence-read, and bounded report-ingress sequence must leave default Finish
+  blocked only by `trusted-authority-required` before any fixture may be
+  authorized.
+- Extends source-built and fresh packed-installed contracts to reject missing,
+  malformed, repeated, control-character, oversized, unsafe, replaced, and
+  identity-drifted readiness inputs without authority side effects.
+- `0.8.0-beta.13` is strict prerelease source preparation only. It makes no
+  publish, tag, channel, GitHub release, original artifact, authority, Finish,
+  promotion, Stable/GA, or `latest` claim.
+
 ## [0.8.0-beta.12] - 2026-07-30
 
 - Prepares a new immutable Consumer Authority Beta after beta.11 stopped before
