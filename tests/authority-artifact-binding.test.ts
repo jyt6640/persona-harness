@@ -32,6 +32,10 @@ type BindingInput = {
   readonly receipt: ProjectFinishAttestationReceipt
 }
 
+type BindingMutation = (
+  input: BindingInput,
+) => AuthorityArtifact | ProjectFinishAttestationVerifierAssessment
+
 describe("consumer authority artifact binding", () => {
   it("accepts the authentic caller enrollment and separately bound reusable signer topology", () => {
     const input = validBinding()
@@ -49,7 +53,7 @@ describe("consumer authority artifact binding", () => {
     expect(matchesAuthorityArtifactBinding(input.artifact, input.enrollment, input.assessment)).toBe(true)
   })
 
-  it.each([
+  const rejectedBindings: readonly (readonly [string, BindingMutation])[] = [
     ["caller workflow", (input: BindingInput) => assessmentFor(input, {
       ...input.receipt,
       workflow: {
@@ -92,14 +96,10 @@ describe("consumer authority artifact binding", () => {
       ...input.artifact,
       runId: "30430000001",
     })],
-    ["untrusted archival assessment", (input: BindingInput) => ({
-      ...input.assessment,
-      authorityEligible: false,
-      consumptionState: "not-applicable",
-      decision: "blocked",
-      state: "binding-mismatch",
-    })],
-  ])("rejects a mismatched %s without treating the archive as authority", (_label, mutate) => {
+    ["untrusted archival assessment", untrustedAssessment],
+  ]
+
+  it.each(rejectedBindings)("rejects a mismatched %s without treating the archive as authority", (_label, mutate) => {
     const input = validBinding()
     const candidate = mutate(input)
     const artifact = isArtifact(candidate) ? candidate : input.artifact
@@ -180,6 +180,16 @@ function assessmentFor(
   receipt: ProjectFinishAttestationReceipt,
 ): ProjectFinishAttestationVerifierAssessment {
   return { ...input.assessment, receipt }
+}
+
+function untrustedAssessment(input: BindingInput): ProjectFinishAttestationVerifierAssessment {
+  return {
+    ...input.assessment,
+    authorityEligible: false,
+    consumptionState: "not-applicable",
+    decision: "blocked",
+    state: "binding-mismatch",
+  }
 }
 
 function isArtifact(value: AuthorityArtifact | ProjectFinishAttestationVerifierAssessment): value is AuthorityArtifact {
