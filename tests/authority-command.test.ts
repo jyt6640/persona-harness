@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { existsSync, mkdtempSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -140,6 +140,35 @@ describe("consumer authority command boundary", () => {
     expect(result.stderr).toContain("GH_TOKEN or GITHUB_TOKEN")
     expect(`${result.stdout}${result.stderr}`).not.toContain(projectDir)
     expect(readAuthorityEnrollment(projectDir, { storeRoot }).state).toBe("missing")
+  })
+
+  it("keeps a host transport credential out of the persisted enrollment and command output", () => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+    const credential = "ghp_host_transport_probe"
+
+    const result = runAuthorityCommand([
+      "enroll",
+      "github",
+      "example/public-gradle-app",
+      "--workflow",
+      "persona-harness.yml",
+    ], {
+      confirmEnrollment: true,
+      enrollmentReadback: () => ({
+        callerWorkflowPath: "persona-harness.yml",
+        repositoryId: 987654321,
+        repositorySlug: "example/public-gradle-app",
+        reusableWorkflowSha: "a".repeat(40),
+      }),
+      githubToken: credential,
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result.status).toBe(0)
+    expect(`${result.stdout}${result.stderr}`).not.toContain(credential)
+    expect(readFileSync(join(storeRoot, "consumer-authority-v1.json"), "utf8")).not.toContain(credential)
   })
 
   it("fetches only a product-owned original archive into the user store without creating workspace authority", () => {

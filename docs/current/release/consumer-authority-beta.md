@@ -5,23 +5,22 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` through `0.8.0-beta.9` are immutable staging-only evidence.
+`0.8.0-beta.1` through `0.8.0-beta.10` are immutable staging-only evidence.
 Their registry and provenance observations cannot be reused as current-version
-consumer authority evidence. Beta.9 did produce an independently verified
-original artifact, but its authenticated installed fetch retained no artifact
-identity because it sent the enrolled workflow filename as a repository path.
-Its
+consumer authority evidence. Beta.10's original bytes and independent online
+cryptographic verification passed, but its isolated External consumer had no
+usable GitHub Actions read credential for installed authority discovery. Its
 certificate SAN identifies the Persona reusable producer workflow while its
 receipt identifies the fixture caller workflow; those identities remain
-separate. The active `0.8.0-beta.10` source candidate has no package, tag,
+separate. The active `0.8.0-beta.11` source candidate has no package, tag,
 channel movement, GitHub release, or signed consumer-project artifact at
 source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.10 must establish that route independently and cannot inherit beta.9's
-verified-but-unretained artifact, an earlier lifecycle, or an earlier authority
+Beta.11 must establish that route independently and cannot inherit beta.10's
+credential-less observation, an earlier lifecycle, or an earlier authority
 result.
 
 ## Fixed Sequence
@@ -37,9 +36,12 @@ result.
 4. A fresh exact registry installation proves the packaged CLI boundaries. A
    public consumer separately enrolls its fixed workflow, fetches original
    signed bytes, verifies them against its current source, and only an explicit
-   Finish may consume a trusted result once. The fixture supplies `GH_TOKEN` or
-   `GITHUB_TOKEN` only as an in-memory Actions-read transport credential; fixed
-  GitHub readback, not the credential or project content, establishes identity.
+   Finish may consume a trusted result once. The observer obtains `GH_TOKEN`
+   from an already-authenticated host only immediately before the fixed
+   read-only GitHub command. It keeps consumer `HOME` isolated, never logs or
+   persists the credential, and does not permit a product credential fallback.
+   Fixed GitHub readback, not the credential or project content, establishes
+   identity.
 
 Before an explicit cooperative Finish, a fresh consumer must establish normal
 lifecycle records through supported public commands. The fixture may use the
@@ -107,17 +109,17 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.9` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.10`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.10` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.11`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta10-acceptance.json`](consumer-authority-beta10-acceptance.json)
+[`consumer-authority-beta11-acceptance.json`](consumer-authority-beta11-acceptance.json)
 record; it names the exact public Java/Spring route, the separate caller and
 reusable certificate identities, the pre-armed independent observer, the
 live certificate observation order, and the one hosted residual.
 
-Before beta.10 package evidence is accepted, the verifier materializes the
+Before beta.11 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds the
 bundle `HEAD` and `refs/remotes/origin/main`, the checkout CWD, Git top-level,
 npm prefix, and the byte-identical `package.json` and lock from `HEAD`. It then
@@ -137,18 +139,22 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.10 fixture push, an independent observer may prepare
-only an isolated exact registry installation, enrollment, status, and explain.
-It must not download artifact bytes, validate online crypto, consume Finish, or
-observe replay. Once the current-version original artifact exists, that observer
-downloads it once, verifies the custom predicate online before the leaf
-certificate `notAfter` deadline, consumes exactly once, and immediately checks
-the replay-negative result. A missed deadline is
+Before the one natural beta.11 fixture push, an independent observer may prepare
+only an isolated exact registry installation, private consumer `HOME`,
+enrollment, status, and explain. It must not download artifact bytes, validate
+online crypto, consume Finish, or observe replay. Once the current-version
+original artifact exists, the observer obtains one host `gh auth token` without
+printing it, injects it only as `GH_TOKEN` into the fixed read-only discovery
+command, downloads the artifact once, verifies the custom predicate online
+before the leaf certificate `notAfter` deadline, consumes exactly once, and
+immediately checks the replay-negative result. A missed deadline is
 `certificate-window-expired`: it blocks without fetch, Finish, or replay and
 never becomes a trusted result through local self-validation or older beta
 evidence. A successful current-version fetch retains only the verified
 artifact ID, digest, run, source, caller, and reusable/SAN binding; any
-mismatch remains non-authoritative and is not stored.
+mismatch remains non-authoritative and is not stored. The token never appears
+in output or persistent consumer state, and Persona Harness never reads host
+credential storage itself.
 
 `ph authority status`, `ph authority fetch github`, and closure are
 non-consuming. Missing enrollment, unavailable network, malformed records,

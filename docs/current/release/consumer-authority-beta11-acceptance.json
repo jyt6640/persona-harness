@@ -1,0 +1,146 @@
+{
+  "schemaVersion": "consumer-authority-beta11-acceptance.1",
+  "package": {
+    "channel": "staging",
+    "scope": "staging-only",
+    "version": "0.8.0-beta.11"
+  },
+  "packageBoundary": {
+    "bundle": {
+      "requiredRefs": ["HEAD", "refs/remotes/origin/main"],
+      "verification": "git-bundle-verify-and-exact-ref-binding",
+      "baseComparison": "independent-no-local-base-checkout-under-the-same-npm-policy"
+    },
+    "cleanCheckout": {
+      "requiredBindings": [
+        "checkout-cwd",
+        "git-toplevel",
+        "npm-prefix",
+        "HEAD-package-json-bytes",
+        "HEAD-package-lock-bytes"
+      ],
+      "sourceFallback": "forbidden"
+    },
+    "npm": {
+      "global": false,
+      "ignoreScriptsBeforePack": false,
+      "install": "npm-ci-ignore-scripts",
+      "workspaces": false
+    },
+    "pack": {
+      "metadata": "name-version-filename-must-match-frozen-package-and-lock",
+      "postcondition": "fresh-installed-cli-version-must-match-tarball-version"
+    }
+  },
+  "beta10HistoricalExternal": {
+    "cryptoOutcome": "independent-original-bytes-and-online-crypto-verified",
+    "outcome": "independent-crypto-passed-authority-fetch-not-attempted-without-github-read-credential",
+    "reusableForBeta11": false,
+    "version": "0.8.0-beta.10"
+  },
+  "cooperative": {
+    "commands": [
+      "ph bootstrap backend --strict --no-developer-mcp",
+      "ph bearshell ./gradlew test",
+      "ph bearshell ./gradlew compileJava",
+      "ph bearshell ./gradlew clean",
+      "ph evidence read README.md",
+      "ph evidence read .persona/project-profile.jsonc",
+      "ph evidence read src/main/java/example/cooperative/GreetingService.java",
+      "ph plan --report-filled implementation --stdin",
+      "ph plan --report-filled review --stdin"
+    ],
+    "defaultFinish": "trusted-authority-required",
+    "explicitFinish": "cooperative-pass",
+    "laterClosure": "trusted-authority-required"
+  },
+  "authority": {
+    "discoveryBinding": {
+      "fixedWorkflowIdentifier": "enrolled-caller-workflow-filename",
+      "failureMode": "missing-malformed-or-mismatched-evidence-is-not-retained",
+      "required": [
+        "caller-workflow-filename",
+        "reusable-workflow-sha-and-certificate-SAN",
+        "repository-id",
+        "source-head",
+        "workflow-run-id",
+        "artifact-id-and-sha256"
+      ],
+      "storeSchema": "consumer-authority-original-artifact.2"
+    },
+    "fixturePlan": {
+      "artifact": "project-finish-attestation",
+      "consumer": "public-java-spring-gradle",
+      "postmergeAction": "normal-push-to-main",
+      "registryInstall": "npm install persona-harness@0.8.0-beta.11 --registry https://registry.npmjs.org"
+    },
+    "hostedFixture": {
+      "callerWorkflowPath": ".github/workflows/research-attestation.yml",
+      "certificateSanIdentity": "reusable-producer-workflow",
+      "event": "push",
+      "ref": "refs/heads/main",
+      "repository": "jyt6640/persona-harness-attestation-claim-fixture",
+      "reusableWorkflowPath": ".github/workflows/persona-harness-project-finish.yml",
+      "revision": "postmerge-persona-harness-beta11-main-sha"
+    },
+    "verification": {
+      "predicate": "project-finish-attestation.1",
+      "route": "fixed-product-owned-online",
+      "unavailable": "bounded-non-authoritative"
+    }
+  },
+  "prearmedExternalHandoff": {
+    "prepare": {
+      "allowedBeforeFixture": ["prepare-isolated-consumer-home", "enroll", "status", "explain"],
+      "consumer": "isolated-exact-registry-install",
+      "credentialPrearm": {
+        "acquisition": "host-gh-auth-token-read-once",
+        "consumerHome": "isolated-ephemeral",
+        "environment": "GH_TOKEN",
+        "logging": "forbidden",
+        "persistence": "forbidden",
+        "productFallback": "forbidden",
+        "scope": "read-only-github-actions-artifact-and-run-discovery"
+      },
+      "prohibitedBeforeArtifact": [
+        "artifact-download",
+        "online-crypto-validation",
+        "finish-consumption",
+        "replay-observation"
+      ]
+    },
+    "trigger": {
+      "onlyAfter": "natural-current-version-original-artifact",
+      "steps": [
+        "inject-ephemeral-host-gh-token-for-read-only-discovery",
+        "download-original-bytes-for-independent-online-verification",
+        "verify-online-before-leaf-certificate-notAfter",
+        "authority-fetch-discovers-and-binds-original-artifact",
+        "finish-consume-once",
+        "finish-replay-blocked"
+      ]
+    },
+    "nonAuthority": [
+      "prearm-does-not-self-validate",
+      "prearm-does-not-grant-authority",
+      "prearm-does-not-persist-or-log-host-credential",
+      "prearm-does-not-reuse-beta10-artifact"
+    ]
+  },
+  "hostedResidual": {
+    "id": "beta11-prearmed-external-live-original-artifact-verification",
+    "requiredEvidence": "one natural current-version public fixture artifact, a host-derived ephemeral GH_TOKEN injected only into an isolated consumer read-only discovery command, independent online verification inside the live certificate window, real installed authority fetch, one explicit Finish consumption, and immediate replay rejection",
+    "whyLocalCannotClose": "GitHub Actions must mint the original current-version signed artifact, while independent online Sigstore verification and authenticated fixed GitHub artifact discovery must observe it within the live certificate window."
+  },
+  "mutationBoundary": {
+    "performed": false,
+    "prohibited": [
+      "npm-publish",
+      "tag-or-dist-tag-mutation",
+      "release-creation",
+      "artifact-download-or-live-verification",
+      "Finish-consumption",
+      "fixture-push-or-workflow-dispatch"
+    ]
+  }
+}
