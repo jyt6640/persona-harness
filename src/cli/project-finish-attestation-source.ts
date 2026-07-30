@@ -10,6 +10,7 @@ import {
   bindProjectFinishAttestationInputSnapshot,
   captureProjectFinishAttestationInputSnapshot,
 } from "./project-finish-attestation-inputs.js"
+import { INIT_MANIFEST_RELATIVE_PATH } from "./init-manifest.js"
 import {
   captureSourceIdentity,
   captureSourceIdentityEntries,
@@ -18,7 +19,10 @@ import {
 } from "./source-identity.js"
 import type { SourceIdentity } from "./source-identity-types.js"
 
-const PROJECT_FINISH_WORKFLOW_ROOT = ".persona/workflow"
+const PROJECT_FINISH_RUNTIME_EXCLUSIONS = [
+  INIT_MANIFEST_RELATIVE_PATH,
+  ".persona/workflow",
+] as const
 
 export function captureProjectFinishAttestationSourceIdentity(
   projectDir: string,
@@ -26,7 +30,7 @@ export function captureProjectFinishAttestationSourceIdentity(
   projectReadBoundary?: ProjectReadBoundary,
 ) {
   return captureSourceIdentity(projectDir, git, ".persona/evidence", {
-    additionalExcludedRoots: [PROJECT_FINISH_WORKFLOW_ROOT],
+    additionalExcludedRoots: PROJECT_FINISH_RUNTIME_EXCLUSIONS,
     ...(projectReadBoundary === undefined ? {} : { gitRunner: currentProjectGit(projectReadBoundary) }),
     projectReadBoundary,
   })
@@ -38,7 +42,7 @@ export function captureProjectFinishAttestationSourceEntries(
   projectReadBoundary?: ProjectReadBoundary,
 ) {
   return captureSourceIdentityEntries(projectDir, git, ".persona/evidence", {
-    additionalExcludedRoots: [PROJECT_FINISH_WORKFLOW_ROOT],
+    additionalExcludedRoots: PROJECT_FINISH_RUNTIME_EXCLUSIONS,
     ...(projectReadBoundary === undefined ? {} : { gitRunner: currentProjectGit(projectReadBoundary) }),
     projectReadBoundary,
   })
