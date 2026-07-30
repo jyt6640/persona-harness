@@ -5,21 +5,22 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` through `0.8.0-beta.11` are immutable staging-only evidence.
-Their registry and provenance observations cannot be reused as current-version
-consumer authority evidence. Beta.11 stopped before fixture authorization
-because its observer credential pre-arm did not establish a verified isolated
-observer condition. Its certificate SAN/caller workflow identity proposal and
+`0.8.0-beta.1` through `0.8.0-beta.12` are immutable staging-only evidence.
+Their registry and provenance observations cannot be reused as beta.13
+current-version consumer authority evidence. Beta.12 established original
+artifact bytes, online crypto verification, and installed authenticated fetch,
+but its public Finish retained implementation-report, review-report, and
+evidence readiness blockers. Its certificate SAN/caller workflow identity and
 all earlier beta observations remain separate historical evidence. The active
-`0.8.0-beta.12` source candidate has no package, tag, channel movement, GitHub
+`0.8.0-beta.13` source candidate has no package, tag, channel movement, GitHub
 release, or signed consumer-project artifact at source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.12 must establish that route independently and cannot inherit beta.11's
-unverified observer condition, an earlier lifecycle, or an earlier authority
-result.
+Beta.13 must establish the remaining public readiness and final authority route
+independently; it cannot inherit beta.12's artifact/fetch result, an earlier
+lifecycle, or an earlier authority result.
 
 ## Fixed Sequence
 
@@ -42,7 +43,7 @@ result.
    it, and does not permit a product credential fallback. Fixed GitHub readback,
    not the credential or project content, establishes identity.
 
-Before an explicit cooperative Finish, a fresh consumer must establish normal
+Before any fixture authorization, a fresh consumer must establish normal
 lifecycle records through supported public commands. The fixture may use the
 following sequence only with reports that describe its own observed work:
 
@@ -56,8 +57,14 @@ ph evidence read .persona/project-profile.jsonc
 ph evidence read src/main/java/<package>/<role>.java
 <substantive implementation report> | ph plan --report-filled implementation --stdin
 <substantive review report> | ph plan --report-filled review --stdin
-ph workflow finish implement --assurance cooperative
+ph workflow finish implement
 ```
+
+That final default Finish must be blocked only by
+`trusted-authority-required`. It must not retain implementation-report,
+review-report, evidence, report-coverage, profile-read-coverage, Java-role-read,
+or loop-state blockers. The public cooperative route remains a separate
+same-invocation local test boundary and does not satisfy external authority.
 
 `bootstrap` initializes only absent empty current loop-state records; it does
 not repair malformed or stale state. In a fresh project, bootstrap holds a
@@ -108,17 +115,17 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.11` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.12`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.12` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.13`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta12-acceptance.json`](consumer-authority-beta12-acceptance.json)
-record; it names the exact public Java/Spring route, the separate caller and
-reusable certificate identities, the independent observer credential preflight,
-the live certificate observation order, and the one hosted residual.
+[`consumer-authority-beta13-acceptance.json`](consumer-authority-beta13-acceptance.json)
+record; it names the exact public Java/Spring readiness route, the separate
+caller and reusable certificate identities, the independent observer credential
+preflight, the live certificate observation order, and the one hosted residual.
 
-Before beta.12 package evidence is accepted, the verifier materializes the
+Before beta.13 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds the
 bundle `HEAD` and `refs/remotes/origin/main`, the checkout CWD, Git top-level,
 npm prefix, and the byte-identical `package.json` and lock from `HEAD`. It then
@@ -138,7 +145,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.12 fixture push, an independent observer may prepare
+Before the one natural beta.13 fixture push, an independent observer may prepare
 only an isolated exact registry installation, private consumer `HOME`,
 enrollment, status, and explain. It must then run
 `node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json`.
