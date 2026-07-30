@@ -87,6 +87,9 @@ prevents a prior ordinary build from making the fixed cooperative build task
 non-fresh. Deleting either loop-state record, submitting malformed or oversized
 report text, or copying a report/evidence record remains blocked. The default
 Finish and later closure remain external-blocked after a cooperative PASS.
+Public report ingress, plan status, and readiness evidence output retain only
+stable project-relative references; they omit caller workspace and temporary
+absolute paths.
 Each `ph evidence read` record stores only a bounded digest and metadata for a
 project-contained regular source file. Its source read uses native descriptor
 traversal from the captured project capability: every root, parent, and leaf
