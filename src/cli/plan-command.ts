@@ -130,16 +130,15 @@ function parsePlanArgs(args: readonly string[]): ParsedPlanArgs {
   return { kind: "invalid", message: `Unknown option: ${arg}` }
 }
 
-function statusOutput(title: string, planPath: string, status: string): string {
-  return [`Persona Harness ${title}.`, "", `Plan: ${planPath}`, `Status: ${status}`].join("\n") + "\n"
+function statusOutput(title: string, status: string): string {
+  return [`Persona Harness ${title}.`, "", `Plan: ${PLAN_PATH}`, `Status: ${status}`].join("\n") + "\n"
 }
 
-function reportStatusOutput(title: string, relativePath: string, reportPath: string, status: string): string {
+function reportStatusOutput(title: string, relativePath: string, status: string): string {
   return [
     `Persona Harness ${title}.`,
     "",
     `Workflow report: ${relativePath}`,
-    `Path: ${reportPath}`,
     `Status: ${status}`,
   ].join("\n") + "\n"
 }
@@ -147,7 +146,7 @@ function reportStatusOutput(title: string, relativePath: string, reportPath: str
 function updateStatus(status: PlanAcceptanceStatus, options: PlanOptions): CliRunResult {
   const result = updateWorkflowPlanStatus(status, options)
   const title = status === "accepted" ? "plan accepted" : "plan marked for revision"
-  return { status: 0, stdout: statusOutput(title, result.planPath, result.status), stderr: "" }
+  return { status: 0, stdout: statusOutput(title, result.status), stderr: "" }
 }
 
 function projectDirFor(options: PlanOptions): string {
@@ -159,11 +158,11 @@ function missingWorkflowArtifacts(options: PlanOptions): readonly string[] {
   return [IMPLEMENTATION_REPORT_PATH, REVIEW_REPORT_PATH].filter((relativePath) => !existsSync(join(projectDir, relativePath)))
 }
 
-function implementationGateOutput(planPath: string, status: string, projectDir?: string): string {
+function implementationGateOutput(status: string, projectDir?: string): string {
   return [
     "Persona Harness implementation gate passed.",
     "",
-    `Plan: ${planPath}`,
+    `Plan: ${PLAN_PATH}`,
     `Status: ${status}`,
     "",
     "Required context:",
@@ -209,7 +208,7 @@ function runImplementationGate(options: PlanOptions): CliRunResult {
     )
   }
 
-  return { status: 0, stdout: implementationGateOutput(result.planPath, result.status, projectDirFor(options)), stderr: "" }
+  return { status: 0, stdout: implementationGateOutput(result.status, projectDirFor(options)), stderr: "" }
 }
 
 export function runPlanCommand(args: readonly string[], options: PlanOptions = {}, invocationName = "ph"): CliRunResult {
@@ -226,7 +225,7 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
   try {
     if (parsed.kind === "status") {
       const result = readWorkflowPlanStatus(options)
-      return { status: 0, stdout: statusOutput("plan status", result.planPath, result.status), stderr: "" }
+      return { status: 0, stdout: statusOutput("plan status", result.status), stderr: "" }
     }
     if (parsed.kind === "accept") {
       return updateStatus("accepted", options)
@@ -244,7 +243,7 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
         : updateWorkflowReportStatus(parsed.reportKind, "filled", options)
       return {
         status: 0,
-        stdout: reportStatusOutput("workflow report filled", result.relativePath, result.reportPath, result.status),
+        stdout: reportStatusOutput("workflow report filled", result.relativePath, result.status),
         stderr: "",
       }
     }
@@ -261,14 +260,14 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
       return runResumeCommand(options)
     }
     if (parsed.kind === "auto-accept") {
-      const planPath = initializeWorkflowPlan(options, parsed.force)
+      initializeWorkflowPlan(options, parsed.force)
       const accepted = updateWorkflowPlanStatus("accepted", options)
       return {
         status: 0,
         stdout: [
           "Persona Harness blackbear plan draft created and accepted.",
           "",
-          `Plan: ${planPath}`,
+          `Plan: ${PLAN_PATH}`,
           `Status: ${accepted.status}`,
           "",
           "Next:",
@@ -280,13 +279,13 @@ export function runPlanCommand(args: readonly string[], options: PlanOptions = {
       }
     }
 
-    const planPath = initializeWorkflowPlan(options, parsed.force)
+    initializeWorkflowPlan(options, parsed.force)
     return {
       status: 0,
       stdout: [
         "Persona Harness blackbear plan draft created.",
         "",
-        `Plan: ${planPath}`,
+        `Plan: ${PLAN_PATH}`,
         "",
         "Next:",
         `- Review and complete ${PLAN_PATH} before implementation.`,
