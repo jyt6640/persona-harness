@@ -69,6 +69,7 @@ try {
     const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
+    await assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package")
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackagedProjectFinishProducerActionTopology(installedPackage, consumerDirectory)
     if (producerIntakeOnly) {
@@ -136,7 +137,6 @@ async function assertPackagedConsumerAuthorityBoundary(installedPackage, consume
     }
   }
   assertPrearmedObserverHandoff(installedPackage, "installed package")
-  await assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package")
   await assertBoundAuthorityDiscovery(installedPackage, "installed package")
   assertConsumerAuthorityBoundary(
     consumerDirectory,
@@ -276,7 +276,7 @@ async function assertObserverCredentialPreflight(packageRoot, cwd, label) {
     "",
   ].join("\n"))
   chmodSync(gh, 0o755)
-  const publicResult = runNode(cwd, [join(packageRoot, "scripts", "preflight-consumer-authority-observer.mjs"), "--json"], {
+  const publicResult = runObserverPreflightNode(cwd, [join(packageRoot, "scripts", "preflight-consumer-authority-observer.mjs"), "--json"], {
     GH_TOKEN: "ambient-token-must-not-cross",
     GITHUB_TOKEN: "ambient-token-must-not-cross",
     HOME: hostHome,
@@ -287,7 +287,10 @@ async function assertObserverCredentialPreflight(packageRoot, cwd, label) {
   try {
     publicPayload = JSON.parse(publicResult.stdout)
   } catch {
-    throw new Error(`${label} public observer credential preflight did not return bounded JSON`)
+    throw new Error(
+      `${label} public observer credential preflight did not return bounded JSON `
+      + `(status=${publicResult.status ?? "unavailable"}, stdout-bytes=${Buffer.byteLength(publicResult.stdout)}, stderr-bytes=${Buffer.byteLength(publicResult.stderr)})`,
+    )
   }
   if (
     publicResult.status === 0
@@ -2724,6 +2727,23 @@ function runNode(cwd, args, environment = {}, input) {
   })
   if (result.error) {
     throw new Error("node process could not start")
+  }
+  return {
+    status: result.status,
+    stderr: result.stderr ?? "",
+    stdout: result.stdout ?? "",
+  }
+}
+
+function runObserverPreflightNode(cwd, args, environment) {
+  const result = spawnSync(process.execPath, args, {
+    cwd,
+    encoding: "utf8",
+    env: environment,
+    maxBuffer: 4 * 1024 * 1024,
+  })
+  if (result.error) {
+    throw new Error("observer preflight node process could not start")
   }
   return {
     status: result.status,

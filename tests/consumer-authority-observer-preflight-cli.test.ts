@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 const root = process.cwd()
 const script = join(root, "scripts", "preflight-consumer-authority-observer.mjs")
+const worker = join(root, "scripts", "consumer-authority-observer-preflight-worker.mjs")
 const temporaryRoots: string[] = []
 
 afterEach(() => {
@@ -68,6 +69,26 @@ describe("public observer credential-preflight script", () => {
     expect(result.stdout).toBe("")
     expect(result.stderr).toContain("Usage:")
     expect(result.stderr).not.toContain("untrusted.example")
+  })
+
+  it("always executes the worker entrypoint and returns bounded JSON when its private token is absent", () => {
+    const fixture = temporaryRoot()
+    const result = spawnSync(process.execPath, [worker], {
+      cwd: fixture,
+      encoding: "utf8",
+      env: { HOME: join(fixture, "worker-home"), PATH: join(fixture, "empty-bin") },
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe("")
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      authorityEligible: false,
+      code: "host-gh-token-invalid",
+      credential: "unusable",
+      fixtureAuthorization: "blocked",
+      mutationPerformed: false,
+      state: "blocked",
+    })
   })
 })
 

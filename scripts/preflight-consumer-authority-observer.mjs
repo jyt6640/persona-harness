@@ -1,5 +1,3 @@
-import { pathToFileURL } from "node:url"
-
 import { runObserverCredentialPreflight } from "./consumer-authority-observer-preflight-launcher.mjs"
 
 function main() {
@@ -14,6 +12,4 @@ function main() {
   process.exitCode = result.state === "ready" ? 0 : 1
 }
 
-if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main()
-}
+main()
