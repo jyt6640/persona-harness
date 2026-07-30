@@ -2232,6 +2232,7 @@ function readBeta13PreAuthorityReadiness(packageRoot) {
   const readiness = value?.preAuthorityReadiness
   const commands = readiness?.commands
   const packageVersion = value?.package?.version
+  const defaultFinish = readiness?.expectedDefaultFinish
   const expectedCommands = [...BETA13_PRE_AUTHORITY_COMMANDS.keys()]
   const expectedDefaultFinish = {
     absentBlockers: [
@@ -2253,7 +2254,10 @@ function readBeta13PreAuthorityReadiness(packageRoot) {
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
-    || !sameRecord(readiness?.expectedDefaultFinish, expectedDefaultFinish)
+    || !isRecord(defaultFinish)
+    || defaultFinish.status !== expectedDefaultFinish.status
+    || defaultFinish.primaryBlocker !== expectedDefaultFinish.primaryBlocker
+    || !sameStrings(defaultFinish.absentBlockers, expectedDefaultFinish.absentBlockers)
   ) {
     throw new Error("beta.13 pre-authority readiness manifest is invalid")
   }
