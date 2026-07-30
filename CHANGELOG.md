@@ -12,6 +12,21 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.14] - 2026-07-30
+
+- Corrects the Consumer Authority source projection for fresh installed
+  consumers: bootstrap-local `.persona/.ph-init-manifest.json` contains a
+  consumer real path and is excluded as runtime ownership metadata, while the
+  profile, Gradle descriptors, Git source identity, reports, and evidence stay
+  bound.
+- Preserves the caller enrollment identity separately from the reusable
+  producer certificate SAN and covers modeled current original-artifact fetch,
+  one explicit Finish consumption, and immediate replay rejection without a
+  live authority claim.
+- `0.8.0-beta.14` is strict prerelease source preparation only. It makes no
+  publish, tag, channel, GitHub release, original artifact, authority, Finish,
+  promotion, Stable/GA, or `latest` claim.
+
 ## [0.8.0-beta.13] - 2026-07-30
 
 - Adds the package-visible Consumer Authority pre-authority readiness contract

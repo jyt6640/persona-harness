@@ -5,21 +5,22 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` through `0.8.0-beta.12` are immutable staging-only evidence.
-Their registry and provenance observations cannot be reused as beta.13
-current-version consumer authority evidence. Beta.12 established original
-artifact bytes, online crypto verification, and installed authenticated fetch,
-but its public Finish retained implementation-report, review-report, and
-evidence readiness blockers. Its certificate SAN/caller workflow identity and
-all earlier beta observations remain separate historical evidence. The active
-`0.8.0-beta.13` source candidate has no package, tag, channel movement, GitHub
-release, or signed consumer-project artifact at source preparation time.
+`0.8.0-beta.1` through `0.8.0-beta.13` are immutable staging-only evidence.
+Their registry and provenance observations cannot be reused as beta.14
+current-version consumer authority evidence. Beta.13 established current
+original artifact bytes, online crypto verification, and authenticated fetch,
+but the installed product retained no authority because its source projection
+included bootstrap-local `.persona/.ph-init-manifest.json` real-path metadata.
+Its caller workflow identity and reusable certificate SAN remain separately
+bound historical facts. The active `0.8.0-beta.14` source candidate has no
+package, tag, channel movement, GitHub release, or signed consumer-project
+artifact at source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.13 must establish the remaining public readiness and final authority route
-independently; it cannot inherit beta.12's artifact/fetch result, an earlier
+Beta.14 must establish the remaining public readiness and final authority route
+independently; it cannot inherit beta.13's artifact/fetch result, an earlier
 lifecycle, or an earlier authority result.
 
 ## Fixed Sequence
@@ -118,17 +119,24 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.12` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.13`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.13` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.14`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta13-acceptance.json`](consumer-authority-beta13-acceptance.json)
+[`consumer-authority-beta14-acceptance.json`](consumer-authority-beta14-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 preflight, the live certificate observation order, and the one hosted residual.
 
-Before beta.13 package evidence is accepted, the verifier materializes the
+The source projection excludes only `.persona/.ph-init-manifest.json` and
+`.persona/workflow` runtime metadata. The init manifest contains a
+consumer-local canonical real path, so it is bootstrap ownership metadata rather
+than caller project source. The profile, Gradle descriptors, Git identity,
+reports, and evidence remain bound. This does not relax caller enrollment,
+reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
+
+Before beta.14 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds the
 bundle `HEAD` and `refs/remotes/origin/main`, the checkout CWD, Git top-level,
 npm prefix, and the byte-identical `package.json` and lock from `HEAD`. It then
@@ -148,7 +156,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.13 fixture push, an independent observer may prepare
+Before the one natural beta.14 fixture push, an independent observer may prepare
 only an isolated exact registry installation, private consumer `HOME`,
 enrollment, status, and explain. It must then run
 `node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json`.
