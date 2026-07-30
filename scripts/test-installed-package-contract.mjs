@@ -2015,13 +2015,28 @@ function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readines
     if (step === undefined) {
       throw new Error(`${label} beta.13 pre-authority command is unsupported`)
     }
+    const result = runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin)
     requireSuccess(
       `${label} lifecycle ${command}`,
-      runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin),
+      result,
     )
+    assertPublicOutputDoesNotExposeWorkspace(result, fixtureRoot, `${label} lifecycle ${command}`)
+  }
+  const status = runNode(fixtureRoot, [phPath, "plan", "--status"])
+  requireSuccess(`${label} public plan status`, status)
+  assertPublicOutputDoesNotExposeWorkspace(status, fixtureRoot, `${label} public plan status`)
+  if (!status.stdout.includes("Plan: .persona/workflow/plan.md")) {
+    throw new Error(`${label} public plan status did not retain the relative plan reference`)
   }
   assertCooperativeLifecycleState(fixtureRoot, label)
   assertAuthorityOnlyPreflight(fixtureRoot, phPath, label, readiness.expectedDefaultFinish)
+}
+
+function assertPublicOutputDoesNotExposeWorkspace(result, workspace, label) {
+  const output = `${result.stdout}${result.stderr}`
+  if (output.includes(workspace) || output.includes(realpathSync(workspace))) {
+    throw new Error(`${label} exposed an absolute workspace path through public output`)
+  }
 }
 
 function assertCooperativeSourceReadRaceBlocks(fixtureRoot, phPath, label, readiness) {
@@ -2233,6 +2248,7 @@ function readBeta13PreAuthorityReadiness(packageRoot) {
   const commands = readiness?.commands
   const packageVersion = value?.package?.version
   const defaultFinish = readiness?.expectedDefaultFinish
+  const publicOutput = readiness?.publicOutput
   const expectedCommands = [...BETA13_PRE_AUTHORITY_COMMANDS.keys()]
   const expectedDefaultFinish = {
     absentBlockers: [
@@ -2248,6 +2264,14 @@ function readBeta13PreAuthorityReadiness(packageRoot) {
     primaryBlocker: "trusted-authority-required",
     status: "blocked",
   }
+  const expectedPublicOutput = {
+    absoluteWorkspacePaths: "omitted",
+    stableReferences: [
+      ".persona/workflow/plan.md",
+      ".persona/workflow/implementation-report.md",
+      ".persona/workflow/review-report.md",
+    ],
+  }
   if (
     packageVersion !== readPackageVersion(packageRoot)
     || value?.schemaVersion !== "consumer-authority-beta13-acceptance.1"
@@ -2258,6 +2282,9 @@ function readBeta13PreAuthorityReadiness(packageRoot) {
     || defaultFinish.status !== expectedDefaultFinish.status
     || defaultFinish.primaryBlocker !== expectedDefaultFinish.primaryBlocker
     || !sameStrings(defaultFinish.absentBlockers, expectedDefaultFinish.absentBlockers)
+    || !isRecord(publicOutput)
+    || publicOutput.absoluteWorkspacePaths !== expectedPublicOutput.absoluteWorkspacePaths
+    || !sameStrings(publicOutput.stableReferences, expectedPublicOutput.stableReferences)
   ) {
     throw new Error("beta.13 pre-authority readiness manifest is invalid")
   }

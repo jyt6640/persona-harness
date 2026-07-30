@@ -64,7 +64,16 @@
       "primaryBlocker": "trusted-authority-required",
       "status": "blocked"
     },
+    "publicOutput": {
+      "absoluteWorkspacePaths": "omitted",
+      "stableReferences": [
+        ".persona/workflow/plan.md",
+        ".persona/workflow/implementation-report.md",
+        ".persona/workflow/review-report.md"
+      ]
+    },
     "negativeCases": [
+      "absolute-workspace-or-temp-path-public-output",
       "missing-or-malformed-report",
       "repeated-control-or-oversized-report",
       "missing-unsafe-replaced-or-identity-drifted-evidence",

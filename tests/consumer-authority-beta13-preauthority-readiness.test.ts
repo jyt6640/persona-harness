@@ -42,7 +42,16 @@ describe("consumer authority beta.13 pre-authority readiness", () => {
       primaryBlocker: "trusted-authority-required",
       status: "blocked",
     })
+    expect(readiness["publicOutput"]).toEqual({
+      absoluteWorkspacePaths: "omitted",
+      stableReferences: [
+        ".persona/workflow/plan.md",
+        ".persona/workflow/implementation-report.md",
+        ".persona/workflow/review-report.md",
+      ],
+    })
     expect(readiness["negativeCases"]).toEqual([
+      "absolute-workspace-or-temp-path-public-output",
       "missing-or-malformed-report",
       "repeated-control-or-oversized-report",
       "missing-unsafe-replaced-or-identity-drifted-evidence",
