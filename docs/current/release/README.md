@@ -70,18 +70,20 @@ capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 `0.8.0-beta.1` is immutable staging-only Consumer Authority Beta evidence:
 its exact registry installation and staged provenance boundary passed, without
 granting consumer Finish authority or any promotion/Stable/GA claim.
-`0.8.0-beta.1` through `0.8.0-beta.10` are immutable staging-only Consumer
-Authority Beta evidence. Beta.10's original bytes and independent online
-cryptographic verification passed, but the isolated observer had no usable
-GitHub Actions read credential for product discovery. `0.8.0-beta.11` is the
-next strict-prerelease source-preparation candidate; it has no source-level
-claim of a tag, publish, channel movement, GitHub release, or original signed
-consumer artifact. Its release contract pre-arms an isolated observer with a
-host-derived ephemeral `GH_TOKEN` only for fixed read-only GitHub discovery.
-Its package evidence also starts from the exact complete-history bundle, not an
-ambient working directory: detached checkout, Git/manifest/lock/npm-prefix
-binding, normal prepack, and fresh installed CLI identity must all agree before
-the tarball is eligible for independent package review.
+`0.8.0-beta.1` through `0.8.0-beta.11` are immutable staging-only Consumer
+Authority Beta evidence. Beta.11 stopped before fixture authorization because
+its observer credential pre-arm did not establish a verified isolated observer
+condition. `0.8.0-beta.12` is the next strict-prerelease source-preparation
+candidate; it has no source-level claim of a tag, publish, channel movement,
+GitHub release, or original signed consumer artifact. Its release contract
+requires the package-visible observer credential-preflight to reach a bounded
+ready result before a fixture may be authorized. The preflight uses a
+host-derived credential only inside its fixed read-only GitHub Actions worker;
+it does not pass that credential to `ph`, npm, archive tooling, or the consumer
+HOME. Its package evidence also starts from the exact complete-history bundle,
+not an ambient working directory: detached checkout, Git/manifest/lock/npm-
+prefix binding, normal prepack, and fresh installed CLI identity must all agree
+before the tarball is eligible for independent package review.
 `0.7.0-rc.2` remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:

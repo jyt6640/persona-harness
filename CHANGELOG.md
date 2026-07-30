@@ -12,6 +12,19 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.12] - 2026-07-30
+
+- Prepares a new immutable Consumer Authority Beta after beta.11 stopped before
+  fixture authorization because its observer credential pre-arm did not
+  establish a verified isolated observer condition.
+- Adds a package-visible, bounded observer credential-preflight that obtains a
+  host `gh` credential without output and sends it only to a fixed read-only
+  GitHub Actions worker. It keeps the consumer HOME separate and never passes
+  that credential to `ph`, npm, or archive tooling.
+- Keeps beta.11 historical staging-only evidence. This source preparation does
+  not authorize a beta.12 publish, fetch, Finish consumption, replay,
+  promotion, Stable/GA, `latest`, or release action.
+
 ## [0.8.0-beta.11] - 2026-07-30
 
 - Prepares the next immutable Consumer Authority Beta after beta.10's original
@@ -19,10 +32,11 @@ preparation alone does not establish stable support or channel state.
   isolated External consumer had no usable GitHub Actions read credential for
   installed authority discovery.
 - Keeps product authority discovery unchanged and records the only permitted
-  observer credential boundary: a host-derived `GH_TOKEN` is injected once
-  into the read-only authority command environment while the consumer `HOME`
-  remains isolated. The credential is neither logged nor persisted, and no
-  product fallback may read host credentials.
+  observer credential proposal: a host-derived `GH_TOKEN` would be injected
+  once into the read-only authority command environment while the consumer
+  `HOME` remained isolated. The later pre-arm did not establish that condition;
+  the credential was neither logged nor persisted, and no product fallback may
+  read host credentials.
 - Keeps beta.10 immutable staging-only evidence. This source preparation does
   not authorize a beta.11 fetch, Finish consumption, replay, promotion,
   Stable/GA, `latest`, or release action.

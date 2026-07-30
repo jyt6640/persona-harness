@@ -30,10 +30,10 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
-const BETA11_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta11-acceptance.json")
+const BETA12_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta12-acceptance.json")
 const MODELED_CURRENT_ARTIFACT_ID = 8712218259
 const MODELED_CURRENT_RUN_ID = 30421869946
-const BETA11_COOPERATIVE_COMMANDS = new Map([
+const BETA12_COOPERATIVE_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -69,6 +69,7 @@ try {
     const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
+    await assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package")
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
     assertPackagedProjectFinishProducerActionTopology(installedPackage, consumerDirectory)
     if (producerIntakeOnly) {
@@ -151,6 +152,7 @@ async function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
   assertPrearmedObserverHandoff(repositoryRoot, "source CLI")
+  await assertObserverCredentialPreflight(repositoryRoot, temporaryRoot, "source CLI")
   await assertBoundAuthorityDiscovery(repositoryRoot, "source CLI")
   assertConsumerAuthorityBoundary(
     temporaryRoot,
@@ -158,6 +160,149 @@ async function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
     join(temporaryRoot, "source-consumer-authority-home"),
     "source CLI",
   )
+}
+
+async function assertObserverCredentialPreflight(packageRoot, cwd, label) {
+  const scripts = [
+    "consumer-authority-observer-preflight-core.mjs",
+    "consumer-authority-observer-preflight-launcher.mjs",
+    "consumer-authority-observer-preflight-worker.mjs",
+    "preflight-consumer-authority-observer.mjs",
+  ]
+  for (const script of scripts) {
+    if (!existsSync(join(packageRoot, "scripts", script))) {
+      throw new Error(`${label} observer credential preflight is missing from the package`)
+    }
+  }
+  const [core, launcher] = await Promise.all([
+    import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-observer-preflight-core.mjs")).href),
+    import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-observer-preflight-launcher.mjs")).href),
+  ])
+  const credential = "ghp_observer_packaged_boundary_probe"
+  const requested = []
+  const readiness = await core.assessGithubActionsReadiness(credential, async (url, headers) => {
+    requested.push(url.toString())
+    if (headers.Authorization !== `Bearer ${credential}`) throw new Error("observer credential was not bound to the fixed request")
+    return url.pathname === "/user"
+      ? { body: { id: 7 }, statusCode: 200 }
+      : { body: { artifacts: [], total_count: 0 }, statusCode: 200 }
+  })
+  if (
+    readiness?.state !== "ready"
+    || readiness?.credential !== "usable"
+    || readiness?.fixtureAuthorization !== "required"
+    || readiness?.authorityEligible !== false
+    || readiness?.mutationPerformed !== false
+    || requested.join("\n") !== [
+      "https://api.github.com/user",
+      "https://api.github.com/repos/jyt6640/persona-harness-attestation-claim-fixture/actions/artifacts?name=persona-harness-observer-preflight-sentinel-v1&per_page=1",
+    ].join("\n")
+  ) {
+    throw new Error(`${label} observer credential preflight did not retain the fixed read-only route`)
+  }
+
+  let removedHome
+  const launched = launcher.runObserverCredentialPreflight({
+    createHome: () => "/isolated-observer-home",
+    environment: {
+      GH_TOKEN: "ambient-token-must-not-cross",
+      GITHUB_TOKEN: "ambient-token-must-not-cross",
+      HOME: "/host-home",
+      PATH: "/host-bin",
+      PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN: "ambient-token-must-not-cross",
+      SECRET_MARKER: "host-secret-must-not-cross",
+    },
+    execute: (command, args, options) => {
+      if (command === "gh") {
+        if (
+          args.join("\n") !== ["auth", "token", "--hostname", "github.com"].join("\n")
+          || options.env.GH_TOKEN !== undefined
+          || options.env.GITHUB_TOKEN !== undefined
+          || options.env.PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN !== undefined
+          || options.env.SECRET_MARKER !== undefined
+          || options.env.HOME !== "/host-home"
+        ) {
+          throw new Error("host credential retrieval environment was not isolated")
+        }
+        return { status: 0, stdout: `${credential}\n` }
+      }
+      if (
+        command !== process.execPath
+        || options.env.HOME !== "/isolated-observer-home"
+        || options.env.PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN !== credential
+        || Object.keys(options.env).sort().join("\n") !== ["HOME", "LANG", "LC_ALL", "PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN"].join("\n")
+      ) {
+        throw new Error("observer worker credential environment was not isolated")
+      }
+      return {
+        status: 0,
+        stdout: `${JSON.stringify({
+          authorityEligible: false,
+          consumerHome: "isolated",
+          credential: "usable",
+          fixtureAuthorization: "required",
+          mutationPerformed: false,
+          next: "fixture-authorization",
+          schemaVersion: "consumer-authority-observer-preflight.1",
+          state: "ready",
+        })}\n`,
+      }
+    },
+    removeHome: (home) => {
+      removedHome = home
+    },
+  })
+  if (
+    launched?.state !== "ready"
+    || launched?.credential !== "usable"
+    || removedHome !== "/isolated-observer-home"
+    || JSON.stringify(launched).includes(credential)
+  ) {
+    throw new Error(`${label} observer credential preflight leaked or persisted host credentials`)
+  }
+
+  const fixtureRoot = mkdtempSync(join(temporaryRoot, "observer-preflight-public-cli-"))
+  const bin = join(fixtureRoot, "bin")
+  const hostHome = join(fixtureRoot, "host-home")
+  const marker = join(bin, "gh-ran")
+  const gh = join(bin, "gh")
+  mkdirSync(bin)
+  writeFileSync(gh, [
+    "#!/bin/sh",
+    "if [ -n \"$GH_TOKEN$GITHUB_TOKEN$PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN\" ]; then exit 88; fi",
+    `if [ \"$HOME\" != ${JSON.stringify(hostHome)} ]; then exit 89; fi`,
+    `: > ${JSON.stringify(marker)}`,
+    "exit 1",
+    "",
+  ].join("\n"))
+  chmodSync(gh, 0o755)
+  const publicResult = runObserverPreflightNode(cwd, [join(packageRoot, "scripts", "preflight-consumer-authority-observer.mjs"), "--json"], {
+    GH_TOKEN: "ambient-token-must-not-cross",
+    GITHUB_TOKEN: "ambient-token-must-not-cross",
+    HOME: hostHome,
+    PATH: bin,
+    PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN: "ambient-token-must-not-cross",
+  })
+  let publicPayload
+  try {
+    publicPayload = JSON.parse(publicResult.stdout)
+  } catch {
+    throw new Error(
+      `${label} public observer credential preflight did not return bounded JSON `
+      + `(status=${publicResult.status ?? "unavailable"}, stdout-bytes=${Buffer.byteLength(publicResult.stdout)}, stderr-bytes=${Buffer.byteLength(publicResult.stderr)})`,
+    )
+  }
+  if (
+    publicResult.status === 0
+    || !existsSync(marker)
+    || publicPayload?.code !== "host-gh-auth-unavailable"
+    || publicPayload?.state !== "blocked"
+    || publicPayload?.mutationPerformed !== false
+    || `${publicResult.stdout}${publicResult.stderr}`.includes("ambient-token-must-not-cross")
+    || `${publicResult.stdout}${publicResult.stderr}`.includes(hostHome)
+  ) {
+    throw new Error(`${label} public observer credential preflight crossed the product boundary`)
+  }
 }
 
 function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
@@ -434,13 +579,13 @@ function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
     fixtureRoot,
     phPath,
     "installed package",
-    readBeta11CooperativeCommands(installedPackage),
+    readBeta12CooperativeCommands(installedPackage),
   )
   assertCooperativeSourceReadRaceBlocks(
     `${fixtureRoot}-source-read-race`,
     phPath,
     "installed package",
-    readBeta11CooperativeCommands(installedPackage),
+    readBeta12CooperativeCommands(installedPackage),
   )
 }
 
@@ -777,13 +922,13 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
-    readBeta11CooperativeCommands(repositoryRoot),
+    readBeta12CooperativeCommands(repositoryRoot),
   )
   assertCooperativeSourceReadRaceBlocks(
     join(temporaryRoot, "source-cli-cooperative-gradle-source-read-race"),
     phPath,
     "source CLI",
-    readBeta11CooperativeCommands(repositoryRoot),
+    readBeta12CooperativeCommands(repositoryRoot),
   )
 }
 
@@ -1864,9 +2009,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands) {
   for (const command of commands) {
-    const step = BETA11_COOPERATIVE_COMMANDS.get(command)
+    const step = BETA12_COOPERATIVE_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.11 acceptance command is unsupported`)
+      throw new Error(`${label} beta.12 acceptance command is unsupported`)
     }
     requireSuccess(
       `${label} lifecycle ${command}`,
@@ -2059,40 +2204,40 @@ function assertCooperativeLifecycleState(projectDir, label) {
   }
 }
 
-function readBeta11CooperativeCommands(packageRoot) {
-  const manifestPath = join(packageRoot, BETA11_ACCEPTANCE_PATH)
+function readBeta12CooperativeCommands(packageRoot) {
+  const manifestPath = join(packageRoot, BETA12_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.11 acceptance manifest is unavailable")
+    throw new Error("beta.12 acceptance manifest is unavailable")
   }
   const commands = value?.cooperative?.commands
   const packageVersion = value?.package?.version
-  const expectedCommands = [...BETA11_COOPERATIVE_COMMANDS.keys()]
+  const expectedCommands = [...BETA12_COOPERATIVE_COMMANDS.keys()]
   if (
     packageVersion !== readPackageVersion(packageRoot)
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
   ) {
-    throw new Error("beta.11 acceptance manifest is invalid")
+    throw new Error("beta.12 acceptance manifest is invalid")
   }
   return commands
 }
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
-  const manifestPath = join(packageRoot, BETA11_ACCEPTANCE_PATH)
+  const manifestPath = join(packageRoot, BETA12_ACCEPTANCE_PATH)
   let manifest
   try {
     manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error(`${label} beta.11 observer handoff contract is unavailable`)
+    throw new Error(`${label} beta.12 observer handoff contract is unavailable`)
   }
   const handoff = manifest?.prearmedExternalHandoff
   const prepare = handoff?.prepare
   const trigger = handoff?.trigger
-  const expectedPrepare = ["prepare-isolated-consumer-home", "enroll", "status", "explain"]
+  const expectedPrepare = ["prepare-isolated-consumer-home", "enroll", "status", "explain", "observer-credential-preflight"]
   const expectedProhibited = [
     "artifact-download",
     "online-crypto-validation",
@@ -2100,7 +2245,7 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     "replay-observation",
   ]
   const expectedSteps = [
-    "inject-ephemeral-host-gh-token-for-read-only-discovery",
+    "observer-credential-preflight-ready",
     "download-original-bytes-for-independent-online-verification",
     "verify-online-before-leaf-certificate-notAfter",
     "authority-fetch-discovers-and-binds-original-artifact",
@@ -2108,37 +2253,41 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     "finish-replay-blocked",
   ]
   const expectedNonAuthority = [
-    "prearm-does-not-self-validate",
-    "prearm-does-not-grant-authority",
-    "prearm-does-not-persist-or-log-host-credential",
-    "prearm-does-not-reuse-beta10-artifact",
+    "preflight-does-not-self-validate",
+    "preflight-does-not-authorize-fixture",
+    "preflight-does-not-grant-authority",
+    "preflight-does-not-persist-or-log-host-credential",
+    "preflight-does-not-reuse-beta11-artifact",
   ]
   if (
     manifest?.package?.version !== readPackageVersion(packageRoot)
-    || manifest?.schemaVersion !== "consumer-authority-beta11-acceptance.1"
-    || manifest?.beta10HistoricalExternal?.version !== "0.8.0-beta.10"
-    || manifest?.beta10HistoricalExternal?.outcome !== "independent-crypto-passed-authority-fetch-not-attempted-without-github-read-credential"
-    || manifest?.beta10HistoricalExternal?.reusableForBeta11 !== false
+    || manifest?.schemaVersion !== "consumer-authority-beta12-acceptance.1"
+    || manifest?.beta11HistoricalExternal?.version !== "0.8.0-beta.11"
+    || manifest?.beta11HistoricalExternal?.outcome !== "credential-preflight-did-not-establish-verified-isolated-observer-condition-before-fixture-authorization"
+    || manifest?.beta11HistoricalExternal?.reusableForBeta12 !== false
     || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
     || manifest?.authority?.hostedFixture?.callerWorkflowPath !== ".github/workflows/research-attestation.yml"
     || manifest?.authority?.hostedFixture?.certificateSanIdentity !== "reusable-producer-workflow"
     || prepare?.consumer !== "isolated-exact-registry-install"
-    || !sameRecord(prepare?.credentialPrearm, {
+    || !sameRecord(prepare?.credentialPreflight, {
       acquisition: "host-gh-auth-token-read-once",
       consumerHome: "isolated-ephemeral",
-      environment: "GH_TOKEN",
+      command: "node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json",
+      hostCredential: "host-gh-only",
       logging: "forbidden",
+      observerWorker: "github-actions-read-only",
       persistence: "forbidden",
       productFallback: "forbidden",
-      scope: "read-only-github-actions-artifact-and-run-discovery",
+      scope: "fixed-authenticated-user-and-empty-sentinel-actions-metadata",
+      tokenEnvironment: "PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN",
     })
     || !sameStrings(prepare?.allowedBeforeFixture, expectedPrepare)
     || !sameStrings(prepare?.prohibitedBeforeArtifact, expectedProhibited)
-    || trigger?.onlyAfter !== "natural-current-version-original-artifact"
+    || trigger?.onlyAfter !== "observer-credential-preflight-ready-and-natural-current-version-original-artifact"
     || !sameStrings(trigger?.steps, expectedSteps)
     || !sameStrings(handoff?.nonAuthority, expectedNonAuthority)
   ) {
-    throw new Error(`${label} beta.11 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.12 observer handoff contract is invalid`)
   }
 }
 
@@ -2578,6 +2727,23 @@ function runNode(cwd, args, environment = {}, input) {
   })
   if (result.error) {
     throw new Error("node process could not start")
+  }
+  return {
+    status: result.status,
+    stderr: result.stderr ?? "",
+    stdout: result.stdout ?? "",
+  }
+}
+
+function runObserverPreflightNode(cwd, args, environment) {
+  const result = spawnSync(process.execPath, args, {
+    cwd,
+    encoding: "utf8",
+    env: environment,
+    maxBuffer: 4 * 1024 * 1024,
+  })
+  if (result.error) {
+    throw new Error("observer preflight node process could not start")
   }
   return {
     status: result.status,

@@ -41,7 +41,7 @@ not become current merely because they remain under `docs/current/`.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.8.0-beta.11-release-notes.md`](release/v0.8.0-beta.11-release-notes.md).
+  [`release/v0.8.0-beta.12-release-notes.md`](release/v0.8.0-beta.12-release-notes.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -118,17 +118,17 @@ not become current merely because they remain under `docs/current/`.
   policy artifact verifier remains read-only/non-authoritative, while local or
   caller-provided staged-package evidence remains
   `artifact-provenance-unavailable`.
-- `0.8.0-beta.1` through `0.8.0-beta.10` are immutable staging-only Consumer
-  Authority Beta evidence. Beta.10's original bytes and independent online
-  cryptographic verification passed, but its isolated External consumer had no
-  usable GitHub Actions read credential for product discovery. That does not
-  establish authority. `0.8.0-beta.11` is the current source-preparation
-  candidate. It makes no package, tag, staging mapping, GitHub release,
-  original signed consumer artifact, promotion, Stable/GA, or Finish authority
-  claim. Its required lifecycle is staging-first, tag-bound, independently
-  audited, and uses an isolated observer with a one-command ephemeral host
-  `GH_TOKEN` handoff in
-  [`release/v0.8.0-beta.11-release-notes.md`](release/v0.8.0-beta.11-release-notes.md).
+- `0.8.0-beta.1` through `0.8.0-beta.11` are historical staging-only Consumer
+  Authority Beta evidence. Beta.11 stopped before fixture authorization because
+  its observer credential pre-arm did not establish a verified isolated observer
+  condition; it provides no reusable artifact, fetch, Finish, or replay fact.
+  That does not establish authority. `0.8.0-beta.12` is the current
+  source-preparation candidate. It makes no package, tag, staging mapping,
+  GitHub release, original signed consumer artifact, promotion, Stable/GA, or
+  Finish authority claim. Its required lifecycle is staging-first, tag-bound,
+  independently audited, and requires a package-visible isolated observer
+  credential-preflight before any fixture authorization in
+  [`release/v0.8.0-beta.12-release-notes.md`](release/v0.8.0-beta.12-release-notes.md).
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)
