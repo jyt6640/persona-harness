@@ -169,13 +169,16 @@ Registry channels never grant Finish authority. External assurance readiness is
 a separate non-consuming inspection and does not move registry or trust state.
 For a public enrolled project, `ph authority enroll github ...` requires an
 interactive confirmation, and `ph authority fetch github` retrieves only a
-matching original public artifact through fixed GitHub policy. Set `GH_TOKEN`
-or `GITHUB_TOKEN` to a credential with Actions read access; the credential
-authenticates fixed GitHub API requests only and cannot supply repository,
-workflow, source, digest, or redirect identity. When more than one repository
-is enrolled, pass the selected enrolled `owner/repository` to `fetch github`.
-Neither command publishes a package, moves a channel, or consumes Finish
-authority.
+matching original public artifact through fixed GitHub policy. `GH_TOKEN` (or
+`GITHUB_TOKEN`) is an in-memory credential with Actions read access only: it
+authenticates fixed GitHub API requests and cannot supply repository, workflow,
+source, digest, or redirect identity. An independent observer obtains its
+ephemeral `GH_TOKEN` from an already authenticated host only immediately before
+the read-only authority command, keeps the consumer `HOME` isolated, and never
+logs or persists that credential. Persona Harness does not read a host keychain
+or provide a credential fallback. When more than one repository is enrolled,
+pass the selected enrolled `owner/repository` to `fetch github`. Neither
+command publishes a package, moves a channel, or consumes Finish authority.
 
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
