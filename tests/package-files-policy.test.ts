@@ -5,6 +5,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 
 type PackageJson = {
+  readonly bin?: Readonly<Record<string, string>>
   readonly files: readonly string[]
 }
 
@@ -375,7 +376,9 @@ describe("package files policy", () => {
     const packagedScripts = [
       "scripts/consumer-authority-artifact-archive.mjs",
       "scripts/consumer-authority-artifact-error.mjs",
+      "scripts/consumer-authority-observer-preflight-core.d.mts",
       "scripts/consumer-authority-observer-preflight-core.mjs",
+      "scripts/consumer-authority-observer-preflight-launcher.d.mts",
       "scripts/consumer-authority-observer-preflight-launcher.mjs",
       "scripts/consumer-authority-observer-preflight-worker.mjs",
       "scripts/fetch-consumer-authority-artifact.mjs",
