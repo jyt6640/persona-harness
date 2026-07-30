@@ -375,7 +375,11 @@ describe("package files policy", () => {
     const packagedScripts = [
       "scripts/consumer-authority-artifact-archive.mjs",
       "scripts/consumer-authority-artifact-error.mjs",
+      "scripts/consumer-authority-observer-preflight-core.mjs",
+      "scripts/consumer-authority-observer-preflight-launcher.mjs",
+      "scripts/consumer-authority-observer-preflight-worker.mjs",
       "scripts/fetch-consumer-authority-artifact.mjs",
+      "scripts/preflight-consumer-authority-observer.mjs",
       "scripts/read-consumer-authority-github.mjs",
     ]
     const runtimePaths = [
@@ -404,11 +408,13 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta9-acceptance.json",
       "docs/current/release/consumer-authority-beta10-acceptance.json",
       "docs/current/release/consumer-authority-beta11-acceptance.json",
+      "docs/current/release/consumer-authority-beta12-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
       expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
     }
+    expect(Object.values(packageJson.bin ?? {})).not.toContain("scripts/preflight-consumer-authority-observer.mjs")
     for (const filePath of sourceOnlyPaths) {
       expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
       expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
@@ -443,7 +449,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.11-release-notes.md",
+      "docs/current/release/v0.8.0-beta.12-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -469,7 +475,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.11-release-notes.md",
+      "docs/current/release/v0.8.0-beta.12-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 
