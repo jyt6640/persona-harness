@@ -30,10 +30,10 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
-const BETA12_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta12-acceptance.json")
+const BETA13_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta13-acceptance.json")
 const MODELED_CURRENT_ARTIFACT_ID = 8712218259
 const MODELED_CURRENT_RUN_ID = 30421869946
-const BETA12_COOPERATIVE_COMMANDS = new Map([
+const BETA13_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -575,17 +575,18 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
+  const readiness = readBeta13PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
     "installed package",
-    readBeta12CooperativeCommands(installedPackage),
+    readiness,
   )
   assertCooperativeSourceReadRaceBlocks(
     `${fixtureRoot}-source-read-race`,
     phPath,
     "installed package",
-    readBeta12CooperativeCommands(installedPackage),
+    readiness,
   )
 }
 
@@ -918,17 +919,18 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
+  const readiness = readBeta13PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
-    readBeta12CooperativeCommands(repositoryRoot),
+    readiness,
   )
   assertCooperativeSourceReadRaceBlocks(
     join(temporaryRoot, "source-cli-cooperative-gradle-source-read-race"),
     phPath,
     "source CLI",
-    readBeta12CooperativeCommands(repositoryRoot),
+    readiness,
   )
 }
 
@@ -1951,7 +1953,7 @@ function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
   }
 }
 
-function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
+function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness) {
   createCooperativeGradleFixture(fixtureRoot)
   requireSuccess(
     `${label} bootstrap checkpoint`,
@@ -1962,7 +1964,7 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
   requireSuccess(`${label} clean consumer worktree`, runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]))
 
   try {
-    runCooperativeLifecycle(consumerRoot, phPath, label, commands)
+    runCooperativeLifecycle(consumerRoot, phPath, label, readiness)
   } finally {
     if (existsSync(consumerRoot)) {
       requireSuccess(`${label} clean consumer removal`, runCommand(fixtureRoot, "git", ["worktree", "remove", "--force", consumerRoot]))
@@ -1970,8 +1972,8 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, commands) {
   }
 }
 
-function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
-  runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands)
+function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness) {
+  runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness)
 
   const cooperativeFinish = runNode(fixtureRoot, [
     phPath,
@@ -2007,26 +2009,37 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, commands) {
   }
 }
 
-function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, commands) {
-  for (const command of commands) {
-    const step = BETA12_COOPERATIVE_COMMANDS.get(command)
+function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness) {
+  for (const command of readiness.commands) {
+    const step = BETA13_PRE_AUTHORITY_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.12 acceptance command is unsupported`)
+      throw new Error(`${label} beta.13 pre-authority command is unsupported`)
     }
+    const result = runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin)
     requireSuccess(
       `${label} lifecycle ${command}`,
-      runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin),
+      result,
     )
+    assertPublicOutputDoesNotExposeWorkspace(result, fixtureRoot, `${label} lifecycle ${command}`)
+  }
+  const status = runNode(fixtureRoot, [phPath, "plan", "--status"])
+  requireSuccess(`${label} public plan status`, status)
+  assertPublicOutputDoesNotExposeWorkspace(status, fixtureRoot, `${label} public plan status`)
+  if (!status.stdout.includes("Plan: .persona/workflow/plan.md")) {
+    throw new Error(`${label} public plan status did not retain the relative plan reference`)
   }
   assertCooperativeLifecycleState(fixtureRoot, label)
+  assertAuthorityOnlyPreflight(fixtureRoot, phPath, label, readiness.expectedDefaultFinish)
+}
 
-  const defaultFinish = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
-  if (defaultFinish.status === 0) {
-    throw new Error(`${label} default Finish unexpectedly accepted local cooperative evidence`)
+function assertPublicOutputDoesNotExposeWorkspace(result, workspace, label) {
+  const output = `${result.stdout}${result.stderr}`
+  if (output.includes(workspace) || output.includes(realpathSync(workspace))) {
+    throw new Error(`${label} exposed an absolute workspace path through public output`)
   }
 }
 
-function assertCooperativeSourceReadRaceBlocks(fixtureRoot, phPath, label, commands) {
+function assertCooperativeSourceReadRaceBlocks(fixtureRoot, phPath, label, readiness) {
   createCooperativeGradleFixture(fixtureRoot)
   requireSuccess(
     `${label} cooperative source-read race bootstrap`,
@@ -2039,7 +2052,7 @@ function assertCooperativeSourceReadRaceBlocks(fixtureRoot, phPath, label, comma
     runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]),
   )
   try {
-    runCooperativeLifecyclePreparation(consumerRoot, phPath, `${label} cooperative source-read race`, commands)
+    runCooperativeLifecyclePreparation(consumerRoot, phPath, `${label} cooperative source-read race`, readiness)
     const sourceParent = join(consumerRoot, "src", "main", "java")
     const sourceDraft = `${sourceParent}.draft`
     const outside = `${consumerRoot}-outside-source`
@@ -2204,48 +2217,109 @@ function assertCooperativeLifecycleState(projectDir, label) {
   }
 }
 
-function readBeta12CooperativeCommands(packageRoot) {
-  const manifestPath = join(packageRoot, BETA12_ACCEPTANCE_PATH)
+function assertAuthorityOnlyPreflight(projectDir, phPath, label, expected) {
+  const defaultFinish = runNode(projectDir, [phPath, "workflow", "finish", "implement"])
+  const output = `${defaultFinish.stdout}${defaultFinish.stderr}`
+  if (
+    defaultFinish.status !== 1
+    || expected.status !== "blocked"
+    || expected.primaryBlocker !== "trusted-authority-required"
+    || !output.includes("Blocker: trusted-authority-required")
+    || expected.absentBlockers.some((blocker) => output.includes(blocker))
+  ) {
+    throw new Error(`${label} public pre-authority readiness did not reach only trusted authority`)
+  }
+  for (const directory of ["finish-attestation", "project-finish-attestation", "verification-attempts", "verification-receipts"]) {
+    if (existsSync(join(projectDir, ".persona", "evidence", directory))) {
+      throw new Error(`${label} authority-only preflight created authority evidence`)
+    }
+  }
+}
+
+function readBeta13PreAuthorityReadiness(packageRoot) {
+  const manifestPath = join(packageRoot, BETA13_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.12 acceptance manifest is unavailable")
+    throw new Error("beta.13 acceptance manifest is unavailable")
   }
-  const commands = value?.cooperative?.commands
+  const readiness = value?.preAuthorityReadiness
+  const commands = readiness?.commands
   const packageVersion = value?.package?.version
-  const expectedCommands = [...BETA12_COOPERATIVE_COMMANDS.keys()]
+  const defaultFinish = readiness?.expectedDefaultFinish
+  const publicOutput = readiness?.publicOutput
+  const expectedCommands = [...BETA13_PRE_AUTHORITY_COMMANDS.keys()]
+  const expectedDefaultFinish = {
+    absentBlockers: [
+      "implementation-report-missing",
+      "review-report-missing",
+      "evidence-missing",
+      "report-coverage-missing",
+      "profile-read-coverage-missing",
+      "java-role-read-coverage-missing",
+      "workflow-loop-state-absent",
+      "ralph-loop-state-absent",
+    ],
+    primaryBlocker: "trusted-authority-required",
+    status: "blocked",
+  }
+  const expectedPublicOutput = {
+    absoluteWorkspacePaths: "omitted",
+    stableReferences: [
+      ".persona/workflow/plan.md",
+      ".persona/workflow/implementation-report.md",
+      ".persona/workflow/review-report.md",
+    ],
+  }
   if (
     packageVersion !== readPackageVersion(packageRoot)
+    || value?.schemaVersion !== "consumer-authority-beta13-acceptance.1"
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
+    || !isRecord(defaultFinish)
+    || defaultFinish.status !== expectedDefaultFinish.status
+    || defaultFinish.primaryBlocker !== expectedDefaultFinish.primaryBlocker
+    || !sameStrings(defaultFinish.absentBlockers, expectedDefaultFinish.absentBlockers)
+    || !isRecord(publicOutput)
+    || publicOutput.absoluteWorkspacePaths !== expectedPublicOutput.absoluteWorkspacePaths
+    || !sameStrings(publicOutput.stableReferences, expectedPublicOutput.stableReferences)
   ) {
-    throw new Error("beta.12 acceptance manifest is invalid")
+    throw new Error("beta.13 pre-authority readiness manifest is invalid")
   }
-  return commands
+  return { commands, expectedDefaultFinish }
 }
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
-  const manifestPath = join(packageRoot, BETA12_ACCEPTANCE_PATH)
+  const manifestPath = join(packageRoot, BETA13_ACCEPTANCE_PATH)
   let manifest
   try {
     manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error(`${label} beta.12 observer handoff contract is unavailable`)
+    throw new Error(`${label} beta.13 observer handoff contract is unavailable`)
   }
   const handoff = manifest?.prearmedExternalHandoff
   const prepare = handoff?.prepare
   const trigger = handoff?.trigger
-  const expectedPrepare = ["prepare-isolated-consumer-home", "enroll", "status", "explain", "observer-credential-preflight"]
+  const expectedPrepare = [
+    "prepare-isolated-consumer-home",
+    "enroll",
+    "status",
+    "explain",
+    "observer-credential-preflight",
+    "public-pre-authority-readiness",
+  ]
   const expectedProhibited = [
     "artifact-download",
     "online-crypto-validation",
+    "authority-fetch",
     "finish-consumption",
     "replay-observation",
   ]
   const expectedSteps = [
     "observer-credential-preflight-ready",
+    "public-finish-blocked-only-on-trusted-authority-required",
     "download-original-bytes-for-independent-online-verification",
     "verify-online-before-leaf-certificate-notAfter",
     "authority-fetch-discovers-and-binds-original-artifact",
@@ -2254,17 +2328,17 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
   ]
   const expectedNonAuthority = [
     "preflight-does-not-self-validate",
-    "preflight-does-not-authorize-fixture",
-    "preflight-does-not-grant-authority",
-    "preflight-does-not-persist-or-log-host-credential",
-    "preflight-does-not-reuse-beta11-artifact",
+    "readiness-does-not-authorize-fixture",
+    "readiness-does-not-grant-authority",
+    "readiness-does-not-persist-or-log-host-credential",
+    "readiness-does-not-reuse-beta12-artifact",
   ]
   if (
     manifest?.package?.version !== readPackageVersion(packageRoot)
-    || manifest?.schemaVersion !== "consumer-authority-beta12-acceptance.1"
-    || manifest?.beta11HistoricalExternal?.version !== "0.8.0-beta.11"
-    || manifest?.beta11HistoricalExternal?.outcome !== "credential-preflight-did-not-establish-verified-isolated-observer-condition-before-fixture-authorization"
-    || manifest?.beta11HistoricalExternal?.reusableForBeta12 !== false
+    || manifest?.schemaVersion !== "consumer-authority-beta13-acceptance.1"
+    || manifest?.beta12HistoricalExternal?.version !== "0.8.0-beta.12"
+    || manifest?.beta12HistoricalExternal?.outcome !== "artifact-crypto-and-installed-fetch-passed-but-public-finish-retained-readiness-blockers"
+    || manifest?.beta12HistoricalExternal?.reusableForBeta13 !== false
     || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
     || manifest?.authority?.hostedFixture?.callerWorkflowPath !== ".github/workflows/research-attestation.yml"
     || manifest?.authority?.hostedFixture?.certificateSanIdentity !== "reusable-producer-workflow"
@@ -2283,11 +2357,12 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     })
     || !sameStrings(prepare?.allowedBeforeFixture, expectedPrepare)
     || !sameStrings(prepare?.prohibitedBeforeArtifact, expectedProhibited)
-    || trigger?.onlyAfter !== "observer-credential-preflight-ready-and-natural-current-version-original-artifact"
+    || prepare?.requiredBeforeFixtureAuthorization !== "public-finish-blocked-only-on-trusted-authority-required"
+    || trigger?.onlyAfter !== "observer-credential-preflight-ready-public-readiness-and-natural-current-version-original-artifact"
     || !sameStrings(trigger?.steps, expectedSteps)
     || !sameStrings(handoff?.nonAuthority, expectedNonAuthority)
   ) {
-    throw new Error(`${label} beta.12 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.13 observer handoff contract is invalid`)
   }
 }
 

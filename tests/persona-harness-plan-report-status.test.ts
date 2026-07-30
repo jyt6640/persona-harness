@@ -120,6 +120,41 @@ describe("ph plan report status errors", () => {
     expect(readFileSync(reportPath, "utf8")).toContain("Status: filled")
   })
 
+  it("does not expose the caller workspace through public report ingress or plan status", () => {
+    const projectDir = createTempProject()
+    const workflowDir = join(projectDir, ".persona", "workflow")
+    const reportPath = join(projectDir, ".persona", "workflow", "implementation-report.md")
+    mkdirSync(workflowDir, { recursive: true })
+    writeFileSync(join(workflowDir, "plan.md"), "Status: accepted\n")
+    writeFileSync(reportPath, "Status: template\n")
+
+    const report = runPersonaCli(["plan", "--report-filled", "implementation", "--stdin"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+      stdin: [
+        "Status: filled",
+        "- README ranges read: 1-220",
+        "- Project profile ranges read: all",
+        "- `npx ph bearshell ./gradlew test`",
+      ].join("\n"),
+    })
+    const status = runPersonaCli(["plan", "--status"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(readFileSync(reportPath, "utf8")).toContain("Status: filled")
+    expect(report.status).toBe(0)
+    expect(status.status).toBe(0)
+    for (const output of [report.stdout, report.stderr, status.stdout, status.stderr]) {
+      expect(output).not.toContain(projectDir)
+    }
+    expect(report.stdout).toContain("Workflow report: .persona/workflow/implementation-report.md")
+    expect(status.stdout).toContain("Plan: .persona/workflow/plan.md")
+  })
+
   it("rejects malformed, oversized, and replacement stdin without changing a template report", () => {
     const projectDir = createTempProject()
     const workflowDir = join(projectDir, ".persona", "workflow")
