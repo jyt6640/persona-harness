@@ -13,7 +13,7 @@ const HEAD = "b".repeat(40)
 const SHA = "c".repeat(64)
 const IDENTITY = {
   name: "persona-harness",
-  version: "0.8.0-beta.14",
+  version: "0.8.0-beta.15",
 }
 
 describe("clean package boundary", () => {
@@ -100,7 +100,7 @@ describe("clean package boundary", () => {
       workspaces: "false",
     })).toEqual({ global: "false", ignoreScripts: "false", workspaces: "false" })
     expect(assertPackRecordBinding({
-      filename: "persona-harness-0.8.0-beta.14.tgz",
+      filename: "persona-harness-0.8.0-beta.15.tgz",
       name: IDENTITY.name,
       version: IDENTITY.version,
     }, IDENTITY)).toEqual(IDENTITY)
