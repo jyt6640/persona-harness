@@ -4,6 +4,7 @@ import {
   assertBundleHeadBinding,
   assertCheckoutPackageBinding,
   assertNpmExecutionPolicy,
+  assertPackageExecutionBinding,
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "../scripts/clean-package-boundary-core.mjs"
@@ -61,6 +62,23 @@ describe("clean package boundary", () => {
       packageSha256: "d".repeat(64),
       root: "/fresh/bundle-checkout",
     })).toThrow("clean-package-package-drift")
+  })
+
+  it("rejects a launcher CWD or manifest path that is not the exact checkout root", () => {
+    const binding = {
+      commandCwd: "/fresh/bundle-checkout",
+      expectedLockPath: "/fresh/bundle-checkout/package-lock.json",
+      expectedPackagePath: "/fresh/bundle-checkout/package.json",
+      gitRoot: "/fresh/bundle-checkout",
+      lockPath: "/fresh/bundle-checkout/package-lock.json",
+      npmPrefix: "/fresh/bundle-checkout",
+      packagePath: "/fresh/bundle-checkout/package.json",
+      root: "/fresh/bundle-checkout",
+    }
+
+    expect(assertPackageExecutionBinding(binding)).toEqual({ root: "/fresh/bundle-checkout" })
+    expect(() => assertPackageExecutionBinding({ ...binding, commandCwd: "/stale/beta1-launcher" })).toThrow("clean-package-command-cwd")
+    expect(() => assertPackageExecutionBinding({ ...binding, packagePath: "/stale/beta1-launcher/package.json" })).toThrow("clean-package-package-path")
   })
 
   it("rejects inherited workspace or ignore-scripts mode", () => {
