@@ -12,6 +12,20 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.15] - 2026-07-31
+
+- Makes explicit `ph workflow finish implement` fail closed with bounded
+  `workflow-state-uninitialized` guidance instead of returning advisory success
+  when the consumer has no initialized workflow state.
+- Extends the source-built and fresh packed-installed Java/Spring consumer
+  contract through public bootstrap, accepted plan, reports, evidence, modeled
+  trusted fetch, one Finish consumption, and immediate replay rejection in the
+  same isolated project root.
+- Keeps the modeled artifact non-authoritative and preserves the sole remaining
+  hosted residual: a current-version original artifact followed by independent
+  online verification, installed fetch, one Finish consumption, and replay
+  block.
+
 ## [0.8.0-beta.14] - 2026-07-30
 
 - Corrects the Consumer Authority source projection for fresh installed
