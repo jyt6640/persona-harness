@@ -14,6 +14,9 @@ describe("consumer authority beta.15 final readiness", () => {
     const signer = record(binding["reusableSigner"])
     const projection = record(binding["runtimeSourceProjection"])
     const modeled = record(authority["modeledContract"])
+    const packageBoundary = record(manifest["packageBoundary"])
+    const npm = record(packageBoundary["npm"])
+    const proof = record(packageBoundary["authoritativeBundleContract"])
 
     expect(manifest["schemaVersion"]).toBe("consumer-authority-beta15-acceptance.1")
     expect(manifest["package"]).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.15" })
@@ -39,6 +42,17 @@ describe("consumer authority beta.15 final readiness", () => {
     ])
     expect(modeled["rejected"]).toContain("stale-or-replayed-terminal-record")
     expect(modeled["authorityClaim"]).toBe("none-before-a-current-original-artifact-is-verified-online")
+    expect(npm).toMatchObject({
+      invocation: "plain-npm-from-bound-detached-checkout-cwd",
+      packPrefixFlag: "forbidden",
+    })
+    expect(proof).toEqual({
+      baseAndTarget: "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
+      command: "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
+      installedContract: "fresh-installed-contract-uses-exact-target-tarball-sha256",
+      rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
+      sourceContract: "built-cli-public-consumer-contract",
+    })
   })
 
   it("requires public initialization before the only pre-armed hosted residual", () => {

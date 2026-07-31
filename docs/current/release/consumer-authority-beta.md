@@ -155,6 +155,12 @@ tarball. The exact base is materialized separately from the same bundle and
 packed under the same policy, so package comparison cannot borrow either
 checkout's working directory or generated output.
 
+The pack invocation itself is plain `npm` from that bound checkout CWD;
+`npm --prefix ... pack` is not an allowed package-root selector. The packaged
+root-bound prepack runner builds from its own script location, and the one
+authoritative bundle proof feeds its exact target tarball SHA-256 into both the
+built source CLI and fresh installed consumer contracts.
+
 For that observer, the authenticated product discovery route sends the enrolled
 caller workflow filename directly to the fixed GitHub workflow-runs endpoint.
 It does not reconstruct a second `.github/workflows/` prefix. The caller

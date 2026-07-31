@@ -86,7 +86,9 @@ consumer HOME. Its package evidence also starts from the exact complete-history
 bundle, not an ambient working directory: detached checkout,
 Git/manifest/lock/npm-prefix binding, normal prepack, and fresh installed CLI
 identity must all agree before the tarball is eligible for independent package
-review.
+review. The package proof invokes plain `npm` from that bound detached checkout,
+never `npm --prefix ... pack`, and uses the exact resulting tarball for both
+source-built and fresh installed consumer contracts.
 `0.7.0-rc.2` remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:
