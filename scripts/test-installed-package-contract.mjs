@@ -30,7 +30,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
-const BETA14_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta14-acceptance.json")
+const BETA15_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta15-acceptance.json")
 const MODELED_CURRENT_ARTIFACT_ID = 710000001
 const MODELED_CURRENT_RUN_ID = 30430000000
 const MODELED_AUTHORITY_TOPOLOGY = {
@@ -40,7 +40,7 @@ const MODELED_AUTHORITY_TOPOLOGY = {
   repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
   reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3",
 }
-const BETA14_PRE_AUTHORITY_COMMANDS = new Map([
+const BETA15_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -582,12 +582,13 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta14PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta15PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
     "installed package",
     readiness,
+    installedPackage,
   )
   assertCooperativeSourceReadRaceBlocks(
     `${fixtureRoot}-source-read-race`,
@@ -926,12 +927,13 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta14PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta15PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
     "source CLI",
     readiness,
+    repositoryRoot,
   )
   assertCooperativeSourceReadRaceBlocks(
     join(temporaryRoot, "source-cli-cooperative-gradle-source-read-race"),
@@ -1960,8 +1962,9 @@ function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
   }
 }
 
-function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness) {
+function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness, packageRoot) {
   createCooperativeGradleFixture(fixtureRoot)
+  assertUninitializedFinishBlocks(fixtureRoot, phPath, label)
   requireSuccess(
     `${label} bootstrap checkpoint`,
     runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
@@ -1970,7 +1973,14 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness) {
   requireSuccess(`${label} clean consumer worktree`, runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]))
 
   try {
-    runCooperativeLifecycle(consumerRoot, phPath, label, readiness)
+    runCooperativeLifecycle(
+      consumerRoot,
+      phPath,
+      label,
+      readiness,
+      packageRoot,
+      `${consumerRoot}-authority-home`,
+    )
   } finally {
     if (existsSync(consumerRoot)) {
       requireSuccess(`${label} clean consumer removal`, runCommand(fixtureRoot, "git", ["worktree", "remove", "--force", consumerRoot]))
@@ -1978,8 +1988,22 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness) {
   }
 }
 
-function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness) {
-  runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness)
+function assertUninitializedFinishBlocks(fixtureRoot, phPath, label) {
+  const result = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
+  const output = `${result.stdout}${result.stderr}`
+  if (
+    result.status !== 1
+    || !result.stderr.includes("Blocker: workflow-state-uninitialized")
+    || output.includes(fixtureRoot)
+    || existsSync(join(fixtureRoot, ".persona"))
+  ) {
+    throw new Error(`${label} uninitialized public Finish did not fail closed`)
+  }
+}
+
+function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness, packageRoot, authorityHome) {
+  const environment = isolatedAuthorityEnvironment(authorityHome)
+  runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness, environment)
 
   const cooperativeFinish = runNode(fixtureRoot, [
     phPath,
@@ -1988,15 +2012,10 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness) {
     "implement",
     "--assurance",
     "cooperative",
-  ])
+  ], environment)
   requireSuccess(`${label} cooperative Finish`, cooperativeFinish)
   if (!cooperativeFinish.stdout.includes("Finish status: PASS")) {
     throw new Error(`${label} cooperative Finish did not report PASS`)
-  }
-  const closure = runNode(fixtureRoot, [phPath, "workflow", "closure", "next", "--json"])
-  requireSuccess(`${label} external-only closure`, closure)
-  if (!closure.stdout.includes("trusted-authority-required")) {
-    throw new Error(`${label} closure did not remain external-only after cooperative Finish`)
   }
   const junitPath = join(
     fixtureRoot,
@@ -2013,29 +2032,35 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness) {
       throw new Error(`${label} cooperative Finish wrote forgeable authority directory ${directory}`)
     }
   }
+  assertModeledAuthorityFinishLifecycle(fixtureRoot, phPath, packageRoot, authorityHome, label)
+  const closure = runNode(fixtureRoot, [phPath, "workflow", "closure", "next", "--json"], environment)
+  requireSuccess(`${label} external-only closure`, closure)
+  if (!closure.stdout.includes("trusted-authority-required")) {
+    throw new Error(`${label} closure did not remain external-only after modeled authority consumption`)
+  }
 }
 
-function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness) {
+function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness, environment = {}) {
   for (const command of readiness.commands) {
-    const step = BETA14_PRE_AUTHORITY_COMMANDS.get(command)
+    const step = BETA15_PRE_AUTHORITY_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.14 pre-authority command is unsupported`)
+      throw new Error(`${label} beta.15 pre-authority command is unsupported`)
     }
-    const result = runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin)
+    const result = runNode(fixtureRoot, [phPath, ...step.args], environment, step.stdin)
     requireSuccess(
       `${label} lifecycle ${command}`,
       result,
     )
     assertPublicOutputDoesNotExposeWorkspace(result, fixtureRoot, `${label} lifecycle ${command}`)
   }
-  const status = runNode(fixtureRoot, [phPath, "plan", "--status"])
+  const status = runNode(fixtureRoot, [phPath, "plan", "--status"], environment)
   requireSuccess(`${label} public plan status`, status)
   assertPublicOutputDoesNotExposeWorkspace(status, fixtureRoot, `${label} public plan status`)
   if (!status.stdout.includes("Plan: .persona/workflow/plan.md")) {
     throw new Error(`${label} public plan status did not retain the relative plan reference`)
   }
   assertCooperativeLifecycleState(fixtureRoot, label)
-  assertAuthorityOnlyPreflight(fixtureRoot, phPath, label, readiness.expectedDefaultFinish)
+  assertAuthorityOnlyPreflight(fixtureRoot, phPath, label, readiness.expectedDefaultFinish, environment)
 }
 
 function assertPublicOutputDoesNotExposeWorkspace(result, workspace, label) {
@@ -2205,8 +2230,8 @@ function assertCooperativeLifecycleState(projectDir, label) {
   }
 }
 
-function assertAuthorityOnlyPreflight(projectDir, phPath, label, expected) {
-  const defaultFinish = runNode(projectDir, [phPath, "workflow", "finish", "implement"])
+function assertAuthorityOnlyPreflight(projectDir, phPath, label, expected, environment = {}) {
+  const defaultFinish = runNode(projectDir, [phPath, "workflow", "finish", "implement"], environment)
   const output = `${defaultFinish.stdout}${defaultFinish.stderr}`
   if (
     defaultFinish.status !== 1
@@ -2224,20 +2249,147 @@ function assertAuthorityOnlyPreflight(projectDir, phPath, label, expected) {
   }
 }
 
-function readBeta14PreAuthorityReadiness(packageRoot) {
-  const manifestPath = join(packageRoot, BETA14_ACCEPTANCE_PATH)
+function isolatedAuthorityEnvironment(home) {
+  mkdirSync(home, { recursive: true })
+  return {
+    GH_TOKEN: "",
+    GITHUB_TOKEN: "",
+    HOME: home,
+  }
+}
+
+function assertModeledAuthorityFinishLifecycle(projectDir, phPath, packageRoot, home, label) {
+  const environment = isolatedAuthorityEnvironment(home)
+  const seeded = seedModeledAuthorityArtifact(projectDir, packageRoot, home, environment, label)
+  const loaderPath = join(home, "modeled-project-finish-worker-loader.mjs")
+  writeModeledProjectFinishWorkerLoader(loaderPath, seeded)
+  const workerArgs = ["--no-warnings", "--experimental-loader", loaderPath, phPath]
+
+  const fetchedStatus = runNode(projectDir, [...workerArgs, "authority", "status", "--json"], environment)
+  requireSuccess(`${label} modeled authority status`, fetchedStatus)
+  assertPublicOutputDoesNotExposeWorkspace(fetchedStatus, projectDir, `${label} modeled authority status`)
+  const fetched = JSON.parse(fetchedStatus.stdout)
+  if (
+    !isRecord(fetched)
+    || fetched.authorityEligible !== true
+    || fetched.consumptionState !== "unconsumed"
+    || fetched.state !== "trusted"
+  ) {
+    throw new Error(`${label} modeled authority fetch did not become trusted and unconsumed`)
+  }
+
+  const firstFinish = runNode(projectDir, [...workerArgs, "workflow", "finish", "implement"], environment)
+  requireSuccess(`${label} modeled authority Finish`, firstFinish)
+  assertPublicOutputDoesNotExposeWorkspace(firstFinish, projectDir, `${label} modeled authority Finish`)
+  if (!firstFinish.stdout.includes("Finish status: PASS")) {
+    throw new Error(`${label} modeled authority Finish did not consume once`)
+  }
+  const terminal = join(projectDir, ".persona", "evidence", "finish-attestation", "consumption.json")
+  if (!existsSync(terminal)) {
+    throw new Error(`${label} modeled authority Finish did not retain a terminal consumption record`)
+  }
+
+  const consumedStatus = runNode(projectDir, [...workerArgs, "authority", "explain", "--json"], environment)
+  requireSuccess(`${label} modeled consumed authority status`, consumedStatus)
+  assertPublicOutputDoesNotExposeWorkspace(consumedStatus, projectDir, `${label} modeled consumed authority status`)
+  const consumed = JSON.parse(consumedStatus.stdout)
+  if (
+    !isRecord(consumed)
+    || consumed.authorityEligible !== true
+    || consumed.consumptionState !== "consumed"
+    || consumed.state !== "trusted"
+  ) {
+    throw new Error(`${label} modeled authority Finish did not expose consumed state`)
+  }
+
+  const replay = runNode(projectDir, [...workerArgs, "workflow", "finish", "implement"], environment)
+  const replayOutput = `${replay.stdout}${replay.stderr}`
+  if (
+    replay.status !== 1
+    || !replay.stderr.includes("Blocker: trusted-authority-required")
+    || replayOutput.includes("Finish status: PASS")
+    || replayOutput.includes(projectDir)
+    || replayOutput.includes(home)
+  ) {
+    throw new Error(`${label} modeled authority replay did not fail closed`)
+  }
+}
+
+function seedModeledAuthorityArtifact(projectDir, packageRoot, home, environment, label) {
+  const moduleRoot = join(packageRoot, "dist", "cli")
+  const moduleUrl = (name) => pathToFileURL(join(moduleRoot, name)).href
+  const script = [
+    'import { createHash } from "node:crypto";',
+    `import { runAuthorityCommand } from ${JSON.stringify(moduleUrl("authority-command.js"))};`,
+    `import { authorityEnrollmentFromReadback, writeAuthorityEnrollment } from ${JSON.stringify(moduleUrl("authority-enrollment.js"))};`,
+    `import { createProjectFinishAttestationProducerArtifacts } from ${JSON.stringify(moduleUrl("project-finish-attestation-producer.js"))};`,
+    `import { canonicalProjectFinishAttestationBytes } from ${JSON.stringify(moduleUrl("project-finish-attestation-canonical.js"))};`,
+    `import { captureWorkspaceIdentity, captureGitIdentity } from ${JSON.stringify(moduleUrl("ci-reverification-identity.js"))};`,
+    `import { captureProjectFinishAttestationSourceIdentity } from ${JSON.stringify(moduleUrl("project-finish-attestation-source.js"))};`,
+    `import { bindProjectFinishAttestationInputSnapshot, captureProjectFinishAttestationInputSnapshot } from ${JSON.stringify(moduleUrl("project-finish-attestation-inputs.js"))};`,
+    `import { personaHarnessVersion } from ${JSON.stringify(moduleUrl("version.js"))};`,
+    'const digest = (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;',
+    'const archive = (members) => { const local = []; const central = []; let offset = 0; for (const [name, bytes] of Object.entries(members)) { const nameBytes = Buffer.from(name, "utf8"); const header = Buffer.alloc(30); header.writeUInt32LE(0x04034b50, 0); header.writeUInt16LE(20, 4); header.writeUInt32LE(bytes.byteLength, 18); header.writeUInt32LE(bytes.byteLength, 22); header.writeUInt16LE(nameBytes.byteLength, 26); local.push(header, nameBytes, bytes); const directory = Buffer.alloc(46); directory.writeUInt32LE(0x02014b50, 0); directory.writeUInt16LE(20, 4); directory.writeUInt16LE(20, 6); directory.writeUInt32LE(bytes.byteLength, 20); directory.writeUInt32LE(bytes.byteLength, 24); directory.writeUInt16LE(nameBytes.byteLength, 28); directory.writeUInt32LE(offset, 42); central.push(directory, nameBytes); offset += header.byteLength + nameBytes.byteLength + bytes.byteLength; } const directory = Buffer.concat(central); const footer = Buffer.alloc(22); footer.writeUInt32LE(0x06054b50, 0); footer.writeUInt16LE(Object.keys(members).length, 8); footer.writeUInt16LE(Object.keys(members).length, 10); footer.writeUInt32LE(directory.byteLength, 12); footer.writeUInt32LE(offset, 16); return Buffer.concat([...local, directory, footer]); };',
+    'const workspace = captureWorkspaceIdentity("."); if (workspace.status !== "available") throw new Error("modeled-authority-workspace");',
+    'const git = captureGitIdentity(".", workspace.value); if (!git.available || git.head === undefined) throw new Error("modeled-authority-git");',
+    'const source = captureProjectFinishAttestationSourceIdentity(".", git); if (source.status !== "available") throw new Error("modeled-authority-source");',
+    'const inputs = captureProjectFinishAttestationInputSnapshot("."); if (inputs.kind !== "ready") throw new Error("modeled-authority-inputs");',
+    'const enrollment = authorityEnrollmentFromReadback({ callerWorkflowPath: "research-attestation.yml", repositoryId: 1304576182, repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture", reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3" }); if (enrollment === undefined) throw new Error("modeled-authority-enrollment");',
+    'const now = new Date().toISOString(); const boundSource = bindProjectFinishAttestationInputSnapshot(source.value, inputs.value);',
+    'const produced = createProjectFinishAttestationProducerArtifacts({ buildArtifactDigest: `sha256:${"b".repeat(64)}`, callerWorkflowRef: `${enrollment.repositorySlug}/.github/workflows/${enrollment.callerWorkflowPath}@refs/heads/main`, callerWorkflowSha: git.head, issuedAt: now, phVersion: personaHarnessVersion(), repository: { id: enrollment.repositoryId, slug: enrollment.repositorySlug, visibility: "public" }, reusableWorkflowSha: enrollment.reusableWorkflowSha, runAttempt: 1, runId: "30450000000", source: { head: git.head, identity: boundSource, root: "." }, test: { count: 1, junitDigest: `sha256:${"c".repeat(64)}`, passed: 1, skipped: 0 } });',
+    'const bundle = Buffer.from(JSON.stringify(produced.statement), "utf8"); const original = archive({ "bundle.json": bundle, "predicate.json": canonicalProjectFinishAttestationBytes(produced.predicate), "receipt.json": produced.receiptBytes });',
+    `const storeRoot = ${JSON.stringify(join(home, ".persona-harness"))};`,
+    'if (!writeAuthorityEnrollment(enrollment, { storeRoot })) throw new Error("modeled-authority-store");',
+    'const assessment = { authorityEligible: true, consumptionState: "unconsumed", decision: "trusted", diagnostics: [], receipt: produced.receipt, state: "trusted", summary: "modeled-trusted-boundary" };',
+    'const result = runAuthorityCommand(["fetch", "github", "--json"], { artifactFetch: () => ({ archive: original, artifactId: 710000015, artifactDigest: digest(original), fetchedAt: now, repositoryId: enrollment.repositoryId, runId: "30450000000", sourceHead: git.head }), artifactInspector: () => assessment, projectDir: ".", storeRoot });',
+    'if (result.status !== 0) throw new Error("modeled-authority-fetch");',
+    'process.stdout.write(JSON.stringify({ bundleDigest: digest(bundle), statement: produced.statement }));',
+  ].join("\n")
+  const result = runNode(projectDir, ["--input-type=module", "-e", script], environment)
+  requireSuccess(`${label} modeled authority fetch`, result)
+  try {
+    const value = JSON.parse(result.stdout)
+    if (!isRecord(value) || typeof value.bundleDigest !== "string" || !isRecord(value.statement)) {
+      throw new TypeError("invalid modeled authority payload")
+    }
+    return value
+  } catch {
+    throw new Error(`${label} modeled authority fetch did not produce a bounded fixture`)
+  }
+}
+
+function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
+  const worker = [
+    "export function runProjectFinishAttestationWorker() {",
+    `  return ${JSON.stringify({ bundleDigest: payload.bundleDigest, ok: true, statement: payload.statement })};`,
+    "}",
+  ].join("\n")
+  const loader = [
+    "export async function resolve(specifier, context, nextResolve) {",
+    '  if (specifier === "./project-finish-attestation-worker.js" && context.parentURL?.endsWith("/project-finish-attestation-verifier.js")) {',
+    `    return { shortCircuit: true, url: ${JSON.stringify(`data:text/javascript,${encodeURIComponent(worker)}`)} };`,
+    "  }",
+    "  return nextResolve(specifier, context);",
+    "}",
+  ].join("\n")
+  writeFileSync(loaderPath, `${loader}\n`)
+}
+
+function readBeta15PreAuthorityReadiness(packageRoot) {
+  const manifestPath = join(packageRoot, BETA15_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.14 acceptance manifest is unavailable")
+    throw new Error("beta.15 acceptance manifest is unavailable")
   }
   const readiness = value?.preAuthorityReadiness
   const commands = readiness?.commands
   const packageVersion = value?.package?.version
   const defaultFinish = readiness?.expectedDefaultFinish
   const publicOutput = readiness?.publicOutput
-  const expectedCommands = [...BETA14_PRE_AUTHORITY_COMMANDS.keys()]
+  const initialization = readiness?.initialization
+  const expectedCommands = [...BETA15_PRE_AUTHORITY_COMMANDS.keys()]
   const expectedDefaultFinish = {
     absentBlockers: [
       "implementation-report-missing",
@@ -2262,7 +2414,7 @@ function readBeta14PreAuthorityReadiness(packageRoot) {
   }
   if (
     packageVersion !== readPackageVersion(packageRoot)
-    || value?.schemaVersion !== "consumer-authority-beta14-acceptance.1"
+    || value?.schemaVersion !== "consumer-authority-beta15-acceptance.1"
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
@@ -2273,19 +2425,29 @@ function readBeta14PreAuthorityReadiness(packageRoot) {
     || !isRecord(publicOutput)
     || publicOutput.absoluteWorkspacePaths !== expectedPublicOutput.absoluteWorkspacePaths
     || !sameStrings(publicOutput.stableReferences, expectedPublicOutput.stableReferences)
+    || !isRecord(initialization)
+    || initialization.acceptedPlan !== "ph bootstrap backend --strict --no-developer-mcp"
+    || initialization.sameConsumer !== true
+    || !isRecord(initialization.inactiveFinish)
+    || initialization.inactiveFinish.blocker !== "workflow-state-uninitialized"
+    || initialization.inactiveFinish.status !== "blocked"
+    || !sameStrings(initialization.loopState, [
+      ".persona/workflow/workflow-loop-state.json",
+      ".persona/workflow/ralph-loop-state.json",
+    ])
   ) {
-    throw new Error("beta.14 pre-authority readiness manifest is invalid")
+    throw new Error("beta.15 pre-authority readiness manifest is invalid")
   }
   return { commands, expectedDefaultFinish }
 }
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
-  const manifestPath = join(packageRoot, BETA14_ACCEPTANCE_PATH)
+  const manifestPath = join(packageRoot, BETA15_ACCEPTANCE_PATH)
   let manifest
   try {
     manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error(`${label} beta.14 observer handoff contract is unavailable`)
+    throw new Error(`${label} beta.15 observer handoff contract is unavailable`)
   }
   const handoff = manifest?.prearmedExternalHandoff
   const prepare = handoff?.prepare
@@ -2297,6 +2459,7 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     "explain",
     "observer-credential-preflight",
     "public-pre-authority-readiness",
+    "public-initialized-finish-state",
   ]
   const expectedProhibited = [
     "artifact-download",
@@ -2307,7 +2470,7 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
   ]
   const expectedSteps = [
     "observer-credential-preflight-ready",
-    "public-finish-blocked-only-on-trusted-authority-required",
+    "public-initialized-finish-blocked-only-on-trusted-authority-required",
     "download-original-bytes-for-independent-online-verification",
     "verify-online-before-leaf-certificate-notAfter",
     "authority-fetch-discovers-and-binds-original-artifact",
@@ -2319,14 +2482,14 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     "readiness-does-not-authorize-fixture",
     "readiness-does-not-grant-authority",
     "readiness-does-not-persist-or-log-host-credential",
-    "readiness-does-not-reuse-beta13-artifact",
+    "readiness-does-not-reuse-beta14-artifact",
   ]
   if (
     manifest?.package?.version !== readPackageVersion(packageRoot)
-    || manifest?.schemaVersion !== "consumer-authority-beta14-acceptance.1"
-    || manifest?.beta13HistoricalExternal?.version !== "0.8.0-beta.13"
-    || manifest?.beta13HistoricalExternal?.outcome !== "artifact-crypto-passed-but-installed-authority-binding-mismatch"
-    || manifest?.beta13HistoricalExternal?.reusableForBeta14 !== false
+    || manifest?.schemaVersion !== "consumer-authority-beta15-acceptance.1"
+    || manifest?.beta14HistoricalExternal?.version !== "0.8.0-beta.14"
+    || manifest?.beta14HistoricalExternal?.outcome !== "trusted-fetch-with-uninitialized-finish-noop-and-no-consumption"
+    || manifest?.beta14HistoricalExternal?.reusableForBeta15 !== false
     || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
     || manifest?.authority?.hostedFixture?.callerWorkflowPath !== ".github/workflows/research-attestation.yml"
     || manifest?.authority?.hostedFixture?.certificateSanIdentity !== "reusable-producer-workflow"
@@ -2345,12 +2508,12 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     })
     || !sameStrings(prepare?.allowedBeforeFixture, expectedPrepare)
     || !sameStrings(prepare?.prohibitedBeforeArtifact, expectedProhibited)
-    || prepare?.requiredBeforeFixtureAuthorization !== "public-finish-blocked-only-on-trusted-authority-required"
-    || trigger?.onlyAfter !== "observer-credential-preflight-ready-public-readiness-and-natural-current-version-original-artifact"
+    || prepare?.requiredBeforeFixtureAuthorization !== "public-initialized-finish-blocked-only-on-trusted-authority-required"
+    || trigger?.onlyAfter !== "observer-credential-preflight-ready-public-initialized-readiness-and-natural-current-version-original-artifact"
     || !sameStrings(trigger?.steps, expectedSteps)
     || !sameStrings(handoff?.nonAuthority, expectedNonAuthority)
   ) {
-    throw new Error(`${label} beta.14 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.15 observer handoff contract is invalid`)
   }
 }
 
