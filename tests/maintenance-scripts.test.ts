@@ -139,7 +139,7 @@ describe("maintenance scripts", () => {
   it("builds dist before local npm pack so packed CLI surface is current", () => {
     const parsed: unknown = JSON.parse(readFileSync(packageJsonPath, "utf8"))
 
-    expect(parsed).toMatchObject({ scripts: { prepack: "npm run build" } })
+    expect(parsed).toMatchObject({ scripts: { prepack: "node scripts/package-root-build.mjs" } })
   })
 
   it("reports PASS when structured scope status matches source and docs", () => {
