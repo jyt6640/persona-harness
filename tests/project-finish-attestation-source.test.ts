@@ -19,6 +19,7 @@ import {
   captureProjectFinishAttestationInputSnapshot,
 } from "../src/cli/project-finish-attestation-inputs.js"
 import {
+  captureProjectFinishAttestationSourceEntries,
   captureProjectFinishAttestationSourceIdentity,
   matchesProjectFinishAttestationSource,
 } from "../src/cli/project-finish-attestation-source.js"
@@ -34,6 +35,24 @@ afterEach(() => {
 })
 
 describe("project finish attestation source binding", () => {
+  it("preserves the public bootstrap projection without a producer-only Git checkpoint", () => {
+    const primary = createPublicProject()
+    const producerBootstrap = run(primary, ["bootstrap", "backend", "--strict", "--no-developer-mcp"])
+    expect(producerBootstrap.status, producerBootstrap.stderr).toBe(0)
+    const expected = captureBoundSourceIdentity(primary)
+    const worktreeParent = track(mkdtempSync(join(tmpdir(), "persona-project-finish-source-")))
+    const worktree = join(worktreeParent, "consumer")
+    execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: primary })
+
+    const consumerBootstrap = run(worktree, ["bootstrap", "backend", "--strict", "--no-developer-mcp"])
+
+    expect(consumerBootstrap.status, consumerBootstrap.stderr).toBe(0)
+    expect(sourceEntryDifferences(primary, worktree)).toEqual([])
+    expect(captureBoundSourceEntries(worktree)).toEqual(captureBoundSourceEntries(primary))
+    expect(captureBoundSourceIdentity(worktree)).toEqual(expected)
+    expect(matchesAt(worktree, expected)).toBe(true)
+  })
+
   it("preserves a checkpointed source binding through the public bootstrap and workflow lifecycle", () => {
     const primary = createPublicProject()
     const bootstrap = run(primary, ["bootstrap", "backend", "--strict", "--no-developer-mcp"])
@@ -206,6 +225,27 @@ function captureBoundSourceIdentity(projectDir: string): SourceIdentity {
     if (inputs.kind !== "ready") throw new Error("project inputs must be available")
     return bindProjectFinishAttestationInputSnapshot(source.value, inputs.value)
   })
+}
+
+function captureBoundSourceEntries(projectDir: string) {
+  return withCurrentDirectory(projectDir, () => {
+    const workspace = captureWorkspaceIdentity(".")
+    if (workspace.status !== "available") throw new Error("workspace identity must be available")
+    const git = captureGitIdentity(".", workspace.value)
+    if (!git.available) throw new Error("Git identity must be available")
+    const source = captureProjectFinishAttestationSourceEntries(".", git)
+    if (source.status !== "available") throw new Error("source entries must be available")
+    return source.value
+  })
+}
+
+function sourceEntryDifferences(left: string, right: string): readonly string[] {
+  const leftEntries = new Map(captureBoundSourceEntries(left).map((entry) => [JSON.stringify(entry), entry.path]))
+  const rightEntries = new Map(captureBoundSourceEntries(right).map((entry) => [JSON.stringify(entry), entry.path]))
+  return [...new Set([
+    ...[...leftEntries.entries()].filter(([entry]) => !rightEntries.has(entry)).map(([, path]) => path),
+    ...[...rightEntries.entries()].filter(([entry]) => !leftEntries.has(entry)).map(([, path]) => path),
+  ])].sort()
 }
 
 function matchesAt(projectDir: string, expected: SourceIdentity): boolean {

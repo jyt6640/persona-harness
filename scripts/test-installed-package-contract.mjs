@@ -30,10 +30,17 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
-const BETA13_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta13-acceptance.json")
-const MODELED_CURRENT_ARTIFACT_ID = 8712218259
-const MODELED_CURRENT_RUN_ID = 30421869946
-const BETA13_PRE_AUTHORITY_COMMANDS = new Map([
+const BETA14_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta14-acceptance.json")
+const MODELED_CURRENT_ARTIFACT_ID = 710000001
+const MODELED_CURRENT_RUN_ID = 30430000000
+const MODELED_AUTHORITY_TOPOLOGY = {
+  callerWorkflowPath: "research-attestation.yml",
+  callerWorkflowSha: "d370eaffefb2fdb12388c4b14c0e52af0e4efb38",
+  repositoryId: 1304576182,
+  repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
+  reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3",
+}
+const BETA14_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -575,7 +582,7 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta13PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta14PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
@@ -919,7 +926,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta13PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta14PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
@@ -1959,7 +1966,6 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness) {
     `${label} bootstrap checkpoint`,
     runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
   )
-  commitBootstrapCheckpoint(fixtureRoot, label)
   const consumerRoot = `${fixtureRoot}-consumer`
   requireSuccess(`${label} clean consumer worktree`, runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]))
 
@@ -2011,9 +2017,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness) {
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness) {
   for (const command of readiness.commands) {
-    const step = BETA13_PRE_AUTHORITY_COMMANDS.get(command)
+    const step = BETA14_PRE_AUTHORITY_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.13 pre-authority command is unsupported`)
+      throw new Error(`${label} beta.14 pre-authority command is unsupported`)
     }
     const result = runNode(fixtureRoot, [phPath, ...step.args], {}, step.stdin)
     requireSuccess(
@@ -2045,7 +2051,6 @@ function assertCooperativeSourceReadRaceBlocks(fixtureRoot, phPath, label, readi
     `${label} cooperative source-read race bootstrap`,
     runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
   )
-  commitBootstrapCheckpoint(fixtureRoot, `${label} cooperative source-read race`)
   const consumerRoot = `${fixtureRoot}-consumer`
   requireSuccess(
     `${label} cooperative source-read race worktree`,
@@ -2189,23 +2194,6 @@ function createCooperativeGradleFixture(projectDir) {
   requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
 }
 
-function commitBootstrapCheckpoint(projectDir, label) {
-  requireSuccess(`${label} checkpoint add`, runCommand(projectDir, "git", ["add", "--all"]))
-  requireSuccess(`${label} checkpoint reset dynamic records`, runCommand(projectDir, "git", ["reset", "--", ".persona/evidence", ".persona/workflow"]))
-  const staticPersonaPaths = [
-    ".persona/.ph-init-manifest.json",
-    ".persona/conventions",
-    ".persona/harness.jsonc",
-    ".persona/policies",
-    ".persona/project-profile.jsonc",
-    ".persona/rules",
-  ].filter((relativePath) => existsSync(join(projectDir, relativePath)))
-  if (staticPersonaPaths.length > 0) {
-    requireSuccess(`${label} checkpoint add static Persona records`, runCommand(projectDir, "git", ["add", "-f", "--", ...staticPersonaPaths]))
-  }
-  requireSuccess(`${label} checkpoint commit`, runCommand(projectDir, "git", ["commit", "-qm", "public bootstrap checkpoint"]))
-}
-
 function assertCooperativeLifecycleState(projectDir, label) {
   for (const relativePath of [
     ".persona/workflow/workflow-loop-state.json",
@@ -2236,20 +2224,20 @@ function assertAuthorityOnlyPreflight(projectDir, phPath, label, expected) {
   }
 }
 
-function readBeta13PreAuthorityReadiness(packageRoot) {
-  const manifestPath = join(packageRoot, BETA13_ACCEPTANCE_PATH)
+function readBeta14PreAuthorityReadiness(packageRoot) {
+  const manifestPath = join(packageRoot, BETA14_ACCEPTANCE_PATH)
   let value
   try {
     value = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error("beta.13 acceptance manifest is unavailable")
+    throw new Error("beta.14 acceptance manifest is unavailable")
   }
   const readiness = value?.preAuthorityReadiness
   const commands = readiness?.commands
   const packageVersion = value?.package?.version
   const defaultFinish = readiness?.expectedDefaultFinish
   const publicOutput = readiness?.publicOutput
-  const expectedCommands = [...BETA13_PRE_AUTHORITY_COMMANDS.keys()]
+  const expectedCommands = [...BETA14_PRE_AUTHORITY_COMMANDS.keys()]
   const expectedDefaultFinish = {
     absentBlockers: [
       "implementation-report-missing",
@@ -2274,7 +2262,7 @@ function readBeta13PreAuthorityReadiness(packageRoot) {
   }
   if (
     packageVersion !== readPackageVersion(packageRoot)
-    || value?.schemaVersion !== "consumer-authority-beta13-acceptance.1"
+    || value?.schemaVersion !== "consumer-authority-beta14-acceptance.1"
     || !Array.isArray(commands)
     || commands.length !== expectedCommands.length
     || commands.some((command, index) => command !== expectedCommands[index])
@@ -2286,18 +2274,18 @@ function readBeta13PreAuthorityReadiness(packageRoot) {
     || publicOutput.absoluteWorkspacePaths !== expectedPublicOutput.absoluteWorkspacePaths
     || !sameStrings(publicOutput.stableReferences, expectedPublicOutput.stableReferences)
   ) {
-    throw new Error("beta.13 pre-authority readiness manifest is invalid")
+    throw new Error("beta.14 pre-authority readiness manifest is invalid")
   }
   return { commands, expectedDefaultFinish }
 }
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
-  const manifestPath = join(packageRoot, BETA13_ACCEPTANCE_PATH)
+  const manifestPath = join(packageRoot, BETA14_ACCEPTANCE_PATH)
   let manifest
   try {
     manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
   } catch {
-    throw new Error(`${label} beta.13 observer handoff contract is unavailable`)
+    throw new Error(`${label} beta.14 observer handoff contract is unavailable`)
   }
   const handoff = manifest?.prearmedExternalHandoff
   const prepare = handoff?.prepare
@@ -2331,14 +2319,14 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     "readiness-does-not-authorize-fixture",
     "readiness-does-not-grant-authority",
     "readiness-does-not-persist-or-log-host-credential",
-    "readiness-does-not-reuse-beta12-artifact",
+    "readiness-does-not-reuse-beta13-artifact",
   ]
   if (
     manifest?.package?.version !== readPackageVersion(packageRoot)
-    || manifest?.schemaVersion !== "consumer-authority-beta13-acceptance.1"
-    || manifest?.beta12HistoricalExternal?.version !== "0.8.0-beta.12"
-    || manifest?.beta12HistoricalExternal?.outcome !== "artifact-crypto-and-installed-fetch-passed-but-public-finish-retained-readiness-blockers"
-    || manifest?.beta12HistoricalExternal?.reusableForBeta13 !== false
+    || manifest?.schemaVersion !== "consumer-authority-beta14-acceptance.1"
+    || manifest?.beta13HistoricalExternal?.version !== "0.8.0-beta.13"
+    || manifest?.beta13HistoricalExternal?.outcome !== "artifact-crypto-passed-but-installed-authority-binding-mismatch"
+    || manifest?.beta13HistoricalExternal?.reusableForBeta14 !== false
     || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
     || manifest?.authority?.hostedFixture?.callerWorkflowPath !== ".github/workflows/research-attestation.yml"
     || manifest?.authority?.hostedFixture?.certificateSanIdentity !== "reusable-producer-workflow"
@@ -2362,7 +2350,7 @@ function assertPrearmedObserverHandoff(packageRoot, label) {
     || !sameStrings(trigger?.steps, expectedSteps)
     || !sameStrings(handoff?.nonAuthority, expectedNonAuthority)
   ) {
-    throw new Error(`${label} beta.13 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.14 observer handoff contract is invalid`)
   }
 }
 
@@ -2383,12 +2371,12 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
     import(pathToFileURL(join(moduleRoot, "project-finish-attestation-producer.js")).href),
     import(pathToFileURL(join(moduleRoot, "version.js")).href),
   ])
-  const sourceHead = "a".repeat(40)
+  const sourceHead = MODELED_AUTHORITY_TOPOLOGY.callerWorkflowSha
   const enrollment = enrollmentStore.authorityEnrollmentFromReadback({
-    callerWorkflowPath: "research-attestation.yml",
-    repositoryId: 987654321,
-    repositorySlug: "example/public-gradle-app",
-    reusableWorkflowSha: "b".repeat(40),
+    callerWorkflowPath: MODELED_AUTHORITY_TOPOLOGY.callerWorkflowPath,
+    repositoryId: MODELED_AUTHORITY_TOPOLOGY.repositoryId,
+    repositorySlug: MODELED_AUTHORITY_TOPOLOGY.repositorySlug,
+    reusableWorkflowSha: MODELED_AUTHORITY_TOPOLOGY.reusableWorkflowSha,
   })
   if (enrollment === undefined) throw new Error(`${label} authority enrollment fixture did not parse`)
   const produced = producer.createProjectFinishAttestationProducerArtifacts({
@@ -2473,8 +2461,14 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
     summary: "deterministic-binding-only",
   }
   const cases = [
-    { id: "run", artifact: { ...artifact, runId: "10" }, enrollment },
-    { id: "source", artifact: { ...artifact, sourceHead: "c".repeat(40) }, enrollment },
+    { id: "run", artifact: { ...artifact, runId: "10" }, enrollment, expectedState: "binding-mismatch" },
+    { id: "source", artifact: { ...artifact, sourceHead: "c".repeat(40) }, enrollment, expectedState: "binding-mismatch" },
+    {
+      id: "repository",
+      artifact: { ...artifact, repositoryId: enrollment.repositoryId + 1 },
+      enrollment,
+      expectedState: "missing",
+    },
     {
       id: "caller",
       artifact,
@@ -2482,6 +2476,7 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
         ...enrollment,
         callerWorkflowPath: "other.yml",
       },
+      expectedState: "binding-mismatch",
     },
     {
       id: "reusable",
@@ -2490,8 +2485,20 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
         ...enrollment,
         reusableWorkflowSha: "c".repeat(40),
       },
+      expectedState: "binding-mismatch",
     },
-    { id: "artifact-id", artifact: { ...artifact, artifactId: 0 }, enrollment },
+    { id: "artifact-id", artifact: { ...artifact, artifactId: 0 }, enrollment, expectedState: "binding-mismatch" },
+    { id: "digest", artifact: { ...artifact, artifactDigest: `sha256:${"0".repeat(64)}` }, enrollment, expectedState: "binding-mismatch" },
+    {
+      id: "archive",
+      artifact: {
+        ...artifact,
+        archive: Buffer.from("not-an-original-project-finish-artifact", "utf8"),
+        artifactDigest: `sha256:${sha256(Buffer.from("not-an-original-project-finish-artifact", "utf8"))}`,
+      },
+      enrollment,
+      expectedState: "binding-mismatch",
+    },
   ]
   const successRoot = mkdtempSync(join(temporaryRoot, "persona-authority-binding-success-"))
   if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot: successRoot })) {
@@ -2528,7 +2535,7 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
     const result = artifactStore.readAuthorityArtifact(candidate.enrollment.repositoryId, { storeRoot })
     if (
       blocked.status === 0
-      || !blocked.stdout.includes("binding-mismatch")
+      || !blocked.stdout.includes(candidate.expectedState)
       || result.state !== "missing"
       || `${blocked.stdout}${blocked.stderr}`.includes("deterministic-binding-only")
     ) {
