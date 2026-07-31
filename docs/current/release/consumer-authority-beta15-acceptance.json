@@ -74,6 +74,12 @@
     },
     "initialization": {
       "acceptedPlan": "ph bootstrap backend --strict --no-developer-mcp",
+      "binding": {
+        "consumerRoot": "same-canonical-project-root",
+        "profile": ".persona/project-profile.jsonc",
+        "reportsAndEvidence": "public-command-created-only",
+        "sourceIdentity": "current-git-source-identity"
+      },
       "inactiveFinish": {
         "blocker": "workflow-state-uninitialized",
         "status": "blocked"
