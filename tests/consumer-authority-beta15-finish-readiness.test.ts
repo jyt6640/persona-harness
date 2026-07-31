@@ -56,6 +56,12 @@ describe("consumer authority beta.15 final readiness", () => {
     })
     expect(initialization).toEqual({
       acceptedPlan: "ph bootstrap backend --strict --no-developer-mcp",
+      binding: {
+        consumerRoot: "same-canonical-project-root",
+        profile: ".persona/project-profile.jsonc",
+        reportsAndEvidence: "public-command-created-only",
+        sourceIdentity: "current-git-source-identity",
+      },
       inactiveFinish: { blocker: "workflow-state-uninitialized", status: "blocked" },
       loopState: [
         ".persona/workflow/workflow-loop-state.json",
