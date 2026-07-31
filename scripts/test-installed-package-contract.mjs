@@ -1989,13 +1989,20 @@ function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness, pac
 }
 
 function assertUninitializedFinishBlocks(fixtureRoot, phPath, label) {
-  const result = runNode(fixtureRoot, [phPath, "workflow", "finish", "implement"])
+  const home = `${fixtureRoot}-uninitialized-authority-home`
+  const result = runNode(
+    fixtureRoot,
+    [phPath, "workflow", "finish", "implement"],
+    isolatedAuthorityEnvironment(home),
+  )
   const output = `${result.stdout}${result.stderr}`
   if (
     result.status !== 1
     || !result.stderr.includes("Blocker: workflow-state-uninitialized")
     || output.includes(fixtureRoot)
+    || output.includes(home)
     || existsSync(join(fixtureRoot, ".persona"))
+    || existsSync(join(home, ".persona-harness"))
   ) {
     throw new Error(`${label} uninitialized public Finish did not fail closed`)
   }
@@ -2389,6 +2396,7 @@ function readBeta15PreAuthorityReadiness(packageRoot) {
   const defaultFinish = readiness?.expectedDefaultFinish
   const publicOutput = readiness?.publicOutput
   const initialization = readiness?.initialization
+  const initializationBinding = initialization?.binding
   const expectedCommands = [...BETA15_PRE_AUTHORITY_COMMANDS.keys()]
   const expectedDefaultFinish = {
     absentBlockers: [
@@ -2428,6 +2436,12 @@ function readBeta15PreAuthorityReadiness(packageRoot) {
     || !isRecord(initialization)
     || initialization.acceptedPlan !== "ph bootstrap backend --strict --no-developer-mcp"
     || initialization.sameConsumer !== true
+    || !sameRecord(initializationBinding, {
+      consumerRoot: "same-canonical-project-root",
+      profile: ".persona/project-profile.jsonc",
+      reportsAndEvidence: "public-command-created-only",
+      sourceIdentity: "current-git-source-identity",
+    })
     || !isRecord(initialization.inactiveFinish)
     || initialization.inactiveFinish.blocker !== "workflow-state-uninitialized"
     || initialization.inactiveFinish.status !== "blocked"
