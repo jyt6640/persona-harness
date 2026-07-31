@@ -2510,9 +2510,10 @@ function readBeta15PreAuthorityReadiness(packageRoot) {
     || !sameRecord(authoritativeBundleContract, {
       baseAndTarget: "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
       command: "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
-      installedContract: "fresh-installed-contract-uses-exact-target-tarball-sha256",
+      fullJavaGradleContract: "source-and-fresh-installed-full-contract-on-a-provisioned-java-gradle-host",
+      installedContract: "fresh-installed-package-exercise-uses-exact-target-tarball-sha256",
       rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
-      sourceContract: "built-cli-public-consumer-contract",
+      sourceContract: "built-cli-package-exercise-contract-under-the-same-executable",
     })
   ) {
     throw new Error("beta.15 pre-authority readiness manifest is invalid")
