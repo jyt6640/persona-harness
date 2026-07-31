@@ -228,12 +228,17 @@ function packCheckout(root, source, npm, label) {
 function exerciseExactTarContract(root, packed, npm) {
   const sourceResult = run(
     process.execPath,
-    [join(root, "scripts", "test-installed-package-contract.mjs"), "--source-cli", join(root, "dist", "cli", "index.js")],
+    [
+      join(root, "scripts", "test-installed-package-contract.mjs"),
+      "--package-exercise",
+      "--source-cli",
+      join(root, "dist", "cli", "index.js"),
+    ],
     root,
     npm,
   )
   requireSuccess(sourceResult, "clean-package-source-contract")
-  if (!sourceResult.stdout.includes("source-cli-cooperative-finish-contract: PASS")) {
+  if (!sourceResult.stdout.includes("source-cli-package-exercise-contract: PASS")) {
     throw new CleanPackageBoundaryError("clean-package-source-contract")
   }
 
@@ -241,6 +246,7 @@ function exerciseExactTarContract(root, packed, npm) {
     process.execPath,
     [
       join(root, "scripts", "test-installed-package-contract.mjs"),
+      "--package-exercise",
       "--tarball",
       packed.tarballPath,
       "--tarball-sha256",
@@ -250,7 +256,7 @@ function exerciseExactTarContract(root, packed, npm) {
     npm,
   )
   requireSuccess(installedResult, "clean-package-installed-contract")
-  if (!installedResult.stdout.includes("installed-package-test-contract: PASS")) {
+  if (!installedResult.stdout.includes("installed-package-exercise-contract: PASS")) {
     throw new CleanPackageBoundaryError("clean-package-installed-contract")
   }
   return {
