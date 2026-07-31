@@ -82,6 +82,27 @@ export function assertCheckoutPackageBinding(binding) {
   return { root: binding.root }
 }
 
+export function assertPackageExecutionBinding(binding) {
+  if (!isRecord(binding)) fail("clean-package-execution-shape")
+  const values = [
+    binding.commandCwd,
+    binding.expectedLockPath,
+    binding.expectedPackagePath,
+    binding.gitRoot,
+    binding.lockPath,
+    binding.npmPrefix,
+    binding.packagePath,
+    binding.root,
+  ]
+  if (!values.every((value) => typeof value === "string")) fail("clean-package-execution-shape")
+  if (binding.commandCwd !== binding.root) fail("clean-package-command-cwd")
+  if (binding.gitRoot !== binding.root) fail("clean-package-root-git")
+  if (binding.npmPrefix !== binding.root) fail("clean-package-root-npm")
+  if (binding.packagePath !== binding.expectedPackagePath) fail("clean-package-package-path")
+  if (binding.lockPath !== binding.expectedLockPath) fail("clean-package-lock-path")
+  return { root: binding.root }
+}
+
 export function assertNpmExecutionPolicy(policy) {
   if (!isRecord(policy) || typeof policy.global !== "string" || typeof policy.ignoreScripts !== "string" || typeof policy.workspaces !== "string") {
     fail("clean-package-npm-shape")

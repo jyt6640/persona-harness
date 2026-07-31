@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest"
 type PackageJson = {
   readonly bin?: Readonly<Record<string, string>>
   readonly files: readonly string[]
+  readonly scripts?: Readonly<Record<string, string>>
 }
 
 type NativeProjectReadManifest = {
@@ -39,6 +40,16 @@ type MarkdownLink = {
 const packageRoot = process.cwd()
 
 describe("package files policy", () => {
+  it("packages the root-bound prepack runner", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const scripts = packageJson.scripts
+
+    expect(existsSync(path.join(packageRoot, "scripts", "package-root-build.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/package-root-build.mjs", packageJson.files)).toBe(true)
+    expect(scripts?.["build"]).toBe("node scripts/package-root-build.mjs")
+    expect(scripts?.["prepack"]).toBe("node scripts/package-root-build.mjs")
+  })
+
   it("packages public rules while retaining diff-rules only as repository source material", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const ruleFiles = listRuleMarkdownFiles(path.join(packageRoot, ".persona/rules")).map((filePath) =>
