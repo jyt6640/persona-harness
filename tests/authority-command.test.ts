@@ -24,6 +24,7 @@ import { createValidProjectFinishAttestationStatement } from "./helpers/project-
 const projects: string[] = []
 
 afterEach(() => {
+  vi.unstubAllEnvs()
   for (const project of projects.splice(0)) rmSync(project, { force: true, recursive: true })
 })
 
@@ -109,6 +110,8 @@ describe("consumer authority command boundary", () => {
 
   it("exposes the non-consuming authority status through the public root command", () => {
     const projectDir = project()
+    const home = project()
+    vi.stubEnv("HOME", home)
     const result = runPersonaCli(["authority", "status"], {
       cwd: projectDir,
       env: { GH_TOKEN: "github-test-credential" },
@@ -118,6 +121,7 @@ describe("consumer authority command boundary", () => {
     expect(result.status).toBe(1)
     expect(result.stdout).toContain("Enrollment: unavailable")
     expect(result.stdout).not.toContain(projectDir)
+    expect(result.stdout).not.toContain(home)
   })
 
   it("requires GitHub authentication only as transport authority before fixed readback", () => {
