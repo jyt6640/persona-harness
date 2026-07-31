@@ -21,6 +21,7 @@ import {
   assertBundleHeadBinding,
   assertCheckoutPackageBinding,
   assertNpmExecutionPolicy,
+  assertPackageExecutionBinding,
   assertPackRecordBinding,
   assertSourcePackageIdentity,
   parseBundleHeads,
@@ -38,7 +39,8 @@ try {
   const source = readSourceIdentity(checkout)
   const npm = createNpmEnvironment(temporaryRoot, "target")
 
-  assertCheckoutIntegrity(checkout, source, npm)
+  const targetRoot = assertCheckoutIntegrity(checkout, source, npm)
+  assertStaleLauncherIsRejected(checkout, targetRoot)
   requireSuccess(runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], checkout, npm), "clean-package-install")
   if (existsSync(join(checkout, "dist"))) throw new CleanPackageBoundaryError("clean-package-prepack-dist")
 
@@ -46,12 +48,15 @@ try {
   const packed = packCheckout(checkout, source, npm, "target")
   assertCheckoutIntegrity(checkout, source, npm)
   assertCliVersion(checkout, join(checkout, "dist", "cli", "index.js"), source.identity.version, npm, "clean-package-built-cli")
+  const contract = input.exerciseContract
+    ? exerciseExactTarContract(checkout, packed, npm)
+    : undefined
 
   const consumer = installFreshTarball(packed.tarballPath, source.identity, npm)
   const baseCheckout = materializeCheckout(bundle, bundle.base, "base")
   const baseSource = readSourceIdentity(baseCheckout)
   const baseNpm = createNpmEnvironment(temporaryRoot, "base")
-  assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
+  const baseRoot = assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
   requireSuccess(runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], baseCheckout, baseNpm), "clean-package-base-install")
   if (existsSync(join(baseCheckout, "dist"))) throw new CleanPackageBoundaryError("clean-package-base-prepack-dist")
   assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
@@ -74,20 +79,18 @@ try {
       tarballSha256: packed.facts.tarballSha256,
       version: source.identity.version,
     },
-    packageRoot: {
-      checkoutCwd: checkout,
-      gitRoot: realpathSync(gitText(checkout, ["rev-parse", "--show-toplevel"])),
-      lockSha256: source.lockSha256,
-      npmPrefix: npmPrefix(checkout, npm),
-      packageSha256: source.packageSha256,
+    packageRoots: {
+      base: baseRoot,
+      target: targetRoot,
     },
-    schemaVersion: "clean-package-boundary.2",
+    schemaVersion: "clean-package-boundary.3",
     source: input.mode,
     installedPackage: {
       cliVersion: consumer.cliVersion,
       sourceFallback: false,
       version: consumer.version,
     },
+    ...(contract === undefined ? {} : { contract }),
   })}\n`)
 } catch (error) {
   process.stderr.write(`${error instanceof CleanPackageBoundaryError ? error.code : "clean-package-boundary-failed"}\n`)
@@ -97,15 +100,22 @@ try {
 }
 
 function parseInput(args) {
-  if (args.length === 0) return { mode: "source" }
-  if (args.length !== 6 || args[0] !== "--bundle" || args[2] !== "--head" || args[4] !== "--base") {
+  const remaining = [...args]
+  let exerciseContract = false
+  if (remaining[0] === "--exercise-contract") {
+    exerciseContract = true
+    remaining.shift()
+  }
+  if (remaining.length === 0) return { exerciseContract, mode: "source" }
+  if (remaining.length !== 6 || remaining[0] !== "--bundle" || remaining[2] !== "--head" || remaining[4] !== "--base") {
     throw new CleanPackageBoundaryError("clean-package-arguments")
   }
-  if (!isSha(args[3]) || !isSha(args[5])) throw new CleanPackageBoundaryError("clean-package-arguments")
+  if (!isSha(remaining[3]) || !isSha(remaining[5])) throw new CleanPackageBoundaryError("clean-package-arguments")
   return {
-    base: args[5],
-    bundlePath: args[1],
-    head: args[3],
+    base: remaining[5],
+    bundlePath: remaining[1],
+    exerciseContract,
+    head: remaining[3],
     mode: "bundle",
   }
 }
@@ -169,8 +179,21 @@ function readSourceIdentity(root) {
 
 function assertCheckoutIntegrity(root, source, npm) {
   assertCleanGit(root)
+  const commandCwd = realpathSync(root)
   const gitRoot = realpathSync(gitText(root, ["rev-parse", "--show-toplevel"]))
   const prefix = npmPrefix(root, npm)
+  const packagePath = realpathSync(join(root, "package.json"))
+  const lockPath = realpathSync(join(root, "package-lock.json"))
+  assertPackageExecutionBinding({
+    commandCwd,
+    expectedLockPath: join(root, "package-lock.json"),
+    expectedPackagePath: join(root, "package.json"),
+    gitRoot,
+    lockPath,
+    npmPrefix: prefix,
+    packagePath,
+    root,
+  })
   assertCheckoutPackageBinding({
     gitRoot,
     headLockSha256: source.headLockSha256,
@@ -185,6 +208,13 @@ function assertCheckoutIntegrity(root, source, npm) {
     ignoreScripts: npmText(["config", "get", "ignore-scripts"], root, npm),
     workspaces: npmText(["config", "get", "workspaces"], root, npm),
   })
+  return {
+    commandCwd,
+    gitRoot,
+    lockPath,
+    npmPrefix: prefix,
+    packagePath,
+  }
 }
 
 function packCheckout(root, source, npm, label) {
@@ -193,6 +223,61 @@ function packCheckout(root, source, npm, label) {
   const packed = runNpm(["pack", "--json", "--pack-destination", packDirectory], root, npm)
   requireSuccess(packed, "clean-package-pack")
   return resolvePackResult(packed.stdout, packDirectory, source.identity)
+}
+
+function exerciseExactTarContract(root, packed, npm) {
+  const sourceResult = run(
+    process.execPath,
+    [join(root, "scripts", "test-installed-package-contract.mjs"), "--source-cli", join(root, "dist", "cli", "index.js")],
+    root,
+    npm,
+  )
+  requireSuccess(sourceResult, "clean-package-source-contract")
+  if (!sourceResult.stdout.includes("source-cli-cooperative-finish-contract: PASS")) {
+    throw new CleanPackageBoundaryError("clean-package-source-contract")
+  }
+
+  const installedResult = run(
+    process.execPath,
+    [
+      join(root, "scripts", "test-installed-package-contract.mjs"),
+      "--tarball",
+      packed.tarballPath,
+      "--tarball-sha256",
+      packed.facts.tarballSha256,
+    ],
+    root,
+    npm,
+  )
+  requireSuccess(installedResult, "clean-package-installed-contract")
+  if (!installedResult.stdout.includes("installed-package-test-contract: PASS")) {
+    throw new CleanPackageBoundaryError("clean-package-installed-contract")
+  }
+  return {
+    installed: "fresh-tarball-contract-pass",
+    source: "built-cli-contract-pass",
+    tarballSha256: packed.facts.tarballSha256,
+  }
+}
+
+function assertStaleLauncherIsRejected(root, binding) {
+  const launcher = join(temporaryRoot, "stale-launcher")
+  mkdirSync(launcher)
+  writeFileSync(join(launcher, "package.json"), `${JSON.stringify({ name: "stale-launcher", version: "0.8.0-beta.1" })}\n`)
+  writeFileSync(join(launcher, "package-lock.json"), `${JSON.stringify({ lockfileVersion: 3, name: "stale-launcher", packages: { "": { name: "stale-launcher", version: "0.8.0-beta.1" } } })}\n`)
+  try {
+    assertPackageExecutionBinding({
+      ...binding,
+      commandCwd: realpathSync(launcher),
+      expectedLockPath: join(root, "package-lock.json"),
+      expectedPackagePath: join(root, "package.json"),
+      root,
+    })
+  } catch (error) {
+    if (error instanceof CleanPackageBoundaryError && error.code === "clean-package-command-cwd") return
+    throw error
+  }
+  throw new CleanPackageBoundaryError("clean-package-stale-launcher")
 }
 
 function installFreshTarball(tarballPath, identity, npm) {
@@ -295,7 +380,7 @@ function npmText(args, cwd, npm) {
 }
 
 function runNpm(args, cwd, npm) {
-  return run("npm", ["--prefix", cwd, ...args], cwd, npm)
+  return run("npm", args, cwd, npm)
 }
 
 function assertCliVersion(cwd, cliPath, expectedVersion, npm, code) {

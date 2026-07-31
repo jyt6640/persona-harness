@@ -29,7 +29,7 @@ import {
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
-const { producerIntakeOnly, sourceCli } = parseContractOptions(process.argv.slice(2))
+const { producerIntakeOnly, sourceCli, tarball, tarballSha256 } = parseContractOptions(process.argv.slice(2))
 const BETA15_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta15-acceptance.json")
 const MODELED_CURRENT_ARTIFACT_ID = 710000001
 const MODELED_CURRENT_RUN_ID = 30430000000
@@ -72,9 +72,12 @@ const BETA15_PRE_AUTHORITY_COMMANDS = new Map([
 
 try {
   if (sourceCli === undefined) {
-    const packed = packCurrentRepository()
+    const packed = tarball === undefined
+      ? packCurrentRepository()
+      : readSuppliedTarball(tarball, tarballSha256)
     const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
+    assertInstalledPackageIdentity(installedPackage, packed.identity)
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
     await assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package")
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
@@ -423,7 +426,26 @@ function packCurrentRepository() {
   const result = runBoundNpm(repositoryRoot, ["pack", "--json", "--pack-destination", packDirectory])
   requireSuccess("package pack", result)
   assertSourcePackManifest()
-  return resolvePackResult(result.stdout, packDirectory, identity)
+  return { ...resolvePackResult(result.stdout, packDirectory, identity), identity }
+}
+
+function readSuppliedTarball(tarballPath, expectedSha256) {
+  if (typeof tarballPath !== "string" || typeof expectedSha256 !== "string" || !/^[0-9a-f]{64}$/u.test(expectedSha256)) {
+    throw new TypeError("installed package tarball contract is invalid")
+  }
+  const resolved = realpathSync(tarballPath)
+  const stat = lstatSync(resolved)
+  if (!stat.isFile() || stat.isSymbolicLink() || sha256(readFileSync(resolved)) !== expectedSha256) {
+    throw new Error("installed package tarball identity does not match")
+  }
+  const identity = readSourcePackIdentity()
+  return {
+    facts: {
+      tarballSha256: expectedSha256,
+    },
+    identity,
+    tarballPath: resolved,
+  }
 }
 
 function installFreshTarball(tarballPath) {
@@ -460,6 +482,13 @@ function assertRepositoryOnlyFilesAreAbsent(installedPackage) {
   }
   if (existsSync(join(installedPackage, "scripts", "check-mvp-scope.mjs"))) {
     throw new Error("installed package unexpectedly contains repository scope checks")
+  }
+}
+
+function assertInstalledPackageIdentity(installedPackage, identity) {
+  const installed = JSON.parse(readFileSync(join(installedPackage, "package.json"), "utf8"))
+  if (installed?.name !== identity.name || installed?.version !== identity.version) {
+    throw new Error("installed package identity differs from tarball source")
   }
 }
 
@@ -2920,7 +2949,7 @@ function runNpm(cwd, args) {
 }
 
 function runBoundNpm(cwd, args) {
-  const result = spawnSync("npm", ["--prefix", cwd, ...args], {
+  const result = spawnSync("npm", args, {
     cwd,
     encoding: "utf8",
     env: boundNpmEnvironment(),
@@ -3127,6 +3156,8 @@ function isRecord(value) {
 function parseContractOptions(args) {
   let producerIntakeOnly = false
   let sourceCli
+  let tarball
+  let tarballSha256
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index]
     if (argument === "--producer-intake-only" && !producerIntakeOnly) {
@@ -3138,7 +3169,23 @@ function parseContractOptions(args) {
       index += 1
       continue
     }
-    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--producer-intake-only] [--source-cli dist/cli/index.js]")
+    if (argument === "--tarball" && tarball === undefined && typeof args[index + 1] === "string" && args[index + 1].trim() !== "") {
+      tarball = args[index + 1]
+      index += 1
+      continue
+    }
+    if (argument === "--tarball-sha256" && tarballSha256 === undefined && typeof args[index + 1] === "string" && /^[0-9a-f]{64}$/u.test(args[index + 1])) {
+      tarballSha256 = args[index + 1]
+      index += 1
+      continue
+    }
+    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256>]")
   }
-  return { producerIntakeOnly, sourceCli }
+  if (sourceCli !== undefined && tarball !== undefined) {
+    throw new TypeError("source CLI and tarball modes are exclusive")
+  }
+  if ((tarball === undefined) !== (tarballSha256 === undefined)) {
+    throw new TypeError("tarball identity is required")
+  }
+  return { producerIntakeOnly, sourceCli, tarball, tarballSha256 }
 }

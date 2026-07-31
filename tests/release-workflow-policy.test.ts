@@ -223,10 +223,11 @@ describe("release workflow policy", () => {
 
     expect(scripts["test"]).toBe("npm run test:package")
     expect(scripts["test:package"]).toBe("node dist/cli/index.js --help")
+    expect(scripts["test:authoritative-bundle-package-contract"]).toBe("node scripts/verify-clean-package-boundary.mjs --exercise-contract")
     expect(scripts["test:clean-package-boundary"]).toBe("node scripts/verify-clean-package-boundary.mjs")
     expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs")
     expect(scripts["test:repository"]).toBe(
-      "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:installed-package-contract && npm run test:clean-package-boundary",
+      "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:authoritative-bundle-package-contract",
     )
 
     for (const workflow of ["ci.yml", "publish.yml", "release.yml"]) {
