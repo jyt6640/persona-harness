@@ -2422,6 +2422,11 @@ function readBeta15PreAuthorityReadiness(packageRoot) {
   const readiness = value?.preAuthorityReadiness
   const commands = readiness?.commands
   const packageVersion = value?.package?.version
+  const packageBoundary = value?.packageBoundary
+  const cleanCheckout = packageBoundary?.cleanCheckout
+  const npmPolicy = packageBoundary?.npm
+  const packPolicy = packageBoundary?.pack
+  const authoritativeBundleContract = packageBoundary?.authoritativeBundleContract
   const defaultFinish = readiness?.expectedDefaultFinish
   const publicOutput = readiness?.publicOutput
   const initialization = readiness?.initialization
@@ -2478,6 +2483,29 @@ function readBeta15PreAuthorityReadiness(packageRoot) {
       ".persona/workflow/workflow-loop-state.json",
       ".persona/workflow/ralph-loop-state.json",
     ])
+    || !isRecord(cleanCheckout)
+    || !sameStrings(cleanCheckout.requiredBindings, [
+      "checkout-cwd",
+      "git-toplevel",
+      "npm-prefix",
+      "resolved-package-json-path",
+      "resolved-package-lock-path",
+      "HEAD-package-json-bytes",
+      "HEAD-package-lock-bytes",
+    ])
+    || cleanCheckout.sourceFallback !== "forbidden"
+    || !isRecord(npmPolicy)
+    || npmPolicy.invocation !== "plain-npm-from-bound-detached-checkout-cwd"
+    || npmPolicy.packPrefixFlag !== "forbidden"
+    || !isRecord(packPolicy)
+    || packPolicy.prepack !== "package-root-build-script-derived-from-its-own-package-root"
+    || !sameRecord(authoritativeBundleContract, {
+      baseAndTarget: "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
+      command: "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
+      installedContract: "fresh-installed-contract-uses-exact-target-tarball-sha256",
+      rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
+      sourceContract: "built-cli-public-consumer-contract",
+    })
   ) {
     throw new Error("beta.15 pre-authority readiness manifest is invalid")
   }
