@@ -29,7 +29,7 @@ import {
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
-const { producerIntakeOnly, sourceCli, tarball, tarballSha256 } = parseContractOptions(process.argv.slice(2))
+const { packageExercise, producerIntakeOnly, sourceCli, tarball, tarballSha256 } = parseContractOptions(process.argv.slice(2))
 const BETA15_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta15-acceptance.json")
 const MODELED_CURRENT_ARTIFACT_ID = 710000001
 const MODELED_CURRENT_RUN_ID = 30430000000
@@ -96,7 +96,9 @@ try {
         installedPackage,
         "installed package",
       )
-      assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+      if (!packageExercise) {
+        assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+      }
       assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory)
       await assertPackagedBoundedReportStdin(installedPackage, consumerDirectory)
       assertWorkflowLifecycleAbsenceBlocks(
@@ -111,7 +113,9 @@ try {
       )
       assertInstalledPackageTestPasses(installedPackage)
       process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
-      process.stdout.write("installed-package-test-contract: PASS\n")
+      process.stdout.write(packageExercise
+        ? "installed-package-exercise-contract: PASS\n"
+        : "installed-package-test-contract: PASS\n")
     }
   } else {
     assertSourceProjectFinishProducerIntake(sourceCli)
@@ -122,12 +126,16 @@ try {
     } else {
       await assertSourceConsumerAuthorityBoundary(sourceCli)
       assertSourceDoctorRegistryReadback(sourceCli)
-      assertSourceCooperativeFinishWorks(sourceCli)
+      if (!packageExercise) {
+        assertSourceCooperativeFinishWorks(sourceCli)
+      }
       assertSourceEvidenceReadWriteBoundary(sourceCli)
       await assertSourceBoundedReportStdin(sourceCli)
       assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
       assertSourceBootstrapWorkspaceIntake(sourceCli)
-      process.stdout.write("source-cli-cooperative-finish-contract: PASS\n")
+      process.stdout.write(packageExercise
+        ? "source-cli-package-exercise-contract: PASS\n"
+        : "source-cli-cooperative-finish-contract: PASS\n")
     }
   }
 } finally {
@@ -3182,6 +3190,7 @@ function isRecord(value) {
 }
 
 function parseContractOptions(args) {
+  let packageExercise = false
   let producerIntakeOnly = false
   let sourceCli
   let tarball
@@ -3190,6 +3199,10 @@ function parseContractOptions(args) {
     const argument = args[index]
     if (argument === "--producer-intake-only" && !producerIntakeOnly) {
       producerIntakeOnly = true
+      continue
+    }
+    if (argument === "--package-exercise" && !packageExercise) {
+      packageExercise = true
       continue
     }
     if (argument === "--source-cli" && sourceCli === undefined && typeof args[index + 1] === "string" && args[index + 1].trim() !== "") {
@@ -3207,7 +3220,7 @@ function parseContractOptions(args) {
       index += 1
       continue
     }
-    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256>]")
+    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--package-exercise] [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256>]")
   }
   if (sourceCli !== undefined && tarball !== undefined) {
     throw new TypeError("source CLI and tarball modes are exclusive")
@@ -3215,5 +3228,8 @@ function parseContractOptions(args) {
   if ((tarball === undefined) !== (tarballSha256 === undefined)) {
     throw new TypeError("tarball identity is required")
   }
-  return { producerIntakeOnly, sourceCli, tarball, tarballSha256 }
+  if (packageExercise && producerIntakeOnly) {
+    throw new TypeError("package exercise and producer intake only are exclusive")
+  }
+  return { packageExercise, producerIntakeOnly, sourceCli, tarball, tarballSha256 }
 }

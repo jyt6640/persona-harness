@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+
 import { describe, expect, it } from "vitest"
 
 import {
@@ -122,5 +125,15 @@ describe("clean package boundary", () => {
       name: IDENTITY.name,
       version: IDENTITY.version,
     }, IDENTITY)).toEqual(IDENTITY)
+  })
+
+  it("uses the shared portable consumer contract for authoritative bundle exercise mode", () => {
+    const verifier = readFileSync(join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"), "utf8")
+    const contract = readFileSync(join(process.cwd(), "scripts", "test-installed-package-contract.mjs"), "utf8")
+
+    expect(verifier).toMatch(/exerciseExactTarContract[\s\S]*?"--package-exercise"[\s\S]*?"--source-cli"/u)
+    expect(verifier).toMatch(/"--package-exercise"[\s\S]*?"--tarball"/u)
+    expect(contract).toContain("source-cli-package-exercise-contract: PASS")
+    expect(contract).toContain("installed-package-exercise-contract: PASS")
   })
 })
