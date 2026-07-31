@@ -16,12 +16,16 @@
         "checkout-cwd",
         "git-toplevel",
         "npm-prefix",
+        "resolved-package-json-path",
+        "resolved-package-lock-path",
         "HEAD-package-json-bytes",
         "HEAD-package-lock-bytes"
       ],
       "sourceFallback": "forbidden"
     },
     "npm": {
+      "invocation": "plain-npm-from-bound-detached-checkout-cwd",
+      "packPrefixFlag": "forbidden",
       "global": false,
       "ignoreScriptsBeforePack": false,
       "install": "npm-ci-ignore-scripts",
@@ -29,7 +33,15 @@
     },
     "pack": {
       "metadata": "name-version-filename-must-match-frozen-package-and-lock",
+      "prepack": "package-root-build-script-derived-from-its-own-package-root",
       "postcondition": "fresh-installed-cli-version-must-match-tarball-version"
+    },
+    "authoritativeBundleContract": {
+      "command": "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
+      "baseAndTarget": "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
+      "rejectBeforePack": "launcher-cwd-or-manifest-outside-bound-checkout",
+      "sourceContract": "built-cli-public-consumer-contract",
+      "installedContract": "fresh-installed-contract-uses-exact-target-tarball-sha256"
     }
   },
   "beta14HistoricalExternal": {
