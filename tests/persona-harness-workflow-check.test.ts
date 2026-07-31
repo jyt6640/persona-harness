@@ -1369,6 +1369,24 @@ describe("ph workflow guard", () => {
     expect(result.stdout).toContain("npx ph init")
   })
 
+  it("fails an authority-backed Finish request before an uninitialized project can no-op", () => {
+    const projectDir = createTempProject()
+
+    const result = runPersonaCli(["workflow", "finish", "implement"], {
+      cwd: projectDir,
+      env: {},
+      invocationName: "ph",
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe("")
+    expect(result.stderr).toContain("Workflow finish failed: implement")
+    expect(result.stderr).toContain("Blocker: workflow-state-uninitialized")
+    expect(result.stderr).toContain("npx ph bootstrap backend --strict --no-developer-mcp")
+    expect(result.stderr).not.toContain(projectDir)
+    expect(existsSync(join(projectDir, ".persona"))).toBe(false)
+  })
+
   it("blocks implementation rail when Persona Harness is initialized but the backend profile is missing", () => {
     const projectDir = createTempProject()
     mkdirSync(join(projectDir, ".persona"), { recursive: true })
