@@ -11,8 +11,8 @@ export function parseBundleHeads(output: string): Array<{ ref: string; sha: stri
 
 export function assertBundleHeadBinding(
   heads: Array<{ ref: string; sha: string }>,
-  expected: { base: string; head: string },
-): { base: string; head: string }
+  expected: { base: string; candidateRef: string; head: string },
+): { base: string; candidateRef: string; head: string }
 
 export function assertCheckoutPackageBinding(binding: {
   root: string
