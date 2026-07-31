@@ -24,6 +24,17 @@ export function assertCheckoutPackageBinding(binding: {
   headLockSha256: string
 }): { root: string }
 
+export function assertPackageExecutionBinding(binding: {
+  commandCwd: string
+  expectedLockPath: string
+  expectedPackagePath: string
+  gitRoot: string
+  lockPath: string
+  npmPrefix: string
+  packagePath: string
+  root: string
+}): { root: string }
+
 export function assertNpmExecutionPolicy(policy: {
   global: string
   ignoreScripts: string
