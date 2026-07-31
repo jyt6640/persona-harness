@@ -64,6 +64,7 @@ try {
   assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
   process.stdout.write(`${JSON.stringify({
     base: bundle.base,
+    candidateRef: bundle.candidateRef,
     basePackage: {
       fileCount: basePacked.facts.fileCount,
       name: baseSource.identity.name,
@@ -107,15 +108,22 @@ function parseInput(args) {
     remaining.shift()
   }
   if (remaining.length === 0) return { exerciseContract, mode: "source" }
-  if (remaining.length !== 6 || remaining[0] !== "--bundle" || remaining[2] !== "--head" || remaining[4] !== "--base") {
+  if (
+    remaining.length !== 8
+    || remaining[0] !== "--bundle"
+    || remaining[2] !== "--candidate-ref"
+    || remaining[4] !== "--head"
+    || remaining[6] !== "--base"
+  ) {
     throw new CleanPackageBoundaryError("clean-package-arguments")
   }
-  if (!isSha(remaining[3]) || !isSha(remaining[5])) throw new CleanPackageBoundaryError("clean-package-arguments")
+  if (!isSha(remaining[5]) || !isSha(remaining[7])) throw new CleanPackageBoundaryError("clean-package-arguments")
   return {
-    base: remaining[5],
+    base: remaining[7],
     bundlePath: remaining[1],
+    candidateRef: remaining[3],
     exerciseContract,
-    head: remaining[3],
+    head: remaining[5],
     mode: "bundle",
   }
 }
@@ -124,20 +132,26 @@ function createSourceBundle(root) {
   assertDirectory(root, "clean-package-source-root")
   assertCleanGit(root)
   const base = gitText(root, ["rev-parse", "refs/remotes/origin/main"])
+  const candidateRef = gitText(root, ["symbolic-ref", "--quiet", "HEAD"])
   const head = gitText(root, ["rev-parse", "HEAD"])
   requireSuccess(run("git", ["merge-base", "--is-ancestor", base, head], root), "clean-package-ancestry")
   const bundlePath = join(temporaryRoot, "candidate.bundle")
-  requireSuccess(run("git", ["bundle", "create", bundlePath, "HEAD", "refs/remotes/origin/main"], root), "clean-package-bundle-create")
-  return verifyBundle(bundlePath, { base, head })
+  requireSuccess(run("git", ["bundle", "create", bundlePath, "HEAD", candidateRef, "refs/remotes/origin/main"], root), "clean-package-bundle-create")
+  return verifyBundle(bundlePath, { base, candidateRef, head })
 }
 
 function verifySuppliedBundle(input) {
-  if (typeof input.bundlePath !== "string" || typeof input.base !== "string" || typeof input.head !== "string") {
+  if (
+    typeof input.bundlePath !== "string"
+    || typeof input.base !== "string"
+    || typeof input.candidateRef !== "string"
+    || typeof input.head !== "string"
+  ) {
     throw new CleanPackageBoundaryError("clean-package-arguments")
   }
   const bundlePath = realpathSync(input.bundlePath)
   assertRegularFile(bundlePath, "clean-package-bundle-file")
-  return verifyBundle(bundlePath, { base: input.base, head: input.head })
+  return verifyBundle(bundlePath, { base: input.base, candidateRef: input.candidateRef, head: input.head })
 }
 
 function verifyBundle(bundlePath, expected) {

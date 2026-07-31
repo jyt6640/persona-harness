@@ -1,5 +1,6 @@
 const SHA256 = /^[0-9a-f]{64}$/u
 const SHA = /^[0-9a-f]{40}$/u
+const CANDIDATE_REF = /^refs\/heads\/(?:[A-Za-z0-9][A-Za-z0-9._-]*)(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/u
 const STRICT_SEMVER = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
 
 export class CleanPackageBoundaryError extends Error {
@@ -41,20 +42,37 @@ export function parseBundleHeads(output) {
 }
 
 export function assertBundleHeadBinding(heads, expected) {
-  if (!Array.isArray(heads) || !isRecord(expected) || typeof expected.base !== "string" || typeof expected.head !== "string") {
+  if (
+    !Array.isArray(heads)
+    || !isRecord(expected)
+    || typeof expected.base !== "string"
+    || typeof expected.candidateRef !== "string"
+    || typeof expected.head !== "string"
+  ) {
     fail("clean-package-bundle-shape")
   }
-  if (!SHA.test(expected.base) || !SHA.test(expected.head)) fail("clean-package-bundle-shape")
+  if (!SHA.test(expected.base) || !SHA.test(expected.head) || !CANDIDATE_REF.test(expected.candidateRef)) {
+    fail("clean-package-bundle-shape")
+  }
   const byRef = new Map()
+  const branchRefs = []
   for (const entry of heads) {
     if (!isRecord(entry) || typeof entry.ref !== "string" || typeof entry.sha !== "string" || !SHA.test(entry.sha) || byRef.has(entry.ref)) {
       fail("clean-package-bundle-shape")
     }
     byRef.set(entry.ref, entry.sha)
+    if (entry.ref.startsWith("refs/heads/")) branchRefs.push(entry.ref)
   }
-  if (byRef.get("HEAD") !== expected.head) fail("clean-package-bundle-head")
+  const candidateSha = byRef.get(expected.candidateRef)
+  if (candidateSha === undefined) fail("clean-package-bundle-candidate-ref")
+  if (branchRefs.length !== 1 || branchRefs[0] !== expected.candidateRef) {
+    fail("clean-package-bundle-candidate-ambiguity")
+  }
+  if (candidateSha !== expected.head) fail("clean-package-bundle-candidate-sha")
+  const headAlias = byRef.get("HEAD")
+  if (headAlias !== undefined && headAlias !== expected.head) fail("clean-package-bundle-head")
   if (byRef.get("refs/remotes/origin/main") !== expected.base) fail("clean-package-bundle-main")
-  return { base: expected.base, head: expected.head }
+  return { base: expected.base, candidateRef: expected.candidateRef, head: expected.head }
 }
 
 export function assertCheckoutPackageBinding(binding) {

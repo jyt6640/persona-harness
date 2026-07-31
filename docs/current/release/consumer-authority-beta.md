@@ -145,15 +145,19 @@ reports, and evidence remain bound. This does not relax caller enrollment,
 reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
 
 Before beta.15 package evidence is accepted, the verifier materializes the
-exact complete-history bundle in a detached no-local checkout. It binds the
-bundle `HEAD` and `refs/remotes/origin/main`, the checkout CWD, Git top-level,
-npm prefix, and the byte-identical `package.json` and lock from `HEAD`. It then
-runs isolated non-global, non-workspace npm setup, a normal prepack, and a
-fresh installed CLI check. An ambient workspace, stale `dist`, alternate npm
-prefix, cache selection, or older package cannot stand in for the frozen
-tarball. The exact base is materialized separately from the same bundle and
-packed under the same policy, so package comparison cannot borrow either
-checkout's working directory or generated output.
+exact complete-history bundle in a detached no-local checkout. It binds one
+explicit canonical `refs/heads/...` candidate ref and
+`refs/remotes/origin/main`; the candidate ref must equal the expected candidate
+SHA and must be the only branch ref. A present bundle `HEAD` alias is accepted
+only when it resolves to that same candidate SHA. The verifier also binds the
+checkout CWD, Git top-level, npm prefix, and the byte-identical `package.json`
+and lock from the selected candidate commit. It then runs isolated non-global,
+non-workspace npm setup, a normal prepack, and a fresh installed CLI check. An
+ambient workspace, stale `dist`, alternate npm prefix, cache selection, or
+older package cannot stand in for the frozen tarball. The exact base is
+materialized separately from the same bundle and packed under the same policy,
+so package comparison cannot borrow either checkout's working directory or
+generated output.
 
 The pack invocation itself is plain `npm` from that bound checkout CWD;
 `npm --prefix ... pack` is not an allowed package-root selector. The packaged
