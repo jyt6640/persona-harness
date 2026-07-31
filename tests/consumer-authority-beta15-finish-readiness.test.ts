@@ -48,8 +48,10 @@ describe("consumer authority beta.15 final readiness", () => {
     })
     expect(proof).toEqual({
       baseAndTarget: "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
+      candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head",
       command: "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
       fullJavaGradleContract: "source-and-fresh-installed-full-contract-on-a-provisioned-java-gradle-host",
+      headAlias: "optional-head-mapping-must-match-the-same-expected-head",
       installedContract: "fresh-installed-package-exercise-uses-exact-target-tarball-sha256",
       rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
       sourceContract: "built-cli-package-exercise-contract-under-the-same-executable",
