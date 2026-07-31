@@ -28,6 +28,7 @@ import {
   type WorkflowGuardKind,
   type WorkflowRunnerKind,
   uninitializedHarnessOutput,
+  uninitializedWorkflowFinishOutput,
 } from "./workflow-output.js"
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
 import { runWorkflowRelayCommand } from "./workflow-relay.js"
@@ -193,7 +194,7 @@ function runWorkflowFinishAtProject(
     projectReadSnapshot: projectRead?.snapshot,
   })
   if (!hasPersonaHarness(summary, projectRead?.snapshot)) {
-    return uninitializedHarnessOutput()
+    return uninitializedWorkflowFinishOutput(runnerKind)
   }
   if (reverify) {
     const result = runFreshFixedVerification(summary.projectDir, ci ? "ci" : "local", {
