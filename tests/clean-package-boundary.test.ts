@@ -15,17 +15,57 @@ import {
 const BASE = "a".repeat(40)
 const HEAD = "b".repeat(40)
 const SHA = "c".repeat(64)
+const CANDIDATE_REF = "refs/heads/fix/consumer-authority-beta18-bundle-ref-binding"
 const IDENTITY = {
   name: "persona-harness",
   version: "0.8.0-beta.15",
 }
 
 describe("clean package boundary", () => {
-  it("rejects a complete bundle that omits the exact candidate HEAD ref", () => {
+  it("accepts the configured canonical candidate branch without a literal HEAD alias", () => {
+    expect(assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD })).toEqual({
+      base: BASE,
+      candidateRef: CANDIDATE_REF,
+      head: HEAD,
+    })
+  })
+
+  it("rejects a wrong, absent, or conflicting canonical candidate branch", () => {
+    const expected = { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD }
+
     expect(() => assertBundleHeadBinding([
-      { ref: "refs/bundle-freeze/issue122/main", sha: BASE },
-      { ref: "refs/bundle-freeze/issue122/candidate", sha: HEAD },
-    ], { base: BASE, head: HEAD })).toThrow("clean-package-bundle-head")
+      { ref: "refs/heads/foreign", sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-ref")
+    expect(() => assertBundleHeadBinding([
+      { ref: "HEAD", sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-ref")
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/heads/foreign", sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-ambiguity")
+  })
+
+  it("rejects a candidate SHA mismatch, only-base bundle, and stale or foreign HEAD alias", () => {
+    const expected = { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD }
+
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: BASE },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-sha")
+    expect(() => assertBundleHeadBinding([
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-ref")
+    expect(() => assertBundleHeadBinding([
+      { ref: "HEAD", sha: BASE },
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-head")
   })
 
   it("rejects package and lock version drift before packing", () => {
@@ -104,8 +144,13 @@ describe("clean package boundary", () => {
     )).toEqual(IDENTITY)
     expect(assertBundleHeadBinding([
       { ref: "HEAD", sha: HEAD },
+      { ref: CANDIDATE_REF, sha: HEAD },
       { ref: "refs/remotes/origin/main", sha: BASE },
-    ], { base: BASE, head: HEAD })).toEqual({ base: BASE, head: HEAD })
+    ], { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD })).toEqual({
+      base: BASE,
+      candidateRef: CANDIDATE_REF,
+      head: HEAD,
+    })
     expect(assertCheckoutPackageBinding({
       gitRoot: "/fresh/bundle-checkout",
       headLockSha256: SHA,
