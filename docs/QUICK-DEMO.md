@@ -42,8 +42,10 @@ the initial blocker asks for real test/build/runtime verification first, then
 names `npx ph workflow check` as the command to run after that work is
 recorded. Do not treat the command as a shortcut around the action.
 
-Do not use an uninitialized directory for this beat: there, finish exits `0`
-with advisory setup guidance rather than demonstrating a gate block.
+Do not use an uninitialized directory for this beat: there, Finish exits
+nonzero with the bounded `workflow-state-uninitialized` blocker. Run the
+public bootstrap command first; an authority-backed Finish never treats absent
+workflow state as a successful no-op.
 
 ## 3. Enter a real goal and follow the rail
 

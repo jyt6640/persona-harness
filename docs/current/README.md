@@ -41,7 +41,7 @@ not become current merely because they remain under `docs/current/`.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.8.0-beta.14-release-notes.md`](release/v0.8.0-beta.14-release-notes.md).
+  [`release/v0.8.0-beta.15-release-notes.md`](release/v0.8.0-beta.15-release-notes.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -118,18 +118,18 @@ not become current merely because they remain under `docs/current/`.
   policy artifact verifier remains read-only/non-authoritative, while local or
   caller-provided staged-package evidence remains
   `artifact-provenance-unavailable`.
-- `0.8.0-beta.1` through `0.8.0-beta.13` are historical staging-only Consumer
-  Authority Beta evidence. Beta.13 independently verified a current original
-  artifact but installed fetch retained no authority because bootstrap-local
-  init metadata entered the consumer source projection; it provides no reusable
-  beta.14 Finish, consumption, or replay fact. `0.8.0-beta.14` is the current
+- `0.8.0-beta.1` through `0.8.0-beta.14` are historical staging-only Consumer
+  Authority Beta evidence. Beta.14 independently verified a current original
+  artifact and authenticated fetch, but the final disposable consumer lacked
+  initialized workflow state and Finish made no authority decision. It provides
+  no reusable beta.15 Finish, consumption, or replay fact. `0.8.0-beta.15` is the current
   source-preparation candidate. It makes no package, tag, staging mapping,
   GitHub release, original signed consumer artifact, promotion, Stable/GA, or
   Finish authority claim. Its pre-fixture gate requires a package-visible
   observer credential-preflight, separate caller/reusable signer binding, and
   the complete public Java/Spring lifecycle to reach only
   `trusted-authority-required` in
-  [`release/v0.8.0-beta.14-release-notes.md`](release/v0.8.0-beta.14-release-notes.md).
+  [`release/v0.8.0-beta.15-release-notes.md`](release/v0.8.0-beta.15-release-notes.md).
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)
