@@ -5,19 +5,19 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` through `0.8.0-beta.15` are immutable staging-only evidence.
-Their registry and provenance observations cannot be reused as beta.16
-current-version consumer authority evidence. Beta.15's final observer combined
-mutually exclusive GitHub CLI identity selectors, so it stopped before online
-cryptographic verification. The active `0.8.0-beta.16` source candidate has no
+`0.8.0-beta.1` through `0.8.0-beta.16` are immutable staging-only evidence.
+Their registry and provenance observations cannot be reused as beta.17
+current-version consumer authority evidence. Beta.16's final observer accepted
+an exit-zero API download without proving a nonempty exact ZIP, so it stopped
+before ZIP validation. The active `0.8.0-beta.17` source candidate has no
 package, tag, channel movement, GitHub release, or signed consumer-project
 artifact at source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.16 must establish the remaining public readiness and final authority route
-independently; it cannot inherit beta.15's observer failure, an earlier
+Beta.17 must establish the remaining public readiness and final authority route
+independently; it cannot inherit beta.16's observer failure, an earlier
 lifecycle, or an earlier authority result.
 
 The consumer must create its own workflow state through public bootstrap and
@@ -50,7 +50,8 @@ without standing in for hosted crypto evidence.
    it, and does not permit a product credential fallback. Fixed GitHub readback,
    not the credential or project content, establishes identity. Before fixture
    authorization, the same package also runs its versioned external attestation
-   command-plan preflight with no token and no artifact. That plan uses exactly
+   and artifact transport plan preflights with no token and no artifact. The
+   attestation plan uses exactly
    one caller `--repo` selector and one reusable `--signer-workflow` plus
    `--signer-digest`; caller workflow/run/ref/source bindings remain separate.
 
@@ -129,15 +130,15 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.15` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.16`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.16` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.17`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta16-acceptance.json`](consumer-authority-beta16-acceptance.json)
+[`consumer-authority-beta17-acceptance.json`](consumer-authority-beta17-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
-and no-token command-plan preflights, the live certificate observation order,
+and no-token command/transport plan preflights, the live certificate observation order,
 and the one hosted residual.
 
 The source projection excludes only `.persona/.ph-init-manifest.json` and
@@ -147,7 +148,7 @@ than caller project source. The profile, Gradle descriptors, Git identity,
 reports, and evidence remain bound. This does not relax caller enrollment,
 reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
 
-Before beta.16 package evidence is accepted, the verifier materializes the
+Before beta.17 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds one
 explicit canonical `refs/heads/...` candidate ref and
 `refs/remotes/origin/main`; the candidate ref must equal the expected candidate
@@ -164,9 +165,17 @@ generated output.
 
 The pack invocation itself is plain `npm` from that bound checkout CWD;
 `npm --prefix ... pack` is not an allowed package-root selector. The packaged
-root-bound prepack runner builds from its own script location, and the one
-authoritative bundle proof feeds its exact target tarball SHA-256 into both the
-built source CLI and fresh installed consumer contracts.
+root-bound prepack runner builds from its own script location. The portable
+`package-content-identity.1` is the cross-environment comparison: it binds
+sorted safe regular package members, allowed mode, size, and per-member
+content digest. Generic independent `npm pack` raw bytes are not treated as a
+portable identity. The pinned canonical publisher emits one normalized tarball
+under isolated npm/Git state, publishes that exact file, and requires registry
+readback to match both that file's raw hash/integrity and the portable identity.
+The one authoritative bundle proof feeds its exact canonical tarball SHA-256
+and content identity into both the built source CLI and fresh installed
+consumer contracts. Retained earlier beta tar aggregates remain diagnostic-only
+and do not authorize a package or authority result.
 
 For that observer, the authenticated product discovery route sends the enrolled
 caller workflow filename directly to the fixed GitHub workflow-runs endpoint.
@@ -177,7 +186,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.16 fixture push, an independent observer may prepare
+Before the one natural beta.17 fixture push, an independent observer may prepare
 only an isolated exact registry installation, private consumer `HOME`,
 enrollment, status, and explain. It must then run
 `node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json`.
@@ -195,6 +204,17 @@ that the installed `gh` CLI accepts the canonical selector grammar through flag
 parsing, retains a bounded exit classification, and has no network or artifact
 access. It does not self-validate a predicate, grant authority, or replace the
 later online verification.
+
+The observer must also run
+`node node_modules/persona-harness/scripts/preflight-consumer-authority-external-artifact-transport.mjs --json`.
+This uses no credential, no original artifact, and no network. It validates only
+the fixed API endpoint, enrolled caller/run/artifact metadata shape, bounded
+output policy, and redirect policy. It does not replace later external
+acquisition: when a current artifact exists, a fixed HTTPS client streams into a
+private no-follow reservation, checks exact count/SHA-256 and safe ZIP members,
+strips Authorization after one validated redirect, and hands only the validated
+original ZIP/bundle to the separate attestation command plan. It never retains a
+signed URL, response body, header, token, or caller-controlled output path.
 
 Once the current-version original artifact exists, the separately governed
 observer sequence independently verifies the custom predicate online before the

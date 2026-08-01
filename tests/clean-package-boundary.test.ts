@@ -201,8 +201,9 @@ describe("clean package boundary", () => {
     const contract = readFileSync(join(process.cwd(), "scripts", "test-installed-package-contract.mjs"), "utf8")
 
     expect(verifier).toMatch(/exerciseExactTarContract[\s\S]*?"--package-exercise"[\s\S]*?"--source-cli"/u)
-    expect(verifier).toMatch(/"--package-exercise"[\s\S]*?"--tarball"/u)
+    expect(verifier).toMatch(/"--package-exercise"[\s\S]*?"--tarball"[\s\S]*?"--tarball-content-identity"/u)
     expect(contract).toContain("source-cli-package-exercise-contract: PASS")
     expect(contract).toContain("installed-package-exercise-contract: PASS")
+    expect(contract).toContain("assertInstalledPackageContentIdentity")
   })
 })

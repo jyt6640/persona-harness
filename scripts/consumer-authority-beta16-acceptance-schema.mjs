@@ -85,6 +85,10 @@ export class Beta16AcceptanceManifestError extends Error {
   }
 }
 
+export function canonicalBeta16AcceptanceManifest() {
+  return structuredClone(EXPECTED_MANIFEST)
+}
+
 export function readBeta16AcceptanceManifest(packageRoot) {
   let packageVersion
   let value

@@ -79,14 +79,15 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 24
+          node-version: 20.19.0
           cache: npm
           registry-url: https://registry.npmjs.org
 
       - name: Show publish toolchain
         run: |
-          node --version
-          npm --version
+          set -euo pipefail
+          test "$(node --version)" = "v20.19.0"
+          test "$(npm --version)" = "10.8.2"
 
       - name: Install dependencies
         run: npm ci
@@ -125,13 +126,24 @@ jobs:
 
           echo "Publishing persona-harness@$version with dist-tag $DIST_TAG"
 
-      - name: Pack dry run
-        run: npm pack --dry-run --json
+      - name: Create one canonical package tarball
+        run: |
+          set -euo pipefail
+          package_directory="${RUNNER_TEMP}/persona-harness-canonical-package"
+          package_facts="${RUNNER_TEMP}/persona-harness-canonical-package-facts.json"
+          test ! -e "$package_directory"
+          test ! -e "$package_facts"
+          node scripts/canonical-package-packer.mjs --output-directory "$package_directory" > "$package_facts"
+          cmp --silent "$package_facts" "$package_directory/package-facts.json"
+          test -s "$package_directory/persona-harness-${PACKAGE_VERSION}.tgz"
+          echo "CANONICAL_PACKAGE_DIRECTORY=$package_directory" >> "$GITHUB_ENV"
+          echo "CANONICAL_PACKAGE_FACTS=$package_facts" >> "$GITHUB_ENV"
+          echo "CANONICAL_TARBALL=$package_directory/persona-harness-${PACKAGE_VERSION}.tgz" >> "$GITHUB_ENV"
 
       - name: Publish to npm
         env:
           DIST_TAG: ${{ inputs.dist_tag }}
-        run: npm publish --access public --tag "$DIST_TAG" --provenance
+        run: npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance
 
       - name: Verify registry package
         env:
@@ -143,6 +155,7 @@ jobs:
           for attempt in {1..30}; do
             if node scripts/release-registry-readback.mjs \
               --dist-tag "$DIST_TAG" \
+              --package-facts "$CANONICAL_PACKAGE_FACTS" \
               --source-head "$EXPECTED_GIT_HEAD" \
               --version "$PACKAGE_VERSION" \
               > registry-readback.json; then

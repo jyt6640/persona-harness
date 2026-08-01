@@ -4,6 +4,7 @@ import {
   chmodSync,
   existsSync,
   lstatSync,
+  mkdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -13,12 +14,18 @@ import process from "node:process"
 import { fileURLToPath } from "node:url"
 
 const packageRoot = realpathSync(resolve(dirname(fileURLToPath(import.meta.url)), ".."))
+const BUILD_LOCK_NAME = ".persona-package-root-build.lock"
+const BUILD_LOCK_TIMEOUT_MS = 120_000
+const BUILD_LOCK_WAIT_MS = 25
 
 try {
   const cleanOnly = parseArgs(process.argv.slice(2))
-  assertPackageIdentity(packageRoot)
-  removeDist(packageRoot)
-  if (!cleanOnly) buildDist(packageRoot)
+  process.umask(0o022)
+  withBuildLock(packageRoot, () => {
+    assertPackageIdentity(packageRoot)
+    removeDist(packageRoot)
+    if (!cleanOnly) buildDist(packageRoot)
+  })
 } catch (error) {
   process.stderr.write(`${error instanceof Error && error.message.startsWith("package-root-build-") ? error.message : "package-root-build-failed"}\n`)
   process.exitCode = 1
@@ -67,13 +74,45 @@ function buildDist(root) {
 }
 
 function buildEnvironment() {
-  const environment = { ...process.env }
-  delete environment.INIT_CWD
-  delete environment.npm_package_json
-  for (const key of Object.keys(environment)) {
-    if (key.toLowerCase().startsWith("npm_config_")) delete environment[key]
+  return {
+    HOME: process.env.HOME ?? "",
+    LANG: "C",
+    LC_ALL: "C",
+    PATH: process.env.PATH ?? "",
+    SOURCE_DATE_EPOCH: "0",
+    TMPDIR: process.env.TMPDIR ?? "/tmp",
+    TZ: "UTC",
   }
-  return environment
+}
+
+function withBuildLock(root, operation) {
+  const lockPath = join(root, BUILD_LOCK_NAME)
+  const deadline = Date.now() + BUILD_LOCK_TIMEOUT_MS
+  while (true) {
+    try {
+      mkdirSync(lockPath, { mode: 0o700 })
+      break
+    } catch (error) {
+      if (!(error instanceof Error) || !isAlreadyExists(error)) throw new Error("package-root-build-lock")
+      const stat = lstatSync(lockPath)
+      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("package-root-build-lock")
+      if (Date.now() >= deadline) throw new Error("package-root-build-lock-timeout")
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, BUILD_LOCK_WAIT_MS)
+    }
+  }
+  try {
+    operation()
+  } finally {
+    if (existsSync(lockPath)) {
+      const stat = lstatSync(lockPath)
+      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("package-root-build-lock")
+      rmSync(lockPath, { force: true, recursive: true })
+    }
+  }
+}
+
+function isAlreadyExists(error) {
+  return "code" in error && error.code === "EEXIST"
 }
 
 function assertRegularFile(path, code) {

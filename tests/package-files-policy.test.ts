@@ -50,6 +50,20 @@ describe("package files policy", () => {
     expect(scripts?.["prepack"]).toBe("node scripts/package-root-build.mjs")
   })
 
+  it("packages the portable content identity and canonical release packer", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    for (const filePath of [
+      "scripts/package-content-identity.d.mts",
+      "scripts/package-content-identity.mjs",
+      "scripts/canonical-package-packer.d.mts",
+      "scripts/canonical-package-packer.mjs",
+    ]) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
+  })
+
   it("packages public rules while retaining diff-rules only as repository source material", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const ruleFiles = listRuleMarkdownFiles(path.join(packageRoot, ".persona/rules")).map((filePath) =>
@@ -396,10 +410,21 @@ describe("package files policy", () => {
       "scripts/clean-package-boundary-core.mjs",
       "scripts/consumer-authority-beta16-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta16-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta17-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta17-acceptance-schema.mjs",
+      "scripts/consumer-authority-external-artifact-transport-plan.d.mts",
+      "scripts/consumer-authority-external-artifact-transport-plan.mjs",
       "scripts/consumer-authority-external-attestation-command-plan.d.mts",
       "scripts/consumer-authority-external-attestation-command-plan.mjs",
+      "scripts/consumer-authority-external-observer-boundary.d.mts",
+      "scripts/consumer-authority-external-observer-boundary.mjs",
+      "scripts/canonical-package-packer.d.mts",
+      "scripts/canonical-package-packer.mjs",
+      "scripts/package-content-identity.d.mts",
+      "scripts/package-content-identity.mjs",
       "scripts/fetch-consumer-authority-artifact.mjs",
       "scripts/preflight-consumer-authority-external-attestation.mjs",
+      "scripts/preflight-consumer-authority-external-artifact-transport.mjs",
       "scripts/preflight-consumer-authority-observer.mjs",
       "scripts/read-consumer-authority-github.mjs",
     ]
@@ -434,6 +459,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta14-acceptance.json",
       "docs/current/release/consumer-authority-beta15-acceptance.json",
       "docs/current/release/consumer-authority-beta16-acceptance.json",
+      "docs/current/release/consumer-authority-beta17-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -441,6 +467,7 @@ describe("package files policy", () => {
     }
     expect(Object.values(packageJson.bin ?? {})).not.toContain("scripts/preflight-consumer-authority-observer.mjs")
     expect(Object.values(packageJson.bin ?? {})).not.toContain("scripts/preflight-consumer-authority-external-attestation.mjs")
+    expect(Object.values(packageJson.bin ?? {})).not.toContain("scripts/preflight-consumer-authority-external-artifact-transport.mjs")
     for (const filePath of sourceOnlyPaths) {
       expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
       expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
@@ -475,7 +502,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.16-release-notes.md",
+      "docs/current/release/v0.8.0-beta.17-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -501,7 +528,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.16-release-notes.md",
+      "docs/current/release/v0.8.0-beta.17-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

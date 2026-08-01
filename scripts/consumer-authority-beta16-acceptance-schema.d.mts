@@ -27,5 +27,6 @@ export class Beta16AcceptanceManifestError extends Error {
   readonly code: "beta16-acceptance-schema"
 }
 
+export function canonicalBeta16AcceptanceManifest(): Beta16AcceptanceManifest
 export function readBeta16AcceptanceManifest(packageRoot: string): Beta16AcceptanceManifest
 export function parseBeta16AcceptanceManifest(value: unknown, packageVersion: string): Beta16AcceptanceManifest
