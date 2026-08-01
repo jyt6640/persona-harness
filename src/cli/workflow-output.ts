@@ -46,6 +46,17 @@ export function uninitializedHarnessOutput(): CliRunResult {
   }
 }
 
+export function uninitializedWorkflowFinishOutput(runnerKind: WorkflowRunnerKind): CliRunResult {
+  return failedRunnerOutput("finish", runnerKind, [], {
+    blockerIds: ["workflow-state-uninitialized"],
+    followUp: {
+      action: "Initialize the public Persona Harness workflow in this project before requesting an authority-backed Finish.",
+      blockerId: "workflow-state-uninitialized",
+      command: { phase: "now", value: "npx ph bootstrap backend --strict --no-developer-mcp" },
+    },
+  })
+}
+
 export function failedGuardOutput(guardKind: WorkflowGuardKind, reasons: readonly string[]): CliRunResult {
   return {
     status: 1,

@@ -70,10 +70,10 @@ capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 `0.8.0-beta.1` is immutable staging-only Consumer Authority Beta evidence:
 its exact registry installation and staged provenance boundary passed, without
 granting consumer Finish authority or any promotion/Stable/GA claim.
-`0.8.0-beta.1` through `0.8.0-beta.13` are immutable staging-only Consumer
-Authority Beta evidence. Beta.13 independently verified a current original
-artifact, but installed fetch retained no authority because bootstrap-local
-init metadata was compared as caller source. `0.8.0-beta.14` is the next
+`0.8.0-beta.1` through `0.8.0-beta.14` are immutable staging-only Consumer
+Authority Beta evidence. Beta.14 independently verified a current original
+artifact and authenticated fetch, but the final disposable consumer lacked
+workflow initialization and Finish made no authority decision. `0.8.0-beta.15` is the next
 strict-prerelease source-preparation candidate; it has no source-level claim of
 a tag, publish, channel movement, GitHub release, or original signed consumer
 artifact. Its release contract requires package-visible observer credential
@@ -86,7 +86,9 @@ consumer HOME. Its package evidence also starts from the exact complete-history
 bundle, not an ambient working directory: detached checkout,
 Git/manifest/lock/npm-prefix binding, normal prepack, and fresh installed CLI
 identity must all agree before the tarball is eligible for independent package
-review.
+review. The package proof invokes plain `npm` from that bound detached checkout,
+never `npm --prefix ... pack`, and uses the exact resulting tarball for both
+source-built and fresh installed consumer contracts.
 `0.7.0-rc.2` remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:

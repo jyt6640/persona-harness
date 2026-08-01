@@ -46,6 +46,7 @@ describe("canonical builder bounded process contract", () => {
     expect(builder).toContain('terminateProcessTree(child.pid, "SIGTERM", ownedProcessTree)')
     expect(builder).toContain('terminateProcessTree(child.pid, "SIGKILL", ownedProcessTree)')
     expect(builder).toContain("discoverOwnedProcessTree")
+    expect(builder).toContain("PROCESS_TREE_OBSERVATION_INTERVAL_MS")
     expect(builder).not.toContain("stdout += chunk")
     expect(builder).not.toContain("stderr += chunk")
   })
@@ -182,7 +183,7 @@ describe("canonical builder bounded process contract", () => {
     expect(readFileSync(heartbeatPath, "utf8")).toBe(heartbeatBefore)
   })
 
-  it.runIf(process.platform !== "win32")("terminates an escaped descendant that keeps the builder pipes open", async () => {
+  it.runIf(process.platform !== "win32")("terminates an escaped descendant after its direct parent exits", async () => {
     const fixtureRoot = createTempDir()
     const heartbeatPath = join(fixtureRoot, "escaped-pipe-descendant.heartbeat")
     const descendantScript = [
@@ -205,6 +206,37 @@ describe("canonical builder bounded process contract", () => {
       { graceMs: 50, timeoutMs: 1_000 },
     )).rejects.toMatchObject({
       details: { commandId: "escaped-pipe-descendant", exitState: "process-lifecycle" },
+    })
+
+    expect(existsSync(heartbeatPath)).toBe(true)
+    const heartbeatBefore = readFileSync(heartbeatPath, "utf8")
+    await new Promise<void>((resolve) => setTimeout(resolve, 150))
+    expect(readFileSync(heartbeatPath, "utf8")).toBe(heartbeatBefore)
+  })
+
+  it.runIf(process.platform !== "win32")("terminates a pipe-holding descendant after its direct parent exits", async () => {
+    const fixtureRoot = createTempDir()
+    const heartbeatPath = join(fixtureRoot, "process-lifecycle-descendant.heartbeat")
+    const descendantScript = [
+      "const { appendFileSync, writeFileSync } = require('node:fs')",
+      `const heartbeatPath = ${JSON.stringify(heartbeatPath)}`,
+      "process.on('SIGTERM', () => {})",
+      "writeFileSync(heartbeatPath, 'started\\n')",
+      "if (process.send) process.send('ready')",
+      "setInterval(() => { appendFileSync(heartbeatPath, 'tick\\n'); process.stdout.write('held-pipe\\n') }, 10)",
+    ].join(";")
+    const parentScript = [
+      "const { spawn } = require('node:child_process')",
+      `const child = spawn(process.execPath, ['-e', ${JSON.stringify(descendantScript)}], { stdio: ['ignore', 'inherit', 'inherit', 'ipc'] })`,
+      "child.once('message', () => process.exit(0))",
+    ].join(";")
+
+    await expect(runBoundedBuilderCommand(
+      fixedNodeCommand("process-lifecycle-descendant", parentScript),
+      fixtureRoot,
+      { graceMs: 50, timeoutMs: 1_000 },
+    )).rejects.toMatchObject({
+      details: { commandId: "process-lifecycle-descendant", exitState: "process-lifecycle" },
     })
 
     expect(existsSync(heartbeatPath)).toBe(true)

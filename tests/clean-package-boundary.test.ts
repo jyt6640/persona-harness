@@ -1,9 +1,13 @@
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+
 import { describe, expect, it } from "vitest"
 
 import {
   assertBundleHeadBinding,
   assertCheckoutPackageBinding,
   assertNpmExecutionPolicy,
+  assertPackageExecutionBinding,
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "../scripts/clean-package-boundary-core.mjs"
@@ -11,17 +15,81 @@ import {
 const BASE = "a".repeat(40)
 const HEAD = "b".repeat(40)
 const SHA = "c".repeat(64)
+const CANDIDATE_REF = "refs/heads/fix/consumer-authority-beta18-bundle-ref-binding"
 const IDENTITY = {
   name: "persona-harness",
-  version: "0.8.0-beta.14",
+  version: "0.8.0-beta.15",
 }
 
 describe("clean package boundary", () => {
-  it("rejects a complete bundle that omits the exact candidate HEAD ref", () => {
+  it("accepts the configured canonical candidate branch without a literal HEAD alias", () => {
+    expect(assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD })).toEqual({
+      base: BASE,
+      candidateRef: CANDIDATE_REF,
+      head: HEAD,
+    })
+  })
+
+  it("rejects a wrong, absent, or conflicting canonical candidate branch", () => {
+    const expected = { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD }
+
     expect(() => assertBundleHeadBinding([
-      { ref: "refs/bundle-freeze/issue122/main", sha: BASE },
-      { ref: "refs/bundle-freeze/issue122/candidate", sha: HEAD },
-    ], { base: BASE, head: HEAD })).toThrow("clean-package-bundle-head")
+      { ref: "refs/heads/foreign", sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-ref")
+    expect(() => assertBundleHeadBinding([
+      { ref: "HEAD", sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-ref")
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/heads/foreign", sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-ambiguity")
+  })
+
+  it("rejects a candidate SHA mismatch, only-base bundle, and stale or foreign HEAD alias", () => {
+    const expected = { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD }
+
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: BASE },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-sha")
+    expect(() => assertBundleHeadBinding([
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-candidate-ref")
+    expect(() => assertBundleHeadBinding([
+      { ref: "HEAD", sha: BASE },
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], expected)).toThrow("clean-package-bundle-head")
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: HEAD },
+    ], expected)).toThrow("clean-package-bundle-main")
+  })
+
+  it("rejects duplicate or unknown bundle refs before package work", () => {
+    const expected = { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD }
+
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+      { ref: "refs/tags/foreign", sha: HEAD },
+    ], expected)).toThrow("clean-package-bundle-ref")
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+      { ref: "HEAD", sha: HEAD },
+      { ref: "HEAD", sha: HEAD },
+    ], expected)).toThrow("clean-package-bundle-shape")
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], { ...expected, candidateRef: "refs/tags/foreign" })).toThrow("clean-package-bundle-shape")
   })
 
   it("rejects package and lock version drift before packing", () => {
@@ -63,6 +131,23 @@ describe("clean package boundary", () => {
     })).toThrow("clean-package-package-drift")
   })
 
+  it("rejects a launcher CWD or manifest path that is not the exact checkout root", () => {
+    const binding = {
+      commandCwd: "/fresh/bundle-checkout",
+      expectedLockPath: "/fresh/bundle-checkout/package-lock.json",
+      expectedPackagePath: "/fresh/bundle-checkout/package.json",
+      gitRoot: "/fresh/bundle-checkout",
+      lockPath: "/fresh/bundle-checkout/package-lock.json",
+      npmPrefix: "/fresh/bundle-checkout",
+      packagePath: "/fresh/bundle-checkout/package.json",
+      root: "/fresh/bundle-checkout",
+    }
+
+    expect(assertPackageExecutionBinding(binding)).toEqual({ root: "/fresh/bundle-checkout" })
+    expect(() => assertPackageExecutionBinding({ ...binding, commandCwd: "/stale/beta1-launcher" })).toThrow("clean-package-command-cwd")
+    expect(() => assertPackageExecutionBinding({ ...binding, packagePath: "/stale/beta1-launcher/package.json" })).toThrow("clean-package-package-path")
+  })
+
   it("rejects inherited workspace or ignore-scripts mode", () => {
     expect(() => assertNpmExecutionPolicy({
       global: "false",
@@ -83,8 +168,13 @@ describe("clean package boundary", () => {
     )).toEqual(IDENTITY)
     expect(assertBundleHeadBinding([
       { ref: "HEAD", sha: HEAD },
+      { ref: CANDIDATE_REF, sha: HEAD },
       { ref: "refs/remotes/origin/main", sha: BASE },
-    ], { base: BASE, head: HEAD })).toEqual({ base: BASE, head: HEAD })
+    ], { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD })).toEqual({
+      base: BASE,
+      candidateRef: CANDIDATE_REF,
+      head: HEAD,
+    })
     expect(assertCheckoutPackageBinding({
       gitRoot: "/fresh/bundle-checkout",
       headLockSha256: SHA,
@@ -100,9 +190,19 @@ describe("clean package boundary", () => {
       workspaces: "false",
     })).toEqual({ global: "false", ignoreScripts: "false", workspaces: "false" })
     expect(assertPackRecordBinding({
-      filename: "persona-harness-0.8.0-beta.14.tgz",
+      filename: "persona-harness-0.8.0-beta.15.tgz",
       name: IDENTITY.name,
       version: IDENTITY.version,
     }, IDENTITY)).toEqual(IDENTITY)
+  })
+
+  it("uses the shared portable consumer contract for authoritative bundle exercise mode", () => {
+    const verifier = readFileSync(join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"), "utf8")
+    const contract = readFileSync(join(process.cwd(), "scripts", "test-installed-package-contract.mjs"), "utf8")
+
+    expect(verifier).toMatch(/exerciseExactTarContract[\s\S]*?"--package-exercise"[\s\S]*?"--source-cli"/u)
+    expect(verifier).toMatch(/"--package-exercise"[\s\S]*?"--tarball"/u)
+    expect(contract).toContain("source-cli-package-exercise-contract: PASS")
+    expect(contract).toContain("installed-package-exercise-contract: PASS")
   })
 })

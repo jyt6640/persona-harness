@@ -1,6 +1,20 @@
 const SHA256 = /^[0-9a-f]{64}$/u
 const SHA = /^[0-9a-f]{40}$/u
+const CANDIDATE_REF = /^refs\/heads\/(?:[A-Za-z0-9][A-Za-z0-9._-]*)(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/u
 const STRICT_SEMVER = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
+
+const BUNDLE_REQUIRED_REFS = Object.freeze([
+  "explicit-single-refs-heads-candidate-must-match-expected-head",
+  "refs/remotes/origin/main",
+])
+
+export const BUNDLE_REFERENCE_POLICY = Object.freeze({
+  candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head",
+  headAlias: "optional-head-mapping-must-match-the-same-expected-head",
+  mainRef: "refs/remotes/origin/main",
+  requiredRefs: BUNDLE_REQUIRED_REFS,
+  sourceCandidateRef: "refs/heads/clean-package-source",
+})
 
 export class CleanPackageBoundaryError extends Error {
   constructor(code) {
@@ -41,20 +55,38 @@ export function parseBundleHeads(output) {
 }
 
 export function assertBundleHeadBinding(heads, expected) {
-  if (!Array.isArray(heads) || !isRecord(expected) || typeof expected.base !== "string" || typeof expected.head !== "string") {
+  if (
+    !Array.isArray(heads)
+    || !isRecord(expected)
+    || typeof expected.base !== "string"
+    || typeof expected.candidateRef !== "string"
+    || typeof expected.head !== "string"
+  ) {
     fail("clean-package-bundle-shape")
   }
-  if (!SHA.test(expected.base) || !SHA.test(expected.head)) fail("clean-package-bundle-shape")
+  if (!SHA.test(expected.base) || !SHA.test(expected.head) || !CANDIDATE_REF.test(expected.candidateRef)) {
+    fail("clean-package-bundle-shape")
+  }
   const byRef = new Map()
+  const branchRefs = []
   for (const entry of heads) {
     if (!isRecord(entry) || typeof entry.ref !== "string" || typeof entry.sha !== "string" || !SHA.test(entry.sha) || byRef.has(entry.ref)) {
       fail("clean-package-bundle-shape")
     }
+    if (entry.ref.startsWith("refs/heads/")) branchRefs.push(entry.ref)
+    else if (entry.ref !== "HEAD" && entry.ref !== BUNDLE_REFERENCE_POLICY.mainRef) fail("clean-package-bundle-ref")
     byRef.set(entry.ref, entry.sha)
   }
-  if (byRef.get("HEAD") !== expected.head) fail("clean-package-bundle-head")
-  if (byRef.get("refs/remotes/origin/main") !== expected.base) fail("clean-package-bundle-main")
-  return { base: expected.base, head: expected.head }
+  const candidateSha = byRef.get(expected.candidateRef)
+  if (candidateSha === undefined) fail("clean-package-bundle-candidate-ref")
+  if (branchRefs.length !== 1 || branchRefs[0] !== expected.candidateRef) {
+    fail("clean-package-bundle-candidate-ambiguity")
+  }
+  if (candidateSha !== expected.head) fail("clean-package-bundle-candidate-sha")
+  const headAlias = byRef.get("HEAD")
+  if (headAlias !== undefined && headAlias !== expected.head) fail("clean-package-bundle-head")
+  if (byRef.get(BUNDLE_REFERENCE_POLICY.mainRef) !== expected.base) fail("clean-package-bundle-main")
+  return { base: expected.base, candidateRef: expected.candidateRef, head: expected.head }
 }
 
 export function assertCheckoutPackageBinding(binding) {
@@ -79,6 +111,27 @@ export function assertCheckoutPackageBinding(binding) {
   }
   if (binding.packageSha256 !== binding.headPackageSha256) fail("clean-package-package-drift")
   if (binding.lockSha256 !== binding.headLockSha256) fail("clean-package-lock-drift")
+  return { root: binding.root }
+}
+
+export function assertPackageExecutionBinding(binding) {
+  if (!isRecord(binding)) fail("clean-package-execution-shape")
+  const values = [
+    binding.commandCwd,
+    binding.expectedLockPath,
+    binding.expectedPackagePath,
+    binding.gitRoot,
+    binding.lockPath,
+    binding.npmPrefix,
+    binding.packagePath,
+    binding.root,
+  ]
+  if (!values.every((value) => typeof value === "string")) fail("clean-package-execution-shape")
+  if (binding.commandCwd !== binding.root) fail("clean-package-command-cwd")
+  if (binding.gitRoot !== binding.root) fail("clean-package-root-git")
+  if (binding.npmPrefix !== binding.root) fail("clean-package-root-npm")
+  if (binding.packagePath !== binding.expectedPackagePath) fail("clean-package-package-path")
+  if (binding.lockPath !== binding.expectedLockPath) fail("clean-package-lock-path")
   return { root: binding.root }
 }
 

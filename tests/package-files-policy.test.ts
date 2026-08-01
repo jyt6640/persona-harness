@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest"
 type PackageJson = {
   readonly bin?: Readonly<Record<string, string>>
   readonly files: readonly string[]
+  readonly scripts?: Readonly<Record<string, string>>
 }
 
 type NativeProjectReadManifest = {
@@ -39,6 +40,16 @@ type MarkdownLink = {
 const packageRoot = process.cwd()
 
 describe("package files policy", () => {
+  it("packages the root-bound prepack runner", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const scripts = packageJson.scripts
+
+    expect(existsSync(path.join(packageRoot, "scripts", "package-root-build.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/package-root-build.mjs", packageJson.files)).toBe(true)
+    expect(scripts?.["build"]).toBe("node scripts/package-root-build.mjs")
+    expect(scripts?.["prepack"]).toBe("node scripts/package-root-build.mjs")
+  })
+
   it("packages public rules while retaining diff-rules only as repository source material", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const ruleFiles = listRuleMarkdownFiles(path.join(packageRoot, ".persona/rules")).map((filePath) =>
@@ -414,6 +425,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta12-acceptance.json",
       "docs/current/release/consumer-authority-beta13-acceptance.json",
       "docs/current/release/consumer-authority-beta14-acceptance.json",
+      "docs/current/release/consumer-authority-beta15-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -454,7 +466,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.14-release-notes.md",
+      "docs/current/release/v0.8.0-beta.15-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -480,7 +492,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.14-release-notes.md",
+      "docs/current/release/v0.8.0-beta.15-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

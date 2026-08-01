@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.8.0-beta.14",
+  "version": "0.8.0-beta.15",
   "private": false,
   "type": "module",
   "description": "Gate-first CLI for Java/Spring backend workflow evidence, completion checks, and optional OpenCode runtime guidance.",
@@ -96,6 +96,7 @@
     "scripts/rail-entry-prompt-regression-gate.mjs",
     "scripts/node-runtime-floor.mjs",
     "scripts/node-runtime-floor.d.mts",
+    "scripts/package-root-build.mjs",
     "packages/codegraph-mcp/bin",
     "packages/codegraph-mcp/lib",
     "packages/lsp-mcp/package.json",
@@ -139,9 +140,9 @@
     "native/project-read"
   ],
   "scripts": {
-    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "build": "npm run clean && tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/cli/index.js', 0o755)\"",
-    "prepack": "npm run build",
+    "clean": "node scripts/package-root-build.mjs --clean",
+    "build": "node scripts/package-root-build.mjs",
+    "prepack": "node scripts/package-root-build.mjs",
     "docs:acceptance-results": "node scripts/generate-acceptance-results-index.mjs",
     "check:acceptance-results": "node scripts/generate-acceptance-results-index.mjs --check",
     "release:github-notes": "node scripts/generate-github-release-notes.mjs",
@@ -166,9 +167,10 @@
     "report:rules": "npm run build && node scripts/report-rule-diagnostics.mjs",
     "test": "npm run test:package",
     "test:package": "node dist/cli/index.js --help",
+    "test:authoritative-bundle-package-contract": "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
     "test:clean-package-boundary": "node scripts/verify-clean-package-boundary.mjs",
     "test:installed-package-contract": "node scripts/test-installed-package-contract.mjs",
-    "test:repository": "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:installed-package-contract && npm run test:clean-package-boundary",
+    "test:repository": "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:authoritative-bundle-package-contract",
     "test:unit": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
