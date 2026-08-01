@@ -22,6 +22,7 @@ const COMMAND_TERMINATION_GRACE_MS = 5_000
 const COMMAND_MAX_STDOUT_BYTES = 1024 * 1024
 const COMMAND_MAX_STDERR_BYTES = 1024 * 1024
 const COMMAND_MAX_TOTAL_OUTPUT_BYTES = 1024 * 1024
+const PROCESS_TREE_OBSERVATION_INTERVAL_MS = 100
 const OUTPUT_DIRECTORY = ".ci/canonical-clean-ci-attestation-builder"
 const TEST_REPORT_PATH = `${OUTPUT_DIRECTORY}/test-results.json`
 const RESOURCE_SENSITIVE_TEST_REPORT_PATH = `${OUTPUT_DIRECTORY}/test-results-resource-sensitive.json`
@@ -190,6 +191,7 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
     let processLifecycleBlocked = false
     let outputLimited = false
     let ownedProcessTree = emptyProcessTree()
+    let ownedProcessTreeTimer
     let settled = false
     let terminationEscalated = false
     let terminationStarted = false
@@ -203,6 +205,7 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
       clearTimeout(timeoutTimer)
       if (exitDrainTimer !== undefined) clearTimeout(exitDrainTimer)
       if (graceTimer !== undefined) clearTimeout(graceTimer)
+      if (ownedProcessTreeTimer !== undefined) clearInterval(ownedProcessTreeTimer)
     }
     const failCommand = (exitCode, exitState) => {
       reject(new BuilderCommandFailure({ commandId: command.id, exitCode, exitState }))
@@ -291,6 +294,8 @@ export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
       timedOut = true
       terminate("timeout")
     }, timeoutMs)
+    observeProcessTree()
+    ownedProcessTreeTimer = setInterval(observeProcessTree, PROCESS_TREE_OBSERVATION_INTERVAL_MS)
     child.stdout.on("data", (chunk) => capture(stdout, chunk))
     child.stderr.on("data", (chunk) => capture(stderr, chunk))
     child.on("error", () => {
