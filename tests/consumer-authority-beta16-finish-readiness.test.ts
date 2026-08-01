@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { readBeta15AcceptanceManifest } from "../scripts/consumer-authority-beta15-acceptance-schema.mjs"
+import { readBeta16AcceptanceManifest } from "../scripts/consumer-authority-beta16-acceptance-schema.mjs"
 import { BUNDLE_REFERENCE_POLICY } from "../scripts/clean-package-boundary-core.mjs"
 
-describe("consumer authority beta.15 final readiness", () => {
+describe("consumer authority beta.16 final readiness", () => {
   it("keeps caller enrollment, reusable signer, bootstrap-local metadata, and replay policy distinct", () => {
     const manifest = readManifest()
     const authority = record(manifest["authority"])
@@ -16,9 +16,10 @@ describe("consumer authority beta.15 final readiness", () => {
     const bundle = record(packageBoundary["bundle"])
     const npm = record(packageBoundary["npm"])
     const proof = record(packageBoundary["authoritativeBundleContract"])
+    const commandPlan = record(manifest["externalAttestationCommandPlan"])
 
-    expect(manifest["schemaVersion"]).toBe("consumer-authority-beta15-acceptance.2")
-    expect(manifest["package"]).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.15" })
+    expect(manifest["schemaVersion"]).toBe("consumer-authority-beta16-acceptance.1")
+    expect(manifest["package"]).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.16" })
     expect(caller).toEqual({
       repositoryId: 1304576182,
       repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
@@ -57,20 +58,58 @@ describe("consumer authority beta.15 final readiness", () => {
       sourceContract: "built-cli-package-exercise-contract-under-the-same-executable",
     })
     expect(bundle["requiredRefs"]).toEqual(BUNDLE_REFERENCE_POLICY.requiredRefs)
+    expect(commandPlan).toEqual({
+      certificateOidcIssuer: "https://token.actions.githubusercontent.com",
+      command: ["attestation", "verify"],
+      denySelfHostedRunners: true,
+      exitClassification: {
+        authenticationRequired: 4,
+        normalVerificationFailure: 1,
+        verified: 0,
+      },
+      format: "json",
+      predicateType: "https://github.com/jyt6640/persona-harness/attestations/project-finish-attestation.1",
+      repositorySelector: {
+        flag: "--repo",
+        source: "caller-enrollment.repositorySlug",
+      },
+      schemaVersion: "consumer-authority-external-attestation-command-plan.1",
+      signerDigest: {
+        flag: "--signer-digest",
+        source: "reusable-signer.workflowSha",
+      },
+      signerSelector: {
+        flag: "--signer-workflow",
+        source: "reusable-signer.workflowPath",
+      },
+      sourceDigest: {
+        flag: "--source-digest",
+        source: "caller-source.sourceSha",
+      },
+      sourceRef: {
+        flag: "--source-ref",
+        source: "caller-source.ref",
+      },
+      tokenIsolation: {
+        artifactAccess: "forbidden-during-preflight",
+        credential: "absent",
+        output: "bounded-classification-only",
+      },
+    })
   })
 
   it("requires public initialization before the only pre-armed hosted residual", () => {
     const manifest = readManifest()
-    const historical = record(manifest["beta14HistoricalExternal"])
+    const historical = record(manifest["beta15HistoricalExternal"])
     const readiness = record(manifest["preAuthorityReadiness"])
     const initialization = record(readiness["initialization"])
     const residual = record(manifest["hostedResidual"])
     const mutationBoundary = record(manifest["mutationBoundary"])
 
     expect(historical).toEqual({
-      outcome: "trusted-fetch-with-uninitialized-finish-noop-and-no-consumption",
-      reusableForBeta15: false,
-      version: "0.8.0-beta.14",
+      outcome: "external-gh-attestation-observer-combined-mutually-exclusive-identity-selectors-before-crypto",
+      reusableForBeta16: false,
+      version: "0.8.0-beta.15",
     })
     expect(initialization).toEqual({
       acceptedPlan: "ph bootstrap backend --strict --no-developer-mcp",
@@ -87,13 +126,13 @@ describe("consumer authority beta.15 final readiness", () => {
       ],
       sameConsumer: true,
     })
-    expect(residual["id"]).toBe("beta15-prearmed-external-authority-consumption")
+    expect(residual["id"]).toBe("beta16-prearmed-external-authority-consumption")
     expect(mutationBoundary["performed"]).toBe(false)
   })
 })
 
 function readManifest() {
-  return readBeta15AcceptanceManifest(process.cwd())
+  return readBeta16AcceptanceManifest(process.cwd())
 }
 
 function record(value: unknown): Record<string, unknown> {
