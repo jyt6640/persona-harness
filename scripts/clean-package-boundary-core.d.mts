@@ -2,6 +2,12 @@ export class CleanPackageBoundaryError extends Error {
   readonly code: string
 }
 
+export const CANONICAL_PACKAGE_SOURCE_REMOTE: "https://github.com/jyt6640/persona-harness.git"
+
+export function assertCanonicalPartialCloneRemote(
+  remote: string,
+): "https://github.com/jyt6640/persona-harness.git"
+
 export const BUNDLE_REFERENCE_POLICY: {
   readonly candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head"
   readonly headAlias: "optional-head-mapping-must-match-the-same-expected-head"

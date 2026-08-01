@@ -48,7 +48,8 @@
       "rejectBeforePack": "launcher-cwd-or-manifest-outside-bound-checkout",
       "sourceContract": "built-cli-package-exercise-contract-under-the-same-executable",
       "installedContract": "fresh-installed-package-exercise-uses-the-exact-canonical-target-tarball-sha256-and-package-content-identity-before-the-separate-node24-publisher-handoff",
-      "fullJavaGradleContract": "source-and-fresh-installed-full-contract-on-a-provisioned-java-gradle-host"
+      "fullJavaGradleContract": "source-and-fresh-installed-full-contract-on-a-provisioned-java-gradle-host",
+      "partialCloneSourceHydration": "only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs"
     },
     "contentIdentity": {
       "aggregate": "sorted-package-relative-path-type-normalized-allowed-mode-size-sha256",

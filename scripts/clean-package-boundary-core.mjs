@@ -8,6 +8,8 @@ const BUNDLE_REQUIRED_REFS = Object.freeze([
   "refs/remotes/origin/main",
 ])
 
+export const CANONICAL_PACKAGE_SOURCE_REMOTE = "https://github.com/jyt6640/persona-harness.git"
+
 export const BUNDLE_REFERENCE_POLICY = Object.freeze({
   candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head",
   headAlias: "optional-head-mapping-must-match-the-same-expected-head",
@@ -21,6 +23,11 @@ export class CleanPackageBoundaryError extends Error {
     super(code)
     this.code = code
   }
+}
+
+export function assertCanonicalPartialCloneRemote(remote) {
+  if (remote !== CANONICAL_PACKAGE_SOURCE_REMOTE) fail("clean-package-source-hydrate")
+  return remote
 }
 
 export function assertSourcePackageIdentity(packageJson, packageLock) {

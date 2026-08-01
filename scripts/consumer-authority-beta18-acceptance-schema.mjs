@@ -63,6 +63,7 @@ function buildExpectedManifest() {
   manifest.packageBoundary.contentIdentity.canonicalPacker.publish = "handoff-one-exact-canonical-tarball-to-isolated-node24-npm11-publisher"
   manifest.packageBoundary.contentIdentity.publisherRuntime = "node24.18.0-npm11.16.0-dry-run-and-real-publish-use-identical-canonical-tarball-argv"
   manifest.packageBoundary.authoritativeBundleContract.installedContract = "fresh-installed-package-exercise-uses-the-exact-canonical-target-tarball-sha256-and-package-content-identity-before-the-separate-node24-publisher-handoff"
+  manifest.packageBoundary.authoritativeBundleContract.partialCloneSourceHydration = "only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs"
   manifest.authority.fixturePlan.registryInstall = "npm install persona-harness@0.8.0-beta.18 --registry https://registry.npmjs.org"
   manifest.authority.hostedFixture.revision = "postmerge-persona-harness-beta18-main-sha"
   manifest.hostedResidual = {

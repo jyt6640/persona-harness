@@ -26,6 +26,8 @@ describe("consumer authority beta.18 acceptance schema", () => {
       publisherRuntime: { node: "24.18.0", npm: "11.16.0" },
       registryPut: { evidence: "hosted-only" },
     })
+    expect(record(record(manifest.packageBoundary).authoritativeBundleContract).partialCloneSourceHydration)
+      .toBe("only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs")
   })
 
   it("rejects publisher runtime, argv, and historical E404 semantic drift", () => {

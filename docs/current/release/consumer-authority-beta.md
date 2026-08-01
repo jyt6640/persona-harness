@@ -166,6 +166,13 @@ materialized separately from the same bundle and packed under the same policy,
 so package comparison cannot borrow either checkout's working directory or
 generated output.
 
+When the source checkout is an authenticated canonical `blob:none` promisor
+clone, that proof may hydrate only the already-bound `origin/main` commit with
+`--refetch --no-filter --no-tags --no-write-fetch-head` before the local bare
+repository materialization. It rechecks the retained main ref before and after
+the object fetch, rejects noncanonical origins or filters, and never moves a
+source ref. Ordinary checkouts use the direct local materialization route.
+
 The pack invocation itself is plain `npm` from that bound checkout CWD;
 `npm --prefix ... pack` is not an allowed package-root selector. The packaged
 root-bound prepack runner builds from its own script location. The portable
