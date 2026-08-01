@@ -49,7 +49,7 @@ describe("consumer authority beta.17 external artifact transport", () => {
       observerInput(),
       credential,
       {
-        request: async (url, headers) => {
+        request: async (url: URL, headers: Record<string, string>) => {
           requests.push({ headers, url: url.toString() })
           if (requests.length === 1) {
             return response(302, { location: "https://pipelines.actions.githubusercontent.com/artifact?opaque=not-retained" }, [])
@@ -257,9 +257,9 @@ describe("consumer authority beta.17 external artifact transport", () => {
     const artifact = modeledArtifact(archive)
 
     // When
-    const renderWithUrl = () => renderExternalArtifactTransportRequest(plan, topology(), { ...artifact, url: "https://untrusted.example" })
-    const renderWithHeaders = () => renderExternalArtifactTransportRequest(plan, topology(), { ...artifact, headers: { Authorization: credential } })
-    const renderWithOutput = () => renderExternalArtifactTransportRequest(plan, topology(), { ...artifact, outputPath: "/tmp/foreign" })
+    const renderWithUrl = () => renderExternalArtifactTransportRequest(plan, topology(), { ...artifact, url: "https://untrusted.example" } as unknown as typeof artifact)
+    const renderWithHeaders = () => renderExternalArtifactTransportRequest(plan, topology(), { ...artifact, headers: { Authorization: credential } } as unknown as typeof artifact)
+    const renderWithOutput = () => renderExternalArtifactTransportRequest(plan, topology(), { ...artifact, outputPath: "/tmp/foreign" } as unknown as typeof artifact)
 
     // Then
     expectPlanBlock(renderWithUrl, "url")
@@ -339,7 +339,9 @@ function topology() {
 }
 
 function response(statusCode: number, headers: Record<string, string>, body: AsyncIterable<Buffer> | readonly Buffer[]) {
-  const asyncBody = Symbol.asyncIterator in Object(body) ? body : chunks(Buffer.concat(body))
+  const asyncBody: AsyncIterable<Buffer> = Symbol.asyncIterator in Object(body)
+    ? body as AsyncIterable<Buffer>
+    : chunks(Buffer.concat(body as readonly Uint8Array[]))
   return { body: asyncBody, headers, statusCode }
 }
 
