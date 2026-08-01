@@ -24,11 +24,14 @@ describe("consumer authority beta.15 acceptance schema", () => {
       .toBe(BUNDLE_REFERENCE_POLICY.candidateRef)
     expect(manifest.packageBoundary.authoritativeBundleContract.headAlias)
       .toBe(BUNDLE_REFERENCE_POLICY.headAlias)
+    expect(manifest.packageBoundary.authoritativeBundleContract.sourceCandidateRef)
+      .toBe(BUNDLE_REFERENCE_POLICY.sourceCandidateRef)
     expect(record(manifest.packageBoundary.bundle)["requiredRefs"])
       .toEqual(BUNDLE_REFERENCE_POLICY.requiredRefs)
     expect(manifest.packageBoundary.authoritativeBundleContract).toMatchObject({
       candidateRef: BUNDLE_REFERENCE_POLICY.candidateRef,
       headAlias: BUNDLE_REFERENCE_POLICY.headAlias,
+      sourceCandidateRef: BUNDLE_REFERENCE_POLICY.sourceCandidateRef,
     })
   })
 
@@ -53,6 +56,10 @@ describe("consumer authority beta.15 acceptance schema", () => {
       {
         name: "conflicting head alias semantic",
         apply: (manifest) => { bundleContract(manifest)["headAlias"] = "head-alias-may-conflict" },
+      },
+      {
+        name: "foreign detached source candidate ref",
+        apply: (manifest) => { bundleContract(manifest)["sourceCandidateRef"] = "refs/heads/foreign" },
       },
       {
         name: "legacy required HEAD alias",

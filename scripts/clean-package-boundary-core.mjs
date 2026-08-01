@@ -13,6 +13,7 @@ export const BUNDLE_REFERENCE_POLICY = Object.freeze({
   headAlias: "optional-head-mapping-must-match-the-same-expected-head",
   mainRef: "refs/remotes/origin/main",
   requiredRefs: BUNDLE_REQUIRED_REFS,
+  sourceCandidateRef: "refs/heads/clean-package-source",
 })
 
 export class CleanPackageBoundaryError extends Error {

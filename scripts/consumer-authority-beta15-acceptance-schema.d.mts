@@ -18,6 +18,7 @@ export interface Beta15AcceptanceManifest {
     readonly authoritativeBundleContract: {
       readonly candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head"
       readonly headAlias: "optional-head-mapping-must-match-the-same-expected-head"
+      readonly sourceCandidateRef: "refs/heads/clean-package-source"
     }
   }
 }

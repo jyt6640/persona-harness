@@ -17,6 +17,7 @@ import process from "node:process"
 import { fileURLToPath } from "node:url"
 
 import {
+  BUNDLE_REFERENCE_POLICY,
   CleanPackageBoundaryError,
   assertBundleHeadBinding,
   assertCheckoutPackageBinding,
@@ -29,70 +30,81 @@ import {
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-clean-package-boundary-"))
+const sourceCandidateRef = BUNDLE_REFERENCE_POLICY.sourceCandidateRef
 
 try {
   const input = parseInput(process.argv.slice(2))
+  const git = createGitEnvironment(temporaryRoot)
   const bundle = input.mode === "source"
-    ? createSourceBundle(sourceRoot)
-    : verifySuppliedBundle(input)
-  const checkout = materializeCheckout(bundle, bundle.head, "target")
-  const source = readSourceIdentity(checkout)
-  const npm = createNpmEnvironment(temporaryRoot, "target")
+    ? createSourceBundle(sourceRoot, git)
+    : verifySuppliedBundle(input, git)
+  if (input.gitBoundaryOnly) {
+    process.stdout.write(`${JSON.stringify({
+      base: bundle.base,
+      candidateRef: bundle.candidateRef,
+      head: bundle.head,
+      source: "detached-source",
+    })}\n`)
+  } else {
+    const checkout = materializeCheckout(bundle, bundle.head, "target", git)
+    const source = readSourceIdentity(checkout, git)
+    const npm = createNpmEnvironment(temporaryRoot, "target")
 
-  const targetRoot = assertCheckoutIntegrity(checkout, source, npm)
-  assertStaleLauncherIsRejected(checkout, targetRoot)
-  requireSuccess(runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], checkout, npm), "clean-package-install")
-  if (existsSync(join(checkout, "dist"))) throw new CleanPackageBoundaryError("clean-package-prepack-dist")
+    const targetRoot = assertCheckoutIntegrity(checkout, source, npm, git)
+    assertStaleLauncherIsRejected(checkout, targetRoot)
+    requireSuccess(runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], checkout, npm), "clean-package-install")
+    if (existsSync(join(checkout, "dist"))) throw new CleanPackageBoundaryError("clean-package-prepack-dist")
 
-  assertCheckoutIntegrity(checkout, source, npm)
-  const packed = packCheckout(checkout, source, npm, "target")
-  assertCheckoutIntegrity(checkout, source, npm)
-  assertCliVersion(checkout, join(checkout, "dist", "cli", "index.js"), source.identity.version, npm, "clean-package-built-cli")
-  const contract = input.exerciseContract
-    ? exerciseExactTarContract(checkout, packed, npm)
-    : undefined
+    assertCheckoutIntegrity(checkout, source, npm, git)
+    const packed = packCheckout(checkout, source, npm, "target")
+    assertCheckoutIntegrity(checkout, source, npm, git)
+    assertCliVersion(checkout, join(checkout, "dist", "cli", "index.js"), source.identity.version, npm, "clean-package-built-cli")
+    const contract = input.exerciseContract
+      ? exerciseExactTarContract(checkout, packed, npm)
+      : undefined
 
-  const consumer = installFreshTarball(packed.tarballPath, source.identity, npm)
-  const baseCheckout = materializeCheckout(bundle, bundle.base, "base")
-  const baseSource = readSourceIdentity(baseCheckout)
-  const baseNpm = createNpmEnvironment(temporaryRoot, "base")
-  const baseRoot = assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
-  requireSuccess(runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], baseCheckout, baseNpm), "clean-package-base-install")
-  if (existsSync(join(baseCheckout, "dist"))) throw new CleanPackageBoundaryError("clean-package-base-prepack-dist")
-  assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
-  const basePacked = packCheckout(baseCheckout, baseSource, baseNpm, "base")
-  assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm)
-  process.stdout.write(`${JSON.stringify({
-    base: bundle.base,
-    candidateRef: bundle.candidateRef,
-    basePackage: {
-      fileCount: basePacked.facts.fileCount,
-      name: baseSource.identity.name,
-      pathSetSha256: basePacked.facts.pathSetSha256,
-      tarballSha256: basePacked.facts.tarballSha256,
-      version: baseSource.identity.version,
-    },
-    head: bundle.head,
-    package: {
-      fileCount: packed.facts.fileCount,
-      name: source.identity.name,
-      pathSetSha256: packed.facts.pathSetSha256,
-      tarballSha256: packed.facts.tarballSha256,
-      version: source.identity.version,
-    },
-    packageRoots: {
-      base: baseRoot,
-      target: targetRoot,
-    },
-    schemaVersion: "clean-package-boundary.3",
-    source: input.mode,
-    installedPackage: {
-      cliVersion: consumer.cliVersion,
-      sourceFallback: false,
-      version: consumer.version,
-    },
-    ...(contract === undefined ? {} : { contract }),
-  })}\n`)
+    const consumer = installFreshTarball(packed.tarballPath, source.identity, npm)
+    const baseCheckout = materializeCheckout(bundle, bundle.base, "base", git)
+    const baseSource = readSourceIdentity(baseCheckout, git)
+    const baseNpm = createNpmEnvironment(temporaryRoot, "base")
+    const baseRoot = assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm, git)
+    requireSuccess(runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], baseCheckout, baseNpm), "clean-package-base-install")
+    if (existsSync(join(baseCheckout, "dist"))) throw new CleanPackageBoundaryError("clean-package-base-prepack-dist")
+    assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm, git)
+    const basePacked = packCheckout(baseCheckout, baseSource, baseNpm, "base")
+    assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm, git)
+    process.stdout.write(`${JSON.stringify({
+      base: bundle.base,
+      candidateRef: bundle.candidateRef,
+      basePackage: {
+        fileCount: basePacked.facts.fileCount,
+        name: baseSource.identity.name,
+        pathSetSha256: basePacked.facts.pathSetSha256,
+        tarballSha256: basePacked.facts.tarballSha256,
+        version: baseSource.identity.version,
+      },
+      head: bundle.head,
+      package: {
+        fileCount: packed.facts.fileCount,
+        name: source.identity.name,
+        pathSetSha256: packed.facts.pathSetSha256,
+        tarballSha256: packed.facts.tarballSha256,
+        version: source.identity.version,
+      },
+      packageRoots: {
+        base: baseRoot,
+        target: targetRoot,
+      },
+      schemaVersion: "clean-package-boundary.3",
+      source: input.mode,
+      installedPackage: {
+        cliVersion: consumer.cliVersion,
+        sourceFallback: false,
+        version: consumer.version,
+      },
+      ...(contract === undefined ? {} : { contract }),
+    })}\n`)
+  }
 } catch (error) {
   process.stderr.write(`${error instanceof CleanPackageBoundaryError ? error.code : "clean-package-boundary-failed"}\n`)
   process.exitCode = 1
@@ -103,11 +115,17 @@ try {
 function parseInput(args) {
   const remaining = [...args]
   let exerciseContract = false
+  let gitBoundaryOnly = false
   if (remaining[0] === "--exercise-contract") {
     exerciseContract = true
     remaining.shift()
   }
-  if (remaining.length === 0) return { exerciseContract, mode: "source" }
+  if (remaining[0] === "--git-boundary-only") {
+    gitBoundaryOnly = true
+    remaining.shift()
+  }
+  if (remaining.length === 0) return { exerciseContract, gitBoundaryOnly, mode: "source" }
+  if (gitBoundaryOnly) throw new CleanPackageBoundaryError("clean-package-arguments")
   if (
     remaining.length !== 8
     || remaining[0] !== "--bundle"
@@ -123,24 +141,62 @@ function parseInput(args) {
     bundlePath: remaining[1],
     candidateRef: remaining[3],
     exerciseContract,
+    gitBoundaryOnly,
     head: remaining[5],
     mode: "bundle",
   }
 }
 
-function createSourceBundle(root) {
+function createSourceBundle(root, git) {
   assertDirectory(root, "clean-package-source-root")
-  assertCleanGit(root)
-  const base = gitText(root, ["rev-parse", "refs/remotes/origin/main"])
-  const candidateRef = gitText(root, ["symbolic-ref", "--quiet", "HEAD"])
-  const head = gitText(root, ["rev-parse", "HEAD"])
-  requireSuccess(run("git", ["merge-base", "--is-ancestor", base, head], root), "clean-package-ancestry")
+  const sourceRoot = realpathSync(root)
+  if (gitText(sourceRoot, ["rev-parse", "--show-toplevel"], git) !== sourceRoot) {
+    throw new CleanPackageBoundaryError("clean-package-source-root")
+  }
+  assertCleanGit(sourceRoot, git)
+  const base = gitText(sourceRoot, ["rev-parse", BUNDLE_REFERENCE_POLICY.mainRef], git)
+  const head = gitText(sourceRoot, ["rev-parse", "HEAD"], git)
+  requireSuccess(run("git", ["merge-base", "--is-ancestor", base, head], sourceRoot, git), "clean-package-ancestry")
+  const sourceRepository = materializeSourceRepository(sourceRoot, head, base, git)
   const bundlePath = join(temporaryRoot, "candidate.bundle")
-  requireSuccess(run("git", ["bundle", "create", bundlePath, "HEAD", candidateRef, "refs/remotes/origin/main"], root), "clean-package-bundle-create")
-  return verifyBundle(bundlePath, { base, candidateRef, head })
+  requireSuccess(
+    run("git", ["bundle", "create", bundlePath, sourceCandidateRef, BUNDLE_REFERENCE_POLICY.mainRef], sourceRepository, git),
+    "clean-package-bundle-create",
+  )
+  return verifyBundle(bundlePath, { base, candidateRef: sourceCandidateRef, head }, git)
 }
 
-function verifySuppliedBundle(input) {
+function materializeSourceRepository(root, head, base, git) {
+  const repository = join(temporaryRoot, "source-bundle.git")
+  requireSuccess(run("git", ["init", "--bare", repository], temporaryRoot, git), "clean-package-source-materialize")
+  requireSuccess(
+    run(
+      "git",
+      [
+        "-c",
+        "protocol.file.allow=always",
+        "fetch",
+        "--no-tags",
+        "--no-write-fetch-head",
+        root,
+        `${head}:${sourceCandidateRef}`,
+        `${base}:${BUNDLE_REFERENCE_POLICY.mainRef}`,
+      ],
+      repository,
+      git,
+    ),
+    "clean-package-source-materialize",
+  )
+  if (gitText(repository, ["rev-parse", sourceCandidateRef], git) !== head) {
+    throw new CleanPackageBoundaryError("clean-package-source-materialize")
+  }
+  if (gitText(repository, ["rev-parse", BUNDLE_REFERENCE_POLICY.mainRef], git) !== base) {
+    throw new CleanPackageBoundaryError("clean-package-source-materialize")
+  }
+  return repository
+}
+
+function verifySuppliedBundle(input, git) {
   if (
     typeof input.bundlePath !== "string"
     || typeof input.base !== "string"
@@ -151,33 +207,33 @@ function verifySuppliedBundle(input) {
   }
   const bundlePath = realpathSync(input.bundlePath)
   assertRegularFile(bundlePath, "clean-package-bundle-file")
-  return verifyBundle(bundlePath, { base: input.base, candidateRef: input.candidateRef, head: input.head })
+  return verifyBundle(bundlePath, { base: input.base, candidateRef: input.candidateRef, head: input.head }, git)
 }
 
-function verifyBundle(bundlePath, expected) {
+function verifyBundle(bundlePath, expected, git) {
   const bare = join(temporaryRoot, "bundle-verify.git")
-  requireSuccess(run("git", ["init", "--bare", bare], temporaryRoot), "clean-package-bundle-verify")
-  requireSuccess(run("git", ["bundle", "verify", bundlePath], bare), "clean-package-bundle-verify")
-  const heads = parseBundleHeads(gitText(bare, ["bundle", "list-heads", bundlePath]))
+  requireSuccess(run("git", ["init", "--bare", bare], temporaryRoot, git), "clean-package-bundle-verify")
+  requireSuccess(run("git", ["bundle", "verify", bundlePath], bare, git), "clean-package-bundle-verify")
+  const heads = parseBundleHeads(gitText(bare, ["bundle", "list-heads", bundlePath], git))
   const binding = assertBundleHeadBinding(heads, expected)
   return { ...binding, bundlePath }
 }
 
-function materializeCheckout(bundle, revision, label) {
+function materializeCheckout(bundle, revision, label, git) {
   const checkout = join(temporaryRoot, `checkout-${label}`)
-  requireSuccess(run("git", ["clone", "--no-local", "--no-checkout", bundle.bundlePath, checkout], temporaryRoot), "clean-package-bundle-clone")
-  requireSuccess(run("git", ["checkout", "--detach", revision], checkout), "clean-package-checkout-head")
+  requireSuccess(run("git", ["clone", "--no-local", "--no-checkout", bundle.bundlePath, checkout], temporaryRoot, git), "clean-package-bundle-clone")
+  requireSuccess(run("git", ["checkout", "--detach", revision], checkout, git), "clean-package-checkout-head")
   assertDirectory(checkout, "clean-package-checkout-root")
-  if (gitText(checkout, ["rev-parse", "HEAD"]) !== revision) throw new CleanPackageBoundaryError("clean-package-checkout-head")
-  assertCleanGit(checkout)
+  if (gitText(checkout, ["rev-parse", "HEAD"], git) !== revision) throw new CleanPackageBoundaryError("clean-package-checkout-head")
+  assertCleanGit(checkout, git)
   return realpathSync(checkout)
 }
 
-function readSourceIdentity(root) {
+function readSourceIdentity(root, git) {
   const packageBytes = readFileSync(join(root, "package.json"))
   const lockBytes = readFileSync(join(root, "package-lock.json"))
-  const headPackageBytes = gitBytes(root, "package.json")
-  const headLockBytes = gitBytes(root, "package-lock.json")
+  const headPackageBytes = gitBytes(root, "package.json", git)
+  const headLockBytes = gitBytes(root, "package-lock.json", git)
   const identity = assertSourcePackageIdentity(
     JSON.parse(packageBytes.toString("utf8")),
     JSON.parse(lockBytes.toString("utf8")),
@@ -191,10 +247,10 @@ function readSourceIdentity(root) {
   }
 }
 
-function assertCheckoutIntegrity(root, source, npm) {
-  assertCleanGit(root)
+function assertCheckoutIntegrity(root, source, npm, git) {
+  assertCleanGit(root, git)
   const commandCwd = realpathSync(root)
-  const gitRoot = realpathSync(gitText(root, ["rev-parse", "--show-toplevel"]))
+  const gitRoot = realpathSync(gitText(root, ["rev-parse", "--show-toplevel"], git))
   const prefix = npmPrefix(root, npm)
   const packagePath = realpathSync(join(root, "package.json"))
   const lockPath = realpathSync(join(root, "package-lock.json"))
@@ -386,6 +442,22 @@ function createNpmEnvironment(root, label) {
   }
 }
 
+function createGitEnvironment(root) {
+  const home = join(root, "git-home")
+  const globalConfig = join(root, "git-globalconfig")
+  mkdirSync(home)
+  writeFileSync(globalConfig, "")
+  return {
+    GIT_CONFIG_GLOBAL: globalConfig,
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_TERMINAL_PROMPT: "0",
+    HOME: home,
+    LANG: "C",
+    LC_ALL: "C",
+    PATH: process.env.PATH ?? "",
+  }
+}
+
 function npmPrefix(root, npm) {
   const prefix = npmText(["prefix"], root, npm)
   return realpathSync(prefix)
@@ -412,8 +484,8 @@ function assertCliVersion(cwd, cliPath, expectedVersion, npm, code) {
   return result.stdout.trim()
 }
 
-function assertCleanGit(root) {
-  if (gitText(root, ["status", "--porcelain", "--untracked-files=all"]) !== "") {
+function assertCleanGit(root, git) {
+  if (gitText(root, ["status", "--porcelain", "--untracked-files=all"], git) !== "") {
     throw new CleanPackageBoundaryError("clean-package-checkout-dirty")
   }
 }
@@ -428,14 +500,14 @@ function assertRegularFile(path, code) {
   if (!stat.isFile() || stat.isSymbolicLink()) throw new CleanPackageBoundaryError(code)
 }
 
-function gitBytes(cwd, path) {
-  const result = spawnSync("git", ["show", `HEAD:${path}`], { cwd, maxBuffer: 16 * 1024 * 1024 })
+function gitBytes(cwd, path, git) {
+  const result = spawnSync("git", ["show", `HEAD:${path}`], { cwd, env: git, maxBuffer: 16 * 1024 * 1024 })
   if (result.status !== 0 || result.stdout === undefined) throw new CleanPackageBoundaryError("clean-package-git")
   return Buffer.from(result.stdout)
 }
 
-function gitText(cwd, args) {
-  const result = run("git", args, cwd)
+function gitText(cwd, args, git) {
+  const result = run("git", args, cwd, git)
   requireSuccess(result, "clean-package-git")
   return result.stdout.trim()
 }

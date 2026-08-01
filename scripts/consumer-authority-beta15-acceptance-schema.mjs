@@ -21,6 +21,7 @@ const EXPECTED_MANIFEST = {
       baseAndTarget: "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
       candidateRef: BUNDLE_REFERENCE_POLICY.candidateRef,
       headAlias: BUNDLE_REFERENCE_POLICY.headAlias,
+      sourceCandidateRef: BUNDLE_REFERENCE_POLICY.sourceCandidateRef,
       rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
       sourceContract: "built-cli-package-exercise-contract-under-the-same-executable",
       installedContract: "fresh-installed-package-exercise-uses-exact-target-tarball-sha256",
