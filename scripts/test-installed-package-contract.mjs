@@ -2862,7 +2862,7 @@ function runCommand(cwd, command, args) {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
-    env: process.env,
+    env: command === "git" ? boundedGitEnvironment() : process.env,
     maxBuffer: 16 * 1024 * 1024,
   })
   if (result.error) {
@@ -2878,7 +2878,7 @@ function runNode(cwd, args, environment = {}, input) {
   const result = spawnSync(process.execPath, args, {
     cwd,
     encoding: "utf8",
-    env: { ...process.env, ...environment },
+    env: { ...boundedGitEnvironment(), ...environment },
     input,
     maxBuffer: 4 * 1024 * 1024,
   })
@@ -2889,6 +2889,22 @@ function runNode(cwd, args, environment = {}, input) {
     status: result.status,
     stderr: result.stderr ?? "",
     stdout: result.stdout ?? "",
+  }
+}
+
+function boundedGitEnvironment() {
+  const home = join(temporaryRoot, "bound-git-home")
+  const globalConfig = join(temporaryRoot, "bound-git-globalconfig")
+  if (!existsSync(home)) mkdirSync(home)
+  if (!existsSync(globalConfig)) writeFileSync(globalConfig, "")
+  const inherited = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
+  )
+  return {
+    ...inherited,
+    GIT_CONFIG_GLOBAL: globalConfig,
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_TERMINAL_PROMPT: "0",
   }
 }
 

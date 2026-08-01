@@ -53,6 +53,7 @@ describe("consumer authority beta.15 final readiness", () => {
       headAlias: BUNDLE_REFERENCE_POLICY.headAlias,
       installedContract: "fresh-installed-package-exercise-uses-exact-target-tarball-sha256",
       rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
+      sourceCandidateRef: BUNDLE_REFERENCE_POLICY.sourceCandidateRef,
       sourceContract: "built-cli-package-exercise-contract-under-the-same-executable",
     })
     expect(bundle["requiredRefs"]).toEqual(BUNDLE_REFERENCE_POLICY.requiredRefs)
