@@ -38,6 +38,16 @@ describe("clean package Git environment", () => {
     expect(result.stdout).toBe("")
     expect(result.stderr).toBe("clean-package-git\n")
   })
+
+  it("fails a detached source without the required origin main binding", () => {
+    const root = createSourceRoot(true)
+    git(root, ["update-ref", "-d", "refs/remotes/origin/main"])
+    const result = runGitBoundary(root)
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe("")
+    expect(result.stderr).toBe("clean-package-git\n")
+  })
 })
 
 function createSourceRoot(withGit: boolean): string {
