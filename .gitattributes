@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.tgz -text
+*.zip -text
+*.gz -text
+*.node -text

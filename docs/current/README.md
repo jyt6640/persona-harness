@@ -125,7 +125,8 @@ not become current merely because they remain under `docs/current/`.
   replay fact. `0.8.0-beta.17` is the current source-preparation candidate. It makes no package, tag, staging mapping,
   GitHub release, original signed consumer artifact, promotion, Stable/GA, or
   Finish authority claim. Its pre-fixture gate requires a package-visible
-  observer credential-preflight, separate caller/reusable signer binding, and
+  observer credential-preflight, separate caller/reusable signer binding,
+  portable canonical package-content identity, and
   the complete public Java/Spring lifecycle to reach only
   `trusted-authority-required` in
   [`release/v0.8.0-beta.17-release-notes.md`](release/v0.8.0-beta.17-release-notes.md).

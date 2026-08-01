@@ -165,9 +165,17 @@ generated output.
 
 The pack invocation itself is plain `npm` from that bound checkout CWD;
 `npm --prefix ... pack` is not an allowed package-root selector. The packaged
-root-bound prepack runner builds from its own script location, and the one
-authoritative bundle proof feeds its exact target tarball SHA-256 into both the
-built source CLI and fresh installed consumer contracts.
+root-bound prepack runner builds from its own script location. The portable
+`package-content-identity.1` is the cross-environment comparison: it binds
+sorted safe regular package members, allowed mode, size, and per-member
+content digest. Generic independent `npm pack` raw bytes are not treated as a
+portable identity. The pinned canonical publisher emits one normalized tarball
+under isolated npm/Git state, publishes that exact file, and requires registry
+readback to match both that file's raw hash/integrity and the portable identity.
+The one authoritative bundle proof feeds its exact canonical tarball SHA-256
+and content identity into both the built source CLI and fresh installed
+consumer contracts. Retained earlier beta tar aggregates remain diagnostic-only
+and do not authorize a package or authority result.
 
 For that observer, the authenticated product discovery route sends the enrolled
 caller workflow filename directly to the fixed GitHub workflow-runs endpoint.

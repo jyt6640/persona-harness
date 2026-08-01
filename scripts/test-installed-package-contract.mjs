@@ -1,13 +1,16 @@
 import { spawn, spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import {
+  closeSync,
   chmodSync,
   copyFileSync,
+  constants,
   cpSync,
   existsSync,
   lstatSync,
   mkdtempSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   realpathSync,
@@ -16,6 +19,7 @@ import {
   symlinkSync,
   unlinkSync,
   writeFileSync,
+  writeSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
@@ -26,11 +30,12 @@ import {
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
 import { readBeta17AcceptanceManifest } from "./consumer-authority-beta17-acceptance-schema.mjs"
+import { canonicalizePackageTarball, readPackageContentIdentity } from "./package-content-identity.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
-const { packageExercise, producerIntakeOnly, sourceCli, tarball, tarballSha256 } = parseContractOptions(process.argv.slice(2))
+const { packageExercise, producerIntakeOnly, sourceCli, tarball, tarballContentIdentity, tarballSha256 } = parseContractOptions(process.argv.slice(2))
 const MODELED_CURRENT_ARTIFACT_ID = 710000001
 const MODELED_CURRENT_RUN_ID = 30430000000
 const MODELED_AUTHORITY_TOPOLOGY = {
@@ -74,10 +79,11 @@ try {
   if (sourceCli === undefined) {
     const packed = tarball === undefined
       ? packCurrentRepository()
-      : readSuppliedTarball(tarball, tarballSha256)
+      : readSuppliedTarball(tarball, tarballSha256, tarballContentIdentity)
     const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
 
     assertInstalledPackageIdentity(installedPackage, packed.identity)
+    assertInstalledPackageContentIdentity(installedPackage, packed.tarballPath, packed.facts.packageContentIdentity)
     assertRepositoryOnlyFilesAreAbsent(installedPackage)
     await assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package")
     assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
@@ -441,18 +447,37 @@ function packCurrentRepository() {
   return { ...resolvePackResult(result.stdout, packDirectory, identity), identity }
 }
 
-function readSuppliedTarball(tarballPath, expectedSha256) {
-  if (typeof tarballPath !== "string" || typeof expectedSha256 !== "string" || !/^[0-9a-f]{64}$/u.test(expectedSha256)) {
+function readSuppliedTarball(tarballPath, expectedSha256, expectedContentIdentity) {
+  if (
+    typeof tarballPath !== "string"
+    || typeof expectedSha256 !== "string"
+    || typeof expectedContentIdentity !== "string"
+    || !/^[0-9a-f]{64}$/u.test(expectedSha256)
+    || !/^[0-9a-f]{64}$/u.test(expectedContentIdentity)
+  ) {
     throw new TypeError("installed package tarball contract is invalid")
   }
   const resolved = realpathSync(tarballPath)
   const stat = lstatSync(resolved)
-  if (!stat.isFile() || stat.isSymbolicLink() || sha256(readFileSync(resolved)) !== expectedSha256) {
+  const bytes = readFileSync(resolved)
+  let packageContentIdentity
+  try {
+    packageContentIdentity = readPackageContentIdentity(bytes)
+  } catch {
+    throw new Error("installed package tarball content identity does not match")
+  }
+  if (
+    !stat.isFile()
+    || stat.isSymbolicLink()
+    || sha256(bytes) !== expectedSha256
+    || packageContentIdentity.identitySha256 !== expectedContentIdentity
+  ) {
     throw new Error("installed package tarball identity does not match")
   }
   const identity = readSourcePackIdentity()
   return {
     facts: {
+      packageContentIdentity,
       tarballSha256: expectedSha256,
     },
     identity,
@@ -501,6 +526,32 @@ function assertInstalledPackageIdentity(installedPackage, identity) {
   const installed = JSON.parse(readFileSync(join(installedPackage, "package.json"), "utf8"))
   if (installed?.name !== identity.name || installed?.version !== identity.version) {
     throw new Error("installed package identity differs from tarball source")
+  }
+}
+
+function assertInstalledPackageContentIdentity(installedPackage, tarballPath, expected) {
+  const installedReader = join(installedPackage, "scripts", "package-content-identity.mjs")
+  if (!existsSync(installedReader) || lstatSync(installedReader).isSymbolicLink()) {
+    throw new Error("installed package content identity reader is missing")
+  }
+  const script = [
+    'import { readFileSync } from "node:fs";',
+    `import { readPackageContentIdentity } from ${JSON.stringify(pathToFileURL(installedReader).href)};`,
+    `const identity = readPackageContentIdentity(readFileSync(${JSON.stringify(tarballPath)}));`,
+    "process.stdout.write(JSON.stringify(identity));",
+  ].join("\n")
+  const result = runNode(installedPackage, ["--input-type=module", "--eval", script])
+  if (result.status !== 0 || result.stderr !== "") {
+    throw new Error("installed package content identity reader failed")
+  }
+  let observed
+  try {
+    observed = JSON.parse(result.stdout)
+  } catch {
+    throw new Error("installed package content identity reader output is invalid")
+  }
+  if (JSON.stringify(observed) !== JSON.stringify(expected)) {
+    throw new Error("installed package content identity differs from tarball")
   }
 }
 
@@ -3150,19 +3201,45 @@ function resolvePackResult(output, packDirectory, identity) {
     }
     return file.path
   }).sort()
-  const bytes = readFileSync(candidate)
+  const canonical = canonicalizePackageTarball(readFileSync(candidate))
+  const canonicalDirectory = join(packDirectory, "canonical")
+  mkdirSync(canonicalDirectory, { mode: 0o700 })
+  const canonicalPath = join(canonicalDirectory, `${identity.name}-${identity.version}.tgz`)
+  writeCanonicalTarball(canonicalPath, canonical.bytes)
   return {
     facts: {
-      filename: basename(candidate),
+      filename: basename(canonicalPath),
       fileCount: paths.length,
       integrity: typeof record.integrity === "string" ? record.integrity : "unavailable",
       packagePathSetSha256: sha256(Buffer.from(`${paths.join("\n")}\n`, "utf8")),
+      packageContentIdentity: canonical.identity,
       shasum: typeof record.shasum === "string" ? record.shasum : "unavailable",
-      size: bytes.byteLength,
-      tarballSha256: sha256(bytes),
+      size: canonical.bytes.byteLength,
+      tarballSha256: sha256(canonical.bytes),
       version: identity.version,
     },
-    tarballPath: candidate,
+    tarballPath: canonicalPath,
+  }
+}
+
+function writeCanonicalTarball(path, bytes) {
+  let descriptor
+  try {
+    descriptor = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600)
+    let offset = 0
+    while (offset < bytes.byteLength) {
+      const written = writeSync(descriptor, bytes, offset, bytes.byteLength - offset)
+      if (written <= 0) throw new Error("write")
+      offset += written
+    }
+  } catch {
+    throw new Error("installed package canonical tarball write failed")
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor)
+  }
+  const stat = lstatSync(path)
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== bytes.byteLength) {
+    throw new Error("installed package canonical tarball write failed")
   }
 }
 
@@ -3209,6 +3286,7 @@ function parseContractOptions(args) {
   let producerIntakeOnly = false
   let sourceCli
   let tarball
+  let tarballContentIdentity
   let tarballSha256
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index]
@@ -3235,16 +3313,24 @@ function parseContractOptions(args) {
       index += 1
       continue
     }
-    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--package-exercise] [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256>]")
+    if (argument === "--tarball-content-identity" && tarballContentIdentity === undefined && typeof args[index + 1] === "string" && /^[0-9a-f]{64}$/u.test(args[index + 1])) {
+      tarballContentIdentity = args[index + 1]
+      index += 1
+      continue
+    }
+    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs [--package-exercise] [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256> --tarball-content-identity <sha256>]")
   }
   if (sourceCli !== undefined && tarball !== undefined) {
     throw new TypeError("source CLI and tarball modes are exclusive")
   }
-  if ((tarball === undefined) !== (tarballSha256 === undefined)) {
+  if (
+    (tarball === undefined) !== (tarballSha256 === undefined)
+    || (tarball === undefined) !== (tarballContentIdentity === undefined)
+  ) {
     throw new TypeError("tarball identity is required")
   }
   if (packageExercise && producerIntakeOnly) {
     throw new TypeError("package exercise and producer intake only are exclusive")
   }
-  return { packageExercise, producerIntakeOnly, sourceCli, tarball, tarballSha256 }
+  return { packageExercise, producerIntakeOnly, sourceCli, tarball, tarballContentIdentity, tarballSha256 }
 }

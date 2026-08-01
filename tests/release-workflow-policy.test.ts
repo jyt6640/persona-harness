@@ -32,6 +32,13 @@ describe("release workflow policy", () => {
     expect(workflow).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02")
     expect(workflow).toContain("if-no-files-found: error")
     expect(workflow).toContain("steps.registry-evidence.outputs.artifact-digest")
+    expect(workflow).toContain("node-version: 20.19.0")
+    expect(workflow).toContain('test "$(node --version)" = "v20.19.0"')
+    expect(workflow).toContain('test "$(npm --version)" = "10.8.2"')
+    expect(workflow).toContain("canonical-package-packer.mjs --output-directory")
+    expect(workflow).toContain('npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance')
+    expect(workflow).toContain('--package-facts "$CANONICAL_PACKAGE_FACTS"')
+    expect(workflow).not.toContain("npm pack --dry-run --json")
     expect(workflow).not.toContain("npm audit signatures")
   })
 

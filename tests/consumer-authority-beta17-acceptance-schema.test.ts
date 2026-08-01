@@ -25,6 +25,10 @@ describe("consumer authority beta.17 acceptance schema", () => {
       headAlias: BUNDLE_REFERENCE_POLICY.headAlias,
       sourceCandidateRef: BUNDLE_REFERENCE_POLICY.sourceCandidateRef,
     })
+    expect(record(manifest.packageBoundary).contentIdentity).toMatchObject({
+      canonicalPacker: { node: "20.19.0", npm: "10.8.2" },
+      schemaVersion: "package-content-identity.1",
+    })
     expect(record(manifest.externalArtifactTransportPlan)).toMatchObject({
       endpoint: { method: "GET" },
       schemaVersion: "consumer-authority-external-artifact-transport-plan.1",
@@ -56,6 +60,10 @@ describe("consumer authority beta.17 acceptance schema", () => {
       {
         name: "command plan signer selector drift",
         apply: (manifest) => { record(manifest.externalAttestationCommandPlan).signerSelector = { flag: "--cert-identity", source: "caller" } },
+      },
+      {
+        name: "package content identity raw hash downgrade",
+        apply: (manifest) => { record(record(manifest.packageBoundary).contentIdentity).rawTarballSha256 = "generic-npm-pack-equality" },
       },
     ]
 

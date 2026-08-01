@@ -50,6 +50,20 @@ describe("package files policy", () => {
     expect(scripts?.["prepack"]).toBe("node scripts/package-root-build.mjs")
   })
 
+  it("packages the portable content identity and canonical release packer", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    for (const filePath of [
+      "scripts/package-content-identity.d.mts",
+      "scripts/package-content-identity.mjs",
+      "scripts/canonical-package-packer.d.mts",
+      "scripts/canonical-package-packer.mjs",
+    ]) {
+      expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
+  })
+
   it("packages public rules while retaining diff-rules only as repository source material", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const ruleFiles = listRuleMarkdownFiles(path.join(packageRoot, ".persona/rules")).map((filePath) =>
@@ -404,6 +418,10 @@ describe("package files policy", () => {
       "scripts/consumer-authority-external-attestation-command-plan.mjs",
       "scripts/consumer-authority-external-observer-boundary.d.mts",
       "scripts/consumer-authority-external-observer-boundary.mjs",
+      "scripts/canonical-package-packer.d.mts",
+      "scripts/canonical-package-packer.mjs",
+      "scripts/package-content-identity.d.mts",
+      "scripts/package-content-identity.mjs",
       "scripts/fetch-consumer-authority-artifact.mjs",
       "scripts/preflight-consumer-authority-external-attestation.mjs",
       "scripts/preflight-consumer-authority-external-artifact-transport.mjs",

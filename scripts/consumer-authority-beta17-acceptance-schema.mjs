@@ -80,6 +80,38 @@ function buildExpectedManifest() {
     "transport-plan-preflight-does-not-access-an-artifact-or-network",
     "transport-model-safety-is-not-online-crypto-or-authority-evidence",
   )
+  manifest.packageBoundary.contentIdentity = {
+    aggregate: "sorted-package-relative-path-type-normalized-allowed-mode-size-sha256",
+    allowedMemberTypes: ["regular"],
+    allowedModes: ["0600", "0644", "0700", "0755"],
+    canonicalPacker: {
+      environment: ["isolated-HOME", "isolated-npm-cache", "isolated-npm-config", "isolated-git-config", "umask-0022", "LANG-C", "LC_ALL-C", "TZ-UTC", "SOURCE_DATE_EPOCH-0"],
+      node: "20.19.0",
+      npm: "10.8.2",
+      publish: "publish-one-exact-canonical-tarball-only",
+    },
+    crossEnvironment: "compare-package-content-identity-not-generic-independent-npm-pack-raw-tar-sha256",
+    rawTarballSha256: "valid-only-for-the-exact-canonical-supplied-tarball-or-postpublish-registry-blob",
+    registryReadback: "require-registry-raw-sha256-integrity-and-package-content-identity-to-match-frozen-canonical-package-facts",
+    retainedExternalDiagnostics: {
+      beta16: {
+        contentOnlySha256: "9bb1c7eaeceb79d198d7baafdaea9c8bc73cd8750209ea5aa76cfc46070e0832",
+        entryCount: 1191,
+        identitySha256: "9eac0bdc041e8e616bd6e4de3ba49e8490b8a269f3f0d3e520027833b927c332",
+        modeCounts: { "0600": 296, "0644": 887, "0700": 7, "0755": 1 },
+      },
+      beta17: {
+        contentOnlySha256: "d411a23a2343cd21e33ac30250ed903934968e214b7f198ccd0ea91a7d6bf580",
+        entryCount: 1200,
+        identitySha256: "5771dc973dd95e5d3f8b01a9e17becf3c17223b3d94aed692e5248e0c3054c5e",
+        modeCounts: { "0600": 305, "0644": 887, "0700": 7, "0755": 1 },
+      },
+      headerClassification: "normalized-gzip-tar-headers-do-not-explain-the-retained-content-or-mode-identity-delta",
+      reuse: "diagnostic-only-not-acceptance-evidence",
+    },
+    schemaVersion: "package-content-identity.1",
+  }
+  manifest.packageBoundary.authoritativeBundleContract.installedContract = "fresh-installed-package-exercise-uses-the-exact-canonical-target-tarball-sha256-and-package-content-identity"
   manifest.authority.fixturePlan.registryInstall = "npm install persona-harness@0.8.0-beta.17 --registry https://registry.npmjs.org"
   manifest.authority.hostedFixture.revision = "postmerge-persona-harness-beta17-main-sha"
   manifest.hostedResidual = {

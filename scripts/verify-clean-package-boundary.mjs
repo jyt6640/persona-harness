@@ -6,10 +6,14 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readFileSync,
   realpathSync,
   rmSync,
   writeFileSync,
+  writeSync,
+  closeSync,
+  constants,
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
@@ -27,10 +31,13 @@ import {
   assertSourcePackageIdentity,
   parseBundleHeads,
 } from "./clean-package-boundary-core.mjs"
+import { canonicalizePackageTarball } from "./package-content-identity.mjs"
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-clean-package-boundary-"))
 const sourceCandidateRef = BUNDLE_REFERENCE_POLICY.sourceCandidateRef
+
+process.umask(0o022)
 
 try {
   const input = parseInput(process.argv.slice(2))
@@ -57,6 +64,7 @@ try {
 
     assertCheckoutIntegrity(checkout, source, npm, git)
     const packed = packCheckout(checkout, source, npm, "target")
+    assertRepeatPackIdentity(packCheckout(checkout, source, npm, "target-repeat"), packed, "clean-package-target-content-identity")
     assertCheckoutIntegrity(checkout, source, npm, git)
     assertCliVersion(checkout, join(checkout, "dist", "cli", "index.js"), source.identity.version, npm, "clean-package-built-cli")
     const contract = input.exerciseContract
@@ -72,6 +80,7 @@ try {
     if (existsSync(join(baseCheckout, "dist"))) throw new CleanPackageBoundaryError("clean-package-base-prepack-dist")
     assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm, git)
     const basePacked = packCheckout(baseCheckout, baseSource, baseNpm, "base")
+    assertRepeatPackIdentity(packCheckout(baseCheckout, baseSource, baseNpm, "base-repeat"), basePacked, "clean-package-base-content-identity")
     assertCheckoutIntegrity(baseCheckout, baseSource, baseNpm, git)
     process.stdout.write(`${JSON.stringify({
       base: bundle.base,
@@ -80,7 +89,8 @@ try {
         fileCount: basePacked.facts.fileCount,
         name: baseSource.identity.name,
         pathSetSha256: basePacked.facts.pathSetSha256,
-        tarballSha256: basePacked.facts.tarballSha256,
+        packageContentIdentity: basePacked.facts.packageContentIdentity,
+        exactTarballSha256: basePacked.facts.tarballSha256,
         version: baseSource.identity.version,
       },
       head: bundle.head,
@@ -88,14 +98,15 @@ try {
         fileCount: packed.facts.fileCount,
         name: source.identity.name,
         pathSetSha256: packed.facts.pathSetSha256,
-        tarballSha256: packed.facts.tarballSha256,
+        packageContentIdentity: packed.facts.packageContentIdentity,
+        exactTarballSha256: packed.facts.tarballSha256,
         version: source.identity.version,
       },
       packageRoots: {
         base: baseRoot,
         target: targetRoot,
       },
-      schemaVersion: "clean-package-boundary.3",
+      schemaVersion: "clean-package-boundary.4",
       source: input.mode,
       installedPackage: {
         cliVersion: consumer.cliVersion,
@@ -321,6 +332,8 @@ function exerciseExactTarContract(root, packed, npm) {
       packed.tarballPath,
       "--tarball-sha256",
       packed.facts.tarballSha256,
+      "--tarball-content-identity",
+      packed.facts.packageContentIdentity.identitySha256,
     ],
     root,
     npm,
@@ -332,7 +345,8 @@ function exerciseExactTarContract(root, packed, npm) {
   return {
     installed: "fresh-tarball-contract-pass",
     source: "built-cli-contract-pass",
-    tarballSha256: packed.facts.tarballSha256,
+    exactTarballSha256: packed.facts.tarballSha256,
+    packageContentIdentity: packed.facts.packageContentIdentity.identitySha256,
   }
 }
 
@@ -406,13 +420,45 @@ function resolvePackResult(output, packDirectory, identity) {
   if (relativePath === "" || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath) || !existsSync(tarballPath)) {
     throw new CleanPackageBoundaryError("clean-package-pack-path")
   }
+  let canonical
+  try {
+    canonical = canonicalizePackageTarball(readFileSync(tarballPath))
+  } catch {
+    throw new CleanPackageBoundaryError("clean-package-content-identity")
+  }
+  const canonicalDirectory = join(packDirectory, "canonical")
+  mkdirSync(canonicalDirectory, { mode: 0o700 })
+  const canonicalPath = join(canonicalDirectory, `${identity.name}-${identity.version}.tgz`)
+  writeCanonicalTarball(canonicalPath, canonical.bytes)
   return {
     facts: {
       fileCount: paths.length,
+      packageContentIdentity: canonical.identity,
       pathSetSha256: sha256(Buffer.from(`${paths.join("\n")}\n`, "utf8")),
-      tarballSha256: sha256(readFileSync(tarballPath)),
+      tarballSha256: sha256(canonical.bytes),
     },
-    tarballPath,
+    tarballPath: canonicalPath,
+  }
+}
+
+function writeCanonicalTarball(path, bytes) {
+  let descriptor
+  try {
+    descriptor = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600)
+    let offset = 0
+    while (offset < bytes.byteLength) {
+      const written = writeSync(descriptor, bytes, offset, bytes.byteLength - offset)
+      if (written <= 0) throw new Error("write")
+      offset += written
+    }
+  } catch {
+    throw new CleanPackageBoundaryError("clean-package-content-identity")
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor)
+  }
+  const stat = lstatSync(path)
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== bytes.byteLength) {
+    throw new CleanPackageBoundaryError("clean-package-content-identity")
   }
 }
 
@@ -421,12 +467,19 @@ function createNpmEnvironment(root, label) {
   const cache = join(root, `npm-cache-${label}`)
   const userConfig = join(root, `npm-userconfig-${label}`)
   const globalConfig = join(root, `npm-globalconfig-${label}`)
+  const gitConfig = join(root, `git-globalconfig-${label}`)
   mkdirSync(home)
   mkdirSync(cache)
-  writeFileSync(userConfig, "")
-  writeFileSync(globalConfig, "")
+  writeFileSync(userConfig, "", { flag: "wx", mode: 0o600 })
+  writeFileSync(globalConfig, "", { flag: "wx", mode: 0o600 })
+  writeFileSync(gitConfig, "", { flag: "wx", mode: 0o600 })
   return {
+    GIT_CONFIG_GLOBAL: gitConfig,
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_TERMINAL_PROMPT: "0",
     HOME: home,
+    LANG: "C",
+    LC_ALL: "C",
     NPM_CONFIG_AUDIT: "false",
     NPM_CONFIG_CACHE: cache,
     NPM_CONFIG_FUND: "false",
@@ -434,10 +487,12 @@ function createNpmEnvironment(root, label) {
     NPM_CONFIG_IGNORE_SCRIPTS: "false",
     NPM_CONFIG_INCLUDE_WORKSPACE_ROOT: "false",
     NPM_CONFIG_UPDATE_NOTIFIER: "false",
+    NPM_CONFIG_UMASK: "0022",
     NPM_CONFIG_USERCONFIG: userConfig,
     NPM_CONFIG_WORKSPACES: "false",
     PATH: process.env.PATH ?? "",
     TMPDIR: root,
+    TZ: "UTC",
     USER: "persona",
   }
 }
@@ -455,6 +510,7 @@ function createGitEnvironment(root) {
     LANG: "C",
     LC_ALL: "C",
     PATH: process.env.PATH ?? "",
+    TZ: "UTC",
   }
 }
 
@@ -532,6 +588,20 @@ function requireSuccess(result, code) {
 
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex")
+}
+
+function assertRepeatPackIdentity(repeated, initial, code) {
+  const left = initial.facts.packageContentIdentity
+  const right = repeated.facts.packageContentIdentity
+  if (
+    left.identitySha256 !== right.identitySha256
+    || left.contentSha256 !== right.contentSha256
+    || left.entryCount !== right.entryCount
+    || JSON.stringify(left.modeCounts) !== JSON.stringify(right.modeCounts)
+    || initial.facts.tarballSha256 !== repeated.facts.tarballSha256
+  ) {
+    throw new CleanPackageBoundaryError(code)
+  }
 }
 
 function isSha(value) {

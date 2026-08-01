@@ -3,6 +3,7 @@
   "version": "0.8.0-beta.17",
   "private": false,
   "type": "module",
+  "packageManager": "npm@10.8.2",
   "description": "Gate-first CLI for Java/Spring backend workflow evidence, completion checks, and optional OpenCode runtime guidance.",
   "main": "dist/index.js",
   "bin": {
@@ -97,6 +98,10 @@
     "scripts/node-runtime-floor.mjs",
     "scripts/node-runtime-floor.d.mts",
     "scripts/package-root-build.mjs",
+    "scripts/package-content-identity.d.mts",
+    "scripts/package-content-identity.mjs",
+    "scripts/canonical-package-packer.d.mts",
+    "scripts/canonical-package-packer.mjs",
     "packages/codegraph-mcp/bin",
     "packages/codegraph-mcp/lib",
     "packages/lsp-mcp/package.json",

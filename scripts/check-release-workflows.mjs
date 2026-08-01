@@ -266,11 +266,20 @@ const requirements = [
   ["publish integrity readback", ".github/workflows/publish.yml", (text) =>
     text.includes("timeout-minutes: 45")
     && text.includes("release-registry-readback.mjs")
+    && text.includes('--package-facts "$CANONICAL_PACKAGE_FACTS"')
     && text.includes("registry-readback.json")
     && text.includes("id: registry-evidence")
     && text.includes("if-no-files-found: error")
     && text.includes("steps.registry-evidence.outputs.artifact-digest")
     && !text.includes("npm audit signatures")],
+  ["publish canonical package tar", ".github/workflows/publish.yml", (text) =>
+    text.includes("node-version: 20.19.0")
+    && text.includes('test "$(node --version)" = "v20.19.0"')
+    && text.includes('test "$(npm --version)" = "10.8.2"')
+    && text.includes("canonical-package-packer.mjs --output-directory")
+    && text.includes('npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance')
+    && text.includes("CANONICAL_PACKAGE_FACTS")
+    && !text.includes("npm pack --dry-run --json")],
   ["release manual approval", ".github/workflows/release.yml", (text) => text.includes("workflow_dispatch:") && text.includes("approval_scope:") && text.includes("          - ga-approved") && text.includes("inputs.approval_scope == 'ga-approved'") && text.includes("tag-source") && text.includes("git fetch origin main") && !text.includes("\n  push:") && !text.includes("tags:\n")],
   ["release idempotency", ".github/workflows/release.yml", (text) => text.includes("gh release view") && text.includes("release-state") && text.includes("--target \"$tag_commit\"")],
   ["release state fields", ".github/workflows/release.yml", (text) => text.includes("targetCommitish") && text.includes("isPrerelease") && text.includes("gh release create") && text.includes("--expected-prerelease false")],
