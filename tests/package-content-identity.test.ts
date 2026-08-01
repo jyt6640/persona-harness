@@ -165,7 +165,8 @@ describe("package content identity", () => {
     ]))
 
     // When
-    const classify = () => classifyPackageContentIdentity(identity, { ...identity, unexpected: true })
+    const malformed: unknown = { ...identity, unexpected: true }
+    const classify = () => classifyPackageContentIdentity(identity, malformed as typeof identity)
 
     // Then
     expect(classify).toThrow("package-content-identity-shape")

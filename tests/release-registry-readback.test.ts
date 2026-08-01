@@ -117,7 +117,9 @@ describe("release registry readback", () => {
       // When / Then
       expect(parseReleaseRegistryReadbackArguments(args(aliasPath))).toBeUndefined()
       expect(parseReleaseRegistryReadbackArguments(args(badPath))).toBeUndefined()
-      expect(parseReleaseRegistryReadbackArguments(args(safePath).toSpliced(7, 1, "0.8.0-beta.2"))).toBeUndefined()
+      const wrongVersion = args(safePath)
+      wrongVersion[7] = "0.8.0-beta.2"
+      expect(parseReleaseRegistryReadbackArguments(wrongVersion)).toBeUndefined()
     } finally {
       rmSync(root, { force: true, recursive: true })
     }
