@@ -36,10 +36,33 @@ describe("release workflow policy", () => {
     expect(workflow).toContain('test "$(node --version)" = "v20.19.0"')
     expect(workflow).toContain('test "$(npm --version)" = "10.8.2"')
     expect(workflow).toContain("canonical-package-packer.mjs --output-directory")
+    expect(workflow).toContain("node-version: 24.18.0")
+    expect(workflow).toContain('test "$(node --version)" = "v24.18.0"')
+    expect(workflow).toContain('test "$(npm --version)" = "11.16.0"')
+    expect(workflow).toContain("canonical-package-publisher.mjs")
+    expect(workflow).toContain('npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance --dry-run')
     expect(workflow).toContain('npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance')
     expect(workflow).toContain('--package-facts "$CANONICAL_PACKAGE_FACTS"')
     expect(workflow).not.toContain("npm pack --dry-run --json")
     expect(workflow).not.toContain("npm audit signatures")
+    expect(workflow).not.toContain("npm whoami")
+    expect(workflow).not.toContain("npm token")
+    expect(workflow).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
+  })
+
+  it("uses the identical canonical-tar Node24 dry-run publisher route for manual release verification", () => {
+    const workflow = readFileSync(join(repositoryRoot, ".github", "workflows", "release.yml"), "utf8")
+
+    expect(workflow).toContain("node-version: 20.19.0")
+    expect(workflow).toContain('test "$(npm --version)" = "10.8.2"')
+    expect(workflow).toContain("canonical-package-packer.mjs --output-directory")
+    expect(workflow).toContain("node-version: 24.18.0")
+    expect(workflow).toContain('test "$(npm --version)" = "11.16.0"')
+    expect(workflow).toContain("canonical-package-publisher.mjs")
+    expect(workflow).toContain('npm publish "$CANONICAL_TARBALL" --access public --tag latest --provenance --dry-run')
+    expect(workflow).not.toContain("npm publish --dry-run --access public --tag latest")
+    expect(workflow).not.toContain("npm whoami")
+    expect(workflow).not.toContain("npm token")
   })
 
   it("keeps the beta's cooperative and external registry fixtures separate and non-authoritative", () => {
@@ -56,7 +79,7 @@ describe("release workflow policy", () => {
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.8.0-beta.17")
+    expect(packageVersion).toBe("0.8.0-beta.18")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",

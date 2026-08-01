@@ -412,6 +412,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-beta16-acceptance-schema.mjs",
       "scripts/consumer-authority-beta17-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta17-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta18-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta18-acceptance-schema.mjs",
       "scripts/consumer-authority-external-artifact-transport-plan.d.mts",
       "scripts/consumer-authority-external-artifact-transport-plan.mjs",
       "scripts/consumer-authority-external-attestation-command-plan.d.mts",
@@ -420,6 +422,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-external-observer-boundary.mjs",
       "scripts/canonical-package-packer.d.mts",
       "scripts/canonical-package-packer.mjs",
+      "scripts/canonical-package-publisher.d.mts",
+      "scripts/canonical-package-publisher.mjs",
       "scripts/package-content-identity.d.mts",
       "scripts/package-content-identity.mjs",
       "scripts/fetch-consumer-authority-artifact.mjs",
@@ -460,6 +464,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta15-acceptance.json",
       "docs/current/release/consumer-authority-beta16-acceptance.json",
       "docs/current/release/consumer-authority-beta17-acceptance.json",
+      "docs/current/release/consumer-authority-beta18-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -502,7 +507,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.17-release-notes.md",
+      "docs/current/release/v0.8.0-beta.18-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -528,7 +533,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.17-release-notes.md",
+      "docs/current/release/v0.8.0-beta.18-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

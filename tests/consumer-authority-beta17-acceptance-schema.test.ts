@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest"
 import {
   BETA17_ACCEPTANCE_SCHEMA_VERSION,
   Beta17AcceptanceManifestError,
+  canonicalBeta17AcceptanceManifest,
   parseBeta17AcceptanceManifest,
-  readBeta17AcceptanceManifest,
 } from "../scripts/consumer-authority-beta17-acceptance-schema.mjs"
 import { BUNDLE_REFERENCE_POLICY } from "../scripts/clean-package-boundary-core.mjs"
 
@@ -16,7 +16,7 @@ const manifestPath = join(repositoryRoot, "docs", "current", "release", "consume
 
 describe("consumer authority beta.17 acceptance schema", () => {
   it("binds the shipped version, bundle policy, command plan, and fixed artifact transport plan together", () => {
-    const manifest = readBeta17AcceptanceManifest(repositoryRoot)
+    const manifest = canonicalBeta17AcceptanceManifest()
 
     expect(manifest.schemaVersion).toBe(BETA17_ACCEPTANCE_SCHEMA_VERSION)
     expect(manifest.package.version).toBe("0.8.0-beta.17")

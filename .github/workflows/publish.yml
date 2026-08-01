@@ -76,14 +76,14 @@ jobs:
             --canonical-main-sha "$canonical_main_sha" \
             --is-ancestor "$is_ancestor"
 
-      - name: Setup Node
+      - name: Setup canonical packer Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20.19.0
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      - name: Show publish toolchain
+      - name: Show canonical packer toolchain
         run: |
           set -euo pipefail
           test "$(node --version)" = "v20.19.0"
@@ -140,10 +140,61 @@ jobs:
           echo "CANONICAL_PACKAGE_FACTS=$package_facts" >> "$GITHUB_ENV"
           echo "CANONICAL_TARBALL=$package_directory/persona-harness-${PACKAGE_VERSION}.tgz" >> "$GITHUB_ENV"
 
+      - name: Setup canonical tar publisher Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.18.0
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Show canonical tar publisher toolchain
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v24.18.0"
+          test "$(npm --version)" = "11.16.0"
+
+      - name: Reserve isolated canonical tar publisher environment
+        run: |
+          set -euo pipefail
+          publisher_directory="${RUNNER_TEMP}/persona-harness-canonical-tar-publisher"
+          test ! -e "$publisher_directory"
+          install -d -m 700 "$publisher_directory" "$publisher_directory/npm-home" "$publisher_directory/npm-cache"
+          install -m 600 /dev/null "$publisher_directory/npm-userconfig"
+          install -m 600 /dev/null "$publisher_directory/npm-globalconfig"
+          echo "PUBLISHER_RUNTIME_DIRECTORY=$publisher_directory" >> "$GITHUB_ENV"
+          echo "PUBLISHER_NPM_HOME=$publisher_directory/npm-home" >> "$GITHUB_ENV"
+          echo "PUBLISHER_NPM_CACHE=$publisher_directory/npm-cache" >> "$GITHUB_ENV"
+          echo "PUBLISHER_NPM_GLOBALCONFIG=$publisher_directory/npm-globalconfig" >> "$GITHUB_ENV"
+          echo "PUBLISHER_NPM_USERCONFIG=$publisher_directory/npm-userconfig" >> "$GITHUB_ENV"
+
+      - name: Preflight canonical tar publisher handoff
+        env:
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: |
+          set -euo pipefail
+          export HOME="$PUBLISHER_NPM_HOME"
+          export NPM_CONFIG_CACHE="$PUBLISHER_NPM_CACHE"
+          export NPM_CONFIG_GLOBALCONFIG="$PUBLISHER_NPM_GLOBALCONFIG"
+          export NPM_CONFIG_USERCONFIG="$PUBLISHER_NPM_USERCONFIG"
+          node scripts/canonical-package-publisher.mjs \
+            --canonical-directory "$CANONICAL_PACKAGE_DIRECTORY" \
+            --dist-tag "$DIST_TAG" \
+            --package-facts "$CANONICAL_PACKAGE_FACTS" \
+            --publisher-runtime-directory "$PUBLISHER_RUNTIME_DIRECTORY" \
+            --tarball "$CANONICAL_TARBALL" \
+            --dry-run true
+          npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance --dry-run
+
       - name: Publish to npm
         env:
           DIST_TAG: ${{ inputs.dist_tag }}
-        run: npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance
+        run: |
+          set -euo pipefail
+          export HOME="$PUBLISHER_NPM_HOME"
+          export NPM_CONFIG_CACHE="$PUBLISHER_NPM_CACHE"
+          export NPM_CONFIG_GLOBALCONFIG="$PUBLISHER_NPM_GLOBALCONFIG"
+          export NPM_CONFIG_USERCONFIG="$PUBLISHER_NPM_USERCONFIG"
+          npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance
 
       - name: Verify registry package
         env:

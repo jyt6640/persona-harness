@@ -55,7 +55,7 @@ Inputs:
     only; this is a separate later promotion dispatch after staging evidence;
   - `latest` requires `ga-approved` and accepts stable versions only.
 
-The workflow verifies:
+The workflow verifies the source boundary under the canonical packer runtime:
 
 ```bash
 npm ci
@@ -65,14 +65,27 @@ npm run typecheck
 npm test
 npm run build
 npm run smoke:product-mvp
-npm pack --dry-run --json
 ```
 
-Then it publishes:
+It then creates exactly one normalized tarball and matching package facts with
+Node `20.19.0` and npm `10.8.2` under isolated npm and Git configuration. That
+runtime is the canonical packer only; it never performs the registry PUT.
+
+The publisher switches to Node `24.18.0` and npm `11.16.0`, reserves a separate
+empty npm home/cache/configuration, verifies the exact canonical tarball SHA-256
+and portable package-content identity, and runs the exact publish argv once in
+dry-run mode. This exceeds the documented npm Trusted Publishing floor of Node
+`22.14.0` and npm `11.5.1`:
 
 ```bash
-npm publish --access public --tag <dist_tag> --provenance
+npm publish <canonical-tarball> --access public --tag <dist_tag> --provenance --dry-run
 ```
+
+Only then does the trusted publisher issue the real registry PUT with the same
+canonical tarball argv minus `--dry-run`. It never repacks the workspace. The
+release workflow uses this same Node20 packer and Node24 dry-run publisher route.
+Neither workflow performs a custom OIDC token exchange or prints authentication
+state; npm Trusted Publishing remains the only authentication path.
 
 The workflow refuses unsafe tag/version combinations:
 
@@ -134,6 +147,12 @@ and create GitHub release notes. It is not the npm publish path.
 ## Boundaries
 
 Trusted publishing changes only the authentication path.
+
+An authorization-shaped registry response is not evidence that a package is
+missing. In particular, beta.16 remains present in the public registry; a
+beta.17 Node20/npm10 registry PUT failure does not change that fact. The Node24
+publisher handoff still requires one new hosted registry PUT and independent
+registry raw-byte, integrity, and package-content-identity readback.
 
 It does not prove:
 
