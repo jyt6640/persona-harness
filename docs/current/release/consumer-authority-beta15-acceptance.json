@@ -7,7 +7,7 @@
   },
   "packageBoundary": {
     "bundle": {
-      "requiredRefs": ["HEAD", "refs/remotes/origin/main"],
+      "requiredRefs": ["explicit-single-refs-heads-candidate-must-match-expected-head", "refs/remotes/origin/main"],
       "verification": "git-bundle-verify-and-exact-ref-binding",
       "baseComparison": "independent-no-local-base-checkout-under-the-same-npm-policy"
     },

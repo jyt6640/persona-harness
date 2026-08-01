@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { readBeta15AcceptanceManifest } from "../scripts/consumer-authority-beta15-acceptance-schema.mjs"
+import { BUNDLE_REFERENCE_POLICY } from "../scripts/clean-package-boundary-core.mjs"
 
 describe("consumer authority beta.15 final readiness", () => {
   it("keeps caller enrollment, reusable signer, bootstrap-local metadata, and replay policy distinct", () => {
@@ -12,6 +13,7 @@ describe("consumer authority beta.15 final readiness", () => {
     const projection = record(binding["runtimeSourceProjection"])
     const modeled = record(authority["modeledContract"])
     const packageBoundary = record(manifest["packageBoundary"])
+    const bundle = record(packageBoundary["bundle"])
     const npm = record(packageBoundary["npm"])
     const proof = record(packageBoundary["authoritativeBundleContract"])
 
@@ -45,14 +47,15 @@ describe("consumer authority beta.15 final readiness", () => {
     })
     expect(proof).toEqual({
       baseAndTarget: "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
-      candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head",
+      candidateRef: BUNDLE_REFERENCE_POLICY.candidateRef,
       command: "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
       fullJavaGradleContract: "source-and-fresh-installed-full-contract-on-a-provisioned-java-gradle-host",
-      headAlias: "optional-head-mapping-must-match-the-same-expected-head",
+      headAlias: BUNDLE_REFERENCE_POLICY.headAlias,
       installedContract: "fresh-installed-package-exercise-uses-exact-target-tarball-sha256",
       rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
       sourceContract: "built-cli-package-exercise-contract-under-the-same-executable",
     })
+    expect(bundle["requiredRefs"]).toEqual(BUNDLE_REFERENCE_POLICY.requiredRefs)
   })
 
   it("requires public initialization before the only pre-armed hosted residual", () => {

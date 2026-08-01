@@ -3,6 +3,18 @@ const SHA = /^[0-9a-f]{40}$/u
 const CANDIDATE_REF = /^refs\/heads\/(?:[A-Za-z0-9][A-Za-z0-9._-]*)(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/u
 const STRICT_SEMVER = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
 
+const BUNDLE_REQUIRED_REFS = Object.freeze([
+  "explicit-single-refs-heads-candidate-must-match-expected-head",
+  "refs/remotes/origin/main",
+])
+
+export const BUNDLE_REFERENCE_POLICY = Object.freeze({
+  candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head",
+  headAlias: "optional-head-mapping-must-match-the-same-expected-head",
+  mainRef: "refs/remotes/origin/main",
+  requiredRefs: BUNDLE_REQUIRED_REFS,
+})
+
 export class CleanPackageBoundaryError extends Error {
   constructor(code) {
     super(code)
@@ -60,8 +72,9 @@ export function assertBundleHeadBinding(heads, expected) {
     if (!isRecord(entry) || typeof entry.ref !== "string" || typeof entry.sha !== "string" || !SHA.test(entry.sha) || byRef.has(entry.ref)) {
       fail("clean-package-bundle-shape")
     }
-    byRef.set(entry.ref, entry.sha)
     if (entry.ref.startsWith("refs/heads/")) branchRefs.push(entry.ref)
+    else if (entry.ref !== "HEAD" && entry.ref !== BUNDLE_REFERENCE_POLICY.mainRef) fail("clean-package-bundle-ref")
+    byRef.set(entry.ref, entry.sha)
   }
   const candidateSha = byRef.get(expected.candidateRef)
   if (candidateSha === undefined) fail("clean-package-bundle-candidate-ref")
@@ -71,7 +84,7 @@ export function assertBundleHeadBinding(heads, expected) {
   if (candidateSha !== expected.head) fail("clean-package-bundle-candidate-sha")
   const headAlias = byRef.get("HEAD")
   if (headAlias !== undefined && headAlias !== expected.head) fail("clean-package-bundle-head")
-  if (byRef.get("refs/remotes/origin/main") !== expected.base) fail("clean-package-bundle-main")
+  if (byRef.get(BUNDLE_REFERENCE_POLICY.mainRef) !== expected.base) fail("clean-package-bundle-main")
   return { base: expected.base, candidateRef: expected.candidateRef, head: expected.head }
 }
 

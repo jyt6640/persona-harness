@@ -9,6 +9,7 @@ import {
   parseBeta15AcceptanceManifest,
   readBeta15AcceptanceManifest,
 } from "../scripts/consumer-authority-beta15-acceptance-schema.mjs"
+import { BUNDLE_REFERENCE_POLICY } from "../scripts/clean-package-boundary-core.mjs"
 
 const repositoryRoot = process.cwd()
 const manifestPath = join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta15-acceptance.json")
@@ -20,9 +21,15 @@ describe("consumer authority beta.15 acceptance schema", () => {
     expect(manifest.schemaVersion).toBe(BETA15_ACCEPTANCE_SCHEMA_VERSION)
     expect(manifest.package.version).toBe("0.8.0-beta.15")
     expect(manifest.packageBoundary.authoritativeBundleContract.candidateRef)
-      .toBe("explicit-single-refs-heads-candidate-must-match-expected-head")
+      .toBe(BUNDLE_REFERENCE_POLICY.candidateRef)
     expect(manifest.packageBoundary.authoritativeBundleContract.headAlias)
-      .toBe("optional-head-mapping-must-match-the-same-expected-head")
+      .toBe(BUNDLE_REFERENCE_POLICY.headAlias)
+    expect(record(manifest.packageBoundary.bundle)["requiredRefs"])
+      .toEqual(BUNDLE_REFERENCE_POLICY.requiredRefs)
+    expect(manifest.packageBoundary.authoritativeBundleContract).toMatchObject({
+      candidateRef: BUNDLE_REFERENCE_POLICY.candidateRef,
+      headAlias: BUNDLE_REFERENCE_POLICY.headAlias,
+    })
   })
 
   it("rejects manifest downgrade, unknown fields, and altered bundle-ref semantics", () => {
@@ -46,6 +53,15 @@ describe("consumer authority beta.15 acceptance schema", () => {
       {
         name: "conflicting head alias semantic",
         apply: (manifest) => { bundleContract(manifest)["headAlias"] = "head-alias-may-conflict" },
+      },
+      {
+        name: "legacy required HEAD alias",
+        apply: (manifest) => {
+          record(record(manifest["packageBoundary"])["bundle"])["requiredRefs"] = [
+            "HEAD",
+            "refs/remotes/origin/main",
+          ]
+        },
       },
     ]
 
