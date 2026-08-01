@@ -41,7 +41,7 @@ not become current merely because they remain under `docs/current/`.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.8.0-beta.17-release-notes.md`](release/v0.8.0-beta.17-release-notes.md).
+  [`release/v0.8.0-beta.18-release-notes.md`](release/v0.8.0-beta.18-release-notes.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -121,15 +121,17 @@ not become current merely because they remain under `docs/current/`.
 - `0.8.0-beta.1` through `0.8.0-beta.16` are historical staging-only Consumer
   Authority Beta evidence. Beta.16's external observer accepted an exit-zero
   artifact download without an exact nonempty ZIP postcondition, so it
-  provides no reusable beta.17 transport, verification, Finish, consumption, or
-  replay fact. `0.8.0-beta.17` is the current source-preparation candidate. It makes no package, tag, staging mapping,
+  provides no reusable beta.18 transport, verification, Finish, consumption, or
+  replay fact. Beta.17's Node20/npm10 registry PUT was authorization-shaped,
+  not a package-absence claim. `0.8.0-beta.18` is the current source-preparation
+  candidate. It makes no package, tag, staging mapping,
   GitHub release, original signed consumer artifact, promotion, Stable/GA, or
   Finish authority claim. Its pre-fixture gate requires a package-visible
   observer credential-preflight, separate caller/reusable signer binding,
   portable canonical package-content identity, and
   the complete public Java/Spring lifecycle to reach only
   `trusted-authority-required` in
-  [`release/v0.8.0-beta.17-release-notes.md`](release/v0.8.0-beta.17-release-notes.md).
+  [`release/v0.8.0-beta.18-release-notes.md`](release/v0.8.0-beta.18-release-notes.md).
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)

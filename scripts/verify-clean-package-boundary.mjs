@@ -24,6 +24,7 @@ import {
   BUNDLE_REFERENCE_POLICY,
   CleanPackageBoundaryError,
   assertBundleHeadBinding,
+  assertCanonicalPartialCloneRemote,
   assertCheckoutPackageBinding,
   assertNpmExecutionPolicy,
   assertPackageExecutionBinding,
@@ -168,6 +169,7 @@ function createSourceBundle(root, git) {
   const base = gitText(sourceRoot, ["rev-parse", BUNDLE_REFERENCE_POLICY.mainRef], git)
   const head = gitText(sourceRoot, ["rev-parse", "HEAD"], git)
   requireSuccess(run("git", ["merge-base", "--is-ancestor", base, head], sourceRoot, git), "clean-package-ancestry")
+  hydratePartialSource(sourceRoot, base, git)
   const sourceRepository = materializeSourceRepository(sourceRoot, head, base, git)
   const bundlePath = join(temporaryRoot, "candidate.bundle")
   requireSuccess(
@@ -175,6 +177,30 @@ function createSourceBundle(root, git) {
     "clean-package-bundle-create",
   )
   return verifyBundle(bundlePath, { base, candidateRef: sourceCandidateRef, head }, git)
+}
+
+function hydratePartialSource(root, base, git) {
+  const promisor = optionalGitConfig(root, "remote.origin.promisor", git)
+  if (promisor === undefined) return
+  if (promisor !== "true") throw new CleanPackageBoundaryError("clean-package-source-hydrate")
+  const filter = gitText(root, ["config", "--get", "remote.origin.partialclonefilter"], git)
+  if (filter !== "blob:none") throw new CleanPackageBoundaryError("clean-package-source-hydrate")
+  assertCanonicalPartialCloneRemote(gitText(root, ["config", "--get", "remote.origin.url"], git))
+  if (gitText(root, ["rev-parse", BUNDLE_REFERENCE_POLICY.mainRef], git) !== base) {
+    throw new CleanPackageBoundaryError("clean-package-source-hydrate")
+  }
+  requireSuccess(
+    run(
+      "git",
+      ["fetch", "--refetch", "--no-filter", "--no-tags", "--no-write-fetch-head", "origin", base],
+      root,
+      git,
+    ),
+    "clean-package-source-hydrate",
+  )
+  if (gitText(root, ["rev-parse", BUNDLE_REFERENCE_POLICY.mainRef], git) !== base) {
+    throw new CleanPackageBoundaryError("clean-package-source-hydrate")
+  }
 }
 
 function materializeSourceRepository(root, head, base, git) {
@@ -566,6 +592,15 @@ function gitText(cwd, args, git) {
   const result = run("git", args, cwd, git)
   requireSuccess(result, "clean-package-git")
   return result.stdout.trim()
+}
+
+function optionalGitConfig(cwd, key, git) {
+  const result = run("git", ["config", "--get", key], cwd, git)
+  if (result.status === 1 && result.stdout === "" && result.stderr === "") return undefined
+  requireSuccess(result, "clean-package-source-hydrate")
+  const value = result.stdout.trim()
+  if (value === "") throw new CleanPackageBoundaryError("clean-package-source-hydrate")
+  return value
 }
 
 function run(command, args, cwd, env = process.env) {

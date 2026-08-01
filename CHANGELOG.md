@@ -12,6 +12,18 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.18] - 2026-08-02
+
+- Keeps Node `20.19.0`/npm `10.8.2` as the isolated canonical package packer
+  and moves only the trusted-publishing dry-run and registry PUT phase to the
+  separately isolated Node `24.18.0`/npm `11.16.0` publisher runtime.
+- Binds the publisher to the exact canonical tarball SHA-256 and portable
+  package-content identity before the canonical-tar dry-run or real publish
+  argv can run; the workflow never repacks the workspace.
+- Aligns the manual release dry-run with the same canonical tar and Node24
+  publisher route. Beta.17's E404 is recorded as authorization-shaped registry
+  evidence, not as a claim that beta.16 is absent from the public registry.
+
 ## [0.8.0-beta.17] - 2026-08-02
 
 - Adds the package-visible `consumer-authority-external-artifact-transport-plan.1`

@@ -6,19 +6,22 @@ user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
 `0.8.0-beta.1` through `0.8.0-beta.16` are immutable staging-only evidence.
-Their registry and provenance observations cannot be reused as beta.17
+Their registry and provenance observations cannot be reused as beta.18
 current-version consumer authority evidence. Beta.16's final observer accepted
 an exit-zero API download without proving a nonempty exact ZIP, so it stopped
-before ZIP validation. The active `0.8.0-beta.17` source candidate has no
-package, tag, channel movement, GitHub release, or signed consumer-project
-artifact at source preparation time.
+before ZIP validation. Beta.17 created a canonical tarball and provenance but
+its Node20/npm10 registry PUT received an authorization-shaped E404; that is not
+a package-absence claim, and beta.16 remains present in the public registry.
+The active `0.8.0-beta.18` source candidate has no package, tag, channel
+movement, GitHub release, or signed consumer-project artifact at source
+preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.17 must establish the remaining public readiness and final authority route
-independently; it cannot inherit beta.16's observer failure, an earlier
-lifecycle, or an earlier authority result.
+Beta.18 must establish the remaining public readiness and final authority route
+independently. It cannot inherit beta.16's observer failure, beta.17's registry
+PUT result, an earlier lifecycle, or an earlier authority result.
 
 The consumer must create its own workflow state through public bootstrap and
 report/evidence commands in the exact project that later fetches authority.
@@ -130,12 +133,12 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.16` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.17`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.17` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.18`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta17-acceptance.json`](consumer-authority-beta17-acceptance.json)
+[`consumer-authority-beta18-acceptance.json`](consumer-authority-beta18-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the live certificate observation order,
@@ -148,7 +151,7 @@ than caller project source. The profile, Gradle descriptors, Git identity,
 reports, and evidence remain bound. This does not relax caller enrollment,
 reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
 
-Before beta.17 package evidence is accepted, the verifier materializes the
+Before beta.18 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds one
 explicit canonical `refs/heads/...` candidate ref and
 `refs/remotes/origin/main`; the candidate ref must equal the expected candidate
@@ -163,15 +166,25 @@ materialized separately from the same bundle and packed under the same policy,
 so package comparison cannot borrow either checkout's working directory or
 generated output.
 
+When the source checkout is an authenticated canonical `blob:none` promisor
+clone, that proof may hydrate only the already-bound `origin/main` commit with
+`--refetch --no-filter --no-tags --no-write-fetch-head` before the local bare
+repository materialization. It rechecks the retained main ref before and after
+the object fetch, rejects noncanonical origins or filters, and never moves a
+source ref. Ordinary checkouts use the direct local materialization route.
+
 The pack invocation itself is plain `npm` from that bound checkout CWD;
 `npm --prefix ... pack` is not an allowed package-root selector. The packaged
 root-bound prepack runner builds from its own script location. The portable
 `package-content-identity.1` is the cross-environment comparison: it binds
 sorted safe regular package members, allowed mode, size, and per-member
 content digest. Generic independent `npm pack` raw bytes are not treated as a
-portable identity. The pinned canonical publisher emits one normalized tarball
-under isolated npm/Git state, publishes that exact file, and requires registry
-readback to match both that file's raw hash/integrity and the portable identity.
+portable identity. The Node20/npm10 canonical packer emits one normalized
+tarball under isolated npm/Git state. A separately isolated Node24/npm11
+publisher verifies that exact tarball and its facts, runs the same canonical-tar
+argv in dry-run mode, then issues the only hosted registry PUT without
+repacking. Registry readback must match both that file's raw hash/integrity and
+the portable identity.
 The one authoritative bundle proof feeds its exact canonical tarball SHA-256
 and content identity into both the built source CLI and fresh installed
 consumer contracts. Retained earlier beta tar aggregates remain diagnostic-only
@@ -186,7 +199,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.17 fixture push, an independent observer may prepare
+Before the one natural beta.18 fixture push, an independent observer may prepare
 only an isolated exact registry installation, private consumer `HOME`,
 enrollment, status, and explain. It must then run
 `node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json`.

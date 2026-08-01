@@ -23,8 +23,8 @@ const immutableActionPins = {
 
 const expectedActionCounts = {
   ".github/workflows/ci.yml": { checkout: 1, setupNode: 1 },
-  ".github/workflows/publish.yml": { checkout: 1, setupNode: 1, uploadArtifact: 1 },
-  ".github/workflows/release.yml": { checkout: 2, setupNode: 2 },
+  ".github/workflows/publish.yml": { checkout: 1, setupNode: 2, uploadArtifact: 1 },
+  ".github/workflows/release.yml": { checkout: 2, setupNode: 3 },
   ".github/workflows/canonical-clean-ci-attestation-builder.yml": {
     attest: 1,
     checkout: 1,
@@ -277,9 +277,28 @@ const requirements = [
     && text.includes('test "$(node --version)" = "v20.19.0"')
     && text.includes('test "$(npm --version)" = "10.8.2"')
     && text.includes("canonical-package-packer.mjs --output-directory")
+    && text.includes("node-version: 24.18.0")
+    && text.includes('test "$(node --version)" = "v24.18.0"')
+    && text.includes('test "$(npm --version)" = "11.16.0"')
+    && text.includes("canonical-package-publisher.mjs")
+    && text.includes('npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance --dry-run')
     && text.includes('npm publish "$CANONICAL_TARBALL" --access public --tag "$DIST_TAG" --provenance')
     && text.includes("CANONICAL_PACKAGE_FACTS")
+    && !text.includes("npm whoami")
+    && !text.includes("npm token")
+    && !text.includes("ACTIONS_ID_TOKEN_REQUEST_")
     && !text.includes("npm pack --dry-run --json")],
+  ["release canonical tar publisher dry run", ".github/workflows/release.yml", (text) =>
+    text.includes("node-version: 20.19.0")
+    && text.includes('test "$(node --version)" = "v20.19.0"')
+    && text.includes('test "$(npm --version)" = "10.8.2"')
+    && text.includes("canonical-package-packer.mjs --output-directory")
+    && text.includes("node-version: 24.18.0")
+    && text.includes('test "$(node --version)" = "v24.18.0"')
+    && text.includes('test "$(npm --version)" = "11.16.0"')
+    && text.includes("canonical-package-publisher.mjs")
+    && text.includes('npm publish "$CANONICAL_TARBALL" --access public --tag latest --provenance --dry-run')
+    && !text.includes("npm publish --dry-run --access public --tag latest")],
   ["release manual approval", ".github/workflows/release.yml", (text) => text.includes("workflow_dispatch:") && text.includes("approval_scope:") && text.includes("          - ga-approved") && text.includes("inputs.approval_scope == 'ga-approved'") && text.includes("tag-source") && text.includes("git fetch origin main") && !text.includes("\n  push:") && !text.includes("tags:\n")],
   ["release idempotency", ".github/workflows/release.yml", (text) => text.includes("gh release view") && text.includes("release-state") && text.includes("--target \"$tag_commit\"")],
   ["release state fields", ".github/workflows/release.yml", (text) => text.includes("targetCommitish") && text.includes("isPrerelease") && text.includes("gh release create") && text.includes("--expected-prerelease false")],
