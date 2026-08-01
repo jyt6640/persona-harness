@@ -15,10 +15,10 @@ const manifestPath = join(repositoryRoot, "docs", "current", "release", "consume
 
 describe("consumer authority beta.18 acceptance schema", () => {
   it("binds the Node20 canonical tar to the isolated Node24 publisher dry run", () => {
-    const manifest = readBeta18AcceptanceManifest(repositoryRoot)
+    const manifest = record(readBeta18AcceptanceManifest(repositoryRoot))
 
     expect(manifest.schemaVersion).toBe(BETA18_ACCEPTANCE_SCHEMA_VERSION)
-    expect(manifest.package.version).toBe("0.8.0-beta.18")
+    expect(record(manifest.package).version).toBe("0.8.0-beta.18")
     expect(record(manifest.canonicalPackagePublisherPlan)).toMatchObject({
       canonicalPackerRuntime: { node: "20.19.0", npm: "10.8.2" },
       npmTrustedPublishingMinimum: { node: "22.14.0", npm: "11.5.1" },
