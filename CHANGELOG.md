@@ -12,6 +12,20 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.17] - 2026-08-02
+
+- Adds the package-visible `consumer-authority-external-artifact-transport-plan.1`
+  for the independent observer. It derives the fixed GitHub artifact endpoint
+  from enrolled caller identity and exact artifact metadata, validates a bounded
+  stream, and admits only a safe, exact ZIP handoff to the existing external
+  attestation command plan.
+- Adds no-token transport grammar preflight and source/fresh-packed observer
+  contract coverage for redirects, empty/non-2xx/HTML/truncated/oversize/hash
+  failures, unsafe output and ZIP members, and nonreflective cleanup.
+- Keeps beta.16 immutable staging evidence: its observer accepted an exit-zero
+  API download without a nonempty exact ZIP postcondition, so it cannot be
+  reused for beta.17 transport, crypto, authority, consumption, or replay.
+
 ## [0.8.0-beta.16] - 2026-08-02
 
 - Adds the package-visible, versioned external `gh attestation verify` command

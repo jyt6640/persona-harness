@@ -70,9 +70,9 @@ capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 `0.8.0-beta.1` is immutable staging-only Consumer Authority Beta evidence:
 its exact registry installation and staged provenance boundary passed, without
 granting consumer Finish authority or any promotion/Stable/GA claim.
-`0.8.0-beta.1` through `0.8.0-beta.15` are immutable staging-only Consumer
-Authority Beta evidence. Beta.15's final observer combined mutually exclusive
-`gh attestation verify` identity selectors before online crypto. `0.8.0-beta.16` is the next
+`0.8.0-beta.1` through `0.8.0-beta.16` are immutable staging-only Consumer
+Authority Beta evidence. Beta.16's final observer accepted an exit-zero API
+download without proving a nonempty exact ZIP. `0.8.0-beta.17` is the next
 strict-prerelease source-preparation candidate; it has no source-level claim of
 a tag, publish, channel movement, GitHub release, or original signed consumer
 artifact. Its release contract requires package-visible observer credential
@@ -85,9 +85,11 @@ consumer HOME. Its package evidence also starts from the exact complete-history
 bundle, not an ambient working directory: detached checkout,
 Git/manifest/lock/npm-prefix binding, normal prepack, and fresh installed CLI
 identity must all agree before the tarball is eligible for independent package
-review. The beta.16 release contract additionally owns a no-token/no-artifact
-`gh attestation verify` command-plan parser preflight that keeps caller
-repository selection distinct from reusable signer selection. The package proof invokes plain `npm` from that bound detached checkout,
+review. The beta.17 release contract additionally owns no-token/no-artifact
+attestation and artifact transport parser preflights. The transport plan binds
+the caller repository/run/artifact endpoint, exact ZIP bytes, and safe members
+before it hands an original ZIP to the separate reusable signer command plan.
+The package proof invokes plain `npm` from that bound detached checkout,
 never `npm --prefix ... pack`, and uses the exact resulting tarball for both
 source-built and fresh installed consumer contracts.
 `0.7.0-rc.2` remains an earlier published `next` record.

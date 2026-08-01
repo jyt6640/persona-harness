@@ -7,7 +7,6 @@ import {
   BETA16_ACCEPTANCE_SCHEMA_VERSION,
   Beta16AcceptanceManifestError,
   parseBeta16AcceptanceManifest,
-  readBeta16AcceptanceManifest,
 } from "../scripts/consumer-authority-beta16-acceptance-schema.mjs"
 import { BUNDLE_REFERENCE_POLICY } from "../scripts/clean-package-boundary-core.mjs"
 
@@ -15,8 +14,8 @@ const repositoryRoot = process.cwd()
 const manifestPath = join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta16-acceptance.json")
 
 describe("consumer authority beta.16 acceptance schema", () => {
-  it("accepts the canonical manifest through the shared package-root reader", () => {
-    const manifest = readBeta16AcceptanceManifest(repositoryRoot)
+  it("accepts the historical canonical manifest through its version-bound parser", () => {
+    const manifest = parseBeta16AcceptanceManifest(canonicalManifest(), "0.8.0-beta.16")
 
     expect(manifest.schemaVersion).toBe(BETA16_ACCEPTANCE_SCHEMA_VERSION)
     expect(manifest.package.version).toBe("0.8.0-beta.16")

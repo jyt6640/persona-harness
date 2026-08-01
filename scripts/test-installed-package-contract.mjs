@@ -25,7 +25,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readBeta16AcceptanceManifest } from "./consumer-authority-beta16-acceptance-schema.mjs"
+import { readBeta17AcceptanceManifest } from "./consumer-authority-beta17-acceptance-schema.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
@@ -40,7 +40,7 @@ const MODELED_AUTHORITY_TOPOLOGY = {
   repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
   reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3",
 }
-const BETA16_PRE_AUTHORITY_COMMANDS = new Map([
+const BETA17_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -156,6 +156,7 @@ async function assertPackagedConsumerAuthorityBoundary(installedPackage, consume
   }
   assertPrearmedObserverHandoff(installedPackage, "installed package")
   assertExternalAttestationCommandPlan(installedPackage, consumerDirectory, "installed package")
+  await assertExternalArtifactTransportPlan(installedPackage, consumerDirectory, "installed package")
   await assertBoundAuthorityDiscovery(installedPackage, "installed package")
   assertConsumerAuthorityBoundary(
     consumerDirectory,
@@ -172,6 +173,7 @@ async function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
   }
   assertPrearmedObserverHandoff(repositoryRoot, "source CLI")
   assertExternalAttestationCommandPlan(repositoryRoot, temporaryRoot, "source CLI")
+  await assertExternalArtifactTransportPlan(repositoryRoot, temporaryRoot, "source CLI")
   await assertObserverCredentialPreflight(repositoryRoot, temporaryRoot, "source CLI")
   await assertBoundAuthorityDiscovery(repositoryRoot, "source CLI")
   assertConsumerAuthorityBoundary(
@@ -621,7 +623,7 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta16PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta17PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
@@ -966,7 +968,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta16PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta17PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
@@ -2088,9 +2090,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness, packageR
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness, environment = {}) {
   for (const command of readiness.commands) {
-    const step = BETA16_PRE_AUTHORITY_COMMANDS.get(command)
+    const step = BETA17_PRE_AUTHORITY_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.16 pre-authority command is unsupported`)
+      throw new Error(`${label} beta.17 pre-authority command is unsupported`)
     }
     const result = runNode(fixtureRoot, [phPath, ...step.args], environment, step.stdin)
     requireSuccess(
@@ -2421,8 +2423,8 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
   writeFileSync(loaderPath, `${loader}\n`)
 }
 
-function readBeta16PreAuthorityReadiness(packageRoot) {
-  const manifest = readBeta16AcceptanceManifest(packageRoot)
+function readBeta17PreAuthorityReadiness(packageRoot) {
+  const manifest = readBeta17AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2431,16 +2433,16 @@ function readBeta16PreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readBeta16AcceptanceManifest(packageRoot)
+    readBeta17AcceptanceManifest(packageRoot)
   } catch {
-    throw new Error(`${label} beta.16 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.17 observer handoff contract is invalid`)
   }
 }
 
 function assertExternalAttestationCommandPlan(packageRoot, cwd, label) {
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-attestation.mjs")
   for (const script of [
-    "consumer-authority-beta16-acceptance-schema.mjs",
+    "consumer-authority-beta17-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
     "preflight-consumer-authority-external-attestation.mjs",
   ]) {
@@ -2476,6 +2478,118 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label) {
     || `${result.stdout}${result.stderr}`.includes(cwd)
   ) {
     throw new Error(`${label} external attestation command plan did not remain no-token and no-artifact`)
+  }
+}
+
+async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
+  const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-artifact-transport.mjs")
+  for (const script of [
+    "consumer-authority-beta17-acceptance-schema.mjs",
+    "consumer-authority-external-artifact-transport-plan.mjs",
+    "consumer-authority-external-observer-boundary.mjs",
+    "preflight-consumer-authority-external-artifact-transport.mjs",
+  ]) {
+    if (!existsSync(join(packageRoot, "scripts", script))) {
+      throw new Error(`${label} external artifact transport plan is missing from the package`)
+    }
+  }
+  const tokenMarker = "ghp_external_artifact_transport_contract_token"
+  const result = runObserverPreflightNode(cwd, [scriptPath, "--json"], {
+    GH_TOKEN: tokenMarker,
+    GITHUB_TOKEN: tokenMarker,
+    HOME: join(temporaryRoot, "external-artifact-transport-observer-home"),
+    PATH: process.env.PATH ?? "",
+  })
+  let payload
+  try {
+    payload = JSON.parse(result.stdout)
+  } catch {
+    throw new Error(`${label} external artifact transport plan did not emit bounded JSON`)
+  }
+  if (
+    result.status !== 0
+    || !isRecord(payload)
+    || payload.artifactAccess !== false
+    || payload.authorityEligible !== false
+    || payload.code !== "external-artifact-transport-parser-accepted"
+    || payload.credential !== "absent"
+    || payload.crypto !== "not-run"
+    || payload.networkAccess !== false
+    || payload.schemaVersion !== "consumer-authority-external-artifact-transport-preflight.1"
+    || payload.state !== "ready"
+    || `${result.stdout}${result.stderr}`.includes(tokenMarker)
+    || `${result.stdout}${result.stderr}`.includes(cwd)
+  ) {
+    throw new Error(`${label} external artifact transport plan did not remain no-token and no-artifact`)
+  }
+
+  const [boundary, transport] = await Promise.all([
+    import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
+    import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
+  ])
+  const manifest = readBeta17AcceptanceManifest(packageRoot)
+  const archive = authorityArtifactArchive({
+    "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
+    "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
+    "receipt.json": Buffer.from("{\"receipt\":true}\n", "utf8"),
+  })
+  const outputRoot = mkdtempSync(join(temporaryRoot, "external-artifact-transport-output-"))
+  const requests = []
+  const topology = {
+    callerEnrollment: {
+      ...manifest.authority.binding.callerEnrollment,
+      workflowSha: "a".repeat(40),
+    },
+    callerSource: { ref: manifest.authority.hostedFixture.ref, sourceSha: "b".repeat(40) },
+    reusableSigner: {
+      repositorySlug: "jyt6640/persona-harness",
+      workflowPath: manifest.authority.binding.reusableSigner.workflowPath,
+      workflowSha: "c".repeat(40),
+    },
+  }
+  const prepared = await boundary.prepareExternalObserverArtifactForTest({
+    artifact: {
+      artifactId: 710000017,
+      expectedByteLength: archive.byteLength,
+      expectedSha256: `sha256:${sha256(archive)}`,
+      runId: "30460000000",
+    },
+    attestationPlan: manifest.externalAttestationCommandPlan,
+    topology,
+    transportPlan: transport.canonicalExternalArtifactTransportPlan(),
+  }, tokenMarker, {
+    createPrivateRoot: () => outputRoot,
+    request: async (url, headers) => {
+      requests.push({ headers, url: url.toString() })
+      if (requests.length === 1) {
+        return { body: emptyAsyncIterable(), headers: { location: "https://pipelines.actions.githubusercontent.com/model" }, statusCode: 302 }
+      }
+      return {
+        body: bufferAsyncIterable(archive),
+        headers: { "content-length": String(archive.byteLength), "content-type": "application/zip" },
+        statusCode: 200,
+      }
+    },
+    timeoutMs: 1000,
+  })
+  try {
+    if (
+      requests.length !== 2
+      || requests[0].headers.Authorization !== `Bearer ${tokenMarker}`
+      || "Authorization" in requests[1].headers
+      || !prepared.readSubject().equals(archive)
+      || prepared.readBundle().toString("utf8") !== "{\"modeled\":true}\n"
+      || prepared.publicResult.authorityEligible !== false
+      || JSON.stringify(prepared.publicResult).includes(tokenMarker)
+      || JSON.stringify(prepared.publicResult).includes(outputRoot)
+    ) {
+      throw new Error(`${label} external artifact transport model did not retain the safe non-authoritative handoff`)
+    }
+  } finally {
+    prepared.cleanup()
+  }
+  if (existsSync(outputRoot)) {
+    throw new Error(`${label} external artifact transport output was not cleaned up`)
   }
 }
 
@@ -3072,6 +3186,14 @@ function assertSourcePackManifest() {
   ) {
     throw new Error("source package manifest differs from HEAD")
   }
+}
+
+async function* bufferAsyncIterable(bytes) {
+  yield bytes
+}
+
+async function* emptyAsyncIterable() {
+  // A redirect response must not supply artifact bytes to the next request.
 }
 
 function sha256(bytes) {
