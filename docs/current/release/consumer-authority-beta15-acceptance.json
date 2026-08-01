@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "consumer-authority-beta15-acceptance.1",
+  "schemaVersion": "consumer-authority-beta15-acceptance.2",
   "package": {
     "channel": "staging",
     "scope": "staging-only",
