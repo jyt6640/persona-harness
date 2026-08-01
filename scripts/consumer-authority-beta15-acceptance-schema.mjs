@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 
+import { BUNDLE_REFERENCE_POLICY } from "./clean-package-boundary-core.mjs"
+
 export const BETA15_ACCEPTANCE_SCHEMA_VERSION = "consumer-authority-beta15-acceptance.2"
 
 const BETA15_PACKAGE_VERSION = "0.8.0-beta.15"
@@ -10,15 +12,15 @@ const EXPECTED_MANIFEST = {
   schemaVersion: BETA15_ACCEPTANCE_SCHEMA_VERSION,
   package: { channel: "staging", scope: "staging-only", version: BETA15_PACKAGE_VERSION },
   packageBoundary: {
-    bundle: { requiredRefs: ["HEAD", "refs/remotes/origin/main"], verification: "git-bundle-verify-and-exact-ref-binding", baseComparison: "independent-no-local-base-checkout-under-the-same-npm-policy" },
+    bundle: { requiredRefs: BUNDLE_REFERENCE_POLICY.requiredRefs, verification: "git-bundle-verify-and-exact-ref-binding", baseComparison: "independent-no-local-base-checkout-under-the-same-npm-policy" },
     cleanCheckout: { requiredBindings: ["checkout-cwd", "git-toplevel", "npm-prefix", "resolved-package-json-path", "resolved-package-lock-path", "HEAD-package-json-bytes", "HEAD-package-lock-bytes"], sourceFallback: "forbidden" },
     npm: { invocation: "plain-npm-from-bound-detached-checkout-cwd", packPrefixFlag: "forbidden", global: false, ignoreScriptsBeforePack: false, install: "npm-ci-ignore-scripts", workspaces: false },
     pack: { metadata: "name-version-filename-must-match-frozen-package-and-lock", prepack: "package-root-build-script-derived-from-its-own-package-root", postcondition: "fresh-installed-cli-version-must-match-tarball-version" },
     authoritativeBundleContract: {
       command: "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
       baseAndTarget: "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
-      candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head",
-      headAlias: "optional-head-mapping-must-match-the-same-expected-head",
+      candidateRef: BUNDLE_REFERENCE_POLICY.candidateRef,
+      headAlias: BUNDLE_REFERENCE_POLICY.headAlias,
       rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
       sourceContract: "built-cli-package-exercise-contract-under-the-same-executable",
       installedContract: "fresh-installed-package-exercise-uses-exact-target-tarball-sha256",

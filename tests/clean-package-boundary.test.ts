@@ -66,6 +66,30 @@ describe("clean package boundary", () => {
       { ref: CANDIDATE_REF, sha: HEAD },
       { ref: "refs/remotes/origin/main", sha: BASE },
     ], expected)).toThrow("clean-package-bundle-head")
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: HEAD },
+    ], expected)).toThrow("clean-package-bundle-main")
+  })
+
+  it("rejects duplicate or unknown bundle refs before package work", () => {
+    const expected = { base: BASE, candidateRef: CANDIDATE_REF, head: HEAD }
+
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+      { ref: "refs/tags/foreign", sha: HEAD },
+    ], expected)).toThrow("clean-package-bundle-ref")
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+      { ref: "HEAD", sha: HEAD },
+      { ref: "HEAD", sha: HEAD },
+    ], expected)).toThrow("clean-package-bundle-shape")
+    expect(() => assertBundleHeadBinding([
+      { ref: CANDIDATE_REF, sha: HEAD },
+      { ref: "refs/remotes/origin/main", sha: BASE },
+    ], { ...expected, candidateRef: "refs/tags/foreign" })).toThrow("clean-package-bundle-shape")
   })
 
   it("rejects package and lock version drift before packing", () => {

@@ -2,6 +2,16 @@ export class CleanPackageBoundaryError extends Error {
   readonly code: string
 }
 
+export const BUNDLE_REFERENCE_POLICY: {
+  readonly candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head"
+  readonly headAlias: "optional-head-mapping-must-match-the-same-expected-head"
+  readonly mainRef: "refs/remotes/origin/main"
+  readonly requiredRefs: readonly [
+    "explicit-single-refs-heads-candidate-must-match-expected-head",
+    "refs/remotes/origin/main",
+  ]
+}
+
 export function assertSourcePackageIdentity(
   packageJson: unknown,
   packageLock: unknown,

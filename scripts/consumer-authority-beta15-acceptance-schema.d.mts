@@ -9,6 +9,12 @@ export interface Beta15AcceptanceManifest {
     readonly version: "0.8.0-beta.15"
   }
   readonly packageBoundary: {
+    readonly bundle: {
+      readonly requiredRefs: readonly [
+        "explicit-single-refs-heads-candidate-must-match-expected-head",
+        "refs/remotes/origin/main",
+      ]
+    }
     readonly authoritativeBundleContract: {
       readonly candidateRef: "explicit-single-refs-heads-candidate-must-match-expected-head"
       readonly headAlias: "optional-head-mapping-must-match-the-same-expected-head"
