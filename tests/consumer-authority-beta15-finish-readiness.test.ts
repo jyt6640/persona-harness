@@ -1,9 +1,6 @@
-import { readFileSync } from "node:fs"
-import { join } from "node:path"
-
 import { describe, expect, it } from "vitest"
 
-const manifestPath = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta15-acceptance.json")
+import { readBeta15AcceptanceManifest } from "../scripts/consumer-authority-beta15-acceptance-schema.mjs"
 
 describe("consumer authority beta.15 final readiness", () => {
   it("keeps caller enrollment, reusable signer, bootstrap-local metadata, and replay policy distinct", () => {
@@ -18,7 +15,7 @@ describe("consumer authority beta.15 final readiness", () => {
     const npm = record(packageBoundary["npm"])
     const proof = record(packageBoundary["authoritativeBundleContract"])
 
-    expect(manifest["schemaVersion"]).toBe("consumer-authority-beta15-acceptance.1")
+    expect(manifest["schemaVersion"]).toBe("consumer-authority-beta15-acceptance.2")
     expect(manifest["package"]).toEqual({ channel: "staging", scope: "staging-only", version: "0.8.0-beta.15" })
     expect(caller).toEqual({
       repositoryId: 1304576182,
@@ -91,8 +88,8 @@ describe("consumer authority beta.15 final readiness", () => {
   })
 })
 
-function readManifest(): Record<string, unknown> {
-  return record(JSON.parse(readFileSync(manifestPath, "utf8")))
+function readManifest() {
+  return readBeta15AcceptanceManifest(process.cwd())
 }
 
 function record(value: unknown): Record<string, unknown> {

@@ -25,12 +25,12 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
+import { readBeta15AcceptanceManifest } from "./consumer-authority-beta15-acceptance-schema.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
 const { packageExercise, producerIntakeOnly, sourceCli, tarball, tarballSha256 } = parseContractOptions(process.argv.slice(2))
-const BETA15_ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta15-acceptance.json")
 const MODELED_CURRENT_ARTIFACT_ID = 710000001
 const MODELED_CURRENT_RUN_ID = 30430000000
 const MODELED_AUTHORITY_TOPOLOGY = {
@@ -2420,179 +2420,17 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readBeta15PreAuthorityReadiness(packageRoot) {
-  const manifestPath = join(packageRoot, BETA15_ACCEPTANCE_PATH)
-  let value
-  try {
-    value = JSON.parse(readFileSync(manifestPath, "utf8"))
-  } catch {
-    throw new Error("beta.15 acceptance manifest is unavailable")
+  const manifest = readBeta15AcceptanceManifest(packageRoot)
+  return {
+    commands: manifest.preAuthorityReadiness.commands,
+    expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
   }
-  const readiness = value?.preAuthorityReadiness
-  const commands = readiness?.commands
-  const packageVersion = value?.package?.version
-  const packageBoundary = value?.packageBoundary
-  const cleanCheckout = packageBoundary?.cleanCheckout
-  const npmPolicy = packageBoundary?.npm
-  const packPolicy = packageBoundary?.pack
-  const authoritativeBundleContract = packageBoundary?.authoritativeBundleContract
-  const defaultFinish = readiness?.expectedDefaultFinish
-  const publicOutput = readiness?.publicOutput
-  const initialization = readiness?.initialization
-  const initializationBinding = initialization?.binding
-  const expectedCommands = [...BETA15_PRE_AUTHORITY_COMMANDS.keys()]
-  const expectedDefaultFinish = {
-    absentBlockers: [
-      "implementation-report-missing",
-      "review-report-missing",
-      "evidence-missing",
-      "report-coverage-missing",
-      "profile-read-coverage-missing",
-      "java-role-read-coverage-missing",
-      "workflow-loop-state-absent",
-      "ralph-loop-state-absent",
-    ],
-    primaryBlocker: "trusted-authority-required",
-    status: "blocked",
-  }
-  const expectedPublicOutput = {
-    absoluteWorkspacePaths: "omitted",
-    stableReferences: [
-      ".persona/workflow/plan.md",
-      ".persona/workflow/implementation-report.md",
-      ".persona/workflow/review-report.md",
-    ],
-  }
-  if (
-    packageVersion !== readPackageVersion(packageRoot)
-    || value?.schemaVersion !== "consumer-authority-beta15-acceptance.1"
-    || !Array.isArray(commands)
-    || commands.length !== expectedCommands.length
-    || commands.some((command, index) => command !== expectedCommands[index])
-    || !isRecord(defaultFinish)
-    || defaultFinish.status !== expectedDefaultFinish.status
-    || defaultFinish.primaryBlocker !== expectedDefaultFinish.primaryBlocker
-    || !sameStrings(defaultFinish.absentBlockers, expectedDefaultFinish.absentBlockers)
-    || !isRecord(publicOutput)
-    || publicOutput.absoluteWorkspacePaths !== expectedPublicOutput.absoluteWorkspacePaths
-    || !sameStrings(publicOutput.stableReferences, expectedPublicOutput.stableReferences)
-    || !isRecord(initialization)
-    || initialization.acceptedPlan !== "ph bootstrap backend --strict --no-developer-mcp"
-    || initialization.sameConsumer !== true
-    || !sameRecord(initializationBinding, {
-      consumerRoot: "same-canonical-project-root",
-      profile: ".persona/project-profile.jsonc",
-      reportsAndEvidence: "public-command-created-only",
-      sourceIdentity: "current-git-source-identity",
-    })
-    || !isRecord(initialization.inactiveFinish)
-    || initialization.inactiveFinish.blocker !== "workflow-state-uninitialized"
-    || initialization.inactiveFinish.status !== "blocked"
-    || !sameStrings(initialization.loopState, [
-      ".persona/workflow/workflow-loop-state.json",
-      ".persona/workflow/ralph-loop-state.json",
-    ])
-    || !isRecord(cleanCheckout)
-    || !sameStrings(cleanCheckout.requiredBindings, [
-      "checkout-cwd",
-      "git-toplevel",
-      "npm-prefix",
-      "resolved-package-json-path",
-      "resolved-package-lock-path",
-      "HEAD-package-json-bytes",
-      "HEAD-package-lock-bytes",
-    ])
-    || cleanCheckout.sourceFallback !== "forbidden"
-    || !isRecord(npmPolicy)
-    || npmPolicy.invocation !== "plain-npm-from-bound-detached-checkout-cwd"
-    || npmPolicy.packPrefixFlag !== "forbidden"
-    || !isRecord(packPolicy)
-    || packPolicy.prepack !== "package-root-build-script-derived-from-its-own-package-root"
-    || !sameRecord(authoritativeBundleContract, {
-      baseAndTarget: "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
-      command: "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
-      fullJavaGradleContract: "source-and-fresh-installed-full-contract-on-a-provisioned-java-gradle-host",
-      installedContract: "fresh-installed-package-exercise-uses-exact-target-tarball-sha256",
-      rejectBeforePack: "launcher-cwd-or-manifest-outside-bound-checkout",
-      sourceContract: "built-cli-package-exercise-contract-under-the-same-executable",
-    })
-  ) {
-    throw new Error("beta.15 pre-authority readiness manifest is invalid")
-  }
-  return { commands, expectedDefaultFinish }
 }
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
-  const manifestPath = join(packageRoot, BETA15_ACCEPTANCE_PATH)
-  let manifest
   try {
-    manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
+    readBeta15AcceptanceManifest(packageRoot)
   } catch {
-    throw new Error(`${label} beta.15 observer handoff contract is unavailable`)
-  }
-  const handoff = manifest?.prearmedExternalHandoff
-  const prepare = handoff?.prepare
-  const trigger = handoff?.trigger
-  const expectedPrepare = [
-    "prepare-isolated-consumer-home",
-    "enroll",
-    "status",
-    "explain",
-    "observer-credential-preflight",
-    "public-pre-authority-readiness",
-    "public-initialized-finish-state",
-  ]
-  const expectedProhibited = [
-    "artifact-download",
-    "online-crypto-validation",
-    "authority-fetch",
-    "finish-consumption",
-    "replay-observation",
-  ]
-  const expectedSteps = [
-    "observer-credential-preflight-ready",
-    "public-initialized-finish-blocked-only-on-trusted-authority-required",
-    "download-original-bytes-for-independent-online-verification",
-    "verify-online-before-leaf-certificate-notAfter",
-    "authority-fetch-discovers-and-binds-original-artifact",
-    "finish-consume-once",
-    "finish-replay-blocked",
-  ]
-  const expectedNonAuthority = [
-    "preflight-does-not-self-validate",
-    "readiness-does-not-authorize-fixture",
-    "readiness-does-not-grant-authority",
-    "readiness-does-not-persist-or-log-host-credential",
-    "readiness-does-not-reuse-beta14-artifact",
-  ]
-  if (
-    manifest?.package?.version !== readPackageVersion(packageRoot)
-    || manifest?.schemaVersion !== "consumer-authority-beta15-acceptance.1"
-    || manifest?.beta14HistoricalExternal?.version !== "0.8.0-beta.14"
-    || manifest?.beta14HistoricalExternal?.outcome !== "trusted-fetch-with-uninitialized-finish-noop-and-no-consumption"
-    || manifest?.beta14HistoricalExternal?.reusableForBeta15 !== false
-    || manifest?.authority?.fixturePlan?.registryInstall !== `npm install persona-harness@${readPackageVersion(packageRoot)} --registry https://registry.npmjs.org`
-    || manifest?.authority?.hostedFixture?.callerWorkflowPath !== ".github/workflows/research-attestation.yml"
-    || manifest?.authority?.hostedFixture?.certificateSanIdentity !== "reusable-producer-workflow"
-    || prepare?.consumer !== "isolated-exact-registry-install"
-    || !sameRecord(prepare?.credentialPreflight, {
-      acquisition: "host-gh-auth-token-read-once",
-      consumerHome: "isolated-ephemeral",
-      command: "node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json",
-      hostCredential: "host-gh-only",
-      logging: "forbidden",
-      observerWorker: "github-actions-read-only",
-      persistence: "forbidden",
-      productFallback: "forbidden",
-      scope: "fixed-authenticated-user-and-empty-sentinel-actions-metadata",
-      tokenEnvironment: "PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN",
-    })
-    || !sameStrings(prepare?.allowedBeforeFixture, expectedPrepare)
-    || !sameStrings(prepare?.prohibitedBeforeArtifact, expectedProhibited)
-    || prepare?.requiredBeforeFixtureAuthorization !== "public-initialized-finish-blocked-only-on-trusted-authority-required"
-    || trigger?.onlyAfter !== "observer-credential-preflight-ready-public-initialized-readiness-and-natural-current-version-original-artifact"
-    || !sameStrings(trigger?.steps, expectedSteps)
-    || !sameStrings(handoff?.nonAuthority, expectedNonAuthority)
-  ) {
     throw new Error(`${label} beta.15 observer handoff contract is invalid`)
   }
 }
@@ -2871,12 +2709,6 @@ function sameStrings(value, expected) {
   return Array.isArray(value)
     && value.length === expected.length
     && value.every((entry, index) => entry === expected[index])
-}
-
-function sameRecord(value, expected) {
-  return isRecord(value)
-    && Object.keys(value).length === Object.keys(expected).length
-    && Object.entries(expected).every(([key, entry]) => value[key] === entry)
 }
 
 function createProjectFinishProducerFixture(projectDir, profileMode) {
