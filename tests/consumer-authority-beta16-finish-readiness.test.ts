@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+
 import { describe, expect, it } from "vitest"
 
-import { readBeta16AcceptanceManifest } from "../scripts/consumer-authority-beta16-acceptance-schema.mjs"
+import { parseBeta16AcceptanceManifest } from "../scripts/consumer-authority-beta16-acceptance-schema.mjs"
 import { BUNDLE_REFERENCE_POLICY } from "../scripts/clean-package-boundary-core.mjs"
 
 describe("consumer authority beta.16 final readiness", () => {
@@ -132,7 +135,8 @@ describe("consumer authority beta.16 final readiness", () => {
 })
 
 function readManifest() {
-  return readBeta16AcceptanceManifest(process.cwd())
+  const path = join(process.cwd(), "docs", "current", "release", "consumer-authority-beta16-acceptance.json")
+  return parseBeta16AcceptanceManifest(JSON.parse(readFileSync(path, "utf8")), "0.8.0-beta.16")
 }
 
 function record(value: unknown): Record<string, unknown> {
