@@ -12,6 +12,20 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.16] - 2026-08-02
+
+- Adds the package-visible, versioned external `gh attestation verify` command
+  plan for the final independent observer. It renders exactly one caller
+  `--repo` selector and one reusable `--signer-workflow`/`--signer-digest`
+  selector, preserving caller enrollment and reusable certificate SAN bindings
+  as distinct facts.
+- Adds a no-token, no-artifact, no-network grammar preflight against the
+  installed `gh` CLI. It retains only bounded exit classifications and blocks
+  selector/schema drift before a natural fixture is authorized.
+- Keeps beta.15 immutable staging evidence: its observer combined mutually
+  exclusive identity flags before online crypto and cannot be reused for
+  beta.16 verification, authority, consumption, or replay evidence.
+
 ## [0.8.0-beta.15] - 2026-07-31
 
 - Makes explicit `ph workflow finish implement` fail closed with bounded

@@ -392,7 +392,14 @@ describe("package files policy", () => {
       "scripts/consumer-authority-observer-preflight-launcher.d.mts",
       "scripts/consumer-authority-observer-preflight-launcher.mjs",
       "scripts/consumer-authority-observer-preflight-worker.mjs",
+      "scripts/clean-package-boundary-core.d.mts",
+      "scripts/clean-package-boundary-core.mjs",
+      "scripts/consumer-authority-beta16-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta16-acceptance-schema.mjs",
+      "scripts/consumer-authority-external-attestation-command-plan.d.mts",
+      "scripts/consumer-authority-external-attestation-command-plan.mjs",
       "scripts/fetch-consumer-authority-artifact.mjs",
+      "scripts/preflight-consumer-authority-external-attestation.mjs",
       "scripts/preflight-consumer-authority-observer.mjs",
       "scripts/read-consumer-authority-github.mjs",
     ]
@@ -426,12 +433,14 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta13-acceptance.json",
       "docs/current/release/consumer-authority-beta14-acceptance.json",
       "docs/current/release/consumer-authority-beta15-acceptance.json",
+      "docs/current/release/consumer-authority-beta16-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
       expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
     }
     expect(Object.values(packageJson.bin ?? {})).not.toContain("scripts/preflight-consumer-authority-observer.mjs")
+    expect(Object.values(packageJson.bin ?? {})).not.toContain("scripts/preflight-consumer-authority-external-attestation.mjs")
     for (const filePath of sourceOnlyPaths) {
       expect(existsSync(path.join(packageRoot, filePath))).toBe(true)
       expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(false)
@@ -466,7 +475,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.15-release-notes.md",
+      "docs/current/release/v0.8.0-beta.16-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -492,7 +501,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.15-release-notes.md",
+      "docs/current/release/v0.8.0-beta.16-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

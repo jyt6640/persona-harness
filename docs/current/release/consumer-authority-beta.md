@@ -5,21 +5,19 @@ lifecycle. It combines a fixed package provenance route with the separate
 user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
-`0.8.0-beta.1` through `0.8.0-beta.14` are immutable staging-only evidence.
-Their registry and provenance observations cannot be reused as beta.15
-current-version consumer authority evidence. Beta.14 established current
-original artifact bytes, online crypto verification, authenticated fetch, and
-separate caller/reusable signer binding, but the final disposable consumer had
-no initialized workflow state and Finish made no authority decision. The active
-`0.8.0-beta.15` source candidate has no
+`0.8.0-beta.1` through `0.8.0-beta.15` are immutable staging-only evidence.
+Their registry and provenance observations cannot be reused as beta.16
+current-version consumer authority evidence. Beta.15's final observer combined
+mutually exclusive GitHub CLI identity selectors, so it stopped before online
+cryptographic verification. The active `0.8.0-beta.16` source candidate has no
 package, tag, channel movement, GitHub release, or signed consumer-project
 artifact at source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
 because it did not complete the full current-version public consumer route.
-Beta.15 must establish the remaining public readiness and final authority route
-independently; it cannot inherit beta.14's artifact/fetch result, an earlier
+Beta.16 must establish the remaining public readiness and final authority route
+independently; it cannot inherit beta.15's observer failure, an earlier
 lifecycle, or an earlier authority result.
 
 The consumer must create its own workflow state through public bootstrap and
@@ -50,7 +48,11 @@ without standing in for hosted crypto evidence.
    read-only worker. It keeps the consumer HOME separate, never logs or
    persists the credential, does not invoke product/npm/archive tooling with
    it, and does not permit a product credential fallback. Fixed GitHub readback,
-   not the credential or project content, establishes identity.
+   not the credential or project content, establishes identity. Before fixture
+   authorization, the same package also runs its versioned external attestation
+   command-plan preflight with no token and no artifact. That plan uses exactly
+   one caller `--repo` selector and one reusable `--signer-workflow` plus
+   `--signer-digest`; caller workflow/run/ref/source bindings remain separate.
 
 Before any fixture authorization, a fresh consumer must establish normal
 lifecycle records through supported public commands. The fixture may use the
@@ -127,15 +129,16 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.14` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.15`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.15` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.16`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta15-acceptance.json`](consumer-authority-beta15-acceptance.json)
+[`consumer-authority-beta16-acceptance.json`](consumer-authority-beta16-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
-preflight, the live certificate observation order, and the one hosted residual.
+and no-token command-plan preflights, the live certificate observation order,
+and the one hosted residual.
 
 The source projection excludes only `.persona/.ph-init-manifest.json` and
 `.persona/workflow` runtime metadata. The init manifest contains a
@@ -144,7 +147,7 @@ than caller project source. The profile, Gradle descriptors, Git identity,
 reports, and evidence remain bound. This does not relax caller enrollment,
 reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
 
-Before beta.15 package evidence is accepted, the verifier materializes the
+Before beta.16 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds one
 explicit canonical `refs/heads/...` candidate ref and
 `refs/remotes/origin/main`; the candidate ref must equal the expected candidate
@@ -174,7 +177,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.15 fixture push, an independent observer may prepare
+Before the one natural beta.16 fixture push, an independent observer may prepare
 only an isolated exact registry installation, private consumer `HOME`,
 enrollment, status, and explain. It must then run
 `node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json`.
@@ -184,6 +187,14 @@ authenticated-user and empty sentinel Actions-metadata worker. It must report
 `ready` before fixture authorization, and it must not download artifact bytes,
 validate online crypto, consume Finish, observe replay, invoke `ph`, invoke npm,
 or identify a future artifact. A blocked preflight authorizes nothing.
+
+The observer must also run
+`node node_modules/persona-harness/scripts/preflight-consumer-authority-external-attestation.mjs --json`.
+That preflight supplies no credential and no original artifact. It proves only
+that the installed `gh` CLI accepts the canonical selector grammar through flag
+parsing, retains a bounded exit classification, and has no network or artifact
+access. It does not self-validate a predicate, grant authority, or replace the
+later online verification.
 
 Once the current-version original artifact exists, the separately governed
 observer sequence independently verifies the custom predicate online before the

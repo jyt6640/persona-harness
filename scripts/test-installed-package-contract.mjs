@@ -25,7 +25,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readBeta15AcceptanceManifest } from "./consumer-authority-beta15-acceptance-schema.mjs"
+import { readBeta16AcceptanceManifest } from "./consumer-authority-beta16-acceptance-schema.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
@@ -40,7 +40,7 @@ const MODELED_AUTHORITY_TOPOLOGY = {
   repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
   reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3",
 }
-const BETA15_PRE_AUTHORITY_COMMANDS = new Map([
+const BETA16_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -155,6 +155,7 @@ async function assertPackagedConsumerAuthorityBoundary(installedPackage, consume
     }
   }
   assertPrearmedObserverHandoff(installedPackage, "installed package")
+  assertExternalAttestationCommandPlan(installedPackage, consumerDirectory, "installed package")
   await assertBoundAuthorityDiscovery(installedPackage, "installed package")
   assertConsumerAuthorityBoundary(
     consumerDirectory,
@@ -170,6 +171,7 @@ async function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
   assertPrearmedObserverHandoff(repositoryRoot, "source CLI")
+  assertExternalAttestationCommandPlan(repositoryRoot, temporaryRoot, "source CLI")
   await assertObserverCredentialPreflight(repositoryRoot, temporaryRoot, "source CLI")
   await assertBoundAuthorityDiscovery(repositoryRoot, "source CLI")
   assertConsumerAuthorityBoundary(
@@ -619,7 +621,7 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta15PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta16PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
@@ -964,7 +966,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta15PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta16PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
@@ -2086,9 +2088,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness, packageR
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness, environment = {}) {
   for (const command of readiness.commands) {
-    const step = BETA15_PRE_AUTHORITY_COMMANDS.get(command)
+    const step = BETA16_PRE_AUTHORITY_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.15 pre-authority command is unsupported`)
+      throw new Error(`${label} beta.16 pre-authority command is unsupported`)
     }
     const result = runNode(fixtureRoot, [phPath, ...step.args], environment, step.stdin)
     requireSuccess(
@@ -2419,8 +2421,8 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
   writeFileSync(loaderPath, `${loader}\n`)
 }
 
-function readBeta15PreAuthorityReadiness(packageRoot) {
-  const manifest = readBeta15AcceptanceManifest(packageRoot)
+function readBeta16PreAuthorityReadiness(packageRoot) {
+  const manifest = readBeta16AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2429,9 +2431,51 @@ function readBeta15PreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readBeta15AcceptanceManifest(packageRoot)
+    readBeta16AcceptanceManifest(packageRoot)
   } catch {
-    throw new Error(`${label} beta.15 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.16 observer handoff contract is invalid`)
+  }
+}
+
+function assertExternalAttestationCommandPlan(packageRoot, cwd, label) {
+  const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-attestation.mjs")
+  for (const script of [
+    "consumer-authority-beta16-acceptance-schema.mjs",
+    "consumer-authority-external-attestation-command-plan.mjs",
+    "preflight-consumer-authority-external-attestation.mjs",
+  ]) {
+    if (!existsSync(join(packageRoot, "scripts", script))) {
+      throw new Error(`${label} external attestation command plan is missing from the package`)
+    }
+  }
+  const tokenMarker = "ghp_external_attestation_contract_token"
+  const result = runObserverPreflightNode(cwd, [scriptPath, "--json"], {
+    GH_TOKEN: tokenMarker,
+    GITHUB_TOKEN: tokenMarker,
+    HOME: join(temporaryRoot, "external-attestation-observer-home"),
+    PATH: process.env.PATH ?? "",
+  })
+  let payload
+  try {
+    payload = JSON.parse(result.stdout)
+  } catch {
+    throw new Error(`${label} external attestation command plan did not emit bounded JSON`)
+  }
+  if (
+    result.status !== 0
+    || !isRecord(payload)
+    || payload.artifactAccess !== false
+    || payload.authorityEligible !== false
+    || payload.code !== "gh-command-parser-accepted"
+    || payload.credential !== "absent"
+    || payload.exit !== "verification-failed"
+    || payload.networkAccess !== false
+    || payload.schemaVersion !== "consumer-authority-external-attestation-preflight.1"
+    || payload.state !== "ready"
+    || `${result.stdout}${result.stderr}`.includes(tokenMarker)
+    || `${result.stdout}${result.stderr}`.includes(cwd)
+  ) {
+    throw new Error(`${label} external attestation command plan did not remain no-token and no-artifact`)
   }
 }
 
