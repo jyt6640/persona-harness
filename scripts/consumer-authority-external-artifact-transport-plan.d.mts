@@ -3,16 +3,16 @@ export const EXTERNAL_ARTIFACT_TRANSPORT_PREFLIGHT_SCHEMA_VERSION: "consumer-aut
 
 export interface ExternalArtifactTopology {
   readonly callerEnrollment: {
-    readonly repositoryId: 1304576182
-    readonly repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture"
-    readonly workflowPath: ".github/workflows/research-attestation.yml"
-    readonly workflowRef: "refs/heads/main"
+    readonly repositoryId: number
+    readonly repositorySlug: string
+    readonly workflowPath: string
+    readonly workflowRef: string
     readonly workflowSha: string
   }
-  readonly callerSource: { readonly ref: "refs/heads/main"; readonly sourceSha: string }
+  readonly callerSource: { readonly ref: string; readonly sourceSha: string }
   readonly reusableSigner: {
-    readonly repositorySlug: "jyt6640/persona-harness"
-    readonly workflowPath: ".github/workflows/persona-harness-project-finish.yml"
+    readonly repositorySlug: string
+    readonly workflowPath: string
     readonly workflowSha: string
   }
 }
