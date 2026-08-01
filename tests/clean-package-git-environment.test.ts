@@ -55,6 +55,7 @@ function createSourceRoot(withGit: boolean): string {
   const scripts = join(root, "scripts")
   mkdirSync(scripts)
   copyFileSync(join(process.cwd(), "scripts", "clean-package-boundary-core.mjs"), join(scripts, "clean-package-boundary-core.mjs"))
+  copyFileSync(join(process.cwd(), "scripts", "package-content-identity.mjs"), join(scripts, "package-content-identity.mjs"))
   copyFileSync(join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"), join(scripts, "verify-clean-package-boundary.mjs"))
   if (!withGit) return root
 
