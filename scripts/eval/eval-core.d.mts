@@ -219,6 +219,8 @@ export function measureCompileResult(
   execution: Record<string, unknown>,
   toolchain?: GeneratedToolchain,
 ): Record<string, unknown>
+export function runObserveReport(workspaceDir: string): Record<string, unknown>
+export function runObserveReportWithRuntime(workspaceDir: string, runtimeRoot: string): Record<string, unknown>
 export function scoreStackAlignmentFromObserveReport(report: unknown, workspaceDir?: string): Record<string, unknown>
 export function preflight(
   options: Record<string, unknown>,
