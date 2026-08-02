@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
@@ -15,62 +16,73 @@ const manifestPath = join(repositoryRoot, "docs", "current", "release", "consume
 const beta20ManifestPath = join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta20-acceptance.json")
 
 describe("consumer authority beta.21 acceptance schema", () => {
-  it("binds the immutable same-consumer final observer procedure", () => {
-    const manifest = record(readBeta21AcceptanceManifest(repositoryRoot))
+  it("reads the legacy same-consumer final observer procedure only from an explicit matching package root", () => {
+    const legacyPackageRoot = mkdtempSync(join(tmpdir(), "persona-harness-beta21-acceptance-"))
+    try {
+      const legacyManifestPath = join(legacyPackageRoot, "docs", "current", "release", "consumer-authority-beta21-acceptance.json")
+      mkdirSync(join(legacyPackageRoot, "docs", "current", "release"), { recursive: true })
+      writeFileSync(join(legacyPackageRoot, "package.json"), JSON.stringify({ version: "0.8.0-beta.21" }))
+      writeFileSync(legacyManifestPath, readFileSync(manifestPath))
 
-    expect(manifest.schemaVersion).toBe(BETA21_ACCEPTANCE_SCHEMA_VERSION)
-    expect(record(manifest.package).version).toBe("0.8.0-beta.21")
-    expect(record(manifest.canonicalPackagePublisherPlan)).toMatchObject({
-      canonicalPackerRuntime: { node: "20.19.0", npm: "10.8.2" },
-      npmTrustedPublishingMinimum: { node: "22.14.0", npm: "11.5.1" },
-      preflight: { mode: "node24-npm11-exact-canonical-tarball-dry-run" },
-      publisherRuntime: { node: "24.18.0", npm: "11.16.0" },
-      registryPut: { evidence: "hosted-only" },
-    })
-    expect(record(record(manifest.packageBoundary).authoritativeBundleContract).partialCloneSourceHydration)
-      .toBe("only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs")
-    expect(record(record(manifest.packageBoundary).registryReadback)).toEqual({
-      failureEvidence: "sanitized-readback-is-uploaded-even-when-postpublish-reconciliation-blocks",
-      sourceBinding: "workflow-verified-canonical-tar",
-      unsupportedMetadata: "registry-githead-is-neither-required-nor-reflected",
-    })
-    expect(record(manifest.beta18HistoricalPublish)).toMatchObject({
-      reusableForBeta19: false,
-      version: "0.8.0-beta.18",
-    })
-    expect(record(manifest.beta19HistoricalPublish)).toEqual({
-      outcome: "published-immutable-staging-package-not-reusable-as-current-package-evidence",
-      reusableForBeta20: false,
-      version: "0.8.0-beta.19",
-    })
-    expect(record(manifest.beta20HistoricalFinalObserver)).toEqual({
-      outcome: "trusted-unconsumed-live-fetch-followed-by-intentional-workflow-state-uninitialized-block-not-reusable-as-closure-evidence",
-      procedureRecordSha256: "1d370a4e4cdd55b20e27c016073246b78c373548c84c89c3499b3838e27980a7",
-      reusableForBeta21: false,
-      version: "0.8.0-beta.20",
-    })
-    const procedure = record(record(manifest.prearmedExternalHandoff).finalObserverProcedure)
-    expect(procedure.procedureRecord).toEqual({
-      location: "coordinator-governed-immutable-external-procedure-record-no-local-path",
-      sha256: "1d370a4e4cdd55b20e27c016073246b78c373548c84c89c3499b3838e27980a7",
-    })
-    expect(procedure.prefetchSteps).toContain("default-Finish-blocked-only-trusted-authority-required")
-    expect(procedure.liveSteps).toEqual(expect.arrayContaining([
-      "authenticated-fetch-once",
-      "same-consumer-status-and-explain-trusted-unconsumed-with-no-readiness-blocker",
-      "Finish-consume-once",
-      "immediate-Finish-replay-blocked",
-    ]))
-    expect(procedure.noReinitializationAfterFetch).toContain("bootstrap-plan-report-evidence-or-loop-state-reset")
-    const handoff = record(manifest.prearmedExternalHandoff)
-    expect(record(handoff.prepare).allowedBeforeFixture).toEqual(expect.arrayContaining([
-      "prepare-one-exact-git-backed-consumer-cwd-head-and-isolated-home-store",
-      "enroll-after-prefetch-readiness",
-    ]))
-    expect(record(handoff.trigger).steps).toEqual(expect.arrayContaining([
-      "final-observer-procedure-prefetch-ready",
-      "same-consumer-trusted-unconsumed-no-readiness-blocker",
-    ]))
+      const manifest = record(readBeta21AcceptanceManifest(legacyPackageRoot))
+
+      expect(manifest.schemaVersion).toBe(BETA21_ACCEPTANCE_SCHEMA_VERSION)
+      expect(record(manifest.package).version).toBe("0.8.0-beta.21")
+      expect(record(manifest.canonicalPackagePublisherPlan)).toMatchObject({
+        canonicalPackerRuntime: { node: "20.19.0", npm: "10.8.2" },
+        npmTrustedPublishingMinimum: { node: "22.14.0", npm: "11.5.1" },
+        preflight: { mode: "node24-npm11-exact-canonical-tarball-dry-run" },
+        publisherRuntime: { node: "24.18.0", npm: "11.16.0" },
+        registryPut: { evidence: "hosted-only" },
+      })
+      expect(record(record(manifest.packageBoundary).authoritativeBundleContract).partialCloneSourceHydration)
+        .toBe("only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs")
+      expect(record(record(manifest.packageBoundary).registryReadback)).toEqual({
+        failureEvidence: "sanitized-readback-is-uploaded-even-when-postpublish-reconciliation-blocks",
+        sourceBinding: "workflow-verified-canonical-tar",
+        unsupportedMetadata: "registry-githead-is-neither-required-nor-reflected",
+      })
+      expect(record(manifest.beta18HistoricalPublish)).toMatchObject({
+        reusableForBeta19: false,
+        version: "0.8.0-beta.18",
+      })
+      expect(record(manifest.beta19HistoricalPublish)).toEqual({
+        outcome: "published-immutable-staging-package-not-reusable-as-current-package-evidence",
+        reusableForBeta20: false,
+        version: "0.8.0-beta.19",
+      })
+      expect(record(manifest.beta20HistoricalFinalObserver)).toEqual({
+        outcome: "trusted-unconsumed-live-fetch-followed-by-intentional-workflow-state-uninitialized-block-not-reusable-as-closure-evidence",
+        procedureRecordSha256: "1d370a4e4cdd55b20e27c016073246b78c373548c84c89c3499b3838e27980a7",
+        reusableForBeta21: false,
+        version: "0.8.0-beta.20",
+      })
+      const procedure = record(record(manifest.prearmedExternalHandoff).finalObserverProcedure)
+      expect(procedure.procedureRecord).toEqual({
+        location: "coordinator-governed-immutable-external-procedure-record-no-local-path",
+        sha256: "1d370a4e4cdd55b20e27c016073246b78c373548c84c89c3499b3838e27980a7",
+      })
+      expect(procedure.prefetchSteps).toContain("default-Finish-blocked-only-trusted-authority-required")
+      expect(procedure.liveSteps).toEqual(expect.arrayContaining([
+        "authenticated-fetch-once",
+        "same-consumer-status-and-explain-trusted-unconsumed-with-no-readiness-blocker",
+        "Finish-consume-once",
+        "immediate-Finish-replay-blocked",
+      ]))
+      expect(procedure.noReinitializationAfterFetch).toContain("bootstrap-plan-report-evidence-or-loop-state-reset")
+      const handoff = record(manifest.prearmedExternalHandoff)
+      expect(record(handoff.prepare).allowedBeforeFixture).toEqual(expect.arrayContaining([
+        "prepare-one-exact-git-backed-consumer-cwd-head-and-isolated-home-store",
+        "enroll-after-prefetch-readiness",
+      ]))
+      expect(record(handoff.trigger).steps).toEqual(expect.arrayContaining([
+        "final-observer-procedure-prefetch-ready",
+        "same-consumer-trusted-unconsumed-no-readiness-blocker",
+      ]))
+      expectSchemaBlock(() => readBeta21AcceptanceManifest(repositoryRoot), "active beta22 package root")
+    } finally {
+      rmSync(legacyPackageRoot, { force: true, recursive: true })
+    }
   })
 
   it("rejects publisher runtime, argv, and historical registry-readback semantic drift", () => {

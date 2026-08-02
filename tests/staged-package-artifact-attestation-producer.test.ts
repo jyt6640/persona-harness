@@ -20,7 +20,7 @@ const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "staged-package-artifact-attestation.yml")
 const producerPath = join(root, "scripts", "build-staged-package-artifact-attestation.mjs")
 const HEAD = "a".repeat(40)
-const CURRENT_SOURCE_VERSION = "0.8.0-beta.21"
+const CURRENT_SOURCE_VERSION = "0.8.0-beta.22"
 const VERSION = "0.7.0-rc.8"
 const RC7_REGISTRY_GIT_HEAD = "659f7d86fcd653f49eead719b91093f35f73ad3e"
 
