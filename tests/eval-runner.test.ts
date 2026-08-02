@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -27,6 +27,7 @@ import {
   preflight,
   classifyProviderToolCompletion,
   runEval,
+  runObserveReportWithRuntime,
   runShellAsync,
   scanWorkspacePurity,
   scoreFixtureStackToolchain,
@@ -1372,6 +1373,38 @@ describe("ON/OFF eval runner core", () => {
     expect(secondResults.runs.map(replayInvariantProjection)).toEqual(firstResults.runs.map(replayInvariantProjection))
   }, 15000)
 
+  it("waits for the package-root build lock before observing a runtime CLI", async () => {
+    const root = tempDir("persona-eval-observer-runtime-")
+    const workspace = tempDir("persona-eval-observer-workspace-")
+    const cliDirectory = join(root, "dist", "cli")
+    mkdirSync(cliDirectory, { recursive: true })
+    writeFileSync(
+      join(cliDirectory, "index.js"),
+      `process.stdout.write(${JSON.stringify(JSON.stringify({ findings: [{ result: "PASS", ruleId: "fixture-lock-observer" }] }))})\n`,
+    )
+    const holder = await holdBuildTransition(root)
+    const startedAt = Date.now()
+    try {
+      const report = runObserveReportWithRuntime(workspace, root)
+
+      expect(Date.now() - startedAt).toBeGreaterThanOrEqual(250)
+      expect(report).toEqual({ findings: [{ result: "PASS", ruleId: "fixture-lock-observer" }] })
+    } finally {
+      await waitForChild(holder)
+    }
+  }, 5000)
+
+  it("blocks observation when the held package runtime is unavailable", () => {
+    const root = tempDir("persona-eval-observer-runtime-missing-")
+    const workspace = tempDir("persona-eval-observer-workspace-missing-")
+
+    expect(runObserveReportWithRuntime(workspace, root)).toEqual({
+      inspectedFiles: [],
+      findings: [],
+      observerError: "observer-runtime-unavailable",
+    })
+  })
+
   it("replays captured provider and workflow logs without fabricating missing workflow results", () => {
     const outputRoot = tempDir("persona-eval-replay-workflow-")
     const captureDir = join(outputRoot, "capture")
@@ -1724,6 +1757,53 @@ function replayInvariantProjection(run: ReplayRuntimeRun): Record<string, unknow
     outcomes: run.outcomes,
     metrics: run.metrics,
   }
+}
+
+async function holdBuildTransition(root: string): Promise<ReturnType<typeof spawn>> {
+  const script = [
+    "import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'",
+    "import { join } from 'node:path'",
+    `const root = ${JSON.stringify(root)}`,
+    "const dist = join(root, 'dist')",
+    "const held = join(root, '.held-dist')",
+    "const lock = join(root, '.persona-package-root-build.lock')",
+    "mkdirSync(lock, { mode: 0o700 })",
+    "renameSync(dist, held)",
+    "process.stdout.write('ready\\n')",
+    "setTimeout(() => { if (existsSync(held)) renameSync(held, dist); rmSync(lock, { force: true, recursive: true }); process.exit(0) }, 500)",
+  ].join("; ")
+  const child = spawn(process.execPath, ["--input-type=module", "-e", script], { stdio: ["ignore", "pipe", "pipe"] })
+  await new Promise<void>((resolvePromise, reject) => {
+    const timeout = setTimeout(() => reject(new Error("build transition did not acquire its lock")), 1000)
+    child.stdout.on("data", (chunk: Buffer) => {
+      if (chunk.toString("utf8").includes("ready")) {
+        clearTimeout(timeout)
+        resolvePromise()
+      }
+    })
+    child.on("error", (error) => {
+      clearTimeout(timeout)
+      reject(error)
+    })
+    child.on("exit", (status) => {
+      if (status !== 0) {
+        clearTimeout(timeout)
+        reject(new Error("build transition exited before readiness"))
+      }
+    })
+  })
+  return child
+}
+
+async function waitForChild(child: ReturnType<typeof spawn>): Promise<void> {
+  if (child.exitCode !== null) {
+    if (child.exitCode === 0) return
+    throw new Error("build transition cleanup failed")
+  }
+  await new Promise<void>((resolvePromise, reject) => {
+    child.on("error", reject)
+    child.on("exit", (status) => status === 0 ? resolvePromise() : reject(new Error("build transition cleanup failed")))
+  })
 }
 
 function replayRunFor(results: ReplayResults, conditionId: string): ReplayRuntimeRun {

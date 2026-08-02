@@ -45,6 +45,8 @@ describe("package files policy", () => {
     const scripts = packageJson.scripts
 
     expect(existsSync(path.join(packageRoot, "scripts", "package-root-build.mjs"))).toBe(true)
+    expect(existsSync(path.join(packageRoot, "scripts", "package-root-build-lock.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/package-root-build-lock.mjs", packageJson.files)).toBe(true)
     expect(isCoveredByPackageFiles("scripts/package-root-build.mjs", packageJson.files)).toBe(true)
     expect(scripts?.["build"]).toBe("node scripts/package-root-build.mjs")
     expect(scripts?.["prepack"]).toBe("node scripts/package-root-build.mjs")
@@ -56,6 +58,7 @@ describe("package files policy", () => {
     for (const filePath of [
       "scripts/package-content-identity.d.mts",
       "scripts/package-content-identity.mjs",
+      "scripts/package-root-build-lock.mjs",
       "scripts/canonical-package-packer.d.mts",
       "scripts/canonical-package-packer.mjs",
     ]) {
