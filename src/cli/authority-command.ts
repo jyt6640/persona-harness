@@ -136,9 +136,13 @@ function runFetch(args: readonly string[], options: AuthorityCommandOptions, inv
   if (options.artifactFetch === undefined && !isAuthorityGithubToken(options.githubToken)) {
     return blockedFetch(parsed.json, "authentication-unavailable", "github-authenticate")
   }
-  const artifact = options.artifactFetch === undefined
+  const fetched = options.artifactFetch === undefined
     ? fetchGithubAuthorityArtifact(projectDir, enrollment, options.githubToken, options.now ?? new Date())
-    : options.artifactFetch(projectDir, enrollment)
+    : { artifact: options.artifactFetch(projectDir, enrollment), kind: "ready" as const }
+  if (fetched.kind === "blocked") {
+    return blockedFetch(parsed.json, "missing", "authority-fetch-github", fetched.diagnostic)
+  }
+  const artifact = fetched.artifact
   if (artifact === undefined || artifact.repositoryId !== enrollment.repositoryId) {
     return blockedFetch(parsed.json, "missing")
   }

@@ -28,10 +28,11 @@ const publicReleaseDocs = [
   "docs/current/release/v0.8.0-beta.16-release-notes.md",
   "docs/current/release/v0.8.0-beta.18-release-notes.md",
   "docs/current/release/v0.8.0-beta.19-release-notes.md",
+  "docs/current/release/v0.8.0-beta.20-release-notes.md",
 ]
 
 describe("release docs temporal-state boundary", () => {
-  it("keeps beta.18 historical registry evidence distinct from the beta.19 source candidate", () => {
+  it("keeps published beta.19 evidence distinct from the beta.20 source candidate", () => {
     const text = publicReleaseDocs
       .map((path) => readFileSync(join(root, path), "utf8"))
       .join("\n")
@@ -48,7 +49,8 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("immutable staging-only Consumer Authority Beta")
     expect(text).toContain("0.8.0-beta.18")
     expect(text).toContain("0.8.0-beta.19")
-    expect(text).toContain("consumer-authority-beta19-acceptance.json")
+    expect(text).toContain("0.8.0-beta.20")
+    expect(text).toContain("consumer-authority-beta20-acceptance.json")
     expect(text).toContain("workflow-verified-canonical-tar")
     expect(text).toContain("registry gitHead")
     expect(text).toContain("no usable GitHub Actions read credential")
