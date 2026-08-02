@@ -1,0 +1,488 @@
+{
+  "schemaVersion": "consumer-authority-beta19-acceptance.1",
+  "package": {
+    "channel": "staging",
+    "scope": "staging-only",
+    "version": "0.8.0-beta.19"
+  },
+  "packageBoundary": {
+    "bundle": {
+      "requiredRefs": [
+        "explicit-single-refs-heads-candidate-must-match-expected-head",
+        "refs/remotes/origin/main"
+      ],
+      "verification": "git-bundle-verify-and-exact-ref-binding",
+      "baseComparison": "independent-no-local-base-checkout-under-the-same-npm-policy"
+    },
+    "cleanCheckout": {
+      "requiredBindings": [
+        "checkout-cwd",
+        "git-toplevel",
+        "npm-prefix",
+        "resolved-package-json-path",
+        "resolved-package-lock-path",
+        "HEAD-package-json-bytes",
+        "HEAD-package-lock-bytes"
+      ],
+      "sourceFallback": "forbidden"
+    },
+    "npm": {
+      "invocation": "plain-npm-from-bound-detached-checkout-cwd",
+      "packPrefixFlag": "forbidden",
+      "global": false,
+      "ignoreScriptsBeforePack": false,
+      "install": "npm-ci-ignore-scripts",
+      "workspaces": false
+    },
+    "pack": {
+      "metadata": "name-version-filename-must-match-frozen-package-and-lock",
+      "prepack": "package-root-build-script-derived-from-its-own-package-root",
+      "postcondition": "fresh-installed-cli-version-must-match-tarball-version"
+    },
+    "authoritativeBundleContract": {
+      "command": "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
+      "baseAndTarget": "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
+      "candidateRef": "explicit-single-refs-heads-candidate-must-match-expected-head",
+      "headAlias": "optional-head-mapping-must-match-the-same-expected-head",
+      "sourceCandidateRef": "refs/heads/clean-package-source",
+      "rejectBeforePack": "launcher-cwd-or-manifest-outside-bound-checkout",
+      "sourceContract": "built-cli-package-exercise-contract-under-the-same-executable",
+      "installedContract": "fresh-installed-package-exercise-uses-the-exact-canonical-target-tarball-sha256-and-package-content-identity-before-the-separate-node24-publisher-handoff",
+      "fullJavaGradleContract": "source-and-fresh-installed-full-contract-on-a-provisioned-java-gradle-host",
+      "partialCloneSourceHydration": "only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs"
+    },
+    "contentIdentity": {
+      "aggregate": "sorted-package-relative-path-type-normalized-allowed-mode-size-sha256",
+      "allowedMemberTypes": [
+        "regular"
+      ],
+      "allowedModes": [
+        "0600",
+        "0644",
+        "0700",
+        "0755"
+      ],
+      "canonicalPacker": {
+        "environment": [
+          "isolated-HOME",
+          "isolated-npm-cache",
+          "isolated-npm-config",
+          "isolated-git-config",
+          "umask-0022",
+          "LANG-C",
+          "LC_ALL-C",
+          "TZ-UTC",
+          "SOURCE_DATE_EPOCH-0"
+        ],
+        "node": "20.19.0",
+        "npm": "10.8.2",
+        "publish": "handoff-one-exact-canonical-tarball-to-isolated-node24-npm11-publisher"
+      },
+      "crossEnvironment": "compare-package-content-identity-not-generic-independent-npm-pack-raw-tar-sha256",
+      "rawTarballSha256": "valid-only-for-the-exact-canonical-supplied-tarball-or-postpublish-registry-blob",
+      "registryReadback": "require-protected-main-tag-source-preflight-and-registry-version-sha1-sri-raw-sha256-and-package-content-identity-to-match-frozen-canonical-package-facts-without-registry-githead",
+      "retainedExternalDiagnostics": {
+        "beta16": {
+          "contentOnlySha256": "9bb1c7eaeceb79d198d7baafdaea9c8bc73cd8750209ea5aa76cfc46070e0832",
+          "entryCount": 1191,
+          "identitySha256": "9eac0bdc041e8e616bd6e4de3ba49e8490b8a269f3f0d3e520027833b927c332",
+          "modeCounts": {
+            "0600": 296,
+            "0644": 887,
+            "0700": 7,
+            "0755": 1
+          }
+        },
+        "beta17": {
+          "contentOnlySha256": "d411a23a2343cd21e33ac30250ed903934968e214b7f198ccd0ea91a7d6bf580",
+          "entryCount": 1200,
+          "identitySha256": "5771dc973dd95e5d3f8b01a9e17becf3c17223b3d94aed692e5248e0c3054c5e",
+          "modeCounts": {
+            "0600": 305,
+            "0644": 887,
+            "0700": 7,
+            "0755": 1
+          }
+        },
+        "headerClassification": "normalized-gzip-tar-headers-do-not-explain-the-retained-content-or-mode-identity-delta",
+        "reuse": "diagnostic-only-not-acceptance-evidence"
+      },
+      "schemaVersion": "package-content-identity.1",
+      "publisherRuntime": "node24.18.0-npm11.16.0-dry-run-and-real-publish-use-identical-canonical-tarball-argv"
+    },
+    "registryReadback": {
+      "failureEvidence": "sanitized-readback-is-uploaded-even-when-postpublish-reconciliation-blocks",
+      "sourceBinding": "workflow-verified-canonical-tar",
+      "unsupportedMetadata": "registry-githead-is-neither-required-nor-reflected"
+    }
+  },
+  "preAuthorityReadiness": {
+    "consumer": "exact-registry-installed-java-spring-gradle",
+    "commands": [
+      "ph bootstrap backend --strict --no-developer-mcp",
+      "ph bearshell ./gradlew test",
+      "ph bearshell ./gradlew compileJava",
+      "ph bearshell ./gradlew clean",
+      "ph evidence read README.md",
+      "ph evidence read .persona/project-profile.jsonc",
+      "ph evidence read src/main/java/example/cooperative/GreetingService.java",
+      "ph plan --report-filled implementation --stdin",
+      "ph plan --report-filled review --stdin"
+    ],
+    "expectedDefaultFinish": {
+      "absentBlockers": [
+        "implementation-report-missing",
+        "review-report-missing",
+        "evidence-missing",
+        "report-coverage-missing",
+        "profile-read-coverage-missing",
+        "java-role-read-coverage-missing",
+        "workflow-loop-state-absent",
+        "ralph-loop-state-absent"
+      ],
+      "primaryBlocker": "trusted-authority-required",
+      "status": "blocked"
+    },
+    "publicOutput": {
+      "absoluteWorkspacePaths": "omitted",
+      "stableReferences": [
+        ".persona/workflow/plan.md",
+        ".persona/workflow/implementation-report.md",
+        ".persona/workflow/review-report.md"
+      ]
+    },
+    "initialization": {
+      "acceptedPlan": "ph bootstrap backend --strict --no-developer-mcp",
+      "binding": {
+        "consumerRoot": "same-canonical-project-root",
+        "profile": ".persona/project-profile.jsonc",
+        "reportsAndEvidence": "public-command-created-only",
+        "sourceIdentity": "current-git-source-identity"
+      },
+      "inactiveFinish": {
+        "blocker": "workflow-state-uninitialized",
+        "status": "blocked"
+      },
+      "loopState": [
+        ".persona/workflow/workflow-loop-state.json",
+        ".persona/workflow/ralph-loop-state.json"
+      ],
+      "sameConsumer": true
+    },
+    "negativeCases": [
+      "absolute-workspace-or-temp-path-public-output",
+      "missing-or-malformed-report",
+      "repeated-control-or-oversized-report",
+      "missing-unsafe-replaced-or-identity-drifted-evidence",
+      "workflow-or-ralph-loop-missing-malformed-or-unsafe",
+      "default-finish-has-no-authority-side-effect"
+    ],
+    "proof": "source-built-and-fresh-packed-installed-public-cli"
+  },
+  "authority": {
+    "binding": {
+      "callerEnrollment": {
+        "repositoryId": 1304576182,
+        "repositorySlug": "jyt6640/persona-harness-attestation-claim-fixture",
+        "workflowPath": ".github/workflows/research-attestation.yml",
+        "workflowRef": "refs/heads/main"
+      },
+      "reusableSigner": {
+        "certificateSanIdentity": "reusable-producer-workflow",
+        "workflowPath": ".github/workflows/persona-harness-project-finish.yml"
+      },
+      "runtimeSourceProjection": {
+        "excludedRuntimeMetadata": [
+          ".persona/.ph-init-manifest.json",
+          ".persona/workflow"
+        ],
+        "reason": "bootstrap-local ownership metadata contains the consumer real path and is not caller project source",
+        "stillBound": [
+          ".persona/project-profile.jsonc",
+          "root-gradle-build-and-settings",
+          "git-source-identity",
+          "public-reports-and-evidence"
+        ]
+      },
+      "required": [
+        "caller-workflow-filename-ref-and-sha",
+        "reusable-workflow-sha-and-certificate-SAN",
+        "repository-id-and-slug",
+        "source-head-and-source-identity",
+        "workflow-run-and-attempt",
+        "artifact-id-and-sha256",
+        "original-archive-members"
+      ],
+      "storeSchema": "consumer-authority-original-artifact.2"
+    },
+    "modeledContract": {
+      "acceptedTopology": "separate-enrolled-caller-and-reusable-signer",
+      "proof": "source-built-and-fresh-packed-installed-public-bootstrap-bound-discovery-exact-once-finish-and-replay-test",
+      "rejected": [
+        "caller-workflow-mismatch",
+        "reusable-workflow-or-certificate-SAN-mismatch",
+        "repository-source-or-run-mismatch",
+        "artifact-digest-or-archive-mismatch",
+        "stale-or-replayed-terminal-record"
+      ],
+      "authorityClaim": "none-before-a-current-original-artifact-is-verified-online"
+    },
+    "fixturePlan": {
+      "artifact": "project-finish-attestation",
+      "consumer": "public-java-spring-gradle",
+      "postmergeAction": "normal-push-to-main",
+      "registryInstall": "npm install persona-harness@0.8.0-beta.19 --registry https://registry.npmjs.org"
+    },
+    "hostedFixture": {
+      "callerWorkflowPath": ".github/workflows/research-attestation.yml",
+      "certificateSanIdentity": "reusable-producer-workflow",
+      "event": "push",
+      "ref": "refs/heads/main",
+      "repository": "jyt6640/persona-harness-attestation-claim-fixture",
+      "reusableWorkflowPath": ".github/workflows/persona-harness-project-finish.yml",
+      "revision": "postmerge-persona-harness-beta19-main-sha"
+    },
+    "verification": {
+      "predicate": "project-finish-attestation.1",
+      "route": "fixed-product-owned-online",
+      "unavailable": "bounded-non-authoritative"
+    }
+  },
+  "externalAttestationCommandPlan": {
+    "certificateOidcIssuer": "https://token.actions.githubusercontent.com",
+    "command": [
+      "attestation",
+      "verify"
+    ],
+    "denySelfHostedRunners": true,
+    "exitClassification": {
+      "authenticationRequired": 4,
+      "normalVerificationFailure": 1,
+      "verified": 0
+    },
+    "format": "json",
+    "predicateType": "https://github.com/jyt6640/persona-harness/attestations/project-finish-attestation.1",
+    "repositorySelector": {
+      "flag": "--repo",
+      "source": "caller-enrollment.repositorySlug"
+    },
+    "schemaVersion": "consumer-authority-external-attestation-command-plan.1",
+    "signerDigest": {
+      "flag": "--signer-digest",
+      "source": "reusable-signer.workflowSha"
+    },
+    "signerSelector": {
+      "flag": "--signer-workflow",
+      "source": "reusable-signer.workflowPath"
+    },
+    "sourceDigest": {
+      "flag": "--source-digest",
+      "source": "caller-source.sourceSha"
+    },
+    "sourceRef": {
+      "flag": "--source-ref",
+      "source": "caller-source.ref"
+    },
+    "tokenIsolation": {
+      "artifactAccess": "forbidden-during-preflight",
+      "credential": "absent",
+      "output": "bounded-classification-only"
+    }
+  },
+  "prearmedExternalHandoff": {
+    "prepare": {
+      "allowedBeforeFixture": [
+        "prepare-isolated-consumer-home",
+        "enroll",
+        "status",
+        "explain",
+        "observer-credential-preflight",
+        "external-attestation-command-plan-preflight",
+        "external-artifact-transport-plan-preflight",
+        "public-pre-authority-readiness",
+        "public-initialized-finish-state"
+      ],
+      "consumer": "isolated-exact-registry-install",
+      "credentialPreflight": {
+        "acquisition": "host-gh-auth-token-read-once",
+        "command": "node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json",
+        "consumerHome": "isolated-ephemeral",
+        "hostCredential": "host-gh-only",
+        "logging": "forbidden",
+        "observerWorker": "github-actions-read-only",
+        "persistence": "forbidden",
+        "productFallback": "forbidden",
+        "scope": "fixed-authenticated-user-and-empty-sentinel-actions-metadata",
+        "tokenEnvironment": "PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN"
+      },
+      "attestationCommandPreflight": {
+        "command": "node node_modules/persona-harness/scripts/preflight-consumer-authority-external-attestation.mjs --json",
+        "credential": "absent",
+        "input": "no-artifact-grammar-sentinel-only",
+        "output": "bounded-exit-classification-only",
+        "productFallback": "forbidden"
+      },
+      "prohibitedBeforeArtifact": [
+        "artifact-download",
+        "online-crypto-validation",
+        "authority-fetch",
+        "finish-consumption",
+        "replay-observation"
+      ],
+      "requiredBeforeFixtureAuthorization": "public-initialized-finish-blocked-only-on-trusted-authority-required",
+      "artifactTransportPreflight": {
+        "command": "node node_modules/persona-harness/scripts/preflight-consumer-authority-external-artifact-transport.mjs --json",
+        "credential": "absent",
+        "input": "no-artifact-fixed-topology-and-metadata-sentinel-only",
+        "output": "bounded-parser-classification-only",
+        "productFallback": "forbidden"
+      }
+    },
+    "trigger": {
+      "onlyAfter": "observer-credential-preflight-ready-attestation-command-plan-preflight-ready-artifact-transport-plan-preflight-ready-public-initialized-readiness-and-natural-current-version-original-artifact",
+      "steps": [
+        "observer-credential-preflight-ready",
+        "external-attestation-command-plan-parser-ready",
+        "external-artifact-transport-plan-parser-ready",
+        "public-initialized-finish-blocked-only-on-trusted-authority-required",
+        "acquire-original-bytes-through-validated-external-artifact-transport-plan",
+        "verify-online-before-leaf-certificate-notAfter",
+        "authority-fetch-discovers-and-binds-original-artifact",
+        "finish-consume-once",
+        "finish-replay-blocked"
+      ]
+    },
+    "nonAuthority": [
+      "preflight-does-not-self-validate",
+      "readiness-does-not-authorize-fixture",
+      "readiness-does-not-grant-authority",
+      "readiness-does-not-persist-or-log-host-credential",
+      "command-plan-preflight-does-not-access-artifact-or-network",
+      "command-plan-preflight-does-not-reuse-beta15-artifact",
+      "transport-plan-preflight-does-not-access-an-artifact-or-network",
+      "transport-model-safety-is-not-online-crypto-or-authority-evidence"
+    ]
+  },
+  "hostedResidual": {
+    "id": "beta19-node24-npm11-canonical-tar-registry-reconciliation",
+    "requiredEvidence": "a protected main/tag source preflight, Node20/npm10 canonical tarball and facts, a separate isolated Node24/npm11 publisher dry-run using the exact canonical tarball argv, and one npm Trusted Publishing registry PUT followed by a sanitized registry version, selected-tag, SHA-1/SRI, raw-SHA-256, and package-content-identity reconciliation",
+    "whyLocalCannotClose": "Only npm's trusted-publishing registry endpoint can decide the real registry PUT and expose the final registry tarball. The beta18 registry bytes matched canonical facts, but its failed unsupported gitHead metadata predicate is non-reusable evidence."
+  },
+  "mutationBoundary": {
+    "performed": false,
+    "prohibited": [
+      "npm-publish",
+      "tag-or-dist-tag-mutation",
+      "release-creation",
+      "artifact-download-or-live-verification",
+      "Finish-consumption",
+      "fixture-push-or-workflow-dispatch"
+    ]
+  },
+  "beta16HistoricalExternal": {
+    "outcome": "external-gh-artifact-download-exit-zero-with-zero-byte-output-before-zip-validation",
+    "reusableForBeta17": false,
+    "version": "0.8.0-beta.16"
+  },
+  "externalArtifactTransportPlan": {
+    "api": {
+      "accept": "application/vnd.github+json, application/octet-stream",
+      "origin": "https://api.github.com",
+      "version": "2022-11-28"
+    },
+    "artifact": {
+      "maximumBytes": 8388608,
+      "source": "validated-actions-artifact-metadata"
+    },
+    "endpoint": {
+      "method": "GET",
+      "path": "/repos/{caller-enrollment.repositorySlug}/actions/artifacts/{artifact.id}/zip"
+    },
+    "output": {
+      "files": [
+        "original.zip",
+        "bundle.json"
+      ],
+      "root": "private-observer-mkdtemp",
+      "write": "no-follow-reserved-and-promote-after-validation"
+    },
+    "redirect": {
+      "authorization": "api-origin-only",
+      "maximum": 1,
+      "permittedHosts": [
+        "pipelines.actions.githubusercontent.com",
+        "results-receiver.actions.githubusercontent.com",
+        "*.blob.core.windows.net"
+      ]
+    },
+    "response": {
+      "contentTypes": [
+        "application/octet-stream",
+        "application/zip"
+      ],
+      "status": 200,
+      "timeoutMs": 15000
+    },
+    "schemaVersion": "consumer-authority-external-artifact-transport-plan.1"
+  },
+  "beta17HistoricalPublish": {
+    "beta16Registry": "present-in-public-registry",
+    "outcome": "canonical-tar-and-provenance-completed-before-authorization-shaped-registry-put-e404",
+    "reusableForBeta18": false,
+    "version": "0.8.0-beta.17"
+  },
+  "canonicalPackagePublisherPlan": {
+    "canonicalPackerRuntime": {
+      "node": "20.19.0",
+      "npm": "10.8.2"
+    },
+    "canonicalTar": {
+      "handoff": "exact-canonical-tarball-sha256-and-package-content-identity",
+      "source": "canonical-package-packer-output-and-package-facts"
+    },
+    "preflight": {
+      "argv": [
+        "npm",
+        "publish",
+        "<canonical-tarball>",
+        "--access",
+        "public",
+        "--tag",
+        "<selected-dist-tag>",
+        "--provenance",
+        "--dry-run"
+      ],
+      "credentials": "no-custom-token-exchange-or-auth-state-output",
+      "mode": "node24-npm11-exact-canonical-tarball-dry-run"
+    },
+    "publisherEnvironment": {
+      "canonicalPackerConfigInheritance": "forbidden",
+      "isolated": [
+        "HOME",
+        "NPM_CONFIG_CACHE",
+        "NPM_CONFIG_GLOBALCONFIG",
+        "NPM_CONFIG_USERCONFIG"
+      ]
+    },
+    "publisherRuntime": {
+      "node": "24.18.0",
+      "npm": "11.16.0"
+    },
+    "npmTrustedPublishingMinimum": {
+      "node": "22.14.0",
+      "npm": "11.5.1"
+    },
+    "registryPut": {
+      "evidence": "hosted-only",
+      "historicalBeta17": "authorization-shaped-registry-response-not-package-absence"
+    },
+    "schemaVersion": "canonical-package-publisher-plan.1"
+  },
+  "beta18HistoricalPublish": {
+    "contentIdentity": "bf3de031ae9ed6d9ab290291f151d0befc1fc4804465f55bddb5ad382399a150",
+    "outcome": "registry-publish-succeeded-and-canonical-registry-bytes-matched-before-an-unsupported-githead-metadata-requirement-blocked-readback",
+    "rawTarballSha256": "66ef460552d03fd067baf412c1d4952e5bd42811b419c585092fc7a75b4c54e6",
+    "reusableForBeta19": false,
+    "version": "0.8.0-beta.18"
+  }
+}

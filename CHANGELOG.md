@@ -12,6 +12,18 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.0-beta.19] - 2026-08-02
+
+- Replaces the unsupported postpublish registry `gitHead` predicate with a
+  workflow-bound source-to-canonical-tar-to-registry-byte reconciliation. The
+  readback requires version, selected tag, SHA-1/SRI, raw SHA-256, and portable
+  package-content identity; untrusted `gitHead` metadata is ignored.
+- Retains a bounded sanitized registry readback at a fixed runner-temp path and
+  uploads it with `if: always()` when reconciliation blocks, without exposing
+  registry bodies, credentials, signed URLs, or package paths.
+- Records beta.18 as immutable staging evidence whose registry bytes matched
+  canonical facts, while requiring a fresh beta19 publish/readback observation.
+
 ## [0.8.0-beta.18] - 2026-08-02
 
 - Keeps Node `20.19.0`/npm `10.8.2` as the isolated canonical package packer

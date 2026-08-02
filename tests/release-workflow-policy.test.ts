@@ -19,19 +19,36 @@ const repositoryRoot = resolve(process.cwd())
 describe("release workflow policy", () => {
   it("requires the staging beta publish route to bind the immutable version tag and sanitized registry readback", () => {
     const workflow = readFileSync(join(repositoryRoot, ".github", "workflows", "publish.yml"), "utf8")
+    const readback = workflow.slice(
+      workflow.indexOf("      - name: Verify registry package"),
+      workflow.indexOf("      - name: Upload sanitized registry readback"),
+    )
+    const upload = workflow.slice(
+      workflow.indexOf("      - name: Upload sanitized registry readback"),
+      workflow.indexOf("      - name: Publish summary"),
+    )
+    const summary = workflow.slice(workflow.indexOf("      - name: Publish summary"))
 
     expect(workflow).toContain("tag:")
     expect(workflow).toContain("TAG_NAME: ${{ inputs.tag }}")
     expect(workflow).toContain("tag-source")
     expect(workflow).toContain("release-registry-readback.mjs")
-    expect(workflow).toContain("registry_readback_verified=false")
-    expect(workflow).toContain('test "$registry_readback_verified" = true')
+    expect(workflow).toContain('echo "EXPECTED_GIT_HEAD=${GITHUB_SHA}"')
+    expect(readback).toContain("registry_readback_verified=false")
+    expect(readback).toContain('--source-head "$EXPECTED_GIT_HEAD"')
+    expect(readback).toContain('test "$registry_readback_verified" = true')
+    expect(readback).toContain('registry_readback_path="${RUNNER_TEMP}/persona-harness-registry-readback.json"')
+    expect(readback).toContain('test -s "$registry_readback_path"')
     expect(workflow).toContain("timeout-minutes: 45")
     expect(workflow).toContain("name: Upload sanitized registry readback")
     expect(workflow).toContain("id: registry-evidence")
-    expect(workflow).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02")
-    expect(workflow).toContain("if-no-files-found: error")
-    expect(workflow).toContain("steps.registry-evidence.outputs.artifact-digest")
+    expect(upload).toContain("if: always()")
+    expect(upload).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02")
+    expect(upload).toContain("if-no-files-found: error")
+    expect(summary).toContain("if: always()")
+    expect(summary).toContain("steps.registry-evidence.outputs.artifact-digest")
+    expect(summary).toContain("workflow source head")
+    expect(summary).not.toContain("- gitHead: ${EXPECTED_GIT_HEAD}")
     expect(workflow).toContain("node-version: 20.19.0")
     expect(workflow).toContain('test "$(node --version)" = "v20.19.0"')
     expect(workflow).toContain('test "$(npm --version)" = "10.8.2"')
@@ -65,6 +82,27 @@ describe("release workflow policy", () => {
     expect(workflow).not.toContain("npm token")
   })
 
+  it("keeps package-visible release procedures aligned with the workflow's existing immutable tag preflight", () => {
+    const runbook = readFileSync(join(repositoryRoot, "docs", "current", "release", "npm-trusted-publishing-runbook.md"), "utf8")
+    const automation = readFileSync(join(repositoryRoot, "docs", "current", "release", "github-actions-release-automation.md"), "utf8")
+    const checklist = readFileSync(join(repositoryRoot, "docs", "current", "release", "release-checklist.md"), "utf8")
+    const stagedVerification = readFileSync(join(repositoryRoot, "docs", "current", "release", "staged-package-verification.md"), "utf8")
+
+    expect(runbook).toContain("The matching immutable Git tag is a precondition for the publish workflow.")
+    expect(runbook).toContain("Do not dispatch publish until the separately approved immutable")
+    expect(runbook).not.toContain("Git tag creation is a separate step after registry verification.")
+    expect(automation).toContain("Create the separately approved immutable matching tag on that protected-main")
+    expect(automation).toContain("<verified-workflow-source-head>")
+    expect(checklist).toContain("protected-main and immutable-tag preflight")
+    expect(checklist).toContain("version dist.shasum dist.integrity --json")
+    expect(checklist).toContain("The immutable matching tag is a required publish precondition")
+    expect(checklist).not.toContain("version gitHead dist.shasum --json")
+    expect(checklist).not.toContain("registry `gitHead` checked")
+    expect(stagedVerification).toContain("SHA-1, SRI, raw SHA-256, and portable package-content identity")
+    expect(stagedVerification).toContain("npm version metadata is not a\n  source-identity field")
+    expect(stagedVerification).not.toContain("gitHead, shasum, and integrity")
+  })
+
   it("keeps the beta's cooperative and external registry fixtures separate and non-authoritative", () => {
     const lifecycle = readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta.md"), "utf8")
 
@@ -79,7 +117,7 @@ describe("release workflow policy", () => {
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.8.0-beta.18")
+    expect(packageVersion).toBe("0.8.0-beta.19")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",
@@ -181,24 +219,27 @@ describe("release workflow policy", () => {
     })).toMatchObject({ code: "version-semver", ok: false })
   })
 
-  it("requires registry version, gitHead, shasum, integrity, and dist-tag", () => {
+  it("requires registry version, shasum, integrity, and dist-tag after the canonical-main source gate", () => {
     const metadata = {
       version: "0.7.0-rc.1",
-      gitHead: TAG_SHA,
       "dist.shasum": "d".repeat(40),
       "dist.integrity": INTEGRITY,
     }
     expect(checkRegistryMetadata({
       distTag: "next",
       distTagsText: "latest: 0.6.0\nnext: 0.7.0-rc.1\n",
-      expectedHead: TAG_SHA,
       expectedVersion: "0.7.0-rc.1",
       metadata,
     })).toEqual({ ok: true })
     expect(checkRegistryMetadata({
       distTag: "next",
+      distTagsText: "latest: 0.6.0\nnext: 0.7.0-rc.1\n",
+      expectedVersion: "0.7.0-rc.1",
+      metadata: { ...metadata, gitHead: "/private/tmp/secret" },
+    })).toEqual({ ok: true })
+    expect(checkRegistryMetadata({
+      distTag: "next",
       distTagsText: "next: 0.7.0-rc.1\n",
-      expectedHead: TAG_SHA,
       expectedVersion: "0.7.0-rc.1",
       metadata: { ...metadata, "dist.integrity": "" },
     })).toMatchObject({ ok: false, code: "registry-integrity" })

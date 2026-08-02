@@ -33,10 +33,13 @@ The gate accepts bounded, versioned fact files plus one local tarball:
   check. A present version blocks the gate.
 - `staged-package-registry-facts.1` records read-only staged registry facts:
   package/version, the exact selected fixed `staging` or `next` channel value,
-  gitHead, shasum, and integrity. The selected value must equal the planned
-  prerelease version.
+  SHA-1, SRI, raw SHA-256, and portable package-content identity. The selected
+  value must equal the planned prerelease version.
 - The supplied local tarball is hashed independently. Its package/version,
-  shasum, and integrity must agree with the staged registry facts.
+  SHA-1, SRI, raw SHA-256, and package-content identity must agree with the
+  staged registry facts. The protected workflow/tag preflight binds source
+  identity before the canonical tarball exists; npm version metadata is not a
+  source-identity field.
 
 The local caller-fact command cannot cryptographically bind a selected local
 tarball to independently issued registry provenance. Therefore a generic

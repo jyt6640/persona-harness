@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process"
 import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -23,7 +24,7 @@ const CONTENT_IDENTITY = {
 }
 
 describe("release registry readback", () => {
-  it("binds the fixed staging beta tag, source, metadata, and downloaded tarball", () => {
+  it("binds a workflow-verified source to the fixed staging beta tag, metadata, and downloaded tarball without registry gitHead", () => {
     const result = assessReleaseRegistryReadback(validInput())
 
     expect(result).toMatchObject({
@@ -31,12 +32,12 @@ describe("release registry readback", () => {
       distTag: "staging",
       provenance: "requires-staged-artifact-attestation",
       registryMutation: "not-performed",
+      sourceBinding: "workflow-verified-canonical-tar",
       sourceHead: HEAD,
       status: "passed",
       version: "0.8.0-beta.1",
     })
     expect(result.registry).toEqual({
-      gitHead: HEAD,
       integrity: INTEGRITY,
       shasum: SHA1,
       tarballSha256: SHA256,
@@ -45,9 +46,52 @@ describe("release registry readback", () => {
     })
   })
 
+  it("accepts the observed beta18 registry route when the exact canonical tarball is present without registry gitHead", () => {
+    const result = assessReleaseRegistryReadback({
+      distTag: "staging",
+      distTagsText: "latest: 0.7.0\nnext: 0.7.0-rc.3\nstaging: 0.8.0-beta.18\n",
+      expectedContentIdentity: {
+        contentSha256: "9e0502259713190878beac3c7e60e952bdc6891e85e282b93b76cc1474813354",
+        entryCount: 1210,
+        identitySha256: "bf3de031ae9ed6d9ab290291f151d0befc1fc4804465f55bddb5ad382399a150",
+        modeCounts: { "0644": 1207, "0755": 3 },
+        schemaVersion: "package-content-identity.1",
+      },
+      expectedHead: "02a127bb996b616b9c631b1d3f48798b79527b13",
+      expectedTarballSha256: "66ef460552d03fd067baf412c1d4952e5bd42811b419c585092fc7a75b4c54e6",
+      expectedVersion: "0.8.0-beta.18",
+      metadata: {
+        "dist.integrity": "sha512-7/wkh22rmxOGLOKRHkhLtukuclGh6ZJXUeS0RdhaxBcij8dImn1yNRhWssQslaaUL+Ii4g1qLU+TQBoLU8FF9w==",
+        "dist.shasum": "37beae7c59ca0e2d73fec2bd8c0f98d32227a117",
+        version: "0.8.0-beta.18",
+      },
+      tarball: {
+        contentIdentity: {
+          contentSha256: "9e0502259713190878beac3c7e60e952bdc6891e85e282b93b76cc1474813354",
+          entryCount: 1210,
+          identitySha256: "bf3de031ae9ed6d9ab290291f151d0befc1fc4804465f55bddb5ad382399a150",
+          modeCounts: { "0644": 1207, "0755": 3 },
+          schemaVersion: "package-content-identity.1",
+        },
+        integrity: "sha512-7/wkh22rmxOGLOKRHkhLtukuclGh6ZJXUeS0RdhaxBcij8dImn1yNRhWssQslaaUL+Ii4g1qLU+TQBoLU8FF9w==",
+        sha1: "37beae7c59ca0e2d73fec2bd8c0f98d32227a117",
+        sha256: "sha256:66ef460552d03fd067baf412c1d4952e5bd42811b419c585092fc7a75b4c54e6",
+      },
+    })
+
+    expect(result).toMatchObject({
+      diagnostics: [],
+      sourceBinding: "workflow-verified-canonical-tar",
+      sourceHead: "02a127bb996b616b9c631b1d3f48798b79527b13",
+      status: "passed",
+      version: "0.8.0-beta.18",
+    })
+  })
+
   it.each([
     ["wrong tag", { distTagsText: "staging: 0.8.0-beta.2\n" }, "release-registry-dist-tag"],
-    ["wrong source", { metadata: { ...validInput().metadata, gitHead: "e".repeat(40) } }, "release-registry-git-head"],
+    ["malformed workflow source", { expectedHead: "not-a-commit" }, "release-registry-source-head"],
+    ["missing registry version", { metadata: { "dist.integrity": INTEGRITY, "dist.shasum": SHA1 } }, "release-registry-metadata"],
     ["wrong tarball sha1", { tarball: { ...validInput().tarball, sha1: "f".repeat(40) } }, "release-registry-shasum"],
     ["wrong tarball integrity", { tarball: { ...validInput().tarball, integrity: `sha512-${"g".repeat(86)}` } }, "release-registry-integrity"],
     ["wrong tarball raw SHA-256", { tarball: { ...validInput().tarball, sha256: `sha256:${"0".repeat(64)}` } }, "release-registry-tarball-sha256"],
@@ -59,17 +103,43 @@ describe("release registry readback", () => {
     expect(result.diagnostics).toContain(code)
   })
 
-  it("bounds malformed registry values without reflecting them", () => {
+  it("does not trust or reflect an unsupported registry gitHead field", () => {
     const secret = "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa"
     const result = assessReleaseRegistryReadback({
       ...validInput(),
       metadata: { ...validInput().metadata, gitHead: `/private/tmp/${secret}` },
     })
 
-    expect(result.status).toBe("blocked")
-    expect(result.diagnostics).toContain("release-registry-metadata")
+    expect(result.status).toBe("passed")
+    expect(result.diagnostics).toEqual([])
     expect(JSON.stringify(result)).not.toContain(secret)
     expect(JSON.stringify(result)).not.toContain("/private/tmp")
+  })
+
+  it("emits a bounded blocked record for an invalid direct entrypoint invocation", () => {
+    const result = spawnSync(process.execPath, ["scripts/release-registry-readback.mjs", "--unexpected"], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: { PATH: process.env.PATH ?? "" },
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe("")
+    const output = JSON.parse(result.stdout)
+    expect(output).toMatchObject({
+      diagnostics: expect.arrayContaining([
+        "release-registry-content-identity",
+        "release-registry-dist-tag",
+        "release-registry-metadata",
+        "release-registry-source-head",
+        "release-registry-tarball",
+        "release-registry-tarball-sha256",
+        "release-registry-version",
+      ]),
+      sourceBinding: "unavailable",
+      status: "blocked",
+    })
+    expect(result.stdout).not.toContain(process.cwd())
   })
 
   it("accepts only a regular canonical package-facts record for CLI readback", () => {
@@ -146,7 +216,6 @@ function validInput() {
     metadata: {
       "dist.integrity": INTEGRITY,
       "dist.shasum": SHA1,
-      gitHead: HEAD,
       version: "0.8.0-beta.1",
     },
     tarball: {

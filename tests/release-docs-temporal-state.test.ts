@@ -27,10 +27,11 @@ const publicReleaseDocs = [
   "docs/current/release/v0.8.0-beta.15-release-notes.md",
   "docs/current/release/v0.8.0-beta.16-release-notes.md",
   "docs/current/release/v0.8.0-beta.18-release-notes.md",
+  "docs/current/release/v0.8.0-beta.19-release-notes.md",
 ]
 
 describe("release docs temporal-state boundary", () => {
-  it("keeps the consumer authority beta.18 source candidate free of beta publication claims", () => {
+  it("keeps beta.18 historical registry evidence distinct from the beta.19 source candidate", () => {
     const text = publicReleaseDocs
       .map((path) => readFileSync(join(root, path), "utf8"))
       .join("\n")
@@ -46,7 +47,10 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("Consumer Authority Beta source-preparation candidate")
     expect(text).toContain("immutable staging-only Consumer Authority Beta")
     expect(text).toContain("0.8.0-beta.18")
-    expect(text).toContain("consumer-authority-beta18-acceptance.json")
+    expect(text).toContain("0.8.0-beta.19")
+    expect(text).toContain("consumer-authority-beta19-acceptance.json")
+    expect(text).toContain("workflow-verified-canonical-tar")
+    expect(text).toContain("registry gitHead")
     expect(text).toContain("no usable GitHub Actions read credential")
     expect(text).toContain("preflight-consumer-authority-observer.mjs")
     expect(text).toContain("preflight-consumer-authority-external-attestation.mjs")
