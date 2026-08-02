@@ -14,17 +14,27 @@ const MAX_ARCHIVE_BYTES = 8 * 1024 * 1024
 const MAX_OUTPUT_BYTES = 12 * 1024 * 1024
 const WORKER_TIMEOUT_MS = 30_000
 
+export type GithubAuthorityFetchDiagnostic =
+  | "authority-fetch-evidence"
+  | "authority-fetch-invalid"
+  | "authority-fetch-network"
+  | "authority-fetch-policy"
+
+export type GithubAuthorityFetchResult =
+  | { readonly diagnostic?: GithubAuthorityFetchDiagnostic; readonly kind: "blocked" }
+  | { readonly artifact: AuthorityArtifact; readonly kind: "ready" }
+
 export function fetchGithubAuthorityArtifact(
   projectDir: string,
   enrollment: AuthorityEnrollment,
   githubToken: string | undefined,
   now = new Date(),
-): AuthorityArtifact | undefined {
-  if (!isAuthorityGithubToken(githubToken)) return undefined
+): GithubAuthorityFetchResult {
+  if (!isAuthorityGithubToken(githubToken)) return { kind: "blocked" }
   const workspace = captureWorkspaceIdentity(projectDir)
-  if (workspace.status !== "available") return undefined
+  if (workspace.status !== "available") return { kind: "blocked" }
   const git = captureGitIdentity(projectDir, workspace.value)
-  if (!git.available || git.head === undefined) return undefined
+  if (!git.available || git.head === undefined) return { kind: "blocked" }
   const result = spawnSync(process.execPath, [WORKER_PATH], {
     cwd: workspace.value.realpath,
     encoding: "utf8",
@@ -44,18 +54,25 @@ export function fetchGithubAuthorityArtifact(
     stdio: ["pipe", "pipe", "ignore"],
     timeout: WORKER_TIMEOUT_MS,
   })
-  if (result.error !== undefined || result.status !== 0 || typeof result.stdout !== "string") return undefined
+  const diagnostic = result.error === undefined && result.status === 1 && typeof result.stdout === "string"
+    ? parseGithubAuthorityFetchDiagnostic(result.stdout)
+    : undefined
+  if (diagnostic !== undefined) return { diagnostic, kind: "blocked" }
+  if (result.error !== undefined || result.status !== 0 || typeof result.stdout !== "string") return { kind: "blocked" }
   const fetched = parseFetchedArtifact(result.stdout)
   return fetched === undefined
-    ? undefined
+    ? { kind: "blocked" }
     : {
-        archive: fetched.archive,
-        artifactId: fetched.artifactId,
-        artifactDigest: fetched.artifactDigest,
-        fetchedAt: now.toISOString(),
-        repositoryId: enrollment.repositoryId,
-        runId: fetched.runId,
-        sourceHead: git.head,
+        artifact: {
+          archive: fetched.archive,
+          artifactId: fetched.artifactId,
+          artifactDigest: fetched.artifactDigest,
+          fetchedAt: now.toISOString(),
+          repositoryId: enrollment.repositoryId,
+          runId: fetched.runId,
+          sourceHead: git.head,
+        },
+        kind: "ready",
       }
 }
 
@@ -82,6 +99,20 @@ export function parseFetchedArtifact(value: string): {
   }
 }
 
+export function parseGithubAuthorityFetchDiagnostic(value: string): GithubAuthorityFetchDiagnostic | undefined {
+  try {
+    const output: unknown = JSON.parse(value)
+    return isRecord(output)
+      && exactKeys(output, ["code", "ok"])
+      && output.ok === false
+      && isGithubAuthorityFetchDiagnostic(output.code)
+      ? output.code
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
   const actual = Object.keys(value).sort()
   return actual.length === keys.length && actual.every((key, index) => key === keys[index])
@@ -101,4 +132,16 @@ function isRunId(value: unknown): value is string {
 
 function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0
+}
+
+function isGithubAuthorityFetchDiagnostic(value: unknown): value is GithubAuthorityFetchDiagnostic {
+  switch (value) {
+    case "authority-fetch-evidence":
+    case "authority-fetch-invalid":
+    case "authority-fetch-network":
+    case "authority-fetch-policy":
+      return true
+    default:
+      return false
+  }
 }

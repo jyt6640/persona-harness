@@ -4,20 +4,21 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import {
-  BETA19_ACCEPTANCE_SCHEMA_VERSION,
-  Beta19AcceptanceManifestError,
-  parseBeta19AcceptanceManifest,
-} from "../scripts/consumer-authority-beta19-acceptance-schema.mjs"
+  BETA20_ACCEPTANCE_SCHEMA_VERSION,
+  Beta20AcceptanceManifestError,
+  parseBeta20AcceptanceManifest,
+  readBeta20AcceptanceManifest,
+} from "../scripts/consumer-authority-beta20-acceptance-schema.mjs"
 
 const repositoryRoot = process.cwd()
-const manifestPath = join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta19-acceptance.json")
+const manifestPath = join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta20-acceptance.json")
 
-describe("consumer authority beta.19 acceptance schema", () => {
-  it("binds workflow-verified canonical source facts to the isolated Node24 publisher and registry reconciliation", () => {
-    const manifest = parseBeta19AcceptanceManifest(canonicalManifest(), "0.8.0-beta.19")
+describe("consumer authority beta.20 acceptance schema", () => {
+  it("binds the fixed authenticated-fetch child envelope without changing the public missing state", () => {
+    const manifest = record(readBeta20AcceptanceManifest(repositoryRoot))
 
-    expect(manifest.schemaVersion).toBe(BETA19_ACCEPTANCE_SCHEMA_VERSION)
-    expect(record(manifest.package).version).toBe("0.8.0-beta.19")
+    expect(manifest.schemaVersion).toBe(BETA20_ACCEPTANCE_SCHEMA_VERSION)
+    expect(record(manifest.package).version).toBe("0.8.0-beta.20")
     expect(record(manifest.canonicalPackagePublisherPlan)).toMatchObject({
       canonicalPackerRuntime: { node: "20.19.0", npm: "10.8.2" },
       npmTrustedPublishingMinimum: { node: "22.14.0", npm: "11.5.1" },
@@ -36,6 +37,23 @@ describe("consumer authority beta.19 acceptance schema", () => {
       reusableForBeta19: false,
       version: "0.8.0-beta.18",
     })
+    expect(record(manifest.beta19HistoricalPublish)).toEqual({
+      outcome: "published-immutable-staging-package-not-reusable-as-current-package-evidence",
+      reusableForBeta20: false,
+      version: "0.8.0-beta.19",
+    })
+    expect(record(record(manifest.authority).fetchDiagnostic)).toEqual({
+      allowedCodes: [
+        "authority-fetch-evidence",
+        "authority-fetch-invalid",
+        "authority-fetch-network",
+        "authority-fetch-policy",
+      ],
+      childEnvelope: "only-exit-one-fixed-code-ok-false",
+      persistence: "blocked-child-leaves-no-artifact-or-authority-state",
+      privacy: "no-token-path-url-or-raw-child-output",
+      publicState: "missing",
+    })
   })
 
   it("rejects publisher runtime, argv, and historical registry-readback semantic drift", () => {
@@ -53,6 +71,10 @@ describe("consumer authority beta.19 acceptance schema", () => {
         apply: (manifest) => { record(record(manifest.packageBoundary).registryReadback).unsupportedMetadata = "registry-githead-required" },
       },
       {
+        name: "unknown child diagnostic",
+        apply: (manifest) => { record(record(manifest.authority).fetchDiagnostic).allowedCodes = ["authority-fetch-foreign"] },
+      },
+      {
         name: "unknown field",
         apply: (manifest) => { manifest.unexpected = "foreign" },
       },
@@ -61,10 +83,10 @@ describe("consumer authority beta.19 acceptance schema", () => {
     for (const testCase of cases) {
       const manifest = canonicalManifest()
       testCase.apply(manifest)
-      expectSchemaBlock(() => parseBeta19AcceptanceManifest(manifest, "0.8.0-beta.19"), testCase.name)
+      expectSchemaBlock(() => parseBeta20AcceptanceManifest(manifest, "0.8.0-beta.20"), testCase.name)
     }
     expectSchemaBlock(
-      () => parseBeta19AcceptanceManifest(canonicalManifest(), "0.8.0-beta.18"),
+      () => parseBeta20AcceptanceManifest(canonicalManifest(), "0.8.0-beta.19"),
       "foreign package version",
     )
   })
@@ -78,8 +100,8 @@ function expectSchemaBlock(action: () => void, label: string): void {
   try {
     action()
   } catch (error) {
-    if (error instanceof Beta19AcceptanceManifestError) {
-      expect(error.code, label).toBe("beta19-acceptance-schema")
+    if (error instanceof Beta20AcceptanceManifestError) {
+      expect(error.code, label).toBe("beta20-acceptance-schema")
       return
     }
     throw error

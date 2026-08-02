@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readBeta19AcceptanceManifest } from "./consumer-authority-beta19-acceptance-schema.mjs"
+import { readBeta20AcceptanceManifest } from "./consumer-authority-beta20-acceptance-schema.mjs"
 import { canonicalizePackageTarball, readPackageContentIdentity } from "./package-content-identity.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -45,7 +45,7 @@ const MODELED_AUTHORITY_TOPOLOGY = {
   repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
   reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3",
 }
-const BETA19_PRE_AUTHORITY_COMMANDS = new Map([
+const BETA20_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -676,7 +676,7 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta19PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta20PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
@@ -1021,7 +1021,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta19PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta20PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
@@ -2143,9 +2143,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness, packageR
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness, environment = {}) {
   for (const command of readiness.commands) {
-    const step = BETA19_PRE_AUTHORITY_COMMANDS.get(command)
+    const step = BETA20_PRE_AUTHORITY_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.19 pre-authority command is unsupported`)
+      throw new Error(`${label} beta.20 pre-authority command is unsupported`)
     }
     const result = runNode(fixtureRoot, [phPath, ...step.args], environment, step.stdin)
     requireSuccess(
@@ -2417,45 +2417,69 @@ function assertModeledAuthorityFinishLifecycle(projectDir, phPath, packageRoot, 
 }
 
 function seedModeledAuthorityArtifact(projectDir, packageRoot, home, environment, label) {
-  const moduleRoot = join(packageRoot, "dist", "cli")
-  const moduleUrl = (name) => pathToFileURL(join(moduleRoot, name)).href
-  const script = [
-    'import { createHash } from "node:crypto";',
-    `import { runAuthorityCommand } from ${JSON.stringify(moduleUrl("authority-command.js"))};`,
-    `import { authorityEnrollmentFromReadback, writeAuthorityEnrollment } from ${JSON.stringify(moduleUrl("authority-enrollment.js"))};`,
-    `import { createProjectFinishAttestationProducerArtifacts } from ${JSON.stringify(moduleUrl("project-finish-attestation-producer.js"))};`,
-    `import { canonicalProjectFinishAttestationBytes } from ${JSON.stringify(moduleUrl("project-finish-attestation-canonical.js"))};`,
-    `import { captureWorkspaceIdentity, captureGitIdentity } from ${JSON.stringify(moduleUrl("ci-reverification-identity.js"))};`,
-    `import { captureProjectFinishAttestationSourceIdentity } from ${JSON.stringify(moduleUrl("project-finish-attestation-source.js"))};`,
-    `import { bindProjectFinishAttestationInputSnapshot, captureProjectFinishAttestationInputSnapshot } from ${JSON.stringify(moduleUrl("project-finish-attestation-inputs.js"))};`,
-    `import { personaHarnessVersion } from ${JSON.stringify(moduleUrl("version.js"))};`,
-    'const digest = (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;',
-    'const archive = (members) => { const local = []; const central = []; let offset = 0; for (const [name, bytes] of Object.entries(members)) { const nameBytes = Buffer.from(name, "utf8"); const header = Buffer.alloc(30); header.writeUInt32LE(0x04034b50, 0); header.writeUInt16LE(20, 4); header.writeUInt32LE(bytes.byteLength, 18); header.writeUInt32LE(bytes.byteLength, 22); header.writeUInt16LE(nameBytes.byteLength, 26); local.push(header, nameBytes, bytes); const directory = Buffer.alloc(46); directory.writeUInt32LE(0x02014b50, 0); directory.writeUInt16LE(20, 4); directory.writeUInt16LE(20, 6); directory.writeUInt32LE(bytes.byteLength, 20); directory.writeUInt32LE(bytes.byteLength, 24); directory.writeUInt16LE(nameBytes.byteLength, 28); directory.writeUInt32LE(offset, 42); central.push(directory, nameBytes); offset += header.byteLength + nameBytes.byteLength + bytes.byteLength; } const directory = Buffer.concat(central); const footer = Buffer.alloc(22); footer.writeUInt32LE(0x06054b50, 0); footer.writeUInt16LE(Object.keys(members).length, 8); footer.writeUInt16LE(Object.keys(members).length, 10); footer.writeUInt32LE(directory.byteLength, 12); footer.writeUInt32LE(offset, 16); return Buffer.concat([...local, directory, footer]); };',
-    'const workspace = captureWorkspaceIdentity("."); if (workspace.status !== "available") throw new Error("modeled-authority-workspace");',
-    'const git = captureGitIdentity(".", workspace.value); if (!git.available || git.head === undefined) throw new Error("modeled-authority-git");',
-    'const source = captureProjectFinishAttestationSourceIdentity(".", git); if (source.status !== "available") throw new Error("modeled-authority-source");',
-    'const inputs = captureProjectFinishAttestationInputSnapshot("."); if (inputs.kind !== "ready") throw new Error("modeled-authority-inputs");',
-    'const enrollment = authorityEnrollmentFromReadback({ callerWorkflowPath: "research-attestation.yml", repositoryId: 1304576182, repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture", reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3" }); if (enrollment === undefined) throw new Error("modeled-authority-enrollment");',
-    'const now = new Date().toISOString(); const boundSource = bindProjectFinishAttestationInputSnapshot(source.value, inputs.value);',
-    'const produced = createProjectFinishAttestationProducerArtifacts({ buildArtifactDigest: `sha256:${"b".repeat(64)}`, callerWorkflowRef: `${enrollment.repositorySlug}/.github/workflows/${enrollment.callerWorkflowPath}@refs/heads/main`, callerWorkflowSha: git.head, issuedAt: now, phVersion: personaHarnessVersion(), repository: { id: enrollment.repositoryId, slug: enrollment.repositorySlug, visibility: "public" }, reusableWorkflowSha: enrollment.reusableWorkflowSha, runAttempt: 1, runId: "30450000000", source: { head: git.head, identity: boundSource, root: "." }, test: { count: 1, junitDigest: `sha256:${"c".repeat(64)}`, passed: 1, skipped: 0 } });',
-    'const bundle = Buffer.from(JSON.stringify(produced.statement), "utf8"); const original = archive({ "bundle.json": bundle, "predicate.json": canonicalProjectFinishAttestationBytes(produced.predicate), "receipt.json": produced.receiptBytes });',
-    `const storeRoot = ${JSON.stringify(join(home, ".persona-harness"))};`,
-    'if (!writeAuthorityEnrollment(enrollment, { storeRoot })) throw new Error("modeled-authority-store");',
-    'const assessment = { authorityEligible: true, consumptionState: "unconsumed", decision: "trusted", diagnostics: [], receipt: produced.receipt, state: "trusted", summary: "modeled-trusted-boundary" };',
-    'const result = runAuthorityCommand(["fetch", "github", "--json"], { artifactFetch: () => ({ archive: original, artifactId: 710000015, artifactDigest: digest(original), fetchedAt: now, repositoryId: enrollment.repositoryId, runId: "30450000000", sourceHead: git.head }), artifactInspector: () => assessment, projectDir: ".", storeRoot });',
-    'if (result.status !== 0) throw new Error("modeled-authority-fetch");',
-    'process.stdout.write(JSON.stringify({ bundleDigest: digest(bundle), statement: produced.statement }));',
-  ].join("\n")
-  const result = runNode(projectDir, ["--input-type=module", "-e", script], environment)
-  requireSuccess(`${label} modeled authority fetch`, result)
+  const runtimeRoot = mkdtempSync(join(temporaryRoot, "authority-fetch-finish-runtime-"))
+  const childFixturePath = join(runtimeRoot, "authority-fetch-finish-fixture.json")
+  const childAuditPath = join(runtimeRoot, "authority-fetch-finish-audit")
   try {
-    const value = JSON.parse(result.stdout)
-    if (!isRecord(value) || typeof value.bundleDigest !== "string" || !isRecord(value.statement)) {
-      throw new TypeError("invalid modeled authority payload")
+    cpSync(join(packageRoot, "dist"), join(runtimeRoot, "dist"), { dereference: true, recursive: true })
+    cpSync(join(packageRoot, "native"), join(runtimeRoot, "native"), { dereference: true, recursive: true })
+    cpSync(join(packageRoot, "scripts"), join(runtimeRoot, "scripts"), { dereference: true, recursive: true })
+    copyFileSync(join(packageRoot, "package.json"), join(runtimeRoot, "package.json"))
+    writeAuthorityFetchChildWorker(runtimeRoot, childFixturePath, childAuditPath)
+    const moduleRoot = join(runtimeRoot, "dist", "cli")
+    const moduleUrl = (name) => pathToFileURL(join(moduleRoot, name)).href
+    const script = [
+      'import { createHash } from "node:crypto";',
+      'import { writeFileSync } from "node:fs";',
+      `import { runAuthorityCommand } from ${JSON.stringify(moduleUrl("authority-command.js"))};`,
+      `import { authorityEnrollmentFromReadback, writeAuthorityEnrollment } from ${JSON.stringify(moduleUrl("authority-enrollment.js"))};`,
+      `import { createProjectFinishAttestationProducerArtifacts } from ${JSON.stringify(moduleUrl("project-finish-attestation-producer.js"))};`,
+      `import { canonicalProjectFinishAttestationBytes } from ${JSON.stringify(moduleUrl("project-finish-attestation-canonical.js"))};`,
+      `import { captureWorkspaceIdentity, captureGitIdentity } from ${JSON.stringify(moduleUrl("ci-reverification-identity.js"))};`,
+      `import { captureProjectFinishAttestationSourceIdentity } from ${JSON.stringify(moduleUrl("project-finish-attestation-source.js"))};`,
+      `import { bindProjectFinishAttestationInputSnapshot, captureProjectFinishAttestationInputSnapshot } from ${JSON.stringify(moduleUrl("project-finish-attestation-inputs.js"))};`,
+      `import { personaHarnessVersion } from ${JSON.stringify(moduleUrl("version.js"))};`,
+      'const digest = (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;',
+      'const archive = (members) => { const local = []; const central = []; let offset = 0; for (const [name, bytes] of Object.entries(members)) { const nameBytes = Buffer.from(name, "utf8"); const header = Buffer.alloc(30); header.writeUInt32LE(0x04034b50, 0); header.writeUInt16LE(20, 4); header.writeUInt32LE(bytes.byteLength, 18); header.writeUInt32LE(bytes.byteLength, 22); header.writeUInt16LE(nameBytes.byteLength, 26); local.push(header, nameBytes, bytes); const directory = Buffer.alloc(46); directory.writeUInt32LE(0x02014b50, 0); directory.writeUInt16LE(20, 4); directory.writeUInt16LE(20, 6); directory.writeUInt32LE(bytes.byteLength, 20); directory.writeUInt32LE(bytes.byteLength, 24); directory.writeUInt16LE(nameBytes.byteLength, 28); directory.writeUInt32LE(offset, 42); central.push(directory, nameBytes); offset += header.byteLength + nameBytes.byteLength + bytes.byteLength; } const directory = Buffer.concat(central); const footer = Buffer.alloc(22); footer.writeUInt32LE(0x06054b50, 0); footer.writeUInt16LE(Object.keys(members).length, 8); footer.writeUInt16LE(Object.keys(members).length, 10); footer.writeUInt32LE(directory.byteLength, 12); footer.writeUInt32LE(offset, 16); return Buffer.concat([...local, directory, footer]); };',
+      'const workspace = captureWorkspaceIdentity("."); if (workspace.status !== "available") throw new Error("modeled-authority-workspace");',
+      'const git = captureGitIdentity(".", workspace.value); if (!git.available || git.head === undefined) throw new Error("modeled-authority-git");',
+      'const source = captureProjectFinishAttestationSourceIdentity(".", git); if (source.status !== "available") throw new Error("modeled-authority-source");',
+      'const inputs = captureProjectFinishAttestationInputSnapshot("."); if (inputs.kind !== "ready") throw new Error("modeled-authority-inputs");',
+      'const enrollment = authorityEnrollmentFromReadback({ callerWorkflowPath: "research-attestation.yml", repositoryId: 1304576182, repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture", reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3" }); if (enrollment === undefined) throw new Error("modeled-authority-enrollment");',
+      'const now = new Date().toISOString(); const boundSource = bindProjectFinishAttestationInputSnapshot(source.value, inputs.value);',
+      'const produced = createProjectFinishAttestationProducerArtifacts({ buildArtifactDigest: `sha256:${"b".repeat(64)}`, callerWorkflowRef: `${enrollment.repositorySlug}/.github/workflows/${enrollment.callerWorkflowPath}@refs/heads/main`, callerWorkflowSha: git.head, issuedAt: now, phVersion: personaHarnessVersion(), repository: { id: enrollment.repositoryId, slug: enrollment.repositorySlug, visibility: "public" }, reusableWorkflowSha: enrollment.reusableWorkflowSha, runAttempt: 1, runId: "30450000000", source: { head: git.head, identity: boundSource, root: "." }, test: { count: 1, junitDigest: `sha256:${"c".repeat(64)}`, passed: 1, skipped: 0 } });',
+      'const bundle = Buffer.from(JSON.stringify(produced.statement), "utf8"); const original = archive({ "bundle.json": bundle, "predicate.json": canonicalProjectFinishAttestationBytes(produced.predicate), "receipt.json": produced.receiptBytes });',
+      `const childFixturePath = ${JSON.stringify(childFixturePath)};`,
+      'writeFileSync(childFixturePath, `${JSON.stringify({ expectedInput: { callerWorkflowPath: enrollment.callerWorkflowPath, repositoryId: enrollment.repositoryId, repositorySlug: enrollment.repositorySlug, sourceHead: git.head }, output: JSON.stringify({ archive: original.toString("base64"), artifactDigest: digest(original), artifactId: 710000015, ok: true, runId: "30450000000" }), status: 0 })}\n`);',
+      `const storeRoot = ${JSON.stringify(join(home, ".persona-harness"))};`,
+      'if (!writeAuthorityEnrollment(enrollment, { storeRoot })) throw new Error("modeled-authority-store");',
+      'const assessment = { authorityEligible: true, consumptionState: "unconsumed", decision: "trusted", diagnostics: [], receipt: produced.receipt, state: "trusted", summary: "modeled-trusted-boundary" };',
+      'const result = runAuthorityCommand(["fetch", "github", "--json"], { artifactInspector: () => assessment, githubToken: "ghp_modeled_authority_fetch", projectDir: ".", storeRoot });',
+      'if (result.status !== 0) throw new Error("modeled-authority-fetch");',
+      'process.stdout.write(JSON.stringify({ bundleDigest: digest(bundle), statement: produced.statement }));',
+    ].join("\n")
+    const result = runNode(projectDir, ["--input-type=module", "-e", script], environment)
+    if (result.status !== 0) {
+      throw new Error(`${label} modeled authority fetch child failed: ${JSON.stringify({
+        childAudit: readAuthorityFetchChildAudit(childAuditPath),
+        result: boundedAuthorityFetchResult(result.stdout),
+      })}`)
     }
-    return value
-  } catch {
-    throw new Error(`${label} modeled authority fetch did not produce a bounded fixture`)
+    requireSuccess(`${label} modeled authority fetch`, result)
+    if (!hasAuthorityFetchChildAudit(childAuditPath)) {
+      throw new Error(`${label} modeled authority fetch did not reach the bound child worker`)
+    }
+    try {
+      const value = JSON.parse(result.stdout)
+      if (!isRecord(value) || typeof value.bundleDigest !== "string" || !isRecord(value.statement)) {
+        throw new TypeError("invalid modeled authority payload")
+      }
+      return value
+    } catch {
+      throw new Error(`${label} modeled authority fetch did not produce a bounded fixture`)
+    }
+  } finally {
+    rmSync(runtimeRoot, { force: true, recursive: true })
   }
 }
 
@@ -2476,8 +2500,8 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
   writeFileSync(loaderPath, `${loader}\n`)
 }
 
-function readBeta19PreAuthorityReadiness(packageRoot) {
-  const manifest = readBeta19AcceptanceManifest(packageRoot)
+function readBeta20PreAuthorityReadiness(packageRoot) {
+  const manifest = readBeta20AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2486,9 +2510,9 @@ function readBeta19PreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readBeta19AcceptanceManifest(packageRoot)
+    readBeta20AcceptanceManifest(packageRoot)
   } catch {
-    throw new Error(`${label} beta.19 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.20 observer handoff contract is invalid`)
   }
 }
 
@@ -2498,7 +2522,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readBeta19AcceptanceManifest(packageRoot)
+  const manifest = readBeta20AcceptanceManifest(packageRoot)
   let plan
   let argv
   try {
@@ -2506,7 +2530,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     argv = publisher.createCanonicalPublisherArgs({
       dryRun: true,
       distTag: "staging",
-      tarballPath: "/private/canonical/persona-harness-0.8.0-beta.19.tgz",
+      tarballPath: "/private/canonical/persona-harness-0.8.0-beta.20.tgz",
     })
   } catch {
     throw new Error(`${label} canonical package publisher handoff contract is invalid`)
@@ -2519,7 +2543,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     || !Array.isArray(argv)
     || argv.join("\u0000") !== [
       "publish",
-      "/private/canonical/persona-harness-0.8.0-beta.19.tgz",
+      "/private/canonical/persona-harness-0.8.0-beta.20.tgz",
       "--access",
       "public",
       "--tag",
@@ -2535,7 +2559,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
 function assertExternalAttestationCommandPlan(packageRoot, cwd, label) {
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-attestation.mjs")
   for (const script of [
-    "consumer-authority-beta19-acceptance-schema.mjs",
+    "consumer-authority-beta20-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
     "preflight-consumer-authority-external-attestation.mjs",
   ]) {
@@ -2577,7 +2601,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label) {
 async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-artifact-transport.mjs")
   for (const script of [
-    "consumer-authority-beta19-acceptance-schema.mjs",
+    "consumer-authority-beta20-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
     "consumer-authority-external-observer-boundary.mjs",
     "preflight-consumer-authority-external-artifact-transport.mjs",
@@ -2620,7 +2644,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readBeta19AcceptanceManifest(packageRoot)
+  const manifest = readBeta20AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
@@ -2873,6 +2897,273 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
     ) {
       throw new Error(`${label} authority ${candidate.id} mismatch retained evidence or reflected fixture state`)
     }
+  }
+  await assertAuthorityFetchChildBoundary(packageRoot, label)
+}
+
+async function assertAuthorityFetchChildBoundary(packageRoot, label) {
+  const runtimeRoot = mkdtempSync(join(temporaryRoot, "authority-fetch-child-runtime-"))
+  const projectDir = mkdtempSync(join(temporaryRoot, "authority-fetch-child-project-"))
+  const childFixturePath = join(runtimeRoot, "authority-fetch-child-fixture.json")
+  const childAuditPath = join(runtimeRoot, "authority-fetch-child-audit")
+  const tokenMarker = "ghp_authority_fetch_child_probe"
+  try {
+    cpSync(join(packageRoot, "dist"), join(runtimeRoot, "dist"), { dereference: true, recursive: true })
+    cpSync(join(packageRoot, "native"), join(runtimeRoot, "native"), { dereference: true, recursive: true })
+    cpSync(join(packageRoot, "scripts"), join(runtimeRoot, "scripts"), { dereference: true, recursive: true })
+    copyFileSync(join(packageRoot, "package.json"), join(runtimeRoot, "package.json"))
+    writeAuthorityFetchChildWorker(runtimeRoot, childFixturePath, childAuditPath)
+    writeFileSync(join(projectDir, "README.md"), "# authority fetch child boundary\n")
+    initializeFixtureGit(projectDir, `${label} authority fetch child`, {
+      email: "authority-fetch@example.invalid",
+      message: "authority fetch child fixture",
+      name: "Authority Fetch",
+    })
+
+    const moduleRoot = join(runtimeRoot, "dist", "cli")
+    const [
+      artifactStore,
+      command,
+      enrollmentStore,
+      producer,
+      version,
+    ] = await Promise.all([
+      import(pathToFileURL(join(moduleRoot, "authority-artifact-store.js")).href),
+      import(pathToFileURL(join(moduleRoot, "authority-command.js")).href),
+      import(pathToFileURL(join(moduleRoot, "authority-enrollment.js")).href),
+      import(pathToFileURL(join(moduleRoot, "project-finish-attestation-producer.js")).href),
+      import(pathToFileURL(join(moduleRoot, "version.js")).href),
+    ])
+    const sourceHead = runCommand(projectDir, "git", ["rev-parse", "HEAD"]).stdout.trim()
+    const enrollment = enrollmentStore.authorityEnrollmentFromReadback({
+      callerWorkflowPath: MODELED_AUTHORITY_TOPOLOGY.callerWorkflowPath,
+      repositoryId: MODELED_AUTHORITY_TOPOLOGY.repositoryId,
+      repositorySlug: MODELED_AUTHORITY_TOPOLOGY.repositorySlug,
+      reusableWorkflowSha: MODELED_AUTHORITY_TOPOLOGY.reusableWorkflowSha,
+    })
+    if (enrollment === undefined) throw new Error(`${label} authority child enrollment fixture did not parse`)
+    const produced = producer.createProjectFinishAttestationProducerArtifacts({
+      buildArtifactDigest: `sha256:${"a".repeat(64)}`,
+      callerWorkflowRef: `${enrollment.repositorySlug}/.github/workflows/${enrollment.callerWorkflowPath}@refs/heads/main`,
+      callerWorkflowSha: sourceHead,
+      issuedAt: "2026-08-02T00:00:00.000Z",
+      phVersion: version.personaHarnessVersion(),
+      repository: { id: enrollment.repositoryId, slug: enrollment.repositorySlug, visibility: "public" },
+      reusableWorkflowSha: enrollment.reusableWorkflowSha,
+      runAttempt: 1,
+      runId: "30470000000",
+      source: {
+        head: sourceHead,
+        identity: {
+          contentDigest: `sha256:${"b".repeat(64)}`,
+          entryCount: 1,
+          exclusions: [".git/**", ".gradle/**", "build/**", "node_modules/**", "<configured-evidence>/**"],
+          gitStatusDigest: `sha256:${"c".repeat(64)}`,
+          repositoryHead: sourceHead,
+          schemaVersion: "source-identity.1",
+          trackedEntryCount: 1,
+          trackedIndexDigest: `sha256:${"d".repeat(64)}`,
+          untrackedEntryCount: 0,
+        },
+        root: ".",
+      },
+      test: {
+        count: 1,
+        junitDigest: `sha256:${"e".repeat(64)}`,
+        passed: 1,
+        skipped: 0,
+      },
+    })
+    const archive = authorityArtifactArchive({
+      "bundle.json": Buffer.from(JSON.stringify(produced.statement), "utf8"),
+      "predicate.json": Buffer.from(JSON.stringify(produced.predicate), "utf8"),
+      "receipt.json": produced.receiptBytes,
+    })
+    const assessment = {
+      authorityEligible: true,
+      consumptionState: "unconsumed",
+      decision: "trusted",
+      diagnostics: [],
+      receipt: produced.receipt,
+      state: "trusted",
+      summary: "modeled-authority-fetch-child",
+    }
+    const expectedInput = {
+      callerWorkflowPath: enrollment.callerWorkflowPath,
+      repositoryId: enrollment.repositoryId,
+      repositorySlug: enrollment.repositorySlug,
+      sourceHead,
+    }
+
+    writeAuthorityFetchChildFixture(childFixturePath, {
+      expectedInput,
+      output: JSON.stringify({
+        archive: archive.toString("base64"),
+        artifactDigest: `sha256:${sha256(archive)}`,
+        artifactId: 710000017,
+        ok: true,
+        runId: "30470000000",
+      }),
+      status: 0,
+    })
+    const successStore = mkdtempSync(join(temporaryRoot, "authority-fetch-child-success-"))
+    if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot: successStore })) {
+      throw new Error(`${label} authority child success enrollment did not persist`)
+    }
+    const success = command.runAuthorityCommand(["fetch", "github", "--json"], {
+      artifactInspector: () => assessment,
+      githubToken: tokenMarker,
+      projectDir,
+      storeRoot: successStore,
+    })
+    const successPayload = JSON.parse(success.stdout)
+    const childAudit = readAuthorityFetchChildAudit(childAuditPath)
+    const successChecks = {
+      child: childAudit === "valid",
+      noDiagnostic: successPayload?.diagnostic === undefined,
+      noProjectReflection: !`${success.stdout}${success.stderr}`.includes(projectDir),
+      noTokenReflection: !`${success.stdout}${success.stderr}`.includes(tokenMarker),
+      state: successPayload?.state === "trusted",
+      status: success.status === 0,
+      stored: artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot: successStore }).state === "ready",
+      unconsumed: successPayload?.consumptionState === "unconsumed",
+    }
+    if (!Object.values(successChecks).every(Boolean)) {
+      throw new Error(`${label} authority child success check failed: ${JSON.stringify({ ...successChecks, childAudit })}`)
+    }
+
+    for (const diagnostic of [
+      "authority-fetch-invalid",
+      "authority-fetch-policy",
+      "authority-fetch-evidence",
+      "authority-fetch-network",
+    ]) {
+      writeAuthorityFetchChildFixture(childFixturePath, {
+        expectedInput,
+        output: JSON.stringify({ code: diagnostic, ok: false }),
+        status: 1,
+      })
+      const storeRoot = mkdtempSync(join(temporaryRoot, `authority-fetch-child-${diagnostic}-`))
+      if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot })) {
+        throw new Error(`${label} authority child ${diagnostic} enrollment did not persist`)
+      }
+      const blocked = command.runAuthorityCommand(["fetch", "github", "--json"], {
+        githubToken: tokenMarker,
+        projectDir,
+        storeRoot,
+      })
+      const payload = JSON.parse(blocked.stdout)
+      if (
+        blocked.status !== 1
+        || payload?.state !== "missing"
+        || payload?.diagnostic !== diagnostic
+        || artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state !== "missing"
+        || !hasAuthorityFetchChildAudit(childAuditPath)
+        || `${blocked.stdout}${blocked.stderr}`.includes(tokenMarker)
+        || `${blocked.stdout}${blocked.stderr}`.includes(projectDir)
+      ) {
+        throw new Error(`${label} authority child ${diagnostic} did not fail closed without reflection`)
+      }
+    }
+
+    writeAuthorityFetchChildFixture(childFixturePath, {
+      expectedInput,
+      output: JSON.stringify({
+        code: "authority-fetch-network",
+        error: "authority-fetch-error-marker",
+        ok: false,
+        path: "/private/authority-fetch-path-marker",
+        token: "authority-fetch-token-marker",
+        url: "https://example.invalid/authority-fetch-url-marker",
+      }),
+      status: 1,
+    })
+    const malformedStore = mkdtempSync(join(temporaryRoot, "authority-fetch-child-malformed-"))
+    if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot: malformedStore })) {
+      throw new Error(`${label} authority child malformed enrollment did not persist`)
+    }
+    const malformed = command.runAuthorityCommand(["fetch", "github", "--json"], {
+      githubToken: tokenMarker,
+      projectDir,
+      storeRoot: malformedStore,
+    })
+    const malformedPayload = JSON.parse(malformed.stdout)
+    if (
+      malformed.status !== 1
+      || malformedPayload?.state !== "missing"
+      || malformedPayload?.diagnostic !== undefined
+      || artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot: malformedStore }).state !== "missing"
+      || !hasAuthorityFetchChildAudit(childAuditPath)
+      || [
+        "authority-fetch-error-marker",
+        "/private/authority-fetch-path-marker",
+        "authority-fetch-token-marker",
+        "https://example.invalid/authority-fetch-url-marker",
+      ].some((marker) => `${malformed.stdout}${malformed.stderr}`.includes(marker))
+      || `${malformed.stdout}${malformed.stderr}`.includes(tokenMarker)
+      || `${malformed.stdout}${malformed.stderr}`.includes(projectDir)
+    ) {
+      throw new Error(`${label} malformed authority child output did not remain non-reflective and missing`)
+    }
+  } finally {
+    rmSync(runtimeRoot, { force: true, recursive: true })
+    rmSync(projectDir, { force: true, recursive: true })
+  }
+}
+
+function writeAuthorityFetchChildWorker(runtimeRoot, fixturePath, auditPath) {
+  writeFileSync(join(runtimeRoot, "scripts", "fetch-consumer-authority-artifact.mjs"), [
+    'import { readFileSync, writeFileSync } from "node:fs";',
+    'const chunks = [];',
+    'process.stdin.on("data", (chunk) => chunks.push(chunk));',
+    'process.stdin.on("end", () => {',
+    `  const fixture = JSON.parse(readFileSync(${JSON.stringify(fixturePath)}, "utf8"));`,
+    '  const actual = Buffer.concat(chunks).toString("utf8");',
+    '  const allowed = process.platform === "darwin"',
+    '    ? ["LANG", "LC_ALL", "PH_AUTHORITY_GITHUB_TOKEN", "__CF_USER_TEXT_ENCODING"]',
+    '    : ["LANG", "LC_ALL", "PH_AUTHORITY_GITHUB_TOKEN"];',
+    '  const environmentIsBounded = Object.keys(process.env).every((key) => allowed.includes(key))',
+    '    && typeof process.env.PH_AUTHORITY_GITHUB_TOKEN === "string";',
+    `  if (actual !== JSON.stringify(fixture.expectedInput)) { writeFileSync(${JSON.stringify(auditPath)}, "input"); process.exitCode = 1; return; }`,
+    `  if (!environmentIsBounded) { writeFileSync(${JSON.stringify(auditPath)}, "environment"); process.exitCode = 1; return; }`,
+    `  writeFileSync(${JSON.stringify(auditPath)}, "valid");`,
+    '  process.stdout.write(fixture.output);',
+    '  process.exitCode = fixture.status;',
+    '});',
+    '',
+  ].join("\n"))
+}
+
+function writeAuthorityFetchChildFixture(path, fixture) {
+  writeFileSync(path, `${JSON.stringify(fixture)}\n`)
+}
+
+function hasAuthorityFetchChildAudit(path) {
+  return readAuthorityFetchChildAudit(path) === "valid"
+}
+
+function readAuthorityFetchChildAudit(path) {
+  if (!existsSync(path)) return "absent"
+  const value = readFileSync(path, "utf8")
+  return ["environment", "input", "valid"].includes(value) ? value : "invalid"
+}
+
+function boundedAuthorityFetchResult(value) {
+  try {
+    const parsed = JSON.parse(value)
+    if (!isRecord(parsed)) return "invalid"
+    const state = typeof parsed.state === "string" ? parsed.state : "invalid"
+    const diagnostic = [
+      "authority-fetch-evidence",
+      "authority-fetch-invalid",
+      "authority-fetch-network",
+      "authority-fetch-policy",
+    ].includes(parsed.diagnostic)
+      ? parsed.diagnostic
+      : undefined
+    return diagnostic === undefined ? { state } : { diagnostic, state }
+  } catch {
+    return "invalid"
   }
 }
 

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { parseFetchedArtifact } from "../src/cli/authority-fetch-worker.js"
+import {
+  parseGithubAuthorityFetchDiagnostic,
+  parseFetchedArtifact,
+} from "../src/cli/authority-fetch-worker.js"
 
 describe("consumer authority fetch worker output", () => {
   it("accepts only the fixed bounded child output shape", () => {
@@ -28,5 +31,30 @@ describe("consumer authority fetch worker output", () => {
     JSON.stringify({ archive: Buffer.from("archive").toString("base64"), artifactDigest: `sha256:${"a".repeat(64)}`, ok: false, runId: "10", secret: "secret-marker" }),
   ])("blocks malformed child output without carrying supplied fields", (value) => {
     expect(parseFetchedArtifact(value)).toBeUndefined()
+  })
+
+  it.each([
+    "authority-fetch-invalid",
+    "authority-fetch-policy",
+    "authority-fetch-evidence",
+    "authority-fetch-network",
+  ] as const)("accepts only the fixed %s child failure envelope", (code) => {
+    expect(parseGithubAuthorityFetchDiagnostic(JSON.stringify({ code, ok: false }))).toBe(code)
+  })
+
+  it.each([
+    "not-json",
+    JSON.stringify({
+      code: "authority-fetch-network",
+      error: "error-marker",
+      ok: false,
+      path: "/private/path-marker",
+      token: "token-marker",
+      url: "https://example.invalid/url-marker",
+    }),
+    JSON.stringify({ code: "authority-fetch-unknown", ok: false }),
+    JSON.stringify({ code: "authority-fetch-network", ok: true }),
+  ])("does not carry malformed or caller-shaped child failure output", (value) => {
+    expect(parseGithubAuthorityFetchDiagnostic(value)).toBeUndefined()
   })
 })
