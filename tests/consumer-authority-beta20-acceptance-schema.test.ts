@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
@@ -11,49 +12,61 @@ import {
 } from "../scripts/consumer-authority-beta20-acceptance-schema.mjs"
 
 const repositoryRoot = process.cwd()
-const manifestPath = join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta20-acceptance.json")
+const beta20ManifestPath = join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta20-acceptance.json")
+const beta21ManifestPath = join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta21-acceptance.json")
 
 describe("consumer authority beta.20 acceptance schema", () => {
-  it("binds the fixed authenticated-fetch child envelope without changing the public missing state", () => {
-    const manifest = record(readBeta20AcceptanceManifest(repositoryRoot))
+  it("reads the legacy beta20 record only from an explicit matching package root", () => {
+    const legacyPackageRoot = mkdtempSync(join(tmpdir(), "persona-harness-beta20-acceptance-"))
+    try {
+      const legacyManifestPath = join(legacyPackageRoot, "docs", "current", "release", "consumer-authority-beta20-acceptance.json")
+      mkdirSync(join(legacyPackageRoot, "docs", "current", "release"), { recursive: true })
+      writeFileSync(join(legacyPackageRoot, "package.json"), JSON.stringify({ version: "0.8.0-beta.20" }))
+      writeFileSync(legacyManifestPath, readFileSync(beta20ManifestPath))
 
-    expect(manifest.schemaVersion).toBe(BETA20_ACCEPTANCE_SCHEMA_VERSION)
-    expect(record(manifest.package).version).toBe("0.8.0-beta.20")
-    expect(record(manifest.canonicalPackagePublisherPlan)).toMatchObject({
-      canonicalPackerRuntime: { node: "20.19.0", npm: "10.8.2" },
-      npmTrustedPublishingMinimum: { node: "22.14.0", npm: "11.5.1" },
-      preflight: { mode: "node24-npm11-exact-canonical-tarball-dry-run" },
-      publisherRuntime: { node: "24.18.0", npm: "11.16.0" },
-      registryPut: { evidence: "hosted-only" },
-    })
-    expect(record(record(manifest.packageBoundary).authoritativeBundleContract).partialCloneSourceHydration)
-      .toBe("only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs")
-    expect(record(record(manifest.packageBoundary).registryReadback)).toEqual({
-      failureEvidence: "sanitized-readback-is-uploaded-even-when-postpublish-reconciliation-blocks",
-      sourceBinding: "workflow-verified-canonical-tar",
-      unsupportedMetadata: "registry-githead-is-neither-required-nor-reflected",
-    })
-    expect(record(manifest.beta18HistoricalPublish)).toMatchObject({
-      reusableForBeta19: false,
-      version: "0.8.0-beta.18",
-    })
-    expect(record(manifest.beta19HistoricalPublish)).toEqual({
-      outcome: "published-immutable-staging-package-not-reusable-as-current-package-evidence",
-      reusableForBeta20: false,
-      version: "0.8.0-beta.19",
-    })
-    expect(record(record(manifest.authority).fetchDiagnostic)).toEqual({
-      allowedCodes: [
-        "authority-fetch-evidence",
-        "authority-fetch-invalid",
-        "authority-fetch-network",
-        "authority-fetch-policy",
-      ],
-      childEnvelope: "only-exit-one-fixed-code-ok-false",
-      persistence: "blocked-child-leaves-no-artifact-or-authority-state",
-      privacy: "no-token-path-url-or-raw-child-output",
-      publicState: "missing",
-    })
+      const manifest = record(readBeta20AcceptanceManifest(legacyPackageRoot))
+
+      expect(manifest.schemaVersion).toBe(BETA20_ACCEPTANCE_SCHEMA_VERSION)
+      expect(record(manifest.package).version).toBe("0.8.0-beta.20")
+      expect(record(manifest.canonicalPackagePublisherPlan)).toMatchObject({
+        canonicalPackerRuntime: { node: "20.19.0", npm: "10.8.2" },
+        npmTrustedPublishingMinimum: { node: "22.14.0", npm: "11.5.1" },
+        preflight: { mode: "node24-npm11-exact-canonical-tarball-dry-run" },
+        publisherRuntime: { node: "24.18.0", npm: "11.16.0" },
+        registryPut: { evidence: "hosted-only" },
+      })
+      expect(record(record(manifest.packageBoundary).authoritativeBundleContract).partialCloneSourceHydration)
+        .toBe("only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs")
+      expect(record(record(manifest.packageBoundary).registryReadback)).toEqual({
+        failureEvidence: "sanitized-readback-is-uploaded-even-when-postpublish-reconciliation-blocks",
+        sourceBinding: "workflow-verified-canonical-tar",
+        unsupportedMetadata: "registry-githead-is-neither-required-nor-reflected",
+      })
+      expect(record(manifest.beta18HistoricalPublish)).toMatchObject({
+        reusableForBeta19: false,
+        version: "0.8.0-beta.18",
+      })
+      expect(record(manifest.beta19HistoricalPublish)).toEqual({
+        outcome: "published-immutable-staging-package-not-reusable-as-current-package-evidence",
+        reusableForBeta20: false,
+        version: "0.8.0-beta.19",
+      })
+      expect(record(record(manifest.authority).fetchDiagnostic)).toEqual({
+        allowedCodes: [
+          "authority-fetch-evidence",
+          "authority-fetch-invalid",
+          "authority-fetch-network",
+          "authority-fetch-policy",
+        ],
+        childEnvelope: "only-exit-one-fixed-code-ok-false",
+        persistence: "blocked-child-leaves-no-artifact-or-authority-state",
+        privacy: "no-token-path-url-or-raw-child-output",
+        publicState: "missing",
+      })
+      expectSchemaBlock(() => readBeta20AcceptanceManifest(repositoryRoot), "active beta21 package root")
+    } finally {
+      rmSync(legacyPackageRoot, { force: true, recursive: true })
+    }
   })
 
   it("rejects publisher runtime, argv, and historical registry-readback semantic drift", () => {
@@ -89,11 +102,15 @@ describe("consumer authority beta.20 acceptance schema", () => {
       () => parseBeta20AcceptanceManifest(canonicalManifest(), "0.8.0-beta.19"),
       "foreign package version",
     )
+    expectSchemaBlock(
+      () => parseBeta20AcceptanceManifest(record(JSON.parse(readFileSync(beta21ManifestPath, "utf8"))), "0.8.0-beta.21"),
+      "beta21 record",
+    )
   })
 })
 
 function canonicalManifest(): Record<string, unknown> {
-  return structuredClone(record(JSON.parse(readFileSync(manifestPath, "utf8"))))
+  return structuredClone(record(JSON.parse(readFileSync(beta20ManifestPath, "utf8"))))
 }
 
 function expectSchemaBlock(action: () => void, label: string): void {
