@@ -34,7 +34,6 @@ export type RegistryMetadata = {
 export type RegistryCheck = {
   readonly distTag: string
   readonly distTagsText: string
-  readonly expectedHead: string
   readonly expectedVersion: string
   readonly metadata: RegistryMetadata
 }
