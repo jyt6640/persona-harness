@@ -187,6 +187,15 @@ describe.sequential("project finish producer OIDC capability bridge", () => {
     expect(existsSync(join(fixture.caller, ".project-finish-attestation-artifacts"))).toBe(false)
   })
 
+  it("disables detached maintenance in nested topology Git fixtures", () => {
+    const fixture = createReusableActionTopology()
+
+    expect(readGitConfig(fixture.caller, "gc.auto")).toBe("0")
+    expect(readGitConfig(fixture.caller, "maintenance.auto")).toBe("false")
+    expect(readGitConfig(fixture.producerRoot, "gc.auto")).toBe("0")
+    expect(readGitConfig(fixture.producerRoot, "maintenance.auto")).toBe("false")
+  })
+
   it("does not infer the nested caller root from the github-script current directory", async () => {
     const fixture = createReusableActionTopology()
     const result = await withRunnerCwd(fixture, () => runProjectFinishAttestationBuilder({
@@ -476,11 +485,7 @@ function createNestedCaller(caller: string): void {
     ].join("\n"),
   )
   chmodSync(join(caller, "gradlew"), 0o755)
-  execFileSync("git", ["init", "-q"], { cwd: caller })
-  execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: caller })
-  execFileSync("git", ["config", "user.name", "PH Test"], { cwd: caller })
-  execFileSync("git", ["add", "."], { cwd: caller })
-  execFileSync("git", ["commit", "-qm", "nested caller"], { cwd: caller })
+  initializeTopologyGitFixture(caller, "nested caller")
 }
 
 function copyProducerRuntime(producerRoot: string): void {
@@ -497,13 +502,24 @@ function runtime(): ProjectFinishProducerRuntimeStaging {
 }
 
 function initializeProducerCheckout(producerRoot: string): string {
-  execFileSync("git", ["init", "-q"], { cwd: producerRoot })
-  execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: producerRoot })
-  execFileSync("git", ["config", "user.name", "PH Test"], { cwd: producerRoot })
-  execFileSync("git", ["add", "."], { cwd: producerRoot })
-  execFileSync("git", ["commit", "-qm", "immutable producer"], { cwd: producerRoot })
+  const sha = initializeTopologyGitFixture(producerRoot, "immutable producer")
   execFileSync("git", ["remote", "add", "origin", "https://github.com/jyt6640/persona-harness.git"], { cwd: producerRoot })
-  return execFileSync("git", ["rev-parse", "HEAD"], { cwd: producerRoot, encoding: "utf8" }).trim()
+  return sha
+}
+
+function initializeTopologyGitFixture(directory: string, message: string): string {
+  execFileSync("git", ["init", "-q"], { cwd: directory })
+  execFileSync("git", ["config", "gc.auto", "0"], { cwd: directory })
+  execFileSync("git", ["config", "maintenance.auto", "false"], { cwd: directory })
+  execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: directory })
+  execFileSync("git", ["config", "user.name", "PH Test"], { cwd: directory })
+  execFileSync("git", ["add", "."], { cwd: directory })
+  execFileSync("git", ["commit", "-qm", message], { cwd: directory })
+  return execFileSync("git", ["rev-parse", "HEAD"], { cwd: directory, encoding: "utf8" }).trim()
+}
+
+function readGitConfig(directory: string, key: "gc.auto" | "maintenance.auto"): string {
+  return execFileSync("git", ["config", "--get", key], { cwd: directory, encoding: "utf8" }).trim()
 }
 
 function actionEnvironment(fixture: ReturnType<typeof createReusableActionTopology>): NodeJS.ProcessEnv {

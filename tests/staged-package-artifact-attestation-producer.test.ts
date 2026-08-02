@@ -265,6 +265,8 @@ function createDigest(algorithm: "sha1" | "sha512", value: Buffer, encoding: "ba
 function initializeProducerWorkspace(workspace: string): string {
   writeFileSync(join(workspace, "fixture.txt"), "fixture\n")
   execFileSync("git", ["init", "-q"], { cwd: workspace })
+  execFileSync("git", ["config", "gc.auto", "0"], { cwd: workspace })
+  execFileSync("git", ["config", "maintenance.auto", "false"], { cwd: workspace })
   execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: workspace })
   execFileSync("git", ["config", "user.name", "PH Test"], { cwd: workspace })
   execFileSync("git", ["add", "fixture.txt"], { cwd: workspace })

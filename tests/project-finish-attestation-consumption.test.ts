@@ -339,6 +339,8 @@ function statementForVersion(phVersion: string): Record<string, unknown> {
 function initializeGitProject(projectDir: string): string {
   writeFileSync(join(projectDir, "README.md"), "consumer authority fixture\n")
   execFileSync("git", ["init", "-q"], { cwd: projectDir })
+  execFileSync("git", ["config", "gc.auto", "0"], { cwd: projectDir })
+  execFileSync("git", ["config", "maintenance.auto", "false"], { cwd: projectDir })
   execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
   execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
   execFileSync("git", ["add", "README.md"], { cwd: projectDir })

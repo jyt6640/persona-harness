@@ -801,11 +801,11 @@ function createProjectFinishProducerActionTopology(packageRoot, runner) {
   for (const path of ["dist", "native", "scripts", "package.json"]) {
     cpSync(join(packageRoot, path), join(producer, path), { recursive: true })
   }
-  requireSuccess("project finish action producer Git init", runCommand(producer, "git", ["init", "-q"]))
-  requireSuccess("project finish action producer Git email", runCommand(producer, "git", ["config", "user.email", "ph@example.invalid"]))
-  requireSuccess("project finish action producer Git name", runCommand(producer, "git", ["config", "user.name", "PH Test"]))
-  requireSuccess("project finish action producer Git add", runCommand(producer, "git", ["add", "."]))
-  requireSuccess("project finish action producer Git commit", runCommand(producer, "git", ["commit", "-qm", "immutable producer"]))
+  initializeFixtureGit(producer, "project finish action producer", {
+    email: "ph@example.invalid",
+    message: "immutable producer",
+    name: "PH Test",
+  })
   requireSuccess(
     "project finish action producer origin",
     runCommand(producer, "git", ["remote", "add", "origin", "https://github.com/jyt6640/persona-harness.git"]),
@@ -1858,11 +1858,11 @@ function createLifecycleStateIntakeFixture(projectDir) {
   writeFileSync(join(projectDir, "src", "main", "java", "App.java"), "class App {}\n")
   writeFileSync(join(projectDir, "gradlew"), "#!/bin/sh\nprintf '%s\\n' 'BUILD SUCCESSFUL'\n")
   chmodSync(join(projectDir, "gradlew"), 0o755)
-  requireSuccess("lifecycle fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
-  requireSuccess("lifecycle fixture Git email", runCommand(projectDir, "git", ["config", "user.email", "fixture@example.invalid"]))
-  requireSuccess("lifecycle fixture Git name", runCommand(projectDir, "git", ["config", "user.name", "Fixture"]))
-  requireSuccess("lifecycle fixture Git add", runCommand(projectDir, "git", ["add", "."]))
-  requireSuccess("lifecycle fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "lifecycle fixture"]))
+  initializeFixtureGit(projectDir, "lifecycle fixture", {
+    email: "fixture@example.invalid",
+    message: "lifecycle fixture",
+    name: "Fixture",
+  })
 }
 
 function lifecycleStateFileNames() {
@@ -2312,12 +2312,12 @@ function createCooperativeGradleFixture(projectDir) {
       "",
     ].join("\n"),
   )
-  requireSuccess("installed fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
-  requireSuccess("installed fixture Git config email", runCommand(projectDir, "git", ["config", "user.email", "ph@example.invalid"]))
-  requireSuccess("installed fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
-  requireSuccess("installed fixture Git config autocrlf", runCommand(projectDir, "git", ["config", "core.autocrlf", "false"]))
-  requireSuccess("installed fixture Git add", runCommand(projectDir, "git", ["add", "."]))
-  requireSuccess("installed fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "installed fixture"]))
+  initializeFixtureGit(projectDir, "installed fixture", {
+    autoCrlf: "false",
+    email: "ph@example.invalid",
+    message: "installed fixture",
+    name: "PH Test",
+  })
 }
 
 function assertCooperativeLifecycleState(projectDir, label) {
@@ -3023,11 +3023,33 @@ function createProjectFinishProducerFixture(projectDir, profileMode) {
       `${JSON.stringify({ marker: "sk-live-aaaaaaaaaaaaaaaaaaaaaaaa", ...cooperativeProfile() })}\n`,
     )
   }
-  requireSuccess("installed producer fixture Git init", runCommand(projectDir, "git", ["init", "-q"]))
-  requireSuccess("installed producer fixture Git config email", runCommand(projectDir, "git", ["config", "user.email", "ph@example.invalid"]))
-  requireSuccess("installed producer fixture Git config name", runCommand(projectDir, "git", ["config", "user.name", "PH Test"]))
-  requireSuccess("installed producer fixture Git add", runCommand(projectDir, "git", ["add", "."]))
-  requireSuccess("installed producer fixture Git commit", runCommand(projectDir, "git", ["commit", "-qm", "producer fixture"]))
+  initializeFixtureGit(projectDir, "installed producer fixture", {
+    email: "ph@example.invalid",
+    message: "producer fixture",
+    name: "PH Test",
+  })
+}
+
+function initializeFixtureGit(projectDir, label, { autoCrlf, email, message, name }) {
+  requireSuccess(`${label} Git init`, runCommand(projectDir, "git", ["init", "-q"]))
+  requireSuccess(`${label} Git disable automatic gc`, runCommand(projectDir, "git", ["config", "gc.auto", "0"]))
+  requireSuccess(`${label} Git disable automatic maintenance`, runCommand(projectDir, "git", ["config", "maintenance.auto", "false"]))
+  requireSuccess(`${label} Git email`, runCommand(projectDir, "git", ["config", "user.email", email]))
+  requireSuccess(`${label} Git name`, runCommand(projectDir, "git", ["config", "user.name", name]))
+  if (autoCrlf !== undefined) {
+    requireSuccess(`${label} Git autocrlf`, runCommand(projectDir, "git", ["config", "core.autocrlf", autoCrlf]))
+  }
+  requireSuccess(`${label} Git add`, runCommand(projectDir, "git", ["add", "."]))
+  requireSuccess(`${label} Git commit`, runCommand(projectDir, "git", ["commit", "-qm", message]))
+  requireFixtureGitConfig(projectDir, label, "gc.auto", "0")
+  requireFixtureGitConfig(projectDir, label, "maintenance.auto", "false")
+}
+
+function requireFixtureGitConfig(projectDir, label, key, expected) {
+  const result = runCommand(projectDir, "git", ["config", "--get", key])
+  if (result.status !== 0 || result.stdout !== `${expected}\n`) {
+    throw new Error(`${label} Git fixture lifecycle configuration failed`)
+  }
 }
 
 function cooperativeProfile() {

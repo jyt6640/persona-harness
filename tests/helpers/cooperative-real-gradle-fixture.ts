@@ -29,6 +29,8 @@ export function createRealCooperativeGradleFixture(): RealCooperativeGradleFixtu
     writeBuildFiles(projectDir)
     writeCurrentWorkflowLifecycleLoopStates(projectDir)
     execFileSync("git", ["init", "-q"], { cwd: projectDir })
+    execFileSync("git", ["config", "gc.auto", "0"], { cwd: projectDir })
+    execFileSync("git", ["config", "maintenance.auto", "false"], { cwd: projectDir })
     execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: projectDir })
     execFileSync("git", ["config", "user.name", "PH Test"], { cwd: projectDir })
     execFileSync("git", ["config", "core.autocrlf", "false"], { cwd: projectDir })
