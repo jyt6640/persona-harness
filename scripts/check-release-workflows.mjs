@@ -267,10 +267,14 @@ const requirements = [
     text.includes("timeout-minutes: 45")
     && text.includes("release-registry-readback.mjs")
     && text.includes('--package-facts "$CANONICAL_PACKAGE_FACTS"')
-    && text.includes("registry-readback.json")
+    && text.includes('registry_readback_path="${RUNNER_TEMP}/persona-harness-registry-readback.json"')
+    && text.includes('path: ${{ runner.temp }}/persona-harness-registry-readback.json')
     && text.includes("id: registry-evidence")
+    && text.includes("if: always()")
     && text.includes("if-no-files-found: error")
     && text.includes("steps.registry-evidence.outputs.artifact-digest")
+    && text.includes("workflow source head")
+    && !text.includes("- gitHead: ${EXPECTED_GIT_HEAD}")
     && !text.includes("npm audit signatures")],
   ["publish canonical package tar", ".github/workflows/publish.yml", (text) =>
     text.includes("node-version: 20.19.0")

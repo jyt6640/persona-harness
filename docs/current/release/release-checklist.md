@@ -32,14 +32,14 @@ Check:
 
 - `package.json`, `package-lock.json`, `CHANGELOG.md`, the current release note, and the develop README/current-status record all name the same intended release version.
 - The current release note and CHANGELOG name the package/source type for every cited smoke result: registry package, local tarball, current tarball, or workspace install.
-- Current-tarball or workspace smoke is never described as published registry behavior. Registry behavior may be claimed only after `npm view persona-harness@<version> version gitHead dist.shasum --json` and `npm dist-tag ls persona-harness` confirm the published package and dist-tag state.
+- Current-tarball or workspace smoke is never described as published registry behavior. Registry behavior may be claimed only after the protected-main and immutable-tag preflight, `npm view persona-harness@<version> version dist.shasum dist.integrity --json`, `npm dist-tag ls persona-harness`, and a downloaded-tarball SHA-256/package-content-identity comparison confirm the published package and dist-tag state.
 - `CHANGELOG.md` and the release note both distinguish surface-verified smoke from full generated-app behavior verification.
 - The release note explicitly says generated app product quality is not certified unless there is a separate, explicit product-quality certification decision.
 - Registry state is recorded when relevant:
-  - npm dist-tag/version checked;
-  - registry `gitHead` checked;
-  - current `HEAD` checked;
-  - any registry `gitHead` / current `HEAD` mismatch recorded with whether smoke used the registry package, local tarball, or workspace install.
+  - protected workflow source head and immutable matching tag checked before canonical packing;
+  - npm dist-tag/version, SHA-1, and SRI checked;
+  - downloaded registry tarball raw SHA-256 and package-content identity checked against the frozen canonical facts;
+  - any registry-byte or channel mismatch recorded with whether smoke used the registry package, local tarball, or workspace install.
 - Develop docs are checked for stale or missing smoke summaries when release notes cite those smoke results.
 - If `/Users/yongtae/Documents/하네스/Persona-Harness/develop` is not a git worktree, the release report records that develop-doc changes have no commit.
 - If develop docs are a git worktree, the release report records the commit hash or the explicit no-commit reason.
@@ -84,17 +84,18 @@ npm publish --dry-run --tag <dist-tag>
 
 Use this order for prerelease refreshes:
 
-1. Publish through `.github/workflows/publish.yml` with
+1. Push the protected release-preparation commit to `main` and create the
+   separately approved immutable matching `v${package.json.version}` tag.
+2. Publish through `.github/workflows/publish.yml` with
    `dist_tag=staging` and `approval_scope=staging-only` after QA release GO.
-2. Verify the registry package with `npm view persona-harness@<version> version gitHead dist.shasum --json`.
-3. Verify dist-tags with `npm dist-tag ls persona-harness`.
-4. Push `main` and the matching `v${package.json.version}` tag only after registry verification succeeds.
+3. Verify the registry package with `npm view persona-harness@<version> version dist.shasum dist.integrity --json` and a downloaded tarball SHA-256/package-content-identity comparison against the frozen canonical facts.
+4. Verify dist-tags with `npm dist-tag ls persona-harness`.
 5. Complete the staged installed-package gate before any separately approved
    `next` promotion dispatch.
 
-Tag pushes do not create GitHub releases and must not be used as the npm
-publish trigger, because npm publish happens through the trusted publishing
-workflow and must be verified before tag creation.
+The immutable matching tag is a required publish precondition, not a tag
+movement performed by the publish workflow. Tag pushes do not create GitHub
+releases and must not be used as the npm publish trigger.
 
 Expected:
 

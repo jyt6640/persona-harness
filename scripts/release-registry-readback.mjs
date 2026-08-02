@@ -42,7 +42,6 @@ export function assessReleaseRegistryReadback(input) {
   if (tarball === undefined) diagnostics.add("release-registry-tarball")
   if (expectedVersion !== undefined && !hasExactTag(value.distTagsText, distTag, expectedVersion)) diagnostics.add("release-registry-dist-tag")
   if (metadata !== undefined && expectedVersion !== undefined && metadata.version !== expectedVersion) diagnostics.add("release-registry-version")
-  if (metadata !== undefined && expectedHead !== undefined && metadata.gitHead !== expectedHead) diagnostics.add("release-registry-git-head")
   if (metadata !== undefined && tarball !== undefined && metadata.shasum !== tarball.sha1) diagnostics.add("release-registry-shasum")
   if (metadata !== undefined && tarball !== undefined && metadata.integrity !== tarball.integrity) diagnostics.add("release-registry-integrity")
   if (tarball !== undefined && expectedContentIdentity !== undefined && !isDeepStrictEqual(tarball.contentIdentity, expectedContentIdentity)) {
@@ -60,7 +59,6 @@ export function assessReleaseRegistryReadback(input) {
     registry: metadata === undefined || tarball === undefined
       ? unavailableRegistry()
       : {
-          gitHead: metadata.gitHead,
           integrity: metadata.integrity,
           shasum: metadata.shasum,
           tarballSha256: tarball.sha256,
@@ -68,8 +66,9 @@ export function assessReleaseRegistryReadback(input) {
           version: metadata.version,
         },
     registryMutation: "not-performed",
-    schemaVersion: "release-registry-readback.3",
+    schemaVersion: "release-registry-readback.4",
     secretRemovalConfirmed: true,
+    sourceBinding: expectedHead === undefined ? "unavailable" : "workflow-verified-canonical-tar",
     sourceHead: expectedHead ?? "unavailable",
     status: diagnostics.size === 0 ? "passed" : "blocked",
     version: expectedVersion ?? "unavailable",
@@ -117,7 +116,6 @@ function readMetadata(root, version, environment) {
     "view",
     `${PACKAGE_NAME}@${version}`,
     "version",
-    "gitHead",
     "dist.shasum",
     "dist.integrity",
     "--json",
@@ -202,7 +200,6 @@ function hasExactTag(value, tag, version) {
 
 function safeMetadata(value) {
   const metadata = record(value)
-  const gitHead = safeCommit(metadata.gitHead)
   const integrity = typeof metadata["dist.integrity"] === "string" && INTEGRITY.test(metadata["dist.integrity"])
     ? metadata["dist.integrity"]
     : undefined
@@ -210,9 +207,9 @@ function safeMetadata(value) {
     ? metadata["dist.shasum"].toLowerCase()
     : undefined
   const version = safeVersion(metadata.version)
-  return gitHead === undefined || integrity === undefined || shasum === undefined || version === undefined
+  return integrity === undefined || shasum === undefined || version === undefined
     ? undefined
-    : { gitHead, integrity, shasum, version }
+    : { integrity, shasum, version }
 }
 
 function safeTarball(value) {
@@ -257,7 +254,6 @@ function isCompatibleChannel(tag, version) {
 
 function unavailableRegistry() {
   return {
-    gitHead: "unavailable",
     integrity: "unavailable",
     shasum: "unavailable",
     tarballSha256: "unavailable",
@@ -350,8 +346,13 @@ function hasExactKeys(value, keys) {
 }
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const expected = parseReleaseRegistryReadbackArguments(process.argv.slice(2))
-  const result = expected === undefined ? assessReleaseRegistryReadback({}) : readReleaseRegistryReadback(process.cwd(), expected)
+  let result
+  try {
+    const expected = parseReleaseRegistryReadbackArguments(process.argv.slice(2))
+    result = expected === undefined ? assessReleaseRegistryReadback({}) : readReleaseRegistryReadback(process.cwd(), expected)
+  } catch {
+    result = assessReleaseRegistryReadback({})
+  }
   process.stdout.write(`${JSON.stringify(result)}\n`)
   if (result.status !== "passed") process.exitCode = 1
 }

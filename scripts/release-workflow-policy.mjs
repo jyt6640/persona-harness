@@ -85,12 +85,9 @@ function parseStrictSemver(value) {
   return { prerelease: match.groups?.["prerelease"] !== undefined }
 }
 
-export function checkRegistryMetadata({ distTag, distTagsText, expectedHead, expectedVersion, metadata }) {
+export function checkRegistryMetadata({ distTag, distTagsText, expectedVersion, metadata }) {
   if (metadata.version !== expectedVersion) {
     return failure("registry-version", `Registry version ${metadata.version} does not match ${expectedVersion}.`)
-  }
-  if (metadata.gitHead !== expectedHead) {
-    return failure("registry-git-head", `Registry gitHead ${metadata.gitHead} does not match ${expectedHead}.`)
   }
   if (typeof metadata["dist.shasum"] !== "string" || metadata["dist.shasum"].length === 0) {
     return failure("registry-shasum", "Registry metadata is missing dist.shasum.")
@@ -206,7 +203,6 @@ async function main() {
     printResult(checkRegistryMetadata({
       distTag: requiredArg("--dist-tag"),
       distTagsText,
-      expectedHead: requiredArg("--expected-head"),
       expectedVersion: requiredArg("--expected-version"),
       metadata,
     }))

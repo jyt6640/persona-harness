@@ -202,6 +202,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          registry_readback_path="${RUNNER_TEMP}/persona-harness-registry-readback.json"
+          test ! -e "$registry_readback_path"
           registry_readback_verified=false
           for attempt in {1..30}; do
             if node scripts/release-registry-readback.mjs \
@@ -209,7 +211,7 @@ jobs:
               --package-facts "$CANONICAL_PACKAGE_FACTS" \
               --source-head "$EXPECTED_GIT_HEAD" \
               --version "$PACKAGE_VERSION" \
-              > registry-readback.json; then
+              > "$registry_readback_path"; then
               registry_readback_verified=true
               break
             fi
@@ -217,25 +219,27 @@ jobs:
             sleep 10
           done
 
+          test -s "$registry_readback_path"
           test "$registry_readback_verified" = true
-          test -s registry-readback.json
 
       - name: Upload sanitized registry readback
         id: registry-evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: npm-registry-readback-${{ env.PACKAGE_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: registry-readback.json
+          path: ${{ runner.temp }}/persona-harness-registry-readback.json
           if-no-files-found: error
           retention-days: 30
 
       - name: Publish summary
+        if: always()
         run: |
           {
             echo "## npm publish verified"
             echo
             echo "- package: persona-harness@${PACKAGE_VERSION}"
-            echo "- gitHead: ${EXPECTED_GIT_HEAD}"
+            echo "- workflow source head: ${EXPECTED_GIT_HEAD}"
             echo "- dist-tag: ${{ inputs.dist_tag }}"
             echo "- approval scope: ${{ inputs.approval_scope }}"
             echo "- registry evidence artifact id: ${{ steps.registry-evidence.outputs.artifact-id }}"
@@ -243,6 +247,10 @@ jobs:
             echo
             echo "### Sanitized registry package readback"
             echo '```json'
-            cat registry-readback.json
+            if test -s "${RUNNER_TEMP}/persona-harness-registry-readback.json"; then
+              cat "${RUNNER_TEMP}/persona-harness-registry-readback.json"
+            else
+              echo '{"status":"blocked","diagnostics":["release-registry-readback-unavailable"]}'
+            fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

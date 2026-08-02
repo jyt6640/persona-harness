@@ -95,33 +95,42 @@ The workflow refuses unsafe tag/version combinations:
 
 ## Registry Post-Check
 
-After publish, the workflow checks npm registry metadata:
+After publish, the workflow checks npm registry metadata that npm exposes and
+the downloaded registry tarball. `gitHead` is not a required npm
+version-metadata field, so it is not treated as a registry source-identity
+assertion.
 
 ```bash
-npm view persona-harness@<version> version gitHead dist.shasum --json
+npm view persona-harness@<version> version dist.shasum dist.integrity --json
 npm dist-tag ls persona-harness
 ```
 
 Required match:
 
 - registry version equals `package.json` version;
-- registry `gitHead` equals the GitHub workflow commit SHA;
-- registry `dist.shasum` exists;
+- protected-main/tag preflight binds the workflow source head before canonical
+  package facts and the tarball are created;
+- registry `dist.shasum` and SRI equal the downloaded registry tarball;
+- the downloaded registry tarball SHA-256 and portable package-content identity
+  equal the frozen canonical package facts;
 - selected dist-tag points to the published version.
+
+The workflow records this as a `workflow-verified-canonical-tar` source
+binding: the protected workflow binds the source commit to canonical facts, and
+the registry confirms those exact published bytes. A missing or hostile metadata
+`gitHead` neither grants nor defeats that binding.
 
 ## Tag Rule
 
-Git tag creation is a separate step after registry verification.
+The matching immutable Git tag is a precondition for the publish workflow. The
+workflow verifies that the supplied existing tag resolves to the protected-main
+package commit before the canonical tarball is created. It never creates, moves,
+or accepts a different tag.
 
-Do not create or push `v${package.json.version}` before npm registry `gitHead`
-matches the release prep commit.
-
-After the publish workflow succeeds:
-
-```bash
-git tag v<version> <verified-gitHead>
-git push origin v<version>
-```
+Do not dispatch publish until the separately approved immutable
+`v${package.json.version}` tag already resolves to the protected-main package
+commit. A blocked publish/readback does not authorize moving, replacing, or
+reusing that tag.
 
 The existing `.github/workflows/release.yml` workflow can then verify the tag
 and create GitHub release notes. It is not the npm publish path.
@@ -130,13 +139,12 @@ and create GitHub release notes. It is not the npm publish path.
 
 1. Prepare the release commit.
 2. Push the release prep commit to `origin/main`.
-3. QA verifies release readiness.
-4. Run `.github/workflows/publish.yml` first with
+3. Create the separately approved immutable matching tag.
+4. QA verifies release readiness.
+5. Run `.github/workflows/publish.yml` first with
    `dist_tag=staging` and `approval_scope=staging-only`.
-5. Confirm the workflow registry post-check and the staged-package verifier
+6. Confirm the workflow registry post-check and the staged-package verifier
    passed against that exact immutable version.
-6. Create and push the matching git tag only through the separately approved
-   tag/release sequence; the publish workflow never moves a tag itself.
 7. Run External registry smoke from a fresh exact-version install.
 8. Obtain a separate explicit approval and a new protected workflow dispatch
    before moving the verified prerelease to `next`.
