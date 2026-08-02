@@ -97,6 +97,7 @@
     "scripts/rail-entry-prompt-regression-gate.mjs",
     "scripts/node-runtime-floor.mjs",
     "scripts/node-runtime-floor.d.mts",
+    "scripts/package-root-build-lock.mjs",
     "scripts/package-root-build.mjs",
     "scripts/package-content-identity.d.mts",
     "scripts/package-content-identity.mjs",

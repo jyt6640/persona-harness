@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { cp, mkdtemp, writeFile } from "node:fs/promises"
 import { arch, platform, release, tmpdir, type } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { spawn, spawnSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
+import { withPackageRootBuildLock } from "../package-root-build-lock.mjs"
 
 export const FIXTURE_PATHS = {
   "backend-api-no-stack": "docs/current/evaluation-fixtures/backend-api-no-stack.md",
@@ -88,6 +90,8 @@ export const DECISION_POLICIES = {
   externalPrimaryPreToolchain: "external-primary-v0.4.1",
   externalPrimary: "external-primary-toolchain-v0.4.2",
 }
+
+const EVAL_RUNTIME_ROOT = realpathSync(resolve(dirname(fileURLToPath(import.meta.url)), "..", ".."))
 
 export function sha256Text(text) {
   return createHash("sha256").update(text).digest("hex")
@@ -775,24 +779,40 @@ export function detectStackAlignment(workspaceDir) {
 }
 
 export function runObserveReport(workspaceDir) {
-  const localCli = resolve("dist", "cli", "index.js")
-  const command = existsSync(localCli) ? `node ${quoteShell(localCli)} observe --json .` : "npx ph observe --json ."
-  const execution = runShell(command, workspaceDir, 60000)
-  if (execution.status !== 0) {
-    return {
-      inspectedFiles: [],
-      findings: [],
-      observerError: `${execution.stdout}\n${execution.stderr}`.trim(),
-    }
-  }
+  return runObserveReportWithRuntime(workspaceDir, EVAL_RUNTIME_ROOT)
+}
+
+export function runObserveReportWithRuntime(workspaceDir, runtimeRoot) {
   try {
-    return JSON.parse(execution.stdout)
-  } catch (error) {
-    return {
-      inspectedFiles: [],
-      findings: [],
-      observerError: error instanceof Error ? error.message : String(error),
-    }
+    return withPackageRootBuildLock(runtimeRoot, (lockedRuntimeRoot) => {
+      const localCli = join(lockedRuntimeRoot, "dist", "cli", "index.js")
+      if (!isRegularFile(localCli)) return unavailableObserveReport()
+
+      const execution = runShell(`node ${quoteShell(localCli)} observe --json .`, workspaceDir, 60000)
+      if (execution.status !== 0) return unavailableObserveReport()
+
+      try {
+        return JSON.parse(execution.stdout)
+      } catch {
+        return unavailableObserveReport()
+      }
+    })
+  } catch {
+    return unavailableObserveReport()
+  }
+}
+
+function isRegularFile(path) {
+  if (!existsSync(path)) return false
+  const stat = lstatSync(path)
+  return stat.isFile() && !stat.isSymbolicLink()
+}
+
+function unavailableObserveReport() {
+  return {
+    inspectedFiles: [],
+    findings: [],
+    observerError: "observer-runtime-unavailable",
   }
 }
 
