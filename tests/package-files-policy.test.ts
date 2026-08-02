@@ -421,6 +421,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-beta19-acceptance-schema.mjs",
       "scripts/consumer-authority-beta20-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta20-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta21-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta21-acceptance-schema.mjs",
       "scripts/consumer-authority-external-artifact-transport-plan.d.mts",
       "scripts/consumer-authority-external-artifact-transport-plan.mjs",
       "scripts/consumer-authority-external-attestation-command-plan.d.mts",
@@ -474,6 +476,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta18-acceptance.json",
       "docs/current/release/consumer-authority-beta19-acceptance.json",
       "docs/current/release/consumer-authority-beta20-acceptance.json",
+      "docs/current/release/consumer-authority-beta21-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
