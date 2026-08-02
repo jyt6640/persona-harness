@@ -70,32 +70,37 @@ capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
 `0.8.0-beta.1` is immutable staging-only Consumer Authority Beta evidence:
 its exact registry installation and staged provenance boundary passed, without
 granting consumer Finish authority or any promotion/Stable/GA claim.
-`0.8.0-beta.1` through `0.8.0-beta.16` are immutable staging-only Consumer
+`0.8.0-beta.1` through `0.8.0-beta.17` are immutable staging-only Consumer
 Authority Beta evidence. Beta.16's final observer accepted an exit-zero API
 download without proving a nonempty exact ZIP. Beta.17's Node20/npm10 registry
 PUT was authorization-shaped rather than a package-absence result; beta.16
-remains present in the public registry. `0.8.0-beta.18` is the next
-strict-prerelease source-preparation candidate; it has no source-level claim of
-a tag, publish, channel movement, GitHub release, or original signed consumer
-artifact. Its release contract requires package-visible observer credential
-preflight, separate caller/reusable signer binding, and a complete public
-Java/Spring readiness route whose default Finish is blocked only by
-`trusted-authority-required` before a fixture may be authorized. The preflights
-uses a host-derived credential only inside its fixed read-only GitHub Actions
-worker; it does not pass that credential to `ph`, npm, archive tooling, or the
-consumer HOME. Its package evidence also starts from the exact complete-history
-bundle, not an ambient working directory: detached checkout,
-Git/manifest/lock/npm-prefix binding, normal prepack, and fresh installed CLI
-identity must all agree before the tarball is eligible for independent package
-review. The beta.18 release contract additionally owns no-token/no-artifact
-attestation and artifact transport parser preflights. The transport plan binds
-the caller repository/run/artifact endpoint, exact ZIP bytes, and safe members
-before it hands an original ZIP to the separate reusable signer command plan.
-The package proof invokes plain `npm` from that bound detached checkout,
-never `npm --prefix ... pack`, and uses the exact resulting tarball for both
-source-built and fresh installed consumer contracts. Its release handoff keeps
-the Node20/npm10 canonical packer separate from the isolated Node24/npm11
-publisher, which dry-runs and then publishes the same canonical tarball only.
+remains present in the public registry. Beta.18 was published to staging and
+its registry bytes matched frozen canonical facts, but its postpublish checker
+incorrectly required an unsupported registry `gitHead` metadata field.
+`0.8.0-beta.19` is the next strict-prerelease source-preparation candidate; it
+has no source-level claim of a tag, publish, channel movement, GitHub release,
+or original signed consumer artifact. Its release contract requires
+package-visible observer credential preflight, separate caller/reusable signer
+binding, and a complete public Java/Spring readiness route whose default Finish
+is blocked only by `trusted-authority-required` before a fixture may be
+authorized. The preflights use a host-derived credential only inside its fixed
+read-only GitHub Actions worker; they do not pass that credential to `ph`, npm,
+archive tooling, or the consumer HOME. Its package evidence also starts from the
+exact complete-history bundle, not an ambient working directory: detached
+checkout, Git/manifest/lock/npm-prefix binding, normal prepack, and fresh
+installed CLI identity must all agree before the tarball is eligible for
+independent package review. The beta19 release contract additionally owns
+no-token/no-artifact attestation and artifact transport parser preflights. The
+transport plan binds the caller repository/run/artifact endpoint, exact ZIP
+bytes, and safe members before it hands an original ZIP to the separate reusable
+signer command plan. The package proof invokes plain `npm` from that bound
+detached checkout, never `npm --prefix ... pack`, and uses the exact resulting
+tarball for both source-built and fresh installed consumer contracts. Its release
+handoff keeps the Node20/npm10 canonical packer separate from the isolated
+Node24/npm11 publisher, which dry-runs and then publishes the same canonical
+tarball only. Postpublish reconciliation binds protected workflow source
+preflight to registry version, selected tag, SHA-1/SRI, raw SHA-256, and portable
+content identity; it does not require registry `gitHead`.
 `0.7.0-rc.2` remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:
@@ -949,9 +954,10 @@ Release verification and explicit manual GitHub release-note automation live in
   `package.json` version.
 - The manual workflow generates the GitHub Release body from
   `docs/current/release/v<version>-release-notes.md`.
-- The publish workflow verifies registry gitHead, dist.shasum, SRI, downloaded
-  tarball SHA-256, and dist-tag state after publish without claiming exact
-  artifact provenance before the separate staged producer/audit route.
+- The publish workflow verifies protected workflow source/tag preflight plus
+  registry dist.shasum, SRI, downloaded tarball SHA-256, portable content
+  identity, and dist-tag state after publish without claiming exact artifact
+  provenance before the separate staged producer/audit route.
 - The matching immutable git tag is a precondition for a publish; the workflow
   never creates or moves it.
 - Tag pushes do not run real `npm publish` or create GitHub releases.

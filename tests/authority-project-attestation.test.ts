@@ -59,6 +59,8 @@ function project(): string {
   mkdirSync(join(projectDir, ".persona", "evidence"), { recursive: true })
   writeFileSync(join(projectDir, "build.gradle"), "plugins {}\n")
   execFileSync("git", ["init", "--quiet"], { cwd: projectDir })
+  execFileSync("git", ["config", "gc.auto", "0"], { cwd: projectDir })
+  execFileSync("git", ["config", "maintenance.auto", "false"], { cwd: projectDir })
   execFileSync("git", ["add", "."], { cwd: projectDir })
   execFileSync("git", ["-c", "user.email=fixture@example.test", "-c", "user.name=Fixture", "commit", "--quiet", "-m", "fixture"], { cwd: projectDir })
   return projectDir

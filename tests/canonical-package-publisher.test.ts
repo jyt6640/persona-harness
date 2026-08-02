@@ -16,7 +16,7 @@ import {
 } from "../scripts/canonical-package-publisher.mjs"
 import { canonicalizePackageTarball } from "../scripts/package-content-identity.mjs"
 
-const PACKAGE = { name: "persona-harness", version: "0.8.0-beta.18" }
+const PACKAGE = { name: "persona-harness", version: "0.8.0-beta.19" }
 
 describe("canonical package publisher", () => {
   it("hands the exact Node20 canonical tar and facts to the Node24 dry-run publisher", () => {
@@ -197,7 +197,7 @@ function createFixture() {
   const canonicalDirectory = join(root, "canonical")
   const publisherRuntimeDirectory = join(root, "publisher")
   const packageFactsPath = join(root, "facts.json")
-  const tarballPath = join(canonicalDirectory, "persona-harness-0.8.0-beta.18.tgz")
+  const tarballPath = join(canonicalDirectory, "persona-harness-0.8.0-beta.19.tgz")
   mkdirSync(canonicalDirectory, { mode: 0o700 })
   mkdirSync(join(canonicalDirectory, "environment"), { mode: 0o700 })
   mkdirSync(join(canonicalDirectory, "environment", "npm-home"), { mode: 0o700 })

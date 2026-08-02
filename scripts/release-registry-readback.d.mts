@@ -4,7 +4,6 @@ export type ReleaseRegistryReadback = {
   readonly package: "persona-harness"
   readonly provenance: "requires-staged-artifact-attestation"
   readonly registry: {
-    readonly gitHead: string
     readonly integrity: string
     readonly shasum: string
     readonly tarballSha256: string
@@ -18,8 +17,9 @@ export type ReleaseRegistryReadback = {
     readonly version: string
   }
   readonly registryMutation: "not-performed"
-  readonly schemaVersion: "release-registry-readback.3"
+  readonly schemaVersion: "release-registry-readback.4"
   readonly secretRemovalConfirmed: true
+  readonly sourceBinding: "unavailable" | "workflow-verified-canonical-tar"
   readonly sourceHead: string
   readonly status: "blocked" | "passed"
   readonly version: string

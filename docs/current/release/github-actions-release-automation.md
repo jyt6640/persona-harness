@@ -126,8 +126,8 @@ Inputs:
 - `approval_scope`: `staging-only`, `next-promotion-approved`, or
   `ga-approved`, matching the selected channel
 
-Manual dispatch does not replace version commits, registry verification, or
-post-publish git tags. It never creates or moves a Git tag.
+Manual dispatch does not replace version commits, the pre-existing immutable
+tag, or registry verification. It never creates or moves a Git tag.
 
 ## Release Sequence
 
@@ -137,12 +137,13 @@ post-publish git tags. It never creates or moves a Git tag.
 4. Run local verification.
 5. Commit the release prep.
 6. Push the commit.
-7. Run `.github/workflows/publish.yml` first with `dist_tag=staging` and
+7. Create the separately approved immutable matching tag on that protected-main
+   package commit.
+8. Run `.github/workflows/publish.yml` first with `dist_tag=staging` and
    `approval_scope=staging-only`.
-8. Verify registry gitHead and shasum from the workflow post-check and run the
-   staged installed-package gate.
-9. Create and push the matching tag only through its separately approved
-   immutable-tag sequence.
+9. Verify protected source/tag preflight and the registry SHA-1/SRI, raw
+   SHA-256, portable content identity, and selected tag from the workflow
+   post-check; then run the staged installed-package gate.
 10. If a GitHub release is separately approved, dispatch
     `.github/workflows/release.yml` with that existing stable tag and
     `approval_scope=ga-approved`.
@@ -151,7 +152,7 @@ post-publish git tags. It never creates or moves a Git tag.
 
 ```bash
 git push origin main
-git tag v0.3.0-alpha.3 <verified-gitHead>
+git tag v0.3.0-alpha.3 <verified-workflow-source-head>
 git push origin v0.3.0-alpha.3
 ```
 

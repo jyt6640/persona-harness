@@ -4,7 +4,6 @@ import {
   chmodSync,
   existsSync,
   lstatSync,
-  mkdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -12,16 +11,14 @@ import {
 import { dirname, join, resolve } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
+import { withPackageRootBuildLock } from "./package-root-build-lock.mjs"
 
 const packageRoot = realpathSync(resolve(dirname(fileURLToPath(import.meta.url)), ".."))
-const BUILD_LOCK_NAME = ".persona-package-root-build.lock"
-const BUILD_LOCK_TIMEOUT_MS = 120_000
-const BUILD_LOCK_WAIT_MS = 25
 
 try {
   const cleanOnly = parseArgs(process.argv.slice(2))
   process.umask(0o022)
-  withBuildLock(packageRoot, () => {
+  withPackageRootBuildLock(packageRoot, () => {
     assertPackageIdentity(packageRoot)
     removeDist(packageRoot)
     if (!cleanOnly) buildDist(packageRoot)
@@ -83,36 +80,6 @@ function buildEnvironment() {
     TMPDIR: process.env.TMPDIR ?? "/tmp",
     TZ: "UTC",
   }
-}
-
-function withBuildLock(root, operation) {
-  const lockPath = join(root, BUILD_LOCK_NAME)
-  const deadline = Date.now() + BUILD_LOCK_TIMEOUT_MS
-  while (true) {
-    try {
-      mkdirSync(lockPath, { mode: 0o700 })
-      break
-    } catch (error) {
-      if (!(error instanceof Error) || !isAlreadyExists(error)) throw new Error("package-root-build-lock")
-      const stat = lstatSync(lockPath)
-      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("package-root-build-lock")
-      if (Date.now() >= deadline) throw new Error("package-root-build-lock-timeout")
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, BUILD_LOCK_WAIT_MS)
-    }
-  }
-  try {
-    operation()
-  } finally {
-    if (existsSync(lockPath)) {
-      const stat = lstatSync(lockPath)
-      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("package-root-build-lock")
-      rmSync(lockPath, { force: true, recursive: true })
-    }
-  }
-}
-
-function isAlreadyExists(error) {
-  return "code" in error && error.code === "EEXIST"
 }
 
 function assertRegularFile(path, code) {

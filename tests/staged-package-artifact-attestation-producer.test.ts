@@ -20,7 +20,7 @@ const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "staged-package-artifact-attestation.yml")
 const producerPath = join(root, "scripts", "build-staged-package-artifact-attestation.mjs")
 const HEAD = "a".repeat(40)
-const CURRENT_SOURCE_VERSION = "0.8.0-beta.18"
+const CURRENT_SOURCE_VERSION = "0.8.0-beta.19"
 const VERSION = "0.7.0-rc.8"
 const RC7_REGISTRY_GIT_HEAD = "659f7d86fcd653f49eead719b91093f35f73ad3e"
 
@@ -265,6 +265,8 @@ function createDigest(algorithm: "sha1" | "sha512", value: Buffer, encoding: "ba
 function initializeProducerWorkspace(workspace: string): string {
   writeFileSync(join(workspace, "fixture.txt"), "fixture\n")
   execFileSync("git", ["init", "-q"], { cwd: workspace })
+  execFileSync("git", ["config", "gc.auto", "0"], { cwd: workspace })
+  execFileSync("git", ["config", "maintenance.auto", "false"], { cwd: workspace })
   execFileSync("git", ["config", "user.email", "ph@example.invalid"], { cwd: workspace })
   execFileSync("git", ["config", "user.name", "PH Test"], { cwd: workspace })
   execFileSync("git", ["add", "fixture.txt"], { cwd: workspace })
