@@ -81,33 +81,46 @@ incorrectly required an unsupported registry `gitHead` metadata field.
 `0.8.0-beta.20` is immutable staging-only evidence: live authority fetch reached
 `trusted/unconsumed`, then Finish correctly blocked before consumption because
 the observer had not initialized the same consumer workflow state.
-`0.8.0-beta.21` is the next strict-prerelease source-preparation candidate; it
-has no source-level claim of a tag, publish, channel movement, GitHub release,
-or original signed consumer artifact. Its release contract requires
-package-visible observer credential preflight, separate caller/reusable signer
-binding, and a complete public Java/Spring readiness route whose default Finish
-is blocked only by `trusted-authority-required` before a fixture may be
-authorized. Beta21 binds that readiness to one exact Git-backed consumer
-CWD/HEAD and isolated HOME/store, requires trusted/unconsumed recheck in that
-same consumer before one Finish/replay, and forbids lifecycle reset or consumer
-switch after fetch. The preflights use a host-derived credential only inside its fixed
-read-only GitHub Actions worker; they do not pass that credential to `ph`, npm,
-archive tooling, or the consumer HOME. Its package evidence also starts from the
-exact complete-history bundle, not an ambient working directory: detached
-checkout, Git/manifest/lock/npm-prefix binding, normal prepack, and fresh
-installed CLI identity must all agree before the tarball is eligible for
-independent package review. The beta21 release contract additionally owns
-no-token/no-artifact attestation and artifact transport parser preflights. The
-transport plan binds the caller repository/run/artifact endpoint, exact ZIP
-bytes, and safe members before it hands an original ZIP to the separate reusable
-signer command plan. The package proof invokes plain `npm` from that bound
-detached checkout, never `npm --prefix ... pack`, and uses the exact resulting
-tarball for both source-built and fresh installed consumer contracts. Its release
-handoff keeps the Node20/npm10 canonical packer separate from the isolated
-Node24/npm11 publisher, which dry-runs and then publishes the same canonical
-tarball only. Postpublish reconciliation binds protected workflow source
-preflight to registry version, selected tag, SHA-1/SRI, raw SHA-256, and portable
-content identity; it does not require registry `gitHead`.
+`0.8.0-beta.21` is non-reusable temporal final-observer evidence: its online
+crypto and identity bindings passed only after the leaf certificate window
+expired, so authenticated fetch, Finish consumption, and replay were not run.
+`0.8.0-beta.22` is the next strict-prerelease procedure-only source candidate;
+it has no source-level claim of a tag, publish, channel movement, GitHub
+release, or original signed consumer artifact. Beta22 records the governed
+future final-observer procedure without changing product fetch, authority,
+Finish, transport, workflow, or CI behavior.
+
+The beta22 release contract requires package-visible observer credential
+preflight, separate caller/reusable signer binding, and a complete public
+Java/Spring readiness route whose default Finish is blocked only by
+`trusted-authority-required` before a fixture may be authorized. Source-bound
+bootstrap must finish before the final fixture commit. That one commit may
+contain only declared source-bound bootstrap outputs and the immutable reusable
+pin; the same unpushed final fixture commit is retained as the installed
+consumer CWD/HEAD. Later slow preparation may modify only excluded runtime or
+build state. Immediately before its one normal push, the remote parent, CWD,
+Git top-level, HEAD, and source identity must still bind to that final commit.
+No lifecycle reinitialization, consumer switch, or source reset is permitted
+after fetch.
+
+The preflights use a host-derived credential only inside their fixed read-only
+GitHub Actions worker; they do not pass that credential to `ph`, npm, archive
+tooling, or the consumer HOME. Beta22 retains the no-token/no-artifact
+attestation and artifact transport parser preflights. The transport plan binds
+the caller repository/run/artifact endpoint, exact ZIP bytes, and safe members
+before it hands an original ZIP to the separate reusable signer command plan.
+Its package evidence starts from the exact complete-history bundle, not an
+ambient working directory: detached checkout, Git/manifest/lock/npm-prefix
+binding, normal prepack, and fresh installed CLI identity must all agree before
+the tarball is eligible for independent package review. The package proof uses
+plain `npm` from that bound detached checkout, never `npm --prefix ... pack`,
+and uses the exact resulting tarball for both source-built and fresh installed
+consumer contracts. Its release handoff keeps the Node20/npm10 canonical packer
+separate from the isolated Node24/npm11 publisher, which dry-runs and then
+publishes the same canonical tarball only. Postpublish reconciliation binds
+protected workflow source preflight to registry version, selected tag, SHA-1/SRI,
+raw SHA-256, and portable content identity; it does not require registry
+`gitHead`.
 `0.7.0-rc.2` remains an earlier published `next` record.
 
 The staged-package artifact producer is a controlled future-run source:

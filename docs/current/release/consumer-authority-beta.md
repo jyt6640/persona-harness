@@ -6,17 +6,20 @@ user-scoped consumer authority route; neither one automatically promotes a
 package or makes Finish pass.
 
 `0.8.0-beta.1` through `0.8.0-beta.20` are immutable staging-only evidence.
-Their registry and provenance observations cannot be reused as beta.21
-current-version consumer authority evidence. Beta.16's final observer accepted
+Their registry and provenance observations cannot be reused as current-version
+consumer authority evidence. Beta.16's final observer accepted
 an exit-zero API download without proving a nonempty exact ZIP, so it stopped
 before ZIP validation. Beta.17 created a canonical tarball and provenance but
 its Node20/npm10 registry PUT received an authorization-shaped E404; that is not
 a package-absence claim, and beta.16 remains present in the public registry.
 Beta.18 is immutable staging evidence: its registry bytes matched canonical
 facts, but its postpublish checker incorrectly required an unsupported registry
-`gitHead` metadata field. The active `0.8.0-beta.21` source candidate has no
-package, tag, channel movement, GitHub release, or signed consumer-project
-artifact at source preparation time.
+`gitHead` metadata field. Beta.21 is non-reusable temporal final-observer
+evidence: online crypto and identity bindings completed only after the leaf
+certificate window expired, so fetch, Finish, and replay did not run. The active
+`0.8.0-beta.22` procedure-only source candidate has no package, tag, channel
+movement, GitHub release, or signed consumer-project artifact at source
+preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
@@ -24,9 +27,10 @@ because it did not complete the full current-version public consumer route.
 Beta.20 reached a live `trusted/unconsumed` fetch but then correctly stopped at
 `workflow-state-uninitialized` because the observer had not prepared the same
 consumer's public lifecycle. That result consumed nothing and is not reusable.
-Beta21 binds the missing immutable same-consumer observer order. It cannot
-inherit beta.16's observer failure, beta.17's registry PUT result, beta.18's
-failed metadata predicate, an earlier lifecycle, or an earlier authority result.
+Beta22 binds the immutable same-consumer observer order and the pre-push source
+identity procedure. It cannot inherit beta.16's observer failure, beta.17's
+registry PUT result, beta.18's failed metadata predicate, beta.21's expired
+temporal result, an earlier lifecycle, or an earlier authority result.
 
 The consumer must create its own workflow state through public bootstrap and
 report/evidence commands in the exact project that later fetches authority.
@@ -36,6 +40,15 @@ After public initialization the same command must reach only
 `trusted-authority-required` before an artifact is available; a modeled trusted
 artifact then proves one real Finish consumption and immediate replay block
 without standing in for hosted crypto evidence.
+
+For the final public fixture, source-bound bootstrap must complete before the
+final fixture commit. That one commit contains only declared source-bound
+bootstrap outputs and the immutable reusable workflow pin. The same unpushed
+final fixture commit is retained as the installed consumer CWD/HEAD; subsequent
+slow preparation may change only excluded runtime and build state. Immediately
+before the one normal push, the fixture remote parent, CWD, Git top-level, HEAD,
+and source identity must still match the final commit. No lifecycle or source
+reinitialization, consumer switch, or state reset is permitted after fetch.
 
 ## Fixed Sequence
 
@@ -139,12 +152,12 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.20` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.21`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.21` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.22`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta21-acceptance.json`](consumer-authority-beta21-acceptance.json)
+[`consumer-authority-beta22-acceptance.json`](consumer-authority-beta22-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the immutable same-consumer
@@ -157,7 +170,7 @@ than caller project source. The profile, Gradle descriptors, Git identity,
 reports, and evidence remain bound. This does not relax caller enrollment,
 reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
 
-Before beta.21 package evidence is accepted, the verifier materializes the
+Before beta.22 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds one
 explicit canonical `refs/heads/...` candidate ref and
 `refs/remotes/origin/main`; the candidate ref must equal the expected candidate
@@ -205,7 +218,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.21 fixture push, an independent observer must prepare
+Before the one natural beta.22 fixture push, an independent observer must prepare
 one exact Git-backed registry consumer CWD/HEAD and one private consumer `HOME`.
 It must first complete the public bootstrap/Gradle/report/evidence/plan route and
 confirm default Finish is blocked only by `trusted-authority-required`; it may
