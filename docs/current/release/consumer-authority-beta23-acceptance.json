@@ -1,0 +1,646 @@
+{
+  "schemaVersion": "consumer-authority-beta23-acceptance.1",
+  "package": {
+    "channel": "staging",
+    "scope": "staging-only",
+    "version": "0.8.0-beta.23"
+  },
+  "packageBoundary": {
+    "bundle": {
+      "requiredRefs": [
+        "explicit-single-refs-heads-candidate-must-match-expected-head",
+        "refs/remotes/origin/main"
+      ],
+      "verification": "git-bundle-verify-and-exact-ref-binding",
+      "baseComparison": "independent-no-local-base-checkout-under-the-same-npm-policy"
+    },
+    "cleanCheckout": {
+      "requiredBindings": [
+        "checkout-cwd",
+        "git-toplevel",
+        "npm-prefix",
+        "resolved-package-json-path",
+        "resolved-package-lock-path",
+        "HEAD-package-json-bytes",
+        "HEAD-package-lock-bytes"
+      ],
+      "sourceFallback": "forbidden"
+    },
+    "npm": {
+      "invocation": "plain-npm-from-bound-detached-checkout-cwd",
+      "packPrefixFlag": "forbidden",
+      "global": false,
+      "ignoreScriptsBeforePack": false,
+      "install": "npm-ci-ignore-scripts",
+      "workspaces": false
+    },
+    "pack": {
+      "metadata": "name-version-filename-must-match-frozen-package-and-lock",
+      "prepack": "package-root-build-script-derived-from-its-own-package-root",
+      "postcondition": "fresh-installed-cli-version-must-match-tarball-version"
+    },
+    "authoritativeBundleContract": {
+      "command": "node scripts/verify-clean-package-boundary.mjs --exercise-contract",
+      "baseAndTarget": "fresh-detached-no-local-checkouts-from-the-same-complete-bundle",
+      "candidateRef": "explicit-single-refs-heads-candidate-must-match-expected-head",
+      "headAlias": "optional-head-mapping-must-match-the-same-expected-head",
+      "sourceCandidateRef": "refs/heads/clean-package-source",
+      "rejectBeforePack": "launcher-cwd-or-manifest-outside-bound-checkout",
+      "sourceContract": "built-cli-package-exercise-contract-under-the-same-executable",
+      "installedContract": "fresh-installed-package-exercise-uses-the-exact-canonical-target-tarball-sha256-and-package-content-identity-before-the-separate-node24-publisher-handoff",
+      "fullJavaGradleContract": "source-and-fresh-installed-full-contract-on-a-provisioned-java-gradle-host",
+      "partialCloneSourceHydration": "only-a-blob-none-promisor-clone-with-the-exact-canonical-origin-may-no-filter-hydrate-the-retained-origin-main-sha-before-local-bundle-materialization-without-moving-refs"
+    },
+    "contentIdentity": {
+      "aggregate": "sorted-package-relative-path-type-normalized-allowed-mode-size-sha256",
+      "allowedMemberTypes": [
+        "regular"
+      ],
+      "allowedModes": [
+        "0600",
+        "0644",
+        "0700",
+        "0755"
+      ],
+      "canonicalPacker": {
+        "environment": [
+          "isolated-HOME",
+          "isolated-npm-cache",
+          "isolated-npm-config",
+          "isolated-git-config",
+          "umask-0022",
+          "LANG-C",
+          "LC_ALL-C",
+          "TZ-UTC",
+          "SOURCE_DATE_EPOCH-0"
+        ],
+        "node": "20.19.0",
+        "npm": "10.8.2",
+        "publish": "handoff-one-exact-canonical-tarball-to-isolated-node24-npm11-publisher"
+      },
+      "crossEnvironment": "compare-package-content-identity-not-generic-independent-npm-pack-raw-tar-sha256",
+      "rawTarballSha256": "valid-only-for-the-exact-canonical-supplied-tarball-or-postpublish-registry-blob",
+      "registryReadback": "require-protected-main-tag-source-preflight-and-registry-version-sha1-sri-raw-sha256-and-package-content-identity-to-match-frozen-canonical-package-facts-without-registry-githead",
+      "retainedExternalDiagnostics": {
+        "beta16": {
+          "contentOnlySha256": "9bb1c7eaeceb79d198d7baafdaea9c8bc73cd8750209ea5aa76cfc46070e0832",
+          "entryCount": 1191,
+          "identitySha256": "9eac0bdc041e8e616bd6e4de3ba49e8490b8a269f3f0d3e520027833b927c332",
+          "modeCounts": {
+            "0600": 296,
+            "0644": 887,
+            "0700": 7,
+            "0755": 1
+          }
+        },
+        "beta17": {
+          "contentOnlySha256": "d411a23a2343cd21e33ac30250ed903934968e214b7f198ccd0ea91a7d6bf580",
+          "entryCount": 1200,
+          "identitySha256": "5771dc973dd95e5d3f8b01a9e17becf3c17223b3d94aed692e5248e0c3054c5e",
+          "modeCounts": {
+            "0600": 305,
+            "0644": 887,
+            "0700": 7,
+            "0755": 1
+          }
+        },
+        "headerClassification": "normalized-gzip-tar-headers-do-not-explain-the-retained-content-or-mode-identity-delta",
+        "reuse": "diagnostic-only-not-acceptance-evidence"
+      },
+      "schemaVersion": "package-content-identity.1",
+      "publisherRuntime": "node24.18.0-npm11.16.0-dry-run-and-real-publish-use-identical-canonical-tarball-argv"
+    },
+    "registryReadback": {
+      "failureEvidence": "sanitized-readback-is-uploaded-even-when-postpublish-reconciliation-blocks",
+      "sourceBinding": "workflow-verified-canonical-tar",
+      "unsupportedMetadata": "registry-githead-is-neither-required-nor-reflected"
+    }
+  },
+  "preAuthorityReadiness": {
+    "consumer": "exact-registry-installed-java-spring-gradle",
+    "commands": [
+      "ph bootstrap backend --strict --no-developer-mcp",
+      "ph bearshell ./gradlew test",
+      "ph bearshell ./gradlew compileJava",
+      "ph bearshell ./gradlew clean",
+      "ph evidence read README.md",
+      "ph evidence read .persona/project-profile.jsonc",
+      "ph evidence read src/main/java/example/cooperative/GreetingService.java",
+      "ph plan --report-filled implementation --stdin",
+      "ph plan --report-filled review --stdin"
+    ],
+    "expectedDefaultFinish": {
+      "absentBlockers": [
+        "implementation-report-missing",
+        "review-report-missing",
+        "evidence-missing",
+        "report-coverage-missing",
+        "profile-read-coverage-missing",
+        "java-role-read-coverage-missing",
+        "workflow-loop-state-absent",
+        "ralph-loop-state-absent"
+      ],
+      "primaryBlocker": "trusted-authority-required",
+      "status": "blocked"
+    },
+    "publicOutput": {
+      "absoluteWorkspacePaths": "omitted",
+      "stableReferences": [
+        ".persona/workflow/plan.md",
+        ".persona/workflow/implementation-report.md",
+        ".persona/workflow/review-report.md"
+      ]
+    },
+    "initialization": {
+      "acceptedPlan": "ph bootstrap backend --strict --no-developer-mcp",
+      "binding": {
+        "consumerRoot": "same-canonical-project-root",
+        "profile": ".persona/project-profile.jsonc",
+        "reportsAndEvidence": "public-command-created-only",
+        "sourceIdentity": "current-git-source-identity"
+      },
+      "inactiveFinish": {
+        "blocker": "workflow-state-uninitialized",
+        "status": "blocked"
+      },
+      "loopState": [
+        ".persona/workflow/workflow-loop-state.json",
+        ".persona/workflow/ralph-loop-state.json"
+      ],
+      "sameConsumer": true
+    },
+    "negativeCases": [
+      "absolute-workspace-or-temp-path-public-output",
+      "missing-or-malformed-report",
+      "repeated-control-or-oversized-report",
+      "missing-unsafe-replaced-or-identity-drifted-evidence",
+      "workflow-or-ralph-loop-missing-malformed-or-unsafe",
+      "default-finish-has-no-authority-side-effect"
+    ],
+    "proof": "source-built-and-fresh-packed-installed-public-cli"
+  },
+  "authority": {
+    "binding": {
+      "callerEnrollment": {
+        "repositoryId": 1304576182,
+        "repositorySlug": "jyt6640/persona-harness-attestation-claim-fixture",
+        "workflowPath": ".github/workflows/research-attestation.yml",
+        "workflowRef": "refs/heads/main"
+      },
+      "reusableSigner": {
+        "certificateSanIdentity": "reusable-producer-workflow",
+        "workflowPath": ".github/workflows/persona-harness-project-finish.yml"
+      },
+      "runtimeSourceProjection": {
+        "excludedRuntimeMetadata": [
+          ".persona/.ph-init-manifest.json",
+          ".persona/workflow"
+        ],
+        "reason": "bootstrap-local ownership metadata contains the consumer real path and is not caller project source",
+        "stillBound": [
+          ".persona/project-profile.jsonc",
+          "root-gradle-build-and-settings",
+          "git-source-identity",
+          "public-reports-and-evidence"
+        ]
+      },
+      "required": [
+        "caller-workflow-filename-ref-and-sha",
+        "reusable-workflow-sha-and-certificate-SAN",
+        "repository-id-and-slug",
+        "source-head-and-source-identity",
+        "workflow-run-and-attempt",
+        "artifact-id-and-sha256",
+        "original-archive-members"
+      ],
+      "storeSchema": "consumer-authority-original-artifact.2"
+    },
+    "modeledContract": {
+      "acceptedTopology": "separate-enrolled-caller-and-reusable-signer",
+      "proof": "source-built-and-fresh-packed-installed-public-bootstrap-bound-discovery-exact-once-finish-and-replay-test",
+      "rejected": [
+        "caller-workflow-mismatch",
+        "reusable-workflow-or-certificate-SAN-mismatch",
+        "repository-source-or-run-mismatch",
+        "artifact-digest-or-archive-mismatch",
+        "stale-or-replayed-terminal-record"
+      ],
+      "authorityClaim": "none-before-a-current-original-artifact-is-verified-online"
+    },
+    "fixturePlan": {
+      "artifact": "project-finish-attestation",
+      "consumer": "public-java-spring-gradle",
+      "postmergeAction": "normal-push-to-main",
+      "registryInstall": "npm install persona-harness@0.8.0-beta.23 --registry https://registry.npmjs.org"
+    },
+    "hostedFixture": {
+      "callerWorkflowPath": ".github/workflows/research-attestation.yml",
+      "certificateSanIdentity": "reusable-producer-workflow",
+      "event": "push",
+      "ref": "refs/heads/main",
+      "repository": "jyt6640/persona-harness-attestation-claim-fixture",
+      "reusableWorkflowPath": ".github/workflows/persona-harness-project-finish.yml",
+      "revision": "postmerge-persona-harness-beta23-main-sha"
+    },
+    "verification": {
+      "predicate": "project-finish-attestation.1",
+      "route": "fixed-product-owned-online",
+      "unavailable": "bounded-non-authoritative"
+    },
+    "fetchDiagnostic": {
+      "allowedCodes": [
+        "authority-fetch-evidence",
+        "authority-fetch-invalid",
+        "authority-fetch-network",
+        "authority-fetch-policy"
+      ],
+      "childEnvelope": "only-exit-one-fixed-code-ok-false",
+      "persistence": "blocked-child-leaves-no-artifact-or-authority-state",
+      "privacy": "no-token-path-url-or-raw-child-output",
+      "publicState": "missing"
+    }
+  },
+  "externalAttestationCommandPlan": {
+    "certificateOidcIssuer": "https://token.actions.githubusercontent.com",
+    "command": [
+      "attestation",
+      "verify"
+    ],
+    "denySelfHostedRunners": true,
+    "exitClassification": {
+      "authenticationRequired": 4,
+      "normalVerificationFailure": 1,
+      "verified": 0
+    },
+    "format": "json",
+    "predicateType": "https://github.com/jyt6640/persona-harness/attestations/project-finish-attestation.1",
+    "repositorySelector": {
+      "flag": "--repo",
+      "source": "caller-enrollment.repositorySlug"
+    },
+    "schemaVersion": "consumer-authority-external-attestation-command-plan.1",
+    "signerDigest": {
+      "flag": "--signer-digest",
+      "source": "reusable-signer.workflowSha"
+    },
+    "signerSelector": {
+      "flag": "--signer-workflow",
+      "source": "reusable-signer.workflowPath"
+    },
+    "sourceDigest": {
+      "flag": "--source-digest",
+      "source": "caller-source.sourceSha"
+    },
+    "sourceRef": {
+      "flag": "--source-ref",
+      "source": "caller-source.ref"
+    },
+    "tokenIsolation": {
+      "artifactAccess": "forbidden-during-preflight",
+      "credential": "absent",
+      "output": "bounded-classification-only"
+    }
+  },
+  "prearmedExternalHandoff": {
+    "prepare": {
+      "allowedBeforeFixture": [
+        "prepare-one-exact-git-backed-fixture-clone-and-isolated-consumer-home-store",
+        "source-bound-bootstrap-before-final-fixture-commit",
+        "retain-identical-unpushed-final-fixture-commit-as-the-installed-consumer-cwd-head",
+        "post-commit-excluded-runtime-build-only-preparation",
+        "v3-env-i-host-state-isolation-and-cleanliness-after-every-prepush-stage",
+        "public-pre-authority-readiness",
+        "public-initialized-finish-state",
+        "observer-credential-preflight",
+        "external-attestation-command-plan-preflight",
+        "external-artifact-transport-plan-preflight",
+        "enroll-after-prefetch-readiness",
+        "status-and-explain-on-ready-same-consumer"
+      ],
+      "consumer": "isolated-exact-registry-install",
+      "credentialPreflight": {
+        "acquisition": "host-gh-auth-token-read-once",
+        "command": "node node_modules/persona-harness/scripts/preflight-consumer-authority-observer.mjs --json",
+        "consumerHome": "isolated-ephemeral",
+        "hostCredential": "host-gh-only",
+        "logging": "forbidden",
+        "observerWorker": "github-actions-read-only",
+        "persistence": "forbidden",
+        "productFallback": "forbidden",
+        "scope": "fixed-authenticated-user-and-empty-sentinel-actions-metadata",
+        "tokenEnvironment": "PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN"
+      },
+      "attestationCommandPreflight": {
+        "command": "node node_modules/persona-harness/scripts/preflight-consumer-authority-external-attestation.mjs --json",
+        "credential": "absent",
+        "input": "no-artifact-grammar-sentinel-only",
+        "output": "bounded-exit-classification-only",
+        "productFallback": "forbidden"
+      },
+      "prohibitedBeforeArtifact": [
+        "artifact-download",
+        "online-crypto-validation",
+        "authority-fetch",
+        "finish-consumption",
+        "replay-observation"
+      ],
+      "requiredBeforeFixtureAuthorization": "public-initialized-finish-blocked-only-on-trusted-authority-required",
+      "artifactTransportPreflight": {
+        "command": "node node_modules/persona-harness/scripts/preflight-consumer-authority-external-artifact-transport.mjs --json",
+        "credential": "absent",
+        "input": "no-artifact-fixed-topology-and-metadata-sentinel-only",
+        "output": "bounded-parser-classification-only",
+        "productFallback": "forbidden"
+      }
+    },
+    "trigger": {
+      "onlyAfter": "immutable-prepush-fixture-commit-v3-host-state-isolation-clean-and-final-observer-procedure-prefetch-ready-and-natural-current-version-original-artifact",
+      "steps": [
+        "pre-push-fixture-parent-cwd-head-source-identity-and-v3-host-state-cleanliness-ready",
+        "normal-push-of-the-same-final-fixture-commit-to-main",
+        "current-original-artifact-transport-and-online-crypto",
+        "verify-online-before-leaf-certificate-notAfter-without-validity-relaxation",
+        "authority-fetch-discovers-and-binds-original-artifact",
+        "same-consumer-trusted-unconsumed-no-readiness-blocker",
+        "finish-consume-once",
+        "finish-replay-blocked"
+      ]
+    },
+    "nonAuthority": [
+      "preflight-does-not-self-validate",
+      "readiness-does-not-authorize-fixture",
+      "readiness-does-not-grant-authority",
+      "readiness-does-not-persist-or-log-host-credential",
+      "command-plan-preflight-does-not-access-artifact-or-network",
+      "command-plan-preflight-does-not-reuse-beta15-artifact",
+      "transport-plan-preflight-does-not-access-an-artifact-or-network",
+      "transport-model-safety-is-not-online-crypto-or-authority-evidence"
+    ],
+    "finalObserverProcedure": {
+      "credentialHandoff": "retrieve-host-gh-credential-silently-outside-the-consumer-and-pass-it-only-to-one-fixed-read-only-observer-child",
+      "execution": {
+        "environment": "env-i-with-only-fixed-allowlisted-variables",
+        "toolPaths": [
+          "absolute-gh",
+          "absolute-git",
+          "absolute-node",
+          "absolute-npm"
+        ]
+      },
+      "failureHandling": {
+        "afterFetch": "do-not-reinitialize-switch-reset-or-retry",
+        "beforeFetch": "abandon-and-recreate-the-consumer-before-any-live-fetch"
+      },
+      "hostStateIsolation": {
+        "externalStateRoots": [
+          "HOME",
+          "GH_CONFIG_DIR",
+          "XDG_CONFIG_HOME",
+          "XDG_DATA_HOME",
+          "XDG_STATE_HOME",
+          "XDG_CACHE_HOME",
+          "XDG_RUNTIME_DIR",
+          "TMPDIR",
+          "APPDATA",
+          "LOCALAPPDATA",
+          "USERPROFILE",
+          "GIT_CONFIG_GLOBAL",
+          "GIT_CONFIG_SYSTEM",
+          "NPM_CONFIG_USERCONFIG",
+          "NPM_CONFIG_CACHE"
+        ],
+        "forbiddenConsumerPaths": [
+          ".local/**",
+          ".config/**",
+          ".cache/**"
+        ],
+        "rootBinding": "all-fifteen-absolute-state-roots-must-remain-outside-the-consumer-realpath"
+      },
+      "liveSteps": [
+        "normal-push-of-the-same-final-fixture-commit-to-main",
+        "current-original-artifact-transport-and-online-crypto-within-leaf-window-without-validity-relaxation",
+        "authenticated-fetch-once",
+        "same-consumer-status-and-explain-trusted-unconsumed-with-no-readiness-blocker",
+        "Finish-consume-once",
+        "immediate-Finish-replay-blocked"
+      ],
+      "noReinitializationAfterFetch": [
+        "consumer-cwd-git-head-or-source-profile-change",
+        "consumer-home-or-authority-store-replacement",
+        "bootstrap-plan-report-evidence-or-loop-state-reset",
+        "consumer-switch-or-copied-state"
+      ],
+      "postCommitPreparation": {
+        "allowedMutations": [
+          ".persona/.ph-init-manifest.json",
+          ".persona/evidence/**",
+          ".persona/workflow/**",
+          ".gradle/**",
+          "build/**",
+          "node_modules/**"
+        ],
+        "forbiddenSourceBoundMutations": [
+          ".github/workflows/research-attestation.yml",
+          ".gitignore",
+          ".local/**",
+          ".config/**",
+          ".cache/**",
+          ".opencode/opencode.json",
+          ".persona/conventions/**",
+          ".persona/harness.jsonc",
+          ".persona/policies/**",
+          ".persona/project-profile.jsonc",
+          ".persona/rules/**",
+          "AGENTS.md",
+          "root-gradle-build-and-settings",
+          "src/**"
+        ]
+      },
+      "prePushCommit": {
+        "cwd": "must-be-exact-fixture-git-toplevel-and-canonical-project-root",
+        "finalCommit": "one-final-commit-contains-only-allowed-source-bound-bootstrap-outputs-and-reusable-pin",
+        "head": "must-remain-the-identical-unpushed-final-fixture-commit",
+        "remoteParent": "must-remain-unchanged-immediately-before-normal-push",
+        "sourceBoundBootstrap": "must-complete-before-final-commit",
+        "sourceIdentity": "must-be-clean-except-excluded-runtime-and-build-residue"
+      },
+      "prefetchSteps": [
+        "one-exact-git-backed-fixture-clone-cwd-head-and-isolated-consumer-home-store",
+        "baseline-cwd-git-toplevel-head-source-identity-empty-porcelain-and-empty-git-clean-ndx",
+        "source-bound-bootstrap-before-final-fixture-commit",
+        "source-bound-preparation-cwd-git-toplevel-head-source-identity-empty-porcelain-and-empty-git-clean-ndx",
+        "one-final-commit-with-only-source-bound-bootstrap-allowlist-and-reusable-pin",
+        "post-commit-excluded-runtime-build-only-slow-preparation-before-push-without-arbitrary-outer-timeout",
+        "credential-handoff-cwd-git-toplevel-head-source-identity-empty-porcelain-and-empty-git-clean-ndx",
+        "observer-child-cwd-git-toplevel-head-source-identity-empty-porcelain-and-empty-git-clean-ndx",
+        "immediately-pre-push-cwd-git-toplevel-head-source-identity-empty-porcelain-and-empty-git-clean-ndx",
+        "public-bootstrap-accepted-plan-and-current-loop-state",
+        "public-Gradle-test-compileJava-and-clean",
+        "public-README-profile-and-Java-evidence",
+        "public-implementation-and-review-report-ingress",
+        "public-plan-status",
+        "default-Finish-blocked-only-trusted-authority-required"
+      ],
+      "procedureRecord": {
+        "location": "coordinator-governed-immutable-external-procedure-record-no-local-path",
+        "sha256": "24eeeb198a683cdbdade04142aa2dca2479f94fb06bc4f39c1633d16c5286c8b"
+      },
+      "stageCleanliness": [
+        "baseline",
+        "source-bound-preparation",
+        "credential-handoff",
+        "observer-child",
+        "immediately-pre-push"
+      ],
+      "timeBounds": {
+        "certificateValidity": "non-relaxable-verify-online-before-leaf-certificate-notAfter",
+        "outerTimeout": "forbidden-no-arbitrary-outer-timeout",
+        "slowPreparation": "complete-before-one-normal-push"
+      },
+      "schemaVersion": "consumer-authority-final-observer-procedure.3"
+    }
+  },
+  "hostedResidual": {
+    "id": "beta23-v3-prearmed-same-commit-current-artifact-fetch-consume-replay",
+    "requiredEvidence": "one separately authorized normal push of the v3-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
+    "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove the v3 host-state isolation procedure, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
+  },
+  "mutationBoundary": {
+    "performed": false,
+    "prohibited": [
+      "npm-publish",
+      "tag-or-dist-tag-mutation",
+      "release-creation",
+      "artifact-download-or-live-verification",
+      "Finish-consumption",
+      "fixture-push-or-workflow-dispatch"
+    ]
+  },
+  "beta16HistoricalExternal": {
+    "outcome": "external-gh-artifact-download-exit-zero-with-zero-byte-output-before-zip-validation",
+    "reusableForBeta17": false,
+    "version": "0.8.0-beta.16"
+  },
+  "externalArtifactTransportPlan": {
+    "api": {
+      "accept": "application/vnd.github+json, application/octet-stream",
+      "origin": "https://api.github.com",
+      "version": "2022-11-28"
+    },
+    "artifact": {
+      "maximumBytes": 8388608,
+      "source": "validated-actions-artifact-metadata"
+    },
+    "endpoint": {
+      "method": "GET",
+      "path": "/repos/{caller-enrollment.repositorySlug}/actions/artifacts/{artifact.id}/zip"
+    },
+    "output": {
+      "files": [
+        "original.zip",
+        "bundle.json"
+      ],
+      "root": "private-observer-mkdtemp",
+      "write": "no-follow-reserved-and-promote-after-validation"
+    },
+    "redirect": {
+      "authorization": "api-origin-only",
+      "maximum": 1,
+      "permittedHosts": [
+        "pipelines.actions.githubusercontent.com",
+        "results-receiver.actions.githubusercontent.com",
+        "*.blob.core.windows.net"
+      ]
+    },
+    "response": {
+      "contentTypes": [
+        "application/octet-stream",
+        "application/zip"
+      ],
+      "status": 200,
+      "timeoutMs": 15000
+    },
+    "schemaVersion": "consumer-authority-external-artifact-transport-plan.1"
+  },
+  "beta17HistoricalPublish": {
+    "beta16Registry": "present-in-public-registry",
+    "outcome": "canonical-tar-and-provenance-completed-before-authorization-shaped-registry-put-e404",
+    "reusableForBeta18": false,
+    "version": "0.8.0-beta.17"
+  },
+  "canonicalPackagePublisherPlan": {
+    "canonicalPackerRuntime": {
+      "node": "20.19.0",
+      "npm": "10.8.2"
+    },
+    "canonicalTar": {
+      "handoff": "exact-canonical-tarball-sha256-and-package-content-identity",
+      "source": "canonical-package-packer-output-and-package-facts"
+    },
+    "preflight": {
+      "argv": [
+        "npm",
+        "publish",
+        "<canonical-tarball>",
+        "--access",
+        "public",
+        "--tag",
+        "<selected-dist-tag>",
+        "--provenance",
+        "--dry-run"
+      ],
+      "credentials": "no-custom-token-exchange-or-auth-state-output",
+      "mode": "node24-npm11-exact-canonical-tarball-dry-run"
+    },
+    "publisherEnvironment": {
+      "canonicalPackerConfigInheritance": "forbidden",
+      "isolated": [
+        "HOME",
+        "NPM_CONFIG_CACHE",
+        "NPM_CONFIG_GLOBALCONFIG",
+        "NPM_CONFIG_USERCONFIG"
+      ]
+    },
+    "publisherRuntime": {
+      "node": "24.18.0",
+      "npm": "11.16.0"
+    },
+    "npmTrustedPublishingMinimum": {
+      "node": "22.14.0",
+      "npm": "11.5.1"
+    },
+    "registryPut": {
+      "evidence": "hosted-only",
+      "historicalBeta17": "authorization-shaped-registry-response-not-package-absence"
+    },
+    "schemaVersion": "canonical-package-publisher-plan.1"
+  },
+  "beta18HistoricalPublish": {
+    "contentIdentity": "bf3de031ae9ed6d9ab290291f151d0befc1fc4804465f55bddb5ad382399a150",
+    "outcome": "registry-publish-succeeded-and-canonical-registry-bytes-matched-before-an-unsupported-githead-metadata-requirement-blocked-readback",
+    "rawTarballSha256": "66ef460552d03fd067baf412c1d4952e5bd42811b419c585092fc7a75b4c54e6",
+    "reusableForBeta19": false,
+    "version": "0.8.0-beta.18"
+  },
+  "beta19HistoricalPublish": {
+    "outcome": "published-immutable-staging-package-not-reusable-as-current-package-evidence",
+    "reusableForBeta20": false,
+    "version": "0.8.0-beta.19"
+  },
+  "beta20HistoricalFinalObserver": {
+    "outcome": "trusted-unconsumed-live-fetch-followed-by-intentional-workflow-state-uninitialized-block-not-reusable-as-closure-evidence",
+    "procedureRecordSha256": "1d370a4e4cdd55b20e27c016073246b78c373548c84c89c3499b3838e27980a7",
+    "reusableForBeta21": false,
+    "version": "0.8.0-beta.20"
+  },
+  "beta21HistoricalFinalObserver": {
+    "outcome": "online-crypto-and-bindings-passed-after-leaf-window-expired-before-authority-fetch-not-reusable-as-closure-evidence",
+    "reusableForBeta22": false,
+    "version": "0.8.0-beta.21"
+  },
+  "beta22HistoricalFinalObserver": {
+    "outcome": "host-gh-xdg-state-created-untracked-local-device-id-after-final-commit-not-reusable-as-closure-evidence",
+    "reusableForBeta23": false,
+    "version": "0.8.0-beta.22"
+  }
+}

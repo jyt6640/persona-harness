@@ -79,7 +79,7 @@ describe("consumer authority beta.21 acceptance schema", () => {
         "final-observer-procedure-prefetch-ready",
         "same-consumer-trusted-unconsumed-no-readiness-blocker",
       ]))
-      expectSchemaBlock(() => readBeta21AcceptanceManifest(repositoryRoot), "active beta22 package root")
+      expectSchemaBlock(() => readBeta21AcceptanceManifest(repositoryRoot), "active beta23 package root")
     } finally {
       rmSync(legacyPackageRoot, { force: true, recursive: true })
     }

@@ -17,7 +17,9 @@ facts, but its postpublish checker incorrectly required an unsupported registry
 `gitHead` metadata field. Beta.21 is non-reusable temporal final-observer
 evidence: online crypto and identity bindings completed only after the leaf
 certificate window expired, so fetch, Finish, and replay did not run. The active
-`0.8.0-beta.22` procedure-only source candidate has no package, tag, channel
+`0.8.0-beta.22` is non-reusable procedure evidence: host `gh`/XDG state created
+an untracked `.local` entry after the final commit. The active
+`0.8.0-beta.23` procedure-only source candidate has no package, tag, channel
 movement, GitHub release, or signed consumer-project artifact at source
 preparation time.
 
@@ -27,8 +29,8 @@ because it did not complete the full current-version public consumer route.
 Beta.20 reached a live `trusted/unconsumed` fetch but then correctly stopped at
 `workflow-state-uninitialized` because the observer had not prepared the same
 consumer's public lifecycle. That result consumed nothing and is not reusable.
-Beta22 binds the immutable same-consumer observer order and the pre-push source
-identity procedure. It cannot inherit beta.16's observer failure, beta.17's
+Beta23 binds the immutable same-consumer observer order, pre-push source
+identity, and v3 host-state isolation procedure. It cannot inherit beta.16's observer failure, beta.17's
 registry PUT result, beta.18's failed metadata predicate, beta.21's expired
 temporal result, an earlier lifecycle, or an earlier authority result.
 
@@ -47,7 +49,12 @@ bootstrap outputs and the immutable reusable workflow pin. The same unpushed
 final fixture commit is retained as the installed consumer CWD/HEAD; subsequent
 slow preparation may change only excluded runtime and build state. Immediately
 before the one normal push, the fixture remote parent, CWD, Git top-level, HEAD,
-and source identity must still match the final commit. No lifecycle or source
+and source identity must still match the final commit. Every host process uses
+`env -i` with explicit absolute `gh`, Git, Node, and npm paths. All fifteen
+host-state roots are outside the consumer realpath, and the observer verifies
+empty porcelain plus empty `git clean -ndx` after baseline, source-bound
+preparation, credential handoff, observer child, and immediately before push.
+`.local`, `.config`, and `.cache` are never allowlisted. No lifecycle or source
 reinitialization, consumer switch, or state reset is permitted after fetch.
 
 ## Fixed Sequence
@@ -152,12 +159,12 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.21` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.22`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.22` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.23`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta22-acceptance.json`](consumer-authority-beta22-acceptance.json)
+[`consumer-authority-beta23-acceptance.json`](consumer-authority-beta23-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the immutable same-consumer
@@ -170,7 +177,7 @@ than caller project source. The profile, Gradle descriptors, Git identity,
 reports, and evidence remain bound. This does not relax caller enrollment,
 reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
 
-Before beta.22 package evidence is accepted, the verifier materializes the
+Before beta.23 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds one
 explicit canonical `refs/heads/...` candidate ref and
 `refs/remotes/origin/main`; the candidate ref must equal the expected candidate
@@ -218,7 +225,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.22 fixture push, an independent observer must prepare
+Before the one natural beta.23 fixture push, an independent observer must prepare
 one exact Git-backed registry consumer CWD/HEAD and one private consumer `HOME`.
 It must first complete the public bootstrap/Gradle/report/evidence/plan route and
 confirm default Finish is blocked only by `trusted-authority-required`; it may

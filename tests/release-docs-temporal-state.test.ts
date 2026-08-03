@@ -31,10 +31,11 @@ const publicReleaseDocs = [
   "docs/current/release/v0.8.0-beta.20-release-notes.md",
   "docs/current/release/v0.8.0-beta.21-release-notes.md",
   "docs/current/release/v0.8.0-beta.22-release-notes.md",
+  "docs/current/release/v0.8.0-beta.23-release-notes.md",
 ]
 
 describe("release docs temporal-state boundary", () => {
-  it("keeps beta.21 temporal evidence distinct from the beta.22 procedure-only candidate", () => {
+  it("keeps historical final-observer evidence distinct from the beta.23 v3 procedure-only candidate", () => {
     const text = publicReleaseDocs
       .map((path) => readFileSync(join(root, path), "utf8"))
       .join("\n")
@@ -54,7 +55,9 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("0.8.0-beta.20")
     expect(text).toContain("0.8.0-beta.21")
     expect(text).toContain("0.8.0-beta.22")
+    expect(text).toContain("0.8.0-beta.23")
     expect(text).toContain("consumer-authority-beta22-acceptance.json")
+    expect(text).toContain("consumer-authority-beta23-acceptance.json")
     expect(text).toContain("workflow-verified-canonical-tar")
     expect(text).toContain("registry gitHead")
     expect(text).toContain("no usable GitHub Actions read credential")
@@ -71,5 +74,6 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("same consumer workflow state")
     expect(text).toContain("source-bound bootstrap before the final fixture commit")
     expect(text).toContain("same unpushed final fixture commit")
+    expect(text).toContain("host-state isolation")
   })
 })
