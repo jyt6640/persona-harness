@@ -36,6 +36,7 @@ import { canonicalizePackageTarball, readPackageContentIdentity } from "./packag
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = mkdtempSync(join(tmpdir(), "persona-installed-package-contract-"))
 const consumerNpmCache = join(temporaryRoot, "npm-cache")
+const contractGradleUserHome = join(temporaryRoot, "gradle-user-home")
 const MODELED_CURRENT_ARTIFACT_ID = 710000001
 const MODELED_CURRENT_RUN_ID = 30430000000
 const MODELED_AUTHORITY_TOPOLOGY = {
@@ -2286,7 +2287,10 @@ function createCooperativeGradleFixture(projectDir) {
   )
   requireSuccess(
     "installed fixture Gradle wrapper",
-    runCommand(projectDir, "gradle", ["--no-daemon", "wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
+    runCommand(projectDir, "gradle", ["--no-daemon", "wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"], {
+      environment: { GRADLE_USER_HOME: contractGradleUserHome },
+      timeoutMs: 120_000,
+    }),
   )
   rmSync(join(projectDir, ".gradle"), { force: true, recursive: true })
   writeFileSync(
@@ -2339,12 +2343,26 @@ function createCooperativeGradleFixture(projectDir) {
       "",
     ].join("\n"),
   )
+  warmCooperativeGradleRuntime(projectDir)
   initializeFixtureGit(projectDir, "installed fixture", {
     autoCrlf: "false",
     email: "ph@example.invalid",
     message: "installed fixture",
     name: "PH Test",
   })
+}
+
+function warmCooperativeGradleRuntime(projectDir) {
+  mkdirSync(contractGradleUserHome, { recursive: true })
+  requireSuccess(
+    "installed fixture Gradle runtime warmup",
+    runCommand(projectDir, "./gradlew", ["--no-daemon", "test"], {
+      environment: { GRADLE_USER_HOME: contractGradleUserHome },
+      timeoutMs: 120_000,
+    }),
+  )
+  rmSync(join(projectDir, ".gradle"), { force: true, recursive: true })
+  rmSync(join(projectDir, "build"), { force: true, recursive: true })
 }
 
 function assertCooperativeLifecycleState(projectDir, label) {
@@ -2379,10 +2397,9 @@ function assertAuthorityOnlyPreflight(projectDir, phPath, label, expected, envir
 
 function isolatedAuthorityEnvironment(home) {
   mkdirSync(home, { recursive: true })
-  const gradleUserHome = join(home, "gradle-user-home")
-  mkdirSync(gradleUserHome, { recursive: true })
+  mkdirSync(contractGradleUserHome, { recursive: true })
   return {
-    GRADLE_USER_HOME: gradleUserHome,
+    GRADLE_USER_HOME: contractGradleUserHome,
     GH_TOKEN: "",
     GITHUB_TOKEN: "",
     HOME: home,
@@ -3582,14 +3599,22 @@ function boundNpmEnvironment() {
   }
 }
 
-function runCommand(cwd, command, args) {
+function runCommand(cwd, command, args, options = {}) {
+  const environment = command === "git" ? boundedGitEnvironment() : process.env
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
-    env: command === "git" ? boundedGitEnvironment() : process.env,
+    env: { ...environment, ...(options.environment ?? {}) },
     maxBuffer: 16 * 1024 * 1024,
+    ...(options.timeoutMs === undefined ? {} : { killSignal: "SIGTERM", timeout: options.timeoutMs }),
   })
   if (result.error) {
+    if (result.error.code === "ETIMEDOUT") {
+      return {
+        status: 124,
+        stdout: result.stdout ?? "",
+      }
+    }
     throw new Error(`${command} process could not start`)
   }
   return {
