@@ -1,0 +1,10 @@
+#!/usr/local/bin/node
+const argumentsList = process.argv.slice(2)
+
+if (argumentsList.length === 1 && argumentsList[0] === "--version") {
+  process.stdout.write("gh version 2.96.0 (persona-harness fixture)\n")
+  process.exit(0)
+}
+
+process.stderr.write("bundle content could not be parsed\n")
+process.exit(1)

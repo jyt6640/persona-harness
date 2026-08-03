@@ -355,10 +355,12 @@ function exerciseExactTarContract(root, packed, npm, observerGh) {
     root,
     npm,
   )
-  requireSuccess(sourceResult, "clean-package-source-contract")
-  if (!sourceResult.stdout.includes("source-cli-package-exercise-contract: PASS")) {
-    throw new CleanPackageBoundaryError("clean-package-source-contract")
-  }
+  requireContractSuccess(
+    sourceResult,
+    "source-cli-package-exercise-contract: PASS",
+    "source-cli-package-exercise-diagnostic",
+    "clean-package-source-contract",
+  )
 
   const installedResult = run(
     process.execPath,
@@ -377,10 +379,12 @@ function exerciseExactTarContract(root, packed, npm, observerGh) {
     root,
     npm,
   )
-  requireSuccess(installedResult, "clean-package-installed-contract")
-  if (!installedResult.stdout.includes("installed-package-exercise-contract: PASS")) {
-    throw new CleanPackageBoundaryError("clean-package-installed-contract")
-  }
+  requireContractSuccess(
+    installedResult,
+    "installed-package-exercise-contract: PASS",
+    "installed-package-exercise-diagnostic",
+    "clean-package-installed-contract",
+  )
   return {
     installed: "fresh-tarball-contract-pass",
     source: "built-cli-contract-pass",
@@ -390,9 +394,25 @@ function exerciseExactTarContract(root, packed, npm, observerGh) {
 }
 
 function resolveObserverGhPath(value) {
-  if (typeof value === "string") return value
-  if (process.platform === "linux") return "/usr/bin/gh"
-  throw new CleanPackageBoundaryError("clean-package-observer-gh")
+  if (typeof value === "string" && isAbsolute(value) && !value.includes("\0") && value.length <= 4_096) return value
+  throw new CleanPackageBoundaryError("clean-package-observer-gh-required")
+}
+
+function requireContractSuccess(result, successMarker, diagnosticMarker, fallbackCode) {
+  if (result.status === 0 && result.stdout.includes(successMarker)) return
+  const code = boundedContractDiagnosticCode(result.stdout, diagnosticMarker)
+  throw new CleanPackageBoundaryError(code === undefined ? `${fallbackCode}-observer-gh-non-tool-stage` : `${fallbackCode}-${code}`)
+}
+
+function boundedContractDiagnosticCode(output, marker) {
+  if (typeof output !== "string") return undefined
+  const expression = new RegExp(`^${escapeExpression(marker)}: (observer-gh-(?:tool-(?:invalid|unavailable|version-unsupported)|parser-rejected|non-tool-stage))$`, "mu")
+  const match = expression.exec(output)
+  return match?.[1]
+}
+
+function escapeExpression(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
 }
 
 function assertStaleLauncherIsRejected(root, binding) {

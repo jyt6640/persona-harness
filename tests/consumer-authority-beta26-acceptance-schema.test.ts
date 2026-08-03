@@ -5,11 +5,11 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import {
-  BETA25_ACCEPTANCE_SCHEMA_VERSION,
-  Beta25AcceptanceManifestError,
-  parseBeta25AcceptanceManifest,
-  readBeta25AcceptanceManifest,
-} from "../scripts/consumer-authority-beta25-acceptance-schema.mjs"
+  BETA26_ACCEPTANCE_SCHEMA_VERSION,
+  Beta26AcceptanceManifestError,
+  parseBeta26AcceptanceManifest,
+  readBeta26AcceptanceManifest,
+} from "../scripts/consumer-authority-beta26-acceptance-schema.mjs"
 import {
   FinalObserverV4CleanlinessError,
   evaluateFinalObserverV4Cleanliness,
@@ -18,28 +18,33 @@ import {
 const repositoryRoot = process.cwd()
 const PROCEDURE_RECORD_SHA256 = "5389c027b21f72f325a5d9e467ecd4d150f672e14da1d04f51774602a284c57d"
 
-describe("consumer authority beta.25 hermetic observer acceptance", () => {
+describe("consumer authority beta.26 workflow-selected observer acceptance", () => {
   it("binds the reviewed v4 cleanliness policy and explicit observer gh tool", () => {
-    const manifest = record(readBeta25AcceptanceManifest(repositoryRoot))
+    const manifest = record(readBeta26AcceptanceManifest(repositoryRoot))
     const procedure = record(record(manifest.prearmedExternalHandoff).finalObserverProcedure)
 
-    expect(manifest.schemaVersion).toBe(BETA25_ACCEPTANCE_SCHEMA_VERSION)
-    expect(record(manifest.package).version).toBe("0.8.0-beta.25")
+    expect(manifest.schemaVersion).toBe(BETA26_ACCEPTANCE_SCHEMA_VERSION)
+    expect(record(manifest.package).version).toBe("0.8.0-beta.26")
     expect(procedure.procedureRecord).toEqual({
       location: "coordinator-governed-immutable-external-procedure-record-no-local-path",
       sha256: PROCEDURE_RECORD_SHA256,
     })
     expect(record(manifest.observerGhTool)).toEqual({
-      executable: "explicit-absolute-regular-non-symlink",
+      executable: "workflow-selected-absolute-regular-non-symlink",
       invocation: "direct-exec-no-shell-no-path-lookup",
       output: "bounded-version-classification-only",
-      schemaVersion: "consumer-authority-observer-gh-tool.1",
+      provisioning: "workflow-owned-runner-package-record-to-private-regular-copy",
+      schemaVersion: "consumer-authority-observer-gh-tool.2",
       version: ">=2.96.0 <3.0.0",
+    })
+    expect(record(manifest.observerGhSelection)).toEqual({
+      diagnostics: "only-fixed-tool-invalid-tool-unavailable-tool-version-unsupported-parser-rejected-or-non-tool-stage-codes-cross-the-package-contract-boundary",
+      workflow: "runner-package-record-selection-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts",
     })
     expect(record(procedure.cleanliness).forbiddenConsumerPaths).toEqual([".local/**", ".config/**", ".cache/**"])
     expect(record(manifest.closureCompleteness).deterministicLinks).toEqual(expect.arrayContaining([
       "v4-stage-scoped-runtime-residue-cleanliness",
-      "explicit-observer-gh-tool-without-ambient-path-lookup",
+      "workflow-selected-observer-gh-tool-without-package-path-lookup",
       "linux-runtime-owned-uv-use-io-uring-child-envelope-only",
     ]))
   })
@@ -47,6 +52,8 @@ describe("consumer authority beta.25 hermetic observer acceptance", () => {
   it("rejects strict acceptance and v4 residue drift", () => {
     const schemaCases: Array<(manifest: Record<string, unknown>) => void> = [
       (manifest) => { record(manifest.observerGhTool).invocation = "path-lookup" },
+      (manifest) => { delete record(manifest.observerGhTool).provisioning },
+      (manifest) => { record(manifest.observerGhSelection).workflow = "ambient-path" },
       (manifest) => { record(record(manifest.prearmedExternalHandoff).finalObserverProcedure).observerGhTool = {} },
       (manifest) => { record(record(record(manifest.prearmedExternalHandoff).finalObserverProcedure).cleanliness).forbiddenConsumerPaths = [] },
       (manifest) => { manifest.unknown = true },
@@ -54,11 +61,11 @@ describe("consumer authority beta.25 hermetic observer acceptance", () => {
     for (const apply of schemaCases) {
       const manifest = cloneCanonical()
       apply(manifest)
-      expectSchemaBlock(() => parseBeta25AcceptanceManifest(manifest, "0.8.0-beta.25"))
+      expectSchemaBlock(() => parseBeta26AcceptanceManifest(manifest, "0.8.0-beta.26"))
     }
 
-    const root = mkdtempSync(join(tmpdir(), "beta25-v4-cleanliness-"))
-    const outside = mkdtempSync(join(tmpdir(), "beta25-v4-outside-"))
+    const root = mkdtempSync(join(tmpdir(), "beta26-v4-cleanliness-"))
+    const outside = mkdtempSync(join(tmpdir(), "beta26-v4-outside-"))
     try {
       materializeValidResidues(root)
       expect(evaluateFinalObserverV4Cleanliness(validInput(root))).toMatchObject({ stage: "immediately-pre-push" })
@@ -78,7 +85,7 @@ describe("consumer authority beta.25 hermetic observer acceptance", () => {
 })
 
 function cloneCanonical(): Record<string, unknown> {
-  return record(JSON.parse(JSON.stringify(readBeta25AcceptanceManifest(repositoryRoot))))
+  return record(JSON.parse(JSON.stringify(readBeta26AcceptanceManifest(repositoryRoot))))
 }
 
 function materializeValidResidues(root: string): void {
@@ -118,10 +125,10 @@ function expectSchemaBlock(action: () => void): void {
   try {
     action()
   } catch (error) {
-    if (error instanceof Beta25AcceptanceManifestError) return
+    if (error instanceof Beta26AcceptanceManifestError) return
     throw error
   }
-  throw new Error("beta25 acceptance unexpectedly accepted drift")
+  throw new Error("beta26 acceptance unexpectedly accepted drift")
 }
 
 function expectCleanlinessBlock(action: () => void): void {

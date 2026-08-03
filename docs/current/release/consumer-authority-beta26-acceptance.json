@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "consumer-authority-beta25-acceptance.1",
+  "schemaVersion": "consumer-authority-beta26-acceptance.1",
   "package": {
     "channel": "staging",
     "scope": "staging-only",
-    "version": "0.8.0-beta.25"
+    "version": "0.8.0-beta.26"
   },
   "packageBoundary": {
     "bundle": {
@@ -231,7 +231,7 @@
       "artifact": "project-finish-attestation",
       "consumer": "public-java-spring-gradle",
       "postmergeAction": "normal-push-to-main",
-      "registryInstall": "npm install persona-harness@0.8.0-beta.25 --registry https://registry.npmjs.org"
+      "registryInstall": "npm install persona-harness@0.8.0-beta.26 --registry https://registry.npmjs.org"
     },
     "hostedFixture": {
       "callerWorkflowPath": ".github/workflows/research-attestation.yml",
@@ -240,7 +240,7 @@
       "ref": "refs/heads/main",
       "repository": "jyt6640/persona-harness-attestation-claim-fixture",
       "reusableWorkflowPath": ".github/workflows/persona-harness-project-finish.yml",
-      "revision": "postmerge-persona-harness-beta25-main-sha"
+      "revision": "postmerge-persona-harness-beta26-main-sha"
     },
     "verification": {
       "predicate": "project-finish-attestation.1",
@@ -309,7 +309,7 @@
         "retain-identical-unpushed-final-fixture-commit-as-the-installed-consumer-cwd-head",
         "post-commit-excluded-runtime-build-only-preparation",
         "v4-immutable-tracked-binding-and-stage-scoped-residue-cleanliness-after-every-prepush-stage",
-        "explicit-observer-gh-tool-preflight-without-path-lookup-token-or-artifact",
+        "workflow-selected-observer-gh-tool-preflight-without-package-path-lookup-token-or-artifact",
         "public-pre-authority-readiness",
         "public-initialized-finish-state",
         "observer-credential-preflight",
@@ -355,7 +355,7 @@
       }
     },
     "trigger": {
-      "onlyAfter": "immutable-prepush-fixture-commit-v4-tracked-binding-and-stage-scoped-residue-cleanliness-and-explicit-observer-gh-tool-ready-and-natural-current-version-original-artifact",
+      "onlyAfter": "immutable-prepush-fixture-commit-v4-tracked-binding-and-stage-scoped-residue-cleanliness-and-workflow-selected-observer-gh-tool-ready-and-natural-current-version-original-artifact",
       "steps": [
         "pre-push-fixture-parent-cwd-head-source-identity-and-v4-cleanliness-ready",
         "normal-push-of-the-same-final-fixture-commit-to-main",
@@ -475,7 +475,7 @@
         "credential-handoff-v4-immutable-binding-and-normalized-residue-projection",
         "observer-child-v4-immutable-binding-and-normalized-residue-projection",
         "immediately-pre-push-v4-immutable-binding-and-normalized-residue-projection",
-        "explicit-observer-gh-tool-regular-nonsymlink-version-compatible-and-no-path-lookup",
+        "workflow-selected-observer-gh-tool-regular-nonsymlink-version-compatible-and-no-package-path-lookup",
         "public-bootstrap-accepted-plan-and-current-loop-state",
         "public-Gradle-test-compileJava-and-clean",
         "public-README-profile-and-Java-evidence",
@@ -606,18 +606,20 @@
         }
       },
       "observerGhTool": {
-        "executable": "explicit-absolute-regular-non-symlink",
+        "executable": "workflow-selected-absolute-regular-non-symlink",
         "invocation": "direct-exec-no-shell-no-path-lookup",
         "output": "bounded-version-classification-only",
-        "schemaVersion": "consumer-authority-observer-gh-tool.1",
+        "provisioning": "workflow-owned-runner-package-record-to-private-regular-copy",
+        "schemaVersion": "consumer-authority-observer-gh-tool.2",
         "version": ">=2.96.0 <3.0.0"
-      }
+      },
+      "observerGhSelection": "workflow-owned-runner-package-record-to-private-regular-copy-before-every-package-contract"
     }
   },
   "hostedResidual": {
-    "id": "beta25-v4-prearmed-same-commit-current-artifact-fetch-consume-replay",
+    "id": "beta26-v4-prearmed-same-commit-current-artifact-fetch-consume-replay",
     "requiredEvidence": "one separately authorized normal push of the v4-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
-    "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, explicit observer-gh parser preflight, Linux child-envelope behavior, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
+    "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh parser preflight with fixed stage diagnostics, Linux child-envelope behavior, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   },
   "mutationBoundary": {
     "performed": false,
@@ -759,26 +761,36 @@
   },
   "beta23HistoricalFinalObserver": {
     "outcome": "raw-empty-porcelain-and-clean-contradicted-approved-runtime-build-residue-after-final-commit-not-reusable-as-closure-evidence",
-    "reusableForBeta25": false,
+    "reusableForBeta26": false,
     "version": "0.8.0-beta.23"
   },
   "beta24HistoricalExternalContract": {
     "outcome": "supplied-bundle-source-contract-required-ambient-gh-and-rejected-linux-runtime-owned-uv-use-io-uring-not-reusable-as-closure-evidence",
-    "reusableForBeta25": false,
+    "reusableForBeta26": false,
     "version": "0.8.0-beta.24"
   },
+  "beta25HistoricalObserverTool": {
+    "outcome": "protected-verify-used-an-unselected-literal-observer-gh-path-and-collapsed-tool-stage-not-reusable-as-closure-evidence",
+    "reusableForBeta26": false,
+    "version": "0.8.0-beta.25"
+  },
   "observerGhTool": {
-    "executable": "explicit-absolute-regular-non-symlink",
+    "executable": "workflow-selected-absolute-regular-non-symlink",
     "invocation": "direct-exec-no-shell-no-path-lookup",
     "output": "bounded-version-classification-only",
-    "schemaVersion": "consumer-authority-observer-gh-tool.1",
+    "provisioning": "workflow-owned-runner-package-record-to-private-regular-copy",
+    "schemaVersion": "consumer-authority-observer-gh-tool.2",
     "version": ">=2.96.0 <3.0.0"
+  },
+  "observerGhSelection": {
+    "diagnostics": "only-fixed-tool-invalid-tool-unavailable-tool-version-unsupported-parser-rejected-or-non-tool-stage-codes-cross-the-package-contract-boundary",
+    "workflow": "runner-package-record-selection-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts"
   },
   "closureCompleteness": {
     "deterministicLinks": [
       "immutable-tracked-source-head-parent-pin-and-digest-map",
       "v4-stage-scoped-runtime-residue-cleanliness",
-      "explicit-observer-gh-tool-without-ambient-path-lookup",
+      "workflow-selected-observer-gh-tool-without-package-path-lookup",
       "linux-runtime-owned-uv-use-io-uring-child-envelope-only",
       "same-consumer-public-bootstrap-plan-loop-gradle-reports-evidence-readiness",
       "host-state-isolated-credential-preflight-and-command-transport-plans",
@@ -786,7 +798,7 @@
       "authenticated-fetch-to-trusted-unconsumed",
       "one-Finish-consumption-and-immediate-replay-block"
     ],
-    "localProof": "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-explicit-gh-parser-and-fixed-authority-child-contracts",
+    "localProof": "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-workflow-selected-gh-parser-fixed-stage-diagnostics-and-authority-child-contracts",
     "remainingUncertainty": "one-authorized-v4-fixture-push-and-immediate-current-artifact-observation-only"
   }
 }

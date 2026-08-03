@@ -254,11 +254,43 @@ function hasContextDiagnosticFinalizerRuntime(metadata, entrypoint) {
     && !entrypoint.includes("process.env.PATH")
 }
 
+function hasWorkflowOwnedObserverGhSelection(text) {
+  const selection = text.indexOf("- name: Select observer GitHub CLI")
+  const installation = text.indexOf("- name: Install dependencies")
+  const test = text.indexOf("- name: Test")
+  return selection >= 0
+    && installation > selection
+    && test > selection
+    && text.includes("id: observer-gh")
+    && text.includes("run: node .github/scripts/prepare-observer-gh-tool.mjs")
+    && text.includes("PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}")
+    && !text.includes("--observer-gh /usr/bin/gh")
+    && !text.includes("command -v gh")
+}
+
+function hasWorkflowOwnedObserverGhProvisioner(text) {
+  return text.includes('const DPKG_QUERY = "/usr/bin/dpkg-query"')
+    && text.includes('spawnSync(DPKG_QUERY, ["--listfiles", "gh"]')
+    && text.includes("constants.COPYFILE_EXCL")
+    && text.includes("constants.O_NOFOLLOW")
+    && text.includes("assessObserverGhTool(output)")
+    && text.includes('appendGithubOutput(githubOutput, `path=${output}\\n`)')
+    && !text.includes("process.env.PATH")
+    && !text.includes("command -v")
+    && !text.includes("GH_TOKEN")
+    && !text.includes("GITHUB_TOKEN")
+    && !text.includes("attestation verify")
+    && !text.includes("gh api")
+}
+
 const requirements = [
   ["ci trigger", ".github/workflows/ci.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("- main")],
   ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm run test:repository", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
+  ["ci workflow-owned observer gh", ".github/workflows/ci.yml", hasWorkflowOwnedObserverGhSelection],
   ["publish repository tests", ".github/workflows/publish.yml", (text) => text.includes("npm run test:repository")],
+  ["publish workflow-owned observer gh", ".github/workflows/publish.yml", hasWorkflowOwnedObserverGhSelection],
   ["release repository tests", ".github/workflows/release.yml", (text) => text.includes("npm run test:repository")],
+  ["release workflow-owned observer gh", ".github/workflows/release.yml", hasWorkflowOwnedObserverGhSelection],
   ["ci no publish", ".github/workflows/ci.yml", (text) => !text.includes("npm publish")],
   ["publish canonical main", ".github/workflows/publish.yml", (text) => text.includes("canonical-main") && text.includes("tag-source") && text.includes("TAG_NAME: ${{ inputs.tag }}") && text.includes("refs/remotes/origin/main") && text.includes("git fetch origin main")],
   ["publish staging approval", ".github/workflows/publish.yml", (text) => text.includes("          - staging") && text.includes("          - next") && text.includes("          - latest") && text.includes("          - staging-only") && text.includes("          - next-promotion-approved") && text.includes("          - ga-approved") && text.includes("approval_scope:") && text.includes('--approval-scope "$APPROVAL_SCOPE"')],
@@ -362,6 +394,7 @@ async function main() {
     fallbackActionEntrypoint,
     finalizerActionMetadata,
     finalizerActionEntrypoint,
+    observerGhProvisioner,
   ] = await Promise.all([
     readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
@@ -378,6 +411,7 @@ async function main() {
     readFile(".github/actions/project-finish-context-diagnostic-fallback/index.mjs", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-finalizer/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-finalizer/index.mjs", "utf8"),
+    readFile(".github/scripts/prepare-observer-gh-tool.mjs", "utf8"),
   ])
   const failures = []
   for (const [name, path, predicate] of requirements) {
@@ -446,6 +480,9 @@ async function main() {
     || !nativeSelftestCore.includes('nativeCaseFor("capability")')
   ) {
     failures.push("project finish context diagnostic native OIDC selftest")
+  }
+  if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner)) {
+    failures.push("workflow-owned observer gh provisioner")
   }
   if (failures.length > 0) {
     throw new Error(`Release workflow policy failed: ${failures.join(", ")}`)

@@ -2,7 +2,7 @@ import { realpathSync } from "node:fs"
 import { dirname } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
-import { readBeta25AcceptanceManifest } from "./consumer-authority-beta25-acceptance-schema.mjs"
+import { readBeta26AcceptanceManifest } from "./consumer-authority-beta26-acceptance-schema.mjs"
 import { runExternalArtifactTransportPreflight } from "./consumer-authority-external-artifact-transport-plan.mjs"
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -14,7 +14,7 @@ async function main() {
     process.exitCode = 1
     return
   }
-  readBeta25AcceptanceManifest(packageRoot)
+  readBeta26AcceptanceManifest(packageRoot)
   const result = await runExternalArtifactTransportPreflight()
   process.stdout.write(`${JSON.stringify(result)}\n`)
   process.exitCode = result.state === "ready" ? 0 : 1

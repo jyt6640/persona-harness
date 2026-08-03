@@ -1,14 +1,15 @@
-export const OBSERVER_GH_TOOL_SCHEMA_VERSION: "consumer-authority-observer-gh-tool.1"
+export const OBSERVER_GH_TOOL_SCHEMA_VERSION: "consumer-authority-observer-gh-tool.2"
 
 export class ObserverGhToolError extends Error {
   readonly code: "observer-gh-tool-contract"
 }
 
 export interface ObserverGhToolContract {
-  readonly executable: "explicit-absolute-regular-non-symlink"
+  readonly executable: "workflow-selected-absolute-regular-non-symlink"
   readonly invocation: "direct-exec-no-shell-no-path-lookup"
   readonly output: "bounded-version-classification-only"
-  readonly schemaVersion: "consumer-authority-observer-gh-tool.1"
+  readonly provisioning: "workflow-owned-runner-package-record-to-private-regular-copy"
+  readonly schemaVersion: "consumer-authority-observer-gh-tool.2"
   readonly version: ">=2.96.0 <3.0.0"
 }
 
