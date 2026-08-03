@@ -75,6 +75,13 @@ const BETA26_PRE_AUTHORITY_COMMANDS = new Map([
   }],
 ])
 
+class ObserverGhContractStageError extends Error {
+  constructor(code) {
+    super(code)
+    this.code = code
+  }
+}
+
 let contractOptions
 try {
   contractOptions = parseContractOptions(process.argv.slice(2))
@@ -153,13 +160,6 @@ try {
   process.exitCode = 1
 } finally {
   rmSync(temporaryRoot, { force: true, recursive: true })
-}
-
-class ObserverGhContractStageError extends Error {
-  constructor(code) {
-    super(code)
-    this.code = code
-  }
 }
 
 function emitBoundedExerciseDiagnostic(error, options) {

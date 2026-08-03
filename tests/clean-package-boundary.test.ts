@@ -208,6 +208,7 @@ describe("clean package boundary", () => {
     expect(contract).toContain("observerGhStageCodeForPreflight")
     expect(contract).toContain("source-cli-package-exercise-diagnostic")
     expect(contract).toContain("installed-package-exercise-diagnostic")
+    expect(contract.indexOf("class ObserverGhContractStageError")).toBeLessThan(contract.indexOf("let contractOptions"))
     expect(verifier).toContain("${fallbackCode}-observer-gh-")
     expect(verifier).toContain("boundedContractDiagnosticCode")
     expect(verifier).not.toContain('return "/usr/bin/gh"')
