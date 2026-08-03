@@ -121,6 +121,8 @@ describe("release workflow policy", () => {
     expect(packageRecord).toContain('const POLICY_PRIMARY_GH_RECORD = "/usr/bin/gh"')
     expect(packageRecord).toContain('"/usr/share/bash-completion/completions/gh"')
     expect(packageRecord).toContain("OPTIONAL_ANCILLARY_GH_RECORDS")
+    expect(packageRecord).toContain("OPTIONAL_ANCILLARY_GH_RECORDS.has(record)")
+    expect(packageRecord).toContain("if (!isRegularNonSymlink(stat))")
     expect(packageRecord).toContain("assessSecondaryGhRecords")
     expect(packageRecord).toContain('"ancillary-unsafe"')
     expect(packageRecord).toContain('"record-encoding"')
@@ -176,7 +178,7 @@ describe("release workflow policy", () => {
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.8.0-beta.30")
+    expect(packageVersion).toBe("0.8.0-beta.31")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",

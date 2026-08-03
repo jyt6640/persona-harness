@@ -12,9 +12,12 @@ import {
 
 const repositoryRoot = process.cwd()
 
-describe("consumer authority beta.30 acceptance schema", () => {
-  it("ships the primary-centric optional-secondary package-record policy with only bounded shapes", () => {
-    const manifest = readBeta30AcceptanceManifest(repositoryRoot)
+describe("consumer authority beta.30 historical acceptance schema", () => {
+  it("keeps the historical primary-centric optional-secondary package-record policy strict", () => {
+    const manifest = canonicalBeta30AcceptanceManifest()
+    const shipped = JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta30-acceptance.json"), "utf8"))
+
+    expect(parseBeta30AcceptanceManifest(shipped, "0.8.0-beta.30")).toEqual(manifest)
 
     expect(manifest.package).toMatchObject({ version: "0.8.0-beta.30" })
     expect(manifest.observerGhSelection).toMatchObject({
@@ -44,6 +47,7 @@ describe("consumer authority beta.30 acceptance schema", () => {
     packageRecord.shapes = ["canonical"]
 
     expect(() => parseBeta30AcceptanceManifest(fixture, "0.8.0-beta.30")).toThrow(Beta30AcceptanceManifestError)
+    expect(() => readBeta30AcceptanceManifest(repositoryRoot)).toThrow(Beta30AcceptanceManifestError)
     expect(JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta29-acceptance.json"), "utf8"))).toHaveProperty("schemaVersion", "consumer-authority-beta29-acceptance.1")
   })
 })

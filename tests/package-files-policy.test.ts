@@ -435,6 +435,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-beta29-acceptance-schema.mjs",
       "scripts/consumer-authority-beta30-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta30-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta31-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta31-acceptance-schema.mjs",
       "scripts/consumer-authority-final-observer-v4-cleanliness.d.mts",
       "scripts/consumer-authority-final-observer-v4-cleanliness.mjs",
       "scripts/consumer-authority-observer-gh-tool.d.mts",
@@ -507,6 +509,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta28-acceptance.json",
       "docs/current/release/consumer-authority-beta29-acceptance.json",
       "docs/current/release/consumer-authority-beta30-acceptance.json",
+      "docs/current/release/consumer-authority-beta31-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -553,7 +556,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.30-release-notes.md",
+      "docs/current/release/v0.8.0-beta.31-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -579,7 +582,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.30-release-notes.md",
+      "docs/current/release/v0.8.0-beta.31-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

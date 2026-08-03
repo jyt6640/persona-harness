@@ -57,7 +57,7 @@ describe("consumer authority workflow observer gh selector lifecycle", () => {
     }
   })
 
-  it("accepts the exact official two-record shape and creates a private output only on success", () => {
+  it("accepts the official primary plus executable known completion and creates a private output only on success", () => {
     // Given: the official executable and completion records.
     const root = mkdtempSync(join(tmpdir(), "beta28-observer-gh-ready-"))
     const runnerTemp = join(root, "runner-temp")
@@ -90,7 +90,7 @@ describe("consumer authority workflow observer gh selector lifecycle", () => {
 
       const records = new Map([
         ["/usr/bin/gh", fixtureStat(true, false, 0o100755)],
-        [completion, fixtureStat(true, false, 0o100644)],
+        [completion, fixtureStat(true, false, 0o100755)],
       ])
       expect(selectInstalledObserverGhCandidate([
         "/usr/bin/gh",
@@ -295,7 +295,7 @@ function strictFixtureOptions(input: {
     lstatPackageRecord: (path: string) => path === primary
       ? fixtureStat(true, false, 0o100755)
       : path === completion
-        ? fixtureStat(true, false, 0o100644)
+        ? fixtureStat(true, false, 0o100755)
         : (() => { throw Object.assign(new Error("missing"), { code: "ENOENT" }) })(),
     readPackageRecord: () => [primary, completion],
   }
