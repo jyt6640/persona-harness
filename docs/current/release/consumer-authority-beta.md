@@ -72,6 +72,12 @@ allowlisted. Linux may add only `UV_USE_IO_URING=0` to the fixed authority-fetch
 child environment. No lifecycle or source reinitialization, consumer switch, or
 state reset is permitted after fetch.
 
+The beta29 selector also runs its bounded direct `gh --version` assessment with
+an explicit token-free state environment rooted in validated `RUNNER_TEMP`.
+It never inherits a package-contract checkout as `HOME` or an XDG state root,
+so normal tool validation cannot leave `.local`, `.config`, or `.cache` behind
+in a source-built or fresh installed consumer.
+
 ## Fixed Sequence
 
 1. An approved protected-main source candidate has strict prerelease SemVer

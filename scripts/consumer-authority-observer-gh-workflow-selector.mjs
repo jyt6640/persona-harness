@@ -75,7 +75,7 @@ function provision(options) {
   const assessTool = typeof settings.assessTool === "function" ? settings.assessTool : assessObserverGhTool
   let source
   try {
-    source = assessTool(candidate)
+    source = assessTool(candidate, { stateRoot: runnerTemp })
   } catch {
     return blocked("observer-gh-workflow-tool-invalid", "source-assessment", packageRecordShape)
   }
@@ -100,7 +100,7 @@ function provision(options) {
 
   let tool
   try {
-    tool = assessTool(output)
+    tool = assessTool(output, { stateRoot: runnerTemp })
   } catch {
     return blocked("observer-gh-workflow-tool-invalid", "private-assessment", packageRecordShape)
   }
