@@ -34,7 +34,7 @@ describe("consumer authority beta.29 acceptance schema", () => {
         ],
       },
     })
-    expect(manifest.closureCompleteness.localProof).toContain("byte-strict-package-record")
+    expect((manifest.closureCompleteness as { localProof: string }).localProof).toContain("byte-strict-package-record")
   })
 
   it("rejects acceptance drift rather than accepting a partial selector contract", () => {
