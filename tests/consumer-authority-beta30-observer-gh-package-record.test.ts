@@ -48,12 +48,12 @@ describe("consumer authority beta.30 primary-centric observer gh package record"
     }
   })
 
-  it("selects only the fixed primary while allowing absent or inert secondary basename-gh records", () => {
+  it("selects only the fixed primary while allowing the known completion in executable mode and inert secondary records", () => {
     const [completion] = OBSERVER_GH_OPTIONAL_ANCILLARY_RECORDS
     const inert = "/usr/share/doc/gh/gh"
     const stats = new Map([
       [OBSERVER_GH_POLICY_PRIMARY_RECORD, fixtureStat(0o100755)],
-      [completion, fixtureStat(0o100644)],
+      [completion, fixtureStat(0o100755)],
       [inert, fixtureStat(0o100644)],
     ])
     const lstat = (path: string) => stats.get(path) ?? missingStat()
@@ -107,6 +107,12 @@ describe("consumer authority beta.30 primary-centric observer gh package record"
     expectShape("ancillary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, completion], {
       lstat: (path) => path === completion ? fixtureStat(0o120777, { symlink: true }) : lstat(path),
     }))
+    expectShape("ancillary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, completion], {
+      lstat: (path) => path === completion ? fixtureStat(0o040755, { file: false }) : lstat(path),
+    }))
+    expectShape("ancillary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, completion], {
+      lstat: (path) => path === completion ? missingStat() : lstat(path),
+    }))
     expectShape("ancillary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, inert], {
       lstat: (path) => path === inert ? fixtureStat(0o040755, { file: false }) : lstat(path),
     }))
@@ -141,7 +147,7 @@ describe("consumer authority beta.30 primary-centric observer gh package record"
     const githubOutput = join(root, "github-output")
     const stats = new Map([
       [OBSERVER_GH_POLICY_PRIMARY_RECORD, fixtureStat(0o100755)],
-      [completion, fixtureStat(0o100644)],
+      [completion, fixtureStat(0o100755)],
       [inert, fixtureStat(0o100644)],
       [executable, fixtureStat(0o100755)],
     ])
@@ -153,6 +159,9 @@ describe("consumer authority beta.30 primary-centric observer gh package record"
         { shape: "record-path", read: () => { throw new ObserverGhPackageRecordError("record-path") }, lstat: () => missingStat() },
         { shape: "primary-missing", read: () => [completion], lstat: (path) => stats.get(path) ?? missingStat() },
         { shape: "primary-unsafe", read: () => records, lstat: (path) => path === OBSERVER_GH_POLICY_PRIMARY_RECORD ? fixtureStat(0o100644) : stats.get(path) ?? missingStat() },
+        { shape: "ancillary-unsafe", read: () => records, lstat: (path) => path === completion ? fixtureStat(0o120777, { symlink: true }) : stats.get(path) ?? missingStat() },
+        { shape: "ancillary-unsafe", read: () => records, lstat: (path) => path === completion ? fixtureStat(0o040755, { file: false }) : stats.get(path) ?? missingStat() },
+        { shape: "ancillary-unsafe", read: () => records, lstat: (path) => path === completion ? missingStat() : stats.get(path) ?? missingStat() },
         { shape: "ancillary-unsafe", read: () => [OBSERVER_GH_POLICY_PRIMARY_RECORD, inert], lstat: (path) => path === inert ? missingStat() : stats.get(path) ?? missingStat() },
         { shape: "executable-ambiguous", read: () => [OBSERVER_GH_POLICY_PRIMARY_RECORD, executable], lstat: (path) => stats.get(path) ?? missingStat() },
         { shape: "lstat-failed", read: () => records, lstat: () => { throw Object.assign(new Error("permission denied"), { code: "EACCES" }) } },

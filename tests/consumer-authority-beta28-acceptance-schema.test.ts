@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest"
 import {
   BETA28_ACCEPTANCE_SCHEMA_VERSION,
   Beta28AcceptanceManifestError,
+  canonicalBeta28AcceptanceManifest,
   parseBeta28AcceptanceManifest,
   readBeta28AcceptanceManifest,
 } from "../scripts/consumer-authority-beta28-acceptance-schema.mjs"
@@ -20,7 +21,10 @@ const PROCEDURE_RECORD_SHA256 = "5389c027b21f72f325a5d9e467ecd4d150f672e14da1d04
 
 describe("consumer authority beta.28 workflow-selected observer acceptance", () => {
   it("binds the reviewed v4 cleanliness policy and observable qualified dpkg observer gh lifecycle", () => {
-    const manifest = record(readBeta28AcceptanceManifest(repositoryRoot))
+    const manifest = record(parseBeta28AcceptanceManifest(
+      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta28-acceptance.json"), "utf8")),
+      "0.8.0-beta.28",
+    ))
     const procedure = record(record(manifest.prearmedExternalHandoff).finalObserverProcedure)
 
     expect(manifest.schemaVersion).toBe(BETA28_ACCEPTANCE_SCHEMA_VERSION)
@@ -60,6 +64,7 @@ describe("consumer authority beta.28 workflow-selected observer acceptance", () 
       "ubuntu-dpkg-record-qualified-workflow-selected-observer-gh-tool-with-fixed-nonreflective-selector-stage-without-package-path-lookup",
       "linux-runtime-owned-uv-use-io-uring-child-envelope-only",
     ]))
+    expect(() => readBeta28AcceptanceManifest(repositoryRoot)).toThrow(Beta28AcceptanceManifestError)
   })
 
   it("rejects strict acceptance and v4 residue drift", () => {
@@ -102,7 +107,7 @@ describe("consumer authority beta.28 workflow-selected observer acceptance", () 
 })
 
 function cloneCanonical(): Record<string, unknown> {
-  return record(JSON.parse(JSON.stringify(readBeta28AcceptanceManifest(repositoryRoot))))
+  return record(JSON.parse(JSON.stringify(canonicalBeta28AcceptanceManifest())))
 }
 
 function materializeValidResidues(root: string): void {

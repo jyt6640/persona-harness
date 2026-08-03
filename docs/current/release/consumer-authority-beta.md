@@ -29,7 +29,8 @@ sibling, which its basename-only selector rejected before assessment. The active
 `0.8.0-beta.27` procedure evidence then collapsed selector lifecycle failures
 to an opaque block. `0.8.0-beta.29` is terminal non-reusable procedure evidence:
 its selector conflated an optional nonselected ancillary record with an unsafe
-record. The active `0.8.0-beta.30` procedure-only source candidate has no
+record. Beta.30 then classified the documented completion as a competing
+executor because of its runner mode. The active `0.8.0-beta.31` procedure-only source candidate has no
 package, tag, channel movement, GitHub release, or signed consumer-project
 artifact at source preparation time.
 
@@ -39,7 +40,7 @@ because it did not complete the full current-version public consumer route.
 Beta.20 reached a live `trusted/unconsumed` fetch but then correctly stopped at
 `workflow-state-uninitialized` because the observer had not prepared the same
 consumer's public lifecycle. That result consumed nothing and is not reusable.
-Beta30 binds the immutable same-consumer observer order, V4 stage-scoped
+Beta31 binds the immutable same-consumer observer order, V4 stage-scoped
 residue cleanliness, pre-push source identity, and one qualified workflow-selected
 observer-gh selector lifecycle contract. It cannot inherit beta.16's observer failure, beta.17's registry
 PUT result, beta.18's failed metadata predicate, beta.21's expired temporal
@@ -65,9 +66,11 @@ and source identity must still match the final commit. Every host process uses
 `env -i` with explicit absolute Git, Node, and npm paths. CI, publish, and
 release package contracts select the exact primary `/usr/bin/gh` package record
 into a private regular non-symlink path with a bounded compatible version
-result. The completion record is optional; any present nonselected basename-
-`gh` record must itself be a regular non-symlink non-executable file, while an
-alias, unsafe secondary, or second executable blocks. No package observer path
+result. The known completion record is optional and may be a no-follow regular
+non-symlink file regardless of executable mode; it is never selected or run.
+Every other present nonselected basename-`gh` record must itself be a regular
+non-symlink non-executable file, while an alias, unsafe secondary, or second
+executable blocks. No package observer path
 is resolved through PATH. All fifteen host-state roots
 are outside the consumer realpath. V4 compares the NUL-safe untracked/ignored
 status and normalized `git clean -ndx` output against the exact allowed residue
@@ -77,7 +80,7 @@ allowlisted. Linux may add only `UV_USE_IO_URING=0` to the fixed authority-fetch
 child environment. No lifecycle or source reinitialization, consumer switch, or
 state reset is permitted after fetch.
 
-The beta30 selector also runs its bounded direct `gh --version` assessment with
+The beta31 selector also runs its bounded direct `gh --version` assessment with
 an explicit token-free state environment rooted in validated `RUNNER_TEMP`.
 It never inherits a package-contract checkout as `HOME` or an XDG state root,
 so normal tool validation cannot leave `.local`, `.config`, or `.cache` behind
@@ -185,12 +188,12 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.29` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.30`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.30` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.31`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta30-acceptance.json`](consumer-authority-beta30-acceptance.json)
+[`consumer-authority-beta31-acceptance.json`](consumer-authority-beta31-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the immutable same-consumer
@@ -243,9 +246,12 @@ consumer contracts. Retained earlier beta tar aggregates remain diagnostic-only
 and do not authorize a package or authority result.
 
 CI, publish, and release lstat every basename-`gh` entry in the runner's Ubuntu
-package record without following links, require exactly one regular executable
-non-symlink candidate, and ignore only the documented regular non-executable
-`/usr/share/bash-completion/completions/gh` ancillary entry.
+package record without following links and require exactly the regular
+non-symlink executable policy primary `/usr/bin/gh`. The documented
+`/usr/share/bash-completion/completions/gh` ancillary entry is optional and,
+when present, must only be a regular non-symlink file regardless of mode; it is
+never selected, copied, or executed. Every other secondary remains inert only
+when regular, non-symlink, and non-executable.
 They copy that candidate into a private runner directory and pass only the
 resulting path. They never look it up through `PATH`, assume `/usr/bin/gh`,
 download it, or use it to access an artifact. A fixed selected-tool diagnostic

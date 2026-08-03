@@ -110,6 +110,12 @@ function assessSecondaryGhRecords(records, lstat) {
       continue
     }
     const stat = lstatRecord(record, lstat, "ancillary-unsafe")
+    if (OPTIONAL_ANCILLARY_GH_RECORDS.has(record)) {
+      if (!isRegularNonSymlink(stat)) {
+        throw new ObserverGhPackageRecordError("ancillary-unsafe")
+      }
+      continue
+    }
     if (isRegularNonSymlinkExecutable(stat)) {
       throw new ObserverGhPackageRecordError("executable-ambiguous")
     }
@@ -181,11 +187,15 @@ function isCanonicalAbsoluteRecordPath(value) {
 }
 
 function isRegularNonSymlinkExecutable(stat) {
-  return stat.isFile() && !stat.isSymbolicLink() && (stat.mode & 0o111) !== 0
+  return isRegularNonSymlink(stat) && (stat.mode & 0o111) !== 0
 }
 
 function isRegularNonSymlinkNonExecutable(stat) {
-  return stat.isFile() && !stat.isSymbolicLink() && (stat.mode & 0o111) === 0
+  return isRegularNonSymlink(stat) && (stat.mode & 0o111) === 0
+}
+
+function isRegularNonSymlink(stat) {
+  return stat.isFile() && !stat.isSymbolicLink()
 }
 
 function hasUtf8Bom(value) {
