@@ -2259,6 +2259,7 @@ function createCooperativeGradleFixture(projectDir) {
   writeFileSync(join(projectDir, "README.md"), "# Installed cooperative Gradle fixture\n")
   writeFileSync(join(projectDir, ".gitignore"), ".gradle/\nbuild/\n")
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'installed-cooperative-gradle'\n")
+  writeFileSync(join(projectDir, "gradle.properties"), "org.gradle.daemon=false\n")
   writeFileSync(
     join(projectDir, "build.gradle"),
     [
@@ -2285,7 +2286,7 @@ function createCooperativeGradleFixture(projectDir) {
   )
   requireSuccess(
     "installed fixture Gradle wrapper",
-    runCommand(projectDir, "gradle", ["wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
+    runCommand(projectDir, "gradle", ["--no-daemon", "wrapper", "--gradle-version", "9.4.0", "--distribution-type", "bin"]),
   )
   rmSync(join(projectDir, ".gradle"), { force: true, recursive: true })
   writeFileSync(
@@ -2378,7 +2379,10 @@ function assertAuthorityOnlyPreflight(projectDir, phPath, label, expected, envir
 
 function isolatedAuthorityEnvironment(home) {
   mkdirSync(home, { recursive: true })
+  const gradleUserHome = join(home, "gradle-user-home")
+  mkdirSync(gradleUserHome, { recursive: true })
   return {
+    GRADLE_USER_HOME: gradleUserHome,
     GH_TOKEN: "",
     GITHUB_TOKEN: "",
     HOME: home,

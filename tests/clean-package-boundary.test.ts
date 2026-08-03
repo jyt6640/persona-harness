@@ -213,4 +213,14 @@ describe("clean package boundary", () => {
     expect(verifier).toContain("boundedContractDiagnosticCode")
     expect(verifier).not.toContain('return "/usr/bin/gh"')
   })
+
+  it("keeps the provisioned Gradle lifecycle bounded to its contract-owned home", () => {
+    const contract = readFileSync(join(process.cwd(), "scripts", "test-installed-package-contract.mjs"), "utf8")
+
+    expect(contract).toContain('join(projectDir, "gradle.properties")')
+    expect(contract).toContain('"org.gradle.daemon=false\\n"')
+    expect(contract).toContain('"--no-daemon", "wrapper"')
+    expect(contract).toContain('GRADLE_USER_HOME: gradleUserHome')
+    expect(contract).toContain('const gradleUserHome = join(home, "gradle-user-home")')
+  })
 })
