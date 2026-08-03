@@ -24,6 +24,7 @@ export function assessObserverGhTool(
   ghPath: unknown,
   options?: {
     readonly contract?: ObserverGhToolContract
+    readonly stateRoot?: string
     readonly execute?: (command: string, argumentsList: readonly string[], options: {
       readonly encoding: "utf8"
       readonly env: Readonly<Record<string, string>>

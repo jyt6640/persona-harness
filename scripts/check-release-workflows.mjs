@@ -268,7 +268,7 @@ function hasWorkflowOwnedObserverGhSelection(text) {
     && !text.includes("command -v gh")
 }
 
-function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord) {
+function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord, tool) {
   return wrapper.includes('from "../../scripts/consumer-authority-observer-gh-workflow-selector.mjs"')
     && core.includes('from "./consumer-authority-observer-gh-package-record.mjs"')
     && core.includes("constants.COPYFILE_EXCL")
@@ -276,7 +276,8 @@ function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord) {
     && core.includes("readInstalledGhPackageRecord()")
     && core.includes("selectInstalledObserverGhCandidate")
     && core.includes("assessObserverGhTool")
-    && core.includes("assessTool(output)")
+    && core.includes("assessTool(candidate, { stateRoot: runnerTemp })")
+    && core.includes("assessTool(output, { stateRoot: runnerTemp })")
     && core.includes('appendGithubOutput(githubOutput, `path=${output}\\n`)')
     && core.includes("selectorStage")
     && core.includes("packageRecordShape")
@@ -309,6 +310,11 @@ function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord) {
     && !packageRecord.includes("GITHUB_TOKEN")
     && !packageRecord.includes("attestation verify")
     && !packageRecord.includes("gh api")
+    && tool.includes("stateRoot")
+    && tool.includes("GH_CONFIG_DIR: root")
+    && tool.includes("XDG_STATE_HOME: root")
+    && tool.includes("GIT_CONFIG_GLOBAL")
+    && !tool.includes("process.env.PATH")
 }
 
 const requirements = [
@@ -425,6 +431,7 @@ async function main() {
     observerGhProvisioner,
     observerGhSelector,
     observerGhPackageRecord,
+    observerGhTool,
   ] = await Promise.all([
     readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
@@ -444,6 +451,7 @@ async function main() {
     readFile(".github/scripts/prepare-observer-gh-tool.mjs", "utf8"),
     readFile("scripts/consumer-authority-observer-gh-workflow-selector.mjs", "utf8"),
     readFile("scripts/consumer-authority-observer-gh-package-record.mjs", "utf8"),
+    readFile("scripts/consumer-authority-observer-gh-tool.mjs", "utf8"),
   ])
   const failures = []
   for (const [name, path, predicate] of requirements) {
@@ -513,7 +521,7 @@ async function main() {
   ) {
     failures.push("project finish context diagnostic native OIDC selftest")
   }
-  if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector, observerGhPackageRecord)) {
+  if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector, observerGhPackageRecord, observerGhTool)) {
     failures.push("workflow-owned observer gh provisioner")
   }
   if (failures.length > 0) {
