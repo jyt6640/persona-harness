@@ -89,6 +89,10 @@ jobs:
           test "$(node --version)" = "v20.19.0"
           test "$(npm --version)" = "10.8.2"
 
+      - name: Select observer GitHub CLI
+        id: observer-gh
+        run: node .github/scripts/prepare-observer-gh-tool.mjs
+
       - name: Install dependencies
         run: npm ci
 
@@ -102,6 +106,8 @@ jobs:
         run: npm run typecheck
 
       - name: Test
+        env:
+          PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
         run: npm run test:repository
 
       - name: Build
