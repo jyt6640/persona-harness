@@ -69,7 +69,7 @@ try {
     assertCheckoutIntegrity(checkout, source, npm, git)
     assertCliVersion(checkout, join(checkout, "dist", "cli", "index.js"), source.identity.version, npm, "clean-package-built-cli")
     const contract = input.exerciseContract
-      ? exerciseExactTarContract(checkout, packed, npm)
+      ? exerciseExactTarContract(checkout, packed, npm, resolveObserverGhPath(input.observerGh))
       : undefined
 
     const consumer = installFreshTarball(packed.tarballPath, source.identity, npm)
@@ -128,6 +128,7 @@ function parseInput(args) {
   const remaining = [...args]
   let exerciseContract = false
   let gitBoundaryOnly = false
+  let observerGh
   if (remaining[0] === "--exercise-contract") {
     exerciseContract = true
     remaining.shift()
@@ -136,7 +137,14 @@ function parseInput(args) {
     gitBoundaryOnly = true
     remaining.shift()
   }
-  if (remaining.length === 0) return { exerciseContract, gitBoundaryOnly, mode: "source" }
+  if (remaining[0] === "--observer-gh") {
+    if (typeof remaining[1] !== "string" || !remaining[1].startsWith("/") || remaining[1].includes("\0")) {
+      throw new CleanPackageBoundaryError("clean-package-arguments")
+    }
+    observerGh = remaining[1]
+    remaining.splice(0, 2)
+  }
+  if (remaining.length === 0) return { exerciseContract, gitBoundaryOnly, mode: "source", observerGh }
   if (gitBoundaryOnly) throw new CleanPackageBoundaryError("clean-package-arguments")
   if (
     remaining.length !== 8
@@ -156,6 +164,7 @@ function parseInput(args) {
     gitBoundaryOnly,
     head: remaining[5],
     mode: "bundle",
+    observerGh,
   }
 }
 
@@ -332,12 +341,14 @@ function packCheckout(root, source, npm, label) {
   return resolvePackResult(packed.stdout, packDirectory, source.identity)
 }
 
-function exerciseExactTarContract(root, packed, npm) {
+function exerciseExactTarContract(root, packed, npm, observerGh) {
   const sourceResult = run(
     process.execPath,
     [
       join(root, "scripts", "test-installed-package-contract.mjs"),
       "--package-exercise",
+      "--observer-gh",
+      observerGh,
       "--source-cli",
       join(root, "dist", "cli", "index.js"),
     ],
@@ -354,6 +365,8 @@ function exerciseExactTarContract(root, packed, npm) {
     [
       join(root, "scripts", "test-installed-package-contract.mjs"),
       "--package-exercise",
+      "--observer-gh",
+      observerGh,
       "--tarball",
       packed.tarballPath,
       "--tarball-sha256",
@@ -374,6 +387,12 @@ function exerciseExactTarContract(root, packed, npm) {
     exactTarballSha256: packed.facts.tarballSha256,
     packageContentIdentity: packed.facts.packageContentIdentity.identitySha256,
   }
+}
+
+function resolveObserverGhPath(value) {
+  if (typeof value === "string") return value
+  if (process.platform === "linux") return "/usr/bin/gh"
+  throw new CleanPackageBoundaryError("clean-package-observer-gh")
 }
 
 function assertStaleLauncherIsRejected(root, binding) {
