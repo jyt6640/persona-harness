@@ -268,31 +268,46 @@ function hasWorkflowOwnedObserverGhSelection(text) {
     && !text.includes("command -v gh")
 }
 
-function hasWorkflowOwnedObserverGhProvisioner(wrapper, core) {
+function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord) {
   return wrapper.includes('from "../../scripts/consumer-authority-observer-gh-workflow-selector.mjs"')
-    && core.includes('const DPKG_QUERY = "/usr/bin/dpkg-query"')
-    && core.includes('spawnSync(DPKG_QUERY, ["--listfiles", "gh"]')
+    && core.includes('from "./consumer-authority-observer-gh-package-record.mjs"')
     && core.includes("constants.COPYFILE_EXCL")
     && core.includes("constants.O_NOFOLLOW")
-    && core.includes("export function selectRegularPackageGhCandidate(paths, options = {})")
-    && core.includes('"/usr/share/bash-completion/completions/gh"')
-    && core.includes("if (!stat.isFile() || stat.isSymbolicLink())")
-    && core.includes("if ((stat.mode & 0o111) !== 0) {")
-    && core.includes("} else if (!DOCUMENTED_ANCILLARY_GH_RECORDS.has(path))")
-    && core.includes("if (matchingRecordCount === 0 || candidates.length === 0) return undefined")
-    && core.includes("assessObserverGhTool(output)")
+    && core.includes("readInstalledGhPackageRecord()")
+    && core.includes("selectInstalledObserverGhCandidate")
+    && core.includes("assessObserverGhTool")
+    && core.includes("assessTool(output)")
     && core.includes('appendGithubOutput(githubOutput, `path=${output}\\n`)')
     && core.includes("selectorStage")
+    && core.includes("packageRecordShape")
     && core.includes('"environment"')
     && core.includes('"output-handoff"')
     && core.includes("RUNNER_TEMP")
     && core.includes("GITHUB_OUTPUT")
+    && packageRecord.includes('const DPKG_QUERY = "/usr/bin/dpkg-query"')
+    && packageRecord.includes('"--showformat=${db:Status-Abbrev}\\t${Architecture}\\n"')
+    && packageRecord.includes('"--listfiles", "gh"')
+    && packageRecord.includes('encoding: "buffer"')
+    && packageRecord.includes('new TextDecoder("utf-8", { fatal: true')
+    && packageRecord.includes("value.includes(0) || value.includes(13)")
+    && packageRecord.includes('const POLICY_PRIMARY_GH_RECORD = "/usr/bin/gh"')
+    && packageRecord.includes('"/usr/share/bash-completion/completions/gh"')
+    && packageRecord.includes("constants.COPYFILE_EXCL") === false
+    && packageRecord.includes("selectInstalledObserverGhCandidate")
+    && packageRecord.includes('"record-encoding"')
+    && packageRecord.includes('"canonical"')
     && !core.includes("process.env.PATH")
     && !core.includes("command -v")
     && !core.includes("GH_TOKEN")
     && !core.includes("GITHUB_TOKEN")
     && !core.includes("attestation verify")
     && !core.includes("gh api")
+    && !packageRecord.includes("process.env.PATH")
+    && !packageRecord.includes("command -v")
+    && !packageRecord.includes("GH_TOKEN")
+    && !packageRecord.includes("GITHUB_TOKEN")
+    && !packageRecord.includes("attestation verify")
+    && !packageRecord.includes("gh api")
 }
 
 const requirements = [
@@ -408,6 +423,7 @@ async function main() {
     finalizerActionEntrypoint,
     observerGhProvisioner,
     observerGhSelector,
+    observerGhPackageRecord,
   ] = await Promise.all([
     readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
@@ -426,6 +442,7 @@ async function main() {
     readFile(".github/actions/project-finish-context-diagnostic-finalizer/index.mjs", "utf8"),
     readFile(".github/scripts/prepare-observer-gh-tool.mjs", "utf8"),
     readFile("scripts/consumer-authority-observer-gh-workflow-selector.mjs", "utf8"),
+    readFile("scripts/consumer-authority-observer-gh-package-record.mjs", "utf8"),
   ])
   const failures = []
   for (const [name, path, predicate] of requirements) {
@@ -495,7 +512,7 @@ async function main() {
   ) {
     failures.push("project finish context diagnostic native OIDC selftest")
   }
-  if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector)) {
+  if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector, observerGhPackageRecord)) {
     failures.push("workflow-owned observer gh provisioner")
   }
   if (failures.length > 0) {

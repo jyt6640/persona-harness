@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process"
 import {
   closeSync,
   constants,
@@ -9,16 +8,18 @@ import {
   realpathSync,
   writeSync,
 } from "node:fs"
-import { basename, isAbsolute, join } from "node:path"
+import { isAbsolute, join } from "node:path"
 
 import { assessObserverGhTool } from "./consumer-authority-observer-gh-tool.mjs"
+import {
+  ObserverGhPackageOwnershipError,
+  ObserverGhPackageRecordError,
+  readInstalledGhPackageRecord,
+  selectInstalledObserverGhCandidate,
+} from "./consumer-authority-observer-gh-package-record.mjs"
 
-const DPKG_QUERY = "/usr/bin/dpkg-query"
 const OUTPUT_DIRECTORY = "persona-harness-observer-gh"
 const OUTPUT_NAME = "gh"
-const DOCUMENTED_ANCILLARY_GH_RECORDS = new Set([
-  "/usr/share/bash-completion/completions/gh",
-])
 const SELECTOR_STAGES = Object.freeze([
   "environment",
   "package-list",
@@ -56,38 +57,36 @@ function provision(options) {
     return blocked("observer-gh-workflow-tool-invalid", "environment")
   }
 
-  const listPackageFiles = typeof settings.listPackageFiles === "function"
-    ? settings.listPackageFiles
-    : listInstalledGhPackageFiles
-  let packageFiles
+  let selection
   try {
-    packageFiles = listPackageFiles()
-  } catch {
-    return blocked("observer-gh-workflow-tool-unavailable", "package-list")
-  }
-
-  let candidate
-  try {
-    candidate = selectRegularPackageGhCandidate(packageFiles)
-  } catch {
+    selection = selectWorkflowPackageCandidate(settings)
+  } catch (error) {
+    if (error instanceof ObserverGhPackageOwnershipError) {
+      return blocked("observer-gh-workflow-tool-unavailable", "package-list")
+    }
+    if (error instanceof ObserverGhPackageRecordError) {
+      return blocked("observer-gh-workflow-tool-invalid", "package-record", error.shape)
+    }
     return blocked("observer-gh-workflow-tool-invalid", "package-record")
   }
-  if (candidate === undefined) return blocked("observer-gh-workflow-tool-unavailable", "package-record")
+  if (selection === undefined) return blocked("observer-gh-workflow-tool-unavailable", "package-record", "primary-missing")
+  const { candidate, packageRecordShape } = selection
 
+  const assessTool = typeof settings.assessTool === "function" ? settings.assessTool : assessObserverGhTool
   let source
   try {
-    source = assessObserverGhTool(candidate)
+    source = assessTool(candidate)
   } catch {
-    return blocked("observer-gh-workflow-tool-invalid", "source-assessment")
+    return blocked("observer-gh-workflow-tool-invalid", "source-assessment", packageRecordShape)
   }
-  if (source.state !== "ready") return blocked(mapToolCode(source.code), "source-assessment")
+  if (source.state !== "ready") return blocked(mapToolCode(source.code), "source-assessment", packageRecordShape)
 
   const outputDirectory = join(runnerTemp, OUTPUT_DIRECTORY)
   try {
     mkdirSync(outputDirectory, { mode: 0o700 })
     if (!isRegularDirectory(outputDirectory)) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
   } catch {
-    return blocked("observer-gh-workflow-tool-invalid", "private-reservation")
+    return blocked("observer-gh-workflow-tool-invalid", "private-reservation", packageRecordShape)
   }
 
   const output = join(outputDirectory, OUTPUT_NAME)
@@ -96,79 +95,36 @@ function provision(options) {
     if (pathExists(output)) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
     copyFile(candidate, output, constants.COPYFILE_EXCL)
   } catch {
-    return blocked("observer-gh-workflow-tool-invalid", "private-copy")
+    return blocked("observer-gh-workflow-tool-invalid", "private-copy", packageRecordShape)
   }
 
   let tool
   try {
-    tool = assessObserverGhTool(output)
+    tool = assessTool(output)
   } catch {
-    return blocked("observer-gh-workflow-tool-invalid", "private-assessment")
+    return blocked("observer-gh-workflow-tool-invalid", "private-assessment", packageRecordShape)
   }
-  if (tool.state !== "ready") return blocked(mapToolCode(tool.code), "private-assessment")
+  if (tool.state !== "ready") return blocked(mapToolCode(tool.code), "private-assessment", packageRecordShape)
 
   if (!appendGithubOutput(githubOutput, `path=${output}\n`)) {
-    return blocked("observer-gh-workflow-tool-invalid", "output-handoff")
+    return blocked("observer-gh-workflow-tool-invalid", "output-handoff", packageRecordShape)
   }
-  return { code: "observer-gh-workflow-ready", selectorStage: "output-handoff", state: "ready" }
+  return {
+    code: "observer-gh-workflow-ready",
+    packageRecordShape,
+    selectorStage: "output-handoff",
+    state: "ready",
+  }
 }
 
-function listInstalledGhPackageFiles() {
-  let result
-  try {
-    result = spawnSync(DPKG_QUERY, ["--listfiles", "gh"], {
-      encoding: "utf8",
-      env: { LANG: "C", LC_ALL: "C" },
-      maxBuffer: 16 * 1024,
-      shell: false,
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 5_000,
-    })
-  } catch {
-    throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-unavailable")
-  }
-  if (result.error !== undefined || result.status !== 0 || typeof result.stdout !== "string") {
-    throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-unavailable")
-  }
-  return result.stdout.split("\n").filter((value) => value.length > 0)
-}
-
-export function selectRegularPackageGhCandidate(paths, options = {}) {
-  if (!Array.isArray(paths) || !paths.every((path) => typeof path === "string")) {
-    throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
-  }
-  const lstat = isRecord(options) && typeof options.lstat === "function" ? options.lstat : lstatSync
-  const candidates = []
-  let matchingRecordCount = 0
-  let missingMatchingRecord = false
-  for (const path of paths) {
-    if (!isPackageRecordPath(path)) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
-    if (basename(path) !== "gh") continue
-    matchingRecordCount += 1
-    let stat
-    try {
-      stat = lstat(path)
-    } catch (error) {
-      if (isMissingPathError(error)) {
-        missingMatchingRecord = true
-        continue
-      }
-      throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
-    }
-    if (!stat.isFile() || stat.isSymbolicLink()) {
-      throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
-    }
-    if ((stat.mode & 0o111) !== 0) {
-      candidates.push(path)
-    } else if (!DOCUMENTED_ANCILLARY_GH_RECORDS.has(path)) {
-      throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
-    }
-  }
-  if (matchingRecordCount === 0 || candidates.length === 0) return undefined
-  if (missingMatchingRecord || candidates.length !== 1) {
-    throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
-  }
-  return candidates[0]
+function selectWorkflowPackageCandidate(settings) {
+  const records = typeof settings.readPackageRecord === "function"
+    ? settings.readPackageRecord()
+    : readInstalledGhPackageRecord()
+  const lstat = typeof settings.lstatPackageRecord === "function"
+    ? settings.lstatPackageRecord
+    : undefined
+  return selectInstalledObserverGhCandidate(records, { lstat })
 }
 
 function resolveRegularDirectory(value) {
@@ -218,10 +174,6 @@ function appendGithubOutput(path, content) {
   }
 }
 
-function isPackageRecordPath(path) {
-  return isAbsolute(path) && !path.includes("\0") && path.length <= 4_096
-}
-
 function isMissingPathError(error) {
   return isRecord(error) && error.code === "ENOENT"
 }
@@ -240,8 +192,10 @@ function mapToolCode(code) {
   }
 }
 
-function blocked(code, selectorStage) {
-  return { code, selectorStage, state: "blocked" }
+function blocked(code, selectorStage, packageRecordShape) {
+  return packageRecordShape === undefined
+    ? { code, selectorStage, state: "blocked" }
+    : { code, packageRecordShape, selectorStage, state: "blocked" }
 }
 
 function isRecord(value) {

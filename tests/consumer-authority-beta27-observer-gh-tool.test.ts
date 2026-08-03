@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process"
-import { chmodSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { chmodSync, copyFileSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -11,9 +11,11 @@ import {
 } from "../scripts/consumer-authority-external-attestation-command-plan.mjs"
 import {
   provisionWorkflowObserverGhTool,
-  selectRegularPackageGhCandidate,
-  WorkflowObserverGhToolError,
 } from "../.github/scripts/prepare-observer-gh-tool.mjs"
+import {
+  ObserverGhPackageRecordError,
+  selectInstalledObserverGhCandidate,
+} from "../scripts/consumer-authority-observer-gh-package-record.mjs"
 import { observerGhStageCodeForPreflight } from "../scripts/consumer-authority-observer-gh-stage.mjs"
 import type { ExternalAttestationTopology } from "../scripts/consumer-authority-external-attestation-command-plan.mjs"
 
@@ -104,12 +106,18 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
       writeFileSync(githubOutput, "")
       writeGhFixture(packageGh, "2.96.0")
 
-      const result = provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [packageGh],
-      })
+      const result = provisionWorkflowObserverGhTool(strictWorkflowOptions({
+        githubOutput,
+        packageGh,
+        runnerTemp,
+      }))
 
-      expect(result).toEqual({ code: "observer-gh-workflow-ready", selectorStage: "output-handoff", state: "ready" })
+      expect(result).toEqual({
+        code: "observer-gh-workflow-ready",
+        packageRecordShape: "canonical",
+        selectorStage: "output-handoff",
+        state: "ready",
+      })
       const selectedPath = readFileSync(githubOutput, "utf8").trim().slice("path=".length)
       expect(selectedPath).toBe(join(realpathSync(runnerTemp), "persona-harness-observer-gh", "gh"))
       expect(selectedPath).not.toBe(packageGh)
@@ -128,20 +136,20 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
       [completion, fixtureStat(true, false, 0o100644)],
     ])
 
-    expect(selectRegularPackageGhCandidate([executable, completion], {
+    expect(selectInstalledObserverGhCandidate([executable, completion], {
       lstat: (path: string) => {
         const stat = stats.get(path)
         if (stat === undefined) throw new Error("fixture stat is missing")
         return stat
       },
-    })).toBe(executable)
-    expect(() => selectRegularPackageGhCandidate([
+    })).toEqual({ candidate: executable, packageRecordShape: "canonical" })
+    expect(() => selectInstalledObserverGhCandidate([
       executable,
       completion,
       "/usr/share/doc/gh/gh",
     ], {
       lstat: (path: string) => stats.get(path) ?? fixtureStat(true, false, 0o100644),
-    })).toThrow(WorkflowObserverGhToolError)
+    })).toThrow(ObserverGhPackageRecordError)
   })
 
   it("copies a qualified package executable into the private workflow reservation", () => {
@@ -155,73 +163,58 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
       writeFileSync(githubOutput, "")
       writeGhFixture(packageGh, "2.96.0")
 
-      const result = provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [packageGh],
-      })
+      const result = provisionWorkflowObserverGhTool(strictWorkflowOptions({
+        githubOutput,
+        packageGh,
+        runnerTemp,
+      }))
 
-      expect(result).toEqual({ code: "observer-gh-workflow-ready", selectorStage: "output-handoff", state: "ready" })
+      expect(result).toEqual({
+        code: "observer-gh-workflow-ready",
+        packageRecordShape: "canonical",
+        selectorStage: "output-handoff",
+        state: "ready",
+      })
       expect(readFileSync(githubOutput, "utf8")).toContain("path=")
     } finally {
       rmSync(root, { force: true, recursive: true })
     }
   })
 
-  it("rejects missing, unsafe, incompatible, and ambiguous workflow package records without output", () => {
+  it("keeps strict record and source-version blocks before output handoff", () => {
     const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-provision-negative-"))
     const packageDirectory = join(root, "package")
-    const oldDirectory = join(root, "old")
-    const aliasDirectory = join(root, "alias")
-    const directoryRecord = join(root, "directory", "gh")
-    const missingSibling = join(root, "missing", "gh")
     const packageGh = join(packageDirectory, "gh")
-    const oldGh = join(oldDirectory, "gh")
-    const alias = join(aliasDirectory, "gh")
     const runnerTemp = join(root, "runner-temp")
     const githubOutput = join(root, "github-output")
     try {
       mkdirSync(runnerTemp)
       mkdirSync(packageDirectory)
-      mkdirSync(oldDirectory)
-      mkdirSync(aliasDirectory)
-      mkdirSync(directoryRecord, { recursive: true })
       writeFileSync(githubOutput, "")
       writeGhFixture(packageGh, "2.96.0")
-      writeGhFixture(oldGh, "2.95.0")
-      symlinkSync(packageGh, alias)
 
       expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [join(root, "missing", "gh")],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-unavailable", state: "blocked" })
-      expect(provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [alias],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
-      expect(provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [oldGh],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-version-unsupported", state: "blocked" })
-      expect(provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [packageGh, oldGh],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
-      expect(provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [packageGh, alias],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
-      expect(provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [packageGh, missingSibling],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
-      expect(provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [directoryRecord],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
-      expect(provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => ["gh"],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
+        readPackageRecord: () => {
+          throw new ObserverGhPackageRecordError("primary-missing")
+        },
+      })).toEqual({
+        code: "observer-gh-workflow-tool-invalid",
+        packageRecordShape: "primary-missing",
+        selectorStage: "package-record",
+        state: "blocked",
+      })
+      expect(provisionWorkflowObserverGhTool(strictWorkflowOptions({
+        githubOutput,
+        packageGh,
+        runnerTemp,
+        sourceVersion: "2.95.0",
+      }))).toMatchObject({
+        code: "observer-gh-workflow-tool-version-unsupported",
+        packageRecordShape: "canonical",
+        selectorStage: "source-assessment",
+        state: "blocked",
+      })
       expect(readFileSync(githubOutput, "utf8")).toBe("")
     } finally {
       rmSync(root, { force: true, recursive: true })
@@ -239,10 +232,16 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
       writeFileSync(githubOutput, "")
       writeGhFixture(packageGh, "2.96.0")
 
-      expect(provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [packageGh],
-      })).toEqual({ code: "observer-gh-workflow-tool-invalid", selectorStage: "private-reservation", state: "blocked" })
+      expect(provisionWorkflowObserverGhTool(strictWorkflowOptions({
+        githubOutput,
+        packageGh,
+        runnerTemp,
+      }))).toEqual({
+        code: "observer-gh-workflow-tool-invalid",
+        packageRecordShape: "canonical",
+        selectorStage: "private-reservation",
+        state: "blocked",
+      })
       expect(readFileSync(githubOutput, "utf8")).toBe("")
     } finally {
       rmSync(root, { force: true, recursive: true })
@@ -321,6 +320,36 @@ function writeGhFixture(path: string, version: string): void {
     "",
   ].join("\n"))
   chmodSync(path, 0o700)
+}
+
+function strictWorkflowOptions(input: {
+  readonly copyFile?: (source: string, destination: string, mode: number) => void
+  readonly githubOutput: string
+  readonly packageGh: string
+  readonly privateVersion?: string
+  readonly runnerTemp: string
+  readonly sourceVersion?: string
+}) {
+  const primary = "/usr/bin/gh"
+  const completion = "/usr/share/bash-completion/completions/gh"
+  const sourceVersion = input.sourceVersion ?? "2.96.0"
+  const privateVersion = input.privateVersion ?? sourceVersion
+  return {
+    assessTool: (path: string) => {
+      const version = path.includes("persona-harness-observer-gh") ? privateVersion : sourceVersion
+      return version === "2.96.0"
+        ? { state: "ready" as const }
+        : { code: "gh-command-version-unsupported", state: "blocked" as const }
+    },
+    copyFile: input.copyFile ?? ((_source: string, destination: string, mode: number) => copyFileSync(input.packageGh, destination, mode)),
+    environment: { GITHUB_OUTPUT: input.githubOutput, RUNNER_TEMP: input.runnerTemp },
+    lstatPackageRecord: (path: string) => path === primary
+      ? fixtureStat(true, false, 0o100755)
+      : path === completion
+        ? fixtureStat(true, false, 0o100644)
+        : (() => { throw Object.assign(new Error("missing"), { code: "ENOENT" }) })(),
+    readPackageRecord: () => [primary, completion],
+  }
 }
 
 function fixtureStat(file: boolean, symbolicLink: boolean, mode: number) {
