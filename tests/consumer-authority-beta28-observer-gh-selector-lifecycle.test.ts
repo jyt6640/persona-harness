@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { chmodSync, copyFileSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
@@ -8,8 +8,12 @@ import { describe, expect, it } from "vitest"
 import {
   OBSERVER_GH_WORKFLOW_SELECTOR_STAGES,
   provisionWorkflowObserverGhTool,
-  selectRegularPackageGhCandidate,
 } from "../scripts/consumer-authority-observer-gh-workflow-selector.mjs"
+import {
+  ObserverGhPackageOwnershipError,
+  ObserverGhPackageRecordError,
+  selectInstalledObserverGhCandidate,
+} from "../scripts/consumer-authority-observer-gh-package-record.mjs"
 import { observerGhStageCodeForWorkflowSelector } from "../scripts/consumer-authority-observer-gh-stage.mjs"
 
 describe("consumer authority beta.28 workflow observer gh selector lifecycle", () => {
@@ -29,8 +33,8 @@ describe("consumer authority beta.28 workflow observer gh selector lifecycle", (
     // When: each boundary is blocked independently.
     const outcomes = [
       runFixture({ environment: {}, stage: "environment" }),
-      runFixture({ listPackageFiles: () => { throw new Error("package list failed") }, stage: "package-list" }),
-      runFixture({ listPackageFiles: () => ["gh"], stage: "package-record" }),
+      runFixture({ packageListError: true, stage: "package-list" }),
+      runFixture({ packageRecordShape: "record-path", stage: "package-record" }),
       runFixture({ sourceVersion: "2.95.0", stage: "source-assessment" }),
       runFixture({ reservePrivateDirectory: true, stage: "private-reservation" }),
       runFixture({ copyFile: () => { throw new Error("copy failed") }, stage: "private-copy" }),
@@ -41,7 +45,11 @@ describe("consumer authority beta.28 workflow observer gh selector lifecycle", (
     // Then: each result retains only its allowlisted stage and creates no output entry.
     for (const outcome of outcomes) {
       expect(outcome.result).toMatchObject({ selectorStage: outcome.stage, state: "blocked" })
-      expect(observerGhStageCodeForWorkflowSelector(outcome.result)).toBe(`observer-gh-selector-${outcome.stage}`)
+      expect(observerGhStageCodeForWorkflowSelector(outcome.result)).toBe(
+        outcome.stage === "package-record"
+          ? "observer-gh-selector-package-record-record-path"
+          : `observer-gh-selector-${outcome.stage}`,
+      )
       expect(JSON.stringify(outcome.result)).not.toContain(outcome.root)
       expect(JSON.stringify(outcome.result)).not.toContain("ghp_beta28_fixture_token")
       if (outcome.outputIsFile) expect(readFileSync(outcome.githubOutput, "utf8")).toBe("")
@@ -63,14 +71,16 @@ describe("consumer authority beta.28 workflow observer gh selector lifecycle", (
       writeGhFixture(packageGh, "2.96.0")
 
       // When: the full selector reserves, copies, and verifies the package executable.
-      const result = provisionWorkflowObserverGhTool({
-        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-        listPackageFiles: () => [packageGh],
-      })
+      const result = provisionWorkflowObserverGhTool(strictFixtureOptions({
+        githubOutput,
+        packageGh,
+        runnerTemp,
+      }))
 
       // Then: it only writes the private path after the final handoff.
       expect(result).toEqual({
         code: "observer-gh-workflow-ready",
+        packageRecordShape: "canonical",
         selectorStage: "output-handoff",
         state: "ready",
       })
@@ -82,7 +92,7 @@ describe("consumer authority beta.28 workflow observer gh selector lifecycle", (
         ["/usr/bin/gh", fixtureStat(true, false, 0o100755)],
         [completion, fixtureStat(true, false, 0o100644)],
       ])
-      expect(selectRegularPackageGhCandidate([
+      expect(selectInstalledObserverGhCandidate([
         "/usr/bin/gh",
         completion,
       ], {
@@ -91,7 +101,7 @@ describe("consumer authority beta.28 workflow observer gh selector lifecycle", (
           if (stat === undefined) throw new Error("fixture stat is missing")
           return stat
         },
-      })).toBe("/usr/bin/gh")
+      })).toEqual({ candidate: "/usr/bin/gh", packageRecordShape: "canonical" })
     } finally {
       rmSync(root, { force: true, recursive: true })
     }
@@ -103,35 +113,38 @@ describe("consumer authority beta.28 workflow observer gh selector lifecycle", (
     const runnerTemp = join(root, "runner-temp")
     const githubOutput = join(root, "github-output")
     const packageGh = join(root, "package", "gh")
-    const alias = join(root, "package", "gh-alias")
-    const second = join(root, "second", "gh")
-    const directory = join(root, "directory", "gh")
     try {
       mkdirSync(runnerTemp)
       mkdirSync(join(root, "package"))
-      mkdirSync(join(root, "second"))
-      mkdirSync(directory, { recursive: true })
       writeFileSync(githubOutput, "")
       writeGhFixture(packageGh, "2.96.0")
-      writeGhFixture(second, "2.96.0")
-      symlinkSync(packageGh, alias)
 
-      // When: each unsafe record shape is presented by the owned package listing.
+      // When: each unsafe record shape is presented by the strict owned record reader.
       const cases = [
-        ["malformed", ["gh"]],
-        ["missing", [join(root, "missing", "gh")]],
-        ["alias", [alias]],
-        ["nonregular", [directory]],
-        ["ambiguous", [packageGh, second]],
+        "record-encoding",
+        "record-path",
+        "primary-missing",
+        "primary-unsafe",
+        "ancillary-missing-or-unsafe",
+        "ancillary-unknown",
+        "executable-ambiguous",
+        "lstat-failed",
       ] as const
 
       // Then: each remains at the package-record stage without writing output.
-      for (const [_label, records] of cases) {
+      for (const packageRecordShape of cases) {
         const result = provisionWorkflowObserverGhTool({
           environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-          listPackageFiles: () => [...records],
+          readPackageRecord: () => {
+            throw new ObserverGhPackageRecordError(packageRecordShape)
+          },
         })
-        expect(result).toMatchObject({ selectorStage: "package-record", state: "blocked" })
+        expect(result).toEqual({
+          code: "observer-gh-workflow-tool-invalid",
+          packageRecordShape,
+          selectorStage: "package-record",
+          state: "blocked",
+        })
         expect(readFileSync(githubOutput, "utf8")).toBe("")
       }
     } finally {
@@ -198,10 +211,11 @@ describe("consumer authority beta.28 workflow observer gh selector lifecycle", (
 })
 
 function runFixture(options: {
-  readonly copyFile?: () => void
+  readonly copyFile?: (source: string, destination: string, mode: number) => void
   readonly environment?: Record<string, string | undefined>
   readonly githubOutputKind?: "directory"
-  readonly listPackageFiles?: () => string[]
+  readonly packageListError?: boolean
+  readonly packageRecordShape?: string
   readonly privateVersion?: string
   readonly reservePrivateDirectory?: boolean
   readonly sourceVersion?: string
@@ -220,21 +234,71 @@ function runFixture(options: {
     writeFileSync(githubOutput, "")
   }
   if (options.reservePrivateDirectory) mkdirSync(join(runnerTemp, "persona-harness-observer-gh"))
-  const result = provisionWorkflowObserverGhTool({
-    copyFile: options.copyFile,
-    environment: options.environment ?? {
-      GH_TOKEN: "ghp_beta28_fixture_token",
-      GITHUB_OUTPUT: githubOutput,
-      RUNNER_TEMP: runnerTemp,
-    },
-    listPackageFiles: options.listPackageFiles ?? (() => [packageGh]),
-  })
+  const environment = options.environment ?? {
+    GH_TOKEN: "ghp_beta28_fixture_token",
+    GITHUB_OUTPUT: githubOutput,
+    RUNNER_TEMP: runnerTemp,
+  }
+  const result = options.packageListError
+    ? provisionWorkflowObserverGhTool({
+      environment,
+      readPackageRecord: () => {
+        throw new ObserverGhPackageOwnershipError("package list failed")
+      },
+    })
+    : options.packageRecordShape === undefined
+      ? provisionWorkflowObserverGhTool(strictFixtureOptions({
+        copyFile: options.copyFile,
+        environment,
+        githubOutput,
+        packageGh,
+        privateVersion: options.privateVersion,
+        runnerTemp,
+        sourceVersion: options.sourceVersion,
+      }))
+      : provisionWorkflowObserverGhTool({
+        environment,
+        readPackageRecord: () => {
+          throw new ObserverGhPackageRecordError(options.packageRecordShape ?? "record-path")
+        },
+      })
   return {
     githubOutput,
     outputIsFile: options.githubOutputKind !== "directory",
     result,
     root,
     stage: options.stage,
+  }
+}
+
+function strictFixtureOptions(input: {
+  readonly copyFile?: (source: string, destination: string, mode: number) => void
+  readonly environment?: Record<string, string | undefined>
+  readonly githubOutput: string
+  readonly packageGh: string
+  readonly privateVersion?: string
+  readonly runnerTemp: string
+  readonly sourceVersion?: string
+}) {
+  const primary = "/usr/bin/gh"
+  const completion = "/usr/share/bash-completion/completions/gh"
+  const sourceVersion = input.sourceVersion ?? "2.96.0"
+  const privateVersion = input.privateVersion ?? sourceVersion
+  return {
+    assessTool: (path: string) => {
+      const version = path.includes("persona-harness-observer-gh") ? privateVersion : sourceVersion
+      return version === "2.96.0"
+        ? { state: "ready" as const }
+        : { code: "gh-command-version-unsupported", state: "blocked" as const }
+    },
+    copyFile: input.copyFile ?? ((_source: string, destination: string, mode: number) => copyFileSync(input.packageGh, destination, mode)),
+    environment: input.environment ?? { GITHUB_OUTPUT: input.githubOutput, RUNNER_TEMP: input.runnerTemp },
+    lstatPackageRecord: (path: string) => path === primary
+      ? fixtureStat(true, false, 0o100755)
+      : path === completion
+        ? fixtureStat(true, false, 0o100644)
+        : (() => { throw Object.assign(new Error("missing"), { code: "ENOENT" }) })(),
+    readPackageRecord: () => [primary, completion],
   }
 }
 

@@ -27,7 +27,7 @@ marker. `0.8.0-beta.26` is terminal non-reusable procedure evidence: the
 normal Ubuntu `gh` package record included a regular non-executable completion
 sibling, which its basename-only selector rejected before assessment. The active
 `0.8.0-beta.27` procedure evidence then collapsed selector lifecycle failures
-to an opaque block. The active `0.8.0-beta.28` procedure-only source candidate has no
+to an opaque block. The active `0.8.0-beta.29` procedure-only source candidate has no
 package, tag, channel movement, GitHub release, or signed consumer-project
 artifact at source preparation time.
 
@@ -37,7 +37,7 @@ because it did not complete the full current-version public consumer route.
 Beta.20 reached a live `trusted/unconsumed` fetch but then correctly stopped at
 `workflow-state-uninitialized` because the observer had not prepared the same
 consumer's public lifecycle. That result consumed nothing and is not reusable.
-Beta28 binds the immutable same-consumer observer order, V4 stage-scoped
+Beta29 binds the immutable same-consumer observer order, V4 stage-scoped
 residue cleanliness, pre-push source identity, and one qualified workflow-selected
 observer-gh selector lifecycle contract. It cannot inherit beta.16's observer failure, beta.17's registry
 PUT result, beta.18's failed metadata predicate, beta.21's expired temporal
@@ -175,11 +175,11 @@ authority artifact or Finish PASS.
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
 an original artifact from `0.8.0-beta.1` through `0.8.0-beta.26` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.28`; only a future
+binding mismatch or historical-evidence block for `0.8.0-beta.29`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta28-acceptance.json`](consumer-authority-beta28-acceptance.json)
+[`consumer-authority-beta29-acceptance.json`](consumer-authority-beta29-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the immutable same-consumer

@@ -13,14 +13,26 @@ export type WorkflowObserverGhSelectorStage = typeof OBSERVER_GH_WORKFLOW_SELECT
 
 export interface WorkflowObserverGhToolResult {
   readonly code: string
+  readonly packageRecordShape?:
+    | "record-encoding"
+    | "record-path"
+    | "primary-missing"
+    | "primary-unsafe"
+    | "ancillary-missing-or-unsafe"
+    | "ancillary-unknown"
+    | "executable-ambiguous"
+    | "lstat-failed"
+    | "canonical"
   readonly selectorStage: WorkflowObserverGhSelectorStage
   readonly state: "blocked" | "ready"
 }
 
 export interface WorkflowObserverGhToolOptions {
+  readonly assessTool?: (path: string) => { readonly code?: string; readonly state: "blocked" | "ready" }
   readonly copyFile?: (source: string, destination: string, mode: number) => void
   readonly environment?: Record<string, string | undefined>
-  readonly listPackageFiles?: () => string[]
+  readonly lstatPackageRecord?: (path: string) => WorkflowObserverGhPackageRecordStat
+  readonly readPackageRecord?: () => readonly string[]
 }
 
 export interface WorkflowObserverGhPackageRecordStat {
@@ -29,18 +41,9 @@ export interface WorkflowObserverGhPackageRecordStat {
   mode: number
 }
 
-export interface WorkflowObserverGhPackageRecordSelectorOptions {
-  readonly lstat?: (path: string) => WorkflowObserverGhPackageRecordStat
-}
-
 export function provisionWorkflowObserverGhTool(
   options?: WorkflowObserverGhToolOptions,
 ): WorkflowObserverGhToolResult
-
-export function selectRegularPackageGhCandidate(
-  paths: string[],
-  options?: WorkflowObserverGhPackageRecordSelectorOptions,
-): string | undefined
 
 export class WorkflowObserverGhToolError extends Error {
   readonly code: string
