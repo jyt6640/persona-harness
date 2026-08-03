@@ -10,10 +10,11 @@ import {
   renderExternalAttestationParserHelpArguments,
   runExternalAttestationGrammarPreflight,
 } from "../scripts/consumer-authority-external-attestation-command-plan.mjs"
+import type { ExternalAttestationTopology } from "../scripts/consumer-authority-external-attestation-command-plan.mjs"
 import { createObserverGhNoTokenEnvironment } from "../scripts/consumer-authority-observer-gh-tool.mjs"
 import { provisionPrivateObserverGhCopy } from "../scripts/consumer-authority-observer-gh-workflow-selector.mjs"
 
-const topology = {
+const topology: ExternalAttestationTopology = {
   callerEnrollment: {
     repositoryId: 1304576182,
     repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
@@ -63,17 +64,21 @@ describe("beta33 observer gh parser-only preflight", () => {
 
       const copied = provisionPrivateObserverGhCopy(source, { runnerTemp })
       expect(copied.state).toBe("ready")
-      if (copied.state !== "ready") throw new Error("private observer gh copy did not become ready")
+      if (copied.state !== "ready" || copied.path === undefined) {
+        throw new Error("private observer gh copy did not become ready")
+      }
+      const copiedPath = copied.path
 
       const environment = createObserverGhNoTokenEnvironment(stateRoot)
+      if (environment === undefined) throw new Error("private observer environment did not become ready")
       expect(environment.PATH).toBeUndefined()
       expect(environment.GH_TOKEN).toBeUndefined()
-      expect(lstatSync(copied.path).isSymbolicLink()).toBe(false)
+      expect(lstatSync(copiedPath).isSymbolicLink()).toBe(false)
 
       const result = runExternalAttestationGrammarPreflight(
         canonicalExternalAttestationCommandPlan(),
         topology,
-        { ghPath: copied.path },
+        { ghPath: copiedPath },
       )
       expect(result).toEqual({
         artifactAccess: false,
@@ -87,20 +92,20 @@ describe("beta33 observer gh parser-only preflight", () => {
       })
 
       const accepted = spawnSync(
-        copied.path,
+        copiedPath,
         renderExternalAttestationParserHelpArguments(canonicalExternalAttestationCommandPlan(), topology),
         { encoding: "utf8", env: environment, shell: false },
       )
       expect(accepted.status).toBe(0)
 
-      const unknown = spawnSync(copied.path, ["attestation", "verify", "placeholder", "--unknown", "--help"], {
+      const unknown = spawnSync(copiedPath, ["attestation", "verify", "placeholder", "--unknown", "--help"], {
         encoding: "utf8",
         env: environment,
         shell: false,
       })
       expect(unknown.status).toBe(1)
 
-      const missingValue = spawnSync(copied.path, ["attestation", "verify", "placeholder", "--signer-digest", "--help"], {
+      const missingValue = spawnSync(copiedPath, ["attestation", "verify", "placeholder", "--signer-digest", "--help"], {
         encoding: "utf8",
         env: environment,
         shell: false,
