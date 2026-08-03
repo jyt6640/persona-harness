@@ -1,3 +1,9 @@
+import { OBSERVER_GH_PACKAGE_RECORD_SHAPES } from "./consumer-authority-observer-gh-package-record.mjs"
+
+const PACKAGE_RECORD_STAGE_CODES = OBSERVER_GH_PACKAGE_RECORD_SHAPES.map(
+  (shape) => `observer-gh-selector-package-record-${shape}`,
+)
+
 const STAGE_CODES = Object.freeze([
   "observer-gh-tool-invalid",
   "observer-gh-tool-unavailable",
@@ -6,7 +12,7 @@ const STAGE_CODES = Object.freeze([
   "observer-gh-non-tool-stage",
   "observer-gh-selector-environment",
   "observer-gh-selector-package-list",
-  "observer-gh-selector-package-record",
+  ...PACKAGE_RECORD_STAGE_CODES,
   "observer-gh-selector-source-assessment",
   "observer-gh-selector-private-reservation",
   "observer-gh-selector-private-copy",
@@ -57,14 +63,28 @@ export function observerGhStageCodeForWorkflowSelector(value) {
     value.state === "ready"
     && value.code === "observer-gh-workflow-ready"
     && value.selectorStage === "output-handoff"
+    && value.packageRecordShape === "canonical"
   ) {
     return undefined
   }
   if (value.state !== "blocked" || typeof value.selectorStage !== "string") {
     return "observer-gh-non-tool-stage"
   }
-  if (value.selectorStage === "selector-internal") return "observer-gh-selector-internal"
-  if (SELECTOR_STAGES.includes(value.selectorStage)) {
+  if (value.selectorStage === "selector-internal" && value.packageRecordShape === undefined) {
+    return "observer-gh-selector-internal"
+  }
+  if (value.selectorStage === "package-record") {
+    return OBSERVER_GH_PACKAGE_RECORD_SHAPES.includes(value.packageRecordShape)
+      ? `observer-gh-selector-package-record-${value.packageRecordShape}`
+      : "observer-gh-non-tool-stage"
+  }
+  if (["environment", "package-list"].includes(value.selectorStage) && value.packageRecordShape === undefined) {
+    return `observer-gh-selector-${value.selectorStage}`
+  }
+  if (
+    SELECTOR_STAGES.includes(value.selectorStage)
+    && value.packageRecordShape === "canonical"
+  ) {
     return `observer-gh-selector-${value.selectorStage}`
   }
   return "observer-gh-non-tool-stage"
