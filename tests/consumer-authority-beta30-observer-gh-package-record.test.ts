@@ -5,7 +5,7 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import {
-  OBSERVER_GH_DOCUMENTED_ANCILLARY_RECORDS,
+  OBSERVER_GH_OPTIONAL_ANCILLARY_RECORDS,
   OBSERVER_GH_PACKAGE_RECORD_SHAPES,
   OBSERVER_GH_POLICY_PRIMARY_RECORD,
   ObserverGhPackageOwnershipError,
@@ -18,17 +18,15 @@ import { observerGhStageCodeForWorkflowSelector } from "../scripts/consumer-auth
 import { assessObserverGhTool } from "../scripts/consumer-authority-observer-gh-tool.mjs"
 import { provisionWorkflowObserverGhTool } from "../scripts/consumer-authority-observer-gh-workflow-selector.mjs"
 
-describe("consumer authority beta.29 strict observer gh package record", () => {
+describe("consumer authority beta.30 primary-centric observer gh package record", () => {
   it("reports a bounded record-path shape before it can write a workflow output", () => {
-    // Given: a valid workflow output reservation and an invalid package record.
-    const root = mkdtempSync(join(tmpdir(), "beta29-record-path-"))
+    const root = mkdtempSync(join(tmpdir(), "beta30-record-path-"))
     const runnerTemp = join(root, "runner-temp")
     const githubOutput = join(root, "github-output")
     try {
       mkdirSync(runnerTemp)
       writeFileSync(githubOutput, "")
 
-      // When: the workflow selector receives a nonabsolute record.
       const result = provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         readPackageRecord: () => {
@@ -36,7 +34,6 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
         },
       })
 
-      // Then: it gives only the fixed shape and leaves the output untouched.
       expect(result).toEqual({
         code: "observer-gh-workflow-tool-invalid",
         packageRecordShape: "record-path",
@@ -51,52 +48,74 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
     }
   })
 
-  it("parses only byte-strict LF package records before selecting the fixed Ubuntu policy primary", () => {
-    const [completion] = OBSERVER_GH_DOCUMENTED_ANCILLARY_RECORDS
-    const canonical = Buffer.from(`${OBSERVER_GH_POLICY_PRIMARY_RECORD}\n${completion}\n`, "utf8")
-    const records = parseObserverGhPackageRecord(canonical)
-    const stats = new Map<string, ReturnType<typeof fixtureStat>>([
+  it("selects only the fixed primary while allowing absent or inert secondary basename-gh records", () => {
+    const [completion] = OBSERVER_GH_OPTIONAL_ANCILLARY_RECORDS
+    const inert = "/usr/share/doc/gh/gh"
+    const stats = new Map([
       [OBSERVER_GH_POLICY_PRIMARY_RECORD, fixtureStat(0o100755)],
       [completion, fixtureStat(0o100644)],
+      [inert, fixtureStat(0o100644)],
     ])
+    const lstat = (path: string) => stats.get(path) ?? missingStat()
 
-    expect(records).toEqual([OBSERVER_GH_POLICY_PRIMARY_RECORD, completion])
-    expect(selectInstalledObserverGhCandidate(records, {
-      lstat: (path: string) => stats.get(path) ?? missingStat(),
-    })).toEqual({ candidate: OBSERVER_GH_POLICY_PRIMARY_RECORD, packageRecordShape: "canonical" })
+    const primaryOnly = parseObserverGhPackageRecord(Buffer.from(`${OBSERVER_GH_POLICY_PRIMARY_RECORD}\n`, "utf8"))
+    const documented = parseObserverGhPackageRecord(Buffer.from(`${OBSERVER_GH_POLICY_PRIMARY_RECORD}\n${completion}\n`, "utf8"))
+    const withInertSecondary = parseObserverGhPackageRecord(Buffer.from(`${OBSERVER_GH_POLICY_PRIMARY_RECORD}\n${inert}\n`, "utf8"))
+
+    for (const records of [primaryOnly, documented, withInertSecondary]) {
+      expect(selectInstalledObserverGhCandidate(records, { lstat })).toEqual({
+        candidate: OBSERVER_GH_POLICY_PRIMARY_RECORD,
+        packageRecordShape: "canonical",
+      })
+    }
     expect(OBSERVER_GH_PACKAGE_RECORD_SHAPES).toEqual([
       "record-encoding",
       "record-path",
       "primary-missing",
       "primary-unsafe",
-      "ancillary-missing-or-unsafe",
-      "ancillary-unknown",
+      "ancillary-unsafe",
       "executable-ambiguous",
       "lstat-failed",
       "canonical",
     ])
   })
 
-  it("maps every strict package-record rejection through one nonreflective shape", () => {
-    const [completion] = OBSERVER_GH_DOCUMENTED_ANCILLARY_RECORDS
-    const canonical = [OBSERVER_GH_POLICY_PRIMARY_RECORD, completion]
+  it("rejects malformed, unsafe, aliased, and competing secondary records with fixed shapes", () => {
+    const [completion] = OBSERVER_GH_OPTIONAL_ANCILLARY_RECORDS
+    const inert = "/usr/share/doc/gh/gh"
+    const executable = "/opt/gh"
+    const alias = "/bin/gh"
     const stats = new Map([
       [OBSERVER_GH_POLICY_PRIMARY_RECORD, fixtureStat(0o100755)],
       [completion, fixtureStat(0o100644)],
-      ["/opt/gh", fixtureStat(0o100755)],
-      ["/usr/share/doc/gh/gh", fixtureStat(0o100644)],
+      [inert, fixtureStat(0o100644)],
+      [executable, fixtureStat(0o100755)],
+      [alias, fixtureStat(0o120777, { symlink: true })],
     ])
+    const lstat = (path: string) => stats.get(path) ?? missingStat()
 
     expectShape("record-encoding", () => parseObserverGhPackageRecord(Buffer.from("/usr/bin/gh\r\n", "utf8")))
     expectShape("record-path", () => parseObserverGhPackageRecord(Buffer.from("gh\n", "utf8")))
-    expectShape("primary-missing", () => selectInstalledObserverGhCandidate([completion], { lstat: (path) => stats.get(path) ?? missingStat() }))
-    expectShape("primary-unsafe", () => selectInstalledObserverGhCandidate(canonical, {
-      lstat: (path) => path === OBSERVER_GH_POLICY_PRIMARY_RECORD ? fixtureStat(0o100644) : stats.get(path) ?? missingStat(),
+    expectShape("record-encoding", () => selectInstalledObserverGhCandidate([
+      OBSERVER_GH_POLICY_PRIMARY_RECORD,
+      OBSERVER_GH_POLICY_PRIMARY_RECORD,
+    ], { lstat }))
+    expectShape("primary-missing", () => selectInstalledObserverGhCandidate([completion], { lstat }))
+    expectShape("primary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD], {
+      lstat: () => fixtureStat(0o100644),
     }))
-    expectShape("ancillary-missing-or-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD], { lstat: (path) => stats.get(path) ?? missingStat() }))
-    expectShape("ancillary-unknown", () => selectInstalledObserverGhCandidate([...canonical, "/usr/share/doc/gh/gh"], { lstat: (path) => stats.get(path) ?? missingStat() }))
-    expectShape("executable-ambiguous", () => selectInstalledObserverGhCandidate([...canonical, "/opt/gh"], { lstat: (path) => stats.get(path) ?? missingStat() }))
-    expectShape("lstat-failed", () => selectInstalledObserverGhCandidate(canonical, {
+    expectShape("ancillary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, completion], {
+      lstat: (path) => path === completion ? fixtureStat(0o120777, { symlink: true }) : lstat(path),
+    }))
+    expectShape("ancillary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, inert], {
+      lstat: (path) => path === inert ? fixtureStat(0o040755, { file: false }) : lstat(path),
+    }))
+    expectShape("ancillary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, inert], {
+      lstat: (path) => path === inert ? missingStat() : lstat(path),
+    }))
+    expectShape("executable-ambiguous", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, executable], { lstat }))
+    expectShape("ancillary-unsafe", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD, alias], { lstat }))
+    expectShape("lstat-failed", () => selectInstalledObserverGhCandidate([OBSERVER_GH_POLICY_PRIMARY_RECORD], {
       lstat: () => {
         throw Object.assign(new Error("permission denied"), { code: "EACCES" })
       },
@@ -112,45 +131,46 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
     }
   })
 
-  it("keeps every strict record block before private reservation and output handoff", () => {
-    const [completion] = OBSERVER_GH_DOCUMENTED_ANCILLARY_RECORDS
+  it("keeps every package-record block before private reservation and output handoff", () => {
+    const [completion] = OBSERVER_GH_OPTIONAL_ANCILLARY_RECORDS
+    const inert = "/usr/share/doc/gh/gh"
+    const executable = "/opt/gh"
     const records = [OBSERVER_GH_POLICY_PRIMARY_RECORD, completion]
-    const root = mkdtempSync(join(tmpdir(), "beta29-record-blocks-"))
+    const root = mkdtempSync(join(tmpdir(), "beta30-record-blocks-"))
     const runnerTemp = join(root, "runner-temp")
     const githubOutput = join(root, "github-output")
     const stats = new Map([
       [OBSERVER_GH_POLICY_PRIMARY_RECORD, fixtureStat(0o100755)],
       [completion, fixtureStat(0o100644)],
-      ["/opt/gh", fixtureStat(0o100755)],
-      ["/usr/share/doc/gh/gh", fixtureStat(0o100644)],
+      [inert, fixtureStat(0o100644)],
+      [executable, fixtureStat(0o100755)],
     ])
     try {
       mkdirSync(runnerTemp)
       writeFileSync(githubOutput, "")
-      const cases: ReadonlyArray<readonly [string, () => readonly string[], (path: string) => ReturnType<typeof fixtureStat>]> = [
-        ["record-encoding", () => { throw new ObserverGhPackageRecordError("record-encoding") }, () => missingStat()],
-        ["record-path", () => { throw new ObserverGhPackageRecordError("record-path") }, () => missingStat()],
-        ["primary-missing", () => [completion], (path) => stats.get(path) ?? missingStat()],
-        ["primary-unsafe", () => records, (path) => path === OBSERVER_GH_POLICY_PRIMARY_RECORD ? fixtureStat(0o100644) : stats.get(path) ?? missingStat()],
-        ["ancillary-missing-or-unsafe", () => [OBSERVER_GH_POLICY_PRIMARY_RECORD], (path) => stats.get(path) ?? missingStat()],
-        ["ancillary-unknown", () => [...records, "/usr/share/doc/gh/gh"], (path) => stats.get(path) ?? missingStat()],
-        ["executable-ambiguous", () => [...records, "/opt/gh"], (path) => stats.get(path) ?? missingStat()],
-        ["lstat-failed", () => records, () => { throw Object.assign(new Error("permission denied"), { code: "EACCES" }) }],
+      const cases: ReadonlyArray<PackageRecordCase> = [
+        { shape: "record-encoding", read: () => { throw new ObserverGhPackageRecordError("record-encoding") }, lstat: () => missingStat() },
+        { shape: "record-path", read: () => { throw new ObserverGhPackageRecordError("record-path") }, lstat: () => missingStat() },
+        { shape: "primary-missing", read: () => [completion], lstat: (path) => stats.get(path) ?? missingStat() },
+        { shape: "primary-unsafe", read: () => records, lstat: (path) => path === OBSERVER_GH_POLICY_PRIMARY_RECORD ? fixtureStat(0o100644) : stats.get(path) ?? missingStat() },
+        { shape: "ancillary-unsafe", read: () => [OBSERVER_GH_POLICY_PRIMARY_RECORD, inert], lstat: (path) => path === inert ? missingStat() : stats.get(path) ?? missingStat() },
+        { shape: "executable-ambiguous", read: () => [OBSERVER_GH_POLICY_PRIMARY_RECORD, executable], lstat: (path) => stats.get(path) ?? missingStat() },
+        { shape: "lstat-failed", read: () => records, lstat: () => { throw Object.assign(new Error("permission denied"), { code: "EACCES" }) } },
       ]
 
-      for (const [packageRecordShape, readPackageRecord, lstatPackageRecord] of cases) {
+      for (const blockedCase of cases) {
         const result = provisionWorkflowObserverGhTool({
           environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-          lstatPackageRecord,
-          readPackageRecord,
+          lstatPackageRecord: blockedCase.lstat,
+          readPackageRecord: blockedCase.read,
         })
         expect(result).toEqual({
           code: "observer-gh-workflow-tool-invalid",
-          packageRecordShape,
+          packageRecordShape: blockedCase.shape,
           selectorStage: "package-record",
           state: "blocked",
         })
-        expect(observerGhStageCodeForWorkflowSelector(result)).toBe(`observer-gh-selector-package-record-${packageRecordShape}`)
+        expect(observerGhStageCodeForWorkflowSelector(result)).toBe(`observer-gh-selector-package-record-${blockedCase.shape}`)
         expect(readFileSync(githubOutput, "utf8")).toBe("")
         expect(existsSync(join(runnerTemp, "persona-harness-observer-gh"))).toBe(false)
       }
@@ -160,19 +180,15 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
   })
 
   it("requires separately bounded installed package ownership, status, and architecture", () => {
-    const [completion] = OBSERVER_GH_DOCUMENTED_ANCILLARY_RECORDS
     const calls: string[][] = []
     const execute = (_command: string, args: string[]) => {
       calls.push(args)
       return args[0] === "--showformat=${db:Status-Abbrev}\t${Architecture}\n"
         ? { status: 0, stdout: Buffer.from("ii \tamd64\n", "utf8") }
-        : { status: 0, stdout: Buffer.from(`${OBSERVER_GH_POLICY_PRIMARY_RECORD}\n${completion}\n`, "utf8") }
+        : { status: 0, stdout: Buffer.from(`${OBSERVER_GH_POLICY_PRIMARY_RECORD}\n`, "utf8") }
     }
 
-    expect(readInstalledGhPackageRecord({ architecture: "amd64", execute })).toEqual([
-      OBSERVER_GH_POLICY_PRIMARY_RECORD,
-      completion,
-    ])
+    expect(readInstalledGhPackageRecord({ architecture: "amd64", execute })).toEqual([OBSERVER_GH_POLICY_PRIMARY_RECORD])
     expect(calls).toEqual([
       ["--showformat=${db:Status-Abbrev}\t${Architecture}\n", "--show", "gh"],
       ["--listfiles", "gh"],
@@ -188,7 +204,7 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
   })
 
   it("contains direct version state under the explicit external runner root", () => {
-    const root = mkdtempSync(join(tmpdir(), "beta29-observer-gh-state-root-"))
+    const root = mkdtempSync(join(tmpdir(), "beta30-observer-gh-state-root-"))
     const consumer = join(root, "consumer")
     const stateRoot = join(root, "runner-state")
     const executable = join(root, "gh")
@@ -227,20 +243,26 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
   })
 })
 
+interface PackageRecordCase {
+  readonly lstat: (path: string) => ReturnType<typeof fixtureStat>
+  readonly read: () => readonly string[]
+  readonly shape: string
+}
+
 function expectShape(shape: string, operation: () => unknown): void {
   try {
     operation()
-    throw new Error("expected strict package record block")
+    throw new Error("expected package record block")
   } catch (error) {
     expect(error).toBeInstanceOf(ObserverGhPackageRecordError)
     expect((error as ObserverGhPackageRecordError).shape).toBe(shape)
   }
 }
 
-function fixtureStat(mode: number) {
+function fixtureStat(mode: number, options: { readonly file?: boolean; readonly symlink?: boolean } = {}) {
   return {
-    isFile: () => true,
-    isSymbolicLink: () => false,
+    isFile: () => options.file ?? true,
+    isSymbolicLink: () => options.symlink ?? false,
     mode,
   }
 }

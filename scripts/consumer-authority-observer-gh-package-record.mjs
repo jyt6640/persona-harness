@@ -6,7 +6,7 @@ const DPKG_QUERY = "/usr/bin/dpkg-query"
 const MAX_PACKAGE_RECORD_BYTES = 16 * 1024
 const MAX_PACKAGE_RECORD_PATH_LENGTH = 4_096
 const POLICY_PRIMARY_GH_RECORD = "/usr/bin/gh"
-const DOCUMENTED_ANCILLARY_GH_RECORDS = new Set([
+const OPTIONAL_ANCILLARY_GH_RECORDS = new Set([
   "/usr/share/bash-completion/completions/gh",
 ])
 
@@ -15,8 +15,7 @@ const PACKAGE_RECORD_SHAPES = Object.freeze([
   "record-path",
   "primary-missing",
   "primary-unsafe",
-  "ancillary-missing-or-unsafe",
-  "ancillary-unknown",
+  "ancillary-unsafe",
   "executable-ambiguous",
   "lstat-failed",
   "canonical",
@@ -24,8 +23,8 @@ const PACKAGE_RECORD_SHAPES = Object.freeze([
 
 export const OBSERVER_GH_PACKAGE_RECORD_SHAPES = PACKAGE_RECORD_SHAPES
 export const OBSERVER_GH_POLICY_PRIMARY_RECORD = POLICY_PRIMARY_GH_RECORD
-export const OBSERVER_GH_DOCUMENTED_ANCILLARY_RECORDS = Object.freeze([
-  ...DOCUMENTED_ANCILLARY_GH_RECORDS,
+export const OBSERVER_GH_OPTIONAL_ANCILLARY_RECORDS = Object.freeze([
+  ...OPTIONAL_ANCILLARY_GH_RECORDS,
 ])
 
 export class ObserverGhPackageRecordError extends Error {
@@ -86,11 +85,11 @@ export function selectInstalledObserverGhCandidate(records, options = {}) {
   if (!Array.isArray(records) || !records.every((record) => typeof record === "string" && isCanonicalAbsoluteRecordPath(record))) {
     throw new ObserverGhPackageRecordError("record-path")
   }
+  if (new Set(records).size !== records.length) throw new ObserverGhPackageRecordError("record-encoding")
 
   const lstat = isRecord(options) && typeof options.lstat === "function" ? options.lstat : lstatSync
   const primary = selectExactPrimaryRecord(records, lstat)
-  assessDocumentedAncillaryRecord(records, lstat)
-  assessUnknownGhRecords(records, lstat)
+  assessSecondaryGhRecords(records, lstat)
   return Object.freeze({ candidate: primary, packageRecordShape: "canonical" })
 }
 
@@ -105,28 +104,18 @@ function selectExactPrimaryRecord(records, lstat) {
   return POLICY_PRIMARY_GH_RECORD
 }
 
-function assessDocumentedAncillaryRecord(records, lstat) {
-  for (const record of DOCUMENTED_ANCILLARY_GH_RECORDS) {
-    if (!records.includes(record)) {
-      throw new ObserverGhPackageRecordError("ancillary-missing-or-unsafe")
-    }
-    const stat = lstatRecord(record, lstat, "ancillary-missing-or-unsafe")
-    if (!isRegularNonSymlinkNonExecutable(stat)) {
-      throw new ObserverGhPackageRecordError("ancillary-missing-or-unsafe")
-    }
-  }
-}
-
-function assessUnknownGhRecords(records, lstat) {
+function assessSecondaryGhRecords(records, lstat) {
   for (const record of records) {
-    if (basename(record) !== "gh" || record === POLICY_PRIMARY_GH_RECORD || DOCUMENTED_ANCILLARY_GH_RECORDS.has(record)) {
+    if (basename(record) !== "gh" || record === POLICY_PRIMARY_GH_RECORD) {
       continue
     }
-    const stat = lstatRecord(record, lstat, undefined)
+    const stat = lstatRecord(record, lstat, "ancillary-unsafe")
     if (isRegularNonSymlinkExecutable(stat)) {
       throw new ObserverGhPackageRecordError("executable-ambiguous")
     }
-    throw new ObserverGhPackageRecordError("ancillary-unknown")
+    if (!isRegularNonSymlinkNonExecutable(stat)) {
+      throw new ObserverGhPackageRecordError("ancillary-unsafe")
+    }
   }
 }
 

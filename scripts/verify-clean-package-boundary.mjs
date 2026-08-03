@@ -32,6 +32,7 @@ import {
   assertSourcePackageIdentity,
   parseBundleHeads,
 } from "./clean-package-boundary-core.mjs"
+import { isObserverGhStageCode } from "./consumer-authority-observer-gh-stage.mjs"
 import { canonicalizePackageTarball } from "./package-content-identity.mjs"
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -406,9 +407,9 @@ function requireContractSuccess(result, successMarker, diagnosticMarker, fallbac
 
 function boundedContractDiagnosticCode(output, marker) {
   if (typeof output !== "string") return undefined
-  const expression = new RegExp(`^${escapeExpression(marker)}: (observer-gh-(?:tool-(?:invalid|unavailable|version-unsupported)|parser-rejected|non-tool-stage|selector-(?:environment|package-list|package-record-(?:record-encoding|record-path|primary-missing|primary-unsafe|ancillary-missing-or-unsafe|ancillary-unknown|executable-ambiguous|lstat-failed|canonical)|source-assessment|private-reservation|private-copy|private-assessment|output-handoff|internal)))$`, "mu")
+  const expression = new RegExp(`^${escapeExpression(marker)}: (observer-gh-[a-z0-9-]+)$`, "mu")
   const match = expression.exec(output)
-  return match?.[1]
+  return isObserverGhStageCode(match?.[1]) ? match[1] : undefined
 }
 
 function escapeExpression(value) {

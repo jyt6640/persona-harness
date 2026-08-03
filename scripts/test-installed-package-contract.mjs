@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readBeta29AcceptanceManifest } from "./consumer-authority-beta29-acceptance-schema.mjs"
+import { readBeta30AcceptanceManifest } from "./consumer-authority-beta30-acceptance-schema.mjs"
 import { observerGhStageCodeForPreflight } from "./consumer-authority-observer-gh-stage.mjs"
 import { canonicalizePackageTarball, readPackageContentIdentity } from "./package-content-identity.mjs"
 
@@ -705,7 +705,7 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta29PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta30PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
@@ -1050,7 +1050,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta29PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta30PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
@@ -2549,8 +2549,8 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
   writeFileSync(loaderPath, `${loader}\n`)
 }
 
-function readBeta29PreAuthorityReadiness(packageRoot) {
-  const manifest = readBeta29AcceptanceManifest(packageRoot)
+function readBeta30PreAuthorityReadiness(packageRoot) {
+  const manifest = readBeta30AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2559,9 +2559,9 @@ function readBeta29PreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readBeta29AcceptanceManifest(packageRoot)
+    readBeta30AcceptanceManifest(packageRoot)
   } catch {
-    throw new Error(`${label} beta.29 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.30 observer handoff contract is invalid`)
   }
 }
 
@@ -2701,7 +2701,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readBeta29AcceptanceManifest(packageRoot)
+  const manifest = readBeta30AcceptanceManifest(packageRoot)
   let plan
   let argv
   try {
@@ -2709,7 +2709,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     argv = publisher.createCanonicalPublisherArgs({
       dryRun: true,
       distTag: "staging",
-      tarballPath: "/private/canonical/persona-harness-0.8.0-beta.29.tgz",
+      tarballPath: "/private/canonical/persona-harness-0.8.0-beta.30.tgz",
     })
   } catch {
     throw new Error(`${label} canonical package publisher handoff contract is invalid`)
@@ -2722,7 +2722,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     || !Array.isArray(argv)
     || argv.join("\u0000") !== [
       "publish",
-      "/private/canonical/persona-harness-0.8.0-beta.29.tgz",
+      "/private/canonical/persona-harness-0.8.0-beta.30.tgz",
       "--access",
       "public",
       "--tag",
@@ -2738,7 +2738,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
 function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerGh) {
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-attestation.mjs")
   for (const script of [
-    "consumer-authority-beta29-acceptance-schema.mjs",
+    "consumer-authority-beta30-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
     "consumer-authority-observer-gh-stage.mjs",
     "consumer-authority-observer-gh-tool.mjs",
@@ -2803,19 +2803,60 @@ async function assertWorkflowSelectedObserverGhLifecycle(packageRoot, cwd, label
     copyFileSync(observerGh, packagedGh, constants.COPYFILE_EXCL)
     chmodSync(packagedGh, 0o700)
     writeFileSync(githubOutput, "")
-    const records = packageRecord.parseObserverGhPackageRecord(Buffer.from(
-      "/usr/bin/gh\n/usr/share/bash-completion/completions/gh\n",
+    const primaryOnly = packageRecord.parseObserverGhPackageRecord(Buffer.from(
+      "/usr/bin/gh\n",
       "utf8",
     ))
     const completion = "/usr/share/bash-completion/completions/gh"
-    const selected = packageRecord.selectInstalledObserverGhCandidate(records, {
-      lstat: (path) => path === "/usr/bin/gh"
-        ? workflowObserverGhFixtureStat(0o100755)
-        : workflowObserverGhFixtureStat(0o100644),
+    const inertSecondary = "/usr/share/doc/gh/gh"
+    const records = packageRecord.parseObserverGhPackageRecord(Buffer.from(
+      `/usr/bin/gh\n${completion}\n${inertSecondary}\n`,
+      "utf8",
+    ))
+    const stats = new Map([
+      ["/usr/bin/gh", workflowObserverGhFixtureStat(0o100755)],
+      [completion, workflowObserverGhFixtureStat(0o100644)],
+      [inertSecondary, workflowObserverGhFixtureStat(0o100644)],
+      ["/opt/gh", workflowObserverGhFixtureStat(0o100755)],
+      ["/bin/gh", workflowObserverGhFixtureStat(0o120777, { symlink: true })],
+    ])
+    const lstat = (path) => stats.get(path) ?? workflowObserverGhMissingStat()
+    const selected = packageRecord.selectInstalledObserverGhCandidate(primaryOnly, {
+      lstat,
+    })
+    const selectedWithInertSecondary = packageRecord.selectInstalledObserverGhCandidate(records, {
+      lstat,
     })
     if (
       selected.candidate !== "/usr/bin/gh"
       || selected.packageRecordShape !== "canonical"
+      || selectedWithInertSecondary.candidate !== "/usr/bin/gh"
+      || selectedWithInertSecondary.packageRecordShape !== "canonical"
+    ) {
+      throw new ObserverGhContractStageError("observer-gh-non-tool-stage")
+    }
+    const expectedPackageRecordShapes = [
+      "record-encoding",
+      "record-path",
+      "primary-missing",
+      "primary-unsafe",
+      "ancillary-unsafe",
+      "executable-ambiguous",
+      "lstat-failed",
+      "canonical",
+    ]
+    if (
+      !packageRecord.OBSERVER_GH_OPTIONAL_ANCILLARY_RECORDS.includes(completion)
+      || packageRecord.OBSERVER_GH_PACKAGE_RECORD_SHAPES.join("\u0000") !== expectedPackageRecordShapes.join("\u0000")
+    ) {
+      throw new ObserverGhContractStageError("observer-gh-non-tool-stage")
+    }
+    if (
+      packageRecord.selectInstalledObserverGhCandidate(records, {
+        lstat: (path) => path === "/usr/bin/gh"
+          ? workflowObserverGhFixtureStat(0o100755)
+          : workflowObserverGhFixtureStat(0o100644),
+      }).candidate !== "/usr/bin/gh"
       || stage.observerGhStageCodeForWorkflowSelector({
         code: "observer-gh-workflow-tool-invalid",
         packageRecordShape: "record-path",
@@ -2833,21 +2874,23 @@ async function assertWorkflowSelectedObserverGhLifecycle(packageRoot, cwd, label
       }
       throw new ObserverGhContractStageError("observer-gh-non-tool-stage")
     }
-    const stats = new Map([
-      ["/usr/bin/gh", workflowObserverGhFixtureStat(0o100755)],
-      [completion, workflowObserverGhFixtureStat(0o100644)],
-      ["/opt/gh", workflowObserverGhFixtureStat(0o100755)],
-      ["/usr/share/doc/gh/gh", workflowObserverGhFixtureStat(0o100644)],
-    ])
-    const lstat = (path) => stats.get(path) ?? workflowObserverGhMissingStat()
     expectPackageRecordShape("record-encoding", () => packageRecord.parseObserverGhPackageRecord(Buffer.from("/usr/bin/gh\r\n", "utf8")))
     expectPackageRecordShape("record-path", () => packageRecord.parseObserverGhPackageRecord(Buffer.from("gh\n", "utf8")))
     expectPackageRecordShape("primary-missing", () => packageRecord.selectInstalledObserverGhCandidate([completion], { lstat }))
     expectPackageRecordShape("primary-unsafe", () => packageRecord.selectInstalledObserverGhCandidate(records, {
       lstat: (path) => path === "/usr/bin/gh" ? workflowObserverGhFixtureStat(0o100644) : lstat(path),
     }))
-    expectPackageRecordShape("ancillary-missing-or-unsafe", () => packageRecord.selectInstalledObserverGhCandidate(["/usr/bin/gh"], { lstat }))
-    expectPackageRecordShape("ancillary-unknown", () => packageRecord.selectInstalledObserverGhCandidate([...records, "/usr/share/doc/gh/gh"], { lstat }))
+    expectPackageRecordShape("record-encoding", () => packageRecord.selectInstalledObserverGhCandidate(["/usr/bin/gh", "/usr/bin/gh"], { lstat }))
+    expectPackageRecordShape("ancillary-unsafe", () => packageRecord.selectInstalledObserverGhCandidate(["/usr/bin/gh", completion], {
+      lstat: (path) => path === completion ? workflowObserverGhFixtureStat(0o120777, { symlink: true }) : lstat(path),
+    }))
+    expectPackageRecordShape("ancillary-unsafe", () => packageRecord.selectInstalledObserverGhCandidate(["/usr/bin/gh", inertSecondary], {
+      lstat: (path) => path === inertSecondary ? workflowObserverGhFixtureStat(0o040755, { file: false }) : lstat(path),
+    }))
+    expectPackageRecordShape("ancillary-unsafe", () => packageRecord.selectInstalledObserverGhCandidate(["/usr/bin/gh", inertSecondary], {
+      lstat: (path) => path === inertSecondary ? workflowObserverGhMissingStat() : lstat(path),
+    }))
+    expectPackageRecordShape("ancillary-unsafe", () => packageRecord.selectInstalledObserverGhCandidate(["/usr/bin/gh", "/bin/gh"], { lstat }))
     expectPackageRecordShape("executable-ambiguous", () => packageRecord.selectInstalledObserverGhCandidate([...records, "/opt/gh"], { lstat }))
     expectPackageRecordShape("lstat-failed", () => packageRecord.selectInstalledObserverGhCandidate(records, {
       lstat: () => {
@@ -2858,10 +2901,8 @@ async function assertWorkflowSelectedObserverGhLifecycle(packageRoot, cwd, label
       assessTool: () => ({ state: "ready" }),
       copyFile: (_source, destination, mode) => copyFileSync(packagedGh, destination, mode),
       environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
-      lstatPackageRecord: (path) => path === "/usr/bin/gh"
-        ? workflowObserverGhFixtureStat(0o100755)
-        : workflowObserverGhFixtureStat(0o100644),
-      readPackageRecord: () => records,
+      lstatPackageRecord: lstat,
+      readPackageRecord: () => primaryOnly,
     }
     const ready = selector.provisionWorkflowObserverGhTool({
       ...strictSelectorOptions,
@@ -2906,10 +2947,10 @@ async function assertWorkflowSelectedObserverGhLifecycle(packageRoot, cwd, label
   }
 }
 
-function workflowObserverGhFixtureStat(mode) {
+function workflowObserverGhFixtureStat(mode, options = {}) {
   return {
-    isFile: () => true,
-    isSymbolicLink: () => false,
+    isFile: () => options.file ?? true,
+    isSymbolicLink: () => options.symlink ?? false,
     mode,
   }
 }
@@ -2921,7 +2962,7 @@ function workflowObserverGhMissingStat() {
 async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-artifact-transport.mjs")
   for (const script of [
-    "consumer-authority-beta29-acceptance-schema.mjs",
+    "consumer-authority-beta30-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
     "consumer-authority-external-observer-boundary.mjs",
     "preflight-consumer-authority-external-artifact-transport.mjs",
@@ -2964,7 +3005,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readBeta29AcceptanceManifest(packageRoot)
+  const manifest = readBeta30AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),

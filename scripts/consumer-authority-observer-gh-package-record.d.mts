@@ -3,15 +3,14 @@ export const OBSERVER_GH_PACKAGE_RECORD_SHAPES: readonly [
   "record-path",
   "primary-missing",
   "primary-unsafe",
-  "ancillary-missing-or-unsafe",
-  "ancillary-unknown",
+  "ancillary-unsafe",
   "executable-ambiguous",
   "lstat-failed",
   "canonical",
 ]
 
 export const OBSERVER_GH_POLICY_PRIMARY_RECORD: "/usr/bin/gh"
-export const OBSERVER_GH_DOCUMENTED_ANCILLARY_RECORDS: readonly [
+export const OBSERVER_GH_OPTIONAL_ANCILLARY_RECORDS: readonly [
   "/usr/share/bash-completion/completions/gh",
 ]
 

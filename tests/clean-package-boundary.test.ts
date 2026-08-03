@@ -213,7 +213,9 @@ describe("clean package boundary", () => {
     expect(contract.indexOf("class ObserverGhContractStageError")).toBeLessThan(contract.indexOf("let contractOptions"))
     expect(verifier).toContain("${fallbackCode}-observer-gh-")
     expect(verifier).toContain("boundedContractDiagnosticCode")
-    expect(verifier).toContain("selector-(?:environment|package-list|package-record-(?:record-encoding|record-path|primary-missing|primary-unsafe|ancillary-missing-or-unsafe|ancillary-unknown|executable-ambiguous|lstat-failed|canonical)")
+    expect(verifier).toContain('import { isObserverGhStageCode } from "./consumer-authority-observer-gh-stage.mjs"')
+    expect(verifier).toContain("isObserverGhStageCode(match?.[1])")
+    expect(verifier).not.toContain("ancillary-unsafe")
     expect(verifier).not.toContain('return "/usr/bin/gh"')
   })
 
