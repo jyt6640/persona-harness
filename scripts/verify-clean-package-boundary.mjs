@@ -32,7 +32,10 @@ import {
   assertSourcePackageIdentity,
   parseBundleHeads,
 } from "./clean-package-boundary-core.mjs"
-import { assessPackageExerciseContractOutput } from "./clean-package-exercise-phase.mjs"
+import {
+  PackageExercisePhaseEnvelopeError,
+  requirePackageExerciseContractSuccess,
+} from "./clean-package-exercise-phase.mjs"
 import { canonicalizePackageTarball } from "./package-content-identity.mjs"
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -402,18 +405,21 @@ function resolveObserverGhPath(value) {
 }
 
 function requireContractSuccess(result, successMarker, phaseMarker, surface, fallbackCode) {
-  const outcome = assessPackageExerciseContractOutput({
-    marker: phaseMarker,
-    output: result.stdout,
-    status: result.status,
-    successMarker,
-    surface,
-  })
-  if (outcome.state === "ready") return
-  if (outcome.state === "blocked") {
-    throw new CleanPackageBoundaryError(`${fallbackCode}-${outcome.phase}-${outcome.code}`)
+  try {
+    requirePackageExerciseContractSuccess({
+      fallbackCode,
+      marker: phaseMarker,
+      output: result.stdout,
+      status: result.status,
+      successMarker,
+      surface,
+    })
+  } catch (error) {
+    if (error instanceof PackageExercisePhaseEnvelopeError) {
+      throw new CleanPackageBoundaryError(error.code)
+    }
+    throw error
   }
-  throw new CleanPackageBoundaryError(`${fallbackCode}-phase-envelope-invalid`)
 }
 
 function assertStaleLauncherIsRejected(root, binding) {

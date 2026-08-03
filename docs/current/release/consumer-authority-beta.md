@@ -93,6 +93,17 @@ package-contract checkout as `HOME` or an XDG state root, so normal tool
 validation cannot leave `.local`, `.config`, or `.cache` behind in a source-built
 or fresh installed consumer.
 
+The beta33 authoritative-bundle exercise uses the package-visible
+`clean-package-exercise-phase.1` vocabulary in
+[`consumer-authority-beta33-acceptance.json`](consumer-authority-beta33-acceptance.json).
+Source-built and fresh-tar children each emit their own complete ordered,
+nonreflective transcript. The parent accepts only all ready records followed by
+the exact PASS marker; marker-only, malformed, out-of-order, foreign, or
+success-after-blocked output is a bounded phase-envelope block. Every record
+contains only the schema version, surface, phase, state, and fixed bounded
+code; it never carries raw child output, a filesystem path, credential, URL,
+or artifact bytes.
+
 ## Fixed Sequence
 
 1. An approved protected-main source candidate has strict prerelease SemVer

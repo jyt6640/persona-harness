@@ -59,6 +59,13 @@ const RECORD_KEYS = Object.freeze([
   "surface",
 ])
 
+export class PackageExercisePhaseEnvelopeError extends Error {
+  constructor(code) {
+    super(code)
+    this.code = code
+  }
+}
+
 export function formatPackageExercisePhaseRecord(surface, phase, state, code, marker) {
   return `${marker}: ${JSON.stringify(createPackageExercisePhaseRecord(surface, phase, state, code))}`
 }
@@ -96,6 +103,21 @@ export function assessPackageExerciseContractOutput({ marker, output, status, su
   }
   if (status !== 0 || successCount !== 1) return { state: "invalid" }
   return { state: "ready" }
+}
+
+export function requirePackageExerciseContractSuccess({ fallbackCode, marker, output, status, successMarker, surface }) {
+  const outcome = assessPackageExerciseContractOutput({
+    marker,
+    output,
+    status,
+    successMarker,
+    surface,
+  })
+  if (outcome.state === "ready") return
+  if (outcome.state === "blocked") {
+    throw new PackageExercisePhaseEnvelopeError(`${fallbackCode}-${outcome.phase}-${outcome.code}`)
+  }
+  throw new PackageExercisePhaseEnvelopeError(`${fallbackCode}-phase-envelope-invalid`)
 }
 
 function parsePackageExerciseTranscript(output, marker, surface) {

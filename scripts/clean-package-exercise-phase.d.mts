@@ -1,5 +1,18 @@
 export const PACKAGE_EXERCISE_PHASE_SCHEMA_VERSION: "clean-package-exercise-phase.1"
 
+export class PackageExercisePhaseEnvelopeError extends Error {
+  readonly code: string
+}
+
+export function requirePackageExerciseContractSuccess(input: Readonly<{
+  fallbackCode: string
+  marker: string
+  output: string
+  status: number
+  successMarker: string
+  surface: "source-built" | "fresh-tar"
+}>): void
+
 export type PackageExerciseSurface = "fresh-tar" | "source-built"
 export type PackageExercisePhaseState = "blocked" | "ready"
 export type PackageExerciseBlockedCode = "contract-failed" | `observer-gh-${string}`

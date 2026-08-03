@@ -5,8 +5,10 @@ import { describe, expect, it } from "vitest"
 
 import {
   PACKAGE_EXERCISE_PHASES,
+  PackageExercisePhaseEnvelopeError,
   assessPackageExerciseContractOutput,
   formatPackageExercisePhaseRecord,
+  requirePackageExerciseContractSuccess,
 } from "../scripts/clean-package-exercise-phase.mjs"
 
 const SOURCE_MARKER = "source-cli-package-exercise-phase"
@@ -129,6 +131,45 @@ describe("clean package exercise phase protocol", () => {
       successMarker: SOURCE_SUCCESS,
       surface: "source-built",
     })).toEqual({ state: "invalid" })
+  })
+
+  it("makes the clean-bundle parent reject marker-only, malformed, out-of-order, and foreign transcripts", () => {
+    const first = PACKAGE_EXERCISE_PHASES["source-built"][0]!
+    const second = PACKAGE_EXERCISE_PHASES["source-built"][1]!
+    const malformed = `${SOURCE_MARKER}: ${JSON.stringify({
+      code: "passed",
+      phase: first,
+      schemaVersion: "clean-package-exercise-phase.1",
+      state: "ready",
+      surface: "source-built",
+      unexpected: "ignored-by-no-one",
+    })}\n`
+    const cases = [
+      `${SOURCE_SUCCESS}\n`,
+      malformed,
+      `${formatPackageExercisePhaseRecord("source-built", second, "ready", "passed", SOURCE_MARKER)}\n`,
+      `${formatPackageExercisePhaseRecord("fresh-tar", PACKAGE_EXERCISE_PHASES["fresh-tar"][0]!, "ready", "passed", SOURCE_MARKER)}\n`,
+    ]
+
+    for (const output of cases) {
+      let thrown
+      try {
+        requirePackageExerciseContractSuccess({
+          fallbackCode: "clean-package-source-contract",
+          marker: SOURCE_MARKER,
+          output,
+          status: 1,
+          successMarker: SOURCE_SUCCESS,
+          surface: "source-built",
+        })
+      } catch (error) {
+        thrown = error
+      }
+      expect(thrown).toBeInstanceOf(PackageExercisePhaseEnvelopeError)
+      expect(thrown).toMatchObject({
+        code: "clean-package-source-contract-phase-envelope-invalid",
+      })
+    }
   })
 
   it("emits one bounded first-phase record for an actual source child failure", () => {

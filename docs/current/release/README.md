@@ -139,6 +139,16 @@ copy through a fixed-placeholder `gh attestation verify <plan> --help` parser
 route under the same token-free state environment, before any artifact or
 online verification action.
 
+Its authoritative bundle exercise also binds the package-visible
+`clean-package-exercise-phase.1` source-built and fresh-tar vocabularies from
+`consumer-authority-beta33-acceptance.json`. The clean-bundle parent requires a
+complete ordered ready transcript and exact PASS marker for the matching
+surface. Marker-only, malformed, out-of-order, foreign, or
+success-after-blocked transcripts fail as a bounded phase-envelope condition.
+Records contain only the schema version, surface, phase, state, and fixed
+bounded code, never raw child output, paths, credentials, URLs, or artifact
+content.
+
 The current package version is bound only when `package.json`, `package-lock`,
 and the current versioned acceptance manifest agree. Historical beta records
 remain strict historical records and cannot define the current package. The
