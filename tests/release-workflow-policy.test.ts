@@ -120,6 +120,9 @@ describe("release workflow policy", () => {
     expect(packageRecord).toContain("value.includes(0) || value.includes(13)")
     expect(packageRecord).toContain('const POLICY_PRIMARY_GH_RECORD = "/usr/bin/gh"')
     expect(packageRecord).toContain('"/usr/share/bash-completion/completions/gh"')
+    expect(packageRecord).toContain("OPTIONAL_ANCILLARY_GH_RECORDS")
+    expect(packageRecord).toContain("assessSecondaryGhRecords")
+    expect(packageRecord).toContain('"ancillary-unsafe"')
     expect(packageRecord).toContain('"record-encoding"')
     expect(packageRecord).toContain('"canonical"')
     expect(selector).not.toContain("process.env.PATH")
@@ -130,6 +133,7 @@ describe("release workflow policy", () => {
     expect(packageRecord).not.toContain("command -v")
     expect(packageRecord).not.toContain("GH_TOKEN")
     expect(packageRecord).not.toContain("GITHUB_TOKEN")
+    expect(packageRecord).toContain("ancillary-unsafe")
     expect(observerTool).toContain("stateRoot")
     expect(observerTool).toContain("GH_CONFIG_DIR: root")
     expect(observerTool).toContain("XDG_STATE_HOME: root")
@@ -172,7 +176,7 @@ describe("release workflow policy", () => {
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.8.0-beta.29")
+    expect(packageVersion).toBe("0.8.0-beta.30")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",

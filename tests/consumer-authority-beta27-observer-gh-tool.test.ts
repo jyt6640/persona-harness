@@ -128,7 +128,7 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
     }
   })
 
-  it("accepts only the exact Ubuntu gh package record shape with its documented completion sibling", () => {
+  it("accepts the primary alone and only safe inert secondary basename-gh records", () => {
     const executable = "/usr/bin/gh"
     const completion = "/usr/share/bash-completion/completions/gh"
     const stats = new Map([
@@ -136,20 +136,24 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
       [completion, fixtureStat(true, false, 0o100644)],
     ])
 
-    expect(selectInstalledObserverGhCandidate([executable, completion], {
-      lstat: (path: string) => {
-        const stat = stats.get(path)
-        if (stat === undefined) throw new Error("fixture stat is missing")
-        return stat
-      },
-    })).toEqual({ candidate: executable, packageRecordShape: "canonical" })
-    expect(() => selectInstalledObserverGhCandidate([
-      executable,
-      completion,
-      "/usr/share/doc/gh/gh",
-    ], {
-      lstat: (path: string) => stats.get(path) ?? fixtureStat(true, false, 0o100644),
-    })).toThrow(ObserverGhPackageRecordError)
+    const inert = "/usr/share/doc/gh/gh"
+    const lstat = (path: string) => {
+      const stat = stats.get(path)
+      if (stat !== undefined) return stat
+      if (path === inert) return fixtureStat(true, false, 0o100644)
+      throw new Error("fixture stat is missing")
+    }
+
+    for (const records of [
+      [executable],
+      [executable, completion],
+      [executable, completion, inert],
+    ]) {
+      expect(selectInstalledObserverGhCandidate(records, { lstat })).toEqual({
+        candidate: executable,
+        packageRecordShape: "canonical",
+      })
+    }
   })
 
   it("copies a qualified package executable into the private workflow reservation", () => {

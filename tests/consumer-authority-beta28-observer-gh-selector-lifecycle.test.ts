@@ -16,7 +16,7 @@ import {
 } from "../scripts/consumer-authority-observer-gh-package-record.mjs"
 import { observerGhStageCodeForWorkflowSelector } from "../scripts/consumer-authority-observer-gh-stage.mjs"
 
-describe("consumer authority beta.28 workflow observer gh selector lifecycle", () => {
+describe("consumer authority workflow observer gh selector lifecycle", () => {
   it("reports a fixed nonreflective stage for every expected selector boundary", () => {
     // Given: the canonical public stage order.
     expect(OBSERVER_GH_WORKFLOW_SELECTOR_STAGES).toEqual([
@@ -125,8 +125,7 @@ describe("consumer authority beta.28 workflow observer gh selector lifecycle", (
         "record-path",
         "primary-missing",
         "primary-unsafe",
-        "ancillary-missing-or-unsafe",
-        "ancillary-unknown",
+        "ancillary-unsafe",
         "executable-ambiguous",
         "lstat-failed",
       ] as const

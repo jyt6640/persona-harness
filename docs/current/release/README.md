@@ -92,12 +92,12 @@ and rejected Linux's runtime-owned `UV_USE_IO_URING=0` child marker.
 `0.8.0-beta.26` then rejected the normal Ubuntu `gh` package record before tool
 assessment because its basename-only selector counted the non-executable
 bash-completion sibling. The next strict-prerelease procedure-only source
-candidate is `0.8.0-beta.29`; beta.28 stopped at an unattributed package-record
-block on the real Ubuntu runner. Beta.29 has no
+candidate is `0.8.0-beta.30`; beta.29 stopped at a conflated nonselected
+ancillary package-record block on the real Ubuntu runner. Beta.30 has no
 source-level claim of a tag, publish, channel movement, GitHub release, or
 original signed consumer artifact.
 
-The beta29 release contract requires package-visible observer credential
+The beta30 release contract requires package-visible observer credential
 preflight, separate caller/reusable signer binding, and a complete public
 Java/Spring readiness route whose default Finish is blocked only by
 `trusted-authority-required` before a fixture may be authorized. Source-bound
@@ -117,8 +117,10 @@ match the V4 stage-scoped residue projection. `.local`, `.config`, and `.cache`
 are never allowlisted. The observer `gh` is selected only after bounded dpkg
 ownership/status/architecture validation and byte-strict package-record parsing;
 the policy primary `/usr/bin/gh` must pass no-follow lstat before private copy,
-while only the documented regular non-executable
-`/usr/share/bash-completion/completions/gh` sibling is ancillary. It is
+while an absent documented regular non-executable
+`/usr/share/bash-completion/completions/gh` sibling is inert. Any present
+secondary basename-`gh` record must be regular, non-symlink, and non-executable;
+an alias, executable, missing, or unsafe secondary blocks. It is
 never an ambient PATH lookup or literal runner path. Linux accepts
 only `UV_USE_IO_URING=0` in the fixed authority child environment. Slow
 preparation completes before the one push, and the certificate validity deadline
