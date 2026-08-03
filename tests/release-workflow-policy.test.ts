@@ -117,7 +117,7 @@ describe("release workflow policy", () => {
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.8.0-beta.23")
+    expect(packageVersion).toBe("0.8.0-beta.25")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",
@@ -294,9 +294,9 @@ describe("release workflow policy", () => {
 
     expect(scripts["test"]).toBe("npm run test:package")
     expect(scripts["test:package"]).toBe("node dist/cli/index.js --help")
-    expect(scripts["test:authoritative-bundle-package-contract"]).toBe("node scripts/verify-clean-package-boundary.mjs --exercise-contract")
+    expect(scripts["test:authoritative-bundle-package-contract"]).toBe("node scripts/verify-clean-package-boundary.mjs --exercise-contract --observer-gh /usr/bin/gh")
     expect(scripts["test:clean-package-boundary"]).toBe("node scripts/verify-clean-package-boundary.mjs")
-    expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs")
+    expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs --observer-gh /usr/bin/gh")
     expect(scripts["test:repository"]).toBe(
       "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:authoritative-bundle-package-contract",
     )
