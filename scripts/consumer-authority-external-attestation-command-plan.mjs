@@ -120,12 +120,12 @@ export function runExternalAttestationGrammarPreflight(plan, topology, options =
   parseTopology(topology)
   const execute = typeof options.execute === "function" ? options.execute : spawnSync
   const ghPath = options.ghPath
-  const tool = assessObserverGhTool(ghPath, { execute })
-  if (tool.state !== "ready") return blocked(tool.code, "execution-failed")
   const root = mkdtempSync(join(tmpdir(), "persona-external-attestation-preflight-"))
   try {
     const home = join(root, "home")
     mkdirSync(home, { recursive: true, mode: 0o700 })
+    const tool = assessObserverGhTool(ghPath, { execute, stateRoot: home })
+    if (tool.state !== "ready") return blocked(tool.code, "execution-failed")
     const bundlePath = join(root, "invalid-bundle.json")
     writeFileSync(bundlePath, "{\"format\":\"preflight\"}\n", { mode: 0o600 })
     const argumentsList = renderExternalAttestationVerifyArguments(plan, topology, {

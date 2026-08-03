@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -15,6 +15,7 @@ import {
   selectInstalledObserverGhCandidate,
 } from "../scripts/consumer-authority-observer-gh-package-record.mjs"
 import { observerGhStageCodeForWorkflowSelector } from "../scripts/consumer-authority-observer-gh-stage.mjs"
+import { assessObserverGhTool } from "../scripts/consumer-authority-observer-gh-tool.mjs"
 import { provisionWorkflowObserverGhTool } from "../scripts/consumer-authority-observer-gh-workflow-selector.mjs"
 
 describe("consumer authority beta.29 strict observer gh package record", () => {
@@ -184,6 +185,45 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
       architecture: "amd64",
       execute: () => ({ status: 0, stdout: Buffer.from("ii \tarm64\n", "utf8") }),
     })).toThrow(ObserverGhPackageOwnershipError)
+  })
+
+  it("contains direct version state under the explicit external runner root", () => {
+    const root = mkdtempSync(join(tmpdir(), "beta29-observer-gh-state-root-"))
+    const consumer = join(root, "consumer")
+    const stateRoot = join(root, "runner-state")
+    const executable = join(root, "gh")
+    const originalCwd = process.cwd()
+    try {
+      mkdirSync(consumer)
+      mkdirSync(stateRoot)
+      writeFileSync(executable, [
+        `#!${process.execPath}`,
+        "import { mkdirSync, writeFileSync } from 'node:fs';",
+        "import { join } from 'node:path';",
+        "if (process.env.GH_TOKEN || process.env.GITHUB_TOKEN || process.env.PATH) process.exit(91);",
+        "const state = join(process.env.HOME, '.local', 'state', 'gh');",
+        "mkdirSync(state, { recursive: true });",
+        "writeFileSync(join(state, 'device-id'), 'fixture\\n');",
+        "process.stdout.write('gh version 2.96.0 (fixture)\\n');",
+        "",
+      ].join("\n"))
+      chmodSync(executable, 0o755)
+      process.chdir(consumer)
+
+      expect(assessObserverGhTool(executable, { stateRoot })).toEqual({
+        code: "gh-command-tool-ready",
+        state: "ready",
+      })
+      expect(existsSync(join(consumer, ".local"))).toBe(false)
+      expect(existsSync(join(stateRoot, ".local", "state", "gh", "device-id"))).toBe(true)
+      expect(assessObserverGhTool(executable, { stateRoot: join(root, "missing") })).toEqual({
+        code: "gh-command-tool-invalid",
+        state: "blocked",
+      })
+    } finally {
+      process.chdir(originalCwd)
+      rmSync(root, { force: true, recursive: true })
+    }
   })
 })
 

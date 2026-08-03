@@ -60,9 +60,9 @@ function buildExpectedManifest() {
   manifest.authority.fixturePlan.registryInstall = "npm install persona-harness@0.8.0-beta.29 --registry https://registry.npmjs.org"
   manifest.authority.hostedFixture.revision = "postmerge-persona-harness-beta29-main-sha"
   procedure.observerGhTool = canonicalObserverGhToolContract()
-  procedure.observerGhSelection = "workflow-owned-dpkg-ownership-and-byte-strict-package-record-qualified-private-copy-with-fixed-nonreflective-selector-stage-and-package-record-shape-before-every-package-contract"
+  procedure.observerGhSelection = "workflow-owned-dpkg-ownership-and-byte-strict-package-record-qualified-private-copy-with-runner-temp-isolated-token-free-state-root-and-fixed-nonreflective-selector-stage-and-package-record-shape-before-every-package-contract"
   procedure.prefetchSteps = procedure.prefetchSteps.map((step) => step === "workflow-selected-observer-gh-tool-dpkg-record-qualified-regular-nonsymlink-executable-version-compatible-fixed-selector-stage-and-no-package-path-lookup"
-    ? "workflow-selected-observer-gh-tool-dpkg-ownership-byte-strict-record-qualified-regular-nonsymlink-policy-primary-private-copy-version-compatible-fixed-selector-stage-and-package-record-shape-without-package-path-lookup"
+    ? "workflow-selected-observer-gh-tool-dpkg-ownership-byte-strict-record-qualified-regular-nonsymlink-policy-primary-private-copy-version-compatible-runner-temp-isolated-token-free-state-root-fixed-selector-stage-and-package-record-shape-without-package-path-lookup"
     : step)
   manifest.observerGhTool = canonicalObserverGhToolContract()
   manifest.observerGhSelection = {
@@ -75,6 +75,7 @@ function buildExpectedManifest() {
       shapes: [...OBSERVER_GH_PACKAGE_RECORD_SHAPES],
       unknownExecutables: "reject-multiple-qualified-executables",
     },
+    stateIsolation: "every-direct-version-assessment-uses-only-a-validated-runner-temp-real-directory-as-an-explicit-token-free-home-gh-xdg-temp-git-and-npm-state-root-so-gh-cannot-create-consumer-local-state",
     stages: [
       "environment",
       "package-list",
@@ -86,16 +87,16 @@ function buildExpectedManifest() {
       "output-handoff",
     ],
     unknown: "selector-internal",
-    workflow: "validate-runner-temp-and-github-output-then-owned-dpkg-status-architecture-and-byte-record-selection-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts",
+    workflow: "validate-runner-temp-and-github-output-then-owned-dpkg-status-architecture-and-byte-record-selection-with-runner-temp-isolated-token-free-state-root-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts",
   }
   manifest.closureCompleteness.deterministicLinks = manifest.closureCompleteness.deterministicLinks.map((link) => link === "ubuntu-dpkg-record-qualified-workflow-selected-observer-gh-tool-with-fixed-nonreflective-selector-stage-without-package-path-lookup"
     ? "ubuntu-dpkg-ownership-byte-strict-package-record-policy-primary-workflow-selected-observer-gh-tool-with-fixed-nonreflective-selector-stage-and-package-record-shape-without-package-path-lookup"
     : link)
-  manifest.closureCompleteness.localProof = "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-ownership-byte-strict-package-record-workflow-selected-gh-selector-lifecycle-parser-fixed-stage-and-shape-diagnostics-and-authority-child-contracts"
+  manifest.closureCompleteness.localProof = "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-ownership-byte-strict-package-record-runner-temp-isolated-token-free-gh-state-workflow-selected-selector-lifecycle-parser-fixed-stage-and-shape-diagnostics-and-authority-child-contracts"
   manifest.hostedResidual = {
     id: "beta29-v4-prearmed-same-commit-current-artifact-fetch-consume-replay",
     requiredEvidence: "one separately authorized normal push of the v4-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
-    whyLocalCannotClose: "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership and byte-strict package-record selector lifecycle with fixed stage and shape diagnostics, Linux child-envelope behavior, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact.",
+    whyLocalCannotClose: "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, runner-temp isolated token-free state, and byte-strict package-record selector lifecycle with fixed stage and shape diagnostics, Linux child-envelope behavior, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact.",
   }
   return manifest
 }

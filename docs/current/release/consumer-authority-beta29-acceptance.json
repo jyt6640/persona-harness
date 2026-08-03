@@ -475,7 +475,7 @@
         "credential-handoff-v4-immutable-binding-and-normalized-residue-projection",
         "observer-child-v4-immutable-binding-and-normalized-residue-projection",
         "immediately-pre-push-v4-immutable-binding-and-normalized-residue-projection",
-        "workflow-selected-observer-gh-tool-dpkg-ownership-byte-strict-record-qualified-regular-nonsymlink-policy-primary-private-copy-version-compatible-fixed-selector-stage-and-package-record-shape-without-package-path-lookup",
+        "workflow-selected-observer-gh-tool-dpkg-ownership-byte-strict-record-qualified-regular-nonsymlink-policy-primary-private-copy-version-compatible-runner-temp-isolated-token-free-state-root-fixed-selector-stage-and-package-record-shape-without-package-path-lookup",
         "public-bootstrap-accepted-plan-and-current-loop-state",
         "public-Gradle-test-compileJava-and-clean",
         "public-README-profile-and-Java-evidence",
@@ -613,13 +613,13 @@
         "schemaVersion": "consumer-authority-observer-gh-tool.2",
         "version": ">=2.96.0 <3.0.0"
       },
-      "observerGhSelection": "workflow-owned-dpkg-ownership-and-byte-strict-package-record-qualified-private-copy-with-fixed-nonreflective-selector-stage-and-package-record-shape-before-every-package-contract"
+      "observerGhSelection": "workflow-owned-dpkg-ownership-and-byte-strict-package-record-qualified-private-copy-with-runner-temp-isolated-token-free-state-root-and-fixed-nonreflective-selector-stage-and-package-record-shape-before-every-package-contract"
     }
   },
   "hostedResidual": {
     "id": "beta29-v4-prearmed-same-commit-current-artifact-fetch-consume-replay",
     "requiredEvidence": "one separately authorized normal push of the v4-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
-    "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership and byte-strict package-record selector lifecycle with fixed stage and shape diagnostics, Linux child-envelope behavior, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
+    "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, runner-temp isolated token-free state, and byte-strict package-record selector lifecycle with fixed stage and shape diagnostics, Linux child-envelope behavior, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   },
   "mutationBoundary": {
     "performed": false,
@@ -812,6 +812,7 @@
       ],
       "unknownExecutables": "reject-multiple-qualified-executables"
     },
+    "stateIsolation": "every-direct-version-assessment-uses-only-a-validated-runner-temp-real-directory-as-an-explicit-token-free-home-gh-xdg-temp-git-and-npm-state-root-so-gh-cannot-create-consumer-local-state",
     "stages": [
       "environment",
       "package-list",
@@ -823,7 +824,7 @@
       "output-handoff"
     ],
     "unknown": "selector-internal",
-    "workflow": "validate-runner-temp-and-github-output-then-owned-dpkg-status-architecture-and-byte-record-selection-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts"
+    "workflow": "validate-runner-temp-and-github-output-then-owned-dpkg-status-architecture-and-byte-record-selection-with-runner-temp-isolated-token-free-state-root-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts"
   },
   "closureCompleteness": {
     "deterministicLinks": [
@@ -837,7 +838,7 @@
       "authenticated-fetch-to-trusted-unconsumed",
       "one-Finish-consumption-and-immediate-replay-block"
     ],
-    "localProof": "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-ownership-byte-strict-package-record-workflow-selected-gh-selector-lifecycle-parser-fixed-stage-and-shape-diagnostics-and-authority-child-contracts",
+    "localProof": "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-ownership-byte-strict-package-record-runner-temp-isolated-token-free-gh-state-workflow-selected-selector-lifecycle-parser-fixed-stage-and-shape-diagnostics-and-authority-child-contracts",
     "remainingUncertainty": "one-authorized-v4-fixture-push-and-immediate-current-artifact-observation-only"
   },
   "beta28HistoricalObserverTool": {
