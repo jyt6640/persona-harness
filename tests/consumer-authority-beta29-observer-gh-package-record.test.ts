@@ -55,7 +55,7 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
     const [completion] = OBSERVER_GH_DOCUMENTED_ANCILLARY_RECORDS
     const canonical = Buffer.from(`${OBSERVER_GH_POLICY_PRIMARY_RECORD}\n${completion}\n`, "utf8")
     const records = parseObserverGhPackageRecord(canonical)
-    const stats = new Map([
+    const stats = new Map<string, ReturnType<typeof fixtureStat>>([
       [OBSERVER_GH_POLICY_PRIMARY_RECORD, fixtureStat(0o100755)],
       [completion, fixtureStat(0o100644)],
     ])
@@ -127,7 +127,7 @@ describe("consumer authority beta.29 strict observer gh package record", () => {
     try {
       mkdirSync(runnerTemp)
       writeFileSync(githubOutput, "")
-      const cases: ReadonlyArray<readonly [string, () => readonly string[], (path: string) => unknown]> = [
+      const cases: ReadonlyArray<readonly [string, () => readonly string[], (path: string) => ReturnType<typeof fixtureStat>]> = [
         ["record-encoding", () => { throw new ObserverGhPackageRecordError("record-encoding") }, () => missingStat()],
         ["record-path", () => { throw new ObserverGhPackageRecordError("record-path") }, () => missingStat()],
         ["primary-missing", () => [completion], (path) => stats.get(path) ?? missingStat()],
