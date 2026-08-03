@@ -1,4 +1,10 @@
 import { isObserverGhStageCode } from "./consumer-authority-observer-gh-stage.mjs"
+import {
+  AUTHORITY_DISCOVERY_EXERCISE_MARKER,
+  assessAuthorityDiscoveryExerciseResult,
+  createAuthorityDiscoveryExerciseResult,
+  formatAuthorityDiscoveryExerciseResult,
+} from "./consumer-authority-authority-discovery-exercise.mjs"
 
 export const PACKAGE_EXERCISE_PHASE_SCHEMA_VERSION = "clean-package-exercise-phase.1"
 
@@ -105,7 +111,15 @@ export function assessPackageExerciseContractOutput({ marker, output, status, su
   return { state: "ready" }
 }
 
-export function requirePackageExerciseContractSuccess({ fallbackCode, marker, output, status, successMarker, surface }) {
+export function requirePackageExerciseContractSuccess({
+  authorityDiscoveryMarker,
+  fallbackCode,
+  marker,
+  output,
+  status,
+  successMarker,
+  surface,
+}) {
   const outcome = assessPackageExerciseContractOutput({
     marker,
     output,
@@ -113,11 +127,32 @@ export function requirePackageExerciseContractSuccess({ fallbackCode, marker, ou
     successMarker,
     surface,
   })
-  if (outcome.state === "ready") return
+  if (outcome.state === "ready") {
+    if (authorityDiscoveryMarker === undefined) return
+    if (hasBoundAuthorityDiscoveryResult(output, surface, marker, authorityDiscoveryMarker)) return
+    throw new PackageExercisePhaseEnvelopeError(`${fallbackCode}-phase-envelope-invalid`)
+  }
   if (outcome.state === "blocked") {
     throw new PackageExercisePhaseEnvelopeError(`${fallbackCode}-${outcome.phase}-${outcome.code}`)
   }
   throw new PackageExercisePhaseEnvelopeError(`${fallbackCode}-phase-envelope-invalid`)
+}
+
+function hasBoundAuthorityDiscoveryResult(output, surface, phaseMarker, resultMarker) {
+  if (resultMarker !== AUTHORITY_DISCOVERY_EXERCISE_MARKER) return false
+  if (assessAuthorityDiscoveryExerciseResult(output, surface).state !== "ready") return false
+  const expectedPhase = formatPackageExercisePhaseRecord(
+    surface,
+    "authority-discovery",
+    "ready",
+    "passed",
+    phaseMarker,
+  )
+  const expectedResult = formatAuthorityDiscoveryExerciseResult(createAuthorityDiscoveryExerciseResult(surface))
+  const lines = output.split("\n")
+  const phaseIndexes = lines.flatMap((line, index) => line === expectedPhase ? [index] : [])
+  const resultIndexes = lines.flatMap((line, index) => line === expectedResult ? [index] : [])
+  return phaseIndexes.length === 1 && resultIndexes.length === 1 && resultIndexes[0] === phaseIndexes[0] + 1
 }
 
 function parsePackageExerciseTranscript(output, marker, surface) {

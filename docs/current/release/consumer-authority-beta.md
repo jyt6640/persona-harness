@@ -99,10 +99,12 @@ The beta33 authoritative-bundle exercise uses the package-visible
 Source-built and fresh-tar children each emit their own complete ordered,
 nonreflective transcript. The parent accepts only all ready records followed by
 the exact PASS marker; marker-only, malformed, out-of-order, foreign, or
-success-after-blocked output is a bounded phase-envelope block. Every record
-contains only the schema version, surface, phase, state, and fixed bounded
-code; it never carries raw child output, a filesystem path, credential, URL,
-or artifact bytes.
+success-after-blocked output is a bounded phase-envelope block. The ready
+`authority-discovery` phase is followed immediately by exactly one
+`consumer-authority-discovery-exercise.1` result for that same surface:
+`trusted-unconsumed-persisted`. Every record contains only fixed schema,
+surface, phase or result state, and bounded code; it never carries raw child
+output, a filesystem path, credential, URL, or artifact bytes.
 
 ## Fixed Sequence
 

@@ -7,6 +7,10 @@ import {
   PACKAGE_EXERCISE_PHASES,
   PACKAGE_EXERCISE_PHASE_SCHEMA_VERSION,
 } from "./clean-package-exercise-phase.mjs"
+import {
+  AUTHORITY_DISCOVERY_EXERCISE_MARKER,
+  AUTHORITY_DISCOVERY_EXERCISE_SCHEMA_VERSION,
+} from "./consumer-authority-authority-discovery-exercise.mjs"
 import { OBSERVER_GH_PACKAGE_RECORD_SHAPES } from "./consumer-authority-observer-gh-package-record.mjs"
 import { canonicalObserverGhToolContract, parseObserverGhToolContract } from "./consumer-authority-observer-gh-tool.mjs"
 import { parseCanonicalPackagePublisherPlan } from "./canonical-package-publisher.mjs"
@@ -106,6 +110,12 @@ function buildExpectedManifest() {
   manifest.packageBoundary.currentVersionAuthority = "current-package-json-package-lock-and-current-versioned-acceptance-manifest-must-bind-one-identical-prerelease-version; historical-versioned-acceptance-records-remain-strict-and-never-define-current-package-identity"
   manifest.packageBoundary.authoritativeBundleContract.rootPolicy = "the-git-bound-authoritative-bundle-verifier-runs-only-from-a-complete-source-materialization-and-requires-git; fresh-installed-contracts-load-observer-stage-and-package-record-only-from-the-exact-tarball-without-src-git-or-source-verifier-fallback"
   manifest.packageBoundary.authoritativeBundleContract.exercisePhaseProtocol = {
+    authorityDiscoveryResult: {
+      marker: AUTHORITY_DISCOVERY_EXERCISE_MARKER,
+      placement: "exactly-one-trusted-unconsumed-persisted-record-immediately-after-the-ready-authority-discovery-phase-for-the-matching-source-built-or-fresh-tar-surface",
+      result: "trusted-unconsumed-persisted",
+      schemaVersion: AUTHORITY_DISCOVERY_EXERCISE_SCHEMA_VERSION,
+    },
     childOutput: "each-source-built-and-fresh-tar-package-exercise-phase-emits-one-ordered-exact-nonreflective-ready-record-or-one-terminal-blocked-record-before-the-terminal-pass-marker",
     freshTar: [...PACKAGE_EXERCISE_PHASES["fresh-tar"]],
     parentAcceptance: "the-clean-bundle-parent-requires-the-complete-ordered-ready-transcript-and-exact-terminal-pass-marker; marker-only-malformed-out-of-order-foreign-or-success-after-blocked-output-is-a-bounded-phase-envelope-block",
@@ -116,11 +126,11 @@ function buildExpectedManifest() {
     ? "ubuntu-dpkg-ownership-byte-strict-package-record-policy-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-records-workflow-selected-copyfile-excl-private-observer-gh-tool-reassessment-and-no-network-parser-help-preflight-with-fixed-nonreflective-selector-stage-and-package-record-shape-without-package-path-lookup"
     : link)
   manifest.closureCompleteness.deterministicLinks.push("workflow-private-copy-reassessment-and-fixed-placeholder-exact-plan-help-parser-preflight-without-artifact-network-token-or-ambient-state")
-  manifest.closureCompleteness.localProof = "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-ownership-byte-strict-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-package-record-copyfile-excl-private-copy-reassessment-runner-temp-isolated-token-free-gh-state-fixed-placeholder-exact-plan-help-parser-preflight-fixed-stage-and-shape-diagnostics-current-package-lock-acceptance-binding-complete-fixture-import-closure-and-authority-child-contracts"
+  manifest.closureCompleteness.localProof = "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-ownership-byte-strict-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-package-record-copyfile-excl-private-copy-reassessment-runner-temp-isolated-token-free-gh-state-fixed-placeholder-exact-plan-help-parser-preflight-fixed-stage-and-shape-diagnostics-current-package-lock-acceptance-binding-complete-fixture-import-closure-and-authority-child-contracts-with-exact-linux-runtime-envelope-and-trusted-unconsumed-persisted-discovery-result-binding"
   manifest.hostedResidual = {
     id: "beta33-v4-prearmed-same-commit-current-artifact-fetch-consume-replay",
     requiredEvidence: "one separately authorized normal push of the v4-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
-    whyLocalCannotClose: "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics, current package-lock-acceptance binding, complete source and fresh-installed fixture import closure, Linux child-envelope behavior, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact.",
+    whyLocalCannotClose: "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics, current package-lock-acceptance binding, complete source and fresh-installed fixture import closure, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact.",
   }
   return manifest
 }

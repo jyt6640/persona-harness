@@ -5,6 +5,7 @@ export class PackageExercisePhaseEnvelopeError extends Error {
 }
 
 export function requirePackageExerciseContractSuccess(input: Readonly<{
+  authorityDiscoveryMarker?: "authority-discovery-exercise-result"
   fallbackCode: string
   marker: string
   output: string

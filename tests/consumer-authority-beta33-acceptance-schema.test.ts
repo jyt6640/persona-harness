@@ -46,6 +46,11 @@ describe("consumer authority beta.33 acceptance schema", () => {
       currentVersionAuthority: expect.stringContaining("package-lock"),
       authoritativeBundleContract: {
         exercisePhaseProtocol: {
+          authorityDiscoveryResult: {
+            marker: "authority-discovery-exercise-result",
+            result: "trusted-unconsumed-persisted",
+            schemaVersion: "consumer-authority-discovery-exercise.1",
+          },
           schemaVersion: "clean-package-exercise-phase.1",
           sourceBuilt: expect.arrayContaining(["cli-binding", "attestation-parser", "bootstrap-workspace-intake"]),
           freshTar: expect.arrayContaining(["tarball-materialization", "attestation-parser", "installed-package-test"]),

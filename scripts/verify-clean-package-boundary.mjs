@@ -36,6 +36,7 @@ import {
   PackageExercisePhaseEnvelopeError,
   requirePackageExerciseContractSuccess,
 } from "./clean-package-exercise-phase.mjs"
+import { AUTHORITY_DISCOVERY_EXERCISE_MARKER } from "./consumer-authority-authority-discovery-exercise.mjs"
 import { canonicalizePackageTarball } from "./package-content-identity.mjs"
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -407,6 +408,7 @@ function resolveObserverGhPath(value) {
 function requireContractSuccess(result, successMarker, phaseMarker, surface, fallbackCode) {
   try {
     requirePackageExerciseContractSuccess({
+      authorityDiscoveryMarker: AUTHORITY_DISCOVERY_EXERCISE_MARKER,
       fallbackCode,
       marker: phaseMarker,
       output: result.stdout,

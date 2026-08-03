@@ -4,6 +4,11 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import {
+  AUTHORITY_DISCOVERY_EXERCISE_MARKER,
+  createAuthorityDiscoveryExerciseResult,
+  formatAuthorityDiscoveryExerciseResult,
+} from "../scripts/consumer-authority-authority-discovery-exercise.mjs"
+import {
   PACKAGE_EXERCISE_PHASES,
   PackageExercisePhaseEnvelopeError,
   assessPackageExerciseContractOutput,
@@ -33,6 +38,93 @@ describe("clean package exercise phase protocol", () => {
       successMarker: SOURCE_SUCCESS,
       surface: "source-built",
     })).toEqual({ state: "ready" })
+  })
+
+  it("binds the authority-discovery result immediately after its ready phase", () => {
+    const phases = PACKAGE_EXERCISE_PHASES["source-built"]
+    const output = [
+      ...phases.flatMap((phase) => {
+        const record = formatPackageExercisePhaseRecord("source-built", phase, "ready", "passed", SOURCE_MARKER)
+        return phase === "authority-discovery"
+          ? [record, formatAuthorityDiscoveryExerciseResult(createAuthorityDiscoveryExerciseResult("source-built"))]
+          : [record]
+      }),
+      SOURCE_SUCCESS,
+      "",
+    ].join("\n")
+
+    expect(() => requirePackageExerciseContractSuccess({
+      authorityDiscoveryMarker: AUTHORITY_DISCOVERY_EXERCISE_MARKER,
+      fallbackCode: "clean-package-source-contract",
+      marker: SOURCE_MARKER,
+      output,
+      status: 0,
+      successMarker: SOURCE_SUCCESS,
+      surface: "source-built",
+    })).not.toThrow()
+
+    const misplaced = output.replace(
+      `${formatPackageExercisePhaseRecord("source-built", "authority-discovery", "ready", "passed", SOURCE_MARKER)}\n${formatAuthorityDiscoveryExerciseResult(createAuthorityDiscoveryExerciseResult("source-built"))}`,
+      `${formatAuthorityDiscoveryExerciseResult(createAuthorityDiscoveryExerciseResult("source-built"))}\n${formatPackageExercisePhaseRecord("source-built", "authority-discovery", "ready", "passed", SOURCE_MARKER)}`,
+    )
+    expect(() => requirePackageExerciseContractSuccess({
+      authorityDiscoveryMarker: AUTHORITY_DISCOVERY_EXERCISE_MARKER,
+      fallbackCode: "clean-package-source-contract",
+      marker: SOURCE_MARKER,
+      output: misplaced,
+      status: 0,
+      successMarker: SOURCE_SUCCESS,
+      surface: "source-built",
+    })).toThrow("clean-package-source-contract-phase-envelope-invalid")
+  })
+
+  it("rejects missing, duplicate, foreign, malformed, and blocked-then-success discovery results", () => {
+    const phaseRecord = formatPackageExercisePhaseRecord(
+      "source-built",
+      "authority-discovery",
+      "ready",
+      "passed",
+      SOURCE_MARKER,
+    )
+    const result = formatAuthorityDiscoveryExerciseResult(createAuthorityDiscoveryExerciseResult("source-built"))
+    const complete = PACKAGE_EXERCISE_PHASES["source-built"].flatMap((phase) => {
+      const record = formatPackageExercisePhaseRecord("source-built", phase, "ready", "passed", SOURCE_MARKER)
+      return phase === "authority-discovery" ? [record, result] : [record]
+    })
+    const validOutput = [...complete, SOURCE_SUCCESS, ""].join("\n")
+    const cases = [
+      validOutput.replace(`\n${result}`, ""),
+      validOutput.replace(result, `${result}\n${result}`),
+      validOutput.replace(result, `${AUTHORITY_DISCOVERY_EXERCISE_MARKER}: ${JSON.stringify({
+        result: "trusted-unconsumed-persisted",
+        schemaVersion: "consumer-authority-discovery-exercise.1",
+        surface: "fresh-tar",
+      })}`),
+      validOutput.replace(result, `${AUTHORITY_DISCOVERY_EXERCISE_MARKER}: ${JSON.stringify({
+        result: "trusted-unconsumed-persisted",
+        schemaVersion: "consumer-authority-discovery-exercise.1",
+        surface: "source-built",
+        unexpected: "ignored-by-no-one",
+      })}`),
+      validOutput.replace(result, `${AUTHORITY_DISCOVERY_EXERCISE_MARKER}: ${JSON.stringify({
+        result: "blocked",
+        schemaVersion: "consumer-authority-discovery-exercise.1",
+        surface: "source-built",
+      })}\n${result}`),
+    ]
+
+    expect(phaseRecord).toContain("authority-discovery")
+    for (const output of cases) {
+      expect(() => requirePackageExerciseContractSuccess({
+        authorityDiscoveryMarker: AUTHORITY_DISCOVERY_EXERCISE_MARKER,
+        fallbackCode: "clean-package-source-contract",
+        marker: SOURCE_MARKER,
+        output,
+        status: 0,
+        successMarker: SOURCE_SUCCESS,
+        surface: "source-built",
+      })).toThrow("clean-package-source-contract-phase-envelope-invalid")
+    }
   })
 
   it("reports only the fixed fresh-tar phase and code for a blocked child", () => {

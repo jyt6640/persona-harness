@@ -6,6 +6,7 @@ export const CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT = "scripts/verify-clean-package-b
 export const CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS = Object.freeze([
   "scripts/clean-package-boundary-core.mjs",
   "scripts/clean-package-exercise-phase.mjs",
+  "scripts/consumer-authority-authority-discovery-exercise.mjs",
   "scripts/consumer-authority-observer-gh-package-record.mjs",
   "scripts/consumer-authority-observer-gh-stage.mjs",
   "scripts/package-content-identity.mjs",

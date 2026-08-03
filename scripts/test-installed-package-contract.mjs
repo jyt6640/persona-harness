@@ -37,6 +37,7 @@ import {
 } from "./consumer-authority-observer-gh-stage.mjs"
 import { provisionPrivateObserverGhCopy } from "./consumer-authority-observer-gh-workflow-selector.mjs"
 import { formatPackageExercisePhaseRecord } from "./clean-package-exercise-phase.mjs"
+import { formatAuthorityDiscoveryExerciseResult } from "./consumer-authority-authority-discovery-exercise.mjs"
 import { canonicalizePackageTarball, readPackageContentIdentity } from "./package-content-identity.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -148,7 +149,7 @@ async function runInstalledPackageContract(options) {
 
   await runPhase("verifier-no-source", () => assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory))
   await runPhase("project-finish-verifier-no-source", () => assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory))
-  await assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, runPhase)
+  await assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, packageExercise, runPhase)
   await runPhase("staged-artifact-verifier", () => assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory))
   await runPhase("doctor-registry", () => assertDoctorRegistryReadback(
     join(consumerDirectory, "doctor-registry-fixture"),
@@ -191,7 +192,7 @@ async function runSourceCliContract(options) {
     return
   }
 
-  await assertSourceConsumerAuthorityBoundary(phPath, observerGh, runPhase)
+  await assertSourceConsumerAuthorityBoundary(phPath, observerGh, packageExercise, runPhase)
   await runPhase("doctor-registry", () => assertSourceDoctorRegistryReadback(phPath))
   if (!packageExercise) {
     assertSourceCooperativeFinishWorks(phPath)
@@ -235,7 +236,7 @@ function resolveSourceCliPath(sourceCliPath) {
   return phPath
 }
 
-async function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, runPhase) {
+async function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, packageExercise, runPhase) {
   const scripts = [
     "consumer-authority-artifact-archive.mjs",
     "consumer-authority-artifact-error.mjs",
@@ -264,7 +265,12 @@ async function assertPackagedConsumerAuthorityBoundary(installedPackage, consume
     observerGh,
   ))
   await runPhase("artifact-transport", () => assertExternalArtifactTransportPlan(installedPackage, consumerDirectory, "installed package"))
-  await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(installedPackage, "installed package"))
+  const authorityDiscoveryResult = await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(
+    installedPackage,
+    "installed package",
+    "fresh-tar",
+  ))
+  emitAuthorityDiscoveryExerciseResult(packageExercise, authorityDiscoveryResult)
   await runPhase("authority-lifecycle", () => assertConsumerAuthorityBoundary(
     consumerDirectory,
     join(consumerDirectory, "node_modules", ".bin", "ph"),
@@ -273,7 +279,7 @@ async function assertPackagedConsumerAuthorityBoundary(installedPackage, consume
   ))
 }
 
-async function assertSourceConsumerAuthorityBoundary(phPath, observerGh, runPhase) {
+async function assertSourceConsumerAuthorityBoundary(phPath, observerGh, packageExercise, runPhase) {
   await runPhase("canonical-publisher", () => assertCanonicalPackagePublisherPlan(repositoryRoot, "source CLI"))
   await runPhase("prearmed-observer", () => assertPrearmedObserverHandoff(repositoryRoot, "source CLI"))
   await runPhase("v4-cleanliness", () => assertV4FinalObserverCleanliness(repositoryRoot, "source CLI"))
@@ -291,13 +297,23 @@ async function assertSourceConsumerAuthorityBoundary(phPath, observerGh, runPhas
   ))
   await runPhase("artifact-transport", () => assertExternalArtifactTransportPlan(repositoryRoot, temporaryRoot, "source CLI"))
   await runPhase("observer-credential", () => assertObserverCredentialPreflight(repositoryRoot, temporaryRoot, "source CLI"))
-  await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(repositoryRoot, "source CLI"))
+  const authorityDiscoveryResult = await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(
+    repositoryRoot,
+    "source CLI",
+    "source-built",
+  ))
+  emitAuthorityDiscoveryExerciseResult(packageExercise, authorityDiscoveryResult)
   await runPhase("authority-lifecycle", () => assertConsumerAuthorityBoundary(
     temporaryRoot,
     phPath,
     join(temporaryRoot, "source-consumer-authority-home"),
     "source CLI",
   ))
+}
+
+function emitAuthorityDiscoveryExerciseResult(packageExercise, result) {
+  if (!packageExercise) return
+  process.stdout.write(`${formatAuthorityDiscoveryExerciseResult(result)}\n`)
 }
 
 async function assertObserverCredentialPreflight(packageRoot, cwd, label) {
@@ -3242,7 +3258,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
   }
 }
 
-async function assertBoundAuthorityDiscovery(packageRoot, label) {
+async function assertBoundAuthorityDiscovery(packageRoot, label, surface) {
   const moduleRoot = join(packageRoot, "dist", "cli")
   const [
     command,
@@ -3430,10 +3446,10 @@ async function assertBoundAuthorityDiscovery(packageRoot, label) {
       throw new Error(`${label} authority ${candidate.id} mismatch retained evidence or reflected fixture state`)
     }
   }
-  await assertAuthorityFetchChildBoundary(packageRoot, label)
+  return assertAuthorityFetchChildBoundary(packageRoot, label, surface)
 }
 
-async function assertAuthorityFetchChildBoundary(packageRoot, label) {
+async function assertAuthorityFetchChildBoundary(packageRoot, label, surface) {
   const runtimeRoot = mkdtempSync(join(temporaryRoot, "authority-fetch-child-runtime-"))
   const projectDir = mkdtempSync(join(temporaryRoot, "authority-fetch-child-project-"))
   const childFixturePath = join(runtimeRoot, "authority-fetch-child-fixture.json")
@@ -3454,12 +3470,14 @@ async function assertAuthorityFetchChildBoundary(packageRoot, label) {
 
     const moduleRoot = join(runtimeRoot, "dist", "cli")
     const [
+      discoveryExercise,
       artifactStore,
       command,
       enrollmentStore,
       producer,
       version,
     ] = await Promise.all([
+      import(pathToFileURL(join(runtimeRoot, "scripts", "consumer-authority-authority-discovery-exercise.mjs")).href),
       import(pathToFileURL(join(moduleRoot, "authority-artifact-store.js")).href),
       import(pathToFileURL(join(moduleRoot, "authority-command.js")).href),
       import(pathToFileURL(join(moduleRoot, "authority-enrollment.js")).href),
@@ -3637,6 +3655,7 @@ async function assertAuthorityFetchChildBoundary(packageRoot, label) {
     ) {
       throw new Error(`${label} malformed authority child output did not remain non-reflective and missing`)
     }
+    return discoveryExercise.createAuthorityDiscoveryExerciseResult(surface)
   } finally {
     rmSync(runtimeRoot, { force: true, recursive: true })
     rmSync(projectDir, { force: true, recursive: true })
