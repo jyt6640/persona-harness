@@ -411,6 +411,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-observer-preflight-worker.mjs",
       "scripts/clean-package-boundary-core.d.mts",
       "scripts/clean-package-boundary-core.mjs",
+      "scripts/clean-package-exercise-phase.d.mts",
+      "scripts/clean-package-exercise-phase.mjs",
       "scripts/consumer-authority-beta16-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta16-acceptance-schema.mjs",
       "scripts/consumer-authority-beta17-acceptance-schema.d.mts",
@@ -548,6 +550,7 @@ describe("package files policy", () => {
     for (const script of [
       "scripts/consumer-authority-observer-gh-package-record.mjs",
       "scripts/consumer-authority-observer-gh-stage.mjs",
+      "scripts/clean-package-exercise-phase.mjs",
     ]) {
       expect(existsSync(path.join(packageRoot, script))).toBe(true)
       expect(isCoveredByPackageFiles(script, packageJson.files)).toBe(true)

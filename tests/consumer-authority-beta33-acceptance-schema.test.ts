@@ -45,6 +45,11 @@ describe("consumer authority beta.33 acceptance schema", () => {
     expect(manifest.packageBoundary).toMatchObject({
       currentVersionAuthority: expect.stringContaining("package-lock"),
       authoritativeBundleContract: {
+        exercisePhaseProtocol: {
+          schemaVersion: "clean-package-exercise-phase.1",
+          sourceBuilt: expect.arrayContaining(["cli-binding", "attestation-parser", "bootstrap-workspace-intake"]),
+          freshTar: expect.arrayContaining(["tarball-materialization", "attestation-parser", "installed-package-test"]),
+        },
         rootPolicy: expect.stringContaining("fresh-installed-contracts"),
       },
     })

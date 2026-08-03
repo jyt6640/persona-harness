@@ -33,8 +33,10 @@ import { readBeta33AcceptanceManifest } from "./consumer-authority-beta33-accept
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
+  isObserverGhStageCode,
 } from "./consumer-authority-observer-gh-stage.mjs"
 import { provisionPrivateObserverGhCopy } from "./consumer-authority-observer-gh-workflow-selector.mjs"
+import { formatPackageExercisePhaseRecord } from "./clean-package-exercise-phase.mjs"
 import { canonicalizePackageTarball, readPackageContentIdentity } from "./package-content-identity.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -87,79 +89,20 @@ class ObserverGhContractStageError extends Error {
   }
 }
 
+class PackageExercisePhaseError extends Error {
+  constructor(surface, phase, code) {
+    super(code)
+    this.code = code
+    this.phase = phase
+    this.surface = surface
+  }
+}
+
 let contractOptions
 try {
   contractOptions = parseContractOptions(process.argv.slice(2))
-  const { observerGh, packageExercise, producerIntakeOnly, sourceCli, tarball, tarballContentIdentity, tarballSha256 } = contractOptions
-  if (sourceCli === undefined) {
-    const packed = tarball === undefined
-      ? packCurrentRepository()
-      : readSuppliedTarball(tarball, tarballSha256, tarballContentIdentity)
-    const { consumerDirectory, installedPackage } = installFreshTarball(packed.tarballPath)
-
-    assertInstalledPackageIdentity(installedPackage, packed.identity)
-    assertInstalledPackageContentIdentity(installedPackage, packed.tarballPath, packed.facts.packageContentIdentity)
-    assertRepositoryOnlyFilesAreAbsent(installedPackage)
-    await assertCanonicalPackagePublisherPlan(installedPackage, "installed package")
-    await assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package")
-    assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory)
-    assertPackagedProjectFinishProducerActionTopology(installedPackage, consumerDirectory)
-    if (producerIntakeOnly) {
-      assertNativeProducerInputSurface(installedPackage, consumerDirectory, "installed package")
-      process.stdout.write("installed-project-finish-producer-intake-contract: PASS\n")
-    } else {
-      assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
-      assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory)
-      await assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh)
-      assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory)
-      assertDoctorRegistryReadback(
-        join(consumerDirectory, "doctor-registry-fixture"),
-        join(consumerDirectory, "node_modules", ".bin", "ph"),
-        installedPackage,
-        "installed package",
-      )
-      if (!packageExercise) {
-        assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
-      }
-      assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory)
-      await assertPackagedBoundedReportStdin(installedPackage, consumerDirectory)
-      assertWorkflowLifecycleAbsenceBlocks(
-        join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
-        join(consumerDirectory, "node_modules", ".bin", "ph"),
-        "installed package",
-      )
-      assertBootstrapWorkspaceIntake(
-        join(consumerDirectory, "workflow-lifecycle-state-intake-fixture"),
-        join(consumerDirectory, "node_modules", ".bin", "ph"),
-        "installed package",
-      )
-      assertInstalledPackageTestPasses(installedPackage)
-      process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
-      process.stdout.write(packageExercise
-        ? "installed-package-exercise-contract: PASS\n"
-        : "installed-package-test-contract: PASS\n")
-    }
-  } else {
-    assertSourceProjectFinishProducerIntake(sourceCli)
-    assertSourceProjectFinishProducerActionTopology()
-    if (producerIntakeOnly) {
-      assertNativeProducerInputSurface(repositoryRoot, repositoryRoot, "source CLI")
-      process.stdout.write("source-cli-project-finish-producer-intake-contract: PASS\n")
-    } else {
-      await assertSourceConsumerAuthorityBoundary(sourceCli, observerGh)
-      assertSourceDoctorRegistryReadback(sourceCli)
-      if (!packageExercise) {
-        assertSourceCooperativeFinishWorks(sourceCli)
-      }
-      assertSourceEvidenceReadWriteBoundary(sourceCli)
-      await assertSourceBoundedReportStdin(sourceCli)
-      assertSourceWorkflowLifecycleAbsenceBlocks(sourceCli)
-      assertSourceBootstrapWorkspaceIntake(sourceCli)
-      process.stdout.write(packageExercise
-        ? "source-cli-package-exercise-contract: PASS\n"
-        : "source-cli-cooperative-finish-contract: PASS\n")
-    }
-  }
+  if (contractOptions.sourceCli === undefined) await runInstalledPackageContract(contractOptions)
+  else await runSourceCliContract(contractOptions)
 } catch (error) {
   emitBoundedExerciseDiagnostic(error, contractOptions)
   process.exitCode = 1
@@ -168,61 +111,193 @@ try {
 }
 
 function emitBoundedExerciseDiagnostic(error, options) {
-  if (options?.packageExercise !== true) return
-  const prefix = options.sourceCli === undefined
-    ? "installed-package-exercise-diagnostic"
-    : "source-cli-package-exercise-diagnostic"
-  const code = error instanceof ObserverGhContractStageError
-    ? error.code
-    : "observer-gh-non-tool-stage"
-  process.stdout.write(`${prefix}: ${code}\n`)
+  if (options?.packageExercise !== true || !(error instanceof PackageExercisePhaseError)) return
+  process.stdout.write(`${formatPackageExercisePhaseRecord(
+    error.surface,
+    error.phase,
+    "blocked",
+    error.code,
+    packageExercisePhaseMarker(error.surface),
+  )}\n`)
 }
 
-async function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh) {
+async function runInstalledPackageContract(options) {
+  const { observerGh, packageExercise, producerIntakeOnly, tarball, tarballContentIdentity, tarballSha256 } = options
+  const runPhase = createPackageExercisePhaseRunner(options, "fresh-tar")
+  const packed = await runPhase("tarball-materialization", () => tarball === undefined
+    ? packCurrentRepository()
+    : readSuppliedTarball(tarball, tarballSha256, tarballContentIdentity))
+  const { consumerDirectory, installedPackage } = await runPhase("fresh-install", () => installFreshTarball(packed.tarballPath))
+
+  await runPhase("package-identity", () => assertInstalledPackageIdentity(installedPackage, packed.identity))
+  await runPhase("package-content-identity", () => assertInstalledPackageContentIdentity(
+    installedPackage,
+    packed.tarballPath,
+    packed.facts.packageContentIdentity,
+  ))
+  await runPhase("repository-only-files", () => assertRepositoryOnlyFilesAreAbsent(installedPackage))
+  await runPhase("canonical-publisher", () => assertCanonicalPackagePublisherPlan(installedPackage, "installed package"))
+  await runPhase("observer-credential", () => assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package"))
+  await runPhase("producer-intake", () => assertPackagedProjectFinishProducerIntake(installedPackage, consumerDirectory))
+  await runPhase("producer-action-topology", () => assertPackagedProjectFinishProducerActionTopology(installedPackage, consumerDirectory))
+  if (producerIntakeOnly) {
+    assertNativeProducerInputSurface(installedPackage, consumerDirectory, "installed package")
+    process.stdout.write("installed-project-finish-producer-intake-contract: PASS\n")
+    return
+  }
+
+  await runPhase("verifier-no-source", () => assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory))
+  await runPhase("project-finish-verifier-no-source", () => assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory))
+  await assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, runPhase)
+  await runPhase("staged-artifact-verifier", () => assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory))
+  await runPhase("doctor-registry", () => assertDoctorRegistryReadback(
+    join(consumerDirectory, "doctor-registry-fixture"),
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    installedPackage,
+    "installed package",
+  ))
+  if (!packageExercise) {
+    assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
+  }
+  await runPhase("evidence-read-write", () => assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory))
+  await runPhase("report-stdin", () => assertPackagedBoundedReportStdin(installedPackage, consumerDirectory))
+  await runPhase("workflow-lifecycle", () => assertWorkflowLifecycleAbsenceBlocks(
+    join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    "installed package",
+  ))
+  await runPhase("bootstrap-workspace-intake", () => assertBootstrapWorkspaceIntake(
+    join(consumerDirectory, "workflow-lifecycle-state-intake-fixture"),
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    "installed package",
+  ))
+  await runPhase("installed-package-test", () => assertInstalledPackageTestPasses(installedPackage))
+  process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
+  process.stdout.write(packageExercise
+    ? "installed-package-exercise-contract: PASS\n"
+    : "installed-package-test-contract: PASS\n")
+}
+
+async function runSourceCliContract(options) {
+  const { observerGh, packageExercise, producerIntakeOnly, sourceCli } = options
+  const runPhase = createPackageExercisePhaseRunner(options, "source-built")
+  const phPath = await runPhase("cli-binding", () => resolveSourceCliPath(sourceCli))
+
+  await runPhase("producer-intake", () => assertSourceProjectFinishProducerIntake(phPath))
+  await runPhase("producer-action-topology", () => assertSourceProjectFinishProducerActionTopology())
+  if (producerIntakeOnly) {
+    assertNativeProducerInputSurface(repositoryRoot, repositoryRoot, "source CLI")
+    process.stdout.write("source-cli-project-finish-producer-intake-contract: PASS\n")
+    return
+  }
+
+  await assertSourceConsumerAuthorityBoundary(phPath, observerGh, runPhase)
+  await runPhase("doctor-registry", () => assertSourceDoctorRegistryReadback(phPath))
+  if (!packageExercise) {
+    assertSourceCooperativeFinishWorks(phPath)
+  }
+  await runPhase("evidence-read-write", () => assertSourceEvidenceReadWriteBoundary(phPath))
+  await runPhase("report-stdin", () => assertSourceBoundedReportStdin(phPath))
+  await runPhase("workflow-lifecycle", () => assertSourceWorkflowLifecycleAbsenceBlocks(phPath))
+  await runPhase("bootstrap-workspace-intake", () => assertSourceBootstrapWorkspaceIntake(phPath))
+  process.stdout.write(packageExercise
+    ? "source-cli-package-exercise-contract: PASS\n"
+    : "source-cli-cooperative-finish-contract: PASS\n")
+}
+
+function createPackageExercisePhaseRunner(options, surface) {
+  return async (phase, operation) => {
+    try {
+      const result = await operation()
+      if (options.packageExercise) {
+        process.stdout.write(`${formatPackageExercisePhaseRecord(surface, phase, "ready", "passed", packageExercisePhaseMarker(surface))}\n`)
+      }
+      return result
+    } catch (error) {
+      if (!options.packageExercise || error instanceof PackageExercisePhaseError) throw error
+      const code = error instanceof ObserverGhContractStageError && isObserverGhStageCode(error.code)
+        ? error.code
+        : "contract-failed"
+      throw new PackageExercisePhaseError(surface, phase, code)
+    }
+  }
+}
+
+function packageExercisePhaseMarker(surface) {
+  return surface === "source-built"
+    ? "source-cli-package-exercise-phase"
+    : "installed-package-exercise-phase"
+}
+
+function resolveSourceCliPath(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) throw new Error("source CLI is missing")
+  return phPath
+}
+
+async function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, runPhase) {
   const scripts = [
     "consumer-authority-artifact-archive.mjs",
     "consumer-authority-artifact-error.mjs",
     "fetch-consumer-authority-artifact.mjs",
     "read-consumer-authority-github.mjs",
   ]
-  for (const script of scripts) {
-    if (!existsSync(join(installedPackage, "scripts", script))) {
-      throw new Error("installed package is missing consumer authority transport")
+  await runPhase("prearmed-observer", () => {
+    for (const script of scripts) {
+      if (!existsSync(join(installedPackage, "scripts", script))) {
+        throw new Error("installed package is missing consumer authority transport")
+      }
     }
-  }
-  assertPrearmedObserverHandoff(installedPackage, "installed package")
-  await assertV4FinalObserverCleanliness(installedPackage, "installed package")
-  await assertWorkflowSelectedObserverGhLifecycle(installedPackage, consumerDirectory, "installed package", observerGh)
-  assertExternalAttestationCommandPlan(installedPackage, consumerDirectory, "installed package", observerGh)
-  await assertExternalArtifactTransportPlan(installedPackage, consumerDirectory, "installed package")
-  await assertBoundAuthorityDiscovery(installedPackage, "installed package")
-  assertConsumerAuthorityBoundary(
+    assertPrearmedObserverHandoff(installedPackage, "installed package")
+  })
+  await runPhase("v4-cleanliness", () => assertV4FinalObserverCleanliness(installedPackage, "installed package"))
+  await runPhase("observer-gh-selector", () => assertWorkflowSelectedObserverGhLifecycle(
+    installedPackage,
+    consumerDirectory,
+    "installed package",
+    observerGh,
+  ))
+  await runPhase("attestation-parser", () => assertExternalAttestationCommandPlan(
+    installedPackage,
+    consumerDirectory,
+    "installed package",
+    observerGh,
+  ))
+  await runPhase("artifact-transport", () => assertExternalArtifactTransportPlan(installedPackage, consumerDirectory, "installed package"))
+  await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(installedPackage, "installed package"))
+  await runPhase("authority-lifecycle", () => assertConsumerAuthorityBoundary(
     consumerDirectory,
     join(consumerDirectory, "node_modules", ".bin", "ph"),
     join(consumerDirectory, "consumer-authority-home"),
     "installed package",
-  )
+  ))
 }
 
-async function assertSourceConsumerAuthorityBoundary(sourceCliPath, observerGh) {
-  const phPath = resolve(repositoryRoot, sourceCliPath)
-  if (!existsSync(phPath)) {
-    throw new Error(`source CLI is missing: ${sourceCliPath}`)
-  }
-  await assertCanonicalPackagePublisherPlan(repositoryRoot, "source CLI")
-  assertPrearmedObserverHandoff(repositoryRoot, "source CLI")
-  await assertV4FinalObserverCleanliness(repositoryRoot, "source CLI")
-  await assertWorkflowSelectedObserverGhLifecycle(repositoryRoot, temporaryRoot, "source CLI", observerGh)
-  assertExternalAttestationCommandPlan(repositoryRoot, temporaryRoot, "source CLI", observerGh)
-  await assertExternalArtifactTransportPlan(repositoryRoot, temporaryRoot, "source CLI")
-  await assertObserverCredentialPreflight(repositoryRoot, temporaryRoot, "source CLI")
-  await assertBoundAuthorityDiscovery(repositoryRoot, "source CLI")
-  assertConsumerAuthorityBoundary(
+async function assertSourceConsumerAuthorityBoundary(phPath, observerGh, runPhase) {
+  await runPhase("canonical-publisher", () => assertCanonicalPackagePublisherPlan(repositoryRoot, "source CLI"))
+  await runPhase("prearmed-observer", () => assertPrearmedObserverHandoff(repositoryRoot, "source CLI"))
+  await runPhase("v4-cleanliness", () => assertV4FinalObserverCleanliness(repositoryRoot, "source CLI"))
+  await runPhase("observer-gh-selector", () => assertWorkflowSelectedObserverGhLifecycle(
+    repositoryRoot,
+    temporaryRoot,
+    "source CLI",
+    observerGh,
+  ))
+  await runPhase("attestation-parser", () => assertExternalAttestationCommandPlan(
+    repositoryRoot,
+    temporaryRoot,
+    "source CLI",
+    observerGh,
+  ))
+  await runPhase("artifact-transport", () => assertExternalArtifactTransportPlan(repositoryRoot, temporaryRoot, "source CLI"))
+  await runPhase("observer-credential", () => assertObserverCredentialPreflight(repositoryRoot, temporaryRoot, "source CLI"))
+  await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(repositoryRoot, "source CLI"))
+  await runPhase("authority-lifecycle", () => assertConsumerAuthorityBoundary(
     temporaryRoot,
     phPath,
     join(temporaryRoot, "source-consumer-authority-home"),
     "source CLI",
-  )
+  ))
 }
 
 async function assertObserverCredentialPreflight(packageRoot, cwd, label) {

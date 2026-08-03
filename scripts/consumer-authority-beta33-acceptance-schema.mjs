@@ -3,6 +3,10 @@ import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 
 import { canonicalBeta32AcceptanceManifest } from "./consumer-authority-beta32-acceptance-schema.mjs"
+import {
+  PACKAGE_EXERCISE_PHASES,
+  PACKAGE_EXERCISE_PHASE_SCHEMA_VERSION,
+} from "./clean-package-exercise-phase.mjs"
 import { OBSERVER_GH_PACKAGE_RECORD_SHAPES } from "./consumer-authority-observer-gh-package-record.mjs"
 import { canonicalObserverGhToolContract, parseObserverGhToolContract } from "./consumer-authority-observer-gh-tool.mjs"
 import { parseCanonicalPackagePublisherPlan } from "./canonical-package-publisher.mjs"
@@ -101,6 +105,13 @@ function buildExpectedManifest() {
   }
   manifest.packageBoundary.currentVersionAuthority = "current-package-json-package-lock-and-current-versioned-acceptance-manifest-must-bind-one-identical-prerelease-version; historical-versioned-acceptance-records-remain-strict-and-never-define-current-package-identity"
   manifest.packageBoundary.authoritativeBundleContract.rootPolicy = "the-git-bound-authoritative-bundle-verifier-runs-only-from-a-complete-source-materialization-and-requires-git; fresh-installed-contracts-load-observer-stage-and-package-record-only-from-the-exact-tarball-without-src-git-or-source-verifier-fallback"
+  manifest.packageBoundary.authoritativeBundleContract.exercisePhaseProtocol = {
+    childOutput: "each-source-built-and-fresh-tar-package-exercise-phase-emits-one-ordered-exact-nonreflective-ready-record-or-one-terminal-blocked-record-before-the-terminal-pass-marker",
+    freshTar: [...PACKAGE_EXERCISE_PHASES["fresh-tar"]],
+    parentAcceptance: "the-clean-bundle-parent-requires-the-complete-ordered-ready-transcript-and-exact-terminal-pass-marker; marker-only-malformed-out-of-order-foreign-or-success-after-blocked-output-is-a-bounded-phase-envelope-block",
+    schemaVersion: PACKAGE_EXERCISE_PHASE_SCHEMA_VERSION,
+    sourceBuilt: [...PACKAGE_EXERCISE_PHASES["source-built"]],
+  }
   manifest.closureCompleteness.deterministicLinks = manifest.closureCompleteness.deterministicLinks.map((link) => link.includes("ubuntu-dpkg-ownership-byte-strict-package-record")
     ? "ubuntu-dpkg-ownership-byte-strict-package-record-policy-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-records-workflow-selected-copyfile-excl-private-observer-gh-tool-reassessment-and-no-network-parser-help-preflight-with-fixed-nonreflective-selector-stage-and-package-record-shape-without-package-path-lookup"
     : link)

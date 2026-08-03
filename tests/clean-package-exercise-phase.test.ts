@@ -1,0 +1,159 @@
+import { spawnSync } from "node:child_process"
+import { join } from "node:path"
+
+import { describe, expect, it } from "vitest"
+
+import {
+  PACKAGE_EXERCISE_PHASES,
+  assessPackageExerciseContractOutput,
+  formatPackageExercisePhaseRecord,
+} from "../scripts/clean-package-exercise-phase.mjs"
+
+const SOURCE_MARKER = "source-cli-package-exercise-phase"
+const SOURCE_SUCCESS = "source-cli-package-exercise-contract: PASS"
+const FRESH_TAR_MARKER = "installed-package-exercise-phase"
+const FRESH_TAR_SUCCESS = "installed-package-exercise-contract: PASS"
+
+describe("clean package exercise phase protocol", () => {
+  it("requires every ordered source-built phase before accepting the terminal marker", () => {
+    const output = [
+      ...PACKAGE_EXERCISE_PHASES["source-built"].map((phase) =>
+        formatPackageExercisePhaseRecord("source-built", phase, "ready", "passed", SOURCE_MARKER),
+      ),
+      SOURCE_SUCCESS,
+      "",
+    ].join("\n")
+
+    expect(assessPackageExerciseContractOutput({
+      marker: SOURCE_MARKER,
+      output,
+      status: 0,
+      successMarker: SOURCE_SUCCESS,
+      surface: "source-built",
+    })).toEqual({ state: "ready" })
+  })
+
+  it("reports only the fixed fresh-tar phase and code for a blocked child", () => {
+    const phases = PACKAGE_EXERCISE_PHASES["fresh-tar"]
+    const output = [
+      formatPackageExercisePhaseRecord("fresh-tar", phases[0]!, "ready", "passed", FRESH_TAR_MARKER),
+      formatPackageExercisePhaseRecord("fresh-tar", phases[1]!, "blocked", "contract-failed", FRESH_TAR_MARKER),
+      "",
+    ].join("\n")
+
+    expect(assessPackageExerciseContractOutput({
+      marker: FRESH_TAR_MARKER,
+      output,
+      status: 1,
+      successMarker: FRESH_TAR_SUCCESS,
+      surface: "fresh-tar",
+    })).toEqual({
+      code: "contract-failed",
+      phase: phases[1],
+      state: "blocked",
+    })
+  })
+
+  it("rejects missing, foreign, out-of-order, and untrusted transcript fields without reflection", () => {
+    const hostile = "/private/consumer/root/ghp_phase_protocol_marker"
+    const first = PACKAGE_EXERCISE_PHASES["source-built"][0]!
+    const second = PACKAGE_EXERCISE_PHASES["source-built"][1]!
+    const valid = formatPackageExercisePhaseRecord("source-built", first, "ready", "passed", SOURCE_MARKER)
+    const outcomes = [
+      assessPackageExerciseContractOutput({
+        marker: SOURCE_MARKER,
+        output: `${SOURCE_SUCCESS}\n`,
+        status: 0,
+        successMarker: SOURCE_SUCCESS,
+        surface: "source-built",
+      }),
+      assessPackageExerciseContractOutput({
+        marker: SOURCE_MARKER,
+        output: [
+          formatPackageExercisePhaseRecord("source-built", second, "ready", "passed", SOURCE_MARKER),
+          SOURCE_SUCCESS,
+          "",
+        ].join("\n"),
+        status: 0,
+        successMarker: SOURCE_SUCCESS,
+        surface: "source-built",
+      }),
+      assessPackageExerciseContractOutput({
+        marker: SOURCE_MARKER,
+        output: `${SOURCE_MARKER}: ${JSON.stringify({
+          code: "passed",
+          phase: first,
+          schemaVersion: "clean-package-exercise-phase.1",
+          state: "ready",
+          surface: "source-built",
+          unsafe: hostile,
+        })}\n`,
+        status: 1,
+        successMarker: SOURCE_SUCCESS,
+        surface: "source-built",
+      }),
+      assessPackageExerciseContractOutput({
+        marker: SOURCE_MARKER,
+        output: [
+          valid,
+          formatPackageExercisePhaseRecord("fresh-tar", PACKAGE_EXERCISE_PHASES["fresh-tar"][1]!, "blocked", "contract-failed", SOURCE_MARKER),
+          "",
+        ].join("\n"),
+        status: 1,
+        successMarker: SOURCE_SUCCESS,
+        surface: "source-built",
+      }),
+    ]
+
+    for (const outcome of outcomes) {
+      expect(outcome).toEqual({ state: "invalid" })
+      expect(JSON.stringify(outcome)).not.toContain(hostile)
+    }
+  })
+
+  it("does not accept a successful exit after a blocked phase or a substring success marker", () => {
+    const first = PACKAGE_EXERCISE_PHASES["source-built"][0]!
+    const blocked = formatPackageExercisePhaseRecord("source-built", first, "blocked", "observer-gh-parser-rejected", SOURCE_MARKER)
+
+    expect(assessPackageExerciseContractOutput({
+      marker: SOURCE_MARKER,
+      output: `${blocked}\n${SOURCE_SUCCESS}\n`,
+      status: 0,
+      successMarker: SOURCE_SUCCESS,
+      surface: "source-built",
+    })).toEqual({ state: "invalid" })
+    expect(assessPackageExerciseContractOutput({
+      marker: SOURCE_MARKER,
+      output: `${SOURCE_SUCCESS} trailing\n`,
+      status: 0,
+      successMarker: SOURCE_SUCCESS,
+      surface: "source-built",
+    })).toEqual({ state: "invalid" })
+  })
+
+  it("emits one bounded first-phase record for an actual source child failure", () => {
+    const marker = "/private/consumer/root/ghp_source_child_marker"
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "scripts", "test-installed-package-contract.mjs"),
+      "--package-exercise",
+      "--observer-gh",
+      marker,
+      "--source-cli",
+      `${marker}-missing-cli`,
+    ], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe("")
+    expect(result.stdout).toBe(`${formatPackageExercisePhaseRecord(
+      "source-built",
+      "cli-binding",
+      "blocked",
+      "contract-failed",
+      SOURCE_MARKER,
+    )}\n`)
+    expect(`${result.stdout}${result.stderr}`).not.toContain(marker)
+  })
+})

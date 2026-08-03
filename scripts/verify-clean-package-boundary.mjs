@@ -32,7 +32,7 @@ import {
   assertSourcePackageIdentity,
   parseBundleHeads,
 } from "./clean-package-boundary-core.mjs"
-import { isObserverGhStageCode } from "./consumer-authority-observer-gh-stage.mjs"
+import { assessPackageExerciseContractOutput } from "./clean-package-exercise-phase.mjs"
 import { canonicalizePackageTarball } from "./package-content-identity.mjs"
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -359,7 +359,8 @@ function exerciseExactTarContract(root, packed, npm, observerGh) {
   requireContractSuccess(
     sourceResult,
     "source-cli-package-exercise-contract: PASS",
-    "source-cli-package-exercise-diagnostic",
+    "source-cli-package-exercise-phase",
+    "source-built",
     "clean-package-source-contract",
   )
 
@@ -383,7 +384,8 @@ function exerciseExactTarContract(root, packed, npm, observerGh) {
   requireContractSuccess(
     installedResult,
     "installed-package-exercise-contract: PASS",
-    "installed-package-exercise-diagnostic",
+    "installed-package-exercise-phase",
+    "fresh-tar",
     "clean-package-installed-contract",
   )
   return {
@@ -399,21 +401,19 @@ function resolveObserverGhPath(value) {
   throw new CleanPackageBoundaryError("clean-package-observer-gh-required")
 }
 
-function requireContractSuccess(result, successMarker, diagnosticMarker, fallbackCode) {
-  if (result.status === 0 && result.stdout.includes(successMarker)) return
-  const code = boundedContractDiagnosticCode(result.stdout, diagnosticMarker)
-  throw new CleanPackageBoundaryError(code === undefined ? `${fallbackCode}-observer-gh-non-tool-stage` : `${fallbackCode}-${code}`)
-}
-
-function boundedContractDiagnosticCode(output, marker) {
-  if (typeof output !== "string") return undefined
-  const expression = new RegExp(`^${escapeExpression(marker)}: (observer-gh-[a-z0-9-]+)$`, "mu")
-  const match = expression.exec(output)
-  return isObserverGhStageCode(match?.[1]) ? match[1] : undefined
-}
-
-function escapeExpression(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
+function requireContractSuccess(result, successMarker, phaseMarker, surface, fallbackCode) {
+  const outcome = assessPackageExerciseContractOutput({
+    marker: phaseMarker,
+    output: result.stdout,
+    status: result.status,
+    successMarker,
+    surface,
+  })
+  if (outcome.state === "ready") return
+  if (outcome.state === "blocked") {
+    throw new CleanPackageBoundaryError(`${fallbackCode}-${outcome.phase}-${outcome.code}`)
+  }
+  throw new CleanPackageBoundaryError(`${fallbackCode}-phase-envelope-invalid`)
 }
 
 function assertStaleLauncherIsRejected(root, binding) {
