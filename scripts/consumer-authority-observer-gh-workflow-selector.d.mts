@@ -28,7 +28,7 @@ export interface WorkflowObserverGhToolResult {
 }
 
 export interface WorkflowObserverGhToolOptions {
-  readonly assessTool?: (path: string) => { readonly code?: string; readonly state: "blocked" | "ready" }
+  readonly assessTool?: (path: string, options?: { readonly stateRoot: string }) => { readonly code?: string; readonly state: "blocked" | "ready" }
   readonly copyFile?: (source: string, destination: string, mode: number) => void
   readonly environment?: Record<string, string | undefined>
   readonly lstatPackageRecord?: (path: string) => WorkflowObserverGhPackageRecordStat
