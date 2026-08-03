@@ -92,12 +92,15 @@ and rejected Linux's runtime-owned `UV_USE_IO_URING=0` child marker.
 `0.8.0-beta.26` then rejected the normal Ubuntu `gh` package record before tool
 assessment because its basename-only selector counted the bash-completion
 sibling. Beta.30 then classified that known, never-executed completion as an
-ambiguous executor when the runner mode was executable. The next strict-
-prerelease procedure-only source candidate is `0.8.0-beta.31`. Beta.31 has no
+ambiguous executor when the runner mode was executable. Beta.31 retained the
+known-completion selector boundary but protected Verify exposed stale current-
+version and incomplete source/release fixture import closure before the package
+contract could run. It is terminal and non-reusable. The next strict-prerelease
+procedure-only source candidate is `0.8.0-beta.32`. Beta.32 has no
 source-level claim of a tag, publish, channel movement, GitHub release, or
 original signed consumer artifact.
 
-The beta31 release contract requires package-visible observer credential
+The beta32 release contract retains package-visible observer credential
 preflight, separate caller/reusable signer binding, and a complete public
 Java/Spring readiness route whose default Finish is blocked only by
 `trusted-authority-required` before a fixture may be authorized. Source-bound
@@ -130,6 +133,13 @@ for environment, package-list, package-record, source/private assessment,
 private reservation/copy, or output handoff; package-record blocks add only an
 allowlisted shape, and unknown failures are bounded as `selector-internal`
 without rendering runner data.
+
+The current package version is bound only when `package.json`, `package-lock`,
+and the current versioned acceptance manifest agree. Historical beta records
+remain strict historical records and cannot define the current package. The
+authoritative-bundle verifier is source/Git-rooted; fresh installed package
+contracts load their observer stage and package-record modules only from the
+exact tarball and never package or invoke that source verifier.
 
 The preflights use a host-derived credential only inside their fixed read-only
 GitHub Actions worker; they do not pass that credential to `ph`, npm, archive

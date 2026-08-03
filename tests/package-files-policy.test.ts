@@ -437,6 +437,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-beta30-acceptance-schema.mjs",
       "scripts/consumer-authority-beta31-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta31-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta32-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta32-acceptance-schema.mjs",
       "scripts/consumer-authority-final-observer-v4-cleanliness.d.mts",
       "scripts/consumer-authority-final-observer-v4-cleanliness.mjs",
       "scripts/consumer-authority-observer-gh-tool.d.mts",
@@ -510,6 +512,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta29-acceptance.json",
       "docs/current/release/consumer-authority-beta30-acceptance.json",
       "docs/current/release/consumer-authority-beta31-acceptance.json",
+      "docs/current/release/consumer-authority-beta32-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -528,8 +531,26 @@ describe("package files policy", () => {
     }
     expect(existsSync(path.join(packageRoot, ".github", "scripts", "prepare-observer-gh-tool.mjs"))).toBe(true)
     expect(isCoveredByPackageFiles(".github/scripts/prepare-observer-gh-tool.mjs", packageJson.files)).toBe(false)
+    expect(existsSync(path.join(packageRoot, "scripts", "release-workflow-checker-inputs.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/release-workflow-checker-inputs.mjs", packageJson.files)).toBe(false)
+    expect(existsSync(path.join(packageRoot, "scripts", "verify-clean-package-boundary.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/verify-clean-package-boundary.mjs", packageJson.files)).toBe(false)
     expect(existsSync(path.join(packageRoot, "tests", "fixtures", "observer-gh", "gh"))).toBe(true)
     expect(isCoveredByPackageFiles("tests/fixtures/observer-gh/gh", packageJson.files)).toBe(false)
+  })
+
+  it("keeps the Git-bound verifier source-only while fresh packages contain only installed observer stages", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    for (const script of [
+      "scripts/consumer-authority-observer-gh-package-record.mjs",
+      "scripts/consumer-authority-observer-gh-stage.mjs",
+    ]) {
+      expect(existsSync(path.join(packageRoot, script))).toBe(true)
+      expect(isCoveredByPackageFiles(script, packageJson.files)).toBe(true)
+    }
+    expect(isCoveredByPackageFiles("scripts/verify-clean-package-boundary.mjs", packageJson.files)).toBe(false)
+    expect(isCoveredByPackageFiles("scripts/release-workflow-checker-inputs.mjs", packageJson.files)).toBe(false)
   })
 
   it("keeps direct current README links covered by packaged files", () => {
@@ -556,7 +577,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.31-release-notes.md",
+      "docs/current/release/v0.8.0-beta.32-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -582,7 +603,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.31-release-notes.md",
+      "docs/current/release/v0.8.0-beta.32-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

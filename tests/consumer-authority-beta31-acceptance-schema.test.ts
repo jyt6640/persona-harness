@@ -7,14 +7,16 @@ import {
   Beta31AcceptanceManifestError,
   canonicalBeta31AcceptanceManifest,
   parseBeta31AcceptanceManifest,
-  readBeta31AcceptanceManifest,
 } from "../scripts/consumer-authority-beta31-acceptance-schema.mjs"
 
 const repositoryRoot = process.cwd()
 
 describe("consumer authority beta.31 acceptance schema", () => {
   it("ships the known-completion mode-independent package-record policy with only bounded shapes", () => {
-    const manifest = readBeta31AcceptanceManifest(repositoryRoot)
+    const manifest = parseBeta31AcceptanceManifest(
+      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta31-acceptance.json"), "utf8")),
+      "0.8.0-beta.31",
+    )
 
     expect(manifest.package).toMatchObject({ version: "0.8.0-beta.31" })
     expect(manifest.observerGhSelection).toMatchObject({

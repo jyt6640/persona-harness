@@ -219,6 +219,17 @@ describe("clean package boundary", () => {
     expect(verifier).not.toContain('return "/usr/bin/gh"')
   })
 
+  it("keeps the Git-bound source verifier separate from the fresh installed package runtime", () => {
+    const verifier = readFileSync(join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"), "utf8")
+    const contract = readFileSync(join(process.cwd(), "scripts", "test-installed-package-contract.mjs"), "utf8")
+
+    expect(verifier).toContain("assertCleanGit(sourceRoot, git)")
+    expect(contract).toContain("installed package unexpectedly contains the Git-bound source verifier")
+    expect(contract).toContain("installed package observer stage is missing")
+    expect(contract).toContain("installed package unexpectedly contains repository source")
+    expect(contract).toContain("installed package unexpectedly contains repository Git metadata")
+  })
+
   it("keeps the provisioned Gradle lifecycle bounded to its contract-owned home", () => {
     const contract = readFileSync(join(process.cwd(), "scripts", "test-installed-package-contract.mjs"), "utf8")
 

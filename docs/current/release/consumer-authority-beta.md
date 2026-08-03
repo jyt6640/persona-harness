@@ -30,9 +30,12 @@ sibling, which its basename-only selector rejected before assessment. The active
 to an opaque block. `0.8.0-beta.29` is terminal non-reusable procedure evidence:
 its selector conflated an optional nonselected ancillary record with an unsafe
 record. Beta.30 then classified the documented completion as a competing
-executor because of its runner mode. The active `0.8.0-beta.31` procedure-only source candidate has no
-package, tag, channel movement, GitHub release, or signed consumer-project
-artifact at source preparation time.
+executor because of its runner mode. `0.8.0-beta.31` is terminal,
+non-reusable protected-Verify evidence: its known-completion selector policy
+was sound, but its generic package-version expectation and source/release
+fixture import closures were incomplete. The active `0.8.0-beta.32`
+package-contract candidate has no package, tag, channel movement, GitHub
+release, or signed consumer-project artifact at source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
@@ -40,7 +43,7 @@ because it did not complete the full current-version public consumer route.
 Beta.20 reached a live `trusted/unconsumed` fetch but then correctly stopped at
 `workflow-state-uninitialized` because the observer had not prepared the same
 consumer's public lifecycle. That result consumed nothing and is not reusable.
-Beta31 binds the immutable same-consumer observer order, V4 stage-scoped
+Beta32 retains the immutable same-consumer observer order, V4 stage-scoped
 residue cleanliness, pre-push source identity, and one qualified workflow-selected
 observer-gh selector lifecycle contract. It cannot inherit beta.16's observer failure, beta.17's registry
 PUT result, beta.18's failed metadata predicate, beta.21's expired temporal
@@ -80,7 +83,7 @@ allowlisted. Linux may add only `UV_USE_IO_URING=0` to the fixed authority-fetch
 child environment. No lifecycle or source reinitialization, consumer switch, or
 state reset is permitted after fetch.
 
-The beta31 selector also runs its bounded direct `gh --version` assessment with
+The beta32 selector also runs its bounded direct `gh --version` assessment with
 an explicit token-free state environment rooted in validated `RUNNER_TEMP`.
 It never inherits a package-contract checkout as `HOME` or an XDG state root,
 so normal tool validation cannot leave `.local`, `.config`, or `.cache` behind
@@ -189,15 +192,21 @@ authority artifact or Finish PASS.
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
 an original artifact from `0.8.0-beta.1` through `0.8.0-beta.30` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.31`; only a future
+binding mismatch or historical-evidence block for `0.8.0-beta.32`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta31-acceptance.json`](consumer-authority-beta31-acceptance.json)
+[`consumer-authority-beta32-acceptance.json`](consumer-authority-beta32-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the immutable same-consumer
 observer sequence, and the one hosted residual.
+
+The beta32 package boundary also binds current package metadata, lock metadata,
+and its current acceptance record together. Its authoritative-bundle verifier
+is deliberately source/Git-rooted; fresh installed contracts load the observer
+stage and package-record modules only from the exact tarball, with no `src`,
+`.git`, or source-verifier fallback.
 
 The source projection excludes only `.persona/.ph-init-manifest.json` and
 `.persona/workflow` runtime metadata. The init manifest contains a

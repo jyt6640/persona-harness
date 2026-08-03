@@ -10,6 +10,7 @@ import {
   checkReleaseState,
   checkTagSource,
 } from "../scripts/release-workflow-policy.mjs"
+import { readBeta32AcceptanceManifest } from "../scripts/consumer-authority-beta32-acceptance-schema.mjs"
 
 const MAIN_SHA = "a".repeat(40)
 const TAG_SHA = "b".repeat(40)
@@ -177,8 +178,10 @@ describe("release workflow policy", () => {
 
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
+    const acceptance = readBeta32AcceptanceManifest(repositoryRoot)
 
-    expect(packageVersion).toBe("0.8.0-beta.31")
+    expect(packageVersion).toBe(acceptance.package.version)
+    expect(readPackageVersion(join(repositoryRoot, "package-lock.json"))).toBe(acceptance.package.version)
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",

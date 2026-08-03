@@ -1,17 +1,11 @@
 import { readFile } from "node:fs/promises"
+import {
+  RELEASE_WORKFLOW_CHECKER_INPUTS,
+  releaseWorkflowCheckerInputName,
+  releaseWorkflowCheckerWorkflowPaths,
+} from "./release-workflow-checker-inputs.mjs"
 
-const workflowPaths = [
-  ".github/workflows/ci.yml",
-  ".github/workflows/publish.yml",
-  ".github/workflows/release.yml",
-  ".github/workflows/canonical-clean-ci-attestation-builder.yml",
-  ".github/workflows/persona-harness-project-finish.yml",
-  ".github/workflows/persona-harness-project-finish-context-diagnostic.yml",
-  ".github/workflows/project-finish-context-diagnostic-selftest.yml",
-  ".github/workflows/staged-package-artifact-attestation.yml",
-  ".github/workflows/staged-producer-context-diagnostic.yml",
-  ".github/workflows/production-integrity-audit.yml",
-]
+const workflowPaths = releaseWorkflowCheckerWorkflowPaths()
 
 const immutableActionPins = {
   attest: "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc",
@@ -416,8 +410,11 @@ const requirements = [
 ]
 
 async function main() {
-  const contents = new Map(await Promise.all(workflowPaths.map(async (path) => [path, await readFile(path, "utf8")])))
-  const [
+  const inputs = Object.fromEntries(await Promise.all(
+    RELEASE_WORKFLOW_CHECKER_INPUTS.map(async ({ name, path }) => [name, await readFile(path, "utf8")]),
+  ))
+  const contents = new Map(workflowPaths.map((path) => [path, inputs[releaseWorkflowCheckerInputName(path)]]))
+  const {
     contextActionMetadata,
     contextActionEntrypoint,
     contextActionBridge,
@@ -437,27 +434,7 @@ async function main() {
     observerGhSelector,
     observerGhPackageRecord,
     observerGhTool,
-  ] = await Promise.all([
-    readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic/oidc-capability-bridge-summary.cjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-selftest/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-selftest/index.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-selftest/selftest.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/index.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/native-selftest.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-selftest/native.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-fallback/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-fallback/index.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-finalizer/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-finalizer/index.mjs", "utf8"),
-    readFile(".github/scripts/prepare-observer-gh-tool.mjs", "utf8"),
-    readFile("scripts/consumer-authority-observer-gh-workflow-selector.mjs", "utf8"),
-    readFile("scripts/consumer-authority-observer-gh-package-record.mjs", "utf8"),
-    readFile("scripts/consumer-authority-observer-gh-tool.mjs", "utf8"),
-  ])
+  } = inputs
   const failures = []
   for (const [name, path, predicate] of requirements) {
     const text = contents.get(path)

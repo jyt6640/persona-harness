@@ -36,6 +36,7 @@ const publicReleaseDocs = [
   "docs/current/release/v0.8.0-beta.29-release-notes.md",
   "docs/current/release/v0.8.0-beta.30-release-notes.md",
   "docs/current/release/v0.8.0-beta.31-release-notes.md",
+  "docs/current/release/v0.8.0-beta.32-release-notes.md",
 ]
 
 describe("release docs temporal-state boundary", () => {
@@ -68,6 +69,7 @@ describe("release docs temporal-state boundary", () => {
     expect(text).toContain("consumer-authority-beta29-acceptance.json")
     expect(text).toContain("consumer-authority-beta30-acceptance.json")
     expect(text).toContain("consumer-authority-beta31-acceptance.json")
+    expect(text).toContain("consumer-authority-beta32-acceptance.json")
     expect(text).toContain("workflow-verified-canonical-tar")
     expect(text).toContain("registry gitHead")
     expect(text).toContain("no usable GitHub Actions read credential")

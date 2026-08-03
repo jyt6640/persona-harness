@@ -1,9 +1,14 @@
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { spawnSync } from "node:child_process"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { tmpdir } from "node:os"
 
 import { describe, expect, it } from "vitest"
+
+import {
+  releaseWorkflowCheckerFixturePaths,
+  releaseWorkflowCheckerWorkflowPaths,
+} from "../scripts/release-workflow-checker-inputs.mjs"
 
 describe("CI and release workflow policy surface", () => {
   it("keeps GitHub release creation behind an explicit manual GA-approved gate", () => {
@@ -31,22 +36,15 @@ describe("CI and release workflow policy surface", () => {
   it("rejects floating action refs while accepting the exact immutable pins", () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), "release-workflow-action-pin-test-"))
     try {
-      mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
-      mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
-      copyContextDiagnosticAction(fixtureDir)
-      copyFileSync(
-        join(process.cwd(), "scripts", "check-release-workflows.mjs"),
-        join(fixtureDir, "scripts", "check-release-workflows.mjs"),
-      )
-
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "persona-harness-project-finish.yml", "persona-harness-project-finish-context-diagnostic.yml", "project-finish-context-diagnostic-selftest.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml", "production-integrity-audit.yml"]) {
-        const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
+      copyReleaseWorkflowCheckerFixture(fixtureDir)
+      for (const workflowPath of releaseWorkflowCheckerWorkflowPaths()) {
+        const sourcePath = join(process.cwd(), workflowPath)
         const floatingText = readFileSync(sourcePath, "utf8")
           .replaceAll("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5", "actions/checkout@v4")
           .replaceAll("actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020", "actions/setup-node@v4")
           .replaceAll("actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc", "actions/attest@v2")
           .replaceAll("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", "actions/upload-artifact@v4")
-        writeFileSync(join(fixtureDir, ".github", "workflows", workflowName), floatingText)
+        writeFileSync(join(fixtureDir, workflowPath), floatingText)
       }
 
       const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
@@ -64,23 +62,16 @@ describe("CI and release workflow policy surface", () => {
   it("rejects a publish workflow that omits the fixed staging approval surface", () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), "release-workflow-staging-policy-test-"))
     try {
-      mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
-      mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
-      copyContextDiagnosticAction(fixtureDir)
-      copyFileSync(
-        join(process.cwd(), "scripts", "check-release-workflows.mjs"),
-        join(fixtureDir, "scripts", "check-release-workflows.mjs"),
-      )
-
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "persona-harness-project-finish.yml", "persona-harness-project-finish-context-diagnostic.yml", "project-finish-context-diagnostic-selftest.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml", "production-integrity-audit.yml"]) {
-        const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
+      copyReleaseWorkflowCheckerFixture(fixtureDir)
+      for (const workflowPath of releaseWorkflowCheckerWorkflowPaths()) {
+        const sourcePath = join(process.cwd(), workflowPath)
         const source = readFileSync(sourcePath, "utf8")
-        const unsafeSource = workflowName === "publish.yml"
+        const unsafeSource = workflowPath === ".github/workflows/publish.yml"
           ? source
             .replace("          - staging\n", "")
             .replace('--approval-scope "$APPROVAL_SCOPE"', '--approval-scope ""')
           : source
-        writeFileSync(join(fixtureDir, ".github", "workflows", workflowName), unsafeSource)
+        writeFileSync(join(fixtureDir, workflowPath), unsafeSource)
       }
 
       const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
@@ -98,21 +89,14 @@ describe("CI and release workflow policy surface", () => {
   it("rejects a publish workflow that creates or moves a Git tag", () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), "release-workflow-tag-movement-test-"))
     try {
-      mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
-      mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
-      copyContextDiagnosticAction(fixtureDir)
-      copyFileSync(
-        join(process.cwd(), "scripts", "check-release-workflows.mjs"),
-        join(fixtureDir, "scripts", "check-release-workflows.mjs"),
-      )
-
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "persona-harness-project-finish.yml", "persona-harness-project-finish-context-diagnostic.yml", "project-finish-context-diagnostic-selftest.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml", "production-integrity-audit.yml"]) {
-        const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
+      copyReleaseWorkflowCheckerFixture(fixtureDir)
+      for (const workflowPath of releaseWorkflowCheckerWorkflowPaths()) {
+        const sourcePath = join(process.cwd(), workflowPath)
         const source = readFileSync(sourcePath, "utf8")
-        const unsafeSource = workflowName === "publish.yml"
+        const unsafeSource = workflowPath === ".github/workflows/publish.yml"
           ? `${source}\n      - name: Unsafe tag movement\n        run: git tag v0.7.0-rc.4\n`
           : source
-        writeFileSync(join(fixtureDir, ".github", "workflows", workflowName), unsafeSource)
+        writeFileSync(join(fixtureDir, workflowPath), unsafeSource)
       }
 
       const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
@@ -130,24 +114,17 @@ describe("CI and release workflow policy surface", () => {
   it("rejects a native staged producer diagnostic job that gains signing permission", () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), "release-workflow-native-diagnostic-permission-test-"))
     try {
-      mkdirSync(join(fixtureDir, "scripts"), { recursive: true })
-      mkdirSync(join(fixtureDir, ".github", "workflows"), { recursive: true })
-      copyContextDiagnosticAction(fixtureDir)
-      copyFileSync(
-        join(process.cwd(), "scripts", "check-release-workflows.mjs"),
-        join(fixtureDir, "scripts", "check-release-workflows.mjs"),
-      )
-
-      for (const workflowName of ["ci.yml", "publish.yml", "release.yml", "canonical-clean-ci-attestation-builder.yml", "persona-harness-project-finish.yml", "persona-harness-project-finish-context-diagnostic.yml", "project-finish-context-diagnostic-selftest.yml", "staged-package-artifact-attestation.yml", "staged-producer-context-diagnostic.yml", "production-integrity-audit.yml"]) {
-        const sourcePath = join(process.cwd(), ".github", "workflows", workflowName)
+      copyReleaseWorkflowCheckerFixture(fixtureDir)
+      for (const workflowPath of releaseWorkflowCheckerWorkflowPaths()) {
+        const sourcePath = join(process.cwd(), workflowPath)
         const source = readFileSync(sourcePath, "utf8")
-        const unsafeSource = workflowName === "staged-package-artifact-attestation.yml"
+        const unsafeSource = workflowPath === ".github/workflows/staged-package-artifact-attestation.yml"
           ? source.replace(
             "    permissions:\n      contents: read\n    runs-on: ubuntu-latest",
             "    permissions:\n      contents: read\n      id-token: write\n    runs-on: ubuntu-latest",
           )
           : source
-        writeFileSync(join(fixtureDir, ".github", "workflows", workflowName), unsafeSource)
+        writeFileSync(join(fixtureDir, workflowPath), unsafeSource)
       }
 
       const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
@@ -163,25 +140,10 @@ describe("CI and release workflow policy surface", () => {
   })
 })
 
-function copyContextDiagnosticAction(fixtureDir: string): void {
-  const actions = [
-    {
-      actionName: "project-finish-context-diagnostic",
-      fileNames: ["action.yml", "index.mjs", "oidc-capability-bridge.cjs", "oidc-capability-bridge-summary.cjs"],
-    },
-    { actionName: "project-finish-context-diagnostic-fallback", fileNames: ["action.yml", "index.mjs"] },
-    { actionName: "project-finish-context-diagnostic-finalizer", fileNames: ["action.yml", "index.mjs"] },
-    { actionName: "project-finish-context-diagnostic-selftest", fileNames: ["action.yml", "index.mjs", "native.mjs", "selftest.mjs"] },
-    { actionName: "project-finish-context-diagnostic-native-selftest", fileNames: ["action.yml", "index.mjs", "native-selftest.mjs"] },
-  ] as const
-  for (const { actionName, fileNames } of actions) {
-    const actionDirectory = join(fixtureDir, ".github", "actions", actionName)
-    mkdirSync(actionDirectory, { recursive: true })
-    for (const fileName of fileNames) {
-      copyFileSync(
-        join(process.cwd(), ".github", "actions", actionName, fileName),
-        join(actionDirectory, fileName),
-      )
-    }
+function copyReleaseWorkflowCheckerFixture(fixtureDir: string): void {
+  for (const relativePath of releaseWorkflowCheckerFixturePaths()) {
+    const targetPath = join(fixtureDir, relativePath)
+    mkdirSync(dirname(targetPath), { recursive: true })
+    copyFileSync(join(process.cwd(), relativePath), targetPath)
   }
 }

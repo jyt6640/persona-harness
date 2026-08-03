@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readBeta31AcceptanceManifest } from "./consumer-authority-beta31-acceptance-schema.mjs"
+import { readBeta32AcceptanceManifest } from "./consumer-authority-beta32-acceptance-schema.mjs"
 import { observerGhStageCodeForPreflight } from "./consumer-authority-observer-gh-stage.mjs"
 import { canonicalizePackageTarball, readPackageContentIdentity } from "./package-content-identity.mjs"
 
@@ -551,6 +551,18 @@ function assertRepositoryOnlyFilesAreAbsent(installedPackage) {
   if (existsSync(join(installedPackage, "scripts", "check-mvp-scope.mjs"))) {
     throw new Error("installed package unexpectedly contains repository scope checks")
   }
+  if (existsSync(join(installedPackage, "scripts", "verify-clean-package-boundary.mjs"))) {
+    throw new Error("installed package unexpectedly contains the Git-bound source verifier")
+  }
+  for (const script of [
+    "consumer-authority-observer-gh-package-record.mjs",
+    "consumer-authority-observer-gh-stage.mjs",
+  ]) {
+    const scriptPath = join(installedPackage, "scripts", script)
+    if (!existsSync(scriptPath) || lstatSync(scriptPath).isSymbolicLink()) {
+      throw new Error("installed package observer stage is missing")
+    }
+  }
 }
 
 function assertInstalledPackageIdentity(installedPackage, identity) {
@@ -705,7 +717,7 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta31PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta32PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
@@ -1050,7 +1062,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta31PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta32PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
@@ -2549,8 +2561,8 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
   writeFileSync(loaderPath, `${loader}\n`)
 }
 
-function readBeta31PreAuthorityReadiness(packageRoot) {
-  const manifest = readBeta31AcceptanceManifest(packageRoot)
+function readBeta32PreAuthorityReadiness(packageRoot) {
+  const manifest = readBeta32AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2559,9 +2571,9 @@ function readBeta31PreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readBeta31AcceptanceManifest(packageRoot)
+    readBeta32AcceptanceManifest(packageRoot)
   } catch {
-    throw new Error(`${label} beta.31 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.32 observer handoff contract is invalid`)
   }
 }
 
@@ -2701,7 +2713,37 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readBeta31AcceptanceManifest(packageRoot)
+  const manifest = readBeta32AcceptanceManifest(packageRoot)
+  let packageMetadata
+  try {
+    packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
+  } catch {
+    throw new Error(`${label} canonical package metadata is invalid`)
+  }
+  if (
+    typeof packageMetadata?.name !== "string"
+    || typeof packageMetadata?.version !== "string"
+    || packageMetadata.version !== manifest.package.version
+  ) {
+    throw new Error(`${label} canonical package metadata does not bind the current acceptance version`)
+  }
+  const lockPath = join(packageRoot, "package-lock.json")
+  if (existsSync(lockPath)) {
+    let lockMetadata
+    try {
+      lockMetadata = JSON.parse(readFileSync(lockPath, "utf8"))
+    } catch {
+      throw new Error(`${label} canonical package lock is invalid`)
+    }
+    if (
+      lockMetadata?.version !== packageMetadata.version
+      || lockMetadata?.packages?.[""]?.name !== packageMetadata.name
+      || lockMetadata?.packages?.[""]?.version !== packageMetadata.version
+    ) {
+      throw new Error(`${label} canonical package lock does not bind the current package version`)
+    }
+  }
+  const tarballPath = `/private/canonical/${packageMetadata.name}-${packageMetadata.version}.tgz`
   let plan
   let argv
   try {
@@ -2709,7 +2751,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     argv = publisher.createCanonicalPublisherArgs({
       dryRun: true,
       distTag: "staging",
-      tarballPath: "/private/canonical/persona-harness-0.8.0-beta.31.tgz",
+      tarballPath,
     })
   } catch {
     throw new Error(`${label} canonical package publisher handoff contract is invalid`)
@@ -2722,7 +2764,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     || !Array.isArray(argv)
     || argv.join("\u0000") !== [
       "publish",
-      "/private/canonical/persona-harness-0.8.0-beta.31.tgz",
+      tarballPath,
       "--access",
       "public",
       "--tag",
@@ -2739,6 +2781,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-attestation.mjs")
   for (const script of [
     "consumer-authority-beta31-acceptance-schema.mjs",
+    "consumer-authority-beta32-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
     "consumer-authority-observer-gh-stage.mjs",
     "consumer-authority-observer-gh-tool.mjs",
@@ -2996,6 +3039,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-artifact-transport.mjs")
   for (const script of [
     "consumer-authority-beta31-acceptance-schema.mjs",
+    "consumer-authority-beta32-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
     "consumer-authority-external-observer-boundary.mjs",
     "preflight-consumer-authority-external-artifact-transport.mjs",
@@ -3038,7 +3082,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readBeta31AcceptanceManifest(packageRoot)
+  const manifest = readBeta32AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
