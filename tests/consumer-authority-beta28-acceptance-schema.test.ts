@@ -5,25 +5,26 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import {
-  BETA27_ACCEPTANCE_SCHEMA_VERSION,
-  Beta27AcceptanceManifestError,
-  canonicalBeta27AcceptanceManifest,
-  parseBeta27AcceptanceManifest,
-} from "../scripts/consumer-authority-beta27-acceptance-schema.mjs"
+  BETA28_ACCEPTANCE_SCHEMA_VERSION,
+  Beta28AcceptanceManifestError,
+  parseBeta28AcceptanceManifest,
+  readBeta28AcceptanceManifest,
+} from "../scripts/consumer-authority-beta28-acceptance-schema.mjs"
 import {
   FinalObserverV4CleanlinessError,
   evaluateFinalObserverV4Cleanliness,
 } from "../scripts/consumer-authority-final-observer-v4-cleanliness.mjs"
 
+const repositoryRoot = process.cwd()
 const PROCEDURE_RECORD_SHA256 = "5389c027b21f72f325a5d9e467ecd4d150f672e14da1d04f51774602a284c57d"
 
-describe("consumer authority beta.27 workflow-selected observer acceptance", () => {
-  it("binds the reviewed v4 cleanliness policy and qualified dpkg observer gh tool", () => {
-    const manifest = record(canonicalBeta27AcceptanceManifest())
+describe("consumer authority beta.28 workflow-selected observer acceptance", () => {
+  it("binds the reviewed v4 cleanliness policy and observable qualified dpkg observer gh lifecycle", () => {
+    const manifest = record(readBeta28AcceptanceManifest(repositoryRoot))
     const procedure = record(record(manifest.prearmedExternalHandoff).finalObserverProcedure)
 
-    expect(manifest.schemaVersion).toBe(BETA27_ACCEPTANCE_SCHEMA_VERSION)
-    expect(record(manifest.package).version).toBe("0.8.0-beta.27")
+    expect(manifest.schemaVersion).toBe(BETA28_ACCEPTANCE_SCHEMA_VERSION)
+    expect(record(manifest.package).version).toBe("0.8.0-beta.28")
     expect(procedure.procedureRecord).toEqual({
       location: "coordinator-governed-immutable-external-procedure-record-no-local-path",
       sha256: PROCEDURE_RECORD_SHA256,
@@ -38,14 +39,25 @@ describe("consumer authority beta.27 workflow-selected observer acceptance", () 
     })
     expect(record(manifest.observerGhSelection)).toEqual({
       ancillary: "ignore-only-the-documented-regular-nonexecutable-/usr/share/bash-completion/completions/gh-package-record-and-reject-missing-symlink-nonregular-malformed-or-ambiguous-executable-records",
-      diagnostics: "only-fixed-tool-invalid-tool-unavailable-tool-version-unsupported-parser-rejected-or-non-tool-stage-codes-cross-the-package-contract-boundary",
+      diagnostics: "only-fixed-tool-invalid-tool-unavailable-tool-version-unsupported-parser-rejected-non-tool-stage-or-selector-stage-codes-cross-the-package-contract-boundary",
       dpkgRecord: "lstat-each-basename-gh-entry-without-following-links-and-require-exactly-one-regular-nonsymlink-executable",
-      workflow: "runner-package-record-qualified-executable-selection-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts",
+      stages: [
+        "environment",
+        "package-list",
+        "package-record",
+        "source-assessment",
+        "private-reservation",
+        "private-copy",
+        "private-assessment",
+        "output-handoff",
+      ],
+      unknown: "selector-internal",
+      workflow: "validate-runner-temp-and-github-output-then-runner-package-record-qualified-executable-selection-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts",
     })
     expect(record(procedure.cleanliness).forbiddenConsumerPaths).toEqual([".local/**", ".config/**", ".cache/**"])
     expect(record(manifest.closureCompleteness).deterministicLinks).toEqual(expect.arrayContaining([
       "v4-stage-scoped-runtime-residue-cleanliness",
-      "ubuntu-dpkg-record-qualified-workflow-selected-observer-gh-tool-without-package-path-lookup",
+      "ubuntu-dpkg-record-qualified-workflow-selected-observer-gh-tool-with-fixed-nonreflective-selector-stage-without-package-path-lookup",
       "linux-runtime-owned-uv-use-io-uring-child-envelope-only",
     ]))
   })
@@ -57,6 +69,8 @@ describe("consumer authority beta.27 workflow-selected observer acceptance", () 
       (manifest) => { record(manifest.observerGhSelection).workflow = "ambient-path" },
       (manifest) => { delete record(manifest.observerGhSelection).dpkgRecord },
       (manifest) => { record(manifest.observerGhSelection).ancillary = "ignore-any-record" },
+      (manifest) => { record(manifest.observerGhSelection).stages = ["environment"] },
+      (manifest) => { record(manifest.observerGhSelection).unknown = "fallback" },
       (manifest) => { record(record(manifest.prearmedExternalHandoff).finalObserverProcedure).observerGhTool = {} },
       (manifest) => { record(record(record(manifest.prearmedExternalHandoff).finalObserverProcedure).cleanliness).forbiddenConsumerPaths = [] },
       (manifest) => { manifest.unknown = true },
@@ -64,11 +78,11 @@ describe("consumer authority beta.27 workflow-selected observer acceptance", () 
     for (const apply of schemaCases) {
       const manifest = cloneCanonical()
       apply(manifest)
-      expectSchemaBlock(() => parseBeta27AcceptanceManifest(manifest, "0.8.0-beta.27"))
+      expectSchemaBlock(() => parseBeta28AcceptanceManifest(manifest, "0.8.0-beta.28"))
     }
 
-    const root = mkdtempSync(join(tmpdir(), "beta27-v4-cleanliness-"))
-    const outside = mkdtempSync(join(tmpdir(), "beta27-v4-outside-"))
+    const root = mkdtempSync(join(tmpdir(), "beta28-v4-cleanliness-"))
+    const outside = mkdtempSync(join(tmpdir(), "beta28-v4-outside-"))
     try {
       materializeValidResidues(root)
       expect(evaluateFinalObserverV4Cleanliness(validInput(root))).toMatchObject({ stage: "immediately-pre-push" })
@@ -88,7 +102,7 @@ describe("consumer authority beta.27 workflow-selected observer acceptance", () 
 })
 
 function cloneCanonical(): Record<string, unknown> {
-  return record(JSON.parse(JSON.stringify(canonicalBeta27AcceptanceManifest())))
+  return record(JSON.parse(JSON.stringify(readBeta28AcceptanceManifest(repositoryRoot))))
 }
 
 function materializeValidResidues(root: string): void {
@@ -128,10 +142,10 @@ function expectSchemaBlock(action: () => void): void {
   try {
     action()
   } catch (error) {
-    if (error instanceof Beta27AcceptanceManifestError) return
+    if (error instanceof Beta28AcceptanceManifestError) return
     throw error
   }
-  throw new Error("beta27 acceptance unexpectedly accepted drift")
+  throw new Error("beta28 acceptance unexpectedly accepted drift")
 }
 
 function expectCleanlinessBlock(action: () => void): void {

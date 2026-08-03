@@ -109,7 +109,7 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
         listPackageFiles: () => [packageGh],
       })
 
-      expect(result).toEqual({ code: "observer-gh-workflow-ready", state: "ready" })
+      expect(result).toEqual({ code: "observer-gh-workflow-ready", selectorStage: "output-handoff", state: "ready" })
       const selectedPath = readFileSync(githubOutput, "utf8").trim().slice("path=".length)
       expect(selectedPath).toBe(join(realpathSync(runnerTemp), "persona-harness-observer-gh", "gh"))
       expect(selectedPath).not.toBe(packageGh)
@@ -160,7 +160,7 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
         listPackageFiles: () => [packageGh],
       })
 
-      expect(result).toEqual({ code: "observer-gh-workflow-ready", state: "ready" })
+      expect(result).toEqual({ code: "observer-gh-workflow-ready", selectorStage: "output-handoff", state: "ready" })
       expect(readFileSync(githubOutput, "utf8")).toContain("path=")
     } finally {
       rmSync(root, { force: true, recursive: true })
@@ -194,34 +194,34 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [join(root, "missing", "gh")],
       })).toMatchObject({ code: "observer-gh-workflow-tool-unavailable", state: "blocked" })
-      expect(() => provisionWorkflowObserverGhTool({
+      expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [alias],
-      })).toThrow(WorkflowObserverGhToolError)
+      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
       expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [oldGh],
       })).toMatchObject({ code: "observer-gh-workflow-tool-version-unsupported", state: "blocked" })
-      expect(() => provisionWorkflowObserverGhTool({
+      expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [packageGh, oldGh],
-      })).toThrow(WorkflowObserverGhToolError)
-      expect(() => provisionWorkflowObserverGhTool({
+      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
+      expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [packageGh, alias],
-      })).toThrow(WorkflowObserverGhToolError)
-      expect(() => provisionWorkflowObserverGhTool({
+      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
+      expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [packageGh, missingSibling],
-      })).toThrow(WorkflowObserverGhToolError)
-      expect(() => provisionWorkflowObserverGhTool({
+      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
+      expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [directoryRecord],
-      })).toThrow(WorkflowObserverGhToolError)
-      expect(() => provisionWorkflowObserverGhTool({
+      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
+      expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => ["gh"],
-      })).toThrow(WorkflowObserverGhToolError)
+      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", selectorStage: "package-record", state: "blocked" })
       expect(readFileSync(githubOutput, "utf8")).toBe("")
     } finally {
       rmSync(root, { force: true, recursive: true })
@@ -242,7 +242,7 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
       expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [packageGh],
-      })).toEqual({ code: "observer-gh-workflow-tool-invalid", state: "blocked" })
+      })).toEqual({ code: "observer-gh-workflow-tool-invalid", selectorStage: "private-reservation", state: "blocked" })
       expect(readFileSync(githubOutput, "utf8")).toBe("")
     } finally {
       rmSync(root, { force: true, recursive: true })
@@ -294,8 +294,12 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
         },
       })
       expect(result.status).toBe(1)
-      expect(result.stdout).toBe("")
-      expect(result.stderr).toBe("observer-gh-workflow-tool-invalid\n")
+      expect(JSON.parse(result.stdout)).toEqual({
+        code: "observer-gh-workflow-tool-invalid",
+        selectorStage: "environment",
+        state: "blocked",
+      })
+      expect(result.stderr).toBe("")
       expect(`${result.stdout}${result.stderr}`).not.toContain(secret)
       expect(`${result.stdout}${result.stderr}`).not.toContain(root)
       expect(readFileSync(githubOutput, "utf8")).toBe("")
