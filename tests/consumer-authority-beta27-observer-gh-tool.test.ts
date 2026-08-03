@@ -11,6 +11,7 @@ import {
 } from "../scripts/consumer-authority-external-attestation-command-plan.mjs"
 import {
   provisionWorkflowObserverGhTool,
+  selectRegularPackageGhCandidate,
   WorkflowObserverGhToolError,
 } from "../.github/scripts/prepare-observer-gh-tool.mjs"
 import { observerGhStageCodeForPreflight } from "../scripts/consumer-authority-observer-gh-stage.mjs"
@@ -35,7 +36,7 @@ const topology: ExternalAttestationTopology = {
   },
 }
 
-describe("consumer authority beta.26 observer gh tool contract", () => {
+describe("consumer authority beta.27 observer gh tool contract", () => {
   it("requires an explicit observer executable instead of ambient command lookup", () => {
     let calls = 0
 
@@ -68,7 +69,7 @@ describe("consumer authority beta.26 observer gh tool contract", () => {
   })
 
   it("accepts only a regular, non-symlink exact-version executable before parser preflight", () => {
-    const root = mkdtempSync(join(tmpdir(), "beta26-observer-gh-tool-"))
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-tool-"))
     const executable = join(root, "gh")
     const wrongVersion = join(root, "wrong-version-gh")
     const alias = join(root, "gh-alias")
@@ -92,7 +93,7 @@ describe("consumer authority beta.26 observer gh tool contract", () => {
   })
 
   it("provisions one private regular workflow-selected copy and never exports a source path", () => {
-    const root = mkdtempSync(join(tmpdir(), "beta26-observer-gh-provision-"))
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-provision-"))
     const packageDirectory = join(root, "package")
     const packageGh = join(packageDirectory, "gh")
     const runnerTemp = join(root, "runner-temp")
@@ -119,11 +120,56 @@ describe("consumer authority beta.26 observer gh tool contract", () => {
     }
   })
 
-  it("rejects missing, symlinked, incompatible, and ambiguous workflow package records without output", () => {
-    const root = mkdtempSync(join(tmpdir(), "beta26-observer-gh-provision-negative-"))
+  it("accepts only the exact Ubuntu gh package record shape with its documented completion sibling", () => {
+    const executable = "/usr/bin/gh"
+    const completion = "/usr/share/bash-completion/completions/gh"
+    const stats = new Map([
+      [executable, fixtureStat(true, false, 0o100755)],
+      [completion, fixtureStat(true, false, 0o100644)],
+    ])
+
+    expect(selectRegularPackageGhCandidate([executable, completion], {
+      lstat: (path: string) => stats.get(path),
+    })).toBe(executable)
+    expect(() => selectRegularPackageGhCandidate([
+      executable,
+      completion,
+      "/usr/share/doc/gh/gh",
+    ], {
+      lstat: (path: string) => stats.get(path) ?? fixtureStat(true, false, 0o100644),
+    })).toThrow(WorkflowObserverGhToolError)
+  })
+
+  it("copies a qualified package executable into the private workflow reservation", () => {
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-dpkg-record-"))
+    const packageGh = join(root, "usr", "bin", "gh")
+    const runnerTemp = join(root, "runner-temp")
+    const githubOutput = join(root, "github-output")
+    try {
+      mkdirSync(runnerTemp)
+      mkdirSync(join(root, "usr", "bin"), { recursive: true })
+      writeFileSync(githubOutput, "")
+      writeGhFixture(packageGh, "2.96.0")
+
+      const result = provisionWorkflowObserverGhTool({
+        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
+        listPackageFiles: () => [packageGh],
+      })
+
+      expect(result).toEqual({ code: "observer-gh-workflow-ready", state: "ready" })
+      expect(readFileSync(githubOutput, "utf8")).toContain("path=")
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it("rejects missing, unsafe, incompatible, and ambiguous workflow package records without output", () => {
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-provision-negative-"))
     const packageDirectory = join(root, "package")
     const oldDirectory = join(root, "old")
     const aliasDirectory = join(root, "alias")
+    const directoryRecord = join(root, "directory", "gh")
+    const missingSibling = join(root, "missing", "gh")
     const packageGh = join(packageDirectory, "gh")
     const oldGh = join(oldDirectory, "gh")
     const alias = join(aliasDirectory, "gh")
@@ -134,6 +180,7 @@ describe("consumer authority beta.26 observer gh tool contract", () => {
       mkdirSync(packageDirectory)
       mkdirSync(oldDirectory)
       mkdirSync(aliasDirectory)
+      mkdirSync(directoryRecord, { recursive: true })
       writeFileSync(githubOutput, "")
       writeGhFixture(packageGh, "2.96.0")
       writeGhFixture(oldGh, "2.95.0")
@@ -143,10 +190,10 @@ describe("consumer authority beta.26 observer gh tool contract", () => {
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [join(root, "missing", "gh")],
       })).toMatchObject({ code: "observer-gh-workflow-tool-unavailable", state: "blocked" })
-      expect(provisionWorkflowObserverGhTool({
+      expect(() => provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [alias],
-      })).toMatchObject({ code: "observer-gh-workflow-tool-invalid", state: "blocked" })
+      })).toThrow(WorkflowObserverGhToolError)
       expect(provisionWorkflowObserverGhTool({
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [oldGh],
@@ -155,6 +202,43 @@ describe("consumer authority beta.26 observer gh tool contract", () => {
         environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
         listPackageFiles: () => [packageGh, oldGh],
       })).toThrow(WorkflowObserverGhToolError)
+      expect(() => provisionWorkflowObserverGhTool({
+        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
+        listPackageFiles: () => [packageGh, alias],
+      })).toThrow(WorkflowObserverGhToolError)
+      expect(() => provisionWorkflowObserverGhTool({
+        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
+        listPackageFiles: () => [packageGh, missingSibling],
+      })).toThrow(WorkflowObserverGhToolError)
+      expect(() => provisionWorkflowObserverGhTool({
+        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
+        listPackageFiles: () => [directoryRecord],
+      })).toThrow(WorkflowObserverGhToolError)
+      expect(() => provisionWorkflowObserverGhTool({
+        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
+        listPackageFiles: () => ["gh"],
+      })).toThrow(WorkflowObserverGhToolError)
+      expect(readFileSync(githubOutput, "utf8")).toBe("")
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it("blocks an occupied private copy reservation without exporting a tool path", () => {
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-private-copy-"))
+    const packageGh = join(root, "package", "gh")
+    const runnerTemp = join(root, "runner-temp")
+    const githubOutput = join(root, "github-output")
+    try {
+      mkdirSync(join(runnerTemp, "persona-harness-observer-gh"), { recursive: true })
+      mkdirSync(join(root, "package"), { recursive: true })
+      writeFileSync(githubOutput, "")
+      writeGhFixture(packageGh, "2.96.0")
+
+      expect(provisionWorkflowObserverGhTool({
+        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
+        listPackageFiles: () => [packageGh],
+      })).toEqual({ code: "observer-gh-workflow-tool-invalid", state: "blocked" })
       expect(readFileSync(githubOutput, "utf8")).toBe("")
     } finally {
       rmSync(root, { force: true, recursive: true })
@@ -171,7 +255,7 @@ describe("consumer authority beta.26 observer gh tool contract", () => {
   })
 
   it("keeps parser rejection bounded after a valid selected tool reaches the grammar preflight", () => {
-    const root = mkdtempSync(join(tmpdir(), "beta26-observer-gh-parser-"))
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-parser-"))
     const executable = join(root, "gh")
     try {
       writeGhFixture(executable, "2.96.0")
@@ -189,10 +273,10 @@ describe("consumer authority beta.26 observer gh tool contract", () => {
   })
 
   it("renders only a fixed workflow selection diagnostic on direct failure", () => {
-    const root = mkdtempSync(join(tmpdir(), "beta26-observer-gh-direct-"))
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-direct-"))
     const runnerTemp = join(root, "runner-temp-file")
     const githubOutput = join(root, "github-output")
-    const secret = "ghp_beta26_nonreflective_fixture"
+    const secret = "ghp_beta27_nonreflective_fixture"
     try {
       writeFileSync(runnerTemp, "not-a-directory\n")
       writeFileSync(githubOutput, "")
@@ -229,4 +313,12 @@ function writeGhFixture(path: string, version: string): void {
     "",
   ].join("\n"))
   chmodSync(path, 0o700)
+}
+
+function fixtureStat(file: boolean, symbolicLink: boolean, mode: number) {
+  return {
+    isFile: () => file,
+    isSymbolicLink: () => symbolicLink,
+    mode,
+  }
 }

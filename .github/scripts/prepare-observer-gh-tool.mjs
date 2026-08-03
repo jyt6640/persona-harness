@@ -18,6 +18,9 @@ import { assessObserverGhTool } from "../../scripts/consumer-authority-observer-
 const DPKG_QUERY = "/usr/bin/dpkg-query"
 const OUTPUT_DIRECTORY = "persona-harness-observer-gh"
 const OUTPUT_NAME = "gh"
+const DOCUMENTED_ANCILLARY_GH_RECORDS = new Set([
+  "/usr/share/bash-completion/completions/gh",
+])
 
 export function provisionWorkflowObserverGhTool(options = {}) {
   const environment = options.environment ?? process.env
@@ -27,6 +30,7 @@ export function provisionWorkflowObserverGhTool(options = {}) {
     ? options.listPackageFiles
     : listInstalledGhPackageFiles
   const candidate = selectRegularPackageGhCandidate(listPackageFiles())
+  if (candidate === undefined) return blocked("observer-gh-workflow-tool-unavailable")
   const source = assessObserverGhTool(candidate)
   if (source.state !== "ready") return blocked(mapToolCode(source.code))
   const outputDirectory = join(runnerTemp, OUTPUT_DIRECTORY)
@@ -69,13 +73,53 @@ function listInstalledGhPackageFiles() {
   return result.stdout.split("\n").filter((value) => value.length > 0)
 }
 
-function selectRegularPackageGhCandidate(paths) {
+export function selectRegularPackageGhCandidate(paths, options = {}) {
   if (!Array.isArray(paths) || !paths.every((path) => typeof path === "string")) {
     throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
   }
-  const candidates = paths.filter((path) => isAbsolute(path) && basename(path) === "gh")
-  if (candidates.length !== 1) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
+  const lstat = typeof options.lstat === "function" ? options.lstat : lstatSync
+  const candidates = []
+  let matchingRecordCount = 0
+  let missingMatchingRecord = false
+  for (const path of paths) {
+    if (!isPackageRecordPath(path)) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
+    if (basename(path) !== "gh") continue
+    matchingRecordCount += 1
+    let stat
+    try {
+      stat = lstat(path)
+    } catch (error) {
+      if (isMissingPathError(error)) {
+        missingMatchingRecord = true
+        continue
+      }
+      throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
+    }
+    if (!stat.isFile() || stat.isSymbolicLink()) {
+      throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
+    }
+    if ((stat.mode & 0o111) !== 0) {
+      candidates.push(path)
+    } else if (!DOCUMENTED_ANCILLARY_GH_RECORDS.has(path)) {
+      throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
+    }
+  }
+  if (matchingRecordCount === 0 || candidates.length === 0) return undefined
+  if (missingMatchingRecord || candidates.length !== 1) {
+    throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
+  }
   return candidates[0]
+}
+
+function isPackageRecordPath(path) {
+  return isAbsolute(path) && !path.includes("\0") && path.length <= 4_096
+}
+
+function isMissingPathError(error) {
+  return error !== null
+    && typeof error === "object"
+    && "code" in error
+    && error.code === "ENOENT"
 }
 
 function requiredAbsoluteDirectory(value) {

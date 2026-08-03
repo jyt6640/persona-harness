@@ -9,25 +9,25 @@ import { parseCanonicalPackagePublisherPlan } from "./canonical-package-publishe
 import { parseExternalArtifactTransportPlan } from "./consumer-authority-external-artifact-transport-plan.mjs"
 import { parseExternalAttestationCommandPlan } from "./consumer-authority-external-attestation-command-plan.mjs"
 
-export const BETA26_ACCEPTANCE_SCHEMA_VERSION = "consumer-authority-beta26-acceptance.1"
+export const BETA27_ACCEPTANCE_SCHEMA_VERSION = "consumer-authority-beta27-acceptance.1"
 
-const BETA26_PACKAGE_VERSION = "0.8.0-beta.26"
-const ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta26-acceptance.json")
+const BETA27_PACKAGE_VERSION = "0.8.0-beta.27"
+const ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta27-acceptance.json")
 const PROCEDURE_RECORD_SHA256 = "5389c027b21f72f325a5d9e467ecd4d150f672e14da1d04f51774602a284c57d"
 const EXPECTED_MANIFEST = buildExpectedManifest()
 
-export class Beta26AcceptanceManifestError extends Error {
+export class Beta27AcceptanceManifestError extends Error {
   constructor(code) {
     super(code)
     this.code = code
   }
 }
 
-export function canonicalBeta26AcceptanceManifest() {
+export function canonicalBeta27AcceptanceManifest() {
   return structuredClone(EXPECTED_MANIFEST)
 }
 
-export function readBeta26AcceptanceManifest(packageRoot) {
+export function readBeta27AcceptanceManifest(packageRoot) {
   let packageVersion
   let value
   try {
@@ -36,11 +36,11 @@ export function readBeta26AcceptanceManifest(packageRoot) {
   } catch {
     fail()
   }
-  return parseBeta26AcceptanceManifest(value, packageVersion)
+  return parseBeta27AcceptanceManifest(value, packageVersion)
 }
 
-export function parseBeta26AcceptanceManifest(value, packageVersion) {
-  if (packageVersion !== BETA26_PACKAGE_VERSION || !isDeepStrictEqual(value, EXPECTED_MANIFEST)) fail()
+export function parseBeta27AcceptanceManifest(value, packageVersion) {
+  if (packageVersion !== BETA27_PACKAGE_VERSION || !isDeepStrictEqual(value, EXPECTED_MANIFEST)) fail()
   parseCanonicalPackagePublisherPlan(value.canonicalPackagePublisherPlan)
   parseExternalAttestationCommandPlan(value.externalAttestationCommandPlan)
   parseExternalArtifactTransportPlan(value.externalArtifactTransportPlan)
@@ -51,28 +51,33 @@ export function parseBeta26AcceptanceManifest(value, packageVersion) {
 function buildExpectedManifest() {
   const manifest = canonicalBeta23AcceptanceManifest()
   const procedure = manifest.prearmedExternalHandoff.finalObserverProcedure
-  manifest.schemaVersion = BETA26_ACCEPTANCE_SCHEMA_VERSION
-  manifest.package.version = BETA26_PACKAGE_VERSION
+  manifest.schemaVersion = BETA27_ACCEPTANCE_SCHEMA_VERSION
+  manifest.package.version = BETA27_PACKAGE_VERSION
   manifest.beta23HistoricalFinalObserver = {
     outcome: "raw-empty-porcelain-and-clean-contradicted-approved-runtime-build-residue-after-final-commit-not-reusable-as-closure-evidence",
-    reusableForBeta26: false,
+    reusableForBeta27: false,
     version: "0.8.0-beta.23",
   }
   manifest.beta24HistoricalExternalContract = {
     outcome: "supplied-bundle-source-contract-required-ambient-gh-and-rejected-linux-runtime-owned-uv-use-io-uring-not-reusable-as-closure-evidence",
-    reusableForBeta26: false,
+    reusableForBeta27: false,
     version: "0.8.0-beta.24",
   }
   manifest.beta25HistoricalObserverTool = {
     outcome: "protected-verify-used-an-unselected-literal-observer-gh-path-and-collapsed-tool-stage-not-reusable-as-closure-evidence",
-    reusableForBeta26: false,
+    reusableForBeta27: false,
     version: "0.8.0-beta.25",
   }
-  manifest.authority.fixturePlan.registryInstall = "npm install persona-harness@0.8.0-beta.26 --registry https://registry.npmjs.org"
-  manifest.authority.hostedFixture.revision = "postmerge-persona-harness-beta26-main-sha"
+  manifest.beta26HistoricalObserverTool = {
+    outcome: "ubuntu-gh-package-record-includes-a-regular-nonexecutable-completion-sibling-and-basename-only-selection-blocked-before-tool-assessment-not-reusable-as-closure-evidence",
+    reusableForBeta27: false,
+    version: "0.8.0-beta.26",
+  }
+  manifest.authority.fixturePlan.registryInstall = "npm install persona-harness@0.8.0-beta.27 --registry https://registry.npmjs.org"
+  manifest.authority.hostedFixture.revision = "postmerge-persona-harness-beta27-main-sha"
   procedure.cleanliness = v4Cleanliness()
   procedure.observerGhTool = canonicalObserverGhToolContract()
-  procedure.observerGhSelection = "workflow-owned-runner-package-record-to-private-regular-copy-before-every-package-contract"
+  procedure.observerGhSelection = "workflow-owned-dpkg-record-lstat-qualified-single-regular-nonsymlink-executable-to-private-copy-before-every-package-contract"
   procedure.postCommitPreparation.allowedMutations = [
     ".persona/.ph-init-manifest.json",
     ".persona/evidence/**",
@@ -92,7 +97,7 @@ function buildExpectedManifest() {
     "credential-handoff-v4-immutable-binding-and-normalized-residue-projection",
     "observer-child-v4-immutable-binding-and-normalized-residue-projection",
     "immediately-pre-push-v4-immutable-binding-and-normalized-residue-projection",
-    "workflow-selected-observer-gh-tool-regular-nonsymlink-version-compatible-and-no-package-path-lookup",
+    "workflow-selected-observer-gh-tool-dpkg-record-qualified-regular-nonsymlink-executable-version-compatible-and-no-package-path-lookup",
     "public-bootstrap-accepted-plan-and-current-loop-state",
     "public-Gradle-test-compileJava-and-clean",
     "public-README-profile-and-Java-evidence",
@@ -108,7 +113,9 @@ function buildExpectedManifest() {
   manifest.observerGhTool = canonicalObserverGhToolContract()
   manifest.observerGhSelection = {
     diagnostics: "only-fixed-tool-invalid-tool-unavailable-tool-version-unsupported-parser-rejected-or-non-tool-stage-codes-cross-the-package-contract-boundary",
-    workflow: "runner-package-record-selection-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts",
+    dpkgRecord: "lstat-each-basename-gh-entry-without-following-links-and-require-exactly-one-regular-nonsymlink-executable",
+    ancillary: "ignore-only-the-documented-regular-nonexecutable-/usr/share/bash-completion/completions/gh-package-record-and-reject-missing-symlink-nonregular-malformed-or-ambiguous-executable-records",
+    workflow: "runner-package-record-qualified-executable-selection-to-private-regular-nonsymlink-copy-before-ci-publish-and-release-package-contracts",
   }
   manifest.prearmedExternalHandoff.prepare.allowedBeforeFixture = [
     "prepare-one-exact-git-backed-fixture-clone-and-isolated-consumer-home-store",
@@ -140,7 +147,7 @@ function buildExpectedManifest() {
     deterministicLinks: [
       "immutable-tracked-source-head-parent-pin-and-digest-map",
       "v4-stage-scoped-runtime-residue-cleanliness",
-      "workflow-selected-observer-gh-tool-without-package-path-lookup",
+      "ubuntu-dpkg-record-qualified-workflow-selected-observer-gh-tool-without-package-path-lookup",
       "linux-runtime-owned-uv-use-io-uring-child-envelope-only",
       "same-consumer-public-bootstrap-plan-loop-gradle-reports-evidence-readiness",
       "host-state-isolated-credential-preflight-and-command-transport-plans",
@@ -148,11 +155,11 @@ function buildExpectedManifest() {
       "authenticated-fetch-to-trusted-unconsumed",
       "one-Finish-consumption-and-immediate-replay-block",
     ],
-    localProof: "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-workflow-selected-gh-parser-fixed-stage-diagnostics-and-authority-child-contracts",
+    localProof: "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-workflow-selected-gh-parser-fixed-stage-diagnostics-and-authority-child-contracts",
     remainingUncertainty: "one-authorized-v4-fixture-push-and-immediate-current-artifact-observation-only",
   }
   manifest.hostedResidual = {
-    id: "beta26-v4-prearmed-same-commit-current-artifact-fetch-consume-replay",
+    id: "beta27-v4-prearmed-same-commit-current-artifact-fetch-consume-replay",
     requiredEvidence: "one separately authorized normal push of the v4-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
     whyLocalCannotClose: "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh parser preflight with fixed stage diagnostics, Linux child-envelope behavior, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact.",
   }
@@ -175,5 +182,5 @@ function v4Cleanliness() {
 }
 
 function fail() {
-  throw new Beta26AcceptanceManifestError("beta26-acceptance-schema")
+  throw new Beta27AcceptanceManifestError("beta27-acceptance-schema")
 }

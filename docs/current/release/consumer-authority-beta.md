@@ -23,7 +23,10 @@ non-reusable procedure evidence because raw-empty Git cleanliness contradicted
 required runtime/build preparation. `0.8.0-beta.24` is terminal non-reusable
 procedure evidence because the supplied-bundle source contract relied on ambient
 `gh` discovery and rejected Linux's runtime-owned `UV_USE_IO_URING=0` child
-marker. The active `0.8.0-beta.26` procedure-only source candidate has no
+marker. `0.8.0-beta.26` is terminal non-reusable procedure evidence: the
+normal Ubuntu `gh` package record included a regular non-executable completion
+sibling, which its basename-only selector rejected before assessment. The active
+`0.8.0-beta.27` procedure-only source candidate has no
 package, tag, channel movement, GitHub release, or signed consumer-project
 artifact at source preparation time.
 
@@ -33,8 +36,8 @@ because it did not complete the full current-version public consumer route.
 Beta.20 reached a live `trusted/unconsumed` fetch but then correctly stopped at
 `workflow-state-uninitialized` because the observer had not prepared the same
 consumer's public lifecycle. That result consumed nothing and is not reusable.
-Beta26 binds the immutable same-consumer observer order, V4 stage-scoped
-residue cleanliness, pre-push source identity, and one workflow-selected
+Beta27 binds the immutable same-consumer observer order, V4 stage-scoped
+residue cleanliness, pre-push source identity, and one qualified workflow-selected
 observer-gh tool contract. It cannot inherit beta.16's observer failure, beta.17's registry
 PUT result, beta.18's failed metadata predicate, beta.21's expired temporal
 result, beta.23's contradictory raw-empty condition, beta.24's ambient-tool
@@ -170,12 +173,12 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.25` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.26`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.26` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.27`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta26-acceptance.json`](consumer-authority-beta26-acceptance.json)
+[`consumer-authority-beta27-acceptance.json`](consumer-authority-beta27-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the immutable same-consumer
@@ -188,7 +191,7 @@ than caller project source. The profile, Gradle descriptors, Git identity,
 reports, and evidence remain bound. This does not relax caller enrollment,
 reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
 
-Before beta.26 package evidence is accepted, the verifier materializes the
+Before beta.27 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds one
 explicit canonical `refs/heads/...` candidate ref and
 `refs/remotes/origin/main`; the candidate ref must equal the expected candidate
@@ -227,8 +230,11 @@ and content identity into both the built source CLI and fresh installed
 consumer contracts. Retained earlier beta tar aggregates remain diagnostic-only
 and do not authorize a package or authority result.
 
-CI, publish, and release select that observer tool from the runner's Ubuntu
-package record, copy it into a private runner directory, and pass only the
+CI, publish, and release lstat every basename-`gh` entry in the runner's Ubuntu
+package record without following links, require exactly one regular executable
+non-symlink candidate, and ignore only the documented regular non-executable
+`/usr/share/bash-completion/completions/gh` ancillary entry.
+They copy that candidate into a private runner directory and pass only the
 resulting path. They never look it up through `PATH`, assume `/usr/bin/gh`,
 download it, or use it to access an artifact. A fixed selected-tool diagnostic
 crosses the source/installed package boundary without rendering a path, stderr,
@@ -243,7 +249,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.26 fixture push, an independent observer must prepare
+Before the one natural beta.27 fixture push, an independent observer must prepare
 one exact Git-backed registry consumer CWD/HEAD and one private consumer `HOME`.
 It must first complete the public bootstrap/Gradle/report/evidence/plan route and
 confirm default Finish is blocked only by `trusted-authority-required`; it may

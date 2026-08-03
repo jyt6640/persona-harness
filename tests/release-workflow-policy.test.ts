@@ -98,6 +98,12 @@ describe("release workflow policy", () => {
     expect(provisioner).toContain('spawnSync(DPKG_QUERY, ["--listfiles", "gh"]')
     expect(provisioner).toContain("constants.COPYFILE_EXCL")
     expect(provisioner).toContain("constants.O_NOFOLLOW")
+    expect(provisioner).toContain("export function selectRegularPackageGhCandidate(paths, options = {})")
+    expect(provisioner).toContain('"/usr/share/bash-completion/completions/gh"')
+    expect(provisioner).toContain("if (!stat.isFile() || stat.isSymbolicLink())")
+    expect(provisioner).toContain("if ((stat.mode & 0o111) !== 0) {")
+    expect(provisioner).toContain("} else if (!DOCUMENTED_ANCILLARY_GH_RECORDS.has(path))")
+    expect(provisioner).toContain("if (matchingRecordCount === 0 || candidates.length === 0) return undefined")
     expect(provisioner).toContain("assessObserverGhTool(output)")
     expect(provisioner).not.toContain("process.env.PATH")
     expect(provisioner).not.toContain("command -v")
@@ -140,7 +146,7 @@ describe("release workflow policy", () => {
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.8.0-beta.26")
+    expect(packageVersion).toBe("0.8.0-beta.27")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",
