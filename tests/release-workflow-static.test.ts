@@ -9,6 +9,10 @@ import {
   releaseWorkflowCheckerFixturePaths,
   releaseWorkflowCheckerWorkflowPaths,
 } from "../scripts/release-workflow-checker-inputs.mjs"
+import {
+  CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS,
+  CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT,
+} from "./fixtures/clean-package-source-fixture-closure.mjs"
 
 describe("CI and release workflow policy surface", () => {
   it("keeps GitHub release creation behind an explicit manual GA-approved gate", () => {
@@ -31,6 +35,16 @@ describe("CI and release workflow policy surface", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Release workflow policy: PASS")
+  })
+
+  it("keeps the release static fixture and clean Git verifier fixture deliberately root-separated", () => {
+    const staticFixturePaths = releaseWorkflowCheckerFixturePaths()
+
+    expect(staticFixturePaths).toContain("scripts/check-release-workflows.mjs")
+    expect(staticFixturePaths).toContain("scripts/release-workflow-checker-inputs.mjs")
+    expect(staticFixturePaths).toContain("scripts/consumer-authority-observer-gh-package-record.mjs")
+    expect(staticFixturePaths).not.toContain(CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT)
+    expect(CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS).not.toContain("scripts/check-release-workflows.mjs")
   })
 
   it("rejects floating action refs while accepting the exact immutable pins", () => {

@@ -11,20 +11,30 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
+import {
+  assertCleanPackageSourceFixtureClosure,
+  cleanPackageSourceFixtureImportClosure,
+  CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS,
+} from "./fixtures/clean-package-source-fixture-closure.mjs"
+
 const roots: string[] = []
-const fixtureScriptPaths = [
-  "clean-package-boundary-core.mjs",
-  "consumer-authority-observer-gh-package-record.mjs",
-  "consumer-authority-observer-gh-stage.mjs",
-  "package-content-identity.mjs",
-  "verify-clean-package-boundary.mjs",
-] as const
+const fixtureScriptPaths = CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { force: true, recursive: true })
 })
 
 describe("clean package Git environment", () => {
+  it("declares the exact verifier import closure before running the Git boundary", () => {
+    expect(fixtureScriptPaths).toEqual(cleanPackageSourceFixtureImportClosure(process.cwd()))
+  })
+
+  it("rejects a source fixture that omits a verifier dependency before execution", () => {
+    const incompleteFixturePaths = fixtureScriptPaths.filter((path) => path !== "scripts/clean-package-exercise-phase.mjs")
+
+    expect(() => assertCleanPackageSourceFixtureClosure(process.cwd(), incompleteFixturePaths)).toThrow("clean-package-source-fixture-closure")
+  })
+
   it("materializes a detached source checkout without inherited Git configuration", () => {
     const root = createSourceRoot(true)
     const result = runGitBoundary(root)
@@ -64,8 +74,9 @@ function createSourceRoot(withGit: boolean): string {
   const root = track(mkdtempSync(join(tmpdir(), "persona-clean-package-git-")))
   const scripts = join(root, "scripts")
   mkdirSync(scripts)
+  assertCleanPackageSourceFixtureClosure(process.cwd(), fixtureScriptPaths)
   for (const scriptPath of fixtureScriptPaths) {
-    copyFileSync(join(process.cwd(), "scripts", scriptPath), join(scripts, scriptPath))
+    copyFileSync(join(process.cwd(), scriptPath), join(root, scriptPath))
   }
   if (!withGit) return root
 

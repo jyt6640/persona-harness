@@ -4,6 +4,12 @@ import path from "node:path"
 
 import { describe, expect, it } from "vitest"
 
+import {
+  cleanPackageSourceFixtureImportClosure,
+  CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS,
+  CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT,
+} from "./fixtures/clean-package-source-fixture-closure.mjs"
+
 type PackageJson = {
   readonly bin?: Readonly<Record<string, string>>
   readonly files: readonly string[]
@@ -557,6 +563,18 @@ describe("package files policy", () => {
     }
     expect(isCoveredByPackageFiles("scripts/verify-clean-package-boundary.mjs", packageJson.files)).toBe(false)
     expect(isCoveredByPackageFiles("scripts/release-workflow-checker-inputs.mjs", packageJson.files)).toBe(false)
+  })
+
+  it("binds the clean Git fixture to the verifier closure without packaging the source verifier", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    expect(CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS).toEqual(cleanPackageSourceFixtureImportClosure(packageRoot))
+    expect(CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS).toContain(CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT)
+    expect(isCoveredByPackageFiles(CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT, packageJson.files)).toBe(false)
+    for (const filePath of CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS) {
+      if (filePath === CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT) continue
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
+    }
   })
 
   it("keeps direct current README links covered by packaged files", () => {
