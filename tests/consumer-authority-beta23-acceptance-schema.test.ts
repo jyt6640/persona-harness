@@ -33,7 +33,7 @@ const EXTERNAL_STATE_ROOTS = [
 
 describe("consumer authority beta.23 acceptance schema", () => {
   it("binds the v3 host-state-isolated final observer procedure", () => {
-    const manifest = record(readBeta23AcceptanceManifest(repositoryRoot))
+    const manifest = record(parseBeta23AcceptanceManifest(canonicalManifest(), "0.8.0-beta.23"))
     const procedure = record(record(manifest.prearmedExternalHandoff).finalObserverProcedure)
     const execution = record(procedure.execution)
     const hostStateIsolation = record(procedure.hostStateIsolation)

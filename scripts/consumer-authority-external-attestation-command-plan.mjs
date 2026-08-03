@@ -4,6 +4,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 
+import { assessObserverGhTool } from "./consumer-authority-observer-gh-tool.mjs"
+
 const COMMAND_PLAN_SCHEMA_VERSION = "consumer-authority-external-attestation-command-plan.1"
 const PREFLIGHT_SCHEMA_VERSION = "consumer-authority-external-attestation-preflight.1"
 const FIXTURE_REPOSITORY = "jyt6640/persona-harness-attestation-claim-fixture"
@@ -117,7 +119,9 @@ export function runExternalAttestationGrammarPreflight(plan, topology, options =
   parseExternalAttestationCommandPlan(plan)
   parseTopology(topology)
   const execute = typeof options.execute === "function" ? options.execute : spawnSync
-  const ghPath = typeof options.ghPath === "string" && options.ghPath.length > 0 ? options.ghPath : "gh"
+  const ghPath = options.ghPath
+  const tool = assessObserverGhTool(ghPath, { execute })
+  if (tool.state !== "ready") return blocked(tool.code, "execution-failed")
   const root = mkdtempSync(join(tmpdir(), "persona-external-attestation-preflight-"))
   try {
     const home = join(root, "home")
@@ -202,8 +206,7 @@ function classifyPreflightResult(result) {
 }
 
 function noTokenEnvironment(home) {
-  const path = process.env.PATH
-  if (!isSafeLocalPath(home) || !isSafePathValue(path)) fail()
+  if (!isSafeLocalPath(home)) fail()
   return {
     GH_CONFIG_DIR: join(home, "gh-config"),
     GH_PROMPT_DISABLED: "1",
@@ -211,7 +214,6 @@ function noTokenEnvironment(home) {
     LANG: "C",
     LC_ALL: "C",
     NO_COLOR: "1",
-    PATH: path,
     XDG_CACHE_HOME: join(home, "cache"),
     XDG_CONFIG_HOME: join(home, "config"),
     XDG_STATE_HOME: join(home, "state"),

@@ -85,14 +85,18 @@ the observer had not initialized the same consumer workflow state.
 crypto and identity bindings passed only after the leaf certificate window
 expired, so authenticated fetch, Finish consumption, and replay were not run.
 `0.8.0-beta.22` is non-reusable final-observer evidence: host `gh`/XDG state
-created an untracked `.local` entry after the final commit. `0.8.0-beta.23` is
-the next strict-prerelease procedure-only source candidate;
-it has no source-level claim of a tag, publish, channel movement, GitHub
-release, or original signed consumer artifact. Beta23 records the governed v3
-future final-observer procedure without changing product fetch, authority,
-Finish, transport, workflow, or CI behavior.
+created an untracked `.local` entry after the final commit. `0.8.0-beta.23`
+contradicted its raw-empty cleanliness predicate. `0.8.0-beta.24` stopped at
+the supplied-bundle source contract because it depended on ambient `gh` lookup
+and rejected Linux's runtime-owned `UV_USE_IO_URING=0` child marker.
+`0.8.0-beta.26` then rejected the normal Ubuntu `gh` package record before tool
+assessment because its basename-only selector counted the non-executable
+bash-completion sibling. The next strict-prerelease procedure-only source
+candidate is `0.8.0-beta.27`; it has no
+source-level claim of a tag, publish, channel movement, GitHub release, or
+original signed consumer artifact.
 
-The beta23 release contract requires package-visible observer credential
+The beta27 release contract requires package-visible observer credential
 preflight, separate caller/reusable signer binding, and a complete public
 Java/Spring readiness route whose default Finish is blocked only by
 `trusted-authority-required` before a fixture may be authorized. Source-bound
@@ -106,10 +110,18 @@ No lifecycle reinitialization, consumer switch, or source reset is permitted
 after fetch. It also requires `env -i`, explicit absolute `gh`/Git/Node/npm
 paths, and fifteen external host-state roots outside the consumer realpath.
 At baseline, source-bound preparation, credential handoff, observer child, and
-immediately before push, CWD/Git top-level/HEAD/source identity plus empty
-porcelain and `git clean -ndx` must remain unchanged. `.local`, `.config`, and
-`.cache` are never allowlisted; slow preparation completes before the one push,
-and the certificate validity deadline is non-relaxable.
+immediately before push, CWD/Git top-level/HEAD/source identity must remain
+unchanged and the NUL-safe status plus normalized `git clean -ndx` output must
+match the V4 stage-scoped residue projection. `.local`, `.config`, and `.cache`
+are never allowlisted. The observer `gh` is selected from the Ubuntu package
+record only after no-follow lstat qualification of each basename-`gh` record;
+exactly one private absolute regular non-symlink compatible executable is
+allowed, while only the documented regular non-executable
+`/usr/share/bash-completion/completions/gh` sibling is ancillary. It is
+never an ambient PATH lookup or literal runner path. Linux accepts
+only `UV_USE_IO_URING=0` in the fixed authority child environment. Slow
+preparation completes before the one push, and the certificate validity deadline
+is non-relaxable.
 
 The preflights use a host-derived credential only inside their fixed read-only
 GitHub Actions worker; they do not pass that credential to `ph`, npm, archive
