@@ -4,6 +4,12 @@ import path from "node:path"
 
 import { describe, expect, it } from "vitest"
 
+import {
+  cleanPackageSourceFixtureImportClosure,
+  CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS,
+  CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT,
+} from "./fixtures/clean-package-source-fixture-closure.mjs"
+
 type PackageJson = {
   readonly bin?: Readonly<Record<string, string>>
   readonly files: readonly string[]
@@ -411,6 +417,10 @@ describe("package files policy", () => {
       "scripts/consumer-authority-observer-preflight-worker.mjs",
       "scripts/clean-package-boundary-core.d.mts",
       "scripts/clean-package-boundary-core.mjs",
+      "scripts/clean-package-exercise-phase.d.mts",
+      "scripts/clean-package-exercise-phase.mjs",
+      "scripts/consumer-authority-authority-discovery-exercise.d.mts",
+      "scripts/consumer-authority-authority-discovery-exercise.mjs",
       "scripts/consumer-authority-beta16-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta16-acceptance-schema.mjs",
       "scripts/consumer-authority-beta17-acceptance-schema.d.mts",
@@ -427,6 +437,32 @@ describe("package files policy", () => {
       "scripts/consumer-authority-beta22-acceptance-schema.mjs",
       "scripts/consumer-authority-beta23-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta23-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta27-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta27-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta28-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta28-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta29-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta29-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta30-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta30-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta31-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta31-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta32-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta32-acceptance-schema.mjs",
+      "scripts/consumer-authority-beta33-acceptance-schema.d.mts",
+      "scripts/consumer-authority-beta33-acceptance-schema.mjs",
+      "scripts/consumer-authority-final-observer-v4-cleanliness.d.mts",
+      "scripts/consumer-authority-final-observer-v4-cleanliness.mjs",
+      "scripts/consumer-authority-observer-gh-tool.d.mts",
+      "scripts/consumer-authority-observer-gh-tool.mjs",
+      "scripts/consumer-authority-observer-gh-stage.d.mts",
+      "scripts/consumer-authority-observer-gh-stage.mjs",
+      "scripts/consumer-authority-observer-gh-package-record.d.mts",
+      "scripts/consumer-authority-observer-gh-package-record.mjs",
+      "scripts/consumer-authority-observer-gh-workflow-selector.d.mts",
+      "scripts/consumer-authority-observer-gh-workflow-selector.mjs",
+      "scripts/authority-fetch-child-environment.d.mts",
+      "scripts/authority-fetch-child-environment.mjs",
       "scripts/consumer-authority-external-artifact-transport-plan.d.mts",
       "scripts/consumer-authority-external-artifact-transport-plan.mjs",
       "scripts/consumer-authority-external-attestation-command-plan.d.mts",
@@ -483,6 +519,13 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta21-acceptance.json",
       "docs/current/release/consumer-authority-beta22-acceptance.json",
       "docs/current/release/consumer-authority-beta23-acceptance.json",
+      "docs/current/release/consumer-authority-beta27-acceptance.json",
+      "docs/current/release/consumer-authority-beta28-acceptance.json",
+      "docs/current/release/consumer-authority-beta29-acceptance.json",
+      "docs/current/release/consumer-authority-beta30-acceptance.json",
+      "docs/current/release/consumer-authority-beta31-acceptance.json",
+      "docs/current/release/consumer-authority-beta32-acceptance.json",
+      "docs/current/release/consumer-authority-beta33-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -498,6 +541,42 @@ describe("package files policy", () => {
     for (const boundaryRecord of boundaryRecords) {
       expect(existsSync(path.join(packageRoot, boundaryRecord))).toBe(true)
       expect(isCoveredByPackageFiles(boundaryRecord, packageJson.files)).toBe(true)
+    }
+    expect(existsSync(path.join(packageRoot, ".github", "scripts", "prepare-observer-gh-tool.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles(".github/scripts/prepare-observer-gh-tool.mjs", packageJson.files)).toBe(false)
+    expect(existsSync(path.join(packageRoot, "scripts", "release-workflow-checker-inputs.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/release-workflow-checker-inputs.mjs", packageJson.files)).toBe(false)
+    expect(existsSync(path.join(packageRoot, "scripts", "verify-clean-package-boundary.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/verify-clean-package-boundary.mjs", packageJson.files)).toBe(false)
+    expect(existsSync(path.join(packageRoot, "tests", "fixtures", "observer-gh", "gh"))).toBe(true)
+    expect(isCoveredByPackageFiles("tests/fixtures/observer-gh/gh", packageJson.files)).toBe(false)
+  })
+
+  it("keeps the Git-bound verifier source-only while fresh packages contain only installed observer stages", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    for (const script of [
+      "scripts/consumer-authority-observer-gh-package-record.mjs",
+      "scripts/consumer-authority-observer-gh-stage.mjs",
+      "scripts/clean-package-exercise-phase.mjs",
+      "scripts/consumer-authority-authority-discovery-exercise.mjs",
+    ]) {
+      expect(existsSync(path.join(packageRoot, script))).toBe(true)
+      expect(isCoveredByPackageFiles(script, packageJson.files)).toBe(true)
+    }
+    expect(isCoveredByPackageFiles("scripts/verify-clean-package-boundary.mjs", packageJson.files)).toBe(false)
+    expect(isCoveredByPackageFiles("scripts/release-workflow-checker-inputs.mjs", packageJson.files)).toBe(false)
+  })
+
+  it("binds the clean Git fixture to the verifier closure without packaging the source verifier", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+
+    expect(CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS).toEqual(cleanPackageSourceFixtureImportClosure(packageRoot))
+    expect(CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS).toContain(CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT)
+    expect(isCoveredByPackageFiles(CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT, packageJson.files)).toBe(false)
+    for (const filePath of CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS) {
+      if (filePath === CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT) continue
+      expect(isCoveredByPackageFiles(filePath, packageJson.files)).toBe(true)
     }
   })
 
@@ -525,7 +604,7 @@ describe("package files policy", () => {
       "docs/releases/v0.6.0/README.md",
       "docs/releases/package-index.md",
       "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.23-release-notes.md",
+      "docs/current/release/v0.8.0-beta.33-release-notes.md",
       "docs/current/p3-integrity-roadmap.md",
       "docs/current/p3-2-closure-authority-acceptance-record.md",
       "docs/current/p3-3-verification-receipt-acceptance-record.md",
@@ -551,7 +630,7 @@ describe("package files policy", () => {
       "docs/current/measurement-scorecard.md",
       "docs/current/injection-value-status.json",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.23-release-notes.md",
+      "docs/current/release/v0.8.0-beta.33-release-notes.md",
       "docs/current/korean-cli-help-scope-authorization.md",
     ])
 

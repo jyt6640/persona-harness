@@ -15,12 +15,12 @@ import {
   STAGED_PACKAGE_ARTIFACT_PREDICATE_TYPE,
   stagedPackageTarballUrl,
 } from "../scripts/staged-package-artifact-attestation-core.mjs"
+import { readBeta33AcceptanceManifest } from "../scripts/consumer-authority-beta33-acceptance-schema.mjs"
 
 const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "staged-package-artifact-attestation.yml")
 const producerPath = join(root, "scripts", "build-staged-package-artifact-attestation.mjs")
 const HEAD = "a".repeat(40)
-const CURRENT_SOURCE_VERSION = "0.8.0-beta.23"
 const VERSION = "0.7.0-rc.8"
 const RC7_REGISTRY_GIT_HEAD = "659f7d86fcd653f49eead719b91093f35f73ad3e"
 
@@ -110,9 +110,15 @@ describe("staged package artifact attestation producer policy", () => {
     expect(JSON.stringify(result.predicate)).not.toContain("external-attested")
   })
 
-  it("keeps a historical RC7 registry gitHead blocked while the beta source version stays separate", () => {
-    expect(readFileSync(join(root, "package.json"), "utf8")).toContain(`"version": "${CURRENT_SOURCE_VERSION}"`)
-    expect(CURRENT_SOURCE_VERSION).not.toBe(VERSION)
+  it("keeps a historical RC7 registry gitHead blocked while current package, lock, and acceptance metadata stay bound", () => {
+    const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
+    const packageLock = JSON.parse(readFileSync(join(root, "package-lock.json"), "utf8"))
+    const manifest = readBeta33AcceptanceManifest(root)
+
+    expect(packageJson.version).toBe(manifest.package.version)
+    expect(packageLock.version).toBe(manifest.package.version)
+    expect(packageLock.packages[""]?.version).toBe(manifest.package.version)
+    expect(manifest.package.version).not.toBe(VERSION)
     expect(() =>
       createStagedPackageArtifactPredicate(producerInput({
         registryVersion: { ...registryVersion(), gitHead: RC7_REGISTRY_GIT_HEAD },

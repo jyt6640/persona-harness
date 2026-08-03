@@ -10,6 +10,7 @@ import {
   checkReleaseState,
   checkTagSource,
 } from "../scripts/release-workflow-policy.mjs"
+import { readBeta33AcceptanceManifest } from "../scripts/consumer-authority-beta33-acceptance-schema.mjs"
 
 const MAIN_SHA = "a".repeat(40)
 const TAG_SHA = "b".repeat(40)
@@ -82,6 +83,71 @@ describe("release workflow policy", () => {
     expect(workflow).not.toContain("npm token")
   })
 
+  it("uses one workflow-selected private observer gh tool across CI and release package contracts", () => {
+    for (const workflowName of ["ci.yml", "publish.yml", "release.yml"]) {
+      const workflow = readFileSync(join(repositoryRoot, ".github", "workflows", workflowName), "utf8")
+      expect(workflow).toContain("- name: Select observer GitHub CLI")
+      expect(workflow).toContain("- name: Preflight selected observer GitHub CLI")
+      expect(workflow).toContain("id: observer-gh")
+      expect(workflow).toContain("run: node .github/scripts/prepare-observer-gh-tool.mjs")
+      expect(workflow).toContain("PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}")
+      expect(workflow).toContain('run: node scripts/preflight-consumer-authority-external-attestation.mjs --json --observer-gh "$PERSONA_HARNESS_OBSERVER_GH"')
+      expect(workflow).not.toContain("--observer-gh /usr/bin/gh")
+      expect(workflow).not.toContain("command -v gh")
+    }
+
+    const provisioner = readFileSync(join(repositoryRoot, ".github", "scripts", "prepare-observer-gh-tool.mjs"), "utf8")
+    const selector = readFileSync(join(repositoryRoot, "scripts", "consumer-authority-observer-gh-workflow-selector.mjs"), "utf8")
+    const packageRecord = readFileSync(join(repositoryRoot, "scripts", "consumer-authority-observer-gh-package-record.mjs"), "utf8")
+    const observerTool = readFileSync(join(repositoryRoot, "scripts", "consumer-authority-observer-gh-tool.mjs"), "utf8")
+    expect(provisioner).toContain('from "../../scripts/consumer-authority-observer-gh-workflow-selector.mjs"')
+    expect(selector).toContain('from "./consumer-authority-observer-gh-package-record.mjs"')
+    expect(selector).toContain("constants.COPYFILE_EXCL")
+    expect(selector).toContain("constants.O_NOFOLLOW")
+    expect(selector).toContain("readInstalledGhPackageRecord()")
+    expect(selector).toContain("selectInstalledObserverGhCandidate")
+    expect(selector).toContain("assessObserverGhTool")
+    expect(selector).toContain("provisionPrivateObserverGhCopy(candidate")
+    expect(selector).toContain("assessTool(sourcePath, { stateRoot: runnerTemp })")
+    expect(selector).toContain("assessTool(output, { stateRoot: runnerTemp })")
+    expect(selector).toContain("copyFile(sourcePath, output, constants.COPYFILE_EXCL)")
+    expect(selector).toContain("selectorStage")
+    expect(selector).toContain("packageRecordShape")
+    expect(selector).toContain("RUNNER_TEMP")
+    expect(selector).toContain("GITHUB_OUTPUT")
+    expect(selector).not.toContain("listPackageFiles")
+    expect(selector).not.toContain("selectRegularPackageGhCandidate")
+    expect(packageRecord).toContain('const DPKG_QUERY = "/usr/bin/dpkg-query"')
+    expect(packageRecord).toContain('"--showformat=${db:Status-Abbrev}\\t${Architecture}\\n"')
+    expect(packageRecord).toContain('"--listfiles", "gh"')
+    expect(packageRecord).toContain('encoding: "buffer"')
+    expect(packageRecord).toContain('new TextDecoder("utf-8", { fatal: true')
+    expect(packageRecord).toContain("value.includes(0) || value.includes(13)")
+    expect(packageRecord).toContain('const POLICY_PRIMARY_GH_RECORD = "/usr/bin/gh"')
+    expect(packageRecord).toContain('"/usr/share/bash-completion/completions/gh"')
+    expect(packageRecord).toContain("OPTIONAL_ANCILLARY_GH_RECORDS")
+    expect(packageRecord).toContain("OPTIONAL_ANCILLARY_GH_RECORDS.has(record)")
+    expect(packageRecord).toContain("if (!isRegularNonSymlink(stat))")
+    expect(packageRecord).toContain("assessSecondaryGhRecords")
+    expect(packageRecord).toContain('"ancillary-unsafe"')
+    expect(packageRecord).toContain('"record-encoding"')
+    expect(packageRecord).toContain('"canonical"')
+    expect(selector).not.toContain("process.env.PATH")
+    expect(selector).not.toContain("command -v")
+    expect(selector).not.toContain("GH_TOKEN")
+    expect(selector).not.toContain("GITHUB_TOKEN")
+    expect(packageRecord).not.toContain("process.env.PATH")
+    expect(packageRecord).not.toContain("command -v")
+    expect(packageRecord).not.toContain("GH_TOKEN")
+    expect(packageRecord).not.toContain("GITHUB_TOKEN")
+    expect(packageRecord).toContain("ancillary-unsafe")
+    expect(observerTool).toContain("stateRoot")
+    expect(observerTool).toContain("GH_CONFIG_DIR: root")
+    expect(observerTool).toContain("XDG_STATE_HOME: root")
+    expect(observerTool).toContain("GIT_CONFIG_GLOBAL")
+    expect(observerTool).not.toContain("process.env.PATH")
+  })
+
   it("keeps package-visible release procedures aligned with the workflow's existing immutable tag preflight", () => {
     const runbook = readFileSync(join(repositoryRoot, "docs", "current", "release", "npm-trusted-publishing-runbook.md"), "utf8")
     const automation = readFileSync(join(repositoryRoot, "docs", "current", "release", "github-actions-release-automation.md"), "utf8")
@@ -116,8 +182,10 @@ describe("release workflow policy", () => {
 
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
+    const acceptance = readBeta33AcceptanceManifest(repositoryRoot)
 
-    expect(packageVersion).toBe("0.8.0-beta.23")
+    expect(packageVersion).toBe(acceptance.package.version)
+    expect(readPackageVersion(join(repositoryRoot, "package-lock.json"))).toBe(acceptance.package.version)
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",
@@ -294,9 +362,9 @@ describe("release workflow policy", () => {
 
     expect(scripts["test"]).toBe("npm run test:package")
     expect(scripts["test:package"]).toBe("node dist/cli/index.js --help")
-    expect(scripts["test:authoritative-bundle-package-contract"]).toBe("node scripts/verify-clean-package-boundary.mjs --exercise-contract")
+    expect(scripts["test:authoritative-bundle-package-contract"]).toBe("node scripts/verify-clean-package-boundary.mjs --exercise-contract --observer-gh \"$PERSONA_HARNESS_OBSERVER_GH\"")
     expect(scripts["test:clean-package-boundary"]).toBe("node scripts/verify-clean-package-boundary.mjs")
-    expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs")
+    expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs --observer-gh \"$PERSONA_HARNESS_OBSERVER_GH\"")
     expect(scripts["test:repository"]).toBe(
       "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:authoritative-bundle-package-contract",
     )

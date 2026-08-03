@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  createAuthorityFetchChildEnvironment,
   parseGithubAuthorityFetchDiagnostic,
   parseFetchedArtifact,
 } from "../src/cli/authority-fetch-worker.js"
 
 describe("consumer authority fetch worker output", () => {
+  it("uses the exact runtime-owned Linux child environment rather than an inherited envelope", () => {
+    expect(createAuthorityFetchChildEnvironment("ghp_worker_marker", "linux")).toEqual({
+      LANG: "C",
+      LC_ALL: "C",
+      PH_AUTHORITY_GITHUB_TOKEN: "ghp_worker_marker",
+      UV_USE_IO_URING: "0",
+    })
+    expect(createAuthorityFetchChildEnvironment("ghp_worker_marker", "win32")).toBeUndefined()
+  })
+
   it("accepts only the fixed bounded child output shape", () => {
     const archive = Buffer.from("original-archive", "utf8")
 

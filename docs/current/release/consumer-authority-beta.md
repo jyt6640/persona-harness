@@ -18,10 +18,26 @@ facts, but its postpublish checker incorrectly required an unsupported registry
 evidence: online crypto and identity bindings completed only after the leaf
 certificate window expired, so fetch, Finish, and replay did not run. The active
 `0.8.0-beta.22` is non-reusable procedure evidence: host `gh`/XDG state created
-an untracked `.local` entry after the final commit. The active
-`0.8.0-beta.23` procedure-only source candidate has no package, tag, channel
-movement, GitHub release, or signed consumer-project artifact at source
-preparation time.
+an untracked `.local` entry after the final commit. `0.8.0-beta.23` is
+non-reusable procedure evidence because raw-empty Git cleanliness contradicted
+required runtime/build preparation. `0.8.0-beta.24` is terminal non-reusable
+procedure evidence because the supplied-bundle source contract relied on ambient
+`gh` discovery and rejected Linux's runtime-owned `UV_USE_IO_URING=0` child
+marker. `0.8.0-beta.26` is terminal non-reusable procedure evidence: the
+normal Ubuntu `gh` package record included a regular non-executable completion
+sibling, which its basename-only selector rejected before assessment. The active
+`0.8.0-beta.27` procedure evidence then collapsed selector lifecycle failures
+to an opaque block. `0.8.0-beta.29` is terminal non-reusable procedure evidence:
+its selector conflated an optional nonselected ancillary record with an unsafe
+record. Beta.30 then classified the documented completion as a competing
+executor because of its runner mode. `0.8.0-beta.31` is terminal,
+non-reusable protected-Verify evidence: its known-completion selector policy
+was sound, but its generic package-version expectation and source/release
+fixture import closures were incomplete. `0.8.0-beta.32` then reached the
+authoritative source contract but used a live invalid-bundle `gh attestation
+verify` preflight that could enter network and Sigstore initialization before
+parser rejection. The active `0.8.0-beta.33` package-contract candidate has no package, tag, channel movement, GitHub
+release, or signed consumer-project artifact at source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
 source-preparation evidence: none qualifies for promotion or issue closure
@@ -29,10 +45,12 @@ because it did not complete the full current-version public consumer route.
 Beta.20 reached a live `trusted/unconsumed` fetch but then correctly stopped at
 `workflow-state-uninitialized` because the observer had not prepared the same
 consumer's public lifecycle. That result consumed nothing and is not reusable.
-Beta23 binds the immutable same-consumer observer order, pre-push source
-identity, and v3 host-state isolation procedure. It cannot inherit beta.16's observer failure, beta.17's
-registry PUT result, beta.18's failed metadata predicate, beta.21's expired
-temporal result, an earlier lifecycle, or an earlier authority result.
+Beta32 retains the immutable same-consumer observer order, V4 stage-scoped
+residue cleanliness, pre-push source identity, and one qualified workflow-selected
+observer-gh selector lifecycle contract. It cannot inherit beta.16's observer failure, beta.17's registry
+PUT result, beta.18's failed metadata predicate, beta.21's expired temporal
+result, beta.23's contradictory raw-empty condition, beta.24's ambient-tool
+failure, an earlier lifecycle, or an earlier authority result.
 
 The consumer must create its own workflow state through public bootstrap and
 report/evidence commands in the exact project that later fetches authority.
@@ -50,12 +68,43 @@ final fixture commit is retained as the installed consumer CWD/HEAD; subsequent
 slow preparation may change only excluded runtime and build state. Immediately
 before the one normal push, the fixture remote parent, CWD, Git top-level, HEAD,
 and source identity must still match the final commit. Every host process uses
-`env -i` with explicit absolute `gh`, Git, Node, and npm paths. All fifteen
-host-state roots are outside the consumer realpath, and the observer verifies
-empty porcelain plus empty `git clean -ndx` after baseline, source-bound
-preparation, credential handoff, observer child, and immediately before push.
-`.local`, `.config`, and `.cache` are never allowlisted. No lifecycle or source
-reinitialization, consumer switch, or state reset is permitted after fetch.
+`env -i` with explicit absolute Git, Node, and npm paths. CI, publish, and
+release package contracts select the exact primary `/usr/bin/gh` package record
+into a private regular non-symlink path with a bounded compatible version
+result. The known completion record is optional and may be a no-follow regular
+non-symlink file regardless of executable mode; it is never selected or run.
+Every other present nonselected basename-`gh` record must itself be a regular
+non-symlink non-executable file, while an alias, unsafe secondary, or second
+executable blocks. No package observer path
+is resolved through PATH. All fifteen host-state roots
+are outside the consumer realpath. V4 compares the NUL-safe untracked/ignored
+status and normalized `git clean -ndx` output against the exact allowed residue
+set at baseline, source-bound preparation, credential handoff, observer child,
+and immediately before push. `.local`, `.config`, and `.cache` are never
+allowlisted. Linux may add only `UV_USE_IO_URING=0` to the fixed authority-fetch
+child environment. No lifecycle or source reinitialization, consumer switch, or
+state reset is permitted after fetch.
+
+The beta33 selector runs its bounded direct `gh --version` assessment and the
+same private copy runs `gh attestation verify <placeholder> <exact-plan> --help`
+with the same token-free state environment. That parser-only command never
+opens an artifact or network client. Neither invocation inherits a
+package-contract checkout as `HOME` or an XDG state root, so normal tool
+validation cannot leave `.local`, `.config`, or `.cache` behind in a source-built
+or fresh installed consumer.
+
+The beta33 authoritative-bundle exercise uses the package-visible
+`clean-package-exercise-phase.1` vocabulary in
+[`consumer-authority-beta33-acceptance.json`](consumer-authority-beta33-acceptance.json).
+Source-built and fresh-tar children each emit their own complete ordered,
+nonreflective transcript. The parent accepts only all ready records followed by
+the exact PASS marker; marker-only, malformed, out-of-order, foreign, or
+success-after-blocked output is a bounded phase-envelope block. The ready
+`authority-discovery` phase is followed immediately by exactly one
+`consumer-authority-discovery-exercise.1` result for that same surface:
+`trusted-unconsumed-persisted`. Every record contains only fixed schema,
+surface, phase or result state, and bounded code; it never carries raw child
+output, a filesystem path, credential, URL, or artifact bytes.
 
 ## Fixed Sequence
 
@@ -159,16 +208,22 @@ authority artifact or Finish PASS.
 
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
-an original artifact from `0.8.0-beta.1` through `0.8.0-beta.22` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.23`; only a future
+an original artifact from `0.8.0-beta.1` through `0.8.0-beta.30` is a bounded
+binding mismatch or historical-evidence block for `0.8.0-beta.33`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta23-acceptance.json`](consumer-authority-beta23-acceptance.json)
+[`consumer-authority-beta33-acceptance.json`](consumer-authority-beta33-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the immutable same-consumer
 observer sequence, and the one hosted residual.
+
+The beta33 package boundary also binds current package metadata, lock metadata,
+and its current acceptance record together. Its authoritative-bundle verifier
+is deliberately source/Git-rooted; fresh installed contracts load the observer
+stage and package-record modules only from the exact tarball, with no `src`,
+`.git`, or source-verifier fallback.
 
 The source projection excludes only `.persona/.ph-init-manifest.json` and
 `.persona/workflow` runtime metadata. The init manifest contains a
@@ -177,7 +232,7 @@ than caller project source. The profile, Gradle descriptors, Git identity,
 reports, and evidence remain bound. This does not relax caller enrollment,
 reusable SHA/SAN, repository, source, run, original-archive, or digest checks.
 
-Before beta.23 package evidence is accepted, the verifier materializes the
+Before beta.28 package evidence is accepted, the verifier materializes the
 exact complete-history bundle in a detached no-local checkout. It binds one
 explicit canonical `refs/heads/...` candidate ref and
 `refs/remotes/origin/main`; the candidate ref must equal the expected candidate
@@ -216,6 +271,19 @@ and content identity into both the built source CLI and fresh installed
 consumer contracts. Retained earlier beta tar aggregates remain diagnostic-only
 and do not authorize a package or authority result.
 
+CI, publish, and release lstat every basename-`gh` entry in the runner's Ubuntu
+package record without following links and require exactly the regular
+non-symlink executable policy primary `/usr/bin/gh`. The documented
+`/usr/share/bash-completion/completions/gh` ancillary entry is optional and,
+when present, must only be a regular non-symlink file regardless of mode; it is
+never selected, copied, or executed. Every other secondary remains inert only
+when regular, non-symlink, and non-executable.
+They copy that candidate into a private runner directory and pass only the
+resulting path. They never look it up through `PATH`, assume `/usr/bin/gh`,
+download it, or use it to access an artifact. A fixed selected-tool diagnostic
+crosses the source/installed package boundary without rendering a path, stderr,
+token, or artifact input.
+
 For that observer, the authenticated product discovery route sends the enrolled
 caller workflow filename directly to the fixed GitHub workflow-runs endpoint.
 It does not reconstruct a second `.github/workflows/` prefix. The caller
@@ -225,7 +293,7 @@ is not retained.
 
 ## Live Verification Deadline
 
-Before the one natural beta.23 fixture push, an independent observer must prepare
+Before the one natural beta.28 fixture push, an independent observer must prepare
 one exact Git-backed registry consumer CWD/HEAD and one private consumer `HOME`.
 It must first complete the public bootstrap/Gradle/report/evidence/plan route and
 confirm default Finish is blocked only by `trusted-authority-required`; it may
@@ -238,13 +306,15 @@ authenticated-user and empty sentinel Actions-metadata worker. It must report
 validate online crypto, consume Finish, observe replay, invoke `ph`, invoke npm,
 or identify a future artifact. A blocked preflight authorizes nothing.
 
-The observer must also run
-`node node_modules/persona-harness/scripts/preflight-consumer-authority-external-attestation.mjs --json`.
-That preflight supplies no credential and no original artifact. It proves only
-that the installed `gh` CLI accepts the canonical selector grammar through flag
-parsing, retains a bounded exit classification, and has no network or artifact
-access. It does not self-validate a predicate, grant authority, or replace the
-later online verification.
+The package-contract observer must receive the workflow-selected absolute
+regular non-symlink `gh` copy and then run
+`node node_modules/persona-harness/scripts/preflight-consumer-authority-external-attestation.mjs --json --observer-gh /absolute/regular/gh`.
+That preflight supplies no credential and no original artifact. It first proves
+the absolute regular non-symlink observer tool has a bounded compatible version
+and then proves that installed `gh` accepts the canonical selector grammar
+through flag parsing. It retains a bounded exit classification, has no PATH
+lookup, network, or artifact access, and does not self-validate a predicate,
+grant authority, or replace later online verification.
 
 The observer must also run
 `node node_modules/persona-harness/scripts/preflight-consumer-authority-external-artifact-transport.mjs --json`.

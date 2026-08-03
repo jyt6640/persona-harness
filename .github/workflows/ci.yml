@@ -30,6 +30,15 @@ jobs:
           node-version: 20.19.0
           cache: npm
 
+      - name: Select observer GitHub CLI
+        id: observer-gh
+        run: node .github/scripts/prepare-observer-gh-tool.mjs
+
+      - name: Preflight selected observer GitHub CLI
+        env:
+          PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
+        run: node scripts/preflight-consumer-authority-external-attestation.mjs --json --observer-gh "$PERSONA_HARNESS_OBSERVER_GH"
+
       - name: Install dependencies
         run: npm ci
 
@@ -52,15 +61,21 @@ jobs:
         run: npm run typecheck
 
       - name: Test
+        env:
+          PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
         run: npm run test:repository
 
       - name: Build
         run: npm run build
 
       - name: Verify Linux Node 20.19 source-built package surface
+        env:
+          PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
         run: node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "linux" --expected-node "20.19.0" --expected-node-mode "exact"
 
       - name: Verify Linux Node 20.19 fresh local-tarball installed package surface
+        env:
+          PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
         run: node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "linux" --expected-node "20.19.0" --expected-node-mode "exact"
 
       - name: Pack dry run

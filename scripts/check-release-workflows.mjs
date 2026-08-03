@@ -1,17 +1,11 @@
 import { readFile } from "node:fs/promises"
+import {
+  RELEASE_WORKFLOW_CHECKER_INPUTS,
+  releaseWorkflowCheckerInputName,
+  releaseWorkflowCheckerWorkflowPaths,
+} from "./release-workflow-checker-inputs.mjs"
 
-const workflowPaths = [
-  ".github/workflows/ci.yml",
-  ".github/workflows/publish.yml",
-  ".github/workflows/release.yml",
-  ".github/workflows/canonical-clean-ci-attestation-builder.yml",
-  ".github/workflows/persona-harness-project-finish.yml",
-  ".github/workflows/persona-harness-project-finish-context-diagnostic.yml",
-  ".github/workflows/project-finish-context-diagnostic-selftest.yml",
-  ".github/workflows/staged-package-artifact-attestation.yml",
-  ".github/workflows/staged-producer-context-diagnostic.yml",
-  ".github/workflows/production-integrity-audit.yml",
-]
+const workflowPaths = releaseWorkflowCheckerWorkflowPaths()
 
 const immutableActionPins = {
   attest: "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc",
@@ -254,11 +248,87 @@ function hasContextDiagnosticFinalizerRuntime(metadata, entrypoint) {
     && !entrypoint.includes("process.env.PATH")
 }
 
+function hasWorkflowOwnedObserverGhSelection(text) {
+  const selection = text.indexOf("- name: Select observer GitHub CLI")
+  const preflight = text.indexOf("- name: Preflight selected observer GitHub CLI")
+  const installation = text.indexOf("- name: Install dependencies")
+  const test = text.indexOf("- name: Test")
+  return selection >= 0
+    && preflight > selection
+    && installation > preflight
+    && test > selection
+    && text.includes("id: observer-gh")
+    && text.includes("run: node .github/scripts/prepare-observer-gh-tool.mjs")
+    && text.includes("PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}")
+    && text.includes('run: node scripts/preflight-consumer-authority-external-attestation.mjs --json --observer-gh "$PERSONA_HARNESS_OBSERVER_GH"')
+    && !text.includes("--observer-gh /usr/bin/gh")
+    && !text.includes("command -v gh")
+}
+
+function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord, tool) {
+  return wrapper.includes('from "../../scripts/consumer-authority-observer-gh-workflow-selector.mjs"')
+    && core.includes('from "./consumer-authority-observer-gh-package-record.mjs"')
+    && core.includes("constants.COPYFILE_EXCL")
+    && core.includes("constants.O_NOFOLLOW")
+    && core.includes("readInstalledGhPackageRecord()")
+    && core.includes("selectInstalledObserverGhCandidate")
+    && core.includes("assessObserverGhTool")
+    && core.includes("provisionPrivateObserverGhCopy(candidate")
+    && core.includes("assessTool(sourcePath, { stateRoot: runnerTemp })")
+    && core.includes("assessTool(output, { stateRoot: runnerTemp })")
+    && core.includes("copyFile(sourcePath, output, constants.COPYFILE_EXCL)")
+    && core.includes('appendGithubOutput(githubOutput, `path=${privateCopy.path}\\n`)')
+    && core.includes("selectorStage")
+    && core.includes("packageRecordShape")
+    && core.includes('"environment"')
+    && core.includes('"output-handoff"')
+    && core.includes("RUNNER_TEMP")
+    && core.includes("GITHUB_OUTPUT")
+    && packageRecord.includes('const DPKG_QUERY = "/usr/bin/dpkg-query"')
+    && packageRecord.includes('"--showformat=${db:Status-Abbrev}\\t${Architecture}\\n"')
+    && packageRecord.includes('"--listfiles", "gh"')
+    && packageRecord.includes('encoding: "buffer"')
+    && packageRecord.includes('new TextDecoder("utf-8", { fatal: true')
+    && packageRecord.includes("value.includes(0) || value.includes(13)")
+    && packageRecord.includes('const POLICY_PRIMARY_GH_RECORD = "/usr/bin/gh"')
+    && packageRecord.includes('"/usr/share/bash-completion/completions/gh"')
+    && packageRecord.includes("OPTIONAL_ANCILLARY_GH_RECORDS.has(record)")
+    && packageRecord.includes("if (!isRegularNonSymlink(stat))")
+    && packageRecord.includes("assessSecondaryGhRecords")
+    && packageRecord.includes('"ancillary-unsafe"')
+    && packageRecord.includes("selectInstalledObserverGhCandidate")
+    && packageRecord.includes('"record-encoding"')
+    && packageRecord.includes('"canonical"')
+    && !core.includes("listPackageFiles")
+    && !core.includes("selectRegularPackageGhCandidate")
+    && !core.includes("process.env.PATH")
+    && !core.includes("command -v")
+    && !core.includes("GH_TOKEN")
+    && !core.includes("GITHUB_TOKEN")
+    && !core.includes("attestation verify")
+    && !core.includes("gh api")
+    && !packageRecord.includes("process.env.PATH")
+    && !packageRecord.includes("command -v")
+    && !packageRecord.includes("GH_TOKEN")
+    && !packageRecord.includes("GITHUB_TOKEN")
+    && !packageRecord.includes("attestation verify")
+    && !packageRecord.includes("gh api")
+    && packageRecord.includes("ancillary-unsafe")
+    && tool.includes("stateRoot")
+    && tool.includes("GH_CONFIG_DIR: root")
+    && tool.includes("XDG_STATE_HOME: root")
+    && tool.includes("GIT_CONFIG_GLOBAL")
+    && !tool.includes("process.env.PATH")
+}
+
 const requirements = [
   ["ci trigger", ".github/workflows/ci.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("- main")],
   ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm run test:repository", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
+  ["ci workflow-owned observer gh", ".github/workflows/ci.yml", hasWorkflowOwnedObserverGhSelection],
   ["publish repository tests", ".github/workflows/publish.yml", (text) => text.includes("npm run test:repository")],
+  ["publish workflow-owned observer gh", ".github/workflows/publish.yml", hasWorkflowOwnedObserverGhSelection],
   ["release repository tests", ".github/workflows/release.yml", (text) => text.includes("npm run test:repository")],
+  ["release workflow-owned observer gh", ".github/workflows/release.yml", hasWorkflowOwnedObserverGhSelection],
   ["ci no publish", ".github/workflows/ci.yml", (text) => !text.includes("npm publish")],
   ["publish canonical main", ".github/workflows/publish.yml", (text) => text.includes("canonical-main") && text.includes("tag-source") && text.includes("TAG_NAME: ${{ inputs.tag }}") && text.includes("refs/remotes/origin/main") && text.includes("git fetch origin main")],
   ["publish staging approval", ".github/workflows/publish.yml", (text) => text.includes("          - staging") && text.includes("          - next") && text.includes("          - latest") && text.includes("          - staging-only") && text.includes("          - next-promotion-approved") && text.includes("          - ga-approved") && text.includes("approval_scope:") && text.includes('--approval-scope "$APPROVAL_SCOPE"')],
@@ -345,8 +415,11 @@ const requirements = [
 ]
 
 async function main() {
-  const contents = new Map(await Promise.all(workflowPaths.map(async (path) => [path, await readFile(path, "utf8")])))
-  const [
+  const inputs = Object.fromEntries(await Promise.all(
+    RELEASE_WORKFLOW_CHECKER_INPUTS.map(async ({ name, path }) => [name, await readFile(path, "utf8")]),
+  ))
+  const contents = new Map(workflowPaths.map((path) => [path, inputs[releaseWorkflowCheckerInputName(path)]]))
+  const {
     contextActionMetadata,
     contextActionEntrypoint,
     contextActionBridge,
@@ -362,23 +435,11 @@ async function main() {
     fallbackActionEntrypoint,
     finalizerActionMetadata,
     finalizerActionEntrypoint,
-  ] = await Promise.all([
-    readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic/oidc-capability-bridge.cjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic/oidc-capability-bridge-summary.cjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-selftest/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-selftest/index.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-selftest/selftest.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/index.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-native-selftest/native-selftest.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-selftest/native.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-fallback/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-fallback/index.mjs", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-finalizer/action.yml", "utf8"),
-    readFile(".github/actions/project-finish-context-diagnostic-finalizer/index.mjs", "utf8"),
-  ])
+    observerGhProvisioner,
+    observerGhSelector,
+    observerGhPackageRecord,
+    observerGhTool,
+  } = inputs
   const failures = []
   for (const [name, path, predicate] of requirements) {
     const text = contents.get(path)
@@ -446,6 +507,9 @@ async function main() {
     || !nativeSelftestCore.includes('nativeCaseFor("capability")')
   ) {
     failures.push("project finish context diagnostic native OIDC selftest")
+  }
+  if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector, observerGhPackageRecord, observerGhTool)) {
+    failures.push("workflow-owned observer gh provisioner")
   }
   if (failures.length > 0) {
     throw new Error(`Release workflow policy failed: ${failures.join(", ")}`)

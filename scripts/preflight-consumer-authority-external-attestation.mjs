@@ -2,7 +2,7 @@ import { realpathSync } from "node:fs"
 import { dirname } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
-import { readBeta23AcceptanceManifest } from "./consumer-authority-beta23-acceptance-schema.mjs"
+import { readBeta33AcceptanceManifest } from "./consumer-authority-beta33-acceptance-schema.mjs"
 import { runExternalAttestationGrammarPreflight } from "./consumer-authority-external-attestation-command-plan.mjs"
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -10,18 +10,23 @@ const PLACEHOLDER_SHA = "0".repeat(40)
 
 function main() {
   const argumentsList = process.argv.slice(2)
-  if (argumentsList.length > 1 || (argumentsList.length === 1 && argumentsList[0] !== "--json")) {
-    process.stderr.write("Usage: node preflight-consumer-authority-external-attestation.mjs [--json]\n")
+  if (argumentsList.length !== 3 || argumentsList[0] !== "--json" || argumentsList[1] !== "--observer-gh" || !isAbsoluteToolPath(argumentsList[2])) {
+    process.stderr.write("Usage: node preflight-consumer-authority-external-attestation.mjs --json --observer-gh /absolute/gh\n")
     process.exitCode = 1
     return
   }
-  const manifest = readBeta23AcceptanceManifest(packageRoot)
+  const manifest = readBeta33AcceptanceManifest(packageRoot)
   const result = runExternalAttestationGrammarPreflight(
     manifest.externalAttestationCommandPlan,
     grammarOnlyTopology(manifest),
+    { ghPath: argumentsList[2] },
   )
   process.stdout.write(`${JSON.stringify(result)}\n`)
   process.exitCode = result.state === "ready" ? 0 : 1
+}
+
+function isAbsoluteToolPath(value) {
+  return typeof value === "string" && value.startsWith("/") && value.length <= 4096 && !value.includes("\0")
 }
 
 function grammarOnlyTopology(manifest) {
@@ -57,7 +62,7 @@ if (isDirectInvocation()) {
       credential: "absent",
       exit: "execution-failed",
       networkAccess: false,
-      schemaVersion: "consumer-authority-external-attestation-preflight.1",
+      schemaVersion: "consumer-authority-external-attestation-preflight.2",
       state: "blocked",
     })}\n`)
     process.exitCode = 1

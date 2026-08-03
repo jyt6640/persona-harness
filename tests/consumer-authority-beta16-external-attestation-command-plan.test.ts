@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process"
-import { mkdtempSync, rmSync, symlinkSync } from "node:fs"
+import { chmodSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -220,39 +220,47 @@ describe("consumer authority beta.16 external attestation command plan", () => {
   })
 
   it("preflights the canonical grammar without a token, artifact request, or raw output reflection", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-external-attestation-plan-tool-test-"))
     const tokenMarker = "ghp_external_attestation_preflight_token_marker"
     let calls = 0
-    const result = runExternalAttestationGrammarPreflight(canonicalPlan, canonicalTopology, {
-      execute: (command, argumentsList, options) => {
-        calls += 1
-        expect(command).toBe("gh")
-        expect(argumentsList).toContain("--repo")
-        expect(argumentsList).toContain("--signer-workflow")
-        expect(options.env.GH_TOKEN).toBeUndefined()
-        expect(options.env.GITHUB_TOKEN).toBeUndefined()
-        expect(options.env.PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN).toBeUndefined()
-        expect(Object.values(options.env).join("\n")).not.toContain(tokenMarker)
-        return {
-          status: 1,
-          stderr: "Error: bundle content could not be parsed: proto invalid\n",
-          stdout: tokenMarker,
-        }
-      },
-      ghPath: "gh",
-    })
+    try {
+      const ghPath = join(root, "gh")
+      writeGhFixture(ghPath)
+      const result = runExternalAttestationGrammarPreflight(canonicalPlan, canonicalTopology, {
+        execute: (command, argumentsList, options) => {
+          calls += 1
+          expect(command).toBe(ghPath)
+          if (argumentsList.join("\0") === "--version") {
+            return { status: 0, stderr: "", stdout: "gh version 2.96.0 (fixture)\n" }
+          }
+          expect(argumentsList).toContain("--repo")
+          expect(argumentsList).toContain("--signer-workflow")
+          expect(argumentsList.at(-1)).toBe("--help")
+          expect(options.env.GH_TOKEN).toBeUndefined()
+          expect(options.env.GITHUB_TOKEN).toBeUndefined()
+          expect(options.env.PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN).toBeUndefined()
+          expect(options.env.PATH).toBeUndefined()
+          expect(Object.values(options.env).join("\n")).not.toContain(tokenMarker)
+          return { status: 0, stderr: "", stdout: tokenMarker }
+        },
+        ghPath,
+      })
 
-    expect(calls).toBe(1)
-    expect(result).toEqual({
-      artifactAccess: false,
-      authorityEligible: false,
-      code: "gh-command-parser-accepted",
-      credential: "absent",
-      exit: "verification-failed",
-      networkAccess: false,
-      schemaVersion: "consumer-authority-external-attestation-preflight.1",
-      state: "ready",
-    })
-    expect(JSON.stringify(result)).not.toContain(tokenMarker)
+      expect(calls).toBe(2)
+      expect(result).toEqual({
+        artifactAccess: false,
+        authorityEligible: false,
+        code: "gh-command-parser-accepted",
+        credential: "absent",
+        exit: "parser-accepted",
+        networkAccess: false,
+        schemaVersion: "consumer-authority-external-attestation-preflight.2",
+        state: "ready",
+      })
+      expect(JSON.stringify(result)).not.toContain(tokenMarker)
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
   })
 
   it("classifies gh exits with bounded states", () => {
@@ -266,9 +274,11 @@ describe("consumer authority beta.16 external attestation command plan", () => {
     const root = mkdtempSync(join(tmpdir(), "persona-external-attestation-plan-test-"))
     const tokenMarker = "ghp_external_attestation_cli_token_marker"
     try {
+      const ghPath = join(root, "gh")
+      writeGhFixture(ghPath)
       const result = spawnSync(
         process.execPath,
-        ["scripts/preflight-consumer-authority-external-attestation.mjs", "--json"],
+        ["scripts/preflight-consumer-authority-external-attestation.mjs", "--json", "--observer-gh", ghPath],
         {
           cwd: process.cwd(),
           encoding: "utf8",
@@ -276,7 +286,6 @@ describe("consumer authority beta.16 external attestation command plan", () => {
             GH_TOKEN: tokenMarker,
             GITHUB_TOKEN: tokenMarker,
             HOME: root,
-            PATH: process.env.PATH ?? "",
           },
           maxBuffer: 64 * 1024,
         },
@@ -288,9 +297,9 @@ describe("consumer authority beta.16 external attestation command plan", () => {
         authorityEligible: false,
         code: "gh-command-parser-accepted",
         credential: "absent",
-        exit: "verification-failed",
+        exit: "parser-accepted",
         networkAccess: false,
-        schemaVersion: "consumer-authority-external-attestation-preflight.1",
+        schemaVersion: "consumer-authority-external-attestation-preflight.2",
         state: "ready",
       })
       expect(output).not.toContain(tokenMarker)
@@ -305,15 +314,16 @@ describe("consumer authority beta.16 external attestation command plan", () => {
     const alias = join(root, "package-alias")
     try {
       symlinkSync(process.cwd(), alias, "dir")
+      const ghPath = join(root, "gh")
+      writeGhFixture(ghPath)
       const result = spawnSync(
         process.execPath,
-        [join(alias, "scripts", "preflight-consumer-authority-external-attestation.mjs"), "--json"],
+        [join(alias, "scripts", "preflight-consumer-authority-external-attestation.mjs"), "--json", "--observer-gh", ghPath],
         {
           cwd: root,
           encoding: "utf8",
           env: {
             HOME: root,
-            PATH: process.env.PATH ?? "",
           },
           maxBuffer: 64 * 1024,
         },
@@ -349,4 +359,22 @@ function record(value: unknown): Record<string, unknown> {
     throw new TypeError("expected record")
   }
   return value as Record<string, unknown>
+}
+
+function writeGhFixture(path: string): void {
+  writeFileSync(path, [
+    `#!${process.execPath}`,
+    "if (process.argv[2] === '--version') {",
+    "  process.stdout.write('gh version 2.96.0 (fixture)\\n')",
+    "  process.exit(0)",
+    "}",
+    "const argumentsList = process.argv.slice(2)",
+    "if (argumentsList.at(-1) !== '--help' || argumentsList.includes('--unknown')) process.exit(1)",
+    "for (let index = 0; index < argumentsList.length; index += 1) {",
+    "  if (argumentsList[index] === '--signer-digest' && argumentsList[index + 1] === '--help') process.exit(1)",
+    "}",
+    "process.exit(0)",
+    "",
+  ].join("\n"))
+  chmodSync(path, 0o700)
 }

@@ -1,10 +1,10 @@
 import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 
+import { createAuthorityFetchChildEnvironment as createBoundedAuthorityFetchChildEnvironment } from "../../scripts/authority-fetch-child-environment.mjs"
 import type { AuthorityArtifact } from "./authority-artifact-store.js"
 import type { AuthorityEnrollment } from "./authority-enrollment.js"
 import {
-  AUTHORITY_GITHUB_TOKEN_ENV,
   isAuthorityGithubToken,
 } from "./authority-github-token.js"
 import { captureGitIdentity, captureWorkspaceIdentity } from "./ci-reverification-identity.js"
@@ -35,14 +35,12 @@ export function fetchGithubAuthorityArtifact(
   if (workspace.status !== "available") return { kind: "blocked" }
   const git = captureGitIdentity(projectDir, workspace.value)
   if (!git.available || git.head === undefined) return { kind: "blocked" }
+  const childEnvironment = createAuthorityFetchChildEnvironment(githubToken)
+  if (childEnvironment === undefined) return { kind: "blocked" }
   const result = spawnSync(process.execPath, [WORKER_PATH], {
     cwd: workspace.value.realpath,
     encoding: "utf8",
-    env: {
-      [AUTHORITY_GITHUB_TOKEN_ENV]: githubToken,
-      LANG: "C",
-      LC_ALL: "C",
-    },
+    env: childEnvironment,
     input: JSON.stringify({
       callerWorkflowPath: enrollment.callerWorkflowPath,
       repositoryId: enrollment.repositoryId,
@@ -97,6 +95,14 @@ export function parseFetchedArtifact(value: string): {
   } catch {
     return undefined
   }
+}
+
+export function createAuthorityFetchChildEnvironment(
+  githubToken: string,
+  platform = process.platform,
+  darwinTextEncoding = process.env["__CF_USER_TEXT_ENCODING"],
+): Readonly<Record<string, string>> | undefined {
+  return createBoundedAuthorityFetchChildEnvironment(githubToken, platform, darwinTextEncoding)
 }
 
 export function parseGithubAuthorityFetchDiagnostic(value: string): GithubAuthorityFetchDiagnostic | undefined {

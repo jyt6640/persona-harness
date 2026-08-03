@@ -11,19 +11,37 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
+import {
+  assertCleanPackageSourceFixtureClosure,
+  cleanPackageSourceFixtureImportClosure,
+  CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS,
+} from "./fixtures/clean-package-source-fixture-closure.mjs"
+
 const roots: string[] = []
+const fixtureScriptPaths = CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { force: true, recursive: true })
 })
 
 describe("clean package Git environment", () => {
+  it("declares the exact verifier import closure before running the Git boundary", () => {
+    expect(fixtureScriptPaths).toEqual(cleanPackageSourceFixtureImportClosure(process.cwd()))
+  })
+
+  it("rejects a source fixture that omits a verifier dependency before execution", () => {
+    const incompleteFixturePaths = fixtureScriptPaths.filter((path) => path !== "scripts/clean-package-exercise-phase.mjs")
+
+    expect(() => assertCleanPackageSourceFixtureClosure(process.cwd(), incompleteFixturePaths)).toThrow("clean-package-source-fixture-closure")
+  })
+
   it("materializes a detached source checkout without inherited Git configuration", () => {
     const root = createSourceRoot(true)
     const result = runGitBoundary(root)
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe("")
+    expect(result.stderr).not.toContain("ERR_MODULE_NOT_FOUND")
     expect(JSON.parse(result.stdout)).toMatchObject({
       candidateRef: "refs/heads/clean-package-source",
       source: "detached-source",
@@ -37,6 +55,7 @@ describe("clean package Git environment", () => {
     expect(result.status).toBe(1)
     expect(result.stdout).toBe("")
     expect(result.stderr).toBe("clean-package-git\n")
+    expect(result.stderr).not.toContain("ERR_MODULE_NOT_FOUND")
   })
 
   it("fails a detached source without the required origin main binding", () => {
@@ -47,6 +66,7 @@ describe("clean package Git environment", () => {
     expect(result.status).toBe(1)
     expect(result.stdout).toBe("")
     expect(result.stderr).toBe("clean-package-git\n")
+    expect(result.stderr).not.toContain("ERR_MODULE_NOT_FOUND")
   })
 })
 
@@ -54,9 +74,10 @@ function createSourceRoot(withGit: boolean): string {
   const root = track(mkdtempSync(join(tmpdir(), "persona-clean-package-git-")))
   const scripts = join(root, "scripts")
   mkdirSync(scripts)
-  copyFileSync(join(process.cwd(), "scripts", "clean-package-boundary-core.mjs"), join(scripts, "clean-package-boundary-core.mjs"))
-  copyFileSync(join(process.cwd(), "scripts", "package-content-identity.mjs"), join(scripts, "package-content-identity.mjs"))
-  copyFileSync(join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"), join(scripts, "verify-clean-package-boundary.mjs"))
+  assertCleanPackageSourceFixtureClosure(process.cwd(), fixtureScriptPaths)
+  for (const scriptPath of fixtureScriptPaths) {
+    copyFileSync(join(process.cwd(), scriptPath), join(root, scriptPath))
+  }
   if (!withGit) return root
 
   writeFileSync(join(root, "README.md"), "# clean package Git fixture\n")

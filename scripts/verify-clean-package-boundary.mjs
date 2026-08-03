@@ -32,6 +32,11 @@ import {
   assertSourcePackageIdentity,
   parseBundleHeads,
 } from "./clean-package-boundary-core.mjs"
+import {
+  PackageExercisePhaseEnvelopeError,
+  requirePackageExerciseContractSuccess,
+} from "./clean-package-exercise-phase.mjs"
+import { AUTHORITY_DISCOVERY_EXERCISE_MARKER } from "./consumer-authority-authority-discovery-exercise.mjs"
 import { canonicalizePackageTarball } from "./package-content-identity.mjs"
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -69,7 +74,7 @@ try {
     assertCheckoutIntegrity(checkout, source, npm, git)
     assertCliVersion(checkout, join(checkout, "dist", "cli", "index.js"), source.identity.version, npm, "clean-package-built-cli")
     const contract = input.exerciseContract
-      ? exerciseExactTarContract(checkout, packed, npm)
+      ? exerciseExactTarContract(checkout, packed, npm, resolveObserverGhPath(input.observerGh))
       : undefined
 
     const consumer = installFreshTarball(packed.tarballPath, source.identity, npm)
@@ -128,6 +133,7 @@ function parseInput(args) {
   const remaining = [...args]
   let exerciseContract = false
   let gitBoundaryOnly = false
+  let observerGh
   if (remaining[0] === "--exercise-contract") {
     exerciseContract = true
     remaining.shift()
@@ -136,7 +142,14 @@ function parseInput(args) {
     gitBoundaryOnly = true
     remaining.shift()
   }
-  if (remaining.length === 0) return { exerciseContract, gitBoundaryOnly, mode: "source" }
+  if (remaining[0] === "--observer-gh") {
+    if (typeof remaining[1] !== "string" || !remaining[1].startsWith("/") || remaining[1].includes("\0")) {
+      throw new CleanPackageBoundaryError("clean-package-arguments")
+    }
+    observerGh = remaining[1]
+    remaining.splice(0, 2)
+  }
+  if (remaining.length === 0) return { exerciseContract, gitBoundaryOnly, mode: "source", observerGh }
   if (gitBoundaryOnly) throw new CleanPackageBoundaryError("clean-package-arguments")
   if (
     remaining.length !== 8
@@ -156,6 +169,7 @@ function parseInput(args) {
     gitBoundaryOnly,
     head: remaining[5],
     mode: "bundle",
+    observerGh,
   }
 }
 
@@ -332,28 +346,35 @@ function packCheckout(root, source, npm, label) {
   return resolvePackResult(packed.stdout, packDirectory, source.identity)
 }
 
-function exerciseExactTarContract(root, packed, npm) {
+function exerciseExactTarContract(root, packed, npm, observerGh) {
   const sourceResult = run(
     process.execPath,
     [
       join(root, "scripts", "test-installed-package-contract.mjs"),
       "--package-exercise",
+      "--observer-gh",
+      observerGh,
       "--source-cli",
       join(root, "dist", "cli", "index.js"),
     ],
     root,
     npm,
   )
-  requireSuccess(sourceResult, "clean-package-source-contract")
-  if (!sourceResult.stdout.includes("source-cli-package-exercise-contract: PASS")) {
-    throw new CleanPackageBoundaryError("clean-package-source-contract")
-  }
+  requireContractSuccess(
+    sourceResult,
+    "source-cli-package-exercise-contract: PASS",
+    "source-cli-package-exercise-phase",
+    "source-built",
+    "clean-package-source-contract",
+  )
 
   const installedResult = run(
     process.execPath,
     [
       join(root, "scripts", "test-installed-package-contract.mjs"),
       "--package-exercise",
+      "--observer-gh",
+      observerGh,
       "--tarball",
       packed.tarballPath,
       "--tarball-sha256",
@@ -364,15 +385,42 @@ function exerciseExactTarContract(root, packed, npm) {
     root,
     npm,
   )
-  requireSuccess(installedResult, "clean-package-installed-contract")
-  if (!installedResult.stdout.includes("installed-package-exercise-contract: PASS")) {
-    throw new CleanPackageBoundaryError("clean-package-installed-contract")
-  }
+  requireContractSuccess(
+    installedResult,
+    "installed-package-exercise-contract: PASS",
+    "installed-package-exercise-phase",
+    "fresh-tar",
+    "clean-package-installed-contract",
+  )
   return {
     installed: "fresh-tarball-contract-pass",
     source: "built-cli-contract-pass",
     exactTarballSha256: packed.facts.tarballSha256,
     packageContentIdentity: packed.facts.packageContentIdentity.identitySha256,
+  }
+}
+
+function resolveObserverGhPath(value) {
+  if (typeof value === "string" && isAbsolute(value) && !value.includes("\0") && value.length <= 4_096) return value
+  throw new CleanPackageBoundaryError("clean-package-observer-gh-required")
+}
+
+function requireContractSuccess(result, successMarker, phaseMarker, surface, fallbackCode) {
+  try {
+    requirePackageExerciseContractSuccess({
+      authorityDiscoveryMarker: AUTHORITY_DISCOVERY_EXERCISE_MARKER,
+      fallbackCode,
+      marker: phaseMarker,
+      output: result.stdout,
+      status: result.status,
+      successMarker,
+      surface,
+    })
+  } catch (error) {
+    if (error instanceof PackageExercisePhaseEnvelopeError) {
+      throw new CleanPackageBoundaryError(error.code)
+    }
+    throw error
   }
 }
 

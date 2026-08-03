@@ -1,11 +1,16 @@
 import { spawnSync } from "node:child_process"
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { mkdtempSync, mkdirSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 
+import {
+  assessObserverGhTool,
+  createObserverGhNoTokenEnvironment,
+} from "./consumer-authority-observer-gh-tool.mjs"
+
 const COMMAND_PLAN_SCHEMA_VERSION = "consumer-authority-external-attestation-command-plan.1"
-const PREFLIGHT_SCHEMA_VERSION = "consumer-authority-external-attestation-preflight.1"
+const PREFLIGHT_SCHEMA_VERSION = "consumer-authority-external-attestation-preflight.2"
 const FIXTURE_REPOSITORY = "jyt6640/persona-harness-attestation-claim-fixture"
 const FIXTURE_REPOSITORY_ID = 1304576182
 const REUSABLE_REPOSITORY = "jyt6640/persona-harness"
@@ -16,7 +21,8 @@ const OIDC_ISSUER = "https://token.actions.githubusercontent.com"
 const PREDICATE_TYPE = "https://github.com/jyt6640/persona-harness/attestations/project-finish-attestation.1"
 const SHA = /^[0-9a-f]{40}$/u
 const MAX_OUTPUT_BYTES = 64 * 1024
-const PREFLIGHT_TIMEOUT_MS = 15_000
+const PARSER_PREFLIGHT_TIMEOUT_MS = 5_000
+const PARSER_PLACEHOLDER_ROOT = "/persona-harness-observer-parser-placeholder"
 
 const EXPECTED_PLAN = Object.freeze({
   certificateOidcIssuer: OIDC_ISSUER,
@@ -106,6 +112,16 @@ export function renderExternalAttestationVerifyArguments(plan, topology, inputs)
   ]
 }
 
+export function renderExternalAttestationParserHelpArguments(plan, topology) {
+  return [
+    ...renderExternalAttestationVerifyArguments(plan, topology, {
+      bundlePath: join(PARSER_PLACEHOLDER_ROOT, "bundle-placeholder"),
+      subjectPath: join(PARSER_PLACEHOLDER_ROOT, "subject-placeholder"),
+    }),
+    "--help",
+  ]
+}
+
 export function classifyGhAttestationExit(status) {
   if (status === 0) return "verified"
   if (status === 1) return "verification-failed"
@@ -117,24 +133,21 @@ export function runExternalAttestationGrammarPreflight(plan, topology, options =
   parseExternalAttestationCommandPlan(plan)
   parseTopology(topology)
   const execute = typeof options.execute === "function" ? options.execute : spawnSync
-  const ghPath = typeof options.ghPath === "string" && options.ghPath.length > 0 ? options.ghPath : "gh"
+  const ghPath = options.ghPath
   const root = mkdtempSync(join(tmpdir(), "persona-external-attestation-preflight-"))
   try {
     const home = join(root, "home")
     mkdirSync(home, { recursive: true, mode: 0o700 })
-    const bundlePath = join(root, "invalid-bundle.json")
-    writeFileSync(bundlePath, "{\"format\":\"preflight\"}\n", { mode: 0o600 })
-    const argumentsList = renderExternalAttestationVerifyArguments(plan, topology, {
-      bundlePath,
-      subjectPath: "/dev/null",
-    })
+    const tool = assessObserverGhTool(ghPath, { execute, stateRoot: home })
+    if (tool.state !== "ready") return blocked(tool.code, "execution-failed")
+    const argumentsList = renderExternalAttestationParserHelpArguments(plan, topology)
     const result = execute(ghPath, argumentsList, {
       encoding: "utf8",
-      env: noTokenEnvironment(home),
+      env: createObserverGhNoTokenEnvironment(home),
       maxBuffer: MAX_OUTPUT_BYTES,
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
-      timeout: PREFLIGHT_TIMEOUT_MS,
+      timeout: PARSER_PREFLIGHT_TIMEOUT_MS,
     })
     return classifyPreflightResult(result)
   } catch (error) {
@@ -182,40 +195,22 @@ function parseInputs(value) {
 }
 
 function classifyPreflightResult(result) {
-  const exit = classifyGhAttestationExit(result?.status)
-  if (result?.error !== undefined) return blocked("gh-command-unavailable", exit)
-  if (result?.status === 1 && isExpectedInvalidBundleDiagnostic(result?.stderr)) {
+  if (isTimeoutError(result?.error)) return blocked("gh-command-parser-timeout", "execution-failed")
+  if (result?.error !== undefined) return blocked("gh-command-unavailable", "execution-failed")
+  if (result?.status === 0) {
     return {
       artifactAccess: false,
       authorityEligible: false,
       code: "gh-command-parser-accepted",
       credential: "absent",
-      exit,
+      exit: "parser-accepted",
       networkAccess: false,
       schemaVersion: PREFLIGHT_SCHEMA_VERSION,
       state: "ready",
     }
   }
-  if (result?.status === 4) return blocked("gh-authentication-required", exit)
-  if (result?.status === 1) return blocked("gh-command-parser-rejected", exit)
-  return blocked("gh-command-unavailable", exit)
-}
-
-function noTokenEnvironment(home) {
-  const path = process.env.PATH
-  if (!isSafeLocalPath(home) || !isSafePathValue(path)) fail()
-  return {
-    GH_CONFIG_DIR: join(home, "gh-config"),
-    GH_PROMPT_DISABLED: "1",
-    HOME: home,
-    LANG: "C",
-    LC_ALL: "C",
-    NO_COLOR: "1",
-    PATH: path,
-    XDG_CACHE_HOME: join(home, "cache"),
-    XDG_CONFIG_HOME: join(home, "config"),
-    XDG_STATE_HOME: join(home, "state"),
-  }
+  if (result?.status === 1) return blocked("gh-command-parser-rejected", "execution-failed")
+  return blocked("gh-command-unavailable", "execution-failed")
 }
 
 function blocked(code, exit) {
@@ -231,8 +226,11 @@ function blocked(code, exit) {
   }
 }
 
-function isExpectedInvalidBundleDiagnostic(value) {
-  return typeof value === "string" && /bundle content could not be parsed/u.test(value)
+function isTimeoutError(error) {
+  return error !== null
+    && typeof error === "object"
+    && "code" in error
+    && error.code === "ETIMEDOUT"
 }
 
 function isSha(value) {

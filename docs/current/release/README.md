@@ -85,14 +85,24 @@ the observer had not initialized the same consumer workflow state.
 crypto and identity bindings passed only after the leaf certificate window
 expired, so authenticated fetch, Finish consumption, and replay were not run.
 `0.8.0-beta.22` is non-reusable final-observer evidence: host `gh`/XDG state
-created an untracked `.local` entry after the final commit. `0.8.0-beta.23` is
-the next strict-prerelease procedure-only source candidate;
-it has no source-level claim of a tag, publish, channel movement, GitHub
-release, or original signed consumer artifact. Beta23 records the governed v3
-future final-observer procedure without changing product fetch, authority,
-Finish, transport, workflow, or CI behavior.
+created an untracked `.local` entry after the final commit. `0.8.0-beta.23`
+contradicted its raw-empty cleanliness predicate. `0.8.0-beta.24` stopped at
+the supplied-bundle source contract because it depended on ambient `gh` lookup
+and rejected Linux's runtime-owned `UV_USE_IO_URING=0` child marker.
+`0.8.0-beta.26` then rejected the normal Ubuntu `gh` package record before tool
+assessment because its basename-only selector counted the bash-completion
+sibling. Beta.30 then classified that known, never-executed completion as an
+ambiguous executor when the runner mode was executable. Beta.31 retained the
+known-completion selector boundary but protected Verify exposed stale current-
+version and incomplete source/release fixture import closure before the package
+contract could run. Beta.32 then used a live invalid-bundle attestation
+preflight that could initialize network/Sigstore before parser rejection. Both
+are terminal and non-reusable. The next strict-prerelease procedure-only source
+candidate is `0.8.0-beta.33`. Beta.33 has no
+source-level claim of a tag, publish, channel movement, GitHub release, or
+original signed consumer artifact.
 
-The beta23 release contract requires package-visible observer credential
+The beta33 release contract retains package-visible observer credential
 preflight, separate caller/reusable signer binding, and a complete public
 Java/Spring readiness route whose default Finish is blocked only by
 `trusted-authority-required` before a fixture may be authorized. Source-bound
@@ -106,10 +116,45 @@ No lifecycle reinitialization, consumer switch, or source reset is permitted
 after fetch. It also requires `env -i`, explicit absolute `gh`/Git/Node/npm
 paths, and fifteen external host-state roots outside the consumer realpath.
 At baseline, source-bound preparation, credential handoff, observer child, and
-immediately before push, CWD/Git top-level/HEAD/source identity plus empty
-porcelain and `git clean -ndx` must remain unchanged. `.local`, `.config`, and
-`.cache` are never allowlisted; slow preparation completes before the one push,
-and the certificate validity deadline is non-relaxable.
+immediately before push, CWD/Git top-level/HEAD/source identity must remain
+unchanged and the NUL-safe status plus normalized `git clean -ndx` output must
+match the V4 stage-scoped residue projection. `.local`, `.config`, and `.cache`
+are never allowlisted. The observer `gh` is selected only after bounded dpkg
+ownership/status/architecture validation and byte-strict package-record parsing;
+the policy primary `/usr/bin/gh` must pass no-follow lstat before private copy,
+while the documented `/usr/share/bash-completion/completions/gh` sibling is
+optional and, when present, must be regular and non-symlink regardless of mode.
+It is never selected, copied, or executed. Any other present secondary
+basename-`gh` record must be regular, non-symlink, and non-executable; an alias,
+executable, missing, or unsafe secondary blocks. It is
+never an ambient PATH lookup or literal runner path. Linux accepts
+only `UV_USE_IO_URING=0` in the fixed authority child environment. Slow
+preparation completes before the one push, and the certificate validity deadline
+is non-relaxable. The selector emits only a fixed nonreflective lifecycle stage
+for environment, package-list, package-record, source/private assessment,
+private reservation/copy, or output handoff; package-record blocks add only an
+allowlisted shape, and unknown failures are bounded as `selector-internal`
+without rendering runner data. Beta.33 additionally proves the selected private
+copy through a fixed-placeholder `gh attestation verify <plan> --help` parser
+route under the same token-free state environment, before any artifact or
+online verification action.
+
+Its authoritative bundle exercise also binds the package-visible
+`clean-package-exercise-phase.1` source-built and fresh-tar vocabularies from
+`consumer-authority-beta33-acceptance.json`. The clean-bundle parent requires a
+complete ordered ready transcript and exact PASS marker for the matching
+surface. Marker-only, malformed, out-of-order, foreign, or
+success-after-blocked transcripts fail as a bounded phase-envelope condition.
+Records contain only the schema version, surface, phase, state, and fixed
+bounded code, never raw child output, paths, credentials, URLs, or artifact
+content.
+
+The current package version is bound only when `package.json`, `package-lock`,
+and the current versioned acceptance manifest agree. Historical beta records
+remain strict historical records and cannot define the current package. The
+authoritative-bundle verifier is source/Git-rooted; fresh installed package
+contracts load their observer stage and package-record modules only from the
+exact tarball and never package or invoke that source verifier.
 
 The preflights use a host-derived credential only inside their fixed read-only
 GitHub Actions worker; they do not pass that credential to `ph`, npm, archive
