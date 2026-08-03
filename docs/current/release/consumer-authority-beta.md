@@ -33,8 +33,10 @@ record. Beta.30 then classified the documented completion as a competing
 executor because of its runner mode. `0.8.0-beta.31` is terminal,
 non-reusable protected-Verify evidence: its known-completion selector policy
 was sound, but its generic package-version expectation and source/release
-fixture import closures were incomplete. The active `0.8.0-beta.32`
-package-contract candidate has no package, tag, channel movement, GitHub
+fixture import closures were incomplete. `0.8.0-beta.32` then reached the
+authoritative source contract but used a live invalid-bundle `gh attestation
+verify` preflight that could enter network and Sigstore initialization before
+parser rejection. The active `0.8.0-beta.33` package-contract candidate has no package, tag, channel movement, GitHub
 release, or signed consumer-project artifact at source preparation time.
 
 The prior beta candidates are retained as staging-only NO-GO or
@@ -83,11 +85,13 @@ allowlisted. Linux may add only `UV_USE_IO_URING=0` to the fixed authority-fetch
 child environment. No lifecycle or source reinitialization, consumer switch, or
 state reset is permitted after fetch.
 
-The beta32 selector also runs its bounded direct `gh --version` assessment with
-an explicit token-free state environment rooted in validated `RUNNER_TEMP`.
-It never inherits a package-contract checkout as `HOME` or an XDG state root,
-so normal tool validation cannot leave `.local`, `.config`, or `.cache` behind
-in a source-built or fresh installed consumer.
+The beta33 selector runs its bounded direct `gh --version` assessment and the
+same private copy runs `gh attestation verify <placeholder> <exact-plan> --help`
+with the same token-free state environment. That parser-only command never
+opens an artifact or network client. Neither invocation inherits a
+package-contract checkout as `HOME` or an XDG state root, so normal tool
+validation cannot leave `.local`, `.config`, or `.cache` behind in a source-built
+or fresh installed consumer.
 
 ## Fixed Sequence
 
@@ -192,17 +196,17 @@ authority artifact or Finish PASS.
 The external-attested fixture must pin the exact current package revision. The
 verifier binds the signed receipt `phVersion` to its installed CLI version, so
 an original artifact from `0.8.0-beta.1` through `0.8.0-beta.30` is a bounded
-binding mismatch or historical-evidence block for `0.8.0-beta.32`; only a future
+binding mismatch or historical-evidence block for `0.8.0-beta.33`; only a future
 original signed artifact for the current immutable version can exercise
 enrollment, fetch, explicit consumption, and replay rejection. The complete
 source/packed acceptance contract is the structured
-[`consumer-authority-beta32-acceptance.json`](consumer-authority-beta32-acceptance.json)
+[`consumer-authority-beta33-acceptance.json`](consumer-authority-beta33-acceptance.json)
 record; it names the exact public Java/Spring readiness route, the separate
 caller and reusable certificate identities, the independent observer credential
 and no-token command/transport plan preflights, the immutable same-consumer
 observer sequence, and the one hosted residual.
 
-The beta32 package boundary also binds current package metadata, lock metadata,
+The beta33 package boundary also binds current package metadata, lock metadata,
 and its current acceptance record together. Its authoritative-bundle verifier
 is deliberately source/Git-rooted; fresh installed contracts load the observer
 stage and package-record modules only from the exact tarball, with no `src`,

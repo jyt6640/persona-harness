@@ -10,7 +10,7 @@ import {
   checkReleaseState,
   checkTagSource,
 } from "../scripts/release-workflow-policy.mjs"
-import { readBeta32AcceptanceManifest } from "../scripts/consumer-authority-beta32-acceptance-schema.mjs"
+import { readBeta33AcceptanceManifest } from "../scripts/consumer-authority-beta33-acceptance-schema.mjs"
 
 const MAIN_SHA = "a".repeat(40)
 const TAG_SHA = "b".repeat(40)
@@ -87,9 +87,11 @@ describe("release workflow policy", () => {
     for (const workflowName of ["ci.yml", "publish.yml", "release.yml"]) {
       const workflow = readFileSync(join(repositoryRoot, ".github", "workflows", workflowName), "utf8")
       expect(workflow).toContain("- name: Select observer GitHub CLI")
+      expect(workflow).toContain("- name: Preflight selected observer GitHub CLI")
       expect(workflow).toContain("id: observer-gh")
       expect(workflow).toContain("run: node .github/scripts/prepare-observer-gh-tool.mjs")
       expect(workflow).toContain("PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}")
+      expect(workflow).toContain('run: node scripts/preflight-consumer-authority-external-attestation.mjs --json --observer-gh "$PERSONA_HARNESS_OBSERVER_GH"')
       expect(workflow).not.toContain("--observer-gh /usr/bin/gh")
       expect(workflow).not.toContain("command -v gh")
     }
@@ -105,8 +107,10 @@ describe("release workflow policy", () => {
     expect(selector).toContain("readInstalledGhPackageRecord()")
     expect(selector).toContain("selectInstalledObserverGhCandidate")
     expect(selector).toContain("assessObserverGhTool")
-    expect(selector).toContain("assessTool(candidate, { stateRoot: runnerTemp })")
+    expect(selector).toContain("provisionPrivateObserverGhCopy(candidate")
+    expect(selector).toContain("assessTool(sourcePath, { stateRoot: runnerTemp })")
     expect(selector).toContain("assessTool(output, { stateRoot: runnerTemp })")
+    expect(selector).toContain("copyFile(sourcePath, output, constants.COPYFILE_EXCL)")
     expect(selector).toContain("selectorStage")
     expect(selector).toContain("packageRecordShape")
     expect(selector).toContain("RUNNER_TEMP")
@@ -178,7 +182,7 @@ describe("release workflow policy", () => {
 
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
-    const acceptance = readBeta32AcceptanceManifest(repositoryRoot)
+    const acceptance = readBeta33AcceptanceManifest(repositoryRoot)
 
     expect(packageVersion).toBe(acceptance.package.version)
     expect(readPackageVersion(join(repositoryRoot, "package-lock.json"))).toBe(acceptance.package.version)

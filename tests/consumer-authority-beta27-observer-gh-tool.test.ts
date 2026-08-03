@@ -257,6 +257,7 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
     expect(observerGhStageCodeForPreflight({ code: "gh-command-unavailable", state: "blocked" })).toBe("observer-gh-tool-unavailable")
     expect(observerGhStageCodeForPreflight({ code: "gh-command-version-unsupported", state: "blocked" })).toBe("observer-gh-tool-version-unsupported")
     expect(observerGhStageCodeForPreflight({ code: "gh-command-parser-rejected", state: "blocked" })).toBe("observer-gh-parser-rejected")
+    expect(observerGhStageCodeForPreflight({ code: "gh-command-parser-timeout", state: "blocked" })).toBe("observer-gh-parser-timeout")
     expect(observerGhStageCodeForPreflight({ code: "gh-command-parser-accepted", state: "ready" })).toBeUndefined()
     expect(observerGhStageCodeForPreflight({ code: "untrusted-detail", state: "blocked" })).toBe("observer-gh-non-tool-stage")
   })
@@ -319,8 +320,12 @@ function writeGhFixture(path: string, version: string): void {
     `  process.stdout.write('gh version ${version} (fixture)\\n')`,
     "  process.exit(0)",
     "}",
-    "process.stderr.write('bundle content could not be parsed\\n')",
-    "process.exit(1)",
+    "const argumentsList = process.argv.slice(2)",
+    "if (argumentsList.at(-1) !== '--help' || argumentsList.includes('--unknown')) process.exit(1)",
+    "for (let index = 0; index < argumentsList.length; index += 1) {",
+    "  if (argumentsList[index] === '--signer-digest' && argumentsList[index + 1] === '--help') process.exit(1)",
+    "}",
+    "process.exit(0)",
     "",
   ].join("\n"))
   chmodSync(path, 0o700)

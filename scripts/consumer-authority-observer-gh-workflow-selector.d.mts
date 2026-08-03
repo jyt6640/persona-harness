@@ -34,6 +34,19 @@ export interface WorkflowObserverGhToolOptions {
   readonly readPackageRecord?: () => readonly string[]
 }
 
+export interface PrivateObserverGhCopyResult {
+  readonly code: string
+  readonly path?: string
+  readonly selectorStage: "source-assessment" | "private-reservation" | "private-copy" | "private-assessment"
+  readonly state: "blocked" | "ready"
+}
+
+export interface PrivateObserverGhCopyOptions {
+  readonly assessTool?: (path: string, options?: { readonly stateRoot: string }) => { readonly code?: string; readonly state: "blocked" | "ready" }
+  readonly copyFile?: (source: string, destination: string, mode: number) => void
+  readonly runnerTemp?: string
+}
+
 export interface WorkflowObserverGhPackageRecordStat {
   isFile(): boolean
   isSymbolicLink(): boolean
@@ -43,6 +56,10 @@ export interface WorkflowObserverGhPackageRecordStat {
 export function provisionWorkflowObserverGhTool(
   options?: WorkflowObserverGhToolOptions,
 ): WorkflowObserverGhToolResult
+export function provisionPrivateObserverGhCopy(
+  sourcePath: string,
+  options?: PrivateObserverGhCopyOptions,
+): PrivateObserverGhCopyResult
 
 export class WorkflowObserverGhToolError extends Error {
   readonly code: string

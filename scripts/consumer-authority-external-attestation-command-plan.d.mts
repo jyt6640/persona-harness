@@ -1,5 +1,5 @@
 export const EXTERNAL_ATTESTATION_COMMAND_PLAN_SCHEMA_VERSION: "consumer-authority-external-attestation-command-plan.1"
-export const EXTERNAL_ATTESTATION_PREFLIGHT_SCHEMA_VERSION: "consumer-authority-external-attestation-preflight.1"
+export const EXTERNAL_ATTESTATION_PREFLIGHT_SCHEMA_VERSION: "consumer-authority-external-attestation-preflight.2"
 
 export interface ExternalAttestationCommandPlan {
   readonly certificateOidcIssuer: "https://token.actions.githubusercontent.com"
@@ -64,9 +64,9 @@ export interface ExternalAttestationPreflightResult {
   readonly authorityEligible: false
   readonly code: string
   readonly credential: "absent"
-  readonly exit: "verified" | "verification-failed" | "authentication-required" | "execution-failed"
+  readonly exit: "parser-accepted" | "execution-failed"
   readonly networkAccess: false
-  readonly schemaVersion: "consumer-authority-external-attestation-preflight.1"
+  readonly schemaVersion: "consumer-authority-external-attestation-preflight.2"
   readonly state: "ready" | "blocked"
 }
 
@@ -96,6 +96,10 @@ export function renderExternalAttestationVerifyArguments(
   plan: ExternalAttestationCommandPlan,
   topology: ExternalAttestationTopology,
   inputs: { readonly bundlePath: string; readonly subjectPath: string },
+): readonly string[]
+export function renderExternalAttestationParserHelpArguments(
+  plan: ExternalAttestationCommandPlan,
+  topology: ExternalAttestationTopology,
 ): readonly string[]
 export function classifyGhAttestationExit(status: unknown): "verified" | "verification-failed" | "authentication-required" | "execution-failed"
 export function runExternalAttestationGrammarPreflight(

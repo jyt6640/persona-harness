@@ -20,6 +20,7 @@ export interface ObserverGhToolAssessment {
 
 export function canonicalObserverGhToolContract(): ObserverGhToolContract
 export function parseObserverGhToolContract(value: unknown): ObserverGhToolContract
+export function createObserverGhNoTokenEnvironment(stateRoot: unknown): Readonly<Record<string, string>> | undefined
 export function assessObserverGhTool(
   ghPath: unknown,
   options?: {

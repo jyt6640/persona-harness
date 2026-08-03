@@ -41,7 +41,7 @@ not become current merely because they remain under `docs/current/`.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.8.0-beta.32-release-notes.md`](release/v0.8.0-beta.32-release-notes.md).
+  [`release/v0.8.0-beta.33-release-notes.md`](release/v0.8.0-beta.33-release-notes.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -147,7 +147,7 @@ not become current merely because they remain under `docs/current/`.
   byte-strict package records, and fixed nonreflective selector stages and
   package-record shapes, including the known completion's mode-independent
   nonselection rule, in
-  [`release/v0.8.0-beta.32-release-notes.md`](release/v0.8.0-beta.32-release-notes.md).
+  [`release/v0.8.0-beta.33-release-notes.md`](release/v0.8.0-beta.33-release-notes.md).
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)

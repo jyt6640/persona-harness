@@ -235,16 +235,13 @@ describe("consumer authority beta.16 external attestation command plan", () => {
           }
           expect(argumentsList).toContain("--repo")
           expect(argumentsList).toContain("--signer-workflow")
+          expect(argumentsList.at(-1)).toBe("--help")
           expect(options.env.GH_TOKEN).toBeUndefined()
           expect(options.env.GITHUB_TOKEN).toBeUndefined()
           expect(options.env.PH_OBSERVER_PREFLIGHT_GITHUB_TOKEN).toBeUndefined()
           expect(options.env.PATH).toBeUndefined()
           expect(Object.values(options.env).join("\n")).not.toContain(tokenMarker)
-          return {
-            status: 1,
-            stderr: "Error: bundle content could not be parsed: proto invalid\n",
-            stdout: tokenMarker,
-          }
+          return { status: 0, stderr: "", stdout: tokenMarker }
         },
         ghPath,
       })
@@ -255,9 +252,9 @@ describe("consumer authority beta.16 external attestation command plan", () => {
         authorityEligible: false,
         code: "gh-command-parser-accepted",
         credential: "absent",
-        exit: "verification-failed",
+        exit: "parser-accepted",
         networkAccess: false,
-        schemaVersion: "consumer-authority-external-attestation-preflight.1",
+        schemaVersion: "consumer-authority-external-attestation-preflight.2",
         state: "ready",
       })
       expect(JSON.stringify(result)).not.toContain(tokenMarker)
@@ -300,9 +297,9 @@ describe("consumer authority beta.16 external attestation command plan", () => {
         authorityEligible: false,
         code: "gh-command-parser-accepted",
         credential: "absent",
-        exit: "verification-failed",
+        exit: "parser-accepted",
         networkAccess: false,
-        schemaVersion: "consumer-authority-external-attestation-preflight.1",
+        schemaVersion: "consumer-authority-external-attestation-preflight.2",
         state: "ready",
       })
       expect(output).not.toContain(tokenMarker)
@@ -371,8 +368,12 @@ function writeGhFixture(path: string): void {
     "  process.stdout.write('gh version 2.96.0 (fixture)\\n')",
     "  process.exit(0)",
     "}",
-    "process.stderr.write('bundle content could not be parsed\\n')",
-    "process.exit(1)",
+    "const argumentsList = process.argv.slice(2)",
+    "if (argumentsList.at(-1) !== '--help' || argumentsList.includes('--unknown')) process.exit(1)",
+    "for (let index = 0; index < argumentsList.length; index += 1) {",
+    "  if (argumentsList[index] === '--signer-digest' && argumentsList[index + 1] === '--help') process.exit(1)",
+    "}",
+    "process.exit(0)",
     "",
   ].join("\n"))
   chmodSync(path, 0o700)

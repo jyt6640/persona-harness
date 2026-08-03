@@ -72,47 +72,67 @@ function provision(options) {
   if (selection === undefined) return blocked("observer-gh-workflow-tool-unavailable", "package-record", "primary-missing")
   const { candidate, packageRecordShape } = selection
 
-  const assessTool = typeof settings.assessTool === "function" ? settings.assessTool : assessObserverGhTool
-  let source
-  try {
-    source = assessTool(candidate, { stateRoot: runnerTemp })
-  } catch {
-    return blocked("observer-gh-workflow-tool-invalid", "source-assessment", packageRecordShape)
-  }
-  if (source.state !== "ready") return blocked(mapToolCode(source.code), "source-assessment", packageRecordShape)
-
-  const outputDirectory = join(runnerTemp, OUTPUT_DIRECTORY)
-  try {
-    mkdirSync(outputDirectory, { mode: 0o700 })
-    if (!isRegularDirectory(outputDirectory)) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
-  } catch {
-    return blocked("observer-gh-workflow-tool-invalid", "private-reservation", packageRecordShape)
+  const privateCopy = provisionPrivateObserverGhCopy(candidate, {
+    assessTool: settings.assessTool,
+    copyFile: settings.copyFile,
+    runnerTemp,
+  })
+  if (privateCopy.state !== "ready") {
+    return blocked(privateCopy.code, privateCopy.selectorStage, packageRecordShape)
   }
 
-  const output = join(outputDirectory, OUTPUT_NAME)
-  const copyFile = typeof settings.copyFile === "function" ? settings.copyFile : copyFileSync
-  try {
-    if (pathExists(output)) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
-    copyFile(candidate, output, constants.COPYFILE_EXCL)
-  } catch {
-    return blocked("observer-gh-workflow-tool-invalid", "private-copy", packageRecordShape)
-  }
-
-  let tool
-  try {
-    tool = assessTool(output, { stateRoot: runnerTemp })
-  } catch {
-    return blocked("observer-gh-workflow-tool-invalid", "private-assessment", packageRecordShape)
-  }
-  if (tool.state !== "ready") return blocked(mapToolCode(tool.code), "private-assessment", packageRecordShape)
-
-  if (!appendGithubOutput(githubOutput, `path=${output}\n`)) {
+  if (!appendGithubOutput(githubOutput, `path=${privateCopy.path}\n`)) {
     return blocked("observer-gh-workflow-tool-invalid", "output-handoff", packageRecordShape)
   }
   return {
     code: "observer-gh-workflow-ready",
     packageRecordShape,
     selectorStage: "output-handoff",
+    state: "ready",
+  }
+}
+
+export function provisionPrivateObserverGhCopy(sourcePath, options = {}) {
+  const settings = isRecord(options) ? options : {}
+  const runnerTemp = resolveRegularDirectory(settings.runnerTemp)
+  if (runnerTemp === undefined) return privateBlocked("observer-gh-workflow-tool-invalid", "private-reservation")
+  const assessTool = typeof settings.assessTool === "function" ? settings.assessTool : assessObserverGhTool
+  let source
+  try {
+    source = assessTool(sourcePath, { stateRoot: runnerTemp })
+  } catch {
+    return privateBlocked("observer-gh-workflow-tool-invalid", "source-assessment")
+  }
+  if (source.state !== "ready") return privateBlocked(mapToolCode(source.code), "source-assessment")
+
+  const outputDirectory = join(runnerTemp, OUTPUT_DIRECTORY)
+  try {
+    mkdirSync(outputDirectory, { mode: 0o700 })
+    if (!isRegularDirectory(outputDirectory)) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
+  } catch {
+    return privateBlocked("observer-gh-workflow-tool-invalid", "private-reservation")
+  }
+
+  const output = join(outputDirectory, OUTPUT_NAME)
+  const copyFile = typeof settings.copyFile === "function" ? settings.copyFile : copyFileSync
+  try {
+    if (pathExists(output)) throw new WorkflowObserverGhToolError("observer-gh-workflow-tool-invalid")
+    copyFile(sourcePath, output, constants.COPYFILE_EXCL)
+  } catch {
+    return privateBlocked("observer-gh-workflow-tool-invalid", "private-copy")
+  }
+
+  let tool
+  try {
+    tool = assessTool(output, { stateRoot: runnerTemp })
+  } catch {
+    return privateBlocked("observer-gh-workflow-tool-invalid", "private-assessment")
+  }
+  if (tool.state !== "ready") return privateBlocked(mapToolCode(tool.code), "private-assessment")
+  return {
+    code: "observer-gh-private-copy-ready",
+    path: output,
+    selectorStage: "private-assessment",
     state: "ready",
   }
 }
@@ -196,6 +216,10 @@ function blocked(code, selectorStage, packageRecordShape) {
   return packageRecordShape === undefined
     ? { code, selectorStage, state: "blocked" }
     : { code, packageRecordShape, selectorStage, state: "blocked" }
+}
+
+function privateBlocked(code, selectorStage) {
+  return { code, selectorStage, state: "blocked" }
 }
 
 function isRecord(value) {

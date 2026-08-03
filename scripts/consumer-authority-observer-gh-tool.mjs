@@ -39,7 +39,7 @@ export function assessObserverGhTool(ghPath, options = {}) {
   parseObserverGhToolContract(options.contract ?? EXPECTED_TOOL_CONTRACT)
   if (typeof ghPath !== "string" || ghPath.length === 0) return blocked("gh-command-tool-required")
   if (!isAbsolute(ghPath) || ghPath.includes("\0") || ghPath.length > 4096) return blocked("gh-command-tool-invalid")
-  const environment = noTokenEnvironment(options.stateRoot)
+  const environment = createObserverGhNoTokenEnvironment(options.stateRoot)
   if (environment === undefined) return blocked("gh-command-tool-invalid")
 
   try {
@@ -70,7 +70,7 @@ export function assessObserverGhTool(ghPath, options = {}) {
   return { code: "gh-command-tool-ready", state: "ready" }
 }
 
-function noTokenEnvironment(stateRoot) {
+export function createObserverGhNoTokenEnvironment(stateRoot) {
   const root = resolveStateRoot(stateRoot)
   if (root === undefined) return undefined
   return {

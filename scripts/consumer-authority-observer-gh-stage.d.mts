@@ -3,6 +3,7 @@ export const OBSERVER_GH_STAGE_CODES: readonly [
   "observer-gh-tool-unavailable",
   "observer-gh-tool-version-unsupported",
   "observer-gh-parser-rejected",
+  "observer-gh-parser-timeout",
   "observer-gh-non-tool-stage",
   "observer-gh-selector-environment",
   "observer-gh-selector-package-list",
@@ -24,4 +25,5 @@ export const OBSERVER_GH_STAGE_CODES: readonly [
 
 export function observerGhStageCodeForPreflight(value: unknown): (typeof OBSERVER_GH_STAGE_CODES)[number] | undefined
 export function observerGhStageCodeForWorkflowSelector(value: unknown): (typeof OBSERVER_GH_STAGE_CODES)[number] | undefined
+export function observerGhStageCodeForPrivateCopy(value: unknown): (typeof OBSERVER_GH_STAGE_CODES)[number] | undefined
 export function isObserverGhStageCode(value: unknown): value is (typeof OBSERVER_GH_STAGE_CODES)[number]

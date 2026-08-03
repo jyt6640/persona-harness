@@ -250,14 +250,17 @@ function hasContextDiagnosticFinalizerRuntime(metadata, entrypoint) {
 
 function hasWorkflowOwnedObserverGhSelection(text) {
   const selection = text.indexOf("- name: Select observer GitHub CLI")
+  const preflight = text.indexOf("- name: Preflight selected observer GitHub CLI")
   const installation = text.indexOf("- name: Install dependencies")
   const test = text.indexOf("- name: Test")
   return selection >= 0
-    && installation > selection
+    && preflight > selection
+    && installation > preflight
     && test > selection
     && text.includes("id: observer-gh")
     && text.includes("run: node .github/scripts/prepare-observer-gh-tool.mjs")
     && text.includes("PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}")
+    && text.includes('run: node scripts/preflight-consumer-authority-external-attestation.mjs --json --observer-gh "$PERSONA_HARNESS_OBSERVER_GH"')
     && !text.includes("--observer-gh /usr/bin/gh")
     && !text.includes("command -v gh")
 }
@@ -270,9 +273,11 @@ function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord, too
     && core.includes("readInstalledGhPackageRecord()")
     && core.includes("selectInstalledObserverGhCandidate")
     && core.includes("assessObserverGhTool")
-    && core.includes("assessTool(candidate, { stateRoot: runnerTemp })")
+    && core.includes("provisionPrivateObserverGhCopy(candidate")
+    && core.includes("assessTool(sourcePath, { stateRoot: runnerTemp })")
     && core.includes("assessTool(output, { stateRoot: runnerTemp })")
-    && core.includes('appendGithubOutput(githubOutput, `path=${output}\\n`)')
+    && core.includes("copyFile(sourcePath, output, constants.COPYFILE_EXCL)")
+    && core.includes('appendGithubOutput(githubOutput, `path=${privateCopy.path}\\n`)')
     && core.includes("selectorStage")
     && core.includes("packageRecordShape")
     && core.includes('"environment"')

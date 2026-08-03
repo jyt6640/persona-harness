@@ -29,8 +29,12 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readBeta32AcceptanceManifest } from "./consumer-authority-beta32-acceptance-schema.mjs"
-import { observerGhStageCodeForPreflight } from "./consumer-authority-observer-gh-stage.mjs"
+import { readBeta33AcceptanceManifest } from "./consumer-authority-beta33-acceptance-schema.mjs"
+import {
+  observerGhStageCodeForPreflight,
+  observerGhStageCodeForPrivateCopy,
+} from "./consumer-authority-observer-gh-stage.mjs"
+import { provisionPrivateObserverGhCopy } from "./consumer-authority-observer-gh-workflow-selector.mjs"
 import { canonicalizePackageTarball, readPackageContentIdentity } from "./package-content-identity.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -717,7 +721,7 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta32PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta33PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
@@ -1062,7 +1066,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta32PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta33PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
@@ -2561,8 +2565,8 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
   writeFileSync(loaderPath, `${loader}\n`)
 }
 
-function readBeta32PreAuthorityReadiness(packageRoot) {
-  const manifest = readBeta32AcceptanceManifest(packageRoot)
+function readBeta33PreAuthorityReadiness(packageRoot) {
+  const manifest = readBeta33AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2571,9 +2575,9 @@ function readBeta32PreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readBeta32AcceptanceManifest(packageRoot)
+    readBeta33AcceptanceManifest(packageRoot)
   } catch {
-    throw new Error(`${label} beta.32 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.33 observer handoff contract is invalid`)
   }
 }
 
@@ -2713,7 +2717,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readBeta32AcceptanceManifest(packageRoot)
+  const manifest = readBeta33AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -2782,6 +2786,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
   for (const script of [
     "consumer-authority-beta31-acceptance-schema.mjs",
     "consumer-authority-beta32-acceptance-schema.mjs",
+    "consumer-authority-beta33-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
     "consumer-authority-observer-gh-stage.mjs",
     "consumer-authority-observer-gh-tool.mjs",
@@ -2793,11 +2798,24 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     }
   }
   const tokenMarker = "ghp_external_attestation_contract_token"
-  const result = runObserverPreflightNode(cwd, [scriptPath, "--json", "--observer-gh", observerGh], {
-    GH_TOKEN: tokenMarker,
-    GITHUB_TOKEN: tokenMarker,
-    HOME: join(temporaryRoot, "external-attestation-observer-home"),
-  })
+  const privateRoot = mkdtempSync(join(temporaryRoot, "external-attestation-private-copy-"))
+  const runnerTemp = join(privateRoot, "runner-temp")
+  let result
+  try {
+    mkdirSync(runnerTemp)
+    const privateCopy = provisionPrivateObserverGhCopy(observerGh, { runnerTemp })
+    const privateStage = observerGhStageCodeForPrivateCopy(privateCopy)
+    if (privateStage !== undefined || privateCopy.state !== "ready" || typeof privateCopy.path !== "string") {
+      throw new ObserverGhContractStageError(privateStage ?? "observer-gh-non-tool-stage")
+    }
+    result = runObserverPreflightNode(cwd, [scriptPath, "--json", "--observer-gh", privateCopy.path], {
+      GH_TOKEN: tokenMarker,
+      GITHUB_TOKEN: tokenMarker,
+      HOME: join(temporaryRoot, "external-attestation-observer-home"),
+    })
+  } finally {
+    rmSync(privateRoot, { force: true, recursive: true })
+  }
   let payload
   try {
     payload = JSON.parse(result.stdout)
@@ -2813,9 +2831,9 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     || payload.authorityEligible !== false
     || payload.code !== "gh-command-parser-accepted"
     || payload.credential !== "absent"
-    || payload.exit !== "verification-failed"
+    || payload.exit !== "parser-accepted"
     || payload.networkAccess !== false
-    || payload.schemaVersion !== "consumer-authority-external-attestation-preflight.1"
+    || payload.schemaVersion !== "consumer-authority-external-attestation-preflight.2"
     || payload.state !== "ready"
     || `${result.stdout}${result.stderr}`.includes(tokenMarker)
     || `${result.stdout}${result.stderr}`.includes(cwd)
@@ -3040,6 +3058,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
   for (const script of [
     "consumer-authority-beta31-acceptance-schema.mjs",
     "consumer-authority-beta32-acceptance-schema.mjs",
+    "consumer-authority-beta33-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
     "consumer-authority-external-observer-boundary.mjs",
     "preflight-consumer-authority-external-artifact-transport.mjs",
@@ -3082,7 +3101,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readBeta32AcceptanceManifest(packageRoot)
+  const manifest = readBeta33AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
