@@ -3,15 +3,16 @@ import { lstatSync } from "node:fs"
 import { isAbsolute } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 
-const TOOL_SCHEMA_VERSION = "consumer-authority-observer-gh-tool.1"
+const TOOL_SCHEMA_VERSION = "consumer-authority-observer-gh-tool.2"
 const VERSION_TIMEOUT_MS = 5_000
 const VERSION_MAX_OUTPUT_BYTES = 4 * 1024
 const VERSION = /^gh version (\d+)\.(\d+)\.(\d+)(?:\s|$)/mu
 
 const EXPECTED_TOOL_CONTRACT = Object.freeze({
-  executable: "explicit-absolute-regular-non-symlink",
+  executable: "workflow-selected-absolute-regular-non-symlink",
   invocation: "direct-exec-no-shell-no-path-lookup",
   output: "bounded-version-classification-only",
+  provisioning: "workflow-owned-runner-package-record-to-private-regular-copy",
   schemaVersion: TOOL_SCHEMA_VERSION,
   version: ">=2.96.0 <3.0.0",
 })
@@ -44,8 +45,8 @@ export function assessObserverGhTool(ghPath, options = {}) {
     if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o111) === 0) {
       return blocked("gh-command-tool-invalid")
     }
-  } catch {
-    return blocked("gh-command-tool-invalid")
+  } catch (error) {
+    return blocked(isMissingPathError(error) ? "gh-command-unavailable" : "gh-command-tool-invalid")
   }
 
   const execute = typeof options.execute === "function" ? options.execute : spawnSync
@@ -86,6 +87,13 @@ function isCompatibleVersion(value) {
   const numericPatch = Number(patch)
   if (!Number.isSafeInteger(numericMajor) || !Number.isSafeInteger(numericMinor) || !Number.isSafeInteger(numericPatch)) return false
   return numericMajor === 2 && numericMinor >= 96
+}
+
+function isMissingPathError(error) {
+  return error !== null
+    && typeof error === "object"
+    && "code" in error
+    && error.code === "ENOENT"
 }
 
 function blocked(code) {

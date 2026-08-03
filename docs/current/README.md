@@ -41,7 +41,7 @@ not become current merely because they remain under `docs/current/`.
   [`docs/releases/package-index.md`](../releases/package-index.md).
 - Release operations and workflow-compatible release notes:
   [`release/README.md`](release/README.md) and
-  [`release/v0.8.0-beta.25-release-notes.md`](release/v0.8.0-beta.25-release-notes.md).
+  [`release/v0.8.0-beta.26-release-notes.md`](release/v0.8.0-beta.26-release-notes.md).
 - P3 integrity roadmap and release hold:
   [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
 - P3-2 closure authority candidate:
@@ -131,7 +131,7 @@ not become current merely because they remain under `docs/current/`.
   identity bindings completed only after the leaf certificate window expired.
   `0.8.0-beta.22` is historical non-reusable final-observer evidence: host
   `gh`/XDG state created an untracked `.local` entry after the final commit.
-  `0.8.0-beta.25` is the current procedure-only source candidate. It makes no
+  `0.8.0-beta.26` is the current procedure-only source candidate. It makes no
   package, tag, staging mapping, GitHub release, original signed consumer
   artifact, promotion, Stable/GA, or Finish authority claim. Its pre-fixture
   gate requires source-bound bootstrap before one final fixture commit, retention
@@ -140,8 +140,8 @@ not become current merely because they remain under `docs/current/`.
   binding, portable canonical package-content identity, and the complete public
   Java/Spring lifecycle to reach only `trusted-authority-required`, plus V4
   stage-scoped residue isolation outside the consumer realpath, and an
-  explicit observer-gh tool contract with no PATH lookup, in
-  [`release/v0.8.0-beta.25-release-notes.md`](release/v0.8.0-beta.25-release-notes.md).
+  workflow-selected observer-gh tool contract with no package PATH lookup, in
+  [`release/v0.8.0-beta.26-release-notes.md`](release/v0.8.0-beta.26-release-notes.md).
 - P3-9 permits separately dispatched P2 source, measurement, or report-only
   investigation. The sole product-scope exception is
   [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)
