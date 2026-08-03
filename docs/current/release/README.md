@@ -86,13 +86,15 @@ crypto and identity bindings passed only after the leaf certificate window
 expired, so authenticated fetch, Finish consumption, and replay were not run.
 `0.8.0-beta.22` is non-reusable final-observer evidence: host `gh`/XDG state
 created an untracked `.local` entry after the final commit. `0.8.0-beta.23` is
-the next strict-prerelease procedure-only source candidate;
+historical procedure evidence because raw-empty Git cleanliness checks
+contradicted approved runtime/build preparation. `0.8.0-beta.24` is the next
+strict-prerelease procedure-only source candidate;
 it has no source-level claim of a tag, publish, channel movement, GitHub
-release, or original signed consumer artifact. Beta23 records the governed v3
+release, or original signed consumer artifact. Beta24 records the governed V4
 future final-observer procedure without changing product fetch, authority,
 Finish, transport, workflow, or CI behavior.
 
-The beta23 release contract requires package-visible observer credential
+The beta24 release contract requires package-visible observer credential
 preflight, separate caller/reusable signer binding, and a complete public
 Java/Spring readiness route whose default Finish is blocked only by
 `trusted-authority-required` before a fixture may be authorized. Source-bound
@@ -106,14 +108,17 @@ No lifecycle reinitialization, consumer switch, or source reset is permitted
 after fetch. It also requires `env -i`, explicit absolute `gh`/Git/Node/npm
 paths, and fifteen external host-state roots outside the consumer realpath.
 At baseline, source-bound preparation, credential handoff, observer child, and
-immediately before push, CWD/Git top-level/HEAD/source identity plus empty
-porcelain and `git clean -ndx` must remain unchanged. `.local`, `.config`, and
-`.cache` are never allowlisted; slow preparation completes before the one push,
-and the certificate validity deadline is non-relaxable.
+immediately before push, CWD/Git top-level/HEAD/source identity plus the exact
+stage-scoped NUL-safe untracked/ignored residue set and matching normalized
+`git clean -ndx` diagnostic must remain unchanged. Only documented runtime and
+build residues are allowed, with lstat/realpath containment for every path and
+ancestor. `.local`, `.config`, and `.cache` are never allowlisted; slow
+preparation completes before the one push, and the certificate validity deadline
+is non-relaxable.
 
 The preflights use a host-derived credential only inside their fixed read-only
 GitHub Actions worker; they do not pass that credential to `ph`, npm, archive
-tooling, or the consumer HOME. Beta23 retains the no-token/no-artifact
+tooling, or the consumer HOME. Beta24 retains the no-token/no-artifact
 attestation and artifact transport parser preflights. The transport plan binds
 the caller repository/run/artifact endpoint, exact ZIP bytes, and safe members
 before it hands an original ZIP to the separate reusable signer command plan.

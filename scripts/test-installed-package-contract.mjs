@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readBeta23AcceptanceManifest } from "./consumer-authority-beta23-acceptance-schema.mjs"
+import { readBeta24AcceptanceManifest } from "./consumer-authority-beta24-acceptance-schema.mjs"
 import { canonicalizePackageTarball, readPackageContentIdentity } from "./package-content-identity.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -45,7 +45,7 @@ const MODELED_AUTHORITY_TOPOLOGY = {
   repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
   reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3",
 }
-const BETA23_PRE_AUTHORITY_COMMANDS = new Map([
+const BETA24_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
@@ -162,6 +162,7 @@ async function assertPackagedConsumerAuthorityBoundary(installedPackage, consume
     }
   }
   assertPrearmedObserverHandoff(installedPackage, "installed package")
+  await assertV4FinalObserverCleanliness(installedPackage, "installed package")
   assertExternalAttestationCommandPlan(installedPackage, consumerDirectory, "installed package")
   await assertExternalArtifactTransportPlan(installedPackage, consumerDirectory, "installed package")
   await assertBoundAuthorityDiscovery(installedPackage, "installed package")
@@ -180,6 +181,7 @@ async function assertSourceConsumerAuthorityBoundary(sourceCliPath) {
   }
   await assertCanonicalPackagePublisherPlan(repositoryRoot, "source CLI")
   assertPrearmedObserverHandoff(repositoryRoot, "source CLI")
+  await assertV4FinalObserverCleanliness(repositoryRoot, "source CLI")
   assertExternalAttestationCommandPlan(repositoryRoot, temporaryRoot, "source CLI")
   await assertExternalArtifactTransportPlan(repositoryRoot, temporaryRoot, "source CLI")
   await assertObserverCredentialPreflight(repositoryRoot, temporaryRoot, "source CLI")
@@ -676,7 +678,7 @@ function assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installe
 function assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory) {
   const fixtureRoot = join(consumerDirectory, "cooperative-gradle-fixture")
   const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
-  const readiness = readBeta23PreAuthorityReadiness(installedPackage)
+  const readiness = readBeta24PreAuthorityReadiness(installedPackage)
   assertCooperativeFinishWorks(
     fixtureRoot,
     phPath,
@@ -1021,7 +1023,7 @@ function assertSourceCooperativeFinishWorks(sourceCliPath) {
   if (!existsSync(phPath)) {
     throw new Error(`source CLI is missing: ${sourceCliPath}`)
   }
-  const readiness = readBeta23PreAuthorityReadiness(repositoryRoot)
+  const readiness = readBeta24PreAuthorityReadiness(repositoryRoot)
   assertCooperativeFinishWorks(
     join(temporaryRoot, "source-cli-cooperative-gradle-fixture"),
     phPath,
@@ -2143,9 +2145,9 @@ function runCooperativeLifecycle(fixtureRoot, phPath, label, readiness, packageR
 
 function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readiness, environment = {}) {
   for (const command of readiness.commands) {
-    const step = BETA23_PRE_AUTHORITY_COMMANDS.get(command)
+    const step = BETA24_PRE_AUTHORITY_COMMANDS.get(command)
     if (step === undefined) {
-      throw new Error(`${label} beta.23 pre-authority command is unsupported`)
+      throw new Error(`${label} beta.24 pre-authority command is unsupported`)
     }
     const result = runNode(fixtureRoot, [phPath, ...step.args], environment, step.stdin)
     requireSuccess(
@@ -2500,8 +2502,8 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
   writeFileSync(loaderPath, `${loader}\n`)
 }
 
-function readBeta23PreAuthorityReadiness(packageRoot) {
-  const manifest = readBeta23AcceptanceManifest(packageRoot)
+function readBeta24PreAuthorityReadiness(packageRoot) {
+  const manifest = readBeta24AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2510,10 +2512,137 @@ function readBeta23PreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readBeta23AcceptanceManifest(packageRoot)
+    readBeta24AcceptanceManifest(packageRoot)
   } catch {
-    throw new Error(`${label} beta.23 observer handoff contract is invalid`)
+    throw new Error(`${label} beta.24 observer handoff contract is invalid`)
   }
+}
+
+async function assertV4FinalObserverCleanliness(packageRoot, label) {
+  const scriptPath = join(packageRoot, "scripts", "consumer-authority-final-observer-v4-cleanliness.mjs")
+  if (!existsSync(scriptPath)) {
+    throw new Error(`${label} v4 final observer cleanliness contract is missing from the package`)
+  }
+  const cleanliness = await import(pathToFileURL(scriptPath).href)
+  const fixtureRoot = mkdtempSync(join(temporaryRoot, "final-observer-v4-cleanliness-"))
+  const outsideRoot = mkdtempSync(join(temporaryRoot, "final-observer-v4-outside-"))
+  const stages = [
+    "baseline",
+    "source-bound-preparation",
+    "credential-handoff",
+    "observer-child",
+    "immediately-pre-push",
+  ]
+  const projection = cleanliness.FINAL_OBSERVER_V4_STAGE_RESIDUE_PROJECTION
+  try {
+    writeFinalObserverV4GitFixture(fixtureRoot)
+    for (const stage of stages) {
+      materializeFinalObserverV4Stage(fixtureRoot, stage)
+      const residues = projection[stage]
+      const result = cleanliness.evaluateFinalObserverV4Cleanliness(finalObserverV4Input(fixtureRoot, stage))
+      if (result.stage !== stage || result.residues.join("\u0000") !== residues.join("\u0000")) {
+        throw new Error(`${label} v4 final observer cleanliness did not preserve the stage projection`)
+      }
+    }
+
+    const tracked = finalObserverV4Input(fixtureRoot, "immediately-pre-push")
+    tracked.statusNul = " M README.md\0"
+    requireV4CleanlinessBlock(cleanliness, () => cleanliness.evaluateFinalObserverV4Cleanliness(tracked), label)
+
+    const unexpected = finalObserverV4Input(fixtureRoot, "immediately-pre-push")
+    unexpected.statusNul = `${unexpected.statusNul}?? unexpected\0`
+    unexpected.cleanOutput = `${unexpected.cleanOutput}Would remove unexpected\n`
+    requireV4CleanlinessBlock(cleanliness, () => cleanliness.evaluateFinalObserverV4Cleanliness(unexpected), label)
+
+    const forbidden = finalObserverV4Input(fixtureRoot, "immediately-pre-push")
+    forbidden.statusNul = `!! .local/\0${forbidden.statusNul}`
+    forbidden.cleanOutput = `Would remove .local/\n${forbidden.cleanOutput}`
+    requireV4CleanlinessBlock(cleanliness, () => cleanliness.evaluateFinalObserverV4Cleanliness(forbidden), label)
+
+    const drift = finalObserverV4Input(fixtureRoot, "immediately-pre-push")
+    drift.observed.sourceDigest = `sha256:${"f".repeat(64)}`
+    requireV4CleanlinessBlock(cleanliness, () => cleanliness.evaluateFinalObserverV4Cleanliness(drift), label)
+
+    const finalDiff = finalObserverV4Input(fixtureRoot, "immediately-pre-push")
+    finalDiff.expected.finalDiff = [".github/workflows/research-attestation.yml", "src/Main.java"]
+    finalDiff.observed.finalDiff = [".github/workflows/research-attestation.yml", "src/Main.java"]
+    requireV4CleanlinessBlock(cleanliness, () => cleanliness.evaluateFinalObserverV4Cleanliness(finalDiff), label)
+
+    const workflow = join(fixtureRoot, ".persona", "workflow")
+    rmSync(workflow, { force: true, recursive: true })
+    symlinkSync(outsideRoot, workflow)
+    const alias = finalObserverV4Input(fixtureRoot, "immediately-pre-push")
+    requireV4CleanlinessBlock(cleanliness, () => cleanliness.evaluateFinalObserverV4Cleanliness(alias), label)
+  } finally {
+    rmSync(fixtureRoot, { force: true, recursive: true })
+    rmSync(outsideRoot, { force: true, recursive: true })
+  }
+}
+
+function writeFinalObserverV4GitFixture(root) {
+  mkdirSync(join(root, ".github", "workflows"), { recursive: true })
+  mkdirSync(join(root, ".persona"), { recursive: true })
+  writeFileSync(join(root, ".gitignore"), [
+    ".gradle/",
+    ".persona/evidence/",
+    ".persona/workflow/",
+    "build/",
+    "node_modules/",
+  ].join("\n") + "\n")
+  writeFileSync(join(root, ".github", "workflows", "research-attestation.yml"), "name: fixture\n")
+  writeFileSync(join(root, ".persona", "harness.jsonc"), "{}\n")
+  writeFileSync(join(root, "README.md"), "# final observer v4 fixture\n")
+  initializeFixtureGit(root, "final observer v4 fixture", {
+    email: "final-observer@example.invalid",
+    message: "final observer v4 fixture",
+    name: "Final Observer",
+  })
+}
+
+function materializeFinalObserverV4Stage(root, stage) {
+  if (stage === "baseline") return
+  mkdirSync(join(root, ".persona", "workflow"), { recursive: true })
+  writeFileSync(join(root, ".persona", ".ph-init-manifest.json"), "{}\n")
+  if (stage === "source-bound-preparation") return
+  mkdirSync(join(root, ".gradle"), { recursive: true })
+  mkdirSync(join(root, ".persona", "evidence"), { recursive: true })
+  mkdirSync(join(root, "build"), { recursive: true })
+  mkdirSync(join(root, "node_modules"), { recursive: true })
+}
+
+function finalObserverV4Input(root, stage) {
+  const canonicalRoot = realpathSync(root)
+  const statusNul = runCommand(root, "git", ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored=matching"]).stdout
+  const cleanOutput = runCommand(root, "git", ["clean", "-ndx"]).stdout
+  const binding = {
+    cwd: canonicalRoot,
+    finalDiff: [".github/workflows/research-attestation.yml", ".persona/project-profile.jsonc"],
+    head: "a".repeat(40),
+    parent: "b".repeat(40),
+    remoteParent: "c".repeat(40),
+    reusablePinDigest: `sha256:${"c".repeat(64)}`,
+    reusablePinPath: ".github/workflows/research-attestation.yml",
+    sourceDigest: `sha256:${"d".repeat(64)}`,
+    topLevel: canonicalRoot,
+  }
+  return {
+    cleanOutput,
+    expected: structuredClone(binding),
+    observed: structuredClone(binding),
+    projectRoot: root,
+    stage,
+    statusNul,
+  }
+}
+
+function requireV4CleanlinessBlock(cleanliness, action, label) {
+  try {
+    action()
+  } catch (error) {
+    if (error instanceof cleanliness.FinalObserverV4CleanlinessError) return
+    throw error
+  }
+  throw new Error(`${label} v4 final observer cleanliness accepted an unsafe state`)
 }
 
 async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
@@ -2522,7 +2651,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readBeta23AcceptanceManifest(packageRoot)
+  const manifest = readBeta24AcceptanceManifest(packageRoot)
   let plan
   let argv
   try {
@@ -2530,7 +2659,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     argv = publisher.createCanonicalPublisherArgs({
       dryRun: true,
       distTag: "staging",
-      tarballPath: "/private/canonical/persona-harness-0.8.0-beta.23.tgz",
+      tarballPath: "/private/canonical/persona-harness-0.8.0-beta.24.tgz",
     })
   } catch {
     throw new Error(`${label} canonical package publisher handoff contract is invalid`)
@@ -2543,7 +2672,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     || !Array.isArray(argv)
     || argv.join("\u0000") !== [
       "publish",
-      "/private/canonical/persona-harness-0.8.0-beta.23.tgz",
+      "/private/canonical/persona-harness-0.8.0-beta.24.tgz",
       "--access",
       "public",
       "--tag",
@@ -2559,7 +2688,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
 function assertExternalAttestationCommandPlan(packageRoot, cwd, label) {
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-attestation.mjs")
   for (const script of [
-    "consumer-authority-beta23-acceptance-schema.mjs",
+    "consumer-authority-beta24-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
     "preflight-consumer-authority-external-attestation.mjs",
   ]) {
@@ -2601,7 +2730,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label) {
 async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
   const scriptPath = join(packageRoot, "scripts", "preflight-consumer-authority-external-artifact-transport.mjs")
   for (const script of [
-    "consumer-authority-beta23-acceptance-schema.mjs",
+    "consumer-authority-beta24-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
     "consumer-authority-external-observer-boundary.mjs",
     "preflight-consumer-authority-external-artifact-transport.mjs",
@@ -2644,7 +2773,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readBeta23AcceptanceManifest(packageRoot)
+  const manifest = readBeta24AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
