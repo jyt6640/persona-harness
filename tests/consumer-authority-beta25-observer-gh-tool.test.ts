@@ -8,8 +8,9 @@ import {
   canonicalExternalAttestationCommandPlan,
   runExternalAttestationGrammarPreflight,
 } from "../scripts/consumer-authority-external-attestation-command-plan.mjs"
+import type { ExternalAttestationTopology } from "../scripts/consumer-authority-external-attestation-command-plan.mjs"
 
-const topology = {
+const topology: ExternalAttestationTopology = {
   callerEnrollment: {
     repositoryId: 1304576182,
     repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
