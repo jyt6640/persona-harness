@@ -268,25 +268,31 @@ function hasWorkflowOwnedObserverGhSelection(text) {
     && !text.includes("command -v gh")
 }
 
-function hasWorkflowOwnedObserverGhProvisioner(text) {
-  return text.includes('const DPKG_QUERY = "/usr/bin/dpkg-query"')
-    && text.includes('spawnSync(DPKG_QUERY, ["--listfiles", "gh"]')
-    && text.includes("constants.COPYFILE_EXCL")
-    && text.includes("constants.O_NOFOLLOW")
-    && text.includes("export function selectRegularPackageGhCandidate(paths, options = {})")
-    && text.includes('"/usr/share/bash-completion/completions/gh"')
-    && text.includes("if (!stat.isFile() || stat.isSymbolicLink())")
-    && text.includes("if ((stat.mode & 0o111) !== 0) {")
-    && text.includes("} else if (!DOCUMENTED_ANCILLARY_GH_RECORDS.has(path))")
-    && text.includes("if (matchingRecordCount === 0 || candidates.length === 0) return undefined")
-    && text.includes("assessObserverGhTool(output)")
-    && text.includes('appendGithubOutput(githubOutput, `path=${output}\\n`)')
-    && !text.includes("process.env.PATH")
-    && !text.includes("command -v")
-    && !text.includes("GH_TOKEN")
-    && !text.includes("GITHUB_TOKEN")
-    && !text.includes("attestation verify")
-    && !text.includes("gh api")
+function hasWorkflowOwnedObserverGhProvisioner(wrapper, core) {
+  return wrapper.includes('from "../../scripts/consumer-authority-observer-gh-workflow-selector.mjs"')
+    && core.includes('const DPKG_QUERY = "/usr/bin/dpkg-query"')
+    && core.includes('spawnSync(DPKG_QUERY, ["--listfiles", "gh"]')
+    && core.includes("constants.COPYFILE_EXCL")
+    && core.includes("constants.O_NOFOLLOW")
+    && core.includes("export function selectRegularPackageGhCandidate(paths, options = {})")
+    && core.includes('"/usr/share/bash-completion/completions/gh"')
+    && core.includes("if (!stat.isFile() || stat.isSymbolicLink())")
+    && core.includes("if ((stat.mode & 0o111) !== 0) {")
+    && core.includes("} else if (!DOCUMENTED_ANCILLARY_GH_RECORDS.has(path))")
+    && core.includes("if (matchingRecordCount === 0 || candidates.length === 0) return undefined")
+    && core.includes("assessObserverGhTool(output)")
+    && core.includes('appendGithubOutput(githubOutput, `path=${output}\\n`)')
+    && core.includes("selectorStage")
+    && core.includes('"environment"')
+    && core.includes('"output-handoff"')
+    && core.includes("RUNNER_TEMP")
+    && core.includes("GITHUB_OUTPUT")
+    && !core.includes("process.env.PATH")
+    && !core.includes("command -v")
+    && !core.includes("GH_TOKEN")
+    && !core.includes("GITHUB_TOKEN")
+    && !core.includes("attestation verify")
+    && !core.includes("gh api")
 }
 
 const requirements = [
@@ -401,6 +407,7 @@ async function main() {
     finalizerActionMetadata,
     finalizerActionEntrypoint,
     observerGhProvisioner,
+    observerGhSelector,
   ] = await Promise.all([
     readFile(".github/actions/project-finish-context-diagnostic/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic/index.mjs", "utf8"),
@@ -418,6 +425,7 @@ async function main() {
     readFile(".github/actions/project-finish-context-diagnostic-finalizer/action.yml", "utf8"),
     readFile(".github/actions/project-finish-context-diagnostic-finalizer/index.mjs", "utf8"),
     readFile(".github/scripts/prepare-observer-gh-tool.mjs", "utf8"),
+    readFile("scripts/consumer-authority-observer-gh-workflow-selector.mjs", "utf8"),
   ])
   const failures = []
   for (const [name, path, predicate] of requirements) {
@@ -487,7 +495,7 @@ async function main() {
   ) {
     failures.push("project finish context diagnostic native OIDC selftest")
   }
-  if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner)) {
+  if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector)) {
     failures.push("workflow-owned observer gh provisioner")
   }
   if (failures.length > 0) {

@@ -406,7 +406,7 @@ function requireContractSuccess(result, successMarker, diagnosticMarker, fallbac
 
 function boundedContractDiagnosticCode(output, marker) {
   if (typeof output !== "string") return undefined
-  const expression = new RegExp(`^${escapeExpression(marker)}: (observer-gh-(?:tool-(?:invalid|unavailable|version-unsupported)|parser-rejected|non-tool-stage))$`, "mu")
+  const expression = new RegExp(`^${escapeExpression(marker)}: (observer-gh-(?:tool-(?:invalid|unavailable|version-unsupported)|parser-rejected|non-tool-stage|selector-(?:environment|package-list|package-record|source-assessment|private-reservation|private-copy|private-assessment|output-handoff|internal)))$`, "mu")
   const match = expression.exec(output)
   return match?.[1]
 }

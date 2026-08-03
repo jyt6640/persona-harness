@@ -94,21 +94,26 @@ describe("release workflow policy", () => {
     }
 
     const provisioner = readFileSync(join(repositoryRoot, ".github", "scripts", "prepare-observer-gh-tool.mjs"), "utf8")
-    expect(provisioner).toContain('const DPKG_QUERY = "/usr/bin/dpkg-query"')
-    expect(provisioner).toContain('spawnSync(DPKG_QUERY, ["--listfiles", "gh"]')
-    expect(provisioner).toContain("constants.COPYFILE_EXCL")
-    expect(provisioner).toContain("constants.O_NOFOLLOW")
-    expect(provisioner).toContain("export function selectRegularPackageGhCandidate(paths, options = {})")
-    expect(provisioner).toContain('"/usr/share/bash-completion/completions/gh"')
-    expect(provisioner).toContain("if (!stat.isFile() || stat.isSymbolicLink())")
-    expect(provisioner).toContain("if ((stat.mode & 0o111) !== 0) {")
-    expect(provisioner).toContain("} else if (!DOCUMENTED_ANCILLARY_GH_RECORDS.has(path))")
-    expect(provisioner).toContain("if (matchingRecordCount === 0 || candidates.length === 0) return undefined")
-    expect(provisioner).toContain("assessObserverGhTool(output)")
-    expect(provisioner).not.toContain("process.env.PATH")
-    expect(provisioner).not.toContain("command -v")
-    expect(provisioner).not.toContain("GH_TOKEN")
-    expect(provisioner).not.toContain("GITHUB_TOKEN")
+    const selector = readFileSync(join(repositoryRoot, "scripts", "consumer-authority-observer-gh-workflow-selector.mjs"), "utf8")
+    expect(provisioner).toContain('from "../../scripts/consumer-authority-observer-gh-workflow-selector.mjs"')
+    expect(selector).toContain('const DPKG_QUERY = "/usr/bin/dpkg-query"')
+    expect(selector).toContain('spawnSync(DPKG_QUERY, ["--listfiles", "gh"]')
+    expect(selector).toContain("constants.COPYFILE_EXCL")
+    expect(selector).toContain("constants.O_NOFOLLOW")
+    expect(selector).toContain("export function selectRegularPackageGhCandidate(paths, options = {})")
+    expect(selector).toContain('"/usr/share/bash-completion/completions/gh"')
+    expect(selector).toContain("if (!stat.isFile() || stat.isSymbolicLink())")
+    expect(selector).toContain("if ((stat.mode & 0o111) !== 0) {")
+    expect(selector).toContain("} else if (!DOCUMENTED_ANCILLARY_GH_RECORDS.has(path))")
+    expect(selector).toContain("if (matchingRecordCount === 0 || candidates.length === 0) return undefined")
+    expect(selector).toContain("assessObserverGhTool(output)")
+    expect(selector).toContain("selectorStage")
+    expect(selector).toContain("RUNNER_TEMP")
+    expect(selector).toContain("GITHUB_OUTPUT")
+    expect(selector).not.toContain("process.env.PATH")
+    expect(selector).not.toContain("command -v")
+    expect(selector).not.toContain("GH_TOKEN")
+    expect(selector).not.toContain("GITHUB_TOKEN")
   })
 
   it("keeps package-visible release procedures aligned with the workflow's existing immutable tag preflight", () => {
@@ -146,7 +151,7 @@ describe("release workflow policy", () => {
   it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
 
-    expect(packageVersion).toBe("0.8.0-beta.27")
+    expect(packageVersion).toBe("0.8.0-beta.28")
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
       distTag: "staging",

@@ -92,11 +92,12 @@ and rejected Linux's runtime-owned `UV_USE_IO_URING=0` child marker.
 `0.8.0-beta.26` then rejected the normal Ubuntu `gh` package record before tool
 assessment because its basename-only selector counted the non-executable
 bash-completion sibling. The next strict-prerelease procedure-only source
-candidate is `0.8.0-beta.27`; it has no
+candidate is `0.8.0-beta.28`; beta.27 retained qualified selection but collapsed
+its runner selector lifecycle into an opaque block. Beta.28 has no
 source-level claim of a tag, publish, channel movement, GitHub release, or
 original signed consumer artifact.
 
-The beta27 release contract requires package-visible observer credential
+The beta28 release contract requires package-visible observer credential
 preflight, separate caller/reusable signer binding, and a complete public
 Java/Spring readiness route whose default Finish is blocked only by
 `trusted-authority-required` before a fixture may be authorized. Source-bound
@@ -121,7 +122,10 @@ allowed, while only the documented regular non-executable
 never an ambient PATH lookup or literal runner path. Linux accepts
 only `UV_USE_IO_URING=0` in the fixed authority child environment. Slow
 preparation completes before the one push, and the certificate validity deadline
-is non-relaxable.
+is non-relaxable. The selector emits only a fixed nonreflective lifecycle stage
+for environment, package-list, package-record, source/private assessment,
+private reservation/copy, or output handoff; unknown failures are bounded as
+`selector-internal` without rendering runner data.
 
 The preflights use a host-derived credential only inside their fixed read-only
 GitHub Actions worker; they do not pass that credential to `ph`, npm, archive
