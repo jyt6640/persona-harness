@@ -4,6 +4,26 @@ const STAGE_CODES = Object.freeze([
   "observer-gh-tool-version-unsupported",
   "observer-gh-parser-rejected",
   "observer-gh-non-tool-stage",
+  "observer-gh-selector-environment",
+  "observer-gh-selector-package-list",
+  "observer-gh-selector-package-record",
+  "observer-gh-selector-source-assessment",
+  "observer-gh-selector-private-reservation",
+  "observer-gh-selector-private-copy",
+  "observer-gh-selector-private-assessment",
+  "observer-gh-selector-output-handoff",
+  "observer-gh-selector-internal",
+])
+
+const SELECTOR_STAGES = Object.freeze([
+  "environment",
+  "package-list",
+  "package-record",
+  "source-assessment",
+  "private-reservation",
+  "private-copy",
+  "private-assessment",
+  "output-handoff",
 ])
 
 export const OBSERVER_GH_STAGE_CODES = STAGE_CODES
@@ -27,6 +47,27 @@ export function observerGhStageCodeForPreflight(value) {
     default:
       return "observer-gh-non-tool-stage"
   }
+}
+
+export function observerGhStageCodeForWorkflowSelector(value) {
+  if (!isRecord(value) || typeof value.code !== "string" || typeof value.state !== "string") {
+    return "observer-gh-non-tool-stage"
+  }
+  if (
+    value.state === "ready"
+    && value.code === "observer-gh-workflow-ready"
+    && value.selectorStage === "output-handoff"
+  ) {
+    return undefined
+  }
+  if (value.state !== "blocked" || typeof value.selectorStage !== "string") {
+    return "observer-gh-non-tool-stage"
+  }
+  if (value.selectorStage === "selector-internal") return "observer-gh-selector-internal"
+  if (SELECTOR_STAGES.includes(value.selectorStage)) {
+    return `observer-gh-selector-${value.selectorStage}`
+  }
+  return "observer-gh-non-tool-stage"
 }
 
 export function isObserverGhStageCode(value) {
