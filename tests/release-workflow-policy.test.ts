@@ -108,6 +108,8 @@ describe("release workflow policy", () => {
     expect(selector).toContain("packageRecordShape")
     expect(selector).toContain("RUNNER_TEMP")
     expect(selector).toContain("GITHUB_OUTPUT")
+    expect(selector).not.toContain("listPackageFiles")
+    expect(selector).not.toContain("selectRegularPackageGhCandidate")
     expect(packageRecord).toContain('const DPKG_QUERY = "/usr/bin/dpkg-query"')
     expect(packageRecord).toContain('"--showformat=${db:Status-Abbrev}\\t${Architecture}\\n"')
     expect(packageRecord).toContain('"--listfiles", "gh"')

@@ -292,10 +292,11 @@ function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord) {
     && packageRecord.includes("value.includes(0) || value.includes(13)")
     && packageRecord.includes('const POLICY_PRIMARY_GH_RECORD = "/usr/bin/gh"')
     && packageRecord.includes('"/usr/share/bash-completion/completions/gh"')
-    && packageRecord.includes("constants.COPYFILE_EXCL") === false
     && packageRecord.includes("selectInstalledObserverGhCandidate")
     && packageRecord.includes('"record-encoding"')
     && packageRecord.includes('"canonical"')
+    && !core.includes("listPackageFiles")
+    && !core.includes("selectRegularPackageGhCandidate")
     && !core.includes("process.env.PATH")
     && !core.includes("command -v")
     && !core.includes("GH_TOKEN")
