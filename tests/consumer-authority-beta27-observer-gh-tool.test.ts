@@ -129,7 +129,11 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
     ])
 
     expect(selectRegularPackageGhCandidate([executable, completion], {
-      lstat: (path: string) => stats.get(path),
+      lstat: (path: string) => {
+        const stat = stats.get(path)
+        if (stat === undefined) throw new Error("fixture stat is missing")
+        return stat
+      },
     })).toBe(executable)
     expect(() => selectRegularPackageGhCandidate([
       executable,
