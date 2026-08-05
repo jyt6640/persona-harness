@@ -110,6 +110,9 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Rules: ${summary.rulePackDiagnostics} (${summary.rulePackDiagnosticCount} diagnostics)`,
     `Conventions: ${summary.conventionPackDiagnostics} (${summary.conventionPackDiagnosticCount} diagnostics)`,
     "Pack diagnostics are report-only; they do not block existing workflow gates.",
+    summary.astGrepAvailable
+      ? "ast-grep: available (AST conventions run)"
+      : "ast-grep: MISSING — AST conventions are skipped; install @ast-grep/cli or set PH_AST_GREP_BIN",
     ...rulePackDetails,
     ...conventionPackDetails,
     `Stale fixture scan: ${staleStatus}`,

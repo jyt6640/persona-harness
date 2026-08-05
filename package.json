@@ -246,6 +246,7 @@
     "snappy": "7.3.3"
   },
   "optionalDependencies": {
+    "@ast-grep/cli": "0.45.0",
     "@colbymchenry/codegraph": "1.1.6",
     "@theupsider/lsp-mcp": "1.1.2"
   },
