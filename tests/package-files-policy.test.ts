@@ -100,7 +100,7 @@ describe("package files policy", () => {
       toPackagePath(path.relative(packageRoot, filePath)),
     )
 
-    expect(conventionFiles).toHaveLength(8)
+    expect(conventionFiles).toHaveLength(11)
 
     for (const conventionFile of conventionFiles) {
       expect(isCoveredByPackageFiles(conventionFile, packageJson.files)).toBe(true)

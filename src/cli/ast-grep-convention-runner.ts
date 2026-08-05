@@ -123,7 +123,20 @@ function targetSuffixApplies(definition: ConventionDefinition, filePath: string)
   return suffixes === undefined || suffixes.some((suffix) => filePath.replace(/\\/g, "/").endsWith(suffix))
 }
 
-export function runAstGrepConvention(projectDir: string, definition: ConventionDefinition): AstGrepConventionResult {
+export type AstGrepConventionScanOptions = {
+  /**
+   * Restricts the scan to a single path instead of the whole default scan root.
+   * The runtime hook uses this so a per-write scan does not grow with the
+   * project.
+   */
+  readonly scanPath?: string
+}
+
+export function runAstGrepConvention(
+  projectDir: string,
+  definition: ConventionDefinition,
+  options: AstGrepConventionScanOptions = {},
+): AstGrepConventionResult {
   if (definition.check.kind !== "ast-grep") {
     return { status: "inactive" }
   }
@@ -141,7 +154,9 @@ export function runAstGrepConvention(projectDir: string, definition: ConventionD
     }
   }
 
-  const scanRoot = join(projectDir, DEFAULT_SCAN_ROOT)
+  const scanRoot = options.scanPath === undefined
+    ? join(projectDir, DEFAULT_SCAN_ROOT)
+    : resolve(projectDir, options.scanPath)
   if (!existsSync(scanRoot)) {
     return { findings: [], status: "checked" }
   }

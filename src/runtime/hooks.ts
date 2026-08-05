@@ -4,6 +4,7 @@ import { writePhase0Evidence } from "./evidence.js"
 import { ContinuationTracker } from "./continuation.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import {
+  isObserverFindingsEnabled,
   isRuntimeInjectionEnabled,
   loadHarnessConfigResult,
   resolveSafeEvidenceRootResult,
@@ -139,6 +140,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
+  const observerFindingsEnabled = isObserverFindingsEnabled(config)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
   const ralphLoop = new RalphLoopContinuationTracker({
     client: options.client,
@@ -339,6 +341,21 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           }
         }
 
+        // Observer findings are independent of guidance injection: the accepted
+        // A/B measured the guidance block, not this surface, so it must be able
+        // to run without turning that block back on.
+        if (observerFindingsEnabled) {
+          observeJavaWriteReportOnly({
+            evidenceDir,
+            projectDir,
+            tool: input.tool,
+            sessionID: input.sessionID,
+            callID: input.callID,
+            targetFile: observedTargetFile,
+            output,
+          })
+        }
+
         const injection = captureTargetFile(
           "tool.execute.after",
           input.tool,
@@ -368,14 +385,16 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         }, {
           evidenceDir,
         })
-        observeJavaWriteReportOnly({
-          evidenceDir,
-          projectDir,
-          tool: input.tool,
-          sessionID: input.sessionID,
-          callID: input.callID,
-          targetFile: injection.targetFile,
-        })
+        if (!observerFindingsEnabled) {
+          observeJavaWriteReportOnly({
+            evidenceDir,
+            projectDir,
+            tool: input.tool,
+            sessionID: input.sessionID,
+            callID: input.callID,
+            targetFile: injection.targetFile,
+          })
+        }
       })
     },
 

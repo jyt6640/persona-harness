@@ -283,16 +283,40 @@ function dtoBoundary(files: readonly string[]): ShapeFinding {
 }
 
 function entityDirectExposure(projectDir: string, files: readonly string[]): ShapeFinding {
-  const domainNames = files
-    .filter((filePath) => hasPathPart([filePath], "domain") && !filePath.endsWith("Repository.java"))
-    .map((filePath) => fileName(filePath).replace(/\.java$/, ""))
-    .filter((name): name is string => name !== undefined)
+  const domainNames = [...new Set([
+    ...files
+      .filter((filePath) => hasPathPart([filePath], "domain") && !filePath.endsWith("Repository.java"))
+      .map((filePath) => fileName(filePath).replace(/\.java$/, "")),
+    ...files
+      .filter((filePath) => declaresPersistenceEntity(filePath))
+      .map((filePath) => fileName(filePath).replace(/\.java$/, "")),
+  ])].filter((name): name is string => name !== undefined && name.length > 0)
   const controllerFiles = files.filter((filePath) => filePath.endsWith("Controller.java") || hasPathPart([filePath], "presentation"))
   const hits = controllerFiles.flatMap((filePath) => {
     const content = stripJavaCommentsAndLiterals(readFileSync(filePath, "utf8"))
     return domainNames.filter((domainName) => new RegExp(`\\b${domainName}\\b`).test(content)).map((domainName) => `${relative(projectDir, filePath)} exposes ${domainName}`)
   })
-  return hits.length === 0 ? pass("Entity direct exposure", "no controller domain entity exposure observed") : warn("Entity direct exposure", hits.join(", "))
+  if (hits.length > 0) {
+    return warn("Entity direct exposure", hits.join(", "))
+  }
+  // Only claim a clean boundary when persistence entities were actually found and
+  // none of them reached a Controller. With no recognizable entity the check has
+  // nothing to compare against, so it must not report a clean result.
+  return domainNames.length === 0
+    ? warn("Entity direct exposure", "no domain package or @Entity class recognized; exposure not determined")
+    : pass("Entity direct exposure", "no controller domain entity exposure observed")
+}
+
+function declaresPersistenceEntity(filePath: string): boolean {
+  if (!filePath.endsWith(".java")) {
+    return false
+  }
+  try {
+    const content = stripJavaCommentsAndLiterals(readFileSync(filePath, "utf8"))
+    return /@Entity\b/.test(content) && /\bimport\s+(?:jakarta|javax)\.persistence\./.test(content)
+  } catch {
+    return false
+  }
 }
 
 function stripJavaCommentsAndLiterals(content: string): string {

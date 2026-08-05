@@ -1,0 +1,18 @@
+id: spring.autowired-field-injection
+language: Java
+message: Field injection hides required collaborators and cannot be set in a plain unit test; declare them as constructor parameters.
+# persona-harness-level: warn
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: make the field private final and inject it through the constructor.
+# persona-harness-step-id: fix-spring-autowired-field-injection
+# persona-harness-roles: implementer, reviewer
+rule:
+  kind: field_declaration
+  has:
+    kind: modifiers
+    has:
+      kind: marker_annotation
+      regex: "^@Autowired$"

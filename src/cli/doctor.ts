@@ -9,6 +9,8 @@ import {
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
 import { readEntrySteeringStatusSummary } from "../runtime/entry-steering-status.js"
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
+import { findAstGrepBinary } from "./ast-grep-convention-runner.js"
+import { missingWorkflowTemplates } from "./plan.js"
 import { summarizeConventionPackDiagnostics } from "./convention-pack-diagnostics.js"
 import { readAuthorityStatus } from "./authority-command.js"
 import { selectAuthorityGithubToken } from "./authority-github-token.js"
@@ -161,6 +163,8 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     rulePackDiagnosticCount: rulePackDiagnostics.diagnosticCount,
     rulePackDiagnosticDetails: rulePackDiagnostics.diagnostics,
     conventionPackDiagnostics: conventionPackDiagnostics.finding,
+    astGrepAvailable: findAstGrepBinary() !== undefined,
+    missingWorkflowTemplates: missingWorkflowTemplates(projectDir),
     conventionPackDiagnosticCount: conventionPackDiagnostics.diagnosticCount,
     conventionPackDiagnosticDetails: conventionPackDiagnostics.diagnostics,
     rulesFileCount: rulesScan.rulesFileCount,

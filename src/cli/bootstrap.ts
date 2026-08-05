@@ -18,7 +18,12 @@ import { enableRuntimeInjectionPreview, enableStrictClosureVerification } from "
 import { PROFILE_PATH } from "./intake-profile.js"
 import { initializeFreshBootstrapPersonaHarness } from "./init.js"
 import { runIntakeCommand } from "./intake.js"
-import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH } from "./plan.js"
+import {
+  IMPLEMENTATION_REPORT_PATH,
+  PLAN_PATH,
+  restoreMissingWorkflowTemplates,
+  REVIEW_REPORT_PATH,
+} from "./plan.js"
 import { runPlanCommand } from "./plan-command.js"
 import { runPolicyCommand } from "./policy.js"
 import {
@@ -558,6 +563,15 @@ function runBackendBootstrap(
     }
   } else {
     skipped.push(`${PLAN_PATH} already exists`)
+    // Report templates are only written while drafting a plan, so a project
+    // whose plan survives but whose templates were deleted had no way back.
+    const restored = restoreMissingWorkflowTemplates({
+      bootstrapWriteBoundary: activeBoundary,
+      projectDir: capturedProjectDir,
+    })
+    for (const path of restored) {
+      actions.push(`restored missing workflow template ${path}`)
+    }
   }
 
     activeBoundary.assert()

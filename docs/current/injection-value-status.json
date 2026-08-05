@@ -110,5 +110,76 @@
     "stoppingReason": "Deconfounded runtime smoke does not show PH clearly beating the plain baseline; keep injection effect unproven."
   },
   "decision": "freeze-expansion",
-  "decisionRationale": "Accepted 10-pair local-current OpenCode PH OFF/ON evidence found PH runtime injection worse for provider-token total, read chars, tool calls, and elapsed time in all pairs. Runtime guidance is downgraded to explicit opt-in preview while gate/evidence CLI surfaces remain the product center."
+  "decisionRationale": "Accepted 10-pair local-current OpenCode PH OFF/ON evidence found PH runtime injection worse for provider-token total, read chars, tool calls, and elapsed time in all pairs. Runtime guidance is downgraded to explicit opt-in preview while gate/evidence CLI surfaces remain the product center.",
+  "observerFindingsMeasurement": {
+    "surface": "ph-observer-findings",
+    "configFlag": "features.observerFindings",
+    "measuredAt": "2026-08-05",
+    "host": "OpenCode 1.17.16",
+    "model": "openai/gpt-5.3-codex-spark",
+    "scenario": "extend-existing-violating-orders-api",
+    "scenarioNote": "A greenfield pilot produced zero HIGH findings in both arms; that scenario has no headroom because this model writes clean layered Spring code unprompted. The measured scenario seeds a Controller that already calls the repository directly, imports jakarta.persistence, returns a raw type, and builds a native query by string concatenation, then asks for two unrelated new endpoints.",
+    "decisionRuleFixedBeforeMeasuring": {
+      "primary": "HIGH-confidence observer WARN findings left in src/main/java (lower is better)",
+      "guardrail": "provider token total",
+      "defaultOnRequires": "primary decreases AND guardrail stays within a stated bound",
+      "otherwise": "record the negative and keep the flag default-off"
+    },
+    "pairedOpenCodeSessions": {
+      "pairs": 10,
+      "totalSessions": 20,
+      "pairControls": [
+        "same seeded source inside each pair",
+        "same task prompt inside each pair",
+        "fresh project per session",
+        "counterbalanced OFF/ON order",
+        "runtimeInjection off in both arms"
+      ],
+      "deliveryConfirmedPairs": 9,
+      "deliveryNote": "Manipulation check counts observer records carrying a HIGH WARN. One ON session (pair 3) delivered none and is reported separately.",
+      "meanRemainingViolations": {
+        "off": 3.5,
+        "on": 3.8
+      },
+      "meanRemainingViolationsDeliveryConfirmed": {
+        "off": 3.67,
+        "on": 3.67
+      },
+      "pairOutcomes": {
+        "onBetter": 2,
+        "tie": 5,
+        "offBetter": 3
+      },
+      "pairOutcomesDeliveryConfirmed": {
+        "onBetter": 2,
+        "tie": 5,
+        "offBetter": 2
+      },
+      "meanProviderTotal": {
+        "off": 594789,
+        "on": 488453
+      },
+      "outcomeDistribution": {
+        "off": {
+          "2": 5,
+          "5": 5
+        },
+        "on": {
+          "2": 4,
+          "5": 6
+        }
+      },
+      "outcomeShapeNote": "The primary outcome is bimodal: the agent either cleans up the seeded legacy method (2 remaining) or leaves it alone (5 remaining). OFF split exactly 5/5, so the scenario behaves like a coin flip on whether unrequested cleanup happens, and findings did not reliably move it."
+    },
+    "prerequisiteDefectFound": {
+      "summary": "Instrumenting a live session showed Codex-family models edit through `apply_patch`, whose only argument is `patchText`. Target extraction looked only for path-shaped arguments, so every such edit was invisible to the observers, write guard, injection, and Java role read coverage.",
+      "effectOnEarlierAttempts": "Three earlier pairs recorded zero delivery and were discarded before the reported window.",
+      "fixedIn": "Fix: observe files edited through apply_patch"
+    },
+    "outcome": "no-improvement",
+    "decision": "keep-default-off",
+    "decisionRationale": "Remaining violations did not decrease (3.50 off vs 3.80 on across all pairs; 3.67 vs 3.67 across delivery-confirmed pairs) and pair outcomes were 2 better / 5 tied / 3 worse. The pre-fixed rule requires a decrease, so the flag stays default-off. Provider tokens were 17.9% lower with findings on, but the guardrail cannot substitute for the primary.",
+    "whatThisDoesNotShow": "This does not show that surfacing findings is useless, only that on this scenario, host, and model it did not reduce remaining violations. The appended block states it is report-only and not enforcement, which gives a task-focused agent a sound reason to leave unrequested cleanup alone. A directive variant was not measured and would be a separate claim.",
+    "claimBoundary": "No token-saving, app-quality, agent-improvement, or product-efficacy claim is made from this measurement."
+  }
 }

@@ -237,6 +237,52 @@ function existingWorkflowPaths(projectDir: string, bootstrapWriteBoundary?: Boot
   )
 }
 
+const RESTORABLE_WORKFLOW_TEMPLATES = [
+  IMPLEMENTATION_REPORT_PATH,
+  REVIEW_REPORT_PATH,
+  ROLE_BOUNDARY_PATH,
+] as const
+
+export function missingWorkflowTemplates(
+  projectDir: string,
+  bootstrapWriteBoundary?: BootstrapWriteBoundary,
+): readonly string[] {
+  return RESTORABLE_WORKFLOW_TEMPLATES.filter((path) =>
+    !(bootstrapWriteBoundary?.projectFileExists(path) ?? existsSync(join(projectDir, path))),
+  )
+}
+
+/**
+ * Rewrites report templates that are missing without touching the plan or any
+ * template still on disk. These are only ever written as a side effect of
+ * drafting a plan, so deleting one previously left the project in a state where
+ * `workflow finish` demanded a file that no command would recreate.
+ */
+export function restoreMissingWorkflowTemplates(options: PlanOptions = {}): readonly string[] {
+  const projectDir = options.bootstrapWriteBoundary === undefined ? resolve(options.projectDir ?? process.cwd()) : "."
+  const missing = missingWorkflowTemplates(projectDir, options.bootstrapWriteBoundary)
+  if (missing.length === 0) {
+    return []
+  }
+
+  if (options.bootstrapWriteBoundary === undefined) {
+    mkdirSync(join(projectDir, ".persona", "workflow"), { recursive: true })
+  }
+  const inputLines = readmeLines(projectDir, options.bootstrapWriteBoundary)
+  for (const path of missing) {
+    if (path === IMPLEMENTATION_REPORT_PATH) {
+      writeWorkflowTemplate(options, "implementation-report.md", join(projectDir, path), createImplementationReportTemplate(inputLines))
+      continue
+    }
+    if (path === REVIEW_REPORT_PATH) {
+      writeWorkflowTemplate(options, "review-report.md", join(projectDir, path), createReviewReportTemplate(inputLines))
+      continue
+    }
+    writeWorkflowTemplate(options, "roles.md", join(projectDir, path), createWorkflowRoleBoundaryTemplate())
+  }
+  return missing
+}
+
 export function initializeWorkflowPlan(options: PlanOptions = {}, force = false): string {
   const projectDir = options.bootstrapWriteBoundary === undefined ? resolve(options.projectDir ?? process.cwd()) : "."
   const profileState = readBackendProjectProfileState(projectDir, options.bootstrapWriteBoundary)

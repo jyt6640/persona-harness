@@ -40,7 +40,18 @@ export type HarnessConfig = {
 
 export type HarnessFeaturesConfig = {
   readonly entrySteering: boolean
+  /**
+   * Injects rule, profile, and policy guidance into tool output. Measured
+   * negative in the accepted 10-pair A/B and kept off by default.
+   */
   readonly runtimeInjection: boolean
+  /**
+   * Surfaces the observer's own findings for the file that was just written.
+   * Independent of {@link runtimeInjection} so the measured-negative guidance
+   * injection does not hold this surface hostage; it carries a different cost
+   * shape and has to earn its own default.
+   */
+  readonly observerFindings: boolean
 }
 
 export type HarnessEnforceConfig = {
@@ -115,6 +126,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
   features: {
     entrySteering: false,
     runtimeInjection: false,
+    observerFindings: false,
   },
   enforce: {
     compaction: {
@@ -161,6 +173,7 @@ const FAIL_CLOSED_CONFIG: HarnessConfig = {
   features: {
     entrySteering: false,
     runtimeInjection: false,
+    observerFindings: false,
   },
   enforce: {
     ...DEFAULT_CONFIG.enforce,
@@ -243,7 +256,11 @@ function validConfigShape(value: Record<string, unknown>): boolean {
   }
 
   if (isRecord(value.features)) {
-    if (!isBooleanIfPresent(value.features, "entrySteering") || !isBooleanIfPresent(value.features, "runtimeInjection")) {
+    if (
+      !isBooleanIfPresent(value.features, "entrySteering")
+      || !isBooleanIfPresent(value.features, "runtimeInjection")
+      || !isBooleanIfPresent(value.features, "observerFindings")
+    ) {
       return false
     }
   }
@@ -354,6 +371,7 @@ function readFeaturesConfig(value: unknown): HarnessFeaturesConfig {
   return {
     entrySteering: readBoolean(value.entrySteering, DEFAULT_CONFIG.features.entrySteering),
     runtimeInjection: readBoolean(value.runtimeInjection, DEFAULT_CONFIG.features.runtimeInjection),
+    observerFindings: readBoolean(value.observerFindings, DEFAULT_CONFIG.features.observerFindings),
   }
 }
 
@@ -509,6 +527,10 @@ export function loadHarnessConfig(projectDir: string, projectReadBoundary?: Harn
 
 export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
   return config.enabled && config.features.runtimeInjection
+}
+
+export function isObserverFindingsEnabled(config: HarnessConfig): boolean {
+  return config.enabled && config.features.observerFindings
 }
 
 export function loadHarnessConfigResult(

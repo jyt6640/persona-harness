@@ -23,7 +23,7 @@ experiments/*
 !experiments/filesystem-residue-corpus/**
 !experiments/fixture-qualification-authorization/
 !experiments/fixture-qualification-authorization/**
-example/
+/example/
 
 # OpenCode / Persona local runtime artifacts.
 AGENTS.md

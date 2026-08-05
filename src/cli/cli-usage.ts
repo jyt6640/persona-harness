@@ -10,6 +10,7 @@ function englishUsage(invocationName: string): string {
     "  attach [--yes]               Prepare an existing Java/Spring/Gradle project for the workflow.",
     "  go <goal> | --stdin           Host-neutral single entry from a concrete goal to the current ticket and implementation rail.",
     "  doctor                       Diagnose local OpenCode and Persona Harness installation state.",
+    "  observe <path>               Report Java/Spring observer findings for a file or directory.",
     "  authority                    Inspect or enroll bounded external consumer authority.",
     "",
     "Examples:",
@@ -20,6 +21,7 @@ function englishUsage(invocationName: string): string {
     `  ${invocationName} go "Add a task creation endpoint."`,
     `  printf "Add task creation." | ${invocationName} go --stdin`,
     `  ${invocationName} doctor`,
+    `  ${invocationName} observe src/main/java`,
     `  ${invocationName} authority status`,
   ].join("\n")
 }
@@ -34,6 +36,7 @@ function koreanUsage(invocationName: string): string {
     "  attach [--yes]               기존 Java/Spring/Gradle 프로젝트를 workflow에 연결합니다.",
     "  go <goal> | --stdin           구체적인 목표를 현재 ticket과 구현 rail로 연결하는 단일 진입점입니다.",
     "  doctor                       로컬 OpenCode 및 Persona Harness 설치 상태를 진단합니다.",
+    "  observe <path>               파일 또는 디렉터리의 Java/Spring observer 관측 결과를 보고합니다.",
     "  authority                    제한된 외부 consumer authority 상태를 확인하거나 등록합니다.",
     "",
     "도움말 언어 선택: --lang en 또는 --lang ko",
@@ -46,6 +49,7 @@ function koreanUsage(invocationName: string): string {
     `  ${invocationName} go "작업 생성 endpoint를 추가해줘."`,
     `  printf "작업 생성 endpoint를 추가해줘." | ${invocationName} go --stdin`,
     `  ${invocationName} doctor`,
+    `  ${invocationName} observe src/main/java`,
     `  ${invocationName} authority status`,
   ].join("\n")
 }
