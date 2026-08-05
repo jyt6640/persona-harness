@@ -113,6 +113,12 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     summary.astGrepAvailable
       ? "ast-grep: available (AST conventions run)"
       : "ast-grep: MISSING — AST conventions are skipped; install @ast-grep/cli or set PH_AST_GREP_BIN",
+    ...(summary.missingWorkflowTemplates.length > 0
+      ? [
+          `Workflow templates: MISSING ${summary.missingWorkflowTemplates.join(", ")}`,
+          "- workflow finish requires these; run npx ph bootstrap backend to restore them",
+        ]
+      : []),
     ...rulePackDetails,
     ...conventionPackDetails,
     `Stale fixture scan: ${staleStatus}`,
