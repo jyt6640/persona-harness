@@ -18,11 +18,11 @@ afterEach(() => {
   rmSync(fixtureWorkspace, { recursive: true, force: true })
 })
 
-function writeHarnessConfig(runtimeInjection: boolean): void {
+function writeHarnessConfig(runtimeInjection: boolean, observerFindings = runtimeInjection): void {
   mkdirSync(join(fixtureWorkspace, ".persona"), { recursive: true })
   writeFileSync(
     join(fixtureWorkspace, ".persona", "harness.jsonc"),
-    `${JSON.stringify({ features: { runtimeInjection }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+    `${JSON.stringify({ features: { runtimeInjection, observerFindings }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
   )
 }
 
@@ -133,7 +133,24 @@ describe("observer findings surfaced to the acting agent", () => {
     expect(output.output).toContain("orderRepository")
   })
 
-  it("stays silent when runtime injection is disabled", async () => {
+  it("runs without the measured-negative guidance injection", async () => {
+    writeHarnessConfig(false, true)
+    const targetFile = writeControllerFixture()
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const output = { title: "write", output: "ok", metadata: {} }
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "write", sessionID: "session-findings-only", callID: "call-findings-only", args: { path: targetFile } },
+      output,
+    )
+
+    // The guidance block is what the accepted A/B measured as negative. Findings
+    // must be able to reach the agent without switching it back on.
+    expect(output.output).toContain(OBSERVER_OUTPUT_MARKER)
+    expect(output.output).not.toContain("[Persona Harness Injection]")
+  })
+
+  it("stays silent when both surfaces are disabled", async () => {
     writeHarnessConfig(false)
     const targetFile = writeControllerFixture()
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })

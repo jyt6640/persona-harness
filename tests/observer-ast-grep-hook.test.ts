@@ -26,7 +26,7 @@ function createProject(conventions: readonly { readonly name: string; readonly b
   mkdirSync(join(projectDir, ".persona", "conventions"), { recursive: true })
   writeFileSync(
     join(projectDir, ".persona", "harness.jsonc"),
-    `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+    `${JSON.stringify({ features: { runtimeInjection: true, observerFindings: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
   )
   for (const convention of conventions) {
     writeFileSync(join(projectDir, ".persona", "conventions", convention.name), convention.body)
