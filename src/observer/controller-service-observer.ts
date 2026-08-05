@@ -68,7 +68,10 @@ export function observeControllerServiceDependency(input: ObserveControllerServi
   if (methodCalls.length > 0) {
     return observation("PASS", "MEDIUM", evidence)
   }
-  return observation("WARN", undefined, evidence)
+  // The Controller class parsed successfully and declared no Service field,
+  // constructor parameter, or call site. The absence is the observation, so it
+  // is definitive rather than unscored.
+  return observation("WARN", "HIGH", evidence)
 }
 
 function observation(

@@ -9,8 +9,11 @@ export type ControllerRepositoryEvidence = {
   readonly methodCalls: readonly string[]
 }
 
+export type ControllerRepositoryConfidence = "HIGH" | "MEDIUM"
+
 export type ControllerRepositoryObservation = {
   readonly finding: ObserverFinding
+  readonly confidence?: ControllerRepositoryConfidence
   readonly evidence: ControllerRepositoryEvidence
   readonly limitations: readonly string[]
 }
@@ -60,6 +63,10 @@ export function observeControllerRepositoryDependency(
 
   return {
     finding: hasEvidence(evidence) ? "WARN" : "PASS",
+    // A WARN here is backed by concrete repository fields, constructor parameters,
+    // or call sites in the Controller, so it is a high-confidence observation.
+    // A PASS only records the absence of those spans and stays MEDIUM.
+    confidence: hasEvidence(evidence) ? "HIGH" : "MEDIUM",
     evidence,
     limitations: [STRING_BASED_LIMITATION],
   }

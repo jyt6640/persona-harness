@@ -160,7 +160,9 @@ class ReservationService {
     const findings = arrayValue(reportRecord.findings)
     const repositoryFinding = findingByRule(findings, "controller.repository-dependency")
     expect(repositoryFinding.result).toBe("WARN")
-    expect(repositoryFinding.confidence).toBe("NONE")
+    // The WARN is backed by concrete repository spans in the Controller, so it
+    // reports HIGH rather than the unscored NONE it used to emit.
+    expect(repositoryFinding.confidence).toBe("HIGH")
     expect(repositoryFinding.source).toBe("manual/text")
     expect(repositoryFinding.filePath).toBe("src/main/java/com/example/ReservationController.java")
     expect(stringArrayValue(repositoryFinding.limitations)).toEqual([
