@@ -31,8 +31,9 @@
 Unlike most agent-harness projects, PH publishes what it has actually measured — including negatives.
 
 - **Simple forged TDD evidence fixture** planted before `workflow finish` → `finish` exits **1**, forged file ignored.
-- **Green-only completion** with the TDD rail on → blocked **5/5** (vs allowed 5/5 off).
+- **Green-only completion** with the TDD rail on → blocked **5/5** (vs allowed 5/5 off). Measured against the pre-authority gate; `finish` now also requires external authority in every configuration, so the "allowed" arm is no longer reproducible as written.
 - **Runtime injection**, 10 paired OpenCode runs → equal success (10/10 both), but PH ON cost more on every pair → kept **default-off**.
+- **Observer findings surfaced to the agent**, 10 paired OpenCode runs → remaining violations did not drop (3.50 off vs 3.80 on) → kept **default-off**.
 
 Completion-integrity measurements are bounded local fixtures. They are *not*
 token-saving, app-quality, product-efficacy, security, GA, or broad
@@ -111,6 +112,9 @@ address hostile same-user filesystem path replacement.
 > [!NOTE]
 > If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. **That failure is the product working, not a bug.**
 
+> [!IMPORTANT]
+> `workflow finish` cannot reach a trusted PASS from a purely local checkout. Clearing every content gate still leaves `trusted-authority-required`, because only a verified external attestation from an enrolled repository grants finish authority. Enrol one with `npx ph authority`, and run `npx ph doctor` to see the current `Finish authority` and `Consumer authority` state before you rely on the gate.
+
 Three-beat setup, gate, and goal-entry walkthrough: **[Quick Demo](docs/QUICK-DEMO.md)**.
 
 ## TDD Rail (opt-in)
@@ -138,6 +142,7 @@ npx ph workflow split README.md && npx ph workflow next   # multi-ticket
 npx ph bearshell --shell 'gradle test'                    # bounded execution
 npx ph evidence summary | metrics --json | ab-report --json | pminus-report --json
 npx ph authority status | enroll github <owner/repository> --workflow <path> | fetch github [owner/repository]
+npx ph observe src/main/java                              # Java/Spring observer findings
 npx ph review backend-shape
 ```
 
