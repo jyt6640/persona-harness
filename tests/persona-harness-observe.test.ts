@@ -327,7 +327,9 @@ class TodoController {
       const finding = findingByRule(arrayValue(report.findings), CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id)
       expect(finding).toEqual(expect.objectContaining({
         ruleId: CONTROLLER_PERSISTENCE_IMPORT_CONVENTION.id,
-        result: "WARN",
+        // A convention that never ran carries no verdict; reporting it as WARN
+        // fabricated a violation the code did not have.
+        result: "UNKNOWN",
         confidence: "NONE",
         source: "ast-grep",
         filePath: ".persona/conventions",

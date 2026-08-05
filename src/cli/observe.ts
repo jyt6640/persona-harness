@@ -144,9 +144,12 @@ function observeAstGrepConvention(
     return []
   }
   if (result.status === "skipped") {
+    // A convention that never ran has no verdict. Reporting it as WARN told the
+    // user their code violated a rule that was in fact not evaluated — on a host
+    // without ast-grep that produced one fabricated violation per convention.
     return [{
       ruleId: definition.id,
-      result: "WARN",
+      result: "UNKNOWN",
       evidence: { status: "skipped", warning: result.warning },
       confidence: "NONE",
       source: "ast-grep",

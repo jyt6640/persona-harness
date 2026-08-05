@@ -11,6 +11,7 @@ import { readEntrySteeringStatusSummary } from "../runtime/entry-steering-status
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
 import { findAstGrepBinary } from "./ast-grep-convention-runner.js"
 import { missingWorkflowTemplates } from "./plan.js"
+import { workflowLifecycleStateSupported } from "../io/workflow-lifecycle-state.js"
 import { summarizeConventionPackDiagnostics } from "./convention-pack-diagnostics.js"
 import { readAuthorityStatus } from "./authority-command.js"
 import { selectAuthorityGithubToken } from "./authority-github-token.js"
@@ -165,6 +166,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     conventionPackDiagnostics: conventionPackDiagnostics.finding,
     astGrepAvailable: findAstGrepBinary() !== undefined,
     missingWorkflowTemplates: missingWorkflowTemplates(projectDir),
+    workflowLifecycleSupported: workflowLifecycleStateSupported(),
     conventionPackDiagnosticCount: conventionPackDiagnostics.diagnosticCount,
     conventionPackDiagnosticDetails: conventionPackDiagnostics.diagnostics,
     rulesFileCount: rulesScan.rulesFileCount,
