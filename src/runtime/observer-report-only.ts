@@ -26,7 +26,22 @@ type ObserveJavaWriteInput = {
   readonly sessionID: string
   readonly callID?: string
   readonly targetFile?: string
+  readonly output?: ObserverToolOutput
 }
+
+/**
+ * Structural view of the host tool output. Kept local so the observer does not
+ * depend on the plugin hook module.
+ */
+export type ObserverToolOutput = {
+  output?: unknown
+}
+
+export const OBSERVER_OUTPUT_MARKER = "[Persona Harness Observation]"
+const OBSERVER_OUTPUT_BUDGET = 1_200
+const OBSERVER_LINE_BUDGET = 240
+const OBSERVER_OUTPUT_TRUNCATION = "… (truncated; see .persona/evidence for the full record)"
+const OBSERVER_OUTPUT_FOOTER = "Report-only: not enforcement and not generated app quality certification."
 
 type ObserverObservation =
   | ControllerRepositoryObservation
@@ -51,17 +66,21 @@ export function observeJavaWriteReportOnly(input: ObserveJavaWriteInput): void {
     const absoluteTargetPath = resolve(input.projectDir, input.targetFile)
     const source = readFileSync(absoluteTargetPath, "utf8")
     const inspectedFile = relative(input.projectDir, absoluteTargetPath) || "."
+    const findings = observeJavaFile(input.projectDir, absoluteTargetPath, source)
     writeObserverReportOnlyEvidence(input.projectDir, {
       hook: "tool.execute.after",
       sessionID: input.sessionID,
       callID: input.callID,
       targetFile: input.targetFile,
       inspectedFile,
-      findings: observeJavaFile(input.projectDir, absoluteTargetPath, source),
+      findings,
       limitations: OBSERVER_LIMITATIONS,
     }, {
       evidenceDir: input.evidenceDir,
     })
+    if (input.output !== undefined) {
+      appendObserverFindingsToToolOutput(input.output, findings, inspectedFile)
+    }
   } catch (error) {
     const detail = input.targetFile
     if (error instanceof Error) {
@@ -70,6 +89,100 @@ export function observeJavaWriteReportOnly(input: ObserveJavaWriteInput): void {
     }
     warnRuntimeFailure("observer-report-only", "observer-report-only", detail, new Error(String(error)))
   }
+}
+
+/**
+ * Surfaces actionable observer findings in the tool output the agent reads.
+ * Only HIGH-confidence WARN findings backed by concrete evidence are appended;
+ * every finding is still written to the evidence store regardless of this.
+ */
+export function appendObserverFindingsToToolOutput(
+  output: ObserverToolOutput,
+  findings: readonly ObserverReportOnlyFinding[],
+  inspectedFile: string,
+): void {
+  if (typeof output.output !== "string" || output.output.includes(OBSERVER_OUTPUT_MARKER)) {
+    return
+  }
+  const block = formatObserverFindingsBlock(findings, inspectedFile)
+  if (block === undefined) {
+    return
+  }
+  output.output = `${output.output}\n\n---\n\n${block}`
+}
+
+export function formatObserverFindingsBlock(
+  findings: readonly ObserverReportOnlyFinding[],
+  inspectedFile: string,
+): string | undefined {
+  const actionable = findings.filter(isActionableFinding)
+  if (actionable.length === 0) {
+    return undefined
+  }
+
+  const lines: string[] = []
+  let used = 0
+  let truncated = false
+  for (const finding of actionable) {
+    const line = truncateTo(`- ${finding.ruleId}: ${summarizeEvidence(finding.evidence)}`, OBSERVER_LINE_BUDGET)
+    if (lines.length > 0 && used + line.length > OBSERVER_OUTPUT_BUDGET) {
+      truncated = true
+      break
+    }
+    lines.push(line)
+    used += line.length + 1
+  }
+
+  return [
+    `${OBSERVER_OUTPUT_MARKER} ${inspectedFile}`,
+    "",
+    ...lines,
+    ...(truncated ? [OBSERVER_OUTPUT_TRUNCATION] : []),
+    "",
+    OBSERVER_OUTPUT_FOOTER,
+  ].join("\n")
+}
+
+function isActionableFinding(finding: ObserverReportOnlyFinding): boolean {
+  return finding.result === "WARN" && finding.confidence === "HIGH" && summarizeEvidence(finding.evidence).length > 0
+}
+
+/**
+ * Flattens the observer evidence shape into the concrete source spans that make
+ * a finding checkable. Findings whose evidence carries no span are not
+ * actionable and are filtered out by {@link isActionableFinding}.
+ */
+function summarizeEvidence(evidence: unknown): string {
+  if (typeof evidence === "string") {
+    return evidence.trim()
+  }
+  if (!isPlainRecord(evidence)) {
+    return ""
+  }
+  const spans: string[] = []
+  for (const value of Object.values(evidence)) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      spans.push(value.trim())
+      continue
+    }
+    if (!Array.isArray(value)) {
+      continue
+    }
+    for (const item of value) {
+      if (typeof item === "string" && item.trim().length > 0) {
+        spans.push(item.trim())
+      }
+    }
+  }
+  return spans.join(" | ")
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function truncateTo(value: string, budget: number): string {
+  return value.length <= budget ? value : `${value.slice(0, Math.max(0, budget - 1))}…`
 }
 
 function isJavaWriteOrEditTool(tool: string): boolean {

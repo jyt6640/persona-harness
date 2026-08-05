@@ -375,6 +375,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           sessionID: input.sessionID,
           callID: input.callID,
           targetFile: injection.targetFile,
+          output,
         })
       })
     },
