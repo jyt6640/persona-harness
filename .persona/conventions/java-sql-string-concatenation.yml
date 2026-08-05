@@ -1,0 +1,19 @@
+id: java.sql-string-concatenation
+language: Java
+message: SQL built by string concatenation is injectable; bind parameters instead of concatenating values into the query.
+# persona-harness-level: warn
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: replace the concatenated query with bound parameters (setParameter, named :parameters, or PreparedStatement placeholders).
+# persona-harness-step-id: fix-java-sql-string-concatenation
+# persona-harness-roles: implementer, reviewer
+rule:
+  any:
+    - pattern: $RECEIVER.createNativeQuery($LEFT + $RIGHT)
+    - pattern: $RECEIVER.createQuery($LEFT + $RIGHT)
+    - pattern: $RECEIVER.executeQuery($LEFT + $RIGHT)
+    - pattern: $RECEIVER.executeUpdate($LEFT + $RIGHT)
+    - pattern: $RECEIVER.prepareStatement($LEFT + $RIGHT)
+    - pattern: "@Query($LEFT + $RIGHT)"

@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs"
 import { relative, resolve } from "node:path"
 
+import {
+  findAstGrepBinary,
+  loadAstGrepConventionDefinitions,
+  runAstGrepConvention,
+} from "../cli/ast-grep-convention-runner.js"
 import { CONTROLLER_REPOSITORY_CONVENTION } from "../config/convention-registry.js"
 import { observeControllerRepositoryDependency } from "../observer/controller-repository-observer.js"
 import type { ControllerRepositoryObservation } from "../observer/controller-repository-observer.js"
@@ -52,6 +57,7 @@ type ObserverObservation =
   | TestContractObservation
 
 const INFO_NORMALIZATION_LIMITATION = "INFO observation normalized to UNKNOWN because ph observe schema is PASS/WARN/UNKNOWN."
+const AST_CONVENTION_LIMITATION = "AST convention match from ast-grep; report-only and not enforcement."
 const OBSERVER_LIMITATIONS = [
   "Report-only observer output; not enforcement and not generated app quality certification.",
   "Java parsing is text based and may miss equivalent AST shapes.",
@@ -89,6 +95,42 @@ export function observeJavaWriteReportOnly(input: ObserveJavaWriteInput): void {
     }
     warnRuntimeFailure("observer-report-only", "observer-report-only", detail, new Error(String(error)))
   }
+}
+
+/**
+ * Runs the AST conventions against the single file that was just written.
+ * The CLI `observe` surface already reports these; without this the runtime hook
+ * saw only the text-based observers, so the higher-precision AST findings never
+ * reached the agent. The scan is scoped to one file so its cost does not grow
+ * with the project, and it is skipped entirely when ast-grep is unavailable.
+ */
+function observeAstGrepConventions(
+  projectDir: string,
+  filePath: string,
+  relativePath: string,
+): readonly ObserverReportOnlyFinding[] {
+  if (findAstGrepBinary() === undefined) {
+    return []
+  }
+  const findings: ObserverReportOnlyFinding[] = []
+  for (const definition of loadAstGrepConventionDefinitions(projectDir)) {
+    const result = runAstGrepConvention(projectDir, definition, { scanPath: filePath })
+    if (result.status !== "checked" || result.findings.length === 0) {
+      continue
+    }
+    findings.push({
+      ruleId: definition.id,
+      result: "WARN",
+      evidence: { matches: result.findings.map((match) => `line ${match.line}: ${match.message}`) },
+      // AST conventions match a concrete syntax node rather than a text
+      // heuristic, so a match is a high-confidence observation.
+      confidence: definition.highPrecision ? "HIGH" : "MEDIUM",
+      source: "live-hook/text",
+      limitations: [AST_CONVENTION_LIMITATION],
+      filePath: relativePath,
+    })
+  }
+  return findings
 }
 
 /**
@@ -225,6 +267,7 @@ function observeJavaFile(projectDir: string, filePath: string, source: string): 
   if (/(?:Test|Tests|IntegrationTest)\.java$/.test(filePath)) {
     findings.push(normalizeObservation("test.contract-anchors", relativePath, observeTestContractAnchors({ filePath, source, scenario: "step1" })))
   }
+  findings.push(...observeAstGrepConventions(projectDir, filePath, relativePath))
   if (findings.length === 0) {
     findings.push({
       ruleId: "java-file.applicability",
