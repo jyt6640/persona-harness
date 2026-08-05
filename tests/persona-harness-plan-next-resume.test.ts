@@ -142,10 +142,10 @@ describe("ph plan --next", () => {
       report
         .replace("Status: template", "Status: filled")
         .replace("- README ranges read:", "- README ranges read: 1-220")
-        .replace("- 미완료 요구사항:", "- 미완료 요구사항: Step 3~7")
-        .replace("- 남은 README/plan 범위:", "- 남은 README/plan 범위: README 221-end")
-        .replace("- 남은 구현 범위:", "- 남은 구현 범위: import/export and sharing API")
-        .replace("- 다음 프롬프트 힌트:", "- 다음 프롬프트 힌트: 이어서 구현해줘"),
+        .replace("- Requirements not completed:", "- Requirements not completed: Step 3~7")
+        .replace("- README/plan ranges still unread:", "- README/plan ranges still unread: README 221-end")
+        .replace("- Implementation scope still open:", "- Implementation scope still open: import/export and sharing API")
+        .replace("- Hint for the next prompt:", "- Hint for the next prompt: 이어서 구현해줘"),
     )
 
     const result = runPlan(projectDir, ["--next"])
@@ -245,13 +245,13 @@ describe("ph plan --resume", () => {
         .replace("- Plan read method:", "- Plan read method: OpenCode Read")
         .replace("- Plan ranges read:", "- Plan ranges read: 1-220")
         .replace("- Unread ranges:", "- Unread ranges: README 201-end")
-        .replace("- 완료한 요구사항:", "- 완료한 요구사항: Step 1 basic CRUD")
-        .replace("- 미완료 요구사항:", "- 미완료 요구사항: Step 2 import/export")
-        .replace("- 마지막으로 완료한 요구사항/파일:", "- 마지막으로 완료한 요구사항/파일: build.gradle 생성 전 중단")
-        .replace("- 남은 README/plan 범위:", "- 남은 README/plan 범위: README 201-end")
-        .replace("- 남은 구현 범위:", "- 남은 구현 범위: Spring Boot source generation")
-        .replace("- 중단 이유:", "- 중단 이유: TUI output limit")
-        .replace("- 다음에 이어서 실행할 명령/작업:", "- 다음에 이어서 실행할 명령/작업: generate src/main/java"),
+        .replace("- Requirements completed:", "- Requirements completed: Step 1 basic CRUD")
+        .replace("- Requirements not completed:", "- Requirements not completed: Step 2 import/export")
+        .replace("- Last requirement or file completed:", "- Last requirement or file completed: build.gradle 생성 전 중단")
+        .replace("- README/plan ranges still unread:", "- README/plan ranges still unread: README 201-end")
+        .replace("- Implementation scope still open:", "- Implementation scope still open: Spring Boot source generation")
+        .replace("- Reason for stopping:", "- Reason for stopping: TUI output limit")
+        .replace("- Next command or task to resume with:", "- Next command or task to resume with: generate src/main/java"),
     )
 
     const result = runPlan(projectDir, ["--resume"])
@@ -280,10 +280,10 @@ describe("ph workflow continue", () => {
         .replace("- README read method:", "- README read method: npx ph bearshell chunks")
         .replace("- README ranges read:", "- README ranges read: 1-440")
         .replace("- Unread ranges:", "- Unread ranges: README 441-end")
-        .replace("- 미완료 요구사항:", "- 미완료 요구사항: Step 4/6/7")
-        .replace("- 남은 README/plan 범위:", "- 남은 README/plan 범위: README Step 4/6/7")
-        .replace("- 남은 구현 범위:", "- 남은 구현 범위: import/export and sharing API")
-        .replace("- 다음에 이어서 실행할 명령/작업:", "- 다음에 이어서 실행할 명령/작업: continue Step 4"),
+        .replace("- Requirements not completed:", "- Requirements not completed: Step 4/6/7")
+        .replace("- README/plan ranges still unread:", "- README/plan ranges still unread: README Step 4/6/7")
+        .replace("- Implementation scope still open:", "- Implementation scope still open: import/export and sharing API")
+        .replace("- Next command or task to resume with:", "- Next command or task to resume with: continue Step 4"),
     )
 
     const result = runPersonaCli(["workflow", "continue"], { cwd: projectDir, env: {}, invocationName: "ph" })
@@ -362,7 +362,7 @@ describe("ph workflow continue", () => {
         .replace("Status: template", "Status: filled")
         .replace("- README ranges read:", "- README ranges read: 1-220")
         .replace("- Project profile ranges read:", "- Project profile ranges read: all")
-        .replace("- 다음에 이어서 실행할 명령/작업:", "- 다음에 이어서 실행할 명령/작업: fix compile failure")
+        .replace("- Next command or task to resume with:", "- Next command or task to resume with: fix compile failure")
         .concat(
           [
             "",

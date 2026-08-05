@@ -35,7 +35,17 @@ const READ_COVERAGE_LABELS = [
   "Read evidence notes",
 ] as const
 
+// The report template ships English labels. The Korean labels are kept so a
+// project bootstrapped before the templates were translated keeps resuming.
 const CONTINUATION_LABELS = [
+  "Requirements completed",
+  "Requirements not completed",
+  "Last requirement or file completed",
+  "README/plan ranges still unread",
+  "Implementation scope still open",
+  "Reason for stopping",
+  "Next command or task to resume with",
+  "Hint for the next prompt",
   "완료한 요구사항",
   "미완료 요구사항",
   "마지막으로 완료한 요구사항/파일",
@@ -47,6 +57,11 @@ const CONTINUATION_LABELS = [
 ] as const
 
 const REMAINING_SCOPE_LABELS = [
+  "Requirements not completed",
+  "README/plan ranges still unread",
+  "Implementation scope still open",
+  "Next command or task to resume with",
+  "Hint for the next prompt",
   "미완료 요구사항",
   "남은 README/plan 범위",
   "남은 구현 범위",
