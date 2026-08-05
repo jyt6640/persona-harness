@@ -232,11 +232,13 @@ function isJavaWriteOrEditTool(tool: string): boolean {
   return (
     normalizedTool === "write" ||
     normalizedTool === "edit" ||
-    normalizedTool === "patch" ||
     normalizedTool === "multiedit" ||
     normalizedTool === "multi_edit" ||
     normalizedTool.includes("write") ||
-    normalizedTool.includes("edit")
+    normalizedTool.includes("edit") ||
+    // Codex-family models write through `apply_patch`; matching only the exact
+    // name `patch` left those edits unobserved.
+    normalizedTool.includes("patch")
   )
 }
 
