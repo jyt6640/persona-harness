@@ -1,0 +1,18 @@
+id: spring.transactional-no-proxy
+language: Java
+message: A private or final @Transactional method is never proxied, so the transaction silently does not apply.
+# persona-harness-level: warn
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: make the transactional method public and non-final, or move the boundary to a public method on a collaborating bean.
+# persona-harness-step-id: fix-spring-transactional-no-proxy
+# persona-harness-roles: implementer, reviewer
+rule:
+  kind: method_declaration
+  has:
+    kind: modifiers
+    all:
+      - regex: "@Transactional"
+      - regex: "\\b(private|final)\\b"
