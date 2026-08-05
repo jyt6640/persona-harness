@@ -68,6 +68,7 @@ export type DoctorSummary = {
   readonly conventionPackDiagnostics: "PASS" | "WARN"
   readonly astGrepAvailable: boolean
   readonly missingWorkflowTemplates: readonly string[]
+  readonly workflowLifecycleSupported: boolean
   readonly conventionPackDiagnosticCount: number
   readonly conventionPackDiagnosticDetails: readonly ConventionPackDiagnostic[]
   readonly staleFixtureFindings: readonly StaleFixtureFinding[]

@@ -300,8 +300,22 @@ function sameCanonicalDirectory(expected: CanonicalDirectory): boolean {
   return current.kind === "ready" && sameNoFollowPathLocation(expected.identity, current.value.identity)
 }
 
+/**
+ * Reports whether this platform exposes the primitives the workflow lifecycle
+ * state files are guarded with. Windows defines neither `O_DIRECTORY` nor
+ * `O_NOFOLLOW`, so the no-follow directory guarantee cannot be expressed there
+ * and every lifecycle state read reports `unsafe`.
+ */
+export function workflowLifecycleStateSupported(): boolean {
+  return typeof constants.O_DIRECTORY === "number" && typeof constants.O_NOFOLLOW === "number"
+}
+
+export const WORKFLOW_LIFECYCLE_STATE_UNSUPPORTED_REASON =
+  "This platform does not expose O_DIRECTORY/O_NOFOLLOW, so Persona Harness cannot open the workflow directory "
+  + "without following links. Workflow lifecycle state is refused rather than guarded by a weaker check."
+
 function openNoFollowDirectory(path: string): number {
-  if (typeof constants.O_DIRECTORY !== "number") throw new WorkflowLifecycleStateError()
+  if (!workflowLifecycleStateSupported()) throw new WorkflowLifecycleStateError()
   return openSync(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
 }
 

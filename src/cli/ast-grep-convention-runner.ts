@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
-import { delimiter, join, relative, resolve } from "node:path"
+import { delimiter, dirname, join, relative, resolve } from "node:path"
 import { spawnSync } from "node:child_process"
+import { createRequire } from "node:module"
 
 import type { ConventionDefinition } from "../config/convention-registry.js"
 import { isRecord } from "../config/jsonc.js"
@@ -35,7 +36,9 @@ function lookupExecutable(candidate: string): string | undefined {
     return existsSync(trimmed) ? trimmed : undefined
   }
 
-  const extensions = process.platform === "win32" ? ["", ".cmd", ".exe", ".ps1"] : [""]
+  // `.exe` first: Node cannot spawn a `.cmd` shim without a shell, so a shim
+  // that resolves ahead of the real binary would fail its own version check.
+  const extensions = process.platform === "win32" ? ["", ".exe", ".cmd", ".ps1"] : [""]
   for (const dir of (process.env.PATH ?? "").split(delimiter)) {
     if (dir.trim() === "") {
       continue
@@ -67,12 +70,47 @@ function verifiedAstGrepExecutable(candidate: string): string | undefined {
   return /^ast-grep(?:\s+|$)/u.test(identity) ? executable : undefined
 }
 
+/**
+ * Resolves the binary shipped inside the `@ast-grep/cli` optional dependency.
+ *
+ * PATH lookup alone is not enough: the installed package puts its shims in
+ * `node_modules/.bin`, which is not on PATH for every way `ph` is launched, and
+ * on Windows the shim is a `.cmd` that Node cannot spawn without a shell. The
+ * package's own platform executable is directly spawnable, so prefer it.
+ */
+function bundledAstGrepExecutable(): string | undefined {
+  const names = process.platform === "win32"
+    ? ["ast-grep.exe", "sg.exe"]
+    : ["ast-grep", "sg"]
+  let packageRoot: string
+  try {
+    packageRoot = dirname(createRequire(import.meta.url).resolve("@ast-grep/cli/package.json"))
+  } catch {
+    return undefined
+  }
+  for (const name of names) {
+    const candidate = join(packageRoot, name)
+    if (existsSync(candidate)) {
+      return candidate
+    }
+  }
+  return undefined
+}
+
 export function findAstGrepBinary(): string | undefined {
   const override = process.env.PH_AST_GREP_BIN
   if (override !== undefined && override.trim() !== "") {
     return verifiedAstGrepExecutable(override)
   }
-  return verifiedAstGrepExecutable("ast-grep") ?? verifiedAstGrepExecutable("sg")
+  const onPath = verifiedAstGrepExecutable("ast-grep") ?? verifiedAstGrepExecutable("sg")
+  if (onPath !== undefined) {
+    return onPath
+  }
+  // Fall back to the optional dependency's own executable. This is what makes
+  // the dependency usable on Windows, where the installed shim is a `.cmd` that
+  // Node cannot spawn and `node_modules/.bin` is not always on PATH.
+  const bundled = bundledAstGrepExecutable()
+  return bundled === undefined ? undefined : verifiedAstGrepExecutable(bundled)
 }
 
 function stringValue(record: Record<string, unknown>, key: string): string | undefined {
