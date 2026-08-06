@@ -8,7 +8,53 @@ const WORKER_PATH = fileURLToPath(new URL("../../scripts/verify-finish-attestati
 const WORKER_TIMEOUT_MS = 120_000
 const MAX_WORKER_OUTPUT_BYTES = 2 * 1024 * 1024
 
-export function runFinishAttestationWorker(projectDir: string): FinishAttestationWorkerResult {
+/**
+ * Cryptographic verification is a pure function of the bundle bytes: the worker
+ * reads only `.persona/evidence/finish-attestation/bundle.json` and returns the
+ * signature, certificate, and transparency verdict for exactly those bytes.
+ *
+ * A single `workflow finish` reaches this through two independent
+ * non-consuming paths — `readWorkflowStatus` and `readWorkflowClosureState` —
+ * and each spawn costs roughly 600ms, so the same bytes were verified twice per
+ * invocation. Keying on the digest collapses that without weakening anything:
+ * different bytes are a different key, so a replaced bundle is always verified
+ * afresh.
+ *
+ * Everything that depends on time or state — expiry, source drift, PH version,
+ * consumption — is evaluated by the caller outside this cache, per call.
+ */
+const workerResultsByBundleDigest = new Map<string, FinishAttestationWorkerResult>()
+const MAX_CACHED_WORKER_RESULTS = 8
+
+export function runFinishAttestationWorker(
+  projectDir: string,
+  bundleDigest?: string,
+): FinishAttestationWorkerResult {
+  if (bundleDigest !== undefined) {
+    const cached = workerResultsByBundleDigest.get(bundleDigest)
+    if (cached !== undefined) {
+      return cached
+    }
+  }
+  const result = runFinishAttestationWorkerUncached(projectDir)
+  if (bundleDigest !== undefined) {
+    if (workerResultsByBundleDigest.size >= MAX_CACHED_WORKER_RESULTS) {
+      const oldest = workerResultsByBundleDigest.keys().next().value
+      if (oldest !== undefined) {
+        workerResultsByBundleDigest.delete(oldest)
+      }
+    }
+    workerResultsByBundleDigest.set(bundleDigest, result)
+  }
+  return result
+}
+
+/** Drops cached verdicts. Tests use this to prove the cache is keyed, not sticky. */
+export function clearFinishAttestationWorkerCache(): void {
+  workerResultsByBundleDigest.clear()
+}
+
+function runFinishAttestationWorkerUncached(projectDir: string): FinishAttestationWorkerResult {
   const result = spawnSync(process.execPath, [WORKER_PATH], {
     cwd: projectDir,
     encoding: "utf8",

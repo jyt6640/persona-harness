@@ -79,7 +79,7 @@ function verifyExternalFinishAttestationInternal(
     return blocked("missing", "No safe external finish attestation bundle is present.", "bundle")
   }
   const bundleDigest = sha256Digest(bundleBytes)
-  const worker = runFinishAttestationWorker(projectDir)
+  const worker = runFinishAttestationWorker(projectDir, bundleDigest)
   if (!worker.ok) return blocked(worker.state, worker.message, "bundle")
   if (worker.bundleDigest !== bundleDigest) {
     return blocked("binding-mismatch", "Bundle bytes changed during product-owned verification.", "bundle")
