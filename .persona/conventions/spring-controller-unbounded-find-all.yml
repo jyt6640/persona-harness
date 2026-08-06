@@ -1,0 +1,14 @@
+id: spring.controller-unbounded-find-all
+language: Java
+message: A Controller returning findAll() with no Pageable sends the whole table over HTTP and grows without bound.
+# persona-harness-level: warn
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-target-suffix: Controller.java
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: accept a Pageable and return a Page, or expose a bounded query instead.
+# persona-harness-step-id: fix-spring-controller-unbounded-find-all
+# persona-harness-roles: implementer, reviewer
+rule:
+  pattern: $RECEIVER.findAll()
