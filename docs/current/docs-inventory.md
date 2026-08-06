@@ -129,6 +129,7 @@ Total indexed files: 336
 | `docs/current/rail-entry-measurement-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/rail-entry-prompt-regression-gate.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/ralph-loop-measurement-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
+| `docs/current/repository-map.md` | current active pointer/status | - | Where code lives and how the `src/cli` clusters depend on each other, derived from the real import graph; explains why that directory is still flat and what the clusters would become. |
 | `docs/current/role-scoped-rule-delivery.md` | current active pointer/status | - | T7 role/stage scoped static rule delivery status and boundary record. |
 | `docs/current/role-rules-dogfooding-readiness.md` | current active pointer/status | - | T10 ROLE-RULES dogfooding readiness checklist, violation-log template, and next queue. |
 | `docs/current/release/README.md` | current active pointer/status | - | Current release-operation entrypoint. It points to the canonical workflow lifecycle projection and cannot turn historical readiness snapshots into current release evidence. |
