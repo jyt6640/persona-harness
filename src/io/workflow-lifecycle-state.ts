@@ -300,23 +300,41 @@ function sameCanonicalDirectory(expected: CanonicalDirectory): boolean {
   return current.kind === "ready" && sameNoFollowPathLocation(expected.identity, current.value.identity)
 }
 
+export type WorkflowLifecycleGuardMode = "no-follow-open" | "lstat-verified"
+
 /**
- * Reports whether this platform exposes the primitives the workflow lifecycle
- * state files are guarded with. Windows defines neither `O_DIRECTORY` nor
- * `O_NOFOLLOW`, so the no-follow directory guarantee cannot be expressed there
- * and every lifecycle state read reports `unsafe`.
+ * Reports how the workflow directory is guarded on this platform.
+ *
+ * `no-follow-open` is the POSIX path: `O_DIRECTORY | O_NOFOLLOW` makes the open
+ * itself refuse a symlink or a non-directory, atomically.
+ *
+ * `lstat-verified` is the Windows path. Neither flag exists there, so the open
+ * cannot carry the guarantee. The caller has already rejected symlinks and
+ * non-directories with `lstat` before opening, and re-verifies the descriptor's
+ * identity against that `lstat` afterwards, so a swapped directory is still
+ * caught. What is lost is the atomicity of the open — a same-UID race, which
+ * this program's threat model already declines to claim resistance against.
  */
-export function workflowLifecycleStateSupported(): boolean {
+export function workflowLifecycleGuardMode(): WorkflowLifecycleGuardMode {
   return typeof constants.O_DIRECTORY === "number" && typeof constants.O_NOFOLLOW === "number"
+    ? "no-follow-open"
+    : "lstat-verified"
 }
 
-export const WORKFLOW_LIFECYCLE_STATE_UNSUPPORTED_REASON =
-  "This platform does not expose O_DIRECTORY/O_NOFOLLOW, so Persona Harness cannot open the workflow directory "
-  + "without following links. Workflow lifecycle state is refused rather than guarded by a weaker check."
-
 function openNoFollowDirectory(path: string): number {
-  if (!workflowLifecycleStateSupported()) throw new WorkflowLifecycleStateError()
-  return openSync(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+  if (workflowLifecycleGuardMode() === "no-follow-open") {
+    return openSync(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+  }
+  const descriptor = openSync(path, constants.O_RDONLY)
+  try {
+    if (!fstatSync(descriptor, { bigint: true }).isDirectory()) {
+      throw new WorkflowLifecycleStateError()
+    }
+  } catch (error) {
+    closeSync(descriptor)
+    throw error instanceof WorkflowLifecycleStateError ? error : new WorkflowLifecycleStateError()
+  }
+  return descriptor
 }
 
 function isContained(root: string, candidate: string): boolean {

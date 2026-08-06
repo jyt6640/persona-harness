@@ -7,10 +7,6 @@ import {
   reserveBootstrapWriteBoundary,
   type BootstrapWriteBoundary,
 } from "../io/bootstrap-write-boundary.js"
-import {
-  WORKFLOW_LIFECYCLE_STATE_UNSUPPORTED_REASON,
-  workflowLifecycleStateSupported,
-} from "../io/workflow-lifecycle-state.js"
 import { rulePackContentHash } from "../rules/rule-delivery.js"
 import { emptyRalphLoopState, readRalphLoopStateSnapshot, writeRalphLoopState } from "../runtime/ralph-loop-state.js"
 import type { CliRunResult } from "./bearshell.js"
@@ -424,16 +420,10 @@ function initializeWorkflowLifecycleStates(projectDir: string, actions: string[]
 }
 
 function lifecycleInitializationFailure(): CliRunResult {
-  // Naming the platform cause matters: on Windows there is no existing state to
-  // review, and telling the user to review one sends them looking for a file
-  // that was never written.
-  const reason = workflowLifecycleStateSupported()
-    ? "Review the existing workflow state before retrying."
-    : `${WORKFLOW_LIFECYCLE_STATE_UNSUPPORTED_REASON} Platform: ${process.platform}.`
   return {
     status: 1,
     stdout: "",
-    stderr: `Persona Harness backend bootstrap failed during workflow lifecycle initialization. ${reason}\n`,
+    stderr: "Persona Harness backend bootstrap failed during workflow lifecycle initialization. Review the existing workflow state before retrying.\n",
   }
 }
 
