@@ -70,6 +70,7 @@ Total indexed files: 336
 | `docs/current/external-review-adoption-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/evidence-reviews/v0.3.8-alpha.0-clean-workflow-smoke.md` | legacy current evidence review | v0.3.8-alpha.0 | Compatibility location for older evidence review; keep linked rather than moving blindly. |
 | `docs/current/evidence-reviews/v0.3.8-alpha.1-clean-tarball-workflow-smoke.md` | legacy current evidence review | v0.3.8-alpha.1 | Compatibility location for older evidence review; keep linked rather than moving blindly. |
+| `docs/current/external-environment-verification.md` | current active pointer/status | - | Reproducible packaged-install verification on a machine other than the build host; records the Windows 11 run that found three defects. Procedure only, not an independent audit, and no platform support claim. |
 | `docs/current/hq-orchestration/README.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/hq-orchestration/protocol.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/hq-orchestration/templates/common-dispatch-header.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
