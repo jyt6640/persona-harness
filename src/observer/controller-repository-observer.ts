@@ -1,4 +1,4 @@
-import { collectJavaParameterLists, splitJavaParameters } from "./java-source.js"
+import { collectJavaParameterLists, FIELD_ANNOTATION_PREFIX, splitJavaParameters } from "./java-source.js"
 
 export type ObserverFinding = "PASS" | "WARN" | "UNKNOWN"
 
@@ -105,7 +105,13 @@ function hasEvidence(evidence: ControllerRepositoryEvidence): boolean {
 }
 
 function scanRepositoryFields(source: string): RepositoryVariableScan {
-  const regex = /^\s*(?:private|protected|public)?\s*(?:static\s+)?(?:final\s+)?(\w*Repository\w*(?:\s*<[^;=]+>)?)\s+(\w+)\s*(?:[=;])/gm
+  // Field annotations sit before the modifier, so anchoring on the modifier
+  // alone missed every `@Autowired private FooRepository foo;` — the most common
+  // shape in real Spring code.
+  const regex = new RegExp(
+    String.raw`^\s*${FIELD_ANNOTATION_PREFIX}(?:private|protected|public)?\s*(?:static\s+)?(?:final\s+)?(\w*Repository\w*(?:\s*<[^;=]+>)?)\s+(\w+)\s*(?:[=;])`,
+    "gm",
+  )
   const evidence: string[] = []
   const variableNames: string[] = []
 
