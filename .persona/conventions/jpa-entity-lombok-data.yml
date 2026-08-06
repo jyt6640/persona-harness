@@ -1,0 +1,18 @@
+id: jpa.entity-lombok-data
+language: Java
+message: "@Data on an @Entity generates equals/hashCode over every field, including the generated id and lazy associations; define them deliberately instead."
+# persona-harness-level: warn
+# persona-harness-scope: single-file
+# persona-harness-profile-scope: java-spring-service-architecture
+# persona-harness-high-precision: true
+# persona-harness-block-allowed: false
+# persona-harness-fix-path: replace @Data with the specific accessors the entity needs, and write equals/hashCode from the business key.
+# persona-harness-step-id: fix-jpa-entity-lombok-data
+# persona-harness-roles: implementer, reviewer
+rule:
+  kind: class_declaration
+  has:
+    kind: modifiers
+    all:
+      - regex: "@Data\\b"
+      - regex: "@Entity\\b"
