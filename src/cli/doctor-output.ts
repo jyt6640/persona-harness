@@ -114,12 +114,10 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     summary.astGrepAvailable
       ? "ast-grep: available (AST conventions run)"
       : "ast-grep: MISSING — AST conventions are skipped; install @ast-grep/cli or set PH_AST_GREP_BIN",
-    ...(summary.workflowLifecycleSupported
-      ? []
-      : [
-          `Workflow lifecycle state: UNSUPPORTED on ${process.platform}`,
-          "- O_DIRECTORY/O_NOFOLLOW are unavailable, so bootstrap and workflow state writes fail closed",
-        ]),
+    `Workflow directory guard: ${summary.workflowLifecycleGuard}`,
+    ...(summary.workflowLifecycleGuard === "lstat-verified"
+      ? ["- this platform has no O_DIRECTORY/O_NOFOLLOW; symlinks are rejected by lstat and identity is re-verified after open, but the open itself is not atomic"]
+      : []),
     ...(summary.missingWorkflowTemplates.length > 0
       ? [
           `Workflow templates: MISSING ${summary.missingWorkflowTemplates.join(", ")}`,
