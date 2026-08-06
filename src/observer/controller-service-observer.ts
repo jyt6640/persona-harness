@@ -1,6 +1,7 @@
 import {
   collectJavaParameterLists,
   collectMatches,
+  FIELD_ANNOTATION_PREFIX,
   getJavaFileName,
   hasJavaClassOrRecord,
   normalizeJavaParameter,
@@ -97,7 +98,7 @@ function unknownObservation(reason: string): ControllerServiceObservation {
 
 function scanServiceFields(source: string): VariableScan {
   const regex = new RegExp(
-    String.raw`^\s*(?:private|protected|public)?\s*(?:static\s+)?(?:final\s+)?(${SERVICE_TYPE_PATTERN})\s+(\w+)\s*(?:[=;])`,
+    String.raw`^\s*${FIELD_ANNOTATION_PREFIX}(?:private|protected|public)?\s*(?:static\s+)?(?:final\s+)?(${SERVICE_TYPE_PATTERN})\s+(\w+)\s*(?:[=;])`,
     "gm",
   )
   return scanVariableDeclarations(source, regex)

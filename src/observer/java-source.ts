@@ -190,3 +190,10 @@ function readBalancedParentheses(source: string, openParenIndex: number): string
   }
   return undefined
 }
+
+/**
+ * Matches any run of field annotations that may precede a Java field's access
+ * modifier, e.g. `@Autowired`, `@Autowired @Qualifier("x")`, `@Value("${a}")`.
+ * Field scanners anchored on the modifier alone silently skip annotated fields.
+ */
+export const FIELD_ANNOTATION_PREFIX = String.raw`(?:@\w+(?:\s*\([^)]*\))?\s*)*`
