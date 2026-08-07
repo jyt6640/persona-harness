@@ -83,6 +83,81 @@ export class NativeProjectReadRuntimeError extends Error {
   }
 }
 
+export type NativeProjectReadGuardMode = "no-follow-open" | "lstat-verified"
+
+/**
+ * How this module keeps a symlink from being opened in place of the path it was
+ * asked for.
+ *
+ * `O_DIRECTORY` and `O_NOFOLLOW` do not exist on Windows, so opening with them
+ * throws there and every project read fails — which surfaced as
+ * `source-read-runtime-unavailable` and made `workflow finish` unusable on
+ * Windows from 0.8.0-beta onward. `workflow-lifecycle-state.ts` already
+ * degrades the same way for the same reason.
+ *
+ * `lstat-verified` inspects the path before opening and rejects a symlink, then
+ * confirms the descriptor really is a directory. That is weaker than an atomic
+ * `O_NOFOLLOW` open — a swap between the two calls is not excluded — but it is
+ * strictly more than the last release that worked on Windows performed, since
+ * 0.7.0 had no project read boundary at all.
+ */
+export function nativeProjectReadGuardMode(): NativeProjectReadGuardMode {
+  return typeof constants.O_DIRECTORY === "number" && typeof constants.O_NOFOLLOW === "number"
+    ? "no-follow-open"
+    : "lstat-verified"
+}
+
+/** `O_NOFOLLOW` where the platform has it, and nothing where it does not. */
+function noFollowFileFlag(): number {
+  return typeof constants.O_NOFOLLOW === "number" ? constants.O_NOFOLLOW : 0
+}
+
+/**
+ * Whether this platform and architecture are built at all.
+ *
+ * "no artifact exists for win32" and "the artifact for this platform failed to
+ * load or did not match its digest" both raised
+ * `NativeProjectReadRuntimeError`, so callers could not tell an unsupported
+ * platform apart from a tampered or broken install. They are not the same
+ * thing: the first is a fixed property of the release, the second is a signal
+ * that must never be degraded around.
+ *
+ * This answers only the first question, and deliberately does not read, verify,
+ * or load anything.
+ */
+export function nativeProjectReadPlatformSupported(): boolean {
+  try {
+    const manifest = parseManifest(readTrustedFile(MANIFEST_PATH))
+    return manifest.artifacts.some(
+      (candidate) => candidate.platform === process.platform && candidate.architecture === process.arch,
+    )
+  } catch {
+    // An unreadable or malformed manifest is a broken install, not an
+    // unsupported platform, so it must not be reported as one.
+    return true
+  }
+}
+
+function openNoFollowDirectory(path: string): number {
+  if (nativeProjectReadGuardMode() === "no-follow-open") {
+    return openSync(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+  }
+  const before = lstatSync(path, { bigint: true })
+  if (!before.isDirectory() || before.isSymbolicLink()) {
+    throw new NativeProjectReadRuntimeError()
+  }
+  const descriptor = openSync(path, constants.O_RDONLY)
+  try {
+    if (!fstatSync(descriptor, { bigint: true }).isDirectory()) {
+      throw new NativeProjectReadRuntimeError()
+    }
+  } catch (error) {
+    closeSync(descriptor)
+    throw error instanceof NativeProjectReadRuntimeError ? error : new NativeProjectReadRuntimeError()
+  }
+  return descriptor
+}
+
 export class NativeProjectReadLimitError extends Error {
   readonly name = "NativeProjectReadLimitError"
 
@@ -161,13 +236,11 @@ export function captureNativeProjectReadRootContext(
   let parentDescriptor: number | undefined
   let rootDescriptor: number | undefined
   try {
-    parentDescriptor = openSync(
+    parentDescriptor = openNoFollowDirectory(
       anchor === "current" ? ".." : ".",
-      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
     )
-    rootDescriptor = openSync(
+    rootDescriptor = openNoFollowDirectory(
       anchor === "current" ? "." : rootName,
-      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
     )
     const rootStat = fstatSync(rootDescriptor, { bigint: true })
     const parentStat = fstatSync(parentDescriptor, { bigint: true })
@@ -488,13 +561,11 @@ function runNative(
   let rootDescriptor: number | undefined
   try {
     if (rootContext !== undefined) {
-      parentDescriptor = openSync(
+      parentDescriptor = openNoFollowDirectory(
         rootContext.anchor === "current" ? ".." : ".",
-        constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
       )
-      rootDescriptor = openSync(
+      rootDescriptor = openNoFollowDirectory(
         rootContext.anchor === "current" ? "." : rootContext.rootName,
-        constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
       )
       const rootStat = fstatSync(rootDescriptor, { bigint: true })
       const parentStat = fstatSync(parentDescriptor, { bigint: true })
@@ -723,7 +794,7 @@ function openTrustedFile(path: string): { readonly bytes: Buffer; readonly descr
   try {
     const before = lstatSync(path, { bigint: true })
     if (!before.isFile() || before.isSymbolicLink()) throw new NativeProjectReadRuntimeError()
-    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW)
+    descriptor = openSync(path, constants.O_RDONLY | noFollowFileFlag())
     const opened = fstatSync(descriptor, { bigint: true })
     const bytes = readFileSync(descriptor)
     const afterRead = fstatSync(descriptor, { bigint: true })
