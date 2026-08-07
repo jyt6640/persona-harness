@@ -12,7 +12,7 @@ Node.js 20+ and npm are required.
 mkdir -p /tmp/persona-harness-quick-demo
 cd /tmp/persona-harness-quick-demo
 npm init -y
-npm install -D persona-harness@0.6.0
+npm install -D persona-harness
 npx ph init
 npx ph bootstrap backend
 ```
