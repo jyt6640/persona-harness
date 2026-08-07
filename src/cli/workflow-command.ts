@@ -12,6 +12,7 @@ import {
   captureProjectReadSnapshot,
   type ProjectReadSnapshot,
 } from "../io/project-read-snapshot.js"
+import { nativeProjectReadPlatformSupported } from "../io/native-project-read.js"
 import { runFreshFixedVerification } from "./fresh-verification-runner.js"
 import { runResumeCommand } from "./plan-next.js"
 import { workflowClosureFinishReasons } from "./workflow-closure-finish.js"
@@ -167,6 +168,21 @@ function runWorkflowFinish(
   if (projectDir !== resolve(process.cwd())) {
     return runWorkflowFinishAtProject(runnerKind, reverify, ci, assurance, projectDir)
   }
+  // The source-read snapshot needs a native artifact, and the release ships one
+  // only for darwin and linux. On any other platform there is nothing to load,
+  // so demanding it made `workflow finish` fail before evaluating a single
+  // blocker — Windows users had a working gate in 0.7.0, which had no snapshot
+  // at all, and lost it entirely in 0.8.x.
+  //
+  // Run the same unsnapshotted path this function already uses for a project
+  // outside the working directory, and say plainly what was not verified. A
+  // platform that *is* built keeps failing closed: this is a build-matrix fact,
+  // not a load failure, and the two are distinguished at the source.
+  if (!nativeProjectReadPlatformSupported()) {
+    return withUnsnapshottedFinishNotice(
+      runWorkflowFinishAtProject(runnerKind, reverify, ci, assurance, projectDir),
+    )
+  }
   let boundary: ProjectReadBoundary | undefined
   try {
     boundary = reserveProjectReadBoundary(projectDir)
@@ -184,6 +200,19 @@ function runWorkflowFinish(
   } finally {
     boundary?.close()
   }
+}
+
+/**
+ * States what the finish did not do, on every finish that ran without the
+ * source-read snapshot. Degrading quietly would let a weaker verification pass
+ * for the stronger one, which is the failure this whole gate exists to prevent.
+ */
+function withUnsnapshottedFinishNotice(result: CliRunResult): CliRunResult {
+  const notice = `Source-read snapshot unavailable on ${process.platform}/${process.arch}: `
+    + "no native project-read artifact is built for this platform. Cooperative "
+    + "verification ran without the snapshot boundary, so this finish does not "
+    + "attest that project sources were read under it.\n"
+  return { ...result, stderr: `${result.stderr}${notice}` }
 }
 
 function runWorkflowFinishAtProject(
