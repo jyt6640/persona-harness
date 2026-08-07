@@ -41,6 +41,34 @@ It checked 155 and stayed quiet about the rest. Precision is what was measured
 here. Recall was not, and a project can pass every observer while being wrong in
 ways no observer looks at.
 
+### What the silence is actually made of
+
+The 28% figure reads worse than the situation is, so it is worth breaking down.
+Of mall's 370 unobserved files:
+
+| | files | is this a gap? |
+| --- | ---: | --- |
+| MyBatis-generated `*Example` | 76 | no — generated, nobody edits it |
+| interfaces | 112 | no — no fields, nothing to observe |
+| data holders (no method bodies) | 63 | no — POJOs |
+| logic, but only getters/setters/`toString` | 88 | no |
+| **real logic, unobserved** | **31** | **yes** |
+
+So the honest gap in mall is 31 files out of 519 — **6%** — not 72%. Sixteen of
+those 31 are Spring `*Config` classes; the rest are utilities, aspects, an
+exception handler, and a JWT helper. Whether a layering observer should have an
+opinion about a `@Configuration` class is a design question, not an oversight.
+
+This breakdown was produced by classifying each unobserved file, and it is the
+number to argue with — not the coverage percentage.
+
+### The filename heuristic was checked and held
+
+Roles are assigned by filename suffix, which is what hid the `*ServiceImpl.java`
+gap below. Across both projects, **101 classes annotated `@Controller`,
+`@RestController`, or `@Service` were checked against their filenames and none
+mismatched.** The suffix list was incomplete; the approach was not wrong.
+
 Two projects is also a small sample, and both are Java/Spring/Maven web
 backends. Nothing here extends to other stacks.
 
@@ -116,6 +144,8 @@ npx ph observe src/main/java
 ```
 
 For `mall`, run `ph observe` once per module against `<module>/src/main/java`.
+The coverage breakdown above comes from the `java-file.applicability` findings
+in `ph observe --json`, classified per file by reading each one.
 
 Warnings must be read against the source to be counted; this document counts a
 warning as correct only where the cited file was opened and the condition
