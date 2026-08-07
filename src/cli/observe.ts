@@ -55,6 +55,47 @@ const JAVA_EXTENSION = ".java"
 const OBSERVER_SOURCE: ObserverSource = "manual/text"
 const INFO_NORMALIZATION_LIMITATION = "INFO observation normalized to UNKNOWN because ph observe schema is PASS/WARN/UNKNOWN."
 
+/**
+ * What a WARN from each text observer actually means, and what to do about it.
+ *
+ * These rules do not share a polarity: `controller.repository-dependency`,
+ * `controller.sql-access`, and `service.storage-ownership` warn because
+ * something is present, while `controller.service-dependency`,
+ * `test.contract-anchors`, and `dto.boundary` warn because something is
+ * absent. Printing a bare rule id left both kinds looking identical — a
+ * Controller that legitimately warns on both counts produced two lines that a
+ * reader could not tell apart, let alone act on.
+ *
+ * Presentation only: it explains findings that were already produced and
+ * changes no verdict, level, or gate.
+ */
+const WARN_GUIDANCE: Readonly<Record<string, { readonly message: string; readonly fixPath: string }>> = {
+  [CONTROLLER_REPOSITORY_CONVENTION.id]: {
+    message: "This Controller depends on a Repository directly, so persistence choices leak into the web layer.",
+    fixPath: CONTROLLER_REPOSITORY_CONVENTION.fixPath,
+  },
+  "controller.service-dependency": {
+    message: "This Controller has no Service dependency, so orchestration lives in the web layer.",
+    fixPath: "move the orchestration into a Service and have the Controller call it.",
+  },
+  "controller.sql-access": {
+    message: "This Controller reaches SQL or persistence APIs directly, so queries are written at the HTTP boundary.",
+    fixPath: "move the query behind a Repository or Service and return a DTO from the Controller.",
+  },
+  "dto.boundary": {
+    message: "This type is named Dto, so the direction it carries is not visible at the boundary.",
+    fixPath: "name it after its direction — Request for inbound, Response for outbound.",
+  },
+  "service.storage-ownership": {
+    message: "This Service owns storage or mutates state it also holds, so persistence is not behind a boundary.",
+    fixPath: "move the state behind a Repository or persistence-backed boundary.",
+  },
+  "test.contract-anchors": {
+    message: "This test is missing contract anchors, so it does not pin the behaviour it claims to cover.",
+    fixPath: "add the missing anchors listed in the finding evidence.",
+  },
+}
+
 export function runObserveCommand(args: readonly string[], options: ObserveOptions = {}, invocationName = "ph"): CliRunResult {
   const jsonOnly = args.includes("--json")
   const targetArg = args.find((arg) => arg !== "--json")
@@ -229,14 +270,20 @@ function normalizeObservation(
     | TestContractObservation,
 ): ObserveFinding {
   const isInfo = observation.finding === "INFO"
+  const result = normalizeFindingResult(observation.finding)
+  // Only a WARN asks the reader to do something, so only a WARN carries a fix
+  // path. Attaching one to PASS would invent work that the observation did not
+  // find.
+  const guidance = result === "WARN" ? WARN_GUIDANCE[ruleId] : undefined
   return {
     ruleId,
-    result: normalizeFindingResult(observation.finding),
+    result,
     evidence: observation.evidence,
     confidence: observationConfidence(observation),
     source: OBSERVER_SOURCE,
     limitations: isInfo ? [...observation.limitations, INFO_NORMALIZATION_LIMITATION] : observation.limitations,
     filePath,
+    ...(guidance === undefined ? {} : { message: guidance.message, fixPath: guidance.fixPath }),
   }
 }
 
@@ -258,9 +305,17 @@ function observationConfidence(
 
 function formatHumanSummary(report: ObserveReport): string {
   const counts = findingCounts(report.findings)
-  const findingLines = report.findings.map((finding) =>
-    `- ${finding.result} ${finding.ruleId} (${finding.filePath}) confidence=${finding.confidence}`,
-  )
+  // The headline line is unchanged so existing readers and parsers keep working;
+  // the explanation is appended underneath, and only when the finding has one.
+  const findingLines = report.findings.flatMap((finding) => {
+    const location = finding.line === undefined ? finding.filePath : `${finding.filePath}:${finding.line}`
+    const headline = `- ${finding.result} ${finding.ruleId} (${location}) confidence=${finding.confidence}`
+    return [
+      headline,
+      ...(finding.message === undefined ? [] : [`    why: ${finding.message}`]),
+      ...(finding.fixPath === undefined ? [] : [`    fix: ${finding.fixPath}`]),
+    ]
+  })
   return [
     `Observe summary: ${report.inspectedFiles.length} Java file(s), ${report.findings.length} finding(s).`,
     `Results: PASS=${counts.PASS}, WARN=${counts.WARN}, UNKNOWN=${counts.UNKNOWN}.`,

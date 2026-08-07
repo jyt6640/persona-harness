@@ -105,6 +105,13 @@ async function main() {
   const diagnostics = []
 
   for (const entry of entries) {
+    // The taxonomy governs documents, and dot-entries are not documents. This
+    // walks the filesystem rather than the index, so a `.DS_Store` that git
+    // already ignores was being reported as a misfiled doc and failed the whole
+    // repository suite for anyone who had opened docs/ in Finder.
+    if (entry.name.startsWith(".")) {
+      continue
+    }
     if (entry.isFile() && !ROOT_ALLOWED_FILES.has(entry.name)) {
       diagnostics.push(`Move docs/${entry.name} to ${suggestedDirectory(entry.name)}${entry.name}`)
     }

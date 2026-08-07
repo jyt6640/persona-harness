@@ -42,6 +42,14 @@ const STRING_BASED_LIMITATION =
 
 const SERVICE_TYPE_PATTERN = String.raw`(?:[\w.]+\.)?\w*Service(?:<[^;(){}]+>)?`
 
+// An instance field of any type: a modifier, not `static`, and a declaration
+// that terminates in `=` or `;` rather than `(`, which keeps method signatures
+// out. No `g` flag — `test` would otherwise carry `lastIndex` between calls.
+const INSTANCE_FIELD_PATTERN = new RegExp(
+  String.raw`^\s*${FIELD_ANNOTATION_PREFIX}(?:private|protected|public)\s+(?!static\b)(?:final\s+)?[\w.$]+(?:<[^;(){}]*>)?(?:\[\])?\s+\w+\s*[=;]`,
+  "m",
+)
+
 export function observeControllerServiceDependency(input: ObserveControllerServiceDependencyInput): ControllerServiceObservation {
   const fileName = getJavaFileName(input.filePath)
   if (!fileName.endsWith("Controller.java")) {
@@ -69,10 +77,32 @@ export function observeControllerServiceDependency(input: ObserveControllerServi
   if (methodCalls.length > 0) {
     return observation("PASS", "MEDIUM", evidence)
   }
-  // The Controller class parsed successfully and declared no Service field,
-  // constructor parameter, or call site. The absence is the observation, so it
-  // is definitive rather than unscored.
+  // A Controller that injects nothing at all has no orchestration to place, so
+  // "the Service layer is missing" is not something this file can show either
+  // way. Spring's own reference application has two such Controllers — one
+  // returns a view name, the other throws — and reporting them as a
+  // high-confidence layering warning stated something untrue about them.
+  if (!hasInjectedCollaborator(scrubbedSource, className)) {
+    return unknownObservation("Controller injects no collaborator, so a missing Service layer cannot be observed.")
+  }
+  // The Controller does collaborate with something, and none of it is a
+  // Service. The absence is the observation, so it is definitive.
   return observation("WARN", "HIGH", evidence)
+}
+
+/**
+ * Whether the Controller injects anything at all — any instance field or any
+ * constructor parameter, of any type.
+ *
+ * Deliberately conservative: an undetected collaborator downgrades a WARN to
+ * UNKNOWN, which under-reports, while over-detecting would reinstate the false
+ * positive this guards against.
+ */
+function hasInjectedCollaborator(source: string, className: string): boolean {
+  const hasConstructorParameter = collectJavaParameterLists(source, className).some(
+    (parameters) => parameters.trim().length > 0,
+  )
+  return hasConstructorParameter || INSTANCE_FIELD_PATTERN.test(source)
 }
 
 function observation(
