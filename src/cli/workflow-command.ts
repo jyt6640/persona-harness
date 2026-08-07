@@ -100,7 +100,15 @@ function requiredFixDetails(fixes: readonly WorkflowRequiredFix[]): readonly str
 }
 
 function hasPersonaHarness(summary: WorkflowStatus, snapshot?: ProjectReadSnapshot): boolean {
-  return snapshot?.hasDirectory(".persona") ?? existsSync(join(summary.projectDir, ".persona"))
+  return hasPersonaHarnessAt(summary.projectDir, snapshot)
+}
+
+/**
+ * The same check without a status summary, for callers that would otherwise
+ * verify the whole finish authority just to learn a resolved path.
+ */
+function hasPersonaHarnessAt(projectDir: string, snapshot?: ProjectReadSnapshot): boolean {
+  return snapshot?.hasDirectory(".persona") ?? existsSync(join(projectDir, ".persona"))
 }
 
 function stdinEncodingFailure(options: WorkflowOptions): CliRunResult | undefined {
@@ -189,19 +197,21 @@ function runWorkflowFinishAtProject(
     readonly snapshot: ProjectReadSnapshot
   },
 ): CliRunResult {
-  const summary = readWorkflowStatus(projectDir, {
-    projectReadBoundary: projectRead?.boundary,
-    projectReadSnapshot: projectRead?.snapshot,
-  })
-  if (!hasPersonaHarness(summary, projectRead?.snapshot)) {
+  // Only the resolved project directory and whether `.persona` exists are used
+  // from here on, and `readWorkflowStatus` verifies the full finish authority to
+  // produce them — a Sigstore worker spawn plus a source-identity scan whose
+  // result is then discarded. `runWorkflowFinishResult` below performs that
+  // verification itself, and it is that one which gates the finish.
+  const resolvedProjectDir = resolve(projectDir)
+  if (!hasPersonaHarnessAt(resolvedProjectDir, projectRead?.snapshot)) {
     return uninitializedWorkflowFinishOutput(runnerKind)
   }
   if (reverify) {
-    const result = runFreshFixedVerification(summary.projectDir, ci ? "ci" : "local", {
+    const result = runFreshFixedVerification(resolvedProjectDir, ci ? "ci" : "local", {
       projectReadBoundary: projectRead?.boundary,
     })
     if (result.finalStatus !== "passed") {
-      const artifactReference = safeProjectArtifactReference(summary.projectDir, result.artifactPath)
+      const artifactReference = safeProjectArtifactReference(resolvedProjectDir, result.artifactPath)
       const diagnostics = result.diagnosticCodes
         .slice(0, 8)
         .map((code) => safeWorkflowCode(code, "invalid-diagnostic-code"))
@@ -212,7 +222,7 @@ function runWorkflowFinishAtProject(
   }
   return runWorkflowFinishResult(
     runnerKind,
-    summary.projectDir,
+    resolvedProjectDir,
     assurance,
     projectRead,
   )
