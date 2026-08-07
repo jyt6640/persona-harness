@@ -51,11 +51,34 @@ const SEQUENCE_TYPES = ["AtomicLong", "AtomicInteger", "long", "Long", "int", "I
 const SEQUENCE_NAMES = ["nextId", "idCounter", "sequence"] as const
 const MUTATION_METHODS = ["put", "remove", "clear", "getAndIncrement", "incrementAndGet"] as const
 const STORAGE_NAME_HINT = /(?:storage|store|cache|map|list|set|reservations|times|items|entities|records)$/i
+
+/**
+ * An instance field carries an access modifier; a local variable inside a method
+ * body does not. The modifier used to be optional here, which was invisible
+ * while this observer only ever saw `*Service.java` — an interface has no method
+ * bodies to mismatch. Extending it to `*ServiceImpl.java` made every
+ * `List<Foo> itemList = ...` inside a method look like Service-owned storage.
+ *
+ * Requiring the modifier misses a package-private field, which under-reports.
+ * That is the safe direction: the alternative reinstates the false positives.
+ */
+const FIELD_MODIFIER = "(?:private|protected|public)\\s+"
+
+/**
+ * Type arguments on one line only. `[^;=]` previously matched newlines, so a
+ * method signature could be swallowed whole and reported as a field.
+ */
+const FIELD_GENERIC_ARGUMENTS = "<[^;=(){}\\n]*>"
 const LITERAL_STORAGE_WORD = /\b(?:Map|List|AtomicLong|nextId|idCounter|sequence|storage|store|put|remove|clear)\b/i
 
 export function observeServiceStorageOwnership(input: ObserveServiceStorageOwnershipInput): ServiceStorageObservation {
   const fileName = getJavaFileName(input.filePath)
-  if (!fileName.endsWith("Service.java")) {
+  // `FooService` + `FooServiceImpl` is the dominant Spring shape, and the
+  // implementation is where fields and state live — the interface has neither.
+  // Matching only `*Service.java` meant that in a codebase written that way this
+  // observer inspected the one file that structurally cannot own storage and
+  // never looked at the one that can.
+  if (!fileName.endsWith("Service.java") && !fileName.endsWith("ServiceImpl.java")) {
     return unknownObservation("Target is not a Service Java file.")
   }
 
@@ -131,7 +154,7 @@ function unknownObservation(reason: string): ServiceStorageObservation {
 function scanStorageFields(source: string): VariableScan {
   const typePattern = STORAGE_TYPES.join("|")
   const regex = new RegExp(
-    `^\\s*(?:private|protected|public)?\\s*(?:static\\s+)?(?:final\\s+)?(${typePattern})(?:\\s*<[^;=]+>)?\\s+(\\w+)\\s*(?:[=;])`,
+    `^\\s*${FIELD_MODIFIER}(?:static\\s+)?(?:final\\s+)?(${typePattern})(?:\\s*${FIELD_GENERIC_ARGUMENTS})?\\s+(\\w+)\\s*(?:[=;])`,
     "gm",
   )
   const evidence: string[] = []
@@ -156,7 +179,7 @@ function scanSequenceFields(source: string): VariableScan {
   const typePattern = SEQUENCE_TYPES.join("|")
   const namePattern = SEQUENCE_NAMES.join("|")
   const regex = new RegExp(
-    `^\\s*(?:private|protected|public)?\\s*(?:static\\s+)?(?:final\\s+)?(?:${typePattern})\\s+(${namePattern})\\s*(?:[=;])`,
+    `^\\s*${FIELD_MODIFIER}(?:static\\s+)?(?:final\\s+)?(?:${typePattern})\\s+(${namePattern})\\s*(?:[=;])`,
     "gm",
   )
   return scanFieldDeclarations(source, regex)

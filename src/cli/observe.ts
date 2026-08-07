@@ -238,7 +238,7 @@ function observeJavaFile(projectDir: string, filePath: string): readonly Observe
   if (/(?:Request|Response|Dto|DTO)\.java$/.test(filePath)) {
     findings.push(normalizeObservation("dto.boundary", relativePath, observeDtoBoundary({ filePath, source })))
   }
-  if (filePath.endsWith("Service.java")) {
+  if (filePath.endsWith("Service.java") || filePath.endsWith("ServiceImpl.java")) {
     findings.push(normalizeObservation("service.storage-ownership", relativePath, observeServiceStorageOwnership({ filePath, source })))
   }
   if (/(?:Test|Tests|IntegrationTest)\.java$/.test(filePath)) {
