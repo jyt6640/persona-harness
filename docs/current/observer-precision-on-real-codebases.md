@@ -22,26 +22,53 @@ Neither project was modified. Nothing was planted.
 | project | Java files | files with an opinion | PASS | WARN | WARN verified correct |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | spring-petclinic | 30 | 6 (20%) | 8 | 9 | 9 / 9 |
-| mall | 519 | 100 (19%) | 139 | 5 | 5 / 5 |
-| **total** | **549** | **106 (19%)** | **147** | **14** | **14 / 14** |
+| mall | 519 | 149 (29%) | 188 | 5 | 5 / 5 |
+| **total** | **549** | **155 (28%)** | **196** | **14** | **14 / 14** |
 
-Before the fix in the same change, the same run produced 16 warnings of which 2
-were wrong — 87.5% precision. The two wrong ones are described below.
+Before the fixes in the same change, the same run produced 16 warnings of which
+2 were wrong — 87.5% precision — and reached only 19% of mall's files. Both
+gaps are described below.
 
 ## Read this number with its limit
 
-**The observers have an opinion about 19% of the Java files they inspect.** The
-remaining 81% are `UNKNOWN`: MyBatis-generated models, configuration, entities,
-utilities, and anything else no observer covers. `mall` alone contributes 469
-`UNKNOWN` findings.
+**The observers have an opinion about 28% of the Java files they inspect.** The
+remaining 72% are `UNKNOWN`: MyBatis-generated models and mappers,
+configuration, entities, parameter objects, utilities, and anything else no
+observer covers. `mall` alone contributes 420 `UNKNOWN` findings.
 
 So "0 false positives across 549 files" is not "the harness checked 549 files".
-It checked 106 and stayed quiet about the rest. Precision is what was measured
+It checked 155 and stayed quiet about the rest. Precision is what was measured
 here. Recall was not, and a project can pass every observer while being wrong in
 ways no observer looks at.
 
 Two projects is also a small sample, and both are Java/Spring/Maven web
 backends. Nothing here extends to other stacks.
+
+## The blind spot this found: `*ServiceImpl.java`
+
+`service.storage-ownership` matched `*Service.java` only. In `mall`, **all 50
+`*Service.java` files are interfaces** — zero are classes — and the 49
+`*ServiceImpl.java` files hold every field and every line of logic. One sampled
+implementation is 327 lines against a 73-line interface.
+
+So the observer was inspecting the one file in each pair that structurally
+cannot own storage, and never looking at the one that can. It reported `UNKNOWN`
+on all 50 interfaces, which was at least honest, but it saw nothing.
+
+Extending the match to `*ServiceImpl.java` immediately produced 19 warnings —
+**all 19 wrong.** The field pattern made the access modifier optional, so every
+`List<Foo> itemList = ...` declared inside a method body matched, and the
+type-argument pattern crossed newlines so a method signature could be captured
+whole as a field. Neither could show up while the observer only ever saw
+interfaces, which have no method bodies.
+
+Requiring an access modifier and confining type arguments to one line removed
+all 19. A planted `ServiceImpl` holding `Map<Long, Order> orderStore` and
+`AtomicLong nextId` is still reported, with a local `List<String> auditList` in
+the same file correctly ignored. mall's 49 implementations now report `PASS`,
+which is right — they delegate to MyBatis mappers rather than holding state.
+
+Coverage of mall went from 19% to 29% of files as a result.
 
 ## The two false positives this found
 
