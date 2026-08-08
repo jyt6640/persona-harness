@@ -7,6 +7,7 @@ import {
   resolveConfiguredPathResult,
 } from "../config/harness-config.js"
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
+import { nativeProjectReadPlatformSupported } from "../io/native-project-read.js"
 import { readEntrySteeringStatusSummary } from "../runtime/entry-steering-status.js"
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
 import { findAstGrepBinary } from "./ast-grep-convention-runner.js"
@@ -124,6 +125,9 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     npx: commandVersion("npx", ["--version"], options),
     opencode,
     runtimeReadiness: runtimeFindings.length === 0 ? "PASS" : "WARN",
+    cooperativeAssurance: nativeProjectReadPlatformSupported()
+      ? "available"
+      : `unavailable on ${process.platform}/${process.arch} (no native project-read artifact); finish reports blockers but cannot reach a cooperative PASS`,
     nodeSupport,
     runtimeFindings,
     reachability,

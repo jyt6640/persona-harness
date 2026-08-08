@@ -47,6 +47,14 @@ export type DoctorSummary = {
   readonly npx: string
   readonly opencode: string
   readonly runtimeReadiness: "PASS" | "WARN"
+  /**
+   * Whether a cooperative PASS is reachable here at all. The cooperative
+   * verifier runs the build through the native project-read boundary, which is
+   * built for darwin and linux only, so on any other platform the mode is
+   * unavailable rather than merely unconfigured. Stated up front so it is not
+   * discovered at the final step of the rail.
+   */
+  readonly cooperativeAssurance: string
   readonly nodeSupport: SigstoreNodeRuntimeAssessment
   readonly runtimeFindings: readonly string[]
   readonly reachability: DoctorReachabilitySummary
