@@ -68,3 +68,54 @@ run. The support matrix and the README platform table are unchanged, and
 `scripts/check-supported-node-matrix.mjs` still refuses a Windows matrix job.
 Whether that policy should change is a separate decision that needs its own
 evidence.
+
+### Windows 11, 2026-08-08
+
+Same host, Node v22.9.0, npm 11.6.0, Temurin 21 and JDK 25, PowerShell rather
+than Git Bash. Packed tarballs of `main`, plus published tarballs from the
+registry for comparison.
+
+This run followed the documented user path end to end instead of running the
+check script, and that difference is what it found.
+
+**`ph workflow finish` was completely non-functional on Windows.** Installing
+published tarballs back to back isolated it to a version range:
+
+| version | `workflow finish` |
+| --- | --- |
+| `0.7.0` (`latest`) | reaches `Blocker: verification-unknown` |
+| `0.7.0-rc.3` (`next`) | reaches `Blocker: verification-unknown` |
+| `0.8.0-beta.23` (`staging`) | `source-read-runtime-unavailable` before evaluating anything |
+
+The first diagnosis — the `O_DIRECTORY`/`O_NOFOLLOW` flags, the same cause as the
+2026-08-05 run — was wrong. Patching them changed nothing on this host. The
+actual cause is one level down: the source-read snapshot loads a native addon,
+and `native/project-read/manifest.json` builds `darwin-arm64`, `darwin-x64`,
+`linux-x64`, and `linux-arm64` only. Nothing on Windows to load.
+
+Three defects found, all fixed:
+
+- `workflow finish` demanded a native artifact that is not built for the
+  platform, instead of falling back to the unsnapshotted path it already uses
+  elsewhere. Fixed in #214, which also separates "no artifact exists for this
+  platform" from "the artifact failed to load", so a built platform keeps
+  failing closed.
+- `ph evidence read` returned `Evidence read unavailable.` for the same reason.
+  Since it is the only producer of the `fileRole` evidence
+  `java-role-read-coverage` accepts, a cooperative PASS was unreachable on
+  Windows even after the finish path worked. Fixed in #215.
+- Nothing told a Windows user that a cooperative PASS is unavailable to them.
+  They would work through the entire rail and be stopped at the last step.
+  Fixed in #216: `ph doctor` now states it beside Node support.
+
+The run also verified acceptance evidence for #124 and #112 on this host —
+Sigstore readiness bounded at ~5.6–5.9s with no token, URL, absolute-path, or
+raw-bundle leakage, and `authority status`/`explain` plaintext–JSON parity with
+one actionable next step. Both are recorded on those issues with their
+limitations stated.
+
+**Cooperative assurance remains darwin and linux only.** The cooperative path has
+55 references to the native boundary, including `runFixedGradle` and
+`runFixedGit` — the boundary is what runs the build, which is the entire content
+of the assurance. Degrading it would keep the word and remove the thing it names,
+so a `win32-x64` artifact is tracked separately in #217 rather than worked around.
