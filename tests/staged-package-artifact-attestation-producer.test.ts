@@ -15,7 +15,7 @@ import {
   STAGED_PACKAGE_ARTIFACT_PREDICATE_TYPE,
   stagedPackageTarballUrl,
 } from "../scripts/staged-package-artifact-attestation-core.mjs"
-import { readBeta33AcceptanceManifest } from "../scripts/consumer-authority-beta33-acceptance-schema.mjs"
+import { readBeta34AcceptanceManifest } from "../scripts/consumer-authority-beta34-acceptance-schema.mjs"
 
 const root = process.cwd()
 const workflowPath = join(root, ".github", "workflows", "staged-package-artifact-attestation.yml")
@@ -113,7 +113,7 @@ describe("staged package artifact attestation producer policy", () => {
   it("keeps a historical RC7 registry gitHead blocked while current package, lock, and acceptance metadata stay bound", () => {
     const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
     const packageLock = JSON.parse(readFileSync(join(root, "package-lock.json"), "utf8"))
-    const manifest = readBeta33AcceptanceManifest(root)
+    const manifest = readBeta34AcceptanceManifest(root)
 
     expect(packageJson.version).toBe(manifest.package.version)
     expect(packageLock.version).toBe(manifest.package.version)
