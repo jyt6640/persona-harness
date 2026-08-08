@@ -1,0 +1,40 @@
+# Reports whether the version on each npm dist-tag was published through
+# .github/workflows/publish.yml.
+#
+# `0.8.0-beta.33` reached `staging` from a workstation on 2026-08-08. Its source
+# binding was correct, so nothing looked wrong — but it carried no npm
+# provenance attestation and the post-publish registry readback never ran, and
+# that only surfaced days later when someone went looking for the readback
+# record. This makes the difference visible on demand instead.
+#
+# Deliberately not a pull-request gate: it reads the live registry, and #203
+# records why the PR path should not depend on external network state. Run it
+# after a publish, or on a schedule if that is wanted later.
+name: Registry channel provenance audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: registry-provenance-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Registry channel provenance audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20.19.0
+
+      - name: Audit dist-tag provenance
+        run: node scripts/check-registry-channel-provenance.mjs
