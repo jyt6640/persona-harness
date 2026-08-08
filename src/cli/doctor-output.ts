@@ -64,6 +64,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `npx: ${summary.npx}`,
     `OpenCode: ${summary.opencode}`,
     `Node support: ${summary.nodeSupport.status === "supported" ? "PASS" : "BLOCKED"} (${summary.nodeSupport.requiredRange})`,
+    `Cooperative assurance: ${summary.cooperativeAssurance}`,
     `Runtime readiness: ${summary.runtimeReadiness}`,
     ...summary.runtimeFindings.map((finding) => `- ${finding}`),
     `Session reachability: ${summary.reachability.level}`,
