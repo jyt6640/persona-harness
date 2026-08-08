@@ -4,20 +4,20 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import {
-  Beta33AcceptanceManifestError,
-  canonicalBeta33AcceptanceManifest,
-  parseBeta33AcceptanceManifest,
-} from "../scripts/consumer-authority-beta33-acceptance-schema.mjs"
+  Beta34AcceptanceManifestError,
+  canonicalBeta34AcceptanceManifest,
+  parseBeta34AcceptanceManifest,
+  readBeta34AcceptanceManifest,
+} from "../scripts/consumer-authority-beta34-acceptance-schema.mjs"
 import { parseBeta31AcceptanceManifest } from "../scripts/consumer-authority-beta31-acceptance-schema.mjs"
 
 const repositoryRoot = process.cwd()
 
-describe("consumer authority beta.33 acceptance schema", () => {
+describe("consumer authority beta.34 acceptance schema", () => {
   it("ships the known-completion policy with current package and root-bound contract authority", () => {
-    const historical = JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta33-acceptance.json"), "utf8"))
-    const manifest = parseBeta33AcceptanceManifest(historical, "0.8.0-beta.33")
+    const manifest = readBeta34AcceptanceManifest(repositoryRoot)
 
-    expect(manifest.package).toMatchObject({ version: "0.8.0-beta.33" })
+    expect(manifest.package).toMatchObject({ version: "0.8.0-beta.34" })
     expect(manifest.observerGhSelection).toMatchObject({
       dpkgOwnership: expect.stringContaining("installed-status-ii"),
       packageRecord: {
@@ -37,11 +37,19 @@ describe("consumer authority beta.33 acceptance schema", () => {
     })
     expect((manifest.closureCompleteness as { localProof: string }).localProof).toContain("known-completion-mode-independent")
     expect(manifest).toMatchObject({
+      // beta32's own record about beta33 carries forward unchanged.
       beta32HistoricalParserPreflight: {
         reusableForBeta33: false,
         version: "0.8.0-beta.32",
       },
+      // beta.33 is superseded for a registry-publish reason, not a code change.
+      beta33HistoricalRegistryPublish: {
+        reusableForBeta34: false,
+        version: "0.8.0-beta.33",
+      },
     })
+    expect((manifest.beta33HistoricalRegistryPublish as { outcome: string }).outcome)
+      .toContain("outside-the-governed-publish-workflow")
     expect(manifest.packageBoundary).toMatchObject({
       currentVersionAuthority: expect.stringContaining("package-lock"),
       authoritativeBundleContract: {
@@ -61,24 +69,24 @@ describe("consumer authority beta.33 acceptance schema", () => {
   })
 
   it("rejects acceptance drift rather than accepting a partial selector contract", () => {
-    const fixture = canonicalBeta33AcceptanceManifest()
+    const fixture = canonicalBeta34AcceptanceManifest()
     const selection = fixture.observerGhSelection as { packageRecord: Record<string, unknown> }
     const packageRecord = selection.packageRecord
     packageRecord.shapes = ["canonical"]
 
-    expect(() => parseBeta33AcceptanceManifest(fixture, "0.8.0-beta.33")).toThrow(Beta33AcceptanceManifestError)
+    expect(() => parseBeta34AcceptanceManifest(fixture, "0.8.0-beta.34")).toThrow(Beta34AcceptanceManifestError)
     const beta31 = JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-beta31-acceptance.json"), "utf8"))
     expect(parseBeta31AcceptanceManifest(beta31, "0.8.0-beta.31")).toHaveProperty("schemaVersion", "consumer-authority-beta31-acceptance.1")
   })
 
-  it("keeps beta33 strict and historical after current package preflights advance", () => {
+  it("routes current package preflights through the beta34 acceptance record", () => {
     for (const script of [
       "preflight-consumer-authority-external-attestation.mjs",
       "preflight-consumer-authority-external-artifact-transport.mjs",
     ]) {
       const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-      expect(source).not.toContain('from "./consumer-authority-beta33-acceptance-schema.mjs"')
-      expect(source).not.toContain("readBeta33AcceptanceManifest(packageRoot)")
+      expect(source).toContain('from "./consumer-authority-beta34-acceptance-schema.mjs"')
+      expect(source).toContain("readBeta34AcceptanceManifest(packageRoot)")
       expect(source).not.toContain("readBeta31AcceptanceManifest")
     }
   })
