@@ -1,0 +1,60 @@
+# Keeps the Windows behaviour fixed in #214, #215, and #216 from regressing.
+#
+# This is deliberately NOT a support claim and NOT part of the support matrix.
+# `.github/workflows/supported-node-matrix.yml` declares which platforms are
+# supported and `scripts/check-supported-node-matrix.mjs` refuses a Windows job
+# there; that policy is untouched. This workflow only pins that the platform
+# fails the way it is documented to fail rather than the way it used to.
+#
+# What it asserts, all verified by hand on a Windows 11 host first:
+#   - `workflow finish` reaches blocker evaluation instead of dying on
+#     `source-read-runtime-unavailable` (#214)
+#   - `ph evidence read` records evidence instead of returning
+#     "Evidence read unavailable." (#215)
+#   - `ph doctor` states that a cooperative PASS is unreachable here (#216)
+#
+# It does not assert that a cooperative PASS works on Windows. It cannot: no
+# win32-x64 native project-read artifact is built (#217).
+name: Windows platform smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Windows platform smoke
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20.19.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Pack
+        run: npm pack --pack-destination ${{ runner.temp }}
+
+      - name: Verify documented Windows behaviour
+        shell: pwsh
+        run: node .github/scripts/windows-platform-smoke.mjs "${{ runner.temp }}"
