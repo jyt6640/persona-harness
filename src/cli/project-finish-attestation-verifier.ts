@@ -41,7 +41,7 @@ import {
   matchesFinishAttestationTerminalRecord,
   readFinishAttestationTerminalRecord,
 } from "./workflow-finish-attestation-consumption.js"
-import { matchesProjectFinishAttestationSource } from "./project-finish-attestation-source.js"
+import { projectFinishAttestationSourceDriftPath } from "./project-finish-attestation-source.js"
 
 export {
   PROJECT_FINISH_ATTESTATION_EVIDENCE_DIRECTORY,
@@ -176,8 +176,9 @@ function verifyProjectFinishAttestationInternal(
     const signedReceipt = parsed.value.predicate.receipt
     const enrollmentMismatch = matchProjectFinishAttestationEnrollment(signedReceipt, enrollment)
     if (enrollmentMismatch !== undefined) return blocked(enrollmentMismatch.code, enrollmentMismatch.path)
-    if (!matchesProjectFinishAttestationSource(projectRoot, signedReceipt.source.identity, projectReadBoundary)) {
-      return blocked("source-drift", "source")
+    const sourceDrift = projectFinishAttestationSourceDriftPath(projectRoot, signedReceipt.source.identity, projectReadBoundary)
+    if (sourceDrift !== undefined) {
+      return blocked("source-drift", sourceDrift)
     }
     if (signedReceipt.phVersion !== personaHarnessVersion()) {
       return blocked("binding-mismatch", "predicate.receipt.phVersion")
@@ -225,8 +226,9 @@ function verifyProjectFinishAttestationInternal(
     }
     if (!consume) return trusted(signedReceipt, "unconsumed")
 
-    if (!matchesProjectFinishAttestationSource(projectRoot, signedReceipt.source.identity, projectReadBoundary)) {
-      return blocked("source-drift", "source")
+    const consumeSourceDrift = projectFinishAttestationSourceDriftPath(projectRoot, signedReceipt.source.identity, projectReadBoundary)
+    if (consumeSourceDrift !== undefined) {
+      return blocked("source-drift", consumeSourceDrift)
     }
     const consumed = consumeFinishAttestation(projectRoot, terminalBinding)
     if (!consumed.ok) {

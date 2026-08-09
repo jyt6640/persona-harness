@@ -9,7 +9,10 @@ const worker = vi.hoisted(() => ({
   runProjectFinishAttestationWorker: vi.fn(),
 }))
 const source = vi.hoisted(() => ({
+  // The verifier now asks where the source drifted rather than whether it
+  // matches, so `undefined` is the matching answer.
   matchesProjectFinishAttestationSource: vi.fn(),
+  projectFinishAttestationSourceDriftPath: vi.fn(),
 }))
 
 vi.mock("../src/cli/project-finish-attestation-worker.js", () => worker)
@@ -54,6 +57,8 @@ beforeEach(() => {
   worker.runProjectFinishAttestationWorker.mockReset()
   source.matchesProjectFinishAttestationSource.mockReset()
   source.matchesProjectFinishAttestationSource.mockReturnValue(true)
+  source.projectFinishAttestationSourceDriftPath.mockReset()
+  source.projectFinishAttestationSourceDriftPath.mockReturnValue(undefined)
 })
 
 afterEach(() => {
