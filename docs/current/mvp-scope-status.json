@@ -1,7 +1,7 @@
 {
   "mvpScope": "java-spring-backend-clean-code",
-  "activeSharedSkills": ["programming", "frontend"],
-  "inactiveVendoredReferences": ["ast-grep", "debugging", "visual-qa", "review-work"],
+  "activeSharedSkills": ["programming"],
+  "inactiveVendoredReferences": ["debugging", "review-work"],
   "experimentalFileRoles": ["typescript", "frontend"],
   "parkingFileRoles": ["infra", "shared-skill"],
   "scopeDecision": "java-backend-mvp-first"

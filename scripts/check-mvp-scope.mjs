@@ -101,7 +101,7 @@ async function main() {
   const router = await loadOptional(FILES.router)
   if (router !== null) {
     const activeSkills = extractArrayConstant(router, "ACTIVE_SHARED_SKILL_NAMES")
-    const inactiveSkills = extractArrayConstant(router, "INACTIVE_VENDORED_SHARED_SKILL_NAMES")
+    const removedSkills = extractArrayConstant(router, "REMOVED_SHARED_SKILL_NAMES")
 
     if (activeSkills === null) {
       diagnostics.push("WARN: ACTIVE_SHARED_SKILL_NAMES was not found in shared-skill-router.ts.")
@@ -109,12 +109,12 @@ async function main() {
       compareArray("active shared skills", activeSkills, status.activeSharedSkills, diagnostics)
     }
 
-    if (inactiveSkills === null) {
-      diagnostics.push("WARN: INACTIVE_VENDORED_SHARED_SKILL_NAMES was not found in shared-skill-router.ts.")
+    if (removedSkills === null) {
+      diagnostics.push("WARN: REMOVED_SHARED_SKILL_NAMES was not found in shared-skill-router.ts.")
     } else {
       for (const skill of status.inactiveVendoredReferences) {
-        if (!inactiveSkills.includes(skill)) {
-          diagnostics.push(`WARN: ${skill} is not listed as an inactive vendored reference in shared-skill-router.ts.`)
+        if (!removedSkills.includes(skill)) {
+          diagnostics.push(`WARN: ${skill} is not listed as a removed shared skill in shared-skill-router.ts.`)
         }
       }
     }

@@ -26,7 +26,7 @@ function runNodeScript(scriptPath: string, args: readonly string[], cwd: string)
   })
 }
 
-function writeScopeProject(projectDir: string, activeSkills: readonly string[] = ["programming", "frontend"]): void {
+function writeScopeProject(projectDir: string, activeSkills: readonly string[] = ["programming"]): void {
   mkdirSync(join(projectDir, "docs", "current"), { recursive: true })
   mkdirSync(join(projectDir, "src", "runtime"), { recursive: true })
   writeFileSync(
@@ -35,7 +35,7 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
       {
         mvpScope: "java-spring-backend-clean-code",
         activeSharedSkills: activeSkills,
-        inactiveVendoredReferences: ["ast-grep", "debugging", "visual-qa", "review-work"],
+        inactiveVendoredReferences: ["debugging", "review-work"],
         experimentalFileRoles: ["typescript", "frontend"],
         parkingFileRoles: ["infra", "shared-skill"],
         scopeDecision: "java-backend-mvp-first",
@@ -47,8 +47,8 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
   writeFileSync(
     join(projectDir, "src", "runtime", "shared-skill-router.ts"),
     [
-      'export const ACTIVE_SHARED_SKILL_NAMES = ["programming", "frontend"] as const',
-      'export const INACTIVE_VENDORED_SHARED_SKILL_NAMES = ["ast-grep", "debugging", "visual-qa", "review-work"] as const',
+      'export const ACTIVE_SHARED_SKILL_NAMES = ["programming"] as const',
+      'export const REMOVED_SHARED_SKILL_NAMES = ["advanced/superpowers-driver", "debugging", "review-work"] as const',
       "",
     ].join("\n"),
   )
@@ -155,7 +155,7 @@ describe("maintenance scripts", () => {
 
   it("reports WARN when structured scope status disagrees with active router skills", () => {
     const projectDir = createTempDir("persona-scope-warn-")
-    writeScopeProject(projectDir, ["programming"])
+    writeScopeProject(projectDir, ["programming", "frontend"])
 
     const result = runNodeScript(checkScopeScript, [projectDir], projectDir)
 
@@ -166,7 +166,7 @@ describe("maintenance scripts", () => {
 
   it("exits nonzero in strict mode when scope diagnostics are WARN", () => {
     const projectDir = createTempDir("persona-scope-strict-warn-")
-    writeScopeProject(projectDir, ["programming"])
+    writeScopeProject(projectDir, ["programming", "frontend"])
 
     const result = runNodeScript(checkScopeScript, ["--strict", projectDir], projectDir)
 
@@ -194,8 +194,8 @@ describe("maintenance scripts", () => {
       `${JSON.stringify(
         {
           mvpScope: "java-spring-backend-clean-code",
-          activeSharedSkills: ["programming", "frontend"],
-          inactiveVendoredReferences: ["ast-grep", "debugging", "visual-qa", "review-work"],
+          activeSharedSkills: ["programming"],
+          inactiveVendoredReferences: ["debugging", "review-work"],
           experimentalFileRoles: ["typescript", "frontend"],
           parkingFileRoles: ["infra", "shared-skill"],
           scopeDecision: "java-backend-mvp-first",
