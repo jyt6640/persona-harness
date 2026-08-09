@@ -57,32 +57,74 @@ export function matchesProjectFinishAttestationSource(
   expected: SourceIdentity,
   suppliedBoundary?: ProjectReadBoundary,
 ): boolean {
+  return projectFinishAttestationSourceDriftPath(projectDir, expected, suppliedBoundary) === undefined
+}
+
+/**
+ * Where the current source stopped matching the signed identity, or `undefined`
+ * when it matches.
+ *
+ * `source-drift` alone sends a reader looking for a change that git often
+ * insists is not there. The case that costs the most time: git normalizes line
+ * endings, so a checkout can report `git status --porcelain
+ * --untracked-files=all` with zero entries while a file's working-tree bytes
+ * differ from the bytes that were committed and signed. Head matches, entry
+ * counts match, the git status digest matches, and only the content digest
+ * moves — with nothing in the diagnostic pointing at why.
+ *
+ * The tracked index digest separates that case cleanly: when it agrees with the
+ * signed identity and the content digest does not, the difference is between
+ * the working tree and its own index rather than between two commits.
+ *
+ * Reporting only; no verdict changes. Any drift still blocks.
+ */
+export function projectFinishAttestationSourceDriftPath(
+  projectDir: string,
+  expected: SourceIdentity,
+  suppliedBoundary?: ProjectReadBoundary,
+): string | undefined {
   let projectReadBoundary = suppliedBoundary
   try {
     if (projectReadBoundary === undefined) projectReadBoundary = reserveProjectReadBoundary(projectDir)
-    return matchesProjectFinishAttestationSourceWithinBoundary(projectReadBoundary, expected)
+    return sourceDriftPathWithinBoundary(projectReadBoundary, expected)
   } catch {
-    return false
+    return "source"
   } finally {
     if (suppliedBoundary === undefined) projectReadBoundary?.close()
   }
 }
 
-function matchesProjectFinishAttestationSourceWithinBoundary(
+function sourceDriftPathWithinBoundary(
   projectReadBoundary: ProjectReadBoundary,
   expected: SourceIdentity,
-): boolean {
+): string | undefined {
   const git = captureGitIdentityFromCapturedProject(currentProjectGit(projectReadBoundary))
-  if (
-    !git.available
-    || git.head !== expected.repositoryHead
-    || git.status === undefined
-  ) {
-    return false
-  }
+  if (!git.available || git.status === undefined) return "source.git"
+  if (git.head !== expected.repositoryHead) return "source.repositoryHead"
   const inputs = captureProjectFinishAttestationInputSnapshot(".", projectReadBoundary)
-  if (inputs.kind !== "ready") return false
+  if (inputs.kind !== "ready") return "source.inputs"
   const source = captureProjectFinishAttestationSourceIdentity(".", git, projectReadBoundary)
-  return source.status === "available"
-    && sameSourceIdentity(bindProjectFinishAttestationInputSnapshot(source.value, inputs.value), expected)
+  if (source.status !== "available") return "source.identity"
+  const actual = bindProjectFinishAttestationInputSnapshot(source.value, inputs.value)
+  return sameSourceIdentity(actual, expected) ? undefined : sourceIdentityDriftPath(actual, expected)
+}
+
+export function sourceIdentityDriftPath(actual: SourceIdentity, expected: SourceIdentity): string {
+  if (actual.repositoryHead !== expected.repositoryHead) return "source.repositoryHead"
+  if (
+    actual.entryCount !== expected.entryCount
+    || actual.trackedEntryCount !== expected.trackedEntryCount
+    || actual.untrackedEntryCount !== expected.untrackedEntryCount
+  ) {
+    return "source.entryCount"
+  }
+  if (actual.gitStatusDigest !== expected.gitStatusDigest) return "source.gitStatusDigest"
+  if (actual.trackedIndexDigest === expected.trackedIndexDigest && actual.contentDigest !== expected.contentDigest) {
+    // Same commit, same file set, same git status, same index — the bytes on
+    // disk differ from the bytes git holds for them. Line-ending normalization
+    // is the usual cause, and `git status` will not show it.
+    return "source.workingTreeBytesDifferFromMatchingGitIndex"
+  }
+  if (actual.trackedIndexDigest !== expected.trackedIndexDigest) return "source.trackedIndexDigest"
+  return actual.contentDigest === expected.contentDigest ? "source" : "source.contentDigest"
 }
