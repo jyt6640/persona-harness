@@ -1,4 +1,5 @@
 import type { ProjectReadBoundary } from "../io/bootstrap-write-boundary.js"
+import { nativeProjectReadPlatformSupported } from "../io/native-project-read.js"
 import {
   cooperativeWorkspaceKey,
   prepareCooperativeFinishContext,
@@ -46,6 +47,20 @@ export function runCurrentProcessCooperativeFinish(
   boundary?: ProjectReadBoundary,
   suppliedContext?: CooperativeFinishContext,
 ): CooperativeFinishAuthorityResult {
+  // The other half of #235. Now that a platform with no native artifact can
+  // prepare a context and reach blocker evaluation, nothing else stands
+  // between it and `runCooperativeGradleVerification` below — a non-boundary
+  // path that returns `passed`. `doctor` states in words that such a platform
+  // "cannot reach a cooperative PASS", and the boundary is what runs the
+  // build, so a PASS without it would keep the word and drop the thing it
+  // names.
+  //
+  // Checked on the platform fact, not on `boundary === undefined`: an absent
+  // boundary is a legitimate state for callers on a platform that does build
+  // one, and using it here would change their behaviour too.
+  if (!nativeProjectReadPlatformSupported()) {
+    return { code: "cooperative-pass-unavailable-on-this-platform", kind: "blocked" }
+  }
   const context = suppliedContext === undefined
     ? prepareCooperativeFinishContext(projectDir, boundary)
     : { kind: "ready" as const, value: suppliedContext }

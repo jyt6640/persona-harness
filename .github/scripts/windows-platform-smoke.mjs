@@ -112,21 +112,25 @@ record(
 // is the one Windows cannot complete. That gap is why #235 went unseen here
 // while this job stayed green.
 //
-// `prepareCooperativeFinishContext` re-reserves the boundary the unsupported
-// platform branch skipped, so this is expected to block on Windows today. What
-// must not regress is the *honesty* of that block: it may not report a
-// verification that never ran.
+// Both halves of what `doctor` promises this platform — "finish reports
+// blockers but cannot reach a cooperative PASS" — are asserted here, because
+// they are implemented by two separate gates on purpose and either one alone
+// is a defect: reporting nothing, or passing without the boundary that runs
+// the build.
 const cooperative = ph(projectDir, ["workflow", "finish", "implement", "--assurance", "cooperative"])
-record(cooperative.status !== 0, "cooperative finish blocks on this platform", `exit ${cooperative.status}`)
+record(cooperative.status !== 0, "cooperative finish cannot reach a PASS here", `exit ${cooperative.status}`)
+record(
+  !cooperative.output.includes(RUNTIME_BLOCKER),
+  "cooperative finish reaches blocker evaluation",
+  cooperative.output.includes(RUNTIME_BLOCKER) ? "still blocked on the runtime" : undefined,
+)
+record(
+  cooperative.output.includes("Closure blocker:"),
+  "cooperative finish reports the project's real blockers",
+)
 record(
   !cooperative.output.includes("Cooperative verification ran without the snapshot boundary"),
   "cooperative finish does not claim a verification it never ran",
-)
-// Recorded, not asserted. This is the open half of #235: when the cooperative
-// path gains a real unsnapshotted mode this line stops appearing, and the note
-// is where that change becomes visible without failing the job in either state.
-notes.push(
-  `NOTE  cooperative finish ${cooperative.output.includes(RUNTIME_BLOCKER) ? "still blocks on the runtime (#235 open)" : "no longer blocks on the runtime — revisit #235"}`,
 )
 
 console.log(notes.join("\n"))
