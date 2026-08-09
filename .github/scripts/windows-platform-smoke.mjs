@@ -89,11 +89,17 @@ const read = ph(projectDir, ["evidence", "read", "src/main/java/com/example/Task
 record(read.status === 0, "ph evidence read records a read", read.output.trim().split("\n")[0])
 
 // #214 — `workflow finish` died before evaluating a single blocker.
+//
+// Match the rendered blocker line, not the bare diagnostic code. The notice
+// names the code on purpose so a reader can recognise the block, and a
+// substring check on the code alone trips on that explanation instead of on a
+// real failure.
+const RUNTIME_BLOCKER = "Cooperative verification blocked: source-read-runtime-unavailable."
 const finish = ph(projectDir, ["workflow", "finish", "implement"])
 record(
-  !finish.output.includes("source-read-runtime-unavailable"),
+  !finish.output.includes(RUNTIME_BLOCKER),
   "workflow finish reaches blocker evaluation",
-  finish.output.includes("source-read-runtime-unavailable") ? "still blocked on the runtime" : undefined,
+  finish.output.includes(RUNTIME_BLOCKER) ? "still blocked on the runtime" : undefined,
 )
 record(finish.status !== 0, "workflow finish still blocks without attestation", `exit ${finish.status}`)
 record(
@@ -115,6 +121,12 @@ record(cooperative.status !== 0, "cooperative finish blocks on this platform", `
 record(
   !cooperative.output.includes("Cooperative verification ran without the snapshot boundary"),
   "cooperative finish does not claim a verification it never ran",
+)
+// Recorded, not asserted. This is the open half of #235: when the cooperative
+// path gains a real unsnapshotted mode this line stops appearing, and the note
+// is where that change becomes visible without failing the job in either state.
+notes.push(
+  `NOTE  cooperative finish ${cooperative.output.includes(RUNTIME_BLOCKER) ? "still blocks on the runtime (#235 open)" : "no longer blocks on the runtime — revisit #235"}`,
 )
 
 console.log(notes.join("\n"))
