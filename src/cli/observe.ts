@@ -155,8 +155,8 @@ function buildObserveReport(projectDir: string, targetPath: string, javaFiles: r
   ]
   return {
     command: "ph observe",
-    targetPath: relative(projectDir, targetPath) || ".",
-    inspectedFiles: javaFiles.map((filePath) => relative(projectDir, filePath)),
+    targetPath: reportPath(projectDir, targetPath) || ".",
+    inspectedFiles: javaFiles.map((filePath) => reportPath(projectDir, filePath)),
     findings,
     limitations: [
       "Report-only observer output; not enforcement and not generated app quality certification.",
@@ -166,7 +166,7 @@ function buildObserveReport(projectDir: string, targetPath: string, javaFiles: r
 }
 
 function observeAstGrepConventions(projectDir: string, javaFiles: readonly string[]): readonly ObserveFinding[] {
-  const inspectedFilePaths = new Set(javaFiles.map((filePath) => relative(projectDir, filePath).replace(/\\/g, "/")))
+  const inspectedFilePaths = new Set(javaFiles.map((filePath) => reportPath(projectDir, filePath)))
   return readConventionDefinitions(projectDir).flatMap((definition) => {
     if (definition.check.kind !== "ast-grep") {
       return []
@@ -224,9 +224,22 @@ function observeAstGrepConvention(
   })
 }
 
+/**
+ * Report paths in POSIX form on every platform.
+ *
+ * `relative()` yields backslashes on Windows while ast-grep always emits
+ * forward slashes, so one report described the same file two ways and anything
+ * grouping findings by `filePath` saw two files. The set at
+ * `inspectedFilePaths` already normalized for exactly this reason; the reported
+ * paths did not.
+ */
+function reportPath(projectDir: string, filePath: string): string {
+  return relative(projectDir, filePath).replace(/\\/g, "/")
+}
+
 function observeJavaFile(projectDir: string, filePath: string): readonly ObserveFinding[] {
   const source = readFileSync(filePath, "utf8")
-  const relativePath = relative(projectDir, filePath)
+  const relativePath = reportPath(projectDir, filePath)
   const findings: ObserveFinding[] = []
   if (filePath.endsWith("Controller.java")) {
     findings.push(
