@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -8,7 +8,7 @@ import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import { createInjectionBlock } from "../src/runtime/injection.js"
 import {
   ACTIVE_SHARED_SKILL_NAMES,
-  INACTIVE_VENDORED_SHARED_SKILL_NAMES,
+  OPTIONAL_SHARED_SKILL_NAMES,
   REMOVED_SHARED_SKILL_NAMES,
 } from "../src/runtime/shared-skill-router.js"
 import type { TransformMessagesOutput } from "../src/runtime/types.js"
@@ -78,13 +78,13 @@ describe("Phase 0 shared skill routing", () => {
     expect(injection.block).toContain("TypeScript")
   })
 
-  it("selects programming and frontend for React component targets", () => {
+  it("selects programming for React component targets without auto-injecting the optional frontend overlay", () => {
     const injection = createInjectionBlock("src/components/ReservationList.tsx")
 
-    expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming", "frontend"])
-    expect(injection.selectedSharedSkills.map((skill) => skill.domain)).toContain("frontend")
-    expect(injection.selectedSharedSkills.map((skill) => skill.path)).toContain("packages/shared-skills/skills/frontend/SKILL.md")
-    expect(injection.block).not.toContain("packages/shared-skills/skills/frontend/SKILL.md")
+    expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
+    expect(injection.selectedSharedSkills.map((skill) => skill.domain)).not.toContain("frontend")
+    expect(injection.selectedSharedSkills.map((skill) => skill.path)).not.toContain("packages/shared-skills/skills/frontend/SKILL.md")
+    expect(injection.block).toContain("programming")
   })
 
   it("does not add frontend for non-React TypeScript module targets", () => {
@@ -93,7 +93,7 @@ describe("Phase 0 shared skill routing", () => {
     expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
   })
 
-  it("keeps inactive vendored skills out of automatic routing", () => {
+  it("keeps optional and removed OMO surfaces out of automatic routing", () => {
     const selectedSkillNames = [
       ...createInjectionBlock("src/components/ReservationList.tsx").selectedSharedSkills.map((skill) => skill.name),
       ...createInjectionBlock("Dockerfile").selectedSharedSkills.map((skill) => skill.name),
@@ -102,28 +102,24 @@ describe("Phase 0 shared skill routing", () => {
       ),
     ]
 
-    expect(ACTIVE_SHARED_SKILL_NAMES).toEqual(["programming", "frontend"])
-    expect(INACTIVE_VENDORED_SHARED_SKILL_NAMES).toEqual([
-      "debugging",
-      "visual-qa",
-      "ast-grep",
-      "git-master",
-      "refactor",
-      "review-work",
-      "start-work",
-      "ulw-plan",
-      "ultraresearch",
-      "init-deep",
-      "remove-ai-slops",
-      "lsp-setup",
-    ])
+    expect(ACTIVE_SHARED_SKILL_NAMES).toEqual(["programming"])
+    expect(OPTIONAL_SHARED_SKILL_NAMES).toEqual(["frontend", "visual-qa", "ast-grep", "lsp-setup"])
     const activeSkillNames = new Set<string>(ACTIVE_SHARED_SKILL_NAMES)
     expect(selectedSkillNames.every((name) => activeSkillNames.has(name))).toBe(true)
   })
 
-  it("does not vendor LazyCodex-only shared skills", () => {
-    expect(REMOVED_SHARED_SKILL_NAMES).toEqual(["lcx-report-bug", "lcx-contribute-bug-fix", "lcx-doctor"])
-    expect(REMOVED_SHARED_SKILL_NAMES.every((name) => !existsSync(`packages/shared-skills/skills/${name}`))).toBe(true)
+  it("does not package OMO-specific orchestration baggage as Persona skills", () => {
+    expect(REMOVED_SHARED_SKILL_NAMES).toEqual([
+      "advanced/superpowers-driver",
+      "init-deep",
+      "remove-ai-slops",
+      "review-work",
+      "start-work",
+      "ultraresearch",
+      "ulw-plan",
+    ])
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as { readonly files: readonly string[] }
+    expect(REMOVED_SHARED_SKILL_NAMES.every((name) => !packageJson.files.includes(`packages/shared-skills/skills/${name}`))).toBe(true)
   })
 
   it("injects shared skill guidance for TypeScript files through hooks", async () => {
@@ -143,7 +139,7 @@ describe("Phase 0 shared skill routing", () => {
     expect(text).toContain("[Persona Harness Injection]")
     expect(text).toContain("Selected skills:")
     expect(text).toContain("programming")
-    expect(text).toContain("frontend")
+    expect(text).not.toContain("- frontend (")
     expect(text).toContain("TypeScript 코드를 수정해줘.")
   })
 

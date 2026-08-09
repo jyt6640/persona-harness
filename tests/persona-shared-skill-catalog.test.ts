@@ -1,0 +1,80 @@
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
+
+import { describe, expect, it } from "vitest"
+
+import {
+  PERSONA_CORE_SKILL_IDS,
+  PERSONA_OPTIONAL_SKILL_IDS,
+  listPersonaSharedSkills,
+  personaSharedSkillPath,
+  resolvePersonaSharedSkill,
+} from "../src/runtime/persona-shared-skill-catalog.js"
+import { createOpenCodeSkillRoute } from "../src/runtime/opencode-skill-adapter.js"
+
+const packageRoot = process.cwd()
+
+function isCoveredByPackageFiles(filePath: string, files: readonly string[]): boolean {
+  return files.some((entry) => filePath === entry || filePath.startsWith(`${entry}/`))
+}
+
+describe("Persona-owned shared-skill catalog", () => {
+  it("ships one portable core with explicit handoffs and optional extensions", () => {
+    expect(PERSONA_CORE_SKILL_IDS).toEqual([
+      "deep-interview",
+      "technical-intake",
+      "plan",
+      "ralplan",
+      "tdd",
+      "implementation",
+      "review",
+      "programming",
+      "debug",
+      "refactor",
+      "git",
+    ])
+    expect(PERSONA_OPTIONAL_SKILL_IDS).toEqual(["frontend", "visual-qa", "ast-grep", "lsp-setup"])
+
+    const skills = listPersonaSharedSkills()
+    expect(skills.map((skill) => skill.id)).toEqual([...PERSONA_CORE_SKILL_IDS, ...PERSONA_OPTIONAL_SKILL_IDS])
+    expect(resolvePersonaSharedSkill("deep-interview")).toMatchObject({
+      mutability: "conversation-only",
+      handoff: "technical-intake",
+    })
+    expect(resolvePersonaSharedSkill("plan")).toMatchObject({ handoff: "ralplan" })
+    expect(resolvePersonaSharedSkill("ralplan")).toMatchObject({ optional: true, handoff: "tdd" })
+    expect(resolvePersonaSharedSkill("implementation")).toMatchObject({ handoff: "review" })
+  })
+
+  it("keeps every catalog entry package-visible and never treats host workflow templates as core skills", () => {
+    const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
+      readonly files: readonly string[]
+    }
+
+    for (const skill of listPersonaSharedSkills()) {
+      const path = personaSharedSkillPath(skill.id)
+      expect(existsSync(join(packageRoot, path))).toBe(true)
+      expect(isCoveredByPackageFiles(path, packageJson.files)).toBe(true)
+    }
+
+    expect(existsSync(join(packageRoot, "packages/shared-skills/catalog.json"))).toBe(true)
+    expect(isCoveredByPackageFiles("packages/shared-skills/catalog.json", packageJson.files)).toBe(true)
+    expect(packageJson.files).not.toContain("packages/shared-skills/skills/workflow")
+    expect(listPersonaSharedSkills().some((skill) => skill.id === "workflow")).toBe(false)
+  })
+
+  it("renders an advisory route instead of injecting a skill body or advancing workflow state", () => {
+    const route = createOpenCodeSkillRoute({
+      decision: "suggest",
+      skillId: "deep-interview",
+      reason: "A product outcome is still unresolved.",
+    })
+
+    expect(route).toContain("[Persona Harness Skill Route]")
+    expect(route).toContain("Decision: suggest")
+    expect(route).toContain("Skill: deep-interview")
+    expect(route).toContain("does not create plans, tickets, branches, files, agents, or workflow state")
+    expect(route).not.toContain("npx ph workflow")
+    expect(route).not.toContain("# Product Deep Interview")
+  })
+})

@@ -3,6 +3,7 @@ import { writeIntentEvidence } from "./evidence.js"
 import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
 import { formatGitWorkflowBlock } from "./git-workflow-skill.js"
 import { injectTextIntoLatestUserMessage } from "./messages.js"
+import { ProductDeepInterviewTracker } from "./product-deep-interview.js"
 import { formatProgrammingWorkflowBlock } from "./programming-workflow-skill.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
 import { formatRefactorWorkflowBlock } from "./refactor-workflow-skill.js"
@@ -25,12 +26,28 @@ const IMPLEMENTATION_PROFILE_GUARD_LINES = [
 ] as const
 
 const FINISH_SEQUENCE_GUARD =
-  "- Before reporting completion, follow this sequence: `.persona/workflow/implementation-report.md`, `.persona/workflow/review-report.md`, `npx ph plan --report-filled review`, then `npx ph workflow finish implement`."
+  "- Before reporting completion, follow the project’s explicit report/review/finish policy; this host route does not create or advance that state."
 
 function latestUserText(output: TransformMessagesOutput): string | undefined {
   const latestUserMessage = [...output.messages].reverse().find((message) => message.info.role === "user")
   const textPart = latestUserMessage?.parts.find((part) => part.type === "text" && typeof part.text === "string")
   return textPart?.type === "text" ? textPart.text : undefined
+}
+
+export function maybeInjectProductDeepInterview(
+  output: TransformMessagesOutput,
+  sessionID: string,
+  tracker: ProductDeepInterviewTracker,
+): boolean {
+  const text = latestUserText(output)
+  if (text === undefined) {
+    return false
+  }
+  const result = tracker.route(sessionID, text)
+  if (result === undefined) {
+    return false
+  }
+  return injectTextIntoLatestUserMessage(output, result.block, "[Persona Harness Product Interview]")
 }
 
 function runtimeReliabilityGuardLines(intent: TopLevelIntent): readonly string[] {
@@ -59,27 +76,27 @@ function runtimeReliabilityGuardLines(intent: TopLevelIntent): readonly string[]
   if (intent.requirementsIntent.kind === "requirement-approval") {
     return [
       ...baseLines,
-      "- Convert only an approved draft into backlog, run `npx ph workflow next` to inspect the first pending ticket, and implement only the current ticket.",
+      "- An approved brief is an explicit handoff to technical intake and planning; do not create backlog, ticket, or implementation state from this route.",
     ]
   }
 
   if (intent.requirementsIntent.kind === "requirement-continuation") {
     return [
       ...baseLines,
-      "- If pending tickets remain, use `npx ph workflow next` / `npx ph workflow continue` to proceed to the next ticket and do not claim the whole backlog is complete.",
+      "- Ask for the explicit current delivery boundary and do not claim the whole backlog is complete.",
     ]
   }
 
   if (intent.requirementsIntent.source === "prompt") {
     return [
       ...baseLines,
-      "- If prompt-only requirements are not already an approved draft, do not implement directly; first create the requirements source/backlog with `npx ph workflow capture --stdin` or `npx ph workflow draft --stdin`.",
+      "- If prompt-only requirements are not already an approved brief, do not implement directly; keep discovery and approval conversational until the user selects the next procedure.",
     ]
   }
 
   return [
     ...baseLines,
-    "- For README/requirements-based implementation, read the file through the end, use `npx ph workflow next` or `npx ph workflow continue` to inspect the pending ticket, and implement only the current ticket.",
+    "- For README/requirements-based work, read the source through the end and route explicitly to technical intake or planning before implementation.",
   ]
 }
 

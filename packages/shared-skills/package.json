@@ -1,9 +1,9 @@
 {
-  "name": "@oh-my-opencode/shared-skills",
+  "name": "@persona-harness/shared-skills",
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "description": "Cross-harness SKILL.md files shared between OMO and Codex",
+  "description": "Persona-owned portable skill procedures and optional overlays",
   "exports": {
     ".": {
       "types": "./index.d.ts",

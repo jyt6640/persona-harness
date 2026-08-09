@@ -21,5 +21,6 @@ describe("formatRefactorWorkflowBlock", () => {
     expect(block).toContain("small structural change")
     expect(block).toContain("rerun the same test/build/smoke command")
     expect(block).toContain("This is not the implementation/debug rail")
+    expect(block).toContain("OpenCode advises and routes only")
   })
 })

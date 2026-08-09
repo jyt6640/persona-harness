@@ -34,23 +34,21 @@ function tier0GuidanceLines(): readonly string[] {
 
 function tier1WorkflowRailLines(): readonly string[] {
   return [
-    "Tier1 - implement/continue workflow rail:",
-    "- If `.persona` exists but profile/policy/plan is empty, do not implement yet; in AI/non-TTY shell run `npx ph bootstrap backend`.",
-    "- For short implementation requests, run `npx ph workflow implement` first and follow that single rail.",
-    "- For pasted requirements, run `npx ph workflow capture --stdin`, `npx ph workflow split`, and `npx ph workflow next` before code.",
-    "- If `npx ph workflow implement` fails, stop and report the plan/status blocker instead of coding.",
-    "- Read long README/plan content in bounded chunks with `npx ph bearshell`; record unread ranges in implementation-report.",
+    "Tier1 - advisory workflow boundary:",
+    "- If profile, policy, or plan state is incomplete, do not implement yet; report the missing project input.",
+    "- A host injection does not start, continue, or repair a workflow. Wait for an explicit user-selected procedure.",
+    "- Keep pasted product requirements conversational until the user approves a brief and chooses technical intake or planning.",
+    "- Read long README/plan content in bounded chunks and state any unread range before making an implementation claim.",
   ]
 }
 
 function tier3ClosureLines(): readonly string[] {
   return [
-    "Tier3 - finish/review/archive verification:",
-    "- Fill implementation-report with real read/verification evidence before `npx ph plan --report-filled implementation`.",
-    "- Fill review-report after review/manual QA, then run `npx ph plan --report-filled review`.",
+    "Tier3 - advisory closure boundary:",
+    "- Keep read and verification evidence honest; reports do not become authority merely because an adapter mentions them.",
     "- Archive only reviewed/completed tickets; pending tickets remain honest blockers.",
-    "- Before claiming done, run `npx ph workflow finish implement` and do not claim completion if it fails.",
-    "- If blocked, use `npx ph workflow closure next --json` or `npx ph workflow continue` for the first actionable blocker.",
+    "- Before claiming done, use the project’s explicit Finish policy and report any blocker instead of inferring success.",
+    "- The host adapter cannot close, archive, or continue workflow state.",
   ]
 }
 

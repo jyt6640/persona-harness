@@ -21,6 +21,7 @@ describe("formatDebugWorkflowBlock", () => {
     expect(block).toContain("evidence")
     expect(block).toContain("Fix only the confirmed cause")
     expect(block).toContain("Rerun relevant tests/build/smoke")
-    expect(block).toContain("This is not generated app product-quality certification")
+    expect(block).toContain("OpenCode advises and routes only")
+    expect(block).not.toContain("npx ph workflow")
   })
 })
