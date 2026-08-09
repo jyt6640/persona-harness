@@ -209,18 +209,24 @@ function verifyProjectFinishAttestationInternal(
     sourceIdentityDigest: signedReceipt.source.identity.contentDigest,
     workspaceIdentityDigest,
     } as const
+    // Four unrelated conditions used to share `consumption`: an unsafe evidence
+    // directory, an unreadable record, a record dated in the future, and a
+    // workspace that already consumed a different attestation. Only the last is
+    // an ordinary state, and reading `binding-mismatch` for it suggests
+    // corruption rather than "this workspace has already taken its finish" —
+    // see #225. Naming them apart changes no verdict; each still blocks.
     if (!hasSafeOptionalTerminalDirectory(projectRoot)) {
-      return blocked("binding-mismatch", "consumption")
+      return blocked("binding-mismatch", "consumption.directoryUnsafe")
     }
     const terminal = readFinishAttestationTerminalRecord(projectRoot)
-    if (terminal.state === "invalid") return blocked("binding-mismatch", "consumption")
+    if (terminal.state === "invalid") return blocked("binding-mismatch", "consumption.recordUnreadable")
     if (terminal.state === "present") {
       if (!allowConsumed) return blocked("replayed", "consumption")
       if (Date.parse(terminal.value.consumedAt) > now.getTime()) {
-        return blocked("binding-mismatch", "consumption")
+        return blocked("binding-mismatch", "consumption.consumedAtIsInTheFuture")
       }
       if (!matchesFinishAttestationTerminalRecord(terminal.value, terminalBinding).ok) {
-        return blocked("binding-mismatch", "consumption")
+        return blocked("binding-mismatch", "consumption.workspaceAlreadyConsumedADifferentAttestation")
       }
       return trusted(signedReceipt, "consumed")
     }
