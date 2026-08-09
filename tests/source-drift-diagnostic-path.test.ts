@@ -13,7 +13,7 @@ const SIGNED: SourceIdentity = {
   schemaVersion: SOURCE_IDENTITY_SCHEMA,
   trackedEntryCount: 58,
   trackedIndexDigest: "sha256:index",
-  untrackedEntryCount: 17,
+  untrackedEntryCount: 0,
 }
 
 function drifted(overrides: Partial<SourceIdentity>): SourceIdentity {
@@ -36,6 +36,13 @@ describe("source drift diagnostic path", () => {
     const actual = drifted({ contentDigest: "sha256:bbbb" })
 
     expect(sourceIdentityDriftPath(actual, SIGNED)).toBe("source.workingTreeBytesDifferFromMatchingGitIndex")
+  })
+
+  it("does not attribute untracked content drift to the tracked index", () => {
+    const signed = drifted({ untrackedEntryCount: 1 })
+    const actual = { ...signed, contentDigest: "sha256:bbbb" }
+
+    expect(sourceIdentityDriftPath(actual, signed)).toBe("source.contentDigest")
   })
 
   it("names the head when the commit differs", () => {

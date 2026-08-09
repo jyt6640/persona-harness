@@ -105,15 +105,16 @@ One attestation, one consumption. Fetching after consumption still reports
 These are the whole reason this document exists. Each one cost real time in the
 run it is drawn from.
 
-### 1. Fill the workflow reports *before* you push
+### 1. Fill the workflow reports *before* you finish
 
-Source identity includes `.persona/workflow`, so the attestation signs the
-reports as they were at push time. Filling them afterwards puts the working tree
-out of step with what was signed, and the finish is refused.
+`.persona/workflow` is runtime workflow state and is excluded from the signed
+source identity. The reports are still required workflow inputs: fill
+`implementation-report.md` and `review-report.md` before you run
+`ph workflow finish implement`.
 
-Do the work, fill `implementation-report.md` and `review-report.md`, run
-`ph plan --report-filled …` for both, **then** commit and push. The attestation
-that run produces covers the completed state.
+Commit and push the completed source state you intend to attest. Filling the
+reports afterwards does not change the signed source identity, but it does not
+complete the workflow requirement retroactively either.
 
 ### 2. A clean `git status` is not clean source
 
@@ -141,7 +142,8 @@ Git normalizes line endings, so a file's working-tree bytes can differ from the
 bytes that were committed and signed while `git status` reports nothing. Source
 identity hashes working-tree bytes.
 
-Since #223 the diagnostic names this case directly:
+When the signed identity contains no untracked source files, the diagnostic
+names this case directly:
 
 ```
 source.workingTreeBytesDifferFromMatchingGitIndex
@@ -149,7 +151,9 @@ source.workingTreeBytesDifferFromMatchingGitIndex
 
 The fix is to make the working tree match the index — `git config core.autocrlf
 false` and re-checkout the affected file, or normalize line endings in the
-repository.
+repository. When untracked source files are present, changed untracked contents
+cannot be distinguished from this case by the tracked index, so the diagnostic
+stays at `source.contentDigest` rather than claiming an index mismatch.
 
 ### 3. A workspace takes one external-attested finish
 
