@@ -99,7 +99,8 @@ Three defects found, all fixed:
   platform, instead of falling back to the unsnapshotted path it already uses
   elsewhere. Fixed in #214, which also separates "no artifact exists for this
   platform" from "the artifact failed to load", so a built platform keeps
-  failing closed.
+  failing closed. **The fallback was incomplete** — see the 2026-08-09 run
+  below.
 - `ph evidence read` returned `Evidence read unavailable.` for the same reason.
   Since it is the only producer of the `fileRole` evidence
   `java-role-read-coverage` accepts, a cooperative PASS was unreachable on
@@ -119,3 +120,51 @@ limitations stated.
 `runFixedGit` — the boundary is what runs the build, which is the entire content
 of the assurance. Degrading it would keep the word and remove the thing it names,
 so a `win32-x64` artifact is tracked separately in #217 rather than worked around.
+
+### Windows 11, 2026-08-09
+
+Same host, win32/x64, node v22.9.0, `persona-harness@0.8.0` installed from the
+registry rather than packed from a branch. The point of this run was to check
+whether the three fixes above hold for a user who installs the released version.
+
+**Two of the three hold. The `#214` fallback does not.**
+
+```
+> npx ph workflow finish implement --assurance cooperative
+exit=1
+- Cooperative verification blocked: source-read-runtime-unavailable.
+
+... Cooperative verification ran without the snapshot boundary ...
+```
+
+Both lines at once, and they contradict each other. The platform branch is
+taken — that is what prints the notice — and then
+`prepareCooperativeFinishContext` re-reserves the boundary the branch skipped on
+purpose, so the finish is blocked before judging anything. The notice reported
+that as a completed unsnapshotted run.
+
+Two independent reasons nothing caught it:
+
+- No platform in the test matrix can reach the branch. On darwin and linux the
+  re-reservation always succeeds, so the degraded path is indistinguishable from
+  the normal one. All 2,190 tests passed.
+- `windows-platform-smoke.yml` had never run the cooperative path. The default
+  assurance is `external` (`src/cli/workflow-args.ts:186`) and the smoke passed
+  no `--assurance`, so every Windows assertion recorded before this run
+  exercised the external path only.
+
+Fixed in #236: the notice no longer claims a verification that did not happen,
+and the smoke now invokes `--assurance cooperative` explicitly. The functional
+half stays open in #235, where scoping it surfaced the more important finding —
+the obvious fix routes Windows into a **non-boundary verification path that can
+return `passed`** (`src/cli/cooperative-finish-authority.ts:63`), which would
+produce a cooperative PASS on the one platform whose `doctor` output states in
+words that it cannot reach one.
+
+This run also settled #217 with measurement rather than estimate. The Windows
+toolchain is not the obstacle — MSVC 19.41.34120 and Windows SDK 10.0.22621 are
+present and `cl` works. The obstacle is that `openat`, `fork`+`execve`, and
+device+inode identity have no faithful Win32 equivalents, and the nearest one
+for the first is `NtCreateFile` with `RootDirectory` — ntdll, not a stable
+public API. "Build a win32-x64 artifact" is a parallel security-critical
+implementation, not a compile target.
