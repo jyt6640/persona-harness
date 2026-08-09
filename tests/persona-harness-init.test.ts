@@ -33,7 +33,17 @@ function createTempProject(): string {
 function createPackageRoot(): string {
   const packageRoot = mkdtempSync(join(tmpdir(), "persona-init-package-"))
   tempPackageRoots.push(packageRoot)
-  cpSync(join(process.cwd(), ".persona"), join(packageRoot, ".persona"), { recursive: true })
+  // `.persona/evidence` is 37 of this directory's 38 MB and cannot exist in a
+  // real package root: it is absent from `files` and `npm pack` ships zero
+  // evidence entries. Copying it made the fixture both unfaithful and slow —
+  // ~776ms per call, twice in the heaviest test, which reached 3.5s against
+  // vitest's 5s default and timed out under the 4-worker parallel group. It
+  // also grows with every run, so the cost rises over time. See #237.
+  const personaDir = join(process.cwd(), ".persona")
+  cpSync(personaDir, join(packageRoot, ".persona"), {
+    filter: (source) => relative(personaDir, source) !== "evidence",
+    recursive: true,
+  })
   cpSync(join(process.cwd(), "package.json"), join(packageRoot, "package.json"))
   mkdirSync(join(packageRoot, "dist"), { recursive: true })
   writeFileSync(join(packageRoot, "dist", "index.js"), "// synthetic plugin\n")
