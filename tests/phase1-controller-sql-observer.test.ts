@@ -24,7 +24,9 @@ class ReservationController {
     const observation = observeControllerSqlAccess({ filePath: controllerPath, source })
 
     expect(observation.finding).toBe("PASS")
-    expect(observation.confidence).toBeUndefined()
+    // An absence-based PASS states MEDIUM rather than rendering as
+    // `confidence=NONE`, which read as "not to be trusted".
+    expect(observation.confidence).toBe("MEDIUM")
     expect(observation.evidence.imports).toEqual([])
     expect(observation.evidence.fields).toEqual([])
     expect(observation.evidence.constructorParameters).toEqual([])

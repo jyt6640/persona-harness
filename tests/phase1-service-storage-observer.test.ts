@@ -24,7 +24,9 @@ class ReservationService {
     const observation = observeServiceStorageOwnership({ filePath: servicePath, source })
 
     expect(observation.finding).toBe("PASS")
-    expect(observation.confidence).toBeUndefined()
+    // An absence-based PASS states MEDIUM rather than rendering as
+    // `confidence=NONE`, which read as "not to be trusted".
+    expect(observation.confidence).toBe("MEDIUM")
     expect(observation.evidence.storageFields).toEqual([])
     expect(observation.evidence.sequenceFields).toEqual([])
     expect(observation.evidence.constructorParameters).toEqual([])
