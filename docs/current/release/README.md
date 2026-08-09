@@ -1036,3 +1036,31 @@ Release verification and explicit manual GitHub release-note automation live in
 - Tag pushes do not run real `npm publish` or create GitHub releases.
 - GitHub release notes are generated from repository release notes only for
   manually approved stable releases.
+
+## Release order
+
+`release.yml` runs **before** `publish.yml`, not after.
+
+Its source-verification job reuses the canonical publisher preflight, which
+includes `npm publish --dry-run`. Once the version exists on the registry npm
+refuses that with
+
+```
+npm error You cannot publish over the previously published versions: <version>.
+```
+
+so the workflow can no longer run for a version it was meant to announce. The
+0.7.0 release did it in the right order — GitHub release at 17:53, npm publish
+at 18:07 — and 0.8.0 did not, which is how the constraint was found.
+
+For a general-availability release:
+
+1. Tag the approved protected-main commit.
+2. Dispatch `release.yml` with the tag and `approval_scope: ga-approved`.
+3. Dispatch `publish.yml` with the tag, `dist_tag: latest`, and
+   `approval_scope: ga-approved`.
+
+If the order is reversed, `checkReleaseState` in
+`scripts/release-workflow-policy.mjs` defines what a valid release looks like —
+tag and title matching, `prerelease` false for a stable, and the tag resolving
+to the release target — and can confirm a recovered release afterwards.
