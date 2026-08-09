@@ -157,6 +157,13 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(productionInstallRisks).toEqual([])
   })
 
+  it("states the bounded Windows package-install contract without making a runtime support claim", () => {
+    const guide = readFileSync(join(packageRoot, "docs/current/persona-shared-skills-core.md"), "utf8")
+
+    expect(guide).toContain("Windows package-install surface")
+    expect(guide).toContain("does not claim Windows runtime support")
+  })
+
   it("renders an advisory route instead of injecting a skill body or advancing workflow state", () => {
     const route = createOpenCodeSkillRoute({
       decision: "suggest",

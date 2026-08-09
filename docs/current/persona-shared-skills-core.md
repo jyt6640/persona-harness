@@ -60,6 +60,11 @@ The packaged staged-artifact Snappy decoder is pure JavaScript. Normal consumer
 installation therefore does not resolve a native Snappy binary, platform
 selector, or decoder lifecycle hook.
 
+The Windows package-install surface is checked before release: the canonical
+tar must have Windows-safe member names and noncolliding npm bin shims, and the
+installed-package contract exercises npm's Windows bin-link behavior without a
+source fallback. This does not claim Windows runtime support.
+
 ## Non-Claims
 
 The shared-skill core does not claim that every host can invoke agents, render
