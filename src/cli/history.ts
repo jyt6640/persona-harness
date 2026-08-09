@@ -194,6 +194,13 @@ export function runHistoryCommand(args: readonly string[], options: HistoryOptio
         `Evidence summary source: ${join(projectDir, EVIDENCE_SUMMARY_PATH)}`,
         `Archived files: ${result.archivedFiles.length}`,
         `Missing files: ${result.missingFiles.length}`,
+        "",
+        // "Archived" reads as "this cycle is closed, start another", and the
+        // finish attestation record is deliberately not part of that: it is
+        // terminal per workspace, which is what makes replay refusable. Saying
+        // so here stops the next finish from looking broken — see #225.
+        "This archives workflow reports only. A consumed finish attestation stays",
+        "consumed: the terminal record is per workspace and is not released here.",
       ].join("\n") + "\n",
       stderr: "",
     }
