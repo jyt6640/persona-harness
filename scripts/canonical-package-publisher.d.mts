@@ -41,3 +41,5 @@ export function verifyCanonicalPublisherHandoff(input: Readonly<{
   readonly status: "passed"
   readonly tarballSha256: string
 }>
+
+export function isSafeVersion(value: unknown): boolean

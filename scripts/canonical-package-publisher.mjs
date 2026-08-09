@@ -280,8 +280,28 @@ function isSafePackageName(value) {
   return typeof value === "string" && /^persona-harness$/u.test(value)
 }
 
-function isSafeVersion(value) {
-  return typeof value === "string" && /^0\.8\.0-beta\.(?:1[89]|[2-9]\d+)$/u.test(value)
+const MAX_VERSION_LENGTH = 256
+const STRICT_SEMVER = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+(?:[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/u
+
+/**
+ * Whether the version string is well formed and bounded.
+ *
+ * This used to hardcode `0.8.0-beta.<N>`, which made the publisher structurally
+ * unable to release anything but a beta of that one line — a release candidate
+ * and a stable both failed here as `canonical-package-publisher-facts`, with no
+ * indication that the version format was the reason.
+ *
+ * Deciding *which* version may go to *which* channel is not this function's
+ * job and never was: `release-workflow-policy.mjs` owns that, and already
+ * refuses a prerelease on `latest` and a non-prerelease on `next` or
+ * `staging`. This checks the shape and bounds the length, nothing more. The
+ * regex mirrors that module's strict SemVer rather than importing it, because
+ * this file ships in the package and that one does not.
+ */
+export function isSafeVersion(value) {
+  if (typeof value !== "string" || value.length === 0 || value.length > MAX_VERSION_LENGTH) return false
+  const match = STRICT_SEMVER.exec(value)
+  return match !== null && match[0] === value
 }
 
 function isSha256(value) {
