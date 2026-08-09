@@ -111,6 +111,8 @@ describe("Phase 0 shared skill routing", () => {
   it("does not package OMO-specific orchestration baggage as Persona skills", () => {
     expect(REMOVED_SHARED_SKILL_NAMES).toEqual([
       "advanced/superpowers-driver",
+      "debugging",
+      "git-master",
       "init-deep",
       "remove-ai-slops",
       "review-work",

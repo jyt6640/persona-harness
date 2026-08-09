@@ -11,6 +11,8 @@ export const OPTIONAL_SHARED_SKILL_NAMES = PERSONA_OPTIONAL_SKILL_IDS
 
 export const REMOVED_SHARED_SKILL_NAMES = [
   "advanced/superpowers-driver",
+  "debugging",
+  "git-master",
   "init-deep",
   "remove-ai-slops",
   "review-work",

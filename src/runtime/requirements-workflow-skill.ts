@@ -7,8 +7,8 @@ import { loadWorkflowSkillBlock, workflowSkillPath } from "./workflow-skill-load
 const DRAFT_REQUIREMENTS_BACKLOG_PATH = ".persona/workflow/requirements/backlog.md"
 
 export type RequirementsWorkflowSkill = {
-  readonly name: "workflow-requirements"
-  readonly domain: "workflow"
+  readonly name: "plan"
+  readonly domain: "planning"
   readonly path: string
   readonly reason: string
 }
@@ -25,8 +25,8 @@ export function hasRequirementsDraft(projectDir: string): boolean {
 
 export function selectedRequirementsWorkflowSkill(intent: RequirementsIntent): RequirementsWorkflowSkill {
   return {
-    name: "workflow-requirements",
-    domain: "workflow",
+    name: "plan",
+    domain: "planning",
     path: workflowSkillPath("requirements"),
     reason: intent.reason,
   }

@@ -110,7 +110,7 @@ describe("intent workflow hook boundary", () => {
   it("advises a one-question product interview without creating workflow or evidence state before approval", async () => {
     writeFileSync(
       join(fixtureWorkspace, ".persona", "harness.jsonc"),
-      `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
+      `${JSON.stringify({ features: { entrySteering: true, runtimeInjection: true }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
     )
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
 
@@ -131,11 +131,46 @@ describe("intent workflow hook boundary", () => {
     expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
   })
 
-  it("routes prompt-only requirements to an advisory delivery-plan route", async () => {
-    const text = await transformPrompt("session-draft", "TODO 웹 서비스 만들래")
+  it("selects code-first brownfield discovery when the project already has source", async () => {
+    mkdirSync(join(fixtureWorkspace, "src"), { recursive: true })
+    writeFileSync(join(fixtureWorkspace, "src", "existing.ts"), "export const existing = true\n", { encoding: "utf8", flag: "w" })
+    writeFileSync(
+      join(fixtureWorkspace, ".persona", "harness.jsonc"),
+      `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["product"] }, null, 2)}\n`,
+    )
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+
+    const text = await transformWithHooks(hooks, "session-product-brownfield", "I want to improve an existing booking flow")
+
+    expect(text).toContain("Mode: brownfield-change-discovery")
+    expect(text).toContain("Read relevant existing code before asking for facts it already answers")
+    expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
+    expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
+  })
+
+  it("keeps a broken brownfield flow on the debug route instead of starting product discovery", async () => {
+    writeFileSync(
+      join(fixtureWorkspace, ".persona", "harness.jsonc"),
+      `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
+    )
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+
+    const text = await transformWithHooks(
+      hooks,
+      "session-product-debug-conflict",
+      "I want to improve an existing booking flow that fails for users",
+    )
+
+    expect(text).toContain("[Persona Harness Debug Workflow]")
+    expect(text).not.toContain("[Persona Harness Product Interview]")
+    expectIntentEvidence("debug", "[Persona Harness Debug Workflow]")
+  })
+
+  it("routes explicit prompt requirements to an advisory delivery-plan route", async () => {
+    const text = await transformPrompt("session-draft", "기능 요구사항을 구현해줘")
 
     expect(text).toContain("[Persona Harness Requirements Workflow]")
-    expect(text).toContain("Detected intent: requirement-drafting")
+    expect(text).toContain("Detected intent: requirement-implementation")
     expect(text).toContain("Skill: plan")
     expect(text).toContain("Decision: suggest")
     expect(text).toContain("does not create plans, tickets, branches, files, agents, or workflow state")
@@ -145,7 +180,7 @@ describe("intent workflow hook boundary", () => {
     expect(intentEvidencePayloads()).toContainEqual(
       expect.objectContaining({
         requirementsIntent: expect.objectContaining({
-          kind: "requirement-drafting",
+          kind: "requirement-implementation",
           source: "prompt",
         }),
       }),

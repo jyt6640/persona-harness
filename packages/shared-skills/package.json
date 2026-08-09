@@ -1,6 +1,6 @@
 {
   "name": "@persona-harness/shared-skills",
-  "version": "0.1.0",
+  "version": "0.8.2",
   "type": "module",
   "private": true,
   "description": "Persona-owned portable skill procedures and optional overlays",
@@ -12,8 +12,25 @@
   },
   "types": "./index.d.ts",
   "files": [
+    "README.md",
+    "catalog.json",
     "index.d.ts",
     "index.mjs",
-    "skills"
+    "skills/deep-interview/SKILL.md",
+    "skills/technical-intake/SKILL.md",
+    "skills/plan/SKILL.md",
+    "skills/ralplan/SKILL.md",
+    "skills/tdd/SKILL.md",
+    "skills/implementation/SKILL.md",
+    "skills/review/SKILL.md",
+    "skills/programming/SKILL.md",
+    "skills/programming/references/java",
+    "skills/debug/SKILL.md",
+    "skills/refactor/SKILL.md",
+    "skills/git/SKILL.md",
+    "skills/frontend/SKILL.md",
+    "skills/visual-qa/SKILL.md",
+    "skills/ast-grep/SKILL.md",
+    "skills/lsp-setup/SKILL.md"
   ]
 }

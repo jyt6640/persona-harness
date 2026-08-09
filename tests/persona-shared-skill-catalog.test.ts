@@ -44,11 +44,19 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(resolvePersonaSharedSkill("plan")).toMatchObject({ handoff: "ralplan" })
     expect(resolvePersonaSharedSkill("ralplan")).toMatchObject({ optional: true, handoff: "tdd" })
     expect(resolvePersonaSharedSkill("implementation")).toMatchObject({ handoff: "review" })
+    expect(skills.filter((skill) => skill.category === "optional-extension").every((skill) => skill.optional)).toBe(true)
   })
 
   it("keeps every catalog entry package-visible and never treats host workflow templates as core skills", () => {
     const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
       readonly files: readonly string[]
+      readonly version: string
+    }
+    const sharedPackageJson = JSON.parse(readFileSync(join(packageRoot, "packages/shared-skills/package.json"), "utf8")) as {
+      readonly files: readonly string[]
+      readonly name: string
+      readonly private: boolean
+      readonly version: string
     }
 
     for (const skill of listPersonaSharedSkills()) {
@@ -61,6 +69,13 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(isCoveredByPackageFiles("packages/shared-skills/catalog.json", packageJson.files)).toBe(true)
     expect(packageJson.files).not.toContain("packages/shared-skills/skills/workflow")
     expect(listPersonaSharedSkills().some((skill) => skill.id === "workflow")).toBe(false)
+    expect(sharedPackageJson).toMatchObject({
+      name: "@persona-harness/shared-skills",
+      private: true,
+      version: packageJson.version,
+    })
+    expect(sharedPackageJson.files).toContain("catalog.json")
+    expect(sharedPackageJson.files).not.toContain("skills")
   })
 
   it("renders an advisory route instead of injecting a skill body or advancing workflow state", () => {

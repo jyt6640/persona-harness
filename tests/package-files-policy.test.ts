@@ -43,9 +43,43 @@ type MarkdownLink = {
   readonly label: string
 }
 
+type SharedSkillCatalog = {
+  readonly schemaVersion: string
+  readonly skills: readonly {
+    readonly entry: string
+    readonly id: string
+  }[]
+}
+
 const packageRoot = process.cwd()
 
 describe("package files policy", () => {
+  it("ships the Persona catalog and only its declared shared-skill contract", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const catalogPath = "packages/shared-skills/catalog.json"
+    const catalog = JSON.parse(readFileSync(path.join(packageRoot, catalogPath), "utf8")) as SharedSkillCatalog
+
+    expect(catalog.schemaVersion).toBe("persona-shared-skill-catalog.1")
+    expect(catalog.skills.length).toBeGreaterThan(0)
+    for (const skill of catalog.skills) {
+      const packagePath = `packages/shared-skills/${skill.entry}`
+      expect(existsSync(path.join(packageRoot, packagePath))).toBe(true)
+      expect(isCoveredByPackageFiles(packagePath, packageJson.files)).toBe(true)
+    }
+
+    for (const packagePath of [
+      catalogPath,
+      "packages/shared-skills/README.md",
+      "docs/current/persona-shared-skills-core.md",
+    ]) {
+      expect(existsSync(path.join(packageRoot, packagePath))).toBe(true)
+      expect(isCoveredByPackageFiles(packagePath, packageJson.files)).toBe(true)
+    }
+
+    expect(packageJson.files.some((entry) => entry.includes("packages/shared-skills/skills/workflow"))).toBe(false)
+    expect(packageJson.files.some((entry) => entry.includes("superpowers-driver"))).toBe(false)
+  })
+
   it("packages the root-bound prepack runner", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const scripts = packageJson.scripts
@@ -598,6 +632,7 @@ describe("package files policy", () => {
       "docs/current/canonical-docs-index.md",
       "docs/current/persona-harness-detailed-usage.md",
       "docs/current/workflow-closure-state-machine-design.md",
+      "docs/current/persona-shared-skills-core.md",
       "docs/current/measurement-scorecard.md",
       "docs/current/consumer-authority-v1-decision.md",
       "docs/current/release/README.md",

@@ -34,7 +34,7 @@ describe("OpenCode workflow skill adapter", () => {
     expect(block).toContain("[Persona Harness Requirements Workflow]")
     expect(block).toContain("Source context: README.md")
     expect(block).toContain("Skill: plan")
-    expect(block).toContain("Handoff: ralplan")
+    expect(block).toContain("Handoff: optional ralplan, then tdd")
     expect(block).toContain("The next handoff is explicit")
     expect(block).not.toContain("npx ph workflow")
   })

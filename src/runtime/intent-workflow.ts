@@ -43,6 +43,9 @@ export function maybeInjectProductDeepInterview(
   if (text === undefined) {
     return false
   }
+  if (!tracker.hasActiveSession(sessionID) && detectTopLevelIntent(text)?.primary !== "product-interview") {
+    return false
+  }
   const result = tracker.route(sessionID, text)
   if (result === undefined) {
     return false

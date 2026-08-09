@@ -16,9 +16,16 @@ function boundedReason(reason: string): string {
   return reason.replace(/[\r\n]+/gu, " ").trim().slice(0, 180) || "The current request matches this Persona procedure."
 }
 
+function renderHandoff(skill: ReturnType<typeof resolvePersonaSharedSkill>): string {
+  if (skill.id === "plan") {
+    return "optional ralplan, then tdd"
+  }
+  return skill.handoff === null ? "none" : skill.handoff
+}
+
 export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string {
   const skill = resolvePersonaSharedSkill(input.skillId)
-  const handoff = skill.handoff === null ? "none" : skill.handoff
+  const handoff = renderHandoff(skill)
 
   return [
     "[Persona Harness Skill Route]",

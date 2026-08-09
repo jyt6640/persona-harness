@@ -53,9 +53,16 @@ const TOPICS = [
 
 type ProductInterviewTopic = (typeof TOPICS)[number]["id"]
 
+export type ProductDeepInterviewMode = "new-product" | "brownfield-change-discovery"
+
 type ProductInterviewSession = {
   readonly answers: ReadonlyMap<ProductInterviewTopic, string>
+  readonly mode: ProductDeepInterviewMode
   readonly topicIndex: number
+}
+
+export type ProductDeepInterviewOptions = {
+  readonly mode?: ProductDeepInterviewMode
 }
 
 export type ProductDeepInterviewResult =
@@ -65,11 +72,15 @@ export type ProductDeepInterviewResult =
   | { readonly kind: "approved"; readonly handoff: "technical-intake"; readonly block: string }
   | { readonly kind: "stopped"; readonly block: string }
 
-const START_PATTERN = /(만들래|만들고\s*싶|기획해|구상해|서비스\s*만들|웹\s*서비스|product\s+idea|want\s+to\s+(?:build|explore)|build\s+(?:an?|the)\s+(?:app|service|product)|new\s+(?:app|service|product)|(?:app|service|product)\s+idea)/iu
+const START_PATTERN = /(만들래|만들고\s*싶|기획해|구상해|서비스\s*만들|웹\s*서비스|기존\s*(?:서비스|제품|앱|흐름).*(?:개선|변경)|product\s+idea|want\s+to\s+(?:build|explore)|build\s+(?:an?|the)\s+(?:app|service|product)|new\s+(?:app|service|product)|(?:app|service|product)\s+idea|(?:improve|change)\s+(?:an?\s+)?existing(?:\s+\w+){0,2}\s+(?:app|service|product|flow))/iu
 const APPROVAL_PATTERN = /^(?:승인|진행하자|시작하자|approve|proceed|go\s+ahead)$/iu
 const STOP_PATTERN = /^(?:stop|pause|그만|중단)$/iu
 const DEFER_PATTERN = /^(?:defer|skip|later|보류|넘겨)$/iu
 const RECOMMEND_PATTERN = /^(?:recommend|recommendation|추천)$/iu
+
+export function isProductDeepInterviewStart(message: string): boolean {
+  return START_PATTERN.test(message.trim())
+}
 
 function topicAt(index: number): (typeof TOPICS)[number] | undefined {
   return TOPICS[index]
@@ -93,6 +104,12 @@ function renderQuestion(session: ProductInterviewSession, approvalBlocked = fals
       }),
       "",
       "Current understanding: product discovery is in progress in this conversation.",
+      ...(session.mode === "brownfield-change-discovery"
+        ? [
+            "Mode: brownfield-change-discovery.",
+            "Read relevant existing code before asking for facts it already answers.",
+          ]
+        : []),
       ...(approvalBlocked ? ["Approval is not available until this product decision is answered or deferred."] : []),
       `Question: ${topic.question}`,
       `Recommendation: ${topic.recommendation}`,
@@ -126,25 +143,37 @@ function briefAnswer(session: ProductInterviewSession, topic: ProductInterviewTo
   return session.answers.get(topic) ?? "deferred"
 }
 
+function approvalBriefLines(session: ProductInterviewSession): readonly string[] {
+  return [
+    "Approval brief:",
+    ...TOPICS.map((topic) => `- ${topic.id}: ${briefAnswer(session, topic.id)}`),
+    "Approval is explicit: reply `approve` to hand off to technical-intake, or name a correction.",
+  ]
+}
+
 function renderApprovalRequired(session: ProductInterviewSession): ProductDeepInterviewResult {
   return {
     kind: "approval-required",
     block: [
       "[Persona Harness Product Interview]",
-      "Approval brief:",
-      ...TOPICS.map((topic) => `- ${topic.id}: ${briefAnswer(session, topic.id)}`),
-      "Approval is explicit: reply `approve` to hand off to technical-intake, or name a correction.",
+      ...approvalBriefLines(session),
       "No plan, ticket, workflow, branch, file, issue, or agent action has been created.",
     ].join("\n"),
   }
 }
 
-function startSession(): ProductInterviewSession {
-  return { answers: new Map<ProductInterviewTopic, string>(), topicIndex: 0 }
+function startSession(mode: ProductDeepInterviewMode): ProductInterviewSession {
+  return { answers: new Map<ProductInterviewTopic, string>(), mode, topicIndex: 0 }
 }
 
 export class ProductDeepInterviewTracker {
   private readonly sessions = new Map<string, ProductInterviewSession>()
+
+  constructor(private readonly options: ProductDeepInterviewOptions = {}) {}
+
+  hasActiveSession(sessionId: string): boolean {
+    return this.sessions.has(sessionId)
+  }
 
   route(sessionId: string, message: string): ProductDeepInterviewResult | undefined {
     const normalized = message.trim()
@@ -154,10 +183,10 @@ export class ProductDeepInterviewTracker {
 
     const current = this.sessions.get(sessionId)
     if (current === undefined) {
-      if (!START_PATTERN.test(normalized)) {
+      if (!isProductDeepInterviewStart(normalized)) {
         return undefined
       }
-      const started = startSession()
+      const started = startSession(this.options.mode ?? "new-product")
       this.sessions.set(sessionId, started)
       return renderQuestion(started)
     }
@@ -186,7 +215,7 @@ export class ProductDeepInterviewTracker {
         handoff: "technical-intake",
         block: [
           "[Persona Harness Product Interview]",
-          renderApprovalRequired(current).block,
+          ...approvalBriefLines(current),
           "Approval received in this conversation only.",
           "Next explicit handoff: technical-intake.",
           "Sequence after an explicit technical brief: plan -> optional ralplan -> TDD -> implementation -> review.",
@@ -203,7 +232,7 @@ export class ProductDeepInterviewTracker {
     const answer = DEFER_PATTERN.test(normalized) ? "deferred" : normalized.slice(0, 600)
     const answers = new Map(current.answers)
     answers.set(topic.id, answer)
-    const next: ProductInterviewSession = { answers, topicIndex: current.topicIndex + 1 }
+    const next: ProductInterviewSession = { answers, mode: current.mode, topicIndex: current.topicIndex + 1 }
     this.sessions.set(sessionId, next)
     return next.topicIndex >= TOPICS.length ? renderApprovalRequired(next) : renderQuestion(next)
   }

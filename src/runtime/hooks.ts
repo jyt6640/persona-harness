@@ -1,4 +1,6 @@
 import type { Hooks } from "@opencode-ai/plugin"
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 
 import { writePhase0Evidence } from "./evidence.js"
 import { ContinuationTracker } from "./continuation.js"
@@ -138,7 +140,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   }
   const evidenceDir = evidencePath.path
   const compliance = new RailComplianceTracker({ evidenceDir })
-  const productInterview = new ProductDeepInterviewTracker()
+  const productInterview = new ProductDeepInterviewTracker({
+    mode: existsSync(join(projectDir, "src")) ? "brownfield-change-discovery" : "new-product",
+  })
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
@@ -411,15 +415,17 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           return
         }
 
-        entrySteering.apply(sessionId, output)
-
         if (runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "intent-workflow")) {
           const productInterviewInjected = config.enabledDomains.includes("product")
             && maybeInjectProductDeepInterview(output, sessionId, productInterview)
-          if (!productInterviewInjected) {
-            maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, { evidenceDir })
+          if (productInterviewInjected) {
+            store.take(sessionId)
+            return
           }
+          maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, { evidenceDir })
         }
+
+        entrySteering.apply(sessionId, output)
 
         const injection =
           runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "model-input") ? store.take(sessionId) : undefined

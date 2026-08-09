@@ -12,8 +12,9 @@ export function createSystemConstitutionBlock(config: HarnessConfig): string {
     "Turn-local intent reset: classify the current user message first. Do not continue implementation mode only because a previous turn was implementation.",
     "Context-completion gate: implement only when the current message asks for implementation, the scope is concrete, the accepted plan is present, and `.persona/project-profile.jsonc` has been read when it exists.",
     "If the request is still an idea, requirement draft, approval, review, refactor, debug, or git task, use the matching PH rail before implementation.",
-    "Finish guard: before claiming done, fill `.persona/workflow/implementation-report.md` and `.persona/workflow/review-report.md`, then run `npx ph workflow finish implement`.",
-    "If `npx ph workflow finish implement` fails, do not claim done. Report the blocker and continue with `npx ph workflow continue` or the first blocker from `npx ph workflow closure next --json`.",
+    "Finish guard: before claiming done, use the project's explicit Finish policy only after implementation and review evidence are complete.",
+    "If the Finish policy blocks, do not claim done. Report the bounded blocker and wait for the user's explicit next procedure.",
+    "The host adapter does not run a workflow command, create workflow state, or advance a workflow automatically.",
     config.enforce.executeVerification
       ? "Strict verification is enabled: finish/closure may run the project verification command directly and use that result as authoritative."
       : "Direct execution verification is not enabled unless project config opts in; report prose remains non-authoritative for strict verification.",

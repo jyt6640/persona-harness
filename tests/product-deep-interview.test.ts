@@ -40,6 +40,7 @@ describe("product deep interview", () => {
     expect(approved).toMatchObject({ kind: "approved", handoff: "technical-intake" })
     expect(approved?.block).toContain("Next explicit handoff: technical-intake")
     expect(approved?.block).toContain("Optional adversarial review after planning: ralplan")
+    expect(approved?.block.match(/\[Persona Harness Product Interview\]/g)).toHaveLength(1)
   })
 
   it("supports defer, recommendation, and stop without silently moving into implementation", () => {
@@ -56,5 +57,16 @@ describe("product deep interview", () => {
     expect(stopped).toMatchObject({ kind: "stopped" })
     expect(stopped?.block).toContain("No project, workflow, issue, agent, or file state was changed")
     expect(tracker.route("session-2", "implement it now")).toBeUndefined()
+  })
+
+  it("keeps brownfield discovery code-first without creating project state", () => {
+    const tracker = new ProductDeepInterviewTracker({ mode: "brownfield-change-discovery" })
+
+    const result = tracker.route("session-brownfield", "I want to improve an existing booking flow")
+
+    expect(result).toMatchObject({ kind: "question", topic: "target-user" })
+    expect(result?.block).toContain("Mode: brownfield-change-discovery")
+    expect(result?.block).toContain("Read relevant existing code before asking for facts it already answers")
+    expect(result?.block).toContain("No plan, ticket, workflow, branch, file, issue, or agent action has been created")
   })
 })

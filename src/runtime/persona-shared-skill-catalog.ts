@@ -103,6 +103,9 @@ function parseSkill(value: unknown, index: number): PersonaSharedSkill {
   if (value.entry !== `skills/${value.id}/SKILL.md`) {
     throw new Error(`Persona shared-skill catalog entry path does not match id at index ${index}`)
   }
+  if (value.category === "optional-extension" && !value.optional) {
+    throw new Error(`Persona optional shared-skill catalog entry must be optional at index ${index}`)
+  }
   return {
     id: value.id,
     title: value.title,

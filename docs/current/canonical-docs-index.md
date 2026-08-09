@@ -13,6 +13,7 @@ Start with [Current Docs](README.md) unless you need a specific decision.
 | Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Writer ownership and safe state handling. |
 | Public product boundary | `docs/MEASURED-CLAIMS.md` | What Persona Harness may and may not claim. |
 | Install and usage | `docs/current/persona-harness-detailed-usage.md` | Detailed local install and maintenance-oriented usage. |
+| Portable shared-skill and product-discovery contract | `docs/current/persona-shared-skills-core.md` | Catalog ownership, interview approval, explicit handoffs, host boundary, and packaged surface. |
 | External environment procedure | `docs/current/external-environment-verification.md` | A bounded packaged-install check on a separate machine. |
 | External-attested Finish walkthrough | `docs/current/external-attested-finish-walkthrough.md` | Source-checkout-only enrolled/fetch/Finish/replay procedure and its limits. |
 | Consumer Authority V1 decision | `docs/current/consumer-authority-v1-decision.md` | The explicit cooperative assurance boundary. |
