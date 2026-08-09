@@ -68,7 +68,7 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(existsSync(join(packageRoot, "packages/shared-skills/catalog.json"))).toBe(true)
     expect(isCoveredByPackageFiles("packages/shared-skills/catalog.json", packageJson.files)).toBe(true)
     expect(packageJson.files).not.toContain("packages/shared-skills/skills/workflow")
-    expect(listPersonaSharedSkills().some((skill) => skill.id === "workflow")).toBe(false)
+    expect((listPersonaSharedSkills().map((skill) => skill.id) as readonly string[])).not.toContain("workflow")
     expect(sharedPackageJson).toMatchObject({
       name: "@persona-harness/shared-skills",
       private: true,
