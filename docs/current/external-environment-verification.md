@@ -161,10 +161,37 @@ return `passed`** (`src/cli/cooperative-finish-authority.ts:63`), which would
 produce a cooperative PASS on the one platform whose `doctor` output states in
 words that it cannot reach one.
 
-This run also settled #217 with measurement rather than estimate. The Windows
-toolchain is not the obstacle — MSVC 19.41.34120 and Windows SDK 10.0.22621 are
-present and `cl` works. The obstacle is that `openat`, `fork`+`execve`, and
-device+inode identity have no faithful Win32 equivalents, and the nearest one
-for the first is `NtCreateFile` with `RootDirectory` — ntdll, not a stable
-public API. "Build a win32-x64 artifact" is a parallel security-critical
-implementation, not a compile target.
+This run also settled #217 with measurement rather than estimate, in two passes —
+and the first pass was wrong in a way worth keeping visible.
+
+The toolchain is not the obstacle: MSVC 19.41.34120 and Windows SDK 10.0.22621
+are present and `cl` works. From there I concluded that `openat`,
+`fork`+`execve`, and device+inode identity have no faithful Win32 equivalents,
+and that the first would need `NtCreateFile` with `RootDirectory` — ntdll, not a
+stable public API.
+
+**That overstated it.** A C probe compiled and run on the host answered three of
+the four with documented Win32 APIs:
+
+```
+rename blocked while handle held                     YES
+delete blocked while handle held                     YES
+FILE_ID_INFO available from handle                   YES
+junction detected, not followed                      YES
+Win32 handle-relative open (openat equivalent)       NO   (no such API)
+```
+
+A directory handle held without `FILE_SHARE_DELETE` blocks rename and delete of
+that directory. `GetFileInformationByHandleEx(FileIdInfo)` gives a volume serial
+and a 128-bit file ID from the handle. `FILE_FLAG_OPEN_REPARSE_POINT` with
+`FileAttributeTagInfo` refuses a junction instead of following it.
+
+Only handle-relative open is genuinely absent, and it matters less than it
+reads. `openat` exists to make a path-component swap *harmless*; holding the
+handle makes the swap *impossible*. The same goal by the opposite route.
+
+So a win32 artifact is feasible without any undocumented API — it is still a
+reimplementation of a 2,164-line security-critical component on different
+primitives, which is why #217 was closed as a recorded decision rather than as
+an impossibility. The lesson for this document is the ordinary one: the first
+answer came from knowledge, the second from a program, and they disagreed.
