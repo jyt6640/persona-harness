@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -10,6 +10,7 @@ const ADVISORY_HOST_TOOLS = [
   "@colbymchenry/codegraph",
   "@theupsider/lsp-mcp",
 ]
+const PORTABLE_PROVENANCE_DECODER = "snappyjs"
 
 function readArg(name) {
   const index = process.argv.indexOf(name)
@@ -20,8 +21,12 @@ function readArg(name) {
   return value
 }
 
+function readJson(path) {
+  return JSON.parse(readFileSync(path, "utf8"))
+}
+
 function readPackageJson(packageRoot) {
-  return JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
+  return readJson(join(packageRoot, "package.json"))
 }
 
 function assertPortableConsumerInstallSurface(packageRoot, consumerRoot) {
@@ -47,6 +52,42 @@ function assertPortableConsumerInstallSurface(packageRoot, consumerRoot) {
   for (const lifecycle of ["preinstall", "install", "postinstall"]) {
     if (typeof scripts[lifecycle] === "string") {
       throw new Error("installed shared-skill package declares a consumer lifecycle script")
+    }
+  }
+
+  if (dependencies.snappy !== undefined || optionalDependencies.snappy !== undefined || dependencies[PORTABLE_PROVENANCE_DECODER] !== "0.7.0") {
+    throw new Error("installed shared-skill package retained a native provenance decoder")
+  }
+  if (existsSync(join(consumerRoot, "node_modules", "snappy")) || existsSync(join(consumerRoot, "node_modules", "@napi-rs"))) {
+    throw new Error("installed shared-skill package resolved a native provenance decoder")
+  }
+
+  const decoder = readPackageJson(join(consumerRoot, "node_modules", PORTABLE_PROVENANCE_DECODER))
+  const decoderScripts = decoder.scripts ?? {}
+  if (
+    decoder.os !== undefined
+    || decoder.cpu !== undefined
+    || Object.keys(decoder.dependencies ?? {}).length !== 0
+    || Object.keys(decoder.optionalDependencies ?? {}).length !== 0
+    || ["preinstall", "install", "postinstall", "prepare"].some((lifecycle) => typeof decoderScripts[lifecycle] === "string")
+  ) {
+    throw new Error("installed shared-skill package resolved an unsafe provenance decoder")
+  }
+}
+
+function assertInstalledDependencyGraph(consumerRoot) {
+  const lock = readJson(join(consumerRoot, "package-lock.json"))
+  const packages = lock.packages
+  if (typeof packages !== "object" || packages === null || Array.isArray(packages)) {
+    throw new Error("installed shared-skill consumer lock is invalid")
+  }
+  for (const [entry, value] of Object.entries(packages)) {
+    if (entry === "") continue
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      throw new Error("installed shared-skill consumer lock is invalid")
+    }
+    if (value.hasInstallScript === true || value.os !== undefined || value.cpu !== undefined) {
+      throw new Error("installed shared-skill package resolved a platform-sensitive dependency")
     }
   }
 }
@@ -76,8 +117,12 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
   const pluginModule = await import(pathToFileURL(join(packageRoot, "dist", "index.js")).href)
   const catalogModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "persona-shared-skill-catalog.js")).href)
   const interviewModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "product-deep-interview.js")).href)
+  const provenanceModule = await import(pathToFileURL(join(packageRoot, "scripts", "staged-package-artifact-provenance-network.mjs")).href)
   if (pluginModule.default?.id !== "persona-harness") {
     throw new Error("installed shared-skill plugin module requires an advisory host tool")
+  }
+  if (typeof provenanceModule.decodeStagedPackageArtifactSnappy !== "function") {
+    throw new Error("installed shared-skill package could not load its provenance decoder")
   }
   const plan = catalogModule.resolvePersonaSharedSkill("plan")
   if (plan.entry !== "skills/plan/SKILL.md") {
@@ -125,6 +170,66 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
   }
 }
 
+function installConsumerTarball(consumerRoot, absoluteTarball, target) {
+  const home = join(consumerRoot, "home")
+  const cache = join(consumerRoot, "cache")
+  const temporary = join(consumerRoot, "tmp")
+  mkdirSync(home, { recursive: true })
+  mkdirSync(cache, { recursive: true })
+  mkdirSync(temporary, { recursive: true })
+  writeFileSync(join(consumerRoot, "package.json"), `${JSON.stringify({ private: true })}\n`)
+  const npmTargetConfig = target === undefined
+    ? {}
+    : {
+        npm_config_cpu: target.cpu,
+        npm_config_os: target.os,
+      }
+  execFileSync(
+    "npm",
+    ["install", "--no-audit", "--no-fund", "--package-lock=true", absoluteTarball],
+    {
+      cwd: consumerRoot,
+      encoding: "utf8",
+      env: {
+        HOME: home,
+        PATH: process.env.PATH ?? "",
+        TMP: temporary,
+        TMPDIR: temporary,
+        USERPROFILE: home,
+        npm_config_audit: "false",
+        npm_config_cache: cache,
+        npm_config_fund: "false",
+        npm_config_ignore_scripts: "false",
+        npm_config_update_notifier: "false",
+        npm_config_userconfig: join(home, "npmrc"),
+        ...npmTargetConfig,
+      },
+      stdio: "pipe",
+    },
+  )
+}
+
+async function verifyConsumerInstall(absoluteTarball, expectedVersion, target) {
+  const consumerRoot = mkdtempSync(join(tmpdir(), "persona-shared-skills-installed-"))
+  try {
+    installConsumerTarball(consumerRoot, absoluteTarball, target)
+    assertInstalledDependencyGraph(consumerRoot)
+
+    const packageRoot = join(consumerRoot, "node_modules", "persona-harness")
+    const resolvedPackageRoot = realpathSync(packageRoot)
+    const resolvedConsumerRoot = realpathSync(consumerRoot)
+    if (dirname(resolvedPackageRoot) !== join(resolvedConsumerRoot, "node_modules")) {
+      throw new Error("installed shared-skill package used a source fallback")
+    }
+
+    assertInstalledCatalog(resolvedPackageRoot, expectedVersion)
+    assertPortableConsumerInstallSurface(resolvedPackageRoot, resolvedConsumerRoot)
+    if (target === undefined) await assertInstalledRuntime(resolvedPackageRoot, resolvedConsumerRoot)
+  } finally {
+    rmSync(consumerRoot, { recursive: true, force: true })
+  }
+}
+
 async function main() {
   const tarball = readArg("--tarball")
   const expectedVersion = readArg("--expected-version")
@@ -137,29 +242,9 @@ async function main() {
     throw new Error("shared-skill package tarball is missing")
   }
 
-  const consumerRoot = mkdtempSync(join(tmpdir(), "persona-shared-skills-installed-"))
-  try {
-    writeFileSync(join(consumerRoot, "package.json"), `${JSON.stringify({ private: true })}\n`)
-    execFileSync(
-      "npm",
-      ["install", "--no-audit", "--no-fund", "--package-lock=false", absoluteTarball],
-      { cwd: consumerRoot, encoding: "utf8", stdio: "pipe" },
-    )
-
-    const packageRoot = join(consumerRoot, "node_modules", "persona-harness")
-    const resolvedPackageRoot = realpathSync(packageRoot)
-    const resolvedConsumerRoot = realpathSync(consumerRoot)
-    if (dirname(resolvedPackageRoot) !== join(resolvedConsumerRoot, "node_modules")) {
-      throw new Error("installed shared-skill package used a source fallback")
-    }
-
-    assertInstalledCatalog(resolvedPackageRoot, expectedVersion)
-    assertPortableConsumerInstallSurface(resolvedPackageRoot, resolvedConsumerRoot)
-    await assertInstalledRuntime(resolvedPackageRoot, resolvedConsumerRoot)
-    process.stdout.write("Persona shared-skills installed package contract: PASS (sourceFallback=false)\n")
-  } finally {
-    rmSync(consumerRoot, { recursive: true, force: true })
-  }
+  await verifyConsumerInstall(absoluteTarball, expectedVersion)
+  await verifyConsumerInstall(absoluteTarball, expectedVersion, { cpu: "x64", os: "win32" })
+  process.stdout.write("Persona shared-skills installed package contract: PASS (sourceFallback=false)\n")
 }
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -265,6 +265,7 @@ describe("package files policy", () => {
     const packagedScripts = [
       "scripts/staged-package-artifact-provenance-core.mjs",
       "scripts/staged-package-artifact-provenance-crypto.mjs",
+      "scripts/staged-package-artifact-provenance-network.d.mts",
       "scripts/staged-package-artifact-provenance-network.mjs",
       "scripts/staged-package-artifact-provenance-policy.mjs",
       "scripts/staged-package-artifact-tarball.mjs",

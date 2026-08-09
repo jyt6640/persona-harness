@@ -122,6 +122,41 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(packageJson.scripts?.postinstall).toBeUndefined()
   })
 
+  it("keeps the packaged provenance decoder free of native install dependencies", () => {
+    const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
+      readonly dependencies?: Readonly<Record<string, string>>
+    }
+    const packageLock = JSON.parse(readFileSync(join(packageRoot, "package-lock.json"), "utf8")) as {
+      readonly packages: Readonly<Record<string, {
+        readonly dependencies?: Readonly<Record<string, string>>
+        readonly cpu?: readonly string[]
+        readonly dev?: boolean
+        readonly devOptional?: boolean
+        readonly hasInstallScript?: boolean
+        readonly os?: readonly string[]
+        readonly version?: string
+      }>>
+    }
+
+    expect(packageJson.dependencies?.snappy).toBeUndefined()
+    expect(packageJson.dependencies?.snappyjs).toBe("0.7.0")
+    expect(packageLock.packages[""]?.dependencies?.snappy).toBeUndefined()
+    expect(packageLock.packages[""]?.dependencies?.snappyjs).toBe("0.7.0")
+    expect(packageLock.packages["node_modules/snappy"]).toBeUndefined()
+    expect(Object.keys(packageLock.packages).filter((entry) => entry.startsWith("node_modules/@napi-rs/snappy-"))).toEqual([])
+    const decoder = packageLock.packages["node_modules/snappyjs"]
+    expect(decoder?.version).toBe("0.7.0")
+    expect(decoder?.hasInstallScript).toBeUndefined()
+    expect(decoder?.os).toBeUndefined()
+    expect(decoder?.cpu).toBeUndefined()
+
+    const productionInstallRisks = Object.entries(packageLock.packages)
+      .filter(([entry, value]) => entry !== "" && value.dev !== true && value.devOptional !== true)
+      .filter(([, value]) => value.hasInstallScript === true || value.os !== undefined || value.cpu !== undefined)
+      .map(([entry]) => entry)
+    expect(productionInstallRisks).toEqual([])
+  })
+
   it("renders an advisory route instead of injecting a skill body or advancing workflow state", () => {
     const route = createOpenCodeSkillRoute({
       decision: "suggest",

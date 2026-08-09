@@ -1,7 +1,7 @@
 import https from "node:https"
 import { createHash } from "node:crypto"
 
-import { uncompressSync } from "snappy"
+import snappy from "snappyjs"
 
 import {
   STAGED_PACKAGE_ARTIFACT_PACKAGE,
@@ -99,7 +99,7 @@ function requestJson(url, limit) {
   return request(url, limit).then(({ bytes, contentType }) => {
     try {
       const decoded = contentType === "application/x-snappy"
-        ? decodeSnappy(bytes, limit)
+        ? decodeStagedPackageArtifactSnappy(bytes, limit)
         : bytes
       return JSON.parse(decoded.toString("utf8"))
     } catch {
@@ -150,10 +150,10 @@ function request(url, limit) {
   })
 }
 
-function decodeSnappy(bytes, limit) {
+export function decodeStagedPackageArtifactSnappy(bytes, limit) {
   if (readSnappyLength(bytes) > limit) throw new StagedPackageArtifactProvenanceError("artifact-provenance-unavailable")
   try {
-    return uncompressSync(bytes)
+    return Buffer.from(snappy.uncompress(bytes))
   } catch {
     throw new StagedPackageArtifactProvenanceError("artifact-provenance-network-invalid")
   }

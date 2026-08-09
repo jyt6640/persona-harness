@@ -56,6 +56,10 @@ their platform-specific lifecycle packages; a host that wants one supplies it
 explicitly. Missing optional tools remain advisory-unavailable and never
 advance workflow state.
 
+The packaged staged-artifact Snappy decoder is pure JavaScript. Normal consumer
+installation therefore does not resolve a native Snappy binary, platform
+selector, or decoder lifecycle hook.
+
 ## Non-Claims
 
 The shared-skill core does not claim that every host can invoke agents, render
