@@ -42,6 +42,28 @@ self-check.
 
 It also asserts nothing about platforms it has not been run on.
 
+## Whose machines these are
+
+Both machines in this document belong to the maintainer. The Windows host is a
+second personal machine, provisioned by the maintainer and reached over their
+own private network; the operator of every run below is the same person who
+maintains the project.
+
+What that buys is real and worth having: a different operating system, a
+different filesystem, a different Node build, and a package installed from the
+registry rather than a working tree. Every platform defect recorded here was
+invisible on the development Mac and became obvious in one run on the other
+machine. Single-machine bias is what these runs remove.
+
+What it does not buy is independence. A second machine is not a second person.
+Nothing here establishes that someone with no stake in the project can install
+Persona Harness and get the same result, and no count of runs on maintainer
+hardware will. #116 needs independent *evidence* — a separately enrolled
+repository producing its own attestations — and that is a different thing from a
+second host.
+
+Read every run below as "the maintainer, on their other computer".
+
 ## Recorded runs
 
 ### Windows 11, 2026-08-05
