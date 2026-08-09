@@ -101,7 +101,12 @@ export function observeControllerSqlAccess(input: ObserveControllerSqlAccessInpu
   if (sqlLiterals.length > 0) {
     return observation("INFO", "LOW", evidence, [SQL_LITERAL_LIMITATION])
   }
-  return observation("PASS", undefined, evidence)
+  // A WARN here is backed by concrete imports, fields, constructor parameters,
+  // or call sites. A PASS only records the absence of those spans, which a
+  // string-based scan supports less strongly, so it stays MEDIUM rather than
+  // rendering as `confidence=NONE` — which reads as "not to be trusted" when it
+  // only meant "not set".
+  return observation("PASS", "MEDIUM", evidence)
 }
 
 function observation(

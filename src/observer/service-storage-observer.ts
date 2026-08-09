@@ -120,7 +120,11 @@ export function observeServiceStorageOwnership(input: ObserveServiceStorageOwner
   if (literalOnly.length > 0) {
     return observation("INFO", "LOW", evidence, [LITERAL_ONLY_LIMITATION])
   }
-  return observation("PASS", undefined, evidence)
+  // As above: a WARN cites storage fields, sequence fields, constructor
+  // parameters, or mutation calls, while a PASS records only their absence.
+  // MEDIUM matches the sibling observers rather than reporting no confidence at
+  // all.
+  return observation("PASS", "MEDIUM", evidence)
 }
 
 function observation(

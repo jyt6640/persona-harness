@@ -100,7 +100,7 @@ exit 1   Blocker: trusted-authority-required
 One attestation, one consumption. Fetching after consumption still reports
 `trusted`, with `consumption: consumed`.
 
-## Three things that will stop you
+## Four things that will stop you
 
 These are the whole reason this document exists. Each one cost real time in the
 run it is drawn from.
@@ -151,7 +151,27 @@ The fix is to make the working tree match the index — `git config core.autocrl
 false` and re-checkout the affected file, or normalize line endings in the
 repository.
 
-### 3. Name the repository when more than one is enrolled
+### 3. A workspace takes one external-attested finish
+
+The first consumption writes `.persona/evidence/finish-attestation/consumption.json`.
+While that file exists, a **different** attestation is refused:
+
+```
+consumption.workspaceAlreadyConsumedADifferentAttestation
+```
+
+The same attestation still reports `trusted` with `consumption: consumed`, so
+this is not replay protection failing — it is the record doing its job. But it
+also means that after finishing once, doing more work, and getting a new signed
+attestation for the new head, the second finish does not proceed.
+
+`ph history` archives the workflow reports and leaves the record in place. No
+command removes it.
+
+Whether that lifetime is intended is an open question — see #225. What is
+described here is what the shipped version does.
+
+### 4. Name the repository when more than one is enrolled
 
 The store is per user, so a second enrolled repository makes an unqualified
 fetch ambiguous:
