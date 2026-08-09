@@ -10,7 +10,7 @@ import {
   checkReleaseState,
   checkTagSource,
 } from "../scripts/release-workflow-policy.mjs"
-import { readGaAcceptanceManifest } from "../scripts/consumer-authority-ga-acceptance-schema.mjs"
+import { readV081AcceptanceManifest } from "../scripts/consumer-authority-v081-acceptance-schema.mjs"
 
 const MAIN_SHA = "a".repeat(40)
 const TAG_SHA = "b".repeat(40)
@@ -186,7 +186,7 @@ describe("release workflow policy", () => {
     // on `latest`. The policy did not change — the version did, and the test
     // has to say which side of that line the package is on.
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
-    const acceptance = readGaAcceptanceManifest(repositoryRoot)
+    const acceptance = readV081AcceptanceManifest(repositoryRoot)
 
     expect(packageVersion).toBe(acceptance.package.version)
     expect(readPackageVersion(join(repositoryRoot, "package-lock.json"))).toBe(acceptance.package.version)
