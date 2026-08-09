@@ -264,7 +264,7 @@ npx ph history --id first-run
 
 `v0.2.1`은 public npm publish 전 단계다. 지금 보장하는 설치 경로는 local path install과 tarball install이며, npm registry에서 `npm install -D persona-harness`로 설치하는 흐름은 아직 지원 대상으로 쓰지 않는다.
 
-자세한 판단과 실제 검증 결과는 [docs/current/v0.2.1-release-readiness.md](docs/current/v0.2.1-release-readiness.md), [docs/current/v0.2.1-support-contract.md](docs/current/v0.2.1-support-contract.md), [docs/current/v0.2.1-package-metadata-audit.md](docs/current/v0.2.1-package-metadata-audit.md), [docs/current/clean-opencode-ph-bearshell-smoke.md](docs/current/clean-opencode-ph-bearshell-smoke.md), [docs/current/vendored-shared-skills-tarball-policy.md](docs/current/vendored-shared-skills-tarball-policy.md)를 본다.
+자세한 판단과 실제 검증 결과는 [v0.2.1 release readiness](v0.2.1-release-readiness.md), [v0.2.1 support contract](v0.2.1-support-contract.md), [v0.2.1 package metadata audit](v0.2.1-package-metadata-audit.md), [clean OpenCode bearshell smoke](clean-opencode-ph-bearshell-smoke.md), [vendored shared-skills tarball policy](vendored-shared-skills-tarball-policy.md)를 본다.
 
 ### A. Persona Harness Repo 자체 검증
 
@@ -311,13 +311,13 @@ opencode run --dir . --model <model> --dangerously-skip-permissions \
 
 `persona-harness init`은 대상 프로젝트에 `.persona/harness.jsonc`, `.persona/rules/`, `.opencode/opencode.json`을 설치/병합한다. `.persona/evidence/`는 template로 복사하지 않으며, OpenCode hook이 실제로 발동할 때 대상 프로젝트 안에 생성된다.
 
-`ph intake --interactive`는 `v0.3.0` backend project-intake workflow의 최소 interactive CLI 표면이다. `.persona/project-profile.jsonc`를 만들고, 사용자의 답변을 `ph plan`의 architecture/technology plan 입력으로 남긴다. 비대화형 `ph intake`는 같은 schema의 editable draft를 만든다. 자세한 범위는 [docs/current/v0.3.0-interactive-intake-design.md](docs/current/v0.3.0-interactive-intake-design.md), [docs/current/v0.3.0-intake-transcript-fixture.md](docs/current/v0.3.0-intake-transcript-fixture.md), [docs/current/v0.3.0-profile-schema-decision.md](docs/current/v0.3.0-profile-schema-decision.md)를 본다.
+`ph intake --interactive`는 `v0.3.0` backend project-intake workflow의 최소 interactive CLI 표면이다. `.persona/project-profile.jsonc`를 만들고, 사용자의 답변을 `ph plan`의 architecture/technology plan 입력으로 남긴다. 비대화형 `ph intake`는 같은 schema의 editable draft를 만든다. 자세한 범위는 [interactive intake design](v0.3.0-interactive-intake-design.md), [intake transcript fixture](v0.3.0-intake-transcript-fixture.md), [profile schema decision](v0.3.0-profile-schema-decision.md)를 본다.
 
-`ph plan`은 `blackbear` planning artifact인 `.persona/workflow/plan.md`를 만든다. README 상태와 backend profile summary를 계획 파일에 남기며, 구현은 이 계획이 검토되거나 수락된 뒤 시작한다. `ph plan --status`, `ph plan --accept`, `ph plan --revise`는 이 상태를 읽거나 갱신하는 최소 acceptance surface다. `ph plan --report-filled implementation`과 `ph plan --report-filled review`는 채워진 report의 상태를 `filled`로 바꾸는 최소 lifecycle marker다. 자세한 범위는 [docs/current/v0.3.0-blackbear-plan-artifact.md](docs/current/v0.3.0-blackbear-plan-artifact.md), [docs/current/v0.3.0-plan-acceptance.md](docs/current/v0.3.0-plan-acceptance.md), [docs/current/v0.3.0-workflow-report-status-lifecycle.md](docs/current/v0.3.0-workflow-report-status-lifecycle.md)를 본다.
+`ph plan`은 `blackbear` planning artifact인 `.persona/workflow/plan.md`를 만든다. README 상태와 backend profile summary를 계획 파일에 남기며, 구현은 이 계획이 검토되거나 수락된 뒤 시작한다. `ph plan --status`, `ph plan --accept`, `ph plan --revise`는 이 상태를 읽거나 갱신하는 최소 acceptance surface다. `ph plan --report-filled implementation`과 `ph plan --report-filled review`는 채워진 report의 상태를 `filled`로 바꾸는 최소 lifecycle marker다. 자세한 범위는 [blackbear plan artifact](v0.3.0-blackbear-plan-artifact.md), [plan acceptance](v0.3.0-plan-acceptance.md), [workflow report status lifecycle](v0.3.0-workflow-report-status-lifecycle.md)를 본다.
 
-`ph history`는 `ph plan`이 만든 workflow artifact가 실제 사용된 뒤 local history로 보존하는 최소 표면이다. 구현/검토 결과를 인증하지 않고, 현재 workflow files를 지우지도 않는다. 자세한 범위는 [docs/current/v0.3.0-workflow-history.md](docs/current/v0.3.0-workflow-history.md)를 본다.
+`ph history`는 `ph plan`이 만든 workflow artifact가 실제 사용된 뒤 local history로 보존하는 최소 표면이다. 구현/검토 결과를 인증하지 않고, 현재 workflow files를 지우지도 않는다. 자세한 범위는 [workflow history](v0.3.0-workflow-history.md)를 본다.
 
-`ph bearshell`은 OMO `sparkshell`을 참고한 Persona Harness CLI helper다. repo inspection, CLI smoke test, 큰 출력이 나오는 명령을 bounded output으로 실행할 때 쓴다. 자세한 범위와 OMO parity gap은 [docs/current/ph-bearshell-mvp.md](docs/current/ph-bearshell-mvp.md)에 둔다.
+`ph bearshell`은 OMO `sparkshell`을 참고한 Persona Harness CLI helper다. repo inspection, CLI smoke test, 큰 출력이 나오는 명령을 bounded output으로 실행할 때 쓴다. 자세한 범위와 OMO parity gap은 [PH bearshell MVP](ph-bearshell-mvp.md)에 둔다.
 
 ```bash
 npx ph bearshell npm test
@@ -374,7 +374,7 @@ npx ph init
 
 Java file이 아직 없는 0-start 상황에서는 `README.md`, `requirements.md`, `build.gradle`, `settings.gradle` target에 한해 Java backend bootstrap guidance를 주입한다. 일반 markdown 문서, `docs/` 내부 문서, `CHANGELOG.md`, 임의 note 파일에는 bootstrap injection을 걸지 않는다.
 
-추가 설치/검증 경로는 [docs/current/java-backend-mvp-install-guide.md](docs/current/java-backend-mvp-install-guide.md)를 본다.
+추가 설치/검증 경로는 [Java backend MVP install guide](java-backend-mvp-install-guide.md)를 본다.
 
 이 MVP는 생성된 Spring application의 품질, 테스트 충분성, rule enforcement, Guard/AST/linter 검증, frontend/infra/desktop productization을 보증하지 않는다.
 
@@ -481,7 +481,7 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 - 1단계 실험에서는 API 계약을 고정한다. 예약 추가 요청은 `name`, `date`, `time`이고 응답은 `id`, `name`, `date`, `time`이다.
 - #2-3 fixture에서는 별도 API contract rule을 사용한다. 예약 추가 요청은 `name`, `date`, `timeId`이고, 예약 조회 응답의 `time`은 `{ id, startAt }` 객체다.
 
-`references/diff-rules`에서 가져온 철학과 보류한 개인 취향성 규칙은 [docs/current/rule-curation.md](docs/current/rule-curation.md)에 남긴다.
+`references/diff-rules`에서 가져온 철학과 보류한 개인 취향성 규칙은 [rule curation](rule-curation.md)에 남긴다.
 
 `example/src`는 backend product code style reference answer로 다룬다. 이 예제는 roomescape, step1, H2, `schema.sql`, 특정 endpoint/body/test style을 보편 규칙으로 강제하기 위한 template이 아니다. 현재 기본 목표는 같은 요구사항과 선택한 기술 스택이 주어졌을 때 Clean Code 기반 backend code flow가 균일하게 나오게 하는 것이다.
 
@@ -493,15 +493,15 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 
 기준 문서:
 
-- [docs/current/mvp-goal.md](docs/current/mvp-goal.md)
-- [docs/current/loop-engineering.md](docs/current/loop-engineering.md)
-- [docs/current/workflow.md](docs/current/workflow.md)
-- [docs/current/rule-policy.md](docs/current/rule-policy.md)
-- [docs/current/backend-product-code-style-direction.md](docs/current/backend-product-code-style-direction.md)
-- [docs/current/shared-skill-reference-direction.md](docs/current/shared-skill-reference-direction.md)
-- [docs/current/skill-auto-routing-result.md](docs/current/skill-auto-routing-result.md)
-- [docs/phases/phase0/phase0-step2-scope.md](docs/phases/phase0/phase0-step2-scope.md)
-- [docs/phases/phase0/phase0-rule-selection-review.md](docs/phases/phase0/phase0-rule-selection-review.md)
+- [MVP goal](mvp-goal.md)
+- [Loop engineering](loop-engineering.md)
+- [Workflow notes](workflow.md)
+- [Rule policy](rule-policy.md)
+- [Backend product-code style direction](backend-product-code-style-direction.md)
+- [Shared-skill reference direction](shared-skill-reference-direction.md)
+- [Skill auto-routing result](skill-auto-routing-result.md)
+- [Phase 0 step 2 scope](../phases/phase0/phase0-step2-scope.md)
+- [Phase 0 rule-selection review](../phases/phase0/phase0-rule-selection-review.md)
 
 ## OpenCode 플러그인 구조
 

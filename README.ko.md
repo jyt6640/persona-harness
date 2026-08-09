@@ -24,7 +24,7 @@
 > AI 에이전트는 "다 됐습니다!"라고 말하기를 좋아합니다 — Persona Harness는 그것을 증명하게 만듭니다. 필요한 report, PH가 생성한 evidence, 실제 테스트 결과가 디스크에 존재하기 전까지 완료 주장을 차단하는 로컬 CLI 완료 게이트입니다.
 
 > [!IMPORTANT]
-> **Alpha, gate-first, 측정 기반.** Stable: `persona-harness@latest=0.6.0` (`next=0.6.0-rc.4`). runtime injection은 accepted 10-pair fixture에서 **negative**로 측정됐고, 따라서 runtime guidance는 **default-off / opt-in**이며 제품 중심이 아닙니다. [`injection-value-status.json`](docs/current/injection-value-status.json) 참고. PH가 주장하는 것은 좁습니다: **명시적으로 정의된 evidence gate와 결정론적 위반에 대해 검증되지 않은 완료를 차단한다.**
+> **Alpha, gate-first, 측정 기반.** 라이브 registry 채널, 태그, GitHub 릴리스와 audit lifecycle fact는 governed registry와 audit record에 유지됩니다. source 문서는 자신의 preparation boundary만 기록합니다. runtime injection은 **default-off / opt-in**입니다. [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md), [`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md), [`injection-value-status.json`](docs/current/injection-value-status.json)을 참고하세요.
 
 ## 측정된 동작 (Measured Behavior)
 
@@ -152,7 +152,7 @@ Evidence는 하나의 질문에만 답합니다 — *"에이전트가 기대된 
 - **새 사용자** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
 - **설치 & 백엔드 형태** → [MVP 설치 가이드](docs/current/java-backend-mvp-install-guide.md)
 - **기여자** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- **릴리스 & 측정** → [v0.6.0 캡슐](docs/releases/v0.6.0/README.md) · [패키지 인덱스](docs/releases/package-index.md) · [docs/current](docs/current/README.md) · [Changelog](CHANGELOG.md)
+- **릴리스 & 측정** → [릴리스 운영](docs/current/release/README.md) · [버전별 릴리스 문서](docs/releases/README.md) · [패키지 인덱스](docs/releases/package-index.md) · [Changelog](CHANGELOG.md)
 
 ## 기여
 

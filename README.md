@@ -212,7 +212,7 @@ is in [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 - **Agent not following the rail?** → [Troubleshooting](docs/troubleshooting/README.md)
 - **Install & backend shape** → [MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 - **Contributors** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- **Release & measurement** → [v0.6.0 capsule](docs/releases/v0.6.0/README.md) · [package index](docs/releases/package-index.md) · [docs/current](docs/current/README.md) · [Changelog](CHANGELOG.md)
+- **Release & measurement** → [release operations](docs/current/release/README.md) · [versioned release docs](docs/releases/README.md) · [package index](docs/releases/package-index.md) · [Changelog](CHANGELOG.md)
 - **Advanced repository surfaces** → `docs/current/advanced-surface-index.md`
 
 ## Contributing

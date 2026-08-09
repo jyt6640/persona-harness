@@ -21,13 +21,14 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - current status JSON: 1
 - evidence review archive: 47
 - historical version-specific record: 28
+- historical release operations: 1
 - legacy current evidence review: 2
 - operational stable: 40
 - phase archive: 46
 - version-specific release note: 59
 - versioned durable: 26
 
-Total indexed files: 336
+Total indexed files: 337
 
 ## File Inventory
 
@@ -136,6 +137,7 @@ Total indexed files: 336
 | `docs/current/role-scoped-rule-delivery.md` | current active pointer/status | - | T7 role/stage scoped static rule delivery status and boundary record. |
 | `docs/current/role-rules-dogfooding-readiness.md` | current active pointer/status | - | T10 ROLE-RULES dogfooding readiness checklist, violation-log template, and next queue. |
 | `docs/current/release/README.md` | current active pointer/status | - | Current release-operation entrypoint. It points to the canonical workflow lifecycle projection and cannot turn historical readiness snapshots into current release evidence. |
+| `docs/current/release/history.md` | historical release operations | - | Retained release-operation and Consumer Authority evidence history. It is linked from the release entrypoint and is not a current instruction or live registry state. |
 | `docs/current/release/project-finish-attestation-producer.md` | operational stable | - | Reusable public-push project-finish producer source contract; its separate verifier core does not make the producer a default Finish, branch-protection, enrollment, review, or approval authority. |
 | `docs/current/release/project-finish-attestation-verifier.md` | current active pointer/status | - | Project-owned original-bundle verifier-core boundary: fixed Sigstore policy, strict project-finish-attestation.1 structure, typed enrollment, source binding, safe diagnostics, and explicit-only terminal consumption; no enrollment UX, registry, release, tag, or default Finish authority. |
 | `docs/current/release/staged-package-artifact-attestation-producer.md` | operational stable | - | Controlled protected-main source for exact npm tarball attestations consumed only through fixed product verifier policy; no release or authority action. |

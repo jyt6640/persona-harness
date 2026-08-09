@@ -24,12 +24,14 @@ These are documentation directories, not npm packages or release channels.
 
 ## Root Entrypoints
 
-- `project-progress-board.md`: short current-state board.
-- `README.md`: this taxonomy and placement guide.
-- `current/docs-inventory.md`: classification index for every file under
-  `docs/**`.
-- `releases/package-index.md`: chronological package/version index from early
-  undocumented versions through the current release candidate.
+- `START-HERE.md`: first-run reader map.
+- `current/README.md`: current operator and maintainer map.
+- `current/release/README.md`: release operator entrypoint.
+- `releases/package-index.md`: chronological package/version index.
+- `current/canonical-docs-index.md`: deep-reference current-record map.
+- `current/docs-inventory.md`: exhaustive classification index for every file
+  under `docs/**`.
+- `project-progress-board.md`: retained project-state board.
 
 ## Placement Rules
 
