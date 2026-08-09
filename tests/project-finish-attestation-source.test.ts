@@ -22,6 +22,7 @@ import {
   captureProjectFinishAttestationSourceEntries,
   captureProjectFinishAttestationSourceIdentity,
   matchesProjectFinishAttestationSource,
+  projectFinishAttestationSourceDriftPath,
 } from "../src/cli/project-finish-attestation-source.js"
 import { runPersonaCli } from "../src/cli/index.js"
 import type { SourceIdentity } from "../src/cli/source-identity-types.js"
@@ -112,6 +113,18 @@ describe("project finish attestation source binding", () => {
     writeFileSync(join(worktree, "README.md"), "tracked source drift\n")
 
     expect(matchesAt(worktree, expected)).toBe(false)
+  })
+
+  it("does not misdiagnose changed untracked content as an index mismatch", () => {
+    const projectDir = createProject()
+    const untracked = join(projectDir, "scratch.txt")
+    writeFileSync(untracked, "first\n")
+    const expected = captureBoundSourceIdentity(projectDir)
+
+    writeFileSync(untracked, "second\n")
+
+    expect(matchesAt(projectDir, expected)).toBe(false)
+    expect(driftPathAt(projectDir, expected)).toBe("source.contentDigest")
   })
 
   it("blocks a source matcher leaf alias without recovering authority", () => {
@@ -254,6 +267,10 @@ function sourceEntryDifferences(left: string, right: string): readonly string[] 
 
 function matchesAt(projectDir: string, expected: SourceIdentity): boolean {
   return withCurrentDirectory(projectDir, () => matchesProjectFinishAttestationSource(".", expected))
+}
+
+function driftPathAt(projectDir: string, expected: SourceIdentity): string | undefined {
+  return withCurrentDirectory(projectDir, () => projectFinishAttestationSourceDriftPath(".", expected))
 }
 
 function withCurrentDirectory<T>(directory: string, operation: () => T): T {

@@ -72,9 +72,10 @@ export function matchesProjectFinishAttestationSource(
  * counts match, the git status digest matches, and only the content digest
  * moves — with nothing in the diagnostic pointing at why.
  *
- * The tracked index digest separates that case cleanly: when it agrees with the
- * signed identity and the content digest does not, the difference is between
- * the working tree and its own index rather than between two commits.
+ * The tracked index digest separates that case cleanly only when there are no
+ * untracked entries. With an untracked file present, its contents can change
+ * while both the status and tracked-index digests remain the same, so the
+ * diagnostic must stay at the content-drift level.
  *
  * Reporting only; no verdict changes. Any drift still blocks.
  */
@@ -119,7 +120,11 @@ export function sourceIdentityDriftPath(actual: SourceIdentity, expected: Source
     return "source.entryCount"
   }
   if (actual.gitStatusDigest !== expected.gitStatusDigest) return "source.gitStatusDigest"
-  if (actual.trackedIndexDigest === expected.trackedIndexDigest && actual.contentDigest !== expected.contentDigest) {
+  if (
+    actual.untrackedEntryCount === 0
+    && actual.trackedIndexDigest === expected.trackedIndexDigest
+    && actual.contentDigest !== expected.contentDigest
+  ) {
     // Same commit, same file set, same git status, same index — the bytes on
     // disk differ from the bytes git holds for them. Line-ending normalization
     // is the usual cause, and `git status` will not show it.
