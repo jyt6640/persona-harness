@@ -1037,6 +1037,42 @@ Release verification and explicit manual GitHub release-note automation live in
 - GitHub release notes are generated from repository release notes only for
   manually approved stable releases.
 
+## Release tags are immutable
+
+`refs/tags/v*` is covered by the `Release tags are immutable` ruleset, with
+**no bypass actors** — the same posture `enforce_admins` gives `main`. It
+carries three rules:
+
+| rule | effect |
+| --- | --- |
+| `deletion` | a release tag cannot be deleted |
+| `update` | a release tag cannot be repointed |
+| `non_fast_forward` | a release tag cannot be rewound |
+
+Creation stays open, so a release can still tag its commit.
+
+**`deletion` + `non_fast_forward` alone is not enough, and it looks like it is.**
+Measured on 2026-08-09 with exactly those two rules active: deleting
+`v0.8.0-beta.8` was refused, and force-moving it *forward* to `main` succeeded.
+`non_fast_forward` blocks a rewind, and moving an old tag onto a newer commit is
+a fast-forward, so nothing stopped it. The tag was restored to
+`c13caf30f058c4112101ec3ac093c114463aa74b` and `update` was added.
+
+That is the rule that actually pins a tag. The other two matter, but a
+tag-protection setup verified only by trying to *delete* a tag will report
+success while every tag in the repository remains movable.
+
+### Removing a tag on purpose
+
+There is no bypass, so this takes three deliberate steps:
+
+1. `PUT /repos/:owner/:repo/rulesets/:id` with `"enforcement": "disabled"`.
+2. Delete or repoint the tag.
+3. `PUT` the same ruleset back with `"enforcement": "active"`.
+
+Requiring the ruleset to be switched off is the point — it makes moving a
+published tag an act rather than a slip.
+
 ## Release order
 
 `release.yml` runs **before** `publish.yml`, not after.
