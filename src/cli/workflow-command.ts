@@ -208,10 +208,16 @@ function runWorkflowFinish(
  * for the stronger one, which is the failure this whole gate exists to prevent.
  */
 function withUnsnapshottedFinishNotice(result: CliRunResult): CliRunResult {
+  // This must not claim the verification ran. `prepareCooperativeFinishContext`
+  // re-reserves the boundary this branch skipped on purpose, so on a platform
+  // with no artifact the finish is blocked *before* judging anything — and the
+  // old wording reported that as a completed unsnapshotted run, which is the
+  // one direction a gate must never err in. Measured on Windows in #235.
   const notice = `Source-read snapshot unavailable on ${process.platform}/${process.arch}: `
-    + "no native project-read artifact is built for this platform. Cooperative "
-    + "verification ran without the snapshot boundary, so this finish does not "
-    + "attest that project sources were read under it.\n"
+    + "no native project-read artifact is built for this platform, so this "
+    + "finish does not attest that project sources were read under a snapshot "
+    + "boundary. If the blockers above include source-read-runtime-unavailable, "
+    + "cooperative verification did not run at all.\n"
   return { ...result, stderr: `${result.stderr}${notice}` }
 }
 

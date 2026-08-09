@@ -98,7 +98,23 @@ record(
 record(finish.status !== 0, "workflow finish still blocks without attestation", `exit ${finish.status}`)
 record(
   finish.output.includes("Source-read snapshot unavailable"),
-  "workflow finish states it ran without the snapshot boundary",
+  "workflow finish names the missing snapshot boundary",
+)
+
+// The default assurance is `external` (`src/cli/workflow-args.ts:186`), so
+// everything above exercises the external path only — and the cooperative path
+// is the one Windows cannot complete. That gap is why #235 went unseen here
+// while this job stayed green.
+//
+// `prepareCooperativeFinishContext` re-reserves the boundary the unsupported
+// platform branch skipped, so this is expected to block on Windows today. What
+// must not regress is the *honesty* of that block: it may not report a
+// verification that never ran.
+const cooperative = ph(projectDir, ["workflow", "finish", "implement", "--assurance", "cooperative"])
+record(cooperative.status !== 0, "cooperative finish blocks on this platform", `exit ${cooperative.status}`)
+record(
+  !cooperative.output.includes("Cooperative verification ran without the snapshot boundary"),
+  "cooperative finish does not claim a verification it never ran",
 )
 
 console.log(notes.join("\n"))

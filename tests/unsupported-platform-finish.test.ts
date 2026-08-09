@@ -86,3 +86,27 @@ describe("workflow finish on a platform with no native artifact", () => {
     }
   })
 })
+
+/**
+ * The notice above is only reachable on a platform with no native artifact, and
+ * no such platform is in the test matrix — which is why #235 was found by
+ * running Windows rather than by any of these tests. Asserting on the source is
+ * the only way to pin the wording from here.
+ *
+ * What it must never say again: that cooperative verification *ran*. The branch
+ * that prints this passes no boundary down, and
+ * `prepareCooperativeFinishContext` re-reserves one, so on such a platform the
+ * finish is blocked before judging anything. Reporting that as a completed
+ * unsnapshotted run overstates the gate in the one direction that matters.
+ */
+describe("the unsnapshotted finish notice", () => {
+  const SOURCE = readFileSync(join(process.cwd(), "src", "cli", "workflow-command.ts"), "utf8")
+
+  it("does not claim the verification ran", () => {
+    expect(SOURCE).not.toContain("verification ran without the snapshot boundary")
+  })
+
+  it("tells the reader how to recognise a finish that never ran", () => {
+    expect(SOURCE).toContain("cooperative verification did not run at all")
+  })
+})
