@@ -24,7 +24,7 @@
 > AI 智能体总喜欢说"完成了！"—— Persona Harness 让它们拿出证明。这是一个本地 CLI 完成门禁：在所需 report、由 PH 生成的 evidence、真实测试结果落盘之前，阻止任何完成声明。
 
 > [!IMPORTANT]
-> **Alpha，gate-first，基于测量。** Stable：`persona-harness@latest=0.6.0`（`next=0.6.0-rc.4`）。runtime injection 在已接受的 10 组配对 fixture 中被测为 **负面**，因此 runtime guidance **默认关闭 / 仅 opt-in**，不是产品中心。见 [`injection-value-status.json`](docs/current/injection-value-status.json)。PH 的主张很窄：**对明确定义的 evidence gate 和确定性违规，阻止未经验证的完成。**
+> **Alpha，gate-first，基于测量。** 实时 registry 渠道、标签、GitHub 发布和 audit lifecycle 事实保存在 governed registry 与 audit record 中；source documentation 只记录自己的 preparation boundary。runtime injection 保持 **default-off / opt-in**。见 [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md)、[`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md) 和 [`injection-value-status.json`](docs/current/injection-value-status.json)。
 
 ## 已测量的行为 (Measured Behavior)
 
@@ -151,7 +151,7 @@ Evidence 只回答一个问题 —— *"智能体是否看到并遵循了预期�
 - **新用户** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
 - **安装 & 后端形态** → [MVP 安装指南](docs/current/java-backend-mvp-install-guide.md)
 - **贡献者** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- **发布 & 测量** → [v0.6.0 胶囊](docs/releases/v0.6.0/README.md) · [包索引](docs/releases/package-index.md) · [docs/current](docs/current/README.md) · [Changelog](CHANGELOG.md)
+- **发布 & 测量** → [发布运营](docs/current/release/README.md) · [版本化发布文档](docs/releases/README.md) · [包索引](docs/releases/package-index.md) · [Changelog](CHANGELOG.md)
 
 ## 贡献
 

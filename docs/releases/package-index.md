@@ -8,48 +8,19 @@ git tags, and explicitly recorded registry smoke facts.
 Use this index to scan package history. Use the linked release notes,
 `CHANGELOG.md`, and version capsules for detailed evidence.
 
-## Current Channel State
+## Recorded Channel State
 
-- Current package metadata: `0.7.0-rc.3`.
-- `0.7.0-rc.3` is published to npm `next` from exact main
-  `728e9c339463ea521fa4388a37d1c76f76c9d726`.
-- Current stable channel: `persona-harness@latest=0.6.0`.
-- Current published prerelease channel: `persona-harness@next=0.7.0-rc.3`.
-- `0.7.0-rc.1` was published on 2026-07-11 with registry gitHead, matching
-  tag, and release-branch commit
-  `d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`.
-- rc3 trusted publish workflow: `29310969744`; matching Git tag and GitHub
-  prerelease: `v0.7.0-rc.3`.
-- Current alpha channel: retired; no `alpha` dist-tag is present after stable
-  T0 cleanup.
-- S-0 live alpha check: `alpha` still resolves to `0.3.9-alpha.8`, gitHead
-  `3bb90aa50c8d1231189a5ca00665e8d5bfccade9`, shasum
-  `cd26989425223b5145f190c2dfbfa5ad84e57cf9`. Current release policy does not
-  authorize automatic alpha removal or realignment, so S-0 made no alpha
-  dist-tag mutation.
-- ROLE-RULES T0 live check: the legacy alpha-retirement record reported
-  `latest=0.6.0` and `next=0.6.0-rc.4`, with no `alpha` dist-tag. Explicit
-  `persona-harness@0.3.9-alpha.8` still resolves by version, with gitHead
-  `3bb90aa50c8d1231189a5ca00665e8d5bfccade9`, shasum
-  `cd26989425223b5145f190c2dfbfa5ad84e57cf9`, and integrity
-  `sha512-YRZ/h/2cQQcA75pgtzt6eUMFKD4Zqxs+sE0tL+kMCOAhwIc7of0bXb96CtwQjZ3B8If2iczw5S1NvMcV/xb9FA==`.
-  No unpublish occurred and `latest`/`next` were not moved by the cleanup.
-- `v0.6.0` capsule:
-  [`docs/releases/v0.6.0/`](v0.6.0/README.md).
-- `v0.7.0-rc.3` published release capsule:
-  [`docs/releases/v0.7.0-rc.3/`](v0.7.0-rc.3/README.md).
-- `v0.7.0-rc.2` published release capsule:
-  [`docs/releases/v0.7.0-rc.2/`](v0.7.0-rc.2/README.md).
-- `v0.7.0-rc.1` published release capsule:
-  [`docs/releases/v0.7.0-rc.1/`](v0.7.0-rc.1/README.md).
-- `v0.6.0-rc.4` capsule:
-  [`docs/releases/v0.6.0-rc.4/`](v0.6.0-rc.4/README.md).
-- `v0.6.0-rc.3` capsule:
-  [`docs/releases/v0.6.0-rc.3/`](v0.6.0-rc.3/README.md).
-- `v0.6.0-rc.2` capsule:
-  [`docs/releases/v0.6.0-rc.2/`](v0.6.0-rc.2/README.md).
-- `v0.6.0-rc.1` capsule:
-  [`docs/releases/v0.6.0-rc.1/`](v0.6.0-rc.1/README.md).
+At the 2026-08-09 registry readback:
+
+- Current package metadata and npm `latest`: `0.8.1`.
+- npm `next`: `0.8.0-rc.1`.
+- npm `staging`: `0.8.0-beta.34`.
+- GitHub's latest release: `v0.8.1`.
+
+These are dated readback facts, not a standing promotion or publish approval.
+Read the live registry and protected workflow state again before making a
+release decision. The timeline below preserves older channel values in their
+historical rows; they are not competing live claims.
 
 ## Reading Rules
 
@@ -121,8 +92,8 @@ Use this index to scan package history. Use the linked release notes,
 | `0.6.0-rc.1` | 2026-07-03 | historical published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.1/README.md), [`release facts`](v0.6.0-rc.1/release-facts.md), [`measurements`](v0.6.0-rc.1/measurements.md), [`release notes`](../current/release/v0.6.0-rc.1-release-notes.md) | capsule records `next=0.6.0-rc.1`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead, shasum, tag, and Stage 14 registry smoke archive |
 | `0.6.0-rc.2` | 2026-07-04 | previous published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.2/README.md), [`release facts`](v0.6.0-rc.2/release-facts.md), [`measurements`](v0.6.0-rc.2/measurements.md), [`release notes`](../current/release/v0.6.0-rc.2-release-notes.md) | registry smoke records `next=0.6.0-rc.2`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `d3d5fdced355f0ac0fbed5e700d57b2aa1592263`, shasum `0eae3cc232e3f37de9390b0afc662a001aaa0b56`, tag, and archive `rc060-rc2-registry-smoke-20260704T043901Z` |
 | `0.6.0-rc.3` | 2026-07-04 | previous published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.3/README.md), [`release facts`](v0.6.0-rc.3/release-facts.md), [`measurements`](v0.6.0-rc.3/measurements.md), [`release notes`](../current/release/v0.6.0-rc.3-release-notes.md) | registry smoke records `next=0.6.0-rc.3`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum `ef498adfac138d9d0843406cba53acf76b34c6f1`, tag, prerelease GitHub release, and archive `rc060-rc3-registry-smoke-20260704T133936Z` |
-| `0.6.0-rc.4` | 2026-07-05 | current published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.4/README.md), [`release facts`](v0.6.0-rc.4/release-facts.md), [`measurements`](v0.6.0-rc.4/measurements.md), [`release notes`](../current/release/v0.6.0-rc.4-release-notes.md) | registry smoke records `next=0.6.0-rc.4`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `cf6835697f47da5a2a8372d00fc47e263ee781f8`, shasum `76565f6e7d244595fa338bb646ea7888d8d5255a`, integrity `sha512-8oBVX1vmudoNZCJEVXNdx/lJnPITKD0cW2OGk6Bv963oibNwyo+itxYquRNr8JlDQR7RKDmcQ5XTCVlIP9weaw==`, tag, prerelease GitHub release, and archive `rc060-rc4-registry-smoke-20260705T110131Z` |
-| `0.6.0` | 2026-07-05 | current stable `latest`; local tag exists | [`capsule`](v0.6.0/README.md), [`release facts`](v0.6.0/release-facts.md), [`measurements`](v0.6.0/measurements.md), [`release notes`](../current/release/v0.6.0-release-notes.md) | registry smoke records `latest=0.6.0`, `next=0.6.0-rc.4`, `alpha=0.3.9-alpha.8` at smoke time, gitHead `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum `ffd77996263cffb858bd977edb73b03cf2820c75`, integrity `sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`, stable GitHub release, and archive `stable-060-registry-smoke-20260705T041031Z`; later T0 cleanup removed the `alpha` dist-tag |
+| `0.6.0-rc.4` | 2026-07-05 | historical published `next` RC; local tag exists | [`capsule`](v0.6.0-rc.4/README.md), [`release facts`](v0.6.0-rc.4/release-facts.md), [`measurements`](v0.6.0-rc.4/measurements.md), [`release notes`](../current/release/v0.6.0-rc.4-release-notes.md) | registry smoke records `next=0.6.0-rc.4`, `latest=0.5.0`, `alpha=0.3.9-alpha.8`, gitHead `cf6835697f47da5a2a8372d00fc47e263ee781f8`, shasum `76565f6e7d244595fa338bb646ea7888d8d5255a`, integrity `sha512-8oBVX1vmudoNZCJEVXNdx/lJnPITKD0cW2OGk6Bv963oibNwyo+itxYquRNr8JlDQR7RKDmcQ5XTCVlIP9weaw==`, tag, prerelease GitHub release, and archive `rc060-rc4-registry-smoke-20260705T110131Z` |
+| `0.6.0` | 2026-07-05 | historical stable `latest`; local tag exists | [`capsule`](v0.6.0/README.md), [`release facts`](v0.6.0/release-facts.md), [`measurements`](v0.6.0/measurements.md), [`release notes`](../current/release/v0.6.0-release-notes.md) | registry smoke records `latest=0.6.0`, `next=0.6.0-rc.4`, `alpha=0.3.9-alpha.8` at smoke time, gitHead `13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum `ffd77996263cffb858bd977edb73b03cf2820c75`, integrity `sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`, stable GitHub release, and archive `stable-060-registry-smoke-20260705T041031Z`; later T0 cleanup removed the `alpha` dist-tag |
 | `0.7.0-rc.1` | 2026-07-11 | published `next` prerelease; matching tag and release branch | [`capsule`](v0.7.0-rc.1/README.md), [`release facts`](v0.7.0-rc.1/release-facts.md), [`measurements`](v0.7.0-rc.1/measurements.md), [`release notes`](../current/release/v0.7.0-rc.1-release-notes.md) | registry gitHead/tag/release branch `d4d4d9a`; npm SHA-1 `5a15c8c15abc5169a4843cbe41d12ec481793f3b`; `latest=0.6.0`, `next=0.7.0-rc.1` |
 | `0.7.0-rc.2` | 2026-07-12 | published `next` prerelease; matching tag and GitHub prerelease | [`capsule`](v0.7.0-rc.2/README.md), [`release facts`](v0.7.0-rc.2/release-facts.md), [`measurements`](v0.7.0-rc.2/measurements.md), [`release notes`](../current/release/v0.7.0-rc.2-release-notes.md) | workflow `29184360718`; registry gitHead `185885b`; SHA-1 `0d5595b697694c54ece6adfd8c5e8e77f3c2f3e3`; `latest=0.6.0`, `next=0.7.0-rc.2` |
 | `0.7.0-rc.3` | 2026-07-14 | published `next` prerelease; matching tag and GitHub prerelease | [`capsule`](v0.7.0-rc.3/README.md), [`release facts`](v0.7.0-rc.3/release-facts.md), [`measurements`](v0.7.0-rc.3/measurements.md), [`release notes`](../current/release/v0.7.0-rc.3-release-notes.md) | workflow `29310969744`; registry gitHead `728e9c3`; SHA-1 `9d1fb27ab86d344afcd748b66959188ea9553258`; `latest=0.6.0`, `next=0.7.0-rc.3` |
@@ -143,6 +114,10 @@ Use this index to scan package history. Use the linked release notes,
 | `0.8.0-beta.19` | 2026-08-02 | Consumer Authority Beta source preparation | [`release notes`](../current/release/v0.8.0-beta.19-release-notes.md), [`beta lifecycle`](../current/release/consumer-authority-beta.md) | workflow-bound canonical source to registry-byte reconciliation with one fresh hosted registry PUT/readback residual |
 | `0.8.0-beta.22` | 2026-08-02 | historical Consumer Authority Beta procedure evidence | [`release notes`](../current/release/v0.8.0-beta.22-release-notes.md), [`beta lifecycle`](../current/release/consumer-authority-beta.md) | host gh/XDG state created an untracked `.local` entry after the final commit; it supplies no reusable final evidence |
 | `0.8.0-beta.23` | 2026-08-03 | Consumer Authority Beta v3 procedure-only source preparation | [`release notes`](../current/release/v0.8.0-beta.23-release-notes.md), [`beta lifecycle`](../current/release/consumer-authority-beta.md) | all fifteen host-state roots are outside the consumer realpath, with same CWD/HEAD/source and empty Git cleanliness checks after every pre-push stage |
+| `0.8.0-beta.34` | 2026-08-09 | published staging-only beta | [`release notes`](../current/release/v0.8.0-beta.34-release-notes.md), [`beta lifecycle`](../current/release/consumer-authority-beta.md) | recorded npm `staging` at the 2026-08-09 readback; staging evidence is not Finish or promotion authority |
+| `0.8.0-rc.1` | 2026-08-09 | published `next` release candidate | [`release notes`](../current/release/v0.8.0-rc.1-release-notes.md) | recorded npm `next` at the 2026-08-09 readback |
+| `0.8.0` | 2026-08-09 | published stable release | [`release notes`](../current/release/v0.8.0-release-notes.md) | superseded as npm `latest` by `0.8.1` in the same release cycle |
+| `0.8.1` | 2026-08-09 | current stable `latest` at the recorded readback | [`release notes`](../current/release/v0.8.1-release-notes.md) | npm `latest` and GitHub latest release matched `v0.8.1`; re-read live state before a later release decision |
 
 ## Future Migration Notes
 

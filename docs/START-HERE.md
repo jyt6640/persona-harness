@@ -31,8 +31,10 @@ A reading map for people seeing Persona Harness (PH) for the first time.
 
 ## I want to review release facts
 
-1. [Release capsules](releases/README.md) — the versioned release docs.
-2. [Package/version index](releases/package-index.md).
+1. [Release operations](current/release/README.md) — current checklists,
+   immutable-tag policy, and the last recorded channel state.
+2. [Release capsules](releases/README.md) — durable versioned records.
+3. [Package/version index](releases/package-index.md) — the full chronology.
 
 ## Platform and host support
 

@@ -1,162 +1,62 @@
 # Canonical Docs Index
 
-This index is the current map for finding active Persona Harness records without
-guessing whether a file is canonical, archived history, or generated output.
-It is a navigation document only; it does not add release evidence or broaden
-product claims.
+This is the deep-reference map for active Persona Harness records. It is not a
+release ledger and it does not turn a retained file into a current claim.
+Start with [Current Docs](README.md) unless you need a specific decision.
 
 ## Canonical Current Records
 
-Use these files when making current product, measurement, or release decisions.
-Being located under `docs/current/` is not enough: a file is current only when
-this section or the current pointer explicitly selects it. Version-labelled
-snapshots and historical readiness decisions remain retained records, not
-current decision inputs.
-
-| Topic | Canonical file | Notes |
+| Topic | Canonical file | Use it for |
 | --- | --- | --- |
-| Current docs pointer | `docs/current/README.md` | Short entrypoint for active status and versioned records. |
-| Workflow lifecycle projection | `docs/current/workflow-closure-state-machine-design.md` | Current `workflow-lifecycle.1` contract shared by workflow status, closure JSON, loop-state checks, and finish guidance. It is a fail-closed workflow projection, not release evidence. |
-| Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Current writer ownership plus read-only absent/malformed/stale/unsafe-state handling for the lifecycle projection. |
-| P0-1 `ph go` acceptance | `docs/current/p0-go-acceptance-record.md` | Exact-main acceptance, provenance, cooperative recovery boundary, and item-7 package evidence. |
-| P0-2 finish next-action acceptance | `docs/current/p0-finish-next-action-acceptance-record.md` | Exact-main finish follow-up and report-transition acceptance with local-tarball package evidence. |
-| P0-3 public discovery acceptance | `docs/current/p0-public-discovery-acceptance-record.md` | Exact-main root/dev discovery and writer-safety acceptance with local-tarball package evidence. |
-| Item 12 diff-rules distribution retirement | `docs/current/diff-rules-distribution-retirement-acceptance-record.md` | Exact-main package/init retirement record; repository corpus remains. |
-| Advanced surface index | `docs/current/advanced-surface-index.md` | Repository-only dormant-source and preview-surface index; not an npm package support contract. |
-| Candidate branch retention audit | `docs/current/branch-retention-audit.md` | Repository-only append-only remote branch/PR retention ledger; no ref deletion authorization. |
-| CI finish gate and closure JSON | `docs/current/ci-finish-contract.md` | Exact `finish` exit/stream contract, supported unversioned closure JSON artifact, and CI recipe; no `finish --json` surface exists. |
-| CI evidence reverification acceptance | `docs/current/ci-evidence-reverification-acceptance-record.md` | Item 19 exact-main opt-in `--reverify` and explicit CI-mode acceptance with bounded artifact and package evidence. |
-| CI evidence reverification design | `docs/current/ci-evidence-reverification-design.md` | Item 19 pre-implementation design lineage; the accepted current contract is recorded separately. |
-| Full docs inventory | `docs/current/docs-inventory.md` | Classification for every retained `docs/**` file. |
-| Harness default audit | `docs/current/harness-default-audit.md` | P1 STEP 1 full config-field/default/path audit, dead-flag inventory, and doctor semantic dictionary; no default change. |
-| Entry steering status | `docs/current/entry-steering-status.md` | Default-off OpenCode first-message advisory, source-only bilingual corpus measurement, bounded status record, and no-claim boundary. |
-| AGENTS managed block contract | `docs/current/agents-managed-block-contract.md` | P1 STEP 2 doctor inspection plus P1 STEP 3 bounded managed-V1/project-local attach writer; no default, configuration/evidence-schema, measured-negative, version, or release-state change. |
-| 0.7.0 prepared release notes | `docs/current/release/v0.7.0-release-notes.md` | Immutable GA-source-preparation record. It makes no live registry, tag, release, `latest`, provenance, or audit-completion claim; the no-input audit selects `latest` for strict stable SemVer but cannot fabricate durable stable approval. |
-| 0.8.0-beta.1 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.1-release-notes.md` | Immutable staging-only package evidence; it does not prove current-version consumer authority, promotion, Stable/GA, or Finish authority. |
-| 0.8.0-beta.2 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.2-release-notes.md` | Immutable staging-only evidence; it does not establish current-version consumer authority, promotion, Stable/GA, or Finish authority. |
-| 0.8.0-beta.3 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.3-release-notes.md` | Historical immutable staging-only evidence; it does not establish beta.12 current-version consumer authority, promotion, Stable/GA, or Finish authority. |
-| 0.8.0-beta.5 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.5-release-notes.md` | Historical staging-only source-preparation record; it does not establish beta.12 current-version consumer authority, promotion, Stable/GA, or Finish authority. |
-| 0.8.0-beta.6 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.6-release-notes.md` | Historical staging-only evidence; it does not establish beta.12 current-version consumer authority, promotion, Stable/GA, or Finish authority. |
-| 0.8.0-beta.7 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.7-release-notes.md` | Historical immutable staging-only evidence. Its original artifact was not independently verified inside the leaf certificate window and cannot be reused as current-version authority evidence. |
-| 0.8.0-beta.8 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.8-release-notes.md` | Historical immutable staging-only evidence. Its original artifact was independently verified, but an obsolete caller workflow prearm retained no authority artifact and cannot satisfy beta.12 current-version authority. |
-| 0.8.0-beta.9 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.9-release-notes.md` | Historical immutable staging-only evidence. Its original artifact was independently verified, but the installed fetch treated the enrolled filename as a repository path and retained no authority artifact. |
-| 0.8.0-beta.10 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.10-release-notes.md` | Historical staging-only evidence. Its independent original-byte and online crypto result did not equip the isolated observer with a usable GitHub read credential for installed discovery. |
-| 0.8.0-beta.11 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.11-release-notes.md` | Historical source-preparation record. Its observer credential pre-arm did not establish a verified isolated observer condition before fixture authorization and supplies no reusable authority evidence. |
-| 0.8.0-beta.11 acceptance record | `docs/current/release/consumer-authority-beta11-acceptance.json` | Historical source/packed lifecycle and bounded credential-handoff proposal; it is not beta.12 credential-preflight or authority evidence. |
-| 0.8.0-beta.12 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.12-release-notes.md` | Historical staging-only evidence: original artifact and fetch preparation passed, but public Finish retained readiness blockers; it is not beta.15 authority, consumption, or replay evidence. |
-| 0.8.0-beta.12 acceptance record | `docs/current/release/consumer-authority-beta12-acceptance.json` | Historical source/packed observer-preflight record; it cannot authorize beta.15 readiness, artifact, or Finish evidence. |
-| 0.8.0-beta.13 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.13-release-notes.md` | Historical staging-only evidence: current artifact crypto passed, but installed fetch retained no authority at the bootstrap-local source binding; it is not beta.15 authority, consumption, or replay evidence. |
-| 0.8.0-beta.13 acceptance record | `docs/current/release/consumer-authority-beta13-acceptance.json` | Historical source/packed pre-authority readiness and credential-isolation record; it cannot authorize beta.15 artifact, Finish, or replay evidence. |
-| 0.8.0-beta.14 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.14-release-notes.md` | Historical staging-only evidence: original artifact, crypto, and fetch passed, but an uninitialized consumer Finish made no authority decision. |
-| 0.8.0-beta.14 acceptance record | `docs/current/release/consumer-authority-beta14-acceptance.json` | Historical source/packed authority-binding, privacy, and preauthority readiness record. |
-| 0.8.0-beta.15 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.15-release-notes.md` | Historical staging-only evidence. Its external observer combined mutually exclusive GitHub CLI identity selectors before crypto and supplies no current-version authority evidence. |
-| 0.8.0-beta.15 acceptance record | `docs/current/release/consumer-authority-beta15-acceptance.json` | Historical source/packed public initialization and modeled Finish/replay record; it cannot supply beta.16 live verification evidence. |
-| 0.8.0-beta.16 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.16-release-notes.md` | Historical staging-only evidence. Its observer accepted an exit-zero API download without proving a nonempty exact ZIP, so it supplies no beta.17 transport or authority evidence. |
-| 0.8.0-beta.16 acceptance record | `docs/current/release/consumer-authority-beta16-acceptance.json` | Historical source/packed lifecycle, package-root, bounded gh parser-preflight, modeled exact-once Finish/replay, privacy, and a superseded future current-version artifact residual. |
-| 0.8.0-beta.17 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.17-release-notes.md` | Historical source-preparation record. Its Node20/npm10 canonical tar and provenance do not turn the authorization-shaped registry PUT response into a package-absence claim. |
-| 0.8.0-beta.17 acceptance record | `docs/current/release/consumer-authority-beta17-acceptance.json` | Historical machine-readable source/packed lifecycle, package-root, canonical tar/content identity, bounded command/transport parser preflights, safe ZIP handoff, modeled exact-once Finish/replay, privacy, and one superseded current-version artifact residual. |
-| 0.8.0-beta.18 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.18-release-notes.md` | Historical staging evidence: registry bytes matched canonical facts, but an unsupported registry gitHead predicate blocked workflow readback. |
-| 0.8.0-beta.18 acceptance record | `docs/current/release/consumer-authority-beta18-acceptance.json` | Historical machine-readable source/packed lifecycle and Node20 packer to Node24 publisher contract. |
-| 0.8.0-beta.19 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.19-release-notes.md` | Historical staging evidence; its registry/original artifact checks do not supply current-version authority completion. |
-| 0.8.0-beta.19 acceptance record | `docs/current/release/consumer-authority-beta19-acceptance.json` | Historical machine-readable source/packed lifecycle, package-root, canonical publisher, bounded observer plans, and one superseded hosted residual. |
-| 0.8.0-beta.22 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.22-release-notes.md` | Historical non-reusable procedure evidence: host gh/XDG state created an untracked `.local` entry after the final commit. |
-| 0.8.0-beta.22 acceptance record | `docs/current/release/consumer-authority-beta22-acceptance.json` | Historical machine-readable beta22 procedure record; it changes no product authority behavior. |
-| 0.8.0-beta.23 Consumer Authority Beta | `docs/current/release/v0.8.0-beta.23-release-notes.md` | Current procedure-only candidate: v3 isolates all fifteen host-state roots outside the consumer realpath and verifies clean consumer state after every pre-push stage. |
-| 0.8.0-beta.23 acceptance record | `docs/current/release/consumer-authority-beta23-acceptance.json` | Machine-readable v3 procedure, package, observer, and one hosted residual contract; it changes no product authority behavior. |
-| Consumer Authority Beta lifecycle | `docs/current/release/consumer-authority-beta.md` | Fixed tag-bound staging, exact package readback, original-artifact consumer boundary, and separately approved `next` promotion sequence. |
-| 0.7.0-rc.3 published capsule | `docs/releases/v0.7.0-rc.3/README.md` | Current npm `next` candidate with matching registry gitHead, tag, GitHub prerelease, and workflow provenance. |
-| 0.7.0-rc.2 published capsule | `docs/releases/v0.7.0-rc.2/README.md` | Previous npm `next` candidate with registry gitHead/tag/workflow provenance. |
-| 0.7.0-rc.1 published capsule | `docs/releases/v0.7.0-rc.1/README.md` | Earlier published npm `next` candidate with registry gitHead/tag provenance. |
-| Stable release facts | `docs/releases/v0.6.0/README.md` | Durable stable `latest` registry-smoke capsule. |
-| Package/version timeline | `docs/releases/package-index.md` | Chronological package index from `0.1.0` through current prereleases. |
-| Release operations | `docs/current/release/README.md` | Release runbook and workflow-compatible release-note sources. |
-| Staged package verification | `docs/current/release/staged-package-verification.md` | Read-only staging-first prerelease gate. Caller-fact/local-tarball input remains blocked; the fixed online verifier independently verifies a selected exact npm artifact but never authorizes channel promotion. |
-| Staged package artifact producer | `docs/current/release/staged-package-artifact-attestation-producer.md` | Controlled protected-main producer for an exact npm `.tgz` attestation consumed only through fixed npm/GitHub/Sigstore verifier policy. No release action or authority result is enabled. |
-| Project finish attestation producer | `docs/current/release/project-finish-attestation-producer.md` | Reusable public-push producer for canonical consumer receipt subjects. A signed artifact requires protected integration plus a separately authorized public caller push; the producer record itself enables no default Finish authority. |
-| Project finish attestation verifier core | `docs/current/release/project-finish-attestation-verifier.md` | Fixed-policy DSSE/Sigstore/Rekor verifier core for original project-finish-attestation.1 bundle bytes, typed enrollment, source binding, bounded diagnostics, and explicit terminal consumption; no enrollment UX or default Finish integration. |
-| Production integrity audit | `docs/current/release/production-integrity-audit.md` | Fixed protected-main read-only audit workflow producing a sanitized digest-bound Actions artifact after a separately authorized staged lifecycle. |
-| External review adoption status | `docs/current/external-review-adoption-status.md` | Stage 16-e adoption/rejection/defer matrix for external review items; docs-only, no schema/product expansion. |
-| Diff-rules classification | `docs/current/diff-rules-classification.md` | T6 classification of all 50 `references/diff-rules` files for future role delivery or T8 gate-candidate work. |
-| Java Iron List gate matrix | `docs/current/java-ironlist-gate-matrix.md` | Item 11 source/fixture/convention-state inventory; it does not add Java enforcement. |
-| Item 21 Java precision warnings | `docs/current/java-precision-warnings-acceptance-record.md` | Exact-main, three-rule high-precision warn-only acceptance; not full Iron List enforcement. |
-| Item 24 QUICK-DEMO gate flow | `docs/current/quick-demo-acceptance-record.md` | Exact-main public three-beat setup, plaintext finish gate, and goal-entry acceptance record. |
-| Item 25 PH-core / adapter boundary | `docs/current/ph-core-adapter-boundary-design.md` | Design-only ownership and dependency direction; no module move or adapter implementation. |
-| P3 integrity roadmap | `docs/current/p3-integrity-roadmap.md` | Accepted P3 assurance model, release hold, and constrained P2 source-only resumption boundary. |
-| P3-2 closure authority candidate | `docs/current/p3-2-closure-authority-acceptance-record.md` | Candidate finish boundary: unsigned project-local evidence is diagnostic-only and no trusted authority path exists yet. |
-| P3-3 verification receipt candidate | `docs/current/p3-3-verification-receipt-acceptance-record.md` | Strict receipt/attempt parser and read-only lifecycle diagnostics; no receipt issuance or finish-authority acceptance. |
-| P3-8 CI/release integrity controls | `docs/current/p3-8-ci-release-integrity-acceptance-record.md` | PR/main CI and canonical-main/registry/release idempotency checks plus repository-admin readback; trusted publishing is publish-only and release approval remains a separate gate. |
-| P3-9 RC3 integrity governance decision | `docs/current/p3-9-rc3-integrity-governance-decision.md` | Exact-main source/package/governance decision: constrained P2 source-only resumption GO; Stable/GA/latest/publish remain NO-GO. |
-| Stable containment execution evidence | `docs/current/stable-containment-execution-evidence.md` | Issue #60 durable pre-execution record for exact `0.6.0` deprecation; action not yet executed and no latest/next movement. |
-| Korean CLI help scope authorization | `docs/current/korean-cli-help-scope-authorization.md` | Sole user-authorized #19 product-scope exception for Korean CLI help locale selection; all other P2 product work and release boundaries remain held. |
-| P3-4 fresh fixed-command verifier candidate | `docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md` | Fresh POSIX Java/Spring/Gradle execution, receipt/attempt issuance, and nonzero testcase enforcement; P3-2 remains blocking. |
-| P3-10 external finish attestation verifier candidate | `docs/current/p3-10-external-finish-attestation-verifier-acceptance-record.md` | Product-owned Sigstore verification, fixed protected-main policy, replay consumption, finish/closure parity, and Node 20 package contract; QA/External remain required. |
-| P3-5 semantic TDD candidate | `docs/current/p3-5-semantic-tdd-acceptance-record.md` | Fresh red-to-green JUnit identity/lineage assessment; local structure remains untrusted and P3-2 remains blocking. |
-| Consumer authority V1 decision | `docs/current/consumer-authority-v1-decision.md` | The only enabled authority path is explicit `workflow finish implement --assurance cooperative`, valid only in that Finish invocation after fixed local verification and one-time in-memory consumption; it is non-persistent, status/fetch/later closure cannot use it, and default/external boundaries remain blocked. |
-| ROLE-RULES dogfooding readiness | `docs/current/role-rules-dogfooding-readiness.md` | T10 exit checklist, violation-log template, and next queue for starting Woowacourse mission dogfooding. |
-| Workflow string-gate parsing audit | `docs/current/workflow-string-gate-parsing-audit.md` | T4 audit of report-status parsing migration and retained string-based gate contracts. |
-| Ralph-loop status | `docs/current/ralph-loop-measurement-status.md` | Trigger, completion-integrity, cooldown, and default-off status. |
-| Role Checklist Relay status | `docs/current/multiagent-relay-trial-status.md` | Relay trial, subagent capability, and checklist-first status. |
-| Rail-entry/runtime-injection status | `docs/current/rail-entry-measurement-status.md` | Rail-entry measurement and runtimeInjection park status. |
-| Rail-entry prompt regression gate | `docs/current/rail-entry-prompt-regression-gate.md` | Operator-run n>=5 wording regression/non-inferiority gate. |
-| Measurement scorecard | `docs/current/measurement-scorecard.md` | Secondary scorecard contract and no-override boundary. |
-| Runtime-injection value state | `docs/current/injection-value-status.json` | Machine-readable current decision state. |
+| Current documentation entrypoint | `docs/current/README.md` | Audience-based navigation and current operating inputs. |
+| Workflow lifecycle projection | `docs/current/workflow-closure-state-machine-design.md` | The current fail-closed `workflow-lifecycle.1` state model. |
+| Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Writer ownership and safe state handling. |
+| Public product boundary | `docs/MEASURED-CLAIMS.md` | What Persona Harness may and may not claim. |
+| Install and usage | `docs/current/persona-harness-detailed-usage.md` | Detailed local install and maintenance-oriented usage. |
+| External environment procedure | `docs/current/external-environment-verification.md` | A bounded packaged-install check on a separate machine. |
+| External-attested Finish walkthrough | `docs/current/external-attested-finish-walkthrough.md` | Source-checkout-only enrolled/fetch/Finish/replay procedure and its limits. |
+| Consumer Authority V1 decision | `docs/current/consumer-authority-v1-decision.md` | The explicit cooperative assurance boundary. |
+| Release operations | `docs/current/release/README.md` | Current release checklist, runbooks, tag policy, and recorded state. |
+| Version/package chronology | `docs/releases/package-index.md` | Durable version history and release-note links. |
+| Advanced repository surfaces | `docs/current/advanced-surface-index.md` | Source-checkout-only dormant, preview, and repository work. |
+| Full retained-file catalog | `docs/current/docs-inventory.md` | Exhaustive classification when the map above is insufficient. |
 
-## Archive And History Records
+### Cooperative Finish Boundary
 
-Historical records stay in place unless a separate migration can preserve links
-and checks. Treat these as evidence history, not current product direction.
+The only enabled cooperative route is `workflow finish implement --assurance cooperative`.
+It is valid in the same Finish invocation after fixed local verification and is
+non-persistent: status/fetch/later closure cannot
+reuse it. Default/external boundaries remain blocked. This is a narrow
+same-invocation result, not a receipt, registry fact, or durable finish
+authority.
 
-| Area | Path | Use |
-| --- | --- | --- |
-| Versioned durable release history | `docs/releases/v<version>/` | Frozen release facts, registry smoke records, and measurement summaries. |
-| Older current-era compatibility docs | `docs/current/v*`, older current docs | Compatibility records retained for link stability. |
-| Historical lifecycle and readiness snapshots | `docs/current/v0.3.0-workflow-report-status-lifecycle.md`, `docs/current/release/next-version-readiness.md`, `docs/current/release/rc-release-readiness-decision.md` | Retained history only. Do not select these files for current workflow lifecycle or release readiness. |
-| Evidence reviews | `docs/evidence-reviews/` | A/B reviews, actual-run reviews, regrades, and generated-run observations. |
-| Phase archives | `docs/phases/` | Phase-specific plans, decisions, and completion notes. |
-| Superseded docs | `docs/archive/` | Historical snapshots and retired transition plans. |
+## Release And Historical Records
 
-## Generated Or Check-Maintained Records
+- [Release operations history](release/history.md) retains historic release
+  readiness decisions, Consumer Authority beta records, and the full release
+  note index. Historical PASS or NO-GO evidence is not current authority.
+- [Consumer Authority Beta lifecycle](release/consumer-authority-beta.md)
+  defines the tag-bound staging and current-artifact boundary. Its versioned
+  acceptance JSON files are retained machine-readable records, not a license to
+  promote a channel or consume Finish authority.
+- [Versioned release docs](../releases/README.md) hold durable capsules. Use
+  them instead of old files under `current/` when the question is about a
+  published version.
+- Source-checkout archive, phase, and evidence-review records keep historical
+  work discoverable without competing with current instructions.
 
-These files are produced or checked by scripts and should be updated through the
-matching workflow when their inputs change.
+## Generated And Maintenance Records
 
-| File | Maintainer/check |
-| --- | --- |
-| `docs/current/docs-inventory.md` | Updated with docs taxonomy changes; checked by `npm run check:docs`. |
-| `docs/current/release/v*-release-notes.md` | Checked by `npm run check:github-release-notes`. |
-| `docs/current/acceptance-results/README.md` | Checked by `npm run check:acceptance-results`. |
-| `docs/current/injection-value-status.json` | Updated only when accepted measurement state changes. |
-
-## Archive Path Convention
-
-Measurement and smoke archives use:
-
-```text
-/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/<run-name>-<timestamp>
-```
-
-Each accepted archive should contain at minimum a human-readable `RESULT.md`
-or equivalent summary, machine-readable summary JSON where feasible, raw logs
-needed for replay or spot checks, and package/source facts when package behavior
-is involved. Registry smoke archives must distinguish registry evidence from
-local-current tarball evidence.
-
-## Current Measurement Records
-
-- Ralph-loop trigger/completion measurements:
-  `docs/current/ralph-loop-measurement-status.md`.
-- Role Checklist Relay and OpenCode subagent capability status:
-  `docs/current/multiagent-relay-trial-status.md`.
-- RuntimeInjection and rail-entry measurements:
-  `docs/current/rail-entry-measurement-status.md`.
-- Secondary scorecard contract:
-  `docs/current/measurement-scorecard.md`.
+`docs/current/docs-inventory.md` is the inventory for every retained
+documentation file. `npm run check:docs` checks the root taxonomy and the
+current lifecycle selection; it does not certify that historical content is a
+live release state. Keep package-visible current documents linked from an
+entrypoint and preserve historical records by a summary or pointer before any
+move.
 
 ## Boundaries
 
-This index is navigation only. It must not be cited as token/provider-token
-saving, product efficacy, navigation benefit, app quality, full-TDD/test
-sufficiency, broad reliability, closure guarantee, autonomous completion,
-generated-app certification, deterministic role enforcement, production-ready
-delegation, automatic completion/downgrade/removal, CodeGraph/LSP
-effectiveness, default-change, registry evidence, or measurement evidence.
+This index is navigation only. It does not add release evidence, approve a
+tag, move a registry channel, certify generated application quality, or claim
+token saving, product efficacy, autonomous completion, deterministic role
+enforcement, or production-ready delegation.

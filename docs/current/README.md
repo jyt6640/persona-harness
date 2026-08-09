@@ -1,253 +1,67 @@
-# Current Docs Pointer Index
+# Current Docs
 
-> **New to Persona Harness? Do not start here.** Start with
-> [`../../README.md`](../../README.md), [`../START-HERE.md`](../START-HERE.md),
-> [`../QUICK-DEMO.md`](../QUICK-DEMO.md), and
-> [`../MEASURED-CLAIMS.md`](../MEASURED-CLAIMS.md). Not every file under
-> `current/` is a current product claim.
+> **New to Persona Harness?** Start with [`START-HERE`](../START-HERE.md),
+> [`QUICK-DEMO`](../QUICK-DEMO.md), and
+> [`MEASURED-CLAIMS`](../MEASURED-CLAIMS.md). This directory is for operators
+> and maintainers, not a first-run tutorial.
 
-`docs/current/` is the working area for active decisions, status files, release
-operations, and maintenance-check inputs. Durable release facts should now be
-recorded first under [`docs/releases/`](../releases/README.md).
-
-This cleanup intentionally preserves older `current/` files in place. Many are
-historical records that were created before the versioned release-docs
-structure. Prefer append-only correction, summary, or migration pointers over
-deleting evidence/status history.
+`docs/current/` contains active decisions, maintenance inputs, and retained
+history. Its location alone does not make a document current.
 
 ## Selection Rule
 
-Use a document as current only when this README or
-[`canonical-docs-index.md`](canonical-docs-index.md) selects it. In particular,
-the retained `v0.3.*` snapshots and the historical release-readiness files do
-not become current merely because they remain under `docs/current/`.
+Use a record as current only when this page or
+[`canonical-docs-index.md`](canonical-docs-index.md) selects it. Retained
+versioned snapshots, beta evidence, and old readiness decisions remain useful
+history but do not become a current product or release claim.
 
-## Current Canonical Pointers
+## Choose By Task
 
-- Prepared-project CLI entry: `npx ph go "<concrete implementation goal>"`
-  composes capture, split, next, and the existing implementation rail without
-  a runtime hook. Its lock/conflict behavior is for cooperative local writers,
-  and does not address hostile same-user filesystem path replacement. Existing
-  draft/approval commands remain the route for vague product ideas.
-- Current published next-channel capsule:
-  [`docs/releases/v0.7.0-rc.3/`](../releases/v0.7.0-rc.3/README.md).
-- Previous published next-channel capsule:
-  [`docs/releases/v0.7.0-rc.2/`](../releases/v0.7.0-rc.2/README.md).
-- Earlier published next-channel capsule:
-  [`docs/releases/v0.7.0-rc.1/`](../releases/v0.7.0-rc.1/README.md).
-- Current published stable capsule:
-  [`docs/releases/v0.6.0/`](../releases/v0.6.0/README.md).
-- Chronological package/version index:
-  [`docs/releases/package-index.md`](../releases/package-index.md).
-- Release operations and workflow-compatible release notes:
-  [`release/README.md`](release/README.md) and
-  [`release/v0.8.0-beta.33-release-notes.md`](release/v0.8.0-beta.33-release-notes.md).
-- P3 integrity roadmap and release hold:
-  [`p3-integrity-roadmap.md`](p3-integrity-roadmap.md).
-- P3-2 closure authority candidate:
-  [`p3-2-closure-authority-acceptance-record.md`](p3-2-closure-authority-acceptance-record.md).
-- P3-3 verification receipt candidate:
-  [`p3-3-verification-receipt-acceptance-record.md`](p3-3-verification-receipt-acceptance-record.md).
-- P3-8 CI/release integrity candidate:
-  [`p3-8-ci-release-integrity-acceptance-record.md`](p3-8-ci-release-integrity-acceptance-record.md).
-- P3-9 RC3 integrity governance decision:
-  [`p3-9-rc3-integrity-governance-decision.md`](p3-9-rc3-integrity-governance-decision.md).
-- Stable containment execution evidence:
-  [`stable-containment-execution-evidence.md`](stable-containment-execution-evidence.md).
-- P3-4 fresh fixed-command verifier candidate:
-  [`p3-4-fresh-fixed-command-verifier-acceptance-record.md`](p3-4-fresh-fixed-command-verifier-acceptance-record.md).
-- P3-5 semantic TDD candidate:
-  [`p3-5-semantic-tdd-acceptance-record.md`](p3-5-semantic-tdd-acceptance-record.md).
-- Consumer authority V1 decision:
-  [`consumer-authority-v1-decision.md`](consumer-authority-v1-decision.md).
-- Canonical/archive/generated docs map:
-  [`canonical-docs-index.md`](canonical-docs-index.md).
-- Canonical workflow lifecycle projection:
-  [`workflow-closure-state-machine-design.md`](workflow-closure-state-machine-design.md).
-- External review adoption status:
-  [`external-review-adoption-status.md`](external-review-adoption-status.md).
-- Diff-rules classification:
-  [`diff-rules-classification.md`](diff-rules-classification.md).
-- ROLE-RULES dogfooding readiness:
-  [`role-rules-dogfooding-readiness.md`](role-rules-dogfooding-readiness.md).
-- Workflow string-gate parsing audit:
-  [`workflow-string-gate-parsing-audit.md`](workflow-string-gate-parsing-audit.md).
-- Workflow state concurrency model:
-  [`workflow-state-concurrency.md`](workflow-state-concurrency.md).
-- Role-scoped static rule delivery:
-  [`role-scoped-rule-delivery.md`](role-scoped-rule-delivery.md).
-- Ralph-loop measurement status:
-  [`ralph-loop-measurement-status.md`](ralph-loop-measurement-status.md).
-- Role Checklist Relay preview/advanced status:
-  [`multiagent-relay-trial-status.md`](multiagent-relay-trial-status.md).
-- Advanced/dormant source and preview-surface index:
-  `advanced-surface-index.md`.
-- Rail-entry and runtime-injection status:
-  [`rail-entry-measurement-status.md`](rail-entry-measurement-status.md).
-- Default-off OpenCode entry-steering corpus and status:
-  [`entry-steering-status.md`](entry-steering-status.md).
-- Rail-entry wording regression gate:
-  [`rail-entry-prompt-regression-gate.md`](rail-entry-prompt-regression-gate.md).
-- Measurement scorecard:
-  [`measurement-scorecard.md`](measurement-scorecard.md).
-- Runtime-injection value status JSON:
-  [`injection-value-status.json`](injection-value-status.json).
-- Full docs inventory:
-  [`docs-inventory.md`](docs-inventory.md).
+| I need to... | Start here |
+| --- | --- |
+| Install or understand the product | [Detailed usage](persona-harness-detailed-usage.md) and [workflow lifecycle](workflow-closure-state-machine-design.md) |
+| Understand claims and measurement limits | [Measurement scorecard](measurement-scorecard.md) |
+| Review Finish or external authority boundaries | [Consumer Authority V1 decision](consumer-authority-v1-decision.md); the repository-only external-attested walkthrough supplies the full procedure |
+| Ship or audit a release | [Release operations](release/README.md) and [versioned release docs](../releases/README.md) |
+| Find a retained design, report, or version record | [Full inventory](docs-inventory.md) |
+| Explore dormant or repository-only work | Use the source checkout's advanced surface index. |
 
-## Current Facts To Preserve
+## Current Operating Inputs
 
-- `0.8.0-beta.1` is an immutable staging-only Consumer Authority Beta package.
-  Its exact registry install and staged provenance boundary are historical
-  package evidence only; they do not prove current-version consumer authority,
-  Finish authority, promotion, Stable/GA, or `latest` movement.
-- `0.7.0-rc.1` was published to npm `next` on 2026-07-11 with registry
-  gitHead/tag/release-branch commit `d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`.
-- `0.7.0-rc.2` was published to npm `next` from exact main
-  `185885b7918459ef12bbea120a4261962cd57059`. Registry gitHead and matching
-  tag/GitHub prerelease `v0.7.0-rc.2` target that commit; package hashes and
-  workflow provenance are recorded in its durable release facts.
-- `0.7.0-rc.3` is published to npm `next` from exact main
-  `728e9c339463ea521fa4388a37d1c76f76c9d726`. Registry gitHead, matching tag,
-  and GitHub prerelease `v0.7.0-rc.3` target that commit; its package hashes,
-  installed-registry smoke, and workflow provenance are recorded in its
-  durable release facts.
-- `0.7.0` is the current observed npm `latest` package at that readback. Its
-  earlier source-preparation note remains historical; current lifecycle facts
-  are maintained in governed registry and audit records. The packaged fixed
-  policy artifact verifier remains read-only/non-authoritative, while local or
-  caller-provided staged-package evidence remains
-  `artifact-provenance-unavailable`.
-- `0.8.0-beta.1` through `0.8.0-beta.20` are historical staging-only Consumer
-  Authority Beta evidence. Beta.16's external observer accepted an exit-zero
-  artifact download without an exact nonempty ZIP postcondition, so it
-  provides no reusable transport, verification, Finish, consumption, or replay
-  fact. Beta.17's Node20/npm10 registry PUT was authorization-shaped, not a
-  package-absence claim. Beta.18 is immutable staging evidence: its registry
-  version, selected tag, SHA-1/SRI, raw SHA-256, and portable content identity
-  matched frozen canonical facts, but its readback incorrectly required an
-  unsupported registry `gitHead` metadata field. `0.8.0-beta.21` is
-  non-reusable temporal final-observer evidence because online crypto and
-  identity bindings completed only after the leaf certificate window expired.
-  `0.8.0-beta.22` is historical non-reusable final-observer evidence: host
-  `gh`/XDG state created an untracked `.local` entry after the final commit.
-  `0.8.0-beta.31` is terminal non-reusable source evidence: protected Verify
-  exposed stale current-version and incomplete source/release fixture import
-  closure before the package contract could run. `0.8.0-beta.32` is the current
-  procedure-only source candidate. It makes no
-  package, tag, staging mapping, GitHub release, original signed consumer
-  artifact, promotion, Stable/GA, or Finish authority claim. Its pre-fixture
-  gate requires source-bound bootstrap before one final fixture commit, retention
-  of that same unpushed commit as the installed consumer CWD/HEAD, a
-  package-visible observer credential preflight, separate caller/reusable signer
-  binding, portable canonical package-content identity, and the complete public
-  Java/Spring lifecycle to reach only `trusted-authority-required`, plus V4
-  stage-scoped residue isolation outside the consumer realpath, and an
-  workflow-selected observer-gh tool contract with no package PATH lookup,
-  byte-strict package records, and fixed nonreflective selector stages and
-  package-record shapes, including the known completion's mode-independent
-  nonselection rule, in
-  [`release/v0.8.0-beta.33-release-notes.md`](release/v0.8.0-beta.33-release-notes.md).
-- P3-9 permits separately dispatched P2 source, measurement, or report-only
-  investigation. The sole product-scope exception is
-  [`korean-cli-help-scope-authorization.md`](korean-cli-help-scope-authorization.md)
-  for issue #19 Korean CLI help locale selection. It does not authorize a
-  default change, other P2 product work, adoption, publish, release, stable,
-  GA, or npm `latest` use. The 2026-07-12 local production audit inputs are
-  recorded in `p3-integrity-roadmap.md`; they are release-planning evidence,
-  not a published third-party certification. Completed P2 source-only evidence
-  and bundles remain retained, not converted into product or release evidence.
-- The P3-2 candidate branch blocks default Finish PASS when no trusted Persona
-  Harness or external authority receipt exists. Unsigned local reports,
-  bearshell output, JUnit XML, TDD JSON, markers, and self-computed digests
-  remain diagnostic-only. Issue #113 adds only the explicit
-  `--assurance cooperative` same-invocation Gradle path: it creates no receipt
-  or terminal authority, and later status, evidence fetch, and closure remain
-  external-blocked.
-- `workflow-lifecycle.1` is the current shared, fail-closed projection for
-  `workflow check`, closure JSON, persisted loop state, and finish guidance.
-  It treats missing/template/malformed/conflicting report markers, unsafe
-  configured paths, missing evidence, absent, stale, or malformed loop state, and
-  pending tickets as blockers. Its read-only `finishAuthority` field surfaces
-  the existing trusted-authority result without issuing, verifying, or
-  consuming authority. Neither lifecycle readiness nor a blocked/trusted
-  authority field proves #111 producer success, signature verification,
-  registry publication, tag movement, GitHub release creation, or release
-  completion.
-- P3-3 defines receipt/attempt parsing and read-only lifecycle diagnostics only.
-  It does not issue, verify, migrate, or accept any receipt as finish authority;
-  P3-2 remains blocked until a later trusted path exists.
-- P3-8 source workflow controls add PR/main CI, canonical-main/tag ancestry
-  checks, registry integrity readback, and fail-closed GitHub release
-  idempotency. On 2026-07-13, the recorded GitHub repository controls added
-  strict main protection, immutable-action enforcement, and protected
-  `npm-publish` environment settings. Closed issue `#10` records the
-  owner-authenticated publisher binding with `publish` permission only; the
-  current release readiness decision keeps publication, `latest`, stable, and
-  GA NO-GO until a fresh versioned RC gate is complete.
-- P3-4 adds fresh fixed-command execution and nonzero JUnit testcase
-  enforcement. Issue #113 may consume those checks only inside an explicit
-  current-process Finish invocation; no local cooperative receipt, later
-  authority, or strong external integrity claim is enabled.
-- P3-5 adds read-only red-to-green JUnit identity and lineage assessment.
-  Structurally valid local chains remain untrusted; no finish authority or
-  external attestation is enabled.
-- `runtimeInjection` remains a parked opt-in preview.
-- P0-1 `ph go` is accepted on exact main `c097428` for its cooperative local
-  writer/workspace-edit contract. Recovery remains hidden from normal help,
-  requires a claimed generation, and revalidates before clearing; hostile
-  same-user path replacement remains outside scope.
-- The rail-entry prompt regression gate is an operator-run n>=5
-  non-inferiority check for rail/AGENTS/gate-output wording changes. It is not
-  product-efficacy or runtime-injection benefit evidence.
-- Ralph-loop idle trigger delivery failed to prove model-facing continuation.
-  The later default-off hybrid tool-output trigger has accepted
-  trigger-survival evidence, including n=15 PASS for marker/state/follow-up,
-  but blocker-delta correction, cooldown caveats, completion-integrity
-  movement, and default-change limits remain active.
-- `ph workflow loop` is an explicit capped fresh-session blocker loop command
-  with fixture-scoped Stage 18 completion-integrity evidence. It is not a hook,
-  not a default, and not evidence of broad product efficacy or token savings.
-- Static rule delivery is scoped narrowly by role/stage where T7 delivery
-  points include rules in prompt/card surfaces; closure, check, and finish
-  gates remain broad/global.
-- Relay is an advanced preview Role Checklist Relay: a main-session checklist
-  rail with optional host-dependent subagent invocation. A direct OpenCode
-  task/subagent capability probe was observed, but PH relay still does not
-  prove reliable automatic OpenCode role subagent orchestration.
-  `--multi-agent-preview` and `multiAgent` remain compatibility names.
-- `workflow role-boundary` remains report-only/heuristic. The wrong-actor
-  attribution blind spot is documented.
-- `scorecard.1` is secondary archive observation only and does not override
-  preregistered kill criteria.
-- Fake Gradle/Spring gate-gaming through a `gradle-shim.js`-style shim is a
-  candidate measured adversarial case after forged-TDD detection, not a broad
-  reliability or product-efficacy proof.
+- `workflow-closure-state-machine-design.md` is the current
+  `workflow-lifecycle.1` fail-closed projection for workflow status, closure
+  JSON, loop-state checks, and Finish guidance.
+- `workflow-state-concurrency.md` defines writer ownership and the read-only
+  handling of absent, malformed, stale, or unsafe state.
+- `consumer-authority-v1-decision.md` defines the only enabled cooperative
+  route. `workflow finish implement --assurance cooperative` is valid only in
+  that same Finish invocation and is
+  non-persistent: status, fetch, and later closure cannot reuse it, and the
+  default/external boundaries remain blocked.
+- `external-environment-verification.md` and
+  `external-attested-finish-walkthrough.md` record scoped observer procedures,
+  not a broad support or quality claim.
 
-## Classification
+## Release And Package Records
 
-- Versioned release records belong in `docs/releases/v<version>/`.
-- Release runbooks and workflow-compatible note files remain in
-  `docs/current/release/`.
-- Active measurements and decision statuses may remain in `docs/current/` while
-  they are changing.
-- `docs-inventory.md` tracks every file under `docs/**`, including files that
-  are intentionally retained in legacy locations.
-- Older `v0.3.*`, `v0.4.*`, and transitional files under `docs/current/` are
-  historical unless a current pointer above names them. In particular,
-  `v0.3.0-workflow-report-status-lifecycle.md`,
-  `release/next-version-readiness.md`, and
-  `release/rc-release-readiness-decision.md` are not current selection inputs.
-  Do not rewrite them to look current; add explicit correction or migration
-  notes if needed.
+The release row above leads to the compact operator entrypoint and durable
+package chronology. Historical Consumer Authority records live under `release/`;
+their past PASS, NO-GO, or staging result does not provide current Finish
+authority, promotion, or channel permission.
 
-## Product Positioning Boundary
+## Deep Reference And History
 
-Persona Harness is a gate-first workflow rail, evidence, and continuation
-harness. Do not claim token/provider-token saving, product efficacy, navigation
-benefit, app quality, full-TDD/test sufficiency, broad reliability, closure
-guarantee, autonomous completion, generated-app certification, deterministic
-role enforcement, production-ready delegation, automatic
-completion/downgrade/removal, CodeGraph/LSP default/effectiveness, or broad
-product guarantees. Do not claim strong completion-integrity, anti-forgery,
-Stable/GA, or npm `latest` readiness until P3 closes.
+- The canonical index names the small set of current decision inputs and routes
+  every other record to history or inventory.
+- The inventory classifies every retained file. It is a maintenance map, not a
+  first-reading path.
+- Repository-only archive, phase, and evidence-review records preserve prior
+  work without competing with current operating guidance.
+
+## Claim Boundary
+
+Persona Harness is a gate-first workflow rail and completion-evidence harness.
+It does not claim token saving, generated-app quality, product efficacy,
+autonomous completion, deterministic role enforcement, or production-ready
+delegation. Read the Measured Claims record above before turning an operational
+record into a product claim.

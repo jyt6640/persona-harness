@@ -592,46 +592,39 @@ describe("package files policy", () => {
     })
 
     expect(linkedFiles).toEqual([
-      "README.md",
       "docs/START-HERE.md",
       "docs/QUICK-DEMO.md",
       "docs/MEASURED-CLAIMS.md",
-      "docs/releases/README.md",
       "docs/current/canonical-docs-index.md",
-      "docs/releases/v0.7.0-rc.3/README.md",
-      "docs/releases/v0.7.0-rc.2/README.md",
-      "docs/releases/v0.7.0-rc.1/README.md",
-      "docs/releases/v0.6.0/README.md",
-      "docs/releases/package-index.md",
-      "docs/current/release/README.md",
-      "docs/current/release/v0.8.0-beta.33-release-notes.md",
-      "docs/current/p3-integrity-roadmap.md",
-      "docs/current/p3-2-closure-authority-acceptance-record.md",
-      "docs/current/p3-3-verification-receipt-acceptance-record.md",
-      "docs/current/p3-8-ci-release-integrity-acceptance-record.md",
-      "docs/current/p3-9-rc3-integrity-governance-decision.md",
-      "docs/current/stable-containment-execution-evidence.md",
-      "docs/current/p3-4-fresh-fixed-command-verifier-acceptance-record.md",
-      "docs/current/p3-5-semantic-tdd-acceptance-record.md",
-      "docs/current/consumer-authority-v1-decision.md",
-      "docs/current/canonical-docs-index.md",
+      "docs/current/persona-harness-detailed-usage.md",
       "docs/current/workflow-closure-state-machine-design.md",
-      "docs/current/external-review-adoption-status.md",
-      "docs/current/diff-rules-classification.md",
-      "docs/current/role-rules-dogfooding-readiness.md",
-      "docs/current/workflow-string-gate-parsing-audit.md",
-      "docs/current/workflow-state-concurrency.md",
-      "docs/current/role-scoped-rule-delivery.md",
-      "docs/current/ralph-loop-measurement-status.md",
-      "docs/current/multiagent-relay-trial-status.md",
-      "docs/current/rail-entry-measurement-status.md",
-      "docs/current/entry-steering-status.md",
-      "docs/current/rail-entry-prompt-regression-gate.md",
       "docs/current/measurement-scorecard.md",
-      "docs/current/injection-value-status.json",
+      "docs/current/consumer-authority-v1-decision.md",
+      "docs/current/release/README.md",
+      "docs/releases/README.md",
       "docs/current/docs-inventory.md",
-      "docs/current/release/v0.8.0-beta.33-release-notes.md",
-      "docs/current/korean-cli-help-scope-authorization.md",
+    ])
+
+    for (const linkedFile of linkedFiles) {
+      expect(existsSync(path.join(packageRoot, linkedFile))).toBe(true)
+      expect(isCoveredByPackageFiles(linkedFile, packageJson.files)).toBe(true)
+    }
+  })
+
+  it("keeps canonical current links covered by packaged files", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const canonicalIndexPath = path.join(packageRoot, "docs/current/canonical-docs-index.md")
+    const canonicalIndex = readFileSync(canonicalIndexPath, "utf8")
+    const linkedFiles = extractDirectRelativeMarkdownLinks(canonicalIndex).map((link) => {
+      const resolved = path.relative(packageRoot, path.resolve(path.dirname(canonicalIndexPath), link.href))
+      return toPackagePath(resolved)
+    })
+
+    expect(linkedFiles).toEqual([
+      "docs/current/README.md",
+      "docs/current/release/history.md",
+      "docs/current/release/consumer-authority-beta.md",
+      "docs/releases/README.md",
     ])
 
     for (const linkedFile of linkedFiles) {

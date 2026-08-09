@@ -1,0 +1,1039 @@
+# Release Operations History
+
+This file retains the detailed release and Consumer Authority history that used
+to sit in the release entrypoint. It is evidence and context, not a current
+operator instruction or a live registry readback.
+
+For current release operations, start with [README.md](README.md). For durable
+version/package chronology, use
+[`docs/releases/README.md`](../../releases/README.md) and
+[`docs/releases/package-index.md`](../../releases/package-index.md).
+
+## Retained Workflow Lifecycle Boundary
+
+The current workflow/closure/finish state contract is
+[`../workflow-closure-state-machine-design.md`](../workflow-closure-state-machine-design.md).
+`workflow-lifecycle.1` is a read-only, fail-closed workflow projection; it is
+not a release state, approval, or producer record. A blocked or trusted
+`finishAuthority` value does not claim #111 producer success, signature
+verification, registry publication, tag movement, GitHub release creation, or
+release completion.
+
+Only documents selected by `docs/current/README.md` or
+`docs/current/canonical-docs-index.md` are current inputs. Retained historical
+files such as `next-version-readiness.md` and
+`rc-release-readiness-decision.md` are context, not current release decisions.
+
+## Retained Release Messaging Guardrail
+
+Describe Persona Harness as an AI coding workflow rail + evidence + continuation harness.
+
+Do not describe a release as:
+
+- a Java Clean Code quality guarantee;
+- generated app product-quality certification;
+- evidence count proving quality improvement;
+- AST/linter/build-failure enforcement.
+
+External smoke and A/B or ON/OFF runs may be reported as stack-steering and workflow-closure signals only. Mention limits when relevant: small sample size, `n=1`, non-blind runs, same operator, and model/version/prompt/timeout/continuation dependence.
+
+## 0.3.9-alpha Pre-Eval Stop Gate
+
+Before moving from the `0.3.9-alpha` cleanup lane into `0.4` eval work, HQ must stop and ask the user for a `0.3.9-alpha` publish or release decision.
+
+Do not start `0.4` eval immediately after the following are complete:
+
+- `0.3.9-alpha` pre-eval code-debt cleanup;
+- QA eval fixture / kill-gate documentation;
+- verified report schema documentation.
+
+Those items make the release decision ready; they do not authorize Docs Release to publish, push, tag, or start release prep without HQ/user approval.
+
+## Historical Version-Line Readiness
+
+`0.7.0-rc.1` was published to npm `next` on 2026-07-11. Its registry
+gitHead, matching tag, and release-branch commit are
+`d4d4d9acb1e4198fb2001ac81fe77f6bd9d4efd9`; `latest` remains `0.6.0`.
+Its published release note is
+[`v0.7.0-rc.1-release-notes.md`](v0.7.0-rc.1-release-notes.md), and its durable
+capsule is [`docs/releases/v0.7.0-rc.1/`](../../releases/v0.7.0-rc.1/README.md).
+
+`0.7.0-rc.3` was published to npm `next` from exact main
+`728e9c339463ea521fa4388a37d1c76f76c9d726` by trusted workflow run
+`29310969744`. Registry gitHead matches that commit; npm SHA-1 is
+`9d1fb27ab86d344afcd748b66959188ea9553258`, and npm integrity is
+`sha512-P7ITZAhnOKmbq5RFKzTun7ruL8E4bJP1E049QcaAl3iMtPQZnQRevBfN+pE/tIBPyfNv0la5kPmQOwSADm4epQ==`.
+The matching Git tag and GitHub prerelease `v0.7.0-rc.3` target the same
+commit. Its release record is
+[`v0.7.0-rc.3-release-notes.md`](v0.7.0-rc.3-release-notes.md), and its durable
+capsule is [`docs/releases/v0.7.0-rc.3/`](../../releases/v0.7.0-rc.3/README.md).
+
+`0.8.0-beta.1` is immutable staging-only Consumer Authority Beta evidence:
+its exact registry installation and staged provenance boundary passed, without
+granting consumer Finish authority or any promotion/Stable/GA claim.
+`0.8.0-beta.1` through `0.8.0-beta.17` are immutable staging-only Consumer
+Authority Beta evidence. Beta.16's final observer accepted an exit-zero API
+download without proving a nonempty exact ZIP. Beta.17's Node20/npm10 registry
+PUT was authorization-shaped rather than a package-absence result; beta.16
+remains present in the public registry. Beta.18 was published to staging and
+its registry bytes matched frozen canonical facts, but its postpublish checker
+incorrectly required an unsupported registry `gitHead` metadata field.
+`0.8.0-beta.19` is immutable staging-only Consumer Authority Beta evidence.
+`0.8.0-beta.20` is immutable staging-only evidence: live authority fetch reached
+`trusted/unconsumed`, then Finish correctly blocked before consumption because
+the observer had not initialized the same consumer workflow state.
+`0.8.0-beta.21` is non-reusable temporal final-observer evidence: its online
+crypto and identity bindings passed only after the leaf certificate window
+expired, so authenticated fetch, Finish consumption, and replay were not run.
+`0.8.0-beta.22` is non-reusable final-observer evidence: host `gh`/XDG state
+created an untracked `.local` entry after the final commit. `0.8.0-beta.23`
+contradicted its raw-empty cleanliness predicate. `0.8.0-beta.24` stopped at
+the supplied-bundle source contract because it depended on ambient `gh` lookup
+and rejected Linux's runtime-owned `UV_USE_IO_URING=0` child marker.
+`0.8.0-beta.26` then rejected the normal Ubuntu `gh` package record before tool
+assessment because its basename-only selector counted the bash-completion
+sibling. Beta.30 then classified that known, never-executed completion as an
+ambiguous executor when the runner mode was executable. Beta.31 retained the
+known-completion selector boundary but protected Verify exposed stale current-
+version and incomplete source/release fixture import closure before the package
+contract could run. Beta.32 then used a live invalid-bundle attestation
+preflight that could initialize network/Sigstore before parser rejection. Both
+are terminal and non-reusable. The next strict-prerelease procedure-only source
+candidate is `0.8.0-beta.33`. Beta.33 has no
+source-level claim of a tag, publish, channel movement, GitHub release, or
+original signed consumer artifact.
+
+The beta33 release contract retains package-visible observer credential
+preflight, separate caller/reusable signer binding, and a complete public
+Java/Spring readiness route whose default Finish is blocked only by
+`trusted-authority-required` before a fixture may be authorized. Source-bound
+bootstrap must finish before the final fixture commit. That one commit may
+contain only declared source-bound bootstrap outputs and the immutable reusable
+pin; the same unpushed final fixture commit is retained as the installed
+consumer CWD/HEAD. Later slow preparation may modify only excluded runtime or
+build state. Immediately before its one normal push, the remote parent, CWD,
+Git top-level, HEAD, and source identity must still bind to that final commit.
+No lifecycle reinitialization, consumer switch, or source reset is permitted
+after fetch. It also requires `env -i`, explicit absolute `gh`/Git/Node/npm
+paths, and fifteen external host-state roots outside the consumer realpath.
+At baseline, source-bound preparation, credential handoff, observer child, and
+immediately before push, CWD/Git top-level/HEAD/source identity must remain
+unchanged and the NUL-safe status plus normalized `git clean -ndx` output must
+match the V4 stage-scoped residue projection. `.local`, `.config`, and `.cache`
+are never allowlisted. The observer `gh` is selected only after bounded dpkg
+ownership/status/architecture validation and byte-strict package-record parsing;
+the policy primary `/usr/bin/gh` must pass no-follow lstat before private copy,
+while the documented `/usr/share/bash-completion/completions/gh` sibling is
+optional and, when present, must be regular and non-symlink regardless of mode.
+It is never selected, copied, or executed. Any other present secondary
+basename-`gh` record must be regular, non-symlink, and non-executable; an alias,
+executable, missing, or unsafe secondary blocks. It is
+never an ambient PATH lookup or literal runner path. Linux accepts
+only `UV_USE_IO_URING=0` in the fixed authority child environment. Slow
+preparation completes before the one push, and the certificate validity deadline
+is non-relaxable. The selector emits only a fixed nonreflective lifecycle stage
+for environment, package-list, package-record, source/private assessment,
+private reservation/copy, or output handoff; package-record blocks add only an
+allowlisted shape, and unknown failures are bounded as `selector-internal`
+without rendering runner data. Beta.33 additionally proves the selected private
+copy through a fixed-placeholder `gh attestation verify <plan> --help` parser
+route under the same token-free state environment, before any artifact or
+online verification action.
+
+Its authoritative bundle exercise also binds the package-visible
+`clean-package-exercise-phase.1` source-built and fresh-tar vocabularies from
+`consumer-authority-beta33-acceptance.json`. The clean-bundle parent requires a
+complete ordered ready transcript and exact PASS marker for the matching
+surface. Marker-only, malformed, out-of-order, foreign, or
+success-after-blocked transcripts fail as a bounded phase-envelope condition.
+Records contain only the schema version, surface, phase, state, and fixed
+bounded code, never raw child output, paths, credentials, URLs, or artifact
+content.
+
+The current package version is bound only when `package.json`, `package-lock`,
+and the current versioned acceptance manifest agree. Historical beta records
+remain strict historical records and cannot define the current package. The
+authoritative-bundle verifier is source/Git-rooted; fresh installed package
+contracts load their observer stage and package-record modules only from the
+exact tarball and never package or invoke that source verifier.
+
+The preflights use a host-derived credential only inside their fixed read-only
+GitHub Actions worker; they do not pass that credential to `ph`, npm, archive
+tooling, or the consumer HOME. Beta23 retains the no-token/no-artifact
+attestation and artifact transport parser preflights. The transport plan binds
+the caller repository/run/artifact endpoint, exact ZIP bytes, and safe members
+before it hands an original ZIP to the separate reusable signer command plan.
+Its package evidence starts from the exact complete-history bundle, not an
+ambient working directory: detached checkout, Git/manifest/lock/npm-prefix
+binding, normal prepack, and fresh installed CLI identity must all agree before
+the tarball is eligible for independent package review. The package proof uses
+plain `npm` from that bound detached checkout, never `npm --prefix ... pack`,
+and uses the exact resulting tarball for both source-built and fresh installed
+consumer contracts. Its release handoff keeps the Node20/npm10 canonical packer
+separate from the isolated Node24/npm11 publisher, which dry-runs and then
+publishes the same canonical tarball only. Postpublish reconciliation binds
+protected workflow source preflight to registry version, selected tag, SHA-1/SRI,
+raw SHA-256, and portable content identity; it does not require registry
+`gitHead`.
+`0.7.0-rc.2` remains an earlier published `next` record.
+
+The staged-package artifact producer is a controlled future-run source:
+[`staged-package-artifact-attestation-producer.md`](staged-package-artifact-attestation-producer.md).
+The packaged fixed-policy verifier can independently verify the producer's
+exact public artifact subject, but remains read-only/non-authoritative and does
+not publish or move a channel.
+
+The project-finish attestation producer is a separate consumer-project source
+contract: [`project-finish-attestation-producer.md`](project-finish-attestation-producer.md).
+It requires protected integration plus a separately authorized fresh public
+caller push before a genuine Artifact Attestation exists. Its product-owned
+verifier core is separately documented in
+[`project-finish-attestation-verifier.md`](project-finish-attestation-verifier.md).
+Neither record enables default Finish authority or a
+branch-protection/enrollment/review claim.
+
+## Prepared Stable Source Candidate
+
+[`v0.7.0-release-notes.md`](v0.7.0-release-notes.md) records the immutable
+GA-source-preparation candidate. It is not live registry, tag, GitHub release,
+`latest`, provenance, stable-completion, or audit evidence. Those lifecycle
+facts belong only in governed registry and audit records after their separately
+authorized actions.
+
+The staged-package producer remains restricted to `staging|next`.
+[`production-integrity-audit.md`](production-integrity-audit.md) derives its
+fixed channel from strict SemVer, including `latest` for a stable version, but
+the staged provenance verifier remains an expected non-authoritative block for
+that channel. A future stable-promotion completion approval must be durable
+and protected after the actual stable lifecycle; no such approval record is
+created, inferred, or accepted by this source candidate.
+
+The fixed release policy permits strict stable SemVer only with `latest` and
+explicit `ga-approved`. This source candidate neither authorizes that action
+nor creates its prerequisite tag. Local or caller-supplied staged-package facts
+remain `artifact-provenance-unavailable`; Finish and closure authority remain
+unchanged.
+
+Historical stable package: `0.6.0` was published to npm `latest` after QA
+accepted the final External registry smoke. This historical registry snapshot
+was `latest=0.6.0`, `next=0.7.0-rc.3`, with no `alpha` dist-tag after the
+post-stable T0 retirement. Registry verification then confirmed
+`persona-harness@latest=0.6.0`, gitHead
+`13b1f1b79884e2214c0b41a735b87cdd6d65ee00`, shasum
+`ffd77996263cffb858bd977edb73b03cf2820c75`, and integrity
+`sha512-0dY/LqXYuSD7/G/GsALoE0RBKClikt1MPVR6GvbXRieBiSDh5CEt0JNP0RxJ8Ur3howsURYeaFQX8aRhSzKP0A==`.
+Explicit `persona-harness@0.6.0` resolves to the same package. Local and
+remote `v0.6.0` point at the same gitHead, and the GitHub release is stable
+(`isDraft=false`, `isPrerelease=false`).
+
+Stable basis: HARDEN-1 accepted hardening plus the stable decision cycle S-0
+through S-3. S-0 corrected the blocker: H1-6a compression NO-GO itself did not
+block stable; the shipped failed-finish human `Summary:` header's inferior
+real-session rail-entry evidence did. S-1 established `gate-fixture.2` with
+control rail-entry `10/10`. S-2 accepted FAIL decision input for the shipped
+Summary header (`10/10` control, `9/10` candidate, delta `-10pp`,
+non-inferiority false). S-3 removed the failed-finish human `Summary:` header
+at commit `c7affd7674fc949b373c414974b05010b8dd1f21`, with QA and External
+local-current package smoke accepted. Failed finish human output now renders
+`Required fixes:` and detailed blockers directly; `workflow closure next --json`
+remains the structured machine-readable next-step surface.
+
+Stable prep includes H1-1 unmapped blocker de-loop/human escalation, H1-2
+mechanical finish regression coverage, H1-3 deterministic blocker order/depth,
+H1-4 block-level toolchain fail-closed and mapped human guidance, and H1-5
+atomic writes/fail-safe reads by migrated family only. H1-6a compression
+remains NO-GO and unimplemented. H1-6b structured required-fix data remains
+implementation support, but the failed-finish human Summary header is not
+rendered.
+
+Final stable registry smoke archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stable-060-registry-smoke-20260705T041031Z`.
+The smoke used npm registry only and installed `persona-harness@latest`; no
+local tarball evidence was used. It observed stable S-3 failed-finish output
+with no `Summary:` header, retained `Required fixes:` and detailed blocker
+diagnostics, generic closure JSON parsing, H1-4 mapped toolchain guidance,
+H1-1 unmapped escalation and loop stop surfaces, representative H1-5
+atomic/corrupt-state spots, and retained default-off/schema-stable loop,
+ralph-loop, and Role Checklist Relay surfaces. No real OpenCode/model/eval run
+was performed in this stable registry smoke.
+
+Post-stable external tester kickoff is planned/ready to start from
+`PROJECT-PLAN.md` section 4. No concrete started-recruitment evidence is
+recorded here. Planned scope is 3-5 testers, focused on onboarding drop-off,
+time to first finish, doctor/feedback usage, whether users value or resent gate
+blocks, team convention demand, real fake-shim/gate-gaming incidents, and
+tester-driven UX complaints. HARDEN-2 may start only after this stable final
+record and tester kickoff status are recorded, and must yield to incoming
+tester feedback.
+
+Historical prerelease package: official `0.6.0-rc.4` was published under npm
+dist-tag `next`, not `latest`. Registry verification confirmed
+`persona-harness@next=0.6.0-rc.4`, gitHead
+`cf6835697f47da5a2a8372d00fc47e263ee781f8`, shasum
+`76565f6e7d244595fa338bb646ea7888d8d5255a`, and integrity
+`sha512-8oBVX1vmudoNZCJEVXNdx/lJnPITKD0cW2OGk6Bv963oibNwyo+itxYquRNr8JlDQR7RKDmcQ5XTCVlIP9weaw==`.
+The explicit package selector `persona-harness@0.6.0-rc.4` resolves to the
+same version, gitHead, shasum, and integrity. Current dist-tags are
+`latest=0.5.0`, `next=0.6.0-rc.4`, and `alpha=0.3.9-alpha.8`; `latest` did
+not move at rc4 time. The later stable `0.6.0` records above supersede the
+rc4-time stable deferral after S-3 removed the failed Summary header.
+
+The local and remote `v0.6.0-rc.4` tags point at
+`cf6835697f47da5a2a8372d00fc47e263ee781f8` after registry verification. The
+GitHub release exists as a prerelease, not draft:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.4`.
+
+External registry smoke installed `persona-harness@next` as `0.6.0-rc.4` from
+the registry only and verified package-runtime surfaces. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc060-rc4-registry-smoke-20260705T110131Z`.
+`RESULT.md` classified PASS.
+
+`0.6.0-rc.3` carries post-rc2 records: Stage 15 ralph-loop measurement
+correction and fake-shim gate-gaming adversarial candidate; Stage 16 docs and
+package-policy maintenance; Stage 17 explicit `ph workflow loop`; Stage 18
+fixture-scoped completion-integrity measurement; and Stage 20 failed-finish
+human `Summary:` output. Packaged LICENSE contains `Copyright 2026 jyt6640`
+and no template placeholders.
+
+The rc3 registry smoke observed required package entries for localized READMEs,
+`CHANGELOG.md`, current rc3 release notes, the rc3 versioned capsule files,
+`workflow-loop`, `workflow-loop-state`, `bounded-process`, `workflow-output`,
+`workflow-ralph-loop`, `workflow-relay`, and `workflow-relay-ui`. It observed
+Stage 17 package behavior: `workflow-loop.1` dry-run schema, `defaultOff=true`,
+blocker-depth prompt, no dry-run state write, and execute mode with a fake
+bounded OpenCode run writing workflow-loop state plus prompt/stdout/stderr
+artifacts before ending at iteration cap. It also observed Stage 20 package
+behavior: failed finish stderr prints `Summary:` before `Required fixes:`,
+detailed blockers remain, and closure JSON parses.
+
+The rc3 smoke also preserved ralph-loop default-off reporting
+(`workflow-ralph-loop.4`, `defaultOff=true`, `mutates=false`) and Role
+Checklist Relay checklist-first wording with optional host-dependent
+subagent/task invocation. These records do not prove ralph-loop completion
+integrity beyond the scoped Stage 18 fixture, default change, token savings,
+product efficacy, reliable automatic subagent orchestration, deterministic
+role enforcement, production-ready delegation, or broad reliability.
+
+`0.6.0-rc.4` carries accepted HARDEN-1 work after rc3: H1-0
+preflight PARTIAL, H1-1 unmapped blocker de-loop and human escalation wording,
+H1-3 deterministic blocker order and chain-depth contract, H1-2 mechanical
+finish regression coverage, H1-4 block-level toolchain fail-closed and human
+toolchain guidance, H1-5 atomic writes/fail-safe reads by file family, and
+H1-6b structured finish summary derivation. H1-6a repeated-output compression
+remains NO-GO and unimplemented after real n=5 rail-entry precheck failed
+(`3/5` control, `1/5` candidate, delta `-40pp`).
+
+The rc4 registry smoke observed failed finish plus repeated finish, closure
+JSON, H1-4 toolchain path, H1-1 unmapped path, representative H1-5
+atomic/corrupt-state behavior, and retained rc3 workflow-loop/ralph-loop/relay
+surfaces. H1-6b finish `Summary:` appeared before `Required fixes:`, detailed
+blockers remained, and closure JSON parsed. No H1-6a compression wording
+appeared. Initial H1-4/H1-1 fixtures had prerequisite blockers ahead, so
+isolated populated reruns were used to put target blockers first. H1-5 coverage
+is representative, not a full repeat of every H1-5 family.
+
+Stable-cycle S-0 correction: H1-6a compression NO-GO itself does not block
+stable, because the HARDEN-1 compression spec allowed a worse candidate to be
+rolled back or recorded. The unresolved stable-decision issue is the shipped
+rc3/rc4 `Summary:` header: it has only one real-session rail-entry evidence set
+so far (`n=5`, candidate `1/5` vs current/control `3/5`) and that evidence
+points inferior. S-2 must regate whether the shipped header is harmful or noisy;
+stable `0.6.0` should be re-evaluated after that result.
+
+S-0 criterion consistency record: earlier wording said only observed behavior
+regression justifies rc4. rc4 actually carried gate-behavior-changing hardening
+and validation distribution. The improved future criterion is that
+gate-behavior-changing hardening before stable also requires a prerelease
+validation distribution. This is a criteria improvement for future release
+decisions, not a retroactive excuse or broad stability claim.
+
+S-0 alpha dist-tag decision: live npm state observed `alpha=0.3.9-alpha.8`,
+`latest=0.5.0`, and `next=0.6.0-rc.4`; `alpha` resolved to gitHead
+`3bb90aa50c8d1231189a5ca00665e8d5bfccade9` with shasum
+`cd26989425223b5145f190c2dfbfa5ad84e57cf9`. Current publish policy authorizes
+prerelease publishes to `next` and stable publishes to `latest`, but does not
+authorize automatic alpha removal or realignment. No alpha/latest/next
+dist-tag mutation was made in S-0; changing `alpha` needs a separate explicit
+policy decision.
+
+ROLE-RULES T0 alpha retirement: after stable `0.6.0`, HQ explicitly chose to
+retire the legacy `alpha` shortcut rather than keep or realign it. Live npm
+readback now shows only `latest=0.6.0` and `next=0.6.0-rc.4`; `alpha` is absent.
+The explicit historical package `persona-harness@0.3.9-alpha.8` remains
+available by version with gitHead `3bb90aa50c8d1231189a5ca00665e8d5bfccade9`,
+shasum `cd26989425223b5145f190c2dfbfa5ad84e57cf9`, and integrity
+`sha512-YRZ/h/2cQQcA75pgtzt6eUMFKD4Zqxs+sE0tL+kMCOAhwIc7of0bXb96CtwQjZ3B8If2iczw5S1NvMcV/xb9FA==`.
+No package was unpublished and no `latest` or `next` movement was made by this
+retirement record.
+
+Previous prerelease package: official `0.6.0-rc.3` was published under npm
+dist-tag `next` before rc4 superseded it on that channel. Registry
+verification confirmed `persona-harness@next=0.6.0-rc.3`, gitHead
+`e1af520cf000e805e7df6a1616906f3f9b0e4976`, shasum
+`ef498adfac138d9d0843406cba53acf76b34c6f1`, and integrity
+`sha512-nXImwyxON5zoph8Y3LyXqJhW1NIcX+3JvsBSFAdQlersZ8zO1KmRuRJVKB1DF87fbYxDpVyxMqFU1C6sA8HJQQ==`.
+The local and remote `v0.6.0-rc.3` tags point at that gitHead.
+
+Previous prerelease package: official `0.6.0-rc.2` was published under npm
+dist-tag `next` before rc3 superseded it on that channel. Registry verification
+confirmed `persona-harness@next=0.6.0-rc.2`, gitHead
+`d3d5fdced355f0ac0fbed5e700d57b2aa1592263`, shasum
+`0eae3cc232e3f37de9390b0afc662a001aaa0b56`, and integrity
+`sha512-HmJplQNf896/4Sfz/FiTdJoaDU5EkMrDtxCVMU1x0LfLJzJYNDa0NGafUAgiU4zWc/IA9byDUv4+DryubMVZrg==`.
+The local and remote `v0.6.0-rc.2` tags point at that gitHead after registry
+verification. The GitHub release exists as a prerelease, not draft:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.2`.
+
+`0.3.9-alpha.7` shipped the read-only workflow closure planner and produced one
+Windows SSH registry implementation-to-finish product usability PASS. That is a
+workflow rail product signal, not eval proof, PH superiority proof, generated
+app quality certification, or a general reliability guarantee.
+
+Previous prerelease package: official `0.6.0-rc.1` was published under npm
+dist-tag `next` before rc2 superseded it on that channel. Registry
+verification confirmed
+`persona-harness@next=0.6.0-rc.1`, gitHead
+`b673633533a314e1a64dd6dcb18c4097c5889a2c`, shasum
+`5c8bcd5c1bd4165dd129e39624408672f88091ce`, and dist-tags
+`latest=0.5.0`, `next=0.6.0-rc.1`, `alpha=0.3.9-alpha.8` at rc1 publish
+time. The local and
+remote `v0.6.0-rc.1` tags point at that gitHead after registry verification.
+Trusted Publisher run `28653322434` succeeded; Release workflow run
+`28653429619` succeeded; the GitHub release exists as a prerelease:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.6.0-rc.1`.
+
+External registry smoke installed `persona-harness@next` as `0.6.0-rc.1` from
+the registry only and verified package-runtime surfaces. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/stage14-rc060-rc1-registry-smoke-20260703T100732Z`.
+`RESULT.md` classified PASS.
+
+`0.6.0-rc.1` packages the post-0.5 Stage 1-13 line conservatively: session
+classification/subagent injection skip, utterance gates, role naming cleanup,
+static relay guidance, continuation prompt/gate unification, report-only
+role-boundary observation with heuristic write warnings, ralph-loop default-off
+retry-capped blocker continuation, and the canonical `scorecard.1` measurement
+scorecard definition. The release message must also preserve the accepted
+negative/partial results: Stage 12 did not exercise ralph-loop in the ON pilot,
+so ralph-loop remains parked/default-off preview with no default-ON evidence;
+Stage 13 observed a static Role Checklist Relay guidance path but no reliable
+OpenCode role subagent invocation or orchestration. `--multi-agent-preview` and
+`multiAgent` remain compatibility names for that preview surface.
+
+The rc1 registry smoke observed localized READMEs, `CHANGELOG.md`,
+`docs/current/release/v0.6.0-rc.1-release-notes.md`, ralph-loop/state runtime,
+session registry, hooks, role-boundary heuristic/policy/evidence, continuation
+utterance gate, `workflow ralph-loop`, `workflow role-boundary`, bootstrap,
+workflow relay, and continuation prompt package entries. `ph --help`,
+`ph version`, `ph bootstrap --help`, `workflow ralph-loop --json`,
+`workflow role-boundary --json` and human output, default init/bootstrap,
+multi-agent preview init/bootstrap/rerun, `workflow relay status --json`,
+`workflow relay next --json`, and the smoke driver exited 0. `ph version`
+returned `0.6.0-rc.1`; `workflow ralph-loop --json` emitted
+`workflow-ralph-loop.3` with default-off/dry-run/no-write and
+`maxAttempts=3` / `maxSessionAttempts=9`; `workflow role-boundary --json`
+emitted `workflow-role-boundary-report.2` with report-only/heuristic block mode
+unavailable/no deterministic enforcement and no file writes. Bootstrap Role
+Checklist Relay guidance remained absent by default, present/idempotent with
+the compatibility flag `--multi-agent-preview`, and relay status/next JSON used
+role order `test-writer`, `implementer`, `reviewer`.
+
+Previous stable package: official `0.5.0` was published under npm dist-tag
+`latest`. Registry verification confirmed `persona-harness@latest=0.5.0`,
+gitHead `c0f1085a5182cdd17411bd043173aabc9a76b30e`, shasum
+`3a7c43e4807e7cc8bd1b6c697746d6334ee56b09`. At its stable-smoke time,
+dist-tags were
+`latest=0.5.0`, `next=0.6.0-rc.3`, `alpha=0.3.9-alpha.8`. The local and remote
+`v0.5.0` tags point at the `0.5.0` gitHead. Trusted Publisher run
+`28611027369` succeeded; Release workflow run `28611144533` succeeded; the
+GitHub release exists as a non-prerelease:
+`https://github.com/jyt6640/persona-harness/releases/tag/v0.5.0`.
+
+`0.5.0` keeps the gate-first runtime injection downgrade: runtime injection,
+system constitution injection, workflow prompt rail injection, and continuation
+text are default-off; `--runtime-injection-preview` is explicit opt-in;
+`--strict` intentionally opts into runtime guidance plus direct verification.
+It also packages the README logo asset at `img/Persona-Harness-Logo.png`.
+
+External stable registry smoke installed `persona-harness@latest` as `0.5.0`
+and verified package-runtime surfaces. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/v050-stable-registry-smoke-20260702T180404Z`.
+The smoke classified PASS in `RESULT.md`; `summary-final.json` parsed and
+confirmed command exits/surfaces. It observed localized READMEs, the logo,
+`docs/current/release/v0.5.0-release-notes.md`, P-minus paired/status dist
+files, instruction infer/adopt/check dist files, and CodeGraph/LSP wrappers.
+Basic CLI/bootstrap passed. Default bootstrap wrote
+`features.runtimeInjection=false`, `enforce.systemConstitution=false`, and
+`enforce.executeVerification=false`; default developer MCPs were only
+`grep_app`/`context7`; CodeGraph and LSP remained opt-in; no `.codegraph`
+auto-init occurred.
+
+The stable registry smoke also verified `--runtime-injection-preview`,
+`--strict`, CodeGraph/LSP opt-in unavailable facades, P-minus paired consistency
+lowering aggregate-lower/paired-inconsistent evidence to `keep-gathering`,
+instruction infer/adopt/check drift detection after adoption, read-only
+report/status/metrics surfaces, `workflow tdd` exit 0, and incomplete strict
+`workflow finish implement` exit 1.
+
+`0.5.0` also includes the P-minus aggregate-vs-paired interpretation cleanup:
+aggregate-lower provider-token evidence with weak paired consistency remains
+descriptive local evidence and lowers the decision hint to `keep-gathering`
+rather than a token-saving claim.
+
+Historical next-channel package: `0.5.0-rc.2` previously lived under npm
+dist-tag `next`. It packaged the gate-first runtime injection downgrade and was
+the final release candidate before stable prep; current `next` is
+`0.6.0-rc.3`.
+
+`0.5.0-rc.1` already exists in npm and the remote `v0.5.0-rc.1` tag points at
+the prior wrong-channel commit `dcc34e071d167923b8cf40be095b303ba649d3ca`.
+Because npm package versions are immutable, the corrected gate-first release
+target advances to `0.5.0-rc.2`.
+
+Post-publish registry verification for `0.5.0-rc.2` confirmed gitHead
+`64696dce6daf5e4501609648f3ceb9acb830db87`, shasum
+`a09d6e84f368befddfc7193308ac4912568c4557`, and dist-tags
+`latest=0.4.0`, `next=0.5.0-rc.2`, `alpha=0.3.9-alpha.8`. The
+`v0.5.0-rc.2` tag was created only after registry gitHead/shasum verification
+and points at the same gitHead locally and remotely. The tag-triggered GitHub
+Release workflow succeeded, including GitHub release creation, and the GitHub
+release is marked prerelease.
+
+Fresh registry smoke installed `persona-harness@next` as `0.5.0-rc.2` and
+verified the packaged logo, rc2 release notes, default gate-first bootstrap
+config, and explicit runtime-injection preview opt-in config. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc050-rc2-registry-smoke-20260702T090723Z`.
+
+The `0.5.0-rc.2` prep is justified by the accepted 10-pair local-current
+OpenCode A/B result: PH OFF and PH ON both succeeded 10/10, but PH ON increased
+measured provider-token totals, read chars, tool calls, and elapsed time in all
+10 pairs for that fixture set. The release message is gate-first and
+default-off; it is not a token-saving, provider-token saving, product-efficacy,
+navigation-benefit, app-quality, broad reliability, or closure-guarantee claim.
+
+Registry `next` briefly moved to a superseded `0.5.0-rc.1` build; that is
+treated as a wrong-channel/version incident, not an accepted release record.
+
+Post-publish registry verification for `0.4.1-rc.2` confirmed gitHead
+`bcb5f08cc7c0c99ac07ca3e93d04b3b35b7a1f70`, shasum
+`ab59b9d7e7689cdff6f997ae956edd2c3d3ab6b1`, and dist-tags
+`latest=0.4.0`, `next=0.4.1-rc.2`, `alpha=0.3.9-alpha.8`. The
+`v0.4.1-rc.2` tag was created only after registry gitHead/shasum verification
+and points at the same gitHead locally and remotely. The tag-triggered GitHub
+Release workflow succeeded, including GitHub release creation.
+
+External registry-only smoke installed `persona-harness@next` as
+`0.4.1-rc.2` and verified basic CLI help/version/init/doctor/bootstrap, the
+explicit-write `ab-run` recorder, read-only `ab-report` and `pminus-report`
+consumption of generated evidence, all expected P-minus outcome/hint
+categories, and no mutation outside explicit `.persona/evidence/ab/<scenario>/`
+files. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc041-rc2-registry-package-runtime-20260702T022527Z`.
+
+Post-publish registry verification for `0.4.1-rc.1` confirmed gitHead
+`9d80e9c7f63986a3223901e9fe54550e86b8b425`, shasum
+`fbcc0cc5617d616983a48d3d20b51afe74de0b01`, and dist-tags
+`latest=0.4.0`, `next=0.4.1-rc.1`, `alpha=0.3.9-alpha.8`. The
+`v0.4.1-rc.1` tag was created only after registry gitHead verification and
+points at the same gitHead locally and remotely. The tag-triggered GitHub
+Release workflow succeeded after the checkout fix.
+
+External registry-only smoke installed `persona-harness@next` as
+`0.4.1-rc.1` and did not use the superseded `0.5.0-rc.1` package. It verified
+basic CLI help/version/init/doctor/bootstrap, instruction infer/adopt/check,
+read-only evidence metrics and `ab-report`, the default remote-only developer
+MCP bundle with `--codegraph-preview` opt-in, service-state,
+Controller→Repository, Spring bootJar, read-only `workflow tdd`, and LSP preview
+unavailable facade surfaces. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc041-rc1-registry-package-runtime-20260702T010930Z`.
+
+The `0.4.1-rc.1` smoke is registry package/runtime evidence only. It does not
+move `latest`, prove token saving/provider-token saving, product
+efficacy/navigation benefit, app quality, full TDD/test sufficiency, default
+CodeGraph/LSP effectiveness, broad reliability, closure guarantee, Codex
+support, or code-nav replacement.
+
+`0.4.1-rc.2` inherits those claim boundaries and adds no automatic
+downgrade/removal behavior. The A/B recorder and P-minus report are evidence
+generation/reporting surfaces only; they do not prove token saving,
+provider-token saving, product efficacy, navigation benefit, app quality, full
+TDD/test sufficiency, CodeGraph/LSP effectiveness, broad reliability, closure
+guarantee, Codex support, or code-nav replacement.
+
+Current stable package: official `0.4.0` remains published under `latest`.
+Registry `latest` points at gitHead
+`af51e8afa3bdb41e3eb3a2abf003d95bfa7c6055` with shasum
+`45e3b49d162eeed6d9bc443b5b44508c1e956ebf`; `alpha` remains
+`0.3.9-alpha.8`. The `v0.4.0` tag points at the same gitHead after registry
+verification.
+
+`0.4.0` packages the verified workflow rail/product surfaces:
+
+- workflow rails, evidence traces, continuation/report lifecycle, and finish
+  gates;
+- opt-in TDD rail plus read-only `ph workflow tdd`;
+- precise conformance blockers including Controller→Repository and
+  `service.state-ownership`;
+- read-only `ph evidence metrics [--json]`;
+- default developer MCP bundle package surfaces;
+- opt-in LSP MCP wrapper with missing-dependency unavailable facade and proxy
+  guard.
+
+External latest registry smoke installed `persona-harness@latest` as `0.4.0`
+and verified the registry package/runtime surface: basic CLI clean
+install/help/init/doctor/bootstrap, default developer MCP bundle, opt-in TDD
+rail plus read-only `ph workflow tdd`, precise `service.state-ownership`,
+read-only `ph evidence metrics [--json]`, and opt-in LSP MCP wrapper unavailable
+facade/proxy guard. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/v040-latest-registry-package-runtime-20260701-221728`.
+
+The official release still does not claim token saving/provider-token saving,
+app/product quality, full TDD framework/test sufficiency, LSP effectiveness or
+real Java LSP tool-call evidence, broad AST/linter behavior, broad reliability,
+closure guarantee, generated app certification, Codex support, or code-nav
+relabeling/replacement.
+
+Previously, `0.4.0-rc.10` was published under `next` for the P6 opt-in OpenCode
+LSP MCP wrapper package/runtime surface.
+
+`0.4.0-rc.10` packages the P6 LSP MCP wrapper after rc9:
+
+- opt-in `ph bootstrap backend --lsp-preview`;
+- root bin `ph-lsp-mcp` and package `packages/lsp-mcp`;
+- missing dependency unavailable facade exposing `lsp_status` only;
+- proxy guard requiring both an upstream LSP MCP and Java LSP before proxying
+  symbol/definition/reference-style calls.
+
+This rc10 prep has no real Java LSP tool-call observation, no default LSP
+registration, no A/B or effectiveness claim, no fake symbol/definition/reference
+results, and no Codex support claim.
+
+Post-publish registry verification confirmed shasum
+`f00f78e578a4b89390ffb8a91c907bf5033189c7`; `v0.4.0-rc.10` points at the same
+gitHead after registry verification. External registry-only smoke installed
+`persona-harness@next` as `0.4.0-rc.10` and verified the registry package
+entries/root `ph-lsp-mcp`, default no-LSP bootstrap, opt-in
+`--lsp-preview --no-developer-mcp` registration with config preservation,
+missing-dependency unavailable facade, and proxy guard with fake binaries.
+Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc10-registry-lsp-mcp-20260701-220032`.
+This is registry package/runtime surface and guard-mechanics evidence only:
+OpenCode connected means protocol-alive wrapper/facade, not real Java LSP
+capability, default LSP behavior, A/B effectiveness, token saving, product
+quality, code-nav replacement, Codex support, broad reliability, or closure
+guarantee.
+
+Previously, `0.4.0-rc.9` packaged the P1.5/P2/P3/P4 workflow rail delivery
+after rc8:
+
+- read-only `ph workflow tdd` status helper;
+- scoped `service.state-ownership` Java/Spring service-architecture blocker;
+- read-only `ph evidence metrics [--json]`.
+
+Post-publish registry verification confirmed shasum
+`7bd42b00d669275b0995d37ec108cbb28b8b66b8`; `v0.4.0-rc.9` points at the same
+gitHead after registry verification. External registry-only smoke installed
+`persona-harness@next` as `0.4.0-rc.9` and verified read-only `workflow tdd`,
+TDD rail regressions, precise `service.state-ownership`, and read-only
+`evidence metrics` behavior. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc9-registry-package-runtime-20260701-205115`.
+This is registry package/runtime surface evidence only: it does not move
+`latest`, certify generated app quality, provide a full TDD framework, add a
+broad AST/linter product, prove token saving/product efficacy, or claim
+model/OpenCode/eval evidence.
+
+`0.4.0-rc.8` packages `b5d98e1286c5a7f0349af8a461efdf2ce84a653e`
+(`feat(cli): add tdd workflow rail`) plus the release-prep docs. Post-publish
+registry verification confirmed shasum
+`fc4de25901d4c678799ea66b8e63293dc5f46a12`; `v0.4.0-rc.8` points at the same
+gitHead after registry verification.
+
+Post-rc5 local/origin docs and preview work may include later commits such as
+R1 injection/prose cleanup, the code-nav CLI/package preview, and token proxy
+measurement notes. Treat those as local/current HEAD or fresh local-tarball
+evidence only unless a later registry publish verifies the same gitHead. Ignored
+`.persona/evidence` measurement data may be cited as measurement evidence, but
+it is not part of the npm package surface.
+
+Rc6 packages and registry-smokes the verified code-nav package-surface sequence:
+minimal stdio MCP protocol server plus opt-in `.opencode/opencode.json`
+registration through `npx ph bootstrap backend --code-nav-preview`. Default
+bootstrap still has no code-nav registration. This is registry package-surface
+and protocol-surface evidence only: not model/OpenCode/eval or native-dispatch
+evidence, not token-saving/product-efficacy evidence, and not codegraph
+replacement.
+
+Post-rc6 local/current tarball smoke at
+`38f4e8b1100bd6812212d4d5dfbebbef4d2b10eb` verified an OpenCode local MCP
+newline transport compatibility fix: direct framed JSON-RPC and
+newline-delimited JSON-RPC both worked, and `opencode mcp list --pure` connected
+to `persona-harness-code-nav` from the opt-in generated config. This is local
+tarball compatibility evidence only until a later registry publish verifies the
+same gitHead; it is not a token-saving or product-efficacy claim.
+
+Post-rc6 parser/guidance hardening at `f93d52d` and
+`e52f73f3c3cdb36866d74aecb39757cdf520d0ee` is repo-only measurement hygiene:
+code-nav metrics now distinguish actual JSON tool-name field calls from
+prose/free-text mentions of namespaced OpenCode MCP tools. It improves
+measurement accuracy and discoverability language; it is not natural-adoption,
+token-saving, navigation-benefit, or product-efficacy evidence.
+
+Post-rc6 R1 token telemetry at
+`163a85e0433f6d713afa3f619b3cc6b2d2bcf100` is local/current tarball
+measurement infrastructure only: installed runtime writes
+`.persona/evidence/token-usage/<safe-session-key>.json` from `message.updated`
+assistant events, with latest-per-message dedupe, session aggregate, known
+model-limit ratio, unknown-limit reason, and `telemetry.tokenUsage=false`
+opt-out. It is not registry `@next` behavior until a later publish verifies that
+gitHead, and it is not token-saving, provider-token-saving, product-efficacy, or
+compaction-effectiveness evidence.
+
+Post-rc6 R2 compaction trigger at
+`a0116785e7e013154c4e4c8a75b4d87515fce828` is local/current tarball trigger
+mechanics only: `enforce.compaction` is default-off, evaluates measured R1 token
+ratio, calls `session.summarize` only when opt-in threshold/cooldown data permit,
+and writes `token-compaction.1` evidence with `afterMeasurement.measured=false`.
+It is not registry `@next` behavior until a later publish verifies that gitHead,
+and it is not compaction-effectiveness, token-saving, provider-token-saving, or
+product-efficacy evidence.
+
+Post-rc6 external OpenCode CodeGraph preview at
+`6e69ca3e78b8664384c83221297f336d4c7f9c8c` is local/current tarball
+config-surface evidence only: default bootstrap does not register CodeGraph,
+missing-binary `--codegraph-preview` skips with guidance, and present-binary
+`--codegraph-preview` registers OpenCode `mcp.codegraph` with
+`["codegraph","serve","--mcp"]` without creating `.codegraph`. It is external,
+optional, OpenCode-only, and not registry `@next` behavior until a later publish
+verifies that gitHead. It is not PH-owned codegraph, OMO parity/replacement,
+Codex support, real CodeGraph MCP connection evidence, or token-saving evidence.
+
+R-CG.2 later proved a real external OpenCode CodeGraph MCP tool call
+(`codegraph_codegraph_explore`, canonical `codegraph_explore`) with
+`@colbymchenry/codegraph@1.1.6` and explicit `codegraph init`, but the bounded
+Java/Spring A/B was worse with CodeGraph ON: ON used 1 CodeGraph call, 70,826ms,
+11 reads, 34,180 read chars, and provider total/cacheRead 309,411 / 224,768
+versus OFF 0 calls, 52,746ms, 3 reads, 11,080 read chars, and
+68,648 / 30,720. This is an exact-scenario PARTIAL/defer measurement, not a
+token-saving, provider-token, product-efficacy, navigation-benefit, PH-owned
+codegraph, OMO parity/replacement, Codex support, or auto-init claim.
+
+Post-rc6 default developer MCP bundle at
+`a9dcf044ff423fc4b94e549d365febe0844ab960` is local/current tarball
+package-runtime surface evidence only, not registry `@next` behavior until a
+later publish verifies that gitHead. Default init/bootstrap registers remote
+`grep_app`, remote `context7`, and a local PH `codegraph` wrapper, with no fake
+`git_bash`/`lsp` OpenCode MCP surfaces and no `.codegraph` auto-init.
+`--no-developer-mcp`, `--no-codegraph`, `--codegraph-preview`, and config
+preservation passed. The missing-binary CodeGraph wrapper stays protocol-alive
+as an unavailable facade: `tools/list` is status-only, `tools/call status` and
+unknown tools return `isError:true` unavailable payloads, no fake indexed/search
+tools are exposed, and stderr is clean. `opencode mcp list --pure` showing
+CodeGraph connected means the wrapper/facade connected, not usable indexing or
+effectiveness. This is not token-saving, provider-token, product-efficacy,
+navigation-benefit, PH-owned CodeGraph, OMO parity/replacement, Codex support,
+generated app certification, broad reliability, or closure guarantee evidence.
+
+`0.4.0-rc.7` packages that default developer MCP bundle for the next channel.
+Post-publish registry verification confirmed gitHead
+`640b8d3833e8de12657cdebf4ff0bc2877878c6d`, shasum
+`9d6cb2167fbbf5aa3bdb925b4ec2b6d3652ccd07`, and dist-tags
+`next=0.4.0-rc.7`, `latest=0.3.9-alpha.8`, `alpha=0.3.9-alpha.8`.
+Registry-only package-surface smoke installed `persona-harness@next` as
+`0.4.0-rc.7` and passed for default developer MCP bundle package/runtime
+surface: package entries/bin metadata, default `grep_app`/`context7`/PH
+`codegraph` wrapper registration, `--no-developer-mcp`, `--no-codegraph`,
+config preservation, no `.codegraph` auto-init, and the missing-binary
+CodeGraph unavailable facade. `opencode mcp list --pure` showing `codegraph`
+connected is protocol-alive facade evidence only, not usable indexing or
+effectiveness.
+
+Post-rc7 TDD Workflow Rail at
+`b5d98e1286c5a7f0349af8a461efdf2ce84a653e` is opt-in package-runtime behavior:
+`enforce.tdd` is default-off; `ph workflow test` records red evidence only from
+PH-run strict Gradle/JUnit testcase failures; compile/no-JUnit failure and JUnit
+`<error>` do not count as red; and archive/finish can hard-block until the same
+ticket/test id has red evidence followed by PH-observed green evidence. Fresh
+local/current tarball smoke passed for strict-off advisory, valid red,
+invalid-red rejection, hand-written minimal evidence rejection, and red-to-green
+archive/finish.
+
+`0.4.0-rc.8` publishes that TDD Workflow Rail under `next`. External
+registry-only smoke installed `persona-harness@next` as `0.4.0-rc.8` from
+registry gitHead `18a9bb2f4a9706e4115ffff5d9e864934cd9f0bd` and verified:
+package entries `dist/cli/workflow-tdd.js` and
+`dist/cli/closure-verification-runner.js`, default `tdd:false`, strict-off
+advisory with no fake evidence, valid PH-run Gradle/JUnit red evidence,
+invalid-red rejection for compile/no-JUnit failure and JUnit `<error>`,
+green-only/no-red and hand-written forged evidence blocking with
+`tdd-red-evidence-missing`, and red-to-green check/archive/finish PASS for the
+same ticket/test id. Archive:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/rc8-registry-tdd-workflow-rail-20260701-193324`.
+This is registry package/runtime surface evidence only, not model/OpenCode/eval
+evidence, and not test-sufficiency, product-quality, full TDD framework,
+scaffolding, coverage, mutation-testing, generated-app certification, broad
+reliability, or closure-guarantee evidence.
+
+`docs/evidence-reviews/` is a documentation taxonomy area for observations and
+review records. It is not a published `evidence-review` package, not a dist-tag,
+and not a separate release channel.
+
+Previous published package line `0.4.0-rc.4` covered the GUARD
+Phase 0-3/runtime hook refresh before `next` moved to rc5. It was a
+next-channel prerelease vehicle for scoped product enforcement behavior,
+including BYO ast-grep observe alignment and runtime hook guard levers, not
+stable `0.4.0`.
+
+Old `0.4.0-rc.1` prep commit `5edb535` remains stale historical context and must
+not be reused. The fresh RC prep must be based on current HEAD/docs.
+
+Alpha8 packages the code-level convergence after QA no-token convergence PASS.
+The first current-tarball implementation-to-finish trial was blocked by remote
+SSH/SCP/PowerShell instability, not classified as Persona Harness PASS or FAIL.
+The later registry alpha8 implementation-to-finish product usability trial
+passed once under closure-state routing.
+
+Channel policy: `@alpha` is the current tester/product smoke channel. `latest`
+is now observed at `0.3.9-alpha.8`, but that should not be read as eval proof,
+generated-app quality certification, or a general reliability guarantee.
+Publish this RC with `next`, not `latest`. Future `latest` moves still need an
+explicit release/dist-tag task because default install can imply a stronger
+stability or value-proof claim than this evidence supports.
+
+RC soak policy: rc5 is published under `next` only; `latest` remains
+`0.3.9-alpha.8` unless HQ explicitly approves a stable/default-channel move.
+The local `@next` implementation-to-finish proxy trial passed, but Windows SSH
+remote validation was blocked by SCP/SSH instability before product behavior.
+Windows local operator direct PowerShell no-model closure surface validation now
+passes for rc1 `@next`, including Korean preservation and strict blocked finish
+state. Stable `0.4.0` still requires real external user feedback/soak and any
+desired Windows implementation-to-finish/model route; SSH/SCP remote validation
+remains unsuitable because of instability/mojibake risk. Proxy feedback from the
+existing trial marked the workflow rail helpful, did not request `closure run`,
+and left report consistency/noise as a soak watch item.
+
+Post-rc1 current HEAD adds `002359c fix(cli): reject lossy Windows stdin
+mojibake`. The rc1 Windows implementation trial showed that PowerShell 5.x
+`Get-Content -Raw` can corrupt UTF-8 no-BOM Korean before Persona Harness sees
+stdin; once `?` replacement exists, the CLI cannot recover the original text.
+Use `Get-Content -LiteralPath <path> -Raw -Encoding UTF8 | npx ph workflow draft --stdin`
+or the same form for `workflow capture --stdin`. This guard is not in the
+published rc1 registry package unless a future package includes it, and it is a
+corruption-prevention fix only, not eval proof or generated app certification.
+
+Current-head `002359c` Windows SSH focused continuation is PARTIAL/BLOCKED, not
+an implementation-to-finish PASS. The existing D-drive workspace was reachable
+and Korean/stdin was no longer the blocker. After repairing a missing
+`junit-platform-launcher` test runtime dependency, bearshell `gradlew.bat test`
+and build passed, and source scan did not show fake Gradle shim, Java
+`HttpServer`, CommonJS, or Express bypasses. However OpenCode hung during a
+build bearshell closure step, reports stayed template, `req-1` stayed pending,
+and final `workflow finish implement` exited 1. Stable `0.4.0` remains deferred;
+future Windows validation should use a less script-heavy TUI/operator route
+because the current automation/PowerShell/SSH path may overfit validation
+mechanics.
+
+That less-script-heavy Windows operator route is not validated yet. A fresh
+D-drive current-tarball run installed `0.4.0-rc.1` and passed
+init/doctor/bootstrap, but blocked before model: Korean preservation failed even
+with the guide's `Get-Content ... -Encoding UTF8` pipe, the resulting
+requirements `Original idea` became `??? ? ? API ???`, and the guide's
+`workflow approve requirements` / `workflow split` / `workflow next` commands
+did not match the installed CLI surface in that run. Stable `0.4.0` remains
+deferred until the guide/current CLI surface and Windows validation route are
+corrected and reverified.
+
+Current HEAD `e688d39 fix(cli): guard lossy Windows stdin and pack stale dist`
+addresses the two blockers from that run without changing the release boundary:
+`workflow draft/capture --stdin` now rejects unrecoverable question-mark input
+such as `??? ? ? API ???` before writing requirements, while normal Korean UTF-8
+stdin and the existing `媛...???` mojibake guard remain intact. It also adds
+`prepack: npm run build` so local `npm pack` tarballs do not carry stale `dist`,
+which can make current guide commands appear missing. This is a current
+HEAD/future package fix; published `0.4.0-rc.1 @next` may not include it until a
+new release, and it does not repair already corrupted artifacts.
+
+The `e688d39` Windows operator retry then confirmed preflight progress but still
+blocked before app output. A fresh current HEAD tarball on Windows D-drive had
+the current command surface, rejected lossy `??? ? ? API ???` stdin without
+writing requirements, preserved Korean `간단한 할 일 API 만들래` with UTF-8
+PowerShell encoding variables, and passed the no-token workflow draft/approve/
+split/next/continue/check/closure status/next path. OpenCode started and read
+workflow/profile/planner context, but README was absent and a malformed
+duplicated `.persona/policies` path hit `external_directory` auto-reject; no
+`src` or Gradle files were generated, reports stayed template, ticket stayed
+pending, and final `workflow finish implement` exited 1. This is preflight PASS
+and implementation-to-finish NOT PASS; stable `0.4.0` remains deferred.
+
+Current HEAD `a307ac0 fix(cli): guide README-absent workflow entry` addresses
+the CLI-owned part of that blocker. The duplicated `.persona/policies` absolute
+path was not found in CLI/operator prompt output and appears likely
+model/operator generated, but README-absent workspaces still needed clearer
+rail guidance. `workflow implement`, `workflow continue`, and
+`plan --implement` now route agents to repo-relative source-of-truth files:
+`.persona/project-profile.jsonc`, `.persona/policies/overlay.jsonc`,
+`.persona/workflow/plan.md`, and the current ticket / requirements source.
+README-present projects keep README chunk guidance. This reduces entry/context
+ambiguity only; it is not model follow-through proof or a closure guarantee.
+
+The `a307ac0` Windows operator retry confirmed that previous input/packaging
+and README-absent path blockers improved: fresh tarball preflight had the
+current command surface, rejected lossy `???` stdin, preserved Korean, passed
+no-token workflow/closure preflight, observed README-absent guidance, and did
+not repeat the duplicated `.persona/policies` path. It still did not reach
+implementation-to-finish PASS. OpenCode read `.persona/policies/overlay.jsonc`
+but generated no app output or `src` / Gradle files; the model filled reports,
+ran report-filled, and archived `step-1` anyway. Final
+`workflow finish implement` exited 1 on `STACK_MISMATCH` plus pending
+`step-2/3/4`. The finish gate correctly blocked, but report-filled/archive
+integrity before real implementation/evidence is now the next blocker. Stable
+`0.4.0` remains deferred.
+
+Current HEAD `8660ef3 fix(cli): guard ticket archive on closure blockers`
+addresses the archive side of that blocker without turning report markers into
+quality gates. `plan --report-filled` remains a report marker. `workflow archive
+<ticket>` now reads closure state and exits 1 instead of moving work to history
+when non-ticket blockers remain, including `verification-unknown`,
+`evidence-missing`, `report-coverage-missing`, and stack / verification / report
+blockers. Pending-ticket and history-repair blockers are not treated as archive
+blockers. Reports marked filled without app/evidence/verification now leave the
+backlog/work ticket pending.
+
+The `8660ef3` Windows operator retry then verified that integrity guard in a
+fresh tarball smoke:
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-8660ef3-windows-operator-retry-20260629-221043/RESULT.md`.
+Preflight passed; no-app/no-evidence `workflow archive step-1` exited 1 with
+`verification-unknown`, `implementation-report-missing`, and
+`review-report-missing`; and `workflow next` kept `step-1` current. After
+OpenCode generated a minimal Java/Spring/Gradle skeleton and evidence made
+verification passed, `step-1` moved to history. Final finish remained blocked
+because `step-2`, `step-3`, and `step-4` were still pending, so this is
+INTEGRITY-PASS/PARTIAL rather than stable readiness.
+
+Current HEAD `0784135 fix(cli): block controller repository closure` adds the
+first scoped hard convention blocker. The existing observer signal
+`controller.repository-dependency` is promoted to workflow closure blocker
+`architecture-controller-repository-direct-dependency` for ready Java/Spring
+service-layer profiles when typed evidence can name the Controller, Repository,
+source file, and direct dependency. The violation is surfaced/blocked through
+`workflow check`, `workflow closure next --json`, `workflow continue`, `workflow
+finish implement`, and `workflow archive <ticket>`, with remediation to route
+the Controller through a Service layer. Compliant Controller -> Service ->
+Repository paths do not produce the architecture blocker. Other backend-shape
+WARNs remain report-only; this is not broad architecture correctness
+enforcement.
+
+Current HEAD `1c304e412093dd0621d911ce379ef3f66ea7f224` has GUARD Phase 0-3
+plus BYO ast-grep observe alignment package-surface smoke PASS on fresh current
+tarballs, not published registry `@next` evidence until rc3 is published and
+verified. The original GUARD Phase 0-3 package-surface archive is
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-7fda771-guard-package-surface-smoke-20260630-001558`;
+tarball shasum `b703953aab409f1cd7ac578c5af76b3d3e42cf90`, sha256
+`2155ac28c48367c85d2a4163ba56ecea5dd1842b1d0e0935313c665ab9d55b7c`. QA
+reported focused 134 tests PASS, full `npm test` 70 files / 486 tests PASS,
+typecheck/build/product smoke/built CLI smoke PASS. Phase 0 is opt-in direct
+verification via `.persona/harness.jsonc` `enforce.executeVerification: true`
+for the supported Java/Spring/Gradle slice; PH-run direct `gradlew test`/JUnit
+evidence is authoritative and fake agent-written passed evidence is not. Phase 1
+adds `report|warn|block`; only block level hard-blocks. Phase 2 is warning-only
+write guard fallback because hard deny/rewrite is unsupported by the current hook
+result type. Phase 3 centralizes convention id/default level/blocker/fix path in
+the registry. `a9bf926` adds BYO `.persona/conventions/*.yml` ast-grep preview;
+`1c304e4` aligns `ph observe --json` with check/closure/continue for
+`controller.persistence-import`. The observe-alignment archive is
+`/Users/yongtae/Desktop/persona-harness-artifacts/archive/2026-06-24-desktop-persona-runs/current-head-1c304e4-ast-grep-observe-resmoke-20260630-100023`;
+tarball shasum `5f1047f47fb07fda7dce3d8b9cc58f7557a46dec`, sha256
+`e25571678cd53db525f2af8796f0270c707127bb5355feb0b32640eced0dc566`.
+
+- [Release checklist](release-checklist.md)
+- [Release notes template](release-notes-template.md)
+- [GitHub Actions release automation](github-actions-release-automation.md)
+- [v0.3.0-alpha.3 candidate](v0.3.0-alpha.3-candidate.md)
+- [v0.3.0-alpha.3 demo packaging decision](v0.3.0-alpha.3-demo-packaging-decision.md)
+- [v0.3.0-alpha.3 release notes](v0.3.0-alpha.3-release-notes.md)
+- [v0.3.1-alpha.0 release notes](v0.3.1-alpha.0-release-notes.md)
+- [v0.3.2-alpha.0 release notes](v0.3.2-alpha.0-release-notes.md)
+- [v0.3.2-alpha.1 release notes](v0.3.2-alpha.1-release-notes.md)
+- [v0.3.2-alpha.2 release notes](v0.3.2-alpha.2-release-notes.md)
+- [v0.3.6-alpha.0 release notes](v0.3.6-alpha.0-release-notes.md)
+- [v0.3.6-alpha.1 release notes](v0.3.6-alpha.1-release-notes.md)
+- [v0.3.7-alpha.1 release notes](v0.3.7-alpha.1-release-notes.md)
+- [v0.3.8-alpha.0 release notes](v0.3.8-alpha.0-release-notes.md)
+- [v0.3.8-alpha.1 release notes](v0.3.8-alpha.1-release-notes.md)
+- [v0.3.8-alpha.2 release notes](v0.3.8-alpha.2-release-notes.md)
+- [v0.3.8-alpha.3 release notes](v0.3.8-alpha.3-release-notes.md)
+- [v0.3.8-alpha.4 release notes](v0.3.8-alpha.4-release-notes.md)
+- [v0.3.8-alpha.5 release notes](v0.3.8-alpha.5-release-notes.md)
+- [v0.3.9-alpha.0 release notes](v0.3.9-alpha.0-release-notes.md)
+- [v0.3.9-alpha.1 release notes](v0.3.9-alpha.1-release-notes.md)
+- [v0.3.9-alpha.2 release notes](v0.3.9-alpha.2-release-notes.md)
+- [v0.3.9-alpha.3 release notes](v0.3.9-alpha.3-release-notes.md)
+- [v0.3.9-alpha.4 release notes](v0.3.9-alpha.4-release-notes.md)
+- [v0.3.9-alpha.5 release notes](v0.3.9-alpha.5-release-notes.md)
+- [v0.3.9-alpha.6 release notes](v0.3.9-alpha.6-release-notes.md)
+- [v0.3.9-alpha.7 release notes](v0.3.9-alpha.7-release-notes.md)
+- [v0.3.9-alpha.8 release notes](v0.3.9-alpha.8-release-notes.md)
+- [v0.4.0-rc.1 release notes](v0.4.0-rc.1-release-notes.md)
+- [v0.4.0-rc.2 release notes](v0.4.0-rc.2-release-notes.md)
+- [v0.4.0-rc.3 release notes](v0.4.0-rc.3-release-notes.md)
+- [v0.4.0-rc.4 release notes](v0.4.0-rc.4-release-notes.md)
+- [v0.4.0-rc.5 release notes](v0.4.0-rc.5-release-notes.md)
+- [v0.4.0-rc.6 release notes](v0.4.0-rc.6-release-notes.md)
+- [v0.4.0-rc.7 release notes](v0.4.0-rc.7-release-notes.md)
+- [v0.4.0-rc.8 release notes](v0.4.0-rc.8-release-notes.md)
+- [v0.4.0-rc.9 release notes](v0.4.0-rc.9-release-notes.md)
+- [v0.4.0-rc.10 release notes](v0.4.0-rc.10-release-notes.md)
+- [v0.4.0 release notes](v0.4.0-release-notes.md)
+- [v0.4.1-rc.1 release notes](v0.4.1-rc.1-release-notes.md)
+- [v0.4.1-rc.2 release notes](v0.4.1-rc.2-release-notes.md)
+- [v0.5.0-rc.1 release notes](v0.5.0-rc.1-release-notes.md)
+- [v0.5.0-rc.2 release notes](v0.5.0-rc.2-release-notes.md)
+- [v0.5.0 release notes](v0.5.0-release-notes.md)
+- [v0.6.0-rc.1 release notes](v0.6.0-rc.1-release-notes.md)
+- [v0.6.0-rc.2 release notes](v0.6.0-rc.2-release-notes.md)
+- [v0.6.0-rc.3 release notes](v0.6.0-rc.3-release-notes.md)
+- [v0.6.0-rc.4 release notes](v0.6.0-rc.4-release-notes.md)
+- [v0.6.0 release notes](v0.6.0-release-notes.md)
+- [v0.7.0-rc.3 release notes](v0.7.0-rc.3-release-notes.md)
+- [v0.7.0-rc.2 release notes](v0.7.0-rc.2-release-notes.md)
+- [v0.7.0-rc.1 release notes](v0.7.0-rc.1-release-notes.md)
+- [v0.7.0 release notes](v0.7.0-release-notes.md)
+- [v0.8.0-beta.1 release notes](v0.8.0-beta.1-release-notes.md)
+- [v0.8.0-beta.2 release notes](v0.8.0-beta.2-release-notes.md)
+- [v0.8.0-beta.3 release notes](v0.8.0-beta.3-release-notes.md)
+- [v0.7.0-rc.8 release notes](v0.7.0-rc.8-release-notes.md)
+- [v0.3.6 workflow ticket backlog](../v0.3.6-workflow-ticket-backlog.md)
+- [v0.3.6 requirements draft workflow](../v0.3.6-requirements-draft-workflow.md)
+
+Release verification and explicit manual GitHub release-note automation live in
+`.github/workflows/release.yml`. Npm publishing lives in
+`.github/workflows/publish.yml`; see
+[`npm-trusted-publishing-runbook.md`](npm-trusted-publishing-runbook.md).
+
+- Tag pushes do not trigger GitHub Release creation.
+- Create GitHub release notes only through the manual `Release` workflow with
+  the explicit `ga-approved` scope and an existing stable tag that passes its
+  fixed protected-main policy.
+- Publish npm packages from `.github/workflows/publish.yml` after QA release GO
+  with a fixed channel, matching approval scope, and an existing immutable tag
+  that exactly matches the protected-main package version.
+- Release-candidate packages first use `staging` with `staging-only`; moving a
+  verified immutable prerelease to `next` requires a later separate
+  `next-promotion-approved` dispatch.
+- Stable packages use `latest` only with a separately approved `ga-approved`
+  dispatch.
+- The publish workflow verifies docs, injection-value, typecheck, tests, build,
+  product smoke, and package dry-run before npm publish.
+- The publish workflow uses npm Trusted Publishing/OIDC; no `NPM_TOKEN` secret
+  is required for the trusted path.
+- The manual workflow checks that the supplied existing tag matches
+  `package.json` version.
+- The manual workflow generates the GitHub Release body from
+  `docs/current/release/v<version>-release-notes.md`.
+- The publish workflow verifies protected workflow source/tag preflight plus
+  registry dist.shasum, SRI, downloaded tarball SHA-256, portable content
+  identity, and dist-tag state after publish without claiming exact artifact
+  provenance before the separate staged producer/audit route.
+- The matching immutable git tag is a precondition for a publish; the workflow
+  never creates or moves it.
+- Tag pushes do not run real `npm publish` or create GitHub releases.
+- GitHub release notes are generated from repository release notes only for
+  manually approved stable releases.

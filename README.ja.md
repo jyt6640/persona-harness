@@ -24,7 +24,7 @@
 > AI エージェントは「完了しました！」と言いたがります — Persona Harness はそれを証明させます。必要な report、PH が生成した evidence、実際のテスト結果がディスク上に存在するまで完了主張をブロックするローカル CLI 完了ゲートです。
 
 > [!IMPORTANT]
-> **Alpha, gate-first, 測定ベース。** Stable: `persona-harness@latest=0.6.0`（`next=0.6.0-rc.4`）。runtime injection は accepted 10-pair fixture で **negative** と測定されたため、runtime guidance は **default-off / opt-in** であり、プロダクトの中心ではありません。[`injection-value-status.json`](docs/current/injection-value-status.json) を参照。PH の主張は狭い範囲です: **明示的に定義された evidence gate と決定論的違反に対して、未検証の完了をブロックする。**
+> **Alpha, gate-first, 測定ベース。** ライブの registry チャネル、タグ、GitHub リリース、audit lifecycle の事実は governed registry と audit record に保持されます。source documentation は自身の preparation boundary だけを記録します。runtime injection は **default-off / opt-in** です。[`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md)、[`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md)、[`injection-value-status.json`](docs/current/injection-value-status.json) を参照してください。
 
 ## 測定された動作 (Measured Behavior)
 
@@ -152,7 +152,7 @@ Evidence は一つの質問にのみ答えます — *「エージェントは�
 - **新規ユーザー** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
 - **インストール & バックエンド形状** → [MVP インストールガイド](docs/current/java-backend-mvp-install-guide.md)
 - **コントリビューター** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- **リリース & 測定** → [v0.6.0 カプセル](docs/releases/v0.6.0/README.md) · [パッケージインデックス](docs/releases/package-index.md) · [docs/current](docs/current/README.md) · [Changelog](CHANGELOG.md)
+- **リリース & 測定** → [リリース運用](docs/current/release/README.md) · [バージョン別リリース文書](docs/releases/README.md) · [パッケージインデックス](docs/releases/package-index.md) · [Changelog](CHANGELOG.md)
 
 ## コントリビュート
 

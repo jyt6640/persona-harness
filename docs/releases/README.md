@@ -1,49 +1,47 @@
 # Versioned Release Docs
 
-Versioned release docs preserve facts that should not drift as `docs/current/`
-changes during roadmap work.
+This directory preserves version facts that must not drift while current
+planning changes. It is a history and evidence catalog, not live registry
+state or release authorization.
+
+## Start Here
+
+- [Package/version index](package-index.md) is the chronological version map.
+- [Release operations](../current/release/README.md) is the current operator
+  entrypoint, including the recorded channel snapshot and immutable-tag policy.
+- [`v0.8.1` release notes](../current/release/v0.8.1-release-notes.md) record
+  the latest stable release source and GitHub release facts.
+- [`v0.8.0` release notes](../current/release/v0.8.0-release-notes.md) record
+  the preceding stable release.
+- [`v0.8.0-rc.1` release notes](../current/release/v0.8.0-rc.1-release-notes.md)
+  record the current `next` line at the last readback.
 
 ## Policy
 
 - Put durable release facts, registry smoke summaries, measurement summaries,
-  and caveats under `docs/releases/v<version>/`.
-- Keep `docs/current/` as a small working pointer area for active decisions,
-  status indexes, and files that maintenance checks still read directly.
-- Keep `docs/current/release/v<version>-release-notes.md` as the release-note
-  source used by release operations. A versioned release capsule may link to
-  that file and summarize it, but should not silently replace it.
-- Prefer append-only correction, summary, or migration pointers over deleting
-  old status files. Delete historical files only after checking repo policy and
-  tests.
-- Registry evidence is recorded only after registry gitHead/shasum, tag, and
-  External smoke verification. Local-current evidence remains local-current
-  evidence until a future publish covers the target commit.
+  and caveats under `docs/releases/v<version>/` when a capsule is required.
+- Keep `docs/current/` small: it should point to active decisions and release
+  operations, not repeat every historical result.
+- Keep `docs/current/release/v<version>-release-notes.md` as the source used by
+  release operations. A capsule may summarize that file but must not silently
+  replace it.
+- Registry evidence is recorded only after the required registry, tag, and
+  independent verification boundaries complete. A local or source fact never
+  becomes registry evidence by being linked here.
 
-## Releases
+## Existing Capsules
 
-- [Package version index](package-index.md): chronological package/version
-  timeline from undocumented early rows through the current stable
-  `0.6.0` registry-smoke record and published `0.7.0` release candidates.
-- [`v0.7.0-rc.3`](v0.7.0-rc.3/README.md): current published npm `next`
-  candidate, with matching registry gitHead/tag/GitHub prerelease provenance.
-- [`v0.7.0-rc.2`](v0.7.0-rc.2/README.md): previous published npm `next`
-  candidate, with matching registry gitHead/tag/GitHub prerelease provenance.
-- [`v0.7.0-rc.1`](v0.7.0-rc.1/README.md): earlier published npm `next`
-  candidate on 2026-07-11 with matching gitHead/tag provenance.
-- [`v0.6.0`](v0.6.0/README.md): current stable `latest` registry-smoke
-  capsule. `next` is `0.7.0-rc.3`; the legacy `alpha` dist-tag is retired.
-- [`v0.6.0-rc.4`](v0.6.0-rc.4/README.md): historical published prerelease
-  `next` registry-smoke capsule before stable `0.6.0`.
-- [`v0.6.0-rc.3`](v0.6.0-rc.3/README.md): previous published prerelease `next`
-  registry smoke capsule.
-- [`v0.6.0-rc.2`](v0.6.0-rc.2/README.md): previous published prerelease
-  `next` registry smoke capsule.
-- [`v0.6.0-rc.1`](v0.6.0-rc.1/README.md): prerelease `next` registry smoke,
-  Stage 1-14 package-runtime facts, and current post-rc1 measurement pointers.
+- [`v0.7.0-rc.3`](v0.7.0-rc.3/README.md): published npm `next` candidate with
+  matching registry, tag, GitHub prerelease, and workflow provenance.
+- [`v0.7.0` release notes](../current/release/v0.7.0-release-notes.md):
+  published stable-release record; no separate capsule is retained here.
+- [`v0.6.0`](v0.6.0/README.md): earlier stable registry-smoke capsule.
+- Earlier release-candidate capsules remain listed in
+  [package-index.md](package-index.md).
 
 ## Inventory Relationship
 
-The full docs inventory lives at
+The exhaustive classification of all documents, including retained compatibility
+files still under `docs/current/`, lives in
 [`docs/current/docs-inventory.md`](../current/docs-inventory.md). Files marked
-as version-specific but still located under `docs/current/` are compatibility
-records. Summarize them into a version capsule before moving them.
+historical there remain history even when they are package-visible.
