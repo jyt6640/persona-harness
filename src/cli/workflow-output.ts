@@ -251,7 +251,7 @@ export function passedFinishOutput(
         : ["Workflow evidence is complete; final answer may be reported."]),
       "",
       "Next:",
-      "- `npx ph history --id <run-id>` when this workflow should be archived.",
+      "- `npx ph history --id <run-id>` when this workflow should be archived. It archives reports only; a consumed finish attestation stays consumed.",
       "",
       "Scope:",
       "- AI-facing workflow rail",
