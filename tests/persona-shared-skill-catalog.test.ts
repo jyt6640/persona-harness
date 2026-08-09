@@ -78,6 +78,50 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(sharedPackageJson.files).not.toContain("skills")
   })
 
+  it("keeps advisory host tools out of the mandatory consumer install surface", () => {
+    const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
+      readonly dependencies?: Readonly<Record<string, string>>
+      readonly devDependencies?: Readonly<Record<string, string>>
+      readonly optionalDependencies?: Readonly<Record<string, string>>
+      readonly peerDependencies?: Readonly<Record<string, string>>
+      readonly peerDependenciesMeta?: Readonly<Record<string, { readonly optional?: boolean }>>
+      readonly scripts?: Readonly<Record<string, string>>
+    }
+    const packageLock = JSON.parse(readFileSync(join(packageRoot, "package-lock.json"), "utf8")) as {
+      readonly packages: Readonly<Record<string, {
+        readonly dependencies?: Readonly<Record<string, string>>
+        readonly devDependencies?: Readonly<Record<string, string>>
+        readonly optionalDependencies?: Readonly<Record<string, string>>
+        readonly peerDependencies?: Readonly<Record<string, string>>
+        readonly peerDependenciesMeta?: Readonly<Record<string, { readonly optional?: boolean }>>
+      }>>
+    }
+    const lockRoot = packageLock.packages[""]
+    expect(lockRoot).toBeDefined()
+    const hostTools = [
+      "@opencode-ai/plugin",
+      "@ast-grep/cli",
+      "@colbymchenry/codegraph",
+      "@theupsider/lsp-mcp",
+    ] as const
+
+    for (const hostTool of hostTools) {
+      expect(packageJson.dependencies?.[hostTool]).toBeUndefined()
+      expect(packageJson.optionalDependencies?.[hostTool]).toBeUndefined()
+      expect(packageJson.devDependencies?.[hostTool]).toBeDefined()
+      expect(packageJson.peerDependencies?.[hostTool]).toBeDefined()
+      expect(packageJson.peerDependenciesMeta?.[hostTool]).toEqual({ optional: true })
+      expect(lockRoot?.dependencies?.[hostTool]).toBeUndefined()
+      expect(lockRoot?.optionalDependencies?.[hostTool]).toBeUndefined()
+      expect(lockRoot?.devDependencies?.[hostTool]).toBeDefined()
+      expect(lockRoot?.peerDependencies?.[hostTool]).toBeDefined()
+      expect(lockRoot?.peerDependenciesMeta?.[hostTool]).toEqual({ optional: true })
+    }
+    expect(packageJson.scripts?.preinstall).toBeUndefined()
+    expect(packageJson.scripts?.install).toBeUndefined()
+    expect(packageJson.scripts?.postinstall).toBeUndefined()
+  })
+
   it("renders an advisory route instead of injecting a skill body or advancing workflow state", () => {
     const route = createOpenCodeSkillRoute({
       decision: "suggest",

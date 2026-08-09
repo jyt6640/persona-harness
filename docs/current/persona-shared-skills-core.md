@@ -50,6 +50,12 @@ the Java reference directory. Legacy OMO orchestration material and legacy
 The package-files policy test and the packed-install contract verify this
 surface without falling back to repository source files.
 
+OpenCode, AST-grep, CodeGraph, and upstream LSP integrations are optional peer
+tools. A normal Persona Harness consumer install does not install or execute
+their platform-specific lifecycle packages; a host that wants one supplies it
+explicitly. Missing optional tools remain advisory-unavailable and never
+advance workflow state.
+
 ## Non-Claims
 
 The shared-skill core does not claim that every host can invoke agents, render
