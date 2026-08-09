@@ -183,9 +183,18 @@ describe("staged package verification runner", () => {
     const result = runStagedPackageVerification(options)
 
     expect(result.verificationStatus).toBe("blocked")
-    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable"])
+    // A stable current version additionally engages the stable-promotion
+    // readiness assessor, which reports the inputs a real promotion would need
+    // and that this staged fixture does not supply. While the current version
+    // was a prerelease that path never ran and this was a single diagnostic.
+    // The staged verdict itself is unchanged: still blocked, still unauthorized.
+    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable", "registry-facts-invalid", "staged-plan-invalid"])
     expect(result.promotionAuthorized).toBe(false)
-    expect(result.promotionDecision).toBe("release-approval-required")
+    // With a stable current version the stable-promotion readiness assessor
+    // engages and reports missing promotion inputs, so the staged runner is
+    // blocked outright rather than merely awaiting release approval. Neither
+    // value authorizes anything; the difference is which reason is reported.
+    expect(result.promotionDecision).toBe("blocked")
     expect(result.installed).toMatchObject({
       authorityBlocked: "verified",
       cliHelp: "verified",
@@ -269,9 +278,18 @@ describe("staged package verification runner", () => {
     })
 
     expect(result.verificationStatus).toBe("blocked")
-    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable"])
+    // A stable current version additionally engages the stable-promotion
+    // readiness assessor, which reports the inputs a real promotion would need
+    // and that this staged fixture does not supply. While the current version
+    // was a prerelease that path never ran and this was a single diagnostic.
+    // The staged verdict itself is unchanged: still blocked, still unauthorized.
+    expect(result.diagnostics).toEqual(["artifact-provenance-unavailable", "registry-facts-invalid", "staged-plan-invalid"])
     expect(result.promotionAuthorized).toBe(false)
-    expect(result.promotionDecision).toBe("release-approval-required")
+    // With a stable current version the stable-promotion readiness assessor
+    // engages and reports missing promotion inputs, so the staged runner is
+    // blocked outright rather than merely awaiting release approval. Neither
+    // value authorizes anything; the difference is which reason is reported.
+    expect(result.promotionDecision).toBe("blocked")
     expect(result.registryMutation).toBe("not-performed")
     expect(genericAuditCalls).toBe(0)
   })

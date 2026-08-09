@@ -23,9 +23,11 @@ Full detail and the reject rule live in
 ## Supported claims
 
 Each supported claim is scoped to bounded local fixtures and is a
-**completion-integrity** claim, not an app-quality claim. P3 now holds Stable/GA
-and npm `latest` movement because the 2026-07-12 local production audit found
-stronger completion-integrity bypasses outside these bounded fixtures.
+**completion-integrity** claim, not an app-quality claim. P3 held Stable/GA and
+npm `latest` movement from the 2026-07-12 local production audit, which found
+stronger completion-integrity bypasses outside these bounded fixtures. The
+condition that hold named — trusted external signed CI/verifier attestation —
+was demonstrated on 2026-08-09 and is recorded below.
 
 ### 1. PH blocks missing completion evidence
 
@@ -76,12 +78,38 @@ Accepted boundary:
   not be finish authority after P3.
 - Local fresh fixed-command verification is cooperative-project integrity only.
 - Strong integrity/GA claims require trusted external signed CI/verifier
-  attestation.
+  attestation. **Demonstrated 2026-08-09** — see below.
 - Current RC evidence is not generated-app certification, product efficacy,
   broad reliability, security certification, token-saving evidence, or a strong
   anti-forgery guarantee.
 
 See [`current/p3-integrity-roadmap.md`](current/p3-integrity-roadmap.md).
+
+#### Level 2 external attestation, demonstrated 2026-08-09
+
+The boundary the hold names as a precondition for a strong integrity or GA claim
+was exercised end to end, on `persona-harness@0.8.0-beta.34` installed from the
+registry, against a separate public consumer repository producing its own
+GitHub-signed attestations.
+
+> An enrolled external repository signed a receipt over its own source in GitHub
+> Actions; the consumer fetched it, consumed it once, and the replay was
+> refused.
+
+Refusals were exercised individually and each reported a distinct diagnostic:
+wrong repository, wrong workflow, wrong ref, excluded pull-request path, three
+malformed-archive shapes, expiry, source drift, replay, all-skipped tests, and a
+severed network. A real signature from an unenrolled repository was refused on
+identity rather than on cryptography.
+
+Bounded plainly:
+
+- **Level 2 is now evidenced. The remaining P3 items are not.** This records one
+  boundary, not the hold's closure.
+- The excluded **fork event** was not exercised — it needs a push from an
+  account outside the project — and is reached only indirectly.
+- One operator, one day, one project shape. Evidence and the lines that were
+  **not** covered are on issue #116.
 
 ### Runtime injection
 

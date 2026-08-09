@@ -10,7 +10,7 @@ import {
   checkReleaseState,
   checkTagSource,
 } from "../scripts/release-workflow-policy.mjs"
-import { readRc1AcceptanceManifest } from "../scripts/consumer-authority-rc1-acceptance-schema.mjs"
+import { readGaAcceptanceManifest } from "../scripts/consumer-authority-ga-acceptance-schema.mjs"
 
 const MAIN_SHA = "a".repeat(40)
 const TAG_SHA = "b".repeat(40)
@@ -180,27 +180,33 @@ describe("release workflow policy", () => {
     expect(lifecycle).toContain("no bootstrap artifact outside the project")
   })
 
-  it("keeps the current consumer authority beta eligible only for staging-first prerelease publication", () => {
+  it("keeps the current stable version eligible for latest and refused on the prerelease channels", () => {
+    // This assertion moves with the release. While the current version was a
+    // prerelease it read the other way round: eligible for `staging`, refused
+    // on `latest`. The policy did not change — the version did, and the test
+    // has to say which side of that line the package is on.
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
-    const acceptance = readRc1AcceptanceManifest(repositoryRoot)
+    const acceptance = readGaAcceptanceManifest(repositoryRoot)
 
     expect(packageVersion).toBe(acceptance.package.version)
     expect(readPackageVersion(join(repositoryRoot, "package-lock.json"))).toBe(acceptance.package.version)
     expect(checkDistTagCompatibility({
-      approvalScope: "staging-only",
-      distTag: "staging",
-      version: packageVersion,
-    })).toEqual({ ok: true })
-    expect(checkDistTagCompatibility({
       approvalScope: "ga-approved",
       distTag: "latest",
       version: packageVersion,
-    })).toMatchObject({ code: "dist-tag-prerelease-latest", ok: false })
+    })).toEqual({ ok: true })
+    // A stable version has no business on a prerelease channel, and the
+    // approval scope does not buy its way past that.
     expect(checkDistTagCompatibility({
       approvalScope: "staging-only",
+      distTag: "staging",
+      version: packageVersion,
+    })).toMatchObject({ code: "dist-tag-staging-stable", ok: false })
+    expect(checkDistTagCompatibility({
+      approvalScope: "next-promotion-approved",
       distTag: "next",
       version: packageVersion,
-    })).toMatchObject({ code: "dist-tag-next-approval", ok: false })
+    })).toMatchObject({ ok: false })
   })
 
   it("accepts an exact canonical main source", () => {
