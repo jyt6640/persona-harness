@@ -139,6 +139,15 @@ HQ는 담당 세션 결과를 받거나 읽은 뒤 다음을 확인한다.
 - unrelated dirty file은 섞지 않는다.
 - push는 HQ/사용자 지시가 있을 때만 한다.
 
+## Branch Naming
+
+- `codex/` 접두사는 새 작업, 이름 변경, push, 활성 후보에 사용하지 않는다.
+  기존 `codex/` ref는 보존 대상일 수 있는 과거 기록일 뿐 현재 명명 규칙이 아니다.
+- 브랜치는 작업 목적을 먼저 드러내는 기존 접두사인 `feat/`, `fix/`, `docs/`,
+  `ci/`, `test/`, `security/`, `perf/`, `experiment/` 중 하나로 시작한다.
+- 새 후보를 열기 전에는 해당 접두사가 이슈 성격과 맞는지 확인한다. 예를 들어
+  사용자 기능은 `feat/`, 결함 수정은 `fix/`, 문서만 바꾸는 작업은 `docs/`를 쓴다.
+
 ## Permanent Lane Roles
 
 HQ는 담당 thread를 임시 작업자가 아니라 재사용 가능한 lane으로 다룬다. lane 이름은 작업명이 아니라 장기 책임을 드러내야 한다.
