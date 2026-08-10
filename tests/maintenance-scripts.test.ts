@@ -26,7 +26,11 @@ function runNodeScript(scriptPath: string, args: readonly string[], cwd: string)
   })
 }
 
-function writeScopeProject(projectDir: string, activeSkills: readonly string[] = ["programming"]): void {
+function writeScopeProject(
+  projectDir: string,
+  activeSkills: readonly string[] = ["programming"],
+  automaticSkills: readonly string[] = ["programming"],
+): void {
   mkdirSync(join(projectDir, "docs", "current"), { recursive: true })
   mkdirSync(join(projectDir, "src", "runtime"), { recursive: true })
   writeFileSync(
@@ -35,6 +39,7 @@ function writeScopeProject(projectDir: string, activeSkills: readonly string[] =
       {
         mvpScope: "java-spring-backend-clean-code",
         activeSharedSkills: activeSkills,
+        automaticSharedSkills: automaticSkills,
         inactiveVendoredReferences: ["debugging", "review-work"],
         experimentalFileRoles: ["typescript", "frontend"],
         parkingFileRoles: ["infra", "shared-skill"],
@@ -164,6 +169,16 @@ describe("maintenance scripts", () => {
     expect(result.stdout).toContain("active shared skills changed")
   })
 
+  it("reports WARN when the current policy marks the optional frontend overlay automatic", () => {
+    const projectDir = createTempDir("persona-scope-automatic-overlay-warn-")
+    writeScopeProject(projectDir, ["programming"], ["programming", "frontend"])
+
+    const result = runNodeScript(checkScopeScript, [projectDir], projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("automatic shared skills changed from programming, frontend to programming")
+  })
+
   it("exits nonzero in strict mode when scope diagnostics are WARN", () => {
     const projectDir = createTempDir("persona-scope-strict-warn-")
     writeScopeProject(projectDir, ["programming", "frontend"])
@@ -195,6 +210,7 @@ describe("maintenance scripts", () => {
         {
           mvpScope: "java-spring-backend-clean-code",
           activeSharedSkills: ["programming"],
+          automaticSharedSkills: ["programming"],
           inactiveVendoredReferences: ["debugging", "review-work"],
           experimentalFileRoles: ["typescript", "frontend"],
           parkingFileRoles: ["infra", "shared-skill"],

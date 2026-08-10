@@ -14,7 +14,7 @@ Current automatic shared-skill routing is limited to:
 
 - Java and Gradle targets select `programming` as a supporting shared skill while still loading Java backend rules from `.persona/rules`.
 - TypeScript targets select `programming`.
-- React/frontend TypeScript targets select `programming` plus `frontend`.
+- React/frontend TypeScript targets select `programming`; `frontend` is an explicit optional overlay, not an automatic selection.
 - Infrastructure-looking targets do not select an active skill today and fall through to `shared-skill` role with no rules.
 
 Current vendored-but-inactive skills include:
@@ -63,7 +63,7 @@ Vendored OMO skills are reference material unless explicitly activated by a futu
 | Java/Spring `.persona/rules` | active | MVP baseline |
 | Java/Gradle `programming` selected skill | limited active support | supports injection metadata, not a replacement rule source |
 | TypeScript `programming` selected skill | experimental | smoke path only |
-| React/frontend `frontend` selected skill | experimental | not frontend MVP |
+| React/frontend `frontend` optional overlay | experimental | explicit selection only; not frontend MVP |
 | `infra` file role | parking | no active rules or skill |
 | `shared-skill` file role | parking | fallback role only |
 | `ast-grep` vendored skill | inactive reference | no AST/linter/enforcement gate |
@@ -88,7 +88,7 @@ More precise wording:
 - shared skills are vendored as a reusable package,
 - most vendored skills are inactive references,
 - `programming` is currently selected for Java/Gradle and TypeScript targets,
-- `frontend` is selected only for React/frontend TypeScript targets,
+- `frontend` is available only as an explicit optional overlay and is never selected from a React/frontend target path alone,
 - this limited routing is experimental outside Java backend support and does not make the MVP multi-domain.
 
 ## Next Decision
@@ -99,4 +99,3 @@ Next practical decision:
 
 1. Define a narrow Java backend Clean Code uniformity rubric that is not just package-name exactness, or
 2. move to MVP productization/demo packaging with the Java backend scope explicitly stated.
-

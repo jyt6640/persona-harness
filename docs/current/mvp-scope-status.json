@@ -1,6 +1,7 @@
 {
   "mvpScope": "java-spring-backend-clean-code",
   "activeSharedSkills": ["programming"],
+  "automaticSharedSkills": ["programming"],
   "inactiveVendoredReferences": ["debugging", "review-work"],
   "experimentalFileRoles": ["typescript", "frontend"],
   "parkingFileRoles": ["infra", "shared-skill"],

@@ -56,6 +56,7 @@ function parseStatus(source) {
   return {
     mvpScope: typeof parsed.mvpScope === "string" ? parsed.mvpScope : "",
     activeSharedSkills: parseStringArray(parsed.activeSharedSkills, "activeSharedSkills"),
+    automaticSharedSkills: parseStringArray(parsed.automaticSharedSkills, "automaticSharedSkills"),
     inactiveVendoredReferences: parseStringArray(parsed.inactiveVendoredReferences, "inactiveVendoredReferences"),
     experimentalFileRoles: parseStringArray(parsed.experimentalFileRoles, "experimentalFileRoles"),
     parkingFileRoles: parseStringArray(parsed.parkingFileRoles, "parkingFileRoles"),
@@ -107,6 +108,7 @@ async function main() {
       diagnostics.push("WARN: ACTIVE_SHARED_SKILL_NAMES was not found in shared-skill-router.ts.")
     } else {
       compareArray("active shared skills", activeSkills, status.activeSharedSkills, diagnostics)
+      compareArray("automatic shared skills", activeSkills, status.automaticSharedSkills, diagnostics)
     }
 
     if (removedSkills === null) {

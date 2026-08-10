@@ -489,7 +489,7 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 
 개인/팀/프로젝트 철학은 선택적으로 얹는 후속 philosophy harness layer다. 철학이 없을 때는 Clean Code와 backend 역할 책임을 기본값으로 삼고, 프로젝트 규모, 개인/팀 맥락, 저장소/DB/기술 선택 같은 최소 질문을 통해 계획을 먼저 세운 뒤 구현으로 넘어가는 방향을 유지한다.
 
-`packages/shared-skills`에는 OMO shared-skills 구조와 skill content를 vendoring한다. Persona Harness의 목표는 OMO처럼 작업 맥락에 맞는 skill을 자연스럽게 고르되, backend/frontend/infra에 특화해 적용하는 것이다. 현재 최소 auto-routing은 TypeScript target에 `programming`, React/frontend TypeScript target에 `programming` + `frontend`를 선택한다.
+`packages/shared-skills`에는 OMO shared-skills 구조와 skill content를 vendoring한다. Persona Harness의 목표는 OMO처럼 작업 맥락에 맞는 skill을 자연스럽게 고르되, backend/frontend/infra에 특화해 적용하는 것이다. 현재 최소 auto-routing은 TypeScript와 React/frontend TypeScript target 모두에 `programming`만 선택한다. `frontend`는 명시적으로 선택하는 optional overlay이며 automatic injection 대상이 아니다.
 
 기준 문서:
 
