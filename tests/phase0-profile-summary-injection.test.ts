@@ -157,7 +157,7 @@ describe("Phase 0 backend profile summary injection", () => {
     expect(injection.selectedRules).toContain("backend/java-backend-bootstrap.md")
   })
 
-  it("does not add backend profile summary to non-Java non-bootstrap targets", () => {
+  it("keeps frontend targets out of backend profile injection without auto-injecting the optional frontend overlay", () => {
     const projectDir = createTempProject()
     writeProfile(projectDir, backendProfile({ storage: "database", "package-style": "domain-first" }))
 
@@ -166,7 +166,9 @@ describe("Phase 0 backend profile summary injection", () => {
     expect(injection.fileRole).toBe("frontend")
     expect(injection.block).not.toContain("Project profile summary:")
     expect(injection.selectedRules).toEqual([])
-    expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming", "frontend"])
+    expect(injection.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
+    expect(injection.selectedSharedSkills.map((skill) => skill.domain)).not.toContain("frontend")
+    expect(injection.selectedSharedSkills.map((skill) => skill.path)).not.toContain("packages/shared-skills/skills/frontend/SKILL.md")
   })
 
   it("does not inject unsupported profile scopes as backend guidance", () => {

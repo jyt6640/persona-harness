@@ -27,9 +27,14 @@ export function readPackageContentIdentity(bytes) {
   return readPackageTarball(bytes).identity
 }
 
+export function assertWindowsPackageInstallSurface(bytes) {
+  readPackageTarball(bytes)
+}
+
 export function readPackageTarball(bytes) {
   const members = readMembers(bytes)
   const manifest = readManifest(members)
+  assertWindowsInstallSurface(members, manifest)
   return {
     identity: createIdentity(members),
     manifest: manifest.identity,
@@ -39,6 +44,7 @@ export function readPackageTarball(bytes) {
 export function canonicalizePackageTarball(bytes) {
   const members = readMembers(bytes)
   const manifest = readManifest(members)
+  assertWindowsInstallSurface(members, manifest)
   const canonicalMembers = members
     .map((member) => ({
       ...member,
@@ -145,9 +151,75 @@ function readManifest(members) {
   const memberPaths = new Set(members.map((member) => member.path.slice(PACKAGE_PREFIX.length)))
   const executablePaths = readExecutablePaths(manifest.bin, memberPaths)
   return {
+    bin: manifest.bin,
     executablePaths,
     identity: { name: manifest.name, version: manifest.version },
   }
+}
+
+function assertWindowsInstallSurface(members, manifest) {
+  const canonicalPaths = new Set()
+  for (const member of members) {
+    const path = canonicalWindowsPath(member.path.slice(PACKAGE_PREFIX.length))
+    if (canonicalPaths.has(path)) fail("package-content-identity-windows-surface")
+    canonicalPaths.add(path)
+  }
+
+  for (const path of canonicalPaths) {
+    const segments = path.split("/")
+    for (let index = 1; index < segments.length; index += 1) {
+      if (canonicalPaths.has(segments.slice(0, index).join("/"))) {
+        fail("package-content-identity-windows-surface")
+      }
+    }
+  }
+
+  const binNames = readBinNames(manifest.bin, manifest.identity.name)
+  const shimNames = new Set()
+  for (const name of binNames) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(name) || /\.(?:bat|cmd|exe|ps1)$/iu.test(name)) {
+      fail("package-content-identity-windows-surface")
+    }
+    for (const shimName of [name, `${name}.cmd`, `${name}.ps1`]) {
+      const canonicalName = canonicalWindowsSegment(shimName)
+      if (shimNames.has(canonicalName)) fail("package-content-identity-windows-surface")
+      shimNames.add(canonicalName)
+    }
+  }
+}
+
+function readBinNames(value, packageName) {
+  if (value === undefined) return []
+  if (typeof value === "string") {
+    if (typeof packageName !== "string") fail("package-content-identity-windows-surface")
+    const name = packageName.startsWith("@") ? packageName.slice(packageName.indexOf("/") + 1) : packageName
+    if (name.length === 0 || name.includes("/")) fail("package-content-identity-windows-surface")
+    return [name]
+  }
+  if (!isRecord(value)) fail("package-content-identity-windows-surface")
+  const names = Object.keys(value)
+  if (names.length === 0) fail("package-content-identity-windows-surface")
+  return names
+}
+
+function canonicalWindowsPath(path) {
+  return path.split("/").map(canonicalWindowsSegment).join("/")
+}
+
+function canonicalWindowsSegment(segment) {
+  if (
+    typeof segment !== "string"
+    || segment.length === 0
+    || segment.length > 255
+    || /[<>:"\\\\|?*\u0000-\u001f]/u.test(segment)
+  ) {
+    fail("package-content-identity-windows-surface")
+  }
+  const trimmed = segment.replace(/[. ]+$/u, "")
+  if (trimmed.length === 0 || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/iu.test(trimmed)) {
+    fail("package-content-identity-windows-surface")
+  }
+  return trimmed.normalize("NFC").toLowerCase()
 }
 
 function readExecutablePaths(value, memberPaths) {

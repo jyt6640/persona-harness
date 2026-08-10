@@ -160,7 +160,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
   },
   maxRulesPerInjection: 12,
   evidenceMode: DEFAULT_EVIDENCE_MODE,
-  enabledDomains: ["backend", "programming", "workflow"],
+  enabledDomains: ["backend", "programming", "workflow", "product"],
   scenario: "step1",
 }
 

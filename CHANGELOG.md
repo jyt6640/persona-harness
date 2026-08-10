@@ -8,6 +8,9 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Add the portable Persona-owned shared-skill catalog and one-question product
+  interview route. Hosts route advisory references only; legacy OMO workflow
+  payloads are excluded from the package surface.
 - Keep process-only evaluation cleanup in the normal CI lane while reserving
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.

@@ -42,12 +42,12 @@ function emptyModelInput(sessionID: string): TransformMessagesOutput {
 }
 
 describe("Phase 0 harness config", () => {
-  it("defaults to Java backend MVP and AI workflow domains", () => {
+  it("defaults to Java backend, product discovery, and advisory workflow domains", () => {
     const projectDir = createProject()
 
     const config = loadHarnessConfig(projectDir)
 
-    expect(config.enabledDomains).toEqual(["backend", "programming", "workflow"])
+    expect(config.enabledDomains).toEqual(["backend", "programming", "workflow", "product"])
     expect(config.enforce.executeVerification).toBe(false)
     expect(config.features.runtimeInjection).toBe(false)
     expect(config.features.entrySteering).toBe(false)
@@ -228,7 +228,7 @@ describe("Phase 0 harness config", () => {
     const result = loadHarnessConfigResult(projectDir)
     const injection = createInjectionBlock("README.md", projectDir)
 
-    expect(result.config.enabledDomains).toEqual(["backend", "programming", "workflow"])
+    expect(result.config.enabledDomains).toEqual(["backend", "programming", "workflow", "product"])
     expect(result.diagnostics).toEqual([
       expect.objectContaining({
         code: "malformed_config",

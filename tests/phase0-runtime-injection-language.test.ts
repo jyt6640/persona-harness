@@ -68,7 +68,7 @@ describe("runtime injected prompt language", () => {
           detectedIntent: "test-intent",
           reason: "test reason",
           secondaryIntents: "none",
-          selectedSkillPath: "packages/shared-skills/skills/workflow/requirements/SKILL.md",
+          selectedSkillPath: "packages/shared-skills/skills/plan/SKILL.md",
           sourceFile: "README.md",
         }),
       )

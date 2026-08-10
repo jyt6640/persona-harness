@@ -52,6 +52,11 @@ A workflow + evidence CLI (`ph`) with an optional OpenCode plugin, for Java/Spri
 - can block completion when required reports or evidence for defined gates are
   missing.
 
+The optional runtime adapter can also route to a portable Persona-owned shared
+skill catalog. Product ideas start with a one-question interview and explicit
+brief approval; adapters advise only and never create workflow state or invoke
+host agents automatically. See [Persona Shared Skills Core](docs/current/persona-shared-skills-core.md).
+
 It is **not** a code-quality guarantee, a token-saving product, a broad linter,
 proof that generated apps are production-ready, or a strong completion-integrity
 guarantee before P3 closes. Every claim broader than the measured gates must be

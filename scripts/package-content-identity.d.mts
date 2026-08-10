@@ -16,6 +16,7 @@ export class PackageContentIdentityError extends Error {
 }
 
 export function readPackageContentIdentity(bytes: Buffer): PackageContentIdentity
+export function assertWindowsPackageInstallSurface(bytes: Buffer): void
 export function readPackageTarball(bytes: Buffer): {
   readonly identity: PackageContentIdentity
   readonly manifest: { readonly name: string; readonly version: string }

@@ -123,7 +123,7 @@ function resolveUpstream(env) {
   if (pathCommand !== undefined) {
     return { kind: "available", source: "PATH", command: [pathCommand] }
   }
-  return { kind: "unavailable", reason: "@theupsider/lsp-mcp not found. Install optional dependencies or set PH_LSP_MCP_BIN." }
+  return { kind: "unavailable", reason: "@theupsider/lsp-mcp not found. Install it separately or set PH_LSP_MCP_BIN." }
 }
 
 function resolvePackagedUpstream() {
@@ -134,7 +134,7 @@ function resolvePackagedUpstream() {
     if (typeof bin !== "string") return undefined
     return {
       kind: "available",
-      source: "@theupsider/lsp-mcp optionalDependency",
+      source: "@theupsider/lsp-mcp optionalPeer",
       command: [process.execPath, resolve(dirname(packageJsonPath), bin)],
     }
   } catch (error) {

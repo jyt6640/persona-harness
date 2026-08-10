@@ -7,15 +7,17 @@ import {
   V081AcceptanceManifestError,
   canonicalV081AcceptanceManifest,
   parseV081AcceptanceManifest,
-  readV081AcceptanceManifest,
 } from "../scripts/consumer-authority-v081-acceptance-schema.mjs"
 import { parseGaAcceptanceManifest } from "../scripts/consumer-authority-ga-acceptance-schema.mjs"
 
 const repositoryRoot = process.cwd()
 
 describe("consumer authority 0.8.1 acceptance schema", () => {
-  it("ships the known-completion policy with current package and root-bound contract authority", () => {
-    const manifest = readV081AcceptanceManifest(repositoryRoot)
+  it("keeps the known-completion policy in the strict historical record", () => {
+    const manifest = parseV081AcceptanceManifest(
+      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v081-acceptance.json"), "utf8")),
+      "0.8.1",
+    )
 
     expect(manifest.package).toMatchObject({ version: "0.8.1" })
     expect(manifest.observerGhSelection).toMatchObject({
@@ -93,14 +95,15 @@ describe("consumer authority 0.8.1 acceptance schema", () => {
     expect(() => parseV081AcceptanceManifest(fixture, "0.8.2")).toThrow(V081AcceptanceManifestError)
   })
 
-  it("routes current package preflights through the 0.8.1 acceptance record", () => {
+  it("does not let current package preflights reuse the 0.8.1 acceptance record", () => {
     for (const script of [
       "preflight-consumer-authority-external-attestation.mjs",
       "preflight-consumer-authority-external-artifact-transport.mjs",
     ]) {
       const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-      expect(source).toContain('from "./consumer-authority-v081-acceptance-schema.mjs"')
-      expect(source).toContain("readV081AcceptanceManifest(packageRoot)")
+      expect(source).toContain('from "./consumer-authority-v082-acceptance-schema.mjs"')
+      expect(source).toContain("readV082AcceptanceManifest(packageRoot)")
+      expect(source).not.toContain("readV081AcceptanceManifest(packageRoot)")
       expect(source).not.toContain("readGaAcceptanceManifest")
     }
   })

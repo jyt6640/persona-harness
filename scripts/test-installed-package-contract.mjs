@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV081AcceptanceManifest } from "./consumer-authority-v081-acceptance-schema.mjs"
+import { readV082AcceptanceManifest } from "./consumer-authority-v082-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -123,7 +123,15 @@ function emitBoundedExerciseDiagnostic(error, options) {
 }
 
 async function runInstalledPackageContract(options) {
-  const { observerGh, packageExercise, producerIntakeOnly, tarball, tarballContentIdentity, tarballSha256 } = options
+  const {
+    observerGh,
+    packageAcceptance,
+    packageExercise,
+    producerIntakeOnly,
+    tarball,
+    tarballContentIdentity,
+    tarballSha256,
+  } = options
   const runPhase = createPackageExercisePhaseRunner(options, "fresh-tar")
   const packed = await runPhase("tarball-materialization", () => tarball === undefined
     ? packCurrentRepository()
@@ -149,7 +157,14 @@ async function runInstalledPackageContract(options) {
 
   await runPhase("verifier-no-source", () => assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory))
   await runPhase("project-finish-verifier-no-source", () => assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory))
-  await assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, packageExercise, runPhase)
+  await assertPackagedConsumerAuthorityBoundary(
+    installedPackage,
+    consumerDirectory,
+    observerGh,
+    packageAcceptance,
+    packageExercise,
+    runPhase,
+  )
   await runPhase("staged-artifact-verifier", () => assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory))
   await runPhase("doctor-registry", () => assertDoctorRegistryReadback(
     join(consumerDirectory, "doctor-registry-fixture"),
@@ -176,7 +191,9 @@ async function runInstalledPackageContract(options) {
   process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
   process.stdout.write(packageExercise
     ? "installed-package-exercise-contract: PASS\n"
-    : "installed-package-test-contract: PASS\n")
+    : packageAcceptance
+      ? "installed-package-acceptance-contract: PASS\n"
+      : "installed-package-test-contract: PASS\n")
 }
 
 async function runSourceCliContract(options) {
@@ -236,7 +253,14 @@ function resolveSourceCliPath(sourceCliPath) {
   return phPath
 }
 
-async function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, packageExercise, runPhase) {
+async function assertPackagedConsumerAuthorityBoundary(
+  installedPackage,
+  consumerDirectory,
+  observerGh,
+  packageAcceptance,
+  packageExercise,
+  runPhase,
+) {
   const scripts = [
     "consumer-authority-artifact-archive.mjs",
     "consumer-authority-artifact-error.mjs",
@@ -252,18 +276,20 @@ async function assertPackagedConsumerAuthorityBoundary(installedPackage, consume
     assertPrearmedObserverHandoff(installedPackage, "installed package")
   })
   await runPhase("v4-cleanliness", () => assertV4FinalObserverCleanliness(installedPackage, "installed package"))
-  await runPhase("observer-gh-selector", () => assertWorkflowSelectedObserverGhLifecycle(
-    installedPackage,
-    consumerDirectory,
-    "installed package",
-    observerGh,
-  ))
-  await runPhase("attestation-parser", () => assertExternalAttestationCommandPlan(
-    installedPackage,
-    consumerDirectory,
-    "installed package",
-    observerGh,
-  ))
+  if (!packageAcceptance) {
+    await runPhase("observer-gh-selector", () => assertWorkflowSelectedObserverGhLifecycle(
+      installedPackage,
+      consumerDirectory,
+      "installed package",
+      observerGh,
+    ))
+    await runPhase("attestation-parser", () => assertExternalAttestationCommandPlan(
+      installedPackage,
+      consumerDirectory,
+      "installed package",
+      observerGh,
+    ))
+  }
   await runPhase("artifact-transport", () => assertExternalArtifactTransportPlan(installedPackage, consumerDirectory, "installed package"))
   const authorityDiscoveryResult = await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(
     installedPackage,
@@ -2657,7 +2683,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV081AcceptanceManifest(packageRoot)
+  const manifest = readV082AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2666,7 +2692,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV081AcceptanceManifest(packageRoot)
+    readV082AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} beta.33 observer handoff contract is invalid`)
   }
@@ -2808,7 +2834,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV081AcceptanceManifest(packageRoot)
+  const manifest = readV082AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -2879,6 +2905,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-beta32-acceptance-schema.mjs",
     "consumer-authority-beta33-acceptance-schema.mjs",
     "consumer-authority-beta34-acceptance-schema.mjs",
+    "consumer-authority-v082-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3154,6 +3181,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-beta32-acceptance-schema.mjs",
     "consumer-authority-beta33-acceptance-schema.mjs",
     "consumer-authority-beta34-acceptance-schema.mjs",
+    "consumer-authority-v082-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3198,7 +3226,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV081AcceptanceManifest(packageRoot)
+  const manifest = readV082AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
@@ -4200,6 +4228,7 @@ function isRecord(value) {
 
 function parseContractOptions(args) {
   let observerGh
+  let packageAcceptance = false
   let packageExercise = false
   let producerIntakeOnly = false
   let sourceCli
@@ -4210,6 +4239,10 @@ function parseContractOptions(args) {
     const argument = args[index]
     if (argument === "--producer-intake-only" && !producerIntakeOnly) {
       producerIntakeOnly = true
+      continue
+    }
+    if (argument === "--package-acceptance" && !packageAcceptance) {
+      packageAcceptance = true
       continue
     }
     if (argument === "--package-exercise" && !packageExercise) {
@@ -4241,7 +4274,7 @@ function parseContractOptions(args) {
       index += 1
       continue
     }
-    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs --observer-gh /absolute/gh [--package-exercise] [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256> --tarball-content-identity <sha256>]")
+    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs (--observer-gh /absolute/gh | --package-acceptance) [--package-exercise] [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256> --tarball-content-identity <sha256>]")
   }
   if (sourceCli !== undefined && tarball !== undefined) {
     throw new TypeError("source CLI and tarball modes are exclusive")
@@ -4255,8 +4288,23 @@ function parseContractOptions(args) {
   if (packageExercise && producerIntakeOnly) {
     throw new TypeError("package exercise and producer intake only are exclusive")
   }
-  if (!producerIntakeOnly && observerGh === undefined) {
+  if (
+    packageAcceptance
+    && (observerGh !== undefined || packageExercise || producerIntakeOnly || sourceCli !== undefined)
+  ) {
+    throw new TypeError("package acceptance cannot claim CI observer proof")
+  }
+  if (!producerIntakeOnly && !packageAcceptance && observerGh === undefined) {
     throw new TypeError("explicit observer gh path is required")
   }
-  return { observerGh, packageExercise, producerIntakeOnly, sourceCli, tarball, tarballContentIdentity, tarballSha256 }
+  return {
+    observerGh,
+    packageAcceptance,
+    packageExercise,
+    producerIntakeOnly,
+    sourceCli,
+    tarball,
+    tarballContentIdentity,
+    tarballSha256,
+  }
 }

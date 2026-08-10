@@ -106,6 +106,8 @@ describe("Phase 0 system constitution hook", () => {
     expect(joinedSystem).toContain("Context-completion gate")
     expect(joinedSystem).toContain("Finish guard")
     expect(joinedSystem).toContain("System prompt text is still prose and may be ignored")
+    expect(joinedSystem).toContain("does not run a workflow command")
+    expect(joinedSystem).not.toContain("npx ph workflow finish implement")
   })
 
   it("does not inject when systemConstitution is disabled", async () => {

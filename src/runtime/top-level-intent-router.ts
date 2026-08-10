@@ -1,6 +1,7 @@
 import { detectRequirementsIntent, type RequirementsIntent } from "./requirements-intent-router.js"
+import { isProductDeepInterviewStart } from "./product-deep-interview.js"
 
-export type TopLevelIntentKind = "requirements" | "debug" | "review" | "refactor" | "git" | "programming"
+export type TopLevelIntentKind = "product-interview" | "requirements" | "debug" | "review" | "refactor" | "git" | "programming"
 
 export type TopLevelIntent = {
   readonly primary: TopLevelIntentKind
@@ -37,6 +38,9 @@ function buildIntent(
   reason: string,
   requirementsIntent: RequirementsIntent | undefined,
 ): TopLevelIntent {
+  if (primary === "product-interview") {
+    return { primary, secondary: [], reason }
+  }
   const hasRequirementsContext = requirementsIntent !== undefined || REQUIREMENT_CONTEXT_PATTERN.test(message)
   const hasProgrammingIntent =
     requirementsIntent?.kind === "requirement-drafting" ? false : PROGRAMMING_PATTERN.test(message)
@@ -74,6 +78,10 @@ export function detectTopLevelIntent(message: string): TopLevelIntent | undefine
   const hasGitIntent = GIT_PATTERN.test(normalized)
   const hasProgrammingIntent = PROGRAMMING_PATTERN.test(normalized)
   const hasWorkIntent = requirementsIntent !== undefined || hasDebugIntent || hasReviewIntent || hasRefactorIntent || hasProgrammingIntent
+
+  if (isProductDeepInterviewStart(normalized) && !hasDebugIntent && !hasReviewIntent && !hasRefactorIntent) {
+    return buildIntent("product-interview", normalized, "Product facts require a one-question interview before technical intake.", undefined)
+  }
 
   if (hasGitIntent && !hasWorkIntent) {
     return buildIntent("git", normalized, "Git-only operation requested.", requirementsIntent)

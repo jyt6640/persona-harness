@@ -321,6 +321,45 @@ function hasWorkflowOwnedObserverGhProvisioner(wrapper, core, packageRecord, too
     && !tool.includes("process.env.PATH")
 }
 
+function hasPackageObserverResponsibility(packageManifestText, acceptanceManifestText) {
+  try {
+    const packageManifest = JSON.parse(packageManifestText)
+    const acceptanceManifest = JSON.parse(acceptanceManifestText)
+    if (!isRecord(packageManifest) || !isRecord(packageManifest.scripts) || !isRecord(acceptanceManifest)) return false
+    const packageScript = packageManifest.scripts["test:installed-package-contract"]
+    const responsibilities = acceptanceManifest.acceptanceResponsibilities
+    if (!isRecord(responsibilities) || !isRecord(responsibilities.package) || !isRecord(responsibilities.sourceAndProtectedUbuntuCi)) {
+      return false
+    }
+    return packageScript === "node scripts/test-installed-package-contract.mjs --package-acceptance"
+      && !packageScript.includes("observer-gh")
+      && hasExactStrings(responsibilities.package.excludes, ["attestation-parser", "observer-gh-selector"])
+      && hasExactStrings(responsibilities.package.requires, [
+        "exact-tar-provenance",
+        "normal-install",
+        "installed-only-no-source-fallback",
+        "cli-and-approval-before-mutation",
+      ])
+      && hasExactStrings(responsibilities.sourceAndProtectedUbuntuCi.requires, [
+        "workflow-owned-dpkg-observer-gh-selection",
+        "private-regular-nonsymlink-observer-gh-copy",
+        "path-free-attestation-parser-preflight",
+      ])
+  } catch {
+    return false
+  }
+}
+
+function hasExactStrings(value, expected) {
+  return Array.isArray(value)
+    && value.length === expected.length
+    && value.every((entry, index) => entry === expected[index])
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+}
+
 const requirements = [
   ["ci trigger", ".github/workflows/ci.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("- main")],
   ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm run test:repository", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
@@ -439,6 +478,8 @@ async function main() {
     observerGhSelector,
     observerGhPackageRecord,
     observerGhTool,
+    packageManifest,
+    v082AcceptanceManifest,
   } = inputs
   const failures = []
   for (const [name, path, predicate] of requirements) {
@@ -510,6 +551,9 @@ async function main() {
   }
   if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector, observerGhPackageRecord, observerGhTool)) {
     failures.push("workflow-owned observer gh provisioner")
+  }
+  if (!hasPackageObserverResponsibility(packageManifest, v082AcceptanceManifest)) {
+    failures.push("Package observer responsibility")
   }
   if (failures.length > 0) {
     throw new Error(`Release workflow policy failed: ${failures.join(", ")}`)

@@ -86,7 +86,7 @@ function writeOptInHarnessConfig(projectDir: string): void {
   cpSync(join(process.cwd(), ".persona", "rules"), join(projectDir, ".persona", "rules"), { recursive: true })
   writeFileSync(
     join(projectDir, ".persona", "harness.jsonc"),
-    `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+    `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow", "product"] }, null, 2)}\n`,
   )
 }
 
@@ -186,7 +186,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("예약 생성 API 추가해줘.")
   })
 
-  it("injects requirements workflow guidance for README implementation requests in opt-in projects", async () => {
+  it("routes README implementation requests to an advisory plan handoff", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-readme-workflow"
@@ -197,24 +197,14 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const text = firstText(output)
     expect(text).toContain("[Persona Harness Requirements Workflow]")
     expect(text).toContain("Detected intent: requirement-implementation")
-    expect(text).toContain("Intent classification: implementation request based on README.md.")
-    expect(text).toContain("Next action: split the requirements file into a ticket backlog")
-    expect(text).toContain("npx ph bearshell")
-    expect(text).toContain("npx ph workflow split README.md")
-    expect(text).toContain("npx ph workflow next")
-    expect(text).toContain("bounded subset/current ticket")
-    expect(text).toContain("leave remaining tickets pending for continuation")
-    expect(text).toContain("do not claim the whole backlog")
-    expect(text).toContain("npx ph plan --report-filled implementation")
-    expect(text).toContain("npx ph workflow check")
-    expect(text).toContain("Do not archive req tickets until review confirms requirements are satisfied.")
-    expect(text).toContain("bounded bootRun/manual QA")
-    expect(text).toContain("verification limitation/blocker")
-    expect(text).toContain("instead of looping")
-    expect(text).toContain("npx ph workflow finish implement")
+    expect(text).toContain("Intent classification: requirements or delivery-planning request.")
+    expect(text).toContain("Skill: plan")
+    expect(text).toContain("Source context: README.md")
+    expect(text).toContain("OpenCode advises and routes only")
+    expect(text).not.toContain("npx ph workflow")
   })
 
-  it("routes Korean readme implementation phrasing through the requirements workflow", async () => {
+  it("keeps Korean README implementation phrasing on the advisory plan route", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-korean-readme-workflow"
@@ -225,12 +215,11 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const text = firstText(output)
     expect(text).toContain("[Persona Harness Requirements Workflow]")
     expect(text).toContain("Detected intent: requirement-implementation")
-    expect(text).toContain("Intent classification: implementation request based on README.md.")
-    expect(text).toContain("Next action: split the requirements file into a ticket backlog")
-    expect(text).toContain("Requirements file: `README.md`")
-    expect(text).toContain("npx ph workflow split README.md")
-    expect(text).toContain("Do not write production code before split/next")
-    expect(text).toContain("implement only the current task card")
+    expect(text).toContain("Intent classification: requirements or delivery-planning request.")
+    expect(text).toContain("Source context: README.md")
+    expect(text).toContain("Skill: plan")
+    expect(text).toContain("The next handoff is explicit")
+    expect(text).not.toContain("npx ph workflow")
   })
 
   it("routes README bug reports through the debug workflow instead of requirements implementation", async () => {
@@ -326,7 +315,8 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("Runtime reliability guard:")
     expect(text).toContain("if `.persona/project-profile.jsonc` exists, read it")
     expect(text).toContain("If the profile exists but has not been read yet")
-    expect(text).toContain("`npx ph plan --report-filled review`")
+    expect(text).toContain("this host route does not create or advance that state")
+    expect(text).not.toContain("npx ph workflow")
     expect(text).not.toContain("[Persona Harness Requirements Workflow]")
     expect(text).not.toContain("[Persona Harness Debug Workflow]")
     expect(text).not.toContain("[Persona Harness Review Workflow]")
@@ -358,7 +348,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(intentEvidence?.secondaryIntents).toEqual([])
   })
 
-  it("injects prompt capture guidance for pasted requirement implementation requests", async () => {
+  it("routes pasted requirement implementation requests without creating a source or ticket", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-prompt-workflow"
@@ -369,13 +359,11 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const text = firstText(output)
     expect(text).toContain("[Persona Harness Requirements Workflow]")
     expect(text).toContain("Detected intent: requirement-implementation")
-    expect(text).toContain("Intent classification: prompt-based requirements implementation request.")
-    expect(text).toContain("Next action: save the prompt as a requirements source")
-    expect(text).toContain("npx ph workflow capture --stdin")
-    expect(text).toContain("npx ph workflow split")
-    expect(text).toContain("implement only the current task card")
-    expect(text).toContain("prompt-only requirements")
-    expect(text).toContain("first create the requirements source/backlog")
+    expect(text).toContain("Intent classification: requirements or delivery-planning request.")
+    expect(text).toContain("Skill: plan")
+    expect(text).toContain("keep discovery and approval conversational")
+    expect(text).toContain("OpenCode advises and routes only")
+    expect(text).not.toContain("npx ph workflow")
 
     const intentEvidence = evidencePayloads(fixtureWorkspace).find(
       (payload) => payload.schemaVersion === "phase0.intent.1",
@@ -390,7 +378,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(intentEvidence?.["promptDiagnostic"]).toBeUndefined()
   })
 
-  it("injects requirements draft guidance for vague product ideas without implementation", async () => {
+  it("starts a one-question product interview for vague product ideas", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-draft-workflow"
@@ -399,18 +387,18 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     await hooks["experimental.chat.messages.transform"]?.({}, output)
 
     const text = firstText(output)
-    expect(text).toContain("[Persona Harness Requirements Workflow]")
-    expect(text).toContain("Detected intent: requirement-drafting")
-    expect(text).toContain("Intent classification: product idea drafting request.")
-    expect(text).toContain("Next action: do not implement; write a requirements draft and wait for user review.")
-    expect(text).toContain("npx ph workflow draft --stdin")
-    expect(text).toContain("Do not implement")
-    expect(text).toContain("draft/review-before-implementation")
-    expect(text).toContain("approve before implementation")
-    expect(text).not.toContain("npx ph workflow split README.md")
+    expect(text).toContain("[Persona Harness Product Interview]")
+    expect(text).toContain("Question:")
+    expect(text).toContain("Recommendation:")
+    expect(text).toContain("Tradeoff:")
+    expect(text).toContain("No plan, ticket, workflow, branch, file, issue, or agent action has been created.")
+    expect(text).not.toContain("[Persona Harness Requirements Workflow]")
+    expect(text).not.toContain("npx ph workflow")
+    expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
+    expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
   })
 
-  it("injects requirements approval guidance only when a draft backlog exists", async () => {
+  it("routes approved requirements to an explicit plan handoff only when a draft backlog exists", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     mkdirSync(join(fixtureWorkspace, ".persona", "workflow", "requirements"), { recursive: true })
     writeFileSync(join(fixtureWorkspace, ".persona", "workflow", "requirements", "backlog.md"), "Status: draft\n")
@@ -423,11 +411,11 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const text = firstText(output)
     expect(text).toContain("[Persona Harness Requirements Workflow]")
     expect(text).toContain("Detected intent: requirement-approval")
-    expect(text).toContain("Intent classification: requirements draft approval request.")
-    expect(text).toContain("Next action: approve the draft, create the ticket backlog, and move to the first ticket.")
-    expect(text).toContain("npx ph workflow approve requirements")
-    expect(text).toContain("npx ph workflow split .persona/workflow/requirements/backlog.md")
-    expect(text).toContain("npx ph workflow implement")
+    expect(text).toContain("Intent classification: approved requirements request.")
+    expect(text).toContain("Decision: explicit")
+    expect(text).toContain("Skill: plan")
+    expect(text).toContain("do not create backlog, ticket, or implementation state from this route")
+    expect(text).not.toContain("npx ph workflow")
   })
 
   it("does not route bare approval words when no requirements draft exists", async () => {
@@ -441,7 +429,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(firstText(output)).not.toContain("[Persona Harness Requirements Workflow]")
   })
 
-  it("injects continuation guidance for Step continuation requests", async () => {
+  it("routes continuation requests without automatically selecting or advancing a ticket", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-continue-workflow"
@@ -452,15 +440,10 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const text = firstText(output)
     expect(text).toContain("[Persona Harness Requirements Workflow]")
     expect(text).toContain("Detected intent: requirement-continuation")
-    expect(text).toContain("Intent classification: continuation request.")
-    expect(text).toContain("Next action: inspect the next pending ticket and continue only the current ticket.")
-    expect(text).toContain("npx ph workflow next")
-    expect(text).toContain("npx ph workflow continue")
-    expect(text).toContain("If README.md is absent, do not block")
-    expect(text).toContain(".persona/policies/overlay.jsonc")
-    expect(text).toContain("do not infer a Node/CommonJS stack from package.json")
-    expect(text).toContain("pending tickets remain")
-    expect(text).toContain("do not claim the whole backlog")
+    expect(text).toContain("Intent classification: explicit continuation request.")
+    expect(text).toContain("Ask for the explicit current delivery boundary")
+    expect(text).toContain("The next handoff is explicit")
+    expect(text).not.toContain("npx ph workflow")
   })
 
   it("does not over-route explanation or debugging requests to requirements workflow", async () => {
@@ -632,7 +615,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
     const injection = createInjectionBlock(targetFile, fixtureWorkspace)
 
-    const tier0 = injection.block.split("Tier1 - implement/continue workflow rail:")[0] ?? ""
+    const tier0 = injection.block.split("Tier1 - advisory workflow boundary:")[0] ?? ""
     const tier0Lines = tier0
       .split("\n")
       .slice(tier0.split("\n").findIndex((line) => line === "Tier0 - source-of-truth boundaries:"))
@@ -644,18 +627,18 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(injection.block).not.toContain("PH-owned MCP/codegraph")
   })
 
-  it("routes short implementation intent through the accepted workflow plan gate", () => {
+  it("keeps short implementation guidance advisory until the user selects a procedure", () => {
     const targetFile = fixturePath("ReservationController.java")
 
     const injection = createInjectionBlock(targetFile, fixtureWorkspace)
 
-    expect(injection.block).toContain("Tier1 - implement/continue workflow rail:")
-    expect(injection.block).toContain("short implementation requests")
-    expect(injection.block).toContain("npx ph workflow implement")
+    expect(injection.block).toContain("Tier1 - advisory workflow boundary:")
+    expect(injection.block).toContain("A host injection does not start, continue, or repair a workflow")
+    expect(injection.block).toContain("Keep pasted product requirements conversational")
     expect(injection.block).toContain("profile exists but not read → do not implement yet")
-    expect(injection.block).toContain("If `npx ph workflow implement` fails, stop")
-    expect(injection.block).toContain("Read long README/plan content in bounded chunks with `npx ph bearshell`")
-    expect(injection.block).toContain("Tier3 - finish/review/archive verification:")
+    expect(injection.block).toContain("Read long README/plan content in bounded chunks")
+    expect(injection.block).toContain("Tier3 - advisory closure boundary:")
+    expect(injection.block).not.toContain("npx ph workflow implement")
   })
 
   it("keeps selectedRules evidence as rule path strings", () => {

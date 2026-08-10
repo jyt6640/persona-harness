@@ -20,6 +20,7 @@ describe("formatReviewWorkflowBlock", () => {
     expect(block).toContain("Write findings first")
     expect(block).toContain("file/line/evidence/impact")
     expect(block).toContain("Make fixes only when the user explicitly requests them")
-    expect(block).toContain("This is not generated app product-quality certification")
+    expect(block).toContain("OpenCode advises and routes only")
+    expect(block).not.toContain("npx ph workflow")
   })
 })

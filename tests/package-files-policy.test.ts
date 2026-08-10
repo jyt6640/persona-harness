@@ -43,9 +43,43 @@ type MarkdownLink = {
   readonly label: string
 }
 
+type SharedSkillCatalog = {
+  readonly schemaVersion: string
+  readonly skills: readonly {
+    readonly entry: string
+    readonly id: string
+  }[]
+}
+
 const packageRoot = process.cwd()
 
 describe("package files policy", () => {
+  it("ships the Persona catalog and only its declared shared-skill contract", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const catalogPath = "packages/shared-skills/catalog.json"
+    const catalog = JSON.parse(readFileSync(path.join(packageRoot, catalogPath), "utf8")) as SharedSkillCatalog
+
+    expect(catalog.schemaVersion).toBe("persona-shared-skill-catalog.1")
+    expect(catalog.skills.length).toBeGreaterThan(0)
+    for (const skill of catalog.skills) {
+      const packagePath = `packages/shared-skills/${skill.entry}`
+      expect(existsSync(path.join(packageRoot, packagePath))).toBe(true)
+      expect(isCoveredByPackageFiles(packagePath, packageJson.files)).toBe(true)
+    }
+
+    for (const packagePath of [
+      catalogPath,
+      "packages/shared-skills/README.md",
+      "docs/current/persona-shared-skills-core.md",
+    ]) {
+      expect(existsSync(path.join(packageRoot, packagePath))).toBe(true)
+      expect(isCoveredByPackageFiles(packagePath, packageJson.files)).toBe(true)
+    }
+
+    expect(packageJson.files.some((entry) => entry.includes("packages/shared-skills/skills/workflow"))).toBe(false)
+    expect(packageJson.files.some((entry) => entry.includes("superpowers-driver"))).toBe(false)
+  })
+
   it("packages the root-bound prepack runner", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const scripts = packageJson.scripts
@@ -231,6 +265,7 @@ describe("package files policy", () => {
     const packagedScripts = [
       "scripts/staged-package-artifact-provenance-core.mjs",
       "scripts/staged-package-artifact-provenance-crypto.mjs",
+      "scripts/staged-package-artifact-provenance-network.d.mts",
       "scripts/staged-package-artifact-provenance-network.mjs",
       "scripts/staged-package-artifact-provenance-policy.mjs",
       "scripts/staged-package-artifact-tarball.mjs",
@@ -451,6 +486,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-beta32-acceptance-schema.mjs",
       "scripts/consumer-authority-beta33-acceptance-schema.d.mts",
       "scripts/consumer-authority-beta33-acceptance-schema.mjs",
+      "scripts/consumer-authority-v082-acceptance-schema.d.mts",
+      "scripts/consumer-authority-v082-acceptance-schema.mjs",
       "scripts/consumer-authority-final-observer-v4-cleanliness.d.mts",
       "scripts/consumer-authority-final-observer-v4-cleanliness.mjs",
       "scripts/consumer-authority-observer-gh-tool.d.mts",
@@ -526,6 +563,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-beta31-acceptance.json",
       "docs/current/release/consumer-authority-beta32-acceptance.json",
       "docs/current/release/consumer-authority-beta33-acceptance.json",
+      "docs/current/release/consumer-authority-v082-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -598,6 +636,7 @@ describe("package files policy", () => {
       "docs/current/canonical-docs-index.md",
       "docs/current/persona-harness-detailed-usage.md",
       "docs/current/workflow-closure-state-machine-design.md",
+      "docs/current/persona-shared-skills-core.md",
       "docs/current/measurement-scorecard.md",
       "docs/current/consumer-authority-v1-decision.md",
       "docs/current/release/README.md",

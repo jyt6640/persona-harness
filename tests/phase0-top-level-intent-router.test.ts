@@ -12,12 +12,12 @@ describe("detectTopLevelIntent", () => {
     expect(intent?.requirementsIntent?.sourceFile).toBe("README.md")
   })
 
-  it("routes vague product ideas to requirements drafting without programming", () => {
+  it("routes vague product ideas to the product interview before technical intake", () => {
     const intent = detectTopLevelIntent("TODO 웹 서비스 만들래")
 
-    expect(intent?.primary).toBe("requirements")
+    expect(intent?.primary).toBe("product-interview")
     expect(intent?.secondary).toEqual([])
-    expect(intent?.requirementsIntent?.kind).toBe("requirement-drafting")
+    expect(intent?.requirementsIntent).toBeUndefined()
   })
 
   it("routes runtime failures to debug before programming", () => {

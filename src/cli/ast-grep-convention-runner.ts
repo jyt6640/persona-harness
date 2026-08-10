@@ -71,14 +71,14 @@ function verifiedAstGrepExecutable(candidate: string): string | undefined {
 }
 
 /**
- * Resolves the binary shipped inside the `@ast-grep/cli` optional dependency.
+ * Resolves the binary supplied through the `@ast-grep/cli` optional peer.
  *
  * PATH lookup alone is not enough: the installed package puts its shims in
  * `node_modules/.bin`, which is not on PATH for every way `ph` is launched, and
  * on Windows the shim is a `.cmd` that Node cannot spawn without a shell. The
  * package's own platform executable is directly spawnable, so prefer it.
  */
-function bundledAstGrepExecutable(): string | undefined {
+function optionalPeerAstGrepExecutable(): string | undefined {
   const names = process.platform === "win32"
     ? ["ast-grep.exe", "sg.exe"]
     : ["ast-grep", "sg"]
@@ -106,11 +106,11 @@ export function findAstGrepBinary(): string | undefined {
   if (onPath !== undefined) {
     return onPath
   }
-  // Fall back to the optional dependency's own executable. This is what makes
-  // the dependency usable on Windows, where the installed shim is a `.cmd` that
-  // Node cannot spawn and `node_modules/.bin` is not always on PATH.
-  const bundled = bundledAstGrepExecutable()
-  return bundled === undefined ? undefined : verifiedAstGrepExecutable(bundled)
+  // Fall back to an explicitly supplied optional peer executable. This keeps a
+  // Windows `.cmd` shim out of the spawn path without making the tool part of a
+  // normal Persona Harness consumer install.
+  const optionalPeer = optionalPeerAstGrepExecutable()
+  return optionalPeer === undefined ? undefined : verifiedAstGrepExecutable(optionalPeer)
 }
 
 function stringValue(record: Record<string, unknown>, key: string): string | undefined {

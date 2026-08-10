@@ -1,4 +1,6 @@
 import type { Hooks } from "@opencode-ai/plugin"
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 
 import { writePhase0Evidence } from "./evidence.js"
 import { ContinuationTracker } from "./continuation.js"
@@ -12,7 +14,7 @@ import {
 import { createInjectionBlock } from "./injection.js"
 import { IdleContinuationTracker } from "./idle-continuation.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
-import { maybeInjectIntentWorkflow } from "./intent-workflow.js"
+import { maybeInjectIntentWorkflow, maybeInjectProductDeepInterview } from "./intent-workflow.js"
 import { injectSystemConstitution } from "./system-constitution.js"
 import { TokenCompactionTracker } from "./token-compaction.js"
 import type { TokenCompactionClient } from "./token-compaction.js"
@@ -28,6 +30,7 @@ import { warnRuntimeFailure } from "./error-boundary.js"
 import { injectIntoLatestUserMessage } from "./messages.js"
 import { observeJavaWriteReportOnly } from "./observer-report-only.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
+import { ProductDeepInterviewTracker } from "./product-deep-interview.js"
 import { observeRoleBoundaryWrite } from "./role-boundary-heuristic.js"
 import { RuntimeSessionRegistry } from "./session-registry.js"
 import type { RuntimeInjectionSurface } from "./session-registry.js"
@@ -137,6 +140,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   }
   const evidenceDir = evidencePath.path
   const compliance = new RailComplianceTracker({ evidenceDir })
+  const productInterview = new ProductDeepInterviewTracker({
+    mode: existsSync(join(projectDir, "src")) ? "brownfield-change-discovery" : "new-product",
+  })
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
@@ -409,11 +415,17 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           return
         }
 
-        entrySteering.apply(sessionId, output)
-
         if (runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "intent-workflow")) {
+          const productInterviewInjected = config.enabledDomains.includes("product")
+            && maybeInjectProductDeepInterview(output, sessionId, productInterview)
+          if (productInterviewInjected) {
+            store.take(sessionId)
+            return
+          }
           maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, { evidenceDir })
         }
+
+        entrySteering.apply(sessionId, output)
 
         const injection =
           runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "model-input") ? store.take(sessionId) : undefined

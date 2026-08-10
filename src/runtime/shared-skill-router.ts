@@ -1,25 +1,27 @@
 import type { FileRole } from "../runtime/types.js"
+import {
+  PERSONA_OPTIONAL_SKILL_IDS,
+  personaSharedSkillPath,
+  type PersonaSharedSkillId,
+} from "./persona-shared-skill-catalog.js"
 
-export const ACTIVE_SHARED_SKILL_NAMES = ["programming", "frontend"] as const
+export const ACTIVE_SHARED_SKILL_NAMES = ["programming"] as const
 
-export const INACTIVE_VENDORED_SHARED_SKILL_NAMES = [
+export const OPTIONAL_SHARED_SKILL_NAMES = PERSONA_OPTIONAL_SKILL_IDS
+
+export const REMOVED_SHARED_SKILL_NAMES = [
+  "advanced/superpowers-driver",
   "debugging",
-  "visual-qa",
-  "ast-grep",
   "git-master",
-  "refactor",
-  "review-work",
-  "start-work",
-  "ulw-plan",
-  "ultraresearch",
   "init-deep",
   "remove-ai-slops",
-  "lsp-setup",
+  "review-work",
+  "start-work",
+  "ultraresearch",
+  "ulw-plan",
 ] as const
 
-export const REMOVED_SHARED_SKILL_NAMES = ["lcx-report-bug", "lcx-contribute-bug-fix", "lcx-doctor"] as const
-
-export type SharedSkillDomain = "programming" | "frontend"
+export type SharedSkillDomain = "programming"
 
 export type SharedSkillName = (typeof ACTIVE_SHARED_SKILL_NAMES)[number]
 
@@ -61,37 +63,35 @@ function isInfraTarget(normalizedPath: string): boolean {
   return INFRA_FILE_PATTERN.test(normalizedPath)
 }
 
+function selectProgrammingSkill(reason: string): SelectedSharedSkill {
+  const skillId: PersonaSharedSkillId = "programming"
+  return {
+    name: skillId,
+    domain: "programming",
+    path: personaSharedSkillPath(skillId),
+    reason,
+  }
+}
+
 export function selectSharedSkillsForTarget(targetFile: string): readonly SelectedSharedSkill[] {
   const normalizedPath = normalizePath(targetFile)
-  const selected: SelectedSharedSkill[] = []
-
-  if (isTypeScriptTarget(normalizedPath) || isJavaProgrammingTarget(normalizedPath)) {
-    selected.push({
-      name: "programming",
-      domain: "programming",
-      path: "packages/shared-skills/skills/programming/SKILL.md",
-      reason: isJavaProgrammingTarget(normalizedPath)
-        ? isGradleBuildFile(normalizedPath)
-          ? "Gradle Java build file detected; apply shared programming discipline."
-          : "Java target detected; apply shared programming discipline."
-        : "TypeScript target detected; apply shared programming discipline.",
-    })
-  }
-
-  if (isTypeScriptTarget(normalizedPath) && isFrontendTarget(normalizedPath)) {
-    selected.push({
-      name: "frontend",
-      domain: "frontend",
-      path: "packages/shared-skills/skills/frontend/SKILL.md",
-      reason: "React/frontend TypeScript target detected; apply frontend guidance as an overlay.",
-    })
-  }
 
   if (isInfraTarget(normalizedPath)) {
-    return selected
+    return []
   }
-
-  return selected
+  if (isJavaProgrammingTarget(normalizedPath)) {
+    return [
+      selectProgrammingSkill(
+        isGradleBuildFile(normalizedPath)
+          ? "Gradle Java build file detected; apply the Persona programming discipline."
+          : "Java target detected; apply the Persona programming discipline.",
+      ),
+    ]
+  }
+  if (isTypeScriptTarget(normalizedPath)) {
+    return [selectProgrammingSkill("TypeScript target detected; apply the Persona programming discipline.")]
+  }
+  return []
 }
 
 export function resolveSharedSkillFileRole(selectedSkills: readonly SelectedSharedSkill[], targetFile = ""): FileRole {
@@ -100,7 +100,7 @@ export function resolveSharedSkillFileRole(selectedSkills: readonly SelectedShar
   if (isInfraTarget(normalizedPath)) {
     return "infra"
   }
-  if (selectedSkills.some((skill) => skill.domain === "frontend")) {
+  if (isFrontendTarget(normalizedPath)) {
     return "frontend"
   }
   if (isJavaProgrammingTarget(normalizedPath)) {

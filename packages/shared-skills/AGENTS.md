@@ -1,74 +1,14 @@
-# shared-skills — Cross-Harness SKILL.md Bundle (Skills)
+# Persona Shared Skills
 
-**Generated:** 2026-06-19
+`catalog.json` is the only current Persona-owned shared-skill contract. It
+defines the portable core, explicit optional overlays, their mutability, and
+their handoffs. The root npm package ships only the catalog entries declared
+in its `files` policy; it does not inject full skill bodies into a host.
 
-## OVERVIEW
+OpenCode and other hosts may advise or route to a catalog entry. They do not
+create plans, workflow state, tickets, branches, files, or agents unless a
+user explicitly chooses a later procedure.
 
-Hand-authored, cross-harness skill bundle shared between the OpenCode and Codex editions, pruned for Persona Harness. Pure data — no logic, no transform inside the package. The only code is `index.mjs`, which exports `sharedSkillsRootPath()` returning the absolute path to `skills/`. Package: `@oh-my-opencode/shared-skills` (`files`: `index.mjs`, `index.d.ts`, `skills`).
-
-## SKILLS
-
-Active auto-routed skills:
-
-- `programming`
-- `frontend`
-
-Active intent-routed skills:
-
-- `workflow/requirements` — selected by Persona Harness runtime when a user asks to draft, approve, split, continue, or implement README/requirements/prompt requirements.
-- `workflow/debug` — selected by Persona Harness runtime for failure/error/broken-behavior prompts.
-- `workflow/review` — selected by Persona Harness runtime for review/audit/QA prompts.
-- `workflow/refactor` — selected by Persona Harness runtime for behavior-preserving cleanup/restructure prompts.
-- `workflow/git` — selected by Persona Harness runtime for commit/push/tag/history prompts.
-- `workflow/programming` — selected by Persona Harness runtime for direct code creation or edit prompts when no stronger workflow rail applies.
-
-Workflow skills stay in the npm package and are not copied into project `.persona`.
-
-Inactive vendored skills:
-
-- `debugging`
-- `visual-qa`
-- `ast-grep`
-- `git-master`
-- `refactor`
-- `review-work`
-- `start-work`
-- `ulw-plan`
-- `ultraresearch`
-- `init-deep`
-- `remove-ai-slops`
-- `lsp-setup`
-
-Removed Persona Harness exclusions:
-
-- `lcx-report-bug`
-- `lcx-contribute-bug-fix`
-- `lcx-doctor`
-
-Per-skill layout: `SKILL.md` (YAML frontmatter `name:` + single-line `description:` with triggers) + optional `references/` (the real content; SKILL.md is a router/index) + optional `scripts/` + optional `fixtures/` for regression samples + optional `agents/openai.yaml` (3 skills carry the Codex agent role declaration).
-
-## PIPELINE
-
-```
-skills/ (source)
-  ├─ build:shared-skills-assets (root) → cp -R skills dist/skills          # literal copy, no transform
-  ├─ skills-loader-core → loadSkillsFromDir(sharedSkillsRootPath(), scope:"shared")   # OpenCode runtime
-  └─ omo-codex/plugin/scripts/sync-skills.mjs → plugin/skills/             # copy + adaptSkillForCodex()
-        (inserts Codex Harness Tool Compatibility sections; overlays start-work/review-work;
-         filters out *.test.* ) → ships to ~/.codex/.../skills/
-```
-
-## CONSUMERS
-
-- `skills-loader-core` (`workspace:*`) — default `skillsRootPath` for builtin/shared skill loading.
-- `omo-opencode/src/cli/install-ast-grep-sg.ts` — finds the ast-grep skill dir for binary install.
-- `omo-codex/plugin` (`file:` dep) — `sync-skills.mjs` is the only transformer.
-
-## NOTES
-
-- **No generator builds the skills** — they are authored by hand; the build step is a plain `cp -R`.
-- **Test files (`*.test.ts/.mjs`) are excluded** when Codex copies skills.
-- **`lcx-` skills are intentionally removed** from Persona Harness because they route LazyCodex/Codex maintenance workflows, not this project's backend/frontend/infra harness behavior.
-- **Inactive vendored skills stay off automatic routing** until the Persona-specific adapter explicitly promotes one.
-- **Packaging is pinned** by `omo-opencode/src/shared-skills-package.test.ts` (workspace inclusion + `files` entries + every skill parses).
-- Parent: [`packages/AGENTS.md`](../AGENTS.md).
+Legacy directories outside `catalog.json` are nonoperative source history.
+They are neither routed nor packaged and must not be represented as Persona
+skills or host capabilities.

@@ -109,7 +109,7 @@ function packagedCodegraphCommand() {
     if (typeof bin !== "string" || bin.trim() === "") return undefined
     const script = join(dirname(packageJsonPath), bin)
     if (!existsSync(script)) return undefined
-    return { kind: "available", source: "@colbymchenry/codegraph optionalDependency", command: [process.execPath, script], argsPrefix: [] }
+    return { kind: "available", source: "@colbymchenry/codegraph optionalPeer", command: [process.execPath, script], argsPrefix: [] }
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "MODULE_NOT_FOUND") return undefined
     return undefined

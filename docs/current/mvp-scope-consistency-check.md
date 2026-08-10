@@ -30,7 +30,7 @@ npm run check:scope:strict
 
 - Java/Spring backend Clean Code injection remains the MVP.
 - `programming` is active as limited support for Java/Gradle targets.
-- TypeScript `programming` and React/frontend `frontend` routing are experimental.
+- TypeScript and React/frontend targets automatically select `programming`; `frontend` is an explicit optional overlay. This routing remains experimental.
 - `infra` and generic `shared-skill` roles are parking surfaces.
 - Vendored skills such as `ast-grep`, `debugging`, `visual-qa`, and `review-work` are inactive references unless a later scope decision activates them.
 

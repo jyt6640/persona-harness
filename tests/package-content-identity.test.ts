@@ -4,6 +4,7 @@ import { gzipSync } from "node:zlib"
 import { describe, expect, it } from "vitest"
 
 import {
+  assertWindowsPackageInstallSurface,
   PACKAGE_CONTENT_MAX_MEMBER_BYTES,
   PackageContentIdentityError,
   canonicalizePackageTarball,
@@ -14,6 +15,42 @@ import {
 const TAR_BLOCK_BYTES = 512
 
 describe("package content identity", () => {
+  it("rejects Windows extraction aliases and bin shim collisions before canonical packing", () => {
+    // Given: each archive is otherwise a valid regular-file npm tarball.
+    const cases = [
+      tarball([
+        entry("package/package.json", '{"name":"persona-harness","version":"0.8.2"}\n', 0o644),
+        entry("package/README.md", "one\n", 0o644),
+        entry("package/readme.md", "two\n", 0o644),
+      ]),
+      tarball([
+        entry("package/package.json", '{"name":"persona-harness","version":"0.8.2"}\n', 0o644),
+        entry("package/AUX.md", "reserved\n", 0o644),
+      ]),
+      tarball([
+        entry("package/package.json", '{"name":"persona-harness","version":"0.8.2","bin":{"ph":"dist/cli/index.js","ph.cmd":"dist/cli/index.js"}}\n', 0o644),
+        entry("package/dist/cli/index.js", "#!/usr/bin/env node\n", 0o755),
+      ]),
+    ]
+
+    // When / Then: Windows extraction or cmd-shim would otherwise collide.
+    for (const archive of cases) {
+      expect(() => assertWindowsPackageInstallSurface(archive)).toThrow("package-content-identity-windows-surface")
+    }
+  })
+
+  it("accepts a Windows-safe package member and bin surface", () => {
+    // Given
+    const archive = tarball([
+      entry("package/package.json", '{"name":"persona-harness","version":"0.8.2","bin":{"ph":"dist/cli/index.js"}}\n', 0o644),
+      entry("package/dist/cli/index.js", "#!/usr/bin/env node\n", 0o755),
+      entry("package/docs/guide.md", "safe\n", 0o644),
+    ])
+
+    // Then
+    expect(assertWindowsPackageInstallSurface(archive)).toBeUndefined()
+  })
+
   it("normalizes safe member order and non-security tar metadata without exposing members", () => {
     // Given
     const original = tarball([
