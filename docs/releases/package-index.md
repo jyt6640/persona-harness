@@ -117,7 +117,9 @@ historical rows; they are not competing live claims.
 | `0.8.0-beta.34` | 2026-08-09 | published staging-only beta | [`release notes`](../current/release/v0.8.0-beta.34-release-notes.md), [`beta lifecycle`](../current/release/consumer-authority-beta.md) | recorded npm `staging` at the 2026-08-09 readback; staging evidence is not Finish or promotion authority |
 | `0.8.0-rc.1` | 2026-08-09 | published `next` release candidate | [`release notes`](../current/release/v0.8.0-rc.1-release-notes.md) | recorded npm `next` at the 2026-08-09 readback |
 | `0.8.0` | 2026-08-09 | published stable release | [`release notes`](../current/release/v0.8.0-release-notes.md) | superseded as npm `latest` by `0.8.1` in the same release cycle |
-| `0.8.1` | 2026-08-09 | current stable `latest` at the recorded readback | [`release notes`](../current/release/v0.8.1-release-notes.md) | npm `latest` and GitHub latest release matched `v0.8.1`; re-read live state before a later release decision |
+| `0.8.1` | 2026-08-09 | historical stable `latest` record | [`release notes`](../current/release/v0.8.1-release-notes.md) | superseded as npm `latest` by the later recorded `0.8.2` publication; re-read live state before a release decision |
+| `0.8.2` | 2026-08-10 | recorded npm `latest` publication | [`release notes`](../current/release/v0.8.2-release-notes.md) | canonical registry bytes are immutable and cannot supply `0.8.3` package evidence |
+| `0.8.3` | 2026-08-10 | unpublished stable source candidate | [`release notes`](../current/release/v0.8.3-release-notes.md) | requires its own exact package facts and normal package and hosted gates; no release action is implied |
 
 ## Future Migration Notes
 

@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "consumer-authority-v082-acceptance.1",
+  "schemaVersion": "consumer-authority-v083-acceptance.1",
   "package": {
-    "channel": "latest",
-    "scope": "ga-approved",
-    "version": "0.8.2"
+    "channel": "unpublished",
+    "scope": "source-candidate",
+    "version": "0.8.3"
   },
   "packageBoundary": {
     "bundle": {
@@ -290,7 +290,7 @@
       "artifact": "project-finish-attestation",
       "consumer": "public-java-spring-gradle",
       "postmergeAction": "normal-push-to-main",
-      "registryInstall": "published-persona-harness@0.8.2-latest-release-record"
+      "registryInstall": "requires-authorized-release-before-registry-install-persona-harness@0.8.3"
     },
     "hostedFixture": {
       "callerWorkflowPath": ".github/workflows/research-attestation.yml",
@@ -299,7 +299,7 @@
       "ref": "refs/heads/main",
       "repository": "jyt6640/persona-harness-attestation-claim-fixture",
       "reusableWorkflowPath": ".github/workflows/persona-harness-project-finish.yml",
-      "revision": "v082-published-latest-release-record"
+      "revision": "v083-source-candidate-head-before-authorized-release"
     },
     "verification": {
       "predicate": "project-finish-attestation.1",
@@ -686,7 +686,7 @@
     }
   },
   "hostedResidual": {
-    "id": "v082-published-latest-release-record",
+    "id": "v083-current-package-acceptance-and-authorized-current-artifact-observation",
     "requiredEvidence": "one separately authorized normal push of the v4-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
     "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   },
@@ -971,5 +971,10 @@
     "outcome": "accepted-for-its-own-v081-tree-and-not-reusable-for-the-published-v082-release-or-any-later-package",
     "reusableForV082": false,
     "version": "0.8.1"
+  },
+  "v082HistoricalRelease": {
+    "outcome": "published-latest-v082-release-is-immutable-and-not-reusable-for-this-unpublished-v083-source-candidate-or-any-later-package",
+    "reusableForV083": false,
+    "version": "0.8.2"
   }
 }
