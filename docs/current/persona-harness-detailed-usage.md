@@ -33,7 +33,7 @@ npx ph bootstrap backend
 
 `npx ph init`은 최소 설치/연동 단계다. `.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore`를 준비하고 다음 행동을 안내한다. `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay, accepted plan, implementation/review report template은 만들지 않는다.
 
-Backend-ready 상태가 필요하면 `npx ph bootstrap backend`를 실행한다. 이 명령은 `AGENTS.md`, backend profile, policy overlay, accepted plan, implementation/review report template, harness/OpenCode config 상태를 준비한다.
+Backend-ready 상태가 필요하면 `npx ph bootstrap backend`를 실행한다. 이 명령은 없는 workflow plan을 accepted 상태로 만들고 `AGENTS.md`, backend profile, policy overlay, implementation/review report template, harness/OpenCode config 상태를 준비한다. 이미 있는 draft 또는 revision plan은 사용자 승인 경계를 보존하므로 자동 승인하지 않는다. 그 plan으로 구현 또는 Finish readiness를 계속하려면 `npx ph plan --accept`를 명시적으로 실행한다.
 
 프로젝트 조건을 직접 선택하려면 bootstrap 대신 `npx ph intake --interactive` 또는 `npx ph intake --default backend`를 실행한 뒤 `npx ph policy init`과 `npx ph plan`으로 계획 흐름을 진행한다.
 

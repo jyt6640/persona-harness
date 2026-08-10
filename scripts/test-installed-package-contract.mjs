@@ -55,6 +55,7 @@ const MODELED_AUTHORITY_TOPOLOGY = {
 }
 const BETA28_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
+  ["ph plan --accept", { args: ["plan", "--accept"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
   ["ph bearshell ./gradlew clean", { args: ["bearshell", "./gradlew", "clean"] }],
@@ -2221,10 +2222,7 @@ function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
 function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness, packageRoot) {
   createCooperativeGradleFixture(fixtureRoot)
   assertUninitializedFinishBlocks(fixtureRoot, phPath, label)
-  requireSuccess(
-    `${label} bootstrap checkpoint`,
-    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
-  )
+  prepareRetainedDraftPlan(fixtureRoot, phPath, label)
   const consumerRoot = `${fixtureRoot}-consumer`
   requireSuccess(`${label} clean consumer worktree`, runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]))
 
@@ -2322,8 +2320,36 @@ function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readines
   if (!status.stdout.includes("Plan: .persona/workflow/plan.md")) {
     throw new Error(`${label} public plan status did not retain the relative plan reference`)
   }
+  if (!status.stdout.includes("Status: accepted")) {
+    throw new Error(`${label} public plan status did not accept the retained draft plan`)
+  }
   assertCooperativeLifecycleState(fixtureRoot, label)
   assertAuthorityOnlyPreflight(fixtureRoot, phPath, label, readiness.expectedDefaultFinish, environment)
+}
+
+function prepareRetainedDraftPlan(fixtureRoot, phPath, label) {
+  requireSuccess(
+    `${label} retained source-bound profile`,
+    runNode(fixtureRoot, [phPath, "intake", "--default", "backend"]),
+  )
+  requireSuccess(
+    `${label} retained source-bound draft plan`,
+    runNode(fixtureRoot, [phPath, "plan"]),
+  )
+  requireSuccess(
+    `${label} retained source-bound bootstrap`,
+    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
+  )
+  const draftStatus = runNode(fixtureRoot, [phPath, "plan", "--status"])
+  requireSuccess(`${label} retained source-bound plan status`, draftStatus)
+  if (!draftStatus.stdout.includes("Status: draft")) {
+    throw new Error(`${label} retained source-bound bootstrap did not preserve the draft approval boundary`)
+  }
+  requireSuccess(`${label} retained source-bound plan add`, runCommand(fixtureRoot, "git", ["add", "."]))
+  requireSuccess(
+    `${label} retained source-bound plan commit`,
+    runCommand(fixtureRoot, "git", ["commit", "-qm", "retain draft workflow plan"]),
+  )
 }
 
 function assertPublicOutputDoesNotExposeWorkspace(result, workspace, label) {
