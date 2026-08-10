@@ -98,7 +98,8 @@ function renderQuestion(session: ProductInterviewSession, approvalBlocked = fals
     block: [
       "[Persona Harness Product Interview]",
       createOpenCodeSkillRoute({
-        decision: "suggest",
+        decision: "activate",
+        firstAction: session.mode === "brownfield-change-discovery" ? "code-first-change-discovery" : "one-question-product-interview",
         skillId: "deep-interview",
         reason: "Product facts are still unresolved, so technical intake and planning remain deferred.",
       }),

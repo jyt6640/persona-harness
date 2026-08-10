@@ -3,11 +3,13 @@ import {
   resolvePersonaSharedSkill,
   type PersonaSharedSkillId,
 } from "./persona-shared-skill-catalog.js"
+import type { PersonaSharedSkillActivation } from "./persona-shared-skill-activation.js"
 
-export type OpenCodeSkillRouteDecision = "none" | "suggest" | "explicit"
+export type OpenCodeSkillRouteDecision = "activate" | "explicit"
 
 export type OpenCodeSkillRouteInput = {
-  readonly decision: Exclude<OpenCodeSkillRouteDecision, "none">
+  readonly decision: OpenCodeSkillRouteDecision
+  readonly firstAction: PersonaSharedSkillActivation["firstAction"]
   readonly skillId: PersonaSharedSkillId
   readonly reason: string
 }
@@ -33,8 +35,17 @@ export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string
     `Skill: ${skill.id}`,
     `Reference: ${personaSharedSkillPath(skill.id)}`,
     `Reason: ${boundedReason(input.reason)}`,
+    `First safe action: ${input.firstAction}`,
     `Handoff: ${handoff}`,
-    "OpenCode advises and routes only. It does not create plans, tickets, branches, files, agents, or workflow state, load a full skill body, or advance a workflow automatically.",
-    "Use the referenced skill only when the user explicitly chooses that next step.",
+    "OpenCode activates this catalog reference for the current turn only. OpenCode advises and routes only: it does not load a full skill body. It does not create plans, tickets, branches, files, agents, or workflow state, or advance a workflow automatically.",
+  ].join("\n")
+}
+
+export function createOpenCodeUnavailableSkillRoute(reasonCode: "malformed-explicit-skill-command" | "unavailable-explicit-skill"): string {
+  return [
+    "[Persona Harness Skill Route]",
+    "Decision: unavailable",
+    `Reason code: ${reasonCode}`,
+    "OpenCode does not load a skill body, create state, or fall back to a different procedure.",
   ].join("\n")
 }

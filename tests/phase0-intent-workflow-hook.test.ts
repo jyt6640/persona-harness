@@ -118,7 +118,7 @@ describe("intent workflow hook boundary", () => {
     expect(first).toContain("[Persona Harness Product Interview]")
     expect(first).toContain("Question:")
     expect(first).toContain("Recommendation:")
-    expect(first).toContain("Decision: suggest")
+    expect(first).toContain("Decision: activate")
     expect(first).not.toContain("npx ph workflow")
     expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
     expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
@@ -172,7 +172,7 @@ describe("intent workflow hook boundary", () => {
     expect(text).toContain("[Persona Harness Requirements Workflow]")
     expect(text).toContain("Detected intent: requirement-implementation")
     expect(text).toContain("Skill: plan")
-    expect(text).toContain("Decision: suggest")
+    expect(text).toContain("Decision: activate")
     expect(text).toContain("does not create plans, tickets, branches, files, agents, or workflow state")
     expect(text).not.toContain("npx ph workflow")
     expect(text).not.toContain("[Persona Harness Programming Workflow]")
@@ -185,6 +185,25 @@ describe("intent workflow hook boundary", () => {
         }),
       }),
     )
+  })
+
+  it("renders only a compact explicit catalog reference and leaves ordinary turns untouched", async () => {
+    const explicit = await transformPrompt("session-explicit-frontend", "/persona frontend review the booking screen")
+    const explicitInterview = await transformPrompt("session-explicit-interview", "/persona deep-interview explore a booking product")
+    const ordinary = await transformPrompt("session-ordinary", "hello there")
+
+    expect(explicit).toContain("[Persona Harness Skill Activation]")
+    expect(explicit).toContain("Decision: explicit")
+    expect(explicit).toContain("Skill: frontend")
+    expect(explicit).toContain("Reference: packages/shared-skills/skills/frontend/SKILL.md")
+    expect(explicit).not.toContain("# Frontend")
+    expect(explicit).not.toContain("npx ph workflow")
+    expect(explicitInterview).toContain("[Persona Harness Skill Activation]")
+    expect(explicitInterview).toContain("Decision: explicit")
+    expect(explicitInterview).toContain("Skill: deep-interview")
+    expect(explicitInterview).not.toContain("Question:")
+    expect(explicitInterview).not.toContain("npx ph workflow")
+    expect(ordinary).toBe("hello there")
   })
 
   it("routes approved prompt requirements to an explicit advisory plan handoff only when a draft exists", async () => {

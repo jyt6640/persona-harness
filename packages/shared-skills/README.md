@@ -8,7 +8,10 @@ Core sequence: `deep-interview` -> `technical-intake` -> `plan` -> optional
 `refactor`, and `git` provide bounded supporting guidance. `frontend`,
 `visual-qa`, `ast-grep`, and `lsp-setup` are explicit optional overlays.
 
-Hosts may route to these entries but do not load their full bodies or advance
+An explicit `/persona <skill-id>` command wins routing. Otherwise clear direct
+work uses its matching supporting skill, while ambiguous product requests start
+`deep-interview` with one safe action. Hosts activate one compact catalog
+reference only; they do not load full bodies or the catalog, or advance
 workflow state automatically. The only bundled language reference is Java.
 Anything outside the catalog is nonoperative source history, not a shipped
 Persona capability.

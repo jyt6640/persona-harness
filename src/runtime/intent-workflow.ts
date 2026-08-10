@@ -3,7 +3,7 @@ import { writeIntentEvidence } from "./evidence.js"
 import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
 import { formatGitWorkflowBlock } from "./git-workflow-skill.js"
 import { injectTextIntoLatestUserMessage } from "./messages.js"
-import { ProductDeepInterviewTracker } from "./product-deep-interview.js"
+import { ProductDeepInterviewTracker, type ProductDeepInterviewMode } from "./product-deep-interview.js"
 import { formatProgrammingWorkflowBlock } from "./programming-workflow-skill.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
 import { formatRefactorWorkflowBlock } from "./refactor-workflow-skill.js"
@@ -14,6 +14,10 @@ import {
 } from "./requirements-workflow-skill.js"
 import { formatReviewWorkflowBlock } from "./review-workflow-skill.js"
 import { detectTopLevelIntent, type TopLevelIntent } from "./top-level-intent-router.js"
+import {
+  formatExplicitPersonaSkillActivationBlock,
+  formatUnavailablePersonaSkillActivationBlock,
+} from "./workflow-skill-loader.js"
 import type { TransformMessagesOutput } from "./types.js"
 
 type IntentWorkflowOptions = {
@@ -38,12 +42,13 @@ export function maybeInjectProductDeepInterview(
   output: TransformMessagesOutput,
   sessionID: string,
   tracker: ProductDeepInterviewTracker,
+  productMode: ProductDeepInterviewMode,
 ): boolean {
   const text = latestUserText(output)
   if (text === undefined) {
     return false
   }
-  if (!tracker.hasActiveSession(sessionID) && detectTopLevelIntent(text)?.primary !== "product-interview") {
+  if (!tracker.hasActiveSession(sessionID) && detectTopLevelIntent(text, { productMode })?.primary !== "product-interview") {
     return false
   }
   const result = tracker.route(sessionID, text)
@@ -161,6 +166,34 @@ export function maybeInjectIntentWorkflow(
     return false
   }
   const intent = detectTopLevelIntent(text)
+
+  if (intent?.primary === "unavailable") {
+    return injectIntentWorkflowRail(
+      output,
+      projectDir,
+      sessionID,
+      text,
+      intent,
+      formatUnavailablePersonaSkillActivationBlock(intent),
+      "[Persona Harness Skill Activation]",
+      compliance,
+      options,
+    )
+  }
+
+  if (intent?.activation?.decision === "explicit") {
+    return injectIntentWorkflowRail(
+      output,
+      projectDir,
+      sessionID,
+      text,
+      intent,
+      formatExplicitPersonaSkillActivationBlock(intent),
+      "[Persona Harness Skill Activation]",
+      compliance,
+      options,
+    )
+  }
 
   if (intent?.primary === "debug") {
     return injectIntentWorkflowRail(

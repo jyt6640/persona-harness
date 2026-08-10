@@ -164,15 +164,26 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(guide).toContain("does not claim Windows runtime support")
   })
 
+  it("documents compact automatic activation without automatic frontend or workflow progression", () => {
+    const guide = readFileSync(join(packageRoot, "docs/current/persona-shared-skills-core.md"), "utf8")
+
+    expect(guide).toContain("## Automatic Activation")
+    expect(guide).toContain("explicit `/persona <skill-id>` command")
+    expect(guide).toContain("frontend`, `visual-qa`, `ast-grep`, and `lsp-setup` are optional overlays")
+    expect(guide).toContain("does not load the full skill body or catalog")
+    expect(guide).toMatch(/does\s+not grant them authority/u)
+  })
+
   it("renders an advisory route instead of injecting a skill body or advancing workflow state", () => {
     const route = createOpenCodeSkillRoute({
-      decision: "suggest",
+      decision: "activate",
+      firstAction: "one-question-product-interview",
       skillId: "deep-interview",
       reason: "A product outcome is still unresolved.",
     })
 
     expect(route).toContain("[Persona Harness Skill Route]")
-    expect(route).toContain("Decision: suggest")
+    expect(route).toContain("Decision: activate")
     expect(route).toContain("Skill: deep-interview")
     expect(route).toContain("does not create plans, tickets, branches, files, agents, or workflow state")
     expect(route).not.toContain("npx ph workflow")

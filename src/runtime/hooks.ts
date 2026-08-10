@@ -140,9 +140,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   }
   const evidenceDir = evidencePath.path
   const compliance = new RailComplianceTracker({ evidenceDir })
-  const productInterview = new ProductDeepInterviewTracker({
-    mode: existsSync(join(projectDir, "src")) ? "brownfield-change-discovery" : "new-product",
-  })
+  const productInterviewMode = existsSync(join(projectDir, "src")) ? "brownfield-change-discovery" : "new-product"
+  const productInterview = new ProductDeepInterviewTracker({ mode: productInterviewMode })
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
@@ -417,7 +416,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
 
         if (runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "intent-workflow")) {
           const productInterviewInjected = config.enabledDomains.includes("product")
-            && maybeInjectProductDeepInterview(output, sessionId, productInterview)
+            && maybeInjectProductDeepInterview(output, sessionId, productInterview, productInterviewMode)
           if (productInterviewInjected) {
             store.take(sessionId)
             return

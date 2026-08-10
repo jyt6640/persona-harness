@@ -1,10 +1,18 @@
-import { createOpenCodeSkillRoute } from "./opencode-skill-adapter.js"
+import { createOpenCodeSkillRoute, createOpenCodeUnavailableSkillRoute } from "./opencode-skill-adapter.js"
 import { personaSharedSkillPath, type PersonaSharedSkillId } from "./persona-shared-skill-catalog.js"
+import { activateAutomaticPersonaSkill, type PersonaSharedSkillActivation } from "./persona-shared-skill-activation.js"
 import type { TopLevelIntent } from "./top-level-intent-router.js"
 
 export type WorkflowSkillName = "requirements" | "debug" | "review" | "refactor" | "git" | "programming"
 
-export type WorkflowSkillTemplateVariables = Readonly<Record<string, string>>
+export type WorkflowSkillTemplateVariables = {
+  readonly activation?: PersonaSharedSkillActivation
+  readonly detectedIntent?: string
+  readonly reason?: string
+  readonly secondaryIntents?: string
+  readonly selectedSkillPath?: string
+  readonly sourceFile?: string
+}
 
 const WORKFLOW_SKILL_IDS = {
   requirements: "plan",
@@ -66,6 +74,7 @@ export function workflowSkillPath(skill: WorkflowSkillName): string {
 
 export function topLevelIntentTemplateVariables(intent: TopLevelIntent): WorkflowSkillTemplateVariables {
   return {
+    activation: intent.activation,
     detectedIntent: intent.primary,
     secondaryIntents: intent.secondary.length > 0 ? intent.secondary.join(", ") : "none",
     reason: intent.reason,
@@ -78,7 +87,15 @@ export function loadWorkflowSkillBlock(
   variables: WorkflowSkillTemplateVariables,
 ): string {
   const skillId = WORKFLOW_SKILL_IDS[skill]
-  const decision = skill === "requirements" && blockName === "approval" ? "explicit" : "suggest"
+  const activation = variables.activation ?? activateAutomaticPersonaSkill(
+    skill,
+    variables.reason ?? "The current message matches a bounded Persona procedure.",
+  )
+  const decision = skill === "requirements" && blockName === "approval"
+    ? "explicit"
+    : activation.decision === "explicit"
+      ? "explicit"
+      : "activate"
   const sourceLine = variables.sourceFile === undefined ? [] : [`Source context: ${variables.sourceFile}`]
 
   return [
@@ -90,9 +107,37 @@ export function loadWorkflowSkillBlock(
     ...advisoryFocus(skill),
     createOpenCodeSkillRoute({
       decision,
+      firstAction: activation.firstAction,
       skillId,
       reason: variables.reason ?? "The current message matches a bounded Persona procedure.",
     }),
     "The next handoff is explicit; no command, workflow, ticket, report, or agent action is performed by this route.",
   ].join("\n")
+}
+
+export function formatExplicitPersonaSkillActivationBlock(intent: TopLevelIntent): string {
+  const activation = intent.activation
+  if (activation === undefined || activation.decision !== "explicit") {
+    throw new Error("Explicit Persona skill activation requires an explicit activation contract")
+  }
+
+  return [
+    "[Persona Harness Skill Activation]",
+    `Detected intent: ${intent.primary}`,
+    createOpenCodeSkillRoute({
+      decision: "explicit",
+      firstAction: activation.firstAction,
+      skillId: activation.skillId,
+      reason: activation.reason,
+    }),
+    "The explicit command selects only this bounded catalog reference; it does not create or advance workflow state.",
+  ].join("\n")
+}
+
+export function formatUnavailablePersonaSkillActivationBlock(intent: TopLevelIntent): string {
+  if (intent.primary !== "unavailable" || intent.reasonCode === undefined) {
+    throw new Error("Unavailable Persona skill activation requires an unavailable route contract")
+  }
+
+  return createOpenCodeUnavailableSkillRoute(intent.reasonCode)
 }
