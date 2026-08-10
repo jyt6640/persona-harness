@@ -7,13 +7,17 @@ Make Persona Harness behave more like OMO for shared skills while keeping Person
 ## Implemented
 
 - Vendored OMO `shared-skills` under `packages/shared-skills`.
-- Added a minimal shared skill router in `src/phase0/shared-skill-router.ts`.
-- TypeScript targets select `programming`.
-- React/frontend TypeScript targets select `programming`; `frontend` remains an explicit optional overlay.
-- LazyCodex/Codex maintenance-only `lcx-*` skills were removed from the Persona Harness copy.
-- Non-current skills remain vendored but inactive and are not automatic routing candidates.
-- Java/Spring backend targets continue to use deterministic `.persona/rules` and do not force TypeScript shared skills.
-- Shared skill selections are included in the injection block and metadata-only evidence.
+- `src/runtime/shared-skill-router.ts` keeps file-target routing narrow:
+  TypeScript and Java targets select `programming` as supporting guidance.
+- `src/runtime/top-level-intent-router.ts` activates one compact catalog
+  reference from message intent. Explicit `/persona <skill-id>` commands win;
+  malformed or unavailable commands fail closed without fallback.
+- Ambiguous new-product requests start a one-question `deep-interview`;
+  brownfield requests start code-first discovery. Clear direct work bypasses
+  discovery.
+- React/frontend targets select `programming`; `frontend` remains an explicit
+  optional overlay.
+- Java/Spring backend targets continue to use deterministic `.persona/rules`.
 
 ## Routing Behavior
 
@@ -25,11 +29,13 @@ Make Persona Harness behave more like OMO for shared skills while keeping Person
 | Java/Spring backend files | backend `.persona/rules` only |
 | infra-only files such as `Dockerfile` | no shared skill yet |
 
-## Inactive / Removed Skills
+## Non-catalog Material
 
-Inactive vendored skills are intentionally available as reference material but excluded from automatic routing: `debugging`, `visual-qa`, `ast-grep`, `git-master`, `refactor`, `review-work`, `start-work`, `ulw-plan`, `ultraresearch`, `init-deep`, `remove-ai-slops`, and `lsp-setup`.
+Legacy OMO orchestration payloads and maintenance-only material are not Persona
+automatic-routing candidates. The Persona catalog is the authoritative list;
+its optional extensions require an explicit request and available host support.
 
-Removed skills are not vendored: `lcx-report-bug`, `lcx-contribute-bug-fix`, and `lcx-doctor`.
+Removed `lcx-*` maintenance skills are not Persona runtime capabilities.
 
 ## React / Frontend Overlay
 
@@ -37,25 +43,21 @@ Frontend is an explicit optional overlay. Target path alone, including `.tsx` an
 
 This keeps all automatic TypeScript and React/frontend routing on `programming` only.
 
-## Non-Goals
+## Host Boundary
 
-- No full skill loader yet.
+- No full skill-body or catalog injection.
 - No OMO agent/team workflow copy.
-- No product-quality gate.
-- No frontend/infra project generation.
-- No replacement of `.persona/rules`.
+- No automatic workflow, ticket, branch, file, issue, or agent progression.
+- No frontend/infra project generation or replacement of `.persona/rules`.
 
 ## Verification
 
-- Red test added first in `tests/phase0-shared-skill-routing.test.ts`.
-- TypeScript target smoke expects `programming`.
-- React component target smoke expects `programming` only and rejects automatic `frontend` injection.
-- Inactive vendored skills are asserted to stay out of automatic routing.
-- Removed `lcx-*` skill directories are asserted absent.
-- Hook smoke confirms TypeScript file access receives a Persona Harness injection block.
+- Activation tests cover explicit-command precedence, direct-work precedence,
+  product/brownfield first actions, suppression, and unavailable commands.
+- Target-routing tests keep TypeScript and React/frontend on `programming` only
+  and reject automatic `frontend` injection.
+- Packed-install verification checks installed-only activation behavior without a
+  source fallback or full skill-body route.
 
-## Next
-
-The Gradle Java/Spring Injection ON/OFF A/B pair was run in `experiments/phase0-runs/2026-06-18T10-55-43-325Z`.
-
-Next decision belongs to backend Clean Code uniformity validation, not shared-skill routing.
+The canonical current contract is [Persona Shared Skills
+Core](persona-shared-skills-core.md).

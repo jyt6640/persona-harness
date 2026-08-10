@@ -5,7 +5,8 @@ import { createOpenCodeSkillRoute } from "../src/runtime/opencode-skill-adapter.
 describe("OpenCode skill adapter", () => {
   it("renders ralplan as optional before the TDD handoff", () => {
     const route = createOpenCodeSkillRoute({
-      decision: "suggest",
+      decision: "activate",
+      firstAction: "advisory-reference",
       skillId: "plan",
       reason: "The product and technical briefs are approved.",
     })
