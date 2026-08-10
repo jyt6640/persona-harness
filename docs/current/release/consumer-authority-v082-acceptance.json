@@ -5,6 +5,27 @@
     "scope": "source-candidate",
     "version": "0.8.2"
   },
+  "acceptanceResponsibilities": {
+    "package": {
+      "excludes": [
+        "attestation-parser",
+        "observer-gh-selector"
+      ],
+      "requires": [
+        "exact-tar-provenance",
+        "normal-install",
+        "installed-only-no-source-fallback",
+        "cli-and-approval-before-mutation"
+      ]
+    },
+    "sourceAndProtectedUbuntuCi": {
+      "requires": [
+        "workflow-owned-dpkg-observer-gh-selection",
+        "private-regular-nonsymlink-observer-gh-copy",
+        "path-free-attestation-parser-preflight"
+      ]
+    }
+  },
   "packageBoundary": {
     "bundle": {
       "requiredRefs": [
@@ -672,7 +693,7 @@
         "schemaVersion": "consumer-authority-observer-gh-tool.2",
         "version": ">=2.96.0 <3.0.0"
       },
-      "observerGhSelection": "workflow-owned-dpkg-ownership-and-byte-strict-package-record-qualified-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-inert-or-block-policy-copyfile-excl-private-copy-reassessment-with-runner-temp-isolated-token-free-state-root-and-fixed-nonreflective-selector-stage-and-package-record-shape-before-every-package-contract",
+      "observerGhSelection": "source-and-protected-ubuntu-ci-only-workflow-owned-dpkg-ownership-and-byte-strict-package-record-qualified-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-inert-or-block-policy-copyfile-excl-private-copy-reassessment-with-runner-temp-isolated-token-free-state-root-and-fixed-nonreflective-selector-stage-and-package-record-shape",
       "attestationCommandPreflight": {
         "command": "node node_modules/persona-harness/scripts/preflight-consumer-authority-external-attestation.mjs --json --observer-gh <workflow-private-copy>",
         "credential": "absent",
@@ -688,7 +709,7 @@
   "hostedResidual": {
     "id": "v082-current-package-acceptance-and-authorized-current-artifact-observation",
     "requiredEvidence": "one separately authorized normal push of the v4-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
-    "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Local source and packed contracts prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics, current package-lock-acceptance binding, complete source and fresh-installed fixture import closure, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
+    "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   },
   "mutationBoundary": {
     "performed": false,

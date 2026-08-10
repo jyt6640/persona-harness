@@ -365,7 +365,8 @@ describe("release workflow policy", () => {
     expect(scripts["test:package"]).toBe("node dist/cli/index.js --help")
     expect(scripts["test:authoritative-bundle-package-contract"]).toBe("node scripts/verify-clean-package-boundary.mjs --exercise-contract --observer-gh \"$PERSONA_HARNESS_OBSERVER_GH\"")
     expect(scripts["test:clean-package-boundary"]).toBe("node scripts/verify-clean-package-boundary.mjs")
-    expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs --observer-gh \"$PERSONA_HARNESS_OBSERVER_GH\"")
+    expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs --package-acceptance")
+    expect(scripts["test:installed-package-contract"]).not.toContain("observer-gh")
     expect(scripts["test:repository"]).toBe(
       "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:authoritative-bundle-package-contract",
     )

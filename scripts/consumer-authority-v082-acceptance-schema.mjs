@@ -52,6 +52,28 @@ function buildExpectedManifest() {
   manifest.package.channel = "unpublished"
   manifest.package.scope = "source-candidate"
   manifest.package.version = V082_PACKAGE_VERSION
+  manifest.acceptanceResponsibilities = {
+    package: {
+      excludes: ["attestation-parser", "observer-gh-selector"],
+      requires: [
+        "exact-tar-provenance",
+        "normal-install",
+        "installed-only-no-source-fallback",
+        "cli-and-approval-before-mutation",
+      ],
+    },
+    sourceAndProtectedUbuntuCi: {
+      requires: [
+        "workflow-owned-dpkg-observer-gh-selection",
+        "private-regular-nonsymlink-observer-gh-copy",
+        "path-free-attestation-parser-preflight",
+      ],
+    },
+  }
+  manifest.prearmedExternalHandoff.finalObserverProcedure.observerGhSelection =
+    "source-and-protected-ubuntu-ci-only-workflow-owned-dpkg-ownership-and-byte-strict-package-record-qualified-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-inert-or-block-policy-copyfile-excl-private-copy-reassessment-with-runner-temp-isolated-token-free-state-root-and-fixed-nonreflective-selector-stage-and-package-record-shape"
+  manifest.hostedResidual.whyLocalCannotClose =
+    "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   manifest.v081HistoricalRelease = {
     outcome: "accepted-for-its-own-v081-tree-and-not-reusable-for-this-unpublished-v082-source-candidate-or-any-later-package",
     reusableForV082: false,

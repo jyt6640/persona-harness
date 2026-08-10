@@ -43,8 +43,38 @@ describe("CI and release workflow policy surface", () => {
     expect(staticFixturePaths).toContain("scripts/check-release-workflows.mjs")
     expect(staticFixturePaths).toContain("scripts/release-workflow-checker-inputs.mjs")
     expect(staticFixturePaths).toContain("scripts/consumer-authority-observer-gh-package-record.mjs")
+    expect(staticFixturePaths).toContain("package.json")
+    expect(staticFixturePaths).toContain("docs/current/release/consumer-authority-v082-acceptance.json")
     expect(staticFixturePaths).not.toContain(CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT)
     expect(CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS).not.toContain("scripts/check-release-workflows.mjs")
+  })
+
+  it("rejects a Package consumer script that claims CI-owned observer proof", () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), "release-workflow-package-responsibility-test-"))
+    try {
+      copyReleaseWorkflowCheckerFixture(fixtureDir)
+      copyFileSync(join(process.cwd(), "package.json"), join(fixtureDir, "package.json"))
+      const acceptancePath = "docs/current/release/consumer-authority-v082-acceptance.json"
+      const acceptanceTarget = join(fixtureDir, acceptancePath)
+      mkdirSync(dirname(acceptanceTarget), { recursive: true })
+      copyFileSync(join(process.cwd(), acceptancePath), acceptanceTarget)
+      const packagePath = join(fixtureDir, "package.json")
+      const packageRecord = JSON.parse(readFileSync(packagePath, "utf8")) as {
+        scripts: Record<string, string>
+      }
+      packageRecord.scripts["test:installed-package-contract"] = "node scripts/test-installed-package-contract.mjs --observer-gh \"$PERSONA_HARNESS_OBSERVER_GH\""
+      writeFileSync(packagePath, JSON.stringify(packageRecord, null, 2) + "\n")
+
+      const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
+        cwd: fixtureDir,
+        encoding: "utf8",
+      })
+
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain("Package observer responsibility")
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
   })
 
   it("rejects floating action refs while accepting the exact immutable pins", () => {

@@ -123,7 +123,15 @@ function emitBoundedExerciseDiagnostic(error, options) {
 }
 
 async function runInstalledPackageContract(options) {
-  const { observerGh, packageExercise, producerIntakeOnly, tarball, tarballContentIdentity, tarballSha256 } = options
+  const {
+    observerGh,
+    packageAcceptance,
+    packageExercise,
+    producerIntakeOnly,
+    tarball,
+    tarballContentIdentity,
+    tarballSha256,
+  } = options
   const runPhase = createPackageExercisePhaseRunner(options, "fresh-tar")
   const packed = await runPhase("tarball-materialization", () => tarball === undefined
     ? packCurrentRepository()
@@ -149,7 +157,14 @@ async function runInstalledPackageContract(options) {
 
   await runPhase("verifier-no-source", () => assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory))
   await runPhase("project-finish-verifier-no-source", () => assertPackagedProjectFinishVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory))
-  await assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, packageExercise, runPhase)
+  await assertPackagedConsumerAuthorityBoundary(
+    installedPackage,
+    consumerDirectory,
+    observerGh,
+    packageAcceptance,
+    packageExercise,
+    runPhase,
+  )
   await runPhase("staged-artifact-verifier", () => assertPackagedStagedArtifactVerifierWorksWithoutSourceCheckout(installedPackage, consumerDirectory))
   await runPhase("doctor-registry", () => assertDoctorRegistryReadback(
     join(consumerDirectory, "doctor-registry-fixture"),
@@ -176,7 +191,9 @@ async function runInstalledPackageContract(options) {
   process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
   process.stdout.write(packageExercise
     ? "installed-package-exercise-contract: PASS\n"
-    : "installed-package-test-contract: PASS\n")
+    : packageAcceptance
+      ? "installed-package-acceptance-contract: PASS\n"
+      : "installed-package-test-contract: PASS\n")
 }
 
 async function runSourceCliContract(options) {
@@ -236,7 +253,14 @@ function resolveSourceCliPath(sourceCliPath) {
   return phPath
 }
 
-async function assertPackagedConsumerAuthorityBoundary(installedPackage, consumerDirectory, observerGh, packageExercise, runPhase) {
+async function assertPackagedConsumerAuthorityBoundary(
+  installedPackage,
+  consumerDirectory,
+  observerGh,
+  packageAcceptance,
+  packageExercise,
+  runPhase,
+) {
   const scripts = [
     "consumer-authority-artifact-archive.mjs",
     "consumer-authority-artifact-error.mjs",
@@ -252,18 +276,20 @@ async function assertPackagedConsumerAuthorityBoundary(installedPackage, consume
     assertPrearmedObserverHandoff(installedPackage, "installed package")
   })
   await runPhase("v4-cleanliness", () => assertV4FinalObserverCleanliness(installedPackage, "installed package"))
-  await runPhase("observer-gh-selector", () => assertWorkflowSelectedObserverGhLifecycle(
-    installedPackage,
-    consumerDirectory,
-    "installed package",
-    observerGh,
-  ))
-  await runPhase("attestation-parser", () => assertExternalAttestationCommandPlan(
-    installedPackage,
-    consumerDirectory,
-    "installed package",
-    observerGh,
-  ))
+  if (!packageAcceptance) {
+    await runPhase("observer-gh-selector", () => assertWorkflowSelectedObserverGhLifecycle(
+      installedPackage,
+      consumerDirectory,
+      "installed package",
+      observerGh,
+    ))
+    await runPhase("attestation-parser", () => assertExternalAttestationCommandPlan(
+      installedPackage,
+      consumerDirectory,
+      "installed package",
+      observerGh,
+    ))
+  }
   await runPhase("artifact-transport", () => assertExternalArtifactTransportPlan(installedPackage, consumerDirectory, "installed package"))
   const authorityDiscoveryResult = await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(
     installedPackage,
@@ -4202,6 +4228,7 @@ function isRecord(value) {
 
 function parseContractOptions(args) {
   let observerGh
+  let packageAcceptance = false
   let packageExercise = false
   let producerIntakeOnly = false
   let sourceCli
@@ -4212,6 +4239,10 @@ function parseContractOptions(args) {
     const argument = args[index]
     if (argument === "--producer-intake-only" && !producerIntakeOnly) {
       producerIntakeOnly = true
+      continue
+    }
+    if (argument === "--package-acceptance" && !packageAcceptance) {
+      packageAcceptance = true
       continue
     }
     if (argument === "--package-exercise" && !packageExercise) {
@@ -4243,7 +4274,7 @@ function parseContractOptions(args) {
       index += 1
       continue
     }
-    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs --observer-gh /absolute/gh [--package-exercise] [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256> --tarball-content-identity <sha256>]")
+    throw new TypeError("usage: node scripts/test-installed-package-contract.mjs (--observer-gh /absolute/gh | --package-acceptance) [--package-exercise] [--producer-intake-only] [--source-cli dist/cli/index.js] [--tarball /absolute/package.tgz --tarball-sha256 <sha256> --tarball-content-identity <sha256>]")
   }
   if (sourceCli !== undefined && tarball !== undefined) {
     throw new TypeError("source CLI and tarball modes are exclusive")
@@ -4257,8 +4288,23 @@ function parseContractOptions(args) {
   if (packageExercise && producerIntakeOnly) {
     throw new TypeError("package exercise and producer intake only are exclusive")
   }
-  if (!producerIntakeOnly && observerGh === undefined) {
+  if (
+    packageAcceptance
+    && (observerGh !== undefined || packageExercise || producerIntakeOnly || sourceCli !== undefined)
+  ) {
+    throw new TypeError("package acceptance cannot claim CI observer proof")
+  }
+  if (!producerIntakeOnly && !packageAcceptance && observerGh === undefined) {
     throw new TypeError("explicit observer gh path is required")
   }
-  return { observerGh, packageExercise, producerIntakeOnly, sourceCli, tarball, tarballContentIdentity, tarballSha256 }
+  return {
+    observerGh,
+    packageAcceptance,
+    packageExercise,
+    producerIntakeOnly,
+    sourceCli,
+    tarball,
+    tarballContentIdentity,
+    tarballSha256,
+  }
 }

@@ -25,6 +25,38 @@ describe("consumer authority 0.8.2 acceptance schema", () => {
     expect(manifest.v081HistoricalRelease).toMatchObject({ reusableForV082: false, version: "0.8.1" })
   })
 
+  it("assigns Package consumer evidence separately from CI-owned observer tool evidence", () => {
+    const manifest = readV082AcceptanceManifest(repositoryRoot)
+
+    expect(manifest.acceptanceResponsibilities).toEqual({
+      package: {
+        excludes: ["attestation-parser", "observer-gh-selector"],
+        requires: [
+          "exact-tar-provenance",
+          "normal-install",
+          "installed-only-no-source-fallback",
+          "cli-and-approval-before-mutation",
+        ],
+      },
+      sourceAndProtectedUbuntuCi: {
+        requires: [
+          "workflow-owned-dpkg-observer-gh-selection",
+          "private-regular-nonsymlink-observer-gh-copy",
+          "path-free-attestation-parser-preflight",
+        ],
+      },
+    })
+    expect(manifest.prearmedExternalHandoff.finalObserverProcedure.observerGhSelection).toContain(
+      "source-and-protected-ubuntu-ci-only",
+    )
+    expect(manifest.hostedResidual.whyLocalCannotClose).toContain(
+      "Source and CI-shaped packed exercise prove",
+    )
+    expect(manifest.hostedResidual.whyLocalCannotClose).toContain(
+      "Package acceptance separately proves",
+    )
+  })
+
   it("rejects a neighboring package version and acceptance drift", () => {
     const fixture = canonicalV082AcceptanceManifest()
     const packageRecord = fixture.package as Record<string, unknown>

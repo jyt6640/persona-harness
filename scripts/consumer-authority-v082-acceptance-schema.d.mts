@@ -5,10 +5,27 @@ export class V082AcceptanceManifestError extends Error {
 }
 
 export type V082AcceptanceManifest = Readonly<Record<string, unknown>> & Readonly<{
+  acceptanceResponsibilities: Readonly<{
+    package: Readonly<{
+      excludes: readonly string[]
+      requires: readonly string[]
+    }>
+    sourceAndProtectedUbuntuCi: Readonly<{
+      requires: readonly string[]
+    }>
+  }>
+  hostedResidual: Readonly<{
+    whyLocalCannotClose: string
+  }>
   package: Readonly<{
     channel: string
     scope: string
     version: string
+  }>
+  prearmedExternalHandoff: Readonly<{
+    finalObserverProcedure: Readonly<{
+      observerGhSelection: string
+    }>
   }>
 }>
 

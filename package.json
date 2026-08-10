@@ -263,7 +263,7 @@
     "test:package": "node dist/cli/index.js --help",
     "test:authoritative-bundle-package-contract": "node scripts/verify-clean-package-boundary.mjs --exercise-contract --observer-gh \"$PERSONA_HARNESS_OBSERVER_GH\"",
     "test:clean-package-boundary": "node scripts/verify-clean-package-boundary.mjs",
-    "test:installed-package-contract": "node scripts/test-installed-package-contract.mjs --observer-gh \"$PERSONA_HARNESS_OBSERVER_GH\"",
+    "test:installed-package-contract": "node scripts/test-installed-package-contract.mjs --package-acceptance",
     "test:repository": "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:authoritative-bundle-package-contract",
     "test:unit": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
