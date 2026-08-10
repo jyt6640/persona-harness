@@ -18,11 +18,11 @@ find the record; it is not a ledger of every historical release decision.
 
 ## Recorded Release State
 
-At the 2026-08-09 registry and GitHub readback:
+At the recorded 2026-08-10 release state:
 
 | Channel or record | Value | Source |
 | --- | --- | --- |
-| npm `latest` | `0.8.1` | [`v0.8.1` release notes](v0.8.1-release-notes.md) |
+| npm `latest` | `0.8.2` | [`v0.8.2` release notes](v0.8.2-release-notes.md) |
 | npm `next` | `0.8.0-rc.1` | [`v0.8.0-rc.1` release notes](v0.8.0-rc.1-release-notes.md) |
 | npm `staging` | `0.8.0-beta.34` | [`v0.8.0-beta.34` release notes](v0.8.0-beta.34-release-notes.md) |
 | GitHub latest release | `v0.8.1` | [GitHub releases](https://github.com/jyt6640/persona-harness/releases) |

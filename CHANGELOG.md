@@ -8,12 +8,20 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
-- Add the portable Persona-owned shared-skill catalog and one-question product
-  interview route. Hosts route advisory references only; legacy OMO workflow
-  payloads are excluded from the package surface.
 - Keep process-only evaluation cleanup in the normal CI lane while reserving
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
+
+## [0.8.3] - 2026-08-10
+
+- Prepare portable automatic skill activation: ambiguous new-product requests
+  begin a one-question deep interview, ambiguous brownfield requests begin
+  code-first discovery, explicit commands take precedence, and direct work
+  bypasses discovery. Frontend remains an explicit optional overlay.
+- Keep hosts advisory-only, prevent pre-approval workflow or project mutation,
+  and retain the package's installed-only/no-source-fallback boundary.
+- `0.8.3` is an unpublished source candidate. The immutable published `0.8.2`
+  package cannot be repacked or reused for this release.
 
 ## [0.8.0-beta.19] - 2026-08-02
 
