@@ -22,6 +22,13 @@ export type V083AcceptanceManifest = Readonly<Record<string, unknown>> & Readonl
     scope: string
     version: string
   }>
+  preAuthorityReadiness: Readonly<{
+    commands: readonly string[]
+    initialization: Readonly<{
+      acceptedPlan: string
+      retainedDraftPlan: string
+    }>
+  }>
   prearmedExternalHandoff: Readonly<{
     finalObserverProcedure: Readonly<{
       observerGhSelection: string

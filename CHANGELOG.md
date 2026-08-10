@@ -20,6 +20,9 @@ preparation alone does not establish stable support or channel state.
   bypasses discovery. Frontend remains an explicit optional overlay.
 - Keep hosts advisory-only, prevent pre-approval workflow or project mutation,
   and retain the package's installed-only/no-source-fallback boundary.
+- Preserve an existing source-bound draft or revision plan during strict
+  bootstrap, then require the current V4 readiness route to use explicit
+  `ph plan --accept` before its Gradle, report, and evidence prerequisites.
 - `0.8.3` is an unpublished source candidate. The immutable published `0.8.2`
   package cannot be repacked or reused for this release.
 

@@ -59,6 +59,23 @@ function buildExpectedManifest() {
   }
   manifest.authority.fixturePlan.registryInstall = "requires-authorized-release-before-registry-install-persona-harness@0.8.3"
   manifest.authority.hostedFixture.revision = "v083-source-candidate-head-before-authorized-release"
+  manifest.preAuthorityReadiness.commands.splice(1, 0, "ph plan --accept")
+  manifest.preAuthorityReadiness.initialization.acceptedPlan = "ph plan --accept"
+  manifest.preAuthorityReadiness.initialization.retainedDraftPlan =
+    "bootstrap preserves an existing draft plan; public readiness must accept it explicitly"
+  const prefetchSteps = manifest.prearmedExternalHandoff.finalObserverProcedure.prefetchSteps
+  const bootstrapStep = prefetchSteps.indexOf("public-bootstrap-accepted-plan-and-current-loop-state")
+  prefetchSteps.splice(
+    bootstrapStep,
+    1,
+    "public-bootstrap-current-loop-state",
+    "public-plan-accept-retained-or-draft-plan",
+  )
+  const completeness = manifest.closureCompleteness.deterministicLinks
+  const readinessStep = completeness.indexOf("same-consumer-public-bootstrap-plan-loop-gradle-reports-evidence-readiness")
+  completeness[readinessStep] = "same-consumer-public-bootstrap-explicit-plan-accept-loop-gradle-reports-evidence-readiness"
+  manifest.hostedResidual.whyLocalCannotClose =
+    "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, explicit public acceptance of a retained draft plan, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   manifest.hostedResidual.id = "v083-current-package-acceptance-and-authorized-current-artifact-observation"
   return manifest
 }

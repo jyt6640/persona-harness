@@ -70,25 +70,10 @@ function buildExpectedManifest() {
       ],
     },
   }
-  manifest.preAuthorityReadiness.commands.splice(1, 0, "ph plan --accept")
-  manifest.preAuthorityReadiness.initialization.acceptedPlan = "ph plan --accept"
-  manifest.preAuthorityReadiness.initialization.retainedDraftPlan =
-    "bootstrap preserves an existing draft plan; public readiness must accept it explicitly"
-  const prefetchSteps = manifest.prearmedExternalHandoff.finalObserverProcedure.prefetchSteps
-  const bootstrapStep = prefetchSteps.indexOf("public-bootstrap-accepted-plan-and-current-loop-state")
-  prefetchSteps.splice(
-    bootstrapStep,
-    1,
-    "public-bootstrap-current-loop-state",
-    "public-plan-accept-retained-or-draft-plan",
-  )
-  const completeness = manifest.closureCompleteness.deterministicLinks
-  const readinessStep = completeness.indexOf("same-consumer-public-bootstrap-plan-loop-gradle-reports-evidence-readiness")
-  completeness[readinessStep] = "same-consumer-public-bootstrap-explicit-plan-accept-loop-gradle-reports-evidence-readiness"
   manifest.prearmedExternalHandoff.finalObserverProcedure.observerGhSelection =
     "source-and-protected-ubuntu-ci-only-workflow-owned-dpkg-ownership-and-byte-strict-package-record-qualified-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-inert-or-block-policy-copyfile-excl-private-copy-reassessment-with-runner-temp-isolated-token-free-state-root-and-fixed-nonreflective-selector-stage-and-package-record-shape"
   manifest.hostedResidual.whyLocalCannotClose =
-    "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, explicit public acceptance of a retained draft plan, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
+    "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   manifest.v081HistoricalRelease = {
     outcome: "accepted-for-its-own-v081-tree-and-not-reusable-for-the-published-v082-release-or-any-later-package",
     reusableForV082: false,
