@@ -10,7 +10,7 @@ import {
   checkReleaseState,
   checkTagSource,
 } from "../scripts/release-workflow-policy.mjs"
-import { readV081AcceptanceManifest } from "../scripts/consumer-authority-v081-acceptance-schema.mjs"
+import { readV082AcceptanceManifest } from "../scripts/consumer-authority-v082-acceptance-schema.mjs"
 
 const MAIN_SHA = "a".repeat(40)
 const TAG_SHA = "b".repeat(40)
@@ -180,33 +180,28 @@ describe("release workflow policy", () => {
     expect(lifecycle).toContain("no bootstrap artifact outside the project")
   })
 
-  it("keeps the current stable version eligible for latest and refused on the prerelease channels", () => {
-    // This assertion moves with the release. While the current version was a
-    // prerelease it read the other way round: eligible for `staging`, refused
-    // on `latest`. The policy did not change — the version did, and the test
-    // has to say which side of that line the package is on.
+  it("keeps the current source candidate unpublishable until a matching approval is recorded", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
-    const acceptance = readV081AcceptanceManifest(repositoryRoot)
+    const acceptance = readV082AcceptanceManifest(repositoryRoot)
 
     expect(packageVersion).toBe(acceptance.package.version)
     expect(readPackageVersion(join(repositoryRoot, "package-lock.json"))).toBe(acceptance.package.version)
+    expect(acceptance.package).toMatchObject({ channel: "unpublished", scope: "source-candidate" })
     expect(checkDistTagCompatibility({
-      approvalScope: "ga-approved",
+      approvalScope: acceptance.package.scope,
       distTag: "latest",
       version: packageVersion,
-    })).toEqual({ ok: true })
-    // A stable version has no business on a prerelease channel, and the
-    // approval scope does not buy its way past that.
+    })).toMatchObject({ code: "dist-tag-latest-approval", ok: false })
     expect(checkDistTagCompatibility({
-      approvalScope: "staging-only",
+      approvalScope: acceptance.package.scope,
       distTag: "staging",
       version: packageVersion,
-    })).toMatchObject({ code: "dist-tag-staging-stable", ok: false })
+    })).toMatchObject({ code: "dist-tag-staging-approval", ok: false })
     expect(checkDistTagCompatibility({
-      approvalScope: "next-promotion-approved",
+      approvalScope: acceptance.package.scope,
       distTag: "next",
       version: packageVersion,
-    })).toMatchObject({ ok: false })
+    })).toMatchObject({ code: "dist-tag-next-approval", ok: false })
   })
 
   it("accepts an exact canonical main source", () => {
