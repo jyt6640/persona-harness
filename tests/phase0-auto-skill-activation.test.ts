@@ -23,6 +23,27 @@ describe("automatic Persona shared-skill activation", () => {
     expect(result?.block).not.toContain("npx ph workflow")
   })
 
+  it("recognizes create and make app requests as product discovery without treating exchange as a hang", () => {
+    for (const message of [
+      "Create an app for neighbours to exchange practical skills",
+      "Make a service for local volunteers",
+    ]) {
+      expect(detectTopLevelIntent(message)).toMatchObject({
+        primary: "product-interview",
+        activation: {
+          decision: "automatic",
+          skillId: "deep-interview",
+          firstAction: "one-question-product-interview",
+        },
+      })
+    }
+
+    expect(detectTopLevelIntent("The booking app hangs after checkout")).toMatchObject({
+      primary: "debug",
+      activation: { skillId: "debug" },
+    })
+  })
+
   it("activates brownfield discovery with a code-first first action", () => {
     const intent = detectTopLevelIntent("I want to improve an existing booking flow", {
       productMode: "brownfield-change-discovery",

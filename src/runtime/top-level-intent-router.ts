@@ -27,7 +27,7 @@ export type TopLevelIntentOptions = {
 }
 
 const REQUIREMENT_CONTEXT_PATTERN = /(?:\bREADME(?:\.md)?\b|\brequirements(?:\.md)?\b|리드미|요구사항|backlog|task\s*card|step|단계)/iu
-const DEBUG_PATTERN = /(왜\s*안|안\s*돼|안됨|에러|오류|실패|버그|고장|멈춤|깨졌|문제|원인|debug|bug|error|fail(?:ed|ing|s)?|failure|crash|hang|broken|not\s+working|why)/iu
+const DEBUG_PATTERN = /(왜\s*안|안\s*돼|안됨|에러|오류|실패|버그|고장|멈춤|깨졌|문제|원인|debug|bug|error|fail(?:ed|ing|s)?|failure|crash|\bhang(?:s|ing)?\b|broken|not\s+working|why)/iu
 const REVIEW_PATTERN = /(리뷰|검토|분석|냉정하게|살펴봐|봐봐|review|audit|qa|verify|validate|check\s+(?:this|my|the))/iu
 const REFACTOR_PATTERN = /(리팩터|리팩토|구조\s*개선|구조\s*정리|정리하고|cleanup|clean\s+up|refactor|restructure|simplif)/iu
 const GIT_PATTERN = /(커밋|푸쉬|푸시|태그|릴리즈|\bgit\s+(?:log|show|blame|rebase|status)\b|\bcommit\b|\bpush\b|\btag\b|\brelease\b|\brebase\b|\bblame\b)/iu
