@@ -11,6 +11,11 @@ a successor because a diagnostic code appeared.
 - Use focused checks while working. Do not repeat unchanged heavyweight checks.
 - Do not poll, retry a failed observation, create a diagnostic-wrapper chain,
   or automatically progress a workflow.
+- For an external OpenCode action that invokes a model, apply
+  `externalOpenCodeModel`: record `configuredOpenCodeModel`, use only
+  `openai/gpt-5.3-codex-spark`, and stop `BLOCKED` before model or product
+  action if it is unavailable. Do not substitute a model, provider, alias, or
+  local simulation.
 - Keep complete packets for candidate freeze, independent acceptance, or final
   hosted evidence. Use a compact result for every other handoff.
 - Do not push, publish, tag, stage, create a fixture, or mutate issue state

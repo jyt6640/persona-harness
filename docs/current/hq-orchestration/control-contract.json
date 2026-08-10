@@ -87,6 +87,26 @@
       "diagnostic-wrapper-chains"
     ]
   },
+  "externalOpenCodeModel": {
+    "scope": "opencode-external-model-invocation-only",
+    "provider": "openai",
+    "modelId": "gpt-5.3-codex-spark",
+    "configuredModel": "openai/gpt-5.3-codex-spark",
+    "evidenceField": "configuredOpenCodeModel",
+    "unavailable": "blocked-before-model-or-product-action",
+    "prohibitedSubstitutions": [
+      "model",
+      "provider",
+      "alias",
+      "local-simulation"
+    ],
+    "exclusions": [
+      "github-actions-ci-release-publish",
+      "ordinary-npm-package-checks",
+      "non-opencode-fixture-steps",
+      "historical-evidence"
+    ]
+  },
   "pilot": {
     "issueCount": {
       "minimum": 3,

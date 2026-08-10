@@ -80,6 +80,32 @@ describe("HQ orchestration control contract", () => {
     }
   })
 
+  it("pins external OpenCode model actions without affecting non-model execution", () => {
+    const contract = readControlContract()
+    const protocol = readText("docs/current/hq-orchestration/protocol.md")
+    const dispatchHeader = readText("docs/current/hq-orchestration/templates/common-dispatch-header.md")
+
+    expect(contract).toMatchObject({
+      externalOpenCodeModel: {
+        scope: "opencode-external-model-invocation-only",
+        provider: "openai",
+        modelId: "gpt-5.3-codex-spark",
+        configuredModel: "openai/gpt-5.3-codex-spark",
+        evidenceField: "configuredOpenCodeModel",
+        unavailable: "blocked-before-model-or-product-action",
+        prohibitedSubstitutions: ["model", "provider", "alias", "local-simulation"],
+        exclusions: [
+          "github-actions-ci-release-publish",
+          "ordinary-npm-package-checks",
+          "non-opencode-fixture-steps",
+          "historical-evidence",
+        ],
+      },
+    })
+    expect(protocol).toContain("externalOpenCodeModel")
+    expect(dispatchHeader).toContain("externalOpenCodeModel")
+  })
+
   it("keeps the operating contract outside the published package surface", () => {
     const packageJson: Readonly<Record<string, unknown>> = JSON.parse(readText("package.json"))
 

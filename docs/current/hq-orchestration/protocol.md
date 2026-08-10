@@ -59,6 +59,17 @@ delivery is reported in the final result; it does not authorize another lane.
 - A public fixture, package observation, or final hosted action is evidence
   only and runs once after its named prerequisites. It is never a debugger.
 
+## OpenCode Model Actions
+
+`externalOpenCodeModel` applies only when an external OpenCode test, demo, or
+fixture actually invokes a model. It requires the configured OpenCode model
+`openai/gpt-5.3-codex-spark`, records that configured model in bounded evidence,
+and returns `BLOCKED` before model or product action when unavailable. It never
+silently substitutes a model, provider, alias, or local simulation.
+
+GitHub Actions CI/release/publish, ordinary npm or package checks, non-OpenCode
+fixture steps, and historical evidence are outside this rule.
+
 ## Pilot Measurement
 
 Apply the policy to a three-to-five issue pilot beginning with #257; #256 stays
