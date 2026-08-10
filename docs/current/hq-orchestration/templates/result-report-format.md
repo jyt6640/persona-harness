@@ -1,66 +1,21 @@
-# Result Report Format
+# HQ Result Format
 
-모든 담당 세션은 반드시 한국어로 아래 형식을 사용한다.
+Use this compact terminal result for every Owner or gate decision. Send it
+directly to Delivery Control when the thread tool is available. Keep it to at
+most twelve lines and include only facts that change the next decision.
 
-HQ thread로 직접 결과를 보낼 수 있으면 같은 내용을 아래 prefix와 함께 전송한다.
-
-```md
-[HQ_RESULT] <세션명>: <짧은 결과>
+```text
+[HQ_RESULT]
+role=<role>
+state=PASS|FAIL|BLOCKED|FROZEN
+delta=<changed or discovered boundary>
+evidence=<decisive observed evidence; separate inference>
+decision=<one lawful conclusion>
+next=<one role/action or an explicit user decision>
+risk=<remaining uncertainty or hosted residual>
 ```
 
-## Result
-
-- 완료 / 부분 완료 / 실패 중 하나.
-- 한 문장으로 이유를 적는다.
-
-## Goal
-
-- HQ가 맡긴 목표를 한 문장으로 다시 적는다.
-- 목표가 중간에 바뀌었다면 바뀐 이유를 적는다.
-
-## Success Criteria
-
-- 성공 조건을 체크 가능한 항목으로 적는다.
-- 충족 / 부분 충족 / 미충족을 구분한다.
-- 성공 조건이 애초에 불명확했다면 `Handoff`에 HQ 확인 필요로 남긴다.
-
-## Changed Files
-
-- 변경 파일 목록.
-- 파일별 변경 목적.
-
-## Behavior
-
-- 사용자 또는 AI가 관찰할 수 있는 동작 변화.
-- 동작 변화가 없다면 “문서/테스트-only”라고 적는다.
-
-## Tests
-
-- 추가/수정한 테스트.
-- 테스트가 없으면 이유.
-
-## Verification
-
-- 실행한 명령.
-- 결과.
-- 실행하지 못한 명령과 이유.
-
-## Commit
-
-- 커밋 해시와 메시지.
-- 커밋하지 않았다면 이유.
-
-## Handoff
-
-- 다른 세션이 이어받아야 할 항목.
-- 담당 세션 추천.
-
-## Risks
-
-- 남은 리스크.
-- 과장하면 안 되는 점.
-
-## Next
-
-- 다음 작업 후보.
-- release/publish/push가 필요하면 명시하되 직접 수행하지 않는다.
+Do not replay history, packet hashes, raw logs, secrets, paths, or unchanged
+package facts unless they are decisive. A partial result is not a GO decision,
+a new candidate, or a substitute gate. If direct delivery fails, state that
+fact in the final result rather than relaying through another lane.

@@ -1,0 +1,103 @@
+{
+  "schema": "persona.hq-control.1",
+  "sourceOfTruth": [
+    "docs/current/hq-orchestration/control-contract.json",
+    "docs/current/hq-orchestration/protocol.md",
+    "docs/current/hq-orchestration/templates/result-report-format.md",
+    "docs/current/hq-orchestration/thread-index.md"
+  ],
+  "closure": {
+    "defaultOwner": "owner",
+    "ownerMustProve": [
+      "deterministic links in the assigned boundary",
+      "applicable source, installed, package, and fail-closed negatives",
+      "one exact candidate before a named external residual"
+    ]
+  },
+  "gates": {
+    "source": {
+      "start": "named-source-predicate",
+      "when": [
+        "the frozen boundary changes security, authority, workflow identity, release, or a fail-closed control requiring independent judgment"
+      ],
+      "otherwise": "not-required"
+    },
+    "package": {
+      "start": "named-package-predicate",
+      "when": [
+        "the consumer package, canonical tar, registry, release, or named external consumer boundary changes"
+      ],
+      "otherwise": "not-required"
+    },
+    "hosted": {
+      "start": "named-hosted-predicate",
+      "when": [
+        "a named hosted-only residual remains after owner closure and every required conditional gate passes"
+      ],
+      "otherwise": "not-required"
+    }
+  },
+  "controlLedger": {
+    "columns": [
+      "goal",
+      "owner",
+      "current candidate",
+      "required gate",
+      "next predicate",
+      "blocker"
+    ]
+  },
+  "result": {
+    "prefix": "[HQ_RESULT]",
+    "fields": [
+      "role",
+      "state",
+      "delta",
+      "evidence",
+      "decision",
+      "next",
+      "risk"
+    ],
+    "maximumLines": 12
+  },
+  "completePackets": {
+    "allowedStages": [
+      "candidate-freeze",
+      "independent-acceptance",
+      "final-hosted-evidence"
+    ]
+  },
+  "pins": {
+    "maximum": 3,
+    "roles": [
+      "delivery-control",
+      "owner-workspace",
+      "active-external-gate"
+    ]
+  },
+  "automation": {
+    "mode": "event-driven",
+    "allowed": [
+      "bounded wait for a named event",
+      "direct result delivery"
+    ],
+    "prohibited": [
+      "polling",
+      "retries",
+      "diagnostic-wrapper-chains"
+    ]
+  },
+  "pilot": {
+    "issueCount": {
+      "minimum": 3,
+      "maximum": 5
+    },
+    "metrics": [
+      "rail-starts",
+      "heavy-check-repetition",
+      "repeated-evidence-prose",
+      "retries",
+      "blocked-time-cause"
+    ]
+  }
+}

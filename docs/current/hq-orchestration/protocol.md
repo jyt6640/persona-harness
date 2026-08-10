@@ -1,206 +1,74 @@
-# HQ Thread Orchestration Protocol
+# HQ Delivery Control Protocol
 
-## Goal
+## Source Of Truth
 
-HQ가 사용자와 대화하면서 기능 의도를 정규화하고, 작업을 담당 세션으로 분기하고, 결과를 문서화한 뒤, 다음 작업을 다시 지시한다.
+[`control-contract.json`](control-contract.json) is the strict
+`persona.hq-control.1` policy. This document explains it; the result template
+and thread index are supporting operational inputs. No absent legacy document
+or historical packet supplies a gate rule.
 
-## Non-Goals
+## Owner-Default Closure
 
-- 전용 세션이 자동 공유 메모리를 가진다고 가정하지 않는다.
-- 사용자가 각 세션에 직접 복붙해야 한다고 가정하지 않는다.
-- 하나의 큰 작업을 하나의 큰 커밋으로 묶지 않는다.
-- 범위 밖 작업을 담당 세션이 임의로 수행하게 하지 않는다.
+One Owner owns an issue through diagnosis, implementation, deterministic proof,
+and an exact candidate freeze. The Owner expands the same candidate when a
+deterministic link fails; a bounded code or one green symptom never authorizes
+a separate diagnostic candidate, independent gate, or hosted retry.
 
-## Intent Normalization
+## Conditional Gate Starts
 
-HQ는 기능 개발 요청을 받으면 바로 dispatch하지 않는다. 먼저 아래 항목이 충분히 정규화됐는지 본다.
+Control records a named predicate before starting any gate:
 
-- 사용자가 만들고 싶은 기능 또는 workflow.
-- 기능이 해결할 실제 문제.
-- 성공했을 때 사용자가 관찰할 행동.
-- 입력 artifact: README, prompt-only requirements, profile, plan, backlog, ticket.
-- 담당 영역: CLI, Runtime, Skills, QA, Docs, Research.
-- 범위 밖 항목.
-- 검증 방법.
-- 커밋 단위.
+| Gate | Starts only when | Does not start for |
+| --- | --- | --- |
+| Source | The frozen boundary changes security, authority, workflow identity, release, or a fail-closed control that needs independent judgment. | An ordinary source change with a complete Owner closure. |
+| Package | The consumer package/tar, registry, release, or named external consumer boundary changes. | A package-excluded test or docs correction with unchanged behavioral package inputs. |
+| Hosted | A named hosted-only residual remains after Owner closure and every required conditional gate passes. | Local diagnosis, a substitute check, or a failed observation. |
 
-불분명하면 HQ가 계속 질문한다. 질문은 한 번에 너무 많이 던지지 말고, 다음 분기 판단에 필요한 것부터 묻는다.
+A missing predicate is `BLOCKED`. Acceptance roles decide one exact frozen head;
+they do not debug it, manufacture a replacement candidate, or open a hosted
+action. A failed gate returns to the same Owner for one complete correction.
 
-## Dispatch Rules
+## Control Ledger
 
-HQ는 담당 세션에 메시지를 직접 보낸다.
-
-HQ는 새 thread를 기본값으로 만들지 않는다. 담당 영역별 공용 lane을 먼저 재사용한다.
-
-- 같은 담당 영역의 thread가 이미 있으면 `send_message_to_thread`로 이어서 보낸다.
-- 실제 thread id는 [thread-index.md](thread-index.md)를 정본으로 삼는다.
-- 새 thread는 해당 담당 영역의 공용 lane이 없거나, 기존 lane이 archive/blocked 상태이거나, 독립 worktree가 반드시 필요한 경우에만 만든다.
-- 새로 만든 thread가 반복적으로 필요해지면 disposable task thread가 아니라 담당 영역 공용 lane으로 승격하고, thread id를 HQ memory에 기록한다.
-- 장시간 OpenCode smoke, A/B, external validation은 공용 External Smoke lane으로 보낸다. HQ가 직접 실행하지 않는다.
-
-모든 dispatch에는 다음이 포함되어야 한다.
-
-- 공통 지시.
-- Goal.
-- Scope.
-- Non-goals.
-- Current context.
-- 해야 할 일.
-- 검증 명령.
-- 보고 형식.
-
-담당 세션은 반드시 한국어로 보고한다.
-
-## Result Collection
-
-담당 세션은 작업이 끝나면 HQ가 polling할 때까지 기다리지 않는다. 가능하면 thread 도구로 HQ 세션에 결과를 직접 전송한다.
-
-현재 HQ thread id:
+Control keeps one compact row per active issue:
 
 ```text
-019ed945-1bd4-7262-a4ff-66563c4cf0aa
+goal | owner | current candidate | required gate | next predicate | blocker
 ```
 
-담당 세션의 completion rule:
+The row replaces repeated narrative handoffs. It names only the active
+candidate and current blocker; historical packets and hashes stay in their
+existing evidence records unless decisive to the next decision.
 
-1. 자기 thread의 final answer에 정규화된 결과를 남긴다.
-2. `send_message_to_thread` 또는 동등한 thread tool이 있으면 HQ thread로 같은 결과를 보낸다.
-3. HQ로 보낼 때 제목은 `[HQ_RESULT] <세션명>: <짧은 결과>` 형식을 사용한다.
-4. thread tool이 없거나 실패하면 final answer의 `Handoff`에 “HQ 직접 전송 실패”를 명시한다.
+## Result Delivery
 
-HQ는 담당 세션 결과를 받거나 읽은 뒤 다음을 확인한다.
+Every terminal lane result uses the seven fields in
+[`result-report-format.md`](templates/result-report-format.md) and is sent
+directly to Delivery Control when thread tools are available. A failed direct
+delivery is reported in the final result; it does not authorize another lane.
 
-- Result가 goal을 만족하는지.
-- Changed files가 담당 범위 안인지.
-- Tests와 verification이 충분한지.
-- Commit이 작업 단위별로 나뉘었는지.
-- Handoff가 필요한지.
-- 다른 세션 작업과 충돌하는지.
+## Evidence, Pins, And Automation
 
-결과는 반드시 문서화한다.
+- A complete packet is allowed only for candidate freeze, independent
+  acceptance, or final hosted evidence. Routine deltas use the compact result.
+- Pin only Delivery Control, the active Owner, and one currently active external
+  gate. The lane directory is not a pin list or a serial workflow.
+- Automation may wait once for a named event or deliver a result. It must not
+  poll, retry a failed gate, create a diagnostic-wrapper chain, or automatically
+  create a successor.
+- A public fixture, package observation, or final hosted action is evidence
+  only and runs once after its named prerequisites. It is never a debugger.
 
-- 제품/사용자-facing 결정: `docs/current/**`
-- release 관련: `docs/current/release/**`
-- evidence review: `docs/current/evidence-reviews/**`
-- HQ 운영 메모리: `/Users/yongtae/Documents/하네스/Persona-Harness/develop/HQ-CURRENT-MEMORY.md`
-- 날짜별 진행 기록: `/Users/yongtae/Documents/하네스/Persona-Harness/develop/YYYY-MM-DD-*.md`
+## Pilot Measurement
 
-## Result Return Message
-
-담당 세션이 HQ로 보내는 메시지는 아래 구조를 따른다.
-
-```md
-[HQ_RESULT] <Session>: <Result summary>
-
-## Result
-...
-
-## Goal
-...
-
-## Success Criteria
-...
-
-## Changed Files
-...
-
-## Behavior
-...
-
-## Tests
-...
-
-## Verification
-...
-
-## Commit
-...
-
-## Handoff
-...
-
-## Risks
-...
-
-## Next
-...
-```
-
-이 규칙의 목적은 HQ의 polling 비용을 줄이고, 사용자에게 결과가 자연스럽게 모이도록 만드는 것이다.
-
-## Commit Policy
-
-모든 세션은 작업 단위별 atomic commit을 따른다.
-
-- 기능 변경과 문서 변경이 독립이면 분리한다.
-- 테스트-only 보강이 독립이면 분리한다.
-- release/version bump는 분리한다.
-- smoke report는 분리한다.
-- unrelated dirty file은 섞지 않는다.
-- push는 HQ/사용자 지시가 있을 때만 한다.
-
-## Branch Naming
-
-- `codex/` 접두사는 새 작업, 이름 변경, push, 활성 후보에 사용하지 않는다.
-  기존 `codex/` ref는 보존 대상일 수 있는 과거 기록일 뿐 현재 명명 규칙이 아니다.
-- 브랜치는 작업 목적을 먼저 드러내는 기존 접두사인 `feat/`, `fix/`, `docs/`,
-  `ci/`, `test/`, `security/`, `perf/`, `experiment/` 중 하나로 시작한다.
-- 새 후보를 열기 전에는 해당 접두사가 이슈 성격과 맞는지 확인한다. 예를 들어
-  사용자 기능은 `feat/`, 결함 수정은 `fix/`, 문서만 바꾸는 작업은 `docs/`를 쓴다.
-
-## Permanent Lane Roles
-
-HQ는 담당 thread를 임시 작업자가 아니라 재사용 가능한 lane으로 다룬다. lane 이름은 작업명이 아니라 장기 책임을 드러내야 한다.
-
-이름 규칙:
-
-- `Persona Harness HQ`: 사용자와 대화하며 의도, 우선순위, dispatch, 통합 판단을 맡는다.
-- `Prompt Architect`: HQ가 정한 목표를 전담 lane에 보낼 dispatch prompt로 정규화한다.
-- `Runtime Injection`: runtime hooks, injection, evidence, intent, profile summary attribution을 맡는다.
-- `CLI Workflow`: `ph workflow`, `ph plan`, ticket/report/check/finish/continue UX를 맡는다.
-- `Docs Release`: README, CHANGELOG, release notes, external guide, develop 기록, version prep을 맡는다.
-- `External Smoke`: clean install, OpenCode/TUI smoke, A/B/generated output 관찰을 맡는다.
-- `QA Coverage`: unit/integration/e2e-smoke coverage map과 테스트 보강을 맡는다.
-- `Skills Prompting`: shared-skills, rail wording, `.persona/rules` prompt surface를 맡는다.
-- `Research Reference`: OMO/Codex/reference 조사와 해석을 맡는다.
-
-새 thread를 만들 때 제목은 `[Persona Harness] <Lane Name>` 형식을 사용한다. 이미 만들어진 thread도 가능한 한 이 이름으로 rename한다.
-
-## Session Ownership
-
-| Session | Owns | Must Not Own |
-| --- | --- | --- |
-| HQ | direction, decisions, dispatch, result synthesis | broad implementation without owner split |
-| CLI Workflow | `src/cli/**`, `ph` workflow commands, tickets, reports | runtime injection prose, npm publish |
-| Runtime Injection | `src/runtime/**`, hooks, injection, intent, evidence, continuation, profile summary attribution | CLI command behavior, release docs |
-| Skills Prompting | shared-skills, `.persona/rules`, rail wording | CLI implementation, package publish |
-| QA Coverage | unit tests, coverage map, test strategy | feature scope decisions |
-| Docs Release | README, CHANGELOG, release notes, external guides, develop logs | runtime/CLI behavior |
-| Research Reference | OMO/Codex/reference analysis | product code changes |
-| External Smoke | clean install, OpenCode/TUI smoke, A/B/generated output review | product code changes, release/publish decisions |
-
-현재 재사용 lane:
-
-| Lane Name | Thread id | Reuse For |
-| --- | --- | --- |
-| Prompt Architect | `019ef8b8-bfdf-7c72-9e6b-f50424e3993f` | dispatch prompt design and normalization |
-| Runtime Injection | `019ef8d2-c35c-75b1-bbae-fe66c8343ec3` | runtime injection, profile summary attribution, evidence/intent hook behavior |
-| CLI Workflow | `019ef8d2-cc51-7c02-bbc3-209a216ca20c` | workflow tickets, `ph workflow`, `ph plan`, check/finish/continue behavior |
-| Docs Release | `019ef8e2-8faa-7983-957e-9453c86f1384` | README, CHANGELOG, release notes, external guides, develop records |
-| External Smoke | `019ef8c2-d17f-7713-9fa1-79be6a9a2c4b` | clean install, OpenCode/TUI smoke, A/B/generated output review |
-| QA Coverage | `019ef819-3a55-7cd3-aa36-af1017758487` | tests, coverage map, transition/unit/integration/e2e-smoke coverage |
-| Skills Prompting | `019ef81b-8189-7ea3-ab66-f80a672e4786` | shared-skills, `.persona/rules`, rail wording, Java/backend guidance |
-| Research Reference | `019ef81b-924c-7323-8a42-25d62b039902` | OMO/Codex/reference analysis, session strategy, research memo |
-
-Thread index 정본:
-
-- [thread-index.md](thread-index.md)
+Apply the policy to a three-to-five issue pilot beginning with #257; #256 stays
+a separate release-blocker. For each pilot issue, record rail starts,
+heavy-check repetition, repeated evidence prose, retries, and blocked-time
+cause. The measurements evaluate the operating policy, not product quality.
 
 ## Stop Rules
 
-HQ should stop dispatching and ask the user when:
-
-- a destructive or irreversible action is needed;
-- publish/tag/push needs explicit approval;
-- the user's desired product behavior is ambiguous and would materially change architecture;
-- two sessions report conflicting implementation directions.
+Control asks for an explicit decision before destructive work, publish/tag/push,
+an ambiguous product change, a conflicting owner result, or an unavailable
+named external prerequisite. No alternate executor, model, transport, or gate
+is inferred from a blocked predicate.

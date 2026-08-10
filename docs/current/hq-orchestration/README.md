@@ -1,40 +1,34 @@
 # HQ Orchestration
 
-Persona Harness HQ는 사용자와 대화하면서 기능 의도를 정규화하고, 전용 Codex 세션에 작업을 분기한 뒤, 결과를 다시 수집해 다음 작업으로 연결하는 운영 허브다.
+This directory defines the operating contract for Delivery Control and its
+bounded lanes. It does not create a gate, a thread, a retry, or a package
+evidence claim by itself.
 
-이 문서 묶음은 수동 복붙 중심 운영을 줄이고, HQ가 `send_message_to_thread` / `read_thread` 같은 thread 도구로 직접 dispatch와 result collection을 수행하기 위한 표준이다.
+## Current Source Of Truth
 
-## Documents
+- [control-contract.json](control-contract.json) is the machine-readable
+  `persona.hq-control.1` policy: Owner-default closure, conditional gates, the
+  ledger, result fields, packet/pin limits, automation limits, and pilot
+  measurements.
+- [protocol.md](protocol.md) explains how Control applies that contract.
+- [templates/result-report-format.md](templates/result-report-format.md)
+  defines the compact `[HQ_RESULT]` wire format.
+- [thread-index.md](thread-index.md) is a routing directory, not a pin set or
+  automatic progression graph.
 
-- [protocol.md](protocol.md): HQ 운영 프로토콜.
-- [thread-index.md](thread-index.md): 재사용 lane 이름, thread id, archive 처리된 중복 thread 인덱스.
-- [templates/common-dispatch-header.md](templates/common-dispatch-header.md): 모든 담당 세션에 붙이는 공통 지시.
-- [templates/dispatch-cli-workflow.md](templates/dispatch-cli-workflow.md): CLI Workflow 작업 요청 템플릿.
-- [templates/dispatch-runtime-injection.md](templates/dispatch-runtime-injection.md): Runtime Injection 작업 요청 템플릿.
-- [templates/dispatch-skills-prompting.md](templates/dispatch-skills-prompting.md): Skills Prompting 작업 요청 템플릿.
-- [templates/dispatch-qa-coverage.md](templates/dispatch-qa-coverage.md): QA Coverage 작업 요청 템플릿.
-- [templates/dispatch-docs-release.md](templates/dispatch-docs-release.md): Docs Release 작업 요청 템플릿.
-- [templates/dispatch-research-reference.md](templates/dispatch-research-reference.md): Research Reference 작업 요청 템플릿.
-- [templates/result-report-format.md](templates/result-report-format.md): 모든 세션 결과 보고 형식.
+## Operating Rule
 
-## Default Flow
+The Owner closes the deterministic boundary by default. Source, Package, and
+Hosted work begin only when their named predicate is recorded in the one-line
+Control ledger. A missing predicate is `BLOCKED`; it does not authorize a
+substitute gate or a new diagnostic rail.
 
-1. HQ asks enough questions to normalize the user's intent.
-2. HQ derives scope, non-goals, success criteria, and owner session.
-3. HQ reuses the existing owner-session lane when one exists, then sends a dispatch prompt.
-4. Owner session reports in Korean using the standard result format.
-5. Owner session sends the result back to the HQ thread when thread tools are available.
-6. HQ reads the result, checks conflicts and gaps, then decides the next dispatch.
-7. Every session result is documented in repo docs or the external develop memory before release decisions.
+## Supporting Templates
 
-## Core Rule
+- [common-dispatch-header.md](templates/common-dispatch-header.md) supplies the
+  shared bounded dispatch rule.
+- The `dispatch-*.md` files supply scope-specific prompts only after Control
+  records a named owner or gate predicate.
 
-사용자는 HQ와만 대화해도 된다. HQ가 담당 세션에 보내고, 읽고, 다음 작업을 이어간다.
-
-## Lane Reuse
-
-HQ는 작업마다 새 thread를 만들지 않는다. `CLI Workflow`, `Runtime/Injection`, `External Smoke`, `QA Coverage`, `Docs Release` 같은 담당 영역은 가능한 한 같은 thread를 계속 재사용한다.
-
-새 thread는 담당 lane이 없거나, 기존 lane이 막혔거나, 격리 worktree가 필요한 경우에만 만든다. 새로 만든 thread가 반복 업무에 쓰이면 공용 lane으로 승격하고 `protocol.md`와 develop memory에 thread id를 기록한다.
-
-Lane 이름은 장기 책임을 드러내는 기능형 이름을 쓴다. 기본 이름은 `Prompt Architect`, `Runtime Injection`, `CLI Workflow`, `Docs Release`, `External Smoke`, `QA Coverage`, `Skills Prompting`, `Research Reference`다.
+Historical lane IDs remain discoverable in the thread index, but routine work
+reuses the existing owner lane and does not create a task for every symptom.
