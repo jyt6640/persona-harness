@@ -7,6 +7,14 @@ Updated: 2026-07-10
 2026-07-10 reset: 새 작업은 아래 canonical lane id로만 보낸다. 이전 lane id는
 `Archived / Superseded Threads`의 historical/context source로만 사용한다.
 
+## Pin Policy
+
+This directory routes bounded work; it is not a pin set, a serial gate graph,
+or authorization to create a thread. Pin only Delivery Control, the active
+Owner Workspace, and one currently active external gate. All other lanes and
+archived threads remain unpinned unless an explicit control decision changes
+the active set.
+
 ## Canonical Lanes
 
 | Lane | Thread id | Title | Owns | Must Not Own |
@@ -63,9 +71,10 @@ Updated: 2026-07-10
 
 ## Dispatch Checklist
 
-1. 사용자 목표를 HQ가 정규화한다.
-2. 이 인덱스의 canonical table에서 담당 lane을 고른다.
-3. superseded/archived id에는 새 작업을 보내지 않는다.
-4. 해당 canonical lane thread id로 `send_message_to_thread`를 사용한다.
-5. 새 thread가 필요하면 이유를 명시하고, 반복 업무가 되면 이 문서에 canonical lane으로 승격한다.
-6. 결과는 `[HQ_RESULT] <Lane>: ...` 메시지로 HQ에 돌아와야 한다.
+1. Control records the goal, owner, current candidate, required gate, next
+   predicate, and blocker in its compact ledger.
+2. Use this directory only after the relevant named predicate exists.
+3. Do not send new work to superseded or archived IDs.
+4. Reuse the selected canonical lane with `send_message_to_thread`; create a
+   new thread only under an explicit control decision.
+5. Return the compact `[HQ_RESULT]` format from `templates/result-report-format.md`.

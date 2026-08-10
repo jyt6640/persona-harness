@@ -1,18 +1,34 @@
 # Common Dispatch Header
 
-공통 지시:
+Apply this header only after Delivery Control records a named owner or gate
+predicate. Reuse the existing role workspace; do not create a task, a gate, or
+a successor because a diagnostic code appeared.
 
-- 반드시 한국어로 답한다.
-- 담당 범위 밖 작업은 직접 하지 말고 `Handoff`에 보고한다.
-- 새 thread를 만들지 말고, 담당 영역의 기존 공용 lane을 재사용한다. HQ가 새 thread를 만들었다면 반복 업무용 공용 lane으로 승격할지 확인한다.
-- thread 정체성은 이번 작업명이 아니라 장기 lane 역할이다. 보고할 때도 `Prompt Architect`, `Runtime Injection`, `CLI Workflow`, `Docs Release`, `External Smoke`, `QA Coverage`, `Skills Prompting`, `Research Reference` 같은 고정 lane 이름을 사용한다.
-- 작업 단위별 atomic commit을 지킨다.
-- 기능/테스트/문서/release 변경이 독립이면 커밋을 나눈다.
-- 커밋 전 staged diff가 이번 작업만 포함하는지 확인한다.
-- unrelated dirty file은 건드리거나 커밋에 섞지 않는다.
-- push는 하지 않는다.
-- 결과는 `result-report-format.md` 형식으로 보고하고, 반드시 `Goal`과 `Success Criteria`를 포함한다.
-- 모든 결과와 중요한 판단은 문서화 가능한 형태로 남긴다.
-- 작업이 끝나면 자기 thread final answer에 결과를 남긴 뒤, 가능하면 thread tool로 HQ thread `019ed945-1bd4-7262-a4ff-66563c4cf0aa`에 같은 결과를 직접 보낸다.
-- HQ로 보낼 때는 `[HQ_RESULT] <세션명>: <짧은 결과>` 제목으로 시작한다.
-- thread tool이 없거나 HQ 전송에 실패하면 `Handoff`에 그 사실을 명시한다.
+- Stay inside the dispatched scope and preserve unrelated dirty files.
+- The Owner owns deterministic closure. A support or acceptance lane supplies
+  only its bounded decision; it does not debug, retry, or replace the candidate.
+- Do not start a Source, Package, or Hosted action without its named predicate.
+- Use focused checks while working. Do not repeat unchanged heavyweight checks.
+- Do not poll, retry a failed observation, create a diagnostic-wrapper chain,
+  or automatically progress a workflow.
+- For an external OpenCode action that invokes a model, apply
+  `externalOpenCodeModel`: record `configuredOpenCodeModel`, use only
+  `openai/gpt-5.3-codex-spark`, and stop `BLOCKED` before model or product
+  action if it is unavailable. Do not substitute a model, provider, alias, or
+  local simulation.
+- Keep complete packets for candidate freeze, independent acceptance, or final
+  hosted evidence. Use a compact result for every other handoff.
+- Do not push, publish, tag, stage, create a fixture, or mutate issue state
+  without explicit authorization.
+- Send the terminal result directly to Delivery Control with this exact shape:
+
+```text
+[HQ_RESULT]
+role=<role>
+state=PASS|FAIL|BLOCKED|FROZEN
+delta=<changed or discovered boundary>
+evidence=<decisive observed evidence; separate inference>
+decision=<one lawful conclusion>
+next=<one role/action or an explicit user decision>
+risk=<remaining uncertainty or hosted residual>
+```
