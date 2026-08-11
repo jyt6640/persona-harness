@@ -69,6 +69,55 @@ describe("consumer authority fetch child diagnostic", () => {
     expect(`${json.stdout}${json.stderr}${plain.stdout}${plain.stderr}`).not.toContain(projectDir)
     expect(`${json.stdout}${json.stderr}${plain.stdout}${plain.stderr}`).not.toContain(token)
   })
+
+  it("exposes only a normalized package binding reason for verifier failures", () => {
+    const projectDir = root()
+    const storeRoot = join(projectDir, "authority-store")
+    const token = "ghp_binding_reason_probe"
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "research-attestation.yml",
+      repositoryId: 1304576182,
+      repositorySlug: "jyt6640/persona-harness-attestation-claim-fixture",
+      reusableWorkflowSha: "73e8654ce3307a6be7fb511e0c1f67df93c7d1b3",
+    })
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const marker = "private-path-marker"
+
+    const result = runAuthorityCommand(["fetch", "github", "--json"], {
+      artifactFetch: () => ({
+        archive: Buffer.from("archive-marker"),
+        artifactId: 1,
+        artifactDigest: "sha256:" + "a".repeat(64),
+        fetchedAt: new Date(0).toISOString(),
+        repositoryId: enrollment.repositoryId,
+        runId: "1",
+        sourceHead: "a".repeat(40),
+      }),
+      artifactInspector: () => ({
+        authorityEligible: false,
+        consumptionState: "not-applicable",
+        decision: "blocked",
+        diagnostics: [{ code: "binding-mismatch", path: "predicate.receipt.phVersion" }],
+        state: "binding-mismatch",
+        summary: `secret ${marker}`,
+      }),
+      githubToken: token,
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      authorityEligible: false,
+      bindingReason: "package-version",
+      schemaVersion: "consumer-authority-fetch.3",
+      state: "binding-mismatch",
+    })
+    expect(`${result.stdout}${result.stderr}`).not.toContain(marker)
+    expect(`${result.stdout}${result.stderr}`).not.toContain(token)
+  })
 })
 
 function root(): string {
